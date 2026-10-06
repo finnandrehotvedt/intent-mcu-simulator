@@ -1,0 +1,21 @@
+services:
+  source-check:
+    image: intent-mcu-simulator-source-check:local
+    build:
+      context: .
+      network: host
+    user: "1000:1000"
+    read_only: true
+    network_mode: none
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 1.0
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    environment:
+      HOME: /tmp
+      NO_UPDATE_NOTIFIER: "1"

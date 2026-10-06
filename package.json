@@ -1,0 +1,22 @@
+{
+  "name": "intent-mcu-simulator",
+  "version": "0.6.0",
+  "private": true,
+  "description": "Original browser-based microcontroller learning environment source",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": "20.19.4",
+    "npm": "10.8.2"
+  },
+  "scripts": {
+    "build": "node scripts/build-staging.mjs",
+    "test": "node --test --test-concurrency=1 test/circuit-model.test.mjs"
+  },
+  "dependencies": {
+    "avr8js": "0.21.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}
