@@ -1,0 +1,34 @@
+# Intent MCU Simulator
+
+> Intent MCU Simulator is an original, open-source browser workbench for building supported ATmega328P circuits, compiling firmware in an isolated fixed toolchain, and inspecting deterministic virtual hardware behaviour.
+
+Canonical application: https://lab.teachthecompany.com/
+Source and setup: https://github.com/finnandrehotvedt/intent-mcu-simulator
+Licence: Apache-2.0 for project-owned source; third-party components keep their own terms.
+Current public version: 0.9.0
+
+## Supported public workflow
+
+- Start with an empty project or load the optional Blink example.
+- Add supported components and connect named pin anchors manually.
+- Edit source and compile it through the isolated, fixed AVR toolchain.
+- Load and run the accepted artifact in the deterministic virtual MCU worker.
+- Inspect GPIO, LEDs, buttons, potentiometers, serial bytes, logic traces, and pin state.
+- Save locally or export and import the canonical project JSON.
+- Optionally generate a portable Prompt Bridge request and validate returned structured circuit data.
+
+## Important limits
+
+- The verified teaching profile is a bounded ATmega328P 16 MHz, 5 V subset, not complete hardware equivalence.
+- Simulation is not physical safety certification and does not replace testing on suitable physical hardware.
+- Prompt Bridge has no hosted AI API or agent/tool connection. It creates portable text for a user-selected tool.
+- Free-form AI output cannot draw wires or authorize connections. Only schema-valid, electrically accepted project data reaches the canvas and worker.
+- There are no accounts, analytics, advertising, cloud project storage, physical-device uploads, or live AI calls.
+
+## Primary documentation
+
+- Public source README: https://github.com/finnandrehotvedt/intent-mcu-simulator#readme
+- Contribution guide: https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/CONTRIBUTING.md
+- Security policy: https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/SECURITY.md
+- Project story: https://finnandre.no/2026/10/06/intent-mcu-simulator-apen-kildekode/
+- Technical overview: https://www.intentforce.no/intent-mcu-simulator-apen-kildekode/

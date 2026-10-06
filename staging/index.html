@@ -4,8 +4,29 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="noindex,nofollow">
-  <title>Intent MCU Simulator · manual circuit workspace</title>
+  <meta name="description" content="Build ATmega328P circuits, compile firmware in an isolated toolchain, and inspect virtual GPIO, LEDs, inputs, serial data, and logic traces.">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <meta name="theme-color" content="#07121d">
+  <title>Intent MCU Simulator | Browser AVR firmware workbench</title>
+  <link rel="canonical" href="https://lab.teachthecompany.com/">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="alternate" href="/llms.txt" type="text/plain" title="Intent MCU Simulator facts for AI-assisted discovery">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teach the Company">
+  <meta property="og:title" content="Intent MCU Simulator | Browser AVR firmware workbench">
+  <meta property="og:description" content="Build a supported ATmega328P circuit, compile edited firmware, and inspect deterministic virtual hardware behaviour.">
+  <meta property="og:url" content="https://lab.teachthecompany.com/">
+  <meta property="og:image" content="https://lab.teachthecompany.com/social-card.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Intent MCU Simulator workbench with an original virtual controller, connected LED, source code, and logic trace.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Intent MCU Simulator | Browser AVR firmware workbench">
+  <meta name="twitter:description" content="Build a supported ATmega328P circuit, compile edited firmware, and inspect deterministic virtual hardware behaviour.">
+  <meta name="twitter:image" content="https://lab.teachthecompany.com/social-card.png">
+  <meta name="twitter:image:alt" content="Intent MCU Simulator workbench with an original virtual controller, connected LED, source code, and logic trace.">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://lab.teachthecompany.com/#website","url":"https://lab.teachthecompany.com/","name":"Intent MCU Simulator","inLanguage":"en","mainEntity":{"@id":"https://lab.teachthecompany.com/#software"}},{"@type":"WebApplication","@id":"https://lab.teachthecompany.com/#software","name":"Intent MCU Simulator","url":"https://lab.teachthecompany.com/","description":"An original browser workbench for building supported ATmega328P circuits, compiling firmware in an isolated toolchain, and inspecting deterministic virtual hardware behaviour.","applicationCategory":"EducationalApplication","operatingSystem":"Any modern browser","isAccessibleForFree":true,"softwareVersion":"0.9.0","license":"https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/LICENSE","codeRepository":"https://github.com/finnandrehotvedt/intent-mcu-simulator","featureList":["Manual pin-to-pin circuit building","Isolated firmware compilation","Deterministic virtual MCU execution","GPIO, LED, button and potentiometer models","Serial console, logic analyser and pin inspector","Validation-gated portable Prompt Bridge"],"author":{"@type":"Person","name":"Finn Andre Hotvedt","url":"https://finnandre.no/"},"publisher":{"@type":"Organization","name":"IntentForce","url":"https://www.intentforce.no/"}},{"@type":"FAQPage","@id":"https://lab.teachthecompany.com/#questions","mainEntity":[{"@type":"Question","name":"What does Intent MCU Simulator simulate?","acceptedAnswer":{"@type":"Answer","text":"It simulates a tested educational subset around an ATmega328P 16 MHz, 5 V profile, including supported GPIO, LEDs, resistors, buttons, potentiometers, serial data, and logic traces."}},{"@type":"Question","name":"Does Prompt Bridge connect to a hosted AI service?","acceptedAnswer":{"@type":"Answer","text":"No. Prompt Bridge creates portable text for a tool chosen by the user. Only returned structured circuit data that passes project-owned schema, pin, and electrical validation can reach the canvas."}},{"@type":"Question","name":"Does the simulator replace testing on physical hardware?","acceptedAnswer":{"@type":"Answer","text":"No. The workbench is an educational simulation of a verified subset. It is not physical safety certification and does not claim complete timing or hardware equivalence."}}]}]}</script>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -115,6 +136,20 @@
       <article class="instrument-card panel" aria-labelledby="logic-title"><div class="card-heading"><div><p class="eyebrow">VIRTUAL-CYCLE EDGES</p><h2 id="logic-title">Logic analyser</h2></div><span id="logic-count">0 transitions</span></div><ul id="logic-output" class="logic-output"><li>— · 0000000000 · LOW</li></ul><div class="logic-controls"><label for="logic-channels">Channels</label><select id="logic-channels" multiple size="5"><option value="D13" selected>D13</option><option value="D2" selected>D2</option><option value="D3">D3</option><option value="D5">D5</option><option value="D6">D6</option><option value="D9">D9</option><option value="D10">D10</option><option value="D11">D11</option></select><label for="logic-window">Window</label><select id="logic-window"><option value="25">25 edges</option><option value="100">100 edges</option><option value="500">500 edges</option></select></div><p id="logic-cursor" class="logic-cursor">Cursor Δ —</p></article>
       <article class="instrument-card panel" aria-labelledby="pin-title"><div class="card-heading"><div><p class="eyebrow">SAME MACHINE STATE</p><h2 id="pin-title">Pin inspector</h2></div></div><label for="pin-select">Pin</label><select id="pin-select"><option>D13</option><option>D2</option><option>D3</option><option>D5</option><option>D6</option><option>D9</option><option>D10</option><option>D11</option><option>A0</option></select><dl class="pin-readout"><div><dt>Mode</dt><dd id="pin-mode">—</dd></div><div><dt>Level</dt><dd id="pin-level">—</dd></div><div><dt>PWM / ADC</dt><dd id="pin-detail">—</dd></div><div><dt>Diagnostic</dt><dd id="pin-diagnostic">—</dd></div><div><dt>Cycle</dt><dd id="pin-cycle">0</dd></div></dl></article>
     </section></details>
+
+    <section class="about panel" aria-labelledby="about-title">
+      <div class="about-intro"><div><p class="eyebrow">OPEN SOURCE · VERIFIED BOUNDARIES</p><h2 id="about-title">What is Intent MCU Simulator?</h2></div><p>It is an original browser workbench that turns supported firmware into observable virtual hardware behaviour. Build a circuit by connecting named pins, compile edited source in an isolated fixed toolchain, then inspect GPIO, LEDs, inputs, serial bytes, and logic traces.</p></div>
+      <div class="answer-grid">
+        <article><h3>What does it simulate?</h3><p>A tested educational subset around an ATmega328P 16 MHz, 5 V profile, with supported LEDs, resistors, buttons, potentiometers, GPIO, serial data, and instruments.</p></article>
+        <article><h3>Does Prompt Bridge call AI?</h3><p>No. It creates portable text for a tool you choose. Only returned structured circuit data that passes the project schema, pin rules, and electrical validation can reach the canvas.</p></article>
+        <article><h3>Does it replace physical testing?</h3><p>No. Simulation is not physical safety certification and does not claim complete timing or hardware equivalence. Verify real designs on appropriate hardware.</p></article>
+      </div>
+      <nav class="project-links" aria-label="Project documentation and articles">
+        <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator" rel="external noopener">Source and setup on GitHub</a>
+        <a href="https://finnandre.no/2026/10/06/intent-mcu-simulator-apen-kildekode/" rel="external noopener">Project story on Finnandre</a>
+        <a href="https://www.intentforce.no/intent-mcu-simulator-apen-kildekode/" rel="external noopener">Technical overview on IntentForce</a>
+      </nav>
+    </section>
 
     <footer>Original project interface and deterministic circuit renderer · supported simulation subset · no physical safety certification · active development</footer>
   </main>

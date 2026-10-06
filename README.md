@@ -27,6 +27,16 @@ or agent/tool interface: AI-assisted use happens through ordinary source work
 and the optional portable Prompt Bridge, while deterministic project rules
 remain the authority.
 
+## Public discovery and factual machine context
+
+The live workbench publishes crawlable product explanations, a canonical URL,
+social-preview metadata, truthful Schema.org `WebApplication` and FAQ data,
+`robots.txt`, `sitemap.xml`, and a concise `llms.txt`. These files describe only
+the supported product and link back to this source, licence, contribution
+guidance, and the two owner articles. They do not promise search rankings, AI
+citations, physical equivalence, hosted AI, or capabilities outside the tested
+ATmega328P subset.
+
 ## Current source-release boundary
 
 The browser source supports an ATmega328P learning profile, LEDs, resistors,

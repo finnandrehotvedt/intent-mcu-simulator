@@ -1,0 +1,11 @@
+<!-- SPDX-License-Identifier: Apache-2.0; Copyright 2026 Finn Andre Hotvedt and IntentForce -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Intent MCU Simulator icon</title>
+  <desc id="desc">Four virtual pins connected by a cyan circuit trace.</desc>
+  <rect width="64" height="64" rx="14" fill="#07121d"/>
+  <rect x="11" y="11" width="42" height="42" rx="10" fill="#0c1c2b" stroke="#21445b" stroke-width="2"/>
+  <path d="M19 21h13v11h13v11" fill="none" stroke="#24d7ef" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="19" cy="21" r="4" fill="#a8ff3f"/>
+  <circle cx="32" cy="32" r="4" fill="#ffcc66"/>
+  <circle cx="45" cy="43" r="4" fill="#a8ff3f"/>
+</svg>

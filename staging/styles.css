@@ -138,6 +138,15 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .logic-controls select[multiple] { grid-row: span 3; min-height: 112px; }
 .logic-cursor { color: var(--cyan); font: .73rem ui-monospace, monospace; }
 .pin-readout { margin-bottom: 0; }
+.about { margin-top: 16px; }
+.about-intro { display: grid; grid-template-columns: minmax(250px, .65fr) 1.35fr; gap: 22px; align-items: start; }
+.about-intro > p, .answer-grid p { margin: 0; color: var(--muted); line-height: 1.6; }
+.answer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+.answer-grid article { padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: #07141f; }
+.answer-grid h3 { margin: 0 0 8px; color: var(--cyan); font-size: .94rem; }
+.project-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.project-links a { min-height: 42px; display: inline-flex; align-items: center; padding: 0 13px; border: 1px solid #2a627f; border-radius: 8px; color: var(--text); font-weight: 740; text-decoration: none; }
+.project-links a:hover, .project-links a:focus-visible { border-color: var(--cyan); color: var(--lime); }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 footer { text-align: center; font-size: .76rem; padding-top: 28px; }
 
@@ -151,7 +160,7 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   main { width: min(100% - 18px, 680px); padding-top: 30px; }
   .app-header { align-items: start; flex-direction: column; gap: 8px; }
   .lede { text-align: left; }
-  .project-bar, .workspace, .runtime, .instrument-grid, .prompt-grid { grid-template-columns: 1fr; }
+  .project-bar, .workspace, .runtime, .instrument-grid, .prompt-grid, .about-intro, .answer-grid { grid-template-columns: 1fr; }
   .source-files { grid-template-columns: 1fr 1fr; }
   .catalog-list { grid-template-columns: repeat(2, minmax(130px, 1fr)); overflow: visible; }
   .catalog-pagination { grid-template-columns: 1fr 1fr; }

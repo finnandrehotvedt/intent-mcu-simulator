@@ -1,0 +1,49 @@
+<!-- SPDX-License-Identifier: Apache-2.0; Copyright 2026 Finn Andre Hotvedt and IntentForce -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Intent MCU Simulator social preview</title>
+  <desc id="desc">An original dark virtual workbench with a controller, LED circuit, firmware source, and logic trace.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#06111b"/><stop offset="1" stop-color="#12324a"/></linearGradient>
+    <linearGradient id="board" x1="0" x2="1"><stop stop-color="#176e67"/><stop offset="1" stop-color="#0e5555"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000" flood-opacity=".45"/></filter>
+    <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#21445b" stroke-opacity=".28"/></pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <g transform="translate(68 65)">
+    <rect width="66" height="66" rx="15" fill="#0c1c2b" stroke="#2a627f" stroke-width="2"/>
+    <path d="M17 22h17v12h15v14" fill="none" stroke="#24d7ef" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="17" cy="22" r="5" fill="#a8ff3f"/><circle cx="34" cy="34" r="5" fill="#ffcc66"/><circle cx="49" cy="48" r="5" fill="#a8ff3f"/>
+    <text x="88" y="27" fill="#a8ff3f" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="3">OPEN-SOURCE BROWSER WORKBENCH</text>
+    <text x="88" y="77" fill="#edf7fb" font-family="Arial, sans-serif" font-size="54" font-weight="800">Intent MCU Simulator</text>
+    <text x="88" y="119" fill="#95adbb" font-family="Arial, sans-serif" font-size="24">Build the circuit. Compile the firmware. Inspect the behaviour.</text>
+  </g>
+  <g transform="translate(70 245)" filter="url(#shadow)">
+    <rect width="1060" height="300" rx="24" fill="#0c1c2b" stroke="#21445b" stroke-width="2"/>
+    <rect x="28" y="28" width="535" height="244" rx="16" fill="#08141f" stroke="#21445b"/>
+    <g transform="translate(63 76)">
+      <rect width="292" height="150" rx="17" fill="url(#board)" stroke="#45b3a6" stroke-width="3"/>
+      <rect x="80" y="42" width="132" height="68" rx="8" fill="#161a1d" stroke="#83aaa8" stroke-width="3"/>
+      <g fill="#d6d9d9">
+        <circle cx="38" cy="28" r="6"/><circle cx="74" cy="28" r="6"/><circle cx="110" cy="28" r="6"/><circle cx="146" cy="28" r="6"/><circle cx="182" cy="28" r="6"/><circle cx="218" cy="28" r="6"/><circle cx="254" cy="28" r="6"/>
+        <circle cx="38" cy="124" r="6"/><circle cx="74" cy="124" r="6"/><circle cx="110" cy="124" r="6"/><circle cx="146" cy="124" r="6"/><circle cx="182" cy="124" r="6"/><circle cx="218" cy="124" r="6"/><circle cx="254" cy="124" r="6"/>
+      </g>
+      <text x="146" y="86" fill="#edf7fb" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" font-weight="700">ATmega328P</text>
+    </g>
+    <path d="M317 104H420V78H474" fill="none" stroke="#f04f5f" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M317 200H455V168H495" fill="none" stroke="#303943" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="420" y="68" width="56" height="20" rx="7" fill="#d7c49b" stroke="#8a7048" stroke-width="2"/>
+    <path d="M435 69v18M447 69v18M459 69v18" stroke="#ffcc66" stroke-width="4"/>
+    <path d="M496 84v84M476 84h40M478 168h38" stroke="#bfc7ca" stroke-width="5"/>
+    <path d="M484 84c0-34 28-34 28 0v34h-28z" fill="#831f2c" stroke="#ff6c78" stroke-width="4"/>
+    <circle cx="499" cy="93" r="9" fill="#ff8893" opacity=".7"/>
+    <rect x="592" y="28" width="440" height="150" rx="16" fill="#050d14" stroke="#21445b"/>
+    <text x="619" y="61" fill="#95adbb" font-family="monospace" font-size="15">main.ino</text>
+    <text x="619" y="95" fill="#24d7ef" font-family="monospace" font-size="18">void setup() { pinMode(13, OUTPUT); }</text>
+    <text x="619" y="129" fill="#a8ff3f" font-family="monospace" font-size="18">digitalWrite(13, HIGH);</text>
+    <rect x="592" y="196" width="440" height="76" rx="16" fill="#07141f" stroke="#21445b"/>
+    <path d="M620 245h48v-25h64v25h66v-25h72v25h70" fill="none" stroke="#24d7ef" stroke-width="5" stroke-linejoin="round"/>
+    <text x="615" y="217" fill="#95adbb" font-family="Arial, sans-serif" font-size="13" font-weight="700">D13 LOGIC TRACE</text>
+  </g>
+  <text x="70" y="592" fill="#95adbb" font-family="Arial, sans-serif" font-size="18">Verified educational subset · no hosted AI connection · Apache-2.0 project source</text>
+</svg>
