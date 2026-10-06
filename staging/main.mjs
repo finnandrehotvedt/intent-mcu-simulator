@@ -474,6 +474,7 @@ async function benchmarkCatalogFixture(action = 'start') {
       records: catalogFixtureRecords?.length ?? 0,
       attached: elements.cataloglist.isConnected,
       maximumRenderMilliseconds: Math.max(0, ...catalogBenchmarkSession.renderDurations),
+      longTaskObserverSupported: catalogBenchmarkSession.longTaskObserverSupported,
       longTasks: [...catalogBenchmarkSession.longTasks],
       progressiveThumbnails: elements.cataloglist.querySelectorAll('.catalog-thumbnail').length,
     } : null;
@@ -500,10 +501,11 @@ async function benchmarkCatalogFixture(action = 'start') {
   elements.cataloginterface.value = 'all'; elements.catalogstatus.value = 'all'; elements.catalogfavorites.checked = false;
   catalogWindowStart = 0;
   const longTasks = [];
-  const observer = 'PerformanceObserver' in window && PerformanceObserver.supportedEntryTypes?.includes('longtask')
+  const longTaskObserverSupported = 'PerformanceObserver' in window && PerformanceObserver.supportedEntryTypes?.includes('longtask');
+  const observer = longTaskObserverSupported
     ? new PerformanceObserver((list) => longTasks.push(...list.getEntries().map((entry) => entry.duration))) : null;
   observer?.observe({ type: 'longtask', buffered: false });
-  catalogBenchmarkSession = { longTasks, observer, renderDurations: [] };
+  catalogBenchmarkSession = { longTasks, observer, longTaskObserverSupported, renderDurations: [] };
   const started = performance.now();
   const initial = renderCatalog();
   const layout = elements.cataloglist.getBoundingClientRect();
@@ -513,9 +515,10 @@ async function benchmarkCatalogFixture(action = 'start') {
     matches: initial.matches,
     rendered: initial.rendered,
     attached: elements.cataloglist.isConnected,
-    initialPaintMilliseconds: performance.now() - started,
+    initialAttachedWorkMilliseconds: performance.now() - started,
     attachedLayout: { width: layout.width, height: layout.height },
     maximumRenderMilliseconds: Math.max(0, ...catalogBenchmarkSession.renderDurations),
+    longTaskObserverSupported,
     longTasks: [...longTasks],
     progressiveThumbnails: elements.cataloglist.querySelectorAll('.catalog-thumbnail').length,
   };
