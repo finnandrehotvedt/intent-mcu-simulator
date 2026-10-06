@@ -9,6 +9,24 @@ project-owned circuit model. It includes no copied simulator artwork, layout,
 schema, endpoints, or branding. The interface and component graphics are
 implemented from scratch with HTML, CSS, and JavaScript.
 
+## Why we are building this
+
+This project began as one of many practical demonstrations of professional
+AI-assisted coding: not just generating source, but making the result visible,
+testable, and open to inspection. Firmware is hard to understand from text
+alone. The simulator turns a supported program into observable virtual
+hardware behaviour—pins, LEDs, inputs, serial bytes, and logic traces—so a
+person can learn from it and an AI-assisted workflow can use the same evidence
+when explaining or checking a change.
+
+The project is open source so people can use it, enjoy it, study it, and
+contribute improvements. Development is ongoing, with no fixed final date or
+predetermined finish line. That direction is an invitation to participate, not
+a promise of perpetual maintenance. The current product has no hosted AI API
+or agent/tool interface: AI-assisted use happens through ordinary source work
+and the optional portable Prompt Bridge, while deterministic project rules
+remain the authority.
+
 ## Current source-release boundary
 
 The browser source supports an ATmega328P learning profile, LEDs, resistors,
@@ -62,8 +80,8 @@ Apache-2.0 project-owned source.
 
 Additional current limits:
 
-- the public source checkout is not the deployed application at
-  `lab.teachthecompany.com`;
+- the public workbench is live at `lab.teachthecompany.com`, but this source-only
+  checkout is not its hosted compiler, toolchain, or deployment stack;
 - no physical board connection, firmware upload, live AI call, account,
   analytics, or cloud project store is included;
 - the CPU/peripheral profile is a tested educational subset, not a promise of

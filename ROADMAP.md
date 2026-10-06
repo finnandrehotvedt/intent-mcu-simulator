@@ -4,6 +4,16 @@ This roadmap describes possible source work, not a delivery promise. A feature
 moves into a release only with a defined contract, deterministic tests,
 licence review, and honest compatibility status.
 
+## Direction, not a finish line
+
+The simulator is an ongoing open-source demonstration of professional
+AI-assisted coding and evidence-based firmware learning. It should keep making
+the relationship between source code and observable simulated hardware easier
+for people to inspect, explain, and improve. There is no fixed final date or
+predetermined end state. Contributions are welcome, but this roadmap does not
+promise that every proposal will be accepted or that maintenance will continue
+forever.
+
 ## Near-term source quality
 
 - Improve keyboard and screen-reader workflows for the manual circuit editor.
@@ -22,9 +32,9 @@ licence review, and honest compatibility status.
   corresponding-source, notice, relinking, and sandbox documentation.
 - Evaluate additional components one at a time; displays, sensors, motors, and
   buses require their own electrical and emulator contracts before activation.
-- Keep physical-device access, upload, accounts, hosted AI, and public
-  deployment outside this source roadmap until separately designed and
-  approved.
+- Keep physical-device access, upload, accounts, hosted AI, agent/tool
+  interfaces, and hosted compiler/deployment operations outside this
+  source-only roadmap until each is separately designed and approved.
 
 ## Not planned as shortcuts
 
