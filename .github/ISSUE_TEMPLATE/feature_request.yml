@@ -1,0 +1,33 @@
+name: Feature request
+description: Propose a bounded learner-visible improvement.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Learner outcome
+      description: What should a learner be able to understand or do?
+    validations:
+      required: true
+  - type: textarea
+    id: contract
+    attributes:
+      label: Proposed contract and limits
+      description: Include component, electrical, emulator, data, and UI boundaries that apply.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Acceptance evidence
+      description: Describe deterministic tests and honest unsupported cases.
+    validations:
+      required: true
+  - type: checkboxes
+    id: originality
+    attributes:
+      label: Original-work check
+      options:
+        - label: This proposal does not require copying another simulator's source, layout, artwork, schema, documentation, private endpoint, logo, or branding.
+          required: true

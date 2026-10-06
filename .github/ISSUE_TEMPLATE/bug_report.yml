@@ -1,0 +1,41 @@
+name: Bug report
+description: Report a reproducible problem in the public source.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "For security issues, use Security → Report a vulnerability instead of a public issue."
+  - type: input
+    id: revision
+    attributes:
+      label: Revision
+      description: Commit SHA and browser/Node version used.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction
+      description: Start from an empty project when possible and list each action.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+    validations:
+      required: true
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Source boundary
+      options:
+        - label: I removed credentials, personal data, private topology, and proprietary third-party material.
+          required: true
