@@ -12,6 +12,7 @@ import {
 } from './circuit-engine.mjs';
 import {
   PROJECT_SCHEMA,
+  WIRE_COLORS,
   canonicalProjectJson,
   parseProjectV2,
   validateProjectV2,
@@ -61,7 +62,7 @@ export function createEmptyProject() {
     source: { files: [{ name: 'main.ino', content: '' }] },
     circuit: { schema: CIRCUIT_SCHEMA, components: [], nets: [], junctions: [] },
     layout: {
-      positions: {}, wireRoutes: {},
+      positions: {}, wireRoutes: {}, wireStyles: {},
       viewport: { zoom: 1, panX: 0, panY: 0 },
     },
     instruments: {
@@ -137,7 +138,10 @@ function applyMutation(current, command) {
         return [{ ...net, endpoints }];
       });
       graph.junctions = graph.junctions.filter((junction) => !removedNets.has(junction.net));
-      for (const netId of removedNets) delete next.layout.wireRoutes[netId];
+      for (const netId of removedNets) {
+        delete next.layout.wireRoutes[netId];
+        delete next.layout.wireStyles[netId];
+      }
       runtimeDirty = true;
       break;
     }
@@ -202,6 +206,7 @@ function applyMutation(current, command) {
       graph.nets = graph.nets.filter((net) => net.id !== command.netId);
       graph.junctions = graph.junctions.filter((junction) => junction.net !== command.netId);
       delete next.layout.wireRoutes[command.netId];
+      delete next.layout.wireStyles[command.netId];
       runtimeDirty = true;
       break;
     }
@@ -211,6 +216,12 @@ function applyMutation(current, command) {
         throw new Error('EDITOR_ROUTE');
       }
       next.layout.wireRoutes[command.netId] = clone(command.points);
+      break;
+    }
+    case 'wire.style.set': {
+      if (!exactCommand(command, ['netId', 'color']) || !netById(graph, command.netId)
+          || !WIRE_COLORS.includes(command.color)) throw new Error('EDITOR_WIRE_STYLE');
+      next.layout.wireStyles[command.netId] = { color: command.color };
       break;
     }
     case 'junction.add': {
@@ -339,6 +350,10 @@ export function mergeCircuitProject(baseValue, incomingValue) {
     const targetNet = netMap.get(sourceNet);
     if (targetNet && !merged.layout.wireRoutes[targetNet]) merged.layout.wireRoutes[targetNet] = clone(points);
   }
+  for (const [sourceNet, style] of Object.entries(incoming.layout.wireStyles)) {
+    const targetNet = netMap.get(sourceNet);
+    if (targetNet && !merged.layout.wireStyles[targetNet]) merged.layout.wireStyles[targetNet] = clone(style);
+  }
   merged.circuit = normalizeCircuitStructure(merged.circuit, { allowDraft: true });
   dirtyBuild(merged);
   return {
@@ -413,6 +428,7 @@ export class ProjectEditorReducer {
       next.circuit = validation.project.circuit;
       next.layout.positions = validation.project.layout.positions;
       next.layout.wireRoutes = validation.project.layout.wireRoutes;
+      next.layout.wireStyles = validation.project.layout.wireStyles;
       dirtyBuild(next);
       const electrical = requireRunnable ? validateCircuit(next.circuit) : null;
       if (electrical && !electrical.ok) return resultError(electrical.code, this.revision, electrical.diagnostics);

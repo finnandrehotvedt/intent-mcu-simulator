@@ -3,7 +3,15 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { COMPONENT_CATALOG, CIRCUIT_LIMITS } from '../src/component-catalog.mjs';
+import {
+  CATALOG_CATEGORIES,
+  COMPONENT_CATALOG,
+  CIRCUIT_LIMITS,
+  SUPPORT_STATUS,
+  catalogEntries,
+  filterCatalog,
+  validateCatalogDefinition,
+} from '../src/component-catalog.mjs';
 import {
   CIRCUIT_SCHEMA,
   CircuitRuntime,
@@ -19,7 +27,9 @@ import { CircuitEditorReducer } from '../src/editor-reducer.mjs';
 import {
   LEGACY_STORAGE_KEY,
   PROJECT_SCHEMA,
+  WIRE_COLORS,
   canonicalProjectJson,
+  defaultWireColor,
   migrateProjectV1,
   parseProjectV2,
   validateProjectV2,
@@ -140,19 +150,68 @@ test('component contracts enforce exact pins, properties, controls and reset def
   for (const [type, definition] of Object.entries(COMPONENT_CATALOG)) {
     assert.equal(definition.type, type);
     assert.ok(definition.displayName.length > 0);
-    assert.ok(definition.visualKey.startsWith(type.split('.')[0]) || definition.visualKey.length > 0);
+    assert.equal(validateCatalogDefinition(definition), true);
+    assert.ok(definition.family.length > 0 && definition.variant.length > 0);
+    assert.ok(definition.manufacturer.length > 0 && definition.partNumber.length > 0);
+    assert.ok(definition.modelRef.length > 0);
+    assert.ok(definition.artwork.renderer.length > 0 && definition.artwork.thumbnail.length > 0);
+    assert.equal(definition.artwork.license, 'Apache-2.0');
+    assert.match(definition.artwork.provenance, /Original project SVG/u);
+    assert.ok(CATALOG_CATEGORIES.some((category) => category.id === definition.catalog.category));
+    assert.ok(Object.hasOwn(SUPPORT_STATUS, definition.support.status));
+    assert.ok(definition.support.limitations.length > 0);
     for (const pin of definition.pins) {
-      assert.ok(pin.id);
-      assert.ok(pin.role);
+      assert.ok(pin.id && pin.label && pin.role);
       assert.ok(pin.signals.length > 0);
-      assert.ok(pin.anchor.side);
+      assert.deepEqual(pin.capabilities, pin.signals);
+      assert.ok(pin.anchor.x >= 0 && pin.anchor.x <= 1);
+      assert.ok(pin.anchor.y >= 0 && pin.anchor.y <= 1);
     }
   }
+  assert.equal(CATALOG_CATEGORIES.length, 9);
+  assert.deepEqual(
+    COMPONENT_CATALOG['button.momentary-v1'].internalTerminalGroups,
+    [{ pin: 'A', terminals: ['A1', 'A2'] }, { pin: 'B', terminals: ['B1', 'B2'] }],
+  );
   const bad = clone(DEFAULT_CIRCUIT);
   bad.components.find((item) => item.id === 'resistor-1').properties.extra = true;
   expectCode(bad, 'INVALID_COMPONENT_PROPERTIES');
   bad.components.find((item) => item.id === 'resistor-1').properties = { ohms: 0 };
   expectCode(bad, 'INVALID_COMPONENT_PROPERTIES');
+});
+
+test('W-07/W-08 catalogue filtering covers practical metadata and remains bounded at 1,000 records', () => {
+  const base = COMPONENT_CATALOG['board.atmega328p-16mhz-v1'];
+  const records = Array.from({ length: 1_000 }, (_, index) => ({
+    ...base,
+    type: `catalog.test-${index}-v1`,
+    family: `catalog.test-family-${index % 25}`,
+    variant: `variant-${index % 10}`,
+    displayName: `Environmental controller ${index}`,
+    manufacturer: `Maker ${index % 20}`,
+    partNumber: `MCU-${String(index).padStart(4, '0')}`,
+    catalog: {
+      ...base.catalog,
+      category: index % 2 ? 'controllers' : 'sensors',
+      aliases: [`weather-node-${index}`, `alias-${index % 50}`],
+      functions: index % 3 ? ['gpio controller'] : ['temperature sensing'],
+      interfaces: index % 5 ? ['GPIO'] : ['I²C'],
+      supplyVolts: { min: 3.3, max: 5 },
+      package: index % 2 ? 'development board' : 'breakout module',
+    },
+    support: {
+      status: index % 4 ? 'simulated' : 'partial',
+      limitations: ['Synthetic performance fixture only.'],
+    },
+  }));
+  const started = performance.now();
+  assert.equal(filterCatalog(records, { query: 'Maker 7 MCU-0007 weather-node-7 GPIO' }).length, 1);
+  assert.equal(filterCatalog(records, { query: 'temperature sensing I²C', category: 'sensors' }).length > 0, true);
+  assert.equal(filterCatalog(records, { category: 'controllers', status: 'simulated', interface: 'GPIO' }).length > 0, true);
+  assert.equal(filterCatalog(records, { query: 'breakout 3.3' }).length > 0, true);
+  const elapsed = performance.now() - started;
+  assert.ok(elapsed < 250, `1,000-record catalogue filtering took ${elapsed.toFixed(2)} ms`);
+  assert.equal(catalogEntries({ selectableOnly: true }).length, 5);
 });
 
 test('C-05 direct five volt to ground short blocks with stable net reference', () => {
@@ -385,6 +444,33 @@ test('C-14 wire routes cross without connection and junction removal detaches th
   assert.equal(endpointConnection(editor.project.circuit, { component: ids.pot, pin: 'LOW' }), null);
   assert.equal(editor.apply({ type: 'undo', revision: editor.revision }).ok, true);
   assert.equal(validateCircuit(editor.project.circuit).ok, true);
+});
+
+test('W-04/W-05/W-12 wire colour and editable bends persist without changing electrical identity', () => {
+  const { editor, apply } = buildManualProject();
+  const circuitBefore = canonicalCircuitJson(editor.project.circuit);
+  apply({ type: 'wire.style.set', netId: 'net-d13', color: '#5f8cff' });
+  apply({ type: 'wire.route.set', netId: 'net-d13', points: [{ x: 0.31, y: 0.27 }, { x: 0.62, y: 0.27 }] });
+  assert.equal(canonicalCircuitJson(editor.project.circuit), circuitBefore);
+  assert.equal(editor.project.layout.wireStyles['net-d13'].color, '#5f8cff');
+  assert.deepEqual(editor.project.layout.wireRoutes['net-d13'], [{ x: 0.31, y: 0.27 }, { x: 0.62, y: 0.27 }]);
+  const reopened = parseProjectV2(exportCanonicalProject(editor.project));
+  assert.equal(reopened.ok, true);
+  assert.deepEqual(reopened.project.layout.wireStyles, editor.project.layout.wireStyles);
+  assert.deepEqual(reopened.project.layout.wireRoutes, editor.project.layout.wireRoutes);
+
+  const priorV2 = JSON.parse(exportCanonicalProject(editor.project));
+  delete priorV2.layout.wireStyles;
+  const migrated = parseProjectV2(JSON.stringify(priorV2));
+  assert.equal(migrated.ok, true);
+  for (const net of migrated.project.circuit.nets) {
+    assert.equal(migrated.project.layout.wireStyles[net.id].color, defaultWireColor(net));
+  }
+  assert.equal(WIRE_COLORS.includes(migrated.project.layout.wireStyles['net-ground'].color), true);
+  const beforeRejected = exportCanonicalProject(editor.project);
+  const rejected = editor.apply({ type: 'wire.style.set', revision: editor.revision, netId: 'net-d13', color: '#badbad' });
+  assert.equal(rejected.code, 'EDITOR_WIRE_STYLE');
+  assert.equal(exportCanonicalProject(editor.project), beforeRejected);
 });
 
 test('C-17 GPIO reassignment changes the canonical graph and source without fixed-demo state', () => {

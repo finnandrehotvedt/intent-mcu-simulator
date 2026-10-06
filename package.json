@@ -1,6 +1,6 @@
 {
   "name": "intent-mcu-simulator",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "description": "Original browser-based microcontroller learning environment source",
   "license": "Apache-2.0",

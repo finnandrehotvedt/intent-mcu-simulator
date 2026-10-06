@@ -14,7 +14,11 @@ implemented from scratch with HTML, CSS, and JavaScript.
 The browser source supports an ATmega328P learning profile, LEDs, resistors,
 momentary buttons, linear potentiometers, project import/export, local saves,
 Prompt Bridge circuit-plan validation, serial display, logic traces, and pin
-inspection.
+inspection. Its manual-first workbench uses a data-driven catalogue with nine
+categories, exact support labels, practical metadata search, local favourites
+and recent parts. Selectable parts render original project SVG artwork whose
+visible terminals and invisible wiring hit targets share the same local
+coordinates.
 
 ## Manual builder walkthrough
 
@@ -24,8 +28,9 @@ The intended manual workflow is:
 1. Add one controller and the desired components from the searchable catalog.
 2. Select two visible pin anchors to create a net. Selecting another free pin
    and a pin on that net creates an explicit branch/junction.
-3. Select a net to inspect all members, add layout-only bends, or detach a
-   named branch. Visual crossings do not imply electrical connectivity.
+3. Select a net to inspect all members, choose a wire colour, edit layout-only
+   bends, or detach a named branch. Visual crossings do not imply electrical
+   connectivity, and route/colour changes never alter the electrical graph.
 4. Move or rotate components. Layout changes preserve component and pin
    identity, and routed wire endpoints remain attached to their actual pins.
 5. Edit one or more source files. Source, circuit, and board profile together
@@ -33,6 +38,13 @@ The intended manual workflow is:
 6. Save locally or export the canonical project JSON. Imported projects and
    Prompt Bridge proposals pass the same strict schema and electrical rules as
    manual edits.
+
+Placed parts intentionally have no permanent card/header background. Names,
+properties, pin roles, provenance, simulation status and exact limitations are
+available through the catalogue and inspector instead of being painted into
+the hardware art. The four-terminal tactile button depicts A1/A2 and B1/B2 as
+physical terminals while preserving the two internally common electrical
+groups `A` and `B`.
 
 Example circuit: connect controller `D13` to a resistor, the resistor to an
 LED anode, and the LED cathode to controller ground. Connect a momentary button

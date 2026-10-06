@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
-import { COMPONENT_CATALOG } from '../src/component-catalog.mjs';
+import {
+  CATALOG_CATEGORIES,
+  COMPONENT_CATALOG,
+  SUPPORT_STATUS,
+  catalogEntries,
+  defaultProperties,
+  filterCatalog,
+} from '../src/component-catalog.mjs';
 import { validateCircuit } from '../src/circuit-engine.mjs';
 import {
   ProjectEditorReducer,
@@ -14,6 +21,7 @@ import {
   projectFromCircuit,
 } from '../src/project-editor.mjs';
 import { PROJECT_STORAGE_KEY, migrateProjectV1, parseProjectV2 } from '../src/project-v2.mjs';
+import { createComponentArtwork } from './component-artwork.mjs';
 
 const byId = (id) => document.querySelector(`#${id}`);
 const elements = Object.fromEntries([
@@ -22,9 +30,10 @@ const elements = Object.fromEntries([
   'graph-state', 'wire-state', 'circuit-diagnostics', 'serial-output', 'serial-count', 'serial-input', 'serial-send',
   'serial-clear', 'logic-output', 'logic-count', 'logic-channels', 'logic-window', 'logic-cursor', 'pin-select',
   'pin-mode', 'pin-level', 'pin-detail', 'pin-diagnostic', 'pin-cycle', 'catalog-search', 'catalog-category',
+  'catalog-interface', 'catalog-status', 'catalog-favorites', 'catalog-count',
   'catalog-list', 'selection-name', 'property-editor', 'rotate-component', 'duplicate-component', 'delete-component',
-  'selected-net', 'net-members', 'reconnect-mode', 'add-bend', 'delete-wire', 'remove-junction', 'zoom-value',
-  'zoom-in', 'zoom-out', 'pan-left', 'pan-right', 'pan-up', 'pan-down', 'view-reset', 'project-state',
+  'selected-net', 'net-members', 'wire-color', 'wire-bends', 'selection-support', 'reconnect-mode', 'add-bend', 'delete-wire', 'remove-junction', 'zoom-value',
+  'zoom-in', 'zoom-out', 'pan-left', 'pan-right', 'pan-up', 'pan-down', 'view-reset', 'fit-project', 'project-state',
   'project-message', 'project-new', 'project-save', 'project-reload', 'project-export', 'project-import',
   'project-import-mode', 'undo', 'redo', 'prompt-generate', 'prompt-copy', 'prompt-output', 'prompt-response',
   'prompt-mode', 'prompt-apply', 'prompt-message', 'component-controls',
@@ -32,17 +41,9 @@ const elements = Object.fromEntries([
 ].map((id) => [id.replaceAll('-', ''), byId(id)]));
 
 const runtimeControls = [elements.run, elements.pause, elements.step, elements.reset, elements.speed];
-const categories = Object.freeze({
-  'board.atmega328p-16mhz-v1': 'controller',
-  'led.basic-v1': 'output',
-  'resistor.fixed-v1': 'passive',
-  'button.momentary-v1': 'input',
-  'potentiometer.linear-v1': 'input',
-});
-const glyphs = Object.freeze({
-  'board.atmega328p-16mhz-v1': 'µC', 'led.basic-v1': '●', 'resistor.fixed-v1': 'Ω',
-  'button.momentary-v1': '◉', 'potentiometer.linear-v1': '◒',
-});
+const CATALOG_PREFERENCES_KEY = 'intent-mcu.catalog-preferences.v1';
+const MAX_RECENT_COMPONENTS = 8;
+const CATALOG_WINDOW_LIMIT = 80;
 
 let editor;
 let selectedComponentId = null;
@@ -56,6 +57,7 @@ let loadedSourceIdentity = null;
 let running = false;
 let lastWorkerMessage = 0;
 let selectedSourceFile = 'main.ino';
+let catalogPreferences = loadCatalogPreferences();
 
 window.__M6_STATE__ = {
   buildState: 'dirty', artifactIdentity: null, inputIdentity: null, cacheHit: false,
@@ -65,7 +67,8 @@ window.__M6_STATE__ = {
 window.__M3_STATE__ = window.__M6_STATE__;
 window.__M4_STATE__ = window.__M6_STATE__;
 window.__M5_STATE__ = window.__M6_STATE__;
-window.__M3_READY__ = true; window.__M4_READY__ = true; window.__M5_READY__ = true; window.__M6_READY__ = true;
+window.__M7_STATE__ = window.__M6_STATE__;
+window.__M3_READY__ = true; window.__M4_READY__ = true; window.__M5_READY__ = true; window.__M6_READY__ = true; window.__M7_READY__ = true;
 
 function publish(update) { Object.assign(window.__M6_STATE__, update); }
 function currentProject() { return editor.project; }
@@ -81,6 +84,34 @@ function nextEntityId(prefix, values) {
     if (!used.has(id)) return id;
   }
   throw new Error(`${prefix.toUpperCase()}_LIMIT`);
+}
+function loadCatalogPreferences() {
+  try {
+    const value = JSON.parse(localStorage.getItem(CATALOG_PREFERENCES_KEY) ?? '{}');
+    const selectable = new Set(catalogEntries({ selectableOnly: true }).map((entry) => entry.type));
+    const favorites = Array.isArray(value.favorites)
+      ? [...new Set(value.favorites.filter((type) => typeof type === 'string' && selectable.has(type)))].slice(0, 64) : [];
+    const recent = Array.isArray(value.recent)
+      ? [...new Set(value.recent.filter((type) => typeof type === 'string' && selectable.has(type)))].slice(0, MAX_RECENT_COMPONENTS) : [];
+    return { favorites, recent };
+  } catch {
+    return { favorites: [], recent: [] };
+  }
+}
+function saveCatalogPreferences() {
+  try { localStorage.setItem(CATALOG_PREFERENCES_KEY, JSON.stringify(catalogPreferences)); }
+  catch { elements.projectmessage.textContent = 'Catalogue preferences could not be saved; the project remains usable.'; }
+}
+function markRecentComponent(type) {
+  catalogPreferences.recent = [type, ...catalogPreferences.recent.filter((item) => item !== type)].slice(0, MAX_RECENT_COMPONENTS);
+  saveCatalogPreferences();
+}
+function toggleFavorite(type) {
+  const selected = new Set(catalogPreferences.favorites);
+  if (selected.has(type)) selected.delete(type); else selected.add(type);
+  catalogPreferences.favorites = [...selected].sort();
+  saveCatalogPreferences();
+  renderCatalog();
 }
 function persistProject(message = null) {
   try {
@@ -155,7 +186,21 @@ function drawCircuitWires() {
       const anchor = elements.componentlayer.querySelector(`[data-endpoint="${endpointKey(endpoint)}"]`);
       if (!anchor) return null;
       const box = anchor.getBoundingClientRect();
-      return { endpoint, x: box.left - canvasBox.left + box.width / 2, y: box.top - canvasBox.top + box.height / 2 };
+      const componentBox = anchor.closest('.circuit-component').getBoundingClientRect();
+      const x = box.left - canvasBox.left + box.width / 2;
+      const y = box.top - canvasBox.top + box.height / 2;
+      const distances = [
+        { edge: 'left', value: Math.abs(x - (componentBox.left - canvasBox.left)) },
+        { edge: 'right', value: Math.abs(x - (componentBox.right - canvasBox.left)) },
+        { edge: 'top', value: Math.abs(y - (componentBox.top - canvasBox.top)) },
+        { edge: 'bottom', value: Math.abs(y - (componentBox.bottom - canvasBox.top)) },
+      ].sort((a, b) => a.value - b.value);
+      const escape = { x, y };
+      if (distances[0].edge === 'left') escape.x -= 13;
+      if (distances[0].edge === 'right') escape.x += 13;
+      if (distances[0].edge === 'top') escape.y -= 13;
+      if (distances[0].edge === 'bottom') escape.y += 13;
+      return { endpoint, x, y, escape };
     }).filter(Boolean);
     if (endpoints.length < 2) continue;
     const route = (currentProject().layout.wireRoutes[net.id] ?? []).map((point) => {
@@ -163,8 +208,8 @@ function drawCircuitWires() {
       return { x: visible.x * canvasBox.width, y: visible.y * canvasBox.height };
     });
     const hub = route.at(-1) ?? {
-      x: endpoints.reduce((sum, point) => sum + point.x, 0) / endpoints.length,
-      y: endpoints.reduce((sum, point) => sum + point.y, 0) / endpoints.length,
+      x: endpoints.reduce((sum, point) => sum + point.escape.x, 0) / endpoints.length,
+      y: endpoints.reduce((sum, point) => sum + point.escape.y, 0) / endpoints.length,
     };
     for (const point of endpoints) {
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -172,9 +217,10 @@ function drawCircuitWires() {
       path.dataset.net = net.id;
       path.dataset.endpoint = endpointKey(point.endpoint);
       path.dataset.kind = netKind(net);
+      path.style.setProperty('--wire-color', currentProject().layout.wireStyles[net.id]?.color ?? '#39dff2');
       const routeText = route.length
-        ? route.map((bend) => `L ${bend.x} ${bend.y}`).join(' ')
-        : `L ${hub.x} ${point.y} L ${hub.x} ${hub.y}`;
+        ? `L ${point.escape.x} ${point.escape.y} ${route.map((bend) => `L ${bend.x} ${bend.y}`).join(' ')}`
+        : `L ${point.escape.x} ${point.escape.y} L ${hub.x} ${point.escape.y} L ${hub.x} ${hub.y}`;
       path.setAttribute('d', `M ${point.x} ${point.y} ${routeText}`);
       drawings.push(path);
     }
@@ -267,31 +313,32 @@ function renderComponents() {
     const definition = COMPONENT_CATALOG[component.type];
     const position = screenPoint(currentProject().layout.positions[component.id]);
     const card = document.createElement('article');
-    card.className = `circuit-component ${component.type.startsWith('board.') ? 'board-component' : ''}${selectedComponentId === component.id ? ' selected' : ''}`;
+    card.className = `circuit-component${selectedComponentId === component.id ? ' selected' : ''}`;
     card.dataset.componentId = component.id;
+    card.dataset.componentType = component.type;
     card.tabIndex = 0;
+    card.setAttribute('role', 'group');
+    card.setAttribute('aria-label', `${component.label}, ${definition.displayName}`);
+    card.title = `${component.label} · ${definition.displayName} · ${SUPPORT_STATUS[definition.support.status]}`;
     card.style.left = `${position.x * 100}%`; card.style.top = `${position.y * 100}%`;
     card.style.setProperty('--rotation', `${currentProject().layout.positions[component.id].rotation}deg`);
-    const heading = document.createElement('h3');
-    if (component.type === 'led.basic-v1') {
-      const bulb = document.createElement('span');
-      bulb.className = `component-led ${component.properties.color}`;
-      bulb.dataset.ledId = component.id; bulb.setAttribute('role', 'img'); bulb.setAttribute('aria-label', `${component.label} is off`);
-      heading.append(bulb);
-    }
-    heading.append(document.createTextNode(`${component.label} · ${component.id}`));
-    const type = document.createElement('div'); type.className = 'component-type'; type.textContent = component.type;
-    const pins = document.createElement('div'); pins.className = 'component-pins';
+    card.style.setProperty('--part-width', `${definition.artwork.cssWidth}px`);
+    card.style.setProperty('--part-height', `${definition.artwork.cssHeight}px`);
+    card.append(createComponentArtwork(definition, component));
     for (const pin of definition.pins) {
       const anchor = document.createElement('button'); anchor.type = 'button'; anchor.className = 'pin-anchor';
       anchor.dataset.endpoint = `${component.id}.${pin.id}`; anchor.textContent = pin.id;
-      anchor.title = `${component.id}.${pin.id} · ${pin.role}`;
+      anchor.dataset.label = `${pin.label} · ${component.id}.${pin.id}`;
+      anchor.title = `${component.id}.${pin.id} · ${pin.label} · ${pin.role}`;
+      anchor.setAttribute('aria-label', anchor.title);
+      anchor.style.setProperty('--pin-x', String(pin.anchor.x));
+      anchor.style.setProperty('--pin-y', String(pin.anchor.y));
       if (pendingEndpoint && endpointKey(pendingEndpoint) === anchor.dataset.endpoint) anchor.classList.add('pending');
+      else if (pendingEndpoint) anchor.classList.add('available');
       anchor.addEventListener('click', (event) => { event.stopPropagation(); handlePin({ component: component.id, pin: pin.id }, event.altKey); });
-      pins.append(anchor);
+      card.append(anchor);
     }
     card.addEventListener('click', () => { selectedComponentId = component.id; renderInspector(); renderComponents(); });
-    card.append(heading, type, pins);
     cardPointerDrag(card, component.id);
     return card;
   });
@@ -300,25 +347,97 @@ function renderComponents() {
   requestAnimationFrame(() => requestAnimationFrame(drawCircuitWires));
 }
 
+function hydrateCatalogThumbnail(slot) {
+  if (slot.childElementCount) return;
+  const definition = COMPONENT_CATALOG[slot.dataset.type];
+  const component = newComponent(definition.type, { components: [] });
+  component.label = definition.displayName;
+  component.properties = defaultProperties(definition.type);
+  slot.append(createComponentArtwork(definition, component, { thumbnail: true }));
+}
+
+const catalogThumbnailObserver = 'IntersectionObserver' in window
+  ? new IntersectionObserver((entries) => {
+    for (const entry of entries) if (entry.isIntersecting) {
+      hydrateCatalogThumbnail(entry.target);
+      catalogThumbnailObserver.unobserve(entry.target);
+    }
+  }, { root: elements.cataloglist, rootMargin: '100px' })
+  : null;
+
+function matchedCatalogRecords(records = catalogEntries({ selectableOnly: true })) {
+  const favorites = new Set(catalogPreferences.favorites);
+  const recentRank = new Map(catalogPreferences.recent.map((type, index) => [type, index]));
+  return filterCatalog(records, {
+    query: elements.catalogsearch.value,
+    category: elements.catalogcategory.value,
+    status: elements.catalogstatus.value,
+    interface: elements.cataloginterface.value,
+  }).filter((definition) => !elements.catalogfavorites.checked || favorites.has(definition.type))
+    .sort((a, b) => Number(favorites.has(b.type)) - Number(favorites.has(a.type))
+      || (recentRank.get(a.type) ?? 99) - (recentRank.get(b.type) ?? 99)
+      || a.displayName.localeCompare(b.displayName));
+}
+
+function createCatalogRow(definition, { interactive = true, thumbnail = true } = {}) {
+  const favorites = new Set(catalogPreferences.favorites);
+  const row = document.createElement('div'); row.className = 'catalog-item';
+  row.dataset.type = definition.type; row.draggable = interactive; row.tabIndex = interactive ? 0 : -1; row.setAttribute('role', 'button');
+  row.setAttribute('aria-label', `Add ${definition.displayName}, ${SUPPORT_STATUS[definition.support.status]}`);
+  const thumbnailSlot = document.createElement('span'); thumbnailSlot.className = 'catalog-thumbnail-slot'; thumbnailSlot.dataset.type = definition.type;
+  const text = document.createElement('span'); text.className = 'catalog-item-copy';
+  const name = document.createElement('strong'); name.textContent = definition.displayName;
+  const small = document.createElement('small'); small.textContent = `${definition.partNumber} · ${definition.catalog.interfaces.join(', ')}`;
+  const badge = document.createElement('span'); badge.className = `support-badge ${definition.support.status}`; badge.textContent = SUPPORT_STATUS[definition.support.status];
+  text.append(name, small, badge);
+  const favorite = document.createElement('button'); favorite.type = 'button'; favorite.className = 'catalog-favourite';
+  favorite.textContent = favorites.has(definition.type) ? '★' : '☆';
+  favorite.setAttribute('aria-label', `${favorites.has(definition.type) ? 'Remove' : 'Add'} ${definition.displayName} ${favorites.has(definition.type) ? 'from' : 'to'} favourites`);
+  favorite.disabled = !interactive;
+  if (interactive) {
+    favorite.addEventListener('click', (event) => { event.stopPropagation(); toggleFavorite(definition.type); });
+    row.addEventListener('click', (event) => { if (!event.target.closest('.catalog-favourite')) addComponent(definition.type); });
+    row.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); addComponent(definition.type); } });
+    row.addEventListener('dragstart', (event) => event.dataTransfer.setData('application/x-intent-component', definition.type));
+  }
+  row.append(thumbnailSlot, text, favorite);
+  if (thumbnail && catalogThumbnailObserver) catalogThumbnailObserver.observe(thumbnailSlot);
+  else if (thumbnail) hydrateCatalogThumbnail(thumbnailSlot);
+  return row;
+}
+
 function renderCatalog() {
-  const search = elements.catalogsearch.value.trim().toLowerCase();
-  const category = elements.catalogcategory.value;
-  const buttons = Object.values(COMPONENT_CATALOG)
-    .filter((definition) => definition.type !== 'terminal.serial-uart-v1')
-    .filter((definition) => category === 'all' || categories[definition.type] === category)
-    .filter((definition) => `${definition.displayName} ${definition.type}`.toLowerCase().includes(search))
-    .map((definition) => {
-      const button = document.createElement('button'); button.type = 'button'; button.className = 'catalog-item';
-      button.dataset.type = definition.type; button.draggable = true;
-      const glyph = document.createElement('span'); glyph.className = 'catalog-glyph'; glyph.textContent = glyphs[definition.type];
-      const text = document.createElement('span'); text.append(document.createTextNode(definition.displayName));
-      const small = document.createElement('small'); small.textContent = categories[definition.type]; text.append(small);
-      button.append(glyph, text);
-      button.addEventListener('click', () => addComponent(definition.type));
-      button.addEventListener('dragstart', (event) => event.dataTransfer.setData('application/x-intent-component', definition.type));
-      return button;
-    });
+  const matches = matchedCatalogRecords();
+  const buttons = matches.slice(0, CATALOG_WINDOW_LIMIT).map((definition) => createCatalogRow(definition));
   elements.cataloglist.replaceChildren(...buttons);
+  elements.catalogcount.textContent = `${matches.length} ${matches.length === 1 ? 'part' : 'parts'}${matches.length > CATALOG_WINDOW_LIMIT ? ` · first ${CATALOG_WINDOW_LIMIT} shown` : ''}`;
+}
+
+function benchmarkCatalogFixture() {
+  const templates = catalogEntries({ selectableOnly: true });
+  const records = Array.from({ length: 1_000 }, (_, index) => {
+    const template = templates[index % templates.length];
+    return {
+      ...template,
+      type: `benchmark.component-${index}-v1`,
+      displayName: `Benchmark component ${String(index).padStart(4, '0')}`,
+      manufacturer: `Benchmark Maker ${index % 20}`,
+      partNumber: `BENCH-${String(index).padStart(4, '0')}`,
+      catalog: {
+        ...template.catalog,
+        aliases: [...template.catalog.aliases, `benchmark-alias-${index}`],
+        functions: [...template.catalog.functions, 'benchmark fixture'],
+      },
+    };
+  });
+  const started = performance.now();
+  const matches = filterCatalog(records, { query: 'benchmark' })
+    .sort((a, b) => a.displayName.localeCompare(b.displayName));
+  const holder = document.createElement('div');
+  holder.replaceChildren(...matches.slice(0, CATALOG_WINDOW_LIMIT)
+    .map((definition) => createCatalogRow(definition, { interactive: false, thumbnail: false })));
+  const milliseconds = performance.now() - started;
+  return { records: records.length, matches: matches.length, rendered: holder.children.length, milliseconds };
 }
 
 function addComponent(type, point = null) {
@@ -337,7 +456,11 @@ function addComponent(type, point = null) {
       x: 0.18 + (index % 4) * 0.21, y: 0.2 + Math.floor(index / 4) * 0.28,
     });
     const result = applyEditor({ type: 'component.add', component, position }, `Added ${component.id}`);
-    if (result.ok) selectedComponentId = component.id;
+    if (result.ok) {
+      selectedComponentId = component.id;
+      markRecentComponent(type);
+      renderCatalog();
+    }
     renderProject();
     return result;
   } catch (error) {
@@ -371,10 +494,34 @@ function renderPropertyEditor(component) {
   elements.propertyeditor.replaceChildren(...rows);
 }
 
+function renderWireBends(net) {
+  if (!net) { elements.wirebends.textContent = 'Select a net to edit route bends.'; return; }
+  const points = currentProject().layout.wireRoutes[net.id] ?? [];
+  if (!points.length) { elements.wirebends.textContent = 'Automatic body-avoiding orthogonal route. Add a bend to override it.'; return; }
+  const rows = points.map((point, index) => {
+    const row = document.createElement('div'); row.className = 'bend-row';
+    const x = document.createElement('input'); x.type = 'number'; x.min = '0'; x.max = '1'; x.step = '0.01'; x.value = String(point.x); x.setAttribute('aria-label', `Bend ${index + 1} x`);
+    const y = document.createElement('input'); y.type = 'number'; y.min = '0'; y.max = '1'; y.step = '0.01'; y.value = String(point.y); y.setAttribute('aria-label', `Bend ${index + 1} y`);
+    const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = '×'; remove.setAttribute('aria-label', `Remove bend ${index + 1}`);
+    const update = () => {
+      const next = points.map((item) => ({ ...item })); next[index] = { x: Number(x.value), y: Number(y.value) };
+      applyEditor({ type: 'wire.route.set', netId: net.id, points: next }, `Moved bend ${index + 1}`);
+    };
+    x.addEventListener('change', update); y.addEventListener('change', update);
+    remove.addEventListener('click', () => applyEditor({ type: 'wire.route.set', netId: net.id, points: points.filter((_, pointIndex) => pointIndex !== index) }, `Removed bend ${index + 1}`));
+    row.append(x, y, remove); return row;
+  });
+  elements.wirebends.replaceChildren(...rows);
+}
+
 function renderInspector() {
   const component = currentProject().circuit.components.find((item) => item.id === selectedComponentId) ?? null;
   if (!component) selectedComponentId = null;
   elements.selectionname.textContent = component ? `${component.label} · ${component.id}` : 'Nothing selected';
+  const definition = component ? COMPONENT_CATALOG[component.type] : null;
+  elements.selectionsupport.textContent = definition
+    ? `${SUPPORT_STATUS[definition.support.status]} · ${definition.partNumber} · ${definition.support.limitations.join(' ')}`
+    : 'Select a part to see its exact simulation support.';
   elements.rotatecomponent.disabled = !component;
   elements.duplicatecomponent.disabled = !component || component.type.startsWith('board.');
   elements.deletecomponent.disabled = !component;
@@ -388,9 +535,12 @@ function renderInspector() {
   const net = currentProject().circuit.nets.find((item) => item.id === selectedNetId);
   elements.addbend.disabled = !net;
   elements.deletewire.disabled = !net;
+  elements.wirecolor.disabled = !net;
+  if (net) elements.wirecolor.value = currentProject().layout.wireStyles[net.id].color;
   const junction = net && currentProject().circuit.junctions.find((item) => item.net === net.id);
   elements.removejunction.disabled = !junction;
   elements.netmembers.textContent = net ? net.endpoints.map(endpointKey).join('\n') : 'Select a net to inspect all connected pins.';
+  renderWireBends(net);
 }
 
 function renderRuntimeControls() {
@@ -567,9 +717,12 @@ function setViewport(next) {
 
 elements.catalogsearch.addEventListener('input', renderCatalog);
 elements.catalogcategory.addEventListener('change', renderCatalog);
+elements.cataloginterface.addEventListener('change', renderCatalog);
+elements.catalogstatus.addEventListener('change', renderCatalog);
+elements.catalogfavorites.addEventListener('change', renderCatalog);
 elements.circuitcanvas.addEventListener('dragover', (event) => event.preventDefault());
 elements.circuitcanvas.addEventListener('drop', (event) => {
-  event.preventDefault(); const type = event.dataTransfer.getData('application/x-intent-component'); if (!categories[type]) return;
+  event.preventDefault(); const type = event.dataTransfer.getData('application/x-intent-component'); if (!COMPONENT_CATALOG[type]?.selectable) return;
   const box = elements.circuitcanvas.getBoundingClientRect(); const view = currentProject().layout.viewport;
   const x = Math.max(0.07, Math.min(0.93, ((event.clientX - box.left) / box.width - 0.5 - view.panX) / view.zoom + 0.5));
   const y = Math.max(0.08, Math.min(0.92, ((event.clientY - box.top) / box.height - 0.5 - view.panY) / view.zoom + 0.5));
@@ -624,6 +777,9 @@ elements.duplicatecomponent.addEventListener('click', () => {
 });
 elements.deletecomponent.addEventListener('click', () => { if (selectedComponentId) { const id = selectedComponentId; selectedComponentId = null; applyEditor({ type: 'component.remove', componentId: id }, `Deleted ${id}`); } });
 elements.selectednet.addEventListener('change', () => { selectedNetId = elements.selectednet.value || null; renderInspector(); });
+elements.wirecolor.addEventListener('change', () => {
+  if (selectedNetId) applyEditor({ type: 'wire.style.set', netId: selectedNetId, color: elements.wirecolor.value }, `Styled ${selectedNetId}`);
+});
 elements.reconnectmode.setAttribute('aria-pressed', 'false');
 elements.reconnectmode.addEventListener('click', () => {
   wireMode = wireMode === 'connect' ? 'reconnect' : 'connect'; pendingEndpoint = null;
@@ -652,6 +808,15 @@ elements.panright.addEventListener('click', () => setViewport({ panX: Math.min(1
 elements.panup.addEventListener('click', () => setViewport({ panY: Math.max(-1, currentProject().layout.viewport.panY - 0.05) }));
 elements.pandown.addEventListener('click', () => setViewport({ panY: Math.min(1, currentProject().layout.viewport.panY + 0.05) }));
 elements.viewreset.addEventListener('click', () => setViewport({ zoom: 1, panX: 0, panY: 0 }));
+elements.fitproject.addEventListener('click', () => {
+  const positions = Object.values(currentProject().layout.positions);
+  if (!positions.length) { setViewport({ zoom: 1, panX: 0, panY: 0 }); return; }
+  const xs = positions.map((position) => position.x); const ys = positions.map((position) => position.y);
+  const center = { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2 };
+  const span = Math.max(0.32, Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+  const zoom = Math.max(0.5, Math.min(2, 0.72 / span));
+  setViewport({ zoom, panX: Math.max(-1, Math.min(1, -(center.x - 0.5) * zoom)), panY: Math.max(-1, Math.min(1, -(center.y - 0.5) * zoom)) });
+});
 elements.undo.addEventListener('click', () => applyEditor({ type: 'undo' }, 'Undo'));
 elements.redo.addEventListener('click', () => applyEditor({ type: 'redo' }, 'Redo'));
 
@@ -731,6 +896,12 @@ window.__M6_IMPORT__ = (source, mode = 'replace') => {
   if (result.ok) { stopRuntime('Imported project requires build'); persistProject(); renderProject(); }
   return { ...result, atomic: result.ok || before === exportCanonicalProject(currentProject()) };
 };
+window.__M7_ADD__ = addComponent;
+window.__M7_PROJECT__ = window.__M6_PROJECT__;
+window.__M7_CATALOG__ = () => ({ preferences: structuredClone(catalogPreferences), visible: elements.cataloglist.children.length });
+window.__M7_CATALOG_BENCHMARK__ = benchmarkCatalogFixture;
+
+for (const category of CATALOG_CATEGORIES) elements.catalogcategory.append(new Option(category.label, category.id));
 
 const stored = localStorage.getItem(PROJECT_STORAGE_KEY);
 const restored = stored ? parseProjectV2(stored) : null;

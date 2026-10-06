@@ -11,7 +11,7 @@
 <body>
   <main>
     <header>
-      <p class="eyebrow">INTENT MCU SIMULATOR · NON-PUBLIC ENGINEERING SLICE · M6</p>
+      <p class="eyebrow">INTENT MCU SIMULATOR · PRIVATE WORKBENCH · RC4</p>
       <h1>Build it by hand.<br><em>Then run the firmware.</em></h1>
       <p class="lede">Start empty, place original components, connect named pins, write source, and observe one deterministic virtual-cycle machine. Prompt Bridge is optional and never edits the project until you validate and apply its proposal.</p>
     </header>
@@ -35,9 +35,13 @@
         <p class="eyebrow">1 · COMPONENTS</p><h2 id="catalog-title">Add parts</h2>
         <label for="board-select">Controller profile</label>
         <select id="board-select"><option value="board.atmega328p-16mhz-v1">ATmega328P · 16 MHz · 5 V</option></select>
-        <label for="catalog-search">Search</label><input id="catalog-search" type="search" autocomplete="off" placeholder="LED, resistor, button…">
+        <label for="catalog-search">Search name, alias, function or part number</label><input id="catalog-search" type="search" autocomplete="off" placeholder="GPIO, 328P, indicator…">
         <label for="catalog-category">Category</label>
-        <select id="catalog-category"><option value="all">All components</option><option value="controller">Controller</option><option value="output">Output</option><option value="passive">Passive</option><option value="input">Input</option></select>
+        <select id="catalog-category"><option value="all">All categories</option></select>
+        <label for="catalog-interface">Interface</label><select id="catalog-interface"><option value="all">All interfaces</option><option>GPIO</option><option>analogue</option><option>PWM</option><option>UART</option><option>I²C</option><option>SPI</option><option>passive</option></select>
+        <label for="catalog-status">Simulation support</label><select id="catalog-status"><option value="simulated">Simulated</option><option value="partial">Partial</option><option value="visual">Visual only</option><option value="all">All statuses</option></select>
+        <label class="check-row"><input id="catalog-favorites" type="checkbox"> Favourites only</label>
+        <p id="catalog-count" class="catalog-count" aria-live="polite">0 parts</p>
         <div id="catalog-list" class="catalog-list"></div>
         <p class="truth">Click to add, or drag a part onto the canvas. IDs are allocated once and remain stable.</p>
       </aside>
@@ -46,7 +50,7 @@
         <div class="card-heading"><div><p class="eyebrow">2 · CIRCUIT CANVAS</p><h2 id="canvas-title">Empty project</h2></div><span id="graph-state" class="state">0 components · 0 nets</span></div>
         <div class="canvas-tools" aria-label="Canvas view controls">
           <button id="zoom-out" type="button" aria-label="Zoom out">−</button><output id="zoom-value">100%</output><button id="zoom-in" type="button" aria-label="Zoom in">+</button>
-          <button id="pan-left" type="button" aria-label="Pan left">←</button><button id="pan-right" type="button" aria-label="Pan right">→</button><button id="pan-up" type="button" aria-label="Pan up">↑</button><button id="pan-down" type="button" aria-label="Pan down">↓</button><button id="view-reset" type="button">Reset view</button>
+          <button id="pan-left" type="button" aria-label="Pan left">←</button><button id="pan-right" type="button" aria-label="Pan right">→</button><button id="pan-up" type="button" aria-label="Pan up">↑</button><button id="pan-down" type="button" aria-label="Pan down">↓</button><button id="view-reset" type="button">Reset view</button><button id="fit-project" type="button">Fit project</button>
         </div>
         <div id="circuit-canvas" class="circuit-canvas" tabindex="0" aria-label="Manual circuit canvas. Click one pin and then another to connect them.">
           <div id="canvas-transform" class="canvas-transform"><svg id="circuit-wires" class="circuit-wires" aria-hidden="true"></svg><div id="component-layer" class="component-layer"></div></div>
@@ -57,16 +61,19 @@
 
       <aside class="inspector panel" aria-labelledby="inspector-title">
         <p class="eyebrow">3 · INSPECT</p><h2 id="inspector-title">Selection</h2><p id="selection-name" class="selection-name">Nothing selected</p>
+        <p id="selection-support" class="support-detail">Select a part to see its exact simulation support.</p>
         <div class="inspector-actions"><button id="rotate-component" type="button" disabled>Rotate 90°</button><button id="duplicate-component" type="button" disabled>Duplicate</button><button id="delete-component" type="button" disabled>Delete</button></div>
         <div id="property-editor"></div>
         <label for="selected-net">Net / wire</label><select id="selected-net"><option value="">No net selected</option></select>
+        <label for="wire-color">Wire colour</label><select id="wire-color" disabled><option value="#39dff2">Signal · cyan</option><option value="#f04f5f">Power · red</option><option value="#a8ff3f">Analogue · green</option><option value="#f5c451">Yellow</option><option value="#f28cf3">Magenta</option><option value="#f6f1e7">White</option><option value="#303943">Ground · charcoal</option><option value="#5f8cff">Blue</option></select>
         <div class="inspector-actions"><button id="reconnect-mode" type="button">Reconnect endpoint</button><button id="add-bend" type="button" disabled>Add bend</button><button id="delete-wire" type="button" disabled>Delete wire</button><button id="remove-junction" type="button" disabled>Remove junction</button></div>
+        <div id="wire-bends" class="wire-bends">Select a net to edit route bends.</div>
         <div id="net-members" class="net-members">Select a net to inspect all connected pins.</div>
         <p class="truth">Arrow keys move the selected part. Delete removes it. R rotates. Ctrl/Cmd+Z and Shift+Ctrl/Cmd+Z undo/redo.</p>
       </aside>
     </section>
 
-    <section class="editor-card panel" aria-labelledby="editor-title">
+    <details class="workbench-drawer" open><summary>Firmware editor</summary><section class="editor-card panel" aria-labelledby="editor-title">
       <div class="card-heading"><div><p class="eyebrow">4 · FIRMWARE</p><h2 id="editor-title">main.ino</h2></div><span id="build-state" class="state" role="status">Build required</span></div>
       <div class="source-files" aria-label="Project source files">
         <div><label for="source-file">Open file</label><select id="source-file"></select></div>
@@ -76,18 +83,18 @@
       <label class="sr-only" for="source">Firmware source</label><textarea id="source" spellcheck="false" placeholder="Write your sketch here. The project starts empty."></textarea>
       <div class="build-controls"><button id="build" type="button">Build isolated firmware</button><button id="cancel" type="button" disabled>Cancel build</button></div>
       <pre id="diagnostics" class="diagnostics" aria-live="polite">No build submitted.</pre>
-    </section>
+    </section></details>
 
-    <section class="prompt-card panel" aria-labelledby="prompt-title">
+    <details id="prompt-drawer" class="workbench-drawer"><summary>Optional Prompt Bridge</summary><section class="prompt-card panel" aria-labelledby="prompt-title">
       <div class="card-heading"><div><p class="eyebrow">OPTIONAL · PROMPT BRIDGE V2</p><h2 id="prompt-title">Ask elsewhere. Validate here.</h2></div><span class="state">No live AI connection</span></div>
       <div class="prompt-grid">
         <div><button id="prompt-generate" type="button">Generate portable prompt</button><button id="prompt-copy" type="button" disabled>Copy prompt</button><textarea id="prompt-output" readonly aria-label="Generated portable prompt" placeholder="Generate a deterministic prompt from the current catalog."></textarea></div>
         <div><label for="prompt-response">Paste one wiring proposal</label><textarea id="prompt-response" placeholder='{"schema":"teach-lab-circuit@2",…}'></textarea><div class="build-controls"><select id="prompt-mode" aria-label="Prompt proposal apply mode"><option value="replace">Replace circuit</option><option value="merge">Merge circuit</option></select><button id="prompt-apply" type="button">Validate &amp; apply</button></div></div>
       </div>
       <p id="prompt-message" class="truth" role="status">AI text has no drawing or connection authority. Only the accepted project-owned graph reaches the canvas and worker.</p>
-    </section>
+    </section></details>
 
-    <section class="runtime" aria-labelledby="runtime-title">
+    <details class="workbench-drawer" open><summary>Firmware runtime and instruments</summary><section class="runtime" aria-labelledby="runtime-title">
       <article class="control-card panel">
         <div class="card-heading"><div><p class="eyebrow">5 · VIRTUAL EXECUTION</p><h2 id="runtime-title">Runtime</h2></div><span id="worker-state" class="state">No current artifact loaded</span></div>
         <dl><div><dt>Cycle</dt><dd id="cycle">0</dd></div><div><dt>Instructions</dt><dd id="instructions">0</dd></div><div><dt>Artifact</dt><dd id="artifact">none</dd></div></dl>
@@ -102,7 +109,7 @@
       <article class="instrument-card panel" aria-labelledby="serial-title"><div class="card-heading"><div><p class="eyebrow">USART0 · 8-N-1</p><h2 id="serial-title">Serial console</h2></div><span id="serial-count">0 records</span></div><pre id="serial-output" class="instrument-output" aria-live="polite">No firmware bytes.</pre><div class="serial-controls"><label class="sr-only" for="serial-input">Bytes to schedule on USART0 RX</label><input id="serial-input" type="text" maxlength="64" autocomplete="off" placeholder="Type text for RX"><button id="serial-send" type="button" disabled>Schedule RX</button><button id="serial-clear" type="button" disabled>Clear view</button></div></article>
       <article class="instrument-card panel" aria-labelledby="logic-title"><div class="card-heading"><div><p class="eyebrow">VIRTUAL-CYCLE EDGES</p><h2 id="logic-title">Logic analyser</h2></div><span id="logic-count">0 transitions</span></div><ul id="logic-output" class="logic-output"><li>— · 0000000000 · LOW</li></ul><div class="logic-controls"><label for="logic-channels">Channels</label><select id="logic-channels" multiple size="5"><option value="D13" selected>D13</option><option value="D2" selected>D2</option><option value="D3">D3</option><option value="D5">D5</option><option value="D6">D6</option><option value="D9">D9</option><option value="D10">D10</option><option value="D11">D11</option></select><label for="logic-window">Window</label><select id="logic-window"><option value="25">25 edges</option><option value="100">100 edges</option><option value="500">500 edges</option></select></div><p id="logic-cursor" class="logic-cursor">Cursor Δ —</p></article>
       <article class="instrument-card panel" aria-labelledby="pin-title"><div class="card-heading"><div><p class="eyebrow">SAME MACHINE STATE</p><h2 id="pin-title">Pin inspector</h2></div></div><label for="pin-select">Pin</label><select id="pin-select"><option>D13</option><option>D2</option><option>D3</option><option>D5</option><option>D6</option><option>D9</option><option>D10</option><option>D11</option><option>A0</option></select><dl class="pin-readout"><div><dt>Mode</dt><dd id="pin-mode">—</dd></div><div><dt>Level</dt><dd id="pin-level">—</dd></div><div><dt>PWM / ADC</dt><dd id="pin-detail">—</dd></div><div><dt>Diagnostic</dt><dd id="pin-diagnostic">—</dd></div><div><dt>Cycle</dt><dd id="pin-cycle">0</dd></div></dl></article>
-    </section>
+    </section></details>
 
     <footer>Original project interface and deterministic circuit renderer · no physical safety certification · public application cutover remains gated</footer>
   </main>

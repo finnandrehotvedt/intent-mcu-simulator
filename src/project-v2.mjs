@@ -14,6 +14,9 @@ export const PROJECT_SCHEMA = 'teach-lab-project@2';
 export const PROJECT_STORAGE_KEY = 'teach-lab.simulator.project.v2';
 export const LEGACY_STORAGE_KEY = 'teach-lab.project.v1';
 export const PROJECT_EXPORT_LIMIT = 1024 * 1024;
+export const WIRE_COLORS = Object.freeze([
+  '#39dff2', '#f04f5f', '#a8ff3f', '#f5c451', '#f28cf3', '#f6f1e7', '#303943', '#5f8cff',
+]);
 const BOARD_PROFILE = 'board.atmega328p-16mhz-v1';
 const FILE_NAME = /^(?:main\.ino|[A-Za-z][A-Za-z0-9_-]{0,47}\.(?:h|hpp|c|cpp))$/;
 
@@ -33,9 +36,21 @@ function ownObject(value) {
 }
 function clone(value) { return structuredClone(value); }
 
+export function defaultWireColor(net) {
+  const boardPins = net.endpoints
+    .filter((endpoint) => endpoint.component.startsWith('board-'))
+    .map((endpoint) => endpoint.pin);
+  if (boardPins.includes('5V')) return '#f04f5f';
+  if (boardPins.some((pin) => pin.startsWith('GND'))) return '#303943';
+  if (boardPins.some((pin) => pin.startsWith('A'))) return '#a8ff3f';
+  return '#39dff2';
+}
+
 function normalizeLayout(layout, graph) {
   const legacyShape = exactKeys(layout, ['positions']);
-  if (!legacyShape && !exactKeys(layout, ['positions', 'wireRoutes', 'viewport'])) return null;
+  const priorV2Shape = exactKeys(layout, ['positions', 'wireRoutes', 'viewport']);
+  const currentShape = exactKeys(layout, ['positions', 'wireRoutes', 'wireStyles', 'viewport']);
+  if (!legacyShape && !priorV2Shape && !currentShape) return null;
   if (!ownObject(layout.positions)) return null;
   const componentIds = graph.components.map((component) => component.id).sort();
   if (Object.keys(layout.positions).sort().join('|') !== componentIds.join('|')) return null;
@@ -62,12 +77,21 @@ function normalizeLayout(layout, graph) {
       return { x: point.x, y: point.y };
     });
   }
+  const wireStyles = {};
+  const sourceStyles = currentShape ? layout.wireStyles : {};
+  if (!ownObject(sourceStyles)) return null;
+  for (const netId of Object.keys(sourceStyles)) if (!netIds.has(netId)) return null;
+  for (const net of graph.nets) {
+    const style = sourceStyles[net.id] ?? { color: defaultWireColor(net) };
+    if (!exactKeys(style, ['color']) || !WIRE_COLORS.includes(style.color)) return null;
+    wireStyles[net.id] = { color: style.color };
+  }
   const viewport = legacyShape ? { zoom: 1, panX: 0, panY: 0 } : layout.viewport;
   if (!exactKeys(viewport, ['zoom', 'panX', 'panY'])
       || !Number.isFinite(viewport.zoom) || viewport.zoom < 0.5 || viewport.zoom > 3
       || !Number.isFinite(viewport.panX) || viewport.panX < -1 || viewport.panX > 1
       || !Number.isFinite(viewport.panY) || viewport.panY < -1 || viewport.panY > 1) return null;
-  return { positions, wireRoutes, viewport: clone(viewport) };
+  return { positions, wireRoutes, wireStyles, viewport: clone(viewport) };
 }
 
 function validateSource(source) {
@@ -196,6 +220,7 @@ export function migrateProjectV1(source, storage = null) {
     layout: {
       positions: Object.fromEntries(Object.entries(positions).map(([id, position]) => [id, { ...position, rotation: 0 }])),
       wireRoutes: {},
+      wireStyles: {},
       viewport: { zoom: 1, panX: 0, panY: 0 },
     },
     instruments: {

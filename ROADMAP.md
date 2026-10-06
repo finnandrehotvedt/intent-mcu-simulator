@@ -7,6 +7,8 @@ licence review, and honest compatibility status.
 ## Near-term source quality
 
 - Improve keyboard and screen-reader workflows for the manual circuit editor.
+- Expand the catalogue registry only with independently created artwork,
+  explicit support levels, electrical contracts, provenance and tests.
 - Expand examples that start from an empty project and explain validation
   failures without hiding electrical assumptions.
 - Add source-level tests for more project import, migration, and rendering
