@@ -36,9 +36,12 @@ function ownObject(value) {
 }
 function clone(value) { return structuredClone(value); }
 
-export function defaultWireColor(net) {
+export function defaultWireColor(net, graph = null) {
+  const boardIds = graph
+    ? new Set(graph.components.filter((component) => component.type === BOARD_PROFILE).map((component) => component.id))
+    : null;
   const boardPins = net.endpoints
-    .filter((endpoint) => endpoint.component.startsWith('board-'))
+    .filter((endpoint) => boardIds ? boardIds.has(endpoint.component) : endpoint.component.startsWith('board-'))
     .map((endpoint) => endpoint.pin);
   if (boardPins.includes('5V')) return '#f04f5f';
   if (boardPins.some((pin) => pin.startsWith('GND'))) return '#303943';
@@ -82,7 +85,7 @@ function normalizeLayout(layout, graph) {
   if (!ownObject(sourceStyles)) return null;
   for (const netId of Object.keys(sourceStyles)) if (!netIds.has(netId)) return null;
   for (const net of graph.nets) {
-    const style = sourceStyles[net.id] ?? { color: defaultWireColor(net) };
+    const style = sourceStyles[net.id] ?? { color: defaultWireColor(net, graph) };
     if (!exactKeys(style, ['color']) || !WIRE_COLORS.includes(style.color)) return null;
     wireStyles[net.id] = { color: style.color };
   }

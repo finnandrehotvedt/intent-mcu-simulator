@@ -467,6 +467,20 @@ test('W-04/W-05/W-12 wire colour and editable bends persist without changing ele
     assert.equal(migrated.project.layout.wireStyles[net.id].color, defaultWireColor(net));
   }
   assert.equal(WIRE_COLORS.includes(migrated.project.layout.wireStyles['net-ground'].color), true);
+
+  const renamedBoard = JSON.parse(exportCanonicalProject(editor.project));
+  delete renamedBoard.layout.wireStyles;
+  const oldBoardId = renamedBoard.circuit.components.find((component) => component.type === 'board.atmega328p-16mhz-v1').id;
+  renamedBoard.circuit.components.find((component) => component.id === oldBoardId).id = 'controller-main';
+  renamedBoard.layout.positions['controller-main'] = renamedBoard.layout.positions[oldBoardId];
+  delete renamedBoard.layout.positions[oldBoardId];
+  for (const net of renamedBoard.circuit.nets) {
+    for (const endpoint of net.endpoints) if (endpoint.component === oldBoardId) endpoint.component = 'controller-main';
+  }
+  const renamedMigration = parseProjectV2(JSON.stringify(renamedBoard));
+  assert.equal(renamedMigration.ok, true);
+  assert.equal(renamedMigration.project.layout.wireStyles['net-ground'].color, '#303943');
+  assert.equal(renamedMigration.project.layout.wireStyles['net-5v'].color, '#f04f5f');
   const beforeRejected = exportCanonicalProject(editor.project);
   const rejected = editor.apply({ type: 'wire.style.set', revision: editor.revision, netId: 'net-d13', color: '#badbad' });
   assert.equal(rejected.code, 'EDITOR_WIRE_STYLE');

@@ -123,8 +123,8 @@ export const COMPONENT_CATALOG = Object.freeze({
     family: 'input.tactile-switch', variant: 'four-terminal-no',
     type: 'button.momentary-v1', version: 1, displayName: 'Four-terminal tactile button', manufacturer: 'Generic', partNumber: 'SW-TACT-4-NO',
     pins: [
-      pin('A', 'Terminal group A', 'passive', ['passive.two-terminal'], 0.08, 0.5, { terminals: ['A1', 'A2'] }),
-      pin('B', 'Terminal group B', 'passive', ['passive.two-terminal'], 0.92, 0.5, { terminals: ['B1', 'B2'] }),
+      pin('A', 'Terminal group A · attach A1', 'passive', ['passive.two-terminal'], 0.08, 20 / 78, { terminals: ['A1', 'A2'], attachmentTerminal: 'A1' }),
+      pin('B', 'Terminal group B · attach B1', 'passive', ['passive.two-terminal'], 0.92, 20 / 78, { terminals: ['B1', 'B2'], attachmentTerminal: 'B1' }),
     ],
     propertyKeys: ['normallyOpen'], controlKeys: ['pressed'], modelRef: 'model.button-momentary-no-v1',
     internalTerminalGroups: [
