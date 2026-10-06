@@ -10,16 +10,16 @@
 </head>
 <body>
   <main>
-    <header>
-      <p class="eyebrow">INTENT MCU SIMULATOR · PRIVATE WORKBENCH · RC4</p>
-      <h1>Build it by hand.<br><em>Then run the firmware.</em></h1>
-      <p class="lede">Start empty, place original components, connect named pins, write source, and observe one deterministic virtual-cycle machine. Prompt Bridge is optional and never edits the project until you validate and apply its proposal.</p>
+    <header class="app-header">
+      <div><p class="eyebrow">PRIVATE WORKBENCH · RC4</p><h1>Intent MCU Simulator</h1></div>
+      <p class="lede">Build by hand, compile the edited source, and inspect one deterministic virtual-cycle machine. Prompt Bridge remains optional and validation-gated.</p>
     </header>
 
     <section class="project-bar panel" aria-label="Project controls">
       <div><p class="eyebrow">LOCAL PROJECT</p><strong id="project-state">Empty project · not saved</strong></div>
       <div class="toolbar">
         <button id="project-new" type="button">New empty</button>
+        <button id="project-demo" type="button">Load Blink demo</button>
         <button id="undo" type="button" disabled>Undo</button><button id="redo" type="button" disabled>Redo</button>
         <button id="project-save" type="button">Save local</button><button id="project-reload" type="button">Reload</button>
         <button id="project-export" type="button">Export JSON</button>
@@ -43,6 +43,11 @@
         <label class="check-row"><input id="catalog-favorites" type="checkbox"> Favourites only</label>
         <p id="catalog-count" class="catalog-count" aria-live="polite">0 parts</p>
         <div id="catalog-list" class="catalog-list"></div>
+        <nav class="catalog-pagination" aria-label="Catalogue result pages">
+          <button id="catalog-prev" type="button" disabled>Previous 80</button>
+          <output id="catalog-page" aria-live="polite">No results</output>
+          <button id="catalog-next" type="button" disabled>Next 80</button>
+        </nav>
         <p class="truth">Click to add, or drag a part onto the canvas. IDs are allocated once and remain stable.</p>
       </aside>
 

@@ -8,14 +8,13 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: radial-gradient(circle at 80% 0%, #12324a 0, var(--bg) 42%); color: var(--text); }
-main { width: min(1480px, calc(100% - 32px)); margin: 0 auto; padding: 54px 0 36px; }
-header { max-width: 930px; margin-bottom: 30px; }
+main { width: min(1480px, calc(100% - 32px)); margin: 0 auto; padding: 18px 0 36px; }
+.app-header { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 12px; padding: 0 4px; }
 .eyebrow { color: var(--lime); font-size: .7rem; font-weight: 800; letter-spacing: .15em; margin: 0 0 9px; }
-h1 { font-size: clamp(2.4rem, 6vw, 5.6rem); letter-spacing: -.055em; line-height: .96; margin: 0; }
-h1 em { color: var(--cyan); font-family: Georgia, serif; font-weight: 400; }
+h1 { font-size: clamp(1.55rem, 3vw, 2.3rem); letter-spacing: -.035em; line-height: 1; margin: 0; }
 h2 { font-size: 1.22rem; margin: 0; }
 .lede, .truth, footer { color: var(--muted); line-height: 1.55; }
-.lede { max-width: 760px; font-size: 1.03rem; }
+.lede { max-width: 720px; margin: 0; font-size: .86rem; text-align: right; }
 .panel { background: color-mix(in srgb, var(--panel) 94%, transparent); border: 1px solid var(--line); border-radius: 16px; padding: 18px; box-shadow: 0 18px 50px #0005; min-width: 0; }
 .card-heading { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
 .state { color: var(--amber); font-size: .78rem; text-align: right; }
@@ -36,6 +35,9 @@ button:disabled, select:disabled { opacity: .42; }
 .check-row input { width: auto; min-height: auto; }
 .catalog-count { margin: 12px 0 4px; color: var(--muted); font-size: .76rem; }
 .catalog-list { display: grid; gap: 8px; margin-top: 8px; max-height: 520px; overflow: auto; scrollbar-gutter: stable; }
+.catalog-pagination { display: grid; grid-template-columns: 1fr auto 1fr; gap: 6px; align-items: center; margin-top: 8px; }
+.catalog-pagination button { min-height: 34px; padding: 0 7px; font-size: .68rem; }
+.catalog-pagination output { color: var(--muted); font: 650 .66rem ui-monospace, monospace; text-align: center; white-space: nowrap; }
 .catalog-item { display: grid; grid-template-columns: 58px minmax(0, 1fr) 34px; gap: 8px; align-items: center; width: 100%; min-height: 70px; padding: 6px; text-align: left; }
 .catalog-item-copy { min-width: 0; }
 .catalog-item strong { display: block; font-size: .78rem; }
@@ -147,9 +149,13 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
 }
 @media (max-width: 780px) {
   main { width: min(100% - 18px, 680px); padding-top: 30px; }
+  .app-header { align-items: start; flex-direction: column; gap: 8px; }
+  .lede { text-align: left; }
   .project-bar, .workspace, .runtime, .instrument-grid, .prompt-grid { grid-template-columns: 1fr; }
   .source-files { grid-template-columns: 1fr 1fr; }
   .catalog-list { grid-template-columns: repeat(2, minmax(130px, 1fr)); overflow: visible; }
+  .catalog-pagination { grid-template-columns: 1fr 1fr; }
+  .catalog-pagination output { grid-column: 1 / -1; grid-row: 1; }
   .circuit-canvas { height: 620px; }
   .catalog-list { max-height: none; }
   .serial-controls { grid-template-columns: 1fr 1fr; }

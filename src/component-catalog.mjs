@@ -17,15 +17,26 @@ export const SUPPORT_STATUS = Object.freeze({
   simulated: 'Simulated', partial: 'Partial', visual: 'Visual only',
 });
 
+export const ARTWORK_RENDERER_IDS = Object.freeze([
+  'board-atmega328p',
+  'resistor-axial',
+  'led-through-hole',
+  'button-tactile',
+  'potentiometer-rotary',
+  'instrument-serial',
+]);
+
 const digitalPins = Array.from({ length: 14 }, (_, index) => `D${index}`);
 const analoguePins = Array.from({ length: 6 }, (_, index) => `A${index}`);
 
 function pin(id, label, role, signals, x, y, constraints = {}) {
+  const frozenConstraints = { ...constraints };
+  if (Array.isArray(frozenConstraints.terminals)) frozenConstraints.terminals = Object.freeze([...frozenConstraints.terminals]);
   return Object.freeze({
     id, label, role,
     signals: Object.freeze(signals),
     capabilities: Object.freeze([...signals]),
-    constraints: Object.freeze({ ...constraints }),
+    constraints: Object.freeze(frozenConstraints),
     anchor: Object.freeze({ x, y }),
   });
 }
@@ -52,6 +63,11 @@ function freezeDefinition(definition) {
   return Object.freeze({
     ...definition,
     propertyKeys: Object.freeze(definition.propertyKeys),
+    propertySchema: Object.freeze(Object.fromEntries(Object.entries(definition.propertySchema).map(([key, contract]) => {
+      const frozenContract = { ...contract };
+      if (Array.isArray(frozenContract.values)) frozenContract.values = Object.freeze([...frozenContract.values]);
+      return [key, Object.freeze(frozenContract)];
+    }))),
     controlKeys: Object.freeze(definition.controlKeys),
     pins: Object.freeze(definition.pins),
     internalTerminalGroups: Object.freeze((definition.internalTerminalGroups ?? []).map((group) => Object.freeze({
@@ -80,6 +96,7 @@ export const COMPONENT_CATALOG = Object.freeze({
     type: 'board.atmega328p-16mhz-v1', version: 1,
     displayName: 'ATmega328P 16 MHz learning board', manufacturer: 'Intent Learning', partNumber: 'IL-328P-16-5V',
     pins: boardPins, propertyKeys: [], controlKeys: [], modelRef: 'model.atmega328p-board-v1',
+    propertySchema: {},
     internalTerminalGroups: [], selectable: true,
     artwork: { ...commonArtwork, renderer: 'board-atmega328p', thumbnail: 'board-atmega328p', viewBox: [0, 0, 160, 80], cssWidth: 300, cssHeight: 150 },
     catalog: {
@@ -96,7 +113,8 @@ export const COMPONENT_CATALOG = Object.freeze({
       pin('ANODE', 'Anode (+)', 'passive', ['passive.two-terminal'], 0.38, 0.93, { polarity: 'anode' }),
       pin('CATHODE', 'Cathode (−)', 'passive', ['passive.two-terminal'], 0.66, 0.93, { polarity: 'cathode' }),
     ],
-    propertyKeys: ['color'], controlKeys: [], modelRef: 'model.led-current-v1', internalTerminalGroups: [], selectable: true,
+    propertyKeys: ['color'], propertySchema: { color: { kind: 'enum', values: ['red', 'yellow', 'green', 'blue'], default: 'red' } },
+    controlKeys: [], modelRef: 'model.led-current-v1', internalTerminalGroups: [], selectable: true,
     artwork: { ...commonArtwork, renderer: 'led-through-hole', thumbnail: 'led-through-hole', viewBox: [0, 0, 70, 100], cssWidth: 70, cssHeight: 100 },
     catalog: {
       category: 'displays', aliases: ['light emitting diode', 'indicator light'], functions: ['indicator', 'light output'],
@@ -111,7 +129,8 @@ export const COMPONENT_CATALOG = Object.freeze({
       pin('A', 'Lead A', 'passive', ['passive.two-terminal'], 0.03, 0.5),
       pin('B', 'Lead B', 'passive', ['passive.two-terminal'], 0.97, 0.5),
     ],
-    propertyKeys: ['ohms'], controlKeys: [], modelRef: 'model.resistor-fixed-v1', internalTerminalGroups: [], selectable: true,
+    propertyKeys: ['ohms'], propertySchema: { ohms: { kind: 'number', minimum: 1, maximum: 1_000_000_000, default: 220, unit: 'Ω' } },
+    controlKeys: [], modelRef: 'model.resistor-fixed-v1', internalTerminalGroups: [], selectable: true,
     artwork: { ...commonArtwork, renderer: 'resistor-axial', thumbnail: 'resistor-axial', viewBox: [0, 0, 150, 48], cssWidth: 150, cssHeight: 48 },
     catalog: {
       category: 'passives', aliases: ['resistance', 'current limiting resistor'], functions: ['current limiting', 'series resistance'],
@@ -126,7 +145,8 @@ export const COMPONENT_CATALOG = Object.freeze({
       pin('A', 'Terminal group A · attach A1', 'passive', ['passive.two-terminal'], 0.08, 20 / 78, { terminals: ['A1', 'A2'], attachmentTerminal: 'A1' }),
       pin('B', 'Terminal group B · attach B1', 'passive', ['passive.two-terminal'], 0.92, 20 / 78, { terminals: ['B1', 'B2'], attachmentTerminal: 'B1' }),
     ],
-    propertyKeys: ['normallyOpen'], controlKeys: ['pressed'], modelRef: 'model.button-momentary-no-v1',
+    propertyKeys: ['normallyOpen'], propertySchema: { normallyOpen: { kind: 'boolean', default: true } },
+    controlKeys: ['pressed'], modelRef: 'model.button-momentary-no-v1',
     internalTerminalGroups: [
       { pin: 'A', terminals: ['A1', 'A2'] }, { pin: 'B', terminals: ['B1', 'B2'] },
     ],
@@ -146,7 +166,11 @@ export const COMPONENT_CATALOG = Object.freeze({
       pin('WIPER', 'Wiper', 'passive', ['analogue.scalar-0-5v'], 0.5, 0.96),
       pin('LOW', 'Low terminal', 'passive', ['ground.reference'], 0.81, 0.91),
     ],
-    propertyKeys: ['ohms', 'taper'], controlKeys: ['position'], modelRef: 'model.pot-divider-v1', internalTerminalGroups: [], selectable: true,
+    propertyKeys: ['ohms', 'taper'], propertySchema: {
+      ohms: { kind: 'number', minimum: 1, maximum: 10_000_000, default: 10_000, unit: 'Ω' },
+      taper: { kind: 'enum', values: ['linear'], default: 'linear' },
+    },
+    controlKeys: ['position'], modelRef: 'model.pot-divider-v1', internalTerminalGroups: [], selectable: true,
     artwork: { ...commonArtwork, renderer: 'potentiometer-rotary', thumbnail: 'potentiometer-rotary', viewBox: [0, 0, 110, 100], cssWidth: 110, cssHeight: 100 },
     catalog: {
       category: 'inputs', aliases: ['pot', 'variable resistor', 'rotary control'], functions: ['analogue input', 'voltage divider'],
@@ -157,7 +181,12 @@ export const COMPONENT_CATALOG = Object.freeze({
   'terminal.serial-uart-v1': freezeDefinition({
     family: 'instrument.serial-terminal', variant: 'uart0',
     type: 'terminal.serial-uart-v1', version: 1, displayName: 'USART0 serial instrument', manufacturer: 'Intent Learning', partNumber: 'INSTR-UART0',
-    pins: [], propertyKeys: ['baud', 'encoding', 'historyLimit'], controlKeys: [], modelRef: 'model.usart0-instrument-v1',
+    pins: [], propertyKeys: ['baud', 'encoding', 'historyLimit'], propertySchema: {
+      baud: { kind: 'integer', minimum: 300, maximum: 2_000_000, default: 9_600, unit: 'baud' },
+      encoding: { kind: 'enum', values: ['utf-8'], default: 'utf-8' },
+      historyLimit: { kind: 'integer', minimum: 1, maximum: 4_096, default: 512, unit: 'records' },
+    },
+    controlKeys: [], modelRef: 'model.usart0-instrument-v1',
     internalTerminalGroups: [], selectable: false,
     artwork: { ...commonArtwork, renderer: 'instrument-serial', thumbnail: 'instrument-serial', viewBox: [0, 0, 100, 60], cssWidth: 100, cssHeight: 60 },
     catalog: {
@@ -201,15 +230,104 @@ export function filterCatalog(records, filters = {}) {
 }
 
 export function validateCatalogDefinition(definition) {
-  const categories = new Set(CATALOG_CATEGORIES.map((category) => category.id));
-  if (!definition || typeof definition !== 'object' || !definition.family || !definition.variant
-      || !definition.type || !Number.isInteger(definition.version) || !definition.modelRef
-      || !categories.has(definition.catalog?.category) || !Object.hasOwn(SUPPORT_STATUS, definition.support?.status)
-      || definition.artwork?.license !== 'Apache-2.0' || !definition.artwork?.provenance
-      || !Array.isArray(definition.artwork?.viewBox) || definition.artwork.viewBox.length !== 4) return false;
-  return definition.pins.every((item) => item.id && item.label && item.role
-    && Array.isArray(item.capabilities) && item.anchor.x >= 0 && item.anchor.x <= 1
-    && item.anchor.y >= 0 && item.anchor.y <= 1);
+  try {
+    const categories = new Set(CATALOG_CATEGORIES.map((category) => category.id));
+    const nonEmpty = (value) => typeof value === 'string' && value.trim().length > 0;
+    const finite = (value) => typeof value === 'number' && Number.isFinite(value);
+    const strings = (value, allowEmpty = false) => Array.isArray(value)
+      && (allowEmpty || value.length > 0) && value.every(nonEmpty) && new Set(value).size === value.length;
+    const record = (value) => value && typeof value === 'object' && !Array.isArray(value);
+    if (!record(definition) || !nonEmpty(definition.family) || !nonEmpty(definition.variant)
+      || !nonEmpty(definition.type) || !Number.isInteger(definition.version) || definition.version < 1
+      || !nonEmpty(definition.displayName) || !nonEmpty(definition.manufacturer) || !nonEmpty(definition.partNumber)
+      || !nonEmpty(definition.modelRef) || typeof definition.selectable !== 'boolean'
+      || !strings(definition.propertyKeys, true) || !strings(definition.controlKeys, true)
+      || !record(definition.propertySchema)) return false;
+
+    const propertyNames = Object.keys(definition.propertySchema).sort();
+    if (JSON.stringify(propertyNames) !== JSON.stringify([...definition.propertyKeys].sort())) return false;
+    for (const contract of Object.values(definition.propertySchema)) {
+      if (!record(contract) || !['number', 'integer', 'boolean', 'enum', 'string'].includes(contract.kind)
+        || !Object.hasOwn(contract, 'default')) return false;
+      if (Object.hasOwn(contract, 'unit') && !nonEmpty(contract.unit)) return false;
+      if (contract.kind === 'enum' && (!strings(contract.values) || !contract.values.includes(contract.default))) return false;
+      if (contract.kind === 'boolean' && typeof contract.default !== 'boolean') return false;
+      if (contract.kind === 'string' && typeof contract.default !== 'string') return false;
+      if (['number', 'integer'].includes(contract.kind)) {
+        if (!finite(contract.minimum) || !finite(contract.maximum) || contract.minimum > contract.maximum
+          || !finite(contract.default) || contract.default < contract.minimum || contract.default > contract.maximum
+          || (contract.kind === 'integer' && !Number.isInteger(contract.default))) return false;
+      }
+    }
+
+    const artwork = definition.artwork;
+    if (!record(artwork) || !ARTWORK_RENDERER_IDS.includes(artwork.renderer)
+      || !ARTWORK_RENDERER_IDS.includes(artwork.thumbnail) || artwork.license !== 'Apache-2.0'
+      || !nonEmpty(artwork.provenance) || !Array.isArray(artwork.viewBox) || artwork.viewBox.length !== 4
+      || !artwork.viewBox.every(finite) || artwork.viewBox[2] <= 0 || artwork.viewBox[3] <= 0
+      || !finite(artwork.cssWidth) || artwork.cssWidth <= 0 || !finite(artwork.cssHeight) || artwork.cssHeight <= 0) return false;
+
+    const catalog = definition.catalog;
+    if (!record(catalog) || !categories.has(catalog.category) || !strings(catalog.aliases)
+      || !strings(catalog.functions) || !strings(catalog.interfaces) || !nonEmpty(catalog.package)
+      || !record(catalog.supplyVolts) || !finite(catalog.supplyVolts.min) || !finite(catalog.supplyVolts.max)
+      || catalog.supplyVolts.min > catalog.supplyVolts.max) return false;
+    if (!record(definition.support) || !Object.hasOwn(SUPPORT_STATUS, definition.support.status)
+      || !strings(definition.support.limitations)) return false;
+    if (!Array.isArray(definition.pins) || !Array.isArray(definition.internalTerminalGroups)) return false;
+
+    const pinIds = new Set();
+    for (const item of definition.pins) {
+      if (!record(item) || !nonEmpty(item.id) || pinIds.has(item.id) || !nonEmpty(item.label) || !nonEmpty(item.role)
+        || !strings(item.signals) || !strings(item.capabilities) || !record(item.constraints)
+        || JSON.stringify(item.signals) !== JSON.stringify(item.capabilities) || !record(item.anchor)
+        || !finite(item.anchor.x) || item.anchor.x < 0 || item.anchor.x > 1
+        || !finite(item.anchor.y) || item.anchor.y < 0 || item.anchor.y > 1) return false;
+      pinIds.add(item.id);
+      const constraintKeys = Object.keys(item.constraints);
+      if (!constraintKeys.every((key) => ['voltageMin', 'voltageMax', 'voltage', 'polarity', 'terminals', 'attachmentTerminal'].includes(key))) return false;
+      for (const key of ['voltageMin', 'voltageMax', 'voltage']) {
+        if (Object.hasOwn(item.constraints, key) && !finite(item.constraints[key])) return false;
+      }
+      if (Object.hasOwn(item.constraints, 'voltageMin') && Object.hasOwn(item.constraints, 'voltageMax')
+        && item.constraints.voltageMin > item.constraints.voltageMax) return false;
+      if (Object.hasOwn(item.constraints, 'polarity') && !['anode', 'cathode'].includes(item.constraints.polarity)) return false;
+      if (Object.hasOwn(item.constraints, 'terminals') && !strings(item.constraints.terminals)) return false;
+      if (Object.hasOwn(item.constraints, 'attachmentTerminal')
+        && (!nonEmpty(item.constraints.attachmentTerminal)
+          || !item.constraints.terminals?.includes(item.constraints.attachmentTerminal))) return false;
+    }
+    if (definition.selectable && pinIds.size === 0) return false;
+    const groupedPins = new Set();
+    for (const group of definition.internalTerminalGroups) {
+      if (!record(group) || !pinIds.has(group.pin) || groupedPins.has(group.pin) || !strings(group.terminals)) return false;
+      const pinDefinition = definition.pins.find((item) => item.id === group.pin);
+      if (!Array.isArray(pinDefinition.constraints.terminals)
+        || JSON.stringify(pinDefinition.constraints.terminals) !== JSON.stringify(group.terminals)) return false;
+      groupedPins.add(group.pin);
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function validateComponentCatalog(definitions = COMPONENT_CATALOG) {
+  try {
+    const entries = Array.isArray(definitions) ? definitions : Object.values(definitions);
+    if (!entries.length || !entries.every(validateCatalogDefinition)) return false;
+    const unique = (values) => new Set(values).size === values.length;
+    if (!unique(entries.map((entry) => entry.type)) || !unique(entries.map((entry) => entry.partNumber))
+      || !unique(entries.map((entry) => `${entry.family}/${entry.variant}`))) return false;
+    for (const entry of entries) {
+      const defaults = defaultProperties(entry.type);
+      if (JSON.stringify(Object.keys(defaults).sort()) !== JSON.stringify([...entry.propertyKeys].sort())) return false;
+      for (const key of entry.propertyKeys) if (defaults[key] !== entry.propertySchema[key].default) return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function defaultProperties(type) {

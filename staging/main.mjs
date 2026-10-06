@@ -9,7 +9,7 @@ import {
   defaultProperties,
   filterCatalog,
 } from '../src/component-catalog.mjs';
-import { validateCircuit } from '../src/circuit-engine.mjs';
+import { CIRCUIT_SCHEMA, validateCircuit } from '../src/circuit-engine.mjs';
 import {
   ProjectEditorReducer,
   createEmptyProject,
@@ -31,10 +31,10 @@ const elements = Object.fromEntries([
   'serial-clear', 'logic-output', 'logic-count', 'logic-channels', 'logic-window', 'logic-cursor', 'pin-select',
   'pin-mode', 'pin-level', 'pin-detail', 'pin-diagnostic', 'pin-cycle', 'catalog-search', 'catalog-category',
   'catalog-interface', 'catalog-status', 'catalog-favorites', 'catalog-count',
-  'catalog-list', 'selection-name', 'property-editor', 'rotate-component', 'duplicate-component', 'delete-component',
+  'catalog-list', 'catalog-prev', 'catalog-page', 'catalog-next', 'selection-name', 'property-editor', 'rotate-component', 'duplicate-component', 'delete-component',
   'selected-net', 'net-members', 'wire-color', 'wire-bends', 'selection-support', 'reconnect-mode', 'add-bend', 'delete-wire', 'remove-junction', 'zoom-value',
   'zoom-in', 'zoom-out', 'pan-left', 'pan-right', 'pan-up', 'pan-down', 'view-reset', 'fit-project', 'project-state',
-  'project-message', 'project-new', 'project-save', 'project-reload', 'project-export', 'project-import',
+  'project-message', 'project-new', 'project-demo', 'project-save', 'project-reload', 'project-export', 'project-import',
   'project-import-mode', 'undo', 'redo', 'prompt-generate', 'prompt-copy', 'prompt-output', 'prompt-response',
   'prompt-mode', 'prompt-apply', 'prompt-message', 'component-controls',
   'editor-title', 'source-file', 'source-file-name', 'source-file-add', 'source-file-remove',
@@ -58,6 +58,10 @@ let running = false;
 let lastWorkerMessage = 0;
 let selectedSourceFile = 'main.ino';
 let catalogPreferences = loadCatalogPreferences();
+let catalogWindowStart = 0;
+let catalogFixtureRecords = null;
+let catalogBenchmarkSession = null;
+let catalogFixturePriorFilters = null;
 
 window.__M6_STATE__ = {
   buildState: 'dirty', artifactIdentity: null, inputIdentity: null, cacheHit: false,
@@ -349,11 +353,14 @@ function renderComponents() {
 
 function hydrateCatalogThumbnail(slot) {
   if (slot.childElementCount) return;
-  const definition = COMPONENT_CATALOG[slot.dataset.type];
-  const component = newComponent(definition.type, { components: [] });
+  const definition = slot.catalogDefinition ?? COMPONENT_CATALOG[slot.dataset.type];
+  const artworkType = definition.fixtureBaseType ?? definition.type;
+  const artworkDefinition = COMPONENT_CATALOG[artworkType];
+  if (!artworkDefinition) return;
+  const component = newComponent(artworkType, { components: [] });
   component.label = definition.displayName;
-  component.properties = defaultProperties(definition.type);
-  slot.append(createComponentArtwork(definition, component, { thumbnail: true }));
+  component.properties = defaultProperties(artworkType);
+  slot.append(createComponentArtwork({ ...artworkDefinition, displayName: definition.displayName }, component, { thumbnail: true }));
 }
 
 const catalogThumbnailObserver = 'IntersectionObserver' in window
@@ -365,7 +372,11 @@ const catalogThumbnailObserver = 'IntersectionObserver' in window
   }, { root: elements.cataloglist, rootMargin: '100px' })
   : null;
 
-function matchedCatalogRecords(records = catalogEntries({ selectableOnly: true })) {
+function activeCatalogRecords() {
+  return catalogFixtureRecords ?? catalogEntries({ selectableOnly: true });
+}
+
+function matchedCatalogRecords(records = activeCatalogRecords()) {
   const favorites = new Set(catalogPreferences.favorites);
   const recentRank = new Map(catalogPreferences.recent.map((type, index) => [type, index]));
   return filterCatalog(records, {
@@ -382,9 +393,10 @@ function matchedCatalogRecords(records = catalogEntries({ selectableOnly: true }
 function createCatalogRow(definition, { interactive = true, thumbnail = true } = {}) {
   const favorites = new Set(catalogPreferences.favorites);
   const row = document.createElement('div'); row.className = 'catalog-item';
-  row.dataset.type = definition.type; row.draggable = interactive; row.tabIndex = interactive ? 0 : -1; row.setAttribute('role', 'button');
+  row.dataset.type = definition.type; row.draggable = interactive; row.tabIndex = interactive ? 0 : -1; row.setAttribute('role', interactive ? 'button' : 'listitem');
   row.setAttribute('aria-label', `Add ${definition.displayName}, ${SUPPORT_STATUS[definition.support.status]}`);
   const thumbnailSlot = document.createElement('span'); thumbnailSlot.className = 'catalog-thumbnail-slot'; thumbnailSlot.dataset.type = definition.type;
+  thumbnailSlot.catalogDefinition = definition;
   const text = document.createElement('span'); text.className = 'catalog-item-copy';
   const name = document.createElement('strong'); name.textContent = definition.displayName;
   const small = document.createElement('small'); small.textContent = `${definition.partNumber} · ${definition.catalog.interfaces.join(', ')}`;
@@ -407,21 +419,36 @@ function createCatalogRow(definition, { interactive = true, thumbnail = true } =
 }
 
 function renderCatalog() {
+  const started = performance.now();
   const matches = matchedCatalogRecords();
-  const buttons = matches.slice(0, CATALOG_WINDOW_LIMIT).map((definition) => createCatalogRow(definition));
+  const maximumStart = matches.length ? Math.floor((matches.length - 1) / CATALOG_WINDOW_LIMIT) * CATALOG_WINDOW_LIMIT : 0;
+  catalogWindowStart = Math.min(catalogWindowStart, maximumStart);
+  const windowRecords = matches.slice(catalogWindowStart, catalogWindowStart + CATALOG_WINDOW_LIMIT);
+  const interactive = catalogFixtureRecords === null;
+  const buttons = windowRecords.map((definition) => createCatalogRow(definition, { interactive, thumbnail: true }));
   elements.cataloglist.replaceChildren(...buttons);
-  elements.catalogcount.textContent = `${matches.length} ${matches.length === 1 ? 'part' : 'parts'}${matches.length > CATALOG_WINDOW_LIMIT ? ` · first ${CATALOG_WINDOW_LIMIT} shown` : ''}`;
+  elements.cataloglist.scrollTop = 0;
+  const first = matches.length ? catalogWindowStart + 1 : 0;
+  const last = Math.min(matches.length, catalogWindowStart + windowRecords.length);
+  elements.catalogcount.textContent = `${matches.length} ${matches.length === 1 ? 'part' : 'parts'}`;
+  elements.catalogpage.textContent = matches.length ? `${first}–${last} of ${matches.length}` : 'No results';
+  elements.catalogprev.disabled = catalogWindowStart === 0;
+  elements.catalognext.disabled = catalogWindowStart + CATALOG_WINDOW_LIMIT >= matches.length;
+  const milliseconds = performance.now() - started;
+  if (catalogBenchmarkSession) catalogBenchmarkSession.renderDurations.push(milliseconds);
+  return { matches: matches.length, rendered: windowRecords.length, first, last, milliseconds };
 }
 
-function benchmarkCatalogFixture() {
+function createCatalogBenchmarkFixture() {
   const templates = catalogEntries({ selectableOnly: true });
-  const records = Array.from({ length: 1_000 }, (_, index) => {
+  return Array.from({ length: 1_000 }, (_, index) => {
     const template = templates[index % templates.length];
     return {
       ...template,
       type: `benchmark.component-${index}-v1`,
+      fixtureBaseType: template.type,
       displayName: `Benchmark component ${String(index).padStart(4, '0')}`,
-      manufacturer: `Benchmark Maker ${index % 20}`,
+      manufacturer: `Benchmark Maker-group-${index % 20}`,
       partNumber: `BENCH-${String(index).padStart(4, '0')}`,
       catalog: {
         ...template.catalog,
@@ -430,14 +457,68 @@ function benchmarkCatalogFixture() {
       },
     };
   });
+}
+
+function animationFrames(count = 2) {
+  return new Promise((resolve) => {
+    const next = () => { if (count-- <= 0) resolve(); else requestAnimationFrame(next); };
+    next();
+  });
+}
+
+async function benchmarkCatalogFixture(action = 'start') {
+  if (action === 'stop') {
+    await animationFrames();
+    catalogBenchmarkSession?.observer?.disconnect();
+    const summary = catalogBenchmarkSession ? {
+      records: catalogFixtureRecords?.length ?? 0,
+      attached: elements.cataloglist.isConnected,
+      maximumRenderMilliseconds: Math.max(0, ...catalogBenchmarkSession.renderDurations),
+      longTasks: [...catalogBenchmarkSession.longTasks],
+      progressiveThumbnails: elements.cataloglist.querySelectorAll('.catalog-thumbnail').length,
+    } : null;
+    catalogFixtureRecords = null;
+    catalogBenchmarkSession = null;
+    const prior = catalogFixturePriorFilters;
+    catalogFixturePriorFilters = null;
+    if (prior) {
+      elements.catalogsearch.value = prior.query; elements.catalogcategory.value = prior.category;
+      elements.cataloginterface.value = prior.interface; elements.catalogstatus.value = prior.status;
+      elements.catalogfavorites.checked = prior.favorites;
+    }
+    catalogWindowStart = 0; renderCatalog();
+    return summary;
+  }
+  if (catalogFixtureRecords) throw new Error('CATALOG_BENCHMARK_ALREADY_ACTIVE');
+  catalogFixturePriorFilters = {
+    query: elements.catalogsearch.value, category: elements.catalogcategory.value,
+    interface: elements.cataloginterface.value, status: elements.catalogstatus.value,
+    favorites: elements.catalogfavorites.checked,
+  };
+  catalogFixtureRecords = createCatalogBenchmarkFixture();
+  elements.catalogsearch.value = 'benchmark'; elements.catalogcategory.value = 'all';
+  elements.cataloginterface.value = 'all'; elements.catalogstatus.value = 'all'; elements.catalogfavorites.checked = false;
+  catalogWindowStart = 0;
+  const longTasks = [];
+  const observer = 'PerformanceObserver' in window && PerformanceObserver.supportedEntryTypes?.includes('longtask')
+    ? new PerformanceObserver((list) => longTasks.push(...list.getEntries().map((entry) => entry.duration))) : null;
+  observer?.observe({ type: 'longtask', buffered: false });
+  catalogBenchmarkSession = { longTasks, observer, renderDurations: [] };
   const started = performance.now();
-  const matches = filterCatalog(records, { query: 'benchmark' })
-    .sort((a, b) => a.displayName.localeCompare(b.displayName));
-  const holder = document.createElement('div');
-  holder.replaceChildren(...matches.slice(0, CATALOG_WINDOW_LIMIT)
-    .map((definition) => createCatalogRow(definition, { interactive: false, thumbnail: false })));
-  const milliseconds = performance.now() - started;
-  return { records: records.length, matches: matches.length, rendered: holder.children.length, milliseconds };
+  const initial = renderCatalog();
+  const layout = elements.cataloglist.getBoundingClientRect();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  return {
+    records: catalogFixtureRecords.length,
+    matches: initial.matches,
+    rendered: initial.rendered,
+    attached: elements.cataloglist.isConnected,
+    initialPaintMilliseconds: performance.now() - started,
+    attachedLayout: { width: layout.width, height: layout.height },
+    maximumRenderMilliseconds: Math.max(0, ...catalogBenchmarkSession.renderDurations),
+    longTasks: [...longTasks],
+    progressiveThumbnails: elements.cataloglist.querySelectorAll('.catalog-thumbnail').length,
+  };
 }
 
 function addComponent(type, point = null) {
@@ -715,11 +796,18 @@ function setViewport(next) {
   applyEditor({ type: 'viewport.set', zoom: next.zoom ?? current.zoom, panX: next.panX ?? current.panX, panY: next.panY ?? current.panY }, 'Updated view');
 }
 
-elements.catalogsearch.addEventListener('input', renderCatalog);
-elements.catalogcategory.addEventListener('change', renderCatalog);
-elements.cataloginterface.addEventListener('change', renderCatalog);
-elements.catalogstatus.addEventListener('change', renderCatalog);
-elements.catalogfavorites.addEventListener('change', renderCatalog);
+function resetCatalogWindow() { catalogWindowStart = 0; renderCatalog(); }
+elements.catalogsearch.addEventListener('input', resetCatalogWindow);
+elements.catalogcategory.addEventListener('change', resetCatalogWindow);
+elements.cataloginterface.addEventListener('change', resetCatalogWindow);
+elements.catalogstatus.addEventListener('change', resetCatalogWindow);
+elements.catalogfavorites.addEventListener('change', resetCatalogWindow);
+elements.catalogprev.addEventListener('click', () => {
+  catalogWindowStart = Math.max(0, catalogWindowStart - CATALOG_WINDOW_LIMIT); renderCatalog();
+});
+elements.catalognext.addEventListener('click', () => {
+  catalogWindowStart += CATALOG_WINDOW_LIMIT; renderCatalog();
+});
 elements.circuitcanvas.addEventListener('dragover', (event) => event.preventDefault());
 elements.circuitcanvas.addEventListener('drop', (event) => {
   event.preventDefault(); const type = event.dataTransfer.getData('application/x-intent-component'); if (!COMPONENT_CATALOG[type]?.selectable) return;
@@ -825,6 +913,34 @@ elements.projectnew.addEventListener('click', () => {
   selectedSourceFile = 'main.ino';
   localStorage.removeItem(PROJECT_STORAGE_KEY); renderProject(); elements.projectmessage.textContent = 'Created an actually empty project.';
 });
+elements.projectdemo.addEventListener('click', () => {
+  const circuit = { schema: CIRCUIT_SCHEMA, components: [], nets: [], junctions: [] };
+  const board = newComponent('board.atmega328p-16mhz-v1', circuit); circuit.components.push(board);
+  const resistor = newComponent('resistor.fixed-v1', circuit); circuit.components.push(resistor);
+  const led = newComponent('led.basic-v1', circuit); circuit.components.push(led);
+  circuit.nets.push(
+    { id: 'net-demo-signal', endpoints: [{ component: board.id, pin: 'D13' }, { component: resistor.id, pin: 'A' }] },
+    { id: 'net-demo-led', endpoints: [{ component: resistor.id, pin: 'B' }, { component: led.id, pin: 'ANODE' }] },
+    { id: 'net-demo-ground', endpoints: [{ component: led.id, pin: 'CATHODE' }, { component: board.id, pin: 'GND1' }] },
+  );
+  const source = `void setup() {
+  pinMode(13, OUTPUT);
+  Serial.begin(9600);
+}
+void loop() {
+  digitalWrite(13, HIGH); Serial.write('1'); delay(300);
+  digitalWrite(13, LOW);  Serial.write('0'); delay(300);
+}`;
+  const project = projectFromCircuit(circuit, source);
+  project.layout.positions[board.id] = { x: 0.27, y: 0.52, rotation: 0 };
+  project.layout.positions[resistor.id] = { x: 0.62, y: 0.3, rotation: 0 };
+  project.layout.positions[led.id] = { x: 0.82, y: 0.48, rotation: 0 };
+  const result = editor.importProject(project, 'replace', { running, requireRunnable: true });
+  if (!result.ok) { elements.projectmessage.textContent = `Blink demo rejected: ${result.code}`; return; }
+  stopRuntime('Blink demo loaded — build required'); selectedSourceFile = 'main.ino'; selectedComponentId = null; selectedNetId = null;
+  persistProject(); publish({ lastAction: 'BLINK_DEMO_LOADED', importReport: null }); renderProject();
+  elements.projectmessage.textContent = 'Optional Blink demo loaded through the same validated project reducer. Undo returns to the prior project.';
+});
 elements.projectsave.addEventListener('click', () => persistProject('Saved and revalidated in this browser.'));
 elements.projectreload.addEventListener('click', () => {
   const stored = localStorage.getItem(PROJECT_STORAGE_KEY); const parsed = stored ? parseProjectV2(stored) : { ok: false, code: 'NO_LOCAL_SAVE' };
@@ -898,7 +1014,13 @@ window.__M6_IMPORT__ = (source, mode = 'replace') => {
 };
 window.__M7_ADD__ = addComponent;
 window.__M7_PROJECT__ = window.__M6_PROJECT__;
-window.__M7_CATALOG__ = () => ({ preferences: structuredClone(catalogPreferences), visible: elements.cataloglist.children.length });
+window.__M7_CATALOG__ = () => ({
+  preferences: structuredClone(catalogPreferences),
+  visible: elements.cataloglist.children.length,
+  windowStart: catalogWindowStart,
+  fixtureActive: catalogFixtureRecords !== null,
+  visibleTypes: [...elements.cataloglist.children].map((item) => item.dataset.type),
+});
 window.__M7_CATALOG_BENCHMARK__ = benchmarkCatalogFixture;
 
 for (const category of CATALOG_CATEGORIES) elements.catalogcategory.append(new Option(category.label, category.id));

@@ -11,7 +11,9 @@ import {
   catalogEntries,
   filterCatalog,
   validateCatalogDefinition,
+  validateComponentCatalog,
 } from '../src/component-catalog.mjs';
+import { COMPONENT_ARTWORK_RENDERER_IDS } from '../staging/component-artwork.mjs';
 import {
   CIRCUIT_SCHEMA,
   CircuitRuntime,
@@ -147,6 +149,7 @@ test('C-01 catalog and canonical graph support branching nets and independent in
 });
 
 test('component contracts enforce exact pins, properties, controls and reset defaults', () => {
+  assert.equal(validateComponentCatalog(), true);
   for (const [type, definition] of Object.entries(COMPONENT_CATALOG)) {
     assert.equal(definition.type, type);
     assert.ok(definition.displayName.length > 0);
@@ -169,6 +172,7 @@ test('component contracts enforce exact pins, properties, controls and reset def
     }
   }
   assert.equal(CATALOG_CATEGORIES.length, 9);
+  assert.equal(new Set(COMPONENT_ARTWORK_RENDERER_IDS).size, COMPONENT_ARTWORK_RENDERER_IDS.length);
   assert.deepEqual(
     COMPONENT_CATALOG['button.momentary-v1'].internalTerminalGroups,
     [{ pin: 'A', terminals: ['A1', 'A2'] }, { pin: 'B', terminals: ['B1', 'B2'] }],
@@ -178,6 +182,35 @@ test('component contracts enforce exact pins, properties, controls and reset def
   expectCode(bad, 'INVALID_COMPONENT_PROPERTIES');
   bad.components.find((item) => item.id === 'resistor-1').properties = { ohms: 0 };
   expectCode(bad, 'INVALID_COMPONENT_PROPERTIES');
+});
+
+test('W-06 registry validation fails closed on incomplete or ambiguous definitions', () => {
+  const base = clone(COMPONENT_CATALOG['resistor.fixed-v1']);
+  for (const mutate of [
+    (entry) => { delete entry.pins; },
+    (entry) => { entry.pins = []; },
+    (entry) => { entry.pins.push(clone(entry.pins[0])); },
+    (entry) => { entry.pins[0].constraints = null; },
+    (entry) => { entry.pins[0].constraints = { voltageMin: 'zero' }; },
+    (entry) => { entry.pins[0].constraints = { unknownRule: true }; },
+    (entry) => { entry.artwork.renderer = 'missing-renderer'; },
+    (entry) => { entry.artwork.cssWidth = 0; },
+    (entry) => { entry.artwork.viewBox[2] = 0; },
+    (entry) => { entry.catalog.aliases = []; },
+    (entry) => { entry.catalog.functions = []; },
+    (entry) => { entry.catalog.supplyVolts.max = -1; },
+    (entry) => { delete entry.propertySchema.ohms; },
+    (entry) => { entry.propertySchema.ohms.default = 0; },
+    (entry) => { entry.propertySchema.ohms.unit = ''; },
+    (entry) => { entry.support.limitations = []; },
+  ]) {
+    const invalid = clone(base); mutate(invalid);
+    assert.equal(validateCatalogDefinition(invalid), false);
+  }
+  assert.equal(validateCatalogDefinition({ family: 'incomplete' }), false);
+  const duplicated = Object.values(COMPONENT_CATALOG).map(clone);
+  duplicated[1].partNumber = duplicated[0].partNumber;
+  assert.equal(validateComponentCatalog(duplicated), false);
 });
 
 test('W-07/W-08 catalogue filtering covers practical metadata and remains bounded at 1,000 records', () => {

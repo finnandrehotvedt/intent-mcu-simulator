@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
+import { ARTWORK_RENDERER_IDS } from '../src/component-catalog.mjs';
+
 const NS = 'http://www.w3.org/2000/svg';
 
 function element(name, attributes = {}, text = null) {
@@ -108,13 +110,28 @@ function potentiometer(svg, definition) {
   drawTerminals(svg, definition, 3);
 }
 
+function serialInstrument(svg) {
+  append(svg,
+    element('rect', { x: 4, y: 5, width: 92, height: 50, rx: 6, class: 'board-module' }),
+    element('rect', { x: 12, y: 13, width: 76, height: 25, rx: 3, class: 'board-chip' }),
+    element('circle', { cx: 18, cy: 47, r: 3, fill: '#a8ff3f' }),
+    element('line', { x1: 27, y1: 47, x2: 84, y2: 47, class: 'board-trace' }),
+  );
+}
+
 const renderers = Object.freeze({
   'board-atmega328p': board,
   'resistor-axial': resistor,
   'led-through-hole': led,
   'button-tactile': button,
   'potentiometer-rotary': potentiometer,
+  'instrument-serial': serialInstrument,
 });
+
+export const COMPONENT_ARTWORK_RENDERER_IDS = Object.freeze(Object.keys(renderers));
+if (JSON.stringify(COMPONENT_ARTWORK_RENDERER_IDS) !== JSON.stringify(ARTWORK_RENDERER_IDS)) {
+  throw new Error('Artwork renderer registry does not match the component catalogue contract.');
+}
 
 export function createComponentArtwork(definition, component, { thumbnail = false } = {}) {
   const svg = element('svg', {
