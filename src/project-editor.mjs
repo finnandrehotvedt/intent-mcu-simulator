@@ -17,6 +17,8 @@ import {
   parseProjectV2,
   validateProjectV2,
 } from './project-v2.mjs';
+import { isRouteFamily, normalizeStoredRoute } from './route-model.mjs';
+import { projectChangeRelevance } from './lifecycle.mjs';
 
 export const PROJECT_HISTORY_LIMIT = 64;
 const clone = (value) => structuredClone(value);
@@ -35,6 +37,14 @@ function exactCommand(command, fields) {
 
 function dirtyBuild(project) {
   project.build = { status: 'dirty', inputIdentity: null, artifactIdentity: null };
+}
+
+function buildInputSignature(project) {
+  return JSON.stringify({
+    boardProfile: project.boardProfile,
+    source: project.source,
+    circuit: project.circuit,
+  });
 }
 
 function componentById(graph, id) {
@@ -58,6 +68,7 @@ function validPoint(point) {
 export function createEmptyProject() {
   return validateProjectV2({
     schema: PROJECT_SCHEMA,
+    metadata: { name: 'Untitled project' },
     boardProfile: 'board.atmega328p-16mhz-v1',
     source: { files: [{ name: 'main.ino', content: '' }] },
     circuit: { schema: CIRCUIT_SCHEMA, components: [], nets: [], junctions: [] },
@@ -103,6 +114,11 @@ function applyMutation(current, command) {
   const graph = next.circuit;
   let runtimeDirty = false;
   switch (command.type) {
+    case 'project.rename': {
+      if (!exactCommand(command, ['name'])) throw new Error('EDITOR_COMMAND_SHAPE');
+      next.metadata = { name: command.name };
+      break;
+    }
     case 'component.add': {
       if (!exactCommand(command, ['component', 'position']) || !validPoint(command.position)) throw new Error('EDITOR_COMMAND_SHAPE');
       graph.components.push(clone(command.component));
@@ -135,6 +151,11 @@ function applyMutation(current, command) {
       graph.nets = graph.nets.flatMap((net) => {
         const endpoints = net.endpoints.filter((endpoint) => endpoint.component !== command.componentId);
         if (endpoints.length < 2) { removedNets.add(net.id); return []; }
+        if (endpoints.length !== net.endpoints.length && isRouteFamily(next.layout.wireRoutes[net.id])) {
+          const family = clone(next.layout.wireRoutes[net.id]);
+          family.branches = family.branches.filter((branch) => branch.endpoint.component !== command.componentId);
+          next.layout.wireRoutes[net.id] = normalizeStoredRoute(family, { ...net, endpoints });
+        }
         return [{ ...net, endpoints }];
       });
       graph.junctions = graph.junctions.filter((junction) => !removedNets.has(junction.net));
@@ -186,6 +207,14 @@ function applyMutation(current, command) {
       const net = netById(graph, command.netId);
       if (!net) throw new Error('EDITOR_NET_MISSING');
       net.endpoints.push(clone(command.endpoint));
+      if (isRouteFamily(next.layout.wireRoutes[net.id])) {
+        const family = clone(next.layout.wireRoutes[net.id]);
+        family.branches.push({
+          endpoint: clone(command.endpoint),
+          points: [clone(family.branches[0].points.at(-1))],
+        });
+        next.layout.wireRoutes[net.id] = normalizeStoredRoute(family, net);
+      }
       if (!graph.junctions.some((junction) => junction.net === net.id)) {
         graph.junctions.push({ id: command.junctionId, net: net.id });
       }
@@ -198,6 +227,29 @@ function applyMutation(current, command) {
       const index = net?.endpoints.findIndex((endpoint) => endpointKey(endpoint) === endpointKey(command.from)) ?? -1;
       if (index < 0) throw new Error('EDITOR_ENDPOINT_MISSING');
       net.endpoints[index] = clone(command.to);
+      if (isRouteFamily(next.layout.wireRoutes[net.id])) {
+        const family = clone(next.layout.wireRoutes[net.id]);
+        const branch = family.branches.find((item) => endpointKey(item.endpoint) === endpointKey(command.from));
+        if (!branch) throw new Error('EDITOR_ROUTE');
+        branch.endpoint = clone(command.to);
+        next.layout.wireRoutes[net.id] = normalizeStoredRoute(family, net);
+      }
+      runtimeDirty = true;
+      break;
+    }
+    case 'wire.branch.delete': {
+      if (!exactCommand(command, ['netId', 'endpoint'])) throw new Error('EDITOR_COMMAND_SHAPE');
+      const net = netById(graph, command.netId);
+      if (!net || net.endpoints.length < 3) throw new Error('EDITOR_BRANCH_REQUIRED');
+      const before = net.endpoints.length;
+      net.endpoints = net.endpoints.filter((endpoint) => endpointKey(endpoint) !== endpointKey(command.endpoint));
+      if (before === net.endpoints.length) throw new Error('EDITOR_ENDPOINT_MISSING');
+      if (isRouteFamily(next.layout.wireRoutes[net.id])) {
+        const family = clone(next.layout.wireRoutes[net.id]);
+        family.branches = family.branches.filter((branch) => endpointKey(branch.endpoint) !== endpointKey(command.endpoint));
+        next.layout.wireRoutes[net.id] = normalizeStoredRoute(family, net);
+      }
+      if (net.endpoints.length === 2) graph.junctions = graph.junctions.filter((junction) => junction.net !== net.id);
       runtimeDirty = true;
       break;
     }
@@ -216,6 +268,14 @@ function applyMutation(current, command) {
         throw new Error('EDITOR_ROUTE');
       }
       next.layout.wireRoutes[command.netId] = clone(command.points);
+      break;
+    }
+    case 'wire.route.family.set': {
+      if (!exactCommand(command, ['netId', 'family'])) throw new Error('EDITOR_COMMAND_SHAPE');
+      const net = netById(graph, command.netId);
+      const family = net ? normalizeStoredRoute(command.family, net) : null;
+      if (!net || !isRouteFamily(family)) throw new Error('EDITOR_ROUTE');
+      next.layout.wireRoutes[command.netId] = family;
       break;
     }
     case 'wire.style.set': {
@@ -240,6 +300,11 @@ function applyMutation(current, command) {
         const before = net.endpoints.length;
         net.endpoints = net.endpoints.filter((endpoint) => endpointKey(endpoint) !== endpointKey(command.detachEndpoint));
         if (before === net.endpoints.length) throw new Error('EDITOR_ENDPOINT_MISSING');
+        if (isRouteFamily(next.layout.wireRoutes[net.id])) {
+          const family = clone(next.layout.wireRoutes[net.id]);
+          family.branches = family.branches.filter((branch) => endpointKey(branch.endpoint) !== endpointKey(command.detachEndpoint));
+          next.layout.wireRoutes[net.id] = normalizeStoredRoute(family, net);
+        }
       }
       graph.junctions = graph.junctions.filter((item) => item.id !== command.junctionId);
       runtimeDirty = true;
@@ -348,7 +413,17 @@ export function mergeCircuitProject(baseValue, incomingValue) {
   }
   for (const [sourceNet, points] of Object.entries(incoming.layout.wireRoutes)) {
     const targetNet = netMap.get(sourceNet);
-    if (targetNet && !merged.layout.wireRoutes[targetNet]) merged.layout.wireRoutes[targetNet] = clone(points);
+    if (!targetNet || merged.layout.wireRoutes[targetNet]) continue;
+    const target = netById(merged.circuit, targetNet);
+    const remapped = isRouteFamily(points) ? {
+      schema: points.schema,
+      branches: points.branches.map((branch) => ({
+        endpoint: { component: componentMap.get(branch.endpoint.component), pin: branch.endpoint.pin },
+        points: clone(branch.points),
+      })),
+    } : clone(points);
+    const normalized = normalizeStoredRoute(remapped, target);
+    if (normalized) merged.layout.wireRoutes[targetNet] = normalized;
   }
   for (const [sourceNet, style] of Object.entries(incoming.layout.wireStyles)) {
     const targetNet = netMap.get(sourceNet);
@@ -388,7 +463,7 @@ export class ProjectEditorReducer {
     return {
       ok: true, code, revision: this.revision, project: clone(this.project),
       runnable: circuit.ok, diagnostics: circuit.diagnostics, stopped: running && runtimeDirty,
-      report,
+      buildRelevant: runtimeDirty, report,
     };
   }
 
@@ -422,7 +497,9 @@ export class ProjectEditorReducer {
       if (!circuitOnly) {
         const electrical = requireRunnable ? validateCircuit(validation.project.circuit) : null;
         if (electrical && !electrical.ok) return resultError(electrical.code, this.revision, electrical.diagnostics);
-        return this.#commit(validation.project, 'PROJECT_REPLACED', { running });
+        const replacement = clone(validation.project);
+        dirtyBuild(replacement);
+        return this.#commit(replacement, 'PROJECT_REPLACED', { running });
       }
       const next = clone(this.project);
       next.circuit = validation.project.circuit;
@@ -450,16 +527,25 @@ export class ProjectEditorReducer {
     const source = undo ? this.undoStack : this.redoStack;
     const target = undo ? this.redoStack : this.undoStack;
     if (!source.length) return resultError(undo ? 'EDITOR_UNDO_EMPTY' : 'EDITOR_REDO_EMPTY', this.revision);
-    target.push(this.project);
+    const before = this.project;
+    target.push(before);
     if (target.length > this.historyLimit) target.shift();
     this.project = source.pop();
+    const runtimeDirty = buildInputSignature(before) !== buildInputSignature(this.project);
+    if (runtimeDirty) dirtyBuild(this.project);
     this.revision += 1;
     const circuit = validateCircuit(this.project.circuit);
     return {
       ok: true, code: undo ? 'EDITOR_UNDONE' : 'EDITOR_REDONE', revision: this.revision,
-      project: clone(this.project), runnable: circuit.ok, diagnostics: circuit.diagnostics, stopped: running,
+      project: clone(this.project), runnable: circuit.ok, diagnostics: circuit.diagnostics,
+      stopped: running && runtimeDirty, buildRelevant: runtimeDirty,
+      changeRelevance: runtimeDirty ? 'build' : 'visual',
     };
   }
+}
+
+export function commandBuildRelevance(commandType) {
+  return projectChangeRelevance(commandType);
 }
 
 export function projectFromCircuit(circuit, source = '') {

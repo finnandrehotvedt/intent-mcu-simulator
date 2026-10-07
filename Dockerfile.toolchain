@@ -1,0 +1,75 @@
+FROM node:20.19.4-alpine3.22@sha256:df02558528d3d3d0d621f112e232611aecfee7cbc654f6b375765f72bb262799 AS fetch
+
+ARG ARDUINO_CLI_URL=https://github.com/arduino/arduino-cli/releases/download/v1.5.1/arduino-cli_1.5.1_Linux_64bit.tar.gz
+ARG ARDUINO_CLI_SHA256=28a8e119c498a25607821c36cb2dc49e8463941b261a0d99091baa7bc692dd2b
+ARG ARDUINO_AVR_CORE_URL=https://downloads.arduino.cc/cores/staging/avr-1.8.8.tar.bz2
+ARG ARDUINO_AVR_CORE_SHA256=a234c2a43dcd01ce54be665806f183b8e6ec4e966d2e3e0c3358b63023d6390c
+ARG AVR_GCC_URL=https://downloads.arduino.cc/tools/avr-gcc-7.3.0-atmel3.6.1-arduino7-x86_64-pc-linux-gnu.tar.bz2
+ARG AVR_GCC_SHA256=bd8c37f6952a2130ac9ee32c53f6a660feb79bee8353c8e289eb60fdcefed91e
+ARG CTAGS_URL=https://downloads.arduino.cc/tools/ctags-5.8-arduino11-pm-x86_64-pc-linux-gnu.tar.bz2
+ARG CTAGS_SHA256=62b514f3aaf37b5429ef703853bb46365fb91b4754c1916d085bf134004886e3
+ARG MDNS_DISCOVERY_URL=https://downloads.arduino.cc/discovery/mdns-discovery/mdns-discovery_v1.1.0_Linux_64bit.tar.gz
+ARG MDNS_DISCOVERY_SHA256=6966f406e5b6e80d82a388706d6d9d8a63d46035d19d1e6b4fb1ebeaf7fea056
+ARG SERIAL_DISCOVERY_URL=https://downloads.arduino.cc/discovery/serial-discovery/serial-discovery_v1.5.2_Linux_64bit.tar.gz
+ARG SERIAL_DISCOVERY_SHA256=7a95d7386c66c0846fe4aa96b601e72783ae64f541eb2f5edb4fc9e69a04b6d3
+
+WORKDIR /fetch
+RUN wget -q -O arduino-cli.tar.gz "$ARDUINO_CLI_URL" \
+    && echo "$ARDUINO_CLI_SHA256  arduino-cli.tar.gz" | sha256sum -c - \
+    && mkdir cli && tar -xzf arduino-cli.tar.gz -C cli \
+    && wget -q -O avr-core.tar.bz2 "$ARDUINO_AVR_CORE_URL" \
+    && echo "$ARDUINO_AVR_CORE_SHA256  avr-core.tar.bz2" | sha256sum -c - \
+    && mkdir core && tar -xjf avr-core.tar.bz2 -C core \
+    && wget -q -O avr-gcc.tar.bz2 "$AVR_GCC_URL" \
+    && echo "$AVR_GCC_SHA256  avr-gcc.tar.bz2" | sha256sum -c - \
+    && mkdir gcc && tar -xjf avr-gcc.tar.bz2 -C gcc \
+    && wget -q -O ctags.tar.bz2 "$CTAGS_URL" \
+    && echo "$CTAGS_SHA256  ctags.tar.bz2" | sha256sum -c - \
+    && mkdir ctags && tar -xjf ctags.tar.bz2 -C ctags \
+    && wget -q -O mdns-discovery.tar.gz "$MDNS_DISCOVERY_URL" \
+    && echo "$MDNS_DISCOVERY_SHA256  mdns-discovery.tar.gz" | sha256sum -c - \
+    && mkdir mdns && tar -xzf mdns-discovery.tar.gz -C mdns \
+    && wget -q -O serial-discovery.tar.gz "$SERIAL_DISCOVERY_URL" \
+    && echo "$SERIAL_DISCOVERY_SHA256  serial-discovery.tar.gz" | sha256sum -c - \
+    && mkdir serial && tar -xzf serial-discovery.tar.gz -C serial
+
+FROM --platform=linux/amd64 mirror.gcr.io/library/node:22-bookworm-slim@sha256:d649c27dae7ba0137b3cef5dd75baa422c08dc3d9e3fc0c23dfb172dc3cc6436
+
+LABEL org.opencontainers.image.title="Intent MCU Simulator pinned AVR compiler" \
+      org.opencontainers.image.version="1.0.0-rc.1" \
+      org.opencontainers.image.source="https://github.com/finnandrehotvedt/intent-mcu-simulator" \
+      org.opencontainers.image.licenses="GPL-3.0-or-later AND LGPL-2.1-or-later AND GPL-runtime-exception"
+
+COPY --from=fetch /fetch/cli/arduino-cli /usr/local/bin/arduino-cli
+COPY --from=fetch /fetch/cli/LICENSE.txt /usr/share/licenses/arduino-cli/LICENSE.txt
+COPY --from=fetch /fetch/core/ArduinoCore-avr-1.8.8/ /opt/arduino/data/packages/arduino/hardware/avr/1.8.8/
+COPY --from=fetch /fetch/gcc/avr/ /opt/arduino/data/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/
+COPY --from=fetch /fetch/ctags/ctags-5.8-arduino11/ /opt/arduino/data/packages/builtin/tools/ctags/5.8-arduino11/
+COPY --from=fetch /fetch/mdns/mdns-discovery_linux_amd64/ /opt/arduino/data/packages/builtin/tools/mdns-discovery/1.1.0/
+COPY --from=fetch /fetch/serial/serial-discovery_linux_amd64/ /opt/arduino/data/packages/builtin/tools/serial-discovery/1.5.2/
+COPY toolchain/arduino-cli.yaml /opt/arduino/arduino-cli.yaml
+COPY toolchain/manifest.json /opt/arduino/toolchain-manifest.json
+COPY toolchain/compile-fixtures.sh /usr/local/bin/compile-fixtures
+COPY toolchain/NOTICE.md /usr/share/teach-lab/NOTICE.md
+COPY toolchain/SOURCE-AND-RELINKING.md /usr/share/teach-lab/SOURCE-AND-RELINKING.md
+COPY compiler/build-protocol.mjs /opt/teach-lab/build-protocol.mjs
+COPY compiler/build-worker.mjs /opt/teach-lab/build-worker.mjs
+COPY fixtures /fixtures
+
+RUN chmod 0555 /usr/local/bin/compile-fixtures \
+    && chmod 0444 /opt/teach-lab/*.mjs /usr/share/teach-lab/*.md \
+    && useradd --create-home --uid 10001 compiler \
+    && mkdir -p /build /out \
+    && chown compiler:compiler /build /out \
+    && find /opt/arduino /opt/teach-lab /usr/local/bin/arduino-cli -type f -exec sha256sum {} + \
+      | sort -k2 > /usr/share/teach-lab/toolchain-files.sha256 \
+    && chmod -R a-w /usr/share/teach-lab /opt/teach-lab
+
+USER compiler
+WORKDIR /build
+ENV ARDUINO_DIRECTORIES_DATA=/tmp/data \
+    ARDUINO_DIRECTORIES_DOWNLOADS=/tmp/downloads \
+    ARDUINO_DIRECTORIES_USER=/tmp/user \
+    HOME=/tmp/home
+
+ENTRYPOINT ["node", "/opt/teach-lab/build-worker.mjs"]

@@ -19,3 +19,41 @@ services:
     environment:
       HOME: /tmp
       NO_UPDATE_NOTIFIER: "1"
+
+  local-compiler:
+    profiles: ["local-compiler"]
+    image: intent-mcu-simulator-local:1.0.0-rc.1
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+      network: host
+    user: "1000:1000"
+    group_add:
+      - "${DOCKER_GID:-999}"
+    read_only: true
+    restart: "no"
+    network_mode: host
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 2.0
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      HOME: /tmp
+      NO_UPDATE_NOTIFIER: "1"
+      STAGING_HOST: 127.0.0.1
+      STAGING_PORT: "${LOCAL_PORT:-18766}"
+      INTENT_MCU_LOCAL_URL: "http://127.0.0.1:${LOCAL_PORT:-18766}"
+      COMPILER_IMAGE_LOCK: /workspace/compiler/local-image-lock.json
+      DEPLOYMENT_SCOPE: local-source
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:${LOCAL_PORT:-18766}/readyz"]
+      interval: 5s
+      timeout: 2s
+      retries: 10

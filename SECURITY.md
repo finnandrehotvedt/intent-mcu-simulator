@@ -12,7 +12,7 @@ about unrelated systems in a public issue.
 
 ## Supported source
 
-Security fixes target the latest revision on the default branch. This public
-source release does not include or operate the isolated compiler service,
-toolchain image, deployment environment, user accounts, analytics, or a live
-AI service.
+Security fixes target the latest revision on the default branch. This release
+includes the project-owned isolated compiler gateway and local build recipe,
+but no prebuilt toolchain image, hosted deployment configuration, user
+accounts, analytics, physical-device access or live AI service.

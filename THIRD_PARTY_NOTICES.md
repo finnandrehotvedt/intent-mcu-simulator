@@ -3,6 +3,13 @@
 Original Intent MCU Simulator source is Apache-2.0. The following packages
 retain their own terms.
 
+The optional local compiler image is built by the user from separately
+licensed upstream archives. Exact versions, URLs, checksums and licence
+classifications are in `toolchain/manifest.json`; notices and the
+corresponding-source/relinking boundary are in `toolchain/NOTICE.md` and
+`toolchain/SOURCE-AND-RELINKING.md`. The project does not distribute that
+image, those archives or compiled learner firmware.
+
 ## avr8js 0.21.1
 
 - Source: <https://github.com/wokwi/avr8js/tree/v0.21.1>

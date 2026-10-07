@@ -9,11 +9,14 @@ import {
   validateCircuit,
 } from './circuit-engine.mjs';
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
+import { normalizeStoredRoute } from './route-model.mjs';
 
 export const PROJECT_SCHEMA = 'teach-lab-project@2';
 export const PROJECT_STORAGE_KEY = 'teach-lab.simulator.project.v2';
+export const PROJECT_RECOVERY_KEY = 'teach-lab.simulator.project.recovery.v2';
 export const LEGACY_STORAGE_KEY = 'teach-lab.project.v1';
 export const PROJECT_EXPORT_LIMIT = 1024 * 1024;
+export const DEFAULT_PROJECT_NAME = 'Untitled project';
 export const WIRE_COLORS = Object.freeze([
   '#39dff2', '#f04f5f', '#a8ff3f', '#f5c451', '#f28cf3', '#f6f1e7', '#303943', '#5f8cff',
 ]);
@@ -35,6 +38,13 @@ function ownObject(value) {
     && Object.getPrototypeOf(value) === Object.prototype;
 }
 function clone(value) { return structuredClone(value); }
+
+function normalizeMetadata(metadata = { name: DEFAULT_PROJECT_NAME }) {
+  if (!exactKeys(metadata, ['name']) || typeof metadata.name !== 'string') return null;
+  const name = metadata.name.normalize('NFC').trim().replace(/\s+/gu, ' ');
+  if (!name || name.length > 80 || /[\u0000-\u001f\u007f]/u.test(name)) return null;
+  return { name };
+}
 
 export function defaultWireColor(net, graph = null) {
   const boardIds = graph
@@ -73,12 +83,11 @@ function normalizeLayout(layout, graph) {
   if (!ownObject(sourceRoutes)) return null;
   const netIds = new Set(graph.nets.map((net) => net.id));
   for (const [netId, route] of Object.entries(sourceRoutes)) {
-    if (!netIds.has(netId) || !Array.isArray(route) || route.length > 8) return null;
-    wireRoutes[netId] = route.map((point) => {
-      if (!exactKeys(point, ['x', 'y']) || !Number.isFinite(point.x) || !Number.isFinite(point.y)
-          || point.x < 0 || point.x > 1 || point.y < 0 || point.y > 1) throw new TypeError('PROJECT_LAYOUT');
-      return { x: point.x, y: point.y };
-    });
+    const net = graph.nets.find((item) => item.id === netId);
+    if (!netIds.has(netId) || !net) return null;
+    const normalized = normalizeStoredRoute(route, net);
+    if (!normalized) return null;
+    wireRoutes[netId] = normalized;
   }
   const wireStyles = {};
   const sourceStyles = currentShape ? layout.wireStyles : {};
@@ -118,10 +127,14 @@ function validateSource(source) {
 }
 
 export function validateProjectV2(value) {
-  if (!exactKeys(value, ['schema', 'boardProfile', 'source', 'circuit', 'layout', 'instruments', 'build'])) {
+  const priorShape = exactKeys(value, ['schema', 'boardProfile', 'source', 'circuit', 'layout', 'instruments', 'build']);
+  const currentShape = exactKeys(value, ['schema', 'metadata', 'boardProfile', 'source', 'circuit', 'layout', 'instruments', 'build']);
+  if (!priorShape && !currentShape) {
     return error('PROJECT_SHAPE');
   }
   if (value.schema !== PROJECT_SCHEMA || value.boardProfile !== BOARD_PROFILE) return error('PROJECT_VERSION');
+  const metadata = normalizeMetadata(currentShape ? value.metadata : undefined);
+  if (!metadata) return error('PROJECT_METADATA');
   const source = validateSource(value.source);
   if (!source) return error('PROJECT_SOURCE');
   let circuit;
@@ -149,6 +162,7 @@ export function validateProjectV2(value) {
     code: 'OK',
     project: {
       schema: PROJECT_SCHEMA,
+      metadata,
       boardProfile: BOARD_PROFILE,
       source,
       circuit,
@@ -217,6 +231,7 @@ export function migrateProjectV1(source, storage = null) {
   }
   const project = {
     schema: PROJECT_SCHEMA,
+    metadata: { name: 'Migrated project' },
     boardProfile: BOARD_PROFILE,
     source: { files: [{ name: 'main.ino', content: '' }] },
     circuit: circuitResult.graph,
@@ -243,6 +258,7 @@ export function migrateProjectV1(source, storage = null) {
       sourceCreatedEmpty: true,
       artifactCreated: false,
       originalKeyUntouched: true,
+      unsupportedFields: ['netlist.firmwarePins'],
     },
   };
 }

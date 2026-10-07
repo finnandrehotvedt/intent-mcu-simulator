@@ -1,4 +1,5 @@
 node_modules/
 dist/
+compiler/local-image-lock.json
 npm-debug.log*
 .DS_Store

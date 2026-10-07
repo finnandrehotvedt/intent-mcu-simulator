@@ -26,7 +26,7 @@
   <meta name="twitter:description" content="Build a supported ATmega328P circuit, compile edited firmware, and inspect deterministic virtual hardware behaviour.">
   <meta name="twitter:image" content="https://lab.teachthecompany.com/social-card.png">
   <meta name="twitter:image:alt" content="Intent MCU Simulator workbench with an original virtual controller, connected LED, source code, and logic trace.">
-  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://lab.teachthecompany.com/#website","url":"https://lab.teachthecompany.com/","name":"Intent MCU Simulator","inLanguage":"en","mainEntity":{"@id":"https://lab.teachthecompany.com/#software"}},{"@type":"WebApplication","@id":"https://lab.teachthecompany.com/#software","name":"Intent MCU Simulator","url":"https://lab.teachthecompany.com/","description":"An original browser workbench for building supported ATmega328P circuits, compiling firmware in an isolated toolchain, and inspecting deterministic virtual hardware behaviour.","applicationCategory":"EducationalApplication","operatingSystem":"Any modern browser","isAccessibleForFree":true,"softwareVersion":"0.9.0","license":"https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/LICENSE","codeRepository":"https://github.com/finnandrehotvedt/intent-mcu-simulator","featureList":["Manual pin-to-pin circuit building","Isolated firmware compilation","Deterministic virtual MCU execution","GPIO, LED, button and potentiometer models","Serial console, logic analyser and pin inspector","Validation-gated portable Prompt Bridge"],"author":{"@type":"Person","name":"Finn Andre Hotvedt","url":"https://finnandre.no/"},"publisher":{"@type":"Organization","name":"IntentForce","url":"https://www.intentforce.no/"}},{"@type":"FAQPage","@id":"https://lab.teachthecompany.com/#questions","mainEntity":[{"@type":"Question","name":"What does Intent MCU Simulator simulate?","acceptedAnswer":{"@type":"Answer","text":"It simulates a tested educational subset around an ATmega328P 16 MHz, 5 V profile, including supported GPIO, LEDs, resistors, buttons, potentiometers, serial data, and logic traces."}},{"@type":"Question","name":"Does Prompt Bridge connect to a hosted AI service?","acceptedAnswer":{"@type":"Answer","text":"No. Prompt Bridge creates portable text for a tool chosen by the user. Only returned structured circuit data that passes project-owned schema, pin, and electrical validation can reach the canvas."}},{"@type":"Question","name":"Does the simulator replace testing on physical hardware?","acceptedAnswer":{"@type":"Answer","text":"No. The workbench is an educational simulation of a verified subset. It is not physical safety certification and does not claim complete timing or hardware equivalence."}}]}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://lab.teachthecompany.com/#website","url":"https://lab.teachthecompany.com/","name":"Intent MCU Simulator","inLanguage":"en","mainEntity":{"@id":"https://lab.teachthecompany.com/#software"}},{"@type":"WebApplication","@id":"https://lab.teachthecompany.com/#software","name":"Intent MCU Simulator","url":"https://lab.teachthecompany.com/","description":"An original browser workbench for building supported ATmega328P circuits, compiling firmware in an isolated toolchain, and inspecting deterministic virtual hardware behaviour.","applicationCategory":"EducationalApplication","operatingSystem":"Any modern browser","isAccessibleForFree":true,"softwareVersion":"1.0.0-rc.1","license":"https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/LICENSE","codeRepository":"https://github.com/finnandrehotvedt/intent-mcu-simulator","featureList":["Manual pin-to-pin circuit building","Isolated firmware compilation","Deterministic virtual MCU execution","GPIO, LED, button and potentiometer models","Serial console, logic analyser and pin inspector","Validation-gated portable Prompt Bridge"],"author":{"@type":"Person","name":"Finn Andre Hotvedt","url":"https://finnandre.no/"},"publisher":{"@type":"Organization","name":"IntentForce","url":"https://www.intentforce.no/"}},{"@type":"FAQPage","@id":"https://lab.teachthecompany.com/#questions","mainEntity":[{"@type":"Question","name":"What does Intent MCU Simulator simulate?","acceptedAnswer":{"@type":"Answer","text":"It simulates a tested educational subset around an ATmega328P 16 MHz, 5 V profile, including supported GPIO, LEDs, resistors, buttons, potentiometers, serial data, and logic traces."}},{"@type":"Question","name":"Does Prompt Bridge connect to a hosted AI service?","acceptedAnswer":{"@type":"Answer","text":"No. Prompt Bridge creates portable text for a tool chosen by the user. Only returned structured circuit data that passes project-owned schema, pin, and electrical validation can reach the canvas."}},{"@type":"Question","name":"Does the simulator replace testing on physical hardware?","acceptedAnswer":{"@type":"Answer","text":"No. The workbench is an educational simulation of a verified subset. It is not physical safety certification and does not claim complete timing or hardware equivalence."}}]}]}</script>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -37,19 +37,29 @@
     </header>
 
     <section class="project-bar panel" aria-label="Project controls">
-      <div><p class="eyebrow">LOCAL PROJECT</p><strong id="project-state">Empty project · not saved</strong></div>
+      <div><p class="eyebrow">LOCAL PROJECT</p><label class="project-name-field" for="project-name">Project name <input id="project-name" type="text" maxlength="80" value="Untitled project" autocomplete="off"></label><strong id="project-state">Untitled project · empty · not saved</strong><span id="lifecycle-state" class="lifecycle-state">empty</span></div>
       <div class="toolbar">
         <button id="project-new" type="button">New empty</button>
-        <button id="project-demo" type="button">Load Blink demo</button>
+        <select id="example-select" aria-label="Example project"><option value="blink">Blink LED</option><option value="button">Button input</option><option value="adc">ADC dial</option><option value="pwm">PWM fade</option></select>
+        <button id="project-demo" type="button">Open example</button>
+        <button id="walkthrough-open" type="button">First project guide</button>
         <button id="undo" type="button" disabled>Undo</button><button id="redo" type="button" disabled>Redo</button>
         <button id="project-save" type="button">Save local</button><button id="project-reload" type="button">Reload</button>
-        <button id="project-export" type="button">Export JSON</button>
+        <button id="project-export" type="button">Export JSON</button><button id="recovery-export" type="button" disabled>Download recovery</button>
         <label class="file-button" for="project-import">Import JSON</label>
         <input id="project-import" class="sr-only" type="file" accept="application/json,.json">
         <select id="project-import-mode" aria-label="Project import mode"><option value="replace">Replace project</option><option value="merge">Merge circuit</option><option value="migrate-v1">Migrate v1 project</option></select>
       </div>
       <p id="project-message" class="truth" role="status">No example or hidden template is loaded.</p>
+      <details id="technical-error" class="technical-error" hidden><summary>Technical details</summary><pre id="technical-error-detail"></pre></details>
     </section>
+
+    <nav class="quick-controls panel" aria-label="Persistent build and runtime controls">
+      <span><strong>Workbench</strong><small id="quick-state">Empty project</small></span>
+      <button id="toggle-catalog" type="button" aria-pressed="false">Parts</button>
+      <button id="toggle-inspector" type="button" aria-pressed="false">Inspector</button>
+      <button id="quick-build" type="button">Build</button><button id="quick-run" type="button" disabled>Run</button><button id="quick-pause" type="button" disabled>Pause</button><button id="quick-reset" type="button" disabled>Reset</button>
+    </nav>
 
     <section class="workspace" aria-label="Manual circuit editor">
       <aside class="catalog panel" aria-labelledby="catalog-title">
@@ -72,18 +82,23 @@
         <p class="truth">Click to add, or drag a part onto the canvas. IDs are allocated once and remain stable.</p>
       </aside>
 
+      <div id="catalog-resizer" class="panel-resizer" role="separator" tabindex="0" aria-label="Resize component catalogue" aria-orientation="vertical"></div>
+
       <section class="board-card panel" aria-labelledby="canvas-title">
         <div class="card-heading"><div><p class="eyebrow">2 · CIRCUIT CANVAS</p><h2 id="canvas-title">Empty project</h2></div><span id="graph-state" class="state">0 components · 0 nets</span></div>
         <div class="canvas-tools" aria-label="Canvas view controls">
           <button id="zoom-out" type="button" aria-label="Zoom out">−</button><output id="zoom-value">100%</output><button id="zoom-in" type="button" aria-label="Zoom in">+</button>
           <button id="pan-left" type="button" aria-label="Pan left">←</button><button id="pan-right" type="button" aria-label="Pan right">→</button><button id="pan-up" type="button" aria-label="Pan up">↑</button><button id="pan-down" type="button" aria-label="Pan down">↓</button><button id="view-reset" type="button">Reset view</button><button id="fit-project" type="button">Fit project</button>
+          <button id="show-pin-labels" type="button" aria-pressed="false">Pin labels</button><button id="focus-canvas" type="button" aria-pressed="false">Focus canvas</button><button id="fullscreen-canvas" type="button">Fullscreen</button>
         </div>
         <div id="circuit-canvas" class="circuit-canvas" tabindex="0" aria-label="Manual circuit canvas. Click one pin and then another to connect them.">
-          <div id="canvas-transform" class="canvas-transform"><svg id="circuit-wires" class="circuit-wires" aria-hidden="true"></svg><div id="component-layer" class="component-layer"></div></div>
+          <div id="canvas-transform" class="canvas-transform"><svg id="circuit-wires" class="circuit-wires" role="group" aria-label="Editable wire routes"></svg><div id="component-layer" class="component-layer"></div></div>
         </div>
         <p id="wire-state" class="truth" role="status">Select two named pins to create a wire. A branch creates an explicit junction; crossing routes remain separate.</p>
         <pre id="circuit-diagnostics" class="diagnostics">Add the supported controller to begin.</pre>
       </section>
+
+      <div id="inspector-resizer" class="panel-resizer" role="separator" tabindex="0" aria-label="Resize inspector" aria-orientation="vertical"></div>
 
       <aside class="inspector panel" aria-labelledby="inspector-title">
         <p class="eyebrow">3 · INSPECT</p><h2 id="inspector-title">Selection</h2><p id="selection-name" class="selection-name">Nothing selected</p>
@@ -92,7 +107,7 @@
         <div id="property-editor"></div>
         <label for="selected-net">Net / wire</label><select id="selected-net"><option value="">No net selected</option></select>
         <label for="wire-color">Wire colour</label><select id="wire-color" disabled><option value="#39dff2">Signal · cyan</option><option value="#f04f5f">Power · red</option><option value="#a8ff3f">Analogue · green</option><option value="#f5c451">Yellow</option><option value="#f28cf3">Magenta</option><option value="#f6f1e7">White</option><option value="#303943">Ground · charcoal</option><option value="#5f8cff">Blue</option></select>
-        <div class="inspector-actions"><button id="reconnect-mode" type="button">Reconnect endpoint</button><button id="add-bend" type="button" disabled>Add bend</button><button id="delete-wire" type="button" disabled>Delete wire</button><button id="remove-junction" type="button" disabled>Remove junction</button></div>
+        <div class="inspector-actions"><button id="reconnect-mode" type="button">Reconnect selected branch</button><button id="add-bend" type="button" disabled>Add orthogonal jog</button><button id="delete-branch" type="button" disabled>Delete selected branch</button><button id="delete-wire" type="button" disabled>Delete whole net</button><button id="remove-junction" type="button" disabled>Remove junction</button></div>
         <div id="wire-bends" class="wire-bends">Select a net to edit route bends.</div>
         <div id="net-members" class="net-members">Select a net to inspect all connected pins.</div>
         <p class="truth">Arrow keys move the selected part. Delete removes it. R rotates. Ctrl/Cmd+Z and Shift+Ctrl/Cmd+Z undo/redo.</p>
@@ -106,9 +121,11 @@
         <div><label for="source-file-name">New local file</label><input id="source-file-name" type="text" maxlength="52" autocomplete="off" placeholder="helpers.h"></div>
         <button id="source-file-add" type="button">Add file</button><button id="source-file-remove" type="button" disabled>Remove open file</button>
       </div>
-      <label class="sr-only" for="source">Firmware source</label><textarea id="source" spellcheck="false" placeholder="Write your sketch here. The project starts empty."></textarea>
+      <div class="toolchain-boundary"><strong>Compiler:</strong> Arduino AVR core 1.8.8 · avr-gcc 7.3.0-atmel3.6.1-arduino7. <strong>Simulation:</strong> only the <a href="#compatibility-note">documented MCU/peripheral subset</a>, not every library or device.</div>
+      <div class="code-editor" id="code-editor"><pre id="source-lines" class="source-lines" aria-hidden="true">1</pre><pre id="source-highlight" class="source-highlight" aria-hidden="true"></pre><label class="sr-only" for="source">Firmware source</label><textarea id="source" spellcheck="false" placeholder="Write your sketch here. The project starts empty."></textarea></div>
       <div class="build-controls"><button id="build" type="button">Build isolated firmware</button><button id="cancel" type="button" disabled>Cancel build</button></div>
-      <pre id="diagnostics" class="diagnostics" aria-live="polite">No build submitted.</pre>
+      <div id="diagnostic-links" class="diagnostic-links" aria-label="Compiler diagnostics"></div><pre id="diagnostics" class="diagnostics" aria-live="polite">No build submitted.</pre>
+      <details class="build-log"><summary>Full compiler log</summary><pre id="build-log">No build submitted.</pre></details>
     </section></details>
 
     <details id="prompt-drawer" class="workbench-drawer"><summary>Optional Prompt Bridge</summary><section class="prompt-card panel" aria-labelledby="prompt-title">
@@ -117,13 +134,13 @@
         <div><button id="prompt-generate" type="button">Generate portable prompt</button><button id="prompt-copy" type="button" disabled>Copy prompt</button><textarea id="prompt-output" readonly aria-label="Generated portable prompt" placeholder="Generate a deterministic prompt from the current catalog."></textarea></div>
         <div><label for="prompt-response">Paste one wiring proposal</label><textarea id="prompt-response" placeholder='{"schema":"teach-lab-circuit@2",…}'></textarea><div class="build-controls"><select id="prompt-mode" aria-label="Prompt proposal apply mode"><option value="replace">Replace circuit</option><option value="merge">Merge circuit</option></select><button id="prompt-apply" type="button">Validate &amp; apply</button></div></div>
       </div>
-      <p id="prompt-message" class="truth" role="status">AI text has no drawing or connection authority. Only the accepted project-owned graph reaches the canvas and worker.</p>
+      <p id="prompt-message" class="truth" role="status">AI text has no drawing or connection authority. Only a proposal that passes the built-in electrical checks can update the circuit.</p>
     </section></details>
 
     <details class="workbench-drawer" open><summary>Firmware runtime and instruments</summary><section class="runtime" aria-labelledby="runtime-title">
       <article class="control-card panel">
         <div class="card-heading"><div><p class="eyebrow">5 · VIRTUAL EXECUTION</p><h2 id="runtime-title">Runtime</h2></div><span id="worker-state" class="state">No current artifact loaded</span></div>
-        <dl><div><dt>Cycle</dt><dd id="cycle">0</dd></div><div><dt>Instructions</dt><dd id="instructions">0</dd></div><div><dt>Artifact</dt><dd id="artifact">none</dd></div></dl>
+        <dl><div><dt>Cycle</dt><dd id="cycle">0</dd></div><div><dt>Simulated time</dt><dd id="simulated-time">0.000 ms</dd></div><div><dt>Instructions</dt><dd id="instructions">0</dd></div><div><dt>Requested speed</dt><dd id="requested-speed">1×</dd></div><div><dt>Measured throughput</dt><dd id="achieved-speed">—</dd></div><div><dt>Artifact</dt><dd id="artifact">none</dd></div></dl>
         <div class="controls" aria-label="Runtime controls"><button id="run" disabled>Run</button><button id="pause" disabled>Pause</button><button id="step" disabled>Step</button><button id="reset" disabled>Reset</button></div>
         <label for="speed">Execution speed</label><select id="speed" disabled><option value="0.1">0.1×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option><option value="maximum">Maximum</option></select>
         <div id="component-controls" class="component-runtime-controls"></div>
@@ -132,15 +149,15 @@
     </section>
 
     <section class="instrument-grid" aria-label="Runtime instruments">
-      <article class="instrument-card panel" aria-labelledby="serial-title"><div class="card-heading"><div><p class="eyebrow">USART0 · 8-N-1</p><h2 id="serial-title">Serial console</h2></div><span id="serial-count">0 records</span></div><pre id="serial-output" class="instrument-output" aria-live="polite">No firmware bytes.</pre><div class="serial-controls"><label class="sr-only" for="serial-input">Bytes to schedule on USART0 RX</label><input id="serial-input" type="text" maxlength="64" autocomplete="off" placeholder="Type text for RX"><button id="serial-send" type="button" disabled>Schedule RX</button><button id="serial-clear" type="button" disabled>Clear view</button></div></article>
-      <article class="instrument-card panel" aria-labelledby="logic-title"><div class="card-heading"><div><p class="eyebrow">VIRTUAL-CYCLE EDGES</p><h2 id="logic-title">Logic analyser</h2></div><span id="logic-count">0 transitions</span></div><ul id="logic-output" class="logic-output"><li>— · 0000000000 · LOW</li></ul><div class="logic-controls"><label for="logic-channels">Channels</label><select id="logic-channels" multiple size="5"><option value="D13" selected>D13</option><option value="D2" selected>D2</option><option value="D3">D3</option><option value="D5">D5</option><option value="D6">D6</option><option value="D9">D9</option><option value="D10">D10</option><option value="D11">D11</option></select><label for="logic-window">Window</label><select id="logic-window"><option value="25">25 edges</option><option value="100">100 edges</option><option value="500">500 edges</option></select></div><p id="logic-cursor" class="logic-cursor">Cursor Δ —</p></article>
-      <article class="instrument-card panel" aria-labelledby="pin-title"><div class="card-heading"><div><p class="eyebrow">SAME MACHINE STATE</p><h2 id="pin-title">Pin inspector</h2></div></div><label for="pin-select">Pin</label><select id="pin-select"><option>D13</option><option>D2</option><option>D3</option><option>D5</option><option>D6</option><option>D9</option><option>D10</option><option>D11</option><option>A0</option></select><dl class="pin-readout"><div><dt>Mode</dt><dd id="pin-mode">—</dd></div><div><dt>Level</dt><dd id="pin-level">—</dd></div><div><dt>PWM / ADC</dt><dd id="pin-detail">—</dd></div><div><dt>Diagnostic</dt><dd id="pin-diagnostic">—</dd></div><div><dt>Cycle</dt><dd id="pin-cycle">0</dd></div></dl></article>
+      <article class="instrument-card panel" aria-labelledby="serial-title"><div class="card-heading"><div><p class="eyebrow">USART0 · 8-N-1</p><h2 id="serial-title">Serial console</h2></div><span id="serial-count">0 records</span></div><div class="mode-switch" role="group" aria-label="Serial view"><button id="serial-text-mode" type="button" aria-pressed="true">Text</button><button id="serial-event-mode" type="button" aria-pressed="false">Events</button><button id="serial-export" type="button">Export text</button></div><pre id="serial-output" class="instrument-output" aria-live="polite">No firmware text.</pre><div class="serial-controls"><label class="sr-only" for="serial-input">Text to schedule on USART0 RX</label><input id="serial-input" type="text" maxlength="64" autocomplete="off" placeholder="Type text for RX"><label class="sr-only" for="serial-newline">Line ending</label><select id="serial-newline" aria-label="Send line ending"><option value="none">No ending</option><option value="lf">LF</option><option value="crlf">CRLF</option></select><button id="serial-send" type="button" disabled>Send</button><button id="serial-clear" type="button" disabled>Clear view</button></div></article>
+      <article class="instrument-card logic-card panel" aria-labelledby="logic-title"><div class="card-heading"><div><p class="eyebrow">ACTUAL VIRTUAL-CYCLE EDGES</p><h2 id="logic-title">Logic analyser</h2></div><span id="logic-count">0 transitions</span></div><svg id="logic-waveform" class="logic-waveform" viewBox="0 0 900 260" role="img" aria-label="Digital waveform from actual runtime transition records"></svg><div class="logic-controls"><label for="logic-channels">Channels</label><select id="logic-channels" multiple size="5"><option>D0</option><option>D1</option><option value="D2" selected>D2</option><option>D3</option><option>D4</option><option>D5</option><option>D6</option><option>D7</option><option>D8</option><option>D9</option><option>D10</option><option>D11</option><option>D12</option><option value="D13" selected>D13</option></select><label for="logic-window">Window / zoom</label><select id="logic-window"><option value="25">25 edges · close</option><option value="100" selected>100 edges</option><option value="500">500 edges · wide</option></select><label for="logic-cursor-a">Cursor A</label><input id="logic-cursor-a" type="range" min="0" max="100" value="25"><label for="logic-cursor-b">Cursor B</label><input id="logic-cursor-b" type="range" min="0" max="100" value="75"></div><p id="logic-cursor" class="logic-cursor">Cursor Δ —</p><details><summary>Transition event list</summary><ul id="logic-output" class="logic-output"><li>— · 0000000000 · LOW</li></ul></details></article>
+      <article class="instrument-card panel" aria-labelledby="pin-title"><div class="card-heading"><div><p class="eyebrow">SAME MACHINE STATE</p><h2 id="pin-title">Pin inspector</h2></div></div><label for="pin-select">Pin</label><select id="pin-select"><option>D0</option><option>D1</option><option>D2</option><option>D3</option><option>D4</option><option>D5</option><option>D6</option><option>D7</option><option>D8</option><option>D9</option><option>D10</option><option>D11</option><option>D12</option><option selected>D13</option><option>A0</option><option>A1</option><option>A2</option><option>A3</option><option>A4</option><option>A5</option></select><dl class="pin-readout"><div><dt>Mode</dt><dd id="pin-mode">—</dd></div><div><dt>Level</dt><dd id="pin-level">—</dd></div><div><dt>PWM / ADC</dt><dd id="pin-detail">—</dd></div><div><dt>Diagnostic</dt><dd id="pin-diagnostic">—</dd></div><div><dt>Cycle</dt><dd id="pin-cycle">0</dd></div></dl></article>
     </section></details>
 
     <section class="about panel" aria-labelledby="about-title">
       <div class="about-intro"><div><p class="eyebrow">OPEN SOURCE · VERIFIED BOUNDARIES</p><h2 id="about-title">What is Intent MCU Simulator?</h2></div><p>It is an original browser workbench that turns supported firmware into observable virtual hardware behaviour. Build a circuit by connecting named pins, compile edited source in an isolated fixed toolchain, then inspect GPIO, LEDs, inputs, serial bytes, and logic traces.</p></div>
       <div class="answer-grid">
-        <article><h3>What does it simulate?</h3><p>A tested educational subset around an ATmega328P 16 MHz, 5 V profile, with supported LEDs, resistors, buttons, potentiometers, GPIO, serial data, and instruments.</p></article>
+        <article id="compatibility-note"><h3>What does it simulate?</h3><p>A tested educational subset around an ATmega328P 16 MHz, 5 V profile, with supported LEDs, resistors, buttons, potentiometers, GPIO, serial data, and instruments.</p></article>
         <article><h3>Does Prompt Bridge call AI?</h3><p>No. It creates portable text for a tool you choose. Only returned structured circuit data that passes the project schema, pin rules, and electrical validation can reach the canvas.</p></article>
         <article><h3>Does it replace physical testing?</h3><p>No. Simulation is not physical safety certification and does not claim complete timing or hardware equivalence. Verify real designs on appropriate hardware.</p></article>
       </div>
@@ -151,8 +168,9 @@
       </nav>
     </section>
 
-    <footer>Original project interface and deterministic circuit renderer · supported simulation subset · no physical safety certification · active development</footer>
+    <footer>Intent MCU Simulator 1.0.0-rc.1 source candidate · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/COMPATIBILITY.md">compatibility</a> · no physical safety certification · public deployment remains separately gated</footer>
   </main>
+  <dialog id="walkthrough"><form method="dialog"><button class="dialog-close" aria-label="Close guide">×</button><p class="eyebrow">FIRST PROJECT · FOUR STEPS</p><h2>From circuit to evidence</h2><ol><li><strong>Open an example</strong><span>Choose Blink, button input, ADC or PWM. Each is an ordinary editable project.</span></li><li><strong>Inspect and wire</strong><span>Move parts, select named pins and check the electrical diagnostics.</span></li><li><strong>Build, then run</strong><span>The isolated compiler creates the exact firmware executed by the one browser worker.</span></li><li><strong>Read the instruments</strong><span>Serial lines, waveforms and pin readings all come from that same machine state.</span></li></ol><button value="close">Start building</button></form></dialog>
   <script type="module" src="./main.js"></script>
 </body>
 </html>

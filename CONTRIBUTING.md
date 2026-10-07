@@ -4,7 +4,9 @@ Thank you for helping improve Intent MCU Simulator.
 
 1. Open an issue describing the learner-visible problem or proposed change.
 2. Keep changes focused and add deterministic tests for changed behavior.
-3. Run `npm test` and `npm run build` before submitting a pull request.
+3. Run `npm test` and `npm run build` before submitting a pull request. Changes
+   to compiler/runtime behavior also require the local workflow in
+   `LOCAL-OPERATIONS.md`.
 4. Submit only work you have the right to license under Apache-2.0.
 
 Do not copy another simulator's source, interface layout, screenshots, artwork,

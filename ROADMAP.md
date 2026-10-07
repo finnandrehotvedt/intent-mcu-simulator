@@ -28,8 +28,9 @@ forever.
 
 ## Separate distribution gates
 
-- Evaluate whether an isolated compiler service can be published with complete
-  corresponding-source, notice, relinking, and sandbox documentation.
+- Keep the published compiler service recipe, upstream checksums, notices,
+  relinking directions and confinement tests current without distributing an
+  unreviewed prebuilt toolchain image.
 - Evaluate additional components one at a time; displays, sensors, motors, and
   buses require their own electrical and emulator contracts before activation.
 - Keep physical-device access, upload, accounts, hosted AI, agent/tool

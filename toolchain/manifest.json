@@ -1,0 +1,82 @@
+{
+  "schema": "teach-lab-toolchain-manifest@1",
+  "profile": "arduino:avr:uno",
+  "architecture": "linux/amd64",
+  "cpu": "atmega328p",
+  "clockHz": 16000000,
+  "inputs": [
+    {
+      "name": "runtime-base",
+      "version": "node:22-bookworm-slim",
+      "source": "mirror.gcr.io/library/node",
+      "sha256": "d649c27dae7ba0137b3cef5dd75baa422c08dc3d9e3fc0c23dfb172dc3cc6436",
+      "localImageId": "fc8cd9deea7389d01d9a70cc83a5d09465c2050f2ae322d67300a9794433edad",
+      "license": "Debian package set; exact distributed-image review required"
+    },
+    {
+      "name": "Arduino CLI",
+      "version": "1.5.1",
+      "source": "https://github.com/arduino/arduino-cli/releases/download/v1.5.1/arduino-cli_1.5.1_Linux_64bit.tar.gz",
+      "sourceCode": "https://github.com/arduino/arduino-cli/tree/v1.5.1",
+      "sha256": "28a8e119c498a25607821c36cb2dc49e8463941b261a0d99091baa7bc692dd2b",
+      "license": "GPL-3.0-only"
+    },
+    {
+      "name": "Arduino AVR Boards",
+      "version": "1.8.8",
+      "source": "https://downloads.arduino.cc/cores/staging/avr-1.8.8.tar.bz2",
+      "sourceCode": "https://github.com/arduino/ArduinoCore-avr/tree/1.8.8",
+      "sha256": "a234c2a43dcd01ce54be665806f183b8e6ec4e966d2e3e0c3358b63023d6390c",
+      "license": "Mixed per-file terms; core headers identify LGPL-2.1-or-later and permissive files"
+    },
+    {
+      "name": "Arduino AVR GCC bundle",
+      "version": "7.3.0-atmel3.6.1-arduino7",
+      "source": "https://downloads.arduino.cc/tools/avr-gcc-7.3.0-atmel3.6.1-arduino7-x86_64-pc-linux-gnu.tar.bz2",
+      "sha256": "bd8c37f6952a2130ac9ee32c53f6a660feb79bee8353c8e289eb60fdcefed91e",
+      "license": "GCC/binutils/avr-libc aggregate; GPL family, GCC Runtime Library Exception and permissive avr-libc terms"
+    },
+    {
+      "name": "Arduino ctags",
+      "version": "5.8-arduino11",
+      "source": "https://downloads.arduino.cc/tools/ctags-5.8-arduino11-pm-x86_64-pc-linux-gnu.tar.bz2",
+      "sha256": "62b514f3aaf37b5429ef703853bb46365fb91b4754c1916d085bf134004886e3",
+      "license": "GPL-2.0-or-later"
+    },
+    {
+      "name": "Arduino mDNS discovery",
+      "version": "1.1.0",
+      "source": "https://downloads.arduino.cc/discovery/mdns-discovery/mdns-discovery_v1.1.0_Linux_64bit.tar.gz",
+      "sha256": "6966f406e5b6e80d82a388706d6d9d8a63d46035d19d1e6b4fb1ebeaf7fea056",
+      "license": "GPL-3.0-only"
+    },
+    {
+      "name": "Arduino serial discovery",
+      "version": "1.5.2",
+      "source": "https://downloads.arduino.cc/discovery/serial-discovery/serial-discovery_v1.5.2_Linux_64bit.tar.gz",
+      "sha256": "7a95d7386c66c0846fe4aa96b601e72783ae64f541eb2f5edb4fc9e69a04b6d3",
+      "license": "GPL-3.0-only"
+    }
+  ],
+  "compileCommand": [
+    "arduino-cli", "compile", "--config-file", "/opt/arduino/arduino-cli.yaml",
+    "--fqbn", "arduino:avr:uno", "--build-path", "/build/<fixture>",
+    "--output-dir", "/out/<fixture>", "--warnings", "all", "--no-color",
+    "/fixtures/<fixture>"
+  ],
+  "buildWorkerCommand": [
+    "node", "/opt/teach-lab/build-worker.mjs"
+  ],
+  "runtimeBoundary": {
+    "network": "none",
+    "rootFilesystem": "read-only",
+    "user": "10001:10001",
+    "capabilities": "all dropped",
+    "noNewPrivileges": true,
+    "pidsLimit": 64,
+    "memoryLimitMiB": 768,
+    "cpuLimit": 2,
+    "writablePaths": ["tmpfs:/workspace", "tmpfs:/tmp"]
+  },
+  "distributionDecision": "The source recipe, checksums, notices and relinking directions are published. The project does not distribute the resulting compiler image, downloaded toolchain archives or compiled learner firmware. A person who builds an image locally remains responsible for the upstream terms before supplying it to anyone else."
+}

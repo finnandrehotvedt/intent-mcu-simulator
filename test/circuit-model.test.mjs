@@ -47,6 +47,16 @@ import {
   parsePromptBridgeV2,
   projectFromCircuit,
 } from '../src/project-editor.mjs';
+import {
+  ROUTE_SCHEMA,
+  addRouteJog,
+  materializeRouteFamily,
+  moveRouteSegment,
+  normalizeOrthogonalPath,
+  normalizeStoredRoute,
+  routeFamilyPaths,
+  routeSegmentOrientation,
+} from '../src/route-model.mjs';
 
 const LEGACY_SELECTION = Object.freeze(['controller-1', 'resistor-1', 'led-1', 'button-1']);
 
@@ -405,6 +415,22 @@ test('project v2 canonical validation covers source, graph, layout, instruments 
   assert.equal(validateProjectV2(tampered).code, 'PROJECT_BUILD');
 });
 
+test('project names are canonical, undoable and prior v2 saves gain a safe default', () => {
+  const prior = createEmptyProject();
+  delete prior.metadata;
+  const normalized = validateProjectV2(prior);
+  assert.equal(normalized.ok, true);
+  assert.equal(normalized.project.metadata.name, 'Untitled project');
+  const editor = new ProjectEditorReducer(normalized.project);
+  const renamed = editor.apply({ type: 'project.rename', revision: 0, name: '  Factory   trainer  ' });
+  assert.equal(renamed.ok, true);
+  assert.equal(renamed.project.metadata.name, 'Factory trainer');
+  assert.equal(renamed.buildRelevant, false);
+  assert.equal(JSON.parse(canonicalProjectJson(renamed.project)).metadata.name, 'Factory trainer');
+  assert.equal(editor.apply({ type: 'undo', revision: 1 }).project.metadata.name, 'Untitled project');
+  assert.equal(editor.apply({ type: 'project.rename', revision: 2, name: '' }).ok, false);
+});
+
 test('v1 migration preserves components/positions, creates empty source and never creates an artifact', () => {
   const netlist = legacyPlan();
   const legacy = {
@@ -422,6 +448,7 @@ test('v1 migration preserves components/positions, creates empty source and neve
   assert.equal(result.project.source.files[0].content, '');
   assert.equal(result.project.build.status, 'dirty');
   assert.equal(result.project.build.artifactIdentity, null);
+  assert.deepEqual(result.report.unsupportedFields, ['netlist.firmwarePins']);
   assert.equal(storage.get(LEGACY_STORAGE_KEY), raw);
   const browserStorage = { getItem: (key) => storage.get(key), removeItem: () => assert.fail('migration mutated storage') };
   assert.equal(migrateProjectV1(raw, browserStorage).report.originalKeyUntouched, true);
@@ -623,4 +650,215 @@ test('C-18 manual, prompt and reopen origins normalize to the same circuit', () 
   assert.equal(canonicalCircuitJson(prompt.graph), manual);
   assert.equal(canonicalCircuitJson(reopen.project.circuit), manual);
   assert.deepEqual(mergeCircuitProject(createEmptyProject(), editor.project).project.circuit, editor.project.circuit);
+});
+
+function routeFixture(net) {
+  const anchors = Object.fromEntries(net.endpoints.map((endpoint, index) => {
+    const upper = index % 2 === 0;
+    const left = index < Math.ceil(net.endpoints.length / 2);
+    const pin = { x: left ? 0.1 : 0.9, y: upper ? 0.2 : 0.6 };
+    const escape = { x: left ? 0.15 : 0.85, y: pin.y };
+    return [endpointKey(endpoint), { pin, escape }];
+  }));
+  return { anchors, family: materializeRouteFamily(net, null, anchors) };
+}
+
+function assertOrthogonalFamily(family, anchors) {
+  for (const branch of routeFamilyPaths(family, anchors)) {
+    for (let index = 0; index < branch.points.length - 1; index += 1) {
+      assert.notEqual(routeSegmentOrientation(branch.points[index], branch.points[index + 1]), null);
+    }
+  }
+}
+
+test('C-19/C-20 horizontal and vertical section moves shift both bounds on the snapped world grid', () => {
+  const { editor } = buildManualProject();
+  const net = editor.project.circuit.nets.find((item) => item.id === 'net-d13');
+  const { anchors, family } = routeFixture(net);
+  const endpoint = endpointKey(net.endpoints[0]);
+  const horizontal = moveRouteSegment(family, anchors, endpoint, 0, 0.333, net);
+  const horizontalPath = routeFamilyPaths(horizontal, anchors).find((item) => endpointKey(item.endpoint) === endpoint).points;
+  assert.deepEqual(horizontalPath.slice(0, 4), [
+    anchors[endpoint].pin,
+    { x: anchors[endpoint].pin.x, y: 0.33 },
+    { x: 0.5, y: 0.33 },
+    { x: 0.5, y: 0.4 },
+  ]);
+  const vertical = moveRouteSegment(family, anchors, endpoint, 1, 0.617, net);
+  const verticalPath = routeFamilyPaths(vertical, anchors).find((item) => endpointKey(item.endpoint) === endpoint).points;
+  assert.deepEqual(verticalPath, [
+    anchors[endpoint].pin,
+    { x: 0.62, y: anchors[endpoint].pin.y },
+    { x: 0.62, y: 0.4 },
+    { x: 0.5, y: 0.4 },
+  ]);
+  assertOrthogonalFamily(horizontal, anchors);
+  assertOrthogonalFamily(vertical, anchors);
+});
+
+test('C-21/C-22 fixed pins gain doglegs while unrelated branches and explicit junction identity remain fixed', () => {
+  const { editor } = buildManualProject();
+  const net = editor.project.circuit.nets.find((item) => item.id === 'net-ground');
+  const { anchors, family } = routeFixture(net);
+  const endpoint = endpointKey(net.endpoints[0]);
+  const remoteBefore = family.branches
+    .filter((branch) => endpointKey(branch.endpoint) !== endpoint)
+    .map((branch) => clone(branch));
+  const circuitBefore = canonicalCircuitJson(editor.project.circuit);
+  const moved = moveRouteSegment(family, anchors, endpoint, 0, 0.37, net);
+  const selectedPath = routeFamilyPaths(moved, anchors).find((branch) => endpointKey(branch.endpoint) === endpoint).points;
+  assert.deepEqual(selectedPath[0], anchors[endpoint].pin);
+  assert.deepEqual(
+    moved.branches.filter((branch) => endpointKey(branch.endpoint) !== endpoint),
+    remoteBefore,
+  );
+  assert.equal(editor.project.circuit.junctions.find((junction) => junction.net === net.id).id, 'junction-ground');
+  assert.equal(canonicalCircuitJson(editor.project.circuit), circuitBefore);
+});
+
+test('C-23/C-24 release normalization removes zero and redundant points without joining crossing nets', () => {
+  assert.deepEqual(normalizeOrthogonalPath([
+    { x: 0.1, y: 0.1 }, { x: 0.1, y: 0.1 }, { x: 0.3, y: 0.1 },
+    { x: 0.5, y: 0.1 }, { x: 0.5, y: 0.5 },
+  ]), [{ x: 0.1, y: 0.1 }, { x: 0.5, y: 0.1 }, { x: 0.5, y: 0.5 }]);
+  const { editor } = buildManualProject();
+  const graphBefore = canonicalCircuitJson(editor.project.circuit);
+  const d13 = editor.project.circuit.nets.find((net) => net.id === 'net-d13');
+  const button = editor.project.circuit.nets.find((net) => net.id === 'net-button');
+  const first = routeFixture(d13);
+  const second = routeFixture(button);
+  moveRouteSegment(first.family, first.anchors, endpointKey(d13.endpoints[0]), 0, 0.4, d13);
+  moveRouteSegment(second.family, second.anchors, endpointKey(button.endpoints[0]), 0, 0.4, button);
+  assert.equal(canonicalCircuitJson(editor.project.circuit), graphBefore);
+  assert.notEqual(endpointConnection(editor.project.circuit, d13.endpoints[0]), endpointConnection(editor.project.circuit, button.endpoints[0]));
+});
+
+test('C-25/C-26 route family is one undo transaction and round-trips through canonical persistence', () => {
+  const { editor } = buildManualProject();
+  const net = editor.project.circuit.nets.find((item) => item.id === 'net-d13');
+  const { anchors, family } = routeFixture(net);
+  const moved = moveRouteSegment(family, anchors, endpointKey(net.endpoints[0]), 0, 0.33, net);
+  const before = exportCanonicalProject(editor.project);
+  const revision = editor.revision;
+  const result = editor.apply({
+    type: 'wire.route.family.set', revision, netId: net.id, family: moved,
+  });
+  assert.equal(result.ok, true);
+  assert.equal(editor.revision, revision + 1);
+  assert.equal(editor.project.layout.wireRoutes[net.id].schema, ROUTE_SCHEMA);
+  const committed = exportCanonicalProject(editor.project);
+  const reopened = parseProjectV2(committed);
+  assert.equal(reopened.ok, true);
+  assert.equal(exportCanonicalProject(reopened.project), committed);
+  assert.equal(editor.apply({ type: 'undo', revision: editor.revision }).ok, true);
+  assert.equal(exportCanonicalProject(editor.project), before);
+  assert.equal(editor.apply({ type: 'redo', revision: editor.revision }).ok, true);
+  assert.equal(exportCanonicalProject(editor.project), committed);
+});
+
+test('C-27/C-28 route validation rejects diagonal or incomplete families atomically', () => {
+  const { editor } = buildManualProject();
+  const net = editor.project.circuit.nets.find((item) => item.id === 'net-d13');
+  const { family } = routeFixture(net);
+  const invalid = clone(family);
+  invalid.branches[0].points = [{ x: 0.2, y: 0.2 }, { x: 0.4, y: 0.4 }];
+  assert.equal(normalizeStoredRoute(invalid, net), null);
+  const before = exportCanonicalProject(editor.project);
+  const rejected = editor.apply({
+    type: 'wire.route.family.set', revision: editor.revision, netId: net.id, family: invalid,
+  });
+  assert.equal(rejected.code, 'EDITOR_ROUTE');
+  assert.equal(exportCanonicalProject(editor.project), before);
+  const incomplete = clone(family); incomplete.branches.pop();
+  assert.equal(normalizeStoredRoute(incomplete, net), null);
+});
+
+test('C-29/C-30 manual and Prompt Bridge projects use the same route command without changing wire colour or net identity', () => {
+  const manual = buildManualProject().editor;
+  const parsed = parsePromptBridgeV2(canonicalCircuitJson(manual.project.circuit));
+  assert.equal(parsed.ok, true);
+  const promptEditor = new ProjectEditorReducer(projectFromCircuit(parsed.graph, manual.project.source.files[0].content));
+  for (const candidate of [manual, promptEditor]) {
+    const net = candidate.project.circuit.nets.find((item) => item.id === 'net-d13');
+    const { anchors, family } = routeFixture(net);
+    const moved = moveRouteSegment(family, anchors, endpointKey(net.endpoints[0]), 0, 0.33, net);
+    const color = candidate.project.layout.wireStyles[net.id].color;
+    const circuit = canonicalCircuitJson(candidate.project.circuit);
+    const result = candidate.apply({
+      type: 'wire.route.family.set', revision: candidate.revision, netId: net.id, family: moved,
+    });
+    assert.equal(result.ok, true);
+    assert.equal(candidate.project.layout.wireStyles[net.id].color, color);
+    assert.equal(canonicalCircuitJson(candidate.project.circuit), circuit);
+    assert.equal(candidate.project.layout.wireRoutes[net.id].schema, ROUTE_SCHEMA);
+  }
+});
+
+test('route families preserve unaffected geometry through explicit branch, reconnect and component removal commands', () => {
+  const { editor, apply } = buildManualProject();
+  const net = editor.project.circuit.nets.find((item) => item.id === 'net-d13');
+  const { family } = routeFixture(net);
+  apply({ type: 'wire.route.family.set', netId: net.id, family });
+  const added = newComponent('button.momentary-v1', editor.project.circuit);
+  apply({ type: 'component.add', component: added, position: { x: 0.84, y: 0.75 } });
+  const originalBranches = clone(editor.project.layout.wireRoutes[net.id].branches);
+  apply({
+    type: 'wire.branch', netId: net.id,
+    endpoint: { component: added.id, pin: 'B' }, junctionId: 'junction-d13',
+  });
+  assert.equal(editor.project.layout.wireRoutes[net.id].branches.length, 3);
+  assert.deepEqual(editor.project.layout.wireRoutes[net.id].branches.filter((branch) => branch.endpoint.component !== added.id), originalBranches);
+  apply({
+    type: 'wire.reconnect', netId: net.id,
+    from: { component: 'board-1', pin: 'D13' }, to: { component: 'board-1', pin: 'D12' },
+  });
+  assert.equal(editor.project.layout.wireRoutes[net.id].branches.some((branch) => branch.endpoint.pin === 'D12'), true);
+  assert.equal(editor.project.layout.wireRoutes[net.id].branches.some((branch) => branch.endpoint.pin === 'D13'), false);
+  apply({ type: 'component.remove', componentId: added.id });
+  assert.equal(editor.project.layout.wireRoutes[net.id].branches.length, 2);
+  assert.equal(parseProjectV2(exportCanonicalProject(editor.project)).ok, true);
+});
+
+test('C-31 Add bend inserts one orthogonal jog without changing connectivity', () => {
+  const { editor } = buildManualProject();
+  const net = editor.project.circuit.nets.find((item) => item.id === 'net-d13');
+  const { anchors, family } = routeFixture(net);
+  const before = canonicalCircuitJson(editor.project.circuit);
+  const endpoint = endpointKey(net.endpoints[0]);
+  const jogged = addRouteJog(family, anchors, endpoint, 0, net);
+  assertOrthogonalFamily(jogged, anchors);
+  const originalPath = routeFamilyPaths(family, anchors).find((branch) => endpointKey(branch.endpoint) === endpoint).points;
+  const joggedPath = routeFamilyPaths(jogged, anchors).find((branch) => endpointKey(branch.endpoint) === endpoint).points;
+  assert.ok(joggedPath.length > originalPath.length);
+  assert.notEqual(joggedPath[1].y, originalPath[0].y);
+  const revision = editor.revision;
+  assert.equal(editor.apply({ type: 'wire.route.family.set', revision, netId: net.id, family: jogged }).ok, true);
+  assert.equal(editor.revision, revision + 1);
+  assert.equal(canonicalCircuitJson(editor.project.circuit), before);
+  assert.equal(editor.apply({ type: 'undo', revision: editor.revision }).ok, true);
+  assert.equal(editor.project.layout.wireRoutes[net.id], undefined);
+});
+
+test('C-32 branch delete preserves the rest of the net and whole-net delete stays distinct', () => {
+  const { editor, apply, ids } = buildManualProject();
+  const net = editor.project.circuit.nets.find((item) => item.id === 'net-ground');
+  const { family } = routeFixture(net);
+  apply({ type: 'wire.route.family.set', netId: net.id, family });
+  const unaffected = net.endpoints.filter((endpoint) => endpoint.component !== ids.pot).map(endpointKey).sort();
+  const deleted = apply({
+    type: 'wire.branch.delete', netId: net.id, endpoint: { component: ids.pot, pin: 'LOW' },
+  });
+  assert.equal(deleted.buildRelevant, true);
+  const remaining = editor.project.circuit.nets.find((item) => item.id === 'net-ground');
+  assert.deepEqual(remaining.endpoints.map(endpointKey).sort(), unaffected);
+  assert.equal(editor.project.circuit.nets.some((item) => item.id === 'net-ground'), true);
+  assert.equal(editor.project.circuit.junctions.some((item) => item.net === 'net-ground'), true);
+  assert.equal(editor.project.layout.wireRoutes['net-ground'].branches.length, 3);
+  const rejected = editor.apply({
+    type: 'wire.branch.delete', revision: editor.revision,
+    netId: 'net-d13', endpoint: editor.project.circuit.nets.find((item) => item.id === 'net-d13').endpoints[0],
+  });
+  assert.equal(rejected.code, 'EDITOR_BRANCH_REQUIRED');
+  assert.equal(editor.apply({ type: 'wire.delete', revision: editor.revision, netId: 'net-ground' }).ok, true);
+  assert.equal(editor.project.circuit.nets.some((item) => item.id === 'net-ground'), false);
 });

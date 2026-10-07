@@ -2,6 +2,23 @@
 
 All notable public source changes are recorded here.
 
+## 1.0.0-rc.1 — 2026-10-07
+
+- Published the project-owned compiler gateway, strict build protocol,
+  isolated worker broker, checksum-pinned local toolchain recipe and a fresh
+  checkout compiler-to-emulator acceptance command.
+- Added compact/focus/fullscreen workspace modes, live component movement,
+  pointer-centred zoom/pan, dense-pin labels, named editable projects and an
+  interrupted-save recovery journal.
+- Added four ordinary editable examples, source line numbers/highlighting,
+  clickable diagnostics, readable serial text, measured waveform cursors and
+  full D0–D13/A0–A5 pin inspection.
+- Added direct orthogonal segment dragging, route-family persistence and
+  explicit project/build/runtime generation guards.
+- Reconciled package, source candidate, compatibility and image-label versions.
+  The hosted workbench remains a separate deployed release until an explicit
+  cutover is approved.
+
 ## 0.7.0 — 2026-10-06
 
 - Reconstructed the editor as a manual-first physical-parts workbench with a

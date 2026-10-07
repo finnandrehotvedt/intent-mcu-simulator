@@ -4,10 +4,10 @@ Intent MCU Simulator is an original, browser-based learning environment for
 building small microcontroller circuits, editing firmware, inspecting signals,
 and exchanging deterministic circuit plans through a provider-neutral prompt.
 
-This repository is the source-only release of the browser application and its
-project-owned circuit model. It includes no copied simulator artwork, layout,
-schema, endpoints, or branding. The interface and component graphics are
-implemented from scratch with HTML, CSS, and JavaScript.
+This repository is the source-only release of the browser application,
+project-owned compiler gateway and deterministic circuit model. It includes no
+copied simulator artwork, layout, schema, endpoints, or branding. The
+interface, component graphics and service code are implemented from scratch.
 
 ## Why we are building this
 
@@ -80,18 +80,18 @@ between `D2` and ground and configure `D2` as `INPUT_PULLUP` in firmware. The
 electrical model rejects a missing current-limiting resistor, reversed LED,
 ambiguous ground, reused pin, direct supply short, or conflicting outputs.
 
-The isolated compiler service, compiler/toolchain image, compiler binaries,
-toolchain archives, compiled learner firmware, generated browser bundle, and
-deployment configuration are deliberately not distributed in this repository.
-Building this checkout creates the static browser bundle locally, but does not
-create or enable a firmware compiler endpoint. This boundary keeps third-party
-compiler source, notice, and relinking obligations separate from the
-Apache-2.0 project-owned source.
+The Apache-2.0 compiler gateway source, strict API contract, isolation tests,
+checksum-pinned toolchain recipe, notices and local operations guide are
+included. Prebuilt compiler/toolchain images, downloaded compiler archives,
+compiled learner firmware, generated browser bundles and hosted deployment
+configuration are deliberately not distributed. A local source build keeps
+third-party compiler terms separate from the Apache-2.0 browser and service
+source; it does not authorize redistributing the resulting image.
 
 Additional current limits:
 
-- the public workbench is live at `lab.teachthecompany.com`, but this source-only
-  checkout is not its hosted compiler, toolchain, or deployment stack;
+- the public workbench remains a separately deployed release; source version
+  `1.0.0-rc.1` is a candidate until a distinct deployment is approved;
 - no physical board connection, firmware upload, live AI call, account,
   analytics, or cloud project store is included;
 - the CPU/peripheral profile is a tested educational subset, not a promise of
@@ -105,13 +105,15 @@ Additional current limits:
 
 - Node.js `20.19.4`
 - npm `10.8.2`
+- Docker Engine with access to the local Docker socket for isolated firmware
+  builds (not required for source-only unit tests)
 
 ## Verify a fresh checkout
 
 ```bash
 npm ci --ignore-scripts --no-audit --no-fund
-npm test
 npm run build
+npm test
 ```
 
 The build writes `dist/`, which is intentionally ignored and not committed.
@@ -124,6 +126,29 @@ docker run --rm --network none --read-only --cap-drop ALL \
   --tmpfs /tmp:size=32m,mode=1777 \
   intent-mcu-simulator-source-check
 ```
+
+## Compile and run locally
+
+The reproducible local path uses no hosted compiler:
+
+```bash
+npm run setup:toolchain
+DOCKER_GID=$(stat -c %g /var/run/docker.sock) \
+  docker compose --profile local-compiler up --build -d local-compiler
+```
+
+Then, in another terminal:
+
+```bash
+docker compose --profile local-compiler exec -T local-compiler npm run test:local
+```
+
+This compiles a 150 ms Blink sketch in a disposable offline worker, loads the
+returned HEX into the emulator adapter and measures the expected GPIO edges.
+The setup verifies every downloaded toolchain archive by SHA-256 and generates
+a machine-local image lock. See [LOCAL-OPERATIONS.md](LOCAL-OPERATIONS.md) for
+health, readiness, limits, restart, rollback, logging and distribution details,
+and [COMPATIBILITY.md](COMPATIBILITY.md) for the exact supported subset.
 
 ## Security
 

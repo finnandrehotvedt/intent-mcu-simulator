@@ -1,0 +1,14 @@
+board_manager:
+  additional_urls: []
+directories:
+  data: /tmp/data
+  downloads: /tmp/downloads
+  user: /tmp/user
+library:
+  enable_unsafe_install: false
+logging:
+  level: warn
+metrics:
+  enabled: false
+updater:
+  enable_notification: false

@@ -5,8 +5,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts --no-audit --no-fund \
     && npm cache clean --force
 COPY . ./
-RUN npm test && npm run build \
-    && rm -rf dist \
+RUN npm run build && npm test \
     && chmod -R a+rX /workspace
 
 ENV HOME=/tmp NO_UPDATE_NOTIFIER=1

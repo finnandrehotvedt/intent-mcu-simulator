@@ -1,6 +1,6 @@
 {
   "name": "intent-mcu-simulator",
-  "version": "0.7.0",
+  "version": "1.0.0-rc.1",
   "private": true,
   "description": "Original browser-based microcontroller learning environment source",
   "license": "Apache-2.0",
@@ -11,7 +11,12 @@
   },
   "scripts": {
     "build": "node scripts/build-staging.mjs",
-    "test": "node --test --test-concurrency=1 test/circuit-model.test.mjs"
+    "test": "node --test --test-concurrency=1 test/circuit-model.test.mjs test/lifecycle.test.mjs test/workbench-instruments.test.mjs test/gateway-unit.test.mjs",
+    "setup:toolchain": "sh scripts/setup-local-toolchain.sh",
+    "start:local": "node staging/server.mjs",
+    "test:local": "node scripts/verify-local-compile-run.mjs",
+    "test:compiler-integration": "node --test test/compiler-integration.test.mjs",
+    "test:operations": "node --test test/operations-staging.test.mjs"
   },
   "dependencies": {
     "avr8js": "0.21.1"

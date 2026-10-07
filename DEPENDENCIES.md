@@ -14,6 +14,10 @@ The pinned build base is
 It is infrastructure for local source verification, not product artwork or a
 distributed release image.
 
-The isolated AVR compiler/toolchain is not part of this repository or public
-distribution. Its GPL/LGPL and corresponding-source obligations remain a
-separate distribution gate.
+The repository includes the project-owned compiler gateway and a source recipe
+for a locally built AVR toolchain. The recipe pins Arduino CLI 1.5.1, Arduino
+AVR Boards 1.8.8, AVR GCC 7.3.0-atmel3.6.1-arduino7, ctags 5.8-arduino11 and
+the two Arduino discovery tools by source URL and SHA-256. Their GPL/LGPL,
+runtime-exception and permissive terms remain separate. The project does not
+distribute a prebuilt toolchain image; see `toolchain/manifest.json` and
+`toolchain/SOURCE-AND-RELINKING.md`.
