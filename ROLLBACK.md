@@ -1,13 +1,12 @@
 # Rollback basis
 
-Public rollback remains gated with deployment. No command in this directory is
-authorization to alter the public route.
+Public rollback remains scoped to the authorized deployment. No command in
+this directory is authorization to alter another route or service.
 
-The accepted public `0.9.0` release directory, container image, Caddy file,
-public body readback and backup checksums must remain present before cutover.
-The candidate deployment procedure must arm rollback before changing the
-release symlink or Caddy configuration and must restore all of the following on
-any mandatory failure:
+The retained public `0.9.0` release directory, container image, Caddy file,
+public body readback and backup checksums remain present after cutover. The
+deployment procedure arms rollback before changing the release symlink or
+container and restores all of the following on any mandatory failure:
 
 - the retained `0.9.0` image and release directory;
 - the prior `current` release symlink;

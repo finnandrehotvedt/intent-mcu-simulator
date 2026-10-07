@@ -90,8 +90,9 @@ source; it does not authorize redistributing the resulting image.
 
 Additional current limits:
 
-- the public workbench remains a separately deployed release; source version
-  `1.0.0-rc.2` is a candidate until a distinct deployment is approved;
+- source version `1.0.0-rc.2` is the release currently deployed at
+  `https://lab.teachthecompany.com/`; hosted compiler/toolchain images and
+  private deployment configuration remain outside this source repository;
 - no physical board connection, firmware upload, live AI call, account,
   analytics, or cloud project store is included;
 - the CPU/peripheral profile is a tested educational subset, not a promise of
@@ -102,7 +103,8 @@ Additional current limits:
   certification.
 
 See [RELEASE-NOTES.md](RELEASE-NOTES.md), [MIGRATION.md](MIGRATION.md) and
-[ROLLBACK.md](ROLLBACK.md) for the candidate scope and deployment boundary.
+[ROLLBACK.md](ROLLBACK.md) for the deployed scope, migration and recovery
+boundary.
 
 ## Prerequisites
 

@@ -2,9 +2,9 @@
 
 No server database or account migration exists. Projects are browser-local.
 
-Before a future authorized cutover, users should export important projects as
-canonical project JSON. The candidate keeps the versioned project-v2 storage
-model and validates every reopened project before use. Older project-v1 files
+The authorized cutover keeps the versioned project-v2 storage model and
+validates every reopened project before use. Users upgrading from `0.9.0`
+should still export important projects as canonical project JSON. Older project-v1 files
 use the documented one-way migration; the original v1 browser key is left
 untouched for rollback.
 

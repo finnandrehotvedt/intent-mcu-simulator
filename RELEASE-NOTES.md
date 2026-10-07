@@ -1,8 +1,11 @@
 # Intent MCU Simulator 1.0.0-rc.2
 
-This is the tested application release candidate. It is not the currently
-deployed public version. The public lab remains on `0.9.0` until a separate
-receipt names the accepted source commit and immutable production image.
+This tested application release candidate is deployed at
+`https://lab.teachthecompany.com/` under receipt
+`desktop-ct109-intent-mcu-rc2-public-deployment-20261007-13`. The deployed
+application remains exact source commit
+`64951b3fb039d77ec52713b2ad5fda3679d73ace` and production image config digest
+`sha256:8f5f7abb95067e2c34ac3ed3b84d9115de7ca727ac4815881eeaef38eff52650`.
 
 ## User-visible changes from 0.9.0
 
@@ -39,7 +42,7 @@ replace firmware or bypass electrical checks.
 The package, browser metadata, source archive, candidate containers and release
 documents use `1.0.0-rc.2`. Exact source, public-source, image and evidence
 hashes are recorded in the repository acceptance evidence after immutable
-build/readback. A deployment receipt must repeat the exact source commit and
-production image ID before public cutover. The immutable candidate image is
-labelled non-public; the separately authorized runtime Compose receipt and
-container labels are what mark an actual public deployment.
+build/readback. The distinct deployment receipt repeated the exact source
+commit and production image before public cutover. The immutable candidate
+image remains receipt-neutral; the authorized runtime Compose receipt and
+container labels mark the actual public deployment.
