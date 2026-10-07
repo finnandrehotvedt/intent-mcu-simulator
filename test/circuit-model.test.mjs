@@ -252,9 +252,29 @@ test('W-07/W-08 catalogue filtering covers practical metadata and remains bounde
   assert.equal(filterCatalog(records, { query: 'temperature sensing I²C', category: 'sensors' }).length > 0, true);
   assert.equal(filterCatalog(records, { category: 'controllers', status: 'simulated', interface: 'GPIO' }).length > 0, true);
   assert.equal(filterCatalog(records, { query: 'breakout 3.3' }).length > 0, true);
+  assert.equal(filterCatalog(records, { supplyVoltage: '3.3', pinVoltage: '5' }).length, 1_000);
+  const splitVoltageFixture = records.map((record, index) => ({
+    ...record,
+    pins: index % 2 === 0 ? record.pins : record.pins.map((item) => {
+      const { voltage: _fixedVoltage, ...constraints } = item.constraints;
+      return { ...item, constraints: { ...constraints, voltageMin: 0, voltageMax: 3.3 } };
+    }),
+  }));
+  assert.equal(filterCatalog(splitVoltageFixture, { supplyVoltage: '5', pinVoltage: '5' }).length, 500);
+  assert.equal(filterCatalog(splitVoltageFixture, { supplyVoltage: '3.3', pinVoltage: '3.3' }).length, 1_000);
   const elapsed = performance.now() - started;
   assert.ok(elapsed < 250, `1,000-record catalogue filtering took ${elapsed.toFixed(2)} ms`);
   assert.equal(catalogEntries({ selectableOnly: true }).length, 5);
+  const actual = catalogEntries({ selectableOnly: true });
+  assert.deepEqual(
+    filterCatalog(actual, { supplyVoltage: '5', pinVoltage: '5' }).map((entry) => entry.type),
+    ['board.atmega328p-16mhz-v1'],
+  );
+  assert.deepEqual(
+    filterCatalog(actual, { category: 'inputs', supplyVoltage: '3.3', pinVoltage: 'undeclared' })
+      .map((entry) => entry.type).sort(),
+    ['button.momentary-v1', 'potentiometer.linear-v1'],
+  );
 });
 
 test('C-05 direct five volt to ground short blocks with stable net reference', () => {

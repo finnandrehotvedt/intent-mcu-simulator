@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.0.0-rc.1 targets one `ATmega328P`, 16 MHz, 5 V learning
+Intent MCU Simulator 1.0.0-rc.2 targets one `ATmega328P`, 16 MHz, 5 V learning
 profile. It is a deterministic educational subset, not a complete electrical
 or cycle-perfect hardware replacement.
 

@@ -2,7 +2,7 @@
 set -eu
 
 project_root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
-image=${INTENT_MCU_TOOLCHAIN_IMAGE:-local/intent-mcu-avr-toolchain:1.0.0-rc.1}
+image=${INTENT_MCU_TOOLCHAIN_IMAGE:-local/intent-mcu-avr-toolchain:1.0.0-rc.2}
 lock_file=${INTENT_MCU_IMAGE_LOCK:-$project_root/compiler/local-image-lock.json}
 
 docker build --pull=false --tag "$image" --file "$project_root/Dockerfile.toolchain" "$project_root"

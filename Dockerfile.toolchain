@@ -36,7 +36,7 @@ RUN wget -q -O arduino-cli.tar.gz "$ARDUINO_CLI_URL" \
 FROM --platform=linux/amd64 mirror.gcr.io/library/node:22-bookworm-slim@sha256:d649c27dae7ba0137b3cef5dd75baa422c08dc3d9e3fc0c23dfb172dc3cc6436
 
 LABEL org.opencontainers.image.title="Intent MCU Simulator pinned AVR compiler" \
-      org.opencontainers.image.version="1.0.0-rc.1" \
+      org.opencontainers.image.version="1.0.0-rc.2" \
       org.opencontainers.image.source="https://github.com/finnandrehotvedt/intent-mcu-simulator" \
       org.opencontainers.image.licenses="GPL-3.0-or-later AND LGPL-2.1-or-later AND GPL-runtime-exception"
 

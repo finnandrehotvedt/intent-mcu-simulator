@@ -128,12 +128,26 @@ function worldAt(viewport, screenX, screenY) {
   assert(rotationAttachment, 'routes detached after component rotation'); await page.click('#undo');
 
   const canvas = page.locator('#circuit-canvas'); box = await canvas.boundingBox();
-  const pointer = { x: box.x + box.width * 0.72, y: box.y + box.height * 0.74 };
+  const zoomPoint = await page.evaluate(() => {
+    const canvasNode = document.querySelector('#circuit-canvas');
+    const box = canvasNode.getBoundingClientRect();
+    for (const y of [0.74, 0.62, 0.86, 0.48]) for (const x of [0.72, 0.58, 0.84, 0.42, 0.2]) {
+      const clientX = box.left + box.width * x; const clientY = box.top + box.height * y;
+      const target = document.elementFromPoint(clientX, clientY);
+      if (target && canvasNode.contains(target)
+        && !target.closest('.circuit-component,.wire-segment-hit,.quick-controls')) {
+        return { x: clientX, y: clientY, screenX: x, screenY: y };
+      }
+    }
+    return null;
+  });
+  assert(zoomPoint, 'no empty canvas point was available for wheel zoom');
+  const pointer = { x: zoomPoint.x, y: zoomPoint.y };
   const beforeZoom = await page.evaluate(() => structuredClone(window.__M6_PROJECT__().layout.viewport));
-  const beforeWorld = worldAt(beforeZoom, 0.72, 0.74);
+  const beforeWorld = worldAt(beforeZoom, zoomPoint.screenX, zoomPoint.screenY);
   await page.mouse.move(pointer.x, pointer.y); await page.mouse.wheel(0, -180); await page.waitForTimeout(100);
   const afterZoom = await page.evaluate(() => structuredClone(window.__M6_PROJECT__().layout.viewport));
-  const afterWorld = worldAt(afterZoom, 0.72, 0.74);
+  const afterWorld = worldAt(afterZoom, zoomPoint.screenX, zoomPoint.screenY);
   assert(afterZoom.zoom > beforeZoom.zoom && Math.hypot(afterWorld.x - beforeWorld.x, afterWorld.y - beforeWorld.y) < 0.002, 'wheel zoom did not preserve the world point under the pointer');
   const netsBeforePan = (await page.evaluate(() => window.__M6_PROJECT__().circuit.nets.length));
   const panPoint = await page.evaluate(() => {

@@ -44,7 +44,8 @@ const elements = Object.fromEntries([
   'graph-state', 'wire-state', 'circuit-diagnostics', 'serial-output', 'serial-count', 'serial-input', 'serial-send',
   'serial-clear', 'logic-output', 'logic-count', 'logic-channels', 'logic-window', 'logic-cursor', 'pin-select',
   'pin-mode', 'pin-level', 'pin-detail', 'pin-diagnostic', 'pin-cycle', 'catalog-search', 'catalog-category',
-  'catalog-interface', 'catalog-status', 'catalog-favorites', 'catalog-count',
+  'catalog-interface', 'catalog-status', 'catalog-supply-voltage', 'catalog-pin-voltage', 'catalog-favorites', 'catalog-count',
+  'catalog-empty', 'catalog-clear',
   'catalog-list', 'catalog-prev', 'catalog-page', 'catalog-next', 'selection-name', 'property-editor', 'rotate-component', 'duplicate-component', 'delete-component',
   'selected-net', 'net-members', 'wire-color', 'wire-bends', 'selection-support', 'reconnect-mode', 'add-bend', 'delete-wire', 'remove-junction', 'zoom-value',
   'zoom-in', 'zoom-out', 'pan-left', 'pan-right', 'pan-up', 'pan-down', 'view-reset', 'fit-project', 'project-state',
@@ -819,6 +820,8 @@ function matchedCatalogRecords(records = activeCatalogRecords()) {
     category: elements.catalogcategory.value,
     status: elements.catalogstatus.value,
     interface: elements.cataloginterface.value,
+    supplyVoltage: elements.catalogsupplyvoltage.value,
+    pinVoltage: elements.catalogpinvoltage.value,
   }).filter((definition) => !elements.catalogfavorites.checked || favorites.has(definition.type))
     .sort((a, b) => Number(favorites.has(b.type)) - Number(favorites.has(a.type))
       || (recentRank.get(a.type) ?? 99) - (recentRank.get(b.type) ?? 99)
@@ -866,6 +869,7 @@ function renderCatalog() {
   const first = matches.length ? catalogWindowStart + 1 : 0;
   const last = Math.min(matches.length, catalogWindowStart + windowRecords.length);
   elements.catalogcount.textContent = `${matches.length} ${matches.length === 1 ? 'part' : 'parts'}`;
+  elements.catalogempty.hidden = matches.length > 0;
   elements.catalogpage.textContent = matches.length ? `${first}–${last} of ${matches.length}` : 'No results';
   elements.catalogprev.disabled = catalogWindowStart === 0;
   elements.catalognext.disabled = catalogWindowStart + CATALOG_WINDOW_LIMIT >= matches.length;
@@ -920,6 +924,8 @@ async function benchmarkCatalogFixture(action = 'start') {
     if (prior) {
       elements.catalogsearch.value = prior.query; elements.catalogcategory.value = prior.category;
       elements.cataloginterface.value = prior.interface; elements.catalogstatus.value = prior.status;
+      elements.catalogsupplyvoltage.value = prior.supplyVoltage;
+      elements.catalogpinvoltage.value = prior.pinVoltage;
       elements.catalogfavorites.checked = prior.favorites;
     }
     catalogWindowStart = 0; renderCatalog();
@@ -929,11 +935,13 @@ async function benchmarkCatalogFixture(action = 'start') {
   catalogFixturePriorFilters = {
     query: elements.catalogsearch.value, category: elements.catalogcategory.value,
     interface: elements.cataloginterface.value, status: elements.catalogstatus.value,
+    supplyVoltage: elements.catalogsupplyvoltage.value, pinVoltage: elements.catalogpinvoltage.value,
     favorites: elements.catalogfavorites.checked,
   };
   catalogFixtureRecords = createCatalogBenchmarkFixture();
   elements.catalogsearch.value = 'benchmark'; elements.catalogcategory.value = 'all';
   elements.cataloginterface.value = 'all'; elements.catalogstatus.value = 'all'; elements.catalogfavorites.checked = false;
+  elements.catalogsupplyvoltage.value = 'all'; elements.catalogpinvoltage.value = 'all';
   catalogWindowStart = 0;
   const longTasks = [];
   const longTaskObserverSupported = 'PerformanceObserver' in window && PerformanceObserver.supportedEntryTypes?.includes('longtask');
@@ -1385,7 +1393,20 @@ elements.catalogsearch.addEventListener('input', resetCatalogWindow);
 elements.catalogcategory.addEventListener('change', resetCatalogWindow);
 elements.cataloginterface.addEventListener('change', resetCatalogWindow);
 elements.catalogstatus.addEventListener('change', resetCatalogWindow);
+elements.catalogsupplyvoltage.addEventListener('change', resetCatalogWindow);
+elements.catalogpinvoltage.addEventListener('change', resetCatalogWindow);
 elements.catalogfavorites.addEventListener('change', resetCatalogWindow);
+elements.catalogclear.addEventListener('click', () => {
+  elements.catalogsearch.value = '';
+  elements.catalogcategory.value = 'all';
+  elements.cataloginterface.value = 'all';
+  elements.catalogstatus.value = 'simulated';
+  elements.catalogsupplyvoltage.value = 'all';
+  elements.catalogpinvoltage.value = 'all';
+  elements.catalogfavorites.checked = false;
+  resetCatalogWindow();
+  elements.catalogsearch.focus();
+});
 elements.catalogprev.addEventListener('click', () => {
   catalogWindowStart = Math.max(0, catalogWindowStart - CATALOG_WINDOW_LIMIT); renderCatalog();
 });

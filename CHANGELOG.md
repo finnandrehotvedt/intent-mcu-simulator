@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.0.0-rc.2 — 2026-10-07
+
+- Completed the release-candidate acceptance surface while retaining the
+  separately approved public `0.9.0` deployment unchanged.
+- Added distinct operating-supply and declared pin-voltage catalogue facets,
+  combined-filter coverage over real and 1,000-record fixture catalogues, and
+  actionable empty-result recovery.
+- Added release, migration, rollback, candidate-identity and final acceptance
+  documentation. The candidate still requires an exact deployment receipt
+  before it can replace the hosted application.
+- Added tested supervisor recovery for a transient completion-contract
+  fail-closed gate without resetting completed milestone receipts.
+
 ## 1.0.0-rc.1 — 2026-10-07
 
 - Published the project-owned compiler gateway, strict build protocol,

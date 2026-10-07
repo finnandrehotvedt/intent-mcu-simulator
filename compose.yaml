@@ -22,7 +22,7 @@ services:
 
   local-compiler:
     profiles: ["local-compiler"]
-    image: intent-mcu-simulator-local:1.0.0-rc.1
+    image: intent-mcu-simulator-local:1.0.0-rc.2
     build:
       context: .
       dockerfile: Dockerfile.local

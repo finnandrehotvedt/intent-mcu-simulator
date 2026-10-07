@@ -218,12 +218,40 @@ export function catalogSearchText(definition) {
   ].join(' ').toLocaleLowerCase('en');
 }
 
+export function catalogPinVoltageRanges(definition) {
+  return definition.pins.flatMap((item) => {
+    const constraints = item.constraints ?? {};
+    if (Number.isFinite(constraints.voltage)) {
+      return [{ min: constraints.voltage, max: constraints.voltage }];
+    }
+    if (Number.isFinite(constraints.voltageMin) && Number.isFinite(constraints.voltageMax)) {
+      return [{ min: constraints.voltageMin, max: constraints.voltageMax }];
+    }
+    return [];
+  });
+}
+
 export function filterCatalog(records, filters = {}) {
   const tokens = String(filters.query ?? '').trim().toLocaleLowerCase('en').split(/\s+/u).filter(Boolean);
   return records.filter((definition) => {
     if (filters.category && filters.category !== 'all' && definition.catalog.category !== filters.category) return false;
     if (filters.status && filters.status !== 'all' && definition.support.status !== filters.status) return false;
     if (filters.interface && filters.interface !== 'all' && !definition.catalog.interfaces.includes(filters.interface)) return false;
+    if (filters.supplyVoltage && filters.supplyVoltage !== 'all') {
+      const target = Number(filters.supplyVoltage);
+      if (!Number.isFinite(target)
+        || target < definition.catalog.supplyVolts.min || target > definition.catalog.supplyVolts.max) return false;
+    }
+    if (filters.pinVoltage && filters.pinVoltage !== 'all') {
+      const ranges = catalogPinVoltageRanges(definition);
+      if (filters.pinVoltage === 'undeclared') {
+        if (ranges.length > 0) return false;
+      } else {
+        const target = Number(filters.pinVoltage);
+        if (!Number.isFinite(target)
+          || !ranges.some((range) => target >= range.min && target <= range.max)) return false;
+      }
+    }
     const search = catalogSearchText(definition);
     return tokens.every((token) => search.includes(token));
   });

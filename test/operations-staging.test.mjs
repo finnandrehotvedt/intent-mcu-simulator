@@ -22,7 +22,7 @@ async function startServer(port, lock = goodLock) {
     cwd: root,
     env: {
       ...process.env, STAGING_HOST: '127.0.0.1', STAGING_PORT: String(port),
-      COMPILER_IMAGE_LOCK: lock, DEPLOYMENT_SCOPE: 'm13-disposable-operations-test',
+      COMPILER_IMAGE_LOCK: lock, DEPLOYMENT_SCOPE: 'm14-disposable-operations-test',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });

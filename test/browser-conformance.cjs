@@ -197,6 +197,21 @@ async function automaticRouteIntersections(page) {
   assert(await page.locator('.catalog-item').count() === 2, 'catalog category did not isolate inputs');
   await page.selectOption('#catalog-category', 'all');
 
+  await page.selectOption('#catalog-supply-voltage', '5');
+  await page.selectOption('#catalog-pin-voltage', '5');
+  assert(await page.locator('.catalog-item').count() === 1, 'separate supply and pin-limit filters did not isolate the 5 V controller');
+  await page.selectOption('#catalog-category', 'inputs');
+  await page.selectOption('#catalog-supply-voltage', '3.3');
+  await page.selectOption('#catalog-pin-voltage', 'undeclared');
+  assert(await page.locator('.catalog-item').count() === 2, 'combined actual catalogue voltage facets mismatch');
+  await page.selectOption('#catalog-category', 'controllers');
+  assert(await page.locator('.catalog-item').count() === 0, 'empty catalogue fixture unexpectedly matched');
+  assert(await page.locator('#catalog-empty').isVisible(), 'empty catalogue guidance was not visible');
+  assert((await page.textContent('#catalog-empty')).includes('broaden supply, pin-limit'), 'empty catalogue guidance was not actionable');
+  await page.click('#catalog-clear');
+  assert(await page.locator('.catalog-item').count() === 5, 'clear catalogue filters did not restore supported parts');
+  assert(!(await page.locator('#catalog-empty').isVisible()), 'empty catalogue guidance remained after clearing filters');
+
   const projectBeforePreferences = JSON.stringify(await page.evaluate(() => window.__M6_PROJECT__()));
   await page.locator('.catalog-item[data-type="led.basic-v1"] .catalog-favourite').click();
   assert((await page.evaluate(() => window.__M7_CATALOG__())).preferences.favorites.includes('led.basic-v1'), 'favourite was not recorded');
