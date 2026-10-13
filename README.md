@@ -48,6 +48,11 @@ and recent parts. Selectable parts render original project SVG artwork whose
 visible terminals and invisible wiring hit targets share the same local
 coordinates.
 
+Connected wires remain visible from the exact named metal terminal even where
+component artwork is opaque. Automatic routes still avoid component bodies;
+if a user deliberately moves a route across artwork, that section stays
+visible without changing connectivity or creating a junction.
+
 ## Manual builder walkthrough
 
 The browser project starts empty; there is no concealed demonstration circuit.
@@ -57,13 +62,19 @@ The intended manual workflow is:
 2. Select two visible pin anchors to create a net. Selecting another free pin
    and a pin on that net creates an explicit branch/junction.
 3. Select a net to inspect all members, choose a wire colour, edit layout-only
-   bends, or detach a named branch. Visual crossings do not imply electrical
+   bends, or detach a named branch. A selected wire section clears component
+   selection; Delete removes that connection or branch, while deleting a whole
+   net uses its separately labelled action. Overlapping wire targets cycle in
+   deterministic order. Horizontal sections move only vertically and vertical
+   sections only horizontally. Visual crossings do not imply electrical
    connectivity, and route/colour changes never alter the electrical graph.
 4. Move or rotate components. Layout changes preserve component and pin
    identity, and routed wire endpoints remain attached to their actual pins.
 5. Edit one or more source files. Source, circuit, and board profile together
    determine build freshness; changing any of them invalidates an old artifact.
-6. Save locally or export the canonical project JSON. Imported projects and
+6. Save or open a project file on your computer. Browsers without a native file
+   picker use deterministic download and file-input fallback. Browser recovery
+   is separate from the durable user-owned file. Imported projects and
    Prompt Bridge proposals pass the same strict schema and electrical rules as
    manual edits.
 
@@ -79,6 +90,21 @@ LED anode, and the LED cathode to controller ground. Connect a momentary button
 between `D2` and ground and configure `D2` as `INPUT_PULLUP` in firmware. The
 electrical model rejects a missing current-limiting resistor, reversed LED,
 ambiguous ground, reused pin, direct supply short, or conflicting outputs.
+
+Open the named Serial tab to dock text/events beside the canvas on a wide
+screen or above it as a bottom drawer on a narrow screen. Scrolling away from
+the end pauses autoscroll and exposes an unread indicator; Jump to new output
+resumes it. Clear affects retained view records, while Reset affects the MCU.
+Use Interact mode to press and hold the tactile button directly on the canvas
+with pointer, Space, or Enter. The dock and canvas control reuse the one
+existing runtime worker and do not make a hosted AI or third-party request.
+For a practical testing view, collapse Parts and Inspector with their named
+toolbar buttons and resize Serial as needed. The circuit, input control,
+Build/Run/Pause/Reset and readable live output then remain together without
+scrolling between them at supported desktop widths; both side panels remain
+keyboard-accessible from the same buttons. Route section moves are loop-safe:
+they cannot accumulate repeated rectangular laps, while non-overlapping custom
+jogs and unrelated branches remain intact.
 
 The Apache-2.0 compiler gateway source, strict API contract, isolation tests,
 checksum-pinned toolchain recipe, notices and local operations guide are

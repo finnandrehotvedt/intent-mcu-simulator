@@ -530,6 +530,7 @@ void loop() {
   await page.click('#run');
   current = await state(page, () => window.__M6_STATE__?.runtime?.instruments?.serial?.text?.includes('R')
     && window.__M6_STATE__?.runtime?.instruments?.logic?.transitions?.length >= 4);
+  if (await page.getAttribute('#serial-tab', 'aria-expanded') !== 'true') await page.click('#serial-tab');
   await page.fill('#serial-input', 'Z');
   await page.click('#serial-send');
   current = await state(page, () => window.__M6_STATE__?.runtime?.instruments?.serial?.text?.includes('Z'));
@@ -624,13 +625,18 @@ void loop() {
 
   await page.evaluate(() => {
     window.__M6_ORIGINAL_SET_ITEM__ = Storage.prototype.setItem;
+    window.__M6_ORIGINAL_SAVE_PICKER__ = window.showSaveFilePicker;
+    window.showSaveFilePicker = undefined;
     Storage.prototype.setItem = () => { throw new DOMException('simulated quota', 'QuotaExceededError'); };
   });
   const beforeQuota = JSON.stringify(await page.evaluate(() => window.__M6_PROJECT__()));
   await page.click('#project-save');
   assert((await page.textContent('#project-message')).includes('in-memory project remains usable'), 'quota error was not reported');
   assert(JSON.stringify(await page.evaluate(() => window.__M6_PROJECT__())) === beforeQuota, 'quota failure corrupted in-memory project');
-  await page.evaluate(() => { Storage.prototype.setItem = window.__M6_ORIGINAL_SET_ITEM__; delete window.__M6_ORIGINAL_SET_ITEM__; });
+  await page.evaluate(() => {
+    Storage.prototype.setItem = window.__M6_ORIGINAL_SET_ITEM__; delete window.__M6_ORIGINAL_SET_ITEM__;
+    window.showSaveFilePicker = window.__M6_ORIGINAL_SAVE_PICKER__; delete window.__M6_ORIGINAL_SAVE_PICKER__;
+  });
 
   const widths = [];
   for (const width of [1440, 768, 390, 320]) {

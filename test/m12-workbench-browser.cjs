@@ -73,11 +73,19 @@ function worldAt(viewport, screenX, screenY) {
   await page.click('#toggle-inspector');
   assert(await page.locator('.workspace').evaluate((node) => node.classList.contains('inspector-collapsed')), 'inspector did not collapse'); await page.click('#toggle-inspector');
 
-  await page.evaluate(() => { window.__M12_ORIGINAL_SET_ITEM__ = Storage.prototype.setItem; Storage.prototype.setItem = () => { throw new DOMException('quota', 'QuotaExceededError'); }; });
+  await page.evaluate(() => {
+    window.__M12_ORIGINAL_SET_ITEM__ = Storage.prototype.setItem;
+    window.__M12_ORIGINAL_SAVE_PICKER__ = window.showSaveFilePicker;
+    window.showSaveFilePicker = undefined;
+    Storage.prototype.setItem = () => { throw new DOMException('quota', 'QuotaExceededError'); };
+  });
   await page.click('#project-save');
   assert(await page.isEnabled('#recovery-export') && (await page.textContent('#project-message')).includes('in-memory project remains usable'), 'storage denial did not offer in-memory recovery export');
   const recoveryDownload = page.waitForEvent('download'); await page.click('#recovery-export'); assert((await (await recoveryDownload).suggestedFilename()) === 'intent-mcu-recovery.json', 'recovery download failed');
-  await page.evaluate(() => { Storage.prototype.setItem = window.__M12_ORIGINAL_SET_ITEM__; delete window.__M12_ORIGINAL_SET_ITEM__; }); await page.click('#project-save');
+  await page.evaluate(() => {
+    Storage.prototype.setItem = window.__M12_ORIGINAL_SET_ITEM__; delete window.__M12_ORIGINAL_SET_ITEM__;
+    window.showSaveFilePicker = window.__M12_ORIGINAL_SAVE_PICKER__; delete window.__M12_ORIGINAL_SAVE_PICKER__;
+  }); await page.click('#project-save');
 
   const densePin = page.locator('.pin-anchor[data-endpoint="board-1.D4"]');
   await densePin.scrollIntoViewIfNeeded(); await densePin.click({ force: true });
@@ -182,6 +190,7 @@ function worldAt(viewport, screenX, screenY) {
   }
 
   await page.click('#run');
+  if (await page.getAttribute('#serial-tab', 'aria-expanded') !== 'true') await page.click('#serial-tab');
   await page.waitForFunction(() => document.querySelector('#serial-output').textContent.includes('ON') && document.querySelectorAll('#logic-waveform .wave-path').length > 0, null, { timeout: 10_000 });
   await page.waitForFunction(() => document.querySelector('#achieved-speed').textContent !== '—', null, { timeout: 10_000 });
   assert((await page.textContent('#simulated-time')).includes('ms') && (await page.textContent('#requested-speed')).includes('×'), 'time/requested/measured speed labels are incomplete');

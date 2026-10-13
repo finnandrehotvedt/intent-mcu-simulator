@@ -49,7 +49,7 @@ const elements = Object.fromEntries([
   'catalog-list', 'catalog-prev', 'catalog-page', 'catalog-next', 'selection-name', 'property-editor', 'rotate-component', 'duplicate-component', 'delete-component',
   'selected-net', 'net-members', 'wire-color', 'wire-bends', 'selection-support', 'reconnect-mode', 'add-bend', 'delete-wire', 'remove-junction', 'zoom-value',
   'zoom-in', 'zoom-out', 'pan-left', 'pan-right', 'pan-up', 'pan-down', 'view-reset', 'fit-project', 'project-state',
-  'project-message', 'project-name', 'project-new', 'project-demo', 'project-save', 'project-reload', 'project-export', 'project-import',
+  'project-message', 'project-name', 'project-new', 'project-demo', 'project-save', 'project-open', 'project-open-input', 'project-reload', 'project-export', 'project-import',
   'project-import-mode', 'undo', 'redo', 'prompt-generate', 'prompt-copy', 'prompt-output', 'prompt-response',
   'prompt-mode', 'prompt-apply', 'prompt-message', 'component-controls',
   'editor-title', 'source-file', 'source-file-name', 'source-file-add', 'source-file-remove',
@@ -58,6 +58,8 @@ const elements = Object.fromEntries([
   'toggle-catalog', 'toggle-inspector', 'catalog-resizer', 'inspector-resizer', 'show-pin-labels', 'focus-canvas', 'fullscreen-canvas',
   'source-lines', 'source-highlight', 'diagnostic-links', 'build-log', 'simulated-time', 'requested-speed', 'achieved-speed',
   'serial-text-mode', 'serial-event-mode', 'serial-export', 'serial-newline', 'logic-waveform', 'logic-cursor-a', 'logic-cursor-b',
+  'serial-tab', 'serial-dock', 'serial-close', 'serial-resizer', 'serial-resume', 'serial-new-output',
+  'canvas-select-mode', 'canvas-interact-mode',
 ].map((id) => [id.replaceAll('-', ''), byId(id)]));
 
 const runtimeControls = [elements.run, elements.pause, elements.step, elements.reset, elements.speed];
@@ -84,19 +86,74 @@ let catalogBenchmarkSession = null;
 let catalogFixturePriorFilters = null;
 let routeDrag = null;
 let componentDrag = null;
+let acceptedRoutePaint = [];
+let proposedRoutePaint = [];
+let proposedRouteNetId = null;
 let canvasPan = null;
 let selectedRouteSegment = null;
 let lifecycle = createLifecycleState();
 let savedRevision = null;
 let savedProjectGeneration = null;
+let fileSavedRevision = null;
+let fileSavedProjectGeneration = null;
+let fileSaveState = null;
+let projectFileHandle = null;
 let buildAbortController = null;
 let serialViewMode = 'text';
 let lastThroughputSample = null;
 let latestBuildResult = null;
+let selection = { kind: 'none' };
+let wireCycle = null;
+let suppressCanvasClickUntil = 0;
+let serialAutoscroll = true;
+let serialRenderedRecords = 0;
+let serialUnreadRecords = 0;
+let serialResumeGuardUntil = 0;
+let serialScrollFrame = null;
+let canvasInteractionMode = 'select';
+let activeCanvasButton = null;
+
+function setSelection(next) {
+  selection = next?.kind ? structuredClone(next) : { kind: 'none' };
+  selectedComponentId = selection.kind === 'component' ? selection.componentId : null;
+  selectedNetId = ['wire-segment', 'net'].includes(selection.kind) ? selection.netId : null;
+  selectedRouteSegment = selection.kind === 'wire-segment'
+    ? {
+      netId: selection.netId,
+      endpoint: selection.endpoint,
+      segmentIndex: selection.segmentIndex,
+      orientation: selection.orientation,
+    }
+    : null;
+  publish({
+    selection: structuredClone(selection),
+    selectedComponentId,
+    selectedNetId,
+    selectedRouteSegment: selectedRouteSegment ? structuredClone(selectedRouteSegment) : null,
+  });
+}
+
+function selectComponent(componentId) {
+  setSelection({ kind: 'component', componentId });
+}
+
+function selectWireSegment({ netId, endpoint, segmentIndex, orientation }) {
+  setSelection({ kind: 'wire-segment', netId, endpoint, segmentIndex, orientation });
+}
+
+function selectNet(netId) {
+  setSelection(netId ? { kind: 'net', netId } : { kind: 'none' });
+}
+
+function isTextEditingTarget(target) {
+  return target instanceof Element
+    && Boolean(target.closest('textarea,input,select,[contenteditable="true"],[contenteditable=""]'));
+}
 
 window.__M6_STATE__ = {
   buildState: 'dirty', artifactIdentity: null, inputIdentity: null, cacheHit: false,
   runtime: null, project: null, revision: 0, selectedComponentId: null,
+  selectedNetId: null, selectedRouteSegment: null, selection: { kind: 'none' },
   importReport: null, lastAction: 'initialized',
 };
 window.__M3_STATE__ = window.__M6_STATE__;
@@ -235,7 +292,7 @@ function persistProject(message = null) {
     elements.recoveryexport.disabled = true;
     return true;
   } catch (error) {
-    elements.projectmessage.textContent = `Local save failed (${error.name || error.message}). The in-memory project remains usable.`;
+    elements.projectmessage.textContent = `Browser recovery failed (${error.name || error.message}). The in-memory project remains usable; save a project file before leaving.`;
     elements.recoveryexport.disabled = false;
     return false;
   }
@@ -243,7 +300,98 @@ function persistProject(message = null) {
 function downloadText(filename, text, type = 'text/plain') {
   const link = document.createElement('a');
   link.download = filename; link.href = URL.createObjectURL(new Blob([text], { type }));
-  link.click(); URL.revokeObjectURL(link.href);
+  link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 0);
+}
+function projectFilename() {
+  const stem = currentProject().metadata.name
+    .normalize('NFKD').replace(/[^A-Za-z0-9 _.-]/gu, '').trim().replace(/\s+/gu, '-').slice(0, 64);
+  return `${stem || 'intent-mcu-project'}.intent-mcu.json`;
+}
+function boundedProjectText() {
+  const text = exportCanonicalProject(currentProject());
+  if (new TextEncoder().encode(text).length > 1024 * 1024) throw new Error('INPUT_LIMIT');
+  return text;
+}
+function markFileSaved(state = 'saved to file') {
+  fileSavedRevision = editor.revision;
+  fileSavedProjectGeneration = lifecycle.projectGeneration;
+  fileSaveState = state;
+}
+async function saveProjectFile() {
+  let text;
+  try { text = boundedProjectText(); }
+  catch (error) { showActionableError(elements.projectmessage, error.message, 'Project file was not saved.'); return; }
+  if (typeof window.showSaveFilePicker === 'function') {
+    try {
+      projectFileHandle ??= await window.showSaveFilePicker({
+        suggestedName: projectFilename(),
+        types: [{ description: 'Intent MCU project', accept: { 'application/json': ['.json'] } }],
+      });
+      const writable = await projectFileHandle.createWritable();
+      await writable.write(new Blob([text], { type: 'application/json' }));
+      await writable.close();
+      const recoverySaved = persistProject(); markFileSaved(); renderProject();
+      elements.projectmessage.textContent = recoverySaved
+        ? 'Project saved to the file you selected. Browser recovery was updated separately.'
+        : 'Project saved to the selected file, but browser recovery/local save failed. The in-memory project remains usable.';
+      return;
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        elements.projectmessage.textContent = 'Save cancelled. The project remains in memory; browser recovery is unchanged.';
+        return;
+      }
+      projectFileHandle = null;
+      showActionableError(elements.projectmessage, 'FILE_SAVE_FAILED', `${error?.name || 'Error'}: ${error?.message || 'write failed'}`);
+      return;
+    }
+  }
+  const recoverySaved = persistProject();
+  downloadText(projectFilename(), text, 'application/json');
+  markFileSaved('download requested'); renderProject();
+  elements.projectmessage.textContent = recoverySaved
+    ? 'Project download requested. Your browser chooses the download location; browser recovery was updated separately.'
+    : 'Project download requested, but browser recovery/local save failed. The in-memory project remains usable.';
+}
+async function replaceProjectFromFile(file, handle = null) {
+  if (!file) return;
+  if (file.size > 1024 * 1024) { showActionableError(elements.projectmessage, 'INPUT_LIMIT', `${file.size} bytes`); return; }
+  const before = exportCanonicalProject(currentProject());
+  let source;
+  try { source = await file.text(); }
+  catch (error) { showActionableError(elements.projectmessage, 'PROJECT_READ_FAILED', error?.message || 'read failed'); return; }
+  const result = editor.importText(source, 'replace', { running });
+  if (!result.ok) {
+    showActionableError(elements.projectmessage, result.code, 'Open rejected atomically; project unchanged.');
+    if (exportCanonicalProject(currentProject()) !== before) throw new Error('Atomic open boundary violated');
+    return;
+  }
+  installProjectGeneration({
+    empty: currentProject().circuit.components.length === 0, reason: 'project.file-open',
+    runtimeMessage: 'Opened project requires build',
+  });
+  selectedSourceFile = 'main.ino';
+  projectFileHandle = handle;
+  persistProject(); markFileSaved('opened file current'); publish({ importReport: result.report ?? result.code }); renderProject();
+  elements.projectmessage.textContent = 'Project opened from your computer and revalidated. Previous runtime output was cleared.';
+}
+async function openProjectFile() {
+  if (typeof window.showOpenFilePicker !== 'function') {
+    elements.projectopeninput.click();
+    return;
+  }
+  try {
+    const [handle] = await window.showOpenFilePicker({
+      multiple: false,
+      types: [{ description: 'Intent MCU project', accept: { 'application/json': ['.json'] } }],
+    });
+    await replaceProjectFromFile(await handle.getFile(), handle);
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      elements.projectmessage.textContent = 'Open cancelled. The current project is unchanged.';
+      return;
+    }
+    showActionableError(elements.projectmessage, 'PROJECT_READ_FAILED', `${error?.name || 'Error'}: ${error?.message || 'read failed'}`);
+  }
 }
 function buildInputIdentity() {
   return JSON.stringify({
@@ -272,6 +420,10 @@ function clearRuntimePresentation() {
   elements.trace.replaceChildren(Object.assign(document.createElement('li'), { textContent: '0000000000 · LOW' }));
   elements.serialoutput.textContent = 'No firmware bytes.';
   elements.serialcount.textContent = '0 records';
+  if (serialScrollFrame !== null) cancelAnimationFrame(serialScrollFrame);
+  serialScrollFrame = null;
+  serialRenderedRecords = 0; serialUnreadRecords = 0; serialAutoscroll = true;
+  elements.serialnewoutput.hidden = true; elements.serialresume.hidden = true;
   elements.logicoutput.replaceChildren(Object.assign(document.createElement('li'), { textContent: '— · 0000000000 · LOW' }));
   elements.logiccount.textContent = '0 transitions';
   elements.logiccursor.textContent = 'Cursor Δ —';
@@ -280,6 +432,83 @@ function clearRuntimePresentation() {
   elements.pindiagnostic.textContent = '—'; elements.pincycle.textContent = '0';
   for (const visual of elements.componentlayer.querySelectorAll('.component-led.on')) visual.classList.remove('on');
   publish({ runtime: null });
+}
+
+function updateSerialAutoscroll(serial) {
+  const absoluteRecords = Number(serial.dropped ?? 0) + serial.records.length;
+  const added = Math.max(0, absoluteRecords - serialRenderedRecords);
+  serialRenderedRecords = absoluteRecords;
+  if (!serialAutoscroll && added) {
+    serialUnreadRecords += added;
+    elements.serialnewoutput.textContent = `${serialUnreadRecords} new`;
+    elements.serialnewoutput.hidden = false;
+    elements.serialresume.textContent = 'Jump to new output';
+    elements.serialresume.hidden = false;
+    publish({ serialAutoscroll, serialUnreadRecords });
+    return;
+  }
+  if (serialAutoscroll) scheduleSerialScrollToEnd();
+  publish({ serialAutoscroll, serialUnreadRecords });
+}
+
+function scheduleSerialScrollToEnd() {
+  if (serialScrollFrame !== null) cancelAnimationFrame(serialScrollFrame);
+  serialScrollFrame = requestAnimationFrame(() => {
+    serialScrollFrame = null;
+    if (serialAutoscroll) elements.serialoutput.scrollTop = elements.serialoutput.scrollHeight;
+  });
+}
+
+function resumeSerialAutoscroll() {
+  if (serialScrollFrame !== null) cancelAnimationFrame(serialScrollFrame);
+  serialScrollFrame = null;
+  serialAutoscroll = true; serialUnreadRecords = 0;
+  elements.serialnewoutput.hidden = true; elements.serialresume.hidden = true;
+  elements.serialoutput.scrollTop = elements.serialoutput.scrollHeight;
+  publish({ serialAutoscroll, serialUnreadRecords });
+}
+
+function resumeSerialAutoscrollFromControl() {
+  serialResumeGuardUntil = performance.now() + 200;
+  resumeSerialAutoscroll();
+  requestAnimationFrame(resumeSerialAutoscroll);
+}
+
+function setMomentaryControl(componentId, pressed, action = 'canvas button') {
+  const component = currentProject().circuit.components.find((item) => item.id === componentId && item.type === 'button.momentary-v1');
+  if (!component || component.controls.pressed === pressed) return { ok: Boolean(component), unchanged: true };
+  const result = editor.apply({
+    type: 'component.control.set', revision: editor.revision, componentId, key: 'pressed', value: pressed,
+  }, { running });
+  if (!result.ok) {
+    showActionableError(elements.projectmessage, result.code, `${action}: ${componentId}`);
+    return result;
+  }
+  persistProject();
+  worker?.postMessage({ command: 'control', componentId, key: 'pressed', value: pressed });
+  for (const control of document.querySelectorAll(`[data-control="${componentId}.pressed"],[data-canvas-control="${componentId}.pressed"]`)) {
+    control.setAttribute('aria-pressed', String(pressed));
+    if (control.classList.contains('component-control-hit')) {
+      control.setAttribute('aria-label', `${component.label}: ${pressed ? 'pressed' : 'released'}. Hold Space, Enter, or pointer to operate.`);
+      control.closest('.circuit-component')?.classList.toggle('control-pressed', pressed);
+    } else control.textContent = pressed ? 'Pressed' : 'Released';
+  }
+  publish({
+    project: JSON.parse(exportCanonicalProject(currentProject())), revision: editor.revision,
+    lastAction: `BUTTON_${pressed ? 'PRESSED' : 'RELEASED'}`,
+  });
+  elements.projectmessage.textContent = `${component.label} ${pressed ? 'pressed' : 'released'} through ${action}.`;
+  return result;
+}
+
+function releaseCanvasButton(reason = 'canvas button') {
+  if (!activeCanvasButton) return false;
+  const active = activeCanvasButton; activeCanvasButton = null;
+  try {
+    if (active.target.hasPointerCapture?.(active.pointerId)) active.target.releasePointerCapture(active.pointerId);
+  } catch { /* capture may already be released */ }
+  setMomentaryControl(active.componentId, false, reason);
+  return true;
 }
 
 function stopRuntime(message = 'No current artifact loaded', { updateLifecycle = true, stale = false } = {}) {
@@ -316,9 +545,7 @@ function installProjectGeneration({ empty, reason, runtimeMessage }) {
   applyLifecycle({ type: 'project.install', empty, reason });
   savedRevision = null;
   savedProjectGeneration = null;
-  selectedComponentId = null;
-  selectedNetId = null;
-  selectedRouteSegment = null;
+  setSelection({ kind: 'none' });
   pendingEndpoint = null;
   routeDrag = null;
   wireMode = 'connect';
@@ -332,6 +559,7 @@ function installProjectGeneration({ empty, reason, runtimeMessage }) {
   publish({
     buildState: empty ? 'empty' : 'dirty', artifactIdentity: null, inputIdentity: null,
     cacheHit: false, runtime: null, importReport: null, selectedComponentId: null,
+    selectedNetId: null, selectedRouteSegment: null, selection: { kind: 'none' },
   });
   clearTechnicalError();
 }
@@ -385,32 +613,97 @@ function netKind(net) {
   return 'digital';
 }
 
+function createTerminalWireLayer(component, definition) {
+  const width = definition.artwork.cssWidth;
+  const height = definition.artwork.cssHeight;
+  const layer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  layer.classList.add('component-terminal-wires');
+  layer.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  layer.setAttribute('aria-hidden', 'true');
+  for (const pin of definition.pins) {
+    const endpoint = { component: component.id, pin: pin.id };
+    const netId = endpointConnection(currentProject().circuit, endpoint);
+    if (!netId) continue;
+    const start = { x: pin.anchor.x * width, y: pin.anchor.y * height };
+    const edge = [
+      { name: 'left', distance: start.x },
+      { name: 'right', distance: width - start.x },
+      { name: 'top', distance: start.y },
+      { name: 'bottom', distance: height - start.y },
+    ].sort((left, right) => left.distance - right.distance)[0].name;
+    const end = { ...start };
+    if (edge === 'left') end.x -= 13;
+    if (edge === 'right') end.x += 13;
+    if (edge === 'top') end.y -= 13;
+    if (edge === 'bottom') end.y += 13;
+    const stub = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    stub.classList.add('terminal-wire-stub');
+    stub.dataset.endpoint = endpointKey(endpoint);
+    stub.dataset.net = netId;
+    stub.dataset.escapeEdge = edge;
+    stub.setAttribute('x1', String(start.x)); stub.setAttribute('y1', String(start.y));
+    stub.setAttribute('x2', String(end.x)); stub.setAttribute('y2', String(end.y));
+    stub.style.setProperty('--wire-color', currentProject().layout.wireStyles[netId]?.color ?? '#39dff2');
+    layer.append(stub);
+  }
+  return layer;
+}
+
 function netAnchors(net, canvasBox) {
   return Object.fromEntries(net.endpoints.map((endpoint) => {
-    const anchor = elements.componentlayer.querySelector(`[data-endpoint="${endpointKey(endpoint)}"]`);
-    if (!anchor) return null;
-    const box = anchor.getBoundingClientRect();
-    const componentBox = anchor.closest('.circuit-component').getBoundingClientRect();
-    const pin = {
-      x: box.left - canvasBox.left + box.width / 2,
-      y: box.top - canvasBox.top + box.height / 2,
-    };
+    const component = currentProject().circuit.components.find((item) => item.id === endpoint.component);
+    const definition = component && COMPONENT_CATALOG[component.type];
+    const pinDefinition = definition?.pins.find((pin) => pin.id === endpoint.pin);
+    const card = elements.componentlayer.querySelector(`[data-component-id="${endpoint.component}"]`);
+    const anchor = card?.querySelector(`.pin-anchor[data-endpoint="${endpointKey(endpoint)}"]`);
+    if (!component || !definition || !pinDefinition || !card || !anchor) return null;
+    const cardBox = card.getBoundingClientRect();
+    const anchorBox = anchor.getBoundingClientRect();
+    const width = definition.artwork.cssWidth; const height = definition.artwork.cssHeight;
+    const localPin = { x: pinDefinition.anchor.x * width, y: pinDefinition.anchor.y * height };
     const distances = [
-      { edge: 'left', value: Math.abs(pin.x - (componentBox.left - canvasBox.left)) },
-      { edge: 'right', value: Math.abs(pin.x - (componentBox.right - canvasBox.left)) },
-      { edge: 'top', value: Math.abs(pin.y - (componentBox.top - canvasBox.top)) },
-      { edge: 'bottom', value: Math.abs(pin.y - (componentBox.bottom - canvasBox.top)) },
+      { edge: 'left', value: localPin.x },
+      { edge: 'right', value: width - localPin.x },
+      { edge: 'top', value: localPin.y },
+      { edge: 'bottom', value: height - localPin.y },
     ].sort((left, right) => left.value - right.value);
-    const escape = { ...pin };
-    if (distances[0].edge === 'left') escape.x -= 13;
-    if (distances[0].edge === 'right') escape.x += 13;
-    if (distances[0].edge === 'top') escape.y -= 13;
-    if (distances[0].edge === 'bottom') escape.y += 13;
+    const radians = (currentProject().layout.positions[component.id].rotation * Math.PI) / 180;
+    const localDirection = {
+      left: { x: -1, y: 0 }, right: { x: 1, y: 0 }, top: { x: 0, y: -1 }, bottom: { x: 0, y: 1 },
+    }[distances[0].edge];
+    const direction = {
+      x: localDirection.x * Math.cos(radians) - localDirection.y * Math.sin(radians),
+      y: localDirection.x * Math.sin(radians) + localDirection.y * Math.cos(radians),
+    };
+    const rotatedWidth = Math.abs(Math.cos(radians)) * width + Math.abs(Math.sin(radians)) * height;
+    const rotatedHeight = Math.abs(Math.sin(radians)) * width + Math.abs(Math.cos(radians)) * height;
+    const renderedScale = Math.min(cardBox.width / rotatedWidth, cardBox.height / rotatedHeight);
+    const pin = {
+      x: anchorBox.left - canvasBox.left + anchorBox.width / 2,
+      y: anchorBox.top - canvasBox.top + anchorBox.height / 2,
+    };
+    const escape = {
+      x: pin.x + direction.x * 13 * renderedScale,
+      y: pin.y + direction.y * 13 * renderedScale,
+    };
     return [endpointKey(endpoint), {
       pin: worldPoint(pin.x / canvasBox.width, pin.y / canvasBox.height),
       escape: worldPoint(escape.x / canvasBox.width, escape.y / canvasBox.height),
     }];
   }).filter(Boolean));
+}
+
+function routeObstacles(canvasBox) {
+  return [...elements.componentlayer.querySelectorAll('.circuit-component')].map((card) => {
+    const box = card.getBoundingClientRect();
+    const topLeft = worldPoint((box.left - canvasBox.left) / canvasBox.width, (box.top - canvasBox.top) / canvasBox.height);
+    const bottomRight = worldPoint((box.right - canvasBox.left) / canvasBox.width, (box.bottom - canvasBox.top) / canvasBox.height);
+    return {
+      component: card.dataset.componentId,
+      left: Math.min(topLeft.x, bottomRight.x), right: Math.max(topLeft.x, bottomRight.x),
+      top: Math.min(topLeft.y, bottomRight.y), bottom: Math.max(topLeft.y, bottomRight.y),
+    };
+  });
 }
 
 function screenRoutePoint(point, canvasBox) {
@@ -423,9 +716,37 @@ function routePathText(points, canvasBox) {
   return `M ${visible.map((point) => `${point.x} ${point.y}`).join(' L ')}`;
 }
 
+function drawComponentWireVisibility(canvasBox = elements.circuitcanvas.getBoundingClientRect()) {
+  for (const layer of elements.componentlayer.querySelectorAll('.component-terminal-wires')) {
+    layer.querySelectorAll('.component-wire-overlay-path').forEach((path) => path.remove());
+    const matrix = layer.getScreenCTM();
+    if (!matrix) continue;
+    const inverse = matrix.inverse();
+    for (const record of [...acceptedRoutePaint, ...proposedRoutePaint]) {
+      const local = record.points.map((point) => {
+        const screen = screenRoutePoint(point, canvasBox);
+        const transformed = new DOMPoint(canvasBox.left + screen.x, canvasBox.top + screen.y).matrixTransform(inverse);
+        return { x: transformed.x, y: transformed.y };
+      });
+      const visible = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      visible.classList.add('component-wire-overlay-path');
+      if (record.proposal) visible.classList.add('proposal');
+      else if (record.netId === proposedRouteNetId) visible.classList.add('drag-source');
+      visible.dataset.net = record.netId;
+      visible.dataset.endpoint = record.endpoint;
+      visible.style.setProperty('--wire-color', record.color);
+      visible.setAttribute('d', `M ${local.map((point) => `${point.x} ${point.y}`).join(' L ')}`);
+      layer.append(visible);
+    }
+  }
+}
+
 function clearRouteProposal() {
   elements.circuitwires.querySelector('.wire-drag-proposal-group')?.remove();
   for (const path of elements.circuitwires.querySelectorAll('.drag-source')) path.classList.remove('drag-source');
+  proposedRoutePaint = [];
+  proposedRouteNetId = null;
+  drawComponentWireVisibility();
 }
 
 function drawRouteProposal(net, family, anchors) {
@@ -433,7 +754,8 @@ function drawRouteProposal(net, family, anchors) {
   const canvasBox = elements.circuitcanvas.getBoundingClientRect();
   const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
   group.classList.add('wire-drag-proposal-group');
-  for (const branch of routeFamilyPaths(family, anchors)) {
+  const branches = routeFamilyPaths(family, anchors);
+  for (const branch of branches) {
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.classList.add('wire-drag-proposal');
     path.dataset.net = net.id;
@@ -444,6 +766,15 @@ function drawRouteProposal(net, family, anchors) {
   }
   for (const path of elements.circuitwires.querySelectorAll(`.circuit-wire[data-net="${net.id}"]`)) path.classList.add('drag-source');
   elements.circuitwires.append(group);
+  proposedRouteNetId = net.id;
+  proposedRoutePaint = branches.map((branch) => ({
+    netId: net.id,
+    endpoint: endpointKey(branch.endpoint),
+    points: branch.points,
+    color: currentProject().layout.wireStyles[net.id]?.color ?? '#39dff2',
+    proposal: true,
+  }));
+  drawComponentWireVisibility(canvasBox);
 }
 
 function cancelRouteDrag(message = 'Wire section move cancelled; route restored.') {
@@ -460,11 +791,8 @@ function cancelRouteDrag(message = 'Wire section move cancelled; route restored.
 
 function startRouteDrag(event, { net, family, anchors, endpoint, segmentIndex, orientation, target }) {
   if (routeDrag || event.button !== 0) return;
-  if (document.elementsFromPoint(event.clientX, event.clientY)
-    .some((element) => element !== target && element.closest?.('.pin-anchor, .circuit-component'))) return;
   event.preventDefault(); event.stopPropagation();
-  selectedNetId = net.id;
-  selectedRouteSegment = { netId: net.id, endpoint, segmentIndex, orientation };
+  selectWireSegment({ netId: net.id, endpoint, segmentIndex, orientation });
   renderInspector();
   routeDrag = {
     pointerId: event.pointerId,
@@ -483,6 +811,60 @@ function startRouteDrag(event, { net, family, anchors, endpoint, segmentIndex, o
   elements.wirestate.textContent = `${orientation === 'horizontal' ? 'Horizontal' : 'Vertical'} section selected · drag ${orientation === 'horizontal' ? 'up/down' : 'left/right'} · Escape cancels.`;
 }
 
+function wireTargetKey(target) {
+  return `${target.dataset.net}\u0000${target.dataset.endpoint}\u0000${target.dataset.segment}`;
+}
+
+function pointToLineDistance(point, start, end) {
+  const dx = end.x - start.x; const dy = end.y - start.y;
+  const lengthSquared = dx * dx + dy * dy;
+  if (!lengthSquared) return Math.hypot(point.x - start.x, point.y - start.y);
+  const ratio = Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared));
+  return Math.hypot(point.x - (start.x + ratio * dx), point.y - (start.y + ratio * dy));
+}
+
+function wireTargetsAtPoint(clientX, clientY) {
+  return [...elements.circuitwires.querySelectorAll('.wire-segment-hit')].filter((target) => {
+    const length = target.getTotalLength();
+    const matrix = target.getScreenCTM();
+    if (!matrix || !length) return false;
+    const firstLocal = target.getPointAtLength(0); const lastLocal = target.getPointAtLength(length);
+    const first = new DOMPoint(firstLocal.x, firstLocal.y).matrixTransform(matrix);
+    const last = new DOMPoint(lastLocal.x, lastLocal.y).matrixTransform(matrix);
+    return pointToLineDistance({ x: clientX, y: clientY }, first, last) <= 9;
+  }).sort((left, right) => wireTargetKey(left).localeCompare(wireTargetKey(right)));
+}
+
+function selectSegmentTarget(target, { announce = true } = {}) {
+  const interaction = target?.routeInteraction;
+  if (!interaction) return false;
+  selectWireSegment(interaction);
+  renderInspector();
+  for (const candidate of elements.circuitwires.querySelectorAll('.wire-segment-hit')) candidate.classList.remove('selected');
+  target.classList.add('selected');
+  if (announce) {
+    const overlapCount = wireTargetsAtPoint(...interaction.midpoint).length;
+    elements.wirestate.textContent = `Selected ${interaction.orientation} section ${interaction.segmentIndex + 1} of ${interaction.endpoint} on ${interaction.netId}.${overlapCount > 1 ? ` ${overlapCount} routes overlap here; select again to cycle.` : ''} Junction hubs remain fixed; crossings do not connect.`;
+  }
+  return true;
+}
+
+function cycledWireTarget(candidates, clientX, clientY) {
+  if (!candidates.length) return null;
+  const keys = candidates.map(wireTargetKey);
+  const samePoint = wireCycle && Math.hypot(wireCycle.x - clientX, wireCycle.y - clientY) <= 6
+    && JSON.stringify(wireCycle.keys) === JSON.stringify(keys);
+  let index = 0;
+  if (samePoint) index = (wireCycle.index + 1) % candidates.length;
+  else if (selection.kind === 'wire-segment') {
+    const selectedKey = `${selection.netId}\u0000${selection.endpoint}\u0000${selection.segmentIndex}`;
+    const selectedIndex = keys.indexOf(selectedKey);
+    if (selectedIndex >= 0) index = selectedIndex;
+  }
+  wireCycle = { x: clientX, y: clientY, keys, index };
+  return candidates[index];
+}
+
 function moveRouteDrag(event) {
   if (!routeDrag || event.pointerId !== routeDrag.pointerId) return;
   event.preventDefault();
@@ -492,15 +874,24 @@ function moveRouteDrag(event) {
     (event.clientY - canvasBox.top) / canvasBox.height,
   );
   const coordinate = Math.max(-1, Math.min(2, routeDrag.orientation === 'horizontal' ? point.y : point.x));
-  routeDrag.proposalFamily = moveRouteSegment(
-    routeDrag.originalFamily,
-    routeDrag.anchors,
-    routeDrag.endpoint,
-    routeDrag.segmentIndex,
-    coordinate,
-    routeDrag.net,
-  );
-  drawRouteProposal(routeDrag.net, routeDrag.proposalFamily, routeDrag.anchors);
+  try {
+    routeDrag.proposalFamily = moveRouteSegment(
+      routeDrag.originalFamily,
+      routeDrag.anchors,
+      routeDrag.endpoint,
+      routeDrag.segmentIndex,
+      coordinate,
+      routeDrag.net,
+    );
+    routeDrag.invalidCode = null;
+    drawRouteProposal(routeDrag.net, routeDrag.proposalFamily, routeDrag.anchors);
+  } catch (error) {
+    if (!['ROUTE_MOVE_LOOP', 'ROUTE_MOVE_COMPLEXITY'].includes(error?.message)) throw error;
+    routeDrag.proposalFamily = routeDrag.originalFamily;
+    routeDrag.invalidCode = error.message;
+    clearRouteProposal();
+    elements.wirestate.textContent = 'That move would add a route loop. The saved wire is unchanged; choose a different section or direction.';
+  }
 }
 
 function finishRouteDrag(event) {
@@ -512,6 +903,10 @@ function finishRouteDrag(event) {
   try {
     if (active.target.hasPointerCapture(active.pointerId)) active.target.releasePointerCapture(active.pointerId);
   } catch { /* capture may already be released by the browser */ }
+  if (active.invalidCode) {
+    elements.wirestate.textContent = 'Move rejected because it would add a route loop. No route or history changed.';
+    return;
+  }
   if (JSON.stringify(active.proposalFamily) === JSON.stringify(active.originalFamily)) {
     elements.wirestate.textContent = 'Wire section stayed on its original grid line.';
     return;
@@ -542,13 +937,16 @@ function createSegmentInteraction(net, family, anchors, branch, segmentIndex, ca
   hit.setAttribute('tabindex', '0');
   hit.setAttribute('role', 'button');
   hit.setAttribute('aria-label', `${net.id}, branch ${endpoint}, ${orientation} section ${segmentIndex + 1}. ${orientation === 'horizontal' ? 'Up and Down' : 'Left and Right'} move it on the grid. Junction hubs remain fixed.`);
+  const firstScreen = screenRoutePoint(left, canvasBox); const lastScreen = screenRoutePoint(right, canvasBox);
+  hit.routeInteraction = {
+    net, netId: net.id, family, anchors, endpoint, segmentIndex, orientation,
+    midpoint: [
+      canvasBox.left + (firstScreen.x + lastScreen.x) / 2,
+      canvasBox.top + (firstScreen.y + lastScreen.y) / 2,
+    ],
+  };
   const select = () => {
-    selectedNetId = net.id;
-    selectedRouteSegment = { netId: net.id, endpoint, segmentIndex, orientation };
-    renderInspector();
-    for (const target of elements.circuitwires.querySelectorAll('.wire-segment-hit')) target.classList.remove('selected');
-    hit.classList.add('selected');
-    elements.wirestate.textContent = `Selected ${orientation} section ${segmentIndex + 1} of ${endpoint}. Junction hubs remain fixed; crossings do not connect.`;
+    selectSegmentTarget(hit);
   };
   hit.addEventListener('click', select);
   hit.addEventListener('focus', select);
@@ -557,10 +955,22 @@ function createSegmentInteraction(net, family, anchors, branch, segmentIndex, ca
       ? { ArrowUp: -0.01, ArrowDown: 0.01 }[event.key]
       : { ArrowLeft: -0.01, ArrowRight: 0.01 }[event.key];
     if (delta === undefined && !['Enter', ' '].includes(event.key)) return;
-    event.preventDefault(); event.stopPropagation(); select();
-    if (delta === undefined) return;
+    event.preventDefault(); event.stopPropagation();
+    if (delta === undefined) {
+      const candidates = wireTargetsAtPoint(...hit.routeInteraction.midpoint);
+      selectSegmentTarget(cycledWireTarget(candidates, ...hit.routeInteraction.midpoint) ?? hit);
+      return;
+    }
+    select();
     const coordinate = (orientation === 'horizontal' ? left.y : left.x) + delta;
-    const moved = moveRouteSegment(family, anchors, endpoint, segmentIndex, coordinate, net);
+    let moved;
+    try {
+      moved = moveRouteSegment(family, anchors, endpoint, segmentIndex, coordinate, net);
+    } catch (error) {
+      if (!['ROUTE_MOVE_LOOP', 'ROUTE_MOVE_COMPLEXITY'].includes(error?.message)) throw error;
+      elements.wirestate.textContent = 'Keyboard move rejected because it would add a route loop. The wire is unchanged.';
+      return;
+    }
     applyEditor({ type: 'wire.route.family.set', netId: net.id, family: moved }, `Moved section of ${net.id}`);
     requestAnimationFrame(() => elements.circuitwires.querySelector(
       `.wire-segment-hit[data-net="${net.id}"][data-endpoint="${endpoint}"][data-segment="${segmentIndex}"]`,
@@ -568,10 +978,6 @@ function createSegmentInteraction(net, family, anchors, branch, segmentIndex, ca
   });
   hit.addEventListener('pointerenter', () => { if (!routeDrag) highlight.classList.add('hovered'); });
   hit.addEventListener('pointerleave', () => { if (!routeDrag) highlight.classList.remove('hovered'); });
-  hit.addEventListener('pointerdown', (event) => {
-    highlight.classList.add('hovered');
-    startRouteDrag(event, { net, family, anchors, endpoint, segmentIndex, orientation, target: hit });
-  });
   hit.addEventListener('pointermove', moveRouteDrag);
   hit.addEventListener('pointerup', finishRouteDrag);
   hit.addEventListener('pointercancel', () => cancelRouteDrag());
@@ -588,10 +994,12 @@ function drawCircuitWires() {
   if (!canvasBox.width || !canvasBox.height) return;
   elements.circuitwires.setAttribute('viewBox', `0 0 ${canvasBox.width} ${canvasBox.height}`);
   const drawings = [];
+  const paint = [];
+  const obstacles = routeObstacles(canvasBox);
   for (const net of currentProject().circuit.nets) {
     const anchors = netAnchors(net, canvasBox);
     if (Object.keys(anchors).length < 2) continue;
-    const family = materializeRouteFamily(net, currentProject().layout.wireRoutes[net.id], anchors);
+    const family = materializeRouteFamily(net, currentProject().layout.wireRoutes[net.id], anchors, obstacles);
     const branches = routeFamilyPaths(family, anchors);
     for (const branch of branches) {
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -602,6 +1010,13 @@ function drawCircuitWires() {
       path.style.setProperty('--wire-color', currentProject().layout.wireStyles[net.id]?.color ?? '#39dff2');
       path.setAttribute('d', routePathText(branch.points, canvasBox));
       drawings.push(path);
+      paint.push({
+        netId: net.id,
+        endpoint: endpointKey(branch.endpoint),
+        points: branch.points,
+        color: currentProject().layout.wireStyles[net.id]?.color ?? '#39dff2',
+        proposal: false,
+      });
       for (let index = 0; index < branch.points.length - 1; index += 1) {
         drawings.push(...createSegmentInteraction(net, family, anchors, branch, index, canvasBox));
       }
@@ -615,7 +1030,9 @@ function drawCircuitWires() {
       drawings.push(dot);
     }
   }
+  acceptedRoutePaint = paint;
   elements.circuitwires.replaceChildren(...drawings);
+  drawComponentWireVisibility(canvasBox);
 }
 
 function snappedComponentPoint(point) {
@@ -660,7 +1077,7 @@ function moveComponentDrag(event) {
 
 function cardPointerDrag(card, componentId) {
   card.addEventListener('pointerdown', (event) => {
-    if (event.target.closest('.pin-anchor') || event.button !== 0) return;
+    if (canvasInteractionMode !== 'select' || event.target.closest('.pin-anchor,.component-control-hit') || event.button !== 0) return;
     const box = elements.circuitcanvas.getBoundingClientRect();
     const pointer = worldPoint((event.clientX - box.left) / box.width, (event.clientY - box.top) / box.height);
     const original = structuredClone(currentProject().layout.positions[componentId]);
@@ -669,7 +1086,7 @@ function cardPointerDrag(card, componentId) {
       offset: { x: pointer.x - original.x, y: pointer.y - original.y },
       proposal: { x: original.x, y: original.y }, moved: false,
     };
-    selectedComponentId = componentId;
+    selectComponent(componentId);
     renderInspector();
     card.classList.add('dragging');
     card.setPointerCapture(event.pointerId);
@@ -716,7 +1133,7 @@ function handlePin(endpoint, reconnect = false) {
     }
     const result = applyEditor({ type: 'wire.reconnect', netId: fromNet, from, to: endpoint }, `Reconnected ${fromNet}`);
     if (result.ok) {
-      selectedRouteSegment = null;
+      selectNet(fromNet);
       wireMode = 'connect';
       elements.reconnectmode.setAttribute('aria-pressed', 'false');
       elements.wirestate.textContent = `Reconnected one branch of ${fromNet}. Other endpoints were unchanged.`;
@@ -759,6 +1176,7 @@ function renderComponents() {
     card.style.setProperty('--part-width', `${definition.artwork.cssWidth}px`);
     card.style.setProperty('--part-height', `${definition.artwork.cssHeight}px`);
     card.append(createComponentArtwork(definition, component));
+    card.append(createTerminalWireLayer(component, definition));
     for (const pin of definition.pins) {
       const anchor = document.createElement('button'); anchor.type = 'button'; anchor.className = 'pin-anchor';
       anchor.dataset.endpoint = `${component.id}.${pin.id}`; anchor.textContent = pin.id;
@@ -778,7 +1196,40 @@ function renderComponents() {
       });
       card.append(anchor);
     }
-    card.addEventListener('click', () => { selectedComponentId = component.id; renderInspector(); renderComponents(); });
+    if (component.type === 'button.momentary-v1') {
+      const control = document.createElement('button');
+      control.type = 'button'; control.className = 'component-control-hit';
+      control.dataset.canvasControl = `${component.id}.pressed`;
+      control.tabIndex = canvasInteractionMode === 'interact' ? 0 : -1;
+      control.setAttribute('aria-pressed', String(component.controls.pressed));
+      control.setAttribute('aria-label', `${component.label}: ${component.controls.pressed ? 'pressed' : 'released'}. Hold Space, Enter, or pointer to operate.`);
+      control.addEventListener('pointerdown', (event) => {
+        if (canvasInteractionMode !== 'interact' || event.button !== 0) return;
+        event.preventDefault(); event.stopPropagation();
+        activeCanvasButton = { componentId: component.id, pointerId: event.pointerId, target: control };
+        control.setPointerCapture(event.pointerId);
+        setMomentaryControl(component.id, true, 'canvas pointer');
+      });
+      control.addEventListener('pointerup', (event) => {
+        if (activeCanvasButton?.pointerId !== event.pointerId) return;
+        event.preventDefault(); event.stopPropagation(); releaseCanvasButton('canvas pointer');
+      });
+      control.addEventListener('pointercancel', () => releaseCanvasButton('pointer cancellation'));
+      control.addEventListener('lostpointercapture', () => releaseCanvasButton('lost pointer capture'));
+      control.addEventListener('keydown', (event) => {
+        if (![' ', 'Enter'].includes(event.key) || event.repeat) return;
+        event.preventDefault(); event.stopPropagation(); setMomentaryControl(component.id, true, 'canvas keyboard');
+      });
+      control.addEventListener('keyup', (event) => {
+        if (![' ', 'Enter'].includes(event.key)) return;
+        event.preventDefault(); event.stopPropagation(); setMomentaryControl(component.id, false, 'canvas keyboard');
+      });
+      control.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); });
+      control.addEventListener('blur', () => setMomentaryControl(component.id, false, 'canvas keyboard blur'));
+      card.classList.toggle('control-pressed', component.controls.pressed);
+      card.append(control);
+    }
+    card.addEventListener('click', () => { selectComponent(component.id); renderInspector(); renderComponents(); });
     cardPointerDrag(card, component.id);
     return card;
   });
@@ -984,7 +1435,7 @@ function addComponent(type, point = null) {
     });
     const result = applyEditor({ type: 'component.add', component, position }, `Added ${component.id}`);
     if (result.ok) {
-      selectedComponentId = component.id;
+      selectComponent(component.id);
       markRecentComponent(type);
       renderCatalog();
     }
@@ -1071,13 +1522,29 @@ function renderWireBends(net) {
 }
 
 function renderInspector() {
-  const component = currentProject().circuit.components.find((item) => item.id === selectedComponentId) ?? null;
-  if (!component) selectedComponentId = null;
-  elements.selectionname.textContent = component ? `${component.label} · ${component.id}` : 'Nothing selected';
+  let component = currentProject().circuit.components.find((item) => item.id === selectedComponentId) ?? null;
+  let net = currentProject().circuit.nets.find((item) => item.id === selectedNetId) ?? null;
+  if ((selection.kind === 'component' && !component)
+      || (['wire-segment', 'net'].includes(selection.kind) && !net)
+      || (selection.kind === 'wire-segment'
+        && !net?.endpoints.some((endpoint) => endpointKey(endpoint) === selection.endpoint))) {
+    setSelection({ kind: 'none' });
+    component = null;
+    net = null;
+  }
+  elements.selectionname.textContent = component
+    ? `${component.label} · ${component.id}`
+    : selection.kind === 'wire-segment'
+      ? `${selection.netId} · ${selection.endpoint} · ${selection.orientation} section ${selection.segmentIndex + 1}`
+      : selection.kind === 'net' ? `${selection.netId} · whole net` : 'Nothing selected';
   const definition = component ? COMPONENT_CATALOG[component.type] : null;
   elements.selectionsupport.textContent = definition
     ? `${SUPPORT_STATUS[definition.support.status]} · ${definition.partNumber} · ${definition.support.limitations.join(' ')}`
-    : 'Select a part to see its exact simulation support.';
+    : selection.kind === 'wire-segment'
+      ? 'Selected physical branch section. Delete removes this connection only; crossings never connect.'
+      : selection.kind === 'net'
+        ? 'Whole net selected for inspection. Use the separately labelled whole-net action to remove it.'
+        : 'Select a part or wire section to inspect its exact target.';
   elements.rotatecomponent.disabled = !component;
   elements.duplicatecomponent.disabled = !component || component.type.startsWith('board.');
   elements.deletecomponent.disabled = !component;
@@ -1087,14 +1554,11 @@ function renderInspector() {
   const options = [new Option('No net selected', ''), ...currentProject().circuit.nets.map((net) => new Option(`${net.id} · ${net.endpoints.length} pins`, net.id))];
   elements.selectednet.replaceChildren(...options);
   if (currentProject().circuit.nets.some((net) => net.id === prior)) elements.selectednet.value = prior;
-  else selectedNetId = null;
-  const net = currentProject().circuit.nets.find((item) => item.id === selectedNetId);
-  if (selectedRouteSegment && (!net || selectedRouteSegment.netId !== net.id
-      || !net.endpoints.some((endpoint) => endpointKey(endpoint) === selectedRouteSegment.endpoint))) {
-    selectedRouteSegment = null;
-  }
+  else if (selection.kind !== 'component') setSelection({ kind: 'none' });
+  net = currentProject().circuit.nets.find((item) => item.id === selectedNetId) ?? null;
   elements.addbend.disabled = !net || !selectedRouteSegment;
-  elements.deletebranch.disabled = !net || !selectedRouteSegment || net.endpoints.length < 3;
+  elements.deletebranch.disabled = !net || !selectedRouteSegment;
+  elements.deletebranch.textContent = net?.endpoints.length === 2 ? 'Delete selected connection' : 'Delete selected branch';
   elements.deletewire.disabled = !net;
   elements.reconnectmode.disabled = !net || !selectedRouteSegment;
   elements.wirecolor.disabled = !net;
@@ -1116,8 +1580,7 @@ function renderRuntimeControls() {
       button.setAttribute('aria-pressed', String(component.controls.pressed)); button.textContent = component.controls.pressed ? 'Pressed' : 'Released';
       button.addEventListener('click', () => {
         const pressed = button.getAttribute('aria-pressed') !== 'true';
-        const result = applyEditor({ type: 'component.control.set', componentId: component.id, key: 'pressed', value: pressed }, `${component.id} ${pressed ? 'pressed' : 'released'}`);
-        if (result.ok) worker?.postMessage({ command: 'control', componentId: component.id, key: 'pressed', value: pressed });
+        setMomentaryControl(component.id, pressed, 'runtime control');
       });
       row.append(label, button); return [row];
     }
@@ -1156,16 +1619,23 @@ function renderProject() {
   elements.editortitle.textContent = selectedSourceFile;
   if (elements.source.value !== selectedFile.content) elements.source.value = selectedFile.content;
   renderSourceEditor();
-  const saved = savedRevision === editor.revision && savedProjectGeneration === lifecycle.projectGeneration;
+  const browserRecoveryCurrent = savedRevision === editor.revision && savedProjectGeneration === lifecycle.projectGeneration;
+  const fileSaved = fileSavedRevision === editor.revision && fileSavedProjectGeneration === lifecycle.projectGeneration;
   elements.projectname.value = project.metadata.name;
-  elements.projectstate.textContent = `${project.metadata.name} · ${lifecycle.phase} · revision ${editor.revision} · ${saved ? 'saved locally' : 'not saved'}`;
+  const saveState = fileSaved ? fileSaveState : browserRecoveryCurrent ? 'browser recovery current · not saved to file' : 'not saved to file';
+  elements.projectstate.textContent = `${project.metadata.name} · ${lifecycle.phase} · revision ${editor.revision} · ${saveState}`;
   elements.canvastitle.textContent = `${project.metadata.name} circuit`;
   elements.undo.disabled = !editor.undoStack.length; elements.redo.disabled = !editor.redoStack.length;
   elements.zoomvalue.value = `${Math.round(project.layout.viewport.zoom * 100)}%`;
   for (const option of elements.logicchannels.options) option.selected = project.instruments.logicChannels.includes(option.value);
   if ([...elements.pinselect.options].some((option) => option.value === project.instruments.selectedPin)) elements.pinselect.value = project.instruments.selectedPin;
   elements.quickbuild.disabled = elements.build.disabled;
-  publish({ project: JSON.parse(exportCanonicalProject(project)), graph: structuredClone(project.circuit), revision: editor.revision, selectedComponentId });
+  publish({
+    project: JSON.parse(exportCanonicalProject(project)), graph: structuredClone(project.circuit), revision: editor.revision,
+    selectedComponentId, selectedNetId,
+    selectedRouteSegment: selectedRouteSegment ? structuredClone(selectedRouteSegment) : null,
+    selection: structuredClone(selection),
+  });
   renderLifecycle();
   renderComponents(); renderInspector(); renderRuntimeControls();
 }
@@ -1228,6 +1698,7 @@ function renderRuntime(message) {
     ? (serial.records.length ? serialEventText(serial.records) : 'No serial events.')
     : (textView || 'No firmware bytes.');
   elements.serialcount.textContent = `${serial.records.length} records${serial.dropped ? ` · ${serial.dropped} dropped` : ''}`;
+  updateSerialAutoscroll(serial);
   const logic = message.instruments?.logic ?? { transitions: [], dropped: 0 };
   const recent = logic.transitions.slice(-Number(elements.logicwindow.value)).reverse();
   elements.logicoutput.replaceChildren(...(recent.length ? recent : [{ pin: '—', cycle: 0, level: false }]).map((entry) => {
@@ -1481,6 +1952,82 @@ elements.speed.addEventListener('change', () => {
   elements.requestedspeed.textContent = speed === 'maximum' ? 'Maximum' : `${speed}×`;
   worker?.postMessage({ command: 'speed', speed });
 });
+function setSerialDock(open, { returnFocus = false } = {}) {
+  elements.serialdock.hidden = !open;
+  elements.serialtab.setAttribute('aria-expanded', String(open));
+  document.body.classList.toggle('serial-dock-open', open);
+  publish({ serialDockOpen: open });
+  if (open && serialAutoscroll) requestAnimationFrame(resumeSerialAutoscrollFromControl);
+  if (!open && returnFocus) elements.serialtab.focus();
+  requestAnimationFrame(() => requestAnimationFrame(drawCircuitWires));
+}
+
+function setCanvasInteractionMode(mode) {
+  if (!['select', 'interact'].includes(mode)) return;
+  if (mode === 'select') releaseCanvasButton('mode change');
+  canvasInteractionMode = mode;
+  elements.circuitcanvas.dataset.mode = mode;
+  elements.canvasselectmode.setAttribute('aria-pressed', String(mode === 'select'));
+  elements.canvasinteractmode.setAttribute('aria-pressed', String(mode === 'interact'));
+  elements.wirestate.textContent = mode === 'interact'
+    ? 'Interact mode: hold the tactile button with pointer, Space, or Enter while reading Serial.'
+    : 'Select mode: move parts, choose pins, and edit wire sections.';
+  publish({ canvasInteractionMode: mode });
+  renderComponents();
+}
+
+elements.serialtab.addEventListener('click', () => setSerialDock(elements.serialtab.getAttribute('aria-expanded') !== 'true'));
+elements.serialclose.addEventListener('click', () => setSerialDock(false, { returnFocus: true }));
+elements.serialresume.addEventListener('pointerdown', resumeSerialAutoscrollFromControl);
+elements.serialresume.addEventListener('click', resumeSerialAutoscrollFromControl);
+function pauseSerialAutoscroll() {
+  if (performance.now() < serialResumeGuardUntil) return;
+  if (!serialAutoscroll) return;
+  if (serialScrollFrame !== null) cancelAnimationFrame(serialScrollFrame);
+  serialScrollFrame = null;
+  serialAutoscroll = false;
+  publish({ serialAutoscroll, serialUnreadRecords });
+}
+elements.serialoutput.addEventListener('wheel', pauseSerialAutoscroll, { passive: true });
+elements.serialoutput.addEventListener('touchmove', pauseSerialAutoscroll, { passive: true });
+elements.serialoutput.addEventListener('pointermove', (event) => { if (event.buttons) pauseSerialAutoscroll(); });
+elements.serialoutput.addEventListener('keydown', (event) => {
+  if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End'].includes(event.key)) pauseSerialAutoscroll();
+});
+elements.serialoutput.addEventListener('scroll', () => {
+  const atEnd = elements.serialoutput.scrollHeight - elements.serialoutput.scrollTop - elements.serialoutput.clientHeight <= 6;
+  if (atEnd) resumeSerialAutoscroll();
+  else if (!serialAutoscroll) publish({ serialAutoscroll, serialUnreadRecords });
+  else scheduleSerialScrollToEnd();
+});
+let serialResize = null;
+function setSerialDockWidth(width) {
+  const maximum = Math.min(620, window.innerWidth * 0.48);
+  const snapped = Math.round(clamp(width, 300, maximum) / 20) * 20;
+  document.documentElement.dataset.serialWidth = String(clamp(snapped, 300, 620));
+}
+elements.serialresizer.addEventListener('pointerdown', (event) => {
+  serialResize = { pointerId: event.pointerId, x: event.clientX, width: elements.serialdock.getBoundingClientRect().width };
+  elements.serialresizer.setPointerCapture(event.pointerId);
+});
+elements.serialresizer.addEventListener('pointermove', (event) => {
+  if (!serialResize || serialResize.pointerId !== event.pointerId) return;
+  const width = clamp(serialResize.width + serialResize.x - event.clientX, 300, Math.min(620, window.innerWidth * 0.48));
+  setSerialDockWidth(width);
+  requestAnimationFrame(drawCircuitWires);
+});
+const finishSerialResize = () => { serialResize = null; requestAnimationFrame(() => requestAnimationFrame(drawCircuitWires)); };
+elements.serialresizer.addEventListener('pointerup', finishSerialResize);
+elements.serialresizer.addEventListener('pointercancel', finishSerialResize);
+elements.serialresizer.addEventListener('keydown', (event) => {
+  if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+  event.preventDefault();
+  const current = elements.serialdock.getBoundingClientRect().width;
+  setSerialDockWidth(current + (event.key === 'ArrowLeft' ? 20 : -20));
+  requestAnimationFrame(() => requestAnimationFrame(drawCircuitWires));
+});
+elements.canvasselectmode.addEventListener('click', () => setCanvasInteractionMode('select'));
+elements.canvasinteractmode.addEventListener('click', () => setCanvasInteractionMode('interact'));
 elements.serialsend.addEventListener('click', () => { for (const value of serialInputBytes(elements.serialinput.value, elements.serialnewline.value)) worker?.postMessage({ command: 'uart-rx', value }); elements.serialinput.value = ''; });
 elements.serialinput.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); elements.serialsend.click(); } });
 elements.serialclear.addEventListener('click', () => worker?.postMessage({ command: 'serial-clear' }));
@@ -1515,12 +2062,16 @@ elements.duplicatecomponent.addEventListener('click', () => {
   const source = currentProject().circuit.components.find((component) => component.id === selectedComponentId); if (!source) return;
   const newId = newComponent(source.type, currentProject().circuit).id;
   const result = applyEditor({ type: 'component.duplicate', sourceId: source.id, newId }, `Duplicated ${source.id}`);
-  if (result.ok) { selectedComponentId = newId; renderProject(); }
+  if (result.ok) { selectComponent(newId); renderProject(); }
 });
-elements.deletecomponent.addEventListener('click', () => { if (selectedComponentId) { const id = selectedComponentId; selectedComponentId = null; applyEditor({ type: 'component.remove', componentId: id }, `Deleted ${id}`); } });
+elements.deletecomponent.addEventListener('click', () => {
+  if (!selectedComponentId) return;
+  const id = selectedComponentId;
+  setSelection({ kind: 'none' });
+  applyEditor({ type: 'component.remove', componentId: id }, `Deleted ${id}`);
+});
 elements.selectednet.addEventListener('change', () => {
-  selectedNetId = elements.selectednet.value || null;
-  selectedRouteSegment = null;
+  selectNet(elements.selectednet.value || null);
   renderInspector(); drawCircuitWires();
 });
 elements.wirecolor.addEventListener('change', () => {
@@ -1540,7 +2091,7 @@ elements.addbend.addEventListener('click', () => {
   const net = currentProject().circuit.nets.find((item) => item.id === selectedNetId);
   const canvasBox = elements.circuitcanvas.getBoundingClientRect();
   const anchors = netAnchors(net, canvasBox);
-  const family = materializeRouteFamily(net, currentProject().layout.wireRoutes[net.id], anchors);
+  const family = materializeRouteFamily(net, currentProject().layout.wireRoutes[net.id], anchors, routeObstacles(canvasBox));
   try {
     const jogged = addRouteJog(
       family, anchors, selectedRouteSegment.endpoint, selectedRouteSegment.segmentIndex, net,
@@ -1555,16 +2106,24 @@ elements.deletebranch.addEventListener('click', () => {
   if (!selectedNetId || !selectedRouteSegment) return;
   const endpoint = parseEndpoint(selectedRouteSegment.endpoint);
   const id = selectedNetId;
-  const result = applyEditor({ type: 'wire.branch.delete', netId: id, endpoint }, `Deleted branch ${selectedRouteSegment.endpoint}`);
+  const endpointLabel = selectedRouteSegment.endpoint;
+  const net = currentProject().circuit.nets.find((item) => item.id === id);
+  const command = net?.endpoints.length === 2
+    ? { type: 'wire.delete', netId: id }
+    : { type: 'wire.branch.delete', netId: id, endpoint };
+  setSelection({ kind: 'none' });
+  const result = applyEditor(command, net?.endpoints.length === 2
+    ? `Deleted connection ${id}` : `Deleted branch ${endpointLabel}`);
   if (result.ok) {
-    selectedRouteSegment = null;
-    elements.wirestate.textContent = `Deleted one branch from ${id}. The remaining net and endpoints were preserved.`;
+    elements.wirestate.textContent = net?.endpoints.length === 2
+      ? `Deleted the selected two-pin connection ${id}. Both components and unrelated nets were preserved.`
+      : `Deleted branch ${endpointLabel} from ${id}. The remaining net and endpoints were preserved.`;
     renderProject();
   }
 });
 elements.deletewire.addEventListener('click', () => {
   if (selectedNetId) {
-    const id = selectedNetId; selectedNetId = null; selectedRouteSegment = null;
+    const id = selectedNetId; setSelection({ kind: 'none' });
     applyEditor({ type: 'wire.delete', netId: id }, `Deleted whole net ${id}`);
   }
 });
@@ -1642,6 +2201,19 @@ elements.circuitcanvas.addEventListener('wheel', (event) => {
   setViewport({ zoom, panX: clamp(screenX - 0.5 - (world.x - 0.5) * zoom, -1, 1), panY: clamp(screenY - 0.5 - (world.y - 0.5) * zoom, -1, 1) });
 }, { passive: false });
 elements.circuitcanvas.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0 || event.target.closest?.('.pin-anchor,.component-control-hit')) return;
+  const candidates = wireTargetsAtPoint(event.clientX, event.clientY);
+  const target = cycledWireTarget(candidates, event.clientX, event.clientY);
+  if (!target?.routeInteraction) return;
+  target.nextElementSibling?.classList.add('hovered');
+  suppressCanvasClickUntil = performance.now() + 500;
+  startRouteDrag(event, { ...target.routeInteraction, target });
+}, true);
+elements.circuitcanvas.addEventListener('click', (event) => {
+  if (performance.now() >= suppressCanvasClickUntil) return;
+  event.preventDefault(); event.stopImmediatePropagation();
+}, true);
+elements.circuitcanvas.addEventListener('pointerdown', (event) => {
   if (event.button !== 0 || event.target.closest('.circuit-component,.wire-segment-hit')) return;
   canvasPan = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, viewport: structuredClone(currentProject().layout.viewport) };
   elements.circuitcanvas.setPointerCapture(event.pointerId); elements.circuitcanvas.classList.add('panning');
@@ -1683,6 +2255,7 @@ elements.projectnew.addEventListener('click', () => {
   editor = new ProjectEditorReducer(createEmptyProject());
   installProjectGeneration({ empty: true, reason: 'project.new', runtimeMessage: 'New empty project — build required' });
   selectedSourceFile = 'main.ino';
+  projectFileHandle = null; fileSavedRevision = null; fileSavedProjectGeneration = null; fileSaveState = null;
   localStorage.removeItem(PROJECT_STORAGE_KEY); localStorage.removeItem(PROJECT_RECOVERY_KEY); renderProject(); elements.projectmessage.textContent = 'Created an actually empty project.';
 });
 elements.projectdemo.addEventListener('click', () => {
@@ -1696,7 +2269,13 @@ elements.projectdemo.addEventListener('click', () => {
   persistProject(); publish({ lastAction: `${elements.exampleselect.value.toUpperCase()}_EXAMPLE_LOADED`, importReport: null }); renderProject();
   elements.projectmessage.textContent = `${example.name} loaded through the same safety checks as every project. Edit it, build it, then inspect the live instruments.`;
 });
-elements.projectsave.addEventListener('click', () => { persistProject('Saved and revalidated in this browser.'); renderProject(); });
+elements.projectsave.addEventListener('click', saveProjectFile);
+elements.projectopen.addEventListener('click', openProjectFile);
+elements.projectopeninput.addEventListener('change', async () => {
+  const file = elements.projectopeninput.files[0];
+  elements.projectopeninput.value = '';
+  await replaceProjectFromFile(file);
+});
 elements.projectname.addEventListener('change', () => {
   const result = applyEditor({ type: 'project.rename', name: elements.projectname.value }, 'Project renamed');
   if (!result.ok) elements.projectname.value = currentProject().metadata.name;
@@ -1714,7 +2293,7 @@ elements.projectreload.addEventListener('click', () => {
   });
   selectedSourceFile = 'main.ino';
   savedRevision = editor.revision; savedProjectGeneration = lifecycle.projectGeneration;
-  renderProject(); elements.projectmessage.textContent = 'Reloaded and revalidated local project. Previous runtime output was cleared.';
+  renderProject(); elements.projectmessage.textContent = 'Restored and revalidated browser recovery. Previous runtime output was cleared; save a project file for durable storage.';
 });
 elements.projectexport.addEventListener('click', async () => {
   const text = exportCanonicalProject(currentProject()); const digest = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))].map((value) => value.toString(16).padStart(2, '0')).join('');
@@ -1786,12 +2365,34 @@ document.addEventListener('mousemove', (event) => { if (componentDrag) moveCompo
 document.addEventListener('mouseup', () => {
   if (componentDrag) finishComponentDrag({ pointerId: componentDrag.pointerId });
 });
+function cancelCanvasPan() {
+  if (!canvasPan) return false;
+  canvasPan = null; elements.canvastransform.style.transform = ''; elements.circuitcanvas.classList.remove('panning');
+  elements.wirestate.textContent = 'Canvas pan cancelled; the original view is unchanged.';
+  return true;
+}
+
+function cancelPendingWiring() {
+  if (!pendingEndpoint && wireMode === 'connect') return false;
+  pendingEndpoint = null; wireMode = 'connect'; elements.reconnectmode.setAttribute('aria-pressed', 'false');
+  elements.wirestate.textContent = 'Wire preview or reconnect cancelled; topology is unchanged.';
+  renderComponents();
+  return true;
+}
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && (cancelComponentDrag() || cancelRouteDrag())) { event.preventDefault(); return; }
-  if (event.target.matches('textarea,input,select')) return;
+  if (event.key === 'Escape'
+      && (cancelComponentDrag() || cancelRouteDrag() || releaseCanvasButton('Escape') || cancelCanvasPan() || cancelPendingWiring())) {
+    event.preventDefault(); return;
+  }
+  if (isTextEditingTarget(event.target)) return;
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); (event.shiftKey ? elements.redo : elements.undo).click(); return; }
+  if (event.key === 'Delete' || event.key === 'Backspace') {
+    if (selection.kind === 'component') { event.preventDefault(); elements.deletecomponent.click(); }
+    else if (selection.kind === 'wire-segment') { event.preventDefault(); elements.deletebranch.click(); }
+    else if (selection.kind === 'net') elements.wirestate.textContent = 'Whole-net deletion uses the separately labelled Delete whole net action.';
+    return;
+  }
   if (!selectedComponentId) return;
-  if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); elements.deletecomponent.click(); return; }
   if (event.key.toLowerCase() === 'r') { event.preventDefault(); elements.rotatecomponent.click(); return; }
   const delta = { ArrowLeft: [-0.01, 0], ArrowRight: [0.01, 0], ArrowUp: [0, -0.01], ArrowDown: [0, 0.01] }[event.key];
   if (delta) {
@@ -1864,6 +2465,7 @@ for (const [name, button] of [['catalog-collapsed', elements.togglecatalog], ['i
 if (workspacePreference('pin-labels')) { elements.circuitcanvas.classList.add('show-pin-labels'); elements.showpinlabels.setAttribute('aria-pressed', 'true'); }
 renderCatalog(); renderProject(); setRuntimeEnabled(false);
 clearRuntimePresentation(); renderLifecycle();
+setCanvasInteractionMode('select'); setSerialDock(false);
 elements.projectmessage.textContent = recoveryRestored?.ok
   ? 'Recovered and revalidated an interrupted local save. Rebuild before Run.'
   : restored?.ok ? 'Reopened and revalidated the local project. Rebuild before Run.'

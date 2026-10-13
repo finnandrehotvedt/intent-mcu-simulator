@@ -73,6 +73,8 @@ let browser;
 
   await page.evaluate(() => {
     window.__M13_ORIGINAL_SET_ITEM__ = Storage.prototype.setItem;
+    window.__M13_ORIGINAL_SAVE_PICKER__ = window.showSaveFilePicker;
+    window.showSaveFilePicker = undefined;
     Storage.prototype.setItem = function setItem(key, value) {
       if (key === 'teach-lab.simulator.project.v2') throw new DOMException('quota', 'QuotaExceededError');
       return window.__M13_ORIGINAL_SET_ITEM__.call(this, key, value);
@@ -82,7 +84,10 @@ let browser;
   await page.locator('#project-name').press('Tab');
   assert(await page.isEnabled('#recovery-export') && (await page.textContent('#project-message')).includes('local save failed'),
     'quota failure did not preserve an exportable in-memory project');
-  await page.evaluate(() => { Storage.prototype.setItem = window.__M13_ORIGINAL_SET_ITEM__; delete window.__M13_ORIGINAL_SET_ITEM__; });
+  await page.evaluate(() => {
+    Storage.prototype.setItem = window.__M13_ORIGINAL_SET_ITEM__; delete window.__M13_ORIGINAL_SET_ITEM__;
+    window.showSaveFilePicker = window.__M13_ORIGINAL_SAVE_PICKER__; delete window.__M13_ORIGINAL_SAVE_PICKER__;
+  });
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__M11_READY__ === true);
   assert((await page.evaluate(() => window.__M6_PROJECT__().metadata.name)) === 'Newest in-memory name',

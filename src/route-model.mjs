@@ -75,6 +75,104 @@ export function normalizeOrthogonalPath(points) {
   return compact;
 }
 
+function pointKey(point) {
+  const clean = cleanPoint(point);
+  return `${clean.x}:${clean.y}`;
+}
+
+function between(value, left, right) {
+  return value >= Math.min(left, right) - EPSILON && value <= Math.max(left, right) + EPSILON;
+}
+
+function segmentIntersectionPoints(firstStart, firstEnd, secondStart, secondEnd) {
+  const firstOrientation = routeSegmentOrientation(firstStart, firstEnd);
+  const secondOrientation = routeSegmentOrientation(secondStart, secondEnd);
+  if (!firstOrientation || !secondOrientation) return [];
+  if (firstOrientation !== secondOrientation) {
+    const horizontalStart = firstOrientation === 'horizontal' ? firstStart : secondStart;
+    const horizontalEnd = firstOrientation === 'horizontal' ? firstEnd : secondEnd;
+    const verticalStart = firstOrientation === 'vertical' ? firstStart : secondStart;
+    const verticalEnd = firstOrientation === 'vertical' ? firstEnd : secondEnd;
+    const intersection = cleanPoint({ x: verticalStart.x, y: horizontalStart.y });
+    return between(intersection.x, horizontalStart.x, horizontalEnd.x)
+      && between(intersection.y, verticalStart.y, verticalEnd.y) ? [intersection] : [];
+  }
+  const fixedAxis = firstOrientation === 'horizontal' ? 'y' : 'x';
+  const movingAxis = firstOrientation === 'horizontal' ? 'x' : 'y';
+  if (Math.abs(firstStart[fixedAxis] - secondStart[fixedAxis]) >= EPSILON) return [];
+  const overlapStart = Math.max(
+    Math.min(firstStart[movingAxis], firstEnd[movingAxis]),
+    Math.min(secondStart[movingAxis], secondEnd[movingAxis]),
+  );
+  const overlapEnd = Math.min(
+    Math.max(firstStart[movingAxis], firstEnd[movingAxis]),
+    Math.max(secondStart[movingAxis], secondEnd[movingAxis]),
+  );
+  if (overlapStart > overlapEnd + EPSILON) return [];
+  const point = (coordinate) => cleanPoint({
+    x: firstOrientation === 'horizontal' ? coordinate : firstStart.x,
+    y: firstOrientation === 'horizontal' ? firstStart.y : coordinate,
+  });
+  return Math.abs(overlapStart - overlapEnd) < EPSILON
+    ? [point(overlapStart)] : [point(overlapStart), point(overlapEnd)];
+}
+
+function segmentProgress(start, end, point) {
+  const axis = Math.abs(start.x - end.x) >= EPSILON ? 'x' : 'y';
+  return (point[axis] - start[axis]) / (end[axis] - start[axis]);
+}
+
+function eraseClosedOrthogonalLoops(points) {
+  const normalized = normalizeOrthogonalPath(points);
+  const splits = normalized.slice(0, -1).map((point, index) => [point, normalized[index + 1]]);
+  for (let first = 0; first < splits.length; first += 1) {
+    for (let second = first + 2; second < splits.length; second += 1) {
+      for (const intersection of segmentIntersectionPoints(
+        normalized[first], normalized[first + 1], normalized[second], normalized[second + 1],
+      )) {
+        splits[first].push(intersection);
+        splits[second].push(intersection);
+      }
+    }
+  }
+  const expanded = [];
+  for (let index = 0; index < splits.length; index += 1) {
+    const start = normalized[index]; const end = normalized[index + 1];
+    const ordered = [...new Map(splits[index].map((point) => [pointKey(point), cleanPoint(point)])).values()]
+      .sort((left, right) => segmentProgress(start, end, left) - segmentProgress(start, end, right));
+    for (const point of ordered) if (!expanded.length || !samePoint(expanded.at(-1), point)) expanded.push(point);
+  }
+  const stack = [];
+  const positions = new Map();
+  for (const point of expanded) {
+    const key = pointKey(point);
+    if (positions.has(key)) {
+      const keep = positions.get(key);
+      for (let index = stack.length - 1; index > keep; index -= 1) positions.delete(pointKey(stack[index]));
+      stack.length = keep + 1;
+    } else {
+      positions.set(key, stack.length);
+      stack.push(point);
+    }
+  }
+  return normalizeOrthogonalPath(stack);
+}
+
+function containsMovedSection(points, orientation, target, movedLeft, movedRight) {
+  const movingAxis = orientation === 'horizontal' ? 'x' : 'y';
+  const fixedAxis = orientation === 'horizontal' ? 'y' : 'x';
+  const movedStart = Math.min(movedLeft[movingAxis], movedRight[movingAxis]);
+  const movedEnd = Math.max(movedLeft[movingAxis], movedRight[movingAxis]);
+  return points.slice(0, -1).some((point, index) => {
+    const next = points[index + 1];
+    if (routeSegmentOrientation(point, next) !== orientation
+        || Math.abs(point[fixedAxis] - target) >= EPSILON) return false;
+    const overlap = Math.min(movedEnd, Math.max(point[movingAxis], next[movingAxis]))
+      - Math.max(movedStart, Math.min(point[movingAxis], next[movingAxis]));
+    return overlap > EPSILON;
+  });
+}
+
 function appendOrthogonal(points, target, preference = 'horizontal') {
   const from = points.at(-1);
   if (samePoint(from, target)) return;
@@ -86,6 +184,105 @@ function appendOrthogonal(points, target, preference = 'horizontal') {
   if (!samePoint(points.at(-1), target)) points.push(cleanPoint(target));
 }
 
+function appendAfterDerivedEscape(points, target, anchor) {
+  const from = points.at(-1);
+  if (samePoint(from, target)) return;
+  const direction = anchorDirection(anchor);
+  const alignedWithEscapeAxis = direction.x
+    ? Math.abs(from.y - target.y) < EPSILON
+    : Math.abs(from.x - target.x) < EPSILON;
+  const along = direction.x
+    ? (target.x - from.x) * direction.x
+    : (target.y - from.y) * direction.y;
+  if (alignedWithEscapeAxis && along < -EPSILON) {
+    const axis = direction.x ? 'y' : 'x';
+    const positive = from[axis] + ROUTE_GRID * 4 <= 2;
+    points.push(cleanPoint({ ...from, [axis]: from[axis] + (positive ? ROUTE_GRID * 4 : -ROUTE_GRID * 4) }));
+  }
+  appendOrthogonal(points, target, direction.x ? 'vertical' : 'horizontal');
+}
+
+function anchorDirection(anchor) {
+  return {
+    x: Math.sign(cleanNumber(anchor.escape.x - anchor.pin.x)),
+    y: Math.sign(cleanNumber(anchor.escape.y - anchor.pin.y)),
+  };
+}
+
+function segmentHitsObstacle(start, end, obstacle) {
+  const orientation = routeSegmentOrientation(start, end);
+  if (orientation === 'horizontal') {
+    if (start.y <= obstacle.top + EPSILON || start.y >= obstacle.bottom - EPSILON) return false;
+    return Math.max(Math.min(start.x, end.x), obstacle.left) < Math.min(Math.max(start.x, end.x), obstacle.right) - EPSILON;
+  }
+  if (orientation === 'vertical') {
+    if (start.x <= obstacle.left + EPSILON || start.x >= obstacle.right - EPSILON) return false;
+    return Math.max(Math.min(start.y, end.y), obstacle.top) < Math.min(Math.max(start.y, end.y), obstacle.bottom) - EPSILON;
+  }
+  return false;
+}
+
+function routeHitsObstacle(points, obstacles) {
+  return points.slice(0, -1).some((point, index) =>
+    obstacles.some((obstacle) => segmentHitsObstacle(point, points[index + 1], obstacle)));
+}
+
+function routeLength(points) {
+  return points.slice(0, -1).reduce((length, point, index) => {
+    const next = points[index + 1];
+    return length + Math.abs(next.x - point.x) + Math.abs(next.y - point.y);
+  }, 0);
+}
+
+function safeBranchToHub(escape, hub, channel, obstacles, margin) {
+  const detours = channel.axis === 'horizontal'
+    ? [escape.x, ...obstacles.flatMap((item) => [item.left - margin, item.right + margin])]
+    : [escape.y, ...obstacles.flatMap((item) => [item.top - margin, item.bottom + margin])];
+  const candidates = [];
+  for (const coordinate of [...new Set(detours.map(cleanNumber))].filter((value) => value >= -1 && value <= 2)) {
+    const points = normalizeOrthogonalPath(channel.axis === 'horizontal'
+      ? [escape, { x: coordinate, y: escape.y }, { x: coordinate, y: hub.y }, hub]
+      : [escape, { x: escape.x, y: coordinate }, { x: hub.x, y: coordinate }, hub]);
+    if (routeHitsObstacle(points, obstacles)) continue;
+    candidates.push({
+      points,
+      score: routeLength(points) + Math.max(0, points.length - 2) * ROUTE_GRID,
+      order: candidates.length,
+    });
+  }
+  candidates.sort((left, right) => left.score - right.score || left.order - right.order);
+  return candidates[0]?.points ?? null;
+}
+
+function obstacleSafeDefaultFamily(net, anchors, obstacles) {
+  if (!Array.isArray(obstacles) || !obstacles.length) return null;
+  const escapes = net.endpoints.map((endpoint) => anchors[endpointKey(endpoint)]?.escape);
+  if (escapes.some((escape) => !finitePoint(escape))) return null;
+  const margin = ROUTE_GRID * 3;
+  const channels = [
+    { axis: 'horizontal', coordinate: Math.max(-1, Math.min(...obstacles.map((item) => item.top)) - margin) },
+    { axis: 'horizontal', coordinate: Math.min(2, Math.max(...obstacles.map((item) => item.bottom)) + margin) },
+    { axis: 'vertical', coordinate: Math.max(-1, Math.min(...obstacles.map((item) => item.left)) - margin) },
+    { axis: 'vertical', coordinate: Math.min(2, Math.max(...obstacles.map((item) => item.right)) + margin) },
+  ];
+  const candidates = [];
+  for (const channel of channels) {
+    const hub = cleanPoint(channel.axis === 'horizontal'
+      ? { x: escapes.reduce((sum, point) => sum + point.x, 0) / escapes.length, y: channel.coordinate }
+      : { x: channel.coordinate, y: escapes.reduce((sum, point) => sum + point.y, 0) / escapes.length });
+    const branches = net.endpoints.map((endpoint, index) => {
+      const escape = cleanPoint(escapes[index]);
+      const points = safeBranchToHub(escape, hub, channel, obstacles, margin);
+      return points ? { endpoint: clone(endpoint), points } : null;
+    });
+    if (branches.some((branch) => !branch)) continue;
+    const score = branches.reduce((total, branch) => total + routeLength(branch.points), 0);
+    candidates.push({ score, family: { schema: ROUTE_SCHEMA, branches } });
+  }
+  candidates.sort((left, right) => left.score - right.score);
+  return candidates[0]?.family ?? null;
+}
+
 function routeHub(net, storedRoute, anchors) {
   if (Array.isArray(storedRoute) && storedRoute.length) return cleanPoint(storedRoute.at(-1));
   if (storedRoute?.schema === ROUTE_SCHEMA) {
@@ -94,6 +291,42 @@ function routeHub(net, storedRoute, anchors) {
   }
   const escapes = net.endpoints.map((endpoint) => anchors[endpointKey(endpoint)]?.escape).filter(Boolean);
   if (escapes.length !== net.endpoints.length) throw new TypeError('ROUTE_ANCHOR_MISSING');
+  if (net.endpoints.length === 2) {
+    const endpointAnchors = net.endpoints.map((endpoint) => anchors[endpointKey(endpoint)]);
+    const directions = endpointAnchors.map(anchorDirection);
+    const verticalIndex = directions.findIndex((direction) => direction.y !== 0 && direction.x === 0);
+    const horizontalIndex = directions.findIndex((direction) => direction.x !== 0 && direction.y === 0);
+    if (verticalIndex >= 0 && horizontalIndex >= 0) {
+      return cleanPoint({
+        x: escapes[horizontalIndex].x + directions[horizontalIndex].x * ROUTE_GRID * 4,
+        y: escapes[verticalIndex].y + directions[verticalIndex].y * ROUTE_GRID * 4,
+      });
+    }
+    if (directions.every((direction) => direction.y === 1 && direction.x === 0)) {
+      return cleanPoint({
+        x: (escapes[0].x + escapes[1].x) / 2,
+        y: Math.max(escapes[0].y, escapes[1].y) + ROUTE_GRID * 4,
+      });
+    }
+    if (directions.every((direction) => direction.y === -1 && direction.x === 0)) {
+      return cleanPoint({
+        x: (escapes[0].x + escapes[1].x) / 2,
+        y: Math.min(escapes[0].y, escapes[1].y) - ROUTE_GRID * 4,
+      });
+    }
+    if (directions.every((direction) => direction.x === 1 && direction.y === 0)) {
+      return cleanPoint({
+        x: Math.max(escapes[0].x, escapes[1].x) + ROUTE_GRID * 4,
+        y: (escapes[0].y + escapes[1].y) / 2,
+      });
+    }
+    if (directions.every((direction) => direction.x === -1 && direction.y === 0)) {
+      return cleanPoint({
+        x: Math.min(escapes[0].x, escapes[1].x) - ROUTE_GRID * 4,
+        y: (escapes[0].y + escapes[1].y) / 2,
+      });
+    }
+  }
   return cleanPoint({
     x: escapes.reduce((sum, point) => sum + point.x, 0) / escapes.length,
     y: escapes.reduce((sum, point) => sum + point.y, 0) / escapes.length,
@@ -107,10 +340,17 @@ function branchTargets(endpoint, storedRoute, anchors, hub) {
   if (storedRoute?.schema === ROUTE_SCHEMA) {
     const branch = storedRoute.branches.find((item) => endpointKey(item.endpoint) === key);
     if (!branch) throw new TypeError('ROUTE_BRANCH_MISSING');
-    return branch.points;
+    // The accepted branch points are user-owned world geometry. The escape is
+    // derived from the current transformed terminal, so prepend it without
+    // rewriting the stored family when a part moves or rotates.
+    return [anchor.escape, ...branch.points];
   }
   if (Array.isArray(storedRoute) && storedRoute.length) return [anchor.escape, ...storedRoute];
-  return [anchor.escape, { x: hub.x, y: anchor.escape.y }, hub];
+  const direction = anchorDirection(anchor);
+  const outsideCorner = direction.y
+    ? { x: anchor.escape.x, y: hub.y }
+    : { x: hub.x, y: anchor.escape.y };
+  return [anchor.escape, outsideCorner, hub];
 }
 
 export function isRouteFamily(value) {
@@ -151,14 +391,25 @@ export function normalizeStoredRoute(value, net) {
   return { schema: ROUTE_SCHEMA, branches };
 }
 
-export function materializeRouteFamily(net, storedRoute, anchors) {
+export function materializeRouteFamily(net, storedRoute, anchors, obstacles = []) {
+  if (storedRoute === null || storedRoute === undefined) {
+    const routed = obstacleSafeDefaultFamily(net, anchors, obstacles);
+    if (routed) {
+      const normalized = normalizeStoredRoute(routed, net);
+      if (!normalized) throw new TypeError('ROUTE_FAMILY');
+      return normalized;
+    }
+  }
   const hub = routeHub(net, storedRoute, anchors);
   const branches = net.endpoints.map((endpoint) => {
     const key = endpointKey(endpoint);
     const anchor = anchors[key];
     const full = [cleanPoint(anchor.pin)];
     const targets = branchTargets(endpoint, storedRoute, anchors, hub);
-    targets.forEach((target, index) => appendOrthogonal(full, target, index % 2 ? 'vertical' : 'horizontal'));
+    targets.forEach((target, index) => {
+      if (storedRoute?.schema === ROUTE_SCHEMA && index === 1) appendAfterDerivedEscape(full, target, anchor);
+      else appendOrthogonal(full, target, index % 2 ? 'vertical' : 'horizontal');
+    });
     appendOrthogonal(full, hub, 'horizontal');
     const normalized = normalizeOrthogonalPath(full);
     return { endpoint: clone(endpoint), points: normalized.slice(1) };
@@ -185,11 +436,13 @@ export function moveRouteSegment(family, anchors, endpoint, segmentIndex, coordi
       || segmentIndex >= selected.points.length - 1) throw new TypeError('ROUTE_SEGMENT');
   const left = selected.points[segmentIndex];
   const right = selected.points[segmentIndex + 1];
+  const originalPointCount = selected.points.length;
   const orientation = routeSegmentOrientation(left, right);
   if (!orientation) throw new TypeError('ROUTE_SEGMENT');
   const axis = orientation === 'horizontal' ? 'y' : 'x';
   const target = snapRouteCoordinate(coordinate);
   if (target < -1 || target > 2) throw new TypeError('ROUTE_POINT');
+  if (Math.abs(target - left[axis]) < EPSILON) return clone(family);
   const movedLeft = { ...left, [axis]: target };
   const movedRight = { ...right, [axis]: target };
   const replacement = selected.points.slice(0, segmentIndex);
@@ -197,7 +450,13 @@ export function moveRouteSegment(family, anchors, endpoint, segmentIndex, coordi
   replacement.push(movedLeft, movedRight);
   if (segmentIndex + 1 === selected.points.length - 1) replacement.push(right);
   replacement.push(...selected.points.slice(segmentIndex + 2));
-  selected.points = normalizeOrthogonalPath(replacement);
+  selected.points = eraseClosedOrthogonalLoops(replacement);
+  if (!containsMovedSection(selected.points, orientation, target, movedLeft, movedRight)) {
+    throw new TypeError('ROUTE_MOVE_LOOP');
+  }
+  if (selected.points.length > Math.max(originalPointCount, 8)) {
+    throw new TypeError('ROUTE_MOVE_COMPLEXITY');
+  }
   const branches = family.branches.map((branch) => {
     const path = paths.find((item) => endpointKey(item.endpoint) === endpointKey(branch.endpoint));
     return {

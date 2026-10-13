@@ -2,6 +2,38 @@
 
 All notable public source changes are recorded here.
 
+## Unreleased expansion candidate — 2026-10-13
+
+- Added account-free Save/Open project files. Supporting browsers use a native
+  user-selected file handle; other browsers use deterministic download and
+  file-input fallback. Browser recovery remains a separately labelled crash-
+  recovery aid, and no project/source is stored by the server.
+- Added three-engine coverage for native save/open, fallback round-trip,
+  cancellation, invalid-file atomicity, 1440/768/390/320 layouts and zero
+  server-side project mutation requests.
+
+- Replaced split/stale component and wire selection with one authoritative
+  selection state, so Delete targets only the selected component, connection,
+  or branch; whole-net deletion remains explicit and independently undoable.
+- Added deterministic overlap cycling, direct generous wire hit targets,
+  axis-locked route movement, and safer default signal/GND geometry that leaves
+  each pin outward and avoids component-body re-entry.
+- Added a responsive, resizable Serial side dock/bottom drawer with unread and
+  autoscroll handling, plus Select/Interact modes and real canvas tactile-button
+  press/hold/release through the existing worker.
+- Prevented repeated route-section edits from accumulating self-overlapping
+  rectangular laps. Existing custom routes are not silently reset on load;
+  only provably redundant geometry on the edited branch is simplified.
+- Kept every accepted and live-proposal wire visibly painted from its exact
+  named terminal above opaque component artwork. Default branched routes still
+  detour around component bodies independently; visibility does not create a
+  junction or weaken electrical/body-avoidance validation.
+- Verified a practical collapsed-panel testing view where the circuit, live
+  input, persistent runtime controls and readable Serial output remain visible
+  together at desktop and effective 125%-zoom widths.
+- This entry describes a local tested candidate. The deployed public rc.2 is
+  unchanged until a separate deployment receipt approves an exact candidate.
+
 ## 1.0.0-rc.2 — 2026-10-07
 
 - Completed the release-candidate acceptance surface and deployed the exact

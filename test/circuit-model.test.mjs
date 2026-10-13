@@ -691,6 +691,277 @@ function assertOrthogonalFamily(family, anchors) {
   }
 }
 
+function routeSelfIntersections(points) {
+  const hits = [];
+  const between = (value, left, right) => value >= Math.min(left, right) - 1e-7
+    && value <= Math.max(left, right) + 1e-7;
+  for (let first = 0; first < points.length - 1; first += 1) {
+    for (let second = first + 2; second < points.length - 1; second += 1) {
+      const a = points[first]; const b = points[first + 1];
+      const c = points[second]; const d = points[second + 1];
+      const firstOrientation = routeSegmentOrientation(a, b);
+      const secondOrientation = routeSegmentOrientation(c, d);
+      if (firstOrientation === 'horizontal' && secondOrientation === 'vertical'
+          && between(c.x, a.x, b.x) && between(a.y, c.y, d.y)) hits.push([first, second, c.x, a.y]);
+      if (firstOrientation === 'vertical' && secondOrientation === 'horizontal'
+          && between(a.x, c.x, d.x) && between(c.y, a.y, b.y)) hits.push([first, second, a.x, c.y]);
+      if (firstOrientation === secondOrientation) {
+        const fixed = firstOrientation === 'horizontal' ? 'y' : 'x';
+        const moving = firstOrientation === 'horizontal' ? 'x' : 'y';
+        const overlap = Math.min(Math.max(a[moving], b[moving]), Math.max(c[moving], d[moving]))
+          - Math.max(Math.min(a[moving], b[moving]), Math.min(c[moving], d[moving]));
+        if (Math.abs(a[fixed] - c[fixed]) < 1e-7 && overlap > 1e-7) hits.push([first, second, 'overlap']);
+      }
+    }
+  }
+  return hits;
+}
+
+function assertSimpleRoute(points) {
+  assert.equal(routeSelfIntersections(points).length, 0, `route self-intersects: ${JSON.stringify(points)}`);
+  const edges = points.slice(0, -1).map((point, index) => {
+    const next = points[index + 1];
+    return [JSON.stringify(point), JSON.stringify(next)].sort().join('->');
+  });
+  assert.equal(new Set(edges).size, edges.length, `route repeats an edge: ${JSON.stringify(points)}`);
+}
+
+test('C-33 default routes leave each pin in its declared direction before joining outside the component edge', () => {
+  const mixedNet = {
+    id: 'net-ground',
+    endpoints: [
+      { component: 'board-1', pin: 'GND1' },
+      { component: 'button-1', pin: 'B' },
+    ],
+  };
+  const mixedAnchors = {
+    'board-1.GND1': { pin: { x: 0.4, y: 0.5 }, escape: { x: 0.4, y: 0.55 } },
+    'button-1.B': { pin: { x: 0.8, y: 0.7 }, escape: { x: 0.75, y: 0.7 } },
+  };
+  const mixedPaths = routeFamilyPaths(materializeRouteFamily(mixedNet, null, mixedAnchors), mixedAnchors);
+  const ground = mixedPaths.find((branch) => endpointKey(branch.endpoint) === 'board-1.GND1').points;
+  const button = mixedPaths.find((branch) => endpointKey(branch.endpoint) === 'button-1.B').points;
+  assert.deepEqual(ground[0], mixedAnchors['board-1.GND1'].pin);
+  assert.equal(ground[1].x, ground[0].x);
+  assert.ok(ground[1].y > ground[0].y, 'GND route did not leave its downward-facing pin downward');
+  assert.deepEqual(button[0], mixedAnchors['button-1.B'].pin);
+  assert.equal(button[1].y, button[0].y);
+  assert.ok(button[1].x < button[0].x, 'button route did not leave its left-facing pin leftward');
+  assert.ok(ground.slice(1).every((point) => point.y > mixedAnchors['board-1.GND1'].pin.y), 'GND route re-entered the board-side region');
+  assert.deepEqual(ground.at(-1), { x: 0.71, y: 0.59 });
+  assert.deepEqual(button.at(-1), ground.at(-1));
+
+  const sameDirectionNet = {
+    id: 'net-header-safe',
+    endpoints: [
+      { component: 'board-1', pin: 'D2' },
+      { component: 'button-1', pin: 'A' },
+    ],
+  };
+  const sameDirectionAnchors = {
+    'board-1.D2': { pin: { x: 0.45, y: 0.24 }, escape: { x: 0.45, y: 0.19 } },
+    'button-1.A': { pin: { x: 0.78, y: 0.44 }, escape: { x: 0.78, y: 0.39 } },
+  };
+  const safePaths = routeFamilyPaths(materializeRouteFamily(sameDirectionNet, null, sameDirectionAnchors), sameDirectionAnchors);
+  assert.ok(safePaths.every((branch) => branch.points[1].y < branch.points[0].y), 'route did not leave upward-facing pins upward');
+  assert.ok(safePaths.every((branch) => branch.points.at(-1).y < 0.19), 'shared route channel was not outside both component edges');
+  assertOrthogonalFamily(materializeRouteFamily(sameDirectionNet, null, sameDirectionAnchors), sameDirectionAnchors);
+});
+
+test('receipt14 C12-C15 transformed terminals derive a fresh outward escape without rewriting saved route geometry', () => {
+  const net = {
+    id: 'net-visible-terminal',
+    endpoints: [
+      { component: 'board-1', pin: 'GND1' },
+      { component: 'led-1', pin: 'CATHODE' },
+    ],
+  };
+  const originalAnchors = {
+    'board-1.GND1': { pin: { x: 0.2, y: 0.6 }, escape: { x: 0.2, y: 0.65 } },
+    'led-1.CATHODE': { pin: { x: 0.8, y: 0.3 }, escape: { x: 0.75, y: 0.3 } },
+  };
+  const stored = materializeRouteFamily(net, null, originalAnchors);
+  const storedBefore = clone(stored);
+  const transformed = [
+    { pin: { x: 0.32, y: 0.44 }, escape: { x: 0.32, y: 0.49 } },
+    { pin: { x: 0.48, y: 0.34 }, escape: { x: 0.53, y: 0.34 } },
+    { pin: { x: 0.62, y: 0.46 }, escape: { x: 0.62, y: 0.41 } },
+    { pin: { x: 0.46, y: 0.66 }, escape: { x: 0.41, y: 0.66 } },
+  ];
+  for (const ground of transformed) {
+    const anchors = { ...originalAnchors, 'board-1.GND1': ground };
+    const materialized = materializeRouteFamily(net, stored, anchors);
+    const path = routeFamilyPaths(materialized, anchors)
+      .find((branch) => endpointKey(branch.endpoint) === 'board-1.GND1').points;
+    assert.deepEqual(path[0], ground.pin);
+    const direction = { x: Math.sign(ground.escape.x - ground.pin.x), y: Math.sign(ground.escape.y - ground.pin.y) };
+    const first = { x: Math.sign(path[1].x - path[0].x), y: Math.sign(path[1].y - path[0].y) };
+    assert.deepEqual(first, direction, `first section did not leave transformed terminal outward: ${JSON.stringify(path)}`);
+    const onFirstSection = Math.abs((path[1].x - path[0].x) * (ground.escape.y - path[0].y)
+      - (path[1].y - path[0].y) * (ground.escape.x - path[0].x)) < 1e-7
+      && ground.escape.x >= Math.min(path[0].x, path[1].x) - 1e-7
+      && ground.escape.x <= Math.max(path[0].x, path[1].x) + 1e-7
+      && ground.escape.y >= Math.min(path[0].y, path[1].y) - 1e-7
+      && ground.escape.y <= Math.max(path[0].y, path[1].y) + 1e-7;
+    assert.equal(onFirstSection, true, 'derived escape is not on the first accepted route section');
+    assertOrthogonalFamily(materialized, anchors);
+    assert.deepEqual(stored, storedBefore, 'materialization rewrote saved user route geometry');
+  }
+});
+
+test('receipt14 C16/C17 default routing chooses a body-free outer channel without changing graph identity', () => {
+  const net = {
+    id: 'net-obstacle-safe',
+    endpoints: [
+      { component: 'board-1', pin: 'D13' },
+      { component: 'resistor-1', pin: 'A' },
+    ],
+  };
+  const anchors = {
+    'board-1.D13': { pin: { x: 0.2, y: 0.5 }, escape: { x: 0.2, y: 0.45 } },
+    'resistor-1.A': { pin: { x: 0.8, y: 0.5 }, escape: { x: 0.75, y: 0.5 } },
+  };
+  const obstacles = [
+    { component: 'board-1', left: 0.05, right: 0.35, top: 0.5, bottom: 0.7 },
+    { component: 'resistor-1', left: 0.8, right: 0.95, top: 0.44, bottom: 0.56 },
+    { component: 'led-1', left: 0.4, right: 0.6, top: 0.34, bottom: 0.58 },
+  ];
+  const family = materializeRouteFamily(net, null, anchors, obstacles);
+  const before = clone(net);
+  const segmentHits = (start, end, box) => {
+    const orientation = routeSegmentOrientation(start, end);
+    if (orientation === 'horizontal') return start.y > box.top && start.y < box.bottom
+      && Math.max(Math.min(start.x, end.x), box.left) < Math.min(Math.max(start.x, end.x), box.right);
+    return start.x > box.left && start.x < box.right
+      && Math.max(Math.min(start.y, end.y), box.top) < Math.min(Math.max(start.y, end.y), box.bottom);
+  };
+  for (const branch of family.branches) {
+    for (let index = 0; index < branch.points.length - 1; index += 1) {
+      assert.equal(obstacles.some((box) => segmentHits(branch.points[index], branch.points[index + 1], box)), false,
+        `default route crosses a component body: ${JSON.stringify(branch.points)}`);
+    }
+  }
+  assert.deepEqual(net, before);
+  assertOrthogonalFamily(family, anchors);
+});
+
+test('receipt14 C16/C17 branched defaults detour independently around dense component bodies', () => {
+  const net = {
+    id: 'net-dense-ground',
+    endpoints: [
+      { component: 'board-1', pin: 'GND1' },
+      { component: 'button-1', pin: 'B' },
+      { component: 'led-1', pin: 'CATHODE' },
+      { component: 'pot-1', pin: 'LOW' },
+    ],
+  };
+  const anchors = {
+    'board-1.GND1': { pin: { x: 0.102, y: 0.445 }, escape: { x: 0.102, y: 0.468 } },
+    'button-1.B': { pin: { x: 0.825, y: 0.488 }, escape: { x: 0.842, y: 0.488 } },
+    'led-1.CATHODE': { pin: { x: 0.785, y: 0.233 }, escape: { x: 0.785, y: 0.255 } },
+    'pot-1.LOW': { pin: { x: 0.701, y: 0.865 }, escape: { x: 0.701, y: 0.887 } },
+  };
+  const obstacles = [
+    { component: 'board-1', left: 0.003, right: 0.397, top: 0.213, bottom: 0.467 },
+    { component: 'button-1', left: 0.704, right: 0.836, top: 0.454, bottom: 0.586 },
+    { component: 'led-1', left: 0.724, right: 0.816, top: 0.075, bottom: 0.245 },
+    { component: 'pot-1', left: 0.584, right: 0.728, top: 0.711, bottom: 0.88 },
+    { component: 'resistor-1', left: 0.382, right: 0.578, top: 0.119, bottom: 0.201 },
+  ];
+  const family = materializeRouteFamily(net, null, anchors, obstacles);
+  const paths = routeFamilyPaths(family, anchors);
+  const segmentHits = (start, end, box) => {
+    const orientation = routeSegmentOrientation(start, end);
+    if (orientation === 'horizontal') return start.y > box.top && start.y < box.bottom
+      && Math.max(Math.min(start.x, end.x), box.left) < Math.min(Math.max(start.x, end.x), box.right);
+    return start.x > box.left && start.x < box.right
+      && Math.max(Math.min(start.y, end.y), box.top) < Math.min(Math.max(start.y, end.y), box.bottom);
+  };
+  for (const branch of paths) {
+    for (let index = 1; index < branch.points.length - 1; index += 1) {
+      assert.equal(obstacles.some((box) => segmentHits(branch.points[index], branch.points[index + 1], box)), false,
+        `branched default crosses a component body: ${JSON.stringify(branch.points)}`);
+    }
+  }
+  const boardBranch = paths.find((branch) => endpointKey(branch.endpoint) === 'board-1.GND1');
+  assert.ok(boardBranch.points.some((point) => point.y > Math.max(boardBranch.points[0].y, boardBranch.points.at(-1).y) + 0.05),
+    `dense fixture did not exercise an independent detour: ${JSON.stringify(boardBranch.points)}`);
+  assertOrthogonalFamily(family, anchors);
+});
+
+test('receipt14 C09 repeated multi-section drags remain bounded and erase closed route laps', () => {
+  const net = {
+    id: 'net-loop-regression',
+    endpoints: [{ component: 'board-1', pin: 'GND1' }, { component: 'led-1', pin: 'CATHODE' }],
+  };
+  const anchors = {
+    'board-1.GND1': { pin: { x: 0.2, y: 0.6 }, escape: { x: 0.2, y: 0.65 } },
+    'led-1.CATHODE': { pin: { x: 0.8, y: 0.3 }, escape: { x: 0.75, y: 0.3 } },
+  };
+  const endpoint = 'board-1.GND1';
+  let family = materializeRouteFamily(net, null, anchors);
+  const untouched = clone(family.branches.find((branch) => endpointKey(branch.endpoint) !== endpoint));
+  let seed = 7; let accepted = 0; let attempts = 0;
+  const random = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
+  while (accepted < 24 && attempts < 200) {
+    attempts += 1;
+    const path = routeFamilyPaths(family, anchors).find((branch) => endpointKey(branch.endpoint) === endpoint).points;
+    const segmentIndex = Math.floor(random() * (path.length - 1));
+    const coordinate = Math.round((0.1 + random() * 0.8) * 100) / 100;
+    try {
+      const moved = moveRouteSegment(family, anchors, endpoint, segmentIndex, coordinate, net);
+      if (JSON.stringify(moved) === JSON.stringify(family)) continue;
+      family = moved; accepted += 1;
+      const movedPath = routeFamilyPaths(family, anchors).find((branch) => endpointKey(branch.endpoint) === endpoint).points;
+      assert.ok(movedPath.length <= 8, `route grew with interaction count: ${JSON.stringify(movedPath)}`);
+      assertSimpleRoute(movedPath);
+      assert.deepEqual(family.branches.find((branch) => endpointKey(branch.endpoint) !== endpoint), untouched);
+    } catch (error) {
+      assert.match(error.message, /^ROUTE_MOVE_(?:LOOP|COMPLEXITY)$/u);
+    }
+  }
+  assert.equal(accepted, 24);
+  assertOrthogonalFamily(family, anchors);
+});
+
+test('receipt14 C10/C11 legacy lap repairs on edit without silent load rewrite or deliberate-jog loss', () => {
+  const net = {
+    id: 'net-persisted-loop',
+    endpoints: [{ component: 'board-1', pin: 'GND1' }, { component: 'led-1', pin: 'CATHODE' }],
+  };
+  const anchors = {
+    'board-1.GND1': { pin: { x: 0.2, y: 0.6 }, escape: { x: 0.2, y: 0.65 } },
+    'led-1.CATHODE': { pin: { x: 0.8, y: 0.3 }, escape: { x: 0.75, y: 0.3 } },
+  };
+  const legacy = materializeRouteFamily(net, null, anchors);
+  legacy.branches.find((branch) => endpointKey(branch.endpoint) === 'board-1.GND1').points = [
+    { x: 0.63, y: 0.6 }, { x: 0.63, y: 0.38 }, { x: 0.38, y: 0.38 },
+    { x: 0.38, y: 0.55 }, { x: 0.71, y: 0.55 }, { x: 0.71, y: 0.69 },
+  ];
+  const loaded = normalizeStoredRoute(legacy, net);
+  assert.deepEqual(loaded, legacy, 'loading silently rewrote the persisted custom route');
+  const remoteBefore = clone(loaded.branches.find((branch) => endpointKey(branch.endpoint) === 'led-1.CATHODE'));
+  const repaired = moveRouteSegment(loaded, anchors, 'board-1.GND1', 0, 0.65, net);
+  const repairedPath = routeFamilyPaths(repaired, anchors).find((branch) => endpointKey(branch.endpoint) === 'board-1.GND1').points;
+  assertSimpleRoute(repairedPath);
+  assert.ok(repairedPath.some((point, index) => index && point.y === 0.65 && repairedPath[index - 1].y === 0.65),
+    'repair discarded the selected moved section');
+  assert.deepEqual(repaired.branches.find((branch) => endpointKey(branch.endpoint) === 'led-1.CATHODE'), remoteBefore);
+  assert.deepEqual(repairedPath.at(-1), { x: 0.71, y: 0.69 });
+
+  const deliberate = materializeRouteFamily(net, null, anchors);
+  deliberate.branches.find((branch) => endpointKey(branch.endpoint) === 'board-1.GND1').points = [
+    { x: 0.2, y: 0.65 }, { x: 0.4, y: 0.65 }, { x: 0.4, y: 0.5 },
+    { x: 0.6, y: 0.5 }, { x: 0.6, y: 0.69 }, { x: 0.71, y: 0.69 },
+  ];
+  const deliberateMoved = moveRouteSegment(deliberate, anchors, 'board-1.GND1', 5, 0.75, net);
+  const deliberatePath = routeFamilyPaths(deliberateMoved, anchors)
+    .find((branch) => endpointKey(branch.endpoint) === 'board-1.GND1').points;
+  assertSimpleRoute(deliberatePath);
+  assert.ok(deliberatePath.some((point) => point.x === 0.4 && point.y === 0.5));
+  assert.ok(deliberatePath.some((point) => point.x === 0.6 && point.y === 0.5));
+});
+
 test('C-19/C-20 horizontal and vertical section moves shift both bounds on the snapped world grid', () => {
   const { editor } = buildManualProject();
   const net = editor.project.circuit.nets.find((item) => item.id === 'net-d13');
