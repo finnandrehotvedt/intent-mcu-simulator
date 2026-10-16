@@ -3,7 +3,7 @@
 
 export const CANDIDATE_BUILD_REQUEST_SCHEMA = 'teach-lab-build-request@2';
 export const TARGET_AVAILABILITY_SCHEMA = 'intent-mcu-compile-target-availability@1';
-export const TARGET_AVAILABILITY_REVISION = 'public-release-rc5-20261016';
+export const TARGET_AVAILABILITY_REVISION = 'public-release-rc6-20261016';
 export const AVR_PROFILE = 'board.atmega328p-16mhz-v1';
 export const ESP32C3_PROFILE = 'board.esp32-c3-devmodule-v1';
 export const RP2040_PROFILE = 'board.rp2040-pico-v1';
@@ -43,10 +43,10 @@ const rp2040Availability = availability(RP2040_PROFILE, {
   validatedPeripherals: availableState('validated-subset', 'RP2040_PUBLIC_GPIO0_UART0_SUBSET', 'GPIO0 output, UART0 text, reset and the GP0-to-LED circuit path are validated.'),
 });
 const stm32Availability = availability(STM32F429ZI_PROFILE, {
-  installedCompiler: availableState('private-verified', 'STM32_ARM_COMPILER_PRIVATE_VERIFIED', 'The fixed Arm compiler is verified privately and is not exposed by this public release.'),
-  verifiedCompileTarget: availableState('private-verified', 'STM32_BOUNDED_SOURCE_PRIVATE_VERIFIED', 'The bounded C11 source target and strict STM32F429ZI ELF are verified privately.'),
-  emulatorRuntime: availableState('private-proof', 'STM32_RENODE_PRIVATE_SOURCE_AND_FIXTURE_VERIFIED', 'Compiler-generated and retained hash-pinned ELF paths pass private Renode acceptance; no public runtime is mounted.'),
-  validatedPeripherals: availableState('private-subset', 'STM32_PRIVATE_SUBSET_VERIFIED', 'Only private PB0, USART3 and reset replay evidence exists.'),
+  installedCompiler: availableState('installed', 'STM32_ARM_COMPILER_IMAGE_VERIFIED', 'The fixed Arm GNU 14.3.1 compiler image is installed and identity-pinned.'),
+  verifiedCompileTarget: availableState('verified-bounded', 'STM32_BOUNDED_SOURCE_PUBLIC_VERIFIED', 'One strict PB0 and USART3 source grammar produces a source-bound strict ELF32 artifact.'),
+  emulatorRuntime: availableState('verified', 'STM32_RENODE_PUBLIC_VERIFIED', 'The compiler-generated ELF executes in actual Renode 1.17.0 with reset replay.'),
+  validatedPeripherals: availableState('validated-subset', 'STM32_PB0_USART3_PUBLIC_SUBSET', 'PB0 output and USART3 text are observed in Renode; the external LED is an ideal teaching rendering.'),
 });
 
 function target(value) {
@@ -98,15 +98,15 @@ export const CANDIDATE_COMPILER_TARGETS = Object.freeze({
   }),
   [STM32F429ZI_PROFILE]: target({
     profile: STM32F429ZI_PROFILE,
-    displayName: 'STM32F429ZI · public preview only',
-    requestSchema: null,
-    fqbn: 'STMicroelectronics:stm32:Nucleo_144:pnum=NUCLEO_F429ZI',
-    toolchainIdentitySha256: null,
-    compilerStatus: 'unavailable',
-    runtimeStatus: 'unavailable',
-    compileAvailable: false,
+    displayName: 'STM32F429ZI · bounded public source + actual Renode',
+    requestSchema: 'intent-mcu-stm32-public-build-request@1',
+    fqbn: 'intent:stm32f429zi:bounded-c11',
+    toolchainIdentitySha256: '8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd',
+    compilerStatus: 'supported-bounded-source',
+    runtimeStatus: 'actual-renode-pb0-usart3-reset-replay',
+    compileAvailable: true,
     compileOnly: false,
-    fixedBuildFlags: [],
+    fixedBuildFlags: ['-mcpu=cortex-m4', '-mthumb', '-mfloat-abi=soft', '-ffreestanding', '-Os', '-nostdlib', 'fixed-project-contract'],
     availability: stm32Availability,
   }),
 });

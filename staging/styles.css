@@ -184,7 +184,64 @@ h2 { font-size: 1.22rem; margin: 0; }
   .c3-diagram { min-height: 285px; }
   .c3-board-original { left: 3%; width: 39%; }
 }
-.controller-workbench[data-mode="stm32-preview"]::before { background: #7ea7ff; }
+.stm32-public-workbench { display: grid; gap: 1rem; border-color: rgba(126,167,255,.62); background: linear-gradient(145deg,rgba(21,34,63,.96),rgba(6,18,29,.98) 68%); }
+.stm32-public-workbench[hidden] { display: none; }
+.stm32-public-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.stm32-public-heading h2 { margin: .1rem 0 0; }
+.stm32-boundary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.stm32-boundary-grid article { display: grid; gap: .35rem; padding: .85rem; border: 1px solid #3d5687; border-radius: 12px; background: rgba(4,12,26,.72); }
+.stm32-boundary-grid small { color: #9cbbff; font: 850 .65rem var(--mono); letter-spacing: .09em; }
+.stm32-boundary-grid strong { color: var(--text); }
+.stm32-boundary-grid span { color: var(--muted); font-size: .75rem; line-height: 1.45; }
+.stm32-public-grid { display: grid; grid-template-columns: minmax(300px,.9fr) minmax(390px,1.1fr); gap: 1rem; }
+.stm32-project-pane, .stm32-circuit-pane { min-width: 0; padding: 1rem; border: 1px solid #324a78; border-radius: 16px; background: rgba(3,10,23,.8); }
+.stm32-project-pane { display: grid; gap: .65rem; }
+.stm32-project-pane input:not(.sr-only), .stm32-project-pane textarea { width: 100%; }
+.stm32-source { min-height: 280px; resize: vertical; tab-size: 2; font: 500 .86rem/1.5 var(--mono); color: #e5ecff; background: #020813; border: 1px solid #405a87; border-radius: 12px; padding: .9rem; }
+.stm32-project-actions, .stm32-runtime-actions { display: flex; flex-wrap: wrap; gap: .55rem; }
+.stm32-runtime-actions .primary { color: #031018; background: var(--lime); border-color: var(--lime); }
+.stm32-message { min-height: 2.8rem; margin: 0; color: #dce5fa; }
+.stm32-identities { display: grid; gap: .45rem; margin: 0; }
+.stm32-identities div { display: grid; grid-template-columns: 130px minmax(0,1fr); gap: .65rem; }
+.stm32-identities dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.stm32-circuit-pane { display: grid; gap: .8rem; align-content: start; }
+.stm32-diagram { display: block; width: 100%; height: auto; min-height: 310px; overflow: hidden; border: 1px solid #405a87; border-radius: 16px; background: #f5f0e6; }
+.stm32-board-body { fill: #3157a3; stroke: #19346f; stroke-width: 5; filter: drop-shadow(0 14px 12px rgba(0,0,0,.24)); }
+.stm32-board-module { fill: #d7dce2; stroke: #687482; stroke-width: 3; }
+.stm32-chip { fill: #171c24; stroke: #66717c; stroke-width: 3; }
+.stm32-chip-label { fill: #eef4ff; font: 800 19px var(--mono); letter-spacing: 2px; }
+.stm32-chip-sub { fill: #9fb4d8; font: 700 12px var(--mono); letter-spacing: 3px; }
+.stm32-board-hole { fill: #101a28; stroke: #d6bb5b; stroke-width: 4; }
+.stm32-pin-block { fill: #10243b; stroke: #e3b941; stroke-width: 3; }
+.stm32-pin-label { fill: #fff; font: 850 13px var(--mono); }
+.stm32-pin-number { fill: #bfcfe8; font: 700 9px var(--mono); }
+.stm32-wire-signal, .stm32-wire-led, .stm32-wire-ground, .stm32-lead { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.stm32-wire-signal { stroke: #e2ab1b; stroke-width: 9; }
+.stm32-wire-led { stroke: #e13e51; stroke-width: 9; }
+.stm32-wire-ground { stroke: #202a34; stroke-width: 9; }
+.stm32-lead { stroke: #6c7378; stroke-width: 6; }
+.stm32-resistor { fill: #e1c79c; stroke: #92724c; stroke-width: 3; }
+.stm32-part-label { fill: #342218; font: 850 14px var(--mono); }
+.stm32-led { fill: #8d2435; stroke: #ff6878; stroke-width: 4; filter: drop-shadow(0 0 4px rgba(238,61,79,.25)); transition: fill .12s ease, filter .12s ease; }
+.stm32-diagram[data-led="on"] .stm32-led { fill: #ff3048; filter: drop-shadow(0 0 17px rgba(255,44,69,.9)); }
+.stm32-path-label { fill: #42505a; font: 750 11px var(--mono); }
+.stm32-terminal-card { padding: .8rem; border: 1px solid #354e7b; border-radius: 12px; background: #020812; }
+.stm32-terminal-card pre { min-height: 96px; margin: .55rem 0 0; color: #a8ff3f; white-space: pre-wrap; overflow-wrap: anywhere; }
+.stm32-model-label { margin: 0; color: #bfd0e9; font-size: .74rem; line-height: 1.5; }
+.stm32-model-label strong:last-child { color: var(--amber); }
+.controller-workbench[data-mode="stm32-source"]::before { background: #7ea7ff; }
+
+@media (max-width: 860px) {
+  .stm32-public-grid, .stm32-boundary-grid { grid-template-columns: 1fr; }
+  .stm32-diagram { min-height: 0; }
+}
+@media (max-width: 430px) {
+  .stm32-public-workbench { padding: .7rem; }
+  .stm32-public-grid { gap: .7rem; }
+  .stm32-project-pane, .stm32-circuit-pane { padding: .75rem; }
+  .stm32-runtime-actions button, .stm32-project-actions button { flex: 1 1 130px; }
+  .stm32-identities div { grid-template-columns: 1fr; gap: .15rem; }
+}
 .controller-workbench-copy { min-width: 0; }
 .controller-profile-picker { display: grid; align-content: start; gap: 7px; padding: 11px 12px; border: 1px solid #1c4157; border-radius: 10px; background: #07141f; }
 .controller-profile-picker label { color: var(--cyan); font: 800 .65rem ui-monospace, monospace; letter-spacing: .09em; text-transform: uppercase; }

@@ -1,0 +1,11 @@
+# Copyright 2026 IntentForce
+# SPDX-License-Identifier: Apache-2.0
+FROM local/intent-mcu-rp2040-toolchain:1.1.0-rc.4
+
+USER root
+COPY stm32/ /opt/intent-mcu/stm32/
+RUN chmod -R a=rX /opt/intent-mcu/stm32
+
+USER 65534:65534
+WORKDIR /workspace
+ENTRYPOINT ["node", "/opt/intent-mcu/stm32/builder-worker.mjs"]

@@ -1,0 +1,12 @@
+# Copyright 2026 IntentForce
+# SPDX-License-Identifier: Apache-2.0
+FROM python@sha256:31dd4d9529d02d7436659061cb7564cd4733fc90e5e152709a942d53382ec8d0
+
+COPY renode-root/ /opt/renode/
+COPY stm32/renode-runner.py /opt/intent-mcu/stm32/renode-runner.py
+RUN chmod -R a=rX /opt/renode /opt/intent-mcu \
+    && test -x /opt/renode/renode
+
+USER 65534:65534
+WORKDIR /opt/intent-mcu/stm32
+ENTRYPOINT ["python3", "/opt/intent-mcu/stm32/renode-runner.py", "--renode-root", "/opt/renode", "--state-root", "/tmp"]

@@ -17,23 +17,23 @@ import {
   publicControllerViews,
 } from '../src/public-controller-workbench-view.mjs';
 
-test('public projection exposes three bounded public execution profiles plus one preview', () => {
+test('public projection exposes four bounded public execution profiles', () => {
   const expected = [AVR_PROFILE, ESP32C3_PROFILE, RP2040_PROFILE, STM32F429ZI_PROFILE];
   const views = publicControllerViews();
   assert.deepEqual(views.map((view) => view.profile), expected);
   assert.ok(views.every((view) => view.schema === PUBLIC_CONTROLLER_VIEW_SCHEMA));
   assert.deepEqual(views.filter((view) => view.publicExecution).map((view) => view.profile),
-    [AVR_PROFILE, ESP32C3_PROFILE, RP2040_PROFILE]);
+    [AVR_PROFILE, ESP32C3_PROFILE, RP2040_PROFILE, STM32F429ZI_PROFILE]);
   const c3 = publicControllerView(ESP32C3_PROFILE);
   assert.equal(c3.status, 'supported-bounded');
   assert.equal(c3.publicSupport, true);
   assert.equal(candidateCompilerTarget(ESP32C3_PROFILE).compileAvailable, true);
   assert.match(c3.action, /Build ESP32-C3/i);
   const stm32 = publicControllerView(STM32F429ZI_PROFILE);
-  assert.equal(stm32.status, 'preview-only');
-  assert.equal(stm32.publicSupport, false);
-  assert.equal(candidateCompilerTarget(STM32F429ZI_PROFILE).compileAvailable, false);
-  assert.match(stm32.action, /not enabled/i);
+  assert.equal(stm32.status, 'supported-bounded');
+  assert.equal(stm32.publicSupport, true);
+  assert.equal(candidateCompilerTarget(STM32F429ZI_PROFILE).compileAvailable, true);
+  assert.match(stm32.action, /Build STM32F429ZI/i);
 });
 
 test('bounded C3 evidence separates actual QEMU from the project-owned GPIO model', () => {
@@ -48,8 +48,9 @@ test('bounded C3 evidence separates actual QEMU from the project-owned GPIO mode
   assert.match(rp2040.circuit, /physical pin 1.*physical pin 3/i);
   assert.match(rp2040.limitation, /not a complete Pico/i);
   const stm32 = publicControllerView(STM32F429ZI_PROFILE);
-  assert.match(stm32.runtime, /private Renode source \+ fixture evidence/i);
-  assert.match(stm32.limitation, /not a general STM32/i);
+  assert.match(stm32.runtime, /Actual Renode 1\.17\.0/i);
+  assert.match(stm32.circuit, /Renode-observed PB0/i);
+  assert.match(stm32.limitation, /not arbitrary C or ELF/i);
 });
 
 test('public browser and server entry points contain no private runtime route or C3 broker mount', async () => {

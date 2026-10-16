@@ -22,10 +22,6 @@ import {
   validateCandidateCompileArtifact,
   validateTargetAvailabilitySnapshot,
 } from '../compiler/candidate-target-contract.mjs';
-import {
-  CONTROLLER_ADAPTER_PROFILES,
-  CONTROLLER_COMPILER_PROFILES,
-} from '../expansion-drafts/controller-adapter-contract-v1.mjs';
 
 const expectCode = (fn, code) => assert.throws(
   fn,
@@ -59,37 +55,19 @@ const c3Manifest = () => ({
   },
 });
 
-test('STM32 remains public-unavailable while Pico has one exact bounded public target', () => {
-  for (const profileId of [STM32F429ZI_PROFILE]) {
-    const target = candidateCompilerTarget(profileId);
-    const priorCompiler = CONTROLLER_COMPILER_PROFILES.find((item) => item.profile === profileId);
-    const priorAdapter = CONTROLLER_ADAPTER_PROFILES.find((item) => item.profile === profileId);
-    assert.ok(priorCompiler && priorAdapter, `${profileId} did not reuse a prior profile`);
-    assert.equal(priorCompiler.status, 'unavailable');
-    assert.equal(priorAdapter.status, 'unsupported');
-    assert.equal(target.fqbn, priorCompiler.fqbn);
-    assert.equal(target.compileAvailable, false);
-    assert.equal(target.runtimeStatus, 'unavailable');
-    assert.equal(target.requestSchema, null);
-    assert.equal(target.toolchainIdentitySha256, null);
-    assert.deepEqual(target.fixedBuildFlags, []);
-    assert.deepEqual({
-      installedCompiler: target.availability.installedCompiler.status,
-      verifiedCompileTarget: target.availability.verifiedCompileTarget.status,
-      emulatorRuntime: target.availability.emulatorRuntime.status,
-      validatedPeripherals: target.availability.validatedPeripherals.status,
-    }, {
-      installedCompiler: 'private-verified',
-      verifiedCompileTarget: 'private-verified',
-      emulatorRuntime: 'private-proof',
-      validatedPeripherals: 'private-subset',
-    });
-    const publicContract = JSON.stringify(target);
-    assert.equal(publicContract.includes('requiredVersion'), false);
-    assert.equal(publicContract.includes('observedVersion'), false);
-    assert.equal(publicContract.includes('sizeBytes'), false);
-    assert.equal(publicContract.includes('packageBytes'), false);
-  }
+test('STM32 and Pico expose separate exact bounded public targets', () => {
+  const stm32 = candidateCompilerTarget(STM32F429ZI_PROFILE);
+  assert.equal(stm32.compileAvailable, true);
+  assert.equal(stm32.compileOnly, false);
+  assert.equal(stm32.requestSchema, 'intent-mcu-stm32-public-build-request@1');
+  assert.equal(stm32.fqbn, 'intent:stm32f429zi:bounded-c11');
+  assert.equal(stm32.toolchainIdentitySha256, '8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd');
+  assert.deepEqual([
+    stm32.availability.installedCompiler.status,
+    stm32.availability.verifiedCompileTarget.status,
+    stm32.availability.emulatorRuntime.status,
+    stm32.availability.validatedPeripherals.status,
+  ], ['installed', 'verified-bounded', 'verified', 'validated-subset']);
   const pico = candidateCompilerTarget(RP2040_PROFILE);
   assert.equal(pico.compileAvailable, true);
   assert.equal(pico.compileOnly, false);
@@ -116,7 +94,7 @@ test('availability snapshots reject stale state, wrong family and silent promoti
   assert.equal(validateTargetAvailabilitySnapshot({ ...rp2040, unexpected: true }), false);
 });
 
-test('C3 dedicated service and STM32 preview cannot cross into the generic compiler queue', () => {
+test('C3 and STM32 dedicated services cannot cross into the generic compiler queue', () => {
   let brokerCalls = 0;
   const coordinator = new BuildCoordinator({
     broker: { async compile() { brokerCalls += 1; throw new Error('broker must not run'); } },
@@ -126,8 +104,8 @@ test('C3 dedicated service and STM32 preview cannot cross into the generic compi
   expectCode(() => normalizeBuildRequestValue(c3Request), 'UNKNOWN_COMPILER_TARGET');
   expectCode(() => coordinator.submit(JSON.stringify(c3Request), 'origin'), 'UNKNOWN_COMPILER_TARGET');
   const stm32Request = requestFor(STM32F429ZI_PROFILE);
-  expectCode(() => normalizeBuildRequestValue(stm32Request), 'COMPILER_TARGET_UNAVAILABLE');
-  expectCode(() => coordinator.submit(JSON.stringify(stm32Request), 'origin'), 'COMPILER_TARGET_UNAVAILABLE');
+  expectCode(() => normalizeBuildRequestValue(stm32Request), 'UNKNOWN_COMPILER_TARGET');
+  expectCode(() => coordinator.submit(JSON.stringify(stm32Request), 'origin'), 'UNKNOWN_COMPILER_TARGET');
   for (const profileId of [ESP32C3_PROFILE, STM32F429ZI_PROFILE]) {
     expectCode(() => normalizeBuildRequestValue(requestFor(profileId, { fqbn: 'wrong:family:target' })), 'UNKNOWN_COMPILER_TARGET');
     expectCode(() => normalizeBuildRequestValue(requestFor(profileId, { toolchainIdentitySha256: '0'.repeat(64) })), 'UNKNOWN_COMPILER_TARGET');
@@ -135,13 +113,13 @@ test('C3 dedicated service and STM32 preview cannot cross into the generic compi
   const crossed = requestFor(STM32F429ZI_PROFILE, { fqbn: candidateCompilerTarget(RP2040_PROFILE).fqbn });
   expectCode(() => normalizeBuildRequestValue(crossed), 'UNKNOWN_COMPILER_TARGET');
   const privateSource = requestFor(STM32F429ZI_PROFILE);
-  privateSource.files[0].content = '// PRIVATE_UNAVAILABLE_SOURCE_MARKER\nvoid setup(){} void loop(){}';
+  privateSource.files[0].content = '// DEDICATED_SERVICE_SOURCE_MARKER\nvoid setup(){} void loop(){}';
   try {
     normalizeBuildRequestValue(privateSource);
-    assert.fail('unavailable target was accepted');
+    assert.fail('dedicated STM32 target crossed into the generic queue');
   } catch (error) {
     const responseBoundary = JSON.stringify({ code: error.code, message: error.message });
-    assert.equal(responseBoundary.includes('PRIVATE_UNAVAILABLE_SOURCE_MARKER'), false);
+    assert.equal(responseBoundary.includes('DEDICATED_SERVICE_SOURCE_MARKER'), false);
     assert.equal(responseBoundary.includes('/srv/'), false);
     assert.equal(responseBoundary.includes('/workspace/'), false);
   }

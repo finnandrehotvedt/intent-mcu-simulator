@@ -1,4 +1,40 @@
-# Intent MCU Simulator 1.1.0-rc.5
+# Intent MCU Simulator 1.1.0-rc.6
+
+This incremental public release adds the previously private-verified bounded
+STM32F429ZI source-to-Renode path while preserving the accepted AVR, Pico and
+ESP32-C3 workbenches.
+
+## STM32F429ZI public slice
+
+- One exact project-owned C11 grammar may set PB0 HIGH/LOW, emit one 1–24
+  character uppercase USART3 marker and halt.
+- Arm GNU 14.3.1 compiles the source in a disposable network-disabled,
+  read-only, non-root container using the fixed project startup, runtime and
+  linker contract. A strict source-bound ELF32 validator runs before execution.
+- Actual Renode 1.17.0 observes PB0 and USART3 over two matching boot epochs.
+  Reset starts a fresh isolated Renode process with the same currently accepted
+  ELF; instruction ordinals are not presented as physical cycles.
+- The visible original controller drawing exposes named PB0 and GND anchors.
+  Its PB0 → 220 Ω → LED → GND route stays outside the controller body and is
+  explicitly an ideal teaching circuit driven by the actual PB0 observation.
+- Save/Open contains project name, profile and source only. Source edit,
+  invalid source, Open, profile change and Stop discard executable authority,
+  clear prior PB0/USART3 provenance and require a fresh Build.
+- Compiler and runtime jobs are single-concurrency, rate-bounded, disposable,
+  network-disabled and zero-retention. No arbitrary C, ELF picker, SDK, broad
+  peripheral, full STM32 family, hardware upload or physical-board claim is
+  introduced.
+
+## Preserved public paths
+
+- The accepted AVR, RP2040 Pico and ESP32-C3 journeys and their exact truth
+  labels remain unchanged.
+- The page keeps one active controller canvas, zero tested desktop/mobile
+  horizontal overflow, no cookies and no third-party browser requests.
+
+---
+
+## 1.1.0-rc.5
 
 This incremental public release adds one bounded ESP32-C3 source-to-QEMU path
 while preserving the tested AVR and Pico workbenches.

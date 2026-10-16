@@ -1,0 +1,10 @@
+{
+  "schema": "teach-lab-compiler-image-lock@1",
+  "image": "local/intent-mcu-stm32-toolchain:1.1.0-rc.6",
+  "imageId": "sha256:a5ce68a44d599f77d67389db0c4eb3a3690af82ec71cd6a1f3edd5f92c1ec0ea",
+  "runtimeImageIds": [],
+  "toolchainManifestSha256": "fc238ac8d13b82c6f2b247e3e5e1d846235205c341bb5c52aa5de1070ab8761e",
+  "toolchainFilesSha256": "fc238ac8d13b82c6f2b247e3e5e1d846235205c341bb5c52aa5de1070ab8761e",
+  "architecture": "linux/amd64",
+  "distribution": "Public strict STM32F429ZI PB0/USART3 bounded-source compiler"
+}

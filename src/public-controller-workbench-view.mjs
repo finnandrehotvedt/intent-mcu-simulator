@@ -46,15 +46,15 @@ const definitions = Object.freeze({
     publicExecution: true,
   }),
   [STM32F429ZI_PROFILE]: Object.freeze({
-    mode: 'stm32-preview', status: 'preview-only', eyebrow: 'PRIVATE EVIDENCE · PUBLIC PREVIEW ONLY',
-    label: 'STM32F429ZI', title: 'STM32F429ZI bounded-source preview',
-    summary: 'Bounded C11 source, fixed ARM compilation, strict ELF and actual Renode PB0/USART3/reset replay have passed private verification. No public compiler, arbitrary ELF or runtime is enabled.',
-    project: 'No public project import for this profile',
-    source: 'Private bounded source proof · public Build disabled',
-    runtime: 'Private Renode source + fixture evidence · public Run disabled',
-    circuit: 'Private onboard PB0/LED1 only · no public external wire or broad peripheral mapping',
-    action: 'Public execution not enabled', limitation: 'Private bounded evidence is not a general STM32, Renode, external-pin, or physical-device support claim.',
-    publicExecution: false,
+    mode: 'stm32-source', status: 'supported-bounded', eyebrow: 'PUBLICLY RUNNABLE · BOUNDED STM32F429ZI SUBSET',
+    label: 'STM32F429ZI', title: 'STM32F429ZI source, Renode and PB0 workbench',
+    summary: 'Edit the bounded C11 source, compile with the fixed ARM toolchain, then execute its strict ELF on actual Renode CPU/PB0/USART3.',
+    project: 'Local data-only Save/Open · fresh Build after Open',
+    source: 'Strict PB0 level and USART3 marker grammar · fixed startup/linker/runtime',
+    runtime: 'Actual Renode 1.17.0 CPU, PB0 and USART3 · two verified boot epochs',
+    circuit: 'Renode-observed PB0 → ideal 220 Ω → LED → named GND path',
+    action: 'Build STM32F429ZI project', limitation: 'This is a strict PB0/USART3/reset-replay subset, not arbitrary C or ELF, a complete STM32/SDK/peripheral/timing model, analogue equivalence, hardware programming or physical-device support.',
+    publicExecution: true,
   }),
 });
 
@@ -64,7 +64,7 @@ export function publicControllerView(profile) {
   return structuredClone({
     schema: PUBLIC_CONTROLLER_VIEW_SCHEMA,
     profile,
-    publicSupport: [AVR_PROFILE, ESP32C3_PROFILE, RP2040_PROFILE].includes(profile),
+    publicSupport: [AVR_PROFILE, ESP32C3_PROFILE, RP2040_PROFILE, STM32F429ZI_PROFILE].includes(profile),
     availability: targetAvailabilitySnapshot(profile),
     ...definition,
   });

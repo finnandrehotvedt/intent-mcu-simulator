@@ -2,6 +2,20 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.6 — 2026-10-16
+
+- Added one bounded public STM32F429ZI C11 profile with fixed Arm GNU 14.3.1
+  compilation, strict source-bound ELF32 admission and actual Renode 1.17.0
+  PB0/USART3 execution across reset replay.
+- Added an original named-pin controller drawing and body-avoiding PB0 → 220 Ω
+  → LED → GND teaching circuit, explicitly separated from physical and analogue
+  hardware claims.
+- Added data-only Save/Open, fresh-build enforcement, stale authority
+  invalidation, Stop/discard and fresh-process Reset semantics.
+- Added exact image locks, networkless disposable compiler/runtime jobs,
+  zero server retention, strict origin/request bounds, desktop/mobile browser
+  acceptance and preserved AVR/Pico/C3 regression checks.
+
 ## 1.1.0-rc.5 — 2026-10-16
 
 - Added one bounded public ESP32-C3 sketch profile with fixed Arduino-ESP32

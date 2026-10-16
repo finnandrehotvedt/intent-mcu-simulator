@@ -1,7 +1,8 @@
 # Local compiler operations
 
-This workflow builds the browser plus the isolated AVR and bounded RP2040
-compilers from this checkout and checksum-pinned upstream archives. It does not
+This workflow builds the browser plus the isolated AVR, bounded RP2040 and
+bounded STM32F429ZI compilers from this checkout and checksum-pinned upstream
+archives. It does not
 use the hosted compiler and does not distribute the resulting toolchain images.
 Docker access is required, but privileged containers and root access are not.
 
@@ -14,6 +15,7 @@ npm ci --ignore-scripts --no-audit --no-fund
 npm run build
 npm run setup:toolchain
 npm run setup:rp2040-toolchain
+npm run setup:stm32-public-images
 DOCKER_GID=$(stat -c %g /var/run/docker.sock) \
   docker compose --profile local-compiler up --build -d local-compiler
 ```
@@ -40,6 +42,13 @@ not source-release artifacts. A prepared deployment must provide exact
 `ENABLE_ESP32C3_PUBLIC=1`, and pass the public-origin value. Startup and
 `/readyz` fail closed if either installed image ID differs from its lock.
 
+The public STM32F429ZI service is also disabled unless
+`ENABLE_STM32_PUBLIC=1` is set with exact `STM32_BUILDER_IMAGE_LOCK` and
+`STM32_RUNTIME_IMAGE_LOCK` paths. `npm run setup:stm32-public-images` reuses the
+already pinned Arm GNU 14.3.1 image and the exact local Renode 1.17.0 portable
+asset recorded in `stm32/toolchain-manifest.json`. It performs no network
+download. Startup and `/readyz` fail closed on image-ID drift.
+
 Run the full compiler isolation and recovery checks with:
 
 ```sh
@@ -60,6 +69,11 @@ docker compose --profile local-compiler exec -T local-compiler npm run test:oper
   containers, globally limited to one of each, network-disabled, read-only,
   capability-dropped and tmpfs-only. C3 source/flash authority is in memory
   for a bounded session and is wiped on edit, Stop, expiry, or restart.
+- When STM32 is enabled, its compiler and Renode runtime are separate
+  one-at-a-time disposable containers. Both are network-disabled, read-only,
+  non-root and capability-dropped. ELF bytes cross one request only, remain in
+  browser memory after Build, and are wiped on edit, Open, Stop or profile
+  change; the server retains zero project or executable bytes.
 
 Logs contain lifecycle/error codes, not learner source, returned firmware, job
 capabilities, or secrets. A failed build remains available only in memory for a
@@ -71,6 +85,9 @@ bounded job lifetime; restarting the service discards jobs and cache.
    `docker compose --profile local-compiler down` for the Compose profile.
 2. Confirm no disposable job remains:
    `docker ps -aq --filter label=com.intentforce.teach-lab.role=disposable-build-job`.
+   Also require no
+   `disposable-stm32-public-build-job` or
+   `disposable-stm32-public-runtime-job` container.
 3. Restore the prior source commit and rerun `npm ci`, `npm run build`,
    `npm run setup:toolchain`, and `npm run setup:rp2040-toolchain`.
 4. Start the restored checkout and require both health endpoints plus
@@ -88,6 +105,8 @@ upstream terms and are not project release artifacts. See
 `toolchain/SOURCE-AND-RELINKING.md`, `toolchain/NOTICE.md`, and
 `toolchain/manifest.json` for AVR and
 `compiler/RP2040-TOOLCHAIN-MANIFEST.md` for Pico before supplying a built image
-to anyone else. The C3 lock/manifests do not authorize redistributing its
+to anyone else. The STM32 locks likewise do not authorize redistributing Arm
+GNU or the Renode portable package; review the upstream licences and retained
+notices before any external image distribution. The C3 lock/manifests do not authorize redistributing its
 compiler or QEMU images; review `DEPENDENCIES.md` and `THIRD_PARTY_NOTICES.md`
 first.

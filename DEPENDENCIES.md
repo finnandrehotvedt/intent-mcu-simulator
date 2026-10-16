@@ -39,6 +39,16 @@ fixed flash-layout, container-image, and source identities. They do not claim
 general ESP32 compatibility or licence clearance for redistributing a built
 toolchain/runtime image.
 
+The bounded STM32F429ZI path reuses the same exact Arm GNU 14.3.Rel1 archive
+recorded for Pico and adds Renode `v1.17.0` as a server-side runtime. The
+official portable Linux asset SHA-256 is
+`4ba7c68b59e2447f188ef4b4b112fcccd2802582c460beedceb63b84e5605a5f`;
+its source is <https://github.com/renode/renode/tree/v1.17.0>. Renode's root
+project is MIT and the portable package contains third-party components under
+their own terms. `stm32/toolchain-manifest.json` and the two image locks record
+the exact compiler, runtime and project-owned contract identities. Neither
+built image is distributed by this source release.
+
 The repository includes the project-owned compiler gateway and a source recipe
 for a locally built AVR toolchain. The recipe pins Arduino CLI 1.5.1, Arduino
 AVR Boards 1.8.8, AVR GCC 7.3.0-atmel3.6.1-arduino7, ctags 5.8-arduino11 and

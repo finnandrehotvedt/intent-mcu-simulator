@@ -1,0 +1,10 @@
+{
+  "schema": "teach-lab-compiler-image-lock@1",
+  "image": "local/intent-mcu-stm32-runtime:1.1.0-rc.6",
+  "imageId": "sha256:f52ebf0eac4ece7914de8bbde13233d263ec51a0395037e85ce83ccc7c103b18",
+  "runtimeImageIds": [],
+  "toolchainManifestSha256": "fc238ac8d13b82c6f2b247e3e5e1d846235205c341bb5c52aa5de1070ab8761e",
+  "toolchainFilesSha256": "fc238ac8d13b82c6f2b247e3e5e1d846235205c341bb5c52aa5de1070ab8761e",
+  "architecture": "linux/amd64",
+  "distribution": "Public bounded actual Renode 1.17.0 STM32F429ZI PB0/USART3/reset runtime"
+}

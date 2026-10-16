@@ -4,17 +4,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Build and run supported ATmega328P, bounded RP2040 Pico and bounded ESP32-C3 projects, with actual QEMU CPU/UART and an honestly separate GPIO2 model.">
+  <meta name="description" content="Build and run supported AVR, bounded RP2040 Pico, ESP32-C3 and STM32F429ZI projects through fixed toolchains and tested virtual runtimes.">
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
   <meta name="theme-color" content="#07121d">
-  <title>Intent MCU Simulator | Public AVR, Pico and ESP32-C3 workbenches</title>
+  <title>Intent MCU Simulator | Four public controller workbenches</title>
   <link rel="canonical" href="https://lab.teachthecompany.com/">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="alternate" href="/llms.txt" type="text/plain" title="Intent MCU Simulator facts for AI-assisted discovery">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Teach the Company">
-  <meta property="og:title" content="Intent MCU Simulator | Public AVR, Pico and ESP32-C3 workbenches">
-  <meta property="og:description" content="Run supported AVR, bounded Pico, or bounded ESP32-C3 source through a fixed compiler and actual QEMU CPU/UART.">
+  <meta property="og:title" content="Intent MCU Simulator | Four public controller workbenches">
+  <meta property="og:description" content="Build and run bounded AVR, Pico, ESP32-C3 and STM32F429ZI projects through fixed toolchains and tested virtual runtimes.">
   <meta property="og:url" content="https://lab.teachthecompany.com/">
   <meta property="og:image" content="https://lab.teachthecompany.com/social-card.png">
   <meta property="og:image:type" content="image/png">
@@ -22,8 +22,8 @@
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Intent MCU Simulator workbench with an original virtual controller, connected LED, source code, and logic trace.">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Intent MCU Simulator | Public AVR, Pico and ESP32-C3 workbenches">
-  <meta name="twitter:description" content="Run supported AVR, bounded Pico, or bounded ESP32-C3 source through a fixed compiler and actual QEMU CPU/UART.">
+  <meta name="twitter:title" content="Intent MCU Simulator | Four public controller workbenches">
+  <meta name="twitter:description" content="Build and run bounded AVR, Pico, ESP32-C3 and STM32F429ZI projects through fixed toolchains and tested virtual runtimes.">
   <meta name="twitter:image" content="https://lab.teachthecompany.com/social-card.png">
   <meta name="twitter:image:alt" content="Intent MCU Simulator workbench with an original virtual controller, connected LED, source code, and logic trace.">
   <link rel="stylesheet" href="./styles.css">
@@ -31,8 +31,8 @@
 <body>
   <main>
     <header class="app-header">
-      <div><p class="eyebrow">PUBLIC RELEASE · AVR + BOUNDED PICO + BOUNDED ESP32-C3</p><h1>Intent MCU Simulator</h1></div>
-      <p class="lede">Build and run supported AVR, Pico, or ESP32-C3 learning projects. C3 uses actual QEMU CPU/UART while its GPIO2 LED is an explicitly separate project-owned model.</p>
+      <div><p class="eyebrow">PUBLIC RELEASE · AVR + BOUNDED PICO + ESP32-C3 + STM32F429ZI</p><h1>Intent MCU Simulator</h1></div>
+      <p class="lede">Build and run four bounded controller paths. C3 uses actual QEMU CPU/UART with a separate GPIO2 model; STM32 uses actual Renode PB0/USART3 with an ideal external LED teaching path.</p>
     </header>
 
     <section class="project-bar panel" aria-label="Project controls">
@@ -78,7 +78,7 @@
       </div>
       <div class="controller-profile-picker">
         <label for="board-select">Active controller workbench</label>
-        <select id="board-select"><option value="board.atmega328p-16mhz-v1">ATmega328P · public build + run</option><option value="board.esp32-c3-devmodule-v1">ESP32-C3 · bounded public build + actual QEMU</option><option value="board.rp2040-pico-v1">RP2040 Pico · bounded public build + run</option><option value="board.stm32f429zi-nucleo144-v1">STM32F429ZI · private verified · public preview</option></select>
+        <select id="board-select"><option value="board.atmega328p-16mhz-v1">ATmega328P · public build + run</option><option value="board.esp32-c3-devmodule-v1">ESP32-C3 · bounded public build + actual QEMU</option><option value="board.rp2040-pico-v1">RP2040 Pico · bounded public build + run</option><option value="board.stm32f429zi-nucleo144-v1">STM32F429ZI · bounded public build + actual Renode</option></select>
         <p id="controller-status" class="truth">ATmega328P · compile and tested virtual runtime.</p>
       </div>
       <dl class="controller-capabilities" aria-label="Selected controller capabilities">
@@ -213,6 +213,70 @@
       </div>
     </section>
 
+    <section id="stm32-public-workbench" class="stm32-public-workbench panel" aria-labelledby="stm32-public-title" hidden>
+      <div class="stm32-public-heading">
+        <div><p class="eyebrow">STM32F429ZI · PUBLIC BOUNDED SOURCE</p><h2 id="stm32-public-title">Compile PB0, run actual Renode CPU/GPIO/USART3</h2></div>
+        <span id="stm32-state" class="state" role="status">editing</span>
+      </div>
+      <div class="stm32-boundary-grid" aria-label="STM32F429ZI execution boundaries">
+        <article><small>ACTUAL EXECUTION</small><strong>Renode 1.17.0 · CPU, PB0 and USART3</strong><span>A strict compiler-generated ELF runs in a fresh isolated Renode process; PB0 and USART3 are observed twice across reset replay.</span></article>
+        <article><small>TEACHING CIRCUIT</small><strong>Named PB0 → 220 Ω → LED → GND path</strong><span>The visible ideal LED path follows the observed PB0 level. It is not an analogue, board-layout, timing or physical-hardware model.</span></article>
+      </div>
+      <p class="truth">The fixed C11 grammar may set PB0 HIGH/LOW, write one 1–24 character uppercase USART3 marker and halt. No SDK, arbitrary C/ELF, broad peripherals, full STM32 family, physical board or hardware-programming claim.</p>
+      <div class="stm32-public-grid">
+        <section class="stm32-project-pane" aria-label="STM32F429ZI bounded source project">
+          <label for="stm32-project-name">Local project name</label>
+          <input id="stm32-project-name" type="text" maxlength="80" value="STM32F429 PB0 source project" autocomplete="off">
+          <div class="stm32-project-actions">
+            <button id="stm32-save" type="button">Save local project</button>
+            <button id="stm32-open" type="button">Open local project</button>
+            <input id="stm32-open-input" class="sr-only" type="file" accept="application/json,.json" aria-label="Open STM32 project file">
+          </div>
+          <label for="stm32-source">main.c · edit only PB0 level and uppercase marker</label>
+          <textarea id="stm32-source" class="stm32-source" spellcheck="false" aria-describedby="stm32-message"></textarea>
+          <div class="stm32-runtime-actions">
+            <button id="stm32-build" class="primary" type="button">Build STM32 ELF</button>
+            <button id="stm32-run" type="button" disabled>Run actual Renode</button>
+            <button id="stm32-reset" type="button" disabled>Reset in fresh Renode</button>
+            <button id="stm32-stop" type="button" disabled>Stop &amp; discard</button>
+          </div>
+          <p id="stm32-message" class="stm32-message" role="status">Edit the two bounded values, then build a fresh STM32 ELF.</p>
+          <dl class="stm32-identities">
+            <div><dt>Source SHA-256</dt><dd><code id="stm32-source-hash">not built</code></dd></div>
+            <div><dt>ELF SHA-256</dt><dd><code id="stm32-artifact-hash">not built</code></dd></div>
+          </dl>
+        </section>
+        <section class="stm32-circuit-pane" aria-label="Named STM32F429ZI PB0 teaching circuit">
+          <svg id="stm32-diagram" class="stm32-diagram" data-led="off" viewBox="0 0 760 390" role="img" aria-labelledby="stm32-diagram-title stm32-diagram-desc">
+            <title id="stm32-diagram-title">Original F429ZI profile drawing with named PB0 and GND wiring</title>
+            <desc id="stm32-diagram-desc">PB0 exits the controller body to a 220 ohm resistor and LED. The return wire travels around the controller body to the named GND pin without crossing the controller.</desc>
+            <defs><pattern id="stm32-grid" width="18" height="18" patternUnits="userSpaceOnUse"><path d="M18 0H0V18" fill="none" stroke="#cfcbc1" stroke-width="1"/></pattern></defs>
+            <rect width="760" height="390" rx="18" fill="#f5f0e6"/><rect width="760" height="390" rx="18" fill="url(#stm32-grid)" opacity=".55"/>
+            <rect x="42" y="48" width="322" height="244" rx="20" class="stm32-board-body"/>
+            <rect x="72" y="88" width="74" height="112" rx="8" class="stm32-board-module"/>
+            <rect x="178" y="105" width="112" height="92" rx="8" class="stm32-chip"/>
+            <text x="234" y="145" text-anchor="middle" class="stm32-chip-label">F429ZI</text>
+            <text x="234" y="164" text-anchor="middle" class="stm32-chip-sub">PROFILE</text>
+            <circle cx="91" cy="247" r="13" class="stm32-board-hole"/><circle cx="315" cy="247" r="13" class="stm32-board-hole"/>
+            <rect x="330" y="91" width="54" height="45" rx="8" class="stm32-pin-block"/><text x="357" y="109" text-anchor="middle" class="stm32-pin-label">PB0</text><text x="357" y="124" text-anchor="middle" class="stm32-pin-number">PIN 34</text>
+            <rect x="330" y="218" width="54" height="45" rx="8" class="stm32-pin-block"/><text x="357" y="236" text-anchor="middle" class="stm32-pin-label">GND</text><text x="357" y="251" text-anchor="middle" class="stm32-pin-number">PIN 35</text>
+            <path d="M384 113 H430" class="stm32-wire-signal"/>
+            <line x1="430" y1="113" x2="448" y2="113" class="stm32-lead"/><rect x="448" y="98" width="108" height="30" rx="12" class="stm32-resistor"/><line x1="556" y1="113" x2="596" y2="113" class="stm32-lead"/>
+            <text x="502" y="88" text-anchor="middle" class="stm32-part-label">220 Ω</text>
+            <path d="M596 113 H635 V146" class="stm32-wire-led"/>
+            <path id="stm32-external-led" d="M614 146 Q635 119 656 146 V177 Q635 191 614 177 Z" class="stm32-led" aria-label="External teaching LED is off"/>
+            <line x1="621" y1="181" x2="621" y2="202" class="stm32-lead"/><line x1="649" y1="181" x2="649" y2="202" class="stm32-lead"/>
+            <path d="M635 202 V334 H384 V241" class="stm32-wire-ground"/>
+            <text x="620" y="229" text-anchor="end" class="stm32-path-label">cathode return</text>
+            <text x="513" y="360" text-anchor="middle" class="stm32-path-label">body-avoiding GND route</text>
+          </svg>
+          <p id="stm32-circuit-state" class="truth">Named path: PB0 → 220 Ω → LED → GND · awaiting actual Renode observation</p>
+          <div class="stm32-terminal-card"><strong>Actual Renode PB0 / USART3 evidence</strong><pre id="stm32-terminal" aria-live="polite">No Renode execution yet.</pre></div>
+          <p class="stm32-model-label"><strong>Runtime truth:</strong> PB0 and USART3 are observed in actual Renode. <strong>Circuit truth:</strong> the external resistor/LED path is an ideal educational rendering.</p>
+        </section>
+      </div>
+    </section>
+
     <section id="workbench-workspace" class="workspace" aria-label="Manual circuit editor">
       <aside class="catalog panel" aria-labelledby="catalog-title">
         <p class="eyebrow">1 · COMPONENTS</p><h2 id="catalog-title">Add parts</h2>
@@ -311,7 +375,7 @@
     <section class="about panel" aria-labelledby="about-title">
       <div class="about-intro"><div><p class="eyebrow">OPEN SOURCE · VERIFIED BOUNDARIES</p><h2 id="about-title">What is Intent MCU Simulator?</h2></div><p>It is an original browser workbench that turns supported firmware into observable virtual hardware behaviour. Build a circuit by connecting named pins, compile edited source in an isolated fixed toolchain, then inspect GPIO, LEDs, inputs, serial bytes, and logic traces.</p></div>
       <div class="answer-grid">
-        <article id="compatibility-note"><h3>What does it simulate?</h3><p>One tested ATmega328P 16 MHz, 5 V profile with 16 selectable parts: LEDs and resistors, tactile and toggle inputs, analogue sensors, RGB and seven-segment displays, a 16×2 LCD, an active buzzer, and a quadrature encoder.</p></article>
+        <article id="compatibility-note"><h3>What does it simulate?</h3><p>Four bounded controller paths: the documented ATmega328P browser subset; RP2040 GPIO0/UART0; actual ESP32-C3 QEMU CPU/UART plus a separately labelled GPIO2 model; and actual STM32F429ZI Renode PB0/USART3/reset replay plus an ideal external LED teaching path.</p></article>
         <article><h3>Does Prompt Bridge call AI?</h3><p>No. It creates portable text for a tool you choose. Only returned structured circuit data that passes the project schema, pin rules, and electrical validation can reach the canvas.</p></article>
         <article><h3>Does it replace physical testing?</h3><p>No. Simulation is not physical safety certification and does not claim complete timing or hardware equivalence. Verify real designs on appropriate hardware.</p></article>
       </div>
@@ -326,7 +390,7 @@
       </nav>
     </section>
 
-    <footer>Intent MCU Simulator 1.1.0-rc.5 public release · AVR + bounded Pico + bounded ESP32-C3 execution · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
+    <footer>Intent MCU Simulator 1.1.0-rc.6 public release · AVR + bounded Pico + bounded ESP32-C3 + bounded STM32F429ZI execution · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
   </main>
   <button id="serial-tab" class="serial-tab" type="button" aria-expanded="false" aria-controls="serial-dock"><span>Serial</span><span id="serial-new-output" class="serial-new-output" hidden>0 new</span></button>
   <aside id="serial-dock" class="serial-dock" aria-labelledby="serial-title" hidden>

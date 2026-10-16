@@ -43,6 +43,7 @@ import {
   AVR_PROFILE,
   ESP32C3_PROFILE,
   RP2040_PROFILE,
+  STM32F429ZI_PROFILE,
   candidateCompilerTarget,
   firstMissingTargetPrerequisite,
   targetAvailabilitySnapshot,
@@ -54,6 +55,7 @@ import {
 } from '../src/public-controller-workbench-view.mjs';
 import { Rp2040PublicWorkbench } from '../src/rp2040-public-workbench.mjs';
 import { Esp32C3PublicWorkbench } from '../src/esp32c3-public-workbench.mjs';
+import { Stm32PublicWorkbench } from '../src/stm32-public-workbench.mjs';
 import { serialEventText, serialInputBytes, serialText } from '../src/serial-view.mjs';
 import { CPU_CYCLES_PER_MILLISECOND, cursorCycles, waveformPaths } from '../src/waveform-view.mjs';
 import { createComponentArtwork as createBaseComponentArtwork } from './component-artwork.mjs';
@@ -135,6 +137,10 @@ const elements = Object.fromEntries([
   'c3-public-workbench', 'c3-state', 'c3-project-name', 'c3-save', 'c3-open', 'c3-open-input',
   'c3-source', 'c3-build', 'c3-run', 'c3-stop', 'c3-message', 'c3-source-hash', 'c3-flash-hash',
   'c3-diagram', 'c3-external-led', 'c3-circuit-state', 'c3-disconnect', 'c3-reconnect', 'c3-terminal',
+  'stm32-public-workbench', 'stm32-state', 'stm32-project-name', 'stm32-save', 'stm32-open', 'stm32-open-input',
+  'stm32-source', 'stm32-build', 'stm32-run', 'stm32-reset', 'stm32-stop', 'stm32-message',
+  'stm32-source-hash', 'stm32-artifact-hash', 'stm32-diagram', 'stm32-external-led',
+  'stm32-circuit-state', 'stm32-terminal',
 ].map((id) => [id.replaceAll('-', ''), byId(id)]));
 
 const runtimeControls = [elements.run, elements.pause, elements.step, elements.reset, elements.speed];
@@ -200,6 +206,7 @@ const publicPreviewRegions = [
 ].filter(Boolean);
 let picoPublicState = null;
 let c3PublicState = null;
+let stm32PublicState = null;
 
 function renderPicoQuickControls(state = picoPublicState) {
   if (selectedCompilerProfile !== RP2040_PROFILE || !state) return;
@@ -225,6 +232,19 @@ function renderC3QuickControls(state = c3PublicState) {
   elements.quickrun.disabled = !state.runnable || state.phase === 'running';
   elements.quickpause.disabled = true;
   elements.quickreset.disabled = true;
+}
+
+function renderStm32QuickControls(state = stm32PublicState) {
+  if (selectedCompilerProfile !== STM32F429ZI_PROFILE || !state) return;
+  elements.quickstate.textContent = `STM32F429ZI · ${state.phase} · named PB0 circuit`;
+  elements.quickbuild.textContent = 'Build STM32 ELF';
+  elements.quickrun.textContent = 'Run actual Renode';
+  elements.quickpause.textContent = 'Pause unavailable';
+  elements.quickreset.textContent = 'Reset in fresh Renode';
+  elements.quickbuild.disabled = ['building', 'running'].includes(state.phase);
+  elements.quickrun.disabled = !state.runnable || ['building', 'running'].includes(state.phase);
+  elements.quickpause.disabled = true;
+  elements.quickreset.disabled = !state.runnable || ['building', 'running'].includes(state.phase);
 }
 
 const picoPublicWorkbench = new Rp2040PublicWorkbench({
@@ -297,6 +317,40 @@ window.__ESP32C3_PUBLIC_WORKBENCH__ = {
   build: () => c3PublicWorkbench.build(),
   run: () => c3PublicWorkbench.run(),
   dispose: () => c3PublicWorkbench.dispose(),
+};
+
+const stm32PublicWorkbench = new Stm32PublicWorkbench({
+  elements: {
+    state: elements.stm32state,
+    name: elements.stm32projectname,
+    save: elements.stm32save,
+    open: elements.stm32open,
+    openInput: elements.stm32openinput,
+    source: elements.stm32source,
+    build: elements.stm32build,
+    run: elements.stm32run,
+    reset: elements.stm32reset,
+    stop: elements.stm32stop,
+    message: elements.stm32message,
+    sourceHash: elements.stm32sourcehash,
+    artifactHash: elements.stm32artifacthash,
+    diagram: elements.stm32diagram,
+    led: elements.stm32externalled,
+    circuitState: elements.stm32circuitstate,
+    terminal: elements.stm32terminal,
+  },
+  onState: (state) => {
+    stm32PublicState = state;
+    window.__STM32_PUBLIC_STATE__ = structuredClone(state);
+    renderStm32QuickControls(state);
+  },
+});
+window.__STM32_PUBLIC_WORKBENCH__ = {
+  state: () => stm32PublicWorkbench.snapshot(),
+  build: () => stm32PublicWorkbench.build(),
+  run: () => stm32PublicWorkbench.run(false),
+  reset: () => stm32PublicWorkbench.run(true),
+  stop: () => stm32PublicWorkbench.stop(),
 };
 
 function setSelection(next) {
@@ -463,11 +517,12 @@ function renderPublicControllerWorkbench() {
   const preview = !view.publicExecution;
   const pico = selectedCompilerProfile === RP2040_PROFILE;
   const c3 = selectedCompilerProfile === ESP32C3_PROFILE;
+  const stm32 = selectedCompilerProfile === STM32F429ZI_PROFILE;
   const avr = selectedCompilerProfile === AVR_PROFILE;
   elements.controllerworkbench.dataset.mode = view.mode;
   elements.controllerworkbencheyebrow.textContent = view.eyebrow;
   elements.controllerworkbenchtitle.textContent = view.title;
-  elements.controllerworkbenchbadge.textContent = preview ? 'Preview only' : (pico || c3) ? 'Supported subset' : 'Supported';
+  elements.controllerworkbenchbadge.textContent = preview ? 'Preview only' : (pico || c3 || stm32) ? 'Supported subset' : 'Supported';
   elements.controllerworkbenchbadge.className = `controller-badge ${preview ? 'preview' : 'supported'}`;
   elements.controllerworkbenchsummary.textContent = view.summary;
   elements.controllercapabilityproject.textContent = view.project;
@@ -480,6 +535,8 @@ function renderPublicControllerWorkbench() {
   elements.controllerworkbenchlimitation.textContent = view.limitation;
   elements.controllerpublicboundary.textContent = preview
     ? 'Preview mode changes only this browser view. It cannot upload a project, call a private endpoint, build firmware, or create a runtime session.'
+    : stm32
+      ? 'Public STM32 source is compiled in a fixed network-disabled ARM toolchain and its strict ELF executes in a fresh network-disabled Renode container. Actual PB0/USART3 evidence and the ideal external teaching circuit are labelled separately; projects contain no executable.'
     : c3
       ? 'Public C3 source is compiled in a fixed network-disabled container and executed in a separate network-disabled Espressif QEMU container. QEMU CPU/UART evidence and the project-owned GPIO2 model are labelled separately; no executable is stored with the project.'
       : pico
@@ -491,13 +548,14 @@ function renderPublicControllerWorkbench() {
   elements.runtimedrawer.hidden = !avr;
   elements.picopublicworkbench.hidden = !pico;
   elements.c3publicworkbench.hidden = !c3;
+  elements.stm32publicworkbench.hidden = !stm32;
   elements.parkedcircuitnotice.hidden = true;
   elements.workbenchworkspace.hidden = !avr;
   elements.workbenchworkspace.setAttribute('aria-hidden', String(!avr));
   elements.togglecatalog.hidden = !avr;
   elements.toggleinspector.hidden = !avr;
-  elements.quickbuild.textContent = preview ? 'Build unavailable' : pico ? 'Build Pico' : c3 ? 'Build C3' : 'Build';
-  elements.quickrun.textContent = preview ? 'Run unavailable' : pico ? 'Run Pico' : c3 ? 'Run actual QEMU' : 'Run';
+  elements.quickbuild.textContent = preview ? 'Build unavailable' : pico ? 'Build Pico' : c3 ? 'Build C3' : stm32 ? 'Build STM32 ELF' : 'Build';
+  elements.quickrun.textContent = preview ? 'Run unavailable' : pico ? 'Run Pico' : c3 ? 'Run actual QEMU' : stm32 ? 'Run actual Renode' : 'Run';
   elements.quickbuild.disabled = preview || (avr && elements.build.disabled);
   if (preview) {
     elements.quickrun.disabled = true;
@@ -507,6 +565,7 @@ function renderPublicControllerWorkbench() {
   setPublicPreviewControls(!avr);
   if (pico) renderPicoQuickControls();
   if (c3) renderC3QuickControls();
+  if (stm32) renderStm32QuickControls();
   window.__PUBLIC_CONTROLLER_PROJECTION__.selectedProfile = view.profile;
   window.__PUBLIC_CONTROLLER_PROJECTION__.selected = view;
   publish({
@@ -530,7 +589,10 @@ function renderCompilerTarget() {
     elements.controllerstatus.textContent = `${view.label} · public preview only · Build and Run blocked.`;
     elements.toolchainboundary.innerHTML = `<strong>Public preview:</strong> ${target.profile}. ${availabilityRows} ${missing ? `<strong>Missing public prerequisite:</strong> ${missing.detail} ` : ''}<strong>Boundary:</strong> private evidence is status information only. No project upload, compiler, runtime or AVR circuit mapping is exposed for this profile.`;
   } else {
-    if (target.profile === ESP32C3_PROFILE) {
+    if (target.profile === STM32F429ZI_PROFILE) {
+      elements.controllerstatus.textContent = 'STM32F429ZI · bounded public C11 build + actual Renode PB0/USART3/reset replay.';
+      elements.toolchainboundary.innerHTML = `<strong>Compiler:</strong> Arm GNU 14.3.1 · exact project-owned startup, runtime and linker contract. ${availabilityRows} <strong>Runtime:</strong> actual Renode 1.17.0 CPU, PB0 and USART3 observation across reset replay. <strong>Circuit boundary:</strong> the visible 220 Ω LED path is an ideal teaching rendering, not physical or analogue equivalence.`;
+    } else if (target.profile === ESP32C3_PROFILE) {
       elements.controllerstatus.textContent = 'ESP32-C3 · bounded public source build + actual QEMU CPU/UART + separate GPIO2 model.';
       elements.toolchainboundary.innerHTML = `<strong>Compiler:</strong> Arduino CLI 1.5.1 · Arduino-ESP32 3.3.10 · esp-rv32 2601 · fixed DIO layout. ${availabilityRows} <strong>Runtime:</strong> actual Espressif QEMU esp32c3 CPU/UART. <strong>GPIO boundary:</strong> QEMU pin state is not observed; GPIO2 and LED are interpreted by the separately labelled IntentForce executed-register-write model.`;
     } else if (target.profile === RP2040_PROFILE) {
@@ -3093,11 +3155,15 @@ elements.boardselect.addEventListener('change', () => {
   else picoPublicWorkbench.deactivate();
   if (selectedCompilerProfile === ESP32C3_PROFILE) c3PublicWorkbench.activate();
   else void c3PublicWorkbench.deactivate();
+  if (selectedCompilerProfile === STM32F429ZI_PROFILE) stm32PublicWorkbench.activate();
+  else stm32PublicWorkbench.deactivate();
   detachOutstandingBuild();
   stopRuntime(
     view.publicExecution
       ? selectedCompilerProfile === ESP32C3_PROFILE
         ? 'Supported C3 subset selected · build the bounded sketch to run actual QEMU CPU/UART'
+        : selectedCompilerProfile === STM32F429ZI_PROFILE
+        ? 'Supported STM32 subset selected · build bounded source to run actual Renode PB0/USART3'
         : selectedCompilerProfile === RP2040_PROFILE
         ? 'Supported Pico subset selected · build the bounded source to run'
         : 'Supported AVR workbench selected · rebuild to run'
@@ -3113,6 +3179,8 @@ elements.boardselect.addEventListener('change', () => {
   renderBuildDiagnostics(null, view.publicExecution
     ? selectedCompilerProfile === ESP32C3_PROFILE
       ? 'The AVR project is parked. Use the C3 source panel for the bounded compiler and actual QEMU CPU/UART path.'
+      : selectedCompilerProfile === STM32F429ZI_PROFILE
+      ? 'The AVR project is parked. Use the STM32 source panel for the bounded compiler and actual Renode PB0/USART3 path.'
       : selectedCompilerProfile === RP2040_PROFILE
       ? 'The AVR project is parked. Use the Pico source panel to build a source-bound UF2.'
       : 'No AVR build submitted for the current project.'
@@ -3122,6 +3190,8 @@ elements.boardselect.addEventListener('change', () => {
   elements.projectmessage.textContent = view.publicExecution
     ? selectedCompilerProfile === ESP32C3_PROFILE
       ? 'ESP32-C3 bounded public source selected. The AVR project remains parked; QEMU pin state is not claimed.'
+      : selectedCompilerProfile === STM32F429ZI_PROFILE
+      ? 'STM32F429ZI bounded public source selected. The AVR project remains parked; actual Renode evidence and the ideal teaching circuit are labelled separately.'
       : selectedCompilerProfile === RP2040_PROFILE
       ? 'RP2040 Pico bounded public source selected. The AVR project remains parked and unchanged.'
       : 'ATmega328P public build and tested virtual runtime selected. Rebuild before Run.'
@@ -3132,11 +3202,13 @@ elements.boardselect.addEventListener('change', () => {
   });
   if (selectedCompilerProfile === RP2040_PROFILE) picoPublicWorkbench.render();
   if (selectedCompilerProfile === ESP32C3_PROFILE) c3PublicWorkbench.render();
+  if (selectedCompilerProfile === STM32F429ZI_PROFILE) stm32PublicWorkbench.render();
 });
 elements.controllerprimaryaction.addEventListener('click', () => {
   if (selectedCompilerProfile === AVR_PROFILE) elements.build.click();
   else if (selectedCompilerProfile === ESP32C3_PROFILE) void c3PublicWorkbench.build();
   else if (selectedCompilerProfile === RP2040_PROFILE) void picoPublicWorkbench.build();
+  else if (selectedCompilerProfile === STM32F429ZI_PROFILE) void stm32PublicWorkbench.build();
 });
 elements.controllerreturnavr.addEventListener('click', () => {
   elements.boardselect.value = AVR_PROFILE;
@@ -3178,11 +3250,13 @@ elements.walkthroughopen.addEventListener('click', () => elements.walkthrough.sh
 elements.quickbuild.addEventListener('click', () => {
   if (selectedCompilerProfile === ESP32C3_PROFILE) void c3PublicWorkbench.build();
   else if (selectedCompilerProfile === RP2040_PROFILE) void picoPublicWorkbench.build();
+  else if (selectedCompilerProfile === STM32F429ZI_PROFILE) void stm32PublicWorkbench.build();
   else elements.build.click();
 });
 elements.quickrun.addEventListener('click', () => {
   if (selectedCompilerProfile === ESP32C3_PROFILE) void c3PublicWorkbench.run();
   else if (selectedCompilerProfile === RP2040_PROFILE) void picoPublicWorkbench.run();
+  else if (selectedCompilerProfile === STM32F429ZI_PROFILE) void stm32PublicWorkbench.run(false);
   else elements.run.click();
 });
 elements.quickpause.addEventListener('click', () => {
@@ -3191,6 +3265,7 @@ elements.quickpause.addEventListener('click', () => {
 });
 elements.quickreset.addEventListener('click', () => {
   if (selectedCompilerProfile === RP2040_PROFILE) picoPublicWorkbench.reset();
+  else if (selectedCompilerProfile === STM32F429ZI_PROFILE) void stm32PublicWorkbench.run(true);
   else elements.reset.click();
 });
 elements.projectimport.addEventListener('change', async () => {

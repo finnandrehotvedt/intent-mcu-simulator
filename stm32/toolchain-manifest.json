@@ -1,0 +1,31 @@
+{
+  "schema": "intent-mcu-stm32-public-toolchain@1",
+  "profile": "board.stm32f429zi-nucleo144-v1",
+  "compiler": {
+    "id": "arm-none-eabi-gcc",
+    "version": "14.3.1",
+    "release": "14.3.rel1",
+    "archiveSha256": "8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd"
+  },
+  "runtime": {
+    "id": "renode",
+    "version": "1.17.0",
+    "releaseAssetSha256": "4ba7c68b59e2447f188ef4b4b112fcccd2802582c460beedceb63b84e5605a5f"
+  },
+  "projectOwnedFiles": {
+    "artifactValidatorSha256": "accc61d912f089357408b3f289eef552546e8d40b226ebced17f4dc3f7632c66",
+    "renodeRunnerSha256": "157b72221150df7984c419931f3ab0a556d187ff20ae549f55948566b0f3151e",
+    "runtimeHeaderSha256": "05081317174d49504deea8bc3f4cbd07099c23adb05c32e50548eca9f87b5aab",
+    "runtimeSha256": "329a0ffc0d9cf4c9bd308c1ef014fdc3f653bec513673d2efe57a70432156f8f",
+    "startupSha256": "5f31ab03898fdbd689dc1a87aa09aefcb0bb2f04adcdef4e72f35c530ccec660",
+    "linkerSha256": "088ae4887ee5715c4639361bb5e7b90b9820f8622e5b8dc9750c110a2233d6d6"
+  },
+  "isolation": {
+    "network": "none",
+    "readOnlyRoot": true,
+    "nonRoot": true,
+    "capDropAll": true,
+    "noNewPrivileges": true,
+    "boundedTmpfs": true
+  }
+}

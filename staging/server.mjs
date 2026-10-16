@@ -9,6 +9,7 @@ import { DockerBuildBroker, loadImageLock } from '../compiler/docker-broker.mjs'
 import { createRequestHandler } from '../compiler/http-gateway.mjs';
 import { RP2040_BOARD_PROFILE } from '../compiler/build-protocol.mjs';
 import { createC3PublicService } from '../c3/public-service.mjs';
+import { createStm32PublicService } from '../stm32/public-service.mjs';
 
 if (!globalThis.crypto) Object.defineProperty(globalThis, 'crypto', { value: webcrypto });
 
@@ -41,6 +42,22 @@ if (c3Enabled) {
     testMode: process.env.C3_TEST_MODE === '1',
   });
 }
+const stm32Enabled = process.env.ENABLE_STM32_PUBLIC === '1';
+let stm32Service = null;
+if (stm32Enabled) {
+  const builderLockPath = process.env.STM32_BUILDER_IMAGE_LOCK
+    ? path.resolve(process.env.STM32_BUILDER_IMAGE_LOCK) : null;
+  const runtimeLockPath = process.env.STM32_RUNTIME_IMAGE_LOCK
+    ? path.resolve(process.env.STM32_RUNTIME_IMAGE_LOCK) : null;
+  if (!builderLockPath || !runtimeLockPath) throw new Error('STM32_IMAGE_LOCKS_REQUIRED');
+  stm32Service = createStm32PublicService({
+    builderImageLock: await loadImageLock(builderLockPath),
+    runtimeImageLock: await loadImageLock(runtimeLockPath),
+    publicOrigin: process.env.PUBLIC_ORIGIN || null,
+    trustProxy: process.env.TRUST_PROXY === '1',
+    testMode: process.env.STM32_TEST_MODE === '1',
+  });
+}
 const avrBroker = new DockerBuildBroker({ imageLock, deadlineMs: publicCompilerDeadlineMs });
 const rp2040Broker = new DockerBuildBroker({ imageLock: rp2040ImageLock,
   deadlineMs: publicCompilerDeadlineMs });
@@ -70,6 +87,7 @@ async function verifyCompiler() {
     await Promise.all([
       avrBroker.verifyImage(), rp2040Broker.verifyImage(),
       ...(c3Service ? [c3Service.verifyImages()] : []),
+      ...(stm32Service ? [stm32Service.verifyImages()] : []),
     ]);
     readiness.ready = true;
     readiness.code = 'READY';
@@ -84,11 +102,13 @@ const handler = createRequestHandler({ coordinator, root, publicOrigin, trustPro
 
 const server = http.createServer(async (request, response) => {
   if (c3Service && await c3Service.handle(request, response)) return;
+  if (stm32Service && await stm32Service.handle(request, response)) return;
   await handler(request, response);
 });
 
 for (const signal of ['SIGTERM', 'SIGINT']) process.once(signal, async () => {
   await c3Service?.close();
+  await stm32Service?.close();
   server.close(() => process.exit(0));
 });
 

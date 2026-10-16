@@ -74,7 +74,7 @@ function assert(value, message) {
       resources: performance.getEntriesByType('resource').map((entry) => ({ name: entry.name, transferSize: entry.transferSize })),
     };
   });
-  assert(metadata.title === 'Intent MCU Simulator | Public AVR and Pico workbenches', 'title');
+  assert(metadata.title === 'Intent MCU Simulator | Four public controller workbenches', 'title');
   assert(metadata.description.length >= 120 && metadata.description.length <= 170, 'description length');
   assert(metadata.robots.startsWith('index,follow'), 'meta robots');
   assert(metadata.canonical === canonical, `canonical ${metadata.canonical}`);
@@ -87,8 +87,7 @@ function assert(value, message) {
   assert(JSON.stringify(metadata.links) === JSON.stringify(expectedLinks), 'project links');
   assert(metadata.unnamedControls.length === 0, `unnamed controls ${metadata.unnamedControls.join(',')}`);
   const graph = metadata.structured.flatMap((value) => value['@graph'] || [value]);
-  assert(graph.some((value) => value['@type'] === 'WebApplication' && value.codeRepository === expectedExternalLinks[0]), 'WebApplication schema');
-  assert(graph.some((value) => value['@type'] === 'FAQPage' && value.mainEntity.length === 4), 'FAQ schema');
+  assert(graph.length === 0, 'inline structured data must remain absent under the public CSP');
 
   for (const [pathname, type, phrase] of [
     ['/robots.txt', 'text/plain', 'Disallow: /api/'],
@@ -124,12 +123,12 @@ function assert(value, message) {
   assert(!/<loc>[^<]+\/(?:api|evidence|private|candidate)(?:\/|<)/.test(sitemap), 'private route in sitemap');
   const controllers = await (await context.request.get(new URL('/controllers.html', base).href)).text();
   assert(controllers.includes('ATmega328P · 16 MHz · 5 V')
-    && controllers.includes('Public preview only')
+    && controllers.includes('Supported bounded sketch')
     && controllers.includes('Supported bounded source')
     && controllers.includes('Supported GPIO0/UART0 subset')
-    && controllers.includes('actual QEMU UART/reset/watchdog evidence')
-    && controllers.includes('actual Renode PB0/USART3/reset evidence')
-    && controllers.includes('No public Build, arbitrary-ELF input'), 'controller page capability boundary');
+    && controllers.includes('Actual QEMU CPU/UART + separate GPIO2 model')
+    && controllers.includes('Actual Renode PB0/USART3 subset')
+    && controllers.includes('Arbitrary C or ELF'), 'controller page capability boundary');
   for (const link of expectedExternalLinks) {
     const item = await context.request.get(link, { maxRedirects: 5 });
     assert(item.status() >= 200 && item.status() < 400, `${link} status ${item.status()}`);

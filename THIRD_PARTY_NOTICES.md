@@ -29,6 +29,23 @@ Any external image or binary distribution requires a separate source,
 licence, notice and relinking review. QEMU is a trademark of Software Freedom
 Conservancy; this project claims no affiliation.
 
+The bounded STM32F429ZI compiler uses Arm GNU Toolchain `14.3.rel1`
+(`arm-none-eabi-gcc 14.3.1`) from the archive whose SHA-256 is
+`8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd`.
+GCC, binutils, Newlib and bundled components retain their respective GPL,
+LGPL, runtime-exception and permissive terms. The built server-side image and
+compiler-generated firmware are not source-release artifacts.
+
+The bounded STM32 runtime uses Renode `v1.17.0` from the official portable
+Linux asset with SHA-256
+`4ba7c68b59e2447f188ef4b4b112fcccd2802582c460beedceb63b84e5605a5f`.
+Renode's root project is MIT and its intact portable package contains
+third-party components under their own terms. The package remains a
+server-side runtime image asset and is not part of the Apache-2.0 source
+distribution. The product claims no affiliation with Arm, STMicroelectronics
+or the Renode project; controller and engine names identify compatibility
+targets only.
+
 ## avr8js 0.21.1
 
 - Source: <https://github.com/wokwi/avr8js/tree/v0.21.1>

@@ -1,8 +1,9 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.5 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.6 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
-one bounded `ESP32-C3` GPIO2/UART source profile. They are educational subsets,
+one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
+`STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
 not complete electrical or cycle-perfect hardware replacements.
 
 ## Supported and tested
@@ -39,13 +40,20 @@ UART marker. Arduino CLI 1.5.1, Arduino-ESP32 3.3.10, ESP-IDF 5.5.4 and esp-rv32
 executes the CPU/UART path and reset replay. Executed GPIO MMIO stores feed a
 separate IntentForce GPIO2 register/LED model. QEMU pin state is not observed.
 
+The STM32F429ZI editor accepts one exact project-owned C11 grammar. It can set
+PB0 HIGH or LOW, emit 1–24 uppercase USART3 characters and halt. The fixed Arm
+GNU 14.3.1 toolchain produces a strict source-bound ELF32. Actual Renode 1.17.0
+observes PB0 and USART3 across two matching boot epochs. The named external
+PB0 → 220 Ω → LED → GND path is an ideal teaching rendering driven by the
+observed PB0 level; it is not analogue or physical-board equivalence.
+
 ## Explicitly unsupported
 
 For AVR, SPI, I²C/TWI, EEPROM writes, watchdog activation, analogue comparator use,
 ADC free-running/auto-trigger/differential modes, self-programming and physical
 board upload stop or remain unavailable. General analogue or mixed-signal
-simulation, public STM32F429ZI execution, physical-device access,
-hosted AI, accounts and cloud project storage are outside this release. The
+simulation, physical-device access, hosted AI, accounts and cloud project
+storage are outside this release. The
 Pico profile does not support a general SDK, headers, pointers, arbitrary MMIO,
 PIO, DMA, USB, multicore, broad timing or additional peripherals.
 
@@ -54,16 +62,10 @@ Bluetooth, broad peripherals, exact timing, general ESP32 family compatibility,
 QEMU pin readback, or physical-device equivalence. GPIO2 is a real-board
 strapping pin and the virtual example is not hardware wiring advice.
 
-One additional controller profile is a status preview only:
-
-- STM32F429ZI has private bounded C11 source-to-fixed-ARM-toolchain-to-strict
-  ELF-to-Renode evidence for PB0, USART3, and reset replay, plus a retained
-  hash-pinned fixture. It has no public compiler, arbitrary-ELF input, or
-  runtime.
-
-That evidence statement does not claim complete controller, peripheral, or
-physical-device support. The private STM32 service remains disabled publicly
-and does not inherit any public AVR, Pico or C3 authority.
+The STM32 subset does not support arbitrary C or ELF, an SDK, timer/PWM,
+interrupts, broad peripherals, physical timing, general STM32-family
+compatibility, device programming or physical-hardware equivalence. Executable
+bytes remain transient and are never stored in a saved project.
 
 Visual catalogue entries are not capability claims. A part becomes selectable
 only after it has an electrical model, emulator contract and reference tests.
