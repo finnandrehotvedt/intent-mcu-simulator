@@ -16,6 +16,8 @@ const CATALOG = Object.freeze({
   BUILD_REQUEST_FAILED: 'The compiler service could not start this build. Check the service and try again.',
   BUILD_TIMEOUT: 'The build exceeded its time limit. Reduce the source or try again.',
   BUILD_FAILED: 'The firmware did not compile. Fix the first compiler diagnostic, then build again.',
+  COMPILER_TARGET_UNAVAILABLE: 'This controller cannot build yet. Install and verify its compiler target before trying Build.',
+  ADAPTER_EXECUTION_BLOCKED: 'This firmware compiled, but Run is unavailable because this controller has no verified runtime adapter.',
   WORKER_WATCHDOG: 'The virtual controller stopped responding. Reset it or rebuild the current project.',
   WORKER_ERROR: 'The virtual controller stopped. Rebuild the current project, then try Run again.',
   PROMPT_SOURCE_BOUNDARY: 'The proposal tried to change data outside the circuit. Generate a new wiring proposal and try again.',

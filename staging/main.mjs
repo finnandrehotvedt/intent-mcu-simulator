@@ -32,10 +32,67 @@ import {
 } from '../src/route-model.mjs';
 import { explainError } from '../src/error-catalog.mjs';
 import { createLifecycleState, transitionLifecycle } from '../src/lifecycle.mjs';
-import { createExampleProject } from '../src/example-projects.mjs';
+import { createExampleProject, exampleCatalog } from '../src/example-projects.mjs';
+import {
+  TEMPERATURE_LCD_THRESHOLD_CARD,
+  TEMPERATURE_LCD_THRESHOLD_EXAMPLE_ID,
+  createTemperatureLcdThresholdExample,
+  openTemperatureLcdThresholdExample,
+} from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
+import {
+  AVR_PROFILE,
+  candidateCompilerTarget,
+  firstMissingTargetPrerequisite,
+  targetAvailabilitySnapshot,
+} from '../src/compile-targets.mjs';
+import {
+  PUBLIC_CONTROLLER_VIEW_SCHEMA,
+  publicControllerView,
+  publicControllerViews,
+} from '../src/public-controller-workbench-view.mjs';
 import { serialEventText, serialInputBytes, serialText } from '../src/serial-view.mjs';
 import { CPU_CYCLES_PER_MILLISECOND, cursorCycles, waveformPaths } from '../src/waveform-view.mjs';
-import { createComponentArtwork } from './component-artwork.mjs';
+import { createComponentArtwork as createBaseComponentArtwork } from './component-artwork.mjs';
+import {
+  CANDIDATE_UI_COMPONENTS,
+  candidateContactControl,
+  candidateRuntimeInputs,
+  createCandidateUiComponent,
+  createCandidateUiArtwork,
+  openCandidateUiSession,
+} from '../src/candidate-existing-ui-adapter.mjs';
+import {
+  TEMPERATURE_MAX_C,
+  TEMPERATURE_MIN_C,
+  temperatureCToVoltage,
+} from '../expansion-drafts/temperature-analogue-sensor-v1.mjs';
+import {
+  DIGITAL_LIGHT_THRESHOLD_TYPE,
+  LIGHT_HYSTERESIS_MAX_POINTS,
+  LIGHT_HYSTERESIS_MIN_POINTS,
+  LIGHT_LEVEL_MAX_PERCENT,
+  LIGHT_LEVEL_MIN_PERCENT,
+  LIGHT_THRESHOLD_MAX_PERCENT,
+  LIGHT_THRESHOLD_MIN_PERCENT,
+} from '../expansion-drafts/digital-light-threshold-module-v1.mjs';
+import { COMMON_CATHODE_RGB_LED_TYPE } from '../expansion-drafts/common-cathode-rgb-led-v1.mjs';
+import { ACTIVE_BUZZER_TYPE } from '../expansion-drafts/active-buzzer-module-v1.mjs';
+import { SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
+import {
+  CHARACTER_LCD_TYPE,
+  createCharacterLcd4BitDecoder,
+} from '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs';
+import {
+  ROTARY_ENCODER_TYPE,
+  nextRotaryEncoderDetent,
+} from '../expansion-drafts/rotary-encoder-quadrature-v1.mjs';
+
+const uiComponentCatalog = Object.freeze({ ...COMPONENT_CATALOG, ...CANDIDATE_UI_COMPONENTS });
+function createComponentArtwork(definition, component, options = {}) {
+  return CANDIDATE_UI_COMPONENTS[component.type]
+    ? createCandidateUiArtwork(document, definition, component, options)
+    : createBaseComponentArtwork(definition, component, options);
+}
 
 const byId = (id) => document.querySelector(`#${id}`);
 const elements = Object.fromEntries([
@@ -60,6 +117,13 @@ const elements = Object.fromEntries([
   'serial-text-mode', 'serial-event-mode', 'serial-export', 'serial-newline', 'logic-waveform', 'logic-cursor-a', 'logic-cursor-b',
   'serial-tab', 'serial-dock', 'serial-close', 'serial-resizer', 'serial-resume', 'serial-new-output',
   'canvas-select-mode', 'canvas-interact-mode',
+  'starter-examples', 'starter-gallery', 'quick-controls', 'workbench-workspace',
+  'board-select', 'controller-status', 'toolchain-boundary',
+  'controller-workbench', 'controller-workbench-eyebrow', 'controller-workbench-title', 'controller-workbench-badge',
+  'controller-workbench-summary', 'controller-capability-project', 'controller-capability-source',
+  'controller-capability-runtime', 'controller-capability-circuit', 'controller-primary-action', 'controller-return-avr',
+  'controller-workbench-limitation', 'controller-public-boundary', 'parked-circuit-notice',
+  'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
 ].map((id) => [id.replaceAll('-', ''), byId(id)]));
 
 const runtimeControls = [elements.run, elements.pause, elements.step, elements.reset, elements.speed];
@@ -74,6 +138,8 @@ let pendingEndpoint = null;
 let wireMode = 'connect';
 let worker = null;
 let workerToken = 0;
+let runtimeWorkerCreations = 0;
+let selectedCompilerProfile = AVR_PROFILE;
 let activeJob = null;
 let loadedSourceIdentity = null;
 let running = false;
@@ -112,6 +178,15 @@ let serialResumeGuardUntil = 0;
 let serialScrollFrame = null;
 let canvasInteractionMode = 'select';
 let activeCanvasButton = null;
+const characterLcdRuntime = new Map();
+const publicPreviewControlStates = new Map();
+const publicPreviewRegions = [
+  document.querySelector('.project-bar'),
+  elements.workbenchworkspace,
+  elements.firmwaredrawer,
+  elements.promptdrawer,
+  elements.runtimedrawer,
+].filter(Boolean);
 
 function setSelection(next) {
   selection = next?.kind ? structuredClone(next) : { kind: 'none' };
@@ -155,6 +230,10 @@ window.__M6_STATE__ = {
   runtime: null, project: null, revision: 0, selectedComponentId: null,
   selectedNetId: null, selectedRouteSegment: null, selection: { kind: 'none' },
   importReport: null, lastAction: 'initialized',
+  compilerTarget: AVR_PROFILE, compileAvailable: true, compileOnly: false,
+  targetAvailability: targetAvailabilitySnapshot(AVR_PROFILE), artifactManifest: null,
+  compilerRequestBlocked: false,
+  runtimeWorkerCreations: 0,
 };
 window.__M3_STATE__ = window.__M6_STATE__;
 window.__M4_STATE__ = window.__M6_STATE__;
@@ -163,6 +242,13 @@ window.__M7_STATE__ = window.__M6_STATE__;
 window.__M11_STATE__ = window.__M6_STATE__;
 window.__M3_READY__ = true; window.__M4_READY__ = true; window.__M5_READY__ = true; window.__M6_READY__ = true; window.__M7_READY__ = true;
 window.__M11_READY__ = true;
+window.__PUBLIC_CONTROLLER_PROJECTION__ = {
+  schema: PUBLIC_CONTROLLER_VIEW_SCHEMA,
+  selectedProfile: AVR_PROFILE,
+  selected: publicControllerView(AVR_PROFILE),
+  views: publicControllerViews(),
+  publicRequests: [],
+};
 
 function publish(update) { Object.assign(window.__M6_STATE__, update); }
 function renderLifecycle() {
@@ -238,6 +324,110 @@ function renderBuildDiagnostics(result, fallback = 'No compiler diagnostics.') {
   elements.buildlog.textContent = result?.text || formatDiagnostics(result) || fallback;
 }
 function currentProject() { return editor.project; }
+function currentRuntimeProject() { return editor.kind === 'candidate-project-v3' ? editor.runtimeProject : editor.project; }
+function currentProjectText() {
+  return editor.kind === 'candidate-project-v3' ? editor.saveText() : exportCanonicalProject(editor.project);
+}
+function currentCandidateInputs() {
+  return editor.kind === 'candidate-project-v3' ? candidateRuntimeInputs(editor) : [];
+}
+function currentCompilerTarget() {
+  return candidateCompilerTarget(selectedCompilerProfile) ?? candidateCompilerTarget(AVR_PROFILE);
+}
+function setPublicPreviewControls(preview) {
+  const controls = publicPreviewRegions.flatMap((region) => [...region.querySelectorAll('button, input, select, textarea')])
+    .filter((control) => control !== elements.boardselect);
+  if (preview) {
+    for (const control of controls) {
+      if (!publicPreviewControlStates.has(control)) publicPreviewControlStates.set(control, control.disabled);
+      control.disabled = true;
+    }
+    return;
+  }
+  for (const [control, disabled] of publicPreviewControlStates.entries()) control.disabled = disabled;
+  publicPreviewControlStates.clear();
+}
+function renderPublicControllerWorkbench() {
+  const view = publicControllerView(selectedCompilerProfile) ?? publicControllerView(AVR_PROFILE);
+  const preview = !view.publicExecution;
+  elements.controllerworkbench.dataset.mode = view.mode;
+  elements.controllerworkbencheyebrow.textContent = view.eyebrow;
+  elements.controllerworkbenchtitle.textContent = view.title;
+  elements.controllerworkbenchbadge.textContent = preview ? 'Preview only' : 'Supported';
+  elements.controllerworkbenchbadge.className = `controller-badge ${preview ? 'preview' : 'supported'}`;
+  elements.controllerworkbenchsummary.textContent = view.summary;
+  elements.controllercapabilityproject.textContent = view.project;
+  elements.controllercapabilitysource.textContent = view.source;
+  elements.controllercapabilityruntime.textContent = view.runtime;
+  elements.controllercapabilitycircuit.textContent = view.circuit;
+  elements.controllerprimaryaction.textContent = view.action;
+  elements.controllerprimaryaction.disabled = preview;
+  elements.controllerreturnavr.hidden = !preview;
+  elements.controllerworkbenchlimitation.textContent = view.limitation;
+  elements.controllerpublicboundary.textContent = preview
+    ? 'Preview mode changes only this browser view. It cannot upload a project, call a private endpoint, build firmware, or create a runtime session.'
+    : 'Public AVR actions use the documented build service and one browser worker. Other controller previews never inherit those actions.';
+  elements.startergallery.hidden = preview;
+  elements.firmwaredrawer.hidden = preview;
+  elements.promptdrawer.hidden = preview;
+  elements.runtimedrawer.hidden = preview;
+  elements.parkedcircuitnotice.hidden = !preview;
+  elements.workbenchworkspace.classList.toggle('public-preview-mode', preview);
+  elements.quickbuild.textContent = preview ? 'Build unavailable' : 'Build';
+  elements.quickrun.textContent = preview ? 'Run unavailable' : 'Run';
+  elements.quickbuild.disabled = preview || elements.build.disabled;
+  if (preview) {
+    elements.quickrun.disabled = true;
+    elements.quickpause.disabled = true;
+    elements.quickreset.disabled = true;
+  }
+  setPublicPreviewControls(preview);
+  window.__PUBLIC_CONTROLLER_PROJECTION__.selectedProfile = view.profile;
+  window.__PUBLIC_CONTROLLER_PROJECTION__.selected = view;
+  publish({
+    publicControllerView: structuredClone(view),
+    publicExecutionEnabled: view.publicExecution,
+    compilerRequestBlocked: preview,
+  });
+}
+function renderCompilerTarget() {
+  const target = currentCompilerTarget();
+  const view = publicControllerView(target.profile) ?? publicControllerView(AVR_PROFILE);
+  const availabilityRows = [
+    ['Compiler', target.availability.installedCompiler],
+    ['Compile target', target.availability.verifiedCompileTarget],
+    ['Runtime', target.availability.emulatorRuntime],
+    ['Peripherals', target.availability.validatedPeripherals],
+  ].map(([label, state]) => `<span><strong>${label}:</strong> ${state.status} · <code>${state.code}</code></span>`).join(' ');
+  elements.boardselect.value = target.profile;
+  if (!target.compileAvailable) {
+    const missing = firstMissingTargetPrerequisite(target.profile);
+    elements.controllerstatus.textContent = `${view.label} · public preview only · Build and Run blocked.`;
+    elements.toolchainboundary.innerHTML = `<strong>Public preview:</strong> ${target.profile}. ${availabilityRows} ${missing ? `<strong>Missing public prerequisite:</strong> ${missing.detail} ` : ''}<strong>Boundary:</strong> private evidence is status information only. No project upload, compiler, runtime or AVR circuit mapping is exposed for this profile.`;
+  } else {
+    elements.controllerstatus.textContent = 'ATmega328P · compile and tested virtual runtime.';
+    elements.toolchainboundary.innerHTML = `<strong>Compiler:</strong> Arduino AVR core 1.8.8 · avr-gcc 7.3.0-atmel3.6.1-arduino7. ${availabilityRows} <strong>Simulation:</strong> only the <a href="#compatibility-note">documented MCU/peripheral subset</a>, not every library or device.`;
+  }
+  publish({
+    compilerTarget: target.profile,
+    compileAvailable: target.compileAvailable,
+    compileOnly: false,
+    targetAvailability: targetAvailabilitySnapshot(target.profile),
+  });
+  renderPublicControllerWorkbench();
+}
+function parseEditorSource(source) {
+  const candidate = openCandidateUiSession(source);
+  if (candidate.ok) return { ok: true, code: candidate.code, session: candidate.session, report: candidate.schema };
+  if (candidate.code !== 'CANDIDATE_UI_PROJECT_VERSION') return candidate;
+  const parsed = parseProjectV2(source);
+  if (!parsed.ok) return parsed;
+  const project = structuredClone(parsed.project);
+  // A digest in a saved project is provenance, never a loaded executable.
+  // Every browser/file reopen must rebuild before Run can become available.
+  project.build = { status: 'dirty', inputIdentity: null, artifactIdentity: null };
+  return { ...parsed, project, session: new ProjectEditorReducer(project) };
+}
 function endpointKey(endpoint) { return `${endpoint.component}.${endpoint.pin}`; }
 function parseEndpoint(key) {
   const split = key.lastIndexOf('.');
@@ -272,16 +462,22 @@ function markRecentComponent(type) {
   catalogPreferences.recent = [type, ...catalogPreferences.recent.filter((item) => item !== type)].slice(0, MAX_RECENT_COMPONENTS);
   saveCatalogPreferences();
 }
-function toggleFavorite(type) {
+function toggleFavorite(type, { restoreFocus = false } = {}) {
   const selected = new Set(catalogPreferences.favorites);
   if (selected.has(type)) selected.delete(type); else selected.add(type);
   catalogPreferences.favorites = [...selected].sort();
   saveCatalogPreferences();
   renderCatalog();
+  if (restoreFocus) {
+    const row = [...elements.cataloglist.children].find((item) => item.dataset.type === type);
+    const target = row?.querySelector('.catalog-favourite')
+      ?? (elements.catalogempty.hidden ? elements.catalogfavorites : elements.catalogclear);
+    target?.focus();
+  }
 }
 function persistProject(message = null) {
   try {
-    const text = exportCanonicalProject(currentProject());
+    const text = currentProjectText();
     if (new TextEncoder().encode(text).length > 4 * 1024 * 1024) throw new Error('STORAGE_PROJECT_LIMIT');
     localStorage.setItem(PROJECT_RECOVERY_KEY, text);
     localStorage.setItem(PROJECT_STORAGE_KEY, text);
@@ -308,7 +504,7 @@ function projectFilename() {
   return `${stem || 'intent-mcu-project'}.intent-mcu.json`;
 }
 function boundedProjectText() {
-  const text = exportCanonicalProject(currentProject());
+  const text = currentProjectText();
   if (new TextEncoder().encode(text).length > 1024 * 1024) throw new Error('INPUT_LIMIT');
   return text;
 }
@@ -355,14 +551,15 @@ async function saveProjectFile() {
 async function replaceProjectFromFile(file, handle = null) {
   if (!file) return;
   if (file.size > 1024 * 1024) { showActionableError(elements.projectmessage, 'INPUT_LIMIT', `${file.size} bytes`); return; }
-  const before = exportCanonicalProject(currentProject());
+  const before = currentProjectText();
   let source;
   try { source = await file.text(); }
   catch (error) { showActionableError(elements.projectmessage, 'PROJECT_READ_FAILED', error?.message || 'read failed'); return; }
-  const result = editor.importText(source, 'replace', { running });
+  const result = parseEditorSource(source);
+  if (result.ok) editor = result.session;
   if (!result.ok) {
     showActionableError(elements.projectmessage, result.code, 'Open rejected atomically; project unchanged.');
-    if (exportCanonicalProject(currentProject()) !== before) throw new Error('Atomic open boundary violated');
+    if (currentProjectText() !== before) throw new Error('Atomic open boundary violated');
     return;
   }
   installProjectGeneration({
@@ -371,7 +568,7 @@ async function replaceProjectFromFile(file, handle = null) {
   });
   selectedSourceFile = 'main.ino';
   projectFileHandle = handle;
-  persistProject(); markFileSaved('opened file current'); publish({ importReport: result.report ?? result.code }); renderProject();
+  persistProject(); markFileSaved('opened file current'); publish({ importReport: result.report ?? result.code }); renderCatalog(); renderProject();
   elements.projectmessage.textContent = 'Project opened from your computer and revalidated. Previous runtime output was cleared.';
 }
 async function openProjectFile() {
@@ -394,10 +591,16 @@ async function openProjectFile() {
   }
 }
 function buildInputIdentity() {
+  const target = currentCompilerTarget();
+  const runtimeProject = currentRuntimeProject();
   return JSON.stringify({
-    boardProfile: currentProject().boardProfile,
+    compilerTarget: {
+      profile: target.profile,
+      fqbn: target.fqbn,
+      toolchainIdentitySha256: target.toolchainIdentitySha256,
+    },
     source: currentProject().source,
-    circuit: currentProject().circuit,
+    circuit: runtimeProject?.circuit ?? null,
   });
 }
 
@@ -431,6 +634,26 @@ function clearRuntimePresentation() {
   elements.pinmode.textContent = '—'; elements.pinlevel.textContent = '—'; elements.pindetail.textContent = '—';
   elements.pindiagnostic.textContent = '—'; elements.pincycle.textContent = '0';
   for (const visual of elements.componentlayer.querySelectorAll('.component-led.on')) visual.classList.remove('on');
+  for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key="output-rgb-led-common-cathode"]')) {
+    artwork.dataset.rDuty = '0'; artwork.dataset.gDuty = '0'; artwork.dataset.bDuty = '0';
+    artwork.querySelector('.rgb-led-mix')?.setAttribute('fill', 'rgb(0 0 0)');
+    for (const channel of artwork.querySelectorAll('.rgb-led-channel')) {
+      channel.classList.remove('on'); channel.style.opacity = '0.22'; channel.style.filter = '';
+    }
+  }
+  for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key="output-active-buzzer-module"]')) {
+    artwork.dataset.enabled = 'false'; artwork.dataset.driveState = 'idle';
+    artwork.querySelector('.active-buzzer-disc')?.classList.remove('on');
+    artwork.querySelector('.buzzer-status')?.classList.remove('on');
+    for (const wave of artwork.querySelectorAll('.buzzer-wave')) wave.classList.remove('on');
+  }
+  characterLcdRuntime.clear();
+  for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key="output-character-lcd-16x2-4bit"]')) {
+    artwork.dataset.protocolState = 'awaiting-initialization';
+    artwork.dataset.line1 = ''; artwork.dataset.line2 = '';
+    artwork.querySelector('[data-lcd-line="1"]')?.replaceChildren();
+    artwork.querySelector('[data-lcd-line="2"]')?.replaceChildren();
+  }
   publish({ runtime: null });
 }
 
@@ -494,10 +717,35 @@ function setMomentaryControl(componentId, pressed, action = 'canvas button') {
     } else control.textContent = pressed ? 'Pressed' : 'Released';
   }
   publish({
-    project: JSON.parse(exportCanonicalProject(currentProject())), revision: editor.revision,
+    project: JSON.parse(currentProjectText()), revision: editor.revision,
     lastAction: `BUTTON_${pressed ? 'PRESSED' : 'RELEASED'}`,
   });
   elements.projectmessage.textContent = `${component.label} ${pressed ? 'pressed' : 'released'} through ${action}.`;
+  return result;
+}
+
+function rotateCandidateEncoder(componentId, direction, action = 'encoder control') {
+  const component = currentProject().circuit.components.find(
+    (item) => item.id === componentId && item.type === ROTARY_ENCODER_TYPE,
+  );
+  if (!component || editor.kind !== 'candidate-project-v3') return { ok: false, code: 'ROTARY_ENCODER_MISSING' };
+  let detent;
+  try { detent = nextRotaryEncoderDetent(component, direction); }
+  catch (error) {
+    showActionableError(elements.projectmessage, error.message, `${action}: ${componentId}`);
+    return { ok: false, code: error.message };
+  }
+  const prepared = candidateContactControl(editor, componentId, 'detent', detent);
+  if (!prepared.ok) {
+    showActionableError(elements.projectmessage, prepared.code, `${action}: ${componentId}`);
+    return prepared;
+  }
+  const result = applyEditor(prepared.command, `${component.label} ${direction.toUpperCase()} to detent ${detent}`);
+  if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+  if (result.ok) {
+    elements.projectmessage.textContent = `${component.label} ${direction.toUpperCase()} · four ideal Gray-code edges queued at 1 ms phase spacing.`;
+    publish({ lastEncoderAction: { componentId, direction, detent, source: action } });
+  }
   return result;
 }
 
@@ -652,7 +900,7 @@ function createTerminalWireLayer(component, definition) {
 function netAnchors(net, canvasBox) {
   return Object.fromEntries(net.endpoints.map((endpoint) => {
     const component = currentProject().circuit.components.find((item) => item.id === endpoint.component);
-    const definition = component && COMPONENT_CATALOG[component.type];
+    const definition = component && uiComponentCatalog[component.type];
     const pinDefinition = definition?.pins.find((pin) => pin.id === endpoint.pin);
     const card = elements.componentlayer.querySelector(`[data-component-id="${endpoint.component}"]`);
     const anchor = card?.querySelector(`.pin-anchor[data-endpoint="${endpointKey(endpoint)}"]`);
@@ -1161,7 +1409,7 @@ function handlePin(endpoint, reconnect = false) {
 
 function renderComponents() {
   const cards = currentProject().circuit.components.map((component) => {
-    const definition = COMPONENT_CATALOG[component.type];
+    const definition = uiComponentCatalog[component.type];
     const position = screenPoint(currentProject().layout.positions[component.id]);
     const card = document.createElement('article');
     card.className = `circuit-component${selectedComponentId === component.id ? ' selected' : ''}`;
@@ -1229,6 +1477,22 @@ function renderComponents() {
       card.classList.toggle('control-pressed', component.controls.pressed);
       card.append(control);
     }
+    if (component.type === ROTARY_ENCODER_TYPE) {
+      for (const direction of ['ccw', 'cw']) {
+        const control = document.createElement('button');
+        control.type = 'button';
+        control.className = `component-control-hit encoder-control-hit encoder-${direction}`;
+        control.dataset.canvasControl = `${component.id}.${direction}`;
+        control.tabIndex = canvasInteractionMode === 'interact' ? 0 : -1;
+        control.textContent = direction === 'cw' ? '↻' : '↺';
+        control.setAttribute('aria-label', `${component.label}: turn one detent ${direction.toUpperCase()}.`);
+        control.addEventListener('click', (event) => {
+          event.preventDefault(); event.stopPropagation();
+          if (canvasInteractionMode === 'interact') rotateCandidateEncoder(component.id, direction, 'canvas pointer or keyboard');
+        });
+        card.append(control);
+      }
+    }
     card.addEventListener('click', () => { selectComponent(component.id); renderInspector(); renderComponents(); });
     cardPointerDrag(card, component.id);
     return card;
@@ -1240,13 +1504,15 @@ function renderComponents() {
 
 function hydrateCatalogThumbnail(slot) {
   if (slot.childElementCount) return;
-  const definition = slot.catalogDefinition ?? COMPONENT_CATALOG[slot.dataset.type];
+  const definition = slot.catalogDefinition ?? uiComponentCatalog[slot.dataset.type];
   const artworkType = definition.fixtureBaseType ?? definition.type;
-  const artworkDefinition = COMPONENT_CATALOG[artworkType];
+  const artworkDefinition = uiComponentCatalog[artworkType];
   if (!artworkDefinition) return;
-  const component = newComponent(artworkType, { components: [] });
+  const component = CANDIDATE_UI_COMPONENTS[artworkType]
+    ? createCandidateUiComponent(artworkType, 'candidate-preview-1')
+    : newComponent(artworkType, { components: [] });
   component.label = definition.displayName;
-  component.properties = defaultProperties(artworkType);
+  if (!CANDIDATE_UI_COMPONENTS[artworkType]) component.properties = defaultProperties(artworkType);
   slot.append(createComponentArtwork({ ...artworkDefinition, displayName: definition.displayName }, component, { thumbnail: true }));
 }
 
@@ -1260,7 +1526,10 @@ const catalogThumbnailObserver = 'IntersectionObserver' in window
   : null;
 
 function activeCatalogRecords() {
-  return catalogFixtureRecords ?? catalogEntries({ selectableOnly: true });
+  if (catalogFixtureRecords) return catalogFixtureRecords;
+  const records = catalogEntries({ selectableOnly: true });
+  if (editor.kind !== 'candidate-project-v3') return records;
+  return [...records, ...Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable)];
 }
 
 function matchedCatalogRecords(records = activeCatalogRecords()) {
@@ -1296,9 +1565,9 @@ function createCatalogRow(definition, { interactive = true, thumbnail = true } =
   favorite.setAttribute('aria-label', `${favorites.has(definition.type) ? 'Remove' : 'Add'} ${definition.displayName} ${favorites.has(definition.type) ? 'from' : 'to'} favourites`);
   favorite.disabled = !interactive;
   if (interactive) {
-    favorite.addEventListener('click', (event) => { event.stopPropagation(); toggleFavorite(definition.type); });
+    favorite.addEventListener('click', (event) => { event.stopPropagation(); toggleFavorite(definition.type, { restoreFocus: true }); });
     row.addEventListener('click', (event) => { if (!event.target.closest('.catalog-favourite')) addComponent(definition.type); });
-    row.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); addComponent(definition.type); } });
+    row.addEventListener('keydown', (event) => { if (event.target === row && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); addComponent(definition.type); } });
     row.addEventListener('dragstart', (event) => event.dataTransfer.setData('application/x-intent-component', definition.type));
   }
   row.append(thumbnailSlot, text, favorite);
@@ -1420,7 +1689,22 @@ async function benchmarkCatalogFixture(action = 'start') {
 
 function addComponent(type, point = null) {
   try {
-    const component = newComponent(type, currentProject().circuit);
+    const candidatePrefix = {
+      'reference.ground-v1': 'ground-reference',
+      'switch.toggle-spst-v1': 'toggle-switch',
+      'switch.changeover-spdt-v1': 'selector',
+      'sensor.light-analogue-v1': 'light-sensor',
+      'sensor.temperature-analogue-v1': 'temperature-sensor',
+      [DIGITAL_LIGHT_THRESHOLD_TYPE]: 'light-threshold',
+      [COMMON_CATHODE_RGB_LED_TYPE]: 'rgb-led',
+      [ACTIVE_BUZZER_TYPE]: 'active-buzzer',
+      [SEVEN_SEGMENT_TYPE]: 'seven-segment',
+      [CHARACTER_LCD_TYPE]: 'character-lcd',
+      [ROTARY_ENCODER_TYPE]: 'rotary-encoder',
+    }[type];
+    const component = editor.kind === 'candidate-project-v3' && candidatePrefix
+      ? createCandidateUiComponent(type, nextEntityId(candidatePrefix, currentProject().circuit.components.map((item) => item.id)))
+      : newComponent(type, currentProject().circuit);
     const index = currentProject().circuit.components.length;
     const firstPosition = {
       'board.atmega328p-16mhz-v1': { x: 0.2, y: 0.34 },
@@ -1428,10 +1712,23 @@ function addComponent(type, point = null) {
       'led.basic-v1': { x: 0.77, y: 0.16 },
       'button.momentary-v1': { x: 0.77, y: 0.52 },
       'potentiometer.linear-v1': { x: 0.47, y: 0.76 },
+      'reference.ground-v1': { x: 0.18, y: 0.78 },
+      'switch.toggle-spst-v1': { x: 0.48, y: 0.78 },
+      'switch.changeover-spdt-v1': { x: 0.78, y: 0.78 },
+      'sensor.light-analogue-v1': { x: 0.62, y: 0.76 },
+      'sensor.temperature-analogue-v1': { x: 0.78, y: 0.76 },
+      [DIGITAL_LIGHT_THRESHOLD_TYPE]: { x: 0.78, y: 0.72 },
+      [COMMON_CATHODE_RGB_LED_TYPE]: { x: 0.78, y: 0.7 },
+      [ACTIVE_BUZZER_TYPE]: { x: 0.78, y: 0.68 },
+      [SEVEN_SEGMENT_TYPE]: { x: 0.76, y: 0.66 },
+      [CHARACTER_LCD_TYPE]: { x: 0.72, y: 0.64 },
+      [ROTARY_ENCODER_TYPE]: { x: 0.72, y: 0.64 },
     }[type];
     const sameTypeCount = currentProject().circuit.components.filter((item) => item.type === type).length;
+    const slot = index % 16;
     const position = point ?? (sameTypeCount === 0 ? firstPosition : {
-      x: 0.18 + (index % 4) * 0.21, y: 0.2 + Math.floor(index / 4) * 0.28,
+      x: 0.12 + (slot % 4) * 0.25,
+      y: 0.12 + Math.floor(slot / 4) * 0.25,
     });
     const result = applyEditor({ type: 'component.add', component, position }, `Added ${component.id}`);
     if (result.ok) {
@@ -1449,7 +1746,7 @@ function addComponent(type, point = null) {
 
 function renderPropertyEditor(component) {
   if (!component || !Object.keys(component.properties).length) { elements.propertyeditor.replaceChildren(); return; }
-  const definition = COMPONENT_CATALOG[component.type];
+  const definition = uiComponentCatalog[component.type];
   const rows = Object.entries(component.properties).map(([key, value]) => {
     const row = document.createElement('div'); row.className = 'property-row';
     const contract = definition.propertySchema[key] ?? {};
@@ -1537,7 +1834,7 @@ function renderInspector() {
     : selection.kind === 'wire-segment'
       ? `${selection.netId} · ${selection.endpoint} · ${selection.orientation} section ${selection.segmentIndex + 1}`
       : selection.kind === 'net' ? `${selection.netId} · whole net` : 'Nothing selected';
-  const definition = component ? COMPONENT_CATALOG[component.type] : null;
+  const definition = component ? uiComponentCatalog[component.type] : null;
   elements.selectionsupport.textContent = definition
     ? `${SUPPORT_STATUS[definition.support.status]} · ${definition.partNumber} · ${definition.support.limitations.join(' ')}`
     : selection.kind === 'wire-segment'
@@ -1573,6 +1870,59 @@ function renderInspector() {
 
 function renderRuntimeControls() {
   const controls = currentProject().circuit.components.flatMap((component) => {
+    if (editor.kind === 'candidate-project-v3' && component.type === ROTARY_ENCODER_TYPE) {
+      const row = document.createElement('div'); row.className = 'encoder-runtime-control';
+      const label = document.createElement('span');
+      label.textContent = `${component.label} · detent ${component.controls.detent} · rest 11`;
+      const ccw = document.createElement('button'); ccw.type = 'button'; ccw.textContent = 'CCW −1';
+      ccw.dataset.control = `${component.id}.ccw`;
+      ccw.setAttribute('aria-label', `${component.label}: turn one detent counter-clockwise.`);
+      ccw.addEventListener('click', () => rotateCandidateEncoder(component.id, 'ccw', 'inspector button'));
+      const cw = document.createElement('button'); cw.type = 'button'; cw.textContent = 'CW +1';
+      cw.dataset.control = `${component.id}.cw`;
+      cw.setAttribute('aria-label', `${component.label}: turn one detent clockwise.`);
+      cw.addEventListener('click', () => rotateCandidateEncoder(component.id, 'cw', 'inspector button'));
+      const note = document.createElement('small');
+      note.textContent = '11→01→00→10→11 CW · reverse CCW · ideal 1 ms phases · no bounce';
+      row.append(label, ccw, cw, note); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3'
+        && ['switch.toggle-spst-v1', 'switch.changeover-spdt-v1'].includes(component.type)) {
+      const row = document.createElement('div');
+      const label = document.createElement('span'); label.textContent = component.label;
+      const button = document.createElement('button'); button.type = 'button';
+      const isSpst = component.type === 'switch.toggle-spst-v1';
+      const key = isSpst ? 'closed' : 'selectedThrow';
+      const value = component.controls[key];
+      button.dataset.control = `${component.id}.${key}`;
+      button.setAttribute('aria-pressed', String(isSpst ? value : value === 'B'));
+      button.textContent = isSpst ? (value ? 'Closed' : 'Open') : `Throw ${value}`;
+      button.setAttribute('aria-label', isSpst
+        ? `${component.label}: ${value ? 'closed' : 'open'}. Activate to toggle.`
+        : `${component.label}: COM connected to ${value}. Activate to select ${value === 'A' ? 'B' : 'A'}.`);
+      button.addEventListener('click', () => {
+        const next = isSpst ? !component.controls.closed : component.controls.selectedThrow === 'A' ? 'B' : 'A';
+        const prepared = candidateContactControl(editor, component.id, key, next);
+        if (!prepared.ok) { showActionableError(elements.projectmessage, prepared.code, 'Candidate control rejected.'); return; }
+        const changed = editor.apply({ ...prepared.command, revision: editor.revision });
+        if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Candidate control rejected.'); return; }
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false });
+        persistProject();
+        if (prepared.worker) worker?.postMessage(prepared.worker);
+        if (prepared.transition && worker) {
+          const projection = editor.evaluateSpdtRuntime(component.id);
+          for (const frame of prepared.transition.frames.slice(1)) worker.postMessage({
+            command: 'digital-input', pin: prepared.transition.boardPinNumber,
+            level: frame.state === 'BREAK' ? true : projection.projection.level,
+          });
+        }
+        elements.projectmessage.textContent = isSpst
+          ? `${component.label} changed at runtime without rebuilding.`
+          : `${component.label} changed through BREAK. Direct GND/5 V digital-input model only.`;
+        renderProject();
+      });
+      row.append(label, button); return [row];
+    }
     if (component.type === 'button.momentary-v1') {
       const row = document.createElement('div');
       const label = document.createElement('span'); label.textContent = component.label;
@@ -1583,6 +1933,94 @@ function renderRuntimeControls() {
         setMomentaryControl(component.id, pressed, 'runtime control');
       });
       row.append(label, button); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && component.type === 'sensor.light-analogue-v1') {
+      const row = document.createElement('div');
+      const label = document.createElement('label');
+      const level = Math.round(component.controls.lightLevel * 100);
+      label.textContent = `${component.label} · idealized ${level}% · ${(component.controls.lightLevel * 5).toFixed(2)} V`;
+      const input = document.createElement('input');
+      input.type = 'range'; input.min = '0'; input.max = '100'; input.step = '1'; input.value = String(level);
+      input.dataset.control = `${component.id}.lightLevel`;
+      input.id = `control-${component.id}-light-level`; label.htmlFor = input.id;
+      input.setAttribute('aria-label', `${component.label} idealized light level, 0 to 100 percent`);
+      input.addEventListener('input', () => {
+        const lightLevel = Number(input.value) / 100;
+        const prepared = candidateContactControl(editor, component.id, 'lightLevel', lightLevel);
+        if (!prepared.ok) {
+          showActionableError(elements.projectmessage, prepared.code, 'Light sensor control rejected.');
+          return;
+        }
+        const result = applyEditor(prepared.command, `${component.label} idealized signal ${input.value}%`);
+        if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+      });
+      row.append(label, input); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && component.type === 'sensor.temperature-analogue-v1') {
+      const row = document.createElement('div');
+      const label = document.createElement('label');
+      const temperatureC = component.controls.temperatureC;
+      const voltage = temperatureCToVoltage(temperatureC);
+      label.textContent = `${component.label} · idealized ${temperatureC} °C · ${voltage.toFixed(3)} V`;
+      const input = document.createElement('input');
+      input.type = 'range'; input.min = String(TEMPERATURE_MIN_C); input.max = String(TEMPERATURE_MAX_C);
+      input.step = '1'; input.value = String(temperatureC);
+      input.dataset.control = `${component.id}.temperatureC`;
+      input.id = `control-${component.id}-temperature`; label.htmlFor = input.id;
+      input.setAttribute('aria-label', `${component.label} idealized temperature, ${TEMPERATURE_MIN_C} to ${TEMPERATURE_MAX_C} degrees Celsius`);
+      input.addEventListener('input', () => {
+        const nextTemperatureC = Number(input.value);
+        const prepared = candidateContactControl(editor, component.id, 'temperatureC', nextTemperatureC);
+        if (!prepared.ok) {
+          showActionableError(elements.projectmessage, prepared.code, 'Temperature module control rejected.');
+          return;
+        }
+        const result = applyEditor(prepared.command, `${component.label} idealized signal ${nextTemperatureC} °C`);
+        if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+      });
+      row.append(label, input); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
+      const controls = component.controls;
+      const definitions = [
+        {
+          key: 'lightLevelPercent', label: `${component.label} · input ${controls.lightLevelPercent}% · DOUT ${controls.outputActive ? 'LOW active' : 'HIGH inactive'}`,
+          min: LIGHT_LEVEL_MIN_PERCENT, max: LIGHT_LEVEL_MAX_PERCENT,
+          aria: `${component.label} idealized light input, 0 to 100 percent`, message: 'light input',
+        },
+        {
+          key: 'thresholdPercent', label: `Activation threshold · ${controls.thresholdPercent}%`,
+          min: LIGHT_THRESHOLD_MIN_PERCENT, max: LIGHT_THRESHOLD_MAX_PERCENT,
+          aria: `${component.label} activation threshold, 10 to 100 percent`, message: 'activation threshold',
+        },
+        {
+          key: 'hysteresisPercentagePoints', label: `Hysteresis · ${controls.hysteresisPercentagePoints} percentage points`,
+          min: LIGHT_HYSTERESIS_MIN_POINTS, max: LIGHT_HYSTERESIS_MAX_POINTS,
+          aria: `${component.label} hysteresis, 0 to 10 percentage points`, message: 'hysteresis',
+        },
+      ];
+      return definitions.map((control) => {
+        const row = document.createElement('div');
+        const label = document.createElement('label'); label.textContent = control.label;
+        const input = document.createElement('input'); input.type = 'range';
+        input.min = String(control.min); input.max = String(control.max); input.step = '1';
+        input.value = String(component.controls[control.key]);
+        input.dataset.control = `${component.id}.${control.key}`;
+        input.id = `control-${component.id}-${control.key}`; label.htmlFor = input.id;
+        input.setAttribute('aria-label', control.aria);
+        input.addEventListener('input', () => {
+          const value = Number(input.value);
+          const prepared = candidateContactControl(editor, component.id, control.key, value);
+          if (!prepared.ok) {
+            showActionableError(elements.projectmessage, prepared.code, 'Digital threshold control rejected.');
+            return;
+          }
+          const result = applyEditor(prepared.command, `${component.label} ${control.message} ${value}`);
+          if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+        });
+        row.append(label, input);
+        return row;
+      });
     }
     if (component.type === 'potentiometer.linear-v1') {
       const row = document.createElement('div');
@@ -1603,14 +2041,23 @@ function renderRuntimeControls() {
 
 function renderProject() {
   const project = currentProject();
-  const validation = validateCircuit(project.circuit);
+  const validation = editor.kind === 'candidate-project-v3'
+    ? editor.runnable
+    : validateCircuit(project.circuit);
   const endpointCount = project.circuit.nets.reduce((count, net) => count + net.endpoints.length, 0);
   elements.graphstate.textContent = `${project.circuit.components.length} components · ${project.circuit.nets.length} nets · ${endpointCount} endpoints`;
   if (validation.ok) {
-    elements.circuitdiagnostics.textContent = 'Circuit accepted for the tested runtime subset.';
+    elements.circuitdiagnostics.textContent = editor.kind === 'candidate-project-v3'
+      ? 'Candidate accepted: validated contacts, bounded analogue/digital modules, current-limited light outputs, silent buzzer, seven-segment, and write-only 4-bit GPIO character LCD. Unsupported display commands and electrical topologies fail closed; no physical sensor, optical, acoustic or display accuracy is claimed.'
+      : 'Circuit accepted for the tested runtime subset.';
   } else {
-    const explanations = validation.diagnostics.map((item) => explainError(item.code));
-    elements.circuitdiagnostics.textContent = [...new Set(explanations.map((item) => item.action))].join('\n');
+    if (editor.kind === 'candidate-project-v3') {
+      const details = (validation.details ?? []).map((item) => typeof item === 'string' ? item : JSON.stringify(item)).join(' · ');
+      elements.circuitdiagnostics.textContent = `Draft saved; Build/Run blocked: ${validation.code}${details ? ` · ${details}` : ''}. Complete required terminals with the supported direct 5 V, ground, digital or A0–A5 topology.`;
+    } else {
+      const explanations = (validation.diagnostics ?? []).map((item) => explainError(item.code));
+      elements.circuitdiagnostics.textContent = [...new Set(explanations.map((item) => item.action))].join('\n');
+    }
   }
   if (!project.source.files.some((file) => file.name === selectedSourceFile)) selectedSourceFile = 'main.ino';
   const selectedFile = project.source.files.find((file) => file.name === selectedSourceFile);
@@ -1631,13 +2078,13 @@ function renderProject() {
   if ([...elements.pinselect.options].some((option) => option.value === project.instruments.selectedPin)) elements.pinselect.value = project.instruments.selectedPin;
   elements.quickbuild.disabled = elements.build.disabled;
   publish({
-    project: JSON.parse(exportCanonicalProject(project)), graph: structuredClone(project.circuit), revision: editor.revision,
+    project: structuredClone(project), graph: structuredClone(project.circuit), revision: editor.revision,
     selectedComponentId, selectedNetId,
     selectedRouteSegment: selectedRouteSegment ? structuredClone(selectedRouteSegment) : null,
     selection: structuredClone(selection),
   });
   renderLifecycle();
-  renderComponents(); renderInspector(); renderRuntimeControls();
+  renderComponents(); renderInspector(); renderRuntimeControls(); renderPublicControllerWorkbench();
 }
 
 function svgNode(name, attributes = {}, text = null) {
@@ -1670,6 +2117,144 @@ function renderWaveform(logic) {
   return model;
 }
 
+function renderRgbLedRuntime(message) {
+  if (editor.kind !== 'candidate-project-v3') return;
+  const pins = new Map((message.pins ?? []).map((pin) => [pin.pin, pin]));
+  const dutyForPin = (pinLabel) => {
+    const pin = pins.get(pinLabel);
+    if (Number.isFinite(pin?.pwm?.duty)) return Math.max(0, Math.min(1, pin.pwm.duty));
+    return pin?.mode === 'OUTPUT' || pin?.mode === 'DIGITAL_PWM' ? Number(Boolean(pin.level)) : 0;
+  };
+  for (const support of editor.runtimeSupport.filter(
+    (item) => item.type === COMMON_CATHODE_RGB_LED_TYPE && item.runtimeProjection,
+  )) {
+    const artwork = elements.componentlayer.querySelector(
+      `[data-component-id="${support.componentId}"] [data-artwork-key="output-rgb-led-common-cathode"]`,
+    );
+    if (!artwork) continue;
+    const duties = Object.fromEntries(['R', 'G', 'B'].map((channel) => [
+      channel, dutyForPin(support.runtimeProjection.channels[channel].sourcePin),
+    ]));
+    artwork.dataset.rDuty = duties.R.toFixed(3);
+    artwork.dataset.gDuty = duties.G.toFixed(3);
+    artwork.dataset.bDuty = duties.B.toFixed(3);
+    for (const channel of ['R', 'G', 'B']) {
+      const visual = artwork.querySelector(`[data-rgb-channel="${channel}"]`);
+      if (!visual) continue;
+      visual.classList.toggle('on', duties[channel] > 0.001);
+      visual.style.opacity = String(0.22 + duties[channel] * 0.78);
+      visual.style.filter = duties[channel] > 0.001
+        ? `drop-shadow(0 0 ${2 + duties[channel] * 6}px currentColor)` : '';
+    }
+    artwork.querySelector('.rgb-led-mix')?.setAttribute('fill', `rgb(${Math.round(duties.R * 255)} ${Math.round(duties.G * 255)} ${Math.round(duties.B * 255)})`);
+    const label = `${support.componentId}, commanded relative PWM mix red ${(duties.R * 100).toFixed(1)} percent, green ${(duties.G * 100).toFixed(1)} percent, blue ${(duties.B * 100).toFixed(1)} percent; no physical colour accuracy claimed`;
+    artwork.setAttribute('aria-label', label);
+    const title = artwork.querySelector('title'); if (title) title.textContent = label;
+  }
+}
+
+function renderActiveBuzzerRuntime(message) {
+  if (editor.kind !== 'candidate-project-v3') return;
+  const pins = new Map((message.pins ?? []).map((pin) => [pin.pin, pin]));
+  for (const support of editor.runtimeSupport.filter(
+    (item) => item.type === ACTIVE_BUZZER_TYPE && item.runtimeProjection,
+  )) {
+    const artwork = elements.componentlayer.querySelector(
+      `[data-component-id="${support.componentId}"] [data-artwork-key="output-active-buzzer-module"]`,
+    );
+    if (!artwork) continue;
+    const pin = pins.get(support.runtimeProjection.sourcePin);
+    const driven = pin?.mode === 'OUTPUT';
+    const enabled = driven && Boolean(pin.level);
+    const driveState = driven ? (enabled ? 'enabled' : 'disabled') : 'not-driven';
+    artwork.dataset.enabled = String(enabled);
+    artwork.dataset.driveState = driveState;
+    artwork.querySelector('.active-buzzer-disc')?.classList.toggle('on', enabled);
+    artwork.querySelector('.buzzer-status')?.classList.toggle('on', enabled);
+    for (const wave of artwork.querySelectorAll('.buzzer-wave')) wave.classList.toggle('on', enabled);
+    const label = `${support.componentId}, ${driveState} from ${support.runtimeProjection.sourcePin}; silent logical active-buzzer indicator, no acoustic or current accuracy claimed`;
+    artwork.setAttribute('aria-label', label);
+    const title = artwork.querySelector('title'); if (title) title.textContent = label;
+  }
+}
+
+function renderSevenSegmentRuntime(message) {
+  if (editor.kind !== 'candidate-project-v3') return;
+  const pins = new Map((message.pins ?? []).map((pin) => [pin.pin, pin]));
+  for (const support of editor.runtimeSupport.filter(
+    (item) => item.type === SEVEN_SEGMENT_TYPE && item.runtimeProjection,
+  )) {
+    const artwork = elements.componentlayer.querySelector(
+      `[data-component-id="${support.componentId}"] [data-artwork-key="output-seven-segment-common-cathode"]`,
+    );
+    if (!artwork) continue;
+    const active = Object.entries(support.runtimeProjection.segments)
+      .filter(([, segment]) => {
+        const pin = pins.get(segment.sourcePin);
+        return pin?.mode === 'OUTPUT' && Boolean(pin.level);
+      })
+      .map(([segment]) => segment)
+      .sort();
+    artwork.dataset.activeSegments = active.join('');
+    for (const segment of ['a', 'b', 'c', 'd', 'e', 'f', 'g']) {
+      artwork.querySelector(`[data-seven-segment="${segment}"]`)?.classList.toggle(
+        'on', active.includes(segment),
+      );
+    }
+    const state = active.length ? active.join(', ') : 'blank';
+    const label = `${support.componentId}, commanded segments ${state}; idealized on/off state only, no physical brightness or package-current accuracy claimed`;
+    artwork.setAttribute('aria-label', label);
+    const title = artwork.querySelector('title'); if (title) title.textContent = label;
+  }
+}
+
+function renderCharacterLcdRuntime(message) {
+  if (editor.kind !== 'candidate-project-v3') return;
+  const pins = new Map((message.pins ?? []).map((pin) => [pin.pin, pin]));
+  const trace = Array.isArray(message.trace) ? message.trace : [];
+  const published = [];
+  for (const support of editor.runtimeSupport.filter(
+    (item) => item.type === CHARACTER_LCD_TYPE && item.runtimeProjection,
+  )) {
+    const artwork = elements.componentlayer.querySelector(
+      `[data-component-id="${support.componentId}"] [data-artwork-key="output-character-lcd-16x2-4bit"]`,
+    );
+    if (!artwork) continue;
+    const mapping = Object.fromEntries(Object.entries(support.runtimeProjection.signals).map(
+      ([signal, record]) => [signal, record.sourcePin],
+    ));
+    let record = characterLcdRuntime.get(support.componentId);
+    if (!record || message.cycle < record.cycle || trace.length < record.traceLength) {
+      record = { decoder: createCharacterLcd4BitDecoder(mapping), cycle: 0, traceLength: 0 };
+      characterLcdRuntime.set(support.componentId, record);
+    }
+    const driven = Object.values(mapping).every((pinName) => pins.get(pinName)?.mode === 'OUTPUT');
+    const snapshot = driven
+      ? record.decoder.consume(trace.slice(record.traceLength), {
+        logicDrops: message.retentionDrops?.logic ?? 0,
+      })
+      : record.decoder.snapshot();
+    record.traceLength = trace.length;
+    record.cycle = message.cycle;
+    const state = driven ? snapshot.status : 'not-driven';
+    const lines = driven && snapshot.displayOn ? snapshot.lines : ['', ''];
+    artwork.dataset.protocolState = state;
+    artwork.dataset.line1 = lines[0]; artwork.dataset.line2 = lines[1];
+    const line1 = artwork.querySelector('[data-lcd-line="1"]');
+    const line2 = artwork.querySelector('[data-lcd-line="2"]');
+    if (line1) line1.textContent = lines[0];
+    if (line2) line2.textContent = lines[1];
+    const detail = snapshot.error
+      ? `${snapshot.error.code}: ${snapshot.error.details.join(', ')}`
+      : `${state}; write-only 4-bit GPIO, ${snapshot.latchedBytes} bytes`;
+    const label = `${support.componentId}, line 1 ${JSON.stringify(lines[0])}, line 2 ${JSON.stringify(lines[1])}; ${detail}; no I2C or physical display accuracy claimed`;
+    artwork.setAttribute('aria-label', label);
+    const title = artwork.querySelector('title'); if (title) title.textContent = label;
+    published.push({ componentId: support.componentId, ...snapshot, status: state, lines });
+  }
+  publish({ characterLcd: published });
+}
+
 function renderRuntime(message) {
   publish({ runtime: structuredClone(message) });
   elements.cycle.textContent = message.cycle.toLocaleString('en-US');
@@ -1688,6 +2273,10 @@ function renderRuntime(message) {
     visual.classList.toggle('on', led.on);
     visual.setAttribute('aria-label', `${led.componentId} is ${led.on ? 'on' : 'off'} at ${(led.currentAmps * 1_000).toFixed(2)} mA`);
   }
+  renderRgbLedRuntime(message);
+  renderActiveBuzzerRuntime(message);
+  renderSevenSegmentRuntime(message);
+  renderCharacterLcdRuntime(message);
   const transitions = message.trace.filter((entry) => entry.pin === 13).slice(-8).reverse();
   elements.trace.replaceChildren(...(transitions.length ? transitions : [{ cycle: 0, level: false }]).map((entry) => {
     const item = document.createElement('li'); item.textContent = `${String(entry.cycle).padStart(10, '0')} · ${entry.level ? 'HIGH' : 'LOW'}`; return item;
@@ -1727,6 +2316,8 @@ function loadArtifact(hex, artifactIdentity) {
   }
   const runtimeBinding = loaded.binding;
   const token = ++workerToken;
+  runtimeWorkerCreations += 1;
+  publish({ runtimeWorkerCreations });
   worker = new Worker('./simulator.worker.js', { type: 'module' });
   worker.addEventListener('message', ({ data }) => {
     if (token !== workerToken) return;
@@ -1746,7 +2337,8 @@ function loadArtifact(hex, artifactIdentity) {
   });
   elements.artifact.textContent = artifactIdentity.slice(0, 12);
   worker.postMessage({
-    command: 'init', hex, circuit: structuredClone(currentProject().circuit),
+    command: 'init', hex, circuit: structuredClone(currentRuntimeProject().circuit),
+    digitalInputs: currentCandidateInputs(),
     instruments: {
       logicChannels: [...currentProject().instruments.logicChannels],
       selectedPin: currentProject().instruments.selectedPin,
@@ -1810,7 +2402,36 @@ async function pollJob(job, inputAtSubmit, binding) {
 }
 
 async function build() {
-  const circuit = validateCircuit(currentProject().circuit);
+  const target = currentCompilerTarget();
+  if (!target.compileAvailable) {
+    const missing = firstMissingTargetPrerequisite(target.profile);
+    const view = publicControllerView(target.profile);
+    detachOutstandingBuild();
+    stopRuntime(`${target.displayName} · public execution disabled · no runtime worker created`, { updateLifecycle: false });
+    elements.buildstate.textContent = 'Target unavailable';
+    const detail = `${missing ? `${missing.code}: ${missing.detail} ` : ''}${view?.limitation ?? 'This controller is not enabled publicly.'} No compiler or runtime request was made. The AVR circuit was not mapped to ${target.profile}.`;
+    renderBuildDiagnostics({ diagnostics: [{ file: 'target', line: 1, severity: 'error', message: detail }] }, detail);
+    showActionableError(elements.projectmessage, 'COMPILER_TARGET_UNAVAILABLE', detail);
+    publish({
+      buildState: 'unavailable', artifactIdentity: null, inputIdentity: null,
+      artifactManifest: null, compileOnly: false, runtime: null,
+      compilerRequestBlocked: true, cacheHit: false,
+    });
+    return;
+  }
+  if (editor.kind === 'candidate-project-v3') {
+    const runnable = editor.runnable;
+    if (!runnable.ok) {
+      const details = (runnable.details ?? []).map((item) => typeof item === 'string' ? item : JSON.stringify(item)).join(' · ');
+      const message = `${runnable.code}${details ? ` · ${details}` : ''}. Complete the required contact wiring before building.`;
+      elements.buildstate.textContent = 'Draft not runnable';
+      renderBuildDiagnostics({ diagnostics: [{ file: 'circuit', line: 1, severity: 'error', message }] }, message);
+      showActionableError(elements.projectmessage, runnable.code, message);
+      return;
+    }
+  }
+  const runtimeProject = currentRuntimeProject();
+  const circuit = validateCircuit(runtimeProject.circuit);
   if (!circuit.ok) {
     elements.buildstate.textContent = 'Circuit validation failed';
     renderBuildDiagnostics({ diagnostics: circuit.diagnostics.map((item) => ({ ...item, severity: 'error', message: explainError(item.code).action, file: 'circuit', line: 1 })) }, 'Circuit validation failed.');
@@ -1829,12 +2450,20 @@ async function build() {
   currentProject().build = { status: 'dirty', inputIdentity: null, artifactIdentity: null };
   persistProject();
   elements.build.disabled = true; elements.quickbuild.disabled = true; elements.cancel.disabled = false; elements.buildstate.textContent = 'Building in isolated compiler…'; renderBuildDiagnostics(null, 'Build running…');
-  publish({ buildState: 'building', artifactIdentity: null, inputIdentity: null, cacheHit: false });
+  publish({
+    buildState: 'building', artifactIdentity: null, inputIdentity: null,
+    artifactManifest: null, compileOnly: false,
+    compilerRequestBlocked: false, cacheHit: false,
+  });
   buildAbortController = new AbortController();
   try {
     const response = await fetch('/api/build', {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Teach-Lab-Build': '1' },
-      body: JSON.stringify({ schema: 'teach-lab-build-request@1', board: currentProject().boardProfile, files: currentProject().source.files }),
+      body: JSON.stringify({
+        schema: 'teach-lab-build-request@1',
+        board: currentProject().boardProfile,
+        files: currentProject().source.files,
+      }),
       signal: buildAbortController.signal,
     });
     const submitted = await response.json();
@@ -1886,7 +2515,7 @@ elements.catalognext.addEventListener('click', () => {
 });
 elements.circuitcanvas.addEventListener('dragover', (event) => event.preventDefault());
 elements.circuitcanvas.addEventListener('drop', (event) => {
-  event.preventDefault(); const type = event.dataTransfer.getData('application/x-intent-component'); if (!COMPONENT_CATALOG[type]?.selectable) return;
+  event.preventDefault(); const type = event.dataTransfer.getData('application/x-intent-component'); if (!uiComponentCatalog[type]?.selectable) return;
   const box = elements.circuitcanvas.getBoundingClientRect(); const view = currentProject().layout.viewport;
   const x = Math.max(0.07, Math.min(0.93, ((event.clientX - box.left) / box.width - 0.5 - view.panX) / view.zoom + 0.5));
   const y = Math.max(0.08, Math.min(0.92, ((event.clientY - box.top) / box.height - 0.5 - view.panY) / view.zoom + 0.5));
@@ -2256,18 +2885,105 @@ elements.projectnew.addEventListener('click', () => {
   installProjectGeneration({ empty: true, reason: 'project.new', runtimeMessage: 'New empty project — build required' });
   selectedSourceFile = 'main.ino';
   projectFileHandle = null; fileSavedRevision = null; fileSavedProjectGeneration = null; fileSaveState = null;
-  localStorage.removeItem(PROJECT_STORAGE_KEY); localStorage.removeItem(PROJECT_RECOVERY_KEY); renderProject(); elements.projectmessage.textContent = 'Created an actually empty project.';
+  localStorage.removeItem(PROJECT_STORAGE_KEY); localStorage.removeItem(PROJECT_RECOVERY_KEY); renderCatalog(); renderProject(); elements.projectmessage.textContent = 'Created an actually empty project.';
 });
-elements.projectdemo.addEventListener('click', () => {
-  const example = createExampleProject(elements.exampleselect.value);
-  const projectLabel = elements.exampleselect.value === 'blink' ? 'Blink demo' : example.name;
+function loadExampleProject(exampleId, reason = 'project.demo') {
+  if (exampleId === TEMPERATURE_LCD_THRESHOLD_EXAMPLE_ID) {
+    const before = currentProjectText();
+    let example;
+    try { example = createTemperatureLcdThresholdExample(); }
+    catch (error) {
+      showActionableError(elements.projectmessage, error?.message ?? 'EXAMPLE_INVALID', 'Temperature display example could not be constructed.');
+      return { ok: false, code: error?.message ?? 'EXAMPLE_INVALID' };
+    }
+    const parsed = openTemperatureLcdThresholdExample(example.text);
+    if (!parsed.ok) {
+      showActionableError(elements.projectmessage, parsed.code, 'Temperature display example was rejected atomically; project unchanged.');
+      if (currentProjectText() !== before) throw new Error('Atomic starter example boundary violated');
+      return parsed;
+    }
+    editor = parsed.session;
+    installProjectGeneration({
+      empty: false, reason, runtimeMessage: `${example.name} loaded — build required`,
+    });
+    selectedSourceFile = 'main.ino';
+    elements.exampleselect.value = exampleId;
+    persistProject();
+    publish({ lastAction: 'TEMPERATURE_LCD_THRESHOLD_EXAMPLE_LOADED', importReport: parsed.report ?? parsed.code });
+    renderCatalog(); renderProject();
+    elements.projectmessage.textContent = `${example.name} loaded through candidate electrical and project validation. The ideal sensor model resolves in 0.1953125 °C ADC steps; displayed whole Celsius uses the compiled integer calculation.`;
+    return { ok: true, code: parsed.code, example };
+  }
+  const example = createExampleProject(exampleId);
+  const projectLabel = exampleId === 'blink' ? 'Blink demo' : example.name;
   example.project.metadata.name = projectLabel;
   const result = editor.importProject(example.project, 'replace', { running, requireRunnable: true });
   if (!result.ok) { showActionableError(elements.projectmessage, result.code, `${example.name} example could not be loaded.`); return; }
-  installProjectGeneration({ empty: false, reason: 'project.demo', runtimeMessage: `${projectLabel} loaded — build required` });
+  installProjectGeneration({ empty: false, reason, runtimeMessage: `${projectLabel} loaded — build required` });
   selectedSourceFile = 'main.ino';
-  persistProject(); publish({ lastAction: `${elements.exampleselect.value.toUpperCase()}_EXAMPLE_LOADED`, importReport: null }); renderProject();
+  elements.exampleselect.value = exampleId;
+  persistProject(); publish({ lastAction: `${exampleId.toUpperCase()}_EXAMPLE_LOADED`, importReport: null }); renderProject();
   elements.projectmessage.textContent = `${example.name} loaded through the same safety checks as every project. Edit it, build it, then inspect the live instruments.`;
+  return { ok: true, code: result.code, example };
+}
+
+function renderStarterExamples() {
+  const cards = [...exampleCatalog(), TEMPERATURE_LCD_THRESHOLD_CARD].map((example) => {
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'starter-card'; button.dataset.example = example.id;
+    button.setAttribute('aria-label', `Open ${example.name}: ${example.focus}`);
+    const focus = document.createElement('span'); focus.className = 'starter-focus'; focus.textContent = example.focus;
+    const name = document.createElement('strong'); name.textContent = example.name;
+    const description = document.createElement('span'); description.className = 'starter-description'; description.textContent = example.description;
+    const parts = document.createElement('span'); parts.className = 'starter-parts'; parts.textContent = example.partsLabel;
+    const outcome = document.createElement('span'); outcome.className = 'starter-outcome'; outcome.textContent = example.outcome;
+    const action = document.createElement('span'); action.className = 'starter-action'; action.textContent = 'Open working circuit →';
+    button.append(focus, name, description, parts, outcome, action);
+    button.addEventListener('click', () => loadExampleProject(example.id, 'project.starter'));
+    return button;
+  });
+  elements.starterexamples.replaceChildren(...cards);
+}
+
+elements.projectdemo.addEventListener('click', () => loadExampleProject(elements.exampleselect.value));
+elements.boardselect.addEventListener('change', () => {
+  const selected = candidateCompilerTarget(elements.boardselect.value);
+  selectedCompilerProfile = selected ? selected.profile : AVR_PROFILE;
+  const target = currentCompilerTarget();
+  const view = publicControllerView(target.profile) ?? publicControllerView(AVR_PROFILE);
+  detachOutstandingBuild();
+  stopRuntime(
+    view.publicExecution
+      ? 'Supported AVR workbench selected · rebuild to run'
+      : `${view.label} public preview · compiler/runtime requests blocked`,
+    { updateLifecycle: false },
+  );
+  applyLifecycle({
+    type: 'project.edit', relevance: 'build',
+    empty: currentProject().circuit.components.length === 0,
+  });
+  currentProject().build = { status: 'dirty', inputIdentity: null, artifactIdentity: null };
+  elements.buildstate.textContent = 'Build required';
+  renderBuildDiagnostics(null, view.publicExecution
+    ? 'No AVR build submitted for the current project.'
+    : `${view.label} is a public status preview. No build request was made.`);
+  renderCompilerTarget();
+  renderProject();
+  elements.projectmessage.textContent = view.publicExecution
+    ? 'ATmega328P public build and tested virtual runtime selected. Rebuild before Run.'
+    : `${view.label} preview selected. The AVR project is parked without remapping its circuit; public Build, Run, project upload, and private endpoints remain disabled.`;
+  publish({
+    buildState: 'dirty', artifactIdentity: null, inputIdentity: null,
+    artifactManifest: null, runtime: null, compilerRequestBlocked: !view.publicExecution,
+  });
+});
+elements.controllerprimaryaction.addEventListener('click', () => {
+  if (selectedCompilerProfile === AVR_PROFILE) elements.build.click();
+});
+elements.controllerreturnavr.addEventListener('click', () => {
+  elements.boardselect.value = AVR_PROFILE;
+  elements.boardselect.dispatchEvent(new Event('change', { bubbles: true }));
+  elements.boardselect.focus();
 });
 elements.projectsave.addEventListener('click', saveProjectFile);
 elements.projectopen.addEventListener('click', openProjectFile);
@@ -2280,23 +2996,22 @@ elements.projectname.addEventListener('change', () => {
   const result = applyEditor({ type: 'project.rename', name: elements.projectname.value }, 'Project renamed');
   if (!result.ok) elements.projectname.value = currentProject().metadata.name;
 });
-elements.recoveryexport.addEventListener('click', () => downloadText('intent-mcu-recovery.json', exportCanonicalProject(currentProject()), 'application/json'));
+elements.recoveryexport.addEventListener('click', () => downloadText('intent-mcu-recovery.json', currentProjectText(), 'application/json'));
 elements.projectreload.addEventListener('click', () => {
   const recovery = localStorage.getItem(PROJECT_RECOVERY_KEY);
-  const stored = recovery ?? localStorage.getItem(PROJECT_STORAGE_KEY); const parsed = stored ? parseProjectV2(stored) : { ok: false, code: 'NO_LOCAL_SAVE' };
+  const stored = recovery ?? localStorage.getItem(PROJECT_STORAGE_KEY); const parsed = stored ? parseEditorSource(stored) : { ok: false, code: 'NO_LOCAL_SAVE' };
   if (!parsed.ok) { showActionableError(elements.projectmessage, parsed.code, 'Reload validation failed.'); return; }
-  parsed.project.build = { status: 'dirty', inputIdentity: null, artifactIdentity: null };
-  editor = new ProjectEditorReducer(parsed.project);
+  editor = parsed.session;
   installProjectGeneration({
-    empty: parsed.project.circuit.components.length === 0, reason: 'project.reload',
+    empty: editor.project.circuit.components.length === 0, reason: 'project.reload',
     runtimeMessage: 'Reloaded project requires build',
   });
   selectedSourceFile = 'main.ino';
   savedRevision = editor.revision; savedProjectGeneration = lifecycle.projectGeneration;
-  renderProject(); elements.projectmessage.textContent = 'Restored and revalidated browser recovery. Previous runtime output was cleared; save a project file for durable storage.';
+  renderCatalog(); renderProject(); elements.projectmessage.textContent = 'Restored and revalidated browser recovery. Previous runtime output was cleared; save a project file for durable storage.';
 });
 elements.projectexport.addEventListener('click', async () => {
-  const text = exportCanonicalProject(currentProject()); const digest = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))].map((value) => value.toString(16).padStart(2, '0')).join('');
+  const text = currentProjectText(); const digest = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))].map((value) => value.toString(16).padStart(2, '0')).join('');
   downloadText('intent-mcu-project.json', text, 'application/json');
   elements.projectmessage.textContent = `Exported canonical project · SHA-256 ${digest.slice(0, 16)}…`;
 });
@@ -2309,7 +3024,7 @@ elements.quickreset.addEventListener('click', () => elements.reset.click());
 elements.projectimport.addEventListener('change', async () => {
   const file = elements.projectimport.files[0]; if (!file) return;
   if (file.size > 1024 * 1024) { showActionableError(elements.projectmessage, 'INPUT_LIMIT', `${file.size} bytes`); return; }
-  const before = exportCanonicalProject(currentProject());
+  const before = currentProjectText();
   const mode = elements.projectimportmode.value;
   const source = await file.text();
   const migrated = mode === 'migrate-v1' ? migrateProjectV1(source, localStorage) : null;
@@ -2317,7 +3032,7 @@ elements.projectimport.addEventListener('change', async () => {
     ? (migrated.ok ? editor.importProject(migrated.project, 'replace', { running }) : migrated)
     : editor.importText(source, mode, { running });
   elements.projectimport.value = '';
-  if (!result.ok) { showActionableError(elements.projectmessage, result.code, 'Import rejected atomically; project unchanged.'); if (exportCanonicalProject(currentProject()) !== before) throw new Error('Atomic import boundary violated'); return; }
+  if (!result.ok) { showActionableError(elements.projectmessage, result.code, 'Import rejected atomically; project unchanged.'); if (currentProjectText() !== before) throw new Error('Atomic import boundary violated'); return; }
   if (mode === 'merge') {
     detachOutstandingBuild(); stopRuntime('Merged project requires build', { updateLifecycle: false });
     applyLifecycle({ type: 'project.edit', relevance: 'build', empty: currentProject().circuit.components.length === 0 });
@@ -2419,9 +3134,9 @@ window.__M4_CONTROL__ = (componentId, key, value) => worker?.postMessage({ comma
 window.__M5_COMMAND__ = (command, value) => worker?.postMessage({ command, value });
 window.__M6_ADD__ = addComponent;
 window.__M6_CONNECT__ = (from, to) => { pendingEndpoint = parseEndpoint(from); handlePin(parseEndpoint(to)); };
-window.__M6_PROJECT__ = () => JSON.parse(exportCanonicalProject(currentProject()));
+window.__M6_PROJECT__ = () => JSON.parse(currentProjectText());
 window.__M6_IMPORT__ = (source, mode = 'replace') => {
-  const before = exportCanonicalProject(currentProject()); const result = editor.importText(source, mode, { running });
+  const before = currentProjectText(); const result = editor.importText(source, mode, { running });
   if (result.ok) {
     if (mode === 'replace') {
       installProjectGeneration({
@@ -2434,7 +3149,7 @@ window.__M6_IMPORT__ = (source, mode = 'replace') => {
     }
     persistProject(); renderProject();
   }
-  return { ...result, atomic: result.ok || before === exportCanonicalProject(currentProject()) };
+  return { ...result, atomic: result.ok || before === currentProjectText() };
 };
 window.__M7_ADD__ = addComponent;
 window.__M7_PROJECT__ = window.__M6_PROJECT__;
@@ -2448,14 +3163,14 @@ window.__M7_CATALOG__ = () => ({
 window.__M7_CATALOG_BENCHMARK__ = benchmarkCatalogFixture;
 
 for (const category of CATALOG_CATEGORIES) elements.catalogcategory.append(new Option(category.label, category.id));
+renderStarterExamples();
 
 let stored = null; let recoveryStored = null;
 try { stored = localStorage.getItem(PROJECT_STORAGE_KEY); recoveryStored = localStorage.getItem(PROJECT_RECOVERY_KEY); } catch { /* storage denial is recoverable */ }
-const recoveryRestored = recoveryStored ? parseProjectV2(recoveryStored) : null;
-const currentRestored = stored ? parseProjectV2(stored) : null;
+const recoveryRestored = recoveryStored ? parseEditorSource(recoveryStored) : null;
+const currentRestored = stored ? parseEditorSource(stored) : null;
 const restored = recoveryRestored?.ok ? recoveryRestored : currentRestored;
-if (restored?.ok) restored.project.build = { status: 'dirty', inputIdentity: null, artifactIdentity: null };
-editor = new ProjectEditorReducer(restored?.ok ? restored.project : createEmptyProject());
+editor = restored?.ok ? restored.session : new ProjectEditorReducer(createEmptyProject());
 lifecycle = createLifecycleState({ empty: currentProject().circuit.components.length === 0 });
 if (restored?.ok) persistProject();
 const workspace = document.querySelector('.workspace');
@@ -2463,7 +3178,7 @@ for (const [name, button] of [['catalog-collapsed', elements.togglecatalog], ['i
   if (workspacePreference(name)) { workspace.classList.add(name); button.setAttribute('aria-pressed', 'true'); }
 }
 if (workspacePreference('pin-labels')) { elements.circuitcanvas.classList.add('show-pin-labels'); elements.showpinlabels.setAttribute('aria-pressed', 'true'); }
-renderCatalog(); renderProject(); setRuntimeEnabled(false);
+renderCompilerTarget(); renderCatalog(); renderProject(); setRuntimeEnabled(false);
 clearRuntimePresentation(); renderLifecycle();
 setCanvasInteractionMode('select'); setSerialDock(false);
 elements.projectmessage.textContent = recoveryRestored?.ok

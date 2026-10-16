@@ -1,48 +1,41 @@
-# Intent MCU Simulator 1.0.0-rc.2
+# Intent MCU Simulator 1.1.0-rc.3
 
-This tested application release candidate is deployed at
-`https://lab.teachthecompany.com/` under receipt
-`desktop-ct109-intent-mcu-rc2-public-deployment-20261007-13`. The deployed
-application remains exact source commit
-`64951b3fb039d77ec52713b2ad5fda3679d73ace` and production image config digest
-`sha256:8f5f7abb95067e2c34ac3ed3b84d9115de7ca727ac4815881eeaef38eff52650`.
+This incremental public release promotes the tested local-file and component
+work without changing the product's safety boundary. The public compiler and
+runtime still support one ATmega328P 16 MHz, 5 V educational profile.
 
-## User-visible changes from 0.9.0
+## User-visible changes
 
-- Project, build and runtime generations prevent stale build or worker output
-  from returning after project changes.
-- Orthogonal wire sections support direct dragging, branch selection,
-  reconnect, bend insertion and branch-versus-whole-net deletion.
-- Components move live while keeping pin endpoints attached; canvas zoom and
-  pan are pointer-safe, and compact/focus/fullscreen workspaces improve small
-  and dense layouts.
-- The source editor adds line numbers, active-line highlighting and clickable
-  compiler diagnostics. Serial output and graphical waveforms are readable
-  instruments rather than raw diagnostic dumps.
-- Projects have editable names, examples remain ordinary editable projects,
-  and interrupted or quota-failed local saves have an explicit recovery path.
-- The catalogue preserves search, category, interface, support, favourites and
-  recent-part behaviour while separating operating-supply filters from declared
-  pin-voltage limits and explaining empty results.
+- Save and Open use a learner-owned local project file. Browser recovery stays
+  separately labelled and no account or server project database is added.
+- The catalogue expands from five to 16 selectable original components,
+  including contacts, analogue and digital sensors, RGB and seven-segment
+  outputs, a 16×2 LCD, an active buzzer, and a quadrature encoder.
+- Five validated starter projects are visible in a keyboard-accessible gallery.
+- Component movement and route editing preserve exact visible named-pin wire
+  attachment; invalid electrical plans continue to fail closed.
+- The sticky Workbench toolbar reflows into mobile rows so Build, Run, Pause,
+  and Reset stay visible at 320 px and 390 px without horizontal scrolling.
+- Controller, component, example, and support pages provide crawlable factual
+  documentation, unique canonical URLs, and current sitemap entries.
+- The controller selector now presents one supported public profile and three
+  clearly labelled, non-executable status previews. Preview mode parks the AVR
+  project and disables project Open, Build, Run, firmware, Prompt Bridge, and
+  runtime surfaces without calling a private service.
 
-## Verified scope
+## Controller truth
 
-The candidate supports the documented ATmega328P 16 MHz, 5 V subset and the
-five selectable foundation parts: controller, resistor, LED, button and
-potentiometer. PWM, pin-change interrupts, Timer0/1/2 bounded modes, ADC,
-USART0, GPIO and circuit-driven controls remain covered by reference fixtures.
+- ATmega328P: public compile and tested virtual execution subset.
+- ESP32-C3: private fixed-toolchain and actual QEMU UART/reset/watchdog
+  evidence; public project upload, Build, Run, GPIO, wired circuits, and
+  runtime endpoints are disabled.
+- RP2040 Pico: private bounded source, fixed ARM compiler, strict UF2/ELF,
+  rp2040js GPIO0/UART0, and retained local/precompiled route evidence; no
+  public compiler, firmware picker, or runtime.
+- STM32F429ZI: private bounded source, fixed ARM compiler, strict ELF, actual
+  Renode PB0/USART3/reset, and retained fixture evidence; no public compiler,
+  arbitrary-ELF input, or runtime.
 
-It does not claim a general analogue solver, another MCU engine, physical
-hardware equivalence, or activation of a larger component list. Prompt Bridge
-remains provider-neutral and imports only a validated circuit graph; it cannot
-replace firmware or bypass electrical checks.
-
-## Identity policy
-
-The package, browser metadata, source archive, candidate containers and release
-documents use `1.0.0-rc.2`. Exact source, public-source, image and evidence
-hashes are recorded in the repository acceptance evidence after immutable
-build/readback. The distinct deployment receipt repeated the exact source
-commit and production image before public cutover. The immutable candidate
-image remains receipt-neutral; the authorized runtime Compose receipt and
-container labels mark the actual public deployment.
+The release makes no physical safety, complete hardware-equivalence, search
+ranking, or AI-citation promise. Prompt Bridge remains portable text plus
+strict project-owned validation, not a live AI service.

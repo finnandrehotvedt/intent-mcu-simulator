@@ -42,7 +42,7 @@ function worldAt(viewport, screenX, screenY) {
   await page.goto(base, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.__M11_READY__ === true);
 
-  assert(await page.locator('#example-select option').count() === 4, 'four first-project examples are not reachable');
+  assert(await page.locator('#example-select option').count() === 5, 'five first-project examples are not reachable');
   await page.click('#walkthrough-open');
   assert(await page.locator('#walkthrough').evaluate((dialog) => dialog.open) && await page.locator('#walkthrough li').count() === 4, 'first-project walkthrough did not open');
   await page.locator('#walkthrough button[value="close"]').click();
@@ -135,12 +135,15 @@ function worldAt(viewport, screenX, screenY) {
   });
   assert(rotationAttachment, 'routes detached after component rotation'); await page.click('#undo');
 
-  const canvas = page.locator('#circuit-canvas'); box = await canvas.boundingBox();
+  const canvas = page.locator('#circuit-canvas');
+  await canvas.scrollIntoViewIfNeeded();
+  box = await canvas.boundingBox();
   const zoomPoint = await page.evaluate(() => {
     const canvasNode = document.querySelector('#circuit-canvas');
     const box = canvasNode.getBoundingClientRect();
-    for (const y of [0.74, 0.62, 0.86, 0.48]) for (const x of [0.72, 0.58, 0.84, 0.42, 0.2]) {
+    for (const y of [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]) for (const x of [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]) {
       const clientX = box.left + box.width * x; const clientY = box.top + box.height * y;
+      if (clientX < 1 || clientX >= innerWidth - 1 || clientY < 1 || clientY >= innerHeight - 1) continue;
       const target = document.elementFromPoint(clientX, clientY);
       if (target && canvasNode.contains(target)
         && !target.closest('.circuit-component,.wire-segment-hit,.quick-controls')) {
@@ -160,8 +163,9 @@ function worldAt(viewport, screenX, screenY) {
   const netsBeforePan = (await page.evaluate(() => window.__M6_PROJECT__().circuit.nets.length));
   const panPoint = await page.evaluate(() => {
     const box = document.querySelector('#circuit-canvas').getBoundingClientRect();
-    for (const y of [0.88, 0.76, 0.62, 0.48]) for (const x of [0.08, 0.2, 0.38, 0.58, 0.86]) {
+    for (const y of [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]) for (const x of [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]) {
       const clientX = box.left + box.width * x; const clientY = box.top + box.height * y;
+      if (clientX < 1 || clientX >= innerWidth - 1 || clientY < 1 || clientY >= innerHeight - 1) continue;
       const target = document.elementFromPoint(clientX, clientY);
       if (target && !target.closest('.circuit-component,.wire-segment-hit,.quick-controls')) return { x: clientX, y: clientY };
     }
@@ -211,11 +215,12 @@ function worldAt(viewport, screenX, screenY) {
   assert(await page.inputValue('#source') === sourceBeforeFailure && (await page.textContent('#build-log')).length > 0, 'compiler-unavailable recovery lost source or full-log guidance');
   await page.unroute('**/api/build');
 
-  await page.route(/\/api\/build\/[^/]+$/u, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: 'building' }) }));
+  await page.route('**/api/build', (route) => route.fulfill({ status: 202, contentType: 'application/json', body: JSON.stringify({ jobId: 'm12-cancel', capability: 'm12-cancel-capability' }) }));
+  await page.route('**/api/build/m12-cancel', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: 'building' }) }));
   await page.click('#build'); await page.waitForFunction(() => window.__M6_STATE__.buildState === 'building' && !document.querySelector('#cancel').disabled); await page.click('#cancel');
   await page.waitForFunction(() => window.__M6_STATE__.buildState === 'cancelled');
   assert(await page.inputValue('#source') === sourceBeforeFailure, 'build cancellation lost edited source');
-  await page.unroute(/\/api\/build\/[^/]+$/u);
+  await page.unroute('**/api/build/m12-cancel'); await page.unroute('**/api/build');
 
   await page.route('**/api/build', (route) => route.fulfill({ status: 202, contentType: 'application/json', body: JSON.stringify({ jobId: 'm12-timeout', capability: 'm12-test-capability' }) }));
   await page.route('**/api/build/m12-timeout', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: 'timeout', error: 'Bounded compiler timeout' }) }));
@@ -228,8 +233,19 @@ function worldAt(viewport, screenX, screenY) {
   assert(failure.buildState === 'failed' && await page.locator('#diagnostic-links button').count() > 0, 'compiler failure did not provide clickable diagnostics');
   await page.locator('#diagnostic-links button').first().click();
   assert((await page.inputValue('#source')).includes('this will not compile') && await page.evaluate(() => document.activeElement?.id === 'source'), 'diagnostic navigation lost edited source or failed to focus the editor');
+  await page.evaluate(() => {
+    window.__M12_FAILURE_SAVE_PICKER__ = window.showSaveFilePicker;
+    window.showSaveFilePicker = undefined;
+  });
+  const failureRecoveryDownload = page.waitForEvent('download');
   await page.click('#project-save');
-  assert((await page.textContent('#project-message')).includes('Saved'), 'project did not recover after compiler failure');
+  await failureRecoveryDownload;
+  assert((await page.textContent('#project-message')).includes('Project download requested'),
+    'project did not recover after compiler failure');
+  await page.evaluate(() => {
+    window.showSaveFilePicker = window.__M12_FAILURE_SAVE_PICKER__;
+    delete window.__M12_FAILURE_SAVE_PICKER__;
+  });
 
   const narrow = await browser.newContext({ viewport: { width: 320, height: 780 }, hasTouch: true });
   const narrowPage = await narrow.newPage(); await narrowPage.goto(base, { waitUntil: 'networkidle' }); await narrowPage.waitForFunction(() => window.__M11_READY__ === true);

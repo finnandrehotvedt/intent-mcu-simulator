@@ -1,20 +1,20 @@
-# Migration from public 0.9.0
+# Migration to 1.1.0-rc.3
 
-No server database or account migration exists. Projects are browser-local.
+There is no account, cloud project database, or server-side project migration.
+Existing browser recovery remains readable. Before changing versions, save an
+important project to a local `.intent-mcu.json` file.
 
-The authorized cutover keeps the versioned project-v2 storage model and
-validates every reopened project before use. Users upgrading from `0.9.0`
-should still export important projects as canonical project JSON. Older project-v1 files
-use the documented one-way migration; the original v1 browser key is left
-untouched for rollback.
+After the update:
 
-After upgrade:
+1. open the local project file;
+2. review any explicit migration or unsupported-field report;
+3. rebuild firmware because artifacts are deliberately not persisted;
+4. verify named-pin wiring and component limitations before Run.
 
-1. reopen or import the project;
-2. review any explicit dropped-field or compatibility report;
-3. rebuild firmware because stored artifacts are intentionally stale;
-4. confirm wiring and supported component limits before Run.
+Rejected files and Prompt Bridge proposals remain atomic and do not partially
+replace the current project. The new components extend project-v3 data while
+the established v2 import path remains available.
 
-Rejected imports and Prompt Bridge responses are atomic: they do not partially
-replace the current project. No compiler job, firmware artifact, trace or
-runtime state is migrated between releases.
+The three additional controller selector entries are status previews and do
+not migrate, reinterpret, or upload an AVR project. Selecting one parks the
+current AVR data; return to AVR and rebuild before Run.

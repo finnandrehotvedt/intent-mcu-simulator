@@ -1,0 +1,28 @@
+<!-- SPDX-License-Identifier: Apache-2.0; Copyright 2026 Finn Andre Hotvedt and IntentForce -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="The 16 selectable circuit components supported by Intent MCU Simulator and their model limits.">
+  <meta name="robots" content="index,follow,max-snippet:-1">
+  <title>Supported components | Intent MCU Simulator</title>
+  <link rel="canonical" href="https://lab.teachthecompany.com/components.html">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="docs-main">
+    <header class="app-header"><div><p class="eyebrow">TESTED COMPONENT LIBRARY</p><h1>Supported components</h1></div><p class="lede">Every selectable part has original project artwork, named terminals, an electrical rule set, and a bounded runtime model.</p></header>
+    <nav class="docs-nav" aria-label="Lab documentation"><a href="/">Open workbench</a><a href="/controllers.html">Controllers</a><a href="/examples.html">Examples</a><a href="/support.html">Support</a></nav>
+    <section class="docs-grid" aria-label="Component groups">
+      <article class="docs-card"><h2>Core circuit</h2><ul><li>ATmega328P learning controller</li><li>Axial fixed resistor</li><li>5 mm through-hole LED</li><li>0 V circuit reference</li></ul></article>
+      <article class="docs-card"><h2>Inputs and controls</h2><ul><li>Four-terminal tactile button</li><li>Linear rotary potentiometer</li><li>SPST latching toggle switch</li><li>SPDT changeover contact</li><li>Quadrature rotary encoder</li></ul></article>
+      <article class="docs-card"><h2>Sensors</h2><ul><li>Analogue light sensor module</li><li>Analogue temperature module</li><li>Digital light-threshold module</li></ul></article>
+      <article class="docs-card"><h2>Outputs and displays</h2><ul><li>Common-cathode RGB LED</li><li>Active buzzer module</li><li>Single-digit common-cathode seven-segment display</li><li>16×2 character LCD in write-only 4-bit GPIO mode</li></ul></article>
+    </section>
+    <section class="panel"><h2>Model limits matter</h2><p class="docs-intro">Sensors use ideal bounded values, contacts do not model bounce or wear, light and sound outputs are relative indicators, and the LCD implements a tested command subset. Invalid polarity, missing current limiting, ambiguous ground, reused output pins, shorts, and unsupported topologies fail closed.</p></section>
+    <footer>16 selectable AVR components in Intent MCU Simulator 1.1.0-rc.3 · no third-party simulator artwork or branding</footer>
+  </main>
+</body>
+</html>

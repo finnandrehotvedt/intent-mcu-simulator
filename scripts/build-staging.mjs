@@ -15,6 +15,10 @@ await Promise.all([
   cp(new URL('../staging/robots.txt', import.meta.url), new URL('robots.txt', dist)),
   cp(new URL('../staging/sitemap.xml', import.meta.url), new URL('sitemap.xml', dist)),
   cp(new URL('../staging/llms.txt', import.meta.url), new URL('llms.txt', dist)),
+  cp(new URL('../staging/controllers.html', import.meta.url), new URL('controllers.html', dist)),
+  cp(new URL('../staging/components.html', import.meta.url), new URL('components.html', dist)),
+  cp(new URL('../staging/examples.html', import.meta.url), new URL('examples.html', dist)),
+  cp(new URL('../staging/support.html', import.meta.url), new URL('support.html', dist)),
   build({ entryPoints: [new URL('../staging/main.mjs', import.meta.url).pathname], outfile: new URL('main.js', dist).pathname, bundle: true, format: 'esm', platform: 'browser', legalComments: 'eof' }),
   build({ entryPoints: [new URL('../src/simulator.worker.mjs', import.meta.url).pathname], outfile: new URL('simulator.worker.js', dist).pathname, bundle: true, format: 'esm', platform: 'browser', legalComments: 'eof' }),
 ]);

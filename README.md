@@ -29,20 +29,29 @@ remain the authority.
 
 ## Public discovery and factual machine context
 
-The live workbench publishes crawlable product explanations, a canonical URL,
-social-preview metadata, truthful Schema.org `WebApplication` and FAQ data,
-`robots.txt`, `sitemap.xml`, and a concise `llms.txt`. These files describe only
+The live workbench publishes crawlable controller, component, example and
+support pages, a canonical URL, social-preview metadata, truthful Schema.org
+`WebApplication` and FAQ data, `robots.txt`, `sitemap.xml`, and a concise
+`llms.txt`. These files describe only
 the supported product and link back to this source, licence, contribution
 guidance, and the two owner articles. They do not promise search rankings, AI
 citations, physical equivalence, hosted AI, or capabilities outside the tested
 ATmega328P subset.
 
+The controller selector also exposes three truthful, non-executable capability
+previews. They report bounded private verification without enabling public
+project upload, Build, Run, runtime sessions, or private endpoints. Selecting a
+preview parks the AVR project without mapping its circuit to another family;
+returning to AVR restores the supported workbench.
+
 ## Current source-release boundary
 
-The browser source supports an ATmega328P learning profile, LEDs, resistors,
-momentary buttons, linear potentiometers, project import/export, local saves,
-Prompt Bridge circuit-plan validation, serial display, logic traces, and pin
-inspection. Its manual-first workbench uses a data-driven catalogue with nine
+The browser source supports one ATmega328P learning profile and 16 selectable
+parts: core passives, momentary and latching contacts, analogue and digital
+sensors, LEDs and displays, an active buzzer, and a quadrature encoder. It also
+supports user-owned local project files, Prompt Bridge circuit-plan validation,
+serial display, logic traces, and pin inspection. Its manual-first workbench
+uses a data-driven catalogue with nine
 categories, exact support labels, practical metadata search, local favourites
 and recent parts. Selectable parts render original project SVG artwork whose
 visible terminals and invisible wiring hit targets share the same local
@@ -116,9 +125,14 @@ source; it does not authorize redistributing the resulting image.
 
 Additional current limits:
 
-- source version `1.0.0-rc.2` is the release currently deployed at
+- source version `1.1.0-rc.3` is prepared for the release at
   `https://lab.teachthecompany.com/`; hosted compiler/toolchain images and
   private deployment configuration remain outside this source repository;
+- the public compiler and virtual runtime support only the tested ATmega328P
+  subset; ESP32-C3, RP2040 and STM32F429ZI have increasingly complete bounded
+  private source/compiler/runtime evidence, but all three remain public
+  previews with project upload, Build, Run, firmware selection, and private
+  runtime endpoints disabled;
 - no physical board connection, firmware upload, live AI call, account,
   analytics, or cloud project store is included;
 - the CPU/peripheral profile is a tested educational subset, not a promise of

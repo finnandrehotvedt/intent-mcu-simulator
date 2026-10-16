@@ -600,3 +600,7 @@ export function newComponent(type, graph, label = null) {
   const id = allocateStableId(graph, type);
   return createComponent(id, type, label ? { label } : {});
 }
+export {
+  CANDIDATE_EDITOR_INTEGRATION_SCHEMA, CandidateEditorSession, V2EditorSession,
+  openPortableEditorSession,
+} from './candidate-project-session.mjs';

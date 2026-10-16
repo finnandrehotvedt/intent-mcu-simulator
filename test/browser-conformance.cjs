@@ -14,6 +14,19 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function differencePaths(left, right, path = '$', output = []) {
+  if (output.length >= 20 || Object.is(left, right)) return output;
+  if (left === null || right === null || typeof left !== 'object' || typeof right !== 'object') {
+    output.push({ path, expected: left, actual: right });
+    return output;
+  }
+  for (const key of new Set([...Object.keys(left), ...Object.keys(right)])) {
+    differencePaths(left[key], right[key], `${path}.${key}`, output);
+    if (output.length >= 20) break;
+  }
+  return output;
+}
+
 async function state(page, predicate, timeout = 30_000) {
   await page.waitForFunction(predicate, null, { timeout });
   return page.evaluate(() => structuredClone(window.__M6_STATE__));
@@ -112,7 +125,12 @@ async function automaticRouteIntersections(page) {
   assert(demo.circuit.components.length === 3 && demo.circuit.nets.length === 3
     && demo.source.files[0].content.includes("Serial.write('1')"), 'optional Blink action did not create the validated three-part project');
   let demoState = await build(page);
-  assert(demoState.buildState === 'succeeded', 'optional Blink project did not compile');
+  assert(demoState.buildState === 'succeeded', `optional Blink project did not compile: ${JSON.stringify({
+    buildState: demoState.buildState,
+    diagnostics: demoState.diagnostics,
+    projectMessage: await page.locator('#project-message').textContent(),
+    buildDiagnostics: await page.locator('#diagnostics').textContent(),
+  })}`);
   await page.click('#run');
   try {
     await page.waitForFunction(() => document.querySelector('#component-layer [data-led-id="led-1"]')?.classList.contains('on'), null, { timeout: 5_000 });
@@ -555,7 +573,8 @@ void loop() {
   const reopened = await page.evaluate(() => window.__M6_PROJECT__());
   const expectedReopen = structuredClone(beforeReopen);
   expectedReopen.build = { status: 'dirty', inputIdentity: null, artifactIdentity: null };
-  assert(JSON.stringify(reopened) === JSON.stringify(expectedReopen), 'validated local reopen changed anything beyond clearing obsolete artifact identity');
+  assert(JSON.stringify(reopened) === JSON.stringify(expectedReopen),
+    `validated local reopen changed anything beyond clearing obsolete artifact identity: ${JSON.stringify(differencePaths(expectedReopen, reopened))}`);
   assert(reopened.layout.wireStyles['net-1'].color === '#5f8cff'
     && reopened.layout.wireRoutes['net-1'].schema === 'intent-mcu-route@1',
   'project reopen lost wire colour or bend geometry');

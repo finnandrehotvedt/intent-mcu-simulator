@@ -1,23 +1,24 @@
-# Rollback basis
+# Rollback basis for 1.1.0-rc.3
 
-Public rollback remains scoped to the authorized deployment. No command in
-this directory is authorization to alter another route or service.
+Rollback is scoped only to the Lab application container. DNS, Caddy routing,
+the Teach apex, classroom, security lab, mail, and unrelated containers stay
+unchanged.
 
-The retained public `0.9.0` release directory, container image, Caddy file,
-public body readback and backup checksums remain present after cutover. The
-deployment procedure arms rollback before changing the release symlink or
-container and restores all of the following on any mandatory failure:
+The deployment must retain the current known-good
+`local/intent-mcu-simulator-production:1.0.0-rc.2` image and the exact
+pre-release Compose file on VM103. If any mandatory acceptance check fails,
+restore that image with the retained Compose file, recreate only the Lab
+container, wait for health, and verify Lab plus the related Teach URLs.
 
-- the retained `0.9.0` image and release directory;
-- the prior `current` release symlink;
-- the prior Caddy file and healthy Caddy container;
-- the prior public body identity and service regression checks.
+Learner projects require no server restore. Local files remain owned by the
+learner, and versioned browser recovery is not deleted by either deployment or
+rollback.
 
-Browser projects require no server restore. The prior project-v2 and v1 keys
-remain untouched, so a user can return to `0.9.0` and reimport an exported JSON
-project if needed.
-
-Before requesting deployment, the private candidate must be stopped, the prior
-private staging image restarted and health-checked, then the candidate restored
-and reaccepted. The final evidence records those immutable identities and the
-read-only public rollback check.
+The rc.3 release preserves rc.2's public-only server boundary and refreshes the
+three non-executable preview descriptions from accepted private evidence. Roll
+back by restoring the exact pre-release source/image retained immediately
+before deployment and recreating only the Lab container. Do not change DNS,
+the shared Caddy route, the compiler image, or any private verification
+service. After rollback, verify `/`, `/healthz`, `/readyz`,
+`/controllers.html`, the related Teach URLs, and confirm that no `/private-*`
+route is exposed.

@@ -2,6 +2,12 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import { createHash } from 'node:crypto';
+import {
+  CANDIDATE_BUILD_REQUEST_SCHEMA,
+  candidateCompilerTarget,
+  validateCandidateTarget,
+  validateUnavailableCandidateTarget,
+} from './candidate-target-contract.mjs';
 
 export const BUILD_REQUEST_SCHEMA = 'teach-lab-build-request@1';
 export const WORKER_JOB_SCHEMA = 'teach-lab-worker-job@1';
@@ -22,10 +28,13 @@ export const BUILD_LIMITS = Object.freeze({
 const FORBIDDEN_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
 const FILE_NAME = /^(?:main\.ino|[A-Za-z][A-Za-z0-9_-]{0,47}\.(?:h|hpp|c|cpp))$/;
 const INCLUDE_DIRECTIVE = /^\s*#\s*(include|include_next)\s+(.+?)\s*$/gm;
-const ALLOWED_SYSTEM_HEADERS = new Set([
+const COMMON_SYSTEM_HEADERS = new Set([
   'Arduino.h', 'stdint.h', 'stddef.h', 'stdbool.h', 'stdint.h', 'limits.h',
-  'math.h', 'string.h', 'stdlib.h', 'avr/io.h', 'avr/interrupt.h',
-  'avr/pgmspace.h', 'util/atomic.h', 'util/delay.h',
+  'math.h', 'string.h', 'stdlib.h',
+]);
+const AVR_SYSTEM_HEADERS = new Set([
+  ...COMMON_SYSTEM_HEADERS, 'avr/io.h', 'avr/interrupt.h', 'avr/pgmspace.h',
+  'util/atomic.h', 'util/delay.h',
 ]);
 
 export class BuildProtocolError extends Error {
@@ -134,7 +143,8 @@ export function parseStrictJson(source) {
   return output;
 }
 
-function validateIncludes(files) {
+function validateIncludes(files, board) {
+  const allowedSystemHeaders = board === BOARD_PROFILE ? AVR_SYSTEM_HEADERS : COMMON_SYSTEM_HEADERS;
   const localNames = new Set(files.map((file) => file.name));
   for (const file of files) {
     for (const match of file.content.matchAll(INCLUDE_DIRECTIVE)) {
@@ -148,7 +158,7 @@ function validateIncludes(files) {
           throw new BuildProtocolError('UNSUPPORTED_INCLUDE', `Unsupported local include in ${file.name}`);
         }
       } else if (system) {
-        if (!ALLOWED_SYSTEM_HEADERS.has(system[1])) {
+        if (!allowedSystemHeaders.has(system[1])) {
           throw new BuildProtocolError('UNSUPPORTED_INCLUDE', `Unsupported system include in ${file.name}`);
         }
       } else {
@@ -171,9 +181,27 @@ function hasUnpairedSurrogate(value) {
 }
 
 export function normalizeBuildRequestValue(value) {
-  if (!exactKeys(value, ['schema', 'board', 'files'])) throw new BuildProtocolError('REQUEST_SHAPE');
-  if (value.schema !== BUILD_REQUEST_SCHEMA) throw new BuildProtocolError('UNKNOWN_BUILD_SCHEMA');
-  if (value.board !== BOARD_PROFILE) throw new BuildProtocolError('UNKNOWN_BOARD_PROFILE');
+  let board;
+  let target = null;
+  if (value?.schema === BUILD_REQUEST_SCHEMA) {
+    if (!exactKeys(value, ['schema', 'board', 'files'])) throw new BuildProtocolError('REQUEST_SHAPE');
+    if (value.board !== BOARD_PROFILE) throw new BuildProtocolError('UNKNOWN_BOARD_PROFILE');
+    board = value.board;
+  } else if (value?.schema === CANDIDATE_BUILD_REQUEST_SCHEMA) {
+    if (!exactKeys(value, ['schema', 'target', 'files'])) throw new BuildProtocolError('REQUEST_SHAPE');
+    target = validateCandidateTarget(value.target);
+    if (!target) {
+      const unavailable = validateUnavailableCandidateTarget(value.target);
+      if (unavailable) throw new BuildProtocolError(
+        'COMPILER_TARGET_UNAVAILABLE',
+        unavailable.availability.installedCompiler.detail,
+      );
+      throw new BuildProtocolError('UNKNOWN_COMPILER_TARGET');
+    }
+    board = target.profile;
+  } else {
+    throw new BuildProtocolError('UNKNOWN_BUILD_SCHEMA');
+  }
   if (!Array.isArray(value.files) || value.files.length < 1 || value.files.length > BUILD_LIMITS.files) {
     throw new BuildProtocolError('FILE_LIMIT');
   }
@@ -193,13 +221,18 @@ export function normalizeBuildRequestValue(value) {
   if (!seen.has('main.ino')) throw new BuildProtocolError('MAIN_FILE_REQUIRED');
   if (sourceBytes > BUILD_LIMITS.sourceBytes) throw new BuildProtocolError('SOURCE_LIMIT');
   files.sort((a, b) => a.name === 'main.ino' ? -1 : b.name === 'main.ino' ? 1 : a.name.localeCompare(b.name));
-  validateIncludes(files);
-  return Object.freeze({
-    schema: BUILD_REQUEST_SCHEMA,
-    board: BOARD_PROFILE,
+  validateIncludes(files, board);
+  const normalized = {
+    schema: value.schema,
+    board,
     files: Object.freeze(files),
     sourceBytes,
-  });
+  };
+  if (target) {
+    normalized.fqbn = target.fqbn;
+    normalized.toolchainIdentitySha256 = target.toolchainIdentitySha256;
+  }
+  return Object.freeze(normalized);
 }
 
 export function parseAndNormalizeBuildRequest(raw) {
@@ -214,11 +247,16 @@ export function sha256(value) {
 }
 
 export function canonicalSourceBytes(request) {
-  return Buffer.from(JSON.stringify({
+  const files = request.files.map(({ name, content }) => ({ name, content }));
+  return Buffer.from(JSON.stringify(request.schema === CANDIDATE_BUILD_REQUEST_SCHEMA ? {
     schema: request.schema,
-    board: request.board,
-    files: request.files.map(({ name, content }) => ({ name, content })),
-  }));
+    target: {
+      profile: request.board,
+      fqbn: request.fqbn,
+      toolchainIdentitySha256: request.toolchainIdentitySha256,
+    },
+    files,
+  } : { schema: request.schema, board: request.board, files }));
 }
 
 export function sourceDigest(request) {
@@ -226,11 +264,12 @@ export function sourceDigest(request) {
 }
 
 export function buildInputIdentity(request, imageLock) {
+  const target = candidateCompilerTarget(request.board);
   return sha256(JSON.stringify({
     sourceDigest: sourceDigest(request),
     board: request.board,
     toolchainManifestSha256: imageLock.toolchainManifestSha256,
     toolchainImageId: imageLock.imageId,
-    fixedBuildFlags: FIXED_BUILD_FLAGS,
+    fixedBuildFlags: target?.fixedBuildFlags ?? FIXED_BUILD_FLAGS,
   }));
 }

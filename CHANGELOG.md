@@ -2,7 +2,34 @@
 
 All notable public source changes are recorded here.
 
-## Unreleased expansion candidate — 2026-10-13
+## 1.1.0-rc.3 — 2026-10-16
+
+- Refresh the three non-executable controller previews with the accepted,
+  bounded private evidence while keeping AVR as the only public Build/Run
+  profile.
+- Preserve the tested 16-part AVR catalogue, mobile controls, local Save/Open,
+  named-wire editor, examples, Prompt Bridge validation and crawlable support
+  pages from rc.2.
+- Keep all private compiler/runtime routes, firmware inputs and executable
+  artifacts out of the public source and public server.
+
+## 1.1.0-rc.2 — 2026-10-16
+
+- Added one public controller capability surface with a supported AVR profile
+  and clearly labelled, non-executable ESP32-C3, RP2040 Pico, and STM32F429ZI
+  evidence previews.
+- Parked the AVR project and disabled project Open, Build, Run, firmware,
+  Prompt Bridge, and runtime surfaces whenever a preview profile is selected.
+- Removed the optional ESP32-C3 broker mount from the public server entry point
+  and made attempts to enable it fail closed.
+- Updated public metadata, controller documentation, compatibility truth, and
+  machine-readable discovery copy to distinguish private evidence from public
+  availability.
+- Added desktop/mobile browser acceptance for all four selector states, zero
+  private/third-party requests, no runtime-worker creation, and no horizontal
+  overflow.
+
+## 1.1.0-rc.1 — 2026-10-15
 
 - Added account-free Save/Open project files. Supporting browsers use a native
   user-selected file handle; other browsers use deterministic download and
@@ -11,6 +38,17 @@ All notable public source changes are recorded here.
 - Added three-engine coverage for native save/open, fallback round-trip,
   cancellation, invalid-file atomicity, 1440/768/390/320 layouts and zero
   server-side project mutation requests.
+
+- Added 11 original tested component modules to the five-part foundation for
+  16 selectable components, including contacts, sensors, RGB and seven-segment
+  outputs, a 16×2 LCD, an active buzzer, and a quadrature encoder.
+- Added a fifth validated Temperature display starter and made all starter
+  cards keyboard reachable at desktop and 320/390 px mobile widths.
+- Added crawlable controller, component, example and support pages with exact
+  public capability boundaries, canonical links, robots, sitemap and factual
+  machine-readable context.
+- Reflowed the sticky mobile Workbench controls so Build, Run, Pause and Reset
+  remain visible without horizontal toolbar scrolling or Serial-dock overlap.
 
 - Replaced split/stale component and wire selection with one authoritative
   selection state, so Delete targets only the selected component, connection,
@@ -31,8 +69,9 @@ All notable public source changes are recorded here.
 - Verified a practical collapsed-panel testing view where the circuit, live
   input, persistent runtime controls and readable Serial output remain visible
   together at desktop and effective 125%-zoom widths.
-- This entry describes a local tested candidate. The deployed public rc.2 is
-  unchanged until a separate deployment receipt approves an exact candidate.
+- ESP32-C3 remains a private compile-only proof and is disabled on the public
+  host. RP2040 and STM32 remain unavailable; no board artwork is treated as an
+  execution claim.
 
 ## 1.0.0-rc.2 — 2026-10-07
 

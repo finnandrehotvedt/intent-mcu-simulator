@@ -1,0 +1,29 @@
+<!-- SPDX-License-Identifier: Apache-2.0; Copyright 2026 Finn Andre Hotvedt and IntentForce -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Five editable and validated starter circuits for learning GPIO, inputs, ADC, PWM, displays, and sensors.">
+  <meta name="robots" content="index,follow,max-snippet:-1">
+  <title>Starter examples | Intent MCU Simulator</title>
+  <link rel="canonical" href="https://lab.teachthecompany.com/examples.html">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="docs-main">
+    <header class="app-header"><div><p class="eyebrow">LEARN BY CHANGING A WORKING CIRCUIT</p><h1>Starter examples</h1></div><p class="lede">Each starter enters through the same project, pin, and electrical validation as a local file.</p></header>
+    <nav class="docs-nav" aria-label="Lab documentation"><a href="/">Open workbench</a><a href="/controllers.html">Controllers</a><a href="/components.html">Components</a><a href="/support.html">Support</a></nav>
+    <section class="docs-grid" aria-label="Starter circuits">
+      <article class="docs-card"><h2>Blink LED</h2><p>Connect D13 through a 220 Ω resistor to an LED and ground. Build, run, and compare the light with GPIO and Serial ON/OFF records.</p></article>
+      <article class="docs-card"><h2>Button input</h2><p>Read a tactile button on D2 with <code>INPUT_PULLUP</code>. Press it in Interact mode and inspect firmware-derived input and Serial state.</p></article>
+      <article class="docs-card"><h2>ADC dial</h2><p>Turn a potentiometer feeding A0 and compare its ideal 0–5 V position with the 10-bit ADC values produced by executed firmware.</p></article>
+      <article class="docs-card"><h2>PWM fade</h2><p>Drive a current-limited LED from D3 and relate duty cycle, relative brightness, and the logic analyser waveform.</p></article>
+      <article class="docs-card"><h2>Temperature display</h2><p>Read the ideal temperature module on A1, write whole Celsius to a 16×2 LCD, and select a current-limited RGB status colour.</p></article>
+    </section>
+    <section class="panel"><h2>Make it yours</h2><p class="docs-intro">Open a starter from the workbench, move parts without detaching wires, edit firmware, rebuild, and save the canonical project file on your computer. There is no account or cloud project store.</p><nav class="docs-nav"><a href="/">Choose a starter in the workbench</a></nav></section>
+    <footer>Five validated AVR starters in Intent MCU Simulator 1.1.0-rc.3</footer>
+  </main>
+</body>
+</html>

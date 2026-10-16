@@ -10,13 +10,19 @@ import {
   sha256,
 } from './build-protocol.mjs';
 import { BrokerError } from './docker-broker.mjs';
+import {
+  candidateArtifactIdentity,
+  candidateCompilerTarget,
+  validateCandidateCompileArtifact,
+} from './candidate-target-contract.mjs';
 
 const TERMINAL = new Set(['succeeded', 'failed', 'cancelled', 'timeout']);
 
 export class BuildCoordinator {
-  constructor({ broker, imageLock, globalLimit = 1, perOriginLimit = 1, queueLimit = 3, rateLimit = 12, jobLimit = 16, cacheLimit = 8, jobTtlMs = 5 * 60_000 }) {
+  constructor({ broker, imageLock, identityLockFor = null, globalLimit = 1, perOriginLimit = 1, queueLimit = 3, rateLimit = 12, jobLimit = 16, cacheLimit = 8, jobTtlMs = 5 * 60_000 }) {
     this.broker = broker;
     this.imageLock = imageLock;
+    this.identityLockFor = identityLockFor ?? (() => this.imageLock);
     this.globalLimit = globalLimit;
     this.perOriginLimit = perOriginLimit;
     this.queueLimit = queueLimit;
@@ -47,7 +53,9 @@ export class BuildCoordinator {
     if (this.queue.length >= this.queueLimit) throw new BuildProtocolError('BUILD_QUEUE_FULL', 'Build queue is full', 429);
     const jobId = randomBytes(12).toString('hex');
     const capability = randomBytes(32).toString('base64url');
-    const inputIdentity = buildInputIdentity(request, this.imageLock);
+    const identityLock = this.identityLockFor(request.board);
+    if (!identityLock) throw new BuildProtocolError('UNKNOWN_COMPILER_TARGET');
+    const inputIdentity = buildInputIdentity(request, identityLock);
     const job = {
       jobId, capability, origin, request, inputIdentity,
       status: 'building', phase: 'queued', submittedAt: Date.now(), completedAt: null,
@@ -101,30 +109,58 @@ export class BuildCoordinator {
         };
       } else {
         const artifact = worker.artifact;
-        if (!artifact || sha256(artifact.hex) !== artifact.hexSha256
-            || sha256(Buffer.from(artifact.elfBase64, 'base64')) !== artifact.elfSha256) {
-          throw new BrokerError('ARTIFACT_HASH_MISMATCH');
-        }
-        parseIntelHex(artifact.hex);
-        const result = {
-          code: worker.code,
-          inputIdentity: job.inputIdentity,
-          artifactIdentity: sha256(JSON.stringify({
+        const target = candidateCompilerTarget(job.request.board);
+        if (target?.compileOnly) {
+          if (!validateCandidateCompileArtifact(artifact, target.profile)) {
+            throw new BrokerError('CANDIDATE_ARTIFACT_INVALID');
+          }
+          const result = {
+            code: worker.code,
             inputIdentity: job.inputIdentity,
-            hexSha256: artifact.hexSha256,
-            elfSha256: artifact.elfSha256,
-          })),
-          artifact,
-          diagnostics: worker.diagnostics ?? [],
-          text: worker.text ?? '',
-          isolation: worker.isolation,
-          toolchainImageId: worker.imageId,
-        };
-        job.status = 'succeeded';
-        job.phase = 'complete';
-        job.result = result;
-        if (this.cache.size >= this.cacheLimit) this.cache.delete(this.cache.keys().next().value);
-        this.cache.set(job.inputIdentity, structuredClone(result));
+            artifactIdentity: candidateArtifactIdentity({
+              inputIdentity: job.inputIdentity, target, artifact,
+            }),
+            artifact,
+            compileOnly: true,
+            runtimeStatus: target.runtimeStatus,
+            runtimeRejectCode: artifact.runtimeRejectCode,
+            diagnostics: worker.diagnostics ?? [],
+            text: worker.text ?? '',
+            isolation: worker.isolation,
+            toolchainImageId: worker.imageId,
+            toolchainIdentitySha256: target.toolchainIdentitySha256,
+          };
+          job.status = 'succeeded';
+          job.phase = 'complete';
+          job.result = result;
+          if (this.cache.size >= this.cacheLimit) this.cache.delete(this.cache.keys().next().value);
+          this.cache.set(job.inputIdentity, structuredClone(result));
+        } else {
+          if (!artifact || sha256(artifact.hex) !== artifact.hexSha256
+            || sha256(Buffer.from(artifact.elfBase64, 'base64')) !== artifact.elfSha256) {
+            throw new BrokerError('ARTIFACT_HASH_MISMATCH');
+          }
+          parseIntelHex(artifact.hex);
+          const result = {
+            code: worker.code,
+            inputIdentity: job.inputIdentity,
+            artifactIdentity: sha256(JSON.stringify({
+              inputIdentity: job.inputIdentity,
+              hexSha256: artifact.hexSha256,
+              elfSha256: artifact.elfSha256,
+            })),
+            artifact,
+            diagnostics: worker.diagnostics ?? [],
+            text: worker.text ?? '',
+            isolation: worker.isolation,
+            toolchainImageId: worker.imageId,
+          };
+          job.status = 'succeeded';
+          job.phase = 'complete';
+          job.result = result;
+          if (this.cache.size >= this.cacheLimit) this.cache.delete(this.cache.keys().next().value);
+          this.cache.set(job.inputIdentity, structuredClone(result));
+        }
       }
     } catch (error) {
       if (job.status === 'cancelled' || error.code === 'BUILD_CANCELLED') {

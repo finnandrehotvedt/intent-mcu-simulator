@@ -17,8 +17,8 @@ forever.
 ## Near-term source quality
 
 - Improve keyboard and screen-reader workflows for the manual circuit editor.
-- Expand the catalogue registry only with independently created artwork,
-  explicit support levels, electrical contracts, provenance and tests.
+- Continue expanding the 16-part catalogue only with independently created
+  artwork, explicit support levels, electrical contracts, provenance and tests.
 - Expand examples that start from an empty project and explain validation
   failures without hiding electrical assumptions.
 - Add source-level tests for more project import, migration, and rendering
@@ -31,8 +31,13 @@ forever.
 - Keep the published compiler service recipe, upstream checksums, notices,
   relinking directions and confinement tests current without distributing an
   unreviewed prebuilt toolchain image.
-- Evaluate additional components one at a time; displays, sensors, motors, and
-  buses require their own electrical and emulator contracts before activation.
+- Evaluate additional controllers and components one at a time. The public
+  selector may show exact private evidence as a non-executable preview, but it
+  must not imply public availability. ESP32-C3 needs fair multi-user admission,
+  per-origin/session rate and concurrency limits, transient-data erasure, and
+  production-isolation acceptance before public execution can be considered.
+  RP2040 and STM32 still have no public compiler or runtime. Motors and buses
+  require their own electrical and emulator contracts before activation.
 - Keep physical-device access, upload, accounts, hosted AI, agent/tool
   interfaces, and hosted compiler/deployment operations outside this
   source-only roadmap until each is separately designed and approved.

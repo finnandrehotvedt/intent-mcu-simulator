@@ -10,7 +10,12 @@ import { cursorCycles, waveformPaths } from '../src/waveform-view.mjs';
 
 test('four ordinary examples are validated editable projects', () => {
   assert.deepEqual(exampleCatalog().map((entry) => entry.id), ['blink', 'button', 'adc', 'pwm']);
-  for (const { id } of exampleCatalog()) {
+  for (const entry of exampleCatalog()) {
+    const { id } = entry;
+    assert.match(entry.focus, /output|input|PWM/u);
+    assert.match(entry.partsLabel, /Controller/u);
+    assert.match(entry.outcome, /\.$/u);
+    assert.equal(entry.componentTypes.length >= 2, true);
     const example = createExampleProject(id);
     assert.equal(validateCircuit(example.project.circuit).ok, true, id);
     assert.match(example.project.source.files[0].content, /void setup/);

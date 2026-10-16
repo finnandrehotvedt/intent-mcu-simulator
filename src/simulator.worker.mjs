@@ -28,6 +28,12 @@ function instructionBudget() {
   return Math.max(500, Math.round(10_000 * kernel.adapter.speed));
 }
 
+function applyDigitalInput(value) {
+  if (!value || !Number.isInteger(value.pin) || value.pin < 0 || value.pin > 13
+      || typeof value.level !== 'boolean') throw new Error('INVALID_DIGITAL_INPUT');
+  kernel.adapter.setDigitalPin(value.pin, value.level);
+}
+
 function pump(activeGeneration) {
   if (!running || activeGeneration !== generation) return;
   try {
@@ -47,6 +53,7 @@ self.onmessage = ({ data }) => {
       running = false;
       generation++;
       kernel = new RuntimeKernel(data.hex, data.circuit, data.instruments ?? {});
+      for (const input of data.digitalInputs ?? []) applyDigitalInput(input);
       status('ready');
       return;
     }
@@ -83,6 +90,12 @@ self.onmessage = ({ data }) => {
     } else if (data.command === 'control') {
       kernel.queueControl(data.componentId, data.key, data.value);
       status('control');
+    } else if (data.command === 'digital-input') {
+      applyDigitalInput(data);
+      status('digital-input');
+    } else if (data.command === 'digital-sequence') {
+      kernel.queueDigitalSequence(data.events);
+      status('digital-sequence');
     } else if (data.command === 'uart-rx') {
       kernel.queueUartRx(data.value);
       status('uart-rx');

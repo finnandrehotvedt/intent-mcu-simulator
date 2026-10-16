@@ -8,6 +8,8 @@ export const INPUT_EVENT_LIMIT = 10_000;
 const LOGIC_TRANSITION_LIMIT = 100_000;
 const LOGIC_CHANNEL_LIMIT = 8;
 const SERIAL_HISTORY_MAX = 4_096;
+const DIGITAL_SEQUENCE_EVENT_MAX = 8;
+const DIGITAL_SEQUENCE_OFFSET_MAX = 1_600_000;
 
 const clone = (value) => structuredClone(value);
 
@@ -78,6 +80,7 @@ export class RuntimeKernel {
     this.selectedPin = options.selectedPin ?? 'D13';
     this.serialHistoryLimit = this.#serialLimit(options.serialHistoryLimit ?? 512);
     this.serialClearAbsolute = 0;
+    this.digitalSequenceTailCycle = 0;
   }
 
   #serialLimit(value) {
@@ -107,6 +110,7 @@ export class RuntimeKernel {
       this.adapter.scheduleUartRx(event.targetCycle, event.value);
       return;
     }
+    if (event.type === 'digital-scheduled') return;
     throw new Error(`Unsupported input event: ${event.type}`);
   }
 
@@ -130,6 +134,33 @@ export class RuntimeKernel {
     const event = this.inputs.enqueue({ type: 'uart-rx', value }, this.adapter.cpu.cycles);
     this.#flushInputs();
     return event;
+  }
+
+  queueDigitalSequence(events) {
+    if (!Array.isArray(events) || events.length < 1 || events.length > DIGITAL_SEQUENCE_EVENT_MAX
+        || this.inputs.log.length + events.length > this.inputs.limit) {
+      throw new TypeError('INVALID_DIGITAL_SEQUENCE');
+    }
+    let priorOffset = 0;
+    const normalized = events.map((event) => {
+      if (!event || typeof event !== 'object' || Array.isArray(event)
+          || Object.keys(event).sort().join('|') !== 'level|offsetCycles|pin'
+          || !Number.isSafeInteger(event.offsetCycles) || event.offsetCycles <= priorOffset
+          || event.offsetCycles > DIGITAL_SEQUENCE_OFFSET_MAX
+          || !Number.isInteger(event.pin) || event.pin < 0 || event.pin > 13
+          || typeof event.level !== 'boolean') throw new TypeError('INVALID_DIGITAL_SEQUENCE');
+      priorOffset = event.offsetCycles;
+      return { offsetCycles: event.offsetCycles, pin: event.pin, level: event.level };
+    });
+    const baseCycle = Math.max(this.adapter.cpu.cycles, this.digitalSequenceTailCycle);
+    const queued = normalized.map((event) => this.inputs.enqueue(
+      { type: 'digital-scheduled', pin: event.pin, level: event.level },
+      this.adapter.cpu.cycles,
+      baseCycle + event.offsetCycles,
+    ));
+    for (const event of queued) this.adapter.scheduleDigital(event.targetCycle, event.pin, event.level);
+    this.digitalSequenceTailCycle = queued.at(-1).targetCycle;
+    return clone(queued);
   }
 
   runInstructions(count) {
@@ -160,6 +191,7 @@ export class RuntimeKernel {
     this.circuit.applyControls(this.adapter);
     this.inputs.reset();
     this.serialClearAbsolute = 0;
+    this.digitalSequenceTailCycle = 0;
     return this.snapshot();
   }
 

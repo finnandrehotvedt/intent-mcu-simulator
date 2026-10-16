@@ -4,17 +4,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Build ATmega328P circuits, compile firmware in an isolated toolchain, and inspect virtual GPIO, LEDs, inputs, serial data, and logic traces.">
+  <meta name="description" content="Build and run supported ATmega328P projects in the public workbench, and inspect honest preview-only status for ESP32-C3, RP2040 Pico, and STM32F429ZI.">
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
   <meta name="theme-color" content="#07121d">
-  <title>Intent MCU Simulator | Browser AVR firmware workbench</title>
+  <title>Intent MCU Simulator | Public AVR workbench and controller previews</title>
   <link rel="canonical" href="https://lab.teachthecompany.com/">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="alternate" href="/llms.txt" type="text/plain" title="Intent MCU Simulator facts for AI-assisted discovery">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Teach the Company">
-  <meta property="og:title" content="Intent MCU Simulator | Browser AVR firmware workbench">
-  <meta property="og:description" content="Build a supported ATmega328P circuit, compile edited firmware, and inspect deterministic virtual hardware behaviour.">
+  <meta property="og:title" content="Intent MCU Simulator | Public AVR workbench and controller previews">
+  <meta property="og:description" content="Run the supported public AVR workbench and inspect clearly labelled, non-executable previews for three additional controller families.">
   <meta property="og:url" content="https://lab.teachthecompany.com/">
   <meta property="og:image" content="https://lab.teachthecompany.com/social-card.png">
   <meta property="og:image:type" content="image/png">
@@ -22,25 +22,25 @@
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Intent MCU Simulator workbench with an original virtual controller, connected LED, source code, and logic trace.">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Intent MCU Simulator | Browser AVR firmware workbench">
-  <meta name="twitter:description" content="Build a supported ATmega328P circuit, compile edited firmware, and inspect deterministic virtual hardware behaviour.">
+  <meta name="twitter:title" content="Intent MCU Simulator | Public AVR workbench and controller previews">
+  <meta name="twitter:description" content="Run the supported public AVR workbench and inspect clearly labelled, non-executable previews for three additional controller families.">
   <meta name="twitter:image" content="https://lab.teachthecompany.com/social-card.png">
   <meta name="twitter:image:alt" content="Intent MCU Simulator workbench with an original virtual controller, connected LED, source code, and logic trace.">
-  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://lab.teachthecompany.com/#website","url":"https://lab.teachthecompany.com/","name":"Intent MCU Simulator","inLanguage":"en","mainEntity":{"@id":"https://lab.teachthecompany.com/#software"}},{"@type":"WebApplication","@id":"https://lab.teachthecompany.com/#software","name":"Intent MCU Simulator","url":"https://lab.teachthecompany.com/","description":"An original browser workbench for building supported ATmega328P circuits, compiling firmware in an isolated toolchain, and inspecting deterministic virtual hardware behaviour.","applicationCategory":"EducationalApplication","operatingSystem":"Any modern browser","isAccessibleForFree":true,"softwareVersion":"1.0.0-rc.2","license":"https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/LICENSE","codeRepository":"https://github.com/finnandrehotvedt/intent-mcu-simulator","featureList":["Manual pin-to-pin circuit building","Isolated firmware compilation","Deterministic virtual MCU execution","GPIO, LED, button and potentiometer models","Serial console, logic analyser and pin inspector","Validation-gated portable Prompt Bridge"],"author":{"@type":"Person","name":"Finn Andre Hotvedt","url":"https://finnandre.no/"},"publisher":{"@type":"Organization","name":"IntentForce","url":"https://www.intentforce.no/"}},{"@type":"FAQPage","@id":"https://lab.teachthecompany.com/#questions","mainEntity":[{"@type":"Question","name":"What does Intent MCU Simulator simulate?","acceptedAnswer":{"@type":"Answer","text":"It simulates a tested educational subset around an ATmega328P 16 MHz, 5 V profile, including supported GPIO, LEDs, resistors, buttons, potentiometers, serial data, and logic traces."}},{"@type":"Question","name":"Does Prompt Bridge connect to a hosted AI service?","acceptedAnswer":{"@type":"Answer","text":"No. Prompt Bridge creates portable text for a tool chosen by the user. Only returned structured circuit data that passes project-owned schema, pin, and electrical validation can reach the canvas."}},{"@type":"Question","name":"Does the simulator replace testing on physical hardware?","acceptedAnswer":{"@type":"Answer","text":"No. The workbench is an educational simulation of a verified subset. It is not physical safety certification and does not claim complete timing or hardware equivalence."}}]}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://lab.teachthecompany.com/#website","url":"https://lab.teachthecompany.com/","name":"Intent MCU Simulator","inLanguage":"en","mainEntity":{"@id":"https://lab.teachthecompany.com/#software"}},{"@type":"WebApplication","@id":"https://lab.teachthecompany.com/#software","name":"Intent MCU Simulator","url":"https://lab.teachthecompany.com/","description":"An original public browser workbench for supported ATmega328P projects, with non-executable status previews for ESP32-C3, RP2040 Pico, and STM32F429ZI.","applicationCategory":"EducationalApplication","operatingSystem":"Any modern browser","isAccessibleForFree":true,"softwareVersion":"1.1.0-rc.3","license":"https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/LICENSE","codeRepository":"https://github.com/finnandrehotvedt/intent-mcu-simulator","featureList":["Manual AVR pin-to-pin circuit building","Local AVR project Save and Open","Isolated AVR firmware compilation","Deterministic virtual AVR execution","Truthful preview-only controller capability views","Sixteen selectable AVR circuit components","Five validated AVR starter projects","Serial console, logic analyser and pin inspector","Validation-gated portable Prompt Bridge"],"author":{"@type":"Person","name":"Finn Andre Hotvedt","url":"https://finnandre.no/"},"publisher":{"@type":"Organization","name":"IntentForce","url":"https://www.intentforce.no/"}},{"@type":"FAQPage","@id":"https://lab.teachthecompany.com/#questions","mainEntity":[{"@type":"Question","name":"Which controller runs in the public simulator?","acceptedAnswer":{"@type":"Answer","text":"Only the tested ATmega328P 16 MHz, 5 V educational profile can compile and run publicly. ESP32-C3, RP2040 Pico, and STM32F429ZI are selectable status previews; their private evidence does not expose public Build, Run, project upload, or runtime endpoints."}},{"@type":"Question","name":"Where are projects saved?","acceptedAnswer":{"@type":"Answer","text":"Save and Open use a file selected on the learner's own computer. Browser recovery is separate, and there is no account or cloud project store."}},{"@type":"Question","name":"Does Prompt Bridge connect to a hosted AI service?","acceptedAnswer":{"@type":"Answer","text":"No. Prompt Bridge creates portable text for a tool chosen by the user. Only returned structured circuit data that passes project-owned schema, pin, and electrical validation can reach the AVR canvas."}},{"@type":"Question","name":"Does the simulator replace testing on physical hardware?","acceptedAnswer":{"@type":"Answer","text":"No. The workbench is an educational simulation of a verified subset. It is not physical safety certification and does not claim complete timing or hardware equivalence."}}]}]}</script>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <main>
     <header class="app-header">
-      <div><p class="eyebrow">PUBLIC WORKBENCH · WORK IN PROGRESS</p><h1>Intent MCU Simulator</h1></div>
-      <p class="lede">Build by hand, compile the edited source, and inspect one deterministic virtual-cycle machine. Prompt Bridge remains optional and validation-gated.</p>
+      <div><p class="eyebrow">PUBLIC RELEASE PROJECTION · AVR SUPPORTED · THREE HONEST PREVIEWS</p><h1>Intent MCU Simulator</h1></div>
+      <p class="lede">Build and run the supported AVR workbench. Select another controller to inspect verified evidence, missing capabilities, and the exact public boundary without starting a private service.</p>
     </header>
 
     <section class="project-bar panel" aria-label="Project controls">
       <div><p class="eyebrow">LOCAL PROJECT</p><label class="project-name-field" for="project-name">Project name <input id="project-name" type="text" maxlength="80" value="Untitled project" autocomplete="off"></label><strong id="project-state">Untitled project · empty · not saved</strong><span id="lifecycle-state" class="lifecycle-state">empty</span></div>
       <div class="toolbar">
         <button id="project-new" type="button">New empty</button>
-        <select id="example-select" aria-label="Example project"><option value="blink">Blink LED</option><option value="button">Button input</option><option value="adc">ADC dial</option><option value="pwm">PWM fade</option></select>
+        <select id="example-select" aria-label="Example project"><option value="blink">Blink LED</option><option value="button">Button input</option><option value="adc">ADC dial</option><option value="pwm">PWM fade</option><option value="temperature-lcd-threshold">Temperature display</option></select>
         <button id="project-demo" type="button">Open example</button>
         <button id="walkthrough-open" type="button">First project guide</button>
         <button id="undo" type="button" disabled>Undo</button><button id="redo" type="button" disabled>Redo</button>
@@ -56,18 +56,47 @@
       <details id="technical-error" class="technical-error" hidden><summary>Technical details</summary><pre id="technical-error-detail"></pre></details>
     </section>
 
-    <nav class="quick-controls panel" aria-label="Persistent build and runtime controls">
+    <section id="starter-gallery" class="starter-gallery panel" aria-labelledby="starter-title">
+      <div class="starter-heading">
+        <div><p class="eyebrow">START HERE · VALIDATED EXAMPLES</p><h2 id="starter-title">Start with a working circuit</h2></div>
+        <p>Choose a goal, then edit the wiring and firmware. Every card enters through the same project and electrical validation as a file you open yourself.</p>
+      </div>
+      <div id="starter-examples" class="starter-grid" aria-label="Working starter circuits"></div>
+    </section>
+
+    <nav id="quick-controls" class="quick-controls panel" aria-label="Persistent build and runtime controls">
       <span><strong>Workbench</strong><small id="quick-state">Empty project</small></span>
       <button id="toggle-catalog" type="button" aria-pressed="false">Parts</button>
       <button id="toggle-inspector" type="button" aria-pressed="false">Inspector</button>
       <button id="quick-build" type="button">Build</button><button id="quick-run" type="button" disabled>Run</button><button id="quick-pause" type="button" disabled>Pause</button><button id="quick-reset" type="button" disabled>Reset</button>
     </nav>
 
-    <section class="workspace" aria-label="Manual circuit editor">
+    <section id="controller-workbench" class="controller-workbench panel" aria-labelledby="controller-workbench-title" data-mode="avr-circuit">
+      <div class="controller-workbench-copy">
+        <p id="controller-workbench-eyebrow" class="eyebrow">PUBLICLY SUPPORTED</p>
+        <div class="controller-title-row"><h2 id="controller-workbench-title">ATmega328P circuit workbench</h2><span id="controller-workbench-badge" class="controller-badge supported">Supported</span></div>
+        <p id="controller-workbench-summary" class="controller-summary">Build a circuit, edit source, compile in the fixed AVR toolchain and run the tested deterministic browser-worker subset.</p>
+      </div>
+      <dl class="controller-capabilities" aria-label="Selected controller capabilities">
+        <div><dt>Project</dt><dd id="controller-capability-project">Local Save/Open and browser recovery</dd></div>
+        <div><dt>Source</dt><dd id="controller-capability-source">Edited source · fixed isolated AVR compiler</dd></div>
+        <div><dt>Runtime</dt><dd id="controller-capability-runtime">Deterministic browser worker · documented AVR subset</dd></div>
+        <div><dt>Circuit</dt><dd id="controller-capability-circuit">Active circuit canvas, instruments and Prompt Bridge</dd></div>
+      </dl>
+      <div class="controller-actions">
+        <button id="controller-primary-action" type="button">Build AVR project</button>
+        <button id="controller-return-avr" type="button" hidden>Return to supported AVR workbench</button>
+      </div>
+      <p id="controller-workbench-limitation" class="controller-limitation">Only the documented AVR CPU, peripheral and electrical-model subset is supported.</p>
+      <p id="controller-public-boundary" class="truth">A preview changes only this browser view. It cannot upload a project, call a private endpoint, build firmware, or create a runtime session.</p>
+    </section>
+
+    <section id="workbench-workspace" class="workspace" aria-label="Manual circuit editor">
       <aside class="catalog panel" aria-labelledby="catalog-title">
         <p class="eyebrow">1 · COMPONENTS</p><h2 id="catalog-title">Add parts</h2>
-        <label for="board-select">Controller profile</label>
-        <select id="board-select"><option value="board.atmega328p-16mhz-v1">ATmega328P · 16 MHz · 5 V</option></select>
+        <label for="board-select">Compiler target</label>
+        <select id="board-select"><option value="board.atmega328p-16mhz-v1">ATmega328P · public build + run</option><option value="board.esp32-c3-devmodule-v1">ESP32-C3 · private verified · public preview</option><option value="board.rp2040-pico-v1">RP2040 Pico · private fixture evidence · public preview</option><option value="board.stm32f429zi-nucleo144-v1">STM32F429ZI · private fixture evidence · public preview</option></select>
+        <p id="controller-status" class="truth">ATmega328P · compile and tested virtual runtime.</p>
         <label for="catalog-search">Search name, alias, function or part number</label><input id="catalog-search" type="search" autocomplete="off" placeholder="GPIO, 328P, indicator…">
         <label for="catalog-category">Category</label>
         <select id="catalog-category"><option value="all">All categories</option></select>
@@ -91,6 +120,7 @@
 
       <section class="board-card panel" aria-labelledby="canvas-title">
         <div class="card-heading"><div><p class="eyebrow">2 · CIRCUIT CANVAS</p><h2 id="canvas-title">Empty project</h2></div><span id="graph-state" class="state">0 components · 0 nets</span></div>
+        <div id="parked-circuit-notice" class="parked-circuit-notice" hidden><strong>AVR project parked safely.</strong><span>This preview does not remap or modify the existing AVR circuit. Return to AVR to continue editing.</span></div>
         <div class="canvas-tools" aria-label="Canvas view controls">
           <button id="zoom-out" type="button" aria-label="Zoom out">−</button><output id="zoom-value">100%</output><button id="zoom-in" type="button" aria-label="Zoom in">+</button>
           <button id="pan-left" type="button" aria-label="Pan left">←</button><button id="pan-right" type="button" aria-label="Pan right">→</button><button id="pan-up" type="button" aria-label="Pan up">↑</button><button id="pan-down" type="button" aria-label="Pan down">↓</button><button id="view-reset" type="button">Reset view</button><button id="fit-project" type="button">Fit project</button>
@@ -120,14 +150,14 @@
       </aside>
     </section>
 
-    <details class="workbench-drawer" open><summary>Firmware editor</summary><section class="editor-card panel" aria-labelledby="editor-title">
+    <details id="firmware-drawer" class="workbench-drawer" open><summary>Firmware editor</summary><section class="editor-card panel" aria-labelledby="editor-title">
       <div class="card-heading"><div><p class="eyebrow">4 · FIRMWARE</p><h2 id="editor-title">main.ino</h2></div><span id="build-state" class="state" role="status">Build required</span></div>
       <div class="source-files" aria-label="Project source files">
         <div><label for="source-file">Open file</label><select id="source-file"></select></div>
         <div><label for="source-file-name">New local file</label><input id="source-file-name" type="text" maxlength="52" autocomplete="off" placeholder="helpers.h"></div>
         <button id="source-file-add" type="button">Add file</button><button id="source-file-remove" type="button" disabled>Remove open file</button>
       </div>
-      <div class="toolchain-boundary"><strong>Compiler:</strong> Arduino AVR core 1.8.8 · avr-gcc 7.3.0-atmel3.6.1-arduino7. <strong>Simulation:</strong> only the <a href="#compatibility-note">documented MCU/peripheral subset</a>, not every library or device.</div>
+      <div id="toolchain-boundary" class="toolchain-boundary"><strong>Compiler:</strong> Arduino AVR core 1.8.8 · avr-gcc 7.3.0-atmel3.6.1-arduino7. <strong>Simulation:</strong> only the <a href="#compatibility-note">documented MCU/peripheral subset</a>, not every library or device.</div>
       <div class="code-editor" id="code-editor"><pre id="source-lines" class="source-lines" aria-hidden="true">1</pre><pre id="source-highlight" class="source-highlight" aria-hidden="true"></pre><label class="sr-only" for="source">Firmware source</label><textarea id="source" spellcheck="false" placeholder="Write your sketch here. The project starts empty."></textarea></div>
       <div class="build-controls"><button id="build" type="button">Build isolated firmware</button><button id="cancel" type="button" disabled>Cancel build</button></div>
       <div id="diagnostic-links" class="diagnostic-links" aria-label="Compiler diagnostics"></div><pre id="diagnostics" class="diagnostics" aria-live="polite">No build submitted.</pre>
@@ -143,7 +173,7 @@
       <p id="prompt-message" class="truth" role="status">AI text has no drawing or connection authority. Only a proposal that passes the built-in electrical checks can update the circuit.</p>
     </section></details>
 
-    <details class="workbench-drawer" open><summary>Firmware runtime and instruments</summary><section class="runtime" aria-labelledby="runtime-title">
+    <details id="runtime-drawer" class="workbench-drawer" open><summary>Firmware runtime and instruments</summary><section class="runtime" aria-labelledby="runtime-title">
       <article class="control-card panel">
         <div class="card-heading"><div><p class="eyebrow">5 · VIRTUAL EXECUTION</p><h2 id="runtime-title">Runtime</h2></div><span id="worker-state" class="state">No current artifact loaded</span></div>
         <dl><div><dt>Cycle</dt><dd id="cycle">0</dd></div><div><dt>Simulated time</dt><dd id="simulated-time">0.000 ms</dd></div><div><dt>Instructions</dt><dd id="instructions">0</dd></div><div><dt>Requested speed</dt><dd id="requested-speed">1×</dd></div><div><dt>Measured throughput</dt><dd id="achieved-speed">—</dd></div><div><dt>Artifact</dt><dd id="artifact">none</dd></div></dl>
@@ -162,18 +192,22 @@
     <section class="about panel" aria-labelledby="about-title">
       <div class="about-intro"><div><p class="eyebrow">OPEN SOURCE · VERIFIED BOUNDARIES</p><h2 id="about-title">What is Intent MCU Simulator?</h2></div><p>It is an original browser workbench that turns supported firmware into observable virtual hardware behaviour. Build a circuit by connecting named pins, compile edited source in an isolated fixed toolchain, then inspect GPIO, LEDs, inputs, serial bytes, and logic traces.</p></div>
       <div class="answer-grid">
-        <article id="compatibility-note"><h3>What does it simulate?</h3><p>A tested educational subset around an ATmega328P 16 MHz, 5 V profile, with supported LEDs, resistors, buttons, potentiometers, GPIO, serial data, and instruments.</p></article>
+        <article id="compatibility-note"><h3>What does it simulate?</h3><p>One tested ATmega328P 16 MHz, 5 V profile with 16 selectable parts: LEDs and resistors, tactile and toggle inputs, analogue sensors, RGB and seven-segment displays, a 16×2 LCD, an active buzzer, and a quadrature encoder.</p></article>
         <article><h3>Does Prompt Bridge call AI?</h3><p>No. It creates portable text for a tool you choose. Only returned structured circuit data that passes the project schema, pin rules, and electrical validation can reach the canvas.</p></article>
         <article><h3>Does it replace physical testing?</h3><p>No. Simulation is not physical safety certification and does not claim complete timing or hardware equivalence. Verify real designs on appropriate hardware.</p></article>
       </div>
       <nav class="project-links" aria-label="Project documentation and articles">
+        <a href="/controllers.html">Controller support</a>
+        <a href="/components.html">Supported components</a>
+        <a href="/examples.html">Starter examples</a>
+        <a href="/support.html">Help and limitations</a>
         <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator" rel="external noopener">Source and setup on GitHub</a>
         <a href="https://finnandre.no/2026/10/06/intent-mcu-simulator-apen-kildekode/" rel="external noopener">Project story on Finnandre</a>
         <a href="https://www.intentforce.no/intent-mcu-simulator-apen-kildekode/" rel="external noopener">Technical overview on IntentForce</a>
       </nav>
     </section>
 
-    <footer>Intent MCU Simulator 1.0.0-rc.2 release candidate · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/COMPATIBILITY.md">compatibility</a> · no physical safety certification · public deployment remains separately gated</footer>
+    <footer>Intent MCU Simulator 1.1.0-rc.3 public release · AVR execution only · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
   </main>
   <button id="serial-tab" class="serial-tab" type="button" aria-expanded="false" aria-controls="serial-dock"><span>Serial</span><span id="serial-new-output" class="serial-new-output" hidden>0 new</span></button>
   <aside id="serial-dock" class="serial-dock" aria-labelledby="serial-title" hidden>
