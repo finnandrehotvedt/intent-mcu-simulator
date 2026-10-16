@@ -1,0 +1,10 @@
+{
+  "schema": "teach-lab-compiler-image-lock@1",
+  "image": "local/intent-mcu-rp2040-toolchain:1.1.0-rc.4",
+  "imageId": "sha256:e2c3fd002439eddb24d50e05a47bfcb1d395a3183186b5bf001fd47523ac7bbe",
+  "runtimeImageIds": [],
+  "toolchainManifestSha256": "520437f447b24772e9c66231d3efad86070f9dfb65051a44f42b2d138be937ea",
+  "toolchainFilesSha256": "520437f447b24772e9c66231d3efad86070f9dfb65051a44f42b2d138be937ea",
+  "architecture": "linux/amd64",
+  "distribution": "Public bounded RP2040 source compiler; fixed image, source grammar, contract and Arm GNU archive identity"
+}

@@ -1,0 +1,14 @@
+# syntax=docker/dockerfile:1
+FROM local/intent-mcu-avr-toolchain:1.0.0-rc.2
+
+USER root
+COPY arm-toolchain/ /opt/arm/
+COPY compiler/rp2040-build-worker.mjs /opt/teach-lab/rp2040-build-worker.mjs
+COPY compiler/rp2040-contract/ /opt/teach-lab/rp2040-contract/
+COPY compiler/rp2040-toolchain-manifest.json /opt/teach-lab/rp2040-toolchain-manifest.json
+RUN chmod -R a=rX /opt/teach-lab/rp2040-contract \
+    && chmod 0444 /opt/teach-lab/rp2040-toolchain-manifest.json \
+    && chmod 0555 /opt/teach-lab/rp2040-build-worker.mjs
+
+USER compiler
+ENTRYPOINT ["node", "/opt/teach-lab/rp2040-build-worker.mjs"]

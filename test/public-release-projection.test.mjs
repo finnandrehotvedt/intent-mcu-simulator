@@ -17,13 +17,13 @@ import {
   publicControllerViews,
 } from '../src/public-controller-workbench-view.mjs';
 
-test('public projection exposes one executable profile and three preview-only profiles', () => {
+test('public projection exposes AVR and bounded Pico execution plus two preview-only profiles', () => {
   const expected = [AVR_PROFILE, ESP32C3_PROFILE, RP2040_PROFILE, STM32F429ZI_PROFILE];
   const views = publicControllerViews();
   assert.deepEqual(views.map((view) => view.profile), expected);
   assert.ok(views.every((view) => view.schema === PUBLIC_CONTROLLER_VIEW_SCHEMA));
-  assert.deepEqual(views.filter((view) => view.publicExecution).map((view) => view.profile), [AVR_PROFILE]);
-  for (const profile of expected.slice(1)) {
+  assert.deepEqual(views.filter((view) => view.publicExecution).map((view) => view.profile), [AVR_PROFILE, RP2040_PROFILE]);
+  for (const profile of [ESP32C3_PROFILE, STM32F429ZI_PROFILE]) {
     const view = publicControllerView(profile);
     const target = candidateCompilerTarget(profile);
     assert.equal(view.status, 'preview-only');
@@ -40,8 +40,11 @@ test('preview evidence remains exact and does not imply wired or public runtime 
   assert.match(c3.circuit, /No validated GPIO pin-level or wired-circuit support/);
   assert.match(c3.limitation, /fair multi-user admission/);
   const rp2040 = publicControllerView(RP2040_PROFILE);
-  assert.match(rp2040.runtime, /private rp2040js source \+ fixture evidence/i);
-  assert.match(rp2040.limitation, /not a public compiler/i);
+  assert.equal(rp2040.publicSupport, true);
+  assert.equal(rp2040.publicExecution, true);
+  assert.match(rp2040.runtime, /browser worker/i);
+  assert.match(rp2040.circuit, /physical pin 1.*physical pin 3/i);
+  assert.match(rp2040.limitation, /not a complete Pico/i);
   const stm32 = publicControllerView(STM32F429ZI_PROFILE);
   assert.match(stm32.runtime, /private Renode source \+ fixture evidence/i);
   assert.match(stm32.limitation, /not a general STM32/i);

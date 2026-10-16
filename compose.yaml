@@ -22,7 +22,7 @@ services:
 
   local-compiler:
     profiles: ["local-compiler"]
-    image: intent-mcu-simulator-local:1.1.0-rc.3
+    image: intent-mcu-simulator-local:1.1.0-rc.4
     build:
       context: .
       dockerfile: Dockerfile.local
@@ -51,6 +51,7 @@ services:
       STAGING_PORT: "${LOCAL_PORT:-18766}"
       INTENT_MCU_LOCAL_URL: "http://127.0.0.1:${LOCAL_PORT:-18766}"
       COMPILER_IMAGE_LOCK: /workspace/compiler/local-image-lock.json
+      RP2040_COMPILER_IMAGE_LOCK: /workspace/compiler/local-rp2040-image-lock.json
       DEPLOYMENT_SCOPE: local-source
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:${LOCAL_PORT:-18766}/readyz"]

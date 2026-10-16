@@ -36,15 +36,17 @@ async function routePoint(locator, fraction = 0.5) {
   }, fraction);
 }
 
-async function directTarget(page, selector, orientation = null) {
+async function directTarget(page, selector, orientation = null, fraction = 0.5) {
+  await page.locator('#circuit-canvas').scrollIntoViewIfNeeded();
   const candidates = page.locator(selector);
-  const result = await candidates.evaluateAll((nodes, wanted) => nodes.flatMap((node, index) => {
+  const result = await candidates.evaluateAll((nodes, options) => nodes.flatMap((node, index) => {
+    const { wanted, fraction: ratio } = options;
     if (wanted && node.dataset.orientation !== wanted) return [];
-    const local = node.getPointAtLength(node.getTotalLength() / 2);
+    const local = node.getPointAtLength(node.getTotalLength() * ratio);
     const point = new DOMPoint(local.x, local.y).matrixTransform(node.getScreenCTM());
     const top = document.elementFromPoint(point.x, point.y);
-    return !top?.closest?.('.pin-anchor,.component-control-hit') ? [{ index, x: point.x, y: point.y }] : [];
-  })[0] ?? null, orientation);
+    return top && !top.closest?.('.pin-anchor,.component-control-hit') ? [{ index, x: point.x, y: point.y }] : [];
+  })[0] ?? null, { wanted: orientation, fraction });
   assert(result, `no directly exposed ${orientation ?? ''} route target for ${selector}`);
   return { locator: candidates.nth(result.index), point: result };
 }
@@ -140,10 +142,21 @@ let browser;
   await page.mouse.move(horizontal.point.x, horizontal.point.y); await page.mouse.down(); await page.mouse.up();
   assert(await page.evaluate(() => window.__M6_STATE__.revision) === noOpRevision
     && canonical((await project(page)).layout.wireRoutes) === routeBefore, 'no-op wire gesture entered history');
-  await page.mouse.move(horizontal.point.x, horizontal.point.y); await page.mouse.down();
-  await page.mouse.move(horizontal.point.x, horizontal.point.y + 44, { steps: 4 });
+  const horizontalDrag = await directTarget(page, '.wire-segment-hit', 'horizontal', 0.35);
+  await page.mouse.move(horizontalDrag.point.x, horizontalDrag.point.y); await page.mouse.down();
+  await page.mouse.move(horizontalDrag.point.x, horizontalDrag.point.y + 44, { steps: 4 });
   await page.waitForFunction(() => document.querySelectorAll('.wire-drag-proposal').length > 0, null, { timeout: 2_000 })
-    .catch(() => { throw new Error('actual pointer drag did not show a live proposal'); });
+    .catch(async () => {
+      const diagnostic = await page.evaluate(() => ({
+        selection: window.__M6_STATE__.selection,
+        wireState: document.querySelector('#wire-state')?.textContent,
+        dragging: [...document.querySelectorAll('.wire-segment-hit.dragging')].map((node) => ({
+          net: node.dataset.net, endpoint: node.dataset.endpoint, segment: node.dataset.segment,
+          orientation: node.dataset.orientation, captured: node.dataset.pointerCaptured,
+        })),
+      }));
+      throw new Error(`actual pointer drag did not show a live proposal: ${JSON.stringify(diagnostic)}`);
+    });
   await page.mouse.up();
   current = await project(page);
   assert(canonical(current.layout.wireRoutes) !== routeBefore && canonical(current.circuit) === graphBeforeDrag, 'axis drag changed no route or changed connectivity');

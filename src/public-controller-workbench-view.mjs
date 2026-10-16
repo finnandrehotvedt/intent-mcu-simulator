@@ -35,15 +35,15 @@ const definitions = Object.freeze({
     publicExecution: false,
   }),
   [RP2040_PROFILE]: Object.freeze({
-    mode: 'rp2040-preview', status: 'preview-only', eyebrow: 'PRIVATE VERIFICATION · PUBLIC PREVIEW ONLY',
-    label: 'RP2040 Pico', title: 'RP2040 bounded-source preview',
-    summary: 'Bounded C11 source, fixed ARM compilation, strict UF2/ELF and rp2040js GPIO0/UART0 have passed private verification. Public build, firmware selection and execution are not enabled.',
-    project: 'No public project import for this profile',
-    source: 'Private bounded source proof · public Build disabled',
-    runtime: 'Private rp2040js source + fixture evidence · public Run disabled',
-    circuit: 'Private GP0 pin 1 → resistor → LED → GND pin 3 proof · no public circuit mapping',
-    action: 'Public execution not enabled', limitation: 'Private bounded evidence is not a public compiler, complete Pico, PIO/DMA/USB/multicore, or physical-device support claim.',
-    publicExecution: false,
+    mode: 'rp2040-source', status: 'supported-bounded', eyebrow: 'PUBLICLY RUNNABLE · BOUNDED PICO SUBSET',
+    label: 'RP2040 Pico', title: 'RP2040 Pico source and GPIO0 workbench',
+    summary: 'Edit the bounded C11 example, compile it in the fixed isolated Arm toolchain, then run the source-bound UF2 in a browser worker.',
+    project: 'Local data-only Save/Open · fresh Build after Open',
+    source: 'One fixed main.c grammar · GPIO0, UART0 and halt only',
+    runtime: 'rp2040js 1.4.0 browser worker · hash-bound UF2',
+    circuit: 'GP0 physical pin 1 → 220 Ω → external LED → GND physical pin 3',
+    action: 'Build Pico project', limitation: 'This is a tested educational GPIO0/UART0 subset, not a complete Pico, SDK, PIO, DMA, USB, multicore, timing, or physical-device claim.',
+    publicExecution: true,
   }),
   [STM32F429ZI_PROFILE]: Object.freeze({
     mode: 'stm32-preview', status: 'preview-only', eyebrow: 'PRIVATE EVIDENCE · PUBLIC PREVIEW ONLY',
@@ -64,7 +64,7 @@ export function publicControllerView(profile) {
   return structuredClone({
     schema: PUBLIC_CONTROLLER_VIEW_SCHEMA,
     profile,
-    publicSupport: profile === AVR_PROFILE,
+    publicSupport: [AVR_PROFILE, RP2040_PROFILE].includes(profile),
     availability: targetAvailabilitySnapshot(profile),
     ...definition,
   });

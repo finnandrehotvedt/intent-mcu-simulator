@@ -1,0 +1,440 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Finn Andre Hotvedt and IntentForce
+
+import {
+  RP2040_PICO_PROFILE,
+  createRp2040PicoCircuitDraft,
+  normalizeRp2040PicoCircuitDraft,
+  observeRp2040PicoCircuit,
+  validateRp2040PicoCircuit,
+} from './rp2040-pico-circuit.mjs';
+import { parseStrictJson } from './strict-json.mjs';
+
+export const RP2040_PUBLIC_PROJECT_SCHEMA = 'intent-mcu-rp2040-public-project@1';
+export const RP2040_PUBLIC_BUILD_SCHEMA = 'intent-mcu-rp2040-source-build-request@1';
+export const RP2040_PUBLIC_SOURCE = `/* Intent MCU Simulator public RP2040 source v1 */
+int main(void)
+{
+  intent_gpio0_output(1u);
+  intent_uart0_text("PICO PUBLIC");
+  intent_halt();
+}
+`;
+
+const SOURCE_PATTERN = /^\/\* Intent MCU Simulator public RP2040 source v1 \*\/\nint main\(void\)\n\{\n  intent_gpio0_output\(([01])u\);\n  intent_uart0_text\("([A-Z0-9 _-]{1,24})"\);\n  intent_halt\(\);\n\}\n$/u;
+const exactKeys = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
+  && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
+const clone = (value) => structuredClone(value);
+
+async function sha256(value) {
+  const bytes = typeof value === 'string' ? new TextEncoder().encode(value) : value;
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+  return [...digest].map((part) => part.toString(16).padStart(2, '0')).join('');
+}
+
+function decodeBase64(value) {
+  if (typeof value !== 'string' || value.length < 4 || value.length % 4 !== 0
+      || !/^[A-Za-z0-9+/]*={0,2}$/u.test(value)) throw new Error('RP2040_BUILD_ARTIFACT_ENCODING');
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  if (btoa(binary) !== value) throw new Error('RP2040_BUILD_ARTIFACT_ENCODING');
+  return bytes;
+}
+
+function validName(value) {
+  return typeof value === 'string' && value.trim().length > 0 && value.trim().length <= 80
+    && !/[\u0000-\u001f\u007f]/u.test(value);
+}
+
+function normalizeProject(value) {
+  if (!exactKeys(value, ['schema', 'name', 'profile', 'source', 'circuit'])
+      || value.schema !== RP2040_PUBLIC_PROJECT_SCHEMA || value.profile !== RP2040_PICO_PROFILE
+      || !validName(value.name) || typeof value.source !== 'string'
+      || new TextEncoder().encode(value.source).byteLength > 4096 || !SOURCE_PATTERN.test(value.source)) {
+    throw new Error('RP2040_PROJECT_INVALID');
+  }
+  return {
+    schema: RP2040_PUBLIC_PROJECT_SCHEMA,
+    name: value.name.trim(),
+    profile: RP2040_PICO_PROFILE,
+    source: value.source,
+    circuit: normalizeRp2040PicoCircuitDraft(value.circuit),
+  };
+}
+
+function defaultProject() {
+  return normalizeProject({
+    schema: RP2040_PUBLIC_PROJECT_SCHEMA,
+    name: 'Pico GPIO0 source project',
+    profile: RP2040_PICO_PROFILE,
+    source: RP2040_PUBLIC_SOURCE,
+    circuit: createRp2040PicoCircuitDraft(),
+  });
+}
+
+function download(name, text) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+export class Rp2040PublicWorkbench {
+  constructor({ elements, onState = () => {} } = {}) {
+    this.elements = elements;
+    this.onState = onState;
+    this.project = defaultProject();
+    this.revision = 1;
+    this.phase = 'editing';
+    this.message = 'Edit the two bounded values, then build fresh firmware.';
+    this.artifact = null;
+    this.artifactBytes = null;
+    this.artifactRevision = null;
+    this.worker = null;
+    this.workerGeneration = 0;
+    this.abort = null;
+    this.active = false;
+    this.lastRuntime = null;
+    this.bind();
+    this.render();
+  }
+
+  bind() {
+    this.elements.source.addEventListener('input', () => {
+      this.project.source = this.elements.source.value;
+      this.invalidate('Source changed. The previous artifact was retired.');
+    });
+    this.elements.name.addEventListener('change', () => {
+      if (!validName(this.elements.name.value)) this.elements.name.value = this.project.name;
+      else { this.project.name = this.elements.name.value.trim(); this.render(); }
+    });
+    this.elements.build.addEventListener('click', () => { void this.build(); });
+    this.elements.run.addEventListener('click', () => { void this.run(); });
+    this.elements.pause.addEventListener('click', () => this.pause());
+    this.elements.reset.addEventListener('click', () => this.reset());
+    this.elements.stop.addEventListener('click', () => this.stop());
+    this.elements.disconnect.addEventListener('click', () => this.disconnectLed());
+    this.elements.reconnect.addEventListener('click', () => this.reconnectLed());
+    this.elements.save.addEventListener('click', () => this.save());
+    this.elements.open.addEventListener('click', () => this.elements.openInput.click());
+    this.elements.openInput.addEventListener('change', async () => {
+      const file = this.elements.openInput.files?.[0];
+      this.elements.openInput.value = '';
+      if (file) await this.open(file);
+    });
+  }
+
+  snapshot() {
+    const circuit = validateRp2040PicoCircuit(this.project.circuit);
+    return {
+      profile: RP2040_PICO_PROFILE,
+      phase: this.phase,
+      message: this.message,
+      revision: this.revision,
+      active: this.active,
+      source: this.project.source,
+      circuit: clone(this.project.circuit),
+      circuitValid: circuit.ok,
+      circuitCode: circuit.code,
+      artifact: this.artifact ? clone(this.artifact) : null,
+      runnable: Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok),
+      runtime: this.lastRuntime ? clone(this.lastRuntime) : null,
+      durableServerProject: false,
+      transientExecutableMemoryOnly: true,
+    };
+  }
+
+  publish() {
+    const state = this.snapshot();
+    this.onState(state);
+    return state;
+  }
+
+  activate() {
+    this.active = true;
+    this.render();
+  }
+
+  deactivate() {
+    this.active = false;
+    this.terminateWorker();
+    this.wipeArtifact();
+    this.phase = 'editing';
+    this.message = 'Pico draft preserved. Build fresh firmware after returning.';
+    this.render();
+  }
+
+  wipeArtifact() {
+    this.artifactBytes?.fill(0);
+    this.artifactBytes = null;
+    this.artifact = null;
+    this.artifactRevision = null;
+  }
+
+  terminateWorker() {
+    this.workerGeneration += 1;
+    if (this.worker) {
+      this.worker.postMessage({ command: 'dispose' });
+      this.worker.terminate();
+    }
+    this.worker = null;
+    this.lastRuntime = null;
+  }
+
+  invalidate(message) {
+    this.abort?.abort();
+    this.abort = null;
+    this.terminateWorker();
+    this.wipeArtifact();
+    this.revision += 1;
+    this.phase = 'editing';
+    this.message = message;
+    this.render();
+  }
+
+  async response(response) {
+    let value;
+    try { value = await response.json(); } catch { throw new Error('RP2040_BUILD_RESPONSE_INVALID'); }
+    if (!response.ok) throw Object.assign(new Error(value.code ?? 'RP2040_BUILD_FAILED'), value);
+    return value;
+  }
+
+  async poll(job, revision, source) {
+    while (this.active && revision === this.revision) {
+      const value = await this.response(await fetch(`/api/build/${job.jobId}`, {
+        headers: { Authorization: `Bearer ${job.capability}` },
+        cache: 'no-store', signal: this.abort.signal,
+      }));
+      if (value.status === 'building') {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        continue;
+      }
+      if (value.status !== 'succeeded') {
+        throw Object.assign(new Error(value.error ?? value.result?.code ?? 'RP2040_BUILD_FAILED'), value.result ?? {});
+      }
+      const result = value.result;
+      const artifact = result?.artifact;
+      if (artifact?.schema !== 'intent-mcu-rp2040-compile-artifact@1'
+          || artifact.profile !== RP2040_PICO_PROFILE || artifact.uf2?.bytes > 4 * 1024 * 1024) {
+        throw new Error('RP2040_BUILD_RESPONSE_INVALID');
+      }
+      const bytes = decodeBase64(artifact.uf2.base64);
+      const [sourceHash, artifactHash] = await Promise.all([sha256(source), sha256(bytes)]);
+      if (revision !== this.revision || !this.active) { bytes.fill(0); return null; }
+      if (sourceHash !== artifact.sourceSha256 || artifactHash !== artifact.uf2.sha256
+          || bytes.byteLength !== artifact.uf2.bytes) {
+        bytes.fill(0);
+        throw new Error('RP2040_BUILD_IDENTITY_MISMATCH');
+      }
+      this.artifactBytes = bytes;
+      this.artifactRevision = revision;
+      this.artifact = {
+        sourceSha256: sourceHash,
+        uf2Sha256: artifactHash,
+        bytes: bytes.byteLength,
+        artifactIdentity: result.artifactIdentity,
+        compiler: clone(artifact.compiler),
+      };
+      this.phase = 'built';
+      this.message = 'Fresh source-bound UF2 ready. Run starts one browser worker.';
+      this.abort = null;
+      this.render();
+      return this.artifact;
+    }
+    return null;
+  }
+
+  async build() {
+    if (!this.active || this.phase === 'building') return { ok: false, code: 'RP2040_BUILD_UNAVAILABLE' };
+    const circuit = validateRp2040PicoCircuit(this.project.circuit);
+    if (!circuit.ok) {
+      this.phase = 'blocked';
+      this.message = `Circuit blocked (${circuit.code}). Reconnect the exact GP0 → resistor → LED → GND path.`;
+      this.render();
+      return { ok: false, code: circuit.code };
+    }
+    if (!SOURCE_PATTERN.test(this.project.source)) {
+      this.phase = 'blocked';
+      this.message = 'Source rejected. Edit only GPIO0 level (0/1) and the uppercase UART text.';
+      this.render();
+      return { ok: false, code: 'SOURCE_POLICY_REJECTED' };
+    }
+    this.abort?.abort();
+    this.terminateWorker();
+    this.wipeArtifact();
+    const revision = this.revision;
+    const source = this.project.source;
+    this.abort = new AbortController();
+    this.phase = 'building';
+    this.message = 'Queued in the bounded public Arm compiler (one global build, one per visitor).';
+    this.render();
+    try {
+      const job = await this.response(await fetch('/api/build', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Teach-Lab-Build': '1' },
+        signal: this.abort.signal,
+        body: JSON.stringify({
+          schema: RP2040_PUBLIC_BUILD_SCHEMA,
+          board: RP2040_PICO_PROFILE,
+          files: [{ name: 'main.c', content: source }],
+        }),
+      }));
+      const artifact = await this.poll(job, revision, source);
+      return artifact ? { ok: true, code: 'OK', artifact: clone(artifact) }
+        : { ok: false, code: 'RP2040_BUILD_STALE' };
+    } catch (error) {
+      if (revision !== this.revision || error.name === 'AbortError') return { ok: false, code: 'RP2040_BUILD_STALE' };
+      this.abort = null;
+      this.wipeArtifact();
+      this.phase = 'failed';
+      this.message = `Build failed (${error.code ?? error.message}). No older artifact remains runnable.`;
+      this.render();
+      return { ok: false, code: error.code ?? error.message };
+    }
+  }
+
+  async run() {
+    const circuit = validateRp2040PicoCircuit(this.project.circuit);
+    if (!this.active || !this.artifact || this.artifactRevision !== this.revision
+        || !(this.artifactBytes instanceof Uint8Array) || !circuit.ok) {
+      this.message = 'Run blocked. Reconnect the validated circuit and build this exact source again.';
+      this.render();
+      return { ok: false, code: 'RUN_REQUIRES_CURRENT_BUILD' };
+    }
+    if (this.worker && this.phase === 'paused') {
+      this.worker.postMessage({ command: 'run' });
+      this.phase = 'running';
+      this.message = 'Pico runtime resumed from the current source-bound artifact.';
+      this.render();
+      return { ok: true, code: 'OK' };
+    }
+    this.terminateWorker();
+    const generation = ++this.workerGeneration;
+    const worker = new Worker('./simulator.worker.js', { type: 'module' });
+    this.worker = worker;
+    this.phase = 'starting';
+    this.message = 'Loading the hash-verified UF2 in one browser worker…';
+    this.render();
+    worker.addEventListener('message', ({ data }) => {
+      if (generation !== this.workerGeneration || worker !== this.worker) return;
+      if (data.kind === 'disposed') return;
+      this.lastRuntime = data;
+      if (data.kind === 'ready') {
+        this.phase = 'running';
+        this.message = 'Pico runtime started. GPIO0 and UART0 come from the compiled source.';
+        worker.postMessage({ command: 'run' });
+      } else if (data.kind === 'stopped-error' || data.kind === 'error') {
+        this.phase = 'failed';
+        this.message = `Runtime stopped (${data.message ?? 'bounded runtime error'}).`;
+      } else this.phase = data.paused ? 'paused' : 'running';
+      this.render();
+    });
+    worker.addEventListener('error', (event) => {
+      if (generation !== this.workerGeneration) return;
+      this.phase = 'failed';
+      this.message = `Runtime worker failed (${event.message}).`;
+      this.terminateWorker();
+      this.render();
+    });
+    worker.postMessage({
+      command: 'init', runtimeProfile: RP2040_PICO_PROFILE,
+      firmware: { format: 'uf2', bytes: new Uint8Array(this.artifactBytes), expectedSha256: this.artifact.uf2Sha256 },
+    });
+    return { ok: true, code: 'OK' };
+  }
+
+  pause() {
+    if (!this.worker) return { ok: false, code: 'RUNTIME_NOT_ACTIVE' };
+    this.worker.postMessage({ command: 'pause' });
+    return { ok: true, code: 'OK' };
+  }
+
+  reset() {
+    if (!this.worker) return { ok: false, code: 'RUNTIME_NOT_ACTIVE' };
+    this.worker.postMessage({ command: 'reset' });
+    this.message = 'Pico runtime reset to the source-bound artifact entry point.';
+    this.render();
+    return { ok: true, code: 'OK' };
+  }
+
+  stop() {
+    this.abort?.abort();
+    this.abort = null;
+    this.terminateWorker();
+    this.wipeArtifact();
+    this.phase = 'editing';
+    this.message = 'Stopped and discarded executable authority. Build fresh firmware to run again.';
+    this.render();
+    return { ok: true, code: 'OK' };
+  }
+
+  disconnectLed() {
+    const next = clone(this.project.circuit);
+    next.nets = next.nets.filter((net) => net.id !== 'net-series');
+    delete next.layout.wireStyles['net-series'];
+    this.project.circuit = normalizeRp2040PicoCircuitDraft(next);
+    this.invalidate('External LED disconnected. Runtime authority retired; validation now fails closed.');
+  }
+
+  reconnectLed() {
+    this.project.circuit = createRp2040PicoCircuitDraft();
+    this.invalidate('Validated GP0 → 220 Ω → LED → GND path restored. Build fresh firmware.');
+  }
+
+  save() {
+    const text = `${JSON.stringify(normalizeProject(this.project), null, 2)}\n`;
+    const filename = `${this.project.name.replace(/[^A-Za-z0-9_.-]+/gu, '-').slice(0, 64) || 'pico-project'}.intent-mcu.json`;
+    download(filename, text);
+    this.message = 'Saved a data-only local project. Executable bytes were excluded.';
+    this.render();
+  }
+
+  async open(file) {
+    try {
+      if (!file || file.size > 160 * 1024) throw new Error('RP2040_PROJECT_SIZE_LIMIT');
+      const value = parseStrictJson(await file.text(), 160 * 1024);
+      this.project = normalizeProject(value);
+      this.elements.source.value = this.project.source;
+      this.elements.name.value = this.project.name;
+      this.invalidate('Local project revalidated. Executable state was excluded; build fresh firmware.');
+      return { ok: true, code: 'OK' };
+    } catch (error) {
+      this.message = `Open rejected (${error.code ?? error.message}). The current draft is unchanged.`;
+      this.render();
+      return { ok: false, code: error.code ?? error.message };
+    }
+  }
+
+  render() {
+    const circuit = validateRp2040PicoCircuit(this.project.circuit);
+    const runtimeCircuit = observeRp2040PicoCircuit(this.project.circuit, this.lastRuntime);
+    const runnable = Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok);
+    const building = this.phase === 'building';
+    this.elements.source.value = this.project.source;
+    this.elements.name.value = this.project.name;
+    this.elements.state.textContent = this.phase;
+    this.elements.message.textContent = this.message;
+    this.elements.sourceHash.textContent = this.artifact?.sourceSha256?.slice(0, 16) ?? 'not built';
+    this.elements.artifactHash.textContent = this.artifact?.uf2Sha256?.slice(0, 16) ?? 'not built';
+    this.elements.build.disabled = !this.active || building;
+    this.elements.run.disabled = !this.active || !runnable || building
+      || ['running', 'starting'].includes(this.phase);
+    this.elements.pause.disabled = !this.worker;
+    this.elements.reset.disabled = !this.worker;
+    this.elements.stop.disabled = !this.worker && !this.artifact && !building;
+    this.elements.disconnect.disabled = !circuit.ok;
+    this.elements.reconnect.disabled = circuit.ok;
+    this.elements.diagram.dataset.connected = String(circuit.ok);
+    this.elements.circuitState.textContent = circuit.ok
+      ? 'Validated: GP0 pin 1 → 220 Ω → LED anode/cathode → GND pin 3'
+      : `Disconnected / rejected: ${circuit.code}`;
+    this.elements.externalLed.classList.toggle('on', Boolean(runtimeCircuit.on));
+    this.elements.externalLed.setAttribute('aria-label', `External LED is ${runtimeCircuit.on ? 'on' : 'off'}`);
+    const serial = this.lastRuntime?.instruments?.serial;
+    this.elements.serial.textContent = serial?.text || 'No Pico UART output yet.';
+    this.publish();
+  }
+}

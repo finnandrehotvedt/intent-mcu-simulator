@@ -6,7 +6,9 @@ import test from 'node:test';
 import { BuildCoordinator } from '../compiler/build-coordinator.mjs';
 import {
   BuildProtocolError,
+  RP2040_BUILD_REQUEST_SCHEMA,
   normalizeBuildRequestValue,
+  sha256,
 } from '../compiler/build-protocol.mjs';
 import {
   CANDIDATE_BUILD_REQUEST_SCHEMA,
@@ -57,8 +59,8 @@ const c3Manifest = () => ({
   },
 });
 
-test('RP2040 and STM32 retain public-unavailable profiles while reporting newer private evidence', () => {
-  for (const profileId of [RP2040_PROFILE, STM32F429ZI_PROFILE]) {
+test('STM32 remains public-unavailable while Pico has one exact bounded public target', () => {
+  for (const profileId of [STM32F429ZI_PROFILE]) {
     const target = candidateCompilerTarget(profileId);
     const priorCompiler = CONTROLLER_COMPILER_PROFILES.find((item) => item.profile === profileId);
     const priorAdapter = CONTROLLER_ADAPTER_PROFILES.find((item) => item.profile === profileId);
@@ -88,6 +90,18 @@ test('RP2040 and STM32 retain public-unavailable profiles while reporting newer 
     assert.equal(publicContract.includes('sizeBytes'), false);
     assert.equal(publicContract.includes('packageBytes'), false);
   }
+  const pico = candidateCompilerTarget(RP2040_PROFILE);
+  assert.equal(pico.compileAvailable, true);
+  assert.equal(pico.compileOnly, false);
+  assert.equal(pico.requestSchema, RP2040_BUILD_REQUEST_SCHEMA);
+  assert.equal(pico.fqbn, 'intent:rp2040:pico-bounded-c11');
+  assert.equal(pico.toolchainIdentitySha256, '8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd');
+  assert.deepEqual(pico.availability && [
+    pico.availability.installedCompiler.status,
+    pico.availability.verifiedCompileTarget.status,
+    pico.availability.emulatorRuntime.status,
+    pico.availability.validatedPeripherals.status,
+  ], ['installed', 'verified', 'verified', 'validated-subset']);
 });
 
 test('availability snapshots reject stale state, wrong family and silent promotion', () => {
@@ -95,29 +109,29 @@ test('availability snapshots reject stale state, wrong family and silent promoti
   assert.equal(validateTargetAvailabilitySnapshot(rp2040), true);
   const stale = structuredClone(rp2040); stale.revision = 'installed-inventory-stale';
   assert.equal(validateTargetAvailabilitySnapshot(stale), false);
-  const promoted = structuredClone(rp2040); promoted.installedCompiler.status = 'installed';
-  assert.equal(validateTargetAvailabilitySnapshot(promoted), false);
+  const demoted = structuredClone(rp2040); demoted.installedCompiler.status = 'private-verified';
+  assert.equal(validateTargetAvailabilitySnapshot(demoted), false);
   const wrongFamily = structuredClone(rp2040); wrongFamily.profile = STM32F429ZI_PROFILE;
   assert.equal(validateTargetAvailabilitySnapshot(wrongFamily), false);
   assert.equal(validateTargetAvailabilitySnapshot({ ...rp2040, unexpected: true }), false);
 });
 
-test('all public preview requests fail before queue while profile mismatches remain unknown', () => {
+test('C3 and STM32 preview requests fail before queue while profile mismatches remain unknown', () => {
   let brokerCalls = 0;
   const coordinator = new BuildCoordinator({
     broker: { async compile() { brokerCalls += 1; throw new Error('broker must not run'); } },
     imageLock: { imageId: `sha256:${'a'.repeat(64)}`, toolchainManifestSha256: 'b'.repeat(64) },
   });
-  for (const profileId of [ESP32C3_PROFILE, RP2040_PROFILE, STM32F429ZI_PROFILE]) {
+  for (const profileId of [ESP32C3_PROFILE, STM32F429ZI_PROFILE]) {
     const request = requestFor(profileId);
     expectCode(() => normalizeBuildRequestValue(request), 'COMPILER_TARGET_UNAVAILABLE');
     expectCode(() => coordinator.submit(JSON.stringify(request), 'origin'), 'COMPILER_TARGET_UNAVAILABLE');
     expectCode(() => normalizeBuildRequestValue(requestFor(profileId, { fqbn: 'wrong:family:target' })), 'UNKNOWN_COMPILER_TARGET');
     expectCode(() => normalizeBuildRequestValue(requestFor(profileId, { toolchainIdentitySha256: '0'.repeat(64) })), 'UNKNOWN_COMPILER_TARGET');
   }
-  const crossed = requestFor(RP2040_PROFILE, { fqbn: candidateCompilerTarget(STM32F429ZI_PROFILE).fqbn });
+  const crossed = requestFor(STM32F429ZI_PROFILE, { fqbn: candidateCompilerTarget(RP2040_PROFILE).fqbn });
   expectCode(() => normalizeBuildRequestValue(crossed), 'UNKNOWN_COMPILER_TARGET');
-  const privateSource = requestFor(RP2040_PROFILE);
+  const privateSource = requestFor(STM32F429ZI_PROFILE);
   privateSource.files[0].content = '// PRIVATE_UNAVAILABLE_SOURCE_MARKER\nvoid setup(){} void loop(){}';
   try {
     normalizeBuildRequestValue(privateSource);
@@ -131,6 +145,65 @@ test('all public preview requests fail before queue while profile mismatches rem
   assert.equal(brokerCalls, 0);
   assert.equal(coordinator.queue.length, 0);
   assert.equal(coordinator.jobs.size, 0);
+});
+
+test('public Pico source request accepts only the exact three-call grammar', () => {
+  const sourceText = `/* Intent MCU Simulator public RP2040 source v1 */\nint main(void)\n{\n  intent_gpio0_output(1u);\n  intent_uart0_text("PUBLIC TEST");\n  intent_halt();\n}\n`;
+  const accepted = normalizeBuildRequestValue({
+    schema: RP2040_BUILD_REQUEST_SCHEMA,
+    board: RP2040_PROFILE,
+    files: [{ name: 'main.c', content: sourceText }],
+  });
+  assert.equal(accepted.board, RP2040_PROFILE);
+  assert.equal(accepted.files[0].content, sourceText);
+  for (const rejected of [
+    sourceText.replace('1u', '2u'),
+    sourceText.replace('PUBLIC TEST', 'lowercase'),
+    sourceText.replace('  intent_halt();\n', '  *(volatile unsigned *)0x40000000 = 1;\n  intent_halt();\n'),
+    sourceText.replace('intent_uart0_text', 'system'),
+  ]) {
+    expectCode(() => normalizeBuildRequestValue({
+      schema: RP2040_BUILD_REQUEST_SCHEMA,
+      board: RP2040_PROFILE,
+      files: [{ name: 'main.c', content: rejected }],
+    }), 'SOURCE_POLICY_REJECTED');
+  }
+});
+
+test('public Pico artifact rejects non-canonical base64 before firmware parsing', async () => {
+  const sourceText = `/* Intent MCU Simulator public RP2040 source v1 */\nint main(void)\n{\n  intent_gpio0_output(1u);\n  intent_uart0_text("PUBLIC TEST");\n  intent_halt();\n}\n`;
+  const coordinator = new BuildCoordinator({
+    broker: {
+      async compile() {
+        return {
+          status: 'succeeded', code: 'BUILD_OK', imageId: `sha256:${'a'.repeat(64)}`,
+          isolation: {},
+          artifact: {
+            schema: 'intent-mcu-rp2040-compile-artifact@1',
+            profile: RP2040_PROFILE,
+            sourceSha256: sha256(sourceText),
+            compiler: {
+              id: 'arm-none-eabi-gcc', version: '14.3.1', release: '14.3.rel1',
+              archiveSha256: '8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd',
+            },
+            contract: {},
+            elf: { bytes: 1, sha256: '1'.repeat(64) },
+            uf2: { bytes: 512, sha256: '2'.repeat(64), base64: 'A===' },
+          },
+        };
+      },
+    },
+    imageLock: { imageId: `sha256:${'a'.repeat(64)}`, toolchainManifestSha256: 'b'.repeat(64) },
+  });
+  const submitted = coordinator.submit(JSON.stringify({
+    schema: RP2040_BUILD_REQUEST_SCHEMA,
+    board: RP2040_PROFILE,
+    files: [{ name: 'main.c', content: sourceText }],
+  }), 'origin');
+  await new Promise((resolve) => setImmediate(resolve));
+  const result = coordinator.status(submitted.jobId, submitted.capability, 'origin');
+  assert.equal(result.status, 'failed');
+  assert.equal(result.error, 'RP2040_ARTIFACT_INVALID');
 });
 
 test('prior private compile artifacts cannot cross into the public projection', () => {

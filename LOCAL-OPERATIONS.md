@@ -1,9 +1,9 @@
 # Local compiler operations
 
-This workflow builds the browser and isolated AVR compiler entirely from this
-checkout. It does not use the hosted compiler and does not distribute the
-resulting toolchain image. Docker access is required, but privileged containers
-and root access are not.
+This workflow builds the browser plus the isolated AVR and bounded RP2040
+compilers from this checkout and checksum-pinned upstream archives. It does not
+use the hosted compiler and does not distribute the resulting toolchain images.
+Docker access is required, but privileged containers and root access are not.
 
 ## Build and start
 
@@ -13,6 +13,7 @@ Use Node.js 20.19.4 and npm 10.8.2, then run:
 npm ci --ignore-scripts --no-audit --no-fund
 npm run build
 npm run setup:toolchain
+npm run setup:rp2040-toolchain
 DOCKER_GID=$(stat -c %g /var/run/docker.sock) \
   docker compose --profile local-compiler up --build -d local-compiler
 ```
@@ -23,12 +24,12 @@ In another terminal, prove a real compiler-to-emulator-to-GPIO path:
 docker compose --profile local-compiler exec -T local-compiler npm run test:local
 ```
 
-The setup script builds the toolchain from checksum-pinned upstream archives,
-compares the embedded and tracked manifest hashes, and writes a local image-ID
-lock. The generated lock and image are machine-local and are ignored by Git.
+The setup scripts build the toolchains from checksum-pinned upstream archives,
+validate the tracked compiler-contract identities, and write local image-ID
+locks. The generated locks and images are machine-local and are ignored by Git.
 
 The equivalent host process command is
-`COMPILER_IMAGE_LOCK="$PWD/compiler/local-image-lock.json" npm run start:local`.
+`COMPILER_IMAGE_LOCK="$PWD/compiler/local-image-lock.json" RP2040_COMPILER_IMAGE_LOCK="$PWD/compiler/local-rp2040-image-lock.json" npm run start:local`.
 It is useful for development when the current user already has local Docker
 socket access. The Compose profile is the documented clean-checkout path.
 
@@ -42,9 +43,9 @@ docker compose --profile local-compiler exec -T local-compiler npm run test:oper
 ## Health and practical limits
 
 - `GET /healthz` proves the gateway process can serve requests.
-- `GET /readyz` proves the exact locked compiler image is available.
-- One build runs at a time; at most three wait in the queue.
-- One origin may have one active build and twelve submissions per minute.
+- `GET /readyz` proves both exact locked compiler images are available.
+- One build runs at a time; at most four wait in the shared queue.
+- One origin may have one active build and six submissions per minute.
 - Each disposable worker is limited to one CPU, 256 MiB memory, 64 PIDs, no
   network, a read-only root, no capabilities, and tmpfs-only writable paths.
 
@@ -58,8 +59,8 @@ bounded job lifetime; restarting the service discards jobs and cache.
    `docker compose --profile local-compiler down` for the Compose profile.
 2. Confirm no disposable job remains:
    `docker ps -aq --filter label=com.intentforce.teach-lab.role=disposable-build-job`.
-3. Restore the prior source commit and rerun `npm ci`, `npm run build`, and
-   `npm run setup:toolchain`.
+3. Restore the prior source commit and rerun `npm ci`, `npm run build`,
+   `npm run setup:toolchain`, and `npm run setup:rp2040-toolchain`.
 4. Start the restored checkout and require both health endpoints plus
    `npm run test:local` to pass.
 
@@ -69,8 +70,10 @@ volumes, containers, networks, or the hosted service during local recovery.
 
 ## Distribution boundary
 
-The Dockerfile and setup recipe are Apache-2.0 project source. Downloaded
-compiler archives, the built image, and compiled learner firmware retain their
+The Dockerfiles and setup recipes are Apache-2.0 project source. Downloaded
+compiler archives, built images, and compiled learner firmware retain their
 upstream terms and are not project release artifacts. See
 `toolchain/SOURCE-AND-RELINKING.md`, `toolchain/NOTICE.md`, and
-`toolchain/manifest.json` before supplying a built image to anyone else.
+`toolchain/manifest.json` for AVR and
+`compiler/RP2040-TOOLCHAIN-MANIFEST.md` for Pico before supplying a built image
+to anyone else.

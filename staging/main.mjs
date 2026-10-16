@@ -41,6 +41,7 @@ import {
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
   AVR_PROFILE,
+  RP2040_PROFILE,
   candidateCompilerTarget,
   firstMissingTargetPrerequisite,
   targetAvailabilitySnapshot,
@@ -50,6 +51,7 @@ import {
   publicControllerView,
   publicControllerViews,
 } from '../src/public-controller-workbench-view.mjs';
+import { Rp2040PublicWorkbench } from '../src/rp2040-public-workbench.mjs';
 import { serialEventText, serialInputBytes, serialText } from '../src/serial-view.mjs';
 import { CPU_CYCLES_PER_MILLISECOND, cursorCycles, waveformPaths } from '../src/waveform-view.mjs';
 import { createComponentArtwork as createBaseComponentArtwork } from './component-artwork.mjs';
@@ -124,6 +126,10 @@ const elements = Object.fromEntries([
   'controller-capability-runtime', 'controller-capability-circuit', 'controller-primary-action', 'controller-return-avr',
   'controller-workbench-limitation', 'controller-public-boundary', 'parked-circuit-notice',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
+  'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
+  'pico-source', 'pico-build', 'pico-run', 'pico-pause', 'pico-reset', 'pico-stop', 'pico-message',
+  'pico-source-hash', 'pico-artifact-hash', 'pico-diagram', 'pico-external-led', 'pico-circuit-state',
+  'pico-disconnect', 'pico-reconnect', 'pico-serial',
 ].map((id) => [id.replaceAll('-', ''), byId(id)]));
 
 const runtimeControls = [elements.run, elements.pause, elements.step, elements.reset, elements.speed];
@@ -187,6 +193,58 @@ const publicPreviewRegions = [
   elements.promptdrawer,
   elements.runtimedrawer,
 ].filter(Boolean);
+let picoPublicState = null;
+
+function renderPicoQuickControls(state = picoPublicState) {
+  if (selectedCompilerProfile !== RP2040_PROFILE || !state) return;
+  elements.quickstate.textContent = `Pico · ${state.phase} · ${state.circuitValid ? 'wiring valid' : state.circuitCode}`;
+  elements.quickbuild.textContent = 'Build Pico';
+  elements.quickrun.textContent = 'Run Pico';
+  elements.quickpause.textContent = 'Pause';
+  elements.quickreset.textContent = 'Reset';
+  elements.quickbuild.disabled = state.phase === 'building';
+  elements.quickrun.disabled = !state.runnable || ['running', 'starting'].includes(state.phase);
+  elements.quickpause.disabled = !['running', 'paused'].includes(state.phase);
+  elements.quickreset.disabled = !['running', 'paused'].includes(state.phase);
+}
+
+const picoPublicWorkbench = new Rp2040PublicWorkbench({
+  elements: {
+    state: elements.picostate,
+    name: elements.picoprojectname,
+    save: elements.picosave,
+    open: elements.picoopen,
+    openInput: elements.picoopeninput,
+    source: elements.picosource,
+    build: elements.picobuild,
+    run: elements.picorun,
+    pause: elements.picopause,
+    reset: elements.picoreset,
+    stop: elements.picostop,
+    message: elements.picomessage,
+    sourceHash: elements.picosourcehash,
+    artifactHash: elements.picoartifacthash,
+    diagram: elements.picodiagram,
+    externalLed: elements.picoexternalled,
+    circuitState: elements.picocircuitstate,
+    disconnect: elements.picodisconnect,
+    reconnect: elements.picoreconnect,
+    serial: elements.picoserial,
+  },
+  onState: (state) => {
+    picoPublicState = state;
+    window.__RP2040_PUBLIC_STATE__ = structuredClone(state);
+    renderPicoQuickControls(state);
+  },
+});
+window.__RP2040_PUBLIC_WORKBENCH__ = {
+  state: () => picoPublicWorkbench.snapshot(),
+  build: () => picoPublicWorkbench.build(),
+  run: () => picoPublicWorkbench.run(),
+  pause: () => picoPublicWorkbench.pause(),
+  reset: () => picoPublicWorkbench.reset(),
+  stop: () => picoPublicWorkbench.stop(),
+};
 
 function setSelection(next) {
   selection = next?.kind ? structuredClone(next) : { kind: 'none' };
@@ -350,10 +408,12 @@ function setPublicPreviewControls(preview) {
 function renderPublicControllerWorkbench() {
   const view = publicControllerView(selectedCompilerProfile) ?? publicControllerView(AVR_PROFILE);
   const preview = !view.publicExecution;
+  const pico = selectedCompilerProfile === RP2040_PROFILE;
+  const avr = selectedCompilerProfile === AVR_PROFILE;
   elements.controllerworkbench.dataset.mode = view.mode;
   elements.controllerworkbencheyebrow.textContent = view.eyebrow;
   elements.controllerworkbenchtitle.textContent = view.title;
-  elements.controllerworkbenchbadge.textContent = preview ? 'Preview only' : 'Supported';
+  elements.controllerworkbenchbadge.textContent = preview ? 'Preview only' : pico ? 'Supported subset' : 'Supported';
   elements.controllerworkbenchbadge.className = `controller-badge ${preview ? 'preview' : 'supported'}`;
   elements.controllerworkbenchsummary.textContent = view.summary;
   elements.controllercapabilityproject.textContent = view.project;
@@ -362,26 +422,30 @@ function renderPublicControllerWorkbench() {
   elements.controllercapabilitycircuit.textContent = view.circuit;
   elements.controllerprimaryaction.textContent = view.action;
   elements.controllerprimaryaction.disabled = preview;
-  elements.controllerreturnavr.hidden = !preview;
+  elements.controllerreturnavr.hidden = avr;
   elements.controllerworkbenchlimitation.textContent = view.limitation;
   elements.controllerpublicboundary.textContent = preview
     ? 'Preview mode changes only this browser view. It cannot upload a project, call a private endpoint, build firmware, or create a runtime session.'
-    : 'Public AVR actions use the documented build service and one browser worker. Other controller previews never inherit those actions.';
-  elements.startergallery.hidden = preview;
-  elements.firmwaredrawer.hidden = preview;
-  elements.promptdrawer.hidden = preview;
-  elements.runtimedrawer.hidden = preview;
-  elements.parkedcircuitnotice.hidden = !preview;
-  elements.workbenchworkspace.classList.toggle('public-preview-mode', preview);
-  elements.quickbuild.textContent = preview ? 'Build unavailable' : 'Build';
-  elements.quickrun.textContent = preview ? 'Run unavailable' : 'Run';
-  elements.quickbuild.disabled = preview || elements.build.disabled;
+    : pico
+      ? 'Public Pico source is compiled in a fixed networkless container, returned as a source-bound UF2, and executed only in this browser worker. No executable is stored with the project.'
+      : 'Public AVR actions use the documented build service and one browser worker. Other controller previews never inherit those actions.';
+  elements.startergallery.hidden = !avr;
+  elements.firmwaredrawer.hidden = !avr;
+  elements.promptdrawer.hidden = !avr;
+  elements.runtimedrawer.hidden = !avr;
+  elements.picopublicworkbench.hidden = !pico;
+  elements.parkedcircuitnotice.hidden = avr;
+  elements.workbenchworkspace.classList.toggle('public-preview-mode', !avr);
+  elements.quickbuild.textContent = preview ? 'Build unavailable' : pico ? 'Build Pico' : 'Build';
+  elements.quickrun.textContent = preview ? 'Run unavailable' : pico ? 'Run Pico' : 'Run';
+  elements.quickbuild.disabled = preview || (avr && elements.build.disabled);
   if (preview) {
     elements.quickrun.disabled = true;
     elements.quickpause.disabled = true;
     elements.quickreset.disabled = true;
   }
-  setPublicPreviewControls(preview);
+  setPublicPreviewControls(!avr);
+  if (pico) renderPicoQuickControls();
   window.__PUBLIC_CONTROLLER_PROJECTION__.selectedProfile = view.profile;
   window.__PUBLIC_CONTROLLER_PROJECTION__.selected = view;
   publish({
@@ -405,8 +469,13 @@ function renderCompilerTarget() {
     elements.controllerstatus.textContent = `${view.label} · public preview only · Build and Run blocked.`;
     elements.toolchainboundary.innerHTML = `<strong>Public preview:</strong> ${target.profile}. ${availabilityRows} ${missing ? `<strong>Missing public prerequisite:</strong> ${missing.detail} ` : ''}<strong>Boundary:</strong> private evidence is status information only. No project upload, compiler, runtime or AVR circuit mapping is exposed for this profile.`;
   } else {
-    elements.controllerstatus.textContent = 'ATmega328P · compile and tested virtual runtime.';
-    elements.toolchainboundary.innerHTML = `<strong>Compiler:</strong> Arduino AVR core 1.8.8 · avr-gcc 7.3.0-atmel3.6.1-arduino7. ${availabilityRows} <strong>Simulation:</strong> only the <a href="#compatibility-note">documented MCU/peripheral subset</a>, not every library or device.`;
+    if (target.profile === RP2040_PROFILE) {
+      elements.controllerstatus.textContent = 'RP2040 Pico · bounded public C11 build + browser-worker GPIO0/UART0 runtime.';
+      elements.toolchainboundary.innerHTML = `<strong>Compiler:</strong> Arm GNU 14.3.1 · exact project-owned startup, runtime header and linker map. ${availabilityRows} <strong>Simulation:</strong> GPIO0 output, UART0 text, reset and the named GP0/GND LED path only; no SDK or full Pico claim.`;
+    } else {
+      elements.controllerstatus.textContent = 'ATmega328P · compile and tested virtual runtime.';
+      elements.toolchainboundary.innerHTML = `<strong>Compiler:</strong> Arduino AVR core 1.8.8 · avr-gcc 7.3.0-atmel3.6.1-arduino7. ${availabilityRows} <strong>Simulation:</strong> only the <a href="#compatibility-note">documented MCU/peripheral subset</a>, not every library or device.`;
+    }
   }
   publish({
     compilerTarget: target.profile,
@@ -2951,10 +3020,14 @@ elements.boardselect.addEventListener('change', () => {
   selectedCompilerProfile = selected ? selected.profile : AVR_PROFILE;
   const target = currentCompilerTarget();
   const view = publicControllerView(target.profile) ?? publicControllerView(AVR_PROFILE);
+  if (selectedCompilerProfile === RP2040_PROFILE) picoPublicWorkbench.activate();
+  else picoPublicWorkbench.deactivate();
   detachOutstandingBuild();
   stopRuntime(
     view.publicExecution
-      ? 'Supported AVR workbench selected · rebuild to run'
+      ? selectedCompilerProfile === RP2040_PROFILE
+        ? 'Supported Pico subset selected · build the bounded source to run'
+        : 'Supported AVR workbench selected · rebuild to run'
       : `${view.label} public preview · compiler/runtime requests blocked`,
     { updateLifecycle: false },
   );
@@ -2965,20 +3038,26 @@ elements.boardselect.addEventListener('change', () => {
   currentProject().build = { status: 'dirty', inputIdentity: null, artifactIdentity: null };
   elements.buildstate.textContent = 'Build required';
   renderBuildDiagnostics(null, view.publicExecution
-    ? 'No AVR build submitted for the current project.'
+    ? selectedCompilerProfile === RP2040_PROFILE
+      ? 'The AVR project is parked. Use the Pico source panel to build a source-bound UF2.'
+      : 'No AVR build submitted for the current project.'
     : `${view.label} is a public status preview. No build request was made.`);
   renderCompilerTarget();
   renderProject();
   elements.projectmessage.textContent = view.publicExecution
-    ? 'ATmega328P public build and tested virtual runtime selected. Rebuild before Run.'
+    ? selectedCompilerProfile === RP2040_PROFILE
+      ? 'RP2040 Pico bounded public source selected. The AVR project remains parked and unchanged.'
+      : 'ATmega328P public build and tested virtual runtime selected. Rebuild before Run.'
     : `${view.label} preview selected. The AVR project is parked without remapping its circuit; public Build, Run, project upload, and private endpoints remain disabled.`;
   publish({
     buildState: 'dirty', artifactIdentity: null, inputIdentity: null,
     artifactManifest: null, runtime: null, compilerRequestBlocked: !view.publicExecution,
   });
+  if (selectedCompilerProfile === RP2040_PROFILE) picoPublicWorkbench.render();
 });
 elements.controllerprimaryaction.addEventListener('click', () => {
   if (selectedCompilerProfile === AVR_PROFILE) elements.build.click();
+  else if (selectedCompilerProfile === RP2040_PROFILE) void picoPublicWorkbench.build();
 });
 elements.controllerreturnavr.addEventListener('click', () => {
   elements.boardselect.value = AVR_PROFILE;
@@ -3017,10 +3096,22 @@ elements.projectexport.addEventListener('click', async () => {
 });
 
 elements.walkthroughopen.addEventListener('click', () => elements.walkthrough.showModal());
-elements.quickbuild.addEventListener('click', () => elements.build.click());
-elements.quickrun.addEventListener('click', () => elements.run.click());
-elements.quickpause.addEventListener('click', () => elements.pause.click());
-elements.quickreset.addEventListener('click', () => elements.reset.click());
+elements.quickbuild.addEventListener('click', () => {
+  if (selectedCompilerProfile === RP2040_PROFILE) void picoPublicWorkbench.build();
+  else elements.build.click();
+});
+elements.quickrun.addEventListener('click', () => {
+  if (selectedCompilerProfile === RP2040_PROFILE) void picoPublicWorkbench.run();
+  else elements.run.click();
+});
+elements.quickpause.addEventListener('click', () => {
+  if (selectedCompilerProfile === RP2040_PROFILE) picoPublicWorkbench.pause();
+  else elements.pause.click();
+});
+elements.quickreset.addEventListener('click', () => {
+  if (selectedCompilerProfile === RP2040_PROFILE) picoPublicWorkbench.reset();
+  else elements.reset.click();
+});
 elements.projectimport.addEventListener('change', async () => {
   const file = elements.projectimport.files[0]; if (!file) return;
   if (file.size > 1024 * 1024) { showActionableError(elements.projectmessage, 'INPUT_LIMIT', `${file.size} bytes`); return; }
@@ -3132,6 +3223,7 @@ window.__M3_BUILD__ = build;
 window.__M3_COMMAND__ = (command, value) => worker?.postMessage(command === 'speed' ? { command, speed: value } : { command });
 window.__M4_CONTROL__ = (componentId, key, value) => worker?.postMessage({ command: 'control', componentId, key, value });
 window.__M5_COMMAND__ = (command, value) => worker?.postMessage({ command, value });
+window.addEventListener('pagehide', () => picoPublicWorkbench.deactivate());
 window.__M6_ADD__ = addComponent;
 window.__M6_CONNECT__ = (from, to) => { pendingEndpoint = parseEndpoint(from); handlePin(parseEndpoint(to)); };
 window.__M6_PROJECT__ = () => JSON.parse(currentProjectText());

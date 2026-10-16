@@ -1,0 +1,28 @@
+{
+  "schema": "intent-mcu-rp2040-toolchain-manifest@1",
+  "compiler": {
+    "id": "arm-none-eabi-gcc",
+    "version": "14.3.1",
+    "release": "14.3.rel1",
+    "archiveUrl": "https://developer.arm.com/-/media/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz",
+    "archiveSha256": "8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd"
+  },
+  "files": [
+    {
+      "path": "compiler/rp2040-build-worker.mjs",
+      "sha256": "672a38f11ac031757d8634d53c429048cce506903bc5594470584f80013d4c14"
+    },
+    {
+      "path": "compiler/rp2040-contract/startup.S",
+      "sha256": "a3d84e1c121e6a6365517c38993493b694f7ba85b9bc8db136ac00194ebe5897"
+    },
+    {
+      "path": "compiler/rp2040-contract/rp2040.ld",
+      "sha256": "189e4add83c2ec9fd6d6eca275f55043a92b5b50b8ab68d082a47c91927710d7"
+    },
+    {
+      "path": "compiler/rp2040-contract/intent_rp2040_runtime.h",
+      "sha256": "0888bdeee8bb920ece126baa1085614c3bc0c099f6d8c1faddb7111fa508f6ba"
+    }
+  ]
+}

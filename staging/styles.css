@@ -26,8 +26,8 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 body { margin: 0; background: radial-gradient(circle at 80% 0%, #12324a 0, var(--bg) 42%); color: var(--text); }
-main { width: min(1480px, calc(100% - 32px)); margin: 0 auto; padding: 18px 0 36px; }
-body.serial-dock-open main { width: min(1480px, calc(100% - var(--serial-width) - 40px)); margin-left: 16px; margin-right: auto; }
+main { width: calc(100% - 32px); margin: 0 auto; padding: 18px 0 36px; }
+body.serial-dock-open main { width: calc(100% - var(--serial-width) - 40px); margin-left: 16px; margin-right: auto; }
 .app-header { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 12px; padding: 0 4px; }
 .eyebrow { color: var(--lime); font-size: .7rem; font-weight: 800; letter-spacing: .15em; margin: 0 0 9px; }
 h1 { font-size: clamp(1.55rem, 3vw, 2.3rem); letter-spacing: -.035em; line-height: 1; margin: 0; }
@@ -65,6 +65,62 @@ h2 { font-size: 1.22rem; margin: 0; }
 .controller-workbench::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--lime); }
 .controller-workbench[data-mode="c3-preview"]::before { background: #f2a65a; }
 .controller-workbench[data-mode="rp2040-preview"]::before { background: #d78df2; }
+.controller-workbench[data-mode="rp2040-source"]::before { background: #d78df2; }
+
+.pico-public-workbench { display: grid; gap: 1rem; border-color: rgba(215,141,242,.55); }
+.pico-public-workbench[hidden] { display: none; }
+.pico-public-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.pico-public-heading h2 { margin: .1rem 0 0; }
+.pico-public-grid { display: grid; grid-template-columns: minmax(300px,.9fr) minmax(360px,1.1fr); gap: 1rem; }
+.pico-project-pane, .pico-circuit-pane { min-width: 0; padding: 1rem; border: 1px solid var(--line); border-radius: 16px; background: rgba(5,16,27,.72); }
+.pico-project-pane { display: grid; gap: .65rem; }
+.pico-project-pane input:not(.sr-only), .pico-project-pane textarea { width: 100%; }
+.pico-source { min-height: 245px; resize: vertical; tab-size: 2; font: 500 .88rem/1.55 var(--mono); color: #dff7ff; background: #050e17; border: 1px solid #315066; border-radius: 12px; padding: .9rem; }
+.pico-project-actions, .pico-runtime-actions, .pico-circuit-actions { display: flex; flex-wrap: wrap; gap: .55rem; }
+.pico-runtime-actions .primary { background: var(--accent); color: #031018; border-color: var(--accent); }
+.pico-message { min-height: 2.8rem; margin: 0; color: #d7e8f3; }
+.pico-identities { display: grid; gap: .45rem; margin: 0; }
+.pico-identities div { display: grid; grid-template-columns: 130px minmax(0,1fr); gap: .65rem; }
+.pico-identities dt { color: var(--muted); }
+.pico-identities dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.pico-circuit-pane { display: grid; gap: .8rem; align-content: start; }
+.pico-diagram { position: relative; min-height: 340px; overflow: hidden; border: 1px solid #28465b; border-radius: 16px; background-color: #f5f0e6; background-image: linear-gradient(rgba(15,38,54,.07) 1px, transparent 1px),linear-gradient(90deg,rgba(15,38,54,.07) 1px,transparent 1px); background-size: 18px 18px; }
+.pico-board-original { position: absolute; left: 8%; top: 10%; width: 31%; height: 78%; border: 4px solid #174663; border-radius: 22px; color: white; background: linear-gradient(145deg,#1688b7,#07516f); box-shadow: 0 16px 28px rgba(0,0,0,.28), inset 0 0 0 2px rgba(255,255,255,.12); }
+.pico-board-original > strong { position: absolute; inset: 43% 10% auto; text-align: center; letter-spacing: .12em; font-size: .82rem; }
+.pico-usb { position: absolute; left: 31%; top: -4px; width: 38%; padding: .35rem 0; text-align: center; border-radius: 0 0 7px 7px; background: #bec9d0; color: #13232d; font-size: .68rem; }
+.pico-chip { position: absolute; left: 28%; top: 30%; width: 44%; padding: .8rem .2rem; text-align: center; border-radius: 5px; background: #14222d; color: #cad5db; font: 600 .65rem var(--mono); }
+.pico-pin { position: absolute; left: -7px; display: grid; width: 72%; padding: .28rem .45rem; border: 2px solid #e3b941; border-radius: 8px; background: #102b3b; font: 700 .72rem var(--mono); box-shadow: 0 0 0 3px rgba(227,185,65,.22); }
+.pico-pin small { font-size: .58rem; color: #d4e4ed; }
+.pico-pin-gp0 { top: 15%; }
+.pico-pin-gnd { top: 65%; }
+.pico-onboard-led { position: absolute; right: 7%; bottom: 7%; padding: .4rem; border: 1px dashed rgba(255,255,255,.45); border-radius: 8px; color: #e6f6ff; font-size: .64rem; text-align: right; }
+.pico-wire { position: absolute; display: block; height: 7px; border-radius: 8px; transform-origin: left center; box-shadow: 0 2px 3px rgba(0,0,0,.25); }
+.pico-wire-signal { left: 38%; top: 23%; width: 20%; background: #e7ad16; }
+.pico-resistor { position: absolute; left: 55%; top: calc(23% - 10px); z-index: 2; width: 17%; padding: .35rem .2rem; border: 3px solid #b78b5f; border-radius: 10px; color: #321f14; background: repeating-linear-gradient(90deg,#e4c9a1 0 20%,#af3f34 20% 27%,#e4c9a1 27% 43%,#222 43% 50%,#e4c9a1 50% 66%,#a8522f 66% 73%,#e4c9a1 73%); text-align: center; font: 800 .68rem var(--mono); }
+.pico-wire-series { left: 70%; top: 23%; width: 12%; background: #ee3d4f; }
+.pico-external-led { position: absolute; left: 80%; top: 16%; width: 30px; height: 46px; border: 3px solid #942637; border-radius: 16px 16px 6px 6px; background: radial-gradient(circle at 35% 25%,#ffb6bd,#f02e45 45%,#89172a); box-shadow: 0 0 0 4px rgba(238,61,79,.15); }
+.pico-external-led::after { content: ''; position: absolute; left: 12px; top: 43px; width: 5px; height: 77px; background: #252e35; }
+.pico-external-led.on { background: radial-gradient(circle at 35% 25%,#fff,#ff6878 30%,#ff243d 58%); box-shadow: 0 0 24px 8px rgba(255,44,69,.72); }
+.pico-wire-ground { left: 38%; top: 73%; width: 45%; background: #252e35; }
+.pico-diagram[data-connected="false"] .pico-wire-series { width: 5%; opacity: .35; }
+.pico-diagram[data-connected="false"] .pico-external-led { box-shadow: none; filter: grayscale(.7); }
+.pico-serial-card { border: 1px solid #28465b; border-radius: 12px; background: #030b12; padding: .8rem; }
+.pico-serial-card pre { min-height: 72px; margin: .55rem 0 0; color: #a8ff3f; white-space: pre-wrap; }
+
+@media (max-width: 860px) {
+  .pico-public-grid { grid-template-columns: 1fr; }
+  .pico-diagram { min-height: 310px; }
+}
+
+@media (max-width: 430px) {
+  .pico-public-workbench { padding: .7rem; }
+  .pico-public-grid { gap: .7rem; }
+  .pico-project-pane, .pico-circuit-pane { padding: .75rem; }
+  .pico-runtime-actions button, .pico-project-actions button, .pico-circuit-actions button { flex: 1 1 120px; }
+  .pico-identities div { grid-template-columns: 1fr; gap: .15rem; }
+  .pico-diagram { min-height: 280px; }
+  .pico-board-original { left: 5%; width: 34%; }
+}
 .controller-workbench[data-mode="stm32-preview"]::before { background: #7ea7ff; }
 .controller-workbench-copy { min-width: 0; }
 .controller-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
@@ -88,13 +144,26 @@ h2 { font-size: 1.22rem; margin: 0; }
 .parked-circuit-notice strong { color: var(--amber); }
 .parked-circuit-notice span { color: #e8cda8; }
 .workspace { display: grid; grid-template-columns: var(--catalog-width) 8px minmax(620px, 1fr) 8px var(--inspector-width); gap: 8px; align-items: start; }
+.workspace > .catalog { grid-column: 1; }
+.workspace > #catalog-resizer { grid-column: 2; }
+.workspace > .board-card { grid-column: 3; }
+.workspace > #inspector-resizer { grid-column: 4; }
+.workspace > .inspector { grid-column: 5; }
 .catalog, .inspector { position: sticky; top: 12px; }
 .panel-resizer { align-self: stretch; min-height: 680px; padding: 0; border: 0; border-radius: 999px; background: linear-gradient(90deg, transparent 2px, #2a627f 3px, #2a627f 5px, transparent 6px); cursor: col-resize; box-shadow: none; touch-action: none; }
 .panel-resizer:hover, .panel-resizer:focus-visible { background: linear-gradient(90deg, transparent 1px, var(--lime) 2px, var(--lime) 6px, transparent 7px); outline: 0; }
-.workspace.catalog-collapsed { --catalog-width: 0px; }
-.workspace.inspector-collapsed { --inspector-width: 0px; }
 .workspace.catalog-collapsed .catalog, .workspace.catalog-collapsed #catalog-resizer,
 .workspace.inspector-collapsed .inspector, .workspace.inspector-collapsed #inspector-resizer { display: none; }
+.workspace.catalog-collapsed:not(.inspector-collapsed) { grid-template-columns: minmax(620px, 1fr) 8px var(--inspector-width); }
+.workspace.catalog-collapsed:not(.inspector-collapsed) > .board-card { grid-column: 1; }
+.workspace.catalog-collapsed:not(.inspector-collapsed) > #inspector-resizer { grid-column: 2; }
+.workspace.catalog-collapsed:not(.inspector-collapsed) > .inspector { grid-column: 3; }
+.workspace.inspector-collapsed:not(.catalog-collapsed) { grid-template-columns: var(--catalog-width) 8px minmax(620px, 1fr); }
+.workspace.inspector-collapsed:not(.catalog-collapsed) > .catalog { grid-column: 1; }
+.workspace.inspector-collapsed:not(.catalog-collapsed) > #catalog-resizer { grid-column: 2; }
+.workspace.inspector-collapsed:not(.catalog-collapsed) > .board-card { grid-column: 3; }
+.workspace.catalog-collapsed.inspector-collapsed { grid-template-columns: minmax(620px, 1fr); }
+.workspace.catalog-collapsed.inspector-collapsed > .board-card { grid-column: 1; }
 .workspace.canvas-focus { grid-template-columns: minmax(0, 1fr); }
 .workspace.canvas-focus .catalog, .workspace.canvas-focus .inspector, .workspace.canvas-focus .panel-resizer { display: none; }
 .workspace.canvas-focus .board-card { grid-column: 1; }
@@ -103,6 +172,8 @@ body.serial-dock-open .workspace .catalog, body.serial-dock-open .workspace #cat
 body.serial-dock-open .workspace .board-card { grid-column: 1; }
 body.serial-dock-open .workspace #inspector-resizer { grid-column: 2; }
 body.serial-dock-open .workspace .inspector { grid-column: 3; }
+body.serial-dock-open .workspace.inspector-collapsed { grid-template-columns: minmax(620px, 1fr); }
+body.serial-dock-open .workspace.inspector-collapsed .board-card { grid-column: 1; }
 label { display: block; color: var(--muted); font-size: .82rem; margin: 14px 0 6px; }
 button, select, input { min-height: 42px; border-radius: 8px; border: 1px solid #2a627f; background: #102d41; color: var(--text); font: inherit; }
 button, .file-button { padding: 0 12px; font-weight: 740; }
@@ -340,11 +411,15 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
 @media (max-width: 1120px) {
   .starter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .workspace { grid-template-columns: 1fr 8px 280px; }
-  .catalog { grid-column: 1 / -1; position: static; }
-  #catalog-resizer { display: none; }
-  .board-card { grid-column: 1; }
-  #inspector-resizer { grid-column: 2; }
-  .inspector { grid-column: 3; }
+  .workspace > .catalog { grid-column: 1 / -1; position: static; }
+  .workspace > #catalog-resizer { display: none; }
+  .workspace > .board-card { grid-column: 1; }
+  .workspace > #inspector-resizer { grid-column: 2; }
+  .workspace > .inspector { grid-column: 3; }
+  .workspace.catalog-collapsed:not(.inspector-collapsed) { grid-template-columns: 1fr 8px 280px; }
+  .workspace.inspector-collapsed, .workspace.catalog-collapsed.inspector-collapsed { grid-template-columns: 1fr; }
+  .workspace.inspector-collapsed > .catalog, .workspace.inspector-collapsed > .board-card,
+  .workspace.catalog-collapsed.inspector-collapsed > .board-card { grid-column: 1; }
   .catalog-list { grid-template-columns: repeat(5, minmax(145px, 1fr)); overflow-x: auto; }
   .inspector { position: static; }
   .instrument-grid { grid-template-columns: 1fr 1fr; }
@@ -358,10 +433,17 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   .project-bar, .controller-workbench, .workspace, .runtime, .instrument-grid, .prompt-grid, .about-intro, .answer-grid, .starter-heading { grid-template-columns: 1fr; }
   .controller-capabilities { grid-template-columns: 1fr; }
   .panel-resizer { display: none; }
-  .catalog, .board-card, .inspector, .logic-card { grid-column: 1; }
+  .workspace > .catalog, .workspace > .board-card, .workspace > .inspector, .logic-card { grid-column: 1; }
   body.serial-dock-open .workspace { grid-template-columns: 1fr; }
   body.serial-dock-open .workspace .catalog, body.serial-dock-open .workspace .inspector { display: block; grid-column: 1; }
   body.serial-dock-open .workspace #catalog-resizer, body.serial-dock-open .workspace #inspector-resizer { display: none; }
+  .workspace.catalog-collapsed:not(.inspector-collapsed),
+  .workspace.inspector-collapsed:not(.catalog-collapsed),
+  .workspace.catalog-collapsed.inspector-collapsed { grid-template-columns: 1fr; }
+  .workspace.catalog-collapsed:not(.inspector-collapsed) > .board-card,
+  .workspace.inspector-collapsed:not(.catalog-collapsed) > .catalog,
+  .workspace.inspector-collapsed:not(.catalog-collapsed) > .board-card,
+  .workspace.catalog-collapsed.inspector-collapsed > .board-card { grid-column: 1; }
   .quick-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); overflow: visible; }
   .quick-controls > span { grid-column: 1 / -1; min-width: 0; margin-right: 0; }
   .quick-controls #toggle-catalog, .quick-controls #toggle-inspector { grid-column: span 2; }

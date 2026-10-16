@@ -1,11 +1,11 @@
 # Intent MCU Simulator
 
-> Intent MCU Simulator is an original, open-source browser workbench for building supported ATmega328P circuits, compiling firmware in an isolated fixed toolchain, and inspecting deterministic virtual hardware behaviour.
+> Intent MCU Simulator is an original, open-source browser workbench for supported ATmega328P projects and one bounded RP2040 Pico GPIO0/UART0 source profile.
 
 Canonical application: https://lab.teachthecompany.com/
 Source and setup: https://github.com/finnandrehotvedt/intent-mcu-simulator
 Licence: Apache-2.0 for project-owned source; third-party components keep their own terms.
-Current public version: 1.1.0-rc.3
+Current public version: 1.1.0-rc.4
 
 ## Supported public workflow
 
@@ -16,6 +16,7 @@ Current public version: 1.1.0-rc.3
 - Inspect GPIO, LEDs, buttons, potentiometers, serial bytes, logic traces, and pin state.
 - Save and reopen a project file on the learner's computer; browser recovery is separate.
 - Optionally generate a portable Prompt Bridge request and validate returned structured circuit data.
+- Select RP2040 Pico, edit the two bounded source values, compile in the fixed isolated Arm toolchain, and run the source-bound UF2 in the browser worker.
 
 ## Important limits
 
@@ -24,9 +25,9 @@ Current public version: 1.1.0-rc.3
 - Prompt Bridge has no hosted AI API or agent/tool connection. It creates portable text for a user-selected tool.
 - Free-form AI output cannot draw wires or authorize connections. Only schema-valid, electrically accepted project data reaches the canvas and worker.
 - There are no accounts, analytics, advertising, cloud project storage, physical-device uploads, or live AI calls.
-- The public compiler and virtual runtime support one ATmega328P profile.
+- Public execution supports the tested ATmega328P profile and one bounded RP2040 Pico GPIO0/UART0 source profile.
 - ESP32-C3 is a public status preview only: bounded edited-Serial compilation and actual QEMU UART/reset/watchdog evidence exist privately, while public project upload, Build, Run, endpoints, GPIO, and wired circuits are disabled.
-- RP2040 Pico is a public status preview only: private bounded C11 source, fixed ARM compiler, strict UF2/ELF, rp2040js GPIO0/UART0, and retained local/precompiled route evidence exist, with no public Build, firmware picker, or runtime.
+- RP2040 Pico publicly accepts one exact project-owned C11 grammar, compiles it in a networkless fixed Arm GNU 14.3.1 container, validates a source-bound UF2, and executes GPIO0/UART0 in rp2040js 1.4.0. It does not claim a complete Pico SDK, PIO, DMA, USB, multicore, timing, or physical-device model.
 - STM32F429ZI is a public status preview only: private bounded C11 source, fixed ARM compiler, strict ELF, actual Renode PB0/USART3/reset, and retained fixture evidence exist, with no public Build, arbitrary-ELF input, or runtime.
 
 ## Primary documentation

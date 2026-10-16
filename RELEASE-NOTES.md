@@ -1,37 +1,35 @@
-# Intent MCU Simulator 1.1.0-rc.3
+# Intent MCU Simulator 1.1.0-rc.4
 
-This incremental public release promotes the tested local-file and component
-work without changing the product's safety boundary. The public compiler and
-runtime still support one ATmega328P 16 MHz, 5 V educational profile.
+This incremental public release adds one bounded RP2040 Pico source-to-runtime
+path while preserving the tested AVR workbench. It also makes the desktop
+application use the available width with small gutters.
 
 ## User-visible changes
 
-- Save and Open use a learner-owned local project file. Browser recovery stays
-  separately labelled and no account or server project database is added.
-- The catalogue expands from five to 16 selectable original components,
-  including contacts, analogue and digital sensors, RGB and seven-segment
-  outputs, a 16×2 LCD, an active buzzer, and a quadrature encoder.
-- Five validated starter projects are visible in a keyboard-accessible gallery.
-- Component movement and route editing preserve exact visible named-pin wire
-  attachment; invalid electrical plans continue to fail closed.
-- The sticky Workbench toolbar reflows into mobile rows so Build, Run, Pause,
-  and Reset stay visible at 320 px and 390 px without horizontal scrolling.
-- Controller, component, example, and support pages provide crawlable factual
-  documentation, unique canonical URLs, and current sitemap entries.
-- The controller selector now presents one supported public profile and three
-  clearly labelled, non-executable status previews. Preview mode parks the AVR
-  project and disables project Open, Build, Run, firmware, Prompt Bridge, and
-  runtime surfaces without calling a private service.
+- RP2040 Pico now has a public bounded `main.c` editor, local data-only
+  Save/Open, isolated fixed Arm compilation, strict source-bound UF2 validation,
+  and actual browser-worker GPIO0/UART0 execution.
+- The Pico circuit labels GP0 physical pin 1 and GND physical pin 3, routes GP0
+  through 220 Ω and an external LED, and labels GPIO25 separately as an onboard
+  LED signal rather than a header anchor.
+- Two distinct source variants produce distinct source/UF2 identities and
+  observable LED/UART results. Editing, profile changes, disconnect, Stop and
+  Open invalidate executable authority and require a fresh Build.
+- The app uses the viewport width with 16 px desktop gutters and retains zero
+  horizontal overflow on tested desktop and mobile widths. All Parts and
+  Inspector visibility combinations keep the circuit canvas in the remaining
+  grid, including when the Serial dock is open.
+- The existing AVR compiler, runtime, 16-part library, five examples, circuit
+  editor, Prompt Bridge and local project behavior remain supported.
 
 ## Controller truth
 
 - ATmega328P: public compile and tested virtual execution subset.
+- RP2040 Pico: public exact bounded source grammar, fixed Arm GNU 14.3.1
+  compilation, strict UF2 and rp2040js 1.4.0 GPIO0/UART0 execution subset.
 - ESP32-C3: private fixed-toolchain and actual QEMU UART/reset/watchdog
   evidence; public project upload, Build, Run, GPIO, wired circuits, and
   runtime endpoints are disabled.
-- RP2040 Pico: private bounded source, fixed ARM compiler, strict UF2/ELF,
-  rp2040js GPIO0/UART0, and retained local/precompiled route evidence; no
-  public compiler, firmware picker, or runtime.
 - STM32F429ZI: private bounded source, fixed ARM compiler, strict ELF, actual
   Renode PB0/USART3/reset, and retained fixture evidence; no public compiler,
   arbitrary-ELF input, or runtime.

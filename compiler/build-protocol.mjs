@@ -10,8 +10,10 @@ import {
 } from './candidate-target-contract.mjs';
 
 export const BUILD_REQUEST_SCHEMA = 'teach-lab-build-request@1';
+export const RP2040_BUILD_REQUEST_SCHEMA = 'intent-mcu-rp2040-source-build-request@1';
 export const WORKER_JOB_SCHEMA = 'teach-lab-worker-job@1';
 export const BOARD_PROFILE = 'board.atmega328p-16mhz-v1';
+export const RP2040_BOARD_PROFILE = 'board.rp2040-pico-v1';
 export const FIXED_BUILD_FLAGS = Object.freeze([
   '--fqbn=arduino:avr:uno',
   '--warnings=all',
@@ -27,6 +29,7 @@ export const BUILD_LIMITS = Object.freeze({
 
 const FORBIDDEN_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
 const FILE_NAME = /^(?:main\.ino|[A-Za-z][A-Za-z0-9_-]{0,47}\.(?:h|hpp|c|cpp))$/;
+const RP2040_SOURCE_PATTERN = /^\/\* Intent MCU Simulator public RP2040 source v1 \*\/\nint main\(void\)\n\{\n  intent_gpio0_output\(([01])u\);\n  intent_uart0_text\("([A-Z0-9 _-]{1,24})"\);\n  intent_halt\(\);\n\}\n$/u;
 const INCLUDE_DIRECTIVE = /^\s*#\s*(include|include_next)\s+(.+?)\s*$/gm;
 const COMMON_SYSTEM_HEADERS = new Set([
   'Arduino.h', 'stdint.h', 'stddef.h', 'stdbool.h', 'stdint.h', 'limits.h',
@@ -187,6 +190,10 @@ export function normalizeBuildRequestValue(value) {
     if (!exactKeys(value, ['schema', 'board', 'files'])) throw new BuildProtocolError('REQUEST_SHAPE');
     if (value.board !== BOARD_PROFILE) throw new BuildProtocolError('UNKNOWN_BOARD_PROFILE');
     board = value.board;
+  } else if (value?.schema === RP2040_BUILD_REQUEST_SCHEMA) {
+    if (!exactKeys(value, ['schema', 'board', 'files'])) throw new BuildProtocolError('REQUEST_SHAPE');
+    if (value.board !== RP2040_BOARD_PROFILE) throw new BuildProtocolError('UNKNOWN_BOARD_PROFILE');
+    board = value.board;
   } else if (value?.schema === CANDIDATE_BUILD_REQUEST_SCHEMA) {
     if (!exactKeys(value, ['schema', 'target', 'files'])) throw new BuildProtocolError('REQUEST_SHAPE');
     target = validateCandidateTarget(value.target);
@@ -218,7 +225,13 @@ export function normalizeBuildRequestValue(value) {
     sourceBytes += Buffer.byteLength(content, 'utf8');
     return Object.freeze({ name: file.name, content });
   });
-  if (!seen.has('main.ino')) throw new BuildProtocolError('MAIN_FILE_REQUIRED');
+  if (board === RP2040_BOARD_PROFILE) {
+    if (files.length !== 1 || files[0].name !== 'main.c') throw new BuildProtocolError('RP2040_MAIN_FILE_REQUIRED');
+    if (sourceBytes > 4096) throw new BuildProtocolError('SOURCE_LIMIT');
+    if (!RP2040_SOURCE_PATTERN.test(files[0].content)) {
+      throw new BuildProtocolError('SOURCE_POLICY_REJECTED', 'Use only the three documented bounded Pico calls.');
+    }
+  } else if (!seen.has('main.ino')) throw new BuildProtocolError('MAIN_FILE_REQUIRED');
   if (sourceBytes > BUILD_LIMITS.sourceBytes) throw new BuildProtocolError('SOURCE_LIMIT');
   files.sort((a, b) => a.name === 'main.ino' ? -1 : b.name === 'main.ino' ? 1 : a.name.localeCompare(b.name));
   validateIncludes(files, board);

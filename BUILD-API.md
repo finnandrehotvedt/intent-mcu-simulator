@@ -22,6 +22,13 @@ are accepted: at most eight files, 128 KiB source and the fixed board profile.
 The `202` response returns a 24-hex-character job ID, an independent unguessable
 capability and the complete input identity.
 
+The same endpoint also accepts the exact
+`intent-mcu-rp2040-source-build-request@1` contract for
+`board.rp2040-pico-v1`. It requires one `main.c` file matching the documented
+three-call grammar: GPIO0 level `0` or `1`, 1–24 uppercase UART0 characters,
+and halt. No caller-selected include, path, flag, linker, MMIO, package or
+output format is accepted.
+
 ## Read and cancel
 
 `GET /api/build/{jobId}` and `DELETE /api/build/{jobId}` require
@@ -29,15 +36,17 @@ capability and the complete input identity.
 requires the submit mutation headers. A job ID without its capability returns
 the same not-found response as an absent job.
 
-Terminal states are `succeeded`, `failed`, `cancelled` and `timeout`. Success
-contains checksummed ELF/HEX output, sanitized diagnostics, an artifact
-identity and worker-isolation readback. Source and capabilities are never
-logged. Failed or cancelled jobs never produce a runnable artifact.
+Terminal states are `succeeded`, `failed`, `cancelled` and `timeout`. AVR
+success contains checksummed ELF/HEX output. Pico success contains a strict
+canonical-base64, checksummed and source-bound UF2 plus compiler-contract
+identity. Both contain sanitized diagnostics, an artifact identity and
+worker-isolation readback. Source and capabilities are never logged. Failed or
+cancelled jobs never produce a runnable artifact.
 
 ## Health
 
 - `GET /healthz`: gateway process is serving.
-- `GET /readyz`: the exact image-ID-locked local compiler is available.
+- `GET /readyz`: both exact image-ID-locked compiler images are available.
 
 The implementation and stable error codes are in `compiler/`. Resource,
 retention and recovery behavior is documented in `LOCAL-OPERATIONS.md`.

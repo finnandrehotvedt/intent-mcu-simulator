@@ -2,6 +2,21 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.4 — 2026-10-16
+
+- Added one bounded public RP2040 Pico source profile with fixed isolated Arm
+  compilation, strict source-bound UF2 validation, and rp2040js GPIO0/UART0
+  browser-worker execution.
+- Added an original Pico circuit view with named GP0 pin 1 and GND pin 3
+  anchors, 220 Ω current limiting, external LED state and separate GPIO25
+  onboard-LED semantics.
+- Added local data-only Pico Save/Open and fail-closed artifact invalidation
+  across editing, disconnect, Stop, project Open and profile changes.
+- Expanded the desktop workbench to small viewport gutters while preserving
+  responsive controls and zero horizontal overflow. Parts/Inspector collapse
+  states and the Serial dock now preserve the full remaining canvas width.
+- Kept ESP32-C3 and STM32F429ZI as non-executable public previews.
+
 ## 1.1.0-rc.3 — 2026-10-16
 
 - Refresh the three non-executable controller previews with the accepted,

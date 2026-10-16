@@ -74,7 +74,7 @@ function assert(value, message) {
       resources: performance.getEntriesByType('resource').map((entry) => ({ name: entry.name, transferSize: entry.transferSize })),
     };
   });
-  assert(metadata.title === 'Intent MCU Simulator | Public AVR workbench and controller previews', 'title');
+  assert(metadata.title === 'Intent MCU Simulator | Public AVR and Pico workbenches', 'title');
   assert(metadata.description.length >= 120 && metadata.description.length <= 170, 'description length');
   assert(metadata.robots.startsWith('index,follow'), 'meta robots');
   assert(metadata.canonical === canonical, `canonical ${metadata.canonical}`);
@@ -125,6 +125,8 @@ function assert(value, message) {
   const controllers = await (await context.request.get(new URL('/controllers.html', base).href)).text();
   assert(controllers.includes('ATmega328P · 16 MHz · 5 V')
     && controllers.includes('Public preview only')
+    && controllers.includes('Supported bounded source')
+    && controllers.includes('Supported GPIO0/UART0 subset')
     && controllers.includes('actual QEMU UART/reset/watchdog evidence')
     && controllers.includes('actual Renode PB0/USART3/reset evidence')
     && controllers.includes('No public Build, arbitrary-ELF input'), 'controller page capability boundary');

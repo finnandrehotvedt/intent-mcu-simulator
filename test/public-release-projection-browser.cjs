@@ -7,9 +7,8 @@ const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/
 
 const base = process.env.PUBLIC_PROJECTION_URL || 'http://127.0.0.1:18770';
 const screenshotDirectory = process.env.PUBLIC_PROJECTION_SCREENSHOT_DIR || null;
-const profiles = [
+const previewProfiles = [
   ['board.esp32-c3-devmodule-v1', 'ESP32-C3', 'c3-preview'],
-  ['board.rp2040-pico-v1', 'RP2040 Pico', 'rp2040-preview'],
   ['board.stm32f429zi-nucleo144-v1', 'STM32F429ZI', 'stm32-preview'],
 ];
 
@@ -30,6 +29,7 @@ async function snapshot(page) {
     runtimeHidden: document.querySelector('#runtime-drawer')?.hidden,
     promptHidden: document.querySelector('#prompt-drawer')?.hidden,
     starterHidden: document.querySelector('#starter-gallery')?.hidden,
+    picoHidden: document.querySelector('#pico-public-workbench')?.hidden,
     boardDisabled: document.querySelector('#board-select')?.disabled,
     projectOpenDisabled: document.querySelector('#project-open')?.disabled,
     parkedHidden: document.querySelector('#parked-circuit-notice')?.hidden,
@@ -47,7 +47,7 @@ async function snapshot(page) {
   page.on('request', (request) => {
     const url = new URL(request.url());
     if (url.origin !== new URL(base).origin) externalRequests.push(request.url());
-    if (/private-c3|esp32|rp2040|stm32/i.test(`${url.pathname}${url.search}`)) privateOrPreviewRequests.push(request.url());
+    if (/private-c3|esp32|stm32/i.test(`${url.pathname}${url.search}`)) privateOrPreviewRequests.push(request.url());
   });
   page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
   page.on('pageerror', (error) => consoleErrors.push(error.message));
@@ -63,7 +63,20 @@ async function snapshot(page) {
   assert(initial.overflow <= 1, `desktop initial overflow ${initial.overflow}`);
 
   const reports = [];
-  for (const [profile, label, mode] of profiles) {
+  await page.locator('#board-select').selectOption('board.rp2040-pico-v1');
+  await page.waitForFunction(() => window.__PUBLIC_CONTROLLER_PROJECTION__?.selectedProfile === 'board.rp2040-pico-v1');
+  const pico = await snapshot(page);
+  assert(pico.selected.label === 'RP2040 Pico', `Pico label ${pico.selected.label}`);
+  assert(pico.selected.publicExecution === true && pico.selected.publicSupport === true, 'Pico public boundary');
+  assert(pico.badge === 'Supported subset' && pico.mode === 'rp2040-source', 'Pico badge/mode');
+  assert(!pico.buildDisabled && pico.runDisabled && !pico.primaryDisabled, 'Pico execution controls');
+  assert(!pico.returnHidden && pico.firmwareHidden && pico.runtimeHidden && pico.promptHidden && pico.starterHidden && !pico.picoHidden, 'Pico workbench visibility');
+  assert(!pico.boardDisabled && pico.projectOpenDisabled && !pico.parkedHidden, 'Pico parked AVR project');
+  assert(pico.runtimeWorkerCreations === 0, 'Pico selection created a runtime worker');
+  assert(pico.overflow <= 1, `Pico desktop overflow ${pico.overflow}`);
+  reports.push({ profile: pico.profile, mode: pico.mode, overflow: pico.overflow });
+
+  for (const [profile, label, mode] of previewProfiles) {
     await page.locator('#board-select').selectOption(profile);
     await page.waitForFunction((expected) => window.__PUBLIC_CONTROLLER_PROJECTION__?.selectedProfile === expected, profile);
     const current = await snapshot(page);

@@ -5,10 +5,12 @@ import { randomBytes } from 'node:crypto';
 import { parseIntelHex } from '../src/hex.mjs';
 import {
   BuildProtocolError,
+  RP2040_BOARD_PROFILE,
   buildInputIdentity,
   parseAndNormalizeBuildRequest,
   sha256,
 } from './build-protocol.mjs';
+import { loadRp2040FirmwareArtifact } from '../expansion-drafts/rp2040-firmware-artifact-v1.mjs';
 import { BrokerError } from './docker-broker.mjs';
 import {
   candidateArtifactIdentity,
@@ -17,6 +19,37 @@ import {
 } from './candidate-target-contract.mjs';
 
 const TERMINAL = new Set(['succeeded', 'failed', 'cancelled', 'timeout']);
+const SHA256 = /^[0-9a-f]{64}$/u;
+const CANONICAL_BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u;
+const exactKeys = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
+  && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
+
+async function validatedRp2040Artifact(artifact, request) {
+  if (!exactKeys(artifact, ['schema', 'profile', 'sourceSha256', 'compiler', 'contract', 'elf', 'uf2'])
+      || artifact.schema !== 'intent-mcu-rp2040-compile-artifact@1'
+      || artifact.profile !== RP2040_BOARD_PROFILE || !SHA256.test(artifact.sourceSha256)
+      || artifact.sourceSha256 !== sha256(request.files[0].content)
+      || !exactKeys(artifact.compiler, ['id', 'version', 'release', 'archiveSha256'])
+      || artifact.compiler.id !== 'arm-none-eabi-gcc' || artifact.compiler.version !== '14.3.1'
+      || artifact.compiler.release !== '14.3.rel1'
+      || artifact.compiler.archiveSha256 !== '8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd'
+      || !exactKeys(artifact.elf, ['bytes', 'sha256']) || !SHA256.test(artifact.elf.sha256)
+      || !Number.isSafeInteger(artifact.elf.bytes) || artifact.elf.bytes < 1 || artifact.elf.bytes > 4 * 1024 * 1024
+      || !exactKeys(artifact.uf2, ['bytes', 'sha256', 'base64']) || !SHA256.test(artifact.uf2.sha256)
+      || !Number.isSafeInteger(artifact.uf2.bytes) || artifact.uf2.bytes < 512 || artifact.uf2.bytes > 4 * 1024 * 1024
+      || typeof artifact.uf2.base64 !== 'string' || artifact.uf2.base64.length > 6 * 1024 * 1024
+      || artifact.uf2.base64.length % 4 !== 0 || !CANONICAL_BASE64.test(artifact.uf2.base64)
+      || !artifact.contract || typeof artifact.contract !== 'object' || Array.isArray(artifact.contract)) {
+    throw new BrokerError('RP2040_ARTIFACT_INVALID');
+  }
+  const bytes = Buffer.from(artifact.uf2.base64, 'base64');
+  if (bytes.toString('base64') !== artifact.uf2.base64
+      || bytes.byteLength !== artifact.uf2.bytes || sha256(bytes) !== artifact.uf2.sha256) {
+    throw new BrokerError('RP2040_ARTIFACT_HASH_MISMATCH');
+  }
+  await loadRp2040FirmwareArtifact({ format: 'uf2', bytes: new Uint8Array(bytes), expectedSha256: artifact.uf2.sha256 });
+  return artifact;
+}
 
 export class BuildCoordinator {
   constructor({ broker, imageLock, identityLockFor = null, globalLimit = 1, perOriginLimit = 1, queueLimit = 3, rateLimit = 12, jobLimit = 16, cacheLimit = 8, jobTtlMs = 5 * 60_000 }) {
@@ -110,7 +143,29 @@ export class BuildCoordinator {
       } else {
         const artifact = worker.artifact;
         const target = candidateCompilerTarget(job.request.board);
-        if (target?.compileOnly) {
+        if (job.request.board === RP2040_BOARD_PROFILE) {
+          const artifact = await validatedRp2040Artifact(worker.artifact, job.request);
+          const result = {
+            code: worker.code,
+            inputIdentity: job.inputIdentity,
+            artifactIdentity: sha256(JSON.stringify({
+              inputIdentity: job.inputIdentity,
+              sourceSha256: artifact.sourceSha256,
+              uf2Sha256: artifact.uf2.sha256,
+            })),
+            artifact,
+            compileOnly: false,
+            diagnostics: worker.diagnostics ?? [],
+            text: worker.text ?? '',
+            isolation: worker.isolation,
+            toolchainImageId: worker.imageId,
+          };
+          job.status = 'succeeded';
+          job.phase = 'complete';
+          job.result = result;
+          if (this.cache.size >= this.cacheLimit) this.cache.delete(this.cache.keys().next().value);
+          this.cache.set(job.inputIdentity, structuredClone(result));
+        } else if (target?.compileOnly) {
           if (!validateCandidateCompileArtifact(artifact, target.profile)) {
             throw new BrokerError('CANDIDATE_ARTIFACT_INVALID');
           }

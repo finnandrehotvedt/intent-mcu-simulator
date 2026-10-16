@@ -3,7 +3,7 @@
 
 export const CANDIDATE_BUILD_REQUEST_SCHEMA = 'teach-lab-build-request@2';
 export const TARGET_AVAILABILITY_SCHEMA = 'intent-mcu-compile-target-availability@1';
-export const TARGET_AVAILABILITY_REVISION = 'public-release-rc3-20261016';
+export const TARGET_AVAILABILITY_REVISION = 'public-release-rc4-20261016';
 export const AVR_PROFILE = 'board.atmega328p-16mhz-v1';
 export const ESP32C3_PROFILE = 'board.esp32-c3-devmodule-v1';
 export const RP2040_PROFILE = 'board.rp2040-pico-v1';
@@ -37,10 +37,10 @@ const c3Availability = availability(ESP32C3_PROFILE, {
   validatedPeripherals: availableState('private-uart-only', 'ESP32C3_UART_PRIVATE_ONLY', 'Only private UART text/reset/watchdog evidence exists; GPIO and wired peripherals are not validated.'),
 });
 const rp2040Availability = availability(RP2040_PROFILE, {
-  installedCompiler: availableState('private-verified', 'RP2040_ARM_COMPILER_PRIVATE_VERIFIED', 'The fixed Arm compiler is verified privately and is not exposed by this public release.'),
-  verifiedCompileTarget: availableState('private-verified', 'RP2040_BOUNDED_SOURCE_PRIVATE_VERIFIED', 'The bounded C11 source target and strict ELF/UF2 artifacts are verified privately.'),
-  emulatorRuntime: availableState('private-proof', 'RP2040JS_PRIVATE_SOURCE_AND_FIXTURE_VERIFIED', 'Compiler-generated and retained precompiled firmware pass the bounded private rp2040js subset; no public runtime is mounted.'),
-  validatedPeripherals: availableState('private-subset', 'RP2040_PRIVATE_SUBSET_VERIFIED', 'Private GPIO0/UART0 source evidence and bounded PWM/ADC0 fixture evidence exist only.'),
+  installedCompiler: availableState('installed', 'RP2040_ARM_COMPILER_IMAGE_VERIFIED', 'The fixed Arm GNU 14.3.1 compiler image is installed and identity-pinned.'),
+  verifiedCompileTarget: availableState('verified', 'RP2040_BOUNDED_SOURCE_PUBLIC_VERIFIED', 'The exact bounded C11 source grammar produces strict source-bound UF2 artifacts.'),
+  emulatorRuntime: availableState('verified', 'RP2040JS_PUBLIC_WORKER_VERIFIED', 'Compiler-generated UF2 executes in the pinned browser-worker RP2040 subset.'),
+  validatedPeripherals: availableState('validated-subset', 'RP2040_PUBLIC_GPIO0_UART0_SUBSET', 'GPIO0 output, UART0 text, reset and the GP0-to-LED circuit path are validated.'),
 });
 const stm32Availability = availability(STM32F429ZI_PROFILE, {
   installedCompiler: availableState('private-verified', 'STM32_ARM_COMPILER_PRIVATE_VERIFIED', 'The fixed Arm compiler is verified privately and is not exposed by this public release.'),
@@ -85,15 +85,15 @@ export const CANDIDATE_COMPILER_TARGETS = Object.freeze({
   }),
   [RP2040_PROFILE]: target({
     profile: RP2040_PROFILE,
-    displayName: 'RP2040 Pico · public preview only',
-    requestSchema: null,
-    fqbn: 'rp2040:rp2040:rpipico',
-    toolchainIdentitySha256: null,
-    compilerStatus: 'unavailable',
-    runtimeStatus: 'unavailable',
-    compileAvailable: false,
+    displayName: 'RP2040 Pico · bounded public source + run',
+    requestSchema: 'intent-mcu-rp2040-source-build-request@1',
+    fqbn: 'intent:rp2040:pico-bounded-c11',
+    toolchainIdentitySha256: '8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd',
+    compilerStatus: 'supported-bounded-source',
+    runtimeStatus: 'simulated-browser-worker-subset',
+    compileAvailable: true,
     compileOnly: false,
-    fixedBuildFlags: [],
+    fixedBuildFlags: ['-mcpu=cortex-m0plus', '-mthumb', '-ffreestanding', '-Os', '-nostdlib', 'fixed-project-contract'],
     availability: rp2040Availability,
   }),
   [STM32F429ZI_PROFILE]: target({

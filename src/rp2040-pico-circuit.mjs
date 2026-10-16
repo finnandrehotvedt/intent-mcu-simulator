@@ -1,0 +1,340 @@
+// Copyright 2026 IntentForce
+// SPDX-License-Identifier: Apache-2.0
+import { COMPONENT_CATALOG, LED_FORWARD_VOLTS, defaultProperties } from './component-catalog.mjs';
+import { exactKeys, parseStrictJson } from './strict-json.mjs';
+
+export const RP2040_PICO_CIRCUIT_SCHEMA = 'intent-mcu-rp2040-pico-circuit@1';
+export const RP2040_PICO_PROFILE = 'board.rp2040-pico-v1';
+export const RP2040_PICO_CIRCUIT_LIMIT = 128 * 1024;
+export const RP2040_PICO_NOMINAL_VOLTS = 3.3;
+export const RP2040_PICO_LED_CURRENT_LIMIT_AMPS = 0.012;
+export const RP2040_PICO_DRAFT_STORAGE_KEY = 'intent-mcu.rp2040-pico-circuit.public.v1';
+export const RP2040_PICO_PIN_MAP = Object.freeze({
+  GP0: Object.freeze({ signal: 'GPIO0', physicalPin: 1, voltage: 3.3, capability: 'digital-output+pwm' }),
+  GND3: Object.freeze({ signal: 'GND', physicalPin: 3, voltage: 0, capability: 'ground-reference' }),
+});
+
+const picoPin = (id, label, role, signals, x, y, constraints) => Object.freeze({
+  id, label, role, signals: Object.freeze([...signals]), capabilities: Object.freeze([...signals]),
+  constraints: Object.freeze({ ...constraints }), anchor: Object.freeze({ x, y }),
+});
+
+export const RP2040_PICO_BOARD_DEFINITION = Object.freeze({
+  family: 'board.rp2040-pico-profile', variant: 'public-bounded-gpio0-3v3',
+  type: RP2040_PICO_PROFILE, version: 1,
+  displayName: 'RP2040 Pico profile board', manufacturer: 'Intent Learning', partNumber: 'IL-RP2040-PICO-PROFILE',
+  pins: Object.freeze([
+    picoPin('GP0', 'GPIO0 · physical pin 1', 'digital-io', ['digital.output', 'pwm.output'], 8 / 132, 27 / 300,
+      { voltageMin: 0, voltageMax: 3.3, physicalPin: 1 }),
+    picoPin('GND3', 'GND · physical pin 3', 'ground', ['ground.reference'], 8 / 132, 40 / 300,
+      { physicalPin: 3 }),
+  ]),
+  propertyKeys: Object.freeze([]), controlKeys: Object.freeze([]), propertySchema: Object.freeze({}),
+  modelRef: 'model.rp2040-pico-gpio0-public-v1', internalTerminalGroups: Object.freeze([]), selectable: false,
+  artwork: Object.freeze({
+    provenance: 'Original project SVG assembled from basic geometry; no third-party simulator artwork or traced image.',
+    license: 'Apache-2.0', renderer: 'board-rp2040-pico', thumbnail: 'board-rp2040-pico',
+    viewBox: Object.freeze([0, 0, 132, 300]), cssWidth: 132, cssHeight: 300,
+  }),
+  catalog: Object.freeze({
+    category: 'controllers', aliases: Object.freeze(['rp2040 pico profile', 'gpio0 physical pin 1']),
+    functions: Object.freeze(['bounded source execution', 'gpio0 output']),
+    interfaces: Object.freeze(['GPIO', 'PWM']), supplyVolts: Object.freeze({ min: 3.3, max: 3.3 }), package: 'development board profile',
+  }),
+  support: Object.freeze({
+    status: 'partial',
+    limitations: Object.freeze([
+      'Public bounded GPIO0 output circuit subset only; no complete board or physical-hardware equivalence.',
+      'GPIO25 is the onboard LED connection and is intentionally not exposed as a header anchor.',
+    ]),
+  }),
+});
+
+export const RP2040_PICO_COMPONENT_CATALOG = Object.freeze({
+  [RP2040_PICO_PROFILE]: RP2040_PICO_BOARD_DEFINITION,
+});
+
+const HISTORY_LIMIT = 32;
+const ID = /^[a-z][a-z0-9-]{0,47}$/u;
+const LABEL = /^[\p{L}\p{N} ._#()°Ω×+\-]{1,64}$/u;
+const BOARD = RP2040_PICO_PROFILE;
+const RESISTOR = 'resistor.fixed-v1';
+const LED = 'led.basic-v1';
+const TYPE_PINS = Object.freeze({
+  [BOARD]: new Set(['GP0', 'GND3']),
+  [RESISTOR]: new Set(['A', 'B']),
+  [LED]: new Set(['ANODE', 'CATHODE']),
+});
+
+const clone = (value) => structuredClone(value);
+const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
+const failure = (code, details = {}) => ({ ok: false, code, details: clone(details), model: null });
+
+function component(id, type, label, properties = {}) {
+  return { id, type, label, properties: type === BOARD ? {} : { ...defaultProperties(type), ...properties }, controls: {} };
+}
+
+export function createRp2040PicoCircuitDraft() {
+  return {
+    schema: RP2040_PICO_CIRCUIT_SCHEMA,
+    boardProfile: RP2040_PICO_PROFILE,
+    components: [
+      component('pico-1', BOARD, 'RP2040 Pico profile'),
+      component('resistor-1', RESISTOR, '220 Ω series resistor', { ohms: 220 }),
+      component('led-1', LED, 'External red LED', { color: 'red' }),
+    ],
+    nets: [
+      { id: 'net-gpio0', endpoints: [{ component: 'pico-1', pin: 'GP0' }, { component: 'resistor-1', pin: 'B' }] },
+      { id: 'net-series', endpoints: [{ component: 'resistor-1', pin: 'A' }, { component: 'led-1', pin: 'ANODE' }] },
+      { id: 'net-ground', endpoints: [{ component: 'led-1', pin: 'CATHODE' }, { component: 'pico-1', pin: 'GND3' }] },
+    ],
+    layout: {
+      positions: {
+        'pico-1': { x: 0.78, y: 0.52, rotation: 0 },
+        'resistor-1': { x: 0.48, y: 0.27, rotation: 0 },
+        'led-1': { x: 0.22, y: 0.48, rotation: 0 },
+      },
+      wireStyles: { 'net-gpio0': '#f5c451', 'net-series': '#f04f5f', 'net-ground': '#303943' },
+    },
+  };
+}
+
+function normalizeComponent(value) {
+  if (!exactKeys(value, ['id', 'type', 'label', 'properties', 'controls'])
+      || typeof value.id !== 'string' || !ID.test(value.id)
+      || !Object.hasOwn(TYPE_PINS, value.type)
+      || typeof value.label !== 'string' || !LABEL.test(value.label)
+      || !exactKeys(value.controls, [])) throw Object.assign(new Error('RP2040_CIRCUIT_COMPONENT_INVALID'), { code: 'RP2040_CIRCUIT_COMPONENT_INVALID' });
+  if (value.type === BOARD && !exactKeys(value.properties, [])) throw Object.assign(new Error('RP2040_CIRCUIT_COMPONENT_INVALID'), { code: 'RP2040_CIRCUIT_COMPONENT_INVALID' });
+  if (value.type === RESISTOR && (!exactKeys(value.properties, ['ohms']) || !Number.isFinite(value.properties.ohms)
+      || value.properties.ohms < 1 || value.properties.ohms > 10_000_000)) {
+    throw Object.assign(new Error('RP2040_CIRCUIT_RESISTOR_INVALID'), { code: 'RP2040_CIRCUIT_RESISTOR_INVALID' });
+  }
+  if (value.type === LED && (!exactKeys(value.properties, ['color']) || !Object.hasOwn(LED_FORWARD_VOLTS, value.properties.color))) {
+    throw Object.assign(new Error('RP2040_CIRCUIT_LED_INVALID'), { code: 'RP2040_CIRCUIT_LED_INVALID' });
+  }
+  return clone(value);
+}
+
+function normalizePosition(value) {
+  if (!exactKeys(value, ['x', 'y', 'rotation']) || !Number.isFinite(value.x) || value.x < 0 || value.x > 1
+      || !Number.isFinite(value.y) || value.y < 0 || value.y > 1 || ![0, 90, 180, 270].includes(value.rotation)) {
+    throw Object.assign(new Error('RP2040_CIRCUIT_LAYOUT_INVALID'), { code: 'RP2040_CIRCUIT_LAYOUT_INVALID' });
+  }
+  return clone(value);
+}
+
+export function normalizeRp2040PicoCircuitDraft(value) {
+  if (!exactKeys(value, ['schema', 'boardProfile', 'components', 'nets', 'layout'])
+      || value.schema !== RP2040_PICO_CIRCUIT_SCHEMA || value.boardProfile !== RP2040_PICO_PROFILE
+      || !Array.isArray(value.components) || !Array.isArray(value.nets)
+      || value.components.length > 4 || value.nets.length > 4
+      || !exactKeys(value.layout, ['positions', 'wireStyles'])
+      || value.layout.positions === null || Array.isArray(value.layout.positions)
+      || value.layout.wireStyles === null || Array.isArray(value.layout.wireStyles)) {
+    throw Object.assign(new Error('RP2040_CIRCUIT_SHAPE'), { code: 'RP2040_CIRCUIT_SHAPE' });
+  }
+  const components = value.components.map(normalizeComponent).sort((a, b) => a.id.localeCompare(b.id));
+  const componentIds = new Set();
+  for (const item of components) {
+    if (componentIds.has(item.id)) throw Object.assign(new Error('RP2040_CIRCUIT_COMPONENT_INVALID'), { code: 'RP2040_CIRCUIT_COMPONENT_INVALID' });
+    componentIds.add(item.id);
+  }
+  const positionKeys = Object.keys(value.layout.positions).sort();
+  if (positionKeys.length !== componentIds.size || positionKeys.some((id) => !componentIds.has(id))) {
+    throw Object.assign(new Error('RP2040_CIRCUIT_LAYOUT_INVALID'), { code: 'RP2040_CIRCUIT_LAYOUT_INVALID' });
+  }
+  const positions = Object.fromEntries(positionKeys.map((id) => [id, normalizePosition(value.layout.positions[id])]));
+  const netIds = new Set();
+  const endpoints = new Set();
+  const nets = value.nets.map((net) => {
+    if (!exactKeys(net, ['id', 'endpoints']) || typeof net.id !== 'string' || !ID.test(net.id)
+        || netIds.has(net.id) || !Array.isArray(net.endpoints) || net.endpoints.length !== 2) {
+      throw Object.assign(new Error('RP2040_CIRCUIT_NET_INVALID'), { code: 'RP2040_CIRCUIT_NET_INVALID' });
+    }
+    netIds.add(net.id);
+    const normalizedEndpoints = net.endpoints.map((endpoint) => {
+      if (!exactKeys(endpoint, ['component', 'pin']) || !componentIds.has(endpoint.component)
+          || typeof endpoint.pin !== 'string') {
+        throw Object.assign(new Error('RP2040_CIRCUIT_ENDPOINT_INVALID'), { code: 'RP2040_CIRCUIT_ENDPOINT_INVALID' });
+      }
+      const item = components.find((candidate) => candidate.id === endpoint.component);
+      if (item.type === BOARD && !TYPE_PINS[BOARD].has(endpoint.pin)) {
+        throw Object.assign(new Error('RP2040_PIN_UNPROVEN'), { code: 'RP2040_PIN_UNPROVEN', pin: endpoint.pin });
+      }
+      if (!TYPE_PINS[item.type].has(endpoint.pin)) {
+        throw Object.assign(new Error('RP2040_CIRCUIT_ENDPOINT_INVALID'), { code: 'RP2040_CIRCUIT_ENDPOINT_INVALID' });
+      }
+      const key = endpointKey(endpoint);
+      if (endpoints.has(key)) throw Object.assign(new Error('RP2040_CIRCUIT_ENDPOINT_REUSED'), { code: 'RP2040_CIRCUIT_ENDPOINT_REUSED' });
+      endpoints.add(key);
+      return clone(endpoint);
+    }).sort((a, b) => endpointKey(a).localeCompare(endpointKey(b)));
+    return { id: net.id, endpoints: normalizedEndpoints };
+  }).sort((a, b) => a.id.localeCompare(b.id));
+  const wireStyleKeys = Object.keys(value.layout.wireStyles).sort();
+  if (wireStyleKeys.some((id) => !netIds.has(id) || typeof value.layout.wireStyles[id] !== 'string'
+      || !/^#[0-9a-f]{6}$/iu.test(value.layout.wireStyles[id]))) {
+    throw Object.assign(new Error('RP2040_CIRCUIT_LAYOUT_INVALID'), { code: 'RP2040_CIRCUIT_LAYOUT_INVALID' });
+  }
+  const wireStyles = Object.fromEntries(wireStyleKeys.map((id) => [id, value.layout.wireStyles[id].toLowerCase()]));
+  return { schema: RP2040_PICO_CIRCUIT_SCHEMA, boardProfile: RP2040_PICO_PROFILE, components, nets, layout: { positions, wireStyles } };
+}
+
+function hasPair(net, left, right) {
+  const keys = new Set(net.endpoints.map(endpointKey));
+  return keys.has(left) && keys.has(right);
+}
+
+export function validateRp2040PicoCircuit(value) {
+  let draft;
+  try { draft = normalizeRp2040PicoCircuitDraft(value); }
+  catch (error) { return failure(error.code ?? 'RP2040_CIRCUIT_INVALID', { pin: error.pin ?? null }); }
+  const boards = draft.components.filter((item) => item.type === BOARD);
+  if (boards.length !== 1) return failure('RP2040_BOARD_COUNT');
+  const board = boards[0];
+  const resistor = draft.components.find((item) => item.type === RESISTOR);
+  const led = draft.components.find((item) => item.type === LED);
+  if (!resistor) return failure('RP2040_SERIES_RESISTOR_REQUIRED');
+  if (!led) return failure('RP2040_PATH_OPEN');
+  const boardGp0 = `${board.id}.GP0`;
+  const boardGround = `${board.id}.GND3`;
+  const ledAnode = `${led.id}.ANODE`;
+  const ledCathode = `${led.id}.CATHODE`;
+  const endpointSet = new Set(draft.nets.flatMap((net) => net.endpoints.map(endpointKey)));
+  if (!endpointSet.has(boardGround)) return failure('RP2040_GROUND_REQUIRED');
+  if (!endpointSet.has(boardGp0)) return failure('RP2040_PATH_OPEN');
+  const reverse = draft.nets.some((net) => hasPair(net, boardGp0, ledCathode)
+    || hasPair(net, boardGround, ledAnode)
+    || net.endpoints.some((endpoint) => endpointKey(endpoint) === ledCathode)
+      && net.endpoints.some((endpoint) => endpoint.component === resistor.id));
+  if (reverse) return failure('RP2040_LED_REVERSE_POLARITY');
+  const orientations = [['A', 'B'], ['B', 'A']];
+  const accepted = orientations.find(([sourceLead, ledLead]) =>
+    draft.nets.some((net) => hasPair(net, boardGp0, `${resistor.id}.${sourceLead}`))
+    && draft.nets.some((net) => hasPair(net, `${resistor.id}.${ledLead}`, ledAnode))
+    && draft.nets.some((net) => hasPair(net, ledCathode, boardGround)));
+  if (!accepted || draft.nets.length !== 3) return failure('RP2040_PATH_OPEN');
+  const forwardVolts = LED_FORWARD_VOLTS[led.properties.color];
+  const peakCurrentAmps = (RP2040_PICO_NOMINAL_VOLTS - forwardVolts) / resistor.properties.ohms;
+  if (!Number.isFinite(peakCurrentAmps) || peakCurrentAmps <= 0
+      || peakCurrentAmps > RP2040_PICO_LED_CURRENT_LIMIT_AMPS) {
+    return failure('RP2040_LED_OVERCURRENT', { peakCurrentAmps, limitAmps: RP2040_PICO_LED_CURRENT_LIMIT_AMPS });
+  }
+  return {
+    ok: true,
+    code: 'OK',
+    draft,
+    model: {
+      sourcePin: 'GPIO0', sourceAnchor: 'GP0', sourcePhysicalPin: 1,
+      groundAnchor: 'GND3', groundPhysicalPin: 3,
+      nominalVolts: RP2040_PICO_NOMINAL_VOLTS,
+      resistorId: resistor.id, resistorOhms: resistor.properties.ohms,
+      ledId: led.id, ledColor: led.properties.color, forwardVolts, peakCurrentAmps,
+    },
+  };
+}
+
+export function observeRp2040PicoCircuit(value, runtime) {
+  const validation = validateRp2040PicoCircuit(value);
+  if (!validation.ok || !runtime || runtime.profile !== RP2040_PICO_PROFILE
+      || ['error', 'stopped-error', 'disposed', 'reset', 'ready'].includes(runtime.kind)) {
+    return { active: false, on: false, instantaneousOn: false, brightness: 0, averageCurrentAmps: 0,
+      peakCurrentAmps: validation.model?.peakCurrentAmps ?? 0,
+      code: validation.ok ? 'RP2040_RUNTIME_INACTIVE' : validation.code };
+  }
+  const level = runtime.experimental?.gpio0?.mode === 'output' && runtime.experimental.gpio0.level === true;
+  const duty = runtime.experimental?.pwm && Number.isFinite(runtime.experimental.pwm.dutyCycle)
+    ? Math.max(0, Math.min(1, runtime.experimental.pwm.dutyCycle)) : (level ? 1 : 0);
+  return {
+    active: true, on: duty > 0, instantaneousOn: level, brightness: duty,
+    averageCurrentAmps: validation.model.peakCurrentAmps * duty,
+    peakCurrentAmps: validation.model.peakCurrentAmps,
+    code: 'OK', sourcePin: validation.model.sourcePin,
+  };
+}
+
+export function canonicalRp2040PicoCircuitJson(value) {
+  return JSON.stringify(normalizeRp2040PicoCircuitDraft(value), null, 2);
+}
+
+export function parseRp2040PicoCircuitText(source) {
+  try {
+    const draft = normalizeRp2040PicoCircuitDraft(parseStrictJson(source, RP2040_PICO_CIRCUIT_LIMIT));
+    return { ok: true, code: 'OK', draft, validation: validateRp2040PicoCircuit(draft) };
+  } catch (error) {
+    return failure(error.code ?? 'MALFORMED_JSON');
+  }
+}
+
+export class Rp2040PicoCircuitEditor {
+  constructor(draft = createRp2040PicoCircuitDraft()) {
+    this.draft = normalizeRp2040PicoCircuitDraft(draft);
+    this.selection = { kind: 'none' };
+    this.history = [];
+    this.revision = 0;
+  }
+
+  snapshot() {
+    return { draft: clone(this.draft), selection: clone(this.selection), revision: this.revision,
+      canUndo: this.history.length > 0, validation: validateRp2040PicoCircuit(this.draft) };
+  }
+
+  select(selection) {
+    const next = selection?.kind === 'component' && this.draft.components.some((item) => item.id === selection.id)
+      ? { kind: 'component', id: selection.id }
+      : selection?.kind === 'net' && this.draft.nets.some((item) => item.id === selection.id)
+        ? { kind: 'net', id: selection.id } : { kind: 'none' };
+    this.selection = next;
+    return this.snapshot();
+  }
+
+  #commit(next) {
+    this.history.push(this.draft);
+    if (this.history.length > HISTORY_LIMIT) this.history.shift();
+    this.draft = normalizeRp2040PicoCircuitDraft(next);
+    this.selection = { kind: 'none' };
+    this.revision += 1;
+    return this.snapshot();
+  }
+
+  deleteSelected() {
+    if (this.selection.kind === 'none') return { ok: false, code: 'RP2040_SELECTION_REQUIRED', ...this.snapshot() };
+    if (this.selection.kind === 'component') {
+      const selected = this.draft.components.find((item) => item.id === this.selection.id);
+      if (selected?.type === BOARD) return { ok: false, code: 'RP2040_BOARD_FIXED', ...this.snapshot() };
+      const next = clone(this.draft);
+      next.components = next.components.filter((item) => item.id !== this.selection.id);
+      next.nets = next.nets.filter((net) => !net.endpoints.some((endpoint) => endpoint.component === this.selection.id));
+      delete next.layout.positions[this.selection.id];
+      for (const id of Object.keys(next.layout.wireStyles)) if (!next.nets.some((net) => net.id === id)) delete next.layout.wireStyles[id];
+      return { ok: true, code: 'RP2040_COMPONENT_DELETED', ...this.#commit(next) };
+    }
+    const next = clone(this.draft);
+    next.nets = next.nets.filter((net) => net.id !== this.selection.id);
+    delete next.layout.wireStyles[this.selection.id];
+    return { ok: true, code: 'RP2040_NET_DELETED', ...this.#commit(next) };
+  }
+
+  undo() {
+    if (!this.history.length) return { ok: false, code: 'RP2040_UNDO_EMPTY', ...this.snapshot() };
+    this.draft = this.history.pop();
+    this.selection = { kind: 'none' };
+    this.revision += 1;
+    return { ok: true, code: 'RP2040_UNDONE', ...this.snapshot() };
+  }
+
+  restoreExample() { return { ok: true, code: 'RP2040_EXAMPLE_RESTORED', ...this.#commit(createRp2040PicoCircuitDraft()) }; }
+
+  openText(source) {
+    const parsed = parseRp2040PicoCircuitText(source);
+    if (!parsed.ok) return { ...parsed, ...this.snapshot() };
+    return { ok: true, code: 'RP2040_DRAFT_OPENED', ...this.#commit(parsed.draft) };
+  }
+
+  saveText() { return canonicalRp2040PicoCircuitJson(this.draft); }
+}
+
+export function rp2040PicoCircuitDependencies() {
+  return [RP2040_PICO_BOARD_DEFINITION.type, COMPONENT_CATALOG[RESISTOR]?.type ?? null, COMPONENT_CATALOG[LED]?.type ?? null];
+}

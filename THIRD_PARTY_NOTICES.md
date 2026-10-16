@@ -10,6 +10,11 @@ corresponding-source/relinking boundary are in `toolchain/NOTICE.md` and
 `toolchain/SOURCE-AND-RELINKING.md`. The project does not distribute that
 image, those archives or compiled learner firmware.
 
+The bounded RP2040 compiler image is likewise built locally from Arm GNU
+Toolchain 14.3.Rel1 using the exact URL and SHA-256 recorded in
+`compiler/RP2040-TOOLCHAIN-MANIFEST.md`. Its archive, bundled licence file,
+built image and compiled learner firmware are not distributed here.
+
 ## avr8js 0.21.1
 
 - Source: <https://github.com/wokwi/avr8js/tree/v0.21.1>
@@ -19,6 +24,33 @@ image, those archives or compiled learner firmware.
 > The MIT License (MIT)
 >
 > Copyright (c) 2019-2025 Uri Shaked
+>
+> Permission is hereby granted, free of charge, to any person obtaining a copy
+> of this software and associated documentation files (the "Software"), to deal
+> in the Software without restriction, including without limitation the rights
+> to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+> copies of the Software, and to permit persons to whom the Software is
+> furnished to do so, subject to the following conditions:
+>
+> The above copyright notice and this permission notice shall be included in
+> all copies or substantial portions of the Software.
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+> THE SOFTWARE.
+
+## rp2040js 1.4.0
+
+- Source: <https://github.com/wokwi/rp2040js/tree/v1.4.0>
+- npm integrity: `sha512-knEMw0SRP9JPVLvhhYB3rjP4gLQhcWs9UOXKvxFU9Rn5eWvmlPzObMhEjfeLZ6H8FGepd6ZtMAYzGEtCaB9qYg==`
+
+> The MIT License (MIT)
+>
+> Copyright (c) 2021 Uri Shaked
 >
 > Permission is hereby granted, free of charge, to any person obtaining a copy
 > of this software and associated documentation files (the "Software"), to deal

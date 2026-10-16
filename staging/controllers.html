@@ -13,7 +13,7 @@
 </head>
 <body>
   <main class="docs-main">
-    <header class="app-header"><div><p class="eyebrow">ONE PUBLIC RUNTIME · THREE HONEST PREVIEWS</p><h1>Controller status</h1></div><p class="lede">A selectable profile is not an execution claim. Public capability and private evidence are listed separately.</p></header>
+    <header class="app-header"><div><p class="eyebrow">TWO PUBLIC SUBSETS · TWO HONEST PREVIEWS</p><h1>Controller status</h1></div><p class="lede">A selectable profile is not automatically an execution claim. Public capability and private evidence are listed separately.</p></header>
     <nav class="docs-nav" aria-label="Lab documentation"><a href="/">Open workbench</a><a href="/components.html">Components</a><a href="/examples.html">Examples</a><a href="/support.html">Support</a></nav>
     <section class="panel" aria-labelledby="matrix-title">
       <h2 id="matrix-title">Public release support matrix</h2>
@@ -22,17 +22,18 @@
         <tbody>
           <tr><td>ATmega328P · 16 MHz · 5 V</td><td class="status-supported">Supported</td><td class="status-supported">Supported subset</td><td>Fixed AVR toolchain and deterministic browser worker. See the tested peripheral limits below.</td></tr>
           <tr><td>ESP32-C3 development module</td><td class="status-limited">Public preview only</td><td>Public Run disabled</td><td>Private bounded edited-Serial compilation and actual QEMU UART/reset/watchdog evidence. No public project upload, endpoint, GPIO, or wired-circuit support.</td></tr>
-          <tr><td>RP2040 Pico</td><td class="status-limited">Public preview only</td><td>Public Run disabled</td><td>Private bounded C11 → fixed ARM compiler → strict UF2/ELF → rp2040js GPIO0/UART0 evidence, plus retained local/precompiled routes. No public Build, firmware picker, PIO/DMA/USB/multicore claim, or runtime.</td></tr>
+          <tr><td>RP2040 Pico</td><td class="status-supported">Supported bounded source</td><td class="status-supported">Supported GPIO0/UART0 subset</td><td>One fixed C11 grammar → isolated Arm GNU 14.3.1 compiler → strict source-bound UF2 → rp2040js 1.4.0 browser worker. GP0 pin 1, GND pin 3, external LED and UART0 only; no complete SDK, PIO, DMA, USB, multicore or physical-device claim.</td></tr>
           <tr><td>STM32F429ZI</td><td class="status-limited">Public preview only</td><td>Public Run disabled</td><td>Private bounded C11 → fixed ARM compiler → strict ELF → actual Renode PB0/USART3/reset evidence, plus a retained fixture. No public Build, arbitrary-ELF input, external wire, broad peripheral claim, or runtime.</td></tr>
         </tbody>
       </table>
     </section>
-    <section class="docs-grid" aria-label="ATmega328P support details">
+    <section class="docs-grid" aria-label="Public controller support details">
       <article class="docs-card"><h2>Tested AVR subset</h2><ul><li>Digital GPIO D0–D13, input, output, and pull-up modes</li><li>ADC A0–A5 against bounded 0–5 V sources</li><li>PWM on D3, D5, D6, D9, D10, and D11</li><li>USART0, bounded timing, deterministic reset, and instruction stepping</li><li>INT0/INT1 and the implemented pin-change masks</li></ul></article>
+      <article class="docs-card"><h2>Tested Pico subset</h2><ul><li>One exact bounded <code>main.c</code> grammar</li><li>GPIO0 HIGH or LOW from compiled firmware</li><li>UART0 uppercase text from compiled firmware</li><li>Source-bound strict UF2 execution in a browser worker</li><li>GP0 physical pin 1 through 220 Ω and LED to GND physical pin 3</li></ul></article>
       <article class="docs-card"><h2>Not claimed</h2><p>Complete cycle-perfect hardware equivalence, physical-device upload, every library, SPI, I²C/TWI, EEPROM writes, watchdog activation, analogue-comparator use, and electrical-safety certification are not part of this release.</p></article>
     </section>
-    <section class="panel about"><h2>Why the three previews stay private</h2><p class="docs-intro">The bounded private proofs are not production multi-user services. Public execution remains disabled until fair admission, per-origin/session rate and concurrency limits, abuse accounting, time/body/output limits, memory-only transient projects, cancellation cleanup, networkless non-privileged isolation, and an availability/operations contract pass release acceptance. The C3 compiler worker must also run non-root.</p></section>
-    <footer>Verified for Intent MCU Simulator 1.1.0-rc.3 · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/COMPATIBILITY.md">source compatibility document</a></footer>
+    <section class="panel about"><h2>Why two profiles remain previews</h2><p class="docs-intro">The bounded ESP32-C3 and STM32F429ZI private proofs are not yet production multi-user services. Their public execution remains disabled until each exact profile passes its own isolation, admission, lifecycle, peripheral and release acceptance. Private evidence never inherits the public AVR or Pico authority.</p></section>
+    <footer>Verified for Intent MCU Simulator 1.1.0-rc.4 · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/COMPATIBILITY.md">source compatibility document</a></footer>
   </main>
 </body>
 </html>

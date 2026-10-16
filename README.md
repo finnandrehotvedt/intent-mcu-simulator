@@ -36,19 +36,24 @@ support pages, a canonical URL, social-preview metadata, truthful Schema.org
 the supported product and link back to this source, licence, contribution
 guidance, and the two owner articles. They do not promise search rankings, AI
 citations, physical equivalence, hosted AI, or capabilities outside the tested
-ATmega328P subset.
+ATmega328P and bounded RP2040 Pico subsets.
 
-The controller selector also exposes three truthful, non-executable capability
-previews. They report bounded private verification without enabling public
-project upload, Build, Run, runtime sessions, or private endpoints. Selecting a
-preview parks the AVR project without mapping its circuit to another family;
-returning to AVR restores the supported workbench.
+The controller selector exposes two public execution profiles and two truthful,
+non-executable capability previews. The bounded Pico profile has its own local
+data-only project, exact source grammar, fixed compiler and browser worker. The
+ESP32-C3 and STM32F429ZI previews report private verification without enabling
+public project upload, Build, Run, runtime sessions, or private endpoints.
+Selecting a non-AVR profile parks the AVR project without remapping its circuit;
+returning to AVR restores that workbench.
 
 ## Current source-release boundary
 
-The browser source supports one ATmega328P learning profile and 16 selectable
-parts: core passives, momentary and latching contacts, analogue and digital
-sensors, LEDs and displays, an active buzzer, and a quadrature encoder. It also
+The full circuit editor supports one ATmega328P learning profile and 16
+selectable parts: core passives, momentary and latching contacts, analogue and
+digital sensors, LEDs and displays, an active buzzer, and a quadrature encoder.
+A separate bounded RP2040 Pico profile accepts one exact C11 source grammar,
+compiles a source-bound UF2 and executes GPIO0/UART0 in a browser worker against
+one validated GP0-to-resistor-to-LED-to-GND circuit. The application also
 supports user-owned local project files, Prompt Bridge circuit-plan validation,
 serial display, logic traces, and pin inspection. Its manual-first workbench
 uses a data-driven catalogue with nine
@@ -125,14 +130,13 @@ source; it does not authorize redistributing the resulting image.
 
 Additional current limits:
 
-- source version `1.1.0-rc.3` is prepared for the release at
+- source version `1.1.0-rc.4` is prepared for the release at
   `https://lab.teachthecompany.com/`; hosted compiler/toolchain images and
   private deployment configuration remain outside this source repository;
-- the public compiler and virtual runtime support only the tested ATmega328P
-  subset; ESP32-C3, RP2040 and STM32F429ZI have increasingly complete bounded
-  private source/compiler/runtime evidence, but all three remain public
-  previews with project upload, Build, Run, firmware selection, and private
-  runtime endpoints disabled;
+- public execution supports the tested ATmega328P subset and one bounded
+  RP2040 Pico GPIO0/UART0 source profile; ESP32-C3 and STM32F429ZI have bounded
+  private source/compiler/runtime evidence but remain public previews with
+  Build, Run, project upload and private endpoints disabled;
 - no physical board connection, firmware upload, live AI call, account,
   analytics, or cloud project store is included;
 - the CPU/peripheral profile is a tested educational subset, not a promise of
