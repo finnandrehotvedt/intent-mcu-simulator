@@ -15,6 +15,20 @@ Toolchain 14.3.Rel1 using the exact URL and SHA-256 recorded in
 `compiler/RP2040-TOOLCHAIN-MANIFEST.md`. Its archive, bundled licence file,
 built image and compiled learner firmware are not distributed here.
 
+The hosted bounded ESP32-C3 compiler uses Arduino CLI 1.5.1,
+Arduino-ESP32 3.3.10, Espressif RISC-V toolchain 2601, esptool 5.3.0 and the
+ESP32-C3 3.3.10 libraries under their respective GPL, LGPL, Apache and
+permissive terms. The hosted runtime uses Espressif QEMU tag
+`esp-develop-9.2.2-20260417` at commit
+`40edccac415693c5130f91c01d84176ae6008566`; QEMU is GPL-2.0 as a whole with
+compatible per-file and firmware terms. These are server-side tools, not
+browser assets or prebuilt source-release artifacts. Exact versions, source
+URLs and hashes are recorded in `DEPENDENCIES.md`, `c3/flash-lock.json`,
+`compiler/esp32c3-toolchain-manifest.json`, and `c3/runtime-manifest.json`.
+Any external image or binary distribution requires a separate source,
+licence, notice and relinking review. QEMU is a trademark of Software Freedom
+Conservancy; this project claims no affiliation.
+
 ## avr8js 0.21.1
 
 - Source: <https://github.com/wokwi/avr8js/tree/v0.21.1>

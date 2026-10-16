@@ -1,4 +1,4 @@
-# Migration to 1.1.0-rc.4
+# Migration to 1.1.0-rc.5
 
 There is no account, cloud project database, or server-side project migration.
 Existing browser recovery remains readable. Before changing versions, save an
@@ -16,7 +16,12 @@ replace the current project. The new components extend project-v3 data while
 the established v2 import path remains available.
 
 Selecting any non-AVR profile parks the current AVR data without migrating,
-reinterpreting or uploading it. RP2040 Pico has a separate local data-only
-project format; Open never restores executable bytes and a fresh Build is
-required before Run. ESP32-C3 and STM32F429ZI remain status previews. Return to
-AVR and rebuild before running that project again.
+reinterpreting or uploading it, and the inactive AVR canvas is hidden to avoid
+presenting two circuits as active. RP2040 Pico and ESP32-C3 each have a
+separate local data-only project format; Open never restores executable bytes
+and a fresh Build is required before Run. The existing Return to AVR action
+restores the parked AVR editor. STM32F429ZI remains a status preview.
+
+The five AVR starter projects can now replace one another across both project
+schema generations without retaining a stale reducer. Firmware artifacts are
+still never migrated or reused; build again after choosing a starter.

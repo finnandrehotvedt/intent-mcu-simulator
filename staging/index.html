@@ -4,17 +4,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Build and run supported ATmega328P and bounded RP2040 Pico projects, with honest preview-only status for ESP32-C3 and STM32F429ZI.">
+  <meta name="description" content="Build and run supported ATmega328P, bounded RP2040 Pico and bounded ESP32-C3 projects, with actual QEMU CPU/UART and an honestly separate GPIO2 model.">
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
   <meta name="theme-color" content="#07121d">
-  <title>Intent MCU Simulator | Public AVR and Pico workbenches</title>
+  <title>Intent MCU Simulator | Public AVR, Pico and ESP32-C3 workbenches</title>
   <link rel="canonical" href="https://lab.teachthecompany.com/">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="alternate" href="/llms.txt" type="text/plain" title="Intent MCU Simulator facts for AI-assisted discovery">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Teach the Company">
-  <meta property="og:title" content="Intent MCU Simulator | Public AVR and Pico workbenches">
-  <meta property="og:description" content="Run supported AVR projects or a bounded RP2040 Pico GPIO0/UART0 project, with honest previews for ESP32-C3 and STM32F429ZI.">
+  <meta property="og:title" content="Intent MCU Simulator | Public AVR, Pico and ESP32-C3 workbenches">
+  <meta property="og:description" content="Run supported AVR, bounded Pico, or bounded ESP32-C3 source through a fixed compiler and actual QEMU CPU/UART.">
   <meta property="og:url" content="https://lab.teachthecompany.com/">
   <meta property="og:image" content="https://lab.teachthecompany.com/social-card.png">
   <meta property="og:image:type" content="image/png">
@@ -22,18 +22,18 @@
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Intent MCU Simulator workbench with an original virtual controller, connected LED, source code, and logic trace.">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Intent MCU Simulator | Public AVR and Pico workbenches">
-  <meta name="twitter:description" content="Run supported AVR projects or a bounded RP2040 Pico GPIO0/UART0 project, with honest previews for ESP32-C3 and STM32F429ZI.">
+  <meta name="twitter:title" content="Intent MCU Simulator | Public AVR, Pico and ESP32-C3 workbenches">
+  <meta name="twitter:description" content="Run supported AVR, bounded Pico, or bounded ESP32-C3 source through a fixed compiler and actual QEMU CPU/UART.">
   <meta name="twitter:image" content="https://lab.teachthecompany.com/social-card.png">
   <meta name="twitter:image:alt" content="Intent MCU Simulator workbench with an original virtual controller, connected LED, source code, and logic trace.">
-  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://lab.teachthecompany.com/#website","url":"https://lab.teachthecompany.com/","name":"Intent MCU Simulator","inLanguage":"en","mainEntity":{"@id":"https://lab.teachthecompany.com/#software"}},{"@type":"WebApplication","@id":"https://lab.teachthecompany.com/#software","name":"Intent MCU Simulator","url":"https://lab.teachthecompany.com/","description":"An original public browser workbench for supported ATmega328P projects and a bounded RP2040 Pico GPIO0/UART0 source profile, with non-executable status previews for ESP32-C3 and STM32F429ZI.","applicationCategory":"EducationalApplication","operatingSystem":"Any modern browser","isAccessibleForFree":true,"softwareVersion":"1.1.0-rc.4","license":"https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/LICENSE","codeRepository":"https://github.com/finnandrehotvedt/intent-mcu-simulator","featureList":["Manual AVR pin-to-pin circuit building","Local AVR and Pico project Save and Open","Isolated AVR and bounded RP2040 firmware compilation","Deterministic virtual AVR execution","Browser-worker RP2040 GPIO0 and UART0 execution","Truthful preview-only controller capability views","Sixteen selectable AVR circuit components","Five validated AVR starter projects","Serial console, logic analyser and pin inspector","Validation-gated portable Prompt Bridge"],"author":{"@type":"Person","name":"Finn Andre Hotvedt","url":"https://finnandre.no/"},"publisher":{"@type":"Organization","name":"IntentForce","url":"https://www.intentforce.no/"}},{"@type":"FAQPage","@id":"https://lab.teachthecompany.com/#questions","mainEntity":[{"@type":"Question","name":"Which controllers run in the public simulator?","acceptedAnswer":{"@type":"Answer","text":"The tested ATmega328P 16 MHz, 5 V educational profile and one bounded RP2040 Pico GPIO0/UART0 source profile compile and run publicly. ESP32-C3 and STM32F429ZI remain selectable, non-executable status previews."}},{"@type":"Question","name":"Where are projects saved?","acceptedAnswer":{"@type":"Answer","text":"Save and Open use a file selected on the learner's own computer. Browser recovery is separate, and there is no account or cloud project store."}},{"@type":"Question","name":"Does Prompt Bridge connect to a hosted AI service?","acceptedAnswer":{"@type":"Answer","text":"No. Prompt Bridge creates portable text for a tool chosen by the user. Only returned structured circuit data that passes project-owned schema, pin, and electrical validation can reach the validated canvas."}},{"@type":"Question","name":"Does the simulator replace testing on physical hardware?","acceptedAnswer":{"@type":"Answer","text":"No. The workbench is an educational simulation of verified subsets. It is not physical safety certification and does not claim complete timing or hardware equivalence."}}]}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://lab.teachthecompany.com/#website","url":"https://lab.teachthecompany.com/","name":"Intent MCU Simulator","inLanguage":"en","mainEntity":{"@id":"https://lab.teachthecompany.com/#software"}},{"@type":"WebApplication","@id":"https://lab.teachthecompany.com/#software","name":"Intent MCU Simulator","url":"https://lab.teachthecompany.com/","description":"An original public browser workbench for supported ATmega328P projects, a bounded RP2040 Pico GPIO0/UART0 profile, and a bounded ESP32-C3 GPIO2/UART profile with actual QEMU CPU/UART and a separately labelled project-owned GPIO model.","applicationCategory":"EducationalApplication","operatingSystem":"Any modern browser","isAccessibleForFree":true,"softwareVersion":"1.1.0-rc.5","license":"https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/LICENSE","codeRepository":"https://github.com/finnandrehotvedt/intent-mcu-simulator","featureList":["Manual AVR pin-to-pin circuit building","Local data-only project Save and Open","Isolated AVR, bounded RP2040, and bounded ESP32-C3 firmware compilation","Deterministic virtual AVR execution","Browser-worker RP2040 GPIO0 and UART0 execution","Actual Espressif QEMU esp32c3 CPU and UART execution","Separately labelled project-owned ESP32-C3 GPIO2 LED model","Truthful preview-only STM32 capability view","Sixteen selectable AVR circuit components","Five validated AVR starter projects","Serial console, logic analyser and pin inspector","Validation-gated portable Prompt Bridge"],"author":{"@type":"Person","name":"Finn Andre Hotvedt","url":"https://finnandre.no/"},"publisher":{"@type":"Organization","name":"IntentForce","url":"https://www.intentforce.no/"}},{"@type":"FAQPage","@id":"https://lab.teachthecompany.com/#questions","mainEntity":[{"@type":"Question","name":"Which controllers run in the public simulator?","acceptedAnswer":{"@type":"Answer","text":"The tested ATmega328P educational profile, one bounded RP2040 Pico GPIO0/UART0 profile, and one bounded ESP32-C3 GPIO2/UART profile compile and run publicly. STM32F429ZI remains a selectable, non-executable status preview."}},{"@type":"Question","name":"What does the ESP32-C3 LED show?","acceptedAnswer":{"@type":"Answer","text":"Actual Espressif QEMU executes the compiled CPU and UART path. Executed GPIO2 register writes feed a separately labelled project-owned LED model; QEMU pin state is not observed."}},{"@type":"Question","name":"Where are projects saved?","acceptedAnswer":{"@type":"Answer","text":"Save and Open use a file selected on the learner's own computer. Browser recovery is separate, and there is no account or cloud project store."}},{"@type":"Question","name":"Does Prompt Bridge connect to a hosted AI service?","acceptedAnswer":{"@type":"Answer","text":"No. Prompt Bridge creates portable text for a tool chosen by the user. Only returned structured circuit data that passes project-owned schema, pin, and electrical validation can reach the validated canvas."}},{"@type":"Question","name":"Does the simulator replace testing on physical hardware?","acceptedAnswer":{"@type":"Answer","text":"No. The workbench is an educational simulation of verified subsets. It is not physical safety certification and does not claim complete timing or hardware equivalence."}}]}]}</script>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <main>
     <header class="app-header">
-      <div><p class="eyebrow">PUBLIC RELEASE · AVR + BOUNDED PICO · TWO HONEST PREVIEWS</p><h1>Intent MCU Simulator</h1></div>
-      <p class="lede">Build and run supported AVR projects or a bounded RP2040 Pico GPIO0/UART0 project. ESP32-C3 and STM32F429ZI remain clearly labelled previews.</p>
+      <div><p class="eyebrow">PUBLIC RELEASE · AVR + BOUNDED PICO + BOUNDED ESP32-C3</p><h1>Intent MCU Simulator</h1></div>
+      <p class="lede">Build and run supported AVR, Pico, or ESP32-C3 learning projects. C3 uses actual QEMU CPU/UART while its GPIO2 LED is an explicitly separate project-owned model.</p>
     </header>
 
     <section class="project-bar panel" aria-label="Project controls">
@@ -76,6 +76,11 @@
         <p id="controller-workbench-eyebrow" class="eyebrow">PUBLICLY SUPPORTED</p>
         <div class="controller-title-row"><h2 id="controller-workbench-title">ATmega328P circuit workbench</h2><span id="controller-workbench-badge" class="controller-badge supported">Supported</span></div>
         <p id="controller-workbench-summary" class="controller-summary">Build a circuit, edit source, compile in the fixed AVR toolchain and run the tested deterministic browser-worker subset.</p>
+      </div>
+      <div class="controller-profile-picker">
+        <label for="board-select">Active controller workbench</label>
+        <select id="board-select"><option value="board.atmega328p-16mhz-v1">ATmega328P · public build + run</option><option value="board.esp32-c3-devmodule-v1">ESP32-C3 · bounded public build + actual QEMU</option><option value="board.rp2040-pico-v1">RP2040 Pico · bounded public build + run</option><option value="board.stm32f429zi-nucleo144-v1">STM32F429ZI · private verified · public preview</option></select>
+        <p id="controller-status" class="truth">ATmega328P · compile and tested virtual runtime.</p>
       </div>
       <dl class="controller-capabilities" aria-label="Selected controller capabilities">
         <div><dt>Project</dt><dd id="controller-capability-project">Local Save/Open and browser recovery</dd></div>
@@ -149,12 +154,69 @@
       </div>
     </section>
 
+    <section id="c3-public-workbench" class="c3-public-workbench panel" aria-labelledby="c3-public-title" hidden>
+      <div class="c3-public-heading">
+        <div><p class="eyebrow">ESP32-C3 · PUBLIC BOUNDED SOURCE</p><h2 id="c3-public-title">Compile GPIO2, run actual QEMU CPU/UART</h2></div>
+        <span id="c3-state" class="state" role="status">editing</span>
+      </div>
+      <div class="c3-boundary-grid" aria-label="ESP32-C3 execution boundaries">
+        <article><small>ACTUAL EXECUTION</small><strong>Espressif QEMU esp32c3 CPU + UART</strong><span>Compiled flash boots twice; UART marker and reset provenance come from QEMU.</span></article>
+        <article><small>SEPARATE PROJECT MODEL</small><strong>IntentForce GPIO2 register adapter + LED</strong><span>Interprets actual executed MMIO stores. QEMU pin state is not observed or claimed.</span></article>
+      </div>
+      <p class="truth">The fixed sketch grammar may set GPIO2 OUTPUT/INPUT, choose HIGH/LOW and print one uppercase marker. No SDK, arbitrary source, Wi-Fi, Bluetooth, broad peripherals, general ESP32 family or physical-hardware claim. GPIO2 is also a strapping pin on real boards—verify hardware before reuse.</p>
+      <div class="c3-public-grid">
+        <section class="c3-project-pane" aria-label="ESP32-C3 bounded source project">
+          <label for="c3-project-name">Local project name</label>
+          <input id="c3-project-name" type="text" maxlength="80" value="ESP32-C3 GPIO2 source project" autocomplete="off">
+          <div class="c3-project-actions">
+            <button id="c3-save" type="button">Save local project</button>
+            <button id="c3-open" type="button">Open local project</button>
+            <input id="c3-open-input" class="sr-only" type="file" accept="application/json,.json" aria-label="Open ESP32-C3 project file">
+          </div>
+          <label for="c3-source">sketch.ino · edit only GPIO2 mode/level and uppercase marker</label>
+          <textarea id="c3-source" class="c3-source" spellcheck="false" aria-describedby="c3-message"></textarea>
+          <div class="c3-runtime-actions">
+            <button id="c3-build" class="primary" type="button">Build C3 flash</button>
+            <button id="c3-run" type="button" disabled>Run actual QEMU</button>
+            <button id="c3-stop" type="button" disabled>Stop &amp; discard</button>
+          </div>
+          <p id="c3-message" class="c3-message" role="status">Edit the bounded values, then build fresh ESP32-C3 flash.</p>
+          <dl class="c3-identities">
+            <div><dt>Source SHA-256</dt><dd><code id="c3-source-hash">not built</code></dd></div>
+            <div><dt>Flash SHA-256</dt><dd><code id="c3-flash-hash">not built</code></dd></div>
+          </dl>
+        </section>
+        <section class="c3-circuit-pane" aria-label="Project-owned ESP32-C3 GPIO2 LED model">
+          <div id="c3-diagram" class="c3-diagram" data-connected="true" data-led="off">
+            <div class="c3-board-original" aria-label="Original project ESP32-C3 educational profile board">
+              <strong>ESP32-C3<br>PROFILE</strong>
+              <span class="c3-usb">USB</span>
+              <span class="c3-chip">RISC-V</span>
+              <span class="c3-pin c3-pin-gpio2">GPIO2 <small>J1 · pin 4</small></span>
+              <span class="c3-pin c3-pin-gnd">GND <small>J1 · pin 6</small></span>
+            </div>
+            <span class="c3-wire c3-wire-signal" aria-hidden="true"></span>
+            <span class="c3-resistor" aria-label="220 ohm series resistor"></span>
+            <span class="c3-resistor-label" aria-hidden="true">220 Ω</span>
+            <span class="c3-wire c3-wire-series" aria-hidden="true"></span>
+            <span id="c3-external-led" class="c3-external-led" aria-label="Modeled external LED is off"></span>
+            <span class="c3-wire c3-wire-return-vertical" aria-hidden="true"></span>
+            <span class="c3-wire c3-wire-ground" aria-hidden="true"></span>
+          </div>
+          <p id="c3-circuit-state" class="truth">Project model accepted · GPIO2 → 220 Ω → LED → GND · waiting for Run</p>
+          <div class="c3-circuit-actions">
+            <button id="c3-disconnect" type="button">Disconnect LED return</button>
+            <button id="c3-reconnect" type="button" disabled>Restore model wiring</button>
+          </div>
+          <div class="c3-terminal-card"><strong>Actual QEMU UART / reset evidence</strong><pre id="c3-terminal" aria-live="polite">No QEMU UART output yet.</pre></div>
+          <p class="c3-model-label"><strong>LED label:</strong> project-owned model from executed writes · <strong>not QEMU pin readback</strong></p>
+        </section>
+      </div>
+    </section>
+
     <section id="workbench-workspace" class="workspace" aria-label="Manual circuit editor">
       <aside class="catalog panel" aria-labelledby="catalog-title">
         <p class="eyebrow">1 · COMPONENTS</p><h2 id="catalog-title">Add parts</h2>
-        <label for="board-select">Compiler target</label>
-        <select id="board-select"><option value="board.atmega328p-16mhz-v1">ATmega328P · public build + run</option><option value="board.esp32-c3-devmodule-v1">ESP32-C3 · private verified · public preview</option><option value="board.rp2040-pico-v1">RP2040 Pico · bounded public build + run</option><option value="board.stm32f429zi-nucleo144-v1">STM32F429ZI · private verified · public preview</option></select>
-        <p id="controller-status" class="truth">ATmega328P · compile and tested virtual runtime.</p>
         <label for="catalog-search">Search name, alias, function or part number</label><input id="catalog-search" type="search" autocomplete="off" placeholder="GPIO, 328P, indicator…">
         <label for="catalog-category">Category</label>
         <select id="catalog-category"><option value="all">All categories</option></select>
@@ -265,7 +327,7 @@
       </nav>
     </section>
 
-    <footer>Intent MCU Simulator 1.1.0-rc.4 public release · AVR + bounded Pico execution · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
+    <footer>Intent MCU Simulator 1.1.0-rc.5 public release · AVR + bounded Pico + bounded ESP32-C3 execution · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
   </main>
   <button id="serial-tab" class="serial-tab" type="button" aria-expanded="false" aria-controls="serial-dock"><span>Serial</span><span id="serial-new-output" class="serial-new-output" hidden>0 new</span></button>
   <aside id="serial-dock" class="serial-dock" aria-labelledby="serial-title" hidden>

@@ -1,0 +1,27 @@
+# Copyright 2026 IntentForce
+# SPDX-License-Identifier: Apache-2.0
+FROM mcr.microsoft.com/playwright@sha256:b27e719ecbfef153e13fd24e8341736733bf2658b229677eb21ff57ff5d7fb29 AS collector
+
+COPY qemu-runtime/ /opt/qemu/
+COPY qemu-deps/ /opt/qemu/deps/
+COPY c3/artifact.mjs c3/flash-loader.mjs c3/flash-lock.json c3/gpio2-adapter.mjs c3/protocol.mjs c3/qemu-gpio-observer.mjs c3/qemu-runner.mjs c3/rsp-observer.mjs /rootfs/opt/intent-mcu/c3/
+RUN set -eu; \
+    mkdir -p /rootfs/usr/bin /rootfs/opt/qemu; \
+    cp /usr/bin/node /rootfs/usr/bin/node; \
+    cp -a /opt/qemu/. /rootfs/opt/qemu/; \
+    (ldd /usr/bin/node; LD_LIBRARY_PATH=/opt/qemu/deps ldd /opt/qemu/bin/qemu-system-riscv32) \
+      | awk '/=> \// { print $3 } $1 ~ /^\// { print $1 }' \
+      | sort -u > /tmp/runtime-libraries; \
+    test -s /tmp/runtime-libraries; \
+    while read -r library; do \
+          mkdir -p "/rootfs$(dirname "$library")"; \
+          cp -L "$library" "/rootfs$library"; \
+        done < /tmp/runtime-libraries; \
+    chmod -R a+rX /rootfs/opt/intent-mcu /rootfs/opt/qemu; \
+    test -x /rootfs/lib64/ld-linux-x86-64.so.2
+
+FROM scratch
+COPY --from=collector /rootfs/ /
+USER 65534:65534
+WORKDIR /opt/intent-mcu/c3
+ENTRYPOINT ["/usr/bin/node", "/opt/intent-mcu/c3/qemu-runner.mjs"]

@@ -24,15 +24,15 @@ const definitions = Object.freeze({
     publicExecution: true,
   }),
   [ESP32C3_PROFILE]: Object.freeze({
-    mode: 'c3-preview', status: 'preview-only', eyebrow: 'PRIVATE VERIFICATION · PUBLIC PREVIEW ONLY',
-    label: 'ESP32-C3', title: 'ESP32-C3 Serial verification preview',
-    summary: 'Bounded edited Serial source, fixed-toolchain compilation and actual QEMU UART have passed private verification. They are not exposed on the public service.',
-    project: 'Private local project proof · public Open disabled',
-    source: 'Private bounded Serial source proof · public Build disabled',
-    runtime: 'Private actual QEMU UART proof · public Run disabled',
-    circuit: 'No validated GPIO pin-level or wired-circuit support',
-    action: 'Public execution not enabled', limitation: 'Public C3 execution waits for fair multi-user admission, rate limits and production isolation. No GPIO, wired LED, broad peripheral or physical-device claim.',
-    publicExecution: false,
+    mode: 'c3-source', status: 'supported-bounded', eyebrow: 'PUBLICLY RUNNABLE · BOUNDED ESP32-C3 SUBSET',
+    label: 'ESP32-C3', title: 'ESP32-C3 source, QEMU and GPIO2 model',
+    summary: 'Edit the bounded sketch, compile with the fixed Arduino-ESP32 toolchain, then execute the flash on actual Espressif QEMU CPU/UART.',
+    project: 'Local data-only Save/Open · fresh Build after Open',
+    source: 'Strict GPIO2 mode/level and UART marker grammar · fixed DIO flash layout',
+    runtime: 'Actual Espressif QEMU esp32c3 CPU/UART · two verified boot epochs',
+    circuit: 'Project-owned GPIO2 register model → 220 Ω → LED → GND',
+    action: 'Build ESP32-C3 project', limitation: 'QEMU pin state is not observed. GPIO2/LED comes from the separately labelled project-owned executed-register-write model; no SDK, broad ESP32 family, arbitrary source, timing, Wi-Fi, Bluetooth or physical-device claim.',
+    publicExecution: true,
   }),
   [RP2040_PROFILE]: Object.freeze({
     mode: 'rp2040-source', status: 'supported-bounded', eyebrow: 'PUBLICLY RUNNABLE · BOUNDED PICO SUBSET',
@@ -64,7 +64,7 @@ export function publicControllerView(profile) {
   return structuredClone({
     schema: PUBLIC_CONTROLLER_VIEW_SCHEMA,
     profile,
-    publicSupport: [AVR_PROFILE, RP2040_PROFILE].includes(profile),
+    publicSupport: [AVR_PROFILE, ESP32C3_PROFILE, RP2040_PROFILE].includes(profile),
     availability: targetAvailabilitySnapshot(profile),
     ...definition,
   });

@@ -1,0 +1,105 @@
+{
+  "schema": "intent-mcu-esp32c3-arduino-flash-lock@1",
+  "profile": "board.esp32-c3-devmodule-v1",
+  "fqbn": "esp32:esp32:esp32c3",
+  "compileFqbn": "esp32:esp32:esp32c3:FlashMode=dio",
+  "boardOptions": {
+    "FlashMode": "dio",
+    "FlashFreq": "80m",
+    "FlashSize": "4MB",
+    "PartitionScheme": "default",
+    "CDCOnBoot": "default"
+  },
+  "framework": {
+    "arduinoCliVersion": "1.5.1",
+    "arduinoCliSha256": "cbb47ec4742ee49854031728a0eaeb678a2b36d7a797ef833a1a5b02062149c6",
+    "arduinoEsp32Version": "3.3.10",
+    "arduinoEsp32PackageSha256": "05cbb2cac185265b8b64f1dfa6982e4ae6d57db67f690a291f119a0b2b6aaab2",
+    "espIdfVersion": "5.5.4",
+    "espRv32Version": "2601",
+    "gccSha256": "789918490cee5a48112cae580f3279c08a26d37fbf738b8655b4b7dbe11f9957",
+    "readelfSha256": "7cf6837188c6ad5a228671a9e4284366bc66792c1888577bc5d88f4853b43d0b",
+    "esptoolVersion": "5.3.0",
+    "esptoolSha256": "7a2862c7c5d0467f2cd8e4c0b0dc8ae9b59e065489027db63875a19e21ea7122",
+    "esp32c3LibsVersion": "3.3.10",
+    "socCapsSha256": "07ffae353cf26852841cfa52bb37db26d7d1755ac5fb6e360dc74bf0052a9398",
+    "sourceDateEpoch": 1791244800
+  },
+  "builder": {
+    "image": "fah-firmware/waveshare-8di-8ro:arduino-3.3.10",
+    "imageId": "sha256:ca8051bf5e5a6bc2e4a7ec98a46cd248b8411243ee492c81d76045f9e788b138",
+    "network": "none",
+    "pull": "never",
+    "toolchainMount": "read-only"
+  },
+  "flash": {
+    "bytes": 4194304,
+    "mode": "dio",
+    "frequency": "80m",
+    "layout": [
+      {"kind": "bootloader", "offset": 0},
+      {"kind": "partition-table", "offset": 32768},
+      {"kind": "boot-app0", "offset": 57344},
+      {"kind": "application", "offset": 65536}
+    ],
+    "partitionCsvSha256": "2683fd26b661bc909dcb8a9f05723d36c4000f9396995941a278fda409b753f7",
+    "partitionBinSha256": "148b959cbff1c38aa8e1d5c0ba9d612c54997b945e56a63f41223eef650653a1",
+    "bootApp0Sha256": "f94c5d786a7a8fab06ac5d10e33bf37711a6697636dc037559ea19cc410a17f0",
+    "flashArgsSha256": "2a14bcd532a563a48319d13f11d3d8f3f9cb9d90658fb9733350b42f517c5e33",
+    "bootloaderVersion": 1,
+    "bootloaderEspIdfVersion": "5.5.4",
+    "bootloaderSha256": "aea44226a71db48de6c721c27780f028e2d378173e65a7411dd3209f297579a0",
+    "bootloaderBytes": 18672
+  },
+  "rom": {
+    "version": "esp32c3-api1-20210207",
+    "build": "Feb  7 2021",
+    "bytes": 393216,
+    "sha256": "0de1e65020e803bea0d7443dca149d61895e01fca3bb9c82d073234eebd73f99"
+  },
+  "qemu": {
+    "provider": "Espressif",
+    "version": "9.2.2-esp_develop_20260417",
+    "machine": "esp32c3",
+    "binarySha256": "834699a726720f5273b79bb1e8b3f735f6e0540f17fdf466dfd20055605f2b4d",
+    "image": "mcr.microsoft.com/playwright@sha256:b27e719ecbfef153e13fd24e8341736733bf2658b229677eb21ff57ff5d7fb29",
+    "imageId": "sha256:8a461db088d3b546203b41ea8496e497597bd0bc9a08a331ae5804c30a2a4c9e"
+  },
+  "compatibilityFix": {
+    "failedDefault": "esp32:esp32:esp32c3",
+    "failure": "qio_mode: Failed to set QIE bit; startup_funcs.c:118 flash_ret assertion",
+    "fixedOption": "FlashMode=dio",
+    "scope": "one demonstrated QEMU flash-model prerequisite"
+  },
+  "fixtures": {
+    "a": {
+      "sourcePath": "expansion-drafts/fixtures/esp32c3-arduino-serial-a/esp32c3-arduino-serial-a.ino",
+      "buildPath": "expansion-drafts/fixtures/esp32c3-arduino-serial-a-build",
+      "sourceBytes": 186,
+      "sourceSha256": "cfa7f9912c7257ff119d53bfe3c6d69ccd0c6768450029254b0b2b2e872c6e9b",
+      "uartMarker": "INTENT-C3-EDIT-A:4E6F",
+      "applicationBytes": 274400,
+      "applicationSha256": "0e1e14daad6f42ba49b339398734c80fd7b8096a740f40a0ffc59303d28c9d5f",
+      "elfBytes": 6159088,
+      "elfSha256": "1b3255a581abc7e376febc67bbdf5ac32d50036d1a4a7727c0294461ef7763e4",
+      "mergedFlashSha256": "58759f93c94b8448312cbb57f47f9cb0ebbdbb75430bd8a574be588bd53affac"
+    },
+    "b": {
+      "sourcePath": "expansion-drafts/fixtures/esp32c3-arduino-serial-b/esp32c3-arduino-serial-b.ino",
+      "buildPath": "expansion-drafts/fixtures/esp32c3-arduino-serial-b-build",
+      "sourceBytes": 186,
+      "sourceSha256": "bfccaa65f0b9853a1e9eb1ad96bc705ef4afac6b11514a6ece92bc1541850c7b",
+      "uartMarker": "INTENT-C3-EDIT-B:9A2D",
+      "applicationBytes": 274400,
+      "applicationSha256": "e90486db12de65fed9a9b51e90d6ae10227d120e06cf9c6b7e6afb2f2a8b9171",
+      "elfBytes": 6159088,
+      "elfSha256": "cc145838241a52310d4b56dccd2fb6bee457e313b2061618ae6e7d440f82a793",
+      "mergedFlashSha256": "06792f0fb16ffdfc27534c0dfa3b17ef7e17fdf1e31e296f15fb23933dd2a03e"
+    }
+  },
+  "gpioPinStateObserved": false,
+  "arbitraryFirmwareSupport": false,
+  "generalArduinoCompatibility": false,
+  "persistentUserProjectStorage": false,
+  "publicSupport": true
+}

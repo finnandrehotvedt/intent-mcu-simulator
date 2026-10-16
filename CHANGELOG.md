@@ -2,6 +2,26 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.5 — 2026-10-16
+
+- Added one bounded public ESP32-C3 sketch profile with fixed Arduino-ESP32
+  3.3.10 / esp-rv32 2601 compilation and actual Espressif QEMU esp32c3
+  CPU/UART execution.
+- Added a separately labelled project-owned GPIO2 register and LED model fed
+  by actual executed MMIO stores; the API and UI explicitly report that QEMU
+  pin state is not observed.
+- Added strict flash reconstruction, source/artifact identity, two-boot UART,
+  circuit, admission, capability, timeout and disposable-container checks.
+- Added local data-only C3 Save/Open and responsive desktop/mobile source,
+  circuit and evidence panels without changing the accepted AVR/Pico paths.
+- Fixed cross-schema starter replacement after the temperature/LCD candidate,
+  hid the parked AVR canvas while another controller is active, and raised the
+  bounded AVR/Pico compiler deadline to 30 seconds after observed cold-worker
+  intermittency.
+- Fixed portable Prompt Bridge generation for the validated temperature/LCD
+  runtime projection and made unsupported candidate-specific apply fail
+  explicitly instead of raising a browser exception.
+
 ## 1.1.0-rc.4 — 2026-10-16
 
 - Added one bounded public RP2040 Pico source profile with fixed isolated Arm

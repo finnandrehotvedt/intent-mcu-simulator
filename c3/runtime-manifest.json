@@ -1,0 +1,15 @@
+{
+  "schema": "intent-mcu-esp32c3-public-runtime-manifest@1",
+  "provider": "Espressif",
+  "engine": "QEMU",
+  "version": "9.2.2-esp_develop_20260417",
+  "machine": "esp32c3",
+  "binarySha256": "834699a726720f5273b79bb1e8b3f735f6e0540f17fdf466dfd20055605f2b4d",
+  "romVersion": "esp32c3-api1-20210207",
+  "romSha256": "0de1e65020e803bea0d7443dca149d61895e01fca3bb9c82d073234eebd73f99",
+  "network": "none",
+  "qemuPinStateObserved": false,
+  "gpioPeripheralModel": "IntentForce project-owned GPIO2 register adapter",
+  "image": "local/intent-mcu-esp32c3-runtime:1.1.0-rc.5",
+  "imageId": "sha256:49dc1d67e6deea364f9504765ea137fdce32d2517c5dd531e64b24092c381356"
+}

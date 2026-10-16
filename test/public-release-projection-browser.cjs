@@ -8,7 +8,6 @@ const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/
 const base = process.env.PUBLIC_PROJECTION_URL || 'http://127.0.0.1:18770';
 const screenshotDirectory = process.env.PUBLIC_PROJECTION_SCREENSHOT_DIR || null;
 const previewProfiles = [
-  ['board.esp32-c3-devmodule-v1', 'ESP32-C3', 'c3-preview'],
   ['board.stm32f429zi-nucleo144-v1', 'STM32F429ZI', 'stm32-preview'],
 ];
 
@@ -30,6 +29,8 @@ async function snapshot(page) {
     promptHidden: document.querySelector('#prompt-drawer')?.hidden,
     starterHidden: document.querySelector('#starter-gallery')?.hidden,
     picoHidden: document.querySelector('#pico-public-workbench')?.hidden,
+    c3Hidden: document.querySelector('#c3-public-workbench')?.hidden,
+    workspaceHidden: document.querySelector('#workbench-workspace')?.hidden,
     boardDisabled: document.querySelector('#board-select')?.disabled,
     projectOpenDisabled: document.querySelector('#project-open')?.disabled,
     parkedHidden: document.querySelector('#parked-circuit-notice')?.hidden,
@@ -70,11 +71,24 @@ async function snapshot(page) {
   assert(pico.selected.publicExecution === true && pico.selected.publicSupport === true, 'Pico public boundary');
   assert(pico.badge === 'Supported subset' && pico.mode === 'rp2040-source', 'Pico badge/mode');
   assert(!pico.buildDisabled && pico.runDisabled && !pico.primaryDisabled, 'Pico execution controls');
-  assert(!pico.returnHidden && pico.firmwareHidden && pico.runtimeHidden && pico.promptHidden && pico.starterHidden && !pico.picoHidden, 'Pico workbench visibility');
-  assert(!pico.boardDisabled && pico.projectOpenDisabled && !pico.parkedHidden, 'Pico parked AVR project');
+  assert(!pico.returnHidden && pico.firmwareHidden && pico.runtimeHidden && pico.promptHidden && pico.starterHidden && !pico.picoHidden && pico.c3Hidden, 'Pico workbench visibility');
+  assert(!pico.boardDisabled && pico.projectOpenDisabled && pico.parkedHidden && pico.workspaceHidden, 'Pico parked AVR project');
   assert(pico.runtimeWorkerCreations === 0, 'Pico selection created a runtime worker');
   assert(pico.overflow <= 1, `Pico desktop overflow ${pico.overflow}`);
   reports.push({ profile: pico.profile, mode: pico.mode, overflow: pico.overflow });
+
+  await page.locator('#board-select').selectOption('board.esp32-c3-devmodule-v1');
+  await page.waitForFunction(() => window.__PUBLIC_CONTROLLER_PROJECTION__?.selectedProfile === 'board.esp32-c3-devmodule-v1');
+  const c3 = await snapshot(page);
+  assert(c3.selected.label === 'ESP32-C3', `C3 label ${c3.selected.label}`);
+  assert(c3.selected.publicExecution === true && c3.selected.publicSupport === true, 'C3 public boundary');
+  assert(c3.badge === 'Supported subset' && c3.mode === 'c3-source', 'C3 badge/mode');
+  assert(!c3.buildDisabled && c3.runDisabled && !c3.primaryDisabled, 'C3 execution controls');
+  assert(!c3.returnHidden && c3.firmwareHidden && c3.runtimeHidden && c3.promptHidden && c3.starterHidden && c3.picoHidden && !c3.c3Hidden, 'C3 workbench visibility');
+  assert(!c3.boardDisabled && c3.projectOpenDisabled && c3.parkedHidden && c3.workspaceHidden, 'C3 parked AVR project');
+  assert(c3.runtimeWorkerCreations === 0, 'C3 selection created an AVR runtime worker');
+  assert(c3.overflow <= 1, `C3 desktop overflow ${c3.overflow}`);
+  reports.push({ profile: c3.profile, mode: c3.mode, overflow: c3.overflow });
 
   for (const [profile, label, mode] of previewProfiles) {
     await page.locator('#board-select').selectOption(profile);
@@ -84,8 +98,8 @@ async function snapshot(page) {
     assert(current.selected.publicExecution === false && current.selected.publicSupport === false, `${profile} public boundary`);
     assert(current.badge === 'Preview only' && current.mode === mode, `${profile} preview badge/mode`);
     assert(current.buildDisabled && current.runDisabled && current.primaryDisabled, `${profile} execution controls`);
-    assert(!current.returnHidden && current.firmwareHidden && current.runtimeHidden && current.promptHidden && current.starterHidden, `${profile} preview visibility`);
-    assert(!current.boardDisabled && current.projectOpenDisabled && !current.parkedHidden, `${profile} parked project controls`);
+    assert(!current.returnHidden && current.firmwareHidden && current.runtimeHidden && current.promptHidden && current.starterHidden && current.picoHidden && current.c3Hidden, `${profile} preview visibility`);
+    assert(!current.boardDisabled && current.projectOpenDisabled && current.parkedHidden && current.workspaceHidden, `${profile} parked project controls`);
     assert(current.runtimeWorkerCreations === 0, `${profile} created a runtime worker`);
     assert(current.overflow <= 1, `${profile} desktop overflow ${current.overflow}`);
     reports.push({ profile, mode, overflow: current.overflow });
@@ -108,7 +122,7 @@ async function snapshot(page) {
   assert(returned.selected.publicExecution === true && returned.badge === 'Supported', 'return to AVR state');
   assert(!returned.buildDisabled && !returned.primaryDisabled, 'AVR controls restored');
   assert(!returned.firmwareHidden && !returned.runtimeHidden && !returned.promptHidden && !returned.starterHidden, 'AVR regions restored');
-  assert(!returned.projectOpenDisabled && returned.parkedHidden, 'AVR project controls restored');
+  assert(!returned.projectOpenDisabled && returned.parkedHidden && !returned.workspaceHidden, 'AVR project controls restored');
   assert(returned.overflow <= 1, `mobile AVR overflow ${returned.overflow}`);
 
   const privateRoute = await context.request.get(`${base}/private-c3/session`);

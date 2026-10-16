@@ -33,11 +33,11 @@ forever.
   unreviewed prebuilt toolchain image.
 - Evaluate additional controllers and components one at a time. The public
   selector may show exact private evidence as a non-executable preview, but it
-  must not imply public availability. ESP32-C3 needs fair multi-user admission,
-  per-origin/session rate and concurrency limits, transient-data erasure, and
-  production-isolation acceptance before public execution can be considered.
-  RP2040 and STM32 still have no public compiler or runtime. Motors and buses
-  require their own electrical and emulator contracts before activation.
+  must not imply public availability. AVR, the bounded Pico GPIO0/UART0 path,
+  and the bounded ESP32-C3 GPIO2/UART path are public; expansion beyond those
+  exact contracts requires new evidence. STM32 still has no public compiler or
+  runtime. Motors and buses require their own electrical and emulator
+  contracts before activation.
 - Keep physical-device access, upload, accounts, hosted AI, agent/tool
   interfaces, and hosted compiler/deployment operations outside this
   source-only roadmap until each is separately designed and approved.

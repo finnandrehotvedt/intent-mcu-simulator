@@ -1,0 +1,10 @@
+{
+  "schema": "teach-lab-compiler-image-lock@1",
+  "image": "local/intent-mcu-esp32c3-toolchain:1.1.0-rc.5",
+  "imageId": "sha256:5b2105f4689d21c797cc631421bccbe25b9095d4a6500657dca0ece5dfc801e3",
+  "runtimeImageIds": [],
+  "toolchainManifestSha256": "2f281020849e32283c94ef27591ea04aa1e661b6f8bce9401fbb82fa418550b2",
+  "toolchainFilesSha256": "04f29dd08e192b7c464a09e76c1e45dc7c2887c0d6051625a0ae3bc943b66e40",
+  "architecture": "linux/amd64",
+  "distribution": "Public bounded ESP32-C3 source compiler; fixed network-disabled image and strict DIO flash contract"
+}

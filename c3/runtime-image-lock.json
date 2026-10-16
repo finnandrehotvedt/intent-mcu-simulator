@@ -1,0 +1,10 @@
+{
+  "schema": "teach-lab-compiler-image-lock@1",
+  "image": "local/intent-mcu-esp32c3-runtime:1.1.0-rc.5",
+  "imageId": "sha256:49dc1d67e6deea364f9504765ea137fdce32d2517c5dd531e64b24092c381356",
+  "runtimeImageIds": [],
+  "toolchainManifestSha256": "9bcdf8131ee808b8e0405a5493cbe90d42803d4689d5e9fdc9a7ffbac7a25431",
+  "toolchainFilesSha256": "834699a726720f5273b79bb1e8b3f735f6e0540f17fdf466dfd20055605f2b4d",
+  "architecture": "linux/amd64",
+  "distribution": "Public bounded actual Espressif QEMU esp32c3 CPU/UART runtime; GPIO2 remains a separate project-owned model"
+}

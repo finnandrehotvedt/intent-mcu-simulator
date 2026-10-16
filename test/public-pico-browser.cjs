@@ -96,13 +96,13 @@ function assertContinuousWiring(geometry) {
   await selectPico(page);
   const picoLayout = await page.evaluate(() => ({
     panel: document.querySelector('#pico-public-workbench').getBoundingClientRect().width,
-    avrWorkspaceParked: document.querySelector('#workbench-workspace').classList.contains('public-preview-mode'),
+    avrWorkspaceHidden: document.querySelector('#workbench-workspace').hidden,
     gp0: document.querySelector('.pico-pin-gp0').textContent,
     gnd: document.querySelector('.pico-pin-gnd').textContent,
     onboard: document.querySelector('.pico-onboard-led').textContent,
   }));
   assert.ok(picoLayout.panel >= 1800, JSON.stringify(picoLayout));
-  assert.equal(picoLayout.avrWorkspaceParked, true);
+  assert.equal(picoLayout.avrWorkspaceHidden, true);
   assert.match(picoLayout.gp0, /physical pin 1/);
   assert.match(picoLayout.gnd, /physical pin 3/);
   assert.match(picoLayout.onboard, /GPIO25.*onboard LED only/s);
@@ -169,7 +169,10 @@ function assertContinuousWiring(geometry) {
   }));
   assert.ok(mobile.overflow <= 1, JSON.stringify(mobile));
   assert.ok(mobile.panel.left >= 8 && mobile.panel.right <= 382, JSON.stringify(mobile.panel));
-  assert.ok(mobile.controls.every((item) => !item.hidden && item.rect.left >= 0 && item.rect.right <= 390), JSON.stringify(mobile.controls));
+  assert.deepEqual(mobile.controls.filter((item) => item.hidden).map((item) => item.id),
+    ['toggle-catalog', 'toggle-inspector']);
+  assert.ok(mobile.controls.filter((item) => !item.hidden)
+    .every((item) => item.rect.left >= 0 && item.rect.right <= 390), JSON.stringify(mobile.controls));
   await page.screenshot({ path: `${screenshotDir}/public-pico-mobile-390.png`, fullPage: true });
 
   assert.deepEqual(outside, []);

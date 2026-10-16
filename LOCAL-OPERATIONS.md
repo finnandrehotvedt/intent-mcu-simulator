@@ -33,6 +33,13 @@ The equivalent host process command is
 It is useful for development when the current user already has local Docker
 socket access. The Compose profile is the documented clean-checkout path.
 
+The public ESP32-C3 service is disabled by default in this clean-checkout
+Compose profile because its separately licensed compiler and QEMU binary are
+not source-release artifacts. A prepared deployment must provide exact
+`ESP32C3_BUILDER_IMAGE_LOCK` and `ESP32C3_RUNTIME_IMAGE_LOCK` files, set
+`ENABLE_ESP32C3_PUBLIC=1`, and pass the public-origin value. Startup and
+`/readyz` fail closed if either installed image ID differs from its lock.
+
 Run the full compiler isolation and recovery checks with:
 
 ```sh
@@ -43,11 +50,16 @@ docker compose --profile local-compiler exec -T local-compiler npm run test:oper
 ## Health and practical limits
 
 - `GET /healthz` proves the gateway process can serve requests.
-- `GET /readyz` proves both exact locked compiler images are available.
+- `GET /readyz` proves every enabled exact locked compiler/runtime image is
+  available.
 - One build runs at a time; at most four wait in the shared queue.
 - One origin may have one active build and six submissions per minute.
 - Each disposable worker is limited to one CPU, 256 MiB memory, 64 PIDs, no
   network, a read-only root, no capabilities, and tmpfs-only writable paths.
+- When C3 is enabled, its compiler and runtime are separate disposable
+  containers, globally limited to one of each, network-disabled, read-only,
+  capability-dropped and tmpfs-only. C3 source/flash authority is in memory
+  for a bounded session and is wiped on edit, Stop, expiry, or restart.
 
 Logs contain lifecycle/error codes, not learner source, returned firmware, job
 capabilities, or secrets. A failed build remains available only in memory for a
@@ -76,4 +88,6 @@ upstream terms and are not project release artifacts. See
 `toolchain/SOURCE-AND-RELINKING.md`, `toolchain/NOTICE.md`, and
 `toolchain/manifest.json` for AVR and
 `compiler/RP2040-TOOLCHAIN-MANIFEST.md` for Pico before supplying a built image
-to anyone else.
+to anyone else. The C3 lock/manifests do not authorize redistributing its
+compiler or QEMU images; review `DEPENDENCIES.md` and `THIRD_PARTY_NOTICES.md`
+first.

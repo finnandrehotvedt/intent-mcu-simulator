@@ -116,16 +116,19 @@ test('availability snapshots reject stale state, wrong family and silent promoti
   assert.equal(validateTargetAvailabilitySnapshot({ ...rp2040, unexpected: true }), false);
 });
 
-test('C3 and STM32 preview requests fail before queue while profile mismatches remain unknown', () => {
+test('C3 dedicated service and STM32 preview cannot cross into the generic compiler queue', () => {
   let brokerCalls = 0;
   const coordinator = new BuildCoordinator({
     broker: { async compile() { brokerCalls += 1; throw new Error('broker must not run'); } },
     imageLock: { imageId: `sha256:${'a'.repeat(64)}`, toolchainManifestSha256: 'b'.repeat(64) },
   });
+  const c3Request = requestFor(ESP32C3_PROFILE);
+  expectCode(() => normalizeBuildRequestValue(c3Request), 'UNKNOWN_COMPILER_TARGET');
+  expectCode(() => coordinator.submit(JSON.stringify(c3Request), 'origin'), 'UNKNOWN_COMPILER_TARGET');
+  const stm32Request = requestFor(STM32F429ZI_PROFILE);
+  expectCode(() => normalizeBuildRequestValue(stm32Request), 'COMPILER_TARGET_UNAVAILABLE');
+  expectCode(() => coordinator.submit(JSON.stringify(stm32Request), 'origin'), 'COMPILER_TARGET_UNAVAILABLE');
   for (const profileId of [ESP32C3_PROFILE, STM32F429ZI_PROFILE]) {
-    const request = requestFor(profileId);
-    expectCode(() => normalizeBuildRequestValue(request), 'COMPILER_TARGET_UNAVAILABLE');
-    expectCode(() => coordinator.submit(JSON.stringify(request), 'origin'), 'COMPILER_TARGET_UNAVAILABLE');
     expectCode(() => normalizeBuildRequestValue(requestFor(profileId, { fqbn: 'wrong:family:target' })), 'UNKNOWN_COMPILER_TARGET');
     expectCode(() => normalizeBuildRequestValue(requestFor(profileId, { toolchainIdentitySha256: '0'.repeat(64) })), 'UNKNOWN_COMPILER_TARGET');
   }

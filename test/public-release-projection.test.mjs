@@ -17,28 +17,30 @@ import {
   publicControllerViews,
 } from '../src/public-controller-workbench-view.mjs';
 
-test('public projection exposes AVR and bounded Pico execution plus two preview-only profiles', () => {
+test('public projection exposes three bounded public execution profiles plus one preview', () => {
   const expected = [AVR_PROFILE, ESP32C3_PROFILE, RP2040_PROFILE, STM32F429ZI_PROFILE];
   const views = publicControllerViews();
   assert.deepEqual(views.map((view) => view.profile), expected);
   assert.ok(views.every((view) => view.schema === PUBLIC_CONTROLLER_VIEW_SCHEMA));
-  assert.deepEqual(views.filter((view) => view.publicExecution).map((view) => view.profile), [AVR_PROFILE, RP2040_PROFILE]);
-  for (const profile of [ESP32C3_PROFILE, STM32F429ZI_PROFILE]) {
-    const view = publicControllerView(profile);
-    const target = candidateCompilerTarget(profile);
-    assert.equal(view.status, 'preview-only');
-    assert.equal(view.publicSupport, false);
-    assert.equal(target.compileAvailable, false);
-    assert.equal(target.compileOnly, false);
-    assert.match(view.action, /not enabled/i);
-  }
+  assert.deepEqual(views.filter((view) => view.publicExecution).map((view) => view.profile),
+    [AVR_PROFILE, ESP32C3_PROFILE, RP2040_PROFILE]);
+  const c3 = publicControllerView(ESP32C3_PROFILE);
+  assert.equal(c3.status, 'supported-bounded');
+  assert.equal(c3.publicSupport, true);
+  assert.equal(candidateCompilerTarget(ESP32C3_PROFILE).compileAvailable, true);
+  assert.match(c3.action, /Build ESP32-C3/i);
+  const stm32 = publicControllerView(STM32F429ZI_PROFILE);
+  assert.equal(stm32.status, 'preview-only');
+  assert.equal(stm32.publicSupport, false);
+  assert.equal(candidateCompilerTarget(STM32F429ZI_PROFILE).compileAvailable, false);
+  assert.match(stm32.action, /not enabled/i);
 });
 
-test('preview evidence remains exact and does not imply wired or public runtime support', () => {
+test('bounded C3 evidence separates actual QEMU from the project-owned GPIO model', () => {
   const c3 = publicControllerView(ESP32C3_PROFILE);
-  assert.match(c3.summary, /actual QEMU UART/);
-  assert.match(c3.circuit, /No validated GPIO pin-level or wired-circuit support/);
-  assert.match(c3.limitation, /fair multi-user admission/);
+  assert.match(c3.summary, /actual Espressif QEMU CPU\/UART/);
+  assert.match(c3.circuit, /Project-owned GPIO2 register model/);
+  assert.match(c3.limitation, /QEMU pin state is not observed/);
   const rp2040 = publicControllerView(RP2040_PROFILE);
   assert.equal(rp2040.publicSupport, true);
   assert.equal(rp2040.publicExecution, true);

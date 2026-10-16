@@ -14,7 +14,7 @@ const TYPES = new Map([
 
 const SECURITY_HEADERS = Object.freeze({
   'Cache-Control': 'no-store',
-  'Content-Security-Policy': "default-src 'none'; script-src 'self' 'sha256-MK/Oi4rSytXpw/sfYNGt1MCNNS8yTI4bCwQ8XMB/SW8='; style-src 'self'; connect-src 'self'; worker-src 'self'; img-src 'self'; font-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+  'Content-Security-Policy': "default-src 'none'; script-src 'self' 'sha256-neIaRedborgoi5lzmnPxnndos7ceemt7Zzjywigb0Hw='; style-src 'self'; connect-src 'self'; worker-src 'self'; img-src 'self'; font-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'no-referrer',

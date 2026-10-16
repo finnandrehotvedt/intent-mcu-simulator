@@ -41,6 +41,7 @@ import {
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
   AVR_PROFILE,
+  ESP32C3_PROFILE,
   RP2040_PROFILE,
   candidateCompilerTarget,
   firstMissingTargetPrerequisite,
@@ -52,6 +53,7 @@ import {
   publicControllerViews,
 } from '../src/public-controller-workbench-view.mjs';
 import { Rp2040PublicWorkbench } from '../src/rp2040-public-workbench.mjs';
+import { Esp32C3PublicWorkbench } from '../src/esp32c3-public-workbench.mjs';
 import { serialEventText, serialInputBytes, serialText } from '../src/serial-view.mjs';
 import { CPU_CYCLES_PER_MILLISECOND, cursorCycles, waveformPaths } from '../src/waveform-view.mjs';
 import { createComponentArtwork as createBaseComponentArtwork } from './component-artwork.mjs';
@@ -130,6 +132,9 @@ const elements = Object.fromEntries([
   'pico-source', 'pico-build', 'pico-run', 'pico-pause', 'pico-reset', 'pico-stop', 'pico-message',
   'pico-source-hash', 'pico-artifact-hash', 'pico-diagram', 'pico-external-led', 'pico-circuit-state',
   'pico-disconnect', 'pico-reconnect', 'pico-serial',
+  'c3-public-workbench', 'c3-state', 'c3-project-name', 'c3-save', 'c3-open', 'c3-open-input',
+  'c3-source', 'c3-build', 'c3-run', 'c3-stop', 'c3-message', 'c3-source-hash', 'c3-flash-hash',
+  'c3-diagram', 'c3-external-led', 'c3-circuit-state', 'c3-disconnect', 'c3-reconnect', 'c3-terminal',
 ].map((id) => [id.replaceAll('-', ''), byId(id)]));
 
 const runtimeControls = [elements.run, elements.pause, elements.step, elements.reset, elements.speed];
@@ -194,6 +199,7 @@ const publicPreviewRegions = [
   elements.runtimedrawer,
 ].filter(Boolean);
 let picoPublicState = null;
+let c3PublicState = null;
 
 function renderPicoQuickControls(state = picoPublicState) {
   if (selectedCompilerProfile !== RP2040_PROFILE || !state) return;
@@ -206,6 +212,19 @@ function renderPicoQuickControls(state = picoPublicState) {
   elements.quickrun.disabled = !state.runnable || ['running', 'starting'].includes(state.phase);
   elements.quickpause.disabled = !['running', 'paused'].includes(state.phase);
   elements.quickreset.disabled = !['running', 'paused'].includes(state.phase);
+}
+
+function renderC3QuickControls(state = c3PublicState) {
+  if (selectedCompilerProfile !== ESP32C3_PROFILE || !state) return;
+  elements.quickstate.textContent = `ESP32-C3 · ${state.phase} · ${state.circuitAccepted ? 'model wiring valid' : state.circuitCode}`;
+  elements.quickbuild.textContent = 'Build C3';
+  elements.quickrun.textContent = 'Run actual QEMU';
+  elements.quickpause.textContent = 'Pause unavailable';
+  elements.quickreset.textContent = 'Reset replay is part of Run';
+  elements.quickbuild.disabled = state.phase === 'building' || state.phase === 'running';
+  elements.quickrun.disabled = !state.runnable || state.phase === 'running';
+  elements.quickpause.disabled = true;
+  elements.quickreset.disabled = true;
 }
 
 const picoPublicWorkbench = new Rp2040PublicWorkbench({
@@ -244,6 +263,40 @@ window.__RP2040_PUBLIC_WORKBENCH__ = {
   pause: () => picoPublicWorkbench.pause(),
   reset: () => picoPublicWorkbench.reset(),
   stop: () => picoPublicWorkbench.stop(),
+};
+
+const c3PublicWorkbench = new Esp32C3PublicWorkbench({
+  elements: {
+    state: elements.c3state,
+    name: elements.c3projectname,
+    save: elements.c3save,
+    open: elements.c3open,
+    openInput: elements.c3openinput,
+    source: elements.c3source,
+    build: elements.c3build,
+    run: elements.c3run,
+    stop: elements.c3stop,
+    message: elements.c3message,
+    sourceHash: elements.c3sourcehash,
+    flashHash: elements.c3flashhash,
+    diagram: elements.c3diagram,
+    led: elements.c3externalled,
+    circuitState: elements.c3circuitstate,
+    disconnect: elements.c3disconnect,
+    reconnect: elements.c3reconnect,
+    terminal: elements.c3terminal,
+  },
+  onState: (state) => {
+    c3PublicState = state;
+    window.__ESP32C3_PUBLIC_STATE__ = structuredClone(state);
+    renderC3QuickControls(state);
+  },
+});
+window.__ESP32C3_PUBLIC_WORKBENCH__ = {
+  state: () => c3PublicWorkbench.snapshot(),
+  build: () => c3PublicWorkbench.build(),
+  run: () => c3PublicWorkbench.run(),
+  dispose: () => c3PublicWorkbench.dispose(),
 };
 
 function setSelection(next) {
@@ -409,11 +462,12 @@ function renderPublicControllerWorkbench() {
   const view = publicControllerView(selectedCompilerProfile) ?? publicControllerView(AVR_PROFILE);
   const preview = !view.publicExecution;
   const pico = selectedCompilerProfile === RP2040_PROFILE;
+  const c3 = selectedCompilerProfile === ESP32C3_PROFILE;
   const avr = selectedCompilerProfile === AVR_PROFILE;
   elements.controllerworkbench.dataset.mode = view.mode;
   elements.controllerworkbencheyebrow.textContent = view.eyebrow;
   elements.controllerworkbenchtitle.textContent = view.title;
-  elements.controllerworkbenchbadge.textContent = preview ? 'Preview only' : pico ? 'Supported subset' : 'Supported';
+  elements.controllerworkbenchbadge.textContent = preview ? 'Preview only' : (pico || c3) ? 'Supported subset' : 'Supported';
   elements.controllerworkbenchbadge.className = `controller-badge ${preview ? 'preview' : 'supported'}`;
   elements.controllerworkbenchsummary.textContent = view.summary;
   elements.controllercapabilityproject.textContent = view.project;
@@ -426,7 +480,9 @@ function renderPublicControllerWorkbench() {
   elements.controllerworkbenchlimitation.textContent = view.limitation;
   elements.controllerpublicboundary.textContent = preview
     ? 'Preview mode changes only this browser view. It cannot upload a project, call a private endpoint, build firmware, or create a runtime session.'
-    : pico
+    : c3
+      ? 'Public C3 source is compiled in a fixed network-disabled container and executed in a separate network-disabled Espressif QEMU container. QEMU CPU/UART evidence and the project-owned GPIO2 model are labelled separately; no executable is stored with the project.'
+      : pico
       ? 'Public Pico source is compiled in a fixed networkless container, returned as a source-bound UF2, and executed only in this browser worker. No executable is stored with the project.'
       : 'Public AVR actions use the documented build service and one browser worker. Other controller previews never inherit those actions.';
   elements.startergallery.hidden = !avr;
@@ -434,10 +490,14 @@ function renderPublicControllerWorkbench() {
   elements.promptdrawer.hidden = !avr;
   elements.runtimedrawer.hidden = !avr;
   elements.picopublicworkbench.hidden = !pico;
-  elements.parkedcircuitnotice.hidden = avr;
-  elements.workbenchworkspace.classList.toggle('public-preview-mode', !avr);
-  elements.quickbuild.textContent = preview ? 'Build unavailable' : pico ? 'Build Pico' : 'Build';
-  elements.quickrun.textContent = preview ? 'Run unavailable' : pico ? 'Run Pico' : 'Run';
+  elements.c3publicworkbench.hidden = !c3;
+  elements.parkedcircuitnotice.hidden = true;
+  elements.workbenchworkspace.hidden = !avr;
+  elements.workbenchworkspace.setAttribute('aria-hidden', String(!avr));
+  elements.togglecatalog.hidden = !avr;
+  elements.toggleinspector.hidden = !avr;
+  elements.quickbuild.textContent = preview ? 'Build unavailable' : pico ? 'Build Pico' : c3 ? 'Build C3' : 'Build';
+  elements.quickrun.textContent = preview ? 'Run unavailable' : pico ? 'Run Pico' : c3 ? 'Run actual QEMU' : 'Run';
   elements.quickbuild.disabled = preview || (avr && elements.build.disabled);
   if (preview) {
     elements.quickrun.disabled = true;
@@ -446,6 +506,7 @@ function renderPublicControllerWorkbench() {
   }
   setPublicPreviewControls(!avr);
   if (pico) renderPicoQuickControls();
+  if (c3) renderC3QuickControls();
   window.__PUBLIC_CONTROLLER_PROJECTION__.selectedProfile = view.profile;
   window.__PUBLIC_CONTROLLER_PROJECTION__.selected = view;
   publish({
@@ -469,7 +530,10 @@ function renderCompilerTarget() {
     elements.controllerstatus.textContent = `${view.label} · public preview only · Build and Run blocked.`;
     elements.toolchainboundary.innerHTML = `<strong>Public preview:</strong> ${target.profile}. ${availabilityRows} ${missing ? `<strong>Missing public prerequisite:</strong> ${missing.detail} ` : ''}<strong>Boundary:</strong> private evidence is status information only. No project upload, compiler, runtime or AVR circuit mapping is exposed for this profile.`;
   } else {
-    if (target.profile === RP2040_PROFILE) {
+    if (target.profile === ESP32C3_PROFILE) {
+      elements.controllerstatus.textContent = 'ESP32-C3 · bounded public source build + actual QEMU CPU/UART + separate GPIO2 model.';
+      elements.toolchainboundary.innerHTML = `<strong>Compiler:</strong> Arduino CLI 1.5.1 · Arduino-ESP32 3.3.10 · esp-rv32 2601 · fixed DIO layout. ${availabilityRows} <strong>Runtime:</strong> actual Espressif QEMU esp32c3 CPU/UART. <strong>GPIO boundary:</strong> QEMU pin state is not observed; GPIO2 and LED are interpreted by the separately labelled IntentForce executed-register-write model.`;
+    } else if (target.profile === RP2040_PROFILE) {
       elements.controllerstatus.textContent = 'RP2040 Pico · bounded public C11 build + browser-worker GPIO0/UART0 runtime.';
       elements.toolchainboundary.innerHTML = `<strong>Compiler:</strong> Arm GNU 14.3.1 · exact project-owned startup, runtime header and linker map. ${availabilityRows} <strong>Simulation:</strong> GPIO0 output, UART0 text, reset and the named GP0/GND LED path only; no SDK or full Pico claim.`;
     } else {
@@ -2986,8 +3050,13 @@ function loadExampleProject(exampleId, reason = 'project.demo') {
   const example = createExampleProject(exampleId);
   const projectLabel = exampleId === 'blink' ? 'Blink demo' : example.name;
   example.project.metadata.name = projectLabel;
-  const result = editor.importProject(example.project, 'replace', { running, requireRunnable: true });
+  // A candidate-v3 example owns a different editor session type. Validate the
+  // ordinary v2 replacement in a fresh reducer before swapping sessions so a
+  // starter remains atomic and works after any previously opened example.
+  const replacement = new ProjectEditorReducer(createEmptyProject());
+  const result = replacement.importProject(example.project, 'replace', { running, requireRunnable: true });
   if (!result.ok) { showActionableError(elements.projectmessage, result.code, `${example.name} example could not be loaded.`); return; }
+  editor = replacement;
   installProjectGeneration({ empty: false, reason, runtimeMessage: `${projectLabel} loaded — build required` });
   selectedSourceFile = 'main.ino';
   elements.exampleselect.value = exampleId;
@@ -3022,10 +3091,14 @@ elements.boardselect.addEventListener('change', () => {
   const view = publicControllerView(target.profile) ?? publicControllerView(AVR_PROFILE);
   if (selectedCompilerProfile === RP2040_PROFILE) picoPublicWorkbench.activate();
   else picoPublicWorkbench.deactivate();
+  if (selectedCompilerProfile === ESP32C3_PROFILE) c3PublicWorkbench.activate();
+  else void c3PublicWorkbench.deactivate();
   detachOutstandingBuild();
   stopRuntime(
     view.publicExecution
-      ? selectedCompilerProfile === RP2040_PROFILE
+      ? selectedCompilerProfile === ESP32C3_PROFILE
+        ? 'Supported C3 subset selected · build the bounded sketch to run actual QEMU CPU/UART'
+        : selectedCompilerProfile === RP2040_PROFILE
         ? 'Supported Pico subset selected · build the bounded source to run'
         : 'Supported AVR workbench selected · rebuild to run'
       : `${view.label} public preview · compiler/runtime requests blocked`,
@@ -3038,14 +3111,18 @@ elements.boardselect.addEventListener('change', () => {
   currentProject().build = { status: 'dirty', inputIdentity: null, artifactIdentity: null };
   elements.buildstate.textContent = 'Build required';
   renderBuildDiagnostics(null, view.publicExecution
-    ? selectedCompilerProfile === RP2040_PROFILE
+    ? selectedCompilerProfile === ESP32C3_PROFILE
+      ? 'The AVR project is parked. Use the C3 source panel for the bounded compiler and actual QEMU CPU/UART path.'
+      : selectedCompilerProfile === RP2040_PROFILE
       ? 'The AVR project is parked. Use the Pico source panel to build a source-bound UF2.'
       : 'No AVR build submitted for the current project.'
     : `${view.label} is a public status preview. No build request was made.`);
   renderCompilerTarget();
   renderProject();
   elements.projectmessage.textContent = view.publicExecution
-    ? selectedCompilerProfile === RP2040_PROFILE
+    ? selectedCompilerProfile === ESP32C3_PROFILE
+      ? 'ESP32-C3 bounded public source selected. The AVR project remains parked; QEMU pin state is not claimed.'
+      : selectedCompilerProfile === RP2040_PROFILE
       ? 'RP2040 Pico bounded public source selected. The AVR project remains parked and unchanged.'
       : 'ATmega328P public build and tested virtual runtime selected. Rebuild before Run.'
     : `${view.label} preview selected. The AVR project is parked without remapping its circuit; public Build, Run, project upload, and private endpoints remain disabled.`;
@@ -3054,9 +3131,11 @@ elements.boardselect.addEventListener('change', () => {
     artifactManifest: null, runtime: null, compilerRequestBlocked: !view.publicExecution,
   });
   if (selectedCompilerProfile === RP2040_PROFILE) picoPublicWorkbench.render();
+  if (selectedCompilerProfile === ESP32C3_PROFILE) c3PublicWorkbench.render();
 });
 elements.controllerprimaryaction.addEventListener('click', () => {
   if (selectedCompilerProfile === AVR_PROFILE) elements.build.click();
+  else if (selectedCompilerProfile === ESP32C3_PROFILE) void c3PublicWorkbench.build();
   else if (selectedCompilerProfile === RP2040_PROFILE) void picoPublicWorkbench.build();
 });
 elements.controllerreturnavr.addEventListener('click', () => {
@@ -3097,11 +3176,13 @@ elements.projectexport.addEventListener('click', async () => {
 
 elements.walkthroughopen.addEventListener('click', () => elements.walkthrough.showModal());
 elements.quickbuild.addEventListener('click', () => {
-  if (selectedCompilerProfile === RP2040_PROFILE) void picoPublicWorkbench.build();
+  if (selectedCompilerProfile === ESP32C3_PROFILE) void c3PublicWorkbench.build();
+  else if (selectedCompilerProfile === RP2040_PROFILE) void picoPublicWorkbench.build();
   else elements.build.click();
 });
 elements.quickrun.addEventListener('click', () => {
-  if (selectedCompilerProfile === RP2040_PROFILE) void picoPublicWorkbench.run();
+  if (selectedCompilerProfile === ESP32C3_PROFILE) void c3PublicWorkbench.run();
+  else if (selectedCompilerProfile === RP2040_PROFILE) void picoPublicWorkbench.run();
   else elements.run.click();
 });
 elements.quickpause.addEventListener('click', () => {
@@ -3141,9 +3222,25 @@ elements.projectimport.addEventListener('change', async () => {
       : 'Project replaced safely. Previous runtime output was cleared; build before Run.';
 });
 
-elements.promptgenerate.addEventListener('click', () => { elements.promptoutput.value = generatePromptBridgeV2(currentProject()); elements.promptcopy.disabled = false; elements.promptmessage.textContent = 'Portable prompt generated locally. No network request was made.'; });
+elements.promptgenerate.addEventListener('click', () => {
+  try {
+    elements.promptoutput.value = generatePromptBridgeV2(currentRuntimeProject());
+    elements.promptcopy.disabled = false;
+    elements.promptmessage.textContent = 'Portable prompt generated locally. No network request was made.';
+  } catch (error) {
+    elements.promptoutput.value = '';
+    elements.promptcopy.disabled = true;
+    showActionableError(elements.promptmessage, error?.message ?? 'PROMPT_GENERATION_FAILED',
+      'The current project could not be projected into the portable Prompt Bridge contract.');
+  }
+});
 elements.promptcopy.addEventListener('click', async () => { try { await navigator.clipboard.writeText(elements.promptoutput.value); elements.promptmessage.textContent = 'Prompt copied.'; } catch { elements.promptoutput.select(); elements.promptmessage.textContent = 'Prompt selected; copy it with your browser shortcut.'; } });
 elements.promptapply.addEventListener('click', () => {
+  if (editor.kind === 'candidate-project-v3') {
+    showActionableError(elements.promptmessage, 'CANDIDATE_PROMPT_APPLY_UNSUPPORTED',
+      'Portable prompt generation uses the validated runnable projection, but applying a circuit-only proposal cannot safely replace candidate-specific contacts. Open an ordinary AVR project to apply a proposal.');
+    return;
+  }
   const parsed = parsePromptBridgeV2(elements.promptresponse.value);
   if (!parsed.ok) { showActionableError(elements.promptmessage, parsed.code, 'The pasted proposal was rejected before it could change the project.'); return; }
   const candidate = projectFromCircuit(parsed.graph, currentProject().source.files[0].content);
@@ -3223,7 +3320,10 @@ window.__M3_BUILD__ = build;
 window.__M3_COMMAND__ = (command, value) => worker?.postMessage(command === 'speed' ? { command, speed: value } : { command });
 window.__M4_CONTROL__ = (componentId, key, value) => worker?.postMessage({ command: 'control', componentId, key, value });
 window.__M5_COMMAND__ = (command, value) => worker?.postMessage({ command, value });
-window.addEventListener('pagehide', () => picoPublicWorkbench.deactivate());
+window.addEventListener('pagehide', () => {
+  picoPublicWorkbench.deactivate();
+  c3PublicWorkbench.disposeForPageExit();
+});
 window.__M6_ADD__ = addComponent;
 window.__M6_CONNECT__ = (from, to) => { pendingEndpoint = parseEndpoint(from); handlePin(parseEndpoint(to)); };
 window.__M6_PROJECT__ = () => JSON.parse(currentProjectText());

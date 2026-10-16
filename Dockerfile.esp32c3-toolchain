@@ -1,0 +1,14 @@
+# Copyright 2026 IntentForce
+# SPDX-License-Identifier: Apache-2.0
+FROM fah-firmware/waveshare-8di-8ro:arduino-3.3.10
+
+COPY --chown=0:0 arduino-cli-root/ /opt/arduino-cli/
+COPY --chown=0:0 c3/ /opt/intent-mcu/c3/
+RUN sed -i 's#data: /srv/codex-workspaces/_tools/arduino-cli/state/data#data: /opt/arduino-cli/state/data#' /opt/arduino-cli/state/arduino-cli.yaml \
+    && sed -i 's#downloads: /srv/codex-workspaces/_tools/arduino-cli/state/downloads#downloads: /tmp/arduino-downloads#' /opt/arduino-cli/state/arduino-cli.yaml \
+    && sed -i 's#user: /srv/codex-workspaces/_tools/arduino-cli/state/user#user: /tmp/arduino-user#' /opt/arduino-cli/state/arduino-cli.yaml \
+    && chmod -R a+rX /opt/intent-mcu/c3 \
+    && chmod 0755 /opt/intent-mcu/c3/builder-worker.py
+
+WORKDIR /workspace
+ENTRYPOINT ["python3", "/opt/intent-mcu/c3/builder-worker.py"]

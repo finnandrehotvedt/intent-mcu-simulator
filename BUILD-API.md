@@ -29,6 +29,18 @@ three-call grammar: GPIO0 level `0` or `1`, 1–24 uppercase UART0 characters,
 and halt. No caller-selected include, path, flag, linker, MMIO, package or
 output format is accepted.
 
+ESP32-C3 uses a separate, capability-scoped `/api/c3` service rather than the
+generic build queue. `POST /api/c3/session` creates one short-lived in-memory
+session. A session accepts one exact Arduino sketch grammar through
+`POST /api/c3/session/{id}/build`: GPIO2 `OUTPUT` or `INPUT`, `HIGH` or `LOW`,
+one uppercase UART marker, and the fixed one-second loop. The service returns
+only checksummed identities and bounded diagnostics to the browser; the 4 MiB
+flash remains transient server memory. An authenticated `run` command starts a
+separate network-disabled QEMU container, validates two DIO boot/UART epochs,
+and returns actual CPU/UART evidence plus separately labelled project-owned
+GPIO2-register-model evidence. It never claims QEMU pin readback. `invalidate`
+and `dispose` retire the flash authority, and stale generations fail closed.
+
 ## Read and cancel
 
 `GET /api/build/{jobId}` and `DELETE /api/build/{jobId}` require
@@ -46,7 +58,8 @@ cancelled jobs never produce a runnable artifact.
 ## Health
 
 - `GET /healthz`: gateway process is serving.
-- `GET /readyz`: both exact image-ID-locked compiler images are available.
+- `GET /readyz`: every compiler/runtime image enabled for that deployment is
+  present at its exact locked image ID.
 
 The implementation and stable error codes are in `compiler/`. Resource,
 retention and recovery behavior is documented in `LOCAL-OPERATIONS.md`.

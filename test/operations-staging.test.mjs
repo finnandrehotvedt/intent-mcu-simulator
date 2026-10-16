@@ -56,7 +56,7 @@ async function submit(base, delay) {
 }
 
 async function terminal(base, claim) {
-  for (let attempt = 0; attempt < 300; attempt += 1) {
+  for (let attempt = 0; attempt < 1200; attempt += 1) {
     const response = await fetch(`${base}/api/build/${claim.jobId}`, {
       headers: { Authorization: `Bearer ${claim.capability}` },
     });
@@ -91,12 +91,12 @@ test('OPS-005/OPS-006 private staging restart, unavailable worker and bounded lo
     await waitForReadiness(server, 200, 'READY');
     const startedAt = Date.now();
     const claims = [];
-    for (const delay of [151, 152, 153, 154]) {
+    for (const delay of [151, 152, 153, 154, 155]) {
       const submitted = await submit(server.base, delay);
       assert.equal(submitted.response.status, 202);
       claims.push(submitted.body);
     }
-    const overflow = await submit(server.base, 155);
+    const overflow = await submit(server.base, 156);
     assert.equal(overflow.response.status, 429);
     assert.equal(overflow.body.code, 'BUILD_QUEUE_FULL');
     const results = await Promise.all(claims.map((claim) => terminal(server.base, claim)));
@@ -132,7 +132,7 @@ test('OPS-005/OPS-006 private staging restart, unavailable worker and bounded lo
     assert.equal((await terminal(server.base, (await submit(server.base, 150)).body)).status, 'succeeded');
     const { stdout } = await execFileAsync('docker', ['ps', '-aq', '--filter', 'label=com.intentforce.teach-lab.role=disposable-build-job']);
     assert.equal(stdout.trim(), '');
-    process.stdout.write(`${JSON.stringify({ loadAccepted: 4, queueRejected: 1, latencyMs, restartRecovered: true, unavailableRecovered: true })}\n`);
+    process.stdout.write(`${JSON.stringify({ loadAccepted: 5, queueRejected: 1, latencyMs, restartRecovered: true, unavailableRecovered: true })}\n`);
   } finally {
     if (server?.child.exitCode === null) await stopServer(server);
     await rm(temporary, { recursive: true, force: true });

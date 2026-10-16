@@ -35,14 +35,15 @@ support pages, a canonical URL, social-preview metadata, truthful Schema.org
 `llms.txt`. These files describe only
 the supported product and link back to this source, licence, contribution
 guidance, and the two owner articles. They do not promise search rankings, AI
-citations, physical equivalence, hosted AI, or capabilities outside the tested
-ATmega328P and bounded RP2040 Pico subsets.
+citations, physical equivalence, hosted AI, or capabilities outside the exact
+tested AVR, Pico and ESP32-C3 subsets.
 
-The controller selector exposes two public execution profiles and two truthful,
-non-executable capability previews. The bounded Pico profile has its own local
-data-only project, exact source grammar, fixed compiler and browser worker. The
-ESP32-C3 and STM32F429ZI previews report private verification without enabling
-public project upload, Build, Run, runtime sessions, or private endpoints.
+The controller selector exposes three public execution profiles and one truthful,
+non-executable capability preview. Pico and ESP32-C3 each have a local data-only
+project, exact source grammar and fixed compiler. C3 flash executes on actual
+Espressif QEMU CPU/UART; its GPIO2 LED result is separately and visibly labelled
+as a project-owned executed-register-write model because QEMU pin state is not
+observed. STM32F429ZI remains a non-executable status preview.
 Selecting a non-AVR profile parks the AVR project without remapping its circuit;
 returning to AVR restores that workbench.
 
@@ -53,7 +54,11 @@ selectable parts: core passives, momentary and latching contacts, analogue and
 digital sensors, LEDs and displays, an active buzzer, and a quadrature encoder.
 A separate bounded RP2040 Pico profile accepts one exact C11 source grammar,
 compiles a source-bound UF2 and executes GPIO0/UART0 in a browser worker against
-one validated GP0-to-resistor-to-LED-to-GND circuit. The application also
+one validated GP0-to-resistor-to-LED-to-GND circuit. A separate bounded
+ESP32-C3 sketch grammar compiles a fixed DIO flash image and executes two UART
+boot epochs on actual Espressif QEMU. Its GPIO2-to-220-Ω-to-LED-to-GND result
+uses the separately labelled project-owned register model, not QEMU pin
+readback. The application also
 supports user-owned local project files, Prompt Bridge circuit-plan validation,
 serial display, logic traces, and pin inspection. Its manual-first workbench
 uses a data-driven catalogue with nine
@@ -130,13 +135,12 @@ source; it does not authorize redistributing the resulting image.
 
 Additional current limits:
 
-- source version `1.1.0-rc.4` is prepared for the release at
+- source version `1.1.0-rc.5` is prepared for the release at
   `https://lab.teachthecompany.com/`; hosted compiler/toolchain images and
   private deployment configuration remain outside this source repository;
-- public execution supports the tested ATmega328P subset and one bounded
-  RP2040 Pico GPIO0/UART0 source profile; ESP32-C3 and STM32F429ZI have bounded
-  private source/compiler/runtime evidence but remain public previews with
-  Build, Run, project upload and private endpoints disabled;
+- public execution supports the tested ATmega328P subset, one bounded RP2040
+  Pico GPIO0/UART0 source profile and one bounded ESP32-C3 GPIO2/UART profile;
+  STM32F429ZI remains a non-executable preview;
 - no physical board connection, firmware upload, live AI call, account,
   analytics, or cloud project store is included;
 - the CPU/peripheral profile is a tested educational subset, not a promise of

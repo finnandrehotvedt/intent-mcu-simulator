@@ -1,0 +1,15 @@
+{
+  "schema": "intent-mcu-esp32c3-public-toolchain-manifest@1",
+  "profile": "board.esp32-c3-devmodule-v1",
+  "fqbn": "esp32:esp32:esp32c3:FlashMode=dio",
+  "arduinoCli": "1.5.1",
+  "arduinoEsp32": "3.3.10",
+  "espIdf": "5.5.4",
+  "compiler": "esp-rv32 2601",
+  "sourceDateEpoch": 1791244800,
+  "network": "none",
+  "pull": "never",
+  "sourceLockSha256": "04f29dd08e192b7c464a09e76c1e45dc7c2887c0d6051625a0ae3bc943b66e40",
+  "image": "local/intent-mcu-esp32c3-toolchain:1.1.0-rc.5",
+  "imageId": "sha256:5b2105f4689d21c797cc631421bccbe25b9095d4a6500657dca0ece5dfc801e3"
+}

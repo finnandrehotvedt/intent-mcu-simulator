@@ -19,6 +19,9 @@ let browser;
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   const page = await context.newPage();
   const mutations = [];
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.stack || String(error)));
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
   page.on('request', (request) => {
     if (!['GET', 'HEAD'].includes(request.method())) mutations.push(`${request.method()} ${request.url()}`);
   });
@@ -27,7 +30,47 @@ let browser;
   const cards = page.locator('.starter-card');
   assert(await cards.count() === 5, 'starter gallery does not expose all five validated examples');
   assert((await cards.nth(0).innerText()).includes('Controller · resistor · LED'), 'starter card omits its parts');
-  await page.click('.starter-card[data-example="button"]');
+  const examples = [
+    ['blink', 'Blink demo'],
+    ['button', 'Button input'],
+    ['adc', 'ADC dial'],
+    ['pwm', 'PWM fade'],
+    ['temperature-lcd-threshold', 'Temperature display'],
+  ];
+  const projectName = () => page.evaluate(() => {
+    const value = window.__M6_PROJECT__();
+    return value.schema === 'intent-mcu-project-contact-persistence@1'
+      ? value.project.metadata.name : value.metadata.name;
+  });
+  for (const [id, name] of examples) {
+    await page.click(`.starter-card[data-example="${id}"]`);
+    await page.waitForFunction(([expectedId, expectedName]) => {
+      const value = window.__M6_PROJECT__();
+      const observed = value.schema === 'intent-mcu-project-contact-persistence@1'
+        ? value.project.metadata.name : value.metadata.name;
+      return document.querySelector('#example-select').value === expectedId && observed === expectedName;
+    }, [id, name]);
+  }
+  await page.locator('#prompt-drawer').evaluate((drawer) => { drawer.open = true; });
+  await page.click('#prompt-generate');
+  assert((await page.inputValue('#prompt-output')).length > 100,
+    'Temperature candidate did not generate a portable prompt from its validated runtime projection');
+  assert((await page.textContent('#prompt-message')).includes('generated locally'),
+    'Temperature candidate prompt generation did not report local completion');
+  // Re-enter every ordinary project from the validated candidate-v3 example,
+  // then return to candidate-v3, using the compact dropdown path as well.
+  for (const [id, name] of examples) {
+    await page.selectOption('#example-select', id);
+    await page.click('#project-demo');
+    await page.waitForFunction(([expectedId, expectedName]) => {
+      const value = window.__M6_PROJECT__();
+      const observed = value.schema === 'intent-mcu-project-contact-persistence@1'
+        ? value.project.metadata.name : value.metadata.name;
+      return document.querySelector('#example-select').value === expectedId && observed === expectedName;
+    }, [id, name]);
+  }
+  await page.selectOption('#example-select', 'button');
+  await page.click('#project-demo');
   await page.waitForFunction(() => document.querySelector('#project-message').textContent.includes('Button input loaded'));
   const loaded = await page.evaluate(() => ({
     name: window.__M6_PROJECT__().metadata.name,
@@ -50,12 +93,15 @@ let browser;
     assert(layout.visibleCards === 5, `starter cards disappear at ${viewport.width}px`);
   }
   assert(mutations.length === 0, `starter gallery made server mutation request: ${mutations.join(', ')}`);
+  assert(errors.length === 0, `starter journeys raised browser errors: ${errors.join(' | ')}`);
   if (process.env.STARTER_SCREENSHOT) {
     await page.setViewportSize({ width: 1440, height: 1000 });
     fs.mkdirSync(path.dirname(process.env.STARTER_SCREENSHOT), { recursive: true });
     await page.screenshot({ path: process.env.STARTER_SCREENSHOT, fullPage: true });
   }
-  console.log(JSON.stringify({ browser: browserName, result: 'pass', cards: 5, serverProjectWrites: 0 }));
+  console.log(JSON.stringify({ browser: browserName, result: 'pass', cards: 5,
+    cardJourneys: examples.length, dropdownJourneys: examples.length + 1,
+    finalProject: await projectName(), serverProjectWrites: 0 }));
   await context.close();
 })().catch((error) => {
   console.error(error.stack || error);
