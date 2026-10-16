@@ -11,7 +11,7 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
 
 async function state(page) { return page.evaluate(() => structuredClone(window.__STM32_PUBLIC_STATE__)); }
 async function waitPhase(page, phase) {
-  await page.waitForFunction((value) => window.__STM32_PUBLIC_STATE__?.phase === value, phase, { timeout: 60_000 });
+  await page.waitForFunction((value) => window.__STM32_PUBLIC_STATE__?.phase === value, phase, { timeout: 120_000 });
 }
 
 (async () => {

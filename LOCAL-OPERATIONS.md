@@ -80,7 +80,10 @@ docker compose --profile local-compiler exec -T local-compiler npm run test:oper
   one-at-a-time disposable containers. Both are network-disabled, read-only,
   non-root and capability-dropped. ELF bytes cross one request only, remain in
   browser memory after Build, and are wiped on edit, Open, Stop or profile
-  change; the server retains zero project or executable bytes.
+  change; the server retains zero project or executable bytes. Renode receives
+  a bounded 90-second server deadline so its first cold start can complete on
+  the production VM; timeout and user cancellation still remove the exact
+  disposable runtime container.
 
 Logs contain lifecycle/error codes, not learner source, returned firmware, job
 capabilities, or secrets. A failed build remains available only in memory for a

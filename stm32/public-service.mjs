@@ -20,7 +20,7 @@ const BUILDER_RESULT_SCHEMA = 'intent-mcu-stm32-builder-result@1';
 export const STM32_LIMITS = Object.freeze({
   requestBytes: 96 * 1024,
   buildTimeoutMs: 15_000,
-  runtimeTimeoutMs: 35_000,
+  runtimeTimeoutMs: 90_000,
   compilerOutputBytes: 96 * 1024,
   runtimeOutputBytes: 256 * 1024,
   concurrentBuilds: 1,
