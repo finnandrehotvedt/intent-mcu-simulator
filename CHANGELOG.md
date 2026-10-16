@@ -21,6 +21,9 @@ All notable public source changes are recorded here.
 - Fixed portable Prompt Bridge generation for the validated temperature/LCD
   runtime projection and made unsupported candidate-specific apply fail
   explicitly instead of raising a browser exception.
+- Removed optional inline JSON-LD after live verification showed the unchanged
+  ingress CSP still authorized only the prior release's metadata hash. The
+  application now needs no inline-script exception.
 
 ## 1.1.0-rc.4 — 2026-10-16
 

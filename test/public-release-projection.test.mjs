@@ -53,13 +53,17 @@ test('bounded C3 evidence separates actual QEMU from the project-owned GPIO mode
 });
 
 test('public browser and server entry points contain no private runtime route or C3 broker mount', async () => {
-  const [browserSource, serverSource] = await Promise.all([
+  const [browserSource, serverSource, indexSource, gatewaySource] = await Promise.all([
     readFile(new URL('../staging/main.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../staging/server.mjs', import.meta.url), 'utf8'),
+    readFile(new URL('../staging/index.html', import.meta.url), 'utf8'),
+    readFile(new URL('../compiler/http-gateway.mjs', import.meta.url), 'utf8'),
   ]);
   assert.equal(browserSource.includes('/private-c3'), false);
   assert.equal(browserSource.includes('Esp32C3CandidateBroker'), false);
   assert.equal(serverSource.includes('CandidateBuildRouter'), false);
   assert.equal(serverSource.includes('Esp32C3CandidateBroker'), false);
   assert.match(serverSource, /PUBLIC_PROJECTION_PRIVATE_TARGET_FORBIDDEN/);
+  assert.equal(/<script(?![^>]*\bsrc=)[^>]*>/u.test(indexSource), false);
+  assert.equal(gatewaySource.includes("'sha256-"), false);
 });

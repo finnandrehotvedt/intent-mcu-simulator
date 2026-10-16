@@ -30,6 +30,8 @@ while preserving the tested AVR and Pico workbenches.
 - AVR and Pico disposable compiler deadlines are 30 seconds. This preserves
   fail-closed cancellation while avoiding the observed 12-second cold-worker
   intermittency; successful builds still return as soon as compilation ends.
+- The page contains no inline executable or metadata script, so the unchanged
+  production ingress CSP does not need a release-specific inline hash.
 - RP2040 Pico now has a public bounded `main.c` editor, local data-only
   Save/Open, isolated fixed Arm compilation, strict source-bound UF2 validation,
   and actual browser-worker GPIO0/UART0 execution.
