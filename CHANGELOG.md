@@ -10,6 +10,9 @@ All notable public source changes are recorded here.
 - Added an original Pico circuit view with named GP0 pin 1 and GND pin 3
   anchors, 220 Ω current limiting, external LED state and separate GPIO25
   onboard-LED semantics.
+- Closed the visual LED-cathode/GND gap across desktop and mobile geometry,
+  moved the 220 Ω text clear of the resistor bands, and clarified exact-template
+  source-policy errors.
 - Added local data-only Pico Save/Open and fail-closed artifact invalidation
   across editing, disconnect, Stop, project Open and profile changes.
 - Expanded the desktop workbench to small viewport gutters while preserving

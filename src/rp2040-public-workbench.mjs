@@ -258,7 +258,7 @@ export class Rp2040PublicWorkbench {
     }
     if (!SOURCE_PATTERN.test(this.project.source)) {
       this.phase = 'blocked';
-      this.message = 'Source rejected. Edit only GPIO0 level (0/1) and the uppercase UART text.';
+      this.message = 'Source rejected. Keep the complete template and line breaks exactly as shown; edit only GPIO0 level (0/1) and the uppercase UART text.';
       this.render();
       return { ok: false, code: 'SOURCE_POLICY_REJECTED' };
     }

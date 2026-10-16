@@ -12,6 +12,10 @@ application use the available width with small gutters.
 - The Pico circuit labels GP0 physical pin 1 and GND physical pin 3, routes GP0
   through 220 Ω and an external LED, and labels GPIO25 separately as an onboard
   LED signal rather than a header anchor.
+- The LED cathode lead now meets the GND route continuously at desktop and
+  mobile widths, and the 220 Ω label is separated from the resistor bands.
+- Rejected Pico source now explicitly says to preserve the complete template
+  and its line breaks while changing only the two permitted values.
 - Two distinct source variants produce distinct source/UF2 identities and
   observable LED/UART results. Editing, profile changes, disconnect, Stop and
   Open invalidate executable authority and require a fresh Build.

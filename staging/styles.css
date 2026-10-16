@@ -96,12 +96,13 @@ h2 { font-size: 1.22rem; margin: 0; }
 .pico-onboard-led { position: absolute; right: 7%; bottom: 7%; padding: .4rem; border: 1px dashed rgba(255,255,255,.45); border-radius: 8px; color: #e6f6ff; font-size: .64rem; text-align: right; }
 .pico-wire { position: absolute; display: block; height: 7px; border-radius: 8px; transform-origin: left center; box-shadow: 0 2px 3px rgba(0,0,0,.25); }
 .pico-wire-signal { left: 38%; top: 23%; width: 20%; background: #e7ad16; }
-.pico-resistor { position: absolute; left: 55%; top: calc(23% - 10px); z-index: 2; width: 17%; padding: .35rem .2rem; border: 3px solid #b78b5f; border-radius: 10px; color: #321f14; background: repeating-linear-gradient(90deg,#e4c9a1 0 20%,#af3f34 20% 27%,#e4c9a1 27% 43%,#222 43% 50%,#e4c9a1 50% 66%,#a8522f 66% 73%,#e4c9a1 73%); text-align: center; font: 800 .68rem var(--mono); }
+.pico-resistor { position: absolute; left: 55%; top: calc(23% - 10px); z-index: 2; width: 17%; height: 22px; border: 3px solid #b78b5f; border-radius: 10px; background: repeating-linear-gradient(90deg,#e4c9a1 0 20%,#af3f34 20% 27%,#e4c9a1 27% 43%,#222 43% 50%,#e4c9a1 50% 66%,#a8522f 66% 73%,#e4c9a1 73%); }
+.pico-resistor-label { position: absolute; left: 63.5%; top: calc(23% - 46px); z-index: 3; transform: translateX(-50%); padding: .18rem .42rem; border: 1px solid #b78b5f; border-radius: 6px; color: #321f14; background: #f5f0e6; white-space: nowrap; font: 800 .68rem/1.2 var(--mono); }
 .pico-wire-series { left: 70%; top: 23%; width: 12%; background: #ee3d4f; }
-.pico-external-led { position: absolute; left: 80%; top: 16%; width: 30px; height: 46px; border: 3px solid #942637; border-radius: 16px 16px 6px 6px; background: radial-gradient(circle at 35% 25%,#ffb6bd,#f02e45 45%,#89172a); box-shadow: 0 0 0 4px rgba(238,61,79,.15); }
-.pico-external-led::after { content: ''; position: absolute; left: 12px; top: 43px; width: 5px; height: 77px; background: #252e35; }
+.pico-external-led { position: absolute; left: calc(82% - 18px); top: 16%; z-index: 2; width: 36px; height: 52px; border: 3px solid #942637; border-radius: 18px 18px 6px 6px; background: radial-gradient(circle at 35% 25%,#ffb6bd,#f02e45 45%,#89172a); box-shadow: 0 0 0 4px rgba(238,61,79,.15); }
+.pico-wire-led-return { left: calc(82% - 2.5px); top: calc(16% + 46px); width: 5px; height: calc(57% - 42px); background: #252e35; }
 .pico-external-led.on { background: radial-gradient(circle at 35% 25%,#fff,#ff6878 30%,#ff243d 58%); box-shadow: 0 0 24px 8px rgba(255,44,69,.72); }
-.pico-wire-ground { left: 38%; top: 73%; width: 45%; background: #252e35; }
+.pico-wire-ground { left: 38%; top: 73%; width: calc(44% + 3px); background: #252e35; }
 .pico-diagram[data-connected="false"] .pico-wire-series { width: 5%; opacity: .35; }
 .pico-diagram[data-connected="false"] .pico-external-led { box-shadow: none; filter: grayscale(.7); }
 .pico-serial-card { border: 1px solid #28465b; border-radius: 12px; background: #030b12; padding: .8rem; }

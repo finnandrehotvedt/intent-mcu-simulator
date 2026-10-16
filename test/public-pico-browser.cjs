@@ -34,6 +34,29 @@ async function build(page, source) {
   return state;
 }
 
+async function wiringGeometry(page) {
+  return page.evaluate(() => {
+    const rect = (selector) => document.querySelector(selector).getBoundingClientRect().toJSON();
+    return {
+      led: rect('#pico-external-led'),
+      ledReturn: rect('.pico-wire-led-return'),
+      ground: rect('.pico-wire-ground'),
+      resistor: rect('.pico-resistor'),
+      resistorLabel: rect('.pico-resistor-label'),
+    };
+  });
+}
+
+function assertContinuousWiring(geometry) {
+  assert.ok(geometry.ledReturn.top < geometry.led.bottom, JSON.stringify(geometry));
+  assert.ok(geometry.ledReturn.left >= geometry.led.left
+    && geometry.ledReturn.right <= geometry.led.right, JSON.stringify(geometry));
+  assert.ok(geometry.ledReturn.bottom >= geometry.ground.top
+    && geometry.ledReturn.bottom <= geometry.ground.bottom, JSON.stringify(geometry));
+  assert.ok(geometry.ground.right >= geometry.ledReturn.right, JSON.stringify(geometry));
+  assert.ok(geometry.resistorLabel.bottom <= geometry.resistor.top - 8, JSON.stringify(geometry));
+}
+
 (async () => {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, acceptDownloads: true });
@@ -83,6 +106,14 @@ async function build(page, source) {
   assert.match(picoLayout.gp0, /physical pin 1/);
   assert.match(picoLayout.gnd, /physical pin 3/);
   assert.match(picoLayout.onboard, /GPIO25.*onboard LED only/s);
+  const desktopWiring = await wiringGeometry(page);
+  assertContinuousWiring(desktopWiring);
+
+  await page.fill('#pico-source', HIGH.replace('int main(void)\n{', 'int main(void) {'));
+  await page.click('#pico-build');
+  const rejected = await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state());
+  assert.equal(rejected.phase, 'blocked');
+  assert.match(rejected.message, /complete template and line breaks exactly as shown/);
 
   const high = await build(page, HIGH);
   await page.click('#pico-run');
@@ -127,6 +158,8 @@ async function build(page, source) {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload({ waitUntil: 'networkidle' });
   await selectPico(page);
+  const mobileWiring = await wiringGeometry(page);
+  assertContinuousWiring(mobileWiring);
   const mobile = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     panel: document.querySelector('#pico-public-workbench').getBoundingClientRect(),
@@ -143,7 +176,7 @@ async function build(page, source) {
   assert.deepEqual(errors, []);
   assert.deepEqual(await context.cookies(), []);
   await browser.close();
-  process.stdout.write(`${JSON.stringify({ status: 'pass', desktop, desktop1440, picoLayout, high: high.artifact, low: low.artifact, mobile })}\n`);
+  process.stdout.write(`${JSON.stringify({ status: 'pass', desktop, desktop1440, picoLayout, desktopWiring, high: high.artifact, low: low.artifact, mobileWiring, mobile })}\n`);
 })().catch((error) => {
   process.stderr.write(`${error.stack || error}\n`);
   process.exit(1);
