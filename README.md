@@ -38,6 +38,11 @@ guidance, and the two owner articles. They do not promise search rankings, AI
 citations, physical equivalence, hosted AI, or capabilities outside the exact
 tested AVR, Pico, ESP32-C3 and STM32F429ZI subsets.
 
+The component panel opens an exact 19-model by 4-profile compatibility matrix.
+It derives from the real catalogues and reports Simulated, Partial or
+Unavailable status, project-mode scope and a concrete limitation for every
+cell; `/components.html` publishes the same contract as crawlable content.
+
 The controller selector exposes four bounded public execution profiles. Pico,
 ESP32-C3 and STM32F429ZI each have a local data-only project, exact source grammar
 and fixed compiler. C3 flash executes on actual
@@ -188,7 +193,7 @@ source; it does not authorize redistributing the resulting image.
 
 Additional current limits:
 
-- source version `1.1.0-rc.24` is prepared for the release at
+- source version `1.1.0-rc.25` is prepared for the release at
   `https://lab.teachthecompany.com/`; hosted compiler/toolchain images and
   private deployment configuration remain outside this source repository;
 - public execution supports the tested ATmega328P subset, one bounded RP2040

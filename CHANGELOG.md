@@ -2,6 +2,21 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.25 — 2026-10-17
+
+- Added one executable 19-model by 4-profile compatibility contract derived
+  from the actual public catalogues: 76 exact cells, 25 available and 51
+  unavailable, with project-mode and limitation truth retained per cell.
+- Added an accessible in-workbench matrix and a crawlable documentation table.
+  AVR distinguishes the 5 ordinary project-v2 parts from 16 candidate-v3
+  parts; every narrow profile remains fixed to its controller, resistor and LED.
+- Added targeted positive and fail-closed rotary-encoder coverage for exact
+  D2/D3/ground wiring, ordered CW/CCW worker sequences, wrong phase pins and
+  invalid common-pin topology including powered COM.
+- Kept public reference coverage explicit: all available cells have tracked
+  tests, while 8 AVR candidate models still lack public starter projects.
+  No compiler, runtime, project schema or component capability was expanded.
+
 ## 1.1.0-rc.24 — 2026-10-17
 
 - Added one second validated AVR PWM lesson and paired on/off UART lessons for

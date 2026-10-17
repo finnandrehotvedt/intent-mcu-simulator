@@ -1,4 +1,29 @@
-# Intent MCU Simulator 1.1.0-rc.24
+# Intent MCU Simulator 1.1.0-rc.25
+
+This compatibility-truth release makes the complete public component/profile
+boundary visible without adding a component, controller or runtime capability.
+
+## Exact component matrix
+
+- The workbench presents all 19 public models across AVR, Pico, ESP32-C3 and
+  STM32F429ZI with Simulated, Partial or Unavailable status, exact project mode
+  and a concrete limitation or rejection reason.
+- The same 19-row contract is crawlable on `/components.html`. The executable
+  matrix is derived from the real catalogues and checked against exact totals:
+  76 cells, 25 available and 51 unavailable.
+- AVR has 13 Simulated and 3 Partial available models. Ordinary project-v2
+  still shows 5 parts; candidate-v3 shows 13 by default and all 16 when the
+  learner chooses All statuses.
+- Each narrow profile still exposes only its fixed Partial controller plus the
+  Simulated resistor and LED. Unavailable combinations are never remapped.
+- Targeted rotary-encoder tests prove exact D2/D3/ground acceptance, ordered
+  CW/CCW GPIO sequences and fail-closed wrong-pin and powered-COM behavior.
+- Eight AVR candidate models have tracked tests but no public starter project;
+  that reference-coverage limitation remains explicit.
+
+---
+
+## 1.1.0-rc.24
 
 This supported-example release completes the bounded U03 teaching catalogue
 without adding a controller capability, component, pin, electrical topology,

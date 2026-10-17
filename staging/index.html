@@ -363,6 +363,12 @@
           <output id="catalog-page" aria-live="polite">No results</output>
           <button id="catalog-next" type="button" disabled>Next 80</button>
         </nav>
+        <section class="catalog-support-card" aria-labelledby="catalog-support-title">
+          <p class="eyebrow">EXACT COMPATIBILITY</p>
+          <h3 id="catalog-support-title">What works with each controller?</h3>
+          <p>See all 19 public models across AVR, Pico, ESP32-C3 and STM32, including project-mode limits and explicit unavailable reasons.</p>
+          <button id="catalog-support-open" type="button">View support matrix</button>
+        </section>
         <p class="truth">Click to add, or drag a part onto the canvas. IDs are allocated once and remain stable.</p>
       </aside>
 
@@ -482,7 +488,7 @@
       </nav>
     </section>
 
-    <footer>Intent MCU Simulator 1.1.0-rc.24 public release · supported-function example pack, shared dark circuit workbench and exact controller boundaries across AVR + bounded Pico + ESP32-C3 + STM32F429ZI · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
+    <footer>Intent MCU Simulator 1.1.0-rc.25 public release · exact 19-model compatibility matrix, shared dark circuit workbench and exact controller boundaries across AVR + bounded Pico + ESP32-C3 + STM32F429ZI · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
   </main>
   <button id="serial-tab" class="serial-tab" type="button" aria-expanded="false" aria-controls="serial-dock"><span>Serial</span><span id="serial-new-output" class="serial-new-output" hidden>0 new</span></button>
   <aside id="serial-dock" class="serial-dock" aria-labelledby="serial-title" hidden>
@@ -508,6 +514,30 @@
         <button id="unsaved-discard" type="button" class="danger-button">Discard and continue</button>
       </div>
     </form>
+  </dialog>
+  <dialog id="component-support-dialog" class="component-support-dialog" aria-labelledby="component-support-title" aria-describedby="component-support-summary component-support-mode">
+    <div class="component-support-dialog-inner">
+      <button id="component-support-close" class="dialog-close" type="button" aria-label="Close compatibility matrix">×</button>
+      <p class="eyebrow">PUBLIC COMPONENT CONTRACT</p>
+      <h2 id="component-support-title">Controller compatibility matrix</h2>
+      <label for="component-support-profile">Controller profile</label>
+      <select id="component-support-profile">
+        <option value="board.atmega328p-16mhz-v1">ATmega328P</option>
+        <option value="board.rp2040-pico-v1">RP2040 Pico</option>
+        <option value="board.esp32-c3-devmodule-v1">ESP32-C3</option>
+        <option value="board.stm32f429zi-nucleo144-v1">STM32F429ZI</option>
+      </select>
+      <p id="component-support-summary" class="component-support-summary" aria-live="polite"></p>
+      <p id="component-support-mode" class="truth"></p>
+      <div class="component-support-table-wrap">
+        <table class="component-support-table">
+          <thead><tr><th scope="col">Model</th><th scope="col">Status</th><th scope="col">Project mode</th><th scope="col">Limit or reason</th></tr></thead>
+          <tbody id="component-support-body"></tbody>
+        </table>
+      </div>
+      <p class="truth"><strong>Partial</strong> means a stated bounded model, not broad hardware support. Unavailable combinations fail closed.</p>
+      <a class="matrix-doc-link" href="/components.html#compatibility-matrix">Open the crawlable full matrix</a>
+    </div>
   </dialog>
   <script type="module" src="./main.js"></script>
 </body>

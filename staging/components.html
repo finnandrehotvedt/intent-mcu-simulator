@@ -22,6 +22,36 @@
       <article class="docs-card"><h2>Outputs and displays</h2><ul><li>Common-cathode RGB LED</li><li>Active buzzer module</li><li>Single-digit common-cathode seven-segment display</li><li>16×2 character LCD in write-only 4-bit GPIO mode</li></ul></article>
     </section>
     <section class="panel"><h2>Model limits matter</h2><p class="docs-intro">Sensors use ideal bounded values, contacts do not model bounce or wear, light and sound outputs are relative indicators, and the LCD implements a tested command subset. The thermostat experiment uses the temperature module only as an ideal linear signal, its button as an ideal active-low contact and its LED as a heater-command indicator; it does not model a room or physical heater. Invalid polarity, missing current limiting, ambiguous ground, reused output pins, shorts, and unsupported topologies fail closed.</p></section>
+    <section id="compatibility-matrix" class="panel" aria-labelledby="compatibility-matrix-title">
+      <p class="eyebrow">EXACT PUBLIC CONTRACT</p><h2 id="compatibility-matrix-title">Controller compatibility matrix</h2>
+      <p class="docs-intro">There are 19 unique public models and 76 profile/model cells. AVR has 16 available models: 13 Simulated and 3 Partial. Each narrow controller profile has exactly 3 available models: its Partial controller plus the Simulated resistor and LED. Across the complete matrix, 25 cells are available and 51 are unavailable.</p>
+      <p class="docs-intro"><strong>AVR project modes:</strong> ordinary project-v2 shows 5 Simulated parts. Candidate-v3 shows 13 by default; choose All statuses to see all 16, including 3 Partial models. Partial always means the stated bounded behaviour, never broad hardware equivalence.</p>
+      <div class="support-table-wrap"><table class="support-table component-doc-matrix">
+        <thead><tr><th scope="col">Public model</th><th scope="col">AVR</th><th scope="col">RP2040 Pico</th><th scope="col">ESP32-C3</th><th scope="col">STM32F429ZI</th></tr></thead>
+        <tbody>
+          <tr data-model="board.atmega328p-16mhz-v1"><th>ATmega328P 16 MHz board<br><code>board.atmega328p-16mhz-v1</code></th><td class="status-supported">Simulated</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
+          <tr data-model="led.basic-v1"><th>5 mm LED<br><code>led.basic-v1</code></th><td class="status-supported">Simulated</td><td class="status-supported">Simulated</td><td class="status-supported">Simulated</td><td class="status-supported">Simulated</td></tr>
+          <tr data-model="resistor.fixed-v1"><th>Fixed resistor<br><code>resistor.fixed-v1</code></th><td class="status-supported">Simulated</td><td class="status-supported">Simulated</td><td class="status-supported">Simulated</td><td class="status-supported">Simulated</td></tr>
+          <tr data-model="button.momentary-v1"><th>Tactile button<br><code>button.momentary-v1</code></th><td class="status-supported">Simulated</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
+          <tr data-model="potentiometer.linear-v1"><th>Linear potentiometer<br><code>potentiometer.linear-v1</code></th><td class="status-supported">Simulated</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
+          <tr data-model="reference.ground-v1"><th>0 V reference<br><code>reference.ground-v1</code></th><td class="status-supported">Simulated · candidate-v3</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
+          <tr data-model="switch.toggle-spst-v1"><th>SPST toggle<br><code>switch.toggle-spst-v1</code></th><td class="status-supported">Simulated · candidate-v3</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
+          <tr data-model="switch.changeover-spdt-v1"><th>SPDT changeover<br><code>switch.changeover-spdt-v1</code></th><td class="status-limited">Partial · candidate-v3</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
+          <tr data-model="sensor.light-analogue-v1"><th>Analogue light sensor<br><code>sensor.light-analogue-v1</code></th><td class="status-supported">Simulated · candidate-v3</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
+          <tr data-model="sensor.temperature-analogue-v1"><th>Analogue temperature module<br><code>sensor.temperature-analogue-v1</code></th><td class="status-supported">Simulated · candidate-v3</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
+          <tr data-model="sensor.light-threshold-digital-v1"><th>Digital light threshold<br><code>sensor.light-threshold-digital-v1</code></th><td class="status-supported">Simulated · candidate-v3</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
+          <tr data-model="output.rgb-led-common-cathode-v1"><th>Common-cathode RGB LED<br><code>output.rgb-led-common-cathode-v1</code></th><td class="status-supported">Simulated · candidate-v3</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
+          <tr data-model="output.active-buzzer-module-v1"><th>Active buzzer module<br><code>output.active-buzzer-module-v1</code></th><td class="status-limited">Partial · candidate-v3</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
+          <tr data-model="output.seven-segment-common-cathode-v1"><th>Seven-segment display<br><code>output.seven-segment-common-cathode-v1</code></th><td class="status-supported">Simulated · candidate-v3</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
+          <tr data-model="output.character-lcd-16x2-4bit-v1"><th>16×2 character LCD<br><code>output.character-lcd-16x2-4bit-v1</code></th><td class="status-limited">Partial · candidate-v3</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
+          <tr data-model="input.rotary-encoder-quadrature-v1"><th>Quadrature rotary encoder<br><code>input.rotary-encoder-quadrature-v1</code></th><td class="status-supported">Simulated · candidate-v3</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
+          <tr data-model="board.rp2040-pico-v1"><th>RP2040 Pico board<br><code>board.rp2040-pico-v1</code></th><td>Unavailable</td><td class="status-limited">Partial</td><td>Unavailable</td><td>Unavailable</td></tr>
+          <tr data-model="board.esp32-c3-devmodule-v1"><th>ESP32-C3 board<br><code>board.esp32-c3-devmodule-v1</code></th><td>Unavailable</td><td>Unavailable</td><td class="status-limited">Partial</td><td>Unavailable</td></tr>
+          <tr data-model="board.stm32f429zi-nucleo144-v1"><th>STM32F429ZI board<br><code>board.stm32f429zi-nucleo144-v1</code></th><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td><td class="status-limited">Partial</td></tr>
+        </tbody>
+      </table></div>
+      <p class="docs-intro">Unavailable controllers and parts are not remapped or approximated. Open the in-workbench matrix for the exact project mode and first limitation or rejection reason for every cell.</p>
+    </section>
     <section id="narrow-profile-parts" class="panel" aria-labelledby="narrow-profile-parts-title">
       <h2 id="narrow-profile-parts-title">Pico, ESP32-C3 and STM32 supported parts</h2>
       <p class="docs-intro">Each narrow workbench filters the panel to exactly three entries: its fixed controller, <code>resistor.fixed-v1</code> and <code>led.basic-v1</code>. Controllers cannot be added, duplicated or deleted. A missing resistor or LED is restored with the same stable ID and deterministic safe placement, but with no inferred cable.</p>
@@ -33,7 +63,7 @@
       </div>
       <nav class="docs-nav" aria-label="Narrow profile learning links"><a href="/examples.html#narrow-controller-guides">First project guides</a><a href="/support.html#repair-after-open">Save/Open recovery</a></nav>
     </section>
-    <footer>16 selectable AVR components plus fixed three-part Pico, ESP32-C3 and STM32 profiles in Intent MCU Simulator 1.1.0-rc.24 · original project graphics · no third-party simulator artwork or branding</footer>
+    <footer>19 public models across four exact controller profiles in Intent MCU Simulator 1.1.0-rc.25 · original project graphics · no third-party simulator artwork or branding</footer>
   </main>
 </body>
 </html>

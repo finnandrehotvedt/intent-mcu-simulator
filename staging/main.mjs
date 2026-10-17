@@ -39,6 +39,12 @@ import {
 } from '../src/source-diagnostics.mjs';
 import { createLifecycleState, transitionLifecycle } from '../src/lifecycle.mjs';
 import { mountSharedWorkbenchShell } from '../src/shared-workbench-shell.mjs';
+import {
+  COMPONENT_SUPPORT_CELLS,
+  COMPONENT_SUPPORT_MODELS,
+  COMPONENT_SUPPORT_PROFILES,
+  componentSupportSummary,
+} from '../src/component-support-matrix.mjs';
 import { createExampleProject, exampleCatalog } from '../src/example-projects.mjs';
 import {
   TEMPERATURE_LCD_THRESHOLD_CARD,
@@ -160,6 +166,8 @@ const elements = Object.fromEntries([
   'pin-mode', 'pin-level', 'pin-detail', 'pin-diagnostic', 'pin-cycle', 'catalog-search', 'catalog-category',
   'catalog-interface', 'catalog-status', 'catalog-supply-voltage', 'catalog-pin-voltage', 'catalog-favorites', 'catalog-count',
   'catalog-empty', 'catalog-clear',
+  'catalog-support-open', 'component-support-dialog', 'component-support-close',
+  'component-support-profile', 'component-support-summary', 'component-support-mode', 'component-support-body',
   'catalog-list', 'catalog-prev', 'catalog-page', 'catalog-next', 'selection-name', 'property-editor', 'rotate-component', 'duplicate-component', 'delete-component',
   'selected-net', 'net-members', 'wire-color', 'wire-bends', 'selection-support', 'reconnect-mode', 'add-bend', 'delete-wire', 'remove-junction', 'zoom-value',
   'zoom-in', 'zoom-out', 'pan-left', 'pan-right', 'pan-up', 'pan-down', 'view-reset', 'fit-project', 'project-state',
@@ -3749,6 +3757,37 @@ function renderCatalog() {
   return { matches: matches.length, rendered: windowRecords.length, first, last, milliseconds };
 }
 
+function renderComponentSupportMatrix() {
+  const profileId = elements.componentsupportprofile.value || selectedCompilerProfile || AVR_PROFILE;
+  const profile = COMPONENT_SUPPORT_PROFILES.find((candidate) => candidate.id === profileId)
+    ?? COMPONENT_SUPPORT_PROFILES[0];
+  elements.componentsupportprofile.value = profile.id;
+  const summary = componentSupportSummary(profile.id);
+  elements.componentsupportsummary.textContent = `${summary.available} of ${summary.total} models available · ${summary.simulated} Simulated · ${summary.partial} Partial · ${summary.unavailable} Unavailable`;
+  elements.componentsupportmode.textContent = profile.id === AVR_PROFILE
+    ? 'Ordinary AVR projects show 5 Simulated parts. Candidate-v3 shows 13 by default; All statuses shows all 16 available AVR parts, including 3 Partial.'
+    : 'This bounded profile exposes exactly 3 available entries: its fixed Partial controller, plus the Simulated resistor and LED. Other models are unavailable and are never silently substituted.';
+  const cells = COMPONENT_SUPPORT_CELLS.filter((cell) => cell.profile === profile.id);
+  const rows = COMPONENT_SUPPORT_MODELS.map((model) => {
+    const cell = cells.find((candidate) => candidate.model === model.type);
+    const row = document.createElement('tr');
+    row.dataset.model = model.type; row.dataset.status = cell.status;
+    const modelCell = document.createElement('th'); modelCell.scope = 'row';
+    const name = document.createElement('strong'); name.textContent = model.name;
+    const id = document.createElement('code'); id.textContent = model.type;
+    modelCell.append(name, id);
+    const statusCell = document.createElement('td');
+    const badge = document.createElement('span'); badge.className = `matrix-status ${cell.status}`;
+    badge.textContent = cell.status === 'unavailable' ? 'Unavailable' : SUPPORT_STATUS[cell.status];
+    statusCell.append(badge);
+    const modeCell = document.createElement('td'); modeCell.textContent = cell.projectMode;
+    const limitCell = document.createElement('td'); limitCell.textContent = cell.limitations[0];
+    row.append(modelCell, statusCell, modeCell, limitCell);
+    return row;
+  });
+  elements.componentsupportbody.replaceChildren(...rows);
+}
+
 function createCatalogBenchmarkFixture() {
   const templates = catalogEntries({ selectableOnly: true });
   return Array.from({ length: 1_000 }, (_, index) => {
@@ -4662,6 +4701,14 @@ elements.catalogclear.addEventListener('click', () => {
   resetCatalogWindow();
   elements.catalogsearch.focus();
 });
+elements.catalogsupportopen.addEventListener('click', () => {
+  elements.componentsupportprofile.value = selectedCompilerProfile;
+  renderComponentSupportMatrix();
+  elements.componentsupportdialog.showModal();
+});
+elements.componentsupportclose.addEventListener('click', () => elements.componentsupportdialog.close());
+elements.componentsupportdialog.addEventListener('close', () => elements.catalogsupportopen.focus());
+elements.componentsupportprofile.addEventListener('change', renderComponentSupportMatrix);
 elements.catalogprev.addEventListener('click', () => {
   catalogWindowStart = Math.max(0, catalogWindowStart - CATALOG_WINDOW_LIMIT); renderCatalog();
 });
@@ -5172,6 +5219,10 @@ elements.boardselect.addEventListener('change', () => {
   const selected = candidateCompilerTarget(elements.boardselect.value);
   selectedCompilerProfile = selected ? selected.profile : AVR_PROFILE;
   syncControllerSelectors(selectedCompilerProfile);
+  if (elements.componentsupportdialog.open) {
+    elements.componentsupportprofile.value = selectedCompilerProfile;
+    renderComponentSupportMatrix();
+  }
   const target = currentCompilerTarget();
   const view = publicControllerView(target.profile) ?? publicControllerView(AVR_PROFILE);
   if (selectedCompilerProfile === RP2040_PROFILE) picoPublicWorkbench.activate();

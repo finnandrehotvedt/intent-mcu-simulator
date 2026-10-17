@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.24 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.25 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -22,6 +22,15 @@ examples. Each bounded Pico, ESP32-C3 and STM32 profile has two UART/LED
 examples using only its existing fixed source grammar and three-part circuit.
 Button, ADC and PWM remain unavailable on those narrow profiles; examples do
 not imply a new peripheral, API, pin or topology.
+
+The component contract contains 19 unique public models across these four
+profiles. AVR makes 16 available (13 Simulated and 3 Partial); each narrow
+profile makes exactly 3 available (its fixed Partial controller, Simulated
+resistor and Simulated LED). The remaining profile/model combinations are
+explicitly unavailable. Ordinary AVR project-v2 exposes 5 models, while
+candidate-v3 exposes 13 by default or all 16 with the All statuses filter.
+`src/component-support-matrix.mjs` is the executable derived inventory and the
+same matrix is published on `/components.html`.
 
 ## Supported and tested
 
