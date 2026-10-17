@@ -48,3 +48,21 @@ test('WIRE-LANE-01 assigns an interior parallel segment to a clear visible lane'
   assert.deepEqual(result.routes[1].points[0], { x: 0, y: 2 });
   assert.deepEqual(result.routes[1].points.at(-1), { x: 10, y: 2 });
 });
+
+test('WIRE-LANE-01 preserves accepted terminal escapes while separating an interior lane around bodies', () => {
+  const result = separateParallelWireLanes([
+    route('signal', [{ x: 0, y: 2 }, { x: 1, y: 2 }, { x: 9, y: 2 }, { x: 10, y: 2 }]),
+    route('ground', [{ x: 0, y: 2 }, { x: 1, y: 2 }, { x: 9, y: 2 }, { x: 10, y: 2 }]),
+  ], {
+    clearance: 1,
+    obstacles: [
+      { left: -0.5, right: 0.5, top: 1.5, bottom: 2.5 },
+      { left: 9.5, right: 10.5, top: 1.5, bottom: 2.5 },
+    ],
+    bounds: { left: -1, right: 11, top: 0, bottom: 4 },
+  });
+  assert.equal(result.conflicts.length, 0);
+  assert.equal(result.movedSegments, 1);
+  assert.deepEqual(result.routes[1].points[0], { x: 0, y: 2 });
+  assert.deepEqual(result.routes[1].points.at(-1), { x: 10, y: 2 });
+});

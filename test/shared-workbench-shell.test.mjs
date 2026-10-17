@@ -59,4 +59,7 @@ test('browser entry point mounts the shared shell without replacing profile impl
   assert.match(shell, /FULLSCREEN_API_UNAVAILABLE/);
   assert.match(shell, /event\.key === 'Escape'/);
   assert.match(css, /shared-canvas-focus-open/);
+  assert.match(css, /--canvas-workbench:\s*#08141f/);
+  assert.match(css, /\.pico-editor-canvas[^}]+background-color:\s*var\(--canvas-workbench\)/s);
+  assert.match(css, /\.circuit-canvas[^}]+background-color:\s*var\(--canvas-workbench\)/s);
 });

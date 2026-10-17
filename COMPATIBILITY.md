@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.22 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.23 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -11,6 +11,10 @@ six fixed colours. These controls modify only accepted local layout data.
 Named endpoints and the existing net graph remain the sole electrical
 authority; crossings do not connect nets, and distinct nets cannot share a
 positive-length collinear lane.
+
+All four actual circuit editors use the same dark workbench canvas and grid.
+This presentation parity does not alter any profile's component graphics,
+named pins, topology, compiler or runtime capability.
 
 ## Supported and tested
 

@@ -4,6 +4,7 @@
   --bg: #07121d; --panel: #0c1c2b; --panel2: #10283a; --line: #21445b;
   --text: #edf7fb; --muted: #95adbb; --cyan: #24d7ef; --lime: #a8ff3f;
   --amber: #ffcc66; --danger: #ff6f79; --catalog-width: 270px; --inspector-width: 290px; --serial-width: 390px;
+  --canvas-workbench: #08141f; --canvas-grid: #16304455; --canvas-grid-size: 22px 22px;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 :root[data-serial-width="300"] { --serial-width: 300px; }
@@ -184,7 +185,7 @@ body.shared-canvas-focus-open { overflow: hidden; }
 .crossing-sample { position: relative; width: 2.2rem; height: 1rem; flex: 0 0 auto; background: linear-gradient(90deg,transparent 45%,#39dff2 45% 55%,transparent 55%); }
 .crossing-sample::after { content: ""; position: absolute; left: 0; right: 0; top: .4rem; height: .2rem; border-radius: .2rem; background: #f04f5f; box-shadow: 0 0 0 2px #071924; }
 #pico-zoom-value { min-width: 48px; color: var(--cyan); font: 750 .7rem var(--mono); text-align: center; }
-.pico-editor-canvas { position: relative; width: 100%; min-height: 500px; overflow: hidden; border: 1px solid #31586a; border-radius: 12px; background-color: #f3efe4; background-image: linear-gradient(#71818e18 1px,transparent 1px),linear-gradient(90deg,#71818e18 1px,transparent 1px); background-size: 20px 20px; touch-action: none; }
+.pico-editor-canvas { position: relative; width: 100%; min-height: 500px; overflow: hidden; border: 1px solid #31586a; border-radius: 12px; background-color: var(--canvas-workbench); background-image: linear-gradient(var(--canvas-grid) 1px,transparent 1px),linear-gradient(90deg,var(--canvas-grid) 1px,transparent 1px); background-size: var(--canvas-grid-size); touch-action: none; }
 .pico-editor-wires, .pico-editor-components { position: absolute; inset: 0; width: 100%; height: 100%; }
 .pico-editor-wires { z-index: 1; overflow: visible; pointer-events: auto; }
 .pico-editor-components { z-index: 2; pointer-events: none; }
@@ -474,7 +475,7 @@ button:disabled, select:disabled { opacity: .42; }
 .canvas-mode { display: inline-flex; gap: 3px; padding: 3px; border: 1px solid #21445b; border-radius: 10px; background: #07141f; }
 .canvas-mode button { min-height: 34px; }
 .canvas-mode button[aria-pressed="true"] { color: #07121d; background: var(--lime); border-color: var(--lime); }
-.circuit-canvas { height: 590px; position: relative; border-radius: 12px; overflow: hidden; background-color: #08141f; background-image: linear-gradient(#16304455 1px, transparent 1px), linear-gradient(90deg, #16304455 1px, transparent 1px); background-size: 22px 22px; touch-action: none; }
+.circuit-canvas { height: 590px; position: relative; border-radius: 12px; overflow: hidden; background-color: var(--canvas-workbench); background-image: linear-gradient(var(--canvas-grid) 1px, transparent 1px), linear-gradient(90deg, var(--canvas-grid) 1px, transparent 1px); background-size: var(--canvas-grid-size); touch-action: none; }
 .workspace.canvas-focus .circuit-canvas { height: min(74vh, 820px); }
 .board-card:fullscreen { overflow: auto; border-radius: 0; padding: 22px; background: var(--bg); }
 .board-card:fullscreen .circuit-canvas { height: calc(100vh - 190px); }

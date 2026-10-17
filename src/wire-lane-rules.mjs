@@ -64,8 +64,15 @@ function segmentHitsObstacle(left, right, obstacle) {
 }
 
 function hitsObstacle(points, obstacles) {
-  return points.slice(0, -1).some((point, index) => obstacles.some((obstacle) =>
-    segmentHitsObstacle(point, points[index + 1], obstacle)));
+  return points.slice(0, -1).some((point, index) => {
+    // The first and last segments are the already accepted named-terminal
+    // escapes. Testing them against the endpoint component body makes every
+    // otherwise safe lane candidate fail. Lane separation changes only an
+    // interior section and its adjacent doglegs, so retain the accepted
+    // escapes and body-check the interior geometry it can actually alter.
+    if (index === 0 || index === points.length - 2) return false;
+    return obstacles.some((obstacle) => segmentHitsObstacle(point, points[index + 1], obstacle));
+  });
 }
 
 export function separateParallelWireLanes(routes, { clearance, obstacles = [], bounds = null } = {}) {

@@ -2,6 +2,21 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.23 — 2026-10-17
+
+- Unified the AVR, Pico, ESP32-C3 and STM32 circuit canvases on the same dark
+  navy workbench background and 22 px grid while retaining each profile's real
+  component graphics, named pins, wire geometry and controls.
+- Removed a proven positive-length shared lane between two distinct automatic
+  AVR Blink nets. Later automatic routes now treat already accepted interior
+  lanes as narrow obstacles; user-authored routes remain untouched.
+- Added browser acceptance for exact four-profile canvas-theme parity, readable
+  narrow-profile labels, pointer selection and Add-bend on the common Pico
+  cable, and zero distinct-net collinear overlap in the AVR Blink example.
+- Clarified public cable-routing help: crossings remain separate, distinct nets
+  cannot share a positive-length lane, and this release does not add branch or
+  junction authoring.
+
 ## 1.1.0-rc.22 — 2026-10-17
 
 - Added bounded orthogonal bend and interior-segment editing to the Pico,

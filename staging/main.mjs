@@ -3333,14 +3333,27 @@ function drawCircuitWires() {
   const drawings = [];
   const paint = [];
   const obstacles = routeObstacles(canvasBox);
+  const automaticLaneObstacles = [];
   const records = [];
   for (const net of currentProject().circuit.nets) {
     const anchors = netAnchors(net, canvasBox);
     if (Object.keys(anchors).length < 2) continue;
-    const family = materializeRouteFamily(net, currentProject().layout.wireRoutes[net.id], anchors, obstacles);
+    const storedRoute = currentProject().layout.wireRoutes[net.id];
+    const family = materializeRouteFamily(net, storedRoute, anchors,
+      storedRoute ? obstacles : [...obstacles, ...automaticLaneObstacles]);
     const branches = routeFamilyPaths(family, anchors);
     for (const branch of branches) {
       records.push({ net, family, anchors, branch, netId: net.id, points: branch.points });
+      if (!storedRoute) branch.points.slice(1, -1).forEach((point, index) => {
+        const next = branch.points[index + 2];
+        const laneMargin = 0.006;
+        automaticLaneObstacles.push({
+          left: Math.min(point.x, next.x) - laneMargin,
+          right: Math.max(point.x, next.x) + laneMargin,
+          top: Math.min(point.y, next.y) - laneMargin,
+          bottom: Math.max(point.y, next.y) + laneMargin,
+        });
+      });
     }
   }
   const lanes = separateParallelWireLanes(records.map(({ netId, points }) => ({ netId, points })), {

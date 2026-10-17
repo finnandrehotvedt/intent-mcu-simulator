@@ -1,4 +1,28 @@
-# Intent MCU Simulator 1.1.0-rc.22
+# Intent MCU Simulator 1.1.0-rc.23
+
+This visual-consistency and routing-correction release keeps all rc.22
+electrical, compiler, runtime and local-file boundaries unchanged.
+
+## Shared workbench canvas and route correction
+
+- All four real circuit editors now use the same AVR dark navy canvas, subtle
+  grid and grid spacing. This is a shared presentation token, not a screenshot
+  or replacement canvas; every component, named pin and cable remains live.
+- Automatic AVR routes reserve previously accepted interior lanes before
+  routing the next net. The Blink example no longer contains a positive-length
+  collinear overlap between distinct nets, while crossings and declared
+  same-net trunks retain their existing meaning.
+- The common Pico cable is browser-tested for direct pointer selection,
+  colour/Undo and Add-bend. The review's earlier pointer and bend failures were
+  reproduced as test-position/workflow issues rather than product defects.
+- Before/after desktop evidence covers AVR, Pico, ESP32-C3 and STM32. Computed
+  browser styles prove exact canvas parity and readable part-label contrast.
+- No compiler, runtime, electrical graph, project schema, mobile scope, public
+  route, DNS, Caddy configuration or private dependency changed.
+
+---
+
+## 1.1.0-rc.22
 
 This route-authoring release adds bounded cable layout controls to the three
 narrow controller canvases without changing their electrical graphs, compiler
