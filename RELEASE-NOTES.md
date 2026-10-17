@@ -1,4 +1,29 @@
-# Intent MCU Simulator 1.1.0-rc.25
+# Intent MCU Simulator 1.1.0-rc.26
+
+This reference-completion release gives every available public component cell
+a real working starter without adding a component, pin, electrical topology,
+compiler feature or runtime adapter.
+
+## Eight AVR reference starters
+
+- Ground reference, SPST toggle, SPDT selector, analogue light, digital light
+  threshold, active buzzer, seven-segment display and quadrature encoder now
+  appear as validated working cards in the existing AVR starter gallery.
+- Each card states Learn, Try, Observe and Limits. Loading it is a guarded
+  authored-data change and always requires a fresh isolated AVR Build before
+  the existing worker can Run.
+- Acceptance compiles and runs all eight current sources. It observes real
+  GPIO/ADC/Serial/display behavior and the exact ordered encoder phases while
+  retaining the existing model-specific electrical and topology rejections.
+- SPDT remains a direct GND/5 V digital-input-only Partial model. The active
+  buzzer remains a silent logical Partial indicator with no acoustic, current
+  or physical-accuracy claim.
+- All 25 available component/profile cells now have a public starter binding;
+  the 51 unavailable combinations remain unavailable.
+
+---
+
+## 1.1.0-rc.25
 
 This compatibility-truth release makes the complete public component/profile
 boundary visible without adding a component, controller or runtime capability.

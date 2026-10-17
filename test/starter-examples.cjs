@@ -28,7 +28,7 @@ let browser;
   await page.goto(base, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__M11_READY__ === true);
   const cards = page.locator('.starter-card');
-  assert(await cards.count() === 7, 'starter gallery does not expose all seven validated examples');
+  assert(await cards.count() === 15, 'starter gallery does not expose all fifteen validated examples');
   assert((await cards.nth(0).innerText()).includes('Controller · resistor · LED'), 'starter card omits its parts');
   const examples = [
     ['blink', 'Blink demo'],
@@ -38,6 +38,14 @@ let browser;
     ['pwm-pulse', 'PWM pulse'],
     ['temperature-lcd-threshold', 'Temperature display'],
     ['avr-thermostat-boundary-v1', 'Thermostat boundary test'],
+    ['avr-ground-reference-input', 'Ground reference input'],
+    ['avr-toggle-input', 'SPST toggle input'],
+    ['avr-spdt-selector', 'SPDT input selector'],
+    ['avr-light-analogue', 'Analogue light level'],
+    ['avr-light-threshold', 'Digital light threshold'],
+    ['avr-active-buzzer', 'Logical active buzzer'],
+    ['avr-seven-segment', 'Seven-segment digits'],
+    ['avr-rotary-encoder', 'Quadrature encoder'],
   ];
   const projectName = () => page.evaluate(() => {
     const value = window.__M6_PROJECT__();
@@ -92,7 +100,7 @@ let browser;
       visibleCards: [...document.querySelectorAll('.starter-card')].filter((card) => card.getClientRects().length).length,
     }));
     assert(layout.overflow <= 1, `starter gallery overflows at ${viewport.width}px`);
-    assert(layout.visibleCards === 7, `starter cards disappear at ${viewport.width}px`);
+    assert(layout.visibleCards === 15, `starter cards disappear at ${viewport.width}px`);
   }
   assert(mutations.length === 0, `starter gallery made server mutation request: ${mutations.join(', ')}`);
   assert(errors.length === 0, `starter journeys raised browser errors: ${errors.join(' | ')}`);
@@ -101,7 +109,7 @@ let browser;
     fs.mkdirSync(path.dirname(process.env.STARTER_SCREENSHOT), { recursive: true });
     await page.screenshot({ path: process.env.STARTER_SCREENSHOT, fullPage: true });
   }
-  console.log(JSON.stringify({ browser: browserName, result: 'pass', cards: 7,
+  console.log(JSON.stringify({ browser: browserName, result: 'pass', cards: 15,
     cardJourneys: examples.length, dropdownJourneys: examples.length + 1,
     finalProject: await projectName(), serverProjectWrites: 0 }));
   await context.close();

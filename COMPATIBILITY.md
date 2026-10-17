@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.25 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.26 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -31,6 +31,13 @@ explicitly unavailable. Ordinary AVR project-v2 exposes 5 models, while
 candidate-v3 exposes 13 by default or all 16 with the All statuses filter.
 `src/component-support-matrix.mjs` is the executable derived inventory and the
 same matrix is published on `/components.html`.
+
+Every one of the 25 available component/profile cells has at least one public
+starter binding. Eight rc.26 AVR references cover the explicit ground symbol,
+SPST, SPDT, analogue light, digital light threshold, active buzzer,
+seven-segment display and quadrature encoder. They reuse only the existing
+candidate-v3 projections, compiler and worker. SPDT and buzzer remain Partial;
+the buzzer is a silent logical indicator rather than an acoustic model.
 
 ## Supported and tested
 

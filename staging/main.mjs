@@ -46,6 +46,7 @@ import {
   componentSupportSummary,
 } from '../src/component-support-matrix.mjs';
 import { createExampleProject, exampleCatalog } from '../src/example-projects.mjs';
+import { avrReferenceStarterCatalog, createAvrReferenceStarter } from '../src/avr-reference-starters.mjs';
 import {
   TEMPERATURE_LCD_THRESHOLD_CARD,
   TEMPERATURE_LCD_THRESHOLD_EXAMPLE_ID,
@@ -5112,6 +5113,31 @@ elements.projectnew.addEventListener('click', () => {
   createNewAvrProject();
 });
 function loadExampleProject(exampleId, reason = 'project.demo') {
+  const referenceCard = avrReferenceStarterCatalog().find((entry) => entry.id === exampleId);
+  if (referenceCard) {
+    const before = currentProjectText();
+    let example;
+    try { example = createAvrReferenceStarter(exampleId); }
+    catch (error) {
+      showActionableError(elements.projectmessage, error?.message ?? 'EXAMPLE_INVALID', 'AVR reference starter could not be constructed.');
+      return { ok: false, code: error?.message ?? 'EXAMPLE_INVALID' };
+    }
+    const parsed = openCandidateUiSession(example.text);
+    if (!parsed.ok) {
+      showActionableError(elements.projectmessage, parsed.code, 'AVR reference starter was rejected atomically; project unchanged.');
+      if (currentProjectText() !== before) throw new Error('Atomic AVR reference starter boundary violated');
+      return parsed;
+    }
+    editor = parsed.session;
+    installProjectGeneration({ empty: false, reason, runtimeMessage: `${example.name} loaded — build required` });
+    selectedSourceFile = 'main.ino';
+    elements.exampleselect.value = exampleId;
+    persistProject();
+    publish({ lastAction: `${exampleId.toUpperCase()}_LOADED`, importReport: parsed.report ?? parsed.code });
+    renderCatalog(); renderProject();
+    elements.projectmessage.textContent = `${example.name} loaded as authored data only. Build fresh, then ${example.try.toLowerCase()}`;
+    return { ok: true, code: parsed.code, example };
+  }
   if (exampleId === THERMOSTAT_EXPERIMENT_ID) {
     const before = currentProjectText();
     let example;
@@ -5184,7 +5210,7 @@ function loadExampleProject(exampleId, reason = 'project.demo') {
 }
 
 function renderStarterExamples() {
-  const cards = [...exampleCatalog(), TEMPERATURE_LCD_THRESHOLD_CARD, THERMOSTAT_EXPERIMENT_CARD].map((example) => {
+  const cards = [...exampleCatalog(), TEMPERATURE_LCD_THRESHOLD_CARD, THERMOSTAT_EXPERIMENT_CARD, ...avrReferenceStarterCatalog()].map((example) => {
     const button = document.createElement('button');
     button.type = 'button'; button.className = 'starter-card'; button.dataset.example = example.id;
     button.setAttribute('aria-label', `Open ${example.name}: ${example.focus}`);
@@ -5192,9 +5218,18 @@ function renderStarterExamples() {
     const name = document.createElement('strong'); name.textContent = example.name;
     const description = document.createElement('span'); description.className = 'starter-description'; description.textContent = example.description;
     const parts = document.createElement('span'); parts.className = 'starter-parts'; parts.textContent = example.partsLabel;
-    const outcome = document.createElement('span'); outcome.className = 'starter-outcome'; outcome.textContent = example.outcome;
+    const outcome = document.createElement('span'); outcome.className = 'starter-outcome'; outcome.textContent = example.outcome ?? example.observe;
     const action = document.createElement('span'); action.className = 'starter-action'; action.textContent = 'Open working circuit →';
-    button.append(focus, name, description, parts, outcome, action);
+    button.append(focus, name, description, parts, outcome);
+    if (example.learn) {
+      const guide = document.createElement('span'); guide.className = 'starter-learning-grid';
+      for (const [label, value] of [['Learn', example.learn], ['Try', example.try], ['Observe', example.observe], ['Limits', example.limits]]) {
+        const row = document.createElement('span'); const title = document.createElement('b'); title.textContent = label;
+        row.append(title, document.createTextNode(value)); guide.append(row);
+      }
+      button.append(guide);
+    }
+    button.append(action);
     button.addEventListener('click', () => loadExampleProject(example.id, 'project.starter'));
     return button;
   });

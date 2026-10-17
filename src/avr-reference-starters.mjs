@@ -1,0 +1,210 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Finn Andre Hotvedt and IntentForce
+
+import { createActiveBuzzerComponent } from '../expansion-drafts/active-buzzer-module-v1.mjs';
+import { createEditableContactDraft } from '../expansion-drafts/contact-persistence-fixture-v1.mjs';
+import { createDigitalLightThresholdComponent } from '../expansion-drafts/digital-light-threshold-module-v1.mjs';
+import { createLightAnalogueSensorComponent } from '../expansion-drafts/light-analogue-sensor-v1.mjs';
+import { canonicalContactPersistenceDraftJson } from '../expansion-drafts/project-v3-contact-persistence.mjs';
+import { createSevenSegmentComponent } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
+import { createComponent } from './circuit-engine.mjs';
+import { createCandidateUiComponent, openCandidateUiSession } from './candidate-existing-ui-adapter.mjs';
+
+const SEGMENTS = Object.freeze(['a', 'b', 'c', 'd', 'e', 'f', 'g']);
+const SEGMENT_PINS = Object.freeze(['D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9']);
+const endpoint = (component, pin) => ({ component, pin });
+
+const CARDS = Object.freeze([
+  {
+    id: 'avr-ground-reference-input', name: 'Ground reference input', model: 'reference.ground-v1',
+    focus: '0 V reference · compiled input', partsLabel: 'Controller · 0 V reference · button · LED',
+    description: 'Use the explicit 0 V symbol in a real active-low input circuit.',
+    learn: 'Why one declared reference makes digital levels meaningful.',
+    try: 'Build, Run, then press the input button.',
+    observe: 'D2 and D13 change while Serial reports GROUNDED or OPEN.',
+    limits: 'The symbol is topology authority, not an executable peripheral.',
+  },
+  {
+    id: 'avr-toggle-input', name: 'SPST toggle input', model: 'switch.toggle-spst-v1',
+    focus: 'Maintained contact · D3', partsLabel: 'Controller · SPST toggle · LED',
+    description: 'Read a maintained switch through the existing pull-up input path.',
+    learn: 'How Open and Closed persist without holding a button.',
+    try: 'Build, Run, then toggle Open and Closed.',
+    observe: 'Compiled D3 input changes D13 and prints TOGGLE OPEN/CLOSED.',
+    limits: 'Ideal contact only; no bounce or physical resistance model.',
+  },
+  {
+    id: 'avr-spdt-selector', name: 'SPDT input selector', model: 'switch.changeover-spdt-v1',
+    focus: 'Changeover contact · D8', partsLabel: 'Controller · SPDT selector · LED',
+    description: 'Select a deterministic GND or 5 V digital input through BREAK.',
+    learn: 'How COM selects one throw while the other stays isolated.',
+    try: 'Build, Run, then switch between Throw A and Throw B.',
+    observe: 'Compiled D8 changes after the explicit BREAK transition.',
+    limits: 'Partial: direct GND/5 V digital input only; no analogue or load switching.',
+  },
+  {
+    id: 'avr-light-analogue', name: 'Analogue light level', model: 'sensor.light-analogue-v1',
+    focus: 'Ideal analogue module · A1', partsLabel: 'Controller · analogue light module · LED',
+    description: 'Read an idealized light signal with the existing AVR ADC path.',
+    learn: 'How 0–100% maps linearly to 0–5 V and 10-bit ADC counts.',
+    try: 'Build, Run, then move the Light level control.',
+    observe: 'A1 voltage, Serial ADC counts and D13 threshold state change.',
+    limits: 'Idealized signal only; no lux calibration or physical sensor response.',
+  },
+  {
+    id: 'avr-light-threshold', name: 'Digital light threshold', model: 'sensor.light-threshold-digital-v1',
+    focus: 'Active-low threshold · D7', partsLabel: 'Controller · threshold module · LED',
+    description: 'Exercise an active-low light threshold with bounded hysteresis.',
+    learn: 'Why hysteresis prevents rapid output changes around one threshold.',
+    try: 'Build, Run, then cross the threshold in both directions.',
+    observe: 'Compiled D7 drives D13 and reports LIGHT/DARK on Serial.',
+    limits: 'Ideal percentage input only; no lux calibration or comparator noise.',
+  },
+  {
+    id: 'avr-active-buzzer', name: 'Logical active buzzer', model: 'output.active-buzzer-module-v1',
+    focus: 'Digital output · D8', partsLabel: 'Controller · active buzzer module',
+    description: 'Drive the bounded active-buzzer indicator from compiled firmware.',
+    learn: 'How a logic enable signal differs from an acoustic model.',
+    try: 'Build and Run the alternating enabled/disabled sequence.',
+    observe: 'D8 and the silent visual indicator change with Serial BUZZER ON/OFF.',
+    limits: 'Partial: silent logical indicator; no sound, current or acoustic accuracy.',
+  },
+  {
+    id: 'avr-seven-segment', name: 'Seven-segment digits', model: 'output.seven-segment-common-cathode-v1',
+    focus: 'Seven current-limited outputs', partsLabel: 'Controller · display · seven resistors',
+    description: 'Drive one common-cathode digit through seven independent resistors.',
+    learn: 'How segment patterns form decimal digits.',
+    try: 'Build and Run the 0, 1, 2, 8 sequence.',
+    observe: 'Compiled D3–D9 patterns and Serial digit labels agree.',
+    limits: 'One ideal digit only; no decimal point, multiplexing or physical brightness.',
+  },
+  {
+    id: 'avr-rotary-encoder', name: 'Quadrature encoder', model: 'input.rotary-encoder-quadrature-v1',
+    focus: 'Ordered phases · D2/D3', partsLabel: 'Controller · quadrature encoder · LED',
+    description: 'Read deterministic Gray-code phases on the two interrupt pins.',
+    learn: 'How phase order distinguishes clockwise from counter-clockwise motion.',
+    try: 'Build, Run, then turn one detent CW and one detent CCW.',
+    observe: 'Serial receives the ordered 01→00→10→11 sequence and its reverse.',
+    limits: 'Ideal 1 ms phases only; no bounce, acceleration or physical detents.',
+  },
+]);
+
+const SOURCES = Object.freeze({
+  'avr-ground-reference-input': `void setup() { pinMode(2, INPUT_PULLUP); pinMode(13, OUTPUT); Serial.begin(115200); }
+void loop() { bool grounded = digitalRead(2) == LOW; digitalWrite(13, grounded); Serial.println(grounded ? "GROUNDED" : "OPEN"); delay(120); }
+`,
+  'avr-toggle-input': `void setup() { pinMode(3, INPUT_PULLUP); pinMode(13, OUTPUT); Serial.begin(115200); }
+void loop() { bool closed = digitalRead(3) == LOW; digitalWrite(13, closed); Serial.println(closed ? "TOGGLE CLOSED" : "TOGGLE OPEN"); delay(120); }
+`,
+  'avr-spdt-selector': `void setup() { pinMode(8, INPUT); pinMode(13, OUTPUT); Serial.begin(115200); }
+void loop() { bool high = digitalRead(8) == HIGH; digitalWrite(13, high); Serial.println(high ? "THROW B HIGH" : "THROW A LOW"); delay(120); }
+`,
+  'avr-light-analogue': `void setup() { pinMode(13, OUTPUT); Serial.begin(115200); }
+void loop() { int level = analogRead(A1); digitalWrite(13, level >= 512); Serial.println(level); delay(120); }
+`,
+  'avr-light-threshold': `void setup() { pinMode(7, INPUT_PULLUP); pinMode(13, OUTPUT); Serial.begin(115200); }
+void loop() { bool active = digitalRead(7) == LOW; digitalWrite(13, active); Serial.println(active ? "DARK" : "LIGHT"); delay(120); }
+`,
+  'avr-active-buzzer': `void setup() { pinMode(8, OUTPUT); Serial.begin(115200); }
+void loop() { digitalWrite(8, HIGH); Serial.println("BUZZER ON"); delay(240); digitalWrite(8, LOW); Serial.println("BUZZER OFF"); delay(240); }
+`,
+  'avr-seven-segment': `const byte pins[7] = {3,4,5,6,7,8,9};
+const byte digits[4][7] = {{1,1,1,1,1,1,0},{0,1,1,0,0,0,0},{1,1,0,1,1,0,1},{1,1,1,1,1,1,1}};
+const char labels[4] = {'0','1','2','8'};
+void setup() { for (byte i=0;i<7;i++) pinMode(pins[i], OUTPUT); Serial.begin(115200); }
+void loop() { for (byte d=0;d<4;d++) { for (byte i=0;i<7;i++) digitalWrite(pins[i], digits[d][i]); Serial.println(labels[d]); delay(240); } }
+`,
+  'avr-rotary-encoder': `int lastA = HIGH; int lastB = HIGH;
+void setup() { pinMode(2, INPUT_PULLUP); pinMode(3, INPUT_PULLUP); pinMode(13, OUTPUT); Serial.begin(115200); }
+void loop() { int a=digitalRead(2), b=digitalRead(3); if (a!=lastA || b!=lastB) { Serial.print(a); Serial.println(b); digitalWrite(13,a!=b); lastA=a; lastB=b; } delayMicroseconds(100); }
+`,
+});
+
+function apply(session, command) {
+  const result = session.apply({ ...command, revision: session.revision });
+  if (!result.ok) throw new Error(`${command.type}:${result.code}:${JSON.stringify(result.details)}`);
+}
+
+function freshSession(card) {
+  const draft = createEditableContactDraft(SOURCES[card.id]);
+  if (!draft.ok) throw new Error(draft.code);
+  draft.project.project.metadata.name = card.name;
+  const opened = openCandidateUiSession(canonicalContactPersistenceDraftJson(draft.project));
+  if (!opened.ok) throw new Error(opened.code);
+  return opened.session;
+}
+
+function branch(session, netId, component, pin, junctionId) {
+  apply(session, { type: 'wire.branch', netId, endpoint: endpoint(component, pin), junctionId });
+}
+
+function wire(session, id, leftComponent, leftPin, rightComponent, rightPin) {
+  apply(session, { type: 'wire.create', net: { id, endpoints: [
+    endpoint(leftComponent, leftPin), endpoint(rightComponent, rightPin),
+  ] } });
+}
+
+function add(session, component, position) {
+  apply(session, { type: 'component.add', component, position });
+}
+
+function construct(card) {
+  const session = freshSession(card);
+  if (card.id === 'avr-ground-reference-input') {
+    add(session, createCandidateUiComponent(card.model, 'ground-reference-1'), { x: 0.78, y: 0.78 });
+    branch(session, 'net-ground-branch', 'ground-reference-1', 'REF', 'junction-starter-ground-reference');
+  } else if (card.id === 'avr-toggle-input') {
+    add(session, createCandidateUiComponent(card.model, 'toggle-switch-1'), { x: 0.72, y: 0.7 });
+    branch(session, 'net-ground-branch', 'toggle-switch-1', 'B', 'junction-starter-toggle-ground');
+    wire(session, 'net-starter-toggle-d3', 'toggle-switch-1', 'A', 'board-1', 'D3');
+  } else if (card.id === 'avr-spdt-selector') {
+    add(session, createCandidateUiComponent(card.model, 'selector-1'), { x: 0.72, y: 0.7 });
+    branch(session, 'net-ground-branch', 'selector-1', 'A', 'junction-starter-selector-ground');
+    branch(session, 'net-5v', 'selector-1', 'B', 'junction-starter-selector-power');
+    wire(session, 'net-starter-selector-d8', 'selector-1', 'COM', 'board-1', 'D8');
+  } else if (card.id === 'avr-light-analogue') {
+    add(session, createLightAnalogueSensorComponent('light-sensor-1', 'Desk light signal', { lightLevel: 0.25 }), { x: 0.75, y: 0.72 });
+    branch(session, 'net-5v', 'light-sensor-1', 'VCC', 'junction-starter-light-vcc');
+    branch(session, 'net-ground-branch', 'light-sensor-1', 'GND', 'junction-starter-light-ground');
+    wire(session, 'net-starter-light-a1', 'light-sensor-1', 'AOUT', 'board-1', 'A1');
+  } else if (card.id === 'avr-light-threshold') {
+    add(session, createDigitalLightThresholdComponent('light-threshold-1', 'Workshop light threshold'), { x: 0.75, y: 0.72 });
+    branch(session, 'net-5v', 'light-threshold-1', 'VCC', 'junction-starter-threshold-vcc');
+    branch(session, 'net-ground-branch', 'light-threshold-1', 'GND', 'junction-starter-threshold-ground');
+    wire(session, 'net-starter-threshold-d7', 'light-threshold-1', 'DOUT', 'board-1', 'D7');
+  } else if (card.id === 'avr-active-buzzer') {
+    add(session, createActiveBuzzerComponent('active-buzzer-1', 'Silent logical buzzer'), { x: 0.76, y: 0.7 });
+    branch(session, 'net-5v', 'active-buzzer-1', 'VCC', 'junction-starter-buzzer-vcc');
+    branch(session, 'net-ground-branch', 'active-buzzer-1', 'GND', 'junction-starter-buzzer-ground');
+    wire(session, 'net-starter-buzzer-d8', 'active-buzzer-1', 'EN', 'board-1', 'D8');
+  } else if (card.id === 'avr-seven-segment') {
+    add(session, createSevenSegmentComponent('seven-segment-1', 'Workshop digit'), { x: 0.78, y: 0.72 });
+    SEGMENTS.forEach((segment, index) => add(session, createComponent(`resistor-${index + 3}`, 'resistor.fixed-v1', {
+      label: `Segment ${segment} resistor`, properties: { ohms: 220 },
+    }), { x: 0.4 + (index % 4) * 0.1, y: 0.48 + Math.floor(index / 4) * 0.1 }));
+    branch(session, 'net-ground-branch', 'seven-segment-1', 'COM', 'junction-starter-seven-common');
+    SEGMENTS.forEach((segment, index) => {
+      wire(session, `net-starter-seven-${segment}-anode`, 'seven-segment-1', segment, `resistor-${index + 3}`, 'B');
+      wire(session, `net-starter-seven-${segment}-output`, `resistor-${index + 3}`, 'A', 'board-1', SEGMENT_PINS[index]);
+    });
+  } else if (card.id === 'avr-rotary-encoder') {
+    apply(session, { type: 'component.remove', componentId: 'button-1' });
+    add(session, createCandidateUiComponent(card.model, 'encoder-1'), { x: 0.74, y: 0.7 });
+    wire(session, 'net-starter-encoder-a', 'encoder-1', 'A', 'board-1', 'D2');
+    wire(session, 'net-starter-encoder-b', 'encoder-1', 'B', 'board-1', 'D3');
+    wire(session, 'net-starter-encoder-com', 'encoder-1', 'COM', 'board-1', 'GND2');
+  }
+  if (!session.runnable.ok) throw new Error(`${card.id}:${session.runnable.code}`);
+  return session;
+}
+
+export function avrReferenceStarterCatalog() {
+  return CARDS.map((card) => ({ ...card }));
+}
+
+export function createAvrReferenceStarter(id) {
+  const card = CARDS.find((entry) => entry.id === id);
+  if (!card) throw new Error('AVR_REFERENCE_STARTER_UNKNOWN');
+  const session = construct(card);
+  return { ...card, text: session.saveText(), project: JSON.parse(session.saveText()) };
+}

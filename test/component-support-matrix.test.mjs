@@ -62,18 +62,13 @@ test('public component matrix is the exact 19 by 4 compatibility contract', () =
   assert(COMPONENT_SUPPORT_CELLS.filter((cell) => !cell.available).every((cell) => cell.limitations[0]));
 });
 
-test('every available cell has tracked evidence and incomplete public references stay explicit', () => {
+test('every available cell has tracked evidence and a public reference starter', () => {
   const inventory = componentReferenceInventory();
   assert.equal(inventory.length, 25);
   assert(inventory.every((item) => item.hasTrackedTests));
   for (const item of inventory) for (const path of item.tests) assert(existsSync(path), path);
-  const avrWithoutStarter = inventory.filter((item) => item.profile === AVR && !item.hasPositiveReference);
-  assert.deepEqual(avrWithoutStarter.map((item) => item.model).sort(), [
-    'input.rotary-encoder-quadrature-v1', 'output.active-buzzer-module-v1',
-    'output.seven-segment-common-cathode-v1', 'reference.ground-v1',
-    'sensor.light-analogue-v1', 'sensor.light-threshold-digital-v1',
-    'switch.changeover-spdt-v1', 'switch.toggle-spst-v1',
-  ]);
+  assert.equal(inventory.filter((item) => !item.hasPositiveReference).length, 0);
+  assert(inventory.every((item) => item.starters.length >= 1));
 });
 
 test('crawlable documentation contains one row for every public model', () => {

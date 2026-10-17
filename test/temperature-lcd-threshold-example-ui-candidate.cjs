@@ -92,7 +92,7 @@ let browser;
 
   await page.goto(base, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__M11_READY__ === true);
-  assert(await page.locator('.starter-card').count() === 7, 'starter gallery did not retain the six examples plus the thermostat experiment');
+  assert(await page.locator('.starter-card').count() === 15, 'starter gallery did not retain all fifteen validated AVR examples');
 
   await page.click('.starter-card[data-example="button"]');
   await page.waitForFunction(() => window.__M6_PROJECT__().metadata?.name === 'Button input');
@@ -180,7 +180,7 @@ let browser;
     cards: [...document.querySelectorAll('.starter-card')].filter((item) => item.getClientRects().length).length,
     sliderVisible: Boolean(document.querySelector('[data-control="temperature-sensor-1.temperatureC"]')?.getClientRects().length),
   }));
-  assert(mobile.overflow <= 1 && mobile.cards === 7 && mobile.sliderVisible, `mobile workflow failed ${JSON.stringify(mobile)}`);
+  assert(mobile.overflow <= 1 && mobile.cards === 15 && mobile.sliderVisible, `mobile workflow failed ${JSON.stringify(mobile)}`);
   await assertAttachments(page, loaded.endpoints);
 
   assert(errors.length === 0, `browser errors: ${JSON.stringify(errors)}`);

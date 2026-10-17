@@ -40,7 +40,7 @@
       <div><p class="eyebrow">LOCAL PROJECT</p><label class="project-name-field" for="project-name">Project name <input id="project-name" type="text" maxlength="80" value="Untitled project" autocomplete="off"></label><strong id="project-state">Untitled project · empty · not saved</strong><span id="lifecycle-state" class="lifecycle-state">empty</span></div>
       <div class="toolbar">
         <button id="project-new" type="button">New empty</button>
-        <select id="example-select" aria-label="Example project"><option value="blink">Blink LED</option><option value="button">Button input</option><option value="adc">ADC dial</option><option value="pwm">PWM fade</option><option value="pwm-pulse">PWM pulse</option><option value="temperature-lcd-threshold">Temperature display</option><option value="avr-thermostat-boundary-v1">Thermostat boundary test</option></select>
+        <select id="example-select" aria-label="Example project"><option value="blink">Blink LED</option><option value="button">Button input</option><option value="adc">ADC dial</option><option value="pwm">PWM fade</option><option value="pwm-pulse">PWM pulse</option><option value="temperature-lcd-threshold">Temperature display</option><option value="avr-thermostat-boundary-v1">Thermostat boundary test</option><option value="avr-ground-reference-input">Ground reference input</option><option value="avr-toggle-input">SPST toggle input</option><option value="avr-spdt-selector">SPDT input selector</option><option value="avr-light-analogue">Analogue light level</option><option value="avr-light-threshold">Digital light threshold</option><option value="avr-active-buzzer">Logical active buzzer</option><option value="avr-seven-segment">Seven-segment digits</option><option value="avr-rotary-encoder">Quadrature encoder</option></select>
         <button id="project-demo" type="button">Open example</button>
         <button id="walkthrough-open" type="button">First project guide</button>
         <button id="undo" type="button" disabled>Undo</button><button id="redo" type="button" disabled>Redo</button>
@@ -488,7 +488,7 @@
       </nav>
     </section>
 
-    <footer>Intent MCU Simulator 1.1.0-rc.25 public release · exact 19-model compatibility matrix, shared dark circuit workbench and exact controller boundaries across AVR + bounded Pico + ESP32-C3 + STM32F429ZI · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
+    <footer>Intent MCU Simulator 1.1.0-rc.26 public release · 25 available component cells with public references, shared dark circuit workbench and exact controller boundaries across AVR + bounded Pico + ESP32-C3 + STM32F429ZI · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
   </main>
   <button id="serial-tab" class="serial-tab" type="button" aria-expanded="false" aria-controls="serial-dock"><span>Serial</span><span id="serial-new-output" class="serial-new-output" hidden>0 new</span></button>
   <aside id="serial-dock" class="serial-dock" aria-labelledby="serial-title" hidden>

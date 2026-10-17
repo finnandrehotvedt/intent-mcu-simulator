@@ -1,4 +1,4 @@
-# Rollback basis for 1.1.0-rc.25
+# Rollback basis for 1.1.0-rc.26
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
@@ -7,12 +7,12 @@ unchanged.
 Retain the exact accepted rc.24 source commit
 `b1e559ab3dce87a9aae031664a0333bb9b425d9f`, VM103 image
 `sha256:1085eb9e11b9de3628f3ddd59801077e0ab0016b84e614db17a94fe82e500acc`
-and the pre-rc.25 Compose/environment backup recorded in the release receipt.
+and the pre-rc.26 Compose/environment backup recorded in the release receipt.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
 
-Rc.17 through rc.25 use the same common envelope. An rc.22, rc.23, rc.24 or rc.25 file that contains
+Rc.17 through rc.26 use the same common envelope. An rc.22, rc.23, rc.24, rc.25 or rc.26 file that contains
 narrow-profile `wireRoutes` should be retained as the learner's original, then
 opened in rc.21 only through an rc.21-compatible copy if strict older nested
 validation rejects the added layout field. The existing **Legacy copy** remains

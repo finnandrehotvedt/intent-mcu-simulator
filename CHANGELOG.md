@@ -2,6 +2,25 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.26 — 2026-10-17
+
+- Added exactly eight public AVR reference starters for the rc.25 available
+  models that had tracked tests but no starter: explicit ground reference,
+  SPST, SPDT, analogue light, digital light threshold, active buzzer,
+  seven-segment display and quadrature encoder.
+- Every new card states Learn, Try, Observe and Limits, enters through the
+  existing candidate-v3 validator and loads authored data only. A fresh
+  isolated AVR Build is required before the existing worker may Run.
+- Bound all 25 available component/profile cells to public starters. The 51
+  unavailable cells, all component status values and every narrow-profile
+  limit remain unchanged.
+- Added one integrated eight-starter browser acceptance with actual compiled
+  GPIO, ADC, Serial, display and ordered encoder observations. Existing
+  model-specific power, polarity, resistance, pin and topology negatives stay
+  fail-closed.
+- Kept SPDT and active buzzer Partial. The buzzer remains a silent logical
+  indicator with no sound, current or acoustic-accuracy claim.
+
 ## 1.1.0-rc.25 — 2026-10-17
 
 - Added one executable 19-model by 4-profile compatibility contract derived

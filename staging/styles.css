@@ -57,6 +57,9 @@ h2 { font-size: 1.22rem; margin: 0; }
 .starter-focus { color: var(--lime); font-size: .65rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
 .starter-description, .starter-outcome { color: var(--muted); font-size: .75rem; line-height: 1.42; }
 .starter-parts { color: var(--cyan); font: 650 .69rem ui-monospace, monospace; }
+.starter-learning-grid { display: grid; gap: 5px; width: 100%; margin: 3px 0 2px; padding-top: 8px; border-top: 1px solid #2a4659; }
+.starter-learning-grid > span { display: grid; grid-template-columns: 52px 1fr; gap: 7px; color: var(--muted); font-size: .68rem; line-height: 1.35; }
+.starter-learning-grid b { color: var(--text); font-size: .65rem; letter-spacing: .04em; text-transform: uppercase; }
 .starter-action { margin-top: auto; color: var(--text); font-size: .75rem; font-weight: 800; }
 .starter-card:hover .starter-action, .starter-card:focus-visible .starter-action { color: var(--lime); }
 .profile-example-picker { margin: 12px 0; padding: 12px; border: 1px solid #29465d; border-radius: 10px; background: #081722; }
