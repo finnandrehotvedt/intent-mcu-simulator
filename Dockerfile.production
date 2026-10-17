@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 FROM local/intent-mcu-compiler-integration:1.0.0-rc.2 AS dockercli
-FROM local/intent-mcu-source-check:1.1.0-rc.6
+FROM local/intent-mcu-source-check:1.1.0-rc.7
 
 ARG RELEASE_COMMIT
 
