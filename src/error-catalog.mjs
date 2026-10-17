@@ -8,7 +8,7 @@ const CATALOG = Object.freeze({
   PROJECT_SHAPE: 'This file is not a supported project. Export it again from the simulator or choose another file.',
   PROJECT_VERSION: 'This project uses an unsupported version. Use the migration option for older projects.',
   NO_LOCAL_SAVE: 'There is no browser recovery copy yet. Save a project file or continue editing before trying recovery.',
-  FILE_SAVE_FAILED: 'The project file was not saved. Check browser file permission or choose Save project again.',
+  FILE_SAVE_FAILED: 'The project file was not saved. Check browser file permission, retry the connected save, or choose Download copy.',
   PROJECT_READ_FAILED: 'The project file could not be read. Choose an accessible JSON project file and try again.',
   INPUT_LIMIT: 'The selected file is too large. Choose a project smaller than 1 MB.',
   BOARD_COUNT: 'Add exactly one supported controller before building.',

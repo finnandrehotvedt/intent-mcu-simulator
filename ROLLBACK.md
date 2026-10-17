@@ -1,19 +1,24 @@
-# Rollback basis for 1.1.0-rc.19
+# Rollback basis for 1.1.0-rc.20
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain the exact rc.18 source commit
-`c9b80e2b99b73be64f8f397da269a99908857df1`, VM103 image
-`sha256:2b1fa85bb862f513f66c2b6f2830309553e49d35c9cdf4befe6594e79424d849`
-and pre-rc.19 Compose/environment backup. If release acceptance fails, restore
-that exact app image and files, recreate only the Lab container, wait for
-health and verify Lab plus the existing Teach-domain URLs.
+Retain the exact accepted rc.19 source commit
+`551038e9f5ca42df501232ed1a78d3c4860cf693`, VM103 image
+`sha256:e24e755da1c888ae6a20c9f9f240a18d11564422241636277b53e0dc8bc588c4`
+and the pre-rc.20 Compose/environment backup recorded in the release receipt.
+If release acceptance fails, restore that exact app image and files, recreate
+only the Lab container, wait for health and verify Lab plus the existing
+Teach-domain URLs.
 
-Rc.17, rc.18 and rc.19 use the same common envelope, so learner-owned project files
+Rc.17 through rc.20 use the same common envelope, so learner-owned project files
 open directly after rollback. The existing **Legacy copy** remains available
 for a further rollback to rc.16 and contains no executable/runtime authority.
+
+Native file handles are session-only browser objects and do not survive an app
+container rollback or page reload. Learner-owned files remain unchanged; use
+ordinary Open after rollback and Build fresh.
 
 Browser recovery and learner-owned files are never deleted by deployment or
 rollback. Do not change DNS, shared Caddy configuration, compiler/runtime

@@ -118,6 +118,10 @@ body.shared-canvas-focus-open { overflow: hidden; }
 .pico-project-pane input:not(.sr-only), .pico-project-pane textarea { width: 100%; }
 .pico-source { min-height: 245px; resize: vertical; tab-size: 2; font: 500 .88rem/1.55 var(--mono); color: #dff7ff; background: #050e17; border: 1px solid #315066; border-radius: 12px; padding: .9rem; }
 .pico-project-actions, .pico-runtime-actions, .pico-circuit-actions { display: flex; flex-wrap: wrap; gap: .55rem; }
+.native-file-action[hidden] { display: none; }
+.file-connection { margin: .55rem 0 0; color: #a9bfd0; font-size: .72rem; line-height: 1.45; }
+.file-connection[data-connected="true"] { color: var(--green); }
+.file-connection[data-busy="true"] { color: var(--amber); }
 .pico-runtime-actions .primary { background: var(--accent); color: #031018; border-color: var(--accent); }
 .pico-message { min-height: 2.8rem; margin: 0; color: #d7e8f3; }
 .pico-identities { display: grid; gap: .45rem; margin: 0; }

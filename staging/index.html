@@ -44,7 +44,10 @@
         <button id="project-demo" type="button">Open example</button>
         <button id="walkthrough-open" type="button">First project guide</button>
         <button id="undo" type="button" disabled>Undo</button><button id="redo" type="button" disabled>Redo</button>
-        <button id="project-save" type="button">Save project</button><button id="project-open" type="button">Open project</button>
+        <button id="project-save" type="button">Download copy</button><button id="project-open" type="button">Open project</button>
+        <button id="project-native-open" class="native-file-action" type="button" hidden>Open &amp; connect…</button>
+        <button id="project-native-save" class="native-file-action" type="button" hidden disabled>Save connected file</button>
+        <button id="project-native-save-copy" class="native-file-action" type="button" hidden>Save copy…</button>
         <input id="project-open-input" class="sr-only" type="file" accept="application/json,.json" aria-label="Open project file">
         <button id="project-reload" type="button">Restore browser recovery</button>
         <button id="project-export" type="button">Legacy copy</button><button id="recovery-export" type="button" disabled>Download recovery</button>
@@ -52,6 +55,7 @@
         <input id="project-import" class="sr-only" type="file" accept="application/json,.json">
         <select id="project-import-mode" aria-label="Project import mode"><option value="replace">Replace project</option><option value="merge">Merge circuit</option><option value="migrate-v1">Migrate v1 project</option></select>
       </div>
+      <p id="project-file-connection" class="file-connection" role="status">Download copy and Open project work without a native file connection.</p>
       <p id="project-message" class="truth" role="status">No account or cloud project store. Save/Open uses a file on your computer; your browser or operating system chooses its location. Browser recovery is separate.</p>
       <details id="technical-error" class="technical-error" hidden><summary>Technical details</summary><pre id="technical-error-detail"></pre></details>
     </section>
@@ -110,11 +114,15 @@
           <label for="pico-project-name">Local project name</label>
           <input id="pico-project-name" type="text" maxlength="80" value="Pico GPIO0 source project" autocomplete="off">
           <div class="pico-project-actions">
-            <button id="pico-save" type="button">Save local project</button>
+            <button id="pico-save" type="button">Download copy</button>
             <button id="pico-open" type="button">Open local project</button>
+            <button id="pico-native-open" class="native-file-action" type="button" hidden>Open &amp; connect…</button>
+            <button id="pico-native-save" class="native-file-action" type="button" hidden disabled>Save connected file</button>
+            <button id="pico-native-save-copy" class="native-file-action" type="button" hidden>Save copy…</button>
             <button id="pico-legacy-copy" type="button">Legacy copy</button>
             <input id="pico-open-input" class="sr-only" type="file" accept="application/json,.json" aria-label="Open Pico project file">
           </div>
+          <p id="pico-file-connection" class="file-connection" role="status">Download copy and Open project work without a native file connection.</p>
           <label for="pico-source">main.c · edit only level and UART text</label>
           <textarea id="pico-source" class="pico-source" spellcheck="false" aria-describedby="pico-message"></textarea>
           <div class="pico-runtime-actions">
@@ -177,11 +185,15 @@
           <label for="c3-project-name">Local project name</label>
           <input id="c3-project-name" type="text" maxlength="80" value="ESP32-C3 GPIO2 source project" autocomplete="off">
           <div class="c3-project-actions">
-            <button id="c3-save" type="button">Save local project</button>
+            <button id="c3-save" type="button">Download copy</button>
             <button id="c3-open" type="button">Open local project</button>
+            <button id="c3-native-open" class="native-file-action" type="button" hidden>Open &amp; connect…</button>
+            <button id="c3-native-save" class="native-file-action" type="button" hidden disabled>Save connected file</button>
+            <button id="c3-native-save-copy" class="native-file-action" type="button" hidden>Save copy…</button>
             <button id="c3-legacy-copy" type="button">Legacy copy</button>
             <input id="c3-open-input" class="sr-only" type="file" accept="application/json,.json" aria-label="Open ESP32-C3 project file">
           </div>
+          <p id="c3-file-connection" class="file-connection" role="status">Download copy and Open project work without a native file connection.</p>
           <label for="c3-source">sketch.ino · edit only GPIO2 mode/level and uppercase marker</label>
           <textarea id="c3-source" class="c3-source" spellcheck="false" aria-describedby="c3-message"></textarea>
           <div class="c3-runtime-actions">
@@ -243,11 +255,15 @@
           <label for="stm32-project-name">Local project name</label>
           <input id="stm32-project-name" type="text" maxlength="80" value="STM32F429 PB0 source project" autocomplete="off">
           <div class="stm32-project-actions">
-            <button id="stm32-save" type="button">Save local project</button>
+            <button id="stm32-save" type="button">Download copy</button>
             <button id="stm32-open" type="button">Open local project</button>
+            <button id="stm32-native-open" class="native-file-action" type="button" hidden>Open &amp; connect…</button>
+            <button id="stm32-native-save" class="native-file-action" type="button" hidden disabled>Save connected file</button>
+            <button id="stm32-native-save-copy" class="native-file-action" type="button" hidden>Save copy…</button>
             <button id="stm32-legacy-copy" type="button">Legacy copy</button>
             <input id="stm32-open-input" class="sr-only" type="file" accept="application/json,.json" aria-label="Open STM32 project file">
           </div>
+          <p id="stm32-file-connection" class="file-connection" role="status">Download copy and Open project work without a native file connection.</p>
           <label for="stm32-source">main.c · edit only PB0 level and uppercase marker</label>
           <textarea id="stm32-source" class="stm32-source" spellcheck="false" aria-describedby="stm32-message"></textarea>
           <div class="stm32-runtime-actions">
@@ -433,7 +449,7 @@
       </nav>
     </section>
 
-    <footer>Intent MCU Simulator 1.1.0-rc.19 public release · guarded local New/Open workflow across AVR + bounded Pico + ESP32-C3 + STM32F429ZI · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
+    <footer>Intent MCU Simulator 1.1.0-rc.20 public release · reliable Download/Open plus optional connected desktop files across AVR + bounded Pico + ESP32-C3 + STM32F429ZI · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
   </main>
   <button id="serial-tab" class="serial-tab" type="button" aria-expanded="false" aria-controls="serial-dock"><span>Serial</span><span id="serial-new-output" class="serial-new-output" hidden>0 new</span></button>
   <aside id="serial-dock" class="serial-dock" aria-labelledby="serial-title" hidden>

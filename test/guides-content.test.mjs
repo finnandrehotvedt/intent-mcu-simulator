@@ -26,8 +26,11 @@ test('public guides cover every narrow controller and the exact recovery boundar
   assert(components.includes('id="narrow-profile-parts"')
     && components.includes('resistor.fixed-v1') && components.includes('led.basic-v1'));
   assert(support.includes('all four profiles')
-    && support.includes('requests one deterministic <code>.intent-mcu.json</code> download')
+    && support.includes('<strong>Download copy</strong> requests one deterministic <code>.intent-mcu.json</code> download')
     && support.includes('cannot confirm a durable disk write'));
+  assert(support.includes('<strong>Open &amp; connect</strong>')
+    && support.includes('<strong>Save connected file</strong>')
+    && support.includes('file handle exists only in the current browser session'));
   assert(support.includes('valid common file routes to its declared installed profile')
     && support.includes('not a claim that source code is portable'));
   assert(support.includes('Preserve the original file unchanged')

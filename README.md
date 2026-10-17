@@ -123,12 +123,16 @@ The intended manual workflow is:
    identity, and routed wire endpoints remain attached to their actual pins.
 5. Edit one or more source files. Source, circuit, and board profile together
    determine build freshness; changing any of them invalidates an old artifact.
-6. Save or open a project file on your computer. Save always requests the same
-   deterministic local download on every controller; Open uses the browser's
-   file picker or file-input fallback. Browser recovery is separate from the
-   durable user-owned file. A valid same-profile Open, or AVR New, asks before
-   replacing authored changes; requesting a download copy does not claim that
-   the browser completed a durable write. Imported projects and
+6. Save or open a project file on your computer. **Download copy** always
+   requests the same deterministic local download and ordinary **Open
+   project** always uses a reliable file input. A supported secure desktop
+   browser also shows optional **Open & connect**, **Save connected file** and
+   **Save copy** actions; their file handle exists only in that browser session
+   and a save is claimed only after write and close both succeed. Browser
+   recovery is separate from the durable user-owned file. A valid same-profile
+   Open, or AVR New, asks before replacing authored changes; requesting a
+   download copy does not claim that the browser completed a durable write.
+   Imported projects and
    Prompt Bridge proposals pass the same strict schema and electrical rules as
    manual edits.
 
@@ -178,7 +182,7 @@ source; it does not authorize redistributing the resulting image.
 
 Additional current limits:
 
-- source version `1.1.0-rc.19` is prepared for the release at
+- source version `1.1.0-rc.20` is prepared for the release at
   `https://lab.teachthecompany.com/`; hosted compiler/toolchain images and
   private deployment configuration remain outside this source repository;
 - public execution supports the tested ATmega328P subset, one bounded RP2040

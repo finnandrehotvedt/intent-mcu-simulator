@@ -1,4 +1,31 @@
-# Intent MCU Simulator 1.1.0-rc.19
+# Intent MCU Simulator 1.1.0-rc.20
+
+This local-file parity release preserves the rc.19 guard, project envelope,
+compiler and runtime boundaries while completing one optional desktop native
+file workflow without weakening the reliable browser-download fallback.
+
+## Desktop native file parity
+
+- **Download copy** and ordinary file-input **Open project** remain the primary
+  all-browser actions on AVR, Pico, ESP32-C3 and STM32.
+- Secure desktop browsers that expose the File System Access API also show
+  separately labelled **Open & connect**, **Save connected file** and **Save
+  copy**. Unsupported browsers receive a truthful capability message.
+- Handles remain in memory only and are never put in the common envelope,
+  browser recovery, logs or a server request. Legacy input is never overwritten
+  automatically.
+- Native writes are serialized and bound to the exact profile and authored
+  fingerprint. Cancellation, denial, stale picker return and write/close
+  failure preserve the project and never establish a saved baseline.
+- A native picker that never settles cannot block Download copy, ordinary Open,
+  editing or the unsaved-change guard. No timeout creates a duplicate write.
+- Chromium tests exercise a synthetic File System Access contract across all
+  four profiles; Firefox and WebKit exercise the reliable fallback. This is not
+  a claim that automation operated a real operating-system chooser.
+
+---
+
+## 1.1.0-rc.19
 
 This file-safety release preserves the rc.18 controller, compiler, runtime,
 project-envelope and visual contracts while preventing accidental replacement

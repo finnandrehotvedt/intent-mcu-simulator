@@ -14,13 +14,13 @@ const browserType = { chromium, firefox, webkit }[browserName];
 if (!browserType) throw new Error(`Unsupported browser: ${browserName}`);
 const AVR = 'board.atmega328p-16mhz-v1';
 const profiles = [
-  { id: 'avr', option: AVR, name: '#project-name', source: '#source', open: '#project-open-input',
+  { id: 'avr', option: AVR, name: '#project-name', source: '#source', open: '#project-open-input', openButton: '#project-open',
     sourceEdit: (value) => `${value}\n// guarded authored source` },
-  { id: 'pico', option: 'board.rp2040-pico-v1', name: '#pico-project-name', source: '#pico-source', open: '#pico-open-input', global: '__RP2040_PUBLIC_WORKBENCH__',
+  { id: 'pico', option: 'board.rp2040-pico-v1', name: '#pico-project-name', source: '#pico-source', open: '#pico-open-input', openButton: '#pico-open', global: '__RP2040_PUBLIC_WORKBENCH__',
     sourceEdit: (value) => value.replace('intent_gpio0_output(1u)', 'intent_gpio0_output(0u)') },
-  { id: 'c3', option: 'board.esp32-c3-devmodule-v1', name: '#c3-project-name', source: '#c3-source', open: '#c3-open-input', global: '__ESP32C3_PUBLIC_WORKBENCH__',
+  { id: 'c3', option: 'board.esp32-c3-devmodule-v1', name: '#c3-project-name', source: '#c3-source', open: '#c3-open-input', openButton: '#c3-open', global: '__ESP32C3_PUBLIC_WORKBENCH__',
     sourceEdit: (value) => value.replace('digitalWrite(2, HIGH)', 'digitalWrite(2, LOW)') },
-  { id: 'stm32', option: 'board.stm32f429zi-nucleo144-v1', name: '#stm32-project-name', source: '#stm32-source', open: '#stm32-open-input', global: '__STM32_PUBLIC_WORKBENCH__',
+  { id: 'stm32', option: 'board.stm32f429zi-nucleo144-v1', name: '#stm32-project-name', source: '#stm32-source', open: '#stm32-open-input', openButton: '#stm32-open', global: '__STM32_PUBLIC_WORKBENCH__',
     sourceEdit: (value) => value.replace('intent_pb0_output(1u)', 'intent_pb0_output(0u)') },
 ];
 
@@ -99,9 +99,8 @@ async function inputFile(page, profile, text, name = `${profile.id}.intent-mcu.j
     assert.equal(await canonical(page, profile), dirty, `${profile.id}: malformed input changed draft`);
 
     const beforeEscape = await exactState(page, profile);
-    const initiatorId = await page.locator(profile.open).evaluate((node) => {
-      node.previousElementSibling?.focus();
-      return document.activeElement.id;
+    const initiatorId = await page.locator(profile.openButton).evaluate((node) => {
+      node.focus(); return document.activeElement.id;
     });
     await inputFile(page, profile, baselines[profile.id]);
     await page.waitForSelector('#unsaved-change-dialog[open]');

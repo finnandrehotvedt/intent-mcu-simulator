@@ -159,7 +159,9 @@ const elements = Object.fromEntries([
   'catalog-list', 'catalog-prev', 'catalog-page', 'catalog-next', 'selection-name', 'property-editor', 'rotate-component', 'duplicate-component', 'delete-component',
   'selected-net', 'net-members', 'wire-color', 'wire-bends', 'selection-support', 'reconnect-mode', 'add-bend', 'delete-wire', 'remove-junction', 'zoom-value',
   'zoom-in', 'zoom-out', 'pan-left', 'pan-right', 'pan-up', 'pan-down', 'view-reset', 'fit-project', 'project-state',
-  'project-message', 'project-name', 'project-new', 'project-demo', 'project-save', 'project-open', 'project-open-input', 'project-reload', 'project-export', 'project-import',
+  'project-message', 'project-name', 'project-new', 'project-demo', 'project-save', 'project-open', 'project-open-input',
+  'project-native-open', 'project-native-save', 'project-native-save-copy', 'project-file-connection',
+  'project-reload', 'project-export', 'project-import',
   'project-import-mode', 'undo', 'redo', 'prompt-generate', 'prompt-copy', 'prompt-output', 'prompt-response',
   'prompt-mode', 'prompt-apply', 'prompt-message', 'component-controls',
   'editor-title', 'source-file', 'source-file-name', 'source-file-add', 'source-file-remove',
@@ -181,20 +183,23 @@ const elements = Object.fromEntries([
   'controller-capability-runtime', 'controller-capability-circuit', 'controller-primary-action', 'controller-return-avr',
   'controller-workbench-limitation', 'controller-public-boundary', 'parked-circuit-notice',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
-  'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input', 'pico-legacy-copy',
+  'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
+  'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
   'pico-source', 'pico-build', 'pico-run', 'pico-pause', 'pico-reset', 'pico-stop', 'pico-message',
   'pico-source-hash', 'pico-artifact-hash', 'pico-diagram', 'pico-circuit-state',
   'pico-editor-wires', 'pico-editor-components', 'pico-circuit-selection',
   'pico-parts-list', 'pico-part-properties',
   'pico-delete', 'pico-undo', 'pico-redo', 'pico-rotate', 'pico-zoom-out', 'pico-zoom-value',
   'pico-zoom-in', 'pico-fit', 'pico-reconnect', 'pico-wire-cancel', 'pico-wire-state', 'pico-serial',
-  'c3-public-workbench', 'c3-state', 'c3-project-name', 'c3-save', 'c3-open', 'c3-open-input', 'c3-legacy-copy',
+  'c3-public-workbench', 'c3-state', 'c3-project-name', 'c3-save', 'c3-open', 'c3-open-input',
+  'c3-native-open', 'c3-native-save', 'c3-native-save-copy', 'c3-file-connection', 'c3-legacy-copy',
   'c3-source', 'c3-build', 'c3-run', 'c3-stop', 'c3-message', 'c3-source-hash', 'c3-flash-hash',
   'c3-diagram', 'c3-external-led', 'c3-circuit-state', 'c3-reconnect', 'c3-wire-cancel', 'c3-wire-state', 'c3-terminal',
   'c3-editor-wires', 'c3-editor-components', 'c3-circuit-selection',
   'c3-parts-list', 'c3-part-properties',
   'c3-delete', 'c3-undo', 'c3-redo', 'c3-rotate', 'c3-zoom-out', 'c3-zoom-value', 'c3-zoom-in', 'c3-fit',
-  'stm32-public-workbench', 'stm32-state', 'stm32-project-name', 'stm32-save', 'stm32-open', 'stm32-open-input', 'stm32-legacy-copy',
+  'stm32-public-workbench', 'stm32-state', 'stm32-project-name', 'stm32-save', 'stm32-open', 'stm32-open-input',
+  'stm32-native-open', 'stm32-native-save', 'stm32-native-save-copy', 'stm32-file-connection', 'stm32-legacy-copy',
   'stm32-source', 'stm32-build', 'stm32-run', 'stm32-reset', 'stm32-stop', 'stm32-message',
   'stm32-source-hash', 'stm32-artifact-hash', 'stm32-diagram', 'stm32-external-led',
   'stm32-circuit-state', 'stm32-terminal', 'stm32-editor-wires', 'stm32-editor-components',
@@ -241,7 +246,8 @@ let savedProjectGeneration = null;
 let fileSavedRevision = null;
 let fileSavedProjectGeneration = null;
 let fileSaveState = null;
-let projectFileHandle = null;
+const projectFileConnections = new Map();
+let nativeFileOperation = null;
 let buildAbortController = null;
 let serialViewMode = 'text';
 let lastThroughputSample = null;
@@ -1809,6 +1815,82 @@ function profileMessage(profile, message) {
     : profile === ESP32C3_PROFILE ? elements.c3message : elements.stm32message;
   target.textContent = message;
 }
+function nativeFileUi(profile) {
+  if (profile === AVR_PROFILE) return {
+    open: elements.projectnativeopen, save: elements.projectnativesave,
+    saveCopy: elements.projectnativesavecopy, status: elements.projectfileconnection,
+  };
+  if (profile === RP2040_PROFILE) return {
+    open: elements.piconativeopen, save: elements.piconativesave,
+    saveCopy: elements.piconativesavecopy, status: elements.picofileconnection,
+  };
+  if (profile === ESP32C3_PROFILE) return {
+    open: elements.c3nativeopen, save: elements.c3nativesave,
+    saveCopy: elements.c3nativesavecopy, status: elements.c3fileconnection,
+  };
+  return {
+    open: elements.stm32nativeopen, save: elements.stm32nativesave,
+    saveCopy: elements.stm32nativesavecopy, status: elements.stm32fileconnection,
+  };
+}
+function nativeFileCapabilities() {
+  const secure = window.isSecureContext === true;
+  return {
+    secure,
+    open: secure && typeof window.showOpenFilePicker === 'function',
+    save: secure && typeof window.showSaveFilePicker === 'function',
+  };
+}
+function renderNativeFileControls() {
+  const capabilities = nativeFileCapabilities();
+  for (const profile of [AVR_PROFILE, RP2040_PROFILE, ESP32C3_PROFILE, STM32F429ZI_PROFILE]) {
+    const ui = nativeFileUi(profile);
+    const connection = projectFileConnections.get(profile);
+    const busy = nativeFileOperation?.profile === profile;
+    ui.open.hidden = !capabilities.open;
+    ui.save.hidden = !capabilities.save;
+    ui.saveCopy.hidden = !capabilities.save;
+    ui.open.disabled = busy;
+    ui.saveCopy.disabled = busy;
+    ui.save.disabled = busy || !connection;
+    ui.status.dataset.connected = String(Boolean(connection));
+    ui.status.dataset.busy = String(Boolean(busy));
+    if (busy) ui.status.textContent = `Native ${nativeFileOperation.kind} is waiting for the browser or operating system. Download copy and ordinary Open remain available.`;
+    else if (connection) ui.status.textContent = `Connected for this session: ${connection.name}. Save connected file writes only after a complete close.`;
+    else if (capabilities.open || capabilities.save) ui.status.textContent = 'Optional native file connection available for this secure desktop session. Download copy and ordinary Open remain the reliable primary actions.';
+    else ui.status.textContent = 'Download copy and Open project are available. This browser does not expose the optional native file connection.';
+  }
+}
+function clearProjectFileConnection(profile) {
+  projectFileConnections.delete(profile);
+  renderNativeFileControls();
+}
+function nativeFileIntent(profile, kind) {
+  if (nativeFileOperation) {
+    profileMessage(profile, 'Another native file decision is still open. Download copy and ordinary Open remain available.');
+    return null;
+  }
+  const operation = {
+    id: Symbol(kind), profile, kind,
+    fingerprint: authoredProjectFingerprint(profile),
+  };
+  nativeFileOperation = operation;
+  renderNativeFileControls();
+  return operation;
+}
+function nativeFileIntentIsCurrent(operation) {
+  return nativeFileOperation === operation
+    && selectedCompilerProfile === operation.profile
+    && authoredProjectFingerprint(operation.profile) === operation.fingerprint;
+}
+function finishNativeFileIntent(operation) {
+  if (nativeFileOperation === operation) nativeFileOperation = null;
+  renderNativeFileControls();
+}
+function safeHandleName(handle, profile) {
+  const value = typeof handle?.name === 'string' ? handle.name.trim() : '';
+  return value || commonProjectFilename(profile);
+}
 function saveCommonProject(profile) {
   try {
     const text = commonProjectText(profile);
@@ -1896,12 +1978,16 @@ function installPreparedProjectEnvelope(result, handle = null) {
       runtimeMessage: 'Opened project requires build',
     });
     selectedSourceFile = 'main.ino';
-    projectFileHandle = result.report.legacy ? null : handle;
     persistProject(); markFileSaved('opened file current'); renderCatalog(); renderProject();
   } else if (result.profile === RP2040_PROFILE) picoPublicWorkbench.installPreparedProject(result.project);
   else if (result.profile === ESP32C3_PROFILE) c3PublicWorkbench.installPreparedProject(result.project);
   else if (result.profile === STM32F429ZI_PROFILE) stm32PublicWorkbench.installPreparedProject(result.project);
+  if (handle && !result.report.legacy) projectFileConnections.set(result.profile, {
+    handle, name: safeHandleName(handle, result.profile),
+  });
+  else projectFileConnections.delete(result.profile);
   setProjectBaseline(result.profile);
+  renderNativeFileControls();
   window.__COMMON_PROJECT_FILE_STATE__ = structuredClone({ profile: result.profile, report: result.report });
   profileMessage(result.profile, result.report.legacy
     ? `Legacy ${result.report.inputSchema} migrated in memory to ${result.report.outputSchema}. Save creates a new file; fresh Build is required.`
@@ -1933,6 +2019,111 @@ async function openCommonProjectFile(file, handle = null) {
   })) return { ...result, pending: true };
   return installPreparedProjectEnvelope(result, handle);
 }
+async function openConnectedProject(profile) {
+  if (!nativeFileCapabilities().open) {
+    profileMessage(profile, 'Native connected Open is unavailable. Use Open project instead.');
+    return;
+  }
+  const operation = nativeFileIntent(profile, 'Open & connect');
+  if (!operation) return;
+  try {
+    const handles = await window.showOpenFilePicker({
+      multiple: false,
+      types: [{ description: 'Intent MCU project', accept: { 'application/json': ['.json'] } }],
+    });
+    if (!nativeFileIntentIsCurrent(operation)) {
+      profileMessage(profile, 'Connected Open was cancelled because the active project changed while the picker was open.');
+      return;
+    }
+    const handle = handles?.[0];
+    if (!handle || typeof handle.getFile !== 'function') throw new Error('PROJECT_FILE_HANDLE_INVALID');
+    const file = await handle.getFile();
+    if (!nativeFileIntentIsCurrent(operation)) {
+      profileMessage(profile, 'Connected Open was cancelled because the active project changed before validation.');
+      return;
+    }
+    await openCommonProjectFile(file, handle);
+  } catch (error) {
+    if (error?.name === 'AbortError') profileMessage(profile, 'Connected Open cancelled. The current project and file connection are unchanged.');
+    else profileMessage(profile, `Connected Open failed (${error?.name || error?.message || 'PROJECT_READ_FAILED'}). The current project and file connection are unchanged.`);
+  } finally {
+    finishNativeFileIntent(operation);
+  }
+}
+async function saveNativeProject(profile, { copy = false } = {}) {
+  if (!nativeFileCapabilities().save) {
+    profileMessage(profile, 'Native Save is unavailable. Use Download copy instead.');
+    return;
+  }
+  const prior = projectFileConnections.get(profile) ?? null;
+  if (!copy && !prior) {
+    profileMessage(profile, 'No file is connected for this session. Use Save copy or Download copy.');
+    return;
+  }
+  let text;
+  try { text = commonProjectText(profile); }
+  catch (error) {
+    profileMessage(profile, `Native Save rejected (${error.code ?? error.message}). The project and file connection are unchanged.`);
+    return;
+  }
+  const operation = nativeFileIntent(profile, copy ? 'Save copy' : 'Save connected file');
+  if (!operation) return;
+  let handle = prior?.handle;
+  let writable = null;
+  try {
+    if (copy) handle = await window.showSaveFilePicker({
+      suggestedName: commonProjectFilename(profile),
+      types: [{ description: 'Intent MCU project', accept: { 'application/json': ['.json'] } }],
+    });
+    if (!nativeFileIntentIsCurrent(operation)) {
+      profileMessage(profile, 'Native Save was cancelled because the active project changed before writing. No file was overwritten.');
+      return;
+    }
+    if (!handle || typeof handle.createWritable !== 'function') throw new Error('PROJECT_FILE_HANDLE_INVALID');
+    writable = await handle.createWritable();
+    if (!nativeFileIntentIsCurrent(operation)) {
+      if (typeof writable.abort === 'function') await writable.abort();
+      profileMessage(profile, 'Native Save was cancelled because the active project changed before writing. No file was overwritten.');
+      return;
+    }
+    await writable.write(new Blob([text], { type: 'application/json' }));
+    await writable.close();
+    writable = null;
+    projectFileConnections.set(profile, { handle, name: safeHandleName(handle, profile) });
+    if (authoredProjectFingerprint(profile) === operation.fingerprint) {
+      setProjectBaseline(profile);
+      if (profile === AVR_PROFILE) { markFileSaved('saved to connected file'); renderProject(); }
+      profileMessage(profile, `${copy ? 'Save copy' : 'Save'} completed and closed. ${safeHandleName(handle, profile)} is connected for this session.`);
+    } else {
+      profileMessage(profile, `${copy ? 'Save copy' : 'Save'} completed for the earlier snapshot. Newer edits remain unsaved.`);
+    }
+  } catch (error) {
+    if (writable && typeof writable.abort === 'function') {
+      try { await writable.abort(); } catch { /* the failed writer remains untrusted */ }
+    }
+    if (error?.name === 'AbortError') profileMessage(profile, `${copy ? 'Save copy' : 'Save'} cancelled. The project and existing file connection are unchanged.`);
+    else profileMessage(profile, `${copy ? 'Save copy' : 'Save'} failed (${error?.name || error?.message || 'FILE_SAVE_FAILED'}). No completed write is claimed; the project remains unsaved.`);
+  } finally {
+    finishNativeFileIntent(operation);
+  }
+}
+function installNativeFileControls() {
+  for (const profile of [AVR_PROFILE, RP2040_PROFILE, ESP32C3_PROFILE, STM32F429ZI_PROFILE]) {
+    const ui = nativeFileUi(profile);
+    ui.open.addEventListener('click', () => { void openConnectedProject(profile); });
+    ui.save.addEventListener('click', () => { void saveNativeProject(profile); });
+    ui.saveCopy.addEventListener('click', () => { void saveNativeProject(profile, { copy: true }); });
+  }
+  renderNativeFileControls();
+}
+window.__NATIVE_PROJECT_FILES__ = Object.freeze({
+  capabilities: () => structuredClone(nativeFileCapabilities()),
+  status: (profile = selectedCompilerProfile) => ({
+    profile, connected: projectFileConnections.has(profile),
+    name: projectFileConnections.get(profile)?.name ?? null,
+    busy: nativeFileOperation?.profile === profile,
+  }),
+});
 window.__COMMON_PROJECT_FILES__ = Object.freeze({
   schema: 'intent-mcu-project-envelope@1',
   current: (profile = selectedCompilerProfile) => commonProjectText(profile),
@@ -2037,23 +2228,7 @@ async function replaceProjectFromFile(file, handle = null) {
   return openCommonProjectFile(file, handle);
 }
 async function openProjectFile() {
-  if (typeof window.showOpenFilePicker !== 'function') {
-    elements.projectopeninput.click();
-    return;
-  }
-  try {
-    const [handle] = await window.showOpenFilePicker({
-      multiple: false,
-      types: [{ description: 'Intent MCU project', accept: { 'application/json': ['.json'] } }],
-    });
-    await replaceProjectFromFile(await handle.getFile(), handle);
-  } catch (error) {
-    if (error?.name === 'AbortError') {
-      elements.projectmessage.textContent = 'Open cancelled. The current project is unchanged.';
-      return;
-    }
-    showActionableError(elements.projectmessage, 'PROJECT_READ_FAILED', `${error?.name || 'Error'}: ${error?.message || 'read failed'}`);
-  }
+  elements.projectopeninput.click();
 }
 function buildInputIdentity() {
   const target = currentCompilerTarget();
@@ -4383,7 +4558,8 @@ function createNewAvrProject() {
   editor = new ProjectEditorReducer(createEmptyProject());
   installProjectGeneration({ empty: true, reason: 'project.new', runtimeMessage: 'New empty project — build required' });
   selectedSourceFile = 'main.ino';
-  projectFileHandle = null; fileSavedRevision = null; fileSavedProjectGeneration = null; fileSaveState = null;
+  clearProjectFileConnection(AVR_PROFILE);
+  fileSavedRevision = null; fileSavedProjectGeneration = null; fileSaveState = null;
   localStorage.removeItem(PROJECT_STORAGE_KEY); localStorage.removeItem(PROJECT_RECOVERY_KEY); renderCatalog(); renderProject();
   setProjectBaseline(AVR_PROFILE);
   elements.projectmessage.textContent = 'Created an actually empty project.';
@@ -4833,6 +5009,7 @@ elements.projectmessage.textContent = recoveryRestored?.ok
       : 'No example or hidden template is loaded.';
 if ((stored || recoveryStored) && !restored?.ok) elements.recoveryexport.disabled = false;
 for (const profile of [AVR_PROFILE, RP2040_PROFILE, ESP32C3_PROFILE, STM32F429ZI_PROFILE]) setProjectBaseline(profile);
+installNativeFileControls();
 window.__UNSAVED_CHANGE_GUARD__ = Object.freeze({
   isDirty: (profile = selectedCompilerProfile) => isProjectDirty(profile),
   baseline: (profile = selectedCompilerProfile) => projectBaselines.get(profile),

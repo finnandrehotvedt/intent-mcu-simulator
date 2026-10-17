@@ -76,17 +76,19 @@ let browser;
   await native.evaluate((text) => { window.__LOCAL_FILE_TEXT__ = text; }, nativeText);
   assert(JSON.stringify(JSON.parse(nativeText).project) === nativeCanonical, 'common download changed native-authored project bytes');
   assert((await native.textContent('#project-state')).includes('download requested'), 'common download state is not explicit');
+  await native.click('#project-native-save-copy');
+  await native.waitForFunction(() => window.__NATIVE_PROJECT_FILES__.status().connected);
+  assert(await native.evaluate(() => window.__LOCAL_FILE_TEXT__) === nativeText, 'native Save copy changed canonical bytes');
   await native.click('#project-new');
-  await native.click('#unsaved-discard');
-  await native.click('#project-open');
+  await native.click('#project-native-open');
   await native.waitForFunction(() => document.querySelector('#project-message').textContent.includes('Common project opened'));
   assert(JSON.stringify(await native.evaluate(() => window.__M6_PROJECT__())) === nativeCanonical, 'native save/open changed canonical project bytes');
   const beforeCancel = await native.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
   await native.evaluate(() => {
     window.showOpenFilePicker = async () => { throw new DOMException('cancelled', 'AbortError'); };
   });
-  await native.click('#project-open');
-  assert((await native.textContent('#project-message')).includes('Open cancelled'), 'native cancel is not explained');
+  await native.click('#project-native-open');
+  assert((await native.textContent('#project-message')).includes('Connected Open cancelled'), 'native cancel is not explained');
   assert(await native.evaluate(() => JSON.stringify(window.__M6_PROJECT__())) === beforeCancel, 'cancelled open changed project state');
   await native.setInputFiles('#project-open-input', {
     name: 'invalid.intent-mcu.json', mimeType: 'application/json', buffer: Buffer.from('{"schema":'),
@@ -107,7 +109,7 @@ let browser;
     assert(responsive.overflow <= 1 && responsive.save && responsive.open, `file controls overflow at ${viewport.width}px`);
   }
   assert(nativeMutations.length === 0, `native file workflow made server mutation request: ${nativeMutations.join(', ')}`);
-  progress('deterministic-download-native-open-cancel-invalid-responsive');
+  progress('deterministic-download-native-save-copy-open-cancel-invalid-responsive');
   await nativeContext.close();
 
   console.log(JSON.stringify({ browser: browserName, result: 'pass', account: false, serverProjectWrites: 0 }));

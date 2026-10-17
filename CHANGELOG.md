@@ -2,6 +2,22 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.20 — 2026-10-17
+
+- Kept deterministic **Download copy** and file-input **Open project** as the
+  primary all-browser local-file path on all four accepted profiles.
+- Added separately labelled optional **Open & connect**, **Save connected
+  file** and **Save copy** actions when a secure desktop browser exposes the
+  native File System Access API.
+- Kept file handles in memory only and bound writes to the exact profile and
+  authored fingerprint. New, profile changes, stale pickers, cancellation,
+  permission denial and incomplete write/close never claim a successful save.
+- Preserved the rc.17 regression lock: even a present native picker whose
+  promise never settles cannot consume or delay the primary Download action.
+- Added four-profile synthetic native-contract acceptance in Chromium and
+  all-profile fallback acceptance in Chromium, Firefox and WebKit. Automated
+  tests do not claim that they operated a real OS chooser.
+
 ## 1.1.0-rc.19 — 2026-10-17
 
 - Added one accessible unsaved-change guard for destructive AVR New and valid
