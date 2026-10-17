@@ -82,7 +82,7 @@ test('only actual RP2040 machine state can drive a validated LED model', () => {
   assert.equal(observeRp2040PicoCircuit(broken, runtime).on, false);
 });
 
-test('selection delete undo and strict circuit-only file open preserve draft semantics', () => {
+test('selection delete undo redo move rotate and strict circuit-only file open preserve draft semantics', () => {
   const editor = new Rp2040PicoCircuitEditor();
   const original = editor.saveText();
   editor.select({ kind: 'net', id: 'net-ground' });
@@ -90,6 +90,15 @@ test('selection delete undo and strict circuit-only file open preserve draft sem
   assert.equal(deleted.ok, true); assert.equal(deleted.validation.code, 'RP2040_GROUND_REQUIRED');
   const undone = editor.undo();
   assert.equal(undone.ok, true); assert.equal(undone.validation.ok, true); assert.equal(editor.saveText(), original);
+  const redone = editor.redo();
+  assert.equal(redone.ok, true); assert.equal(redone.validation.code, 'RP2040_GROUND_REQUIRED');
+  assert.equal(editor.undo().validation.ok, true);
+  editor.moveComponent('resistor-1', 0.35, 0.72);
+  assert.deepEqual(editor.snapshot().draft.layout.positions['resistor-1'], { x: 0.35, y: 0.72, rotation: 0 });
+  editor.rotateComponent('resistor-1');
+  assert.equal(editor.snapshot().draft.layout.positions['resistor-1'].rotation, 90);
+  assert.equal(editor.undo().draft.layout.positions['resistor-1'].rotation, 0);
+  assert.equal(editor.redo().draft.layout.positions['resistor-1'].rotation, 90);
   editor.select({ kind: 'component', id: 'pico-1' });
   assert.equal(editor.deleteSelected().code, 'RP2040_BOARD_FIXED');
   const parsed = parseRp2040PicoCircuitText(original);

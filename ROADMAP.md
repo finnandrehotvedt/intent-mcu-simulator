@@ -34,9 +34,9 @@ forever.
 - Evaluate additional controllers and components one at a time. The public
   selector may show exact private evidence as a non-executable preview, but it
   must not imply public availability. AVR, the bounded Pico GPIO0/UART0 path,
-  and the bounded ESP32-C3 GPIO2/UART path are public; expansion beyond those
-  exact contracts requires new evidence. STM32 still has no public compiler or
-  runtime. Motors and buses require their own electrical and emulator
+  the bounded ESP32-C3 GPIO2/UART path, and the bounded STM32F429ZI
+  PB0/USART3 path are public; expansion beyond those exact contracts requires
+  new evidence. Motors and buses require their own electrical and emulator
   contracts before activation.
 - Keep physical-device access, upload, accounts, hosted AI, agent/tool
   interfaces, and hosted compiler/deployment operations outside this

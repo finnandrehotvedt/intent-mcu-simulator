@@ -19,6 +19,7 @@ export const SUPPORT_STATUS = Object.freeze({
 
 export const ARTWORK_RENDERER_IDS = Object.freeze([
   'board-atmega328p',
+  'board-rp2040-pico',
   'resistor-axial',
   'led-through-hole',
   'button-tactile',

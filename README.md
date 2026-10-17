@@ -30,8 +30,8 @@ remain the authority.
 ## Public discovery and factual machine context
 
 The live workbench publishes crawlable controller, component, example and
-support pages, a canonical URL, social-preview metadata, truthful Schema.org
-`WebApplication` and FAQ data, `robots.txt`, `sitemap.xml`, and a concise
+support pages, a canonical URL, social-preview metadata, `robots.txt`,
+`sitemap.xml`, and a concise
 `llms.txt`. These files describe only
 the supported product and link back to this source, licence, contribution
 guidance, and the two owner articles. They do not promise search rankings, AI
@@ -140,7 +140,7 @@ source; it does not authorize redistributing the resulting image.
 
 Additional current limits:
 
-- source version `1.1.0-rc.6` is prepared for the release at
+- source version `1.1.0-rc.7` is prepared for the release at
   `https://lab.teachthecompany.com/`; hosted compiler/toolchain images and
   private deployment configuration remain outside this source repository;
 - public execution supports the tested ATmega328P subset, one bounded RP2040

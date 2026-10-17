@@ -3,6 +3,7 @@
 
 import {
   RP2040_PICO_PROFILE,
+  Rp2040PicoCircuitEditor,
   createRp2040PicoCircuitDraft,
   normalizeRp2040PicoCircuitDraft,
   observeRp2040PicoCircuit,
@@ -87,6 +88,7 @@ export class Rp2040PublicWorkbench {
     this.elements = elements;
     this.onState = onState;
     this.project = defaultProject();
+    this.circuitEditor = new Rp2040PicoCircuitEditor(this.project.circuit);
     this.revision = 1;
     this.phase = 'editing';
     this.message = 'Edit the two bounded values, then build fresh firmware.';
@@ -137,8 +139,10 @@ export class Rp2040PublicWorkbench {
       active: this.active,
       source: this.project.source,
       circuit: clone(this.project.circuit),
+      circuitEditor: this.circuitEditor.snapshot(),
       circuitValid: circuit.ok,
       circuitCode: circuit.code,
+      circuitObservation: observeRp2040PicoCircuit(this.project.circuit, this.lastRuntime),
       artifact: this.artifact ? clone(this.artifact) : null,
       runnable: Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok),
       runtime: this.lastRuntime ? clone(this.lastRuntime) : null,
@@ -371,20 +375,46 @@ export class Rp2040PublicWorkbench {
     return { ok: true, code: 'OK' };
   }
 
+  selectCircuit(selection) {
+    const result = this.circuitEditor.select(selection);
+    this.render();
+    return result;
+  }
+
+  editCircuit(operation, ...args) {
+    if (!['deleteSelected', 'undo', 'redo', 'restoreExample', 'moveComponent', 'rotateComponent'].includes(operation)) {
+      return { ok: false, code: 'RP2040_CIRCUIT_OPERATION_INVALID' };
+    }
+    const result = this.circuitEditor[operation](...args);
+    if (!result.ok) { this.render(); return result; }
+    this.project.circuit = clone(result.draft);
+    const messages = {
+      deleteSelected: `Circuit changed (${result.code}). Executable authority retired; build fresh firmware.`,
+      undo: 'Circuit Undo applied. Executable authority retired; build fresh firmware.',
+      redo: 'Circuit Redo applied. Executable authority retired; build fresh firmware.',
+      restoreExample: 'Validated GP0 → 220 Ω → LED → GND example restored. Build fresh firmware.',
+      moveComponent: 'Component moved; named pin attachments and orthogonal wires were recomputed. Build fresh firmware.',
+      rotateComponent: 'Component rotated; named pin attachments and orthogonal wires were recomputed. Build fresh firmware.',
+    };
+    this.invalidate(messages[operation]);
+    return result;
+  }
+
   disconnectLed() {
-    const next = clone(this.project.circuit);
-    next.nets = next.nets.filter((net) => net.id !== 'net-series');
-    delete next.layout.wireStyles['net-series'];
-    this.project.circuit = normalizeRp2040PicoCircuitDraft(next);
-    this.invalidate('External LED disconnected. Runtime authority retired; validation now fails closed.');
+    this.circuitEditor.select({ kind: 'net', id: 'net-series' });
+    const result = this.circuitEditor.deleteSelected();
+    if (result.ok) {
+      this.project.circuit = clone(result.draft);
+      this.invalidate('External LED disconnected. Runtime authority retired; validation now fails closed.');
+    }
   }
 
   reconnectLed() {
-    this.project.circuit = createRp2040PicoCircuitDraft();
-    this.invalidate('Validated GP0 → 220 Ω → LED → GND path restored. Build fresh firmware.');
+    this.editCircuit('restoreExample');
   }
 
   save() {
+    this.project.circuit = clone(this.circuitEditor.snapshot().draft);
     const text = `${JSON.stringify(normalizeProject(this.project), null, 2)}\n`;
     const filename = `${this.project.name.replace(/[^A-Za-z0-9_.-]+/gu, '-').slice(0, 64) || 'pico-project'}.intent-mcu.json`;
     download(filename, text);
@@ -397,6 +427,7 @@ export class Rp2040PublicWorkbench {
       if (!file || file.size > 160 * 1024) throw new Error('RP2040_PROJECT_SIZE_LIMIT');
       const value = parseStrictJson(await file.text(), 160 * 1024);
       this.project = normalizeProject(value);
+      this.circuitEditor = new Rp2040PicoCircuitEditor(this.project.circuit);
       this.elements.source.value = this.project.source;
       this.elements.name.value = this.project.name;
       this.invalidate('Local project revalidated. Executable state was excluded; build fresh firmware.');
@@ -431,8 +462,8 @@ export class Rp2040PublicWorkbench {
     this.elements.circuitState.textContent = circuit.ok
       ? 'Validated: GP0 pin 1 → 220 Ω → LED anode/cathode → GND pin 3'
       : `Disconnected / rejected: ${circuit.code}`;
-    this.elements.externalLed.classList.toggle('on', Boolean(runtimeCircuit.on));
-    this.elements.externalLed.setAttribute('aria-label', `External LED is ${runtimeCircuit.on ? 'on' : 'off'}`);
+    this.elements.externalLed?.classList.toggle('on', Boolean(runtimeCircuit.on));
+    this.elements.externalLed?.setAttribute('aria-label', `External LED is ${runtimeCircuit.on ? 'on' : 'off'}`);
     const serial = this.lastRuntime?.instruments?.serial;
     this.elements.serial.textContent = serial?.text || 'No Pico UART output yet.';
     this.publish();

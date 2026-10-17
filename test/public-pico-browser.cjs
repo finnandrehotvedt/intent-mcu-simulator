@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
+const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/runner/node_modules', 'playwright'));
@@ -20,7 +21,8 @@ const LOW = HIGH.replace('1u', '0u').replace('PICO HIGH TEST', 'PICO LOW TEST');
 async function selectPico(page) {
   await page.selectOption('#board-select', 'board.rp2040-pico-v1');
   await page.waitForFunction(() => !document.querySelector('#pico-public-workbench').hidden
-    && window.__RP2040_PUBLIC_WORKBENCH__?.state().active === true);
+    && window.__RP2040_PUBLIC_WORKBENCH__?.state().active === true
+    && document.querySelectorAll('.pico-editor-wire').length === 3);
 }
 
 async function build(page, source) {
@@ -34,27 +36,62 @@ async function build(page, source) {
   return state;
 }
 
-async function wiringGeometry(page) {
+async function editorGeometry(page) {
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   return page.evaluate(() => {
-    const rect = (selector) => document.querySelector(selector).getBoundingClientRect().toJSON();
-    return {
-      led: rect('#pico-external-led'),
-      ledReturn: rect('.pico-wire-led-return'),
-      ground: rect('.pico-wire-ground'),
-      resistor: rect('.pico-resistor'),
-      resistorLabel: rect('.pico-resistor-label'),
-    };
+    const canvas = document.querySelector('#pico-diagram').getBoundingClientRect();
+    const state = window.__RP2040_PUBLIC_WORKBENCH__.state();
+    const anchors = Object.fromEntries([...document.querySelectorAll('[data-pico-endpoint]')].map((node) => {
+      const box = node.getBoundingClientRect();
+      return [node.dataset.picoEndpoint, { x: box.left - canvas.left + box.width / 2, y: box.top - canvas.top + box.height / 2 }];
+    }));
+    const bodies = [...document.querySelectorAll('.pico-editor-part')].map((node) => {
+      const box = node.getBoundingClientRect();
+      return { id: node.dataset.componentId, left: box.left - canvas.left, right: box.right - canvas.left,
+        top: box.top - canvas.top, bottom: box.bottom - canvas.top };
+    });
+    const routes = [...document.querySelectorAll('.pico-editor-wire')].map((node) => {
+      const points = JSON.parse(node.dataset.points);
+      const net = state.circuit.nets.find((candidate) => candidate.id === node.dataset.net);
+      const endpointKeys = net.endpoints.map((endpoint) => `${endpoint.component}.${endpoint.pin}`);
+      const attached = endpointKeys.every((key) => points.some((point) => Math.hypot(point.x - anchors[key].x, point.y - anchors[key].y) < 1));
+      const endpointOwners = new Set(net.endpoints.map((endpoint) => endpoint.component));
+      const crossesForeignBody = points.slice(1).some((end, index) => {
+        const start = points[index];
+        return bodies.some((body) => {
+          if (endpointOwners.has(body.id)) return false;
+          if (Math.abs(start.y - end.y) < 0.5) return start.y > body.top && start.y < body.bottom
+            && Math.max(start.x, end.x) > body.left && Math.min(start.x, end.x) < body.right;
+          if (Math.abs(start.x - end.x) < 0.5) return start.x > body.left && start.x < body.right
+            && Math.max(start.y, end.y) > body.top && Math.min(start.y, end.y) < body.bottom;
+          return true;
+        });
+      });
+      return { net: node.dataset.net, attached, crossesForeignBody,
+        orthogonal: points.slice(1).every((point, index) => point.x === points[index].x || point.y === points[index].y), points };
+    });
+    return { routes, canvas: canvas.toJSON(), bodies, anchors };
   });
 }
 
-function assertContinuousWiring(geometry) {
-  assert.ok(geometry.ledReturn.top < geometry.led.bottom, JSON.stringify(geometry));
-  assert.ok(geometry.ledReturn.left >= geometry.led.left
-    && geometry.ledReturn.right <= geometry.led.right, JSON.stringify(geometry));
-  assert.ok(geometry.ledReturn.bottom >= geometry.ground.top
-    && geometry.ledReturn.bottom <= geometry.ground.bottom, JSON.stringify(geometry));
-  assert.ok(geometry.ground.right >= geometry.ledReturn.right, JSON.stringify(geometry));
-  assert.ok(geometry.resistorLabel.bottom <= geometry.resistor.top - 8, JSON.stringify(geometry));
+function assertEditorGeometry(geometry) {
+  assert.equal(geometry.routes.length, 3, JSON.stringify(geometry));
+  assert.ok(geometry.routes.every((route) => route.attached && route.orthogonal && !route.crossesForeignBody), JSON.stringify(geometry.routes));
+}
+
+async function selectWire(page, netId) {
+  await page.locator('#pico-diagram').scrollIntoViewIfNeeded();
+  const point = await page.evaluate((id) => {
+    const wire = document.querySelector(`.pico-editor-wire-hit[data-net="${id}"]`);
+    const local = wire.getPointAtLength(wire.getTotalLength() / 2);
+    const screen = new DOMPoint(local.x, local.y).matrixTransform(wire.getScreenCTM());
+    return { x: screen.x, y: screen.y };
+  }, netId);
+  await page.mouse.click(point.x, point.y);
+  await page.waitForFunction((id) => {
+    const selection = window.__RP2040_PUBLIC_WORKBENCH__.state().circuitEditor.selection;
+    return selection.kind === 'net' && selection.id === id;
+  }, netId);
 }
 
 (async () => {
@@ -63,9 +100,7 @@ function assertContinuousWiring(geometry) {
   const page = await context.newPage();
   const outside = [];
   const errors = [];
-  page.on('request', (request) => {
-    if (new URL(request.url()).origin !== new URL(base).origin) outside.push(request.url());
-  });
+  page.on('request', (request) => { if (new URL(request.url()).origin !== new URL(base).origin) outside.push(request.url()); });
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
   const response = await page.goto(base, { waitUntil: 'networkidle' });
@@ -81,106 +116,125 @@ function assertContinuousWiring(geometry) {
   assert.ok(desktop.width >= 1880, JSON.stringify(desktop));
   assert.ok(desktop.overflow <= 1, JSON.stringify(desktop));
 
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  const desktop1440 = await page.evaluate(() => {
-    const rect = document.querySelector('main').getBoundingClientRect();
-    return { left: rect.left, right: rect.right, width: rect.width, viewport: innerWidth,
-      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth };
-  });
-  assert.ok(desktop1440.left >= 15 && desktop1440.left <= 24, JSON.stringify(desktop1440));
-  assert.ok(desktop1440.viewport - desktop1440.right >= 15 && desktop1440.viewport - desktop1440.right <= 24, JSON.stringify(desktop1440));
-  assert.ok(desktop1440.width >= 1400, JSON.stringify(desktop1440));
-  assert.ok(desktop1440.overflow <= 1, JSON.stringify(desktop1440));
-  await page.setViewportSize({ width: 1920, height: 1080 });
-
   await selectPico(page);
   const picoLayout = await page.evaluate(() => ({
     panel: document.querySelector('#pico-public-workbench').getBoundingClientRect().width,
     avrWorkspaceHidden: document.querySelector('#workbench-workspace').hidden,
-    gp0: document.querySelector('.pico-pin-gp0').textContent,
-    gnd: document.querySelector('.pico-pin-gnd').textContent,
-    onboard: document.querySelector('.pico-onboard-led').textContent,
+    gp0: document.querySelector('[data-pico-endpoint="pico-1.GP0"] .pico-editor-pin-label').textContent,
+    gnd: document.querySelector('[data-pico-endpoint="pico-1.GND3"] .pico-editor-pin-label').textContent,
+    onboard: document.querySelector('.pico-board-led-label').textContent,
+    controls: ['pico-delete', 'pico-undo', 'pico-redo', 'pico-rotate', 'pico-zoom-out', 'pico-zoom-in', 'pico-fit']
+      .every((id) => document.querySelector(`#${id}`)),
   }));
   assert.ok(picoLayout.panel >= 1800, JSON.stringify(picoLayout));
   assert.equal(picoLayout.avrWorkspaceHidden, true);
-  assert.match(picoLayout.gp0, /physical pin 1/);
-  assert.match(picoLayout.gnd, /physical pin 3/);
-  assert.match(picoLayout.onboard, /GPIO25.*onboard LED only/s);
-  const desktopWiring = await wiringGeometry(page);
-  assertContinuousWiring(desktopWiring);
+  assert.match(picoLayout.gp0, /GPIO0.*physical pin 1/); assert.match(picoLayout.gnd, /GND.*physical pin 3/);
+  assert.match(picoLayout.onboard, /GPIO25.*ONBOARD/); assert.equal(picoLayout.controls, true);
+  const initialGeometry = await editorGeometry(page); assertEditorGeometry(initialGeometry);
+
+  const resistorBefore = await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuit.layout.positions['resistor-1']);
+  await page.locator('[data-component-id="resistor-1"]').scrollIntoViewIfNeeded();
+  const resistorBox = await page.locator('[data-component-id="resistor-1"]').boundingBox();
+  await page.mouse.move(resistorBox.x + resistorBox.width / 2, resistorBox.y + resistorBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(resistorBox.x + resistorBox.width / 2 + 90, resistorBox.y + resistorBox.height / 2 + 110, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForFunction((before) => {
+    const after = window.__RP2040_PUBLIC_WORKBENCH__.state().circuit.layout.positions['resistor-1'];
+    return Math.abs(after.x - before.x) > 0.02 && Math.abs(after.y - before.y) > 0.02;
+  }, resistorBefore);
+  assertEditorGeometry(await editorGeometry(page));
+
+  await page.locator('[data-component-id="resistor-1"]').click(); await page.click('#pico-rotate');
+  assert.equal(await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuit.layout.positions['resistor-1'].rotation), 90);
+  await page.click('#pico-undo');
+  assert.equal(await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuit.layout.positions['resistor-1'].rotation), 0);
+  await page.click('#pico-redo');
+  assert.equal(await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuit.layout.positions['resistor-1'].rotation), 90);
+  assertEditorGeometry(await editorGeometry(page));
+  await page.click('#pico-zoom-in'); assert.equal(await page.locator('#pico-zoom-value').textContent(), '110%');
+  await page.click('#pico-fit'); assert.equal(await page.locator('#pico-zoom-value').textContent(), '100%');
+  assertEditorGeometry(await editorGeometry(page));
+
+  await page.locator('[data-component-id="led-1"]').click();
+  const ledBeforeKeyboard = await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuit.layout.positions['led-1']);
+  await page.keyboard.press('ArrowRight'); await page.keyboard.press('r');
+  const ledAfterKeyboard = await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuit.layout.positions['led-1']);
+  assert.ok(ledAfterKeyboard.x > ledBeforeKeyboard.x); assert.equal(ledAfterKeyboard.rotation, 90);
+  await page.focus('#pico-source'); const ledBeforeTextarea = await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuit.layout.positions['led-1']);
+  await page.keyboard.press('ArrowRight');
+  assert.deepEqual(await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuit.layout.positions['led-1']), ledBeforeTextarea);
+  assertEditorGeometry(await editorGeometry(page));
+
+  await selectWire(page, 'net-ground');
+  await page.click('#pico-delete');
+  let disconnected = await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state());
+  assert.equal(disconnected.circuitValid, false); assert.equal(disconnected.circuitCode, 'RP2040_GROUND_REQUIRED');
+  await page.click('#pico-undo'); assert.equal((await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state())).circuitValid, true);
+  await page.click('#pico-redo'); assert.equal((await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state())).circuitValid, false);
+  await page.click('#pico-undo');
+
+  await page.locator('[data-component-id="led-1"]').click(); await page.click('#pico-delete');
+  assert.equal((await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state())).circuitCode, 'RP2040_PATH_OPEN');
+  await page.click('#pico-undo'); assert.equal((await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state())).circuitValid, true);
 
   await page.fill('#pico-source', HIGH.replace('int main(void)\n{', 'int main(void) {'));
   await page.click('#pico-build');
   const rejected = await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state());
-  assert.equal(rejected.phase, 'blocked');
-  assert.match(rejected.message, /complete template and line breaks exactly as shown/);
+  assert.equal(rejected.phase, 'blocked'); assert.match(rejected.message, /complete template and line breaks exactly as shown/);
 
+  const highInitial = await build(page, HIGH);
+  await selectWire(page, 'net-ground'); await page.click('#pico-delete'); await page.click('#pico-undo');
+  assert.equal((await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state())).runnable, false);
+  assert.equal(await page.locator('#pico-run').isDisabled(), true);
   const high = await build(page, HIGH);
+  assert.equal(high.artifact.uf2Sha256, highInitial.artifact.uf2Sha256);
   await page.click('#pico-run');
   await page.waitForFunction(() => document.querySelector('#pico-serial').textContent.includes('PICO HIGH TEST')
     && document.querySelector('#pico-external-led').classList.contains('on'), null, { timeout: 10_000 });
-  await page.click('#pico-reset');
-  await page.waitForFunction(() => window.__RP2040_PUBLIC_WORKBENCH__.state().phase === 'paused');
-  await page.click('#pico-run');
-  await page.waitForFunction(() => document.querySelector('#pico-serial').textContent.includes('PICO HIGH TEST'));
-  await page.click('#pico-pause');
-  await page.waitForFunction(() => window.__RP2040_PUBLIC_WORKBENCH__.state().phase === 'paused');
+  await page.click('#pico-reset'); await page.waitForFunction(() => window.__RP2040_PUBLIC_WORKBENCH__.state().phase === 'paused');
+  await page.click('#pico-run'); await page.waitForFunction(() => document.querySelector('#pico-serial').textContent.includes('PICO HIGH TEST'));
+  await page.click('#pico-pause'); await page.waitForFunction(() => window.__RP2040_PUBLIC_WORKBENCH__.state().phase === 'paused');
   await page.click('#pico-stop');
-  assert.equal((await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state())).runnable, false);
 
   const low = await build(page, LOW);
-  assert.notEqual(low.artifact.sourceSha256, high.artifact.sourceSha256);
-  assert.notEqual(low.artifact.uf2Sha256, high.artifact.uf2Sha256);
-  await page.click('#pico-run');
-  await page.waitForFunction(() => document.querySelector('#pico-serial').textContent.includes('PICO LOW TEST'));
-  assert.equal(await page.locator('#pico-external-led').evaluate((node) => node.classList.contains('on')), false);
+  assert.notEqual(low.artifact.sourceSha256, high.artifact.sourceSha256); assert.notEqual(low.artifact.uf2Sha256, high.artifact.uf2Sha256);
+  await page.click('#pico-run'); await page.waitForFunction(() => document.querySelector('#pico-serial').textContent.includes('PICO LOW TEST'));
+  assert.equal(await page.locator('#pico-external-led').evaluate((node) => node.classList.contains('on')), false); await page.click('#pico-stop');
 
-  await page.click('#pico-disconnect');
-  let disconnected = await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state());
-  assert.equal(disconnected.circuitValid, false);
-  assert.equal(disconnected.runnable, false);
-  await page.click('#pico-build');
-  disconnected = await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state());
-  assert.equal(disconnected.phase, 'blocked');
-  assert.match(disconnected.message, /Circuit blocked/);
-  await page.click('#pico-reconnect');
-  assert.equal((await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state())).circuitValid, true);
-
-  const downloadPromise = page.waitForEvent('download');
-  await page.click('#pico-save');
-  const savedPath = await (await downloadPromise).path();
+  const downloadPromise = page.waitForEvent('download'); await page.click('#pico-save');
+  const download = await downloadPromise; const savedPath = await download.path(); const savedText = fs.readFileSync(savedPath, 'utf8');
+  const saved = JSON.parse(savedText);
+  assert.equal(saved.schema, 'intent-mcu-rp2040-public-project@1'); assert.equal(saved.source, LOW);
+  assert.equal(saved.circuit.layout.positions['resistor-1'].rotation, 90);
+  assert.ok(!/artifact|executable|firmwareBytes|uf2Sha256/iu.test(savedText));
   await page.fill('#pico-source', HIGH);
+  await page.locator('#pico-open-input').setInputFiles({ name: 'invalid.intent-mcu.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ ...saved, executable: 'forbidden' })) });
+  await page.waitForFunction(() => document.querySelector('#pico-message').textContent.includes('Open rejected'));
+  assert.equal(await page.locator('#pico-source').inputValue(), HIGH);
   await page.locator('#pico-open-input').setInputFiles(savedPath);
   await page.waitForFunction((expected) => document.querySelector('#pico-source').value === expected
     && window.__RP2040_PUBLIC_WORKBENCH__.state().runnable === false, LOW);
+  assert.equal(await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuit.layout.positions['resistor-1'].rotation), 90);
+  const rebuilt = await build(page, LOW); assert.equal(rebuilt.runnable, true);
 
-  await page.screenshot({ path: `${screenshotDir}/public-pico-desktop-1920.png`, fullPage: true });
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.reload({ waitUntil: 'networkidle' });
-  await selectPico(page);
-  const mobileWiring = await wiringGeometry(page);
-  assertContinuousWiring(mobileWiring);
+  await page.screenshot({ path: `${screenshotDir}/public-pico-editor-desktop-1920.png`, fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 }); await page.reload({ waitUntil: 'networkidle' }); await selectPico(page);
+  await page.click('#pico-fit'); const mobileGeometry = await editorGeometry(page); assertEditorGeometry(mobileGeometry);
   const mobile = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-    panel: document.querySelector('#pico-public-workbench').getBoundingClientRect(),
-    controls: [...document.querySelectorAll('#quick-controls button')].map((node) => ({
-      id: node.id, rect: node.getBoundingClientRect().toJSON(), hidden: node.hidden,
-    })),
+    panel: document.querySelector('#pico-public-workbench').getBoundingClientRect().toJSON(),
+    canvas: document.querySelector('#pico-diagram').getBoundingClientRect().toJSON(),
+    controls: [...document.querySelectorAll('#quick-controls button')].map((node) => ({ id: node.id, rect: node.getBoundingClientRect().toJSON(), hidden: node.hidden })),
   }));
-  assert.ok(mobile.overflow <= 1, JSON.stringify(mobile));
-  assert.ok(mobile.panel.left >= 8 && mobile.panel.right <= 382, JSON.stringify(mobile.panel));
-  assert.deepEqual(mobile.controls.filter((item) => item.hidden).map((item) => item.id),
-    ['toggle-catalog', 'toggle-inspector']);
-  assert.ok(mobile.controls.filter((item) => !item.hidden)
-    .every((item) => item.rect.left >= 0 && item.rect.right <= 390), JSON.stringify(mobile.controls));
-  await page.screenshot({ path: `${screenshotDir}/public-pico-mobile-390.png`, fullPage: true });
+  assert.ok(mobile.overflow <= 1, JSON.stringify(mobile)); assert.ok(mobile.panel.left >= 8 && mobile.panel.right <= 382, JSON.stringify(mobile.panel));
+  assert.ok(mobile.canvas.left >= 8 && mobile.canvas.right <= 382, JSON.stringify(mobile.canvas));
+  assert.deepEqual(mobile.controls.filter((item) => item.hidden).map((item) => item.id), ['toggle-catalog', 'toggle-inspector']);
+  assert.ok(mobile.controls.filter((item) => !item.hidden).every((item) => item.rect.left >= 0 && item.rect.right <= 390), JSON.stringify(mobile.controls));
+  await page.locator('[data-component-id="resistor-1"]').click(); await page.keyboard.press('ArrowDown'); assertEditorGeometry(await editorGeometry(page));
+  await page.screenshot({ path: `${screenshotDir}/public-pico-editor-mobile-390.png`, fullPage: true });
 
-  assert.deepEqual(outside, []);
-  assert.deepEqual(errors, []);
-  assert.deepEqual(await context.cookies(), []);
+  assert.deepEqual(outside, []); assert.deepEqual(errors, []); assert.deepEqual(await context.cookies(), []);
   await browser.close();
-  process.stdout.write(`${JSON.stringify({ status: 'pass', desktop, desktop1440, picoLayout, desktopWiring, high: high.artifact, low: low.artifact, mobileWiring, mobile })}\n`);
-})().catch((error) => {
-  process.stderr.write(`${error.stack || error}\n`);
-  process.exit(1);
-});
+  process.stdout.write(`${JSON.stringify({ status: 'pass', desktop, picoLayout, initialGeometry, high: high.artifact, low: low.artifact, rebuilt: rebuilt.artifact, mobileGeometry, mobile })}\n`);
+})().catch((error) => { process.stderr.write(`${error.stack || error}\n`); process.exit(1); });

@@ -56,6 +56,30 @@ function board(svg, definition) {
   drawTerminals(svg, definition, 1.9);
 }
 
+function rp2040PicoBoard(svg, definition) {
+  append(svg,
+    element('rect', { x: 13, y: 5, width: 106, height: 290, rx: 24, class: 'pico-board-pcb' }),
+    element('rect', { x: 46, y: 4, width: 40, height: 30, rx: 5, class: 'pico-board-usb' }),
+    element('rect', { x: 37, y: 99, width: 58, height: 58, rx: 6, class: 'pico-board-chip' }),
+    element('rect', { x: 43, y: 196, width: 46, height: 24, rx: 4, class: 'pico-board-flash' }),
+    element('circle', { cx: 66, cy: 68, r: 5, class: 'pico-board-led' }),
+    element('text', { x: 66, y: 84, class: 'pico-board-led-label', 'text-anchor': 'middle' }, 'GPIO25 · ONBOARD'),
+    element('text', { x: 66, y: 247, class: 'pico-board-title', 'text-anchor': 'middle' }, 'RP2040'),
+    element('text', { x: 66, y: 263, class: 'pico-board-subtitle', 'text-anchor': 'middle' }, '3.3 V · PUBLIC SUBSET'),
+    element('text', { x: 21, y: 25, class: 'pico-board-pin-label' }, '1 · GP0'),
+    element('text', { x: 21, y: 43, class: 'pico-board-pin-label' }, '3 · GND'),
+  );
+  for (let row = 0; row < 20; row += 1) {
+    const y = 27 + row * 13;
+    svg.append(element('circle', { cx: 8, cy: y, r: 3.3, class: row < 2 ? 'pico-board-pin proven' : 'pico-board-pin' }));
+    svg.append(element('circle', { cx: 124, cy: y, r: 3.3, class: 'pico-board-pin' }));
+  }
+  for (let index = 0; index < 8; index += 1) {
+    svg.append(element('path', { d: `M 42 ${171 + index * 7} H ${90 - index * 2}`, class: 'board-trace' }));
+  }
+  drawTerminals(svg, definition, 3.1);
+}
+
 function resistor(svg, definition, component) {
   append(svg,
     element('line', { x1: 4, y1: 24, x2: 43, y2: 24, class: 'metal-lead' }),
@@ -121,6 +145,7 @@ function serialInstrument(svg) {
 
 const renderers = Object.freeze({
   'board-atmega328p': board,
+  'board-rp2040-pico': rp2040PicoBoard,
   'resistor-axial': resistor,
   'led-through-hole': led,
   'button-tactile': button,

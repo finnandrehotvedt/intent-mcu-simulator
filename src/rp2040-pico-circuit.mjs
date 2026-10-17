@@ -272,12 +272,14 @@ export class Rp2040PicoCircuitEditor {
     this.draft = normalizeRp2040PicoCircuitDraft(draft);
     this.selection = { kind: 'none' };
     this.history = [];
+    this.future = [];
     this.revision = 0;
   }
 
   snapshot() {
     return { draft: clone(this.draft), selection: clone(this.selection), revision: this.revision,
-      canUndo: this.history.length > 0, validation: validateRp2040PicoCircuit(this.draft) };
+      canUndo: this.history.length > 0, canRedo: this.future.length > 0,
+      validation: validateRp2040PicoCircuit(this.draft) };
   }
 
   select(selection) {
@@ -289,11 +291,12 @@ export class Rp2040PicoCircuitEditor {
     return this.snapshot();
   }
 
-  #commit(next) {
+  #commit(next, selection = { kind: 'none' }) {
     this.history.push(this.draft);
     if (this.history.length > HISTORY_LIMIT) this.history.shift();
+    this.future = [];
     this.draft = normalizeRp2040PicoCircuitDraft(next);
-    this.selection = { kind: 'none' };
+    this.selection = clone(selection);
     this.revision += 1;
     return this.snapshot();
   }
@@ -318,10 +321,41 @@ export class Rp2040PicoCircuitEditor {
 
   undo() {
     if (!this.history.length) return { ok: false, code: 'RP2040_UNDO_EMPTY', ...this.snapshot() };
+    this.future.push(this.draft);
+    if (this.future.length > HISTORY_LIMIT) this.future.shift();
     this.draft = this.history.pop();
     this.selection = { kind: 'none' };
     this.revision += 1;
     return { ok: true, code: 'RP2040_UNDONE', ...this.snapshot() };
+  }
+
+  redo() {
+    if (!this.future.length) return { ok: false, code: 'RP2040_REDO_EMPTY', ...this.snapshot() };
+    this.history.push(this.draft);
+    if (this.history.length > HISTORY_LIMIT) this.history.shift();
+    this.draft = this.future.pop();
+    this.selection = { kind: 'none' };
+    this.revision += 1;
+    return { ok: true, code: 'RP2040_REDONE', ...this.snapshot() };
+  }
+
+  moveComponent(id, x, y) {
+    if (!this.draft.components.some((item) => item.id === id) || !Number.isFinite(x) || !Number.isFinite(y)) {
+      return { ok: false, code: 'RP2040_COMPONENT_MOVE_INVALID', ...this.snapshot() };
+    }
+    const next = clone(this.draft);
+    next.layout.positions[id].x = Math.max(0.08, Math.min(0.92, x));
+    next.layout.positions[id].y = Math.max(0.1, Math.min(0.9, y));
+    return { ok: true, code: 'RP2040_COMPONENT_MOVED', ...this.#commit(next, { kind: 'component', id }) };
+  }
+
+  rotateComponent(id) {
+    if (!this.draft.components.some((item) => item.id === id)) {
+      return { ok: false, code: 'RP2040_COMPONENT_ROTATE_INVALID', ...this.snapshot() };
+    }
+    const next = clone(this.draft);
+    next.layout.positions[id].rotation = (next.layout.positions[id].rotation + 90) % 360;
+    return { ok: true, code: 'RP2040_COMPONENT_ROTATED', ...this.#commit(next, { kind: 'component', id }) };
   }
 
   restoreExample() { return { ok: true, code: 'RP2040_EXAMPLE_RESTORED', ...this.#commit(createRp2040PicoCircuitDraft()) }; }

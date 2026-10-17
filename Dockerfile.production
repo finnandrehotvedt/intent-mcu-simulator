@@ -7,7 +7,7 @@ FROM local/intent-mcu-source-check:1.1.0-rc.6
 ARG RELEASE_COMMIT
 
 LABEL org.opencontainers.image.title="Intent MCU Simulator production" \
-      org.opencontainers.image.version="1.1.0-rc.6" \
+      org.opencontainers.image.version="1.1.0-rc.7" \
       org.opencontainers.image.revision="${RELEASE_COMMIT}" \
       org.opencontainers.image.source="https://github.com/finnandrehotvedt/intent-mcu-simulator" \
       org.opencontainers.image.licenses="Apache-2.0 AND MIT"

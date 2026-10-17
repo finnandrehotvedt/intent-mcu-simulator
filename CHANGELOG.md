@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.7 — 2026-10-17
+
+- Replaced the fixed Pico illustration with an original editable circuit
+  canvas using named GP0 physical pin 1 and GND physical pin 3 anchors.
+- Added part and cable selection, drag and keyboard movement, 90-degree
+  rotation, Delete, bounded Undo/Redo, zoom and Fit with responsive rerouting.
+- Added deterministic orthogonal wire attachment and foreign-component body
+  avoidance after movement, rotation, zoom and viewport resize.
+- Kept circuit and source Save/Open data-only, made topology edits retire stale
+  executable authority, and required a fresh isolated build before Run.
+- Preserved the accepted AVR, Pico compiler/runtime, ESP32-C3 and STM32F429ZI
+  paths while correcting stale STM32 roadmap and Schema.org README wording.
+
 ## 1.1.0-rc.6 — 2026-10-16
 
 - Added one bounded public STM32F429ZI C11 profile with fixed Arm GNU 14.3.1

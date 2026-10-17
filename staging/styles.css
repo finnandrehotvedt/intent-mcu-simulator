@@ -108,10 +108,42 @@ h2 { font-size: 1.22rem; margin: 0; }
 .pico-diagram[data-connected="false"] .pico-external-led { box-shadow: none; filter: grayscale(.7); }
 .pico-serial-card { border: 1px solid #28465b; border-radius: 12px; background: #030b12; padding: .8rem; }
 .pico-serial-card pre { min-height: 72px; margin: .55rem 0 0; color: #a8ff3f; white-space: pre-wrap; }
+.pico-editor-heading { display: flex; justify-content: space-between; gap: .8rem; align-items: end; }
+.pico-editor-heading div { display: grid; gap: .2rem; }
+.pico-editor-heading small, #pico-circuit-selection, .pico-editor-help { color: var(--muted); font-size: .72rem; line-height: 1.45; }
+#pico-circuit-selection { color: var(--cyan); font: 700 .68rem var(--mono); text-align: right; }
+.pico-circuit-actions { align-items: center; }
+.pico-circuit-actions button { min-height: 36px; padding-inline: .65rem; font-size: .72rem; }
+#pico-zoom-value { min-width: 48px; color: var(--cyan); font: 750 .7rem var(--mono); text-align: center; }
+.pico-editor-canvas { position: relative; width: 100%; min-height: 500px; overflow: hidden; border: 1px solid #31586a; border-radius: 12px; background-color: #f3efe4; background-image: linear-gradient(#71818e18 1px,transparent 1px),linear-gradient(90deg,#71818e18 1px,transparent 1px); background-size: 20px 20px; touch-action: none; }
+.pico-editor-wires, .pico-editor-components { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pico-editor-wires { z-index: 1; overflow: visible; pointer-events: auto; }
+.pico-editor-components { z-index: 2; pointer-events: none; }
+.pico-editor-part { pointer-events: auto; cursor: grab; filter: drop-shadow(0 8px 8px #24354266); touch-action: none; }
+.pico-editor-part.dragging { cursor: grabbing; }
+.pico-editor-part.selected { filter: drop-shadow(0 0 6px #4aa817) drop-shadow(0 8px 8px #24354255); }
+.pico-editor-part .pin-anchor::after { display: none; }
+.pico-editor-part-label { position: absolute; left: 50%; top: calc(100% + 7px); transform: translateX(-50%) rotate(calc(-1 * var(--rotation))); width: max-content; max-width: 190px; padding: 3px 6px; border-radius: 4px; background: #06131de8; color: #f6f1e7; font: 700 .62rem/1.25 ui-monospace,monospace; text-align: center; pointer-events: none; }
+.pico-editor-pin-label { position: absolute; left: 50%; bottom: calc(100% + 5px); transform: translateX(-50%) rotate(calc(-1 * var(--rotation))); width: max-content; max-width: 180px; padding: 2px 4px; border: 1px solid #35667d; border-radius: 5px; background: #06111af2; color: #f6f1e7; font: 650 .57rem/1.25 ui-monospace,monospace; white-space: nowrap; pointer-events: none; opacity: .94; }
+.pico-editor-wire { fill: none; stroke: var(--wire-color,#39dff2); stroke-width: 4; vector-effect: non-scaling-stroke; opacity: .96; stroke-linejoin: round; stroke-linecap: round; pointer-events: none; filter: drop-shadow(0 2px 1px #0004); }
+.pico-editor-wire.selected { stroke-width: 6; filter: drop-shadow(0 0 5px #5aaf2b); }
+.pico-editor-wire-hit { fill: none; stroke: transparent; stroke-width: 22; vector-effect: non-scaling-stroke; pointer-events: stroke; cursor: pointer; }
+.pico-editor-wire-hit:focus-visible { outline: none; stroke: #a8ff3f55; }
+.pico-editor-help { margin: -.2rem 0 0; }
+.pico-board-pcb { fill: #226457; stroke: #0d342d; stroke-width: 2; }
+.pico-board-usb { fill: #bbc7cd; stroke: #63737c; stroke-width: 2; }
+.pico-board-chip { fill: #16232a; stroke: #6b7b83; stroke-width: 1.4; }
+.pico-board-flash { fill: #25373e; stroke: #82939a; stroke-width: 1; }
+.pico-board-led { fill: #607367; stroke: #b9d7c5; stroke-width: 1; }
+.pico-board-led-label, .pico-board-pin-label, .pico-board-subtitle { fill: #d4eee4; font: 600 5.8px ui-monospace,monospace; letter-spacing: .02em; }
+.pico-board-title { fill: #f6fff9; font: 800 16px ui-sans-serif,sans-serif; letter-spacing: .08em; }
+.pico-board-pin { fill: #b78f3d; stroke: #f5d880; stroke-width: .8; }
+.pico-board-pin.proven { fill: #ecba43; stroke: #fff1a6; stroke-width: 1.3; }
 
 @media (max-width: 860px) {
   .pico-public-grid { grid-template-columns: 1fr; }
   .pico-diagram { min-height: 310px; }
+  .pico-editor-canvas { min-height: 470px; }
 }
 
 @media (max-width: 430px) {
@@ -122,6 +154,9 @@ h2 { font-size: 1.22rem; margin: 0; }
   .pico-identities div { grid-template-columns: 1fr; gap: .15rem; }
   .pico-diagram { min-height: 280px; }
   .pico-board-original { left: 5%; width: 34%; }
+  .pico-editor-canvas { min-height: 430px; }
+  .pico-editor-heading { align-items: start; }
+  .pico-editor-pin-label { font-size: .52rem; }
 }
 
 .c3-public-workbench { display: grid; gap: 1rem; border-color: rgba(36,215,239,.58); background: linear-gradient(145deg,rgba(8,39,53,.95),rgba(6,18,29,.98) 68%); }

@@ -1,4 +1,4 @@
-# Migration to 1.1.0-rc.6
+# Migration to 1.1.0-rc.7
 
 There is no account, cloud project database, or server-side project migration.
 Existing browser recovery remains readable. Before changing versions, save an
@@ -18,7 +18,8 @@ the established v2 import path remains available.
 Selecting any non-AVR profile parks the current AVR data without migrating,
 reinterpreting or uploading it, and the inactive AVR canvas is hidden to avoid
 presenting two circuits as active. RP2040 Pico, ESP32-C3 and STM32F429ZI each have a
-separate local data-only project format; Open never restores executable bytes
+separate local data-only project format; Pico files now also retain the
+validated editable circuit layout. Open never restores executable bytes
 and a fresh Build is required before Run. The existing Return to AVR action
 restores the parked AVR editor. Existing source-only STM32 draft files may be
 opened, but no prior private or public executable authority is imported.

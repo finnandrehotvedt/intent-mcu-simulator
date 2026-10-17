@@ -1,4 +1,37 @@
-# Intent MCU Simulator 1.1.0-rc.6
+# Intent MCU Simulator 1.1.0-rc.7
+
+This incremental release makes the existing bounded public Pico circuit
+directly editable while preserving all accepted compiler and runtime paths.
+
+## Pico editable circuit
+
+- The original project-owned board, resistor and LED graphics expose named
+  GP0 physical pin 1 and GND physical pin 3 anchors. No third-party simulator
+  artwork, branding or copied layout is introduced.
+- Parts and cables are selectable. Parts support pointer drag, Arrow-key move
+  and 90-degree rotation; selected parts or cables can be deleted and restored
+  through bounded Undo/Redo.
+- Zoom and Fit preserve named-pin attachment. Orthogonal routes are recomputed
+  after movement, rotation and viewport resize and avoid unrelated component
+  bodies.
+- Save/Open remains a local data-only project flow. Executable bytes are never
+  saved; source, topology or Open changes retire stale authority and require a
+  fresh fixed-toolchain Build.
+- Actual compiled GPIO0 HIGH/LOW continues to drive the external LED through
+  the validated 3.3 V GP0 → 220 Ω → LED → GND path. Disconnected or invalid
+  circuits fail closed.
+
+## Preserved public paths
+
+- AVR, the Pico compiler/runtime, ESP32-C3 QEMU and STM32F429ZI Renode retain
+  their accepted bounded contracts and isolation controls.
+- Desktop and mobile acceptance retain zero horizontal overflow, keyboard
+  separation from source text editing, no cookies and no third-party browser
+  requests.
+
+---
+
+## 1.1.0-rc.6
 
 This incremental public release adds the previously private-verified bounded
 STM32F429ZI source-to-Renode path while preserving the accepted AVR, Pico and

@@ -125,29 +125,26 @@
             <div><dt>UF2 SHA-256</dt><dd><code id="pico-artifact-hash">not built</code></dd></div>
           </dl>
         </section>
-        <section class="pico-circuit-pane" aria-label="Validated Pico GPIO0 circuit">
-          <div id="pico-diagram" class="pico-diagram" data-connected="true">
-            <div class="pico-board-original" aria-label="Original project Pico profile board">
-              <strong>RP2040<br>PICO PROFILE</strong>
-              <span class="pico-usb">USB</span>
-              <span class="pico-chip">RP2040</span>
-              <span class="pico-pin pico-pin-gp0">GP0 <small>physical pin 1</small></span>
-              <span class="pico-pin pico-pin-gnd">GND <small>physical pin 3</small></span>
-              <span class="pico-onboard-led">GPIO25 · onboard LED only<br><small>not a header anchor</small></span>
-            </div>
-            <span class="pico-wire pico-wire-signal" aria-hidden="true"></span>
-            <span class="pico-resistor" aria-label="220 ohm series resistor"></span>
-            <span class="pico-resistor-label" aria-hidden="true">220 Ω</span>
-            <span class="pico-wire pico-wire-series" aria-hidden="true"></span>
-            <span id="pico-external-led" class="pico-external-led" aria-label="External LED is off"></span>
-            <span class="pico-wire pico-wire-led-return" aria-hidden="true"></span>
-            <span class="pico-wire pico-wire-ground" aria-hidden="true"></span>
+        <section class="pico-circuit-pane" aria-label="Editable validated Pico GPIO0 circuit">
+          <header class="pico-editor-heading"><div><strong>Editable circuit</strong><small>Named GP0 pin 1 and GND pin 3 anchors</small></div><span id="pico-circuit-selection">Nothing selected</span></header>
+          <div class="pico-circuit-actions" aria-label="Pico circuit editor controls">
+            <button id="pico-delete" type="button" disabled>Delete</button>
+            <button id="pico-undo" type="button" disabled>Undo</button>
+            <button id="pico-redo" type="button" disabled>Redo</button>
+            <button id="pico-rotate" type="button" disabled>Rotate 90°</button>
+            <button id="pico-zoom-out" type="button" aria-label="Zoom out">−</button>
+            <output id="pico-zoom-value" aria-live="polite">100%</output>
+            <button id="pico-zoom-in" type="button" aria-label="Zoom in">+</button>
+            <button id="pico-fit" type="button">Fit</button>
+            <button id="pico-disconnect" type="button">Disconnect LED wire</button>
+            <button id="pico-reconnect" type="button" disabled>Restore example</button>
+          </div>
+          <div id="pico-diagram" class="pico-editor-canvas" data-connected="true" tabindex="0" aria-label="Editable Pico circuit. Select a part or cable. Arrow keys move selected parts; R rotates; Delete removes; Control Z and Control Shift Z undo and redo.">
+            <svg id="pico-editor-wires" class="pico-editor-wires" role="group" aria-label="Orthogonal named-pin wires"></svg>
+            <div id="pico-editor-components" class="pico-editor-components"></div>
           </div>
           <p id="pico-circuit-state" class="truth">Validated: GP0 pin 1 → 220 Ω → LED anode/cathode → GND pin 3</p>
-          <div class="pico-circuit-actions">
-            <button id="pico-disconnect" type="button">Disconnect LED wire</button>
-            <button id="pico-reconnect" type="button" disabled>Restore validated wiring</button>
-          </div>
+          <p class="pico-editor-help">Drag a part or use Arrow keys to move it. Press R to rotate, Delete to remove, Ctrl/⌘ Z to undo, and Ctrl/⌘ Shift Z to redo. Fit redraws every cable at the current canvas size.</p>
           <div class="pico-serial-card"><strong>UART0 output</strong><pre id="pico-serial" aria-live="polite">No Pico UART output yet.</pre></div>
         </section>
       </div>
@@ -390,7 +387,7 @@
       </nav>
     </section>
 
-    <footer>Intent MCU Simulator 1.1.0-rc.6 public release · AVR + bounded Pico + bounded ESP32-C3 + bounded STM32F429ZI execution · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
+    <footer>Intent MCU Simulator 1.1.0-rc.7 public release · AVR + editable bounded Pico + bounded ESP32-C3 + bounded STM32F429ZI execution · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
   </main>
   <button id="serial-tab" class="serial-tab" type="button" aria-expanded="false" aria-controls="serial-dock"><span>Serial</span><span id="serial-new-output" class="serial-new-output" hidden>0 new</span></button>
   <aside id="serial-dock" class="serial-dock" aria-labelledby="serial-title" hidden>
