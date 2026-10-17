@@ -144,6 +144,7 @@
             <output id="pico-zoom-value" aria-live="polite">100%</output>
             <button id="pico-zoom-in" type="button" aria-label="Zoom in">+</button>
             <button id="pico-fit" type="button">Fit</button>
+            <button id="pico-fullscreen" type="button" aria-pressed="false">Fullscreen</button>
             <button id="pico-reconnect" type="button" disabled>Reconnect endpoint</button>
             <button id="pico-wire-cancel" type="button" disabled>Cancel wire</button>
           </div>
@@ -207,6 +208,7 @@
             <output id="c3-zoom-value" aria-live="polite">100%</output>
             <button id="c3-zoom-in" type="button" aria-label="Zoom circuit in">+</button>
             <button id="c3-fit" type="button">Fit</button>
+            <button id="c3-fullscreen" type="button" aria-pressed="false">Fullscreen</button>
             <button id="c3-reconnect" type="button" disabled>Reconnect endpoint</button>
             <button id="c3-wire-cancel" type="button" disabled>Cancel wire</button>
           </div>
@@ -272,6 +274,7 @@
             <output id="stm32-zoom-value" aria-live="polite">100%</output>
             <button id="stm32-zoom-in" type="button" aria-label="Zoom STM32 circuit in">+</button>
             <button id="stm32-fit" type="button">Fit</button>
+            <button id="stm32-fullscreen" type="button" aria-pressed="false">Fullscreen</button>
             <button id="stm32-reconnect" type="button" disabled>Reconnect endpoint</button>
             <button id="stm32-wire-cancel" type="button" disabled>Cancel wire</button>
           </div>
@@ -426,7 +429,7 @@
       </nav>
     </section>
 
-    <footer>Intent MCU Simulator 1.1.0-rc.15 public release · one shared workbench for AVR + bounded Pico + ESP32-C3 + STM32F429ZI execution · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
+    <footer>Intent MCU Simulator 1.1.0-rc.16 public release · one shared workbench for AVR + bounded Pico + ESP32-C3 + STM32F429ZI execution · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
   </main>
   <button id="serial-tab" class="serial-tab" type="button" aria-expanded="false" aria-controls="serial-dock"><span>Serial</span><span id="serial-new-output" class="serial-new-output" hidden>0 new</span></button>
   <aside id="serial-dock" class="serial-dock" aria-labelledby="serial-title" hidden>

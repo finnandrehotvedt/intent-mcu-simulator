@@ -106,6 +106,51 @@ function sharedResizer(document, name, variable, direction) {
   return handle;
 }
 
+function installCanvasFullscreen(document, root, canvas, prefix) {
+  const button = root.querySelector(`#${prefix}-fullscreen`);
+  if (!button) throw new Error(`SHARED_WORKBENCH_FULLSCREEN_MISSING:${prefix}`);
+  const fallbackClass = 'shared-canvas-focus';
+  const active = () => document.fullscreenElement === canvas || root.classList.contains(fallbackClass);
+  const render = () => {
+    const expanded = active();
+    button.textContent = expanded ? 'Exit fullscreen' : 'Fullscreen';
+    button.setAttribute('aria-pressed', String(expanded));
+    button.setAttribute('aria-label', expanded ? 'Exit fullscreen canvas' : 'Open canvas fullscreen');
+    canvas.setAttribute('aria-expanded', String(expanded));
+  };
+  const closeFallback = () => {
+    root.classList.remove(fallbackClass);
+    document.body.classList.remove('shared-canvas-focus-open');
+    render();
+  };
+  button.addEventListener('click', async () => {
+    if (document.fullscreenElement === canvas) {
+      await document.exitFullscreen();
+      render();
+      return;
+    }
+    if (root.classList.contains(fallbackClass)) {
+      closeFallback();
+      return;
+    }
+    try {
+      if (typeof canvas.requestFullscreen !== 'function') throw new Error('FULLSCREEN_API_UNAVAILABLE');
+      await canvas.requestFullscreen();
+      render();
+    } catch {
+      root.classList.add(fallbackClass);
+      document.body.classList.add('shared-canvas-focus-open');
+      canvas.focus({ preventScroll: true });
+      render();
+    }
+  });
+  document.addEventListener('fullscreenchange', render);
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && root.classList.contains(fallbackClass)) closeFallback();
+  });
+  render();
+}
+
 function mountNarrowProfile(document, adapter) {
   const root = document.querySelector(adapter.root);
   const grid = root?.querySelector(adapter.grid);
@@ -192,6 +237,8 @@ function mountNarrowProfile(document, adapter) {
   project.classList.add('shared-project-tools');
   runtime.classList.add('shared-runtime-tools');
   serial.classList.add('shared-serial-surface');
+  canvas.setAttribute('tabindex', '-1');
+  installCanvasFullscreen(document, root, canvas, adapter.prefix);
   return root;
 }
 

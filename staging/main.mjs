@@ -456,7 +456,7 @@ function picoEditorAnchor(endpoint, diagram = elements.picodiagram, components =
     { distance: Math.abs(pin.y - rendered.top), x: 0, y: -1 },
     { distance: Math.abs(rendered.bottom - pin.y), x: 0, y: 1 },
   ].sort((left, right) => left.distance - right.distance)[0];
-  const escapeDistance = direction.distance + (canvas.width <= 430 ? 4 : 14);
+  const escapeDistance = direction.distance + (canvas.width <= 700 ? 4 : 14);
   return {
     pin,
     escape: { x: pin.x + direction.x * escapeDistance, y: pin.y + direction.y * escapeDistance },
@@ -466,7 +466,7 @@ function picoEditorAnchor(endpoint, diagram = elements.picodiagram, components =
 
 function picoEditorObstacles(diagram = elements.picodiagram, components = elements.picoeditorcomponents) {
   const canvas = diagram.getBoundingClientRect();
-  const clearance = canvas.width <= 430 ? 1.5 : 9;
+  const clearance = canvas.width <= 430 ? 1.5 : canvas.width <= 700 ? 4 : 9;
   return [...components.querySelectorAll('.pico-editor-part')].map((card) => {
     const box = card.getBoundingClientRect();
     return {

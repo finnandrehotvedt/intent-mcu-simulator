@@ -50,7 +50,7 @@ asset recorded in `stm32/toolchain-manifest.json`. It performs no network
 download. Startup and `/readyz` fail closed on image-ID drift.
 
 For production, build and test the source image first, tag it as
-`local/intent-mcu-source-check:1.1.0-rc.15`, then assemble the public gateway
+`local/intent-mcu-source-check:1.1.0-rc.16`, then assemble the public gateway
 with `Dockerfile.production`. The final layer copies the checksum-pinned Docker
 28.3.3 client from the established integration image. The gateway still sees
 only the mounted local Docker socket, while each compiler/runtime child keeps

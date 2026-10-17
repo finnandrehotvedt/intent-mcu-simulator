@@ -1,11 +1,11 @@
-# Migration to 1.1.0-rc.15
+# Migration to 1.1.0-rc.16
 
 There is no account, cloud project database, or server-side project migration.
 Existing browser recovery remains readable. Before changing versions, save an
 important project to a local `.intent-mcu.json` file.
 
-This release changes the visible shell and routing presentation but does not
-change a project schema. Files saved by rc.14 remain readable with the same
+This release adds reversible canvas fullscreen presentation but does not
+change a project schema. Files saved by rc.15 remain readable with the same
 profile-specific rules and require a fresh Build after Open.
 
 After the update:

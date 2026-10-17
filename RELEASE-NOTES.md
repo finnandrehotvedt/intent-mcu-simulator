@@ -1,7 +1,20 @@
-# Intent MCU Simulator 1.1.0-rc.15
+# Intent MCU Simulator 1.1.0-rc.16
 
 This release gives all four accepted controller profiles one coherent AVR-style
 workbench without expanding any compiler, runtime, pin or component claim.
+
+## Fullscreen canvas parity
+
+- Pico, ESP32-C3 and STM32 now expose the same discoverable Fullscreen canvas
+  action as AVR, with an explicit Exit action and Escape support.
+- Browsers with the Fullscreen API use it directly. If the API is unavailable
+  or denied, the control truthfully falls back to a reversible full-viewport
+  canvas focus mode rather than claiming native fullscreen.
+- Fit, zoom, exact terminal attachment, body avoidance, label association and
+  distinct wire lanes are revalidated after enter, resize and exit on desktop
+  and mobile. Parts and Inspector return exactly as they were.
+- Fullscreen is presentation-only: authored projects do not change and no
+  stale build or runtime authority can reappear.
 
 ## Shared controller workflow and clear wire lanes
 

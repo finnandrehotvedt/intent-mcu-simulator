@@ -2,8 +2,14 @@
 
 All notable public source changes are recorded here.
 
-## 1.1.0-rc.15 — 2026-10-17
+## 1.1.0-rc.16 — 2026-10-17
 
+- Added explicit Fullscreen/Exit controls to the Pico, ESP32-C3 and STM32
+  canvases, using native browser fullscreen where available and a labelled,
+  reversible full-viewport focus fallback otherwise.
+- Preserved Fit/zoom, terminal attachment, body avoidance, labels, wire lanes,
+  parked data, Parts/Inspector visibility and stale-authority retirement
+  through fullscreen enter, resize and exit on desktop and mobile.
 - Mounted all four accepted controller implementations in one shared AVR-style
   project, Parts, Canvas, Inspector, Firmware, Runtime and Serial workflow.
 - Preserved each profile's existing file schema, compiler/runtime boundary,

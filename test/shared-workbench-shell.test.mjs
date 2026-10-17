@@ -42,9 +42,11 @@ test('unsupported common controls carry profile-specific truthful reasons', () =
 });
 
 test('browser entry point mounts the shared shell without replacing profile implementations', async () => {
-  const [html, browser] = await Promise.all([
+  const [html, browser, shell, css] = await Promise.all([
     readFile(new URL('../staging/index.html', import.meta.url), 'utf8'),
     readFile(new URL('../staging/main.mjs', import.meta.url), 'utf8'),
+    readFile(new URL('../src/shared-workbench-shell.mjs', import.meta.url), 'utf8'),
+    readFile(new URL('../staging/styles.css', import.meta.url), 'utf8'),
   ]);
   for (const id of ['workbench-workspace', 'pico-public-workbench', 'c3-public-workbench', 'stm32-public-workbench']) {
     assert.match(html, new RegExp(`id="${id}"`));
@@ -52,4 +54,9 @@ test('browser entry point mounts the shared shell without replacing profile impl
   assert.match(browser, /mountSharedWorkbenchShell/);
   assert.match(browser, /sharedWorkbenchShell\.activate/);
   assert.match(browser, /sharedWorkbenchShell\.toggle/);
+  for (const prefix of ['pico', 'c3', 'stm32']) assert.match(html, new RegExp(`id="${prefix}-fullscreen"`));
+  assert.match(shell, /requestFullscreen/);
+  assert.match(shell, /FULLSCREEN_API_UNAVAILABLE/);
+  assert.match(shell, /event\.key === 'Escape'/);
+  assert.match(css, /shared-canvas-focus-open/);
 });

@@ -94,6 +94,12 @@ h2 { font-size: 1.22rem; margin: 0; }
 .shared-runtime-surface { display: grid; gap: .75rem; padding-top: 1rem; }
 .shared-build-controls { margin-top: .25rem; }
 .shared-serial-surface { margin-top: .1rem; }
+.shared-canvas-surface:fullscreen,
+.shared-profile-workbench.shared-canvas-focus .shared-canvas-surface { overflow: auto; padding: 20px; border-radius: 0; background: var(--bg); }
+.shared-canvas-surface:fullscreen .pico-editor-canvas,
+.shared-profile-workbench.shared-canvas-focus .pico-editor-canvas { min-height: max(520px, calc(100vh - 250px)); }
+.shared-profile-workbench.shared-canvas-focus .shared-canvas-surface { position: fixed; inset: 0; z-index: 1000; }
+body.shared-canvas-focus-open { overflow: hidden; }
 .shared-parts-surface .bounded-parts-list { grid-template-columns: 1fr; }
 .shared-parts-surface .bounded-part-card small { min-height: 0; }
 .shared-inspector-surface .bounded-part-properties { margin-top: .15rem; }
@@ -742,6 +748,8 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   .shared-profile-workbench.parts-collapsed.inspector-collapsed .shared-profile-grid { grid-template-columns: minmax(0,1fr); grid-template-areas: "parts" "canvas" "inspector"; }
   .shared-project-bar { grid-template-columns: 1fr; }
   .pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label { top: calc(100% + 22px); }
+  .shared-canvas-surface:fullscreen .pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label,
+  .shared-profile-workbench.shared-canvas-focus .pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label { top: calc(100% - 5px); }
 }
 @media (max-width: 390px) {
   .starter-grid { grid-template-columns: 1fr; }
