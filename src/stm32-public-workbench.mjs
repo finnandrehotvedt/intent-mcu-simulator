@@ -23,7 +23,7 @@ function defaultProject() {
     profile: STM32_PROFILE, source: STM32_PUBLIC_SOURCE,
     circuit: normalizeStm32CircuitDraft(createStm32CircuitDraft()) };
 }
-function normalizeProject(value) {
+export function normalizeStm32PublicProject(value) {
   const legacy = value?.schema === STM32_PROJECT_SCHEMA;
   const keys = legacy ? ['schema', 'name', 'profile', 'source']
     : ['schema', 'name', 'profile', 'source', 'circuit'];
@@ -65,11 +65,13 @@ async function sha256(value) {
 
 export class Stm32PublicWorkbench {
   constructor({ elements, endpoint = '/api/stm32', fetchFn = globalThis.fetch,
-    onState = () => {} } = {}) {
+    onState = () => {}, onSave = null, onOpen = null } = {}) {
     this.elements = elements;
     this.endpoint = endpoint.replace(/\/$/u, '');
     this.fetch = fetchFn.bind(globalThis);
     this.onState = onState;
+    this.onSave = onSave;
+    this.onOpen = onOpen;
     this.project = defaultProject();
     this.circuitEditor = new Stm32CircuitEditor(this.project.circuit);
     this.revision = 1;
@@ -109,12 +111,12 @@ export class Stm32PublicWorkbench {
     this.elements.run.addEventListener('click', () => { void this.run(false); });
     this.elements.reset.addEventListener('click', () => { void this.run(true); });
     this.elements.stop.addEventListener('click', () => this.stop('STM32 executable discarded.'));
-    this.elements.save.addEventListener('click', () => this.save());
+    this.elements.save.addEventListener('click', () => this.onSave ? this.onSave() : this.save());
     this.elements.open.addEventListener('click', () => this.elements.openInput.click());
     this.elements.openInput.addEventListener('change', async () => {
       const file = this.elements.openInput.files?.[0];
       this.elements.openInput.value = '';
-      if (file) await this.open(file);
+      if (file) await (this.onOpen ? this.onOpen(file) : this.open(file));
     });
   }
   wipeArtifact() {
@@ -345,11 +347,25 @@ export class Stm32PublicWorkbench {
     this.invalidate(messages[operation] ?? `Circuit changed (${result.code}). ELF and LED authority retired; build fresh.`);
     return result;
   }
+
+  projectDocument() {
+    this.project.circuit = clone(this.circuitEditor.snapshot().draft);
+    return normalizeStm32PublicProject({ ...this.project, source: this.elements.source.value,
+      name: this.elements.name.value, circuit: this.project.circuit });
+  }
+
+  installPreparedProject(project, message = 'Project data opened. ELF and runtime authority were excluded; build fresh.') {
+    this.project = normalizeStm32PublicProject(project);
+    this.circuitEditor = new Stm32CircuitEditor(this.project.circuit);
+    this.elements.name.value = this.project.name;
+    this.elements.source.value = this.project.source;
+    this.invalidate(message);
+    return { ok: true, code: 'OK' };
+  }
+
   save() {
     try {
-      this.project.circuit = clone(this.circuitEditor.snapshot().draft);
-      const project = normalizeProject({ ...this.project, source: this.elements.source.value,
-        name: this.elements.name.value, circuit: this.project.circuit });
+      const project = this.projectDocument();
       this.project = project;
       download(`${project.name.toLowerCase().replace(/[^a-z0-9]+/gu, '-').replace(/^-|-$/gu, '') || 'stm32-project'}.json`,
         `${JSON.stringify(project, null, 2)}\n`);
@@ -365,13 +381,8 @@ export class Stm32PublicWorkbench {
   async open(file) {
     try {
       if (file.size > 8192) throw new Error('STM32_PROJECT_SIZE');
-      const project = normalizeProject(parseStrictJson(await file.text(), 8192));
-      this.project = project;
-      this.circuitEditor = new Stm32CircuitEditor(project.circuit);
-      this.elements.name.value = project.name;
-      this.elements.source.value = project.source;
-      this.invalidate('Project data opened. Executable state was excluded.');
-      return { ok: true, code: 'OK' };
+      const project = normalizeStm32PublicProject(parseStrictJson(await file.text(), 8192));
+      return this.installPreparedProject(project);
     } catch (error) {
       this.message = `Open rejected: ${error.code ?? error.message}. Existing project preserved.`;
       this.render();

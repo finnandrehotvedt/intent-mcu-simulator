@@ -229,7 +229,7 @@ function assertGeometry(value, profile) {
     const savedPath = await download.path();
     const savedText = fs.readFileSync(savedPath, 'utf8');
     const saved = JSON.parse(savedText);
-    const savedCircuit = profile.circuitPath === 'circuit' ? saved.circuit : saved.circuit;
+    const savedCircuit = saved.project.circuit;
     const savedSourceNet = savedCircuit.nets.find((net) => net.id === profile.sourceNet);
     assert(savedSourceNet.endpoints.some((item) => item.component === 'resistor-1' && item.pin === profile.otherLead),
       `${profile.name}: Save lost reconnected topology`);

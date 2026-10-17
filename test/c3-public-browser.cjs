@@ -240,8 +240,9 @@ const failures = [];
   const downloadPromise = page.waitForEvent('download'); await page.click('#c3-save');
   const download = await downloadPromise; const savedPath = await download.path(); const savedText = fs.readFileSync(savedPath, 'utf8');
   const saved = JSON.parse(savedText);
-  assert(saved.schema === 'intent-mcu-esp32c3-public-project@1' && saved.source.includes('C3_LOW'), 'saved C3 project identity mismatch');
-  assert(saved.circuit.layout.positions['resistor-1'].rotation === 90, 'saved C3 circuit lost rotation');
+  assert(saved.schema === 'intent-mcu-project-envelope@1' && saved.profile === 'board.esp32-c3-devmodule-v1'
+    && saved.project.schema === 'intent-mcu-esp32c3-public-project@1' && saved.project.source.includes('C3_LOW'), 'saved C3 project identity mismatch');
+  assert(saved.project.circuit.layout.positions['resistor-1'].rotation === 90, 'saved C3 circuit lost rotation');
   assert(!/artifact|executable|flashSha256|sessionId|capability/iu.test(savedText), 'saved C3 project leaked executable authority');
   await page.locator('#c3-open-input').setInputFiles({ name: 'invalid-c3.json', mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify({ ...saved, executable: 'forbidden' })) });

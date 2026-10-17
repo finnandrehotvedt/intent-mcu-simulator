@@ -113,23 +113,39 @@ let browser;
   await page.waitForFunction(() => window.__THERMOSTAT_FILE_TEXT__.length > 1000);
   const savedText = await page.evaluate(() => window.__THERMOSTAT_FILE_TEXT__);
   const saved = JSON.parse(savedText);
-  assert(saved.schema === 'intent-mcu-project-contact-persistence@1', 'save was not the canonical data-only candidate envelope');
-  assert(saved.project.artifact.status === 'dirty'
-    && saved.project.artifact.inputIdentitySha256 === null
-    && saved.project.artifact.artifactIdentitySha256 === null,
+  assert(saved.schema === 'intent-mcu-project-envelope@1'
+    && saved.profile === 'board.atmega328p-16mhz-v1'
+    && saved.project.schema === 'intent-mcu-project-contact-persistence@1', 'save was not the canonical data-only common envelope');
+  assert(saved.project.project.artifact.status === 'dirty'
+    && saved.project.project.artifact.inputIdentitySha256 === null
+    && saved.project.project.artifact.artifactIdentitySha256 === null,
   'save retained a runnable project artifact');
   assert(!/(firmwareHex|runtimeBinding|thermostatExperimentResults|"hex"\s*:|"elf"\s*:|"uf2"\s*:)/u.test(savedText), 'save retained executable bytes or runtime-result state');
-  assert(saved.compiledFixture.id === 'button-pullup', 'legacy candidate compatibility reference unexpectedly changed');
+  assert(saved.project.compiledFixture.id === 'button-pullup', 'legacy candidate compatibility reference unexpectedly changed');
   await page.click('#project-new');
   await page.click('#project-open');
   await page.waitForFunction(() => window.__M6_STATE__.thermostatExperiment?.active === true);
-  assert(await page.evaluate(() => window.__M6_PROJECT__ && JSON.stringify(window.__M6_PROJECT__()) === window.__THERMOSTAT_FILE_TEXT__), 'Open did not restore exact authored thermostat data');
+  assert(await page.evaluate(() => window.__M6_PROJECT__
+    && JSON.stringify(window.__M6_PROJECT__()) === JSON.stringify(JSON.parse(window.__THERMOSTAT_FILE_TEXT__).project)), 'Open did not restore exact authored thermostat data');
   assert(await page.isDisabled('#thermostat-run-tests'), 'Open reused a stale executable instead of requiring Build');
   await assertAttachments(page, endpoints);
 
   await build(page);
   const reopened = await runScenarios(page);
   assert(reopened.results.every((result) => result.status === 'passed'), 'fresh Build after Open did not pass 3/3');
+
+  await page.evaluate((legacy) => { window.__THERMOSTAT_FILE_TEXT__ = JSON.stringify(legacy); }, saved.project);
+  await page.click('#project-open');
+  await page.waitForFunction(() => document.querySelector('#project-message').textContent.includes('migrated in memory'));
+  const legacyMigration = await page.evaluate(() => ({
+    project: window.__M6_PROJECT__(), artifact: window.__M6_STATE__.artifactIdentity,
+    results: window.__M6_STATE__.thermostatExperiment?.results ?? [],
+    fileState: window.__COMMON_PROJECT_FILE_STATE__,
+  }));
+  assert.deepEqual(legacyMigration.project, saved.project, 'legacy contact migration changed authored data or compiledFixture reference');
+  assert.equal(legacyMigration.artifact, null, 'legacy contact migration restored executable authority');
+  assert.deepEqual(legacyMigration.results, [], 'legacy contact migration restored experiment verdicts');
+  assert.equal(legacyMigration.fileState.report.legacy, true, 'legacy contact migration was not reported');
 
   await page.click('#thermostat-load-bad');
   await page.waitForFunction(() => window.__M6_STATE__.thermostatExperiment?.variant === 'known-bad-equality');

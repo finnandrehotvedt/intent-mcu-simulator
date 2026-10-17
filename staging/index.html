@@ -46,7 +46,7 @@
         <button id="project-save" type="button">Save project</button><button id="project-open" type="button">Open project</button>
         <input id="project-open-input" class="sr-only" type="file" accept="application/json,.json" aria-label="Open project file">
         <button id="project-reload" type="button">Restore browser recovery</button>
-        <button id="project-export" type="button">Download copy</button><button id="recovery-export" type="button" disabled>Download recovery</button>
+        <button id="project-export" type="button">Legacy copy</button><button id="recovery-export" type="button" disabled>Download recovery</button>
         <label class="file-button" for="project-import">Import JSON</label>
         <input id="project-import" class="sr-only" type="file" accept="application/json,.json">
         <select id="project-import-mode" aria-label="Project import mode"><option value="replace">Replace project</option><option value="merge">Merge circuit</option><option value="migrate-v1">Migrate v1 project</option></select>
@@ -111,6 +111,7 @@
           <div class="pico-project-actions">
             <button id="pico-save" type="button">Save local project</button>
             <button id="pico-open" type="button">Open local project</button>
+            <button id="pico-legacy-copy" type="button">Legacy copy</button>
             <input id="pico-open-input" class="sr-only" type="file" accept="application/json,.json" aria-label="Open Pico project file">
           </div>
           <label for="pico-source">main.c · edit only level and UART text</label>
@@ -177,6 +178,7 @@
           <div class="c3-project-actions">
             <button id="c3-save" type="button">Save local project</button>
             <button id="c3-open" type="button">Open local project</button>
+            <button id="c3-legacy-copy" type="button">Legacy copy</button>
             <input id="c3-open-input" class="sr-only" type="file" accept="application/json,.json" aria-label="Open ESP32-C3 project file">
           </div>
           <label for="c3-source">sketch.ino · edit only GPIO2 mode/level and uppercase marker</label>
@@ -242,6 +244,7 @@
           <div class="stm32-project-actions">
             <button id="stm32-save" type="button">Save local project</button>
             <button id="stm32-open" type="button">Open local project</button>
+            <button id="stm32-legacy-copy" type="button">Legacy copy</button>
             <input id="stm32-open-input" class="sr-only" type="file" accept="application/json,.json" aria-label="Open STM32 project file">
           </div>
           <label for="stm32-source">main.c · edit only PB0 level and uppercase marker</label>

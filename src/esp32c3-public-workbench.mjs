@@ -31,7 +31,7 @@ function defaultProject() {
     circuit: normalizeEsp32C3CircuitDraft(createEsp32C3CircuitDraft()),
   };
 }
-function normalizeProject(value) {
+export function normalizeEsp32C3PublicProject(value) {
   if (!exactKeys(value, ['schema', 'name', 'profile', 'source', 'circuit'])
     || value.schema !== C3_PUBLIC_PROJECT_SCHEMA || value.profile !== PROFILE
     || !validName(value.name)) throw new Error('C3_PROJECT_INVALID');
@@ -49,11 +49,13 @@ function download(name, text) {
 
 export class Esp32C3PublicWorkbench {
   constructor({ elements, endpoint = '/api/c3', fetchFn = globalThis.fetch,
-    onState = () => {} } = {}) {
+    onState = () => {}, onSave = null, onOpen = null } = {}) {
     this.elements = elements;
     this.endpoint = endpoint.replace(/\/$/u, '');
     this.fetch = fetchFn.bind(globalThis);
     this.onState = onState;
+    this.onSave = onSave;
+    this.onOpen = onOpen;
     this.project = defaultProject();
     this.circuitEditor = new Esp32C3CircuitEditor(this.project.circuit);
     this.revision = 1;
@@ -98,12 +100,12 @@ export class Esp32C3PublicWorkbench {
     this.elements.build.addEventListener('click', () => { void this.build(); });
     this.elements.run.addEventListener('click', () => { void this.run(); });
     this.elements.stop.addEventListener('click', () => { void this.dispose('C3 session discarded.'); });
-    this.elements.save.addEventListener('click', () => this.save());
+    this.elements.save.addEventListener('click', () => this.onSave ? this.onSave() : this.save());
     this.elements.open.addEventListener('click', () => this.elements.openInput.click());
     this.elements.openInput.addEventListener('change', async () => {
       const file = this.elements.openInput.files?.[0];
       this.elements.openInput.value = '';
-      if (file) await this.open(file);
+      if (file) await (this.onOpen ? this.onOpen(file) : this.open(file));
     });
   }
   snapshot() {
@@ -368,22 +370,33 @@ export class Esp32C3PublicWorkbench {
     return result;
   }
 
-  save() {
+  projectDocument() {
     this.project.circuit = clone(this.circuitEditor.snapshot().draft);
+    return normalizeEsp32C3PublicProject({ ...this.project, source: this.elements.source.value,
+      name: this.elements.name.value, circuit: this.project.circuit });
+  }
+
+  installPreparedProject(project, message = 'Local C3 project opened. Flash and QEMU authority were excluded; build fresh.') {
+    this.project = normalizeEsp32C3PublicProject(project);
+    this.circuitEditor = new Esp32C3CircuitEditor(this.project.circuit);
+    this.elements.source.value = this.project.source;
+    this.elements.name.value = this.project.name;
+    this.invalidate(message);
+    return { ok: true, code: 'OK' };
+  }
+
+  save() {
+    const project = this.projectDocument();
     download(`${this.project.name.replace(/[^a-z0-9]+/giu, '-').replace(/^-|-$/gu, '').toLowerCase() || 'c3-project'}.json`,
-      `${JSON.stringify(normalizeProject(this.project), null, 2)}\n`);
+      `${JSON.stringify(project, null, 2)}\n`);
     this.message = 'Saved a data-only local C3 project. Flash bytes and runtime authority were excluded.';
     this.render();
   }
   async open(file) {
     try {
       if (file.size > 16 * 1024) throw new Error('C3_PROJECT_LIMIT');
-      this.project = normalizeProject(parseStrictJson(await file.text()));
-      this.circuitEditor = new Esp32C3CircuitEditor(this.project.circuit);
-      this.elements.source.value = this.project.source;
-      this.elements.name.value = this.project.name;
-      this.invalidate('Local C3 project opened. Build fresh flash before Run.');
-      return { ok: true, code: 'OK' };
+      const project = normalizeEsp32C3PublicProject(parseStrictJson(await file.text()));
+      return this.installPreparedProject(project);
     } catch (error) {
       this.message = `Open rejected (${error.code ?? error.message}). The current project is unchanged.`;
       this.render();

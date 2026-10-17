@@ -23,7 +23,7 @@ const profiles = [
     name: 'ESP32-C3', option: 'board.esp32-c3-devmodule-v1', global: '__ESP32C3_PUBLIC_WORKBENCH__',
     nameInput: '#c3-project-name', sourceInput: '#c3-source', save: '#c3-save',
     open: '#c3-open', openInput: '#c3-open-input', message: '#c3-message',
-    extension: '.json', schema: 'intent-mcu-esp32c3-public-project@1',
+    extension: '.intent-mcu.json', schema: 'intent-mcu-esp32c3-public-project@1',
     sourceEdit: (value) => value.replace('C3_PUBLIC', 'C3_FILE').replace('digitalWrite(2, HIGH)', 'digitalWrite(2, LOW)'),
     sourceLead: 'B',
   },
@@ -31,7 +31,7 @@ const profiles = [
     name: 'STM32F429ZI', option: 'board.stm32f429zi-nucleo144-v1', global: '__STM32_PUBLIC_WORKBENCH__',
     nameInput: '#stm32-project-name', sourceInput: '#stm32-source', save: '#stm32-save',
     open: '#stm32-open', openInput: '#stm32-open-input', message: '#stm32-message',
-    extension: '.json', schema: 'intent-mcu-stm32-public-project@2',
+    extension: '.intent-mcu.json', schema: 'intent-mcu-stm32-public-project@2',
     sourceEdit: (value) => value.replace('intent_pb0_output(1u)', 'intent_pb0_output(0u)')
       .replace('STM32 PUBLIC', 'STM32 FILE'),
     sourceLead: 'B',
@@ -105,13 +105,15 @@ async function saveNarrow(page, profile) {
   assert(filename.endsWith(profile.extension), `${profile.name}: unexpected filename ${filename}`);
   const text = fs.readFileSync(filePath, 'utf8');
   const saved = JSON.parse(text);
-  assert.equal(saved.schema, profile.schema, `${profile.name}: schema`);
-  assert.deepEqual(saved, expected, `${profile.name}: downloaded file differs from authored data`);
+  assert.equal(saved.schema, 'intent-mcu-project-envelope@1', `${profile.name}: envelope schema`);
+  assert.equal(saved.profile, profile.option, `${profile.name}: envelope profile`);
+  assert.equal(saved.project.schema, profile.schema, `${profile.name}: nested schema`);
+  assert.deepEqual(saved.project, expected, `${profile.name}: downloaded file differs from authored data`);
   assertDataOnly(text, profile.name);
-  assert.equal(saved.circuit.layout.positions['resistor-1'].rotation, 90);
-  assert.equal(saved.circuit.components.find((item) => item.id === 'resistor-1').properties.ohms, 109);
-  assert.equal(saved.circuit.components.find((item) => item.id === 'led-1').properties.color, 'green');
-  assert.equal(saved.circuit.nets.filter((net) => net.id === 'net-series').length, 1);
+  assert.equal(saved.project.circuit.layout.positions['resistor-1'].rotation, 90);
+  assert.equal(saved.project.circuit.components.find((item) => item.id === 'resistor-1').properties.ohms, 109);
+  assert.equal(saved.project.circuit.components.find((item) => item.id === 'led-1').properties.color, 'green');
+  assert.equal(saved.project.circuit.nets.filter((net) => net.id === 'net-series').length, 1);
   return { profile, expected, filePath, filename, saveMs, saved };
 }
 
@@ -127,6 +129,8 @@ async function verifyNarrowOpen(browser, record, wrongProfilePath) {
   await choose(page, record.profile);
   const firstOpenMs = await openThroughChooser(page, record.profile, record.filePath);
   assert.deepEqual(await authored(page, record.profile), record.expected, `${record.profile.name}: fresh-page Open changed authored data`);
+  assert.equal(await page.evaluate((profile) => window.__COMMON_PROJECT_FILES__.current(profile), record.profile.option),
+    fs.readFileSync(record.filePath, 'utf8'), `${record.profile.name}: canonical envelope bytes changed after Open`);
   let state = await page.evaluate((global) => window[global].state(), record.profile.global);
   assert.equal(state.circuitEditor.canUndo, false, `${record.profile.name}: Open restored history`);
   assert.equal(state.artifact, null, `${record.profile.name}: Open restored artifact`);
@@ -150,12 +154,20 @@ async function verifyNarrowOpen(browser, record, wrongProfilePath) {
   await page.waitForFunction((message) => document.querySelector(message).textContent.includes('Open rejected'), record.profile.message);
   assert.equal(JSON.stringify(await authored(page, record.profile)), unchanged, `${record.profile.name}: malformed Open changed project`);
 
-  await page.setInputFiles(record.profile.openInput, wrongProfilePath);
+  await page.setInputFiles(record.profile.openInput, { name: 'oversized.json', mimeType: 'application/json',
+    buffer: Buffer.alloc(1024 * 1024 + 1, 0x20) });
+  await page.waitForTimeout(50);
+  assert.equal(JSON.stringify(await authored(page, record.profile)), unchanged, `${record.profile.name}: oversized Open changed project`);
+
+  const wrongProfile = cleanProject(record.saved);
+  wrongProfile.profile = 'board.atmega328p-16mhz-v1';
+  await page.setInputFiles(record.profile.openInput, { name: 'wrong-profile.json', mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(wrongProfile)) });
   await page.waitForFunction((message) => document.querySelector(message).textContent.includes('Open rejected'), record.profile.message);
   assert.equal(JSON.stringify(await authored(page, record.profile)), unchanged, `${record.profile.name}: wrong-profile Open changed project`);
 
   const unsupported = cleanProject(record.saved);
-  unsupported.circuit.components.find((item) => item.id === 'resistor-1').properties.watts = 0.25;
+  unsupported.project.circuit.components.find((item) => item.id === 'resistor-1').properties.watts = 0.25;
   await page.setInputFiles(record.profile.openInput, { name: 'unsupported-property.json', mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(unsupported)) });
   await page.waitForFunction((message) => document.querySelector(message).textContent.includes('Open rejected'), record.profile.message);
@@ -200,9 +212,11 @@ async function saveAvr(page) {
   const saveMs = Date.now() - started;
   const text = fs.readFileSync(filePath, 'utf8');
   const saved = JSON.parse(text);
-  assert.deepEqual(saved, expected, 'AVR: downloaded file differs from canonical authored project');
-  assert.equal(saved.build.artifactIdentity, null, 'AVR: saved artifact identity');
-  assert.equal(saved.build.inputIdentity, null, 'AVR: saved input identity');
+  assert.equal(saved.schema, 'intent-mcu-project-envelope@1', 'AVR: envelope schema');
+  assert.equal(saved.profile, 'board.atmega328p-16mhz-v1', 'AVR: envelope profile');
+  assert.deepEqual(saved.project, expected, 'AVR: downloaded file differs from canonical authored project');
+  assert.equal(saved.project.build.artifactIdentity, null, 'AVR: saved artifact identity');
+  assert.equal(saved.project.build.inputIdentity, null, 'AVR: saved input identity');
   assertDataOnly(text, 'AVR');
   return { profile: { name: 'ATmega328P' }, expected, filePath,
     filename: download.suggestedFilename(), saveMs, saved };
@@ -216,27 +230,31 @@ async function verifyAvrOpen(browser, record, wrongProfilePath) {
   const firstOpenMs = Date.now();
   const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.click('#project-open')]);
   await chooser.setFiles(record.filePath);
-  await page.waitForFunction(() => document.querySelector('#project-message').textContent.includes('opened from your computer'));
+  await page.waitForFunction(() => document.querySelector('#project-message').textContent.includes('Common project opened'));
   const firstMs = Date.now() - firstOpenMs;
   assert.deepEqual(await page.evaluate(() => window.__M6_PROJECT__()), record.expected, 'AVR: fresh-page Open changed project');
+  assert.equal(await page.evaluate(() => window.__COMMON_PROJECT_FILES__.current('board.atmega328p-16mhz-v1')),
+    fs.readFileSync(record.filePath, 'utf8'), 'AVR: canonical envelope bytes changed after Open');
   const unchanged = JSON.stringify(await page.evaluate(() => window.__M6_PROJECT__()));
   const repeatStarted = Date.now();
   const [repeatChooser] = await Promise.all([page.waitForEvent('filechooser'), page.click('#project-open')]);
   await repeatChooser.setFiles(record.filePath);
-  await page.waitForFunction(() => document.querySelector('#project-message').textContent.includes('opened from your computer'));
+  await page.waitForFunction(() => document.querySelector('#project-message').textContent.includes('Common project opened'));
   const repeatMs = Date.now() - repeatStarted;
   assert.equal(JSON.stringify(await page.evaluate(() => window.__M6_PROJECT__())), unchanged, 'AVR: repeated Open changed project');
   for (const file of [
     { name: 'malformed.json', mimeType: 'application/json', buffer: Buffer.from('{"schema":') },
-    wrongProfilePath,
+    { name: 'wrong-profile.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({
+      ...record.saved, profile: 'board.rp2040-pico-v1',
+    })) },
     (() => {
       const value = cleanProject(record.saved);
-      value.circuit.components.find((item) => item.id === 'resistor-1').properties.watts = 0.25;
+      value.project.circuit.components.find((item) => item.id === 'resistor-1').properties.watts = 0.25;
       return { name: 'unsupported-property.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(value)) };
     })(),
   ]) {
     await page.setInputFiles('#project-open-input', file);
-    await page.waitForFunction(() => !document.querySelector('#technical-error').hidden);
+    await page.waitForFunction(() => document.querySelector('#project-message').textContent.includes('Open rejected'));
     await page.waitForTimeout(50);
     assert.equal(JSON.stringify(await page.evaluate(() => window.__M6_PROJECT__())), unchanged, 'AVR: rejected Open changed project');
   }
@@ -251,6 +269,22 @@ async function verifyAvrOpen(browser, record, wrongProfilePath) {
   return { firstOpenMs: firstMs, repeatOpenMs: repeatMs, mobile };
 }
 
+async function verifyCrossProfileRouting(browser, pico, c3) {
+  const context = await browser.newContext({ viewport: { width: 1265, height: 900 } });
+  const page = await context.newPage();
+  await ready(page);
+  await choose(page, pico.profile);
+  await page.fill(pico.profile.nameInput, 'PARKED PICO BEFORE C3 OPEN');
+  await page.locator(pico.profile.nameInput).press('Tab');
+  const parked = await authored(page, pico.profile);
+  await page.setInputFiles(pico.profile.openInput, c3.filePath);
+  await page.waitForFunction((profile) => document.querySelector('#board-select').value === profile, c3.profile.option);
+  assert.deepEqual(await authored(page, c3.profile), c3.expected, 'valid cross-family Open did not route to the declared C3 profile');
+  await choose(page, pico.profile);
+  assert.deepEqual(await authored(page, pico.profile), parked, 'cross-family Open changed the parked Pico draft');
+  await context.close();
+}
+
 (async () => {
   const browser = await chromium.launch({ headless: true });
   const saveContext = await browser.newContext({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true });
@@ -263,6 +297,7 @@ async function verifyAvrOpen(browser, record, wrongProfilePath) {
     await page.waitForFunction(() => window.__M11_READY__ === true);
     narrow.push(await saveNarrow(page, profile));
   }
+  await verifyCrossProfileRouting(browser, narrow[0], narrow[1]);
   const opened = { ATmega328P: await verifyAvrOpen(browser, avr, narrow[0].filePath) };
   for (let index = 0; index < narrow.length; index += 1) {
     const record = narrow[index];

@@ -21,7 +21,9 @@ import {
   parsePromptBridgeV2,
   projectFromCircuit,
 } from '../src/project-editor.mjs';
-import { PROJECT_RECOVERY_KEY, PROJECT_STORAGE_KEY, migrateProjectV1, parseProjectV2 } from '../src/project-v2.mjs';
+import {
+  PROJECT_RECOVERY_KEY, PROJECT_SCHEMA, PROJECT_STORAGE_KEY, migrateProjectV1, parseProjectV2,
+} from '../src/project-v2.mjs';
 import {
   addRouteJog,
   isRouteFamily,
@@ -70,14 +72,31 @@ import {
   publicControllerView,
   publicControllerViews,
 } from '../src/public-controller-workbench-view.mjs';
-import { Rp2040PublicWorkbench } from '../src/rp2040-public-workbench.mjs';
+import {
+  RP2040_PUBLIC_PROJECT_SCHEMA,
+  Rp2040PublicWorkbench,
+  normalizeRp2040PublicProject,
+} from '../src/rp2040-public-workbench.mjs';
 import {
   RP2040_PICO_COMPONENT_CATALOG,
 } from '../src/rp2040-pico-circuit.mjs';
 import { ESP32C3_PUBLIC_COMPONENT_CATALOG } from '../src/esp32c3-public-circuit.mjs';
-import { Esp32C3PublicWorkbench } from '../src/esp32c3-public-workbench.mjs';
+import {
+  C3_PUBLIC_PROJECT_SCHEMA,
+  Esp32C3PublicWorkbench,
+  normalizeEsp32C3PublicProject,
+} from '../src/esp32c3-public-workbench.mjs';
 import { STM32_PUBLIC_COMPONENT_CATALOG } from '../src/stm32-public-circuit.mjs';
-import { Stm32PublicWorkbench } from '../src/stm32-public-workbench.mjs';
+import {
+  STM32_EDITABLE_PROJECT_SCHEMA,
+  Stm32PublicWorkbench,
+  normalizeStm32PublicProject,
+} from '../src/stm32-public-workbench.mjs';
+import {
+  PROJECT_ENVELOPE_LIMIT,
+  canonicalProjectEnvelope,
+  prepareProjectEnvelope,
+} from '../src/project-envelope.mjs';
 import { serialEventText, serialInputBytes, serialText } from '../src/serial-view.mjs';
 import { CPU_CYCLES_PER_MILLISECOND, cursorCycles, waveformPaths } from '../src/waveform-view.mjs';
 import { createComponentArtwork as createBaseComponentArtwork } from './component-artwork.mjs';
@@ -89,6 +108,7 @@ import {
   createCandidateUiArtwork,
   openCandidateUiSession,
 } from '../src/candidate-existing-ui-adapter.mjs';
+import { CONTACT_PERSISTENCE_SCHEMA } from '../expansion-drafts/project-v3-contact-persistence.mjs';
 import {
   TEMPERATURE_MAX_C,
   TEMPERATURE_MIN_C,
@@ -159,20 +179,20 @@ const elements = Object.fromEntries([
   'controller-capability-runtime', 'controller-capability-circuit', 'controller-primary-action', 'controller-return-avr',
   'controller-workbench-limitation', 'controller-public-boundary', 'parked-circuit-notice',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
-  'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
+  'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input', 'pico-legacy-copy',
   'pico-source', 'pico-build', 'pico-run', 'pico-pause', 'pico-reset', 'pico-stop', 'pico-message',
   'pico-source-hash', 'pico-artifact-hash', 'pico-diagram', 'pico-circuit-state',
   'pico-editor-wires', 'pico-editor-components', 'pico-circuit-selection',
   'pico-parts-list', 'pico-part-properties',
   'pico-delete', 'pico-undo', 'pico-redo', 'pico-rotate', 'pico-zoom-out', 'pico-zoom-value',
   'pico-zoom-in', 'pico-fit', 'pico-reconnect', 'pico-wire-cancel', 'pico-wire-state', 'pico-serial',
-  'c3-public-workbench', 'c3-state', 'c3-project-name', 'c3-save', 'c3-open', 'c3-open-input',
+  'c3-public-workbench', 'c3-state', 'c3-project-name', 'c3-save', 'c3-open', 'c3-open-input', 'c3-legacy-copy',
   'c3-source', 'c3-build', 'c3-run', 'c3-stop', 'c3-message', 'c3-source-hash', 'c3-flash-hash',
   'c3-diagram', 'c3-external-led', 'c3-circuit-state', 'c3-reconnect', 'c3-wire-cancel', 'c3-wire-state', 'c3-terminal',
   'c3-editor-wires', 'c3-editor-components', 'c3-circuit-selection',
   'c3-parts-list', 'c3-part-properties',
   'c3-delete', 'c3-undo', 'c3-redo', 'c3-rotate', 'c3-zoom-out', 'c3-zoom-value', 'c3-zoom-in', 'c3-fit',
-  'stm32-public-workbench', 'stm32-state', 'stm32-project-name', 'stm32-save', 'stm32-open', 'stm32-open-input',
+  'stm32-public-workbench', 'stm32-state', 'stm32-project-name', 'stm32-save', 'stm32-open', 'stm32-open-input', 'stm32-legacy-copy',
   'stm32-source', 'stm32-build', 'stm32-run', 'stm32-reset', 'stm32-stop', 'stm32-message',
   'stm32-source-hash', 'stm32-artifact-hash', 'stm32-diagram', 'stm32-external-led',
   'stm32-circuit-state', 'stm32-terminal', 'stm32-editor-wires', 'stm32-editor-components',
@@ -710,6 +730,8 @@ const picoPublicWorkbench = new Rp2040PublicWorkbench({
     renderPicoQuickControls(state);
     renderPicoCircuitEditor(state);
   },
+  onSave: () => saveCommonProject(RP2040_PROFILE),
+  onOpen: (file) => openCommonProjectFile(file),
 });
 window.__RP2040_PUBLIC_WORKBENCH__ = {
   state: () => picoPublicWorkbench.snapshot(),
@@ -739,6 +761,7 @@ elements.picorotate.addEventListener('click', () => {
 });
 elements.picoreconnect.addEventListener('click', () => beginNamedWireReconnect(picoPublicWorkbench, elements.picowirestate));
 elements.picowirecancel.addEventListener('click', () => cancelNamedWire(picoPublicWorkbench, elements.picowirestate));
+elements.picolegacycopy.addEventListener('click', () => saveLegacyProject(RP2040_PROFILE));
 function setPicoEditorZoom(next) {
   picoEditorZoom = Math.max(0.7, Math.min(1.25, Math.round(next * 20) / 20));
   renderPicoCircuitEditor(picoPublicWorkbench.snapshot());
@@ -942,6 +965,8 @@ const c3PublicWorkbench = new Esp32C3PublicWorkbench({
     renderC3QuickControls(state);
     renderC3CircuitEditor(state);
   },
+  onSave: () => saveCommonProject(ESP32C3_PROFILE),
+  onOpen: (file) => openCommonProjectFile(file),
 });
 window.__ESP32C3_PUBLIC_WORKBENCH__ = {
   state: () => c3PublicWorkbench.snapshot(),
@@ -969,6 +994,7 @@ elements.c3rotate.addEventListener('click', () => {
 });
 elements.c3reconnect.addEventListener('click', () => beginNamedWireReconnect(c3PublicWorkbench, elements.c3wirestate));
 elements.c3wirecancel.addEventListener('click', () => cancelNamedWire(c3PublicWorkbench, elements.c3wirestate));
+elements.c3legacycopy.addEventListener('click', () => saveLegacyProject(ESP32C3_PROFILE));
 function setC3EditorZoom(next) {
   c3EditorZoom = Math.max(0.7, Math.min(1.25, Math.round(next * 20) / 20));
   renderC3CircuitEditor(c3PublicWorkbench.snapshot());
@@ -1182,6 +1208,8 @@ const stm32PublicWorkbench = new Stm32PublicWorkbench({
     renderStm32QuickControls(state);
     renderStm32CircuitEditor(state);
   },
+  onSave: () => saveCommonProject(STM32F429ZI_PROFILE),
+  onOpen: (file) => openCommonProjectFile(file),
 });
 window.__STM32_PUBLIC_WORKBENCH__ = {
   state: () => stm32PublicWorkbench.snapshot(),
@@ -1210,6 +1238,7 @@ elements.stm32rotate.addEventListener('click', () => {
 });
 elements.stm32reconnect.addEventListener('click', () => beginNamedWireReconnect(stm32PublicWorkbench, elements.stm32wirestate));
 elements.stm32wirecancel.addEventListener('click', () => cancelNamedWire(stm32PublicWorkbench, elements.stm32wirestate));
+elements.stm32legacycopy.addEventListener('click', () => saveLegacyProject(STM32F429ZI_PROFILE));
 function setStm32EditorZoom(next) {
   stm32EditorZoom = Math.max(0.7, Math.min(1.25, Math.round(next * 20) / 20));
   renderStm32CircuitEditor(stm32PublicWorkbench.snapshot());
@@ -1712,6 +1741,138 @@ function parseEditorSource(source) {
   project.build = { status: 'dirty', inputIdentity: null, artifactIdentity: null };
   return { ...parsed, project, session: new ProjectEditorReducer(project) };
 }
+const commonProjectAdapters = Object.freeze({
+  [AVR_PROFILE]: Object.freeze({
+    schemas: Object.freeze([PROJECT_SCHEMA, CONTACT_PERSISTENCE_SCHEMA]),
+    prepare(value) {
+      const parsed = parseEditorSource(JSON.stringify(value));
+      if (!parsed.ok) throw Object.assign(new Error(parsed.code), { code: parsed.code, details: parsed.details ?? [] });
+      const project = typeof parsed.session.saveText === 'function'
+        ? JSON.parse(parsed.session.saveText()) : JSON.parse(exportCanonicalProject(parsed.session.project));
+      return {
+        project, prepared: parsed.session,
+        preserved: ['source', 'circuit', 'layout', 'wire routes/styles', 'instruments', 'supported controls'],
+        fieldsDropped: ['build.inputIdentity', 'build.artifactIdentity', 'runtime results'],
+      };
+    },
+  }),
+  [RP2040_PROFILE]: Object.freeze({
+    schemas: Object.freeze([RP2040_PUBLIC_PROJECT_SCHEMA]),
+    prepare: (value) => ({ project: normalizeRp2040PublicProject(value),
+      preserved: ['name', 'source', 'components', 'pins', 'nets', 'properties', 'layout', 'rotation', 'wires'] }),
+  }),
+  [ESP32C3_PROFILE]: Object.freeze({
+    schemas: Object.freeze([C3_PUBLIC_PROJECT_SCHEMA]),
+    prepare: (value) => ({ project: normalizeEsp32C3PublicProject(value),
+      preserved: ['name', 'source', 'components', 'pins', 'nets', 'properties', 'layout', 'rotation', 'wires'] }),
+  }),
+  [STM32F429ZI_PROFILE]: Object.freeze({
+    schemas: Object.freeze([STM32_EDITABLE_PROJECT_SCHEMA, 'intent-mcu-stm32-public-project@1']),
+    prepare(value) {
+      const legacy = value?.schema === 'intent-mcu-stm32-public-project@1';
+      return { project: normalizeStm32PublicProject(value),
+        preserved: ['name', 'source', ...(legacy ? [] : ['components', 'pins', 'nets', 'properties', 'layout', 'rotation', 'wires'])],
+        defaultsAdded: legacy ? ['default validated STM32 teaching circuit'] : [] };
+    },
+  }),
+});
+function profileProjectDocument(profile) {
+  if (profile === AVR_PROFILE) return JSON.parse(currentProjectText());
+  if (profile === RP2040_PROFILE) return picoPublicWorkbench.projectDocument();
+  if (profile === ESP32C3_PROFILE) return c3PublicWorkbench.projectDocument();
+  if (profile === STM32F429ZI_PROFILE) return stm32PublicWorkbench.projectDocument();
+  throw new Error('PROJECT_ENVELOPE_PROFILE');
+}
+function profileProjectName(profile) {
+  const project = profileProjectDocument(profile);
+  return project.metadata?.name ?? project.name ?? 'intent-mcu-project';
+}
+function commonProjectFilename(profile) {
+  const stem = profileProjectName(profile).normalize('NFKD')
+    .replace(/[^A-Za-z0-9 _.-]/gu, '').trim().replace(/\s+/gu, '-').slice(0, 64);
+  return `${stem || 'intent-mcu-project'}.intent-mcu.json`;
+}
+function commonProjectText(profile) {
+  return canonicalProjectEnvelope(profile, profileProjectDocument(profile), commonProjectAdapters);
+}
+function legacyProjectText(profile) {
+  return `${JSON.stringify(profileProjectDocument(profile), null, 2)}\n`;
+}
+function profileMessage(profile, message) {
+  const target = profile === AVR_PROFILE ? elements.projectmessage
+    : profile === RP2040_PROFILE ? elements.picomessage
+    : profile === ESP32C3_PROFILE ? elements.c3message : elements.stm32message;
+  target.textContent = message;
+}
+function saveCommonProject(profile) {
+  try {
+    const text = commonProjectText(profile);
+    downloadText(commonProjectFilename(profile), text, 'application/json');
+    profileMessage(profile, 'Common data-only project download requested. Executable and runtime authority were excluded.');
+    return { ok: true, code: 'OK', text };
+  } catch (error) {
+    profileMessage(profile, `Save rejected (${error.code ?? error.message}). The project is unchanged.`);
+    return { ok: false, code: error.code ?? error.message };
+  }
+}
+function saveLegacyProject(profile) {
+  try {
+    const text = legacyProjectText(profile);
+    const name = commonProjectFilename(profile).replace(/\.intent-mcu\.json$/u, '.legacy.intent-mcu.json');
+    downloadText(name, text, 'application/json');
+    profileMessage(profile, 'Legacy compatibility copy downloaded for rc16 rollback recovery.');
+    return { ok: true, code: 'OK', text };
+  } catch (error) {
+    profileMessage(profile, `Legacy copy rejected (${error.code ?? error.message}).`);
+    return { ok: false, code: error.code ?? error.message };
+  }
+}
+async function openCommonProjectFile(file, handle = null) {
+  const activeBefore = selectedCompilerProfile;
+  if (!file) return { ok: false, code: 'PROJECT_FILE_REQUIRED' };
+  if (file.size > PROJECT_ENVELOPE_LIMIT) {
+    profileMessage(activeBefore, `Open rejected (INPUT_LIMIT). The current ${activeBefore} project is unchanged.`);
+    return { ok: false, code: 'INPUT_LIMIT' };
+  }
+  let source;
+  try { source = await file.text(); }
+  catch (error) {
+    profileMessage(activeBefore, `Open rejected (PROJECT_READ_FAILED). ${error?.message ?? 'read failed'}`);
+    return { ok: false, code: 'PROJECT_READ_FAILED' };
+  }
+  const result = prepareProjectEnvelope(source, commonProjectAdapters);
+  if (!result.ok) {
+    profileMessage(activeBefore, `Open rejected (${result.code}). Profile and current project are unchanged.`);
+    return result;
+  }
+  if (result.profile !== selectedCompilerProfile) {
+    elements.boardselect.value = result.profile;
+    elements.boardselect.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  if (result.profile === AVR_PROFILE) {
+    editor = result.prepared;
+    installProjectGeneration({
+      empty: currentProject().circuit.components.length === 0, reason: 'project.file-open',
+      runtimeMessage: 'Opened project requires build',
+    });
+    selectedSourceFile = 'main.ino';
+    projectFileHandle = result.report.legacy ? null : handle;
+    persistProject(); markFileSaved('opened file current'); renderCatalog(); renderProject();
+  } else if (result.profile === RP2040_PROFILE) picoPublicWorkbench.installPreparedProject(result.project);
+  else if (result.profile === ESP32C3_PROFILE) c3PublicWorkbench.installPreparedProject(result.project);
+  else if (result.profile === STM32F429ZI_PROFILE) stm32PublicWorkbench.installPreparedProject(result.project);
+  window.__COMMON_PROJECT_FILE_STATE__ = structuredClone({ profile: result.profile, report: result.report });
+  profileMessage(result.profile, result.report.legacy
+    ? `Legacy ${result.report.inputSchema} migrated in memory to ${result.report.outputSchema}. Save creates a new file; fresh Build is required.`
+    : `Common project opened for ${result.profile}. Executable authority was cleared; fresh Build is required.`);
+  return result;
+}
+window.__COMMON_PROJECT_FILES__ = Object.freeze({
+  schema: 'intent-mcu-project-envelope@1',
+  current: (profile = selectedCompilerProfile) => commonProjectText(profile),
+  legacy: (profile = selectedCompilerProfile) => legacyProjectText(profile),
+  prepare: (source) => prepareProjectEnvelope(source, commonProjectAdapters),
+});
 function endpointKey(endpoint) { return `${endpoint.component}.${endpoint.pin}`; }
 function parseEndpoint(key) {
   const split = key.lastIndexOf('.');
@@ -1783,13 +1944,11 @@ function downloadText(filename, text, type = 'text/plain') {
   link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 0);
 }
 function projectFilename() {
-  const stem = currentProject().metadata.name
-    .normalize('NFKD').replace(/[^A-Za-z0-9 _.-]/gu, '').trim().replace(/\s+/gu, '-').slice(0, 64);
-  return `${stem || 'intent-mcu-project'}.intent-mcu.json`;
+  return commonProjectFilename(AVR_PROFILE);
 }
 function boundedProjectText() {
-  const text = currentProjectText();
-  if (new TextEncoder().encode(text).length > 1024 * 1024) throw new Error('INPUT_LIMIT');
+  const text = commonProjectText(AVR_PROFILE);
+  if (new TextEncoder().encode(text).length > PROJECT_ENVELOPE_LIMIT) throw new Error('INPUT_LIMIT');
   return text;
 }
 function markFileSaved(state = 'saved to file') {
@@ -1833,27 +1992,7 @@ async function saveProjectFile() {
     : 'Project download requested, but browser recovery/local save failed. The in-memory project remains usable.';
 }
 async function replaceProjectFromFile(file, handle = null) {
-  if (!file) return;
-  if (file.size > 1024 * 1024) { showActionableError(elements.projectmessage, 'INPUT_LIMIT', `${file.size} bytes`); return; }
-  const before = currentProjectText();
-  let source;
-  try { source = await file.text(); }
-  catch (error) { showActionableError(elements.projectmessage, 'PROJECT_READ_FAILED', error?.message || 'read failed'); return; }
-  const result = parseEditorSource(source);
-  if (result.ok) editor = result.session;
-  if (!result.ok) {
-    showActionableError(elements.projectmessage, result.code, 'Open rejected atomically; project unchanged.');
-    if (currentProjectText() !== before) throw new Error('Atomic open boundary violated');
-    return;
-  }
-  installProjectGeneration({
-    empty: currentProject().circuit.components.length === 0, reason: 'project.file-open',
-    runtimeMessage: 'Opened project requires build',
-  });
-  selectedSourceFile = 'main.ino';
-  projectFileHandle = handle;
-  persistProject(); markFileSaved('opened file current'); publish({ importReport: result.report ?? result.code }); renderCatalog(); renderProject();
-  elements.projectmessage.textContent = 'Project opened from your computer and revalidated. Previous runtime output was cleared.';
+  return openCommonProjectFile(file, handle);
 }
 async function openProjectFile() {
   if (typeof window.showOpenFilePicker !== 'function') {
@@ -4404,11 +4543,7 @@ elements.projectreload.addEventListener('click', () => {
   savedRevision = editor.revision; savedProjectGeneration = lifecycle.projectGeneration;
   renderCatalog(); renderProject(); elements.projectmessage.textContent = 'Restored and revalidated browser recovery. Previous runtime output was cleared; save a project file for durable storage.';
 });
-elements.projectexport.addEventListener('click', async () => {
-  const text = currentProjectText(); const digest = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))].map((value) => value.toString(16).padStart(2, '0')).join('');
-  downloadText('intent-mcu-project.json', text, 'application/json');
-  elements.projectmessage.textContent = `Exported canonical project · SHA-256 ${digest.slice(0, 16)}…`;
-});
+elements.projectexport.addEventListener('click', () => saveLegacyProject(AVR_PROFILE));
 
 elements.walkthroughopen.addEventListener('click', () => elements.walkthrough.showModal());
 elements.quickbuild.addEventListener('click', () => {

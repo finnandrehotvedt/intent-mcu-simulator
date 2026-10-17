@@ -48,7 +48,7 @@ function validName(value) {
     && !/[\u0000-\u001f\u007f]/u.test(value);
 }
 
-function normalizeProject(value) {
+export function normalizeRp2040PublicProject(value) {
   if (!exactKeys(value, ['schema', 'name', 'profile', 'source', 'circuit'])
       || value.schema !== RP2040_PUBLIC_PROJECT_SCHEMA || value.profile !== RP2040_PICO_PROFILE
       || !validName(value.name) || typeof value.source !== 'string'
@@ -65,7 +65,7 @@ function normalizeProject(value) {
 }
 
 function defaultProject() {
-  return normalizeProject({
+  return normalizeRp2040PublicProject({
     schema: RP2040_PUBLIC_PROJECT_SCHEMA,
     name: 'Pico GPIO0 source project',
     profile: RP2040_PICO_PROFILE,
@@ -84,9 +84,11 @@ function download(name, text) {
 }
 
 export class Rp2040PublicWorkbench {
-  constructor({ elements, onState = () => {} } = {}) {
+  constructor({ elements, onState = () => {}, onSave = null, onOpen = null } = {}) {
     this.elements = elements;
     this.onState = onState;
+    this.onSave = onSave;
+    this.onOpen = onOpen;
     this.project = defaultProject();
     this.circuitEditor = new Rp2040PicoCircuitEditor(this.project.circuit);
     this.revision = 1;
@@ -121,12 +123,12 @@ export class Rp2040PublicWorkbench {
     this.elements.pause.addEventListener('click', () => this.pause());
     this.elements.reset.addEventListener('click', () => this.reset());
     this.elements.stop.addEventListener('click', () => this.stop());
-    this.elements.save.addEventListener('click', () => this.save());
+    this.elements.save.addEventListener('click', () => this.onSave ? this.onSave() : this.save());
     this.elements.open.addEventListener('click', () => this.elements.openInput.click());
     this.elements.openInput.addEventListener('change', async () => {
       const file = this.elements.openInput.files?.[0];
       this.elements.openInput.value = '';
-      if (file) await this.open(file);
+      if (file) await (this.onOpen ? this.onOpen(file) : this.open(file));
     });
   }
 
@@ -426,9 +428,22 @@ export class Rp2040PublicWorkbench {
     return result;
   }
 
-  save() {
+  projectDocument() {
     this.project.circuit = clone(this.circuitEditor.snapshot().draft);
-    const text = `${JSON.stringify(normalizeProject(this.project), null, 2)}\n`;
+    return normalizeRp2040PublicProject(this.project);
+  }
+
+  installPreparedProject(project, message = 'Local project revalidated. Executable state was excluded; build fresh firmware.') {
+    this.project = normalizeRp2040PublicProject(project);
+    this.circuitEditor = new Rp2040PicoCircuitEditor(this.project.circuit);
+    this.elements.source.value = this.project.source;
+    this.elements.name.value = this.project.name;
+    this.invalidate(message);
+    return { ok: true, code: 'OK' };
+  }
+
+  save() {
+    const text = `${JSON.stringify(this.projectDocument(), null, 2)}\n`;
     const filename = `${this.project.name.replace(/[^A-Za-z0-9_.-]+/gu, '-').slice(0, 64) || 'pico-project'}.intent-mcu.json`;
     download(filename, text);
     this.message = 'Saved a data-only local project. Executable bytes were excluded.';
@@ -439,12 +454,7 @@ export class Rp2040PublicWorkbench {
     try {
       if (!file || file.size > 160 * 1024) throw new Error('RP2040_PROJECT_SIZE_LIMIT');
       const value = parseStrictJson(await file.text(), 160 * 1024);
-      this.project = normalizeProject(value);
-      this.circuitEditor = new Rp2040PicoCircuitEditor(this.project.circuit);
-      this.elements.source.value = this.project.source;
-      this.elements.name.value = this.project.name;
-      this.invalidate('Local project revalidated. Executable state was excluded; build fresh firmware.');
-      return { ok: true, code: 'OK' };
+      return this.installPreparedProject(normalizeRp2040PublicProject(value));
     } catch (error) {
       this.message = `Open rejected (${error.code ?? error.message}). The current draft is unchanged.`;
       this.render();

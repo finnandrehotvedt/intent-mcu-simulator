@@ -266,8 +266,9 @@ async function selectWire(page, netId) {
   const downloadPromise = page.waitForEvent('download'); await page.click('#pico-save');
   const download = await downloadPromise; const savedPath = await download.path(); const savedText = fs.readFileSync(savedPath, 'utf8');
   const saved = JSON.parse(savedText);
-  assert.equal(saved.schema, 'intent-mcu-rp2040-public-project@1'); assert.equal(saved.source, LOW);
-  assert.equal(saved.circuit.layout.positions['resistor-1'].rotation, 90);
+  assert.equal(saved.schema, 'intent-mcu-project-envelope@1'); assert.equal(saved.profile, 'board.rp2040-pico-v1');
+  assert.equal(saved.project.schema, 'intent-mcu-rp2040-public-project@1'); assert.equal(saved.project.source, LOW);
+  assert.equal(saved.project.circuit.layout.positions['resistor-1'].rotation, 90);
   assert.ok(!/artifact|executable|firmwareBytes|uf2Sha256/iu.test(savedText));
   await page.fill('#pico-source', HIGH);
   await page.locator('#pico-open-input').setInputFiles({ name: 'invalid.intent-mcu.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ ...saved, executable: 'forbidden' })) });
