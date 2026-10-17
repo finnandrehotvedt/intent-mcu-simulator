@@ -1,11 +1,12 @@
-# Migration to 1.1.0-rc.13
+# Migration to 1.1.0-rc.14
 
 There is no account, cloud project database, or server-side project migration.
 Existing browser recovery remains readable. Before changing versions, save an
 important project to a local `.intent-mcu.json` file.
 
-This release changes documentation and verification, not a project schema.
-Files saved by rc.12 remain readable with the same profile-specific rules.
+This release adds one candidate-project thermostat starter but does not change
+the project schema. Files saved by rc.13 remain readable with the same
+profile-specific rules.
 
 After the update:
 
@@ -36,6 +37,6 @@ and a fresh Build is required before Run. The existing Return to AVR action
 restores the parked AVR editor. No prior private or public executable authority
 is imported.
 
-The five AVR starter projects can now replace one another across both project
+The six AVR starter projects can replace one another across both project
 schema generations without retaining a stale reducer. Firmware artifacts are
 still never migrated or reused; build again after choosing a starter.

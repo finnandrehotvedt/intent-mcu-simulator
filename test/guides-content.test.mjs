@@ -28,6 +28,12 @@ test('public guides cover every narrow controller and the exact recovery boundar
   assert(support.includes('Pico directly downloads <code>.intent-mcu.json</code>')
     && support.includes('ESP32-C3 and STM32 directly download <code>.json</code>'));
   assert(index.includes('/examples.html#narrow-controller-guides'));
+  assert(examples.includes('id="thermostat-boundary-test"')
+    && examples.includes('executed D13 and matching UART evidence'));
+  assert(controllers.includes('/examples.html#thermostat-boundary-test')
+    && support.includes('between 160 and 350 virtual milliseconds'));
+  assert(llms.includes('/examples.html#thermostat-boundary-test')
+    && llms.includes('known-bad equality variant'));
   assert.equal((sitemap.match(/<lastmod>2026-10-17<\/lastmod>/gu) ?? []).length, 5);
   assert(llms.includes('Open never restores executable authority')
     && llms.includes('/examples.html#stm32-first-project'));

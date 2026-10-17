@@ -2,6 +2,23 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.14 — 2026-10-17
+
+- Added one bounded AVR thermostat experiment with exact A1 temperature,
+  active-low D2 enable and current-limited D13 indicator wiring.
+- Added three reset-isolated virtual-time scenarios. A pass requires executed
+  D13, matching UART text and a complete ordered input log between 160 and
+  350 virtual milliseconds; wall-clock speed has no verdict authority.
+- Added a visible known-bad `<=` firmware variant that fails only the 30 °C
+  equality scenario from observed executed output while both control scenarios
+  remain green.
+- Kept local Save/Open data-only and required a fresh source-bound Build.
+  Correct and known-bad source produce distinct input and artifact identities;
+  compatibility-fixture metadata cannot start or select a runtime.
+- Added desktop/mobile browser acceptance for exact cable attachment, 3/3
+  correct results, known-bad detection, local Save/Open, fresh Build, no
+  third-party requests, no cookies and no horizontal overflow.
+
 ## 1.1.0-rc.13 — 2026-10-17
 
 - Added complete first-project guides for the bounded Pico, ESP32-C3 and

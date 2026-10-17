@@ -39,7 +39,7 @@
       <div><p class="eyebrow">LOCAL PROJECT</p><label class="project-name-field" for="project-name">Project name <input id="project-name" type="text" maxlength="80" value="Untitled project" autocomplete="off"></label><strong id="project-state">Untitled project · empty · not saved</strong><span id="lifecycle-state" class="lifecycle-state">empty</span></div>
       <div class="toolbar">
         <button id="project-new" type="button">New empty</button>
-        <select id="example-select" aria-label="Example project"><option value="blink">Blink LED</option><option value="button">Button input</option><option value="adc">ADC dial</option><option value="pwm">PWM fade</option><option value="temperature-lcd-threshold">Temperature display</option></select>
+        <select id="example-select" aria-label="Example project"><option value="blink">Blink LED</option><option value="button">Button input</option><option value="adc">ADC dial</option><option value="pwm">PWM fade</option><option value="temperature-lcd-threshold">Temperature display</option><option value="avr-thermostat-boundary-v1">Thermostat boundary test</option></select>
         <button id="project-demo" type="button">Open example</button>
         <button id="walkthrough-open" type="button">First project guide</button>
         <button id="undo" type="button" disabled>Undo</button><button id="redo" type="button" disabled>Redo</button>
@@ -375,6 +375,31 @@
       <article class="trace-card panel"><div class="card-heading"><div><p class="eyebrow">GPIO PROVENANCE</p><h2>Recent D13 trace</h2></div></div><ul id="trace" class="trace"><li>0000000000 · LOW</li></ul><p class="truth">Behaviour covers the tested compatibility subset and may differ from physical hardware.</p></article>
     </section>
 
+    <section id="thermostat-experiment" class="thermostat-experiment panel" aria-labelledby="thermostat-experiment-title" hidden>
+      <div class="card-heading"><div><p class="eyebrow">M1 · EXECUTED REQUIREMENT TEST</p><h2 id="thermostat-experiment-title">Thermostat boundary experiment</h2></div><span id="thermostat-experiment-state" class="state">Fresh build required</span></div>
+      <p class="thermostat-intro">The ideal module feeds A1, the active-low enable button feeds D2, and executed firmware drives the current-limited heater indicator from D13. The 30 °C equality case must turn heating off.</p>
+      <div class="thermostat-contract" aria-label="Thermostat experiment contract">
+        <span><strong>Setpoint</strong> 30 °C measured</span><span><strong>Inputs</strong> virtual 0 ms</span><span><strong>Observe</strong> 160–350 ms</span><span><strong>Verdict</strong> executed D13 + UART</span>
+      </div>
+      <div class="thermostat-actions">
+        <button id="thermostat-run-tests" type="button" disabled>Run 3 boundary tests</button>
+        <button id="thermostat-load-bad" type="button">Load known-bad ≤ variant</button>
+        <button id="thermostat-restore" type="button" disabled>Restore correct &lt; variant</button>
+      </div>
+      <div class="thermostat-table-wrap">
+        <table class="thermostat-table">
+          <thead><tr><th>Scenario</th><th>Controlled input</th><th>Expected D13</th><th>Observed evidence</th><th>Result</th></tr></thead>
+          <tbody id="thermostat-results">
+            <tr data-scenario="THERM-SCENARIO-BELOW-ENABLED"><th>Below · enabled</th><td>module 30 °C → measured 29 °C · pressed</td><td>HIGH · HEAT</td><td>Not run</td><td class="experiment-pending">Pending</td></tr>
+            <tr data-scenario="THERM-SCENARIO-EQUALITY-ENABLED"><th>Equality · enabled</th><td>module 31 °C → measured 30 °C · pressed</td><td>LOW · HOLD</td><td>Not run</td><td class="experiment-pending">Pending</td></tr>
+            <tr data-scenario="THERM-SCENARIO-BELOW-DISABLED"><th>Below · disabled</th><td>module 30 °C → measured 29 °C · released</td><td>LOW · OFF</td><td>Not run</td><td class="experiment-pending">Pending</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p id="thermostat-experiment-message" class="truth" role="status">Build this exact local project before running the experiment. Save/Open stores authored data only and always requires a fresh build.</p>
+      <p class="thermostat-limit"><strong>Model boundary:</strong> ideal sensor, ideal no-bounce button and LED command indicator only. No physical heater, room dynamics or safety certification.</p>
+    </section>
+
     <section class="instrument-grid" aria-label="Runtime instruments">
       <article class="instrument-card logic-card panel" aria-labelledby="logic-title"><div class="card-heading"><div><p class="eyebrow">ACTUAL VIRTUAL-CYCLE EDGES</p><h2 id="logic-title">Logic analyser</h2></div><span id="logic-count">0 transitions</span></div><svg id="logic-waveform" class="logic-waveform" viewBox="0 0 900 260" role="img" aria-label="Digital waveform from actual runtime transition records"></svg><div class="logic-controls"><label for="logic-channels">Channels</label><select id="logic-channels" multiple size="5"><option>D0</option><option>D1</option><option value="D2" selected>D2</option><option>D3</option><option>D4</option><option>D5</option><option>D6</option><option>D7</option><option>D8</option><option>D9</option><option>D10</option><option>D11</option><option>D12</option><option value="D13" selected>D13</option></select><label for="logic-window">Window / zoom</label><select id="logic-window"><option value="25">25 edges · close</option><option value="100" selected>100 edges</option><option value="500">500 edges · wide</option></select><label for="logic-cursor-a">Cursor A</label><input id="logic-cursor-a" type="range" min="0" max="100" value="25"><label for="logic-cursor-b">Cursor B</label><input id="logic-cursor-b" type="range" min="0" max="100" value="75"></div><p id="logic-cursor" class="logic-cursor">Cursor Δ —</p><details><summary>Transition event list</summary><ul id="logic-output" class="logic-output"><li>— · 0000000000 · LOW</li></ul></details></article>
       <article class="instrument-card panel" aria-labelledby="pin-title"><div class="card-heading"><div><p class="eyebrow">SAME MACHINE STATE</p><h2 id="pin-title">Pin inspector</h2></div></div><label for="pin-select">Pin</label><select id="pin-select"><option>D0</option><option>D1</option><option>D2</option><option>D3</option><option>D4</option><option>D5</option><option>D6</option><option>D7</option><option>D8</option><option>D9</option><option>D10</option><option>D11</option><option>D12</option><option selected>D13</option><option>A0</option><option>A1</option><option>A2</option><option>A3</option><option>A4</option><option>A5</option></select><dl class="pin-readout"><div><dt>Mode</dt><dd id="pin-mode">—</dd></div><div><dt>Level</dt><dd id="pin-level">—</dd></div><div><dt>PWM / ADC</dt><dd id="pin-detail">—</dd></div><div><dt>Diagnostic</dt><dd id="pin-diagnostic">—</dd></div><div><dt>Cycle</dt><dd id="pin-cycle">0</dd></div></dl></article>
@@ -398,7 +423,7 @@
       </nav>
     </section>
 
-    <footer>Intent MCU Simulator 1.1.0-rc.13 public release · AVR + editable bounded Pico + editable bounded ESP32-C3 + editable bounded STM32F429ZI execution · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
+    <footer>Intent MCU Simulator 1.1.0-rc.14 public release · AVR executed requirement experiment + editable bounded Pico + editable bounded ESP32-C3 + editable bounded STM32F429ZI execution · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
   </main>
   <button id="serial-tab" class="serial-tab" type="button" aria-expanded="false" aria-controls="serial-dock"><span>Serial</span><span id="serial-new-output" class="serial-new-output" hidden>0 new</span></button>
   <aside id="serial-dock" class="serial-dock" aria-labelledby="serial-title" hidden>

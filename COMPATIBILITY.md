@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.13 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.14 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -25,6 +25,15 @@ The source editor accepts `main.ino` plus bounded project-local `.h`, `.hpp`,
 `.c` and `.cpp` files. The fixed compile profile is Arduino AVR Boards 1.8.8,
 Arduino CLI 1.5.1 and AVR GCC 7.3.0-atmel3.6.1-arduino7. No arbitrary library
 installation is supported.
+
+One bounded thermostat experiment uses that same AVR compiler/runtime path.
+Its exact graph is an ideal analogue temperature module on A1, an active-low
+button on D2 and a D13 → 220 Ω → LED → ground indicator. The 30 °C equality
+rule is `measured < setpoint`; three scenarios reset independently and require
+executed D13, matching UART and complete input-event evidence in the 160–350 ms
+virtual-time window. The serialized candidate compatibility fixture contains
+metadata only and cannot authorize execution: current source and projected
+circuit are included in the fresh build identity after every Open or edit.
 
 The Pico editor accepts one exact project-owned `main.c` grammar. It can set
 GPIO0 HIGH or LOW, emit 1–24 uppercase UART0 characters and halt. The fixed

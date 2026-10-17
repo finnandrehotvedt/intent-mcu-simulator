@@ -570,6 +570,24 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .component-runtime-controls > div { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center; }
 .trace { margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 7px; list-style: none; }
 .trace li { border-left: 3px solid var(--cyan); background: #07141f; padding: 9px 11px; color: #bdd0da; font: .76rem ui-monospace, monospace; }
+.thermostat-experiment { margin-top: 16px; border-color: color-mix(in srgb, var(--lime) 48%, var(--line)); background: linear-gradient(135deg, #10283a 0%, #0a1825 62%, #102616 145%); }
+.thermostat-intro { margin: 12px 0; max-width: 980px; color: var(--muted); line-height: 1.55; }
+.thermostat-contract { display: grid; grid-template-columns: repeat(4, minmax(145px, 1fr)); gap: 8px; margin: 12px 0; }
+.thermostat-contract span { display: grid; gap: 3px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); font: .73rem/1.4 ui-monospace, monospace; background: #07141f; }
+.thermostat-contract strong { color: var(--cyan); font-family: inherit; }
+.thermostat-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.thermostat-actions #thermostat-run-tests { color: #07121d; background: var(--lime); border-color: var(--lime); }
+.thermostat-actions #thermostat-load-bad { border-color: var(--amber); }
+.thermostat-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+.thermostat-table { width: 100%; min-width: 780px; border-collapse: collapse; background: #07141f; }
+.thermostat-table th, .thermostat-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: .75rem; line-height: 1.4; }
+.thermostat-table thead th { color: var(--cyan); background: #0c2030; }
+.thermostat-table tbody th { color: var(--text); }
+.thermostat-table tbody tr:last-child > * { border-bottom: 0; }
+.experiment-pass { color: var(--lime); font-weight: 850; }
+.experiment-fail { color: var(--danger); font-weight: 850; }
+.experiment-running, .experiment-pending { color: var(--amber); font-weight: 800; }
+.thermostat-limit { margin: 10px 0 0; color: #d7c38f; font-size: .75rem; line-height: 1.5; }
 .instrument-grid { display: grid; grid-template-columns: 1.5fr .72fr; gap: 16px; margin-top: 16px; }
 .instrument-output { min-height: 150px; max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: 12px; border-radius: 9px; background: #040b11; color: #baf9cb; font: .77rem/1.5 ui-monospace, monospace; }
 .mode-switch { display: flex; gap: 7px; margin: 12px 0 8px; }
@@ -642,7 +660,7 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   main { width: min(100% - 18px, 680px); padding-top: 30px; }
   .app-header { align-items: start; flex-direction: column; gap: 8px; }
   .lede { text-align: left; }
-  .project-bar, .controller-workbench, .workspace, .runtime, .instrument-grid, .prompt-grid, .about-intro, .answer-grid, .starter-heading { grid-template-columns: 1fr; }
+  .project-bar, .controller-workbench, .workspace, .runtime, .instrument-grid, .prompt-grid, .about-intro, .answer-grid, .starter-heading, .thermostat-contract { grid-template-columns: 1fr; }
   .controller-capabilities { grid-template-columns: 1fr; }
   .panel-resizer { display: none; }
   .workspace > .catalog, .workspace > .board-card, .workspace > .inspector, .logic-card { grid-column: 1; }

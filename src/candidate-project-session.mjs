@@ -351,6 +351,17 @@ export class CandidateEditorSession {
           draft.project.metadata = { name: command.name };
           break;
         }
+        case 'source.set': {
+          if (!exactCommand(command, ['name', 'content']) || typeof command.name !== 'string'
+              || typeof command.content !== 'string') {
+            return failure('EDITOR_COMMAND_SHAPE', this.revision);
+          }
+          const file = draft.project.source.files.find((item) => item.name === command.name);
+          if (!file) return failure('EDITOR_SOURCE_MISSING', this.revision, [command.name]);
+          file.content = command.content;
+          runtimeDirty = true;
+          break;
+        }
         case 'component.add': {
           if (!exactCommand(command, ['component', 'position']) || !validPoint(command.position)
               || (!CANDIDATE_COMPONENT_TYPES.has(command.component?.type)

@@ -28,7 +28,7 @@ let browser;
   await page.goto(base, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__M11_READY__ === true);
   const cards = page.locator('.starter-card');
-  assert(await cards.count() === 5, 'starter gallery does not expose all five validated examples');
+  assert(await cards.count() === 6, 'starter gallery does not expose all six validated examples');
   assert((await cards.nth(0).innerText()).includes('Controller · resistor · LED'), 'starter card omits its parts');
   const examples = [
     ['blink', 'Blink demo'],
@@ -36,6 +36,7 @@ let browser;
     ['adc', 'ADC dial'],
     ['pwm', 'PWM fade'],
     ['temperature-lcd-threshold', 'Temperature display'],
+    ['avr-thermostat-boundary-v1', 'Thermostat boundary test'],
   ];
   const projectName = () => page.evaluate(() => {
     const value = window.__M6_PROJECT__();
@@ -90,7 +91,7 @@ let browser;
       visibleCards: [...document.querySelectorAll('.starter-card')].filter((card) => card.getClientRects().length).length,
     }));
     assert(layout.overflow <= 1, `starter gallery overflows at ${viewport.width}px`);
-    assert(layout.visibleCards === 5, `starter cards disappear at ${viewport.width}px`);
+    assert(layout.visibleCards === 6, `starter cards disappear at ${viewport.width}px`);
   }
   assert(mutations.length === 0, `starter gallery made server mutation request: ${mutations.join(', ')}`);
   assert(errors.length === 0, `starter journeys raised browser errors: ${errors.join(' | ')}`);
@@ -99,7 +100,7 @@ let browser;
     fs.mkdirSync(path.dirname(process.env.STARTER_SCREENSHOT), { recursive: true });
     await page.screenshot({ path: process.env.STARTER_SCREENSHOT, fullPage: true });
   }
-  console.log(JSON.stringify({ browser: browserName, result: 'pass', cards: 5,
+  console.log(JSON.stringify({ browser: browserName, result: 'pass', cards: 6,
     cardJourneys: examples.length, dropdownJourneys: examples.length + 1,
     finalProject: await projectName(), serverProjectWrites: 0 }));
   await context.close();

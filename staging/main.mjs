@@ -40,6 +40,21 @@ import {
   openTemperatureLcdThresholdExample,
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
+  THERMOSTAT_EXPERIMENT_ID,
+  THERMOSTAT_SCENARIOS,
+  THERMOSTAT_TIME,
+  evaluateThermostatObservation,
+  thermostatScenarioControls,
+} from '../src/thermostat-experiment-contract.mjs';
+import {
+  THERMOSTAT_EXPERIMENT_CARD,
+  createThermostatExperiment,
+  isThermostatExperimentProject,
+  openThermostatExperiment,
+  thermostatFirmwareSource,
+  thermostatFirmwareVariant,
+} from '../src/thermostat-experiment.mjs';
+import {
   AVR_PROFILE,
   ESP32C3_PROFILE,
   RP2040_PROFILE,
@@ -132,6 +147,8 @@ const elements = Object.fromEntries([
   'serial-text-mode', 'serial-event-mode', 'serial-export', 'serial-newline', 'logic-waveform', 'logic-cursor-a', 'logic-cursor-b',
   'serial-tab', 'serial-dock', 'serial-close', 'serial-resizer', 'serial-resume', 'serial-new-output',
   'canvas-select-mode', 'canvas-interact-mode',
+  'thermostat-experiment', 'thermostat-experiment-state', 'thermostat-run-tests',
+  'thermostat-load-bad', 'thermostat-restore', 'thermostat-results', 'thermostat-experiment-message',
   'starter-examples', 'starter-gallery', 'quick-controls', 'workbench-workspace',
   'board-select', 'controller-status', 'toolchain-boundary',
   'controller-workbench', 'controller-workbench-eyebrow', 'controller-workbench-title', 'controller-workbench-badge',
@@ -214,6 +231,9 @@ let serialResumeGuardUntil = 0;
 let serialScrollFrame = null;
 let canvasInteractionMode = 'select';
 let activeCanvasButton = null;
+let thermostatExperimentRun = null;
+let thermostatExperimentResults = [];
+let thermostatExperimentNotice = 'Build this exact local project before running the experiment.';
 const characterLcdRuntime = new Map();
 const publicPreviewControlStates = new Map();
 const publicPreviewRegions = [
@@ -1345,6 +1365,190 @@ function currentProjectText() {
 function currentCandidateInputs() {
   return editor.kind === 'candidate-project-v3' ? candidateRuntimeInputs(editor) : [];
 }
+function thermostatProjectActive() {
+  return selectedCompilerProfile === AVR_PROFILE && isThermostatExperimentProject(currentProject());
+}
+function thermostatRuntimeReady() {
+  return thermostatProjectActive()
+    && Boolean(worker && lifecycle.runtimeBinding && lifecycle.artifact)
+    && ['ready', 'paused'].includes(lifecycle.phase)
+    && loadedSourceIdentity === buildInputIdentity();
+}
+function thermostatKnownBadCaught() {
+  if (thermostatExperimentResults.length !== THERMOSTAT_SCENARIOS.scenarios.length) return false;
+  return thermostatExperimentResults.every((result) => (
+    result.scenarioId === 'THERM-SCENARIO-EQUALITY-ENABLED'
+      ? result.status === 'failed'
+        && !result.checks.primaryExecutedPin
+        && !result.checks.corroboratingSerial
+      : result.status === 'passed'
+  ));
+}
+function thermostatPublishedState() {
+  return {
+    experimentId: THERMOSTAT_EXPERIMENT_ID,
+    active: thermostatProjectActive(),
+    variant: thermostatProjectActive() ? thermostatFirmwareVariant(currentProject()) : null,
+    running: Boolean(thermostatExperimentRun),
+    phase: thermostatExperimentRun?.phase ?? 'idle',
+    scenarioIndex: thermostatExperimentRun?.scenarioIndex ?? null,
+    results: structuredClone(thermostatExperimentResults),
+    knownBadCaught: thermostatKnownBadCaught(),
+    freshBuildReady: thermostatRuntimeReady(),
+  };
+}
+function renderThermostatExperimentPanel() {
+  const active = thermostatProjectActive();
+  elements.thermostatexperiment.hidden = !active;
+  if (!active) {
+    publish({ thermostatExperiment: thermostatPublishedState() });
+    return;
+  }
+  const variant = thermostatFirmwareVariant(currentProject());
+  const freshBuildReady = thermostatRuntimeReady();
+  const runActive = Boolean(thermostatExperimentRun);
+  elements.thermostatruntests.disabled = !freshBuildReady || runActive || variant === 'modified';
+  elements.thermostatloadbad.disabled = runActive || variant === 'known-bad-equality';
+  elements.thermostatrestore.disabled = runActive || variant === 'correct';
+  if (runActive) {
+    for (const control of runtimeControls) control.disabled = true;
+    elements.quickrun.disabled = true;
+    elements.quickpause.disabled = true;
+    elements.quickreset.disabled = true;
+  }
+
+  for (const [index, scenario] of THERMOSTAT_SCENARIOS.scenarios.entries()) {
+    const row = elements.thermostatresults.querySelector(`[data-scenario="${scenario.id}"]`);
+    if (!row) continue;
+    const evidence = row.children[3];
+    const verdict = row.children[4];
+    const result = thermostatExperimentResults.find((item) => item.scenarioId === scenario.id);
+    const current = thermostatExperimentRun?.scenarioIndex === index;
+    verdict.className = result?.status === 'passed'
+      ? 'experiment-pass'
+      : result?.status === 'failed' ? 'experiment-fail' : current ? 'experiment-running' : 'experiment-pending';
+    verdict.textContent = result?.status === 'passed' ? 'Pass' : result?.status === 'failed' ? 'Fail' : current ? 'Running' : 'Pending';
+    evidence.textContent = result
+      ? `${result.virtualMilliseconds?.toFixed(3) ?? '—'} ms · D13 ${result.observed.d13 === null ? 'missing' : result.observed.d13 ? 'HIGH' : 'LOW'} · ${result.checks.corroboratingSerial ? 'UART matched' : 'UART mismatch'} · ${result.checks.inputsComplete ? 'inputs logged' : 'input evidence missing'}`
+      : current ? 'Resetting, applying inputs and executing firmware…' : 'Not run';
+  }
+
+  if (runActive) {
+    elements.thermostatexperimentstate.textContent = `Scenario ${thermostatExperimentRun.scenarioIndex + 1}/3`;
+  } else if (thermostatKnownBadCaught() && variant === 'known-bad-equality') {
+    elements.thermostatexperimentstate.textContent = 'Known-bad caught';
+  } else if (thermostatExperimentResults.length === THERMOSTAT_SCENARIOS.scenarios.length) {
+    const passed = thermostatExperimentResults.filter((result) => result.status === 'passed').length;
+    elements.thermostatexperimentstate.textContent = `${passed}/3 passed`;
+  } else {
+    elements.thermostatexperimentstate.textContent = freshBuildReady ? 'Ready to test' : 'Fresh build required';
+  }
+  elements.thermostatexperimentmessage.textContent = thermostatExperimentNotice;
+  publish({ thermostatExperiment: thermostatPublishedState() });
+}
+function cancelThermostatExperiment(message, { clearResults = true, render = true } = {}) {
+  thermostatExperimentRun = null;
+  if (clearResults) thermostatExperimentResults = [];
+  if (message) thermostatExperimentNotice = message;
+  if (render) renderThermostatExperimentPanel();
+}
+function startThermostatExperiment() {
+  if (!thermostatRuntimeReady()) {
+    thermostatExperimentNotice = 'Build this exact local project before running the experiment.';
+    renderThermostatExperimentPanel();
+    return { ok: false, code: 'THERMOSTAT_FRESH_BUILD_REQUIRED' };
+  }
+  const variant = thermostatFirmwareVariant(currentProject());
+  if (!['correct', 'known-bad-equality'].includes(variant)) {
+    thermostatExperimentNotice = 'The source no longer matches either reviewed experiment variant.';
+    renderThermostatExperimentPanel();
+    return { ok: false, code: 'THERMOSTAT_SOURCE_MODIFIED' };
+  }
+  thermostatExperimentResults = [];
+  thermostatExperimentRun = { phase: 'await-reset', scenarioIndex: 0, variant };
+  thermostatExperimentNotice = 'Running three isolated scenarios from virtual cycle 0. Wall-clock speed does not affect the verdict.';
+  worker.postMessage({ command: 'reset' });
+  renderThermostatExperimentPanel();
+  return { ok: true, code: 'THERMOSTAT_EXPERIMENT_STARTED' };
+}
+function advanceThermostatExperiment(message) {
+  const run = thermostatExperimentRun;
+  if (!run) return;
+  if (message.kind === 'error' || message.kind === 'stopped-error') {
+    cancelThermostatExperiment(`Experiment unresolved: ${message.message ?? 'runtime error'}. Nothing was marked passed.`, { clearResults: false, render: false });
+    return;
+  }
+  const scenario = THERMOSTAT_SCENARIOS.scenarios[run.scenarioIndex];
+  if (!scenario) {
+    cancelThermostatExperiment('Experiment unresolved: scenario contract was unavailable.', { clearResults: false, render: false });
+    return;
+  }
+  if (run.phase === 'await-reset') {
+    if (message.cycle !== 0 || !message.paused || !['reset', 'ready'].includes(message.kind)) return;
+    run.phase = 'await-controls';
+    for (const control of thermostatScenarioControls(scenario.id)) worker.postMessage(control);
+    return;
+  }
+  if (run.phase === 'await-controls') {
+    const required = thermostatScenarioControls(scenario.id);
+    const logged = message.eventLog?.log?.filter((event) => event.type === 'control') ?? [];
+    const complete = message.eventLog?.dropped === 0 && required.every((control) => logged.some(
+      (event) => event.componentId === control.componentId && event.key === control.key
+        && event.value === control.value && event.targetCycle === 0,
+    ));
+    if (!complete) return;
+    const accepted = applyLifecycle({ type: 'runtime.run' });
+    if (!accepted.accepted) {
+      cancelThermostatExperiment(`Experiment unresolved: ${accepted.code}. Nothing was marked passed.`, { clearResults: false, render: false });
+      return;
+    }
+    run.phase = 'running';
+    worker.postMessage({ command: 'speed', speed: 'maximum' });
+    worker.postMessage({ command: 'run' });
+    return;
+  }
+  if (run.phase === 'running') {
+    const virtualMilliseconds = message.cycle / THERMOSTAT_TIME.clockHertz * 1000;
+    if (virtualMilliseconds < THERMOSTAT_TIME.observeAtOrAfterMilliseconds) return;
+    run.phase = 'await-pause';
+    const paused = applyLifecycle({ type: 'runtime.pause' });
+    if (!paused.accepted) {
+      cancelThermostatExperiment(`Experiment unresolved: ${paused.code}. Nothing was marked passed.`, { clearResults: false, render: false });
+      return;
+    }
+    worker.postMessage({ command: 'pause' });
+    return;
+  }
+  if (run.phase !== 'await-pause' || !message.paused) return;
+  const result = evaluateThermostatObservation(scenario.id, message);
+  thermostatExperimentResults.push(result);
+  if (run.scenarioIndex + 1 < THERMOSTAT_SCENARIOS.scenarios.length) {
+    run.scenarioIndex += 1;
+    run.phase = 'await-reset';
+    worker.postMessage({ command: 'reset' });
+    return;
+  }
+  thermostatExperimentRun = null;
+  const passed = thermostatExperimentResults.filter((item) => item.status === 'passed').length;
+  thermostatExperimentNotice = run.variant === 'known-bad-equality' && thermostatKnownBadCaught()
+    ? 'Known-bad firmware caught: the equality scenario executed D13 HIGH and reported HEAT, while the other two scenarios passed.'
+    : passed === THERMOSTAT_SCENARIOS.scenarios.length
+      ? '3/3 passed from executed D13, matching UART and complete virtual-cycle input evidence.'
+      : `${passed}/3 passed. Failed evidence remains visible; no missing evidence was treated as a pass.`;
+}
+function loadThermostatFirmwareVariant(variant) {
+  if (!thermostatProjectActive()) return { ok: false, code: 'THERMOSTAT_PROJECT_REQUIRED' };
+  const result = applyEditor({
+    type: 'source.set', name: 'main.ino', content: thermostatFirmwareSource(variant),
+  }, variant === 'known-bad-equality' ? 'Loaded known-bad equality variant' : 'Restored correct equality variant');
+  if (result.ok) {
+    thermostatExperimentNotice = variant === 'known-bad-equality'
+      ? 'Known-bad ≤ firmware loaded. Build it fresh, then run the same three scenarios.'
+      : 'Correct < firmware restored. Build it fresh before testing.';
+    renderThermostatExperimentPanel();
+  }
+  return result;
+}
 function currentCompilerTarget() {
   return candidateCompilerTarget(selectedCompilerProfile) ?? candidateCompilerTarget(AVR_PROFILE);
 }
@@ -1804,6 +2008,10 @@ function releaseCanvasButton(reason = 'canvas button') {
 }
 
 function stopRuntime(message = 'No current artifact loaded', { updateLifecycle = true, stale = false } = {}) {
+  cancelThermostatExperiment(
+    thermostatProjectActive() ? `${message}. A fresh build is required before the experiment can run.` : null,
+    { clearResults: true, render: false },
+  );
   workerToken += 1;
   worker?.terminate();
   worker = null;
@@ -3129,6 +3337,7 @@ function renderProject() {
   });
   renderLifecycle();
   renderComponents(); renderInspector(); renderRuntimeControls(); renderPublicControllerWorkbench();
+  renderThermostatExperimentPanel();
 }
 
 function svgNode(name, attributes = {}, text = null) {
@@ -3349,6 +3558,8 @@ function renderRuntime(message) {
   if (stopped) { elements.run.disabled = true; elements.pause.disabled = true; elements.step.disabled = true; }
   else { elements.run.disabled = !message.paused; elements.pause.disabled = message.paused; elements.step.disabled = !message.paused; }
   elements.quickrun.disabled = elements.run.disabled; elements.quickpause.disabled = elements.pause.disabled; elements.quickreset.disabled = elements.reset.disabled;
+  advanceThermostatExperiment(message);
+  renderThermostatExperimentPanel();
 }
 
 function loadArtifact(hex, artifactIdentity) {
@@ -3376,6 +3587,7 @@ function loadArtifact(hex, artifactIdentity) {
     running = false; const state = { kind: 'stopped-error', message: event.message };
     applyLifecycle({ type: 'runtime.message', binding: runtimeBinding, message: state });
     publish({ runtime: state });
+    cancelThermostatExperiment(`Experiment unresolved: ${event.message}. Nothing was marked passed.`, { clearResults: false });
     showActionableError(elements.projectmessage, 'WORKER_ERROR', event.message);
     elements.workerstate.textContent = 'Stopped — rebuild the current project';
   });
@@ -3620,6 +3832,9 @@ elements.pause.addEventListener('click', () => {
 });
 elements.step.addEventListener('click', () => worker?.postMessage({ command: 'step' }));
 elements.reset.addEventListener('click', () => worker?.postMessage({ command: 'reset' }));
+elements.thermostatruntests.addEventListener('click', startThermostatExperiment);
+elements.thermostatloadbad.addEventListener('click', () => loadThermostatFirmwareVariant('known-bad-equality'));
+elements.thermostatrestore.addEventListener('click', () => loadThermostatFirmwareVariant('correct'));
 elements.speed.addEventListener('change', () => {
   const speed = elements.speed.value === 'maximum' ? 'maximum' : Number(elements.speed.value);
   elements.requestedspeed.textContent = speed === 'maximum' ? 'Maximum' : `${speed}×`;
@@ -3932,6 +4147,33 @@ elements.projectnew.addEventListener('click', () => {
   localStorage.removeItem(PROJECT_STORAGE_KEY); localStorage.removeItem(PROJECT_RECOVERY_KEY); renderCatalog(); renderProject(); elements.projectmessage.textContent = 'Created an actually empty project.';
 });
 function loadExampleProject(exampleId, reason = 'project.demo') {
+  if (exampleId === THERMOSTAT_EXPERIMENT_ID) {
+    const before = currentProjectText();
+    let example;
+    try { example = createThermostatExperiment(); }
+    catch (error) {
+      showActionableError(elements.projectmessage, error?.message ?? 'EXAMPLE_INVALID', 'Thermostat experiment could not be constructed.');
+      return { ok: false, code: error?.message ?? 'EXAMPLE_INVALID' };
+    }
+    const parsed = openThermostatExperiment(example.text);
+    if (!parsed.ok) {
+      showActionableError(elements.projectmessage, parsed.code, 'Thermostat experiment was rejected atomically; project unchanged.');
+      if (currentProjectText() !== before) throw new Error('Atomic thermostat example boundary violated');
+      return parsed;
+    }
+    editor = parsed.session;
+    installProjectGeneration({
+      empty: false, reason, runtimeMessage: `${example.name} loaded — build required`,
+    });
+    selectedSourceFile = 'main.ino';
+    elements.exampleselect.value = exampleId;
+    thermostatExperimentNotice = 'Build this exact local project before running the three boundary scenarios.';
+    persistProject();
+    publish({ lastAction: 'THERMOSTAT_EXPERIMENT_LOADED', importReport: parsed.report ?? parsed.code });
+    renderCatalog(); renderProject();
+    elements.projectmessage.textContent = `${example.name} loaded with exact A1 sensor, D2 active-low button and current-limited D13 indicator wiring.`;
+    return { ok: true, code: parsed.code, example };
+  }
   if (exampleId === TEMPERATURE_LCD_THRESHOLD_EXAMPLE_ID) {
     const before = currentProjectText();
     let example;
@@ -3977,7 +4219,7 @@ function loadExampleProject(exampleId, reason = 'project.demo') {
 }
 
 function renderStarterExamples() {
-  const cards = [...exampleCatalog(), TEMPERATURE_LCD_THRESHOLD_CARD].map((example) => {
+  const cards = [...exampleCatalog(), TEMPERATURE_LCD_THRESHOLD_CARD, THERMOSTAT_EXPERIMENT_CARD].map((example) => {
     const button = document.createElement('button');
     button.type = 'button'; button.className = 'starter-card'; button.dataset.example = example.id;
     button.setAttribute('aria-label', `Open ${example.name}: ${example.focus}`);
@@ -4236,6 +4478,7 @@ setInterval(() => {
     const state = { kind: 'stopped-error', message: 'Worker watchdog expired' };
     if (binding) applyLifecycle({ type: 'runtime.message', binding, message: state });
     publish({ runtime: state }); elements.workerstate.textContent = 'Stopped — rebuild the current project';
+    cancelThermostatExperiment('Experiment unresolved: worker watchdog expired. Nothing was marked passed.', { clearResults: false });
     showActionableError(elements.projectmessage, 'WORKER_WATCHDOG', 'No worker message arrived within 2000 ms.');
   }
 }, 250);

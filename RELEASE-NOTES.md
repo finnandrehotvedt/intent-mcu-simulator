@@ -1,4 +1,28 @@
-# Intent MCU Simulator 1.1.0-rc.13
+# Intent MCU Simulator 1.1.0-rc.14
+
+This release adds one bounded, visible requirements-to-execution experiment
+without expanding the AVR controller, compiler or peripheral claim.
+
+## Thermostat boundary experiment
+
+- The sixth AVR starter has exact A1 temperature-module, D2 active-low button
+  and D13 → 220 Ω → LED indicator wiring.
+- Three scenarios reset independently at virtual cycle 0 and observe only in
+  the 160–350 ms virtual-time window. Executed D13 is primary evidence; UART
+  and the ordered input log must also agree. Missing or late evidence fails.
+- The correct `<` firmware passes below/enabled, equality/enabled and
+  below/disabled. The visible known-bad `<=` variant produces a D13 HIGH / HEAT
+  failure at equality while the other two scenarios pass.
+- Save/Open contains authored data and compatibility-reference metadata, not
+  executable bytes or verdicts. Open and every source change retire runtime
+  authority until the visible source is built again.
+- The temperature, button and LED remain ideal teaching models. No room,
+  heater, thermal dynamics, sensor accuracy, contact bounce, physical hardware
+  or safety-controller certification is claimed.
+
+---
+
+## 1.1.0-rc.13
 
 This documentation and local-file verification release makes the three bounded
 non-AVR profiles easier to learn and recover without changing their simulator,

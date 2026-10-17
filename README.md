@@ -136,6 +136,14 @@ between `D2` and ground and configure `D2` as `INPUT_PULLUP` in firmware. The
 electrical model rejects a missing current-limiting resistor, reversed LED,
 ambiguous ground, reused pin, direct supply short, or conflicting outputs.
 
+The thermostat boundary starter adds an ideal temperature module on `A1`, an
+active-low enable button on `D2`, and a 220 Ω LED command indicator on `D13`.
+Its three reset-isolated scenarios observe only between 160 and 350 virtual
+milliseconds. A result passes only when the executed D13 pin, UART line, and
+ordered input log agree. The supplied known-bad `<=` variant must fail the
+30 °C equality scenario. This does not model a physical heater, room dynamics,
+sensor accuracy, contact bounce, or a safety controller.
+
 Open the named Serial tab to dock text/events beside the canvas on a wide
 screen or above it as a bottom drawer on a narrow screen. Scrolling away from
 the end pauses autoscroll and exposes an unread indicator; Jump to new output
@@ -161,7 +169,7 @@ source; it does not authorize redistributing the resulting image.
 
 Additional current limits:
 
-- source version `1.1.0-rc.13` is prepared for the release at
+- source version `1.1.0-rc.14` is prepared for the release at
   `https://lab.teachthecompany.com/`; hosted compiler/toolchain images and
   private deployment configuration remain outside this source repository;
 - public execution supports the tested ATmega328P subset, one bounded RP2040
