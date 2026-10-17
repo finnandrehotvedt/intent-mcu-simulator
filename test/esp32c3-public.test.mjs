@@ -151,6 +151,7 @@ test('public C3 service rejects cross-context access, limits sessions and retire
   assert.equal(missingOrigin.status, 403);
   assert.equal((await missingOrigin.json()).code, 'REQUEST_CONTEXT_REJECTED');
   assert.equal(missingOrigin.headers.get('cache-control'), 'no-store');
+  assert.equal(missingOrigin.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive');
 
   const createdResponse = await fetch(`${base}/api/c3/session`, {
     method: 'POST', headers: mutation, body: '{}',

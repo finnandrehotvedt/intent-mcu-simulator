@@ -22,8 +22,20 @@ const SECURITY_HEADERS = Object.freeze({
   'Cross-Origin-Resource-Policy': 'same-origin',
 });
 
+const INDEXABLE_DOCUMENTS = new Set([
+  '/', '/index.html', '/controllers.html', '/components.html', '/examples.html', '/support.html',
+]);
+
+function responseHeaders(pathname = null) {
+  return {
+    ...SECURITY_HEADERS,
+    'X-Robots-Tag': pathname !== null && INDEXABLE_DOCUMENTS.has(pathname)
+      ? 'index, follow' : 'noindex, nofollow, noarchive',
+  };
+}
+
 function json(response, status, value) {
-  response.writeHead(status, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
+  response.writeHead(status, { ...responseHeaders(), 'Content-Type': 'application/json; charset=utf-8' });
   response.end(`${JSON.stringify(value)}\n`);
 }
 
@@ -85,7 +97,7 @@ export function createRequestHandler({
       const url = new URL(request.url, `http://${request.headers.host ?? '127.0.0.1'}`);
       if (url.pathname === '/api/build') {
         if (request.method !== 'POST') {
-          response.writeHead(405, { ...SECURITY_HEADERS, Allow: 'POST', 'Content-Type': 'application/json; charset=utf-8' });
+          response.writeHead(405, { ...responseHeaders(), Allow: 'POST', 'Content-Type': 'application/json; charset=utf-8' });
           response.end('{"code":"METHOD_NOT_ALLOWED"}\n');
           return;
         }
@@ -110,7 +122,7 @@ export function createRequestHandler({
           json(response, 200, coordinator.cancel(jobMatch[1], capability, origin));
           return;
         }
-        response.writeHead(405, { ...SECURITY_HEADERS, Allow: 'GET, DELETE', 'Content-Type': 'application/json; charset=utf-8' });
+        response.writeHead(405, { ...responseHeaders(), Allow: 'GET, DELETE', 'Content-Type': 'application/json; charset=utf-8' });
         response.end('{"code":"METHOD_NOT_ALLOWED"}\n');
         return;
       }
@@ -126,7 +138,7 @@ export function createRequestHandler({
         return;
       }
       if (!['GET', 'HEAD'].includes(request.method)) {
-        response.writeHead(405, { ...SECURITY_HEADERS, Allow: 'GET, HEAD', 'Content-Type': 'text/plain; charset=utf-8' });
+        response.writeHead(405, { ...responseHeaders(), Allow: 'GET, HEAD', 'Content-Type': 'text/plain; charset=utf-8' });
         response.end('Method not allowed');
         return;
       }
@@ -135,7 +147,8 @@ export function createRequestHandler({
       if (file !== staticRoot && !file.startsWith(`${staticRoot}${path.sep}`)) throw new BuildProtocolError('NOT_FOUND', 'Not found', 404);
       if (!(await stat(file)).isFile()) throw new BuildProtocolError('NOT_FOUND', 'Not found', 404);
       const content = await readFile(file);
-      response.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': TYPES.get(path.extname(file)) ?? 'application/octet-stream' });
+      response.writeHead(200, { ...responseHeaders(url.pathname),
+        'Content-Type': TYPES.get(path.extname(file)) ?? 'application/octet-stream' });
       if (request.method === 'HEAD') response.end(); else response.end(content);
     } catch (error) {
       const status = error instanceof BuildProtocolError ? error.httpStatus : 404;

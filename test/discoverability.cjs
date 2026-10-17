@@ -13,9 +13,9 @@ const expectedExternalLinks = [
 ];
 const documentation = [
   ['/controllers.html', 'Controller support | Intent MCU Simulator', 'ESP32-C3'],
-  ['/components.html', 'Supported components | Intent MCU Simulator', '16 selectable'],
-  ['/examples.html', 'Starter examples | Intent MCU Simulator', 'Temperature display'],
-  ['/support.html', 'Help and limitations | Intent MCU Simulator', 'ownership with the learner'],
+  ['/components.html', 'Supported components | Intent MCU Simulator', 'stable ID'],
+  ['/examples.html', 'Starter examples | Intent MCU Simulator', 'RP2040 Pico · GPIO0 light'],
+  ['/support.html', 'Help and limitations | Intent MCU Simulator', 'Add missing part'],
 ];
 const expectedInternalLinks = documentation.map(([pathname]) => pathname)
   .map((pathname) => new URL(pathname, base).href);
@@ -120,6 +120,7 @@ function assert(value, message) {
   for (const pathname of ['/', ...documentation.map(([path]) => path)]) {
     assert(sitemap.includes(`<loc>${new URL(pathname, canonical).href}</loc>`), `sitemap ${pathname}`);
   }
+  assert((sitemap.match(/<lastmod>2026-10-17<\/lastmod>/g) ?? []).length === 5, 'stale sitemap lastmod');
   assert(!/<loc>[^<]+\/(?:api|evidence|private|candidate)(?:\/|<)/.test(sitemap), 'private route in sitemap');
   const controllers = await (await context.request.get(new URL('/controllers.html', base).href)).text();
   assert(controllers.includes('ATmega328P · 16 MHz · 5 V')
@@ -129,6 +130,11 @@ function assert(value, message) {
     && controllers.includes('Actual QEMU CPU/UART + separate GPIO2 model')
     && controllers.includes('Actual Renode PB0/USART3 subset')
     && controllers.includes('Arbitrary C or ELF'), 'controller page capability boundary');
+  for (const pathname of ['/healthz', '/readyz', '/api/build/not-a-job', '/nonexistent-private-project']) {
+    const item = await context.request.get(new URL(pathname, base).href);
+    assert(item.headers()['x-robots-tag'] === 'noindex, nofollow, noarchive',
+      `${pathname} X-Robots-Tag ${item.headers()['x-robots-tag']}`);
+  }
   for (const link of expectedExternalLinks) {
     const item = await context.request.get(link, { maxRedirects: 5 });
     assert(item.status() >= 200 && item.status() < 400, `${link} status ${item.status()}`);

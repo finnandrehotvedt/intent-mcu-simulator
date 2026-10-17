@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="The 16 selectable circuit components supported by Intent MCU Simulator and their model limits.">
+  <meta name="description" content="Supported AVR and bounded Pico, ESP32-C3 and STM32 circuit parts, properties, compatibility and electrical-model limits.">
   <meta name="robots" content="index,follow,max-snippet:-1">
   <title>Supported components | Intent MCU Simulator</title>
   <link rel="canonical" href="https://lab.teachthecompany.com/components.html">
@@ -13,7 +13,7 @@
 </head>
 <body>
   <main class="docs-main">
-    <header class="app-header"><div><p class="eyebrow">TESTED COMPONENT LIBRARY</p><h1>Supported components</h1></div><p class="lede">Every selectable part has original project artwork, named terminals, an electrical rule set, and a bounded runtime model.</p></header>
+    <header class="app-header"><div><p class="eyebrow">TESTED COMPONENT LIBRARY</p><h1>Supported components</h1></div><p class="lede">The AVR catalogue and the three narrow controller profiles are separate. Every published part has original project artwork, named terminals, electrical rules and an explicit model boundary.</p></header>
     <nav class="docs-nav" aria-label="Lab documentation"><a href="/">Open workbench</a><a href="/controllers.html">Controllers</a><a href="/examples.html">Examples</a><a href="/support.html">Support</a></nav>
     <section class="docs-grid" aria-label="Component groups">
       <article class="docs-card"><h2>Core circuit</h2><ul><li>ATmega328P learning controller</li><li>Axial fixed resistor</li><li>5 mm through-hole LED</li><li>0 V circuit reference</li></ul></article>
@@ -22,7 +22,18 @@
       <article class="docs-card"><h2>Outputs and displays</h2><ul><li>Common-cathode RGB LED</li><li>Active buzzer module</li><li>Single-digit common-cathode seven-segment display</li><li>16×2 character LCD in write-only 4-bit GPIO mode</li></ul></article>
     </section>
     <section class="panel"><h2>Model limits matter</h2><p class="docs-intro">Sensors use ideal bounded values, contacts do not model bounce or wear, light and sound outputs are relative indicators, and the LCD implements a tested command subset. Invalid polarity, missing current limiting, ambiguous ground, reused output pins, shorts, and unsupported topologies fail closed.</p></section>
-    <footer>16 selectable AVR components in Intent MCU Simulator 1.1.0-rc.12 · original project graphics · no third-party simulator artwork or branding</footer>
+    <section id="narrow-profile-parts" class="panel" aria-labelledby="narrow-profile-parts-title">
+      <h2 id="narrow-profile-parts-title">Pico, ESP32-C3 and STM32 supported parts</h2>
+      <p class="docs-intro">Each narrow workbench filters the panel to exactly three entries: its fixed controller, <code>resistor.fixed-v1</code> and <code>led.basic-v1</code>. Controllers cannot be added, duplicated or deleted. A missing resistor or LED is restored with the same stable ID and deterministic safe placement, but with no inferred cable.</p>
+      <div class="docs-grid">
+        <article class="docs-card"><h3>Fixed controller</h3><p>Pico exposes GP0 physical pin 1 and GND pin 3; ESP32-C3 exposes GPIO2 J1 pin 4 and GND J1 pin 6; STM32F429ZI exposes PB0 CN11 pin 34 and GND CN11 pin 35. These are profile-specific, not interchangeable.</p></article>
+        <article class="docs-card"><h3>Series resistor</h3><p>The resistance field is accepted only when the selected LED remains inside the exact ideal 3.3 V / 12 mA model. Unsafe values reject atomically and leave the previous project unchanged.</p></article>
+        <article class="docs-card"><h3>LED colour</h3><p>Red, yellow, green and blue select tested ideal forward-voltage constants. Colour is not a wavelength, brightness, tolerance, thermal or physical-accuracy claim.</p></article>
+        <article class="docs-card"><h3>Recovery rule</h3><p>After adding a missing part, activate compatible free named pins to recreate each cable. The workbench never guesses a connection. Every accepted part or wire edit retires stale firmware until a fresh Build.</p></article>
+      </div>
+      <nav class="docs-nav" aria-label="Narrow profile learning links"><a href="/examples.html#narrow-controller-guides">First project guides</a><a href="/support.html#repair-after-open">Save/Open recovery</a></nav>
+    </section>
+    <footer>16 selectable AVR components plus fixed three-part Pico, ESP32-C3 and STM32 profiles in Intent MCU Simulator 1.1.0-rc.13 · original project graphics · no third-party simulator artwork or branding</footer>
   </main>
 </body>
 </html>

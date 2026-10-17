@@ -126,6 +126,7 @@ test('public STM32 service binds source to strict ELF and returns actual-runtime
     headers: { ...headers, Origin: 'https://wrong.example' }, body: '{}' });
   assert.equal(rejected.status, 403);
   assert.equal(rejected.headers.get('cache-control'), 'no-store');
+  assert.equal(rejected.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive');
 
   const invalid = await fetch(`${base}/api/stm32/build`, { method: 'POST', headers,
     body: JSON.stringify({ schema: STM32_BUILD_SCHEMA, profile: STM32_PROFILE,

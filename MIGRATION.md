@@ -1,8 +1,11 @@
-# Migration to 1.1.0-rc.12
+# Migration to 1.1.0-rc.13
 
 There is no account, cloud project database, or server-side project migration.
 Existing browser recovery remains readable. Before changing versions, save an
 important project to a local `.intent-mcu.json` file.
+
+This release changes documentation and verification, not a project schema.
+Files saved by rc.12 remain readable with the same profile-specific rules.
 
 After the update:
 

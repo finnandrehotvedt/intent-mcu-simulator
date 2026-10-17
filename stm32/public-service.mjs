@@ -36,6 +36,7 @@ const SECURITY_HEADERS = Object.freeze({
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'no-referrer',
   'Cross-Origin-Resource-Policy': 'same-origin',
+  'X-Robots-Tag': 'noindex, nofollow, noarchive',
 });
 
 function sha256(value) { return createHash('sha256').update(value).digest('hex'); }

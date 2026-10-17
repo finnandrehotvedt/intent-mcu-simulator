@@ -1,4 +1,29 @@
-# Intent MCU Simulator 1.1.0-rc.12
+# Intent MCU Simulator 1.1.0-rc.13
+
+This documentation and local-file verification release makes the three bounded
+non-AVR profiles easier to learn and recover without changing their simulator,
+compiler, runtime or electrical contracts.
+
+## Controller guides and local files
+
+- Pico, ESP32-C3 and STM32F429ZI each have a complete first-project guide with
+  their exact named pins, one allowed source edit, the expected result and the
+  requirement to Build again after Open.
+- The supported-components and support pages now explain the fixed three-part
+  profile catalog, stable IDs, supported file extensions and the history-free
+  missing-part repair flow. Adding a part still creates no cable implicitly.
+- Real Save/Open browser acceptance covers AVR, Pico, ESP32-C3 and STM32 on
+  desktop and mobile. It deep-compares data-only source, layout, rotation,
+  properties and wiring; repeated and cancelled Open stay stable; malformed,
+  wrong-profile and unsupported-property files reject atomically.
+- Public HTML documents remain crawlable, while health, readiness, API, JSON
+  and error responses carry an explicit noindex response header.
+- No project schema, account, cloud storage, hosted AI, controller, component,
+  source grammar, compiler or runtime was added.
+
+---
+
+## 1.1.0-rc.12
 
 This app-only release adds bounded recovery for the resistor and LED already
 supported by the Pico, ESP32-C3 and STM32F429ZI teaching circuits. It does not

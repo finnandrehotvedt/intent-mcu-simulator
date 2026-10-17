@@ -2,6 +2,23 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.13 — 2026-10-17
+
+- Added complete first-project guides for the bounded Pico, ESP32-C3 and
+  STM32F429ZI profiles, including exact named-pin wiring, allowed source edits,
+  expected results and the local-file boundary.
+- Documented the three-part narrow-profile catalog, stable part IDs and the
+  history-free repair workflow after Open. Recovery still never infers a wire
+  and a fresh Build remains mandatory.
+- Added all-profile browser acceptance for real local Save/Open files,
+  data-only deep comparison, repeated and cancelled Open, and atomic rejection
+  of malformed, wrong-profile and unsupported-property files on desktop and
+  mobile.
+- Limited crawlable response headers to the six public HTML documents. Health,
+  readiness, API, JSON and error responses now explicitly remain noindex.
+- Preserved all accepted controller, compiler, runtime, project-schema,
+  electrical and no-cloud-storage boundaries.
+
 ## 1.1.0-rc.12 — 2026-10-17
 
 - Added one profile-filtered three-part recovery catalogue to the existing

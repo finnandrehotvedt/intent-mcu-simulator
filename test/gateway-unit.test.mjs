@@ -84,6 +84,7 @@ test('configured HTTPS origin, health alias and trusted proxy identity support p
 
     const health = await fetch(`${base}/healthz`);
     assert.deepEqual(await health.json(), { status: 'ok', scope: 'public' });
+    assert.equal(health.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive');
   }, { publicOrigin, trustProxy: true, deploymentScope: 'public' });
 });
 
@@ -132,8 +133,21 @@ test('discovery files and project-owned social assets use crawler-safe content t
     const response = await fetch(`${base}${pathname}`);
     assert.equal(response.status, 200, pathname);
     assert.equal(response.headers.get('content-type'), contentType, pathname);
+    assert.equal(response.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive', pathname);
   }
   assert.match(await (await fetch(`${base}/robots.txt`)).text(), /Disallow: \/api\//);
   assert.match(await (await fetch(`${base}/sitemap.xml`)).text(), /https:\/\/lab\.teachthecompany\.com\//);
   assert.match(await (await fetch(`${base}/llms.txt`)).text(), /no hosted AI API/i);
+}));
+
+test('only the intended public HTML document cohort is indexable', async () => withServer(async (base) => {
+  for (const pathname of ['/', '/index.html', '/controllers.html', '/components.html', '/examples.html', '/support.html']) {
+    const response = await fetch(`${base}${pathname}`);
+    assert.equal(response.status, 200, pathname);
+    assert.equal(response.headers.get('x-robots-tag'), 'index, follow', pathname);
+  }
+  for (const pathname of ['/healthz', '/readyz', '/api/build/not-a-job', '/not-a-public-document']) {
+    const response = await fetch(`${base}${pathname}`);
+    assert.equal(response.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive', pathname);
+  }
 }));

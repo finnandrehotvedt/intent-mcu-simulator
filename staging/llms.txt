@@ -5,12 +5,12 @@
 Canonical application: https://lab.teachthecompany.com/
 Source and setup: https://github.com/finnandrehotvedt/intent-mcu-simulator
 Licence: Apache-2.0 for project-owned source; third-party components keep their own terms.
-Current public version: 1.1.0-rc.12
+Current public version: 1.1.0-rc.13
 
 ## Supported public workflow
 
 - Start with an empty project or one of five validated starter projects.
-- Add any of 16 selectable supported components and connect named pin anchors manually.
+- In AVR, add any of 16 selectable supported components and connect named pin anchors manually.
 - Edit source and compile it through the isolated, fixed AVR toolchain.
 - Load and run the accepted artifact in the deterministic virtual MCU worker.
 - Inspect GPIO, LEDs, buttons, potentiometers, serial bytes, logic traces, and pin state.
@@ -19,6 +19,7 @@ Current public version: 1.1.0-rc.12
 - Select RP2040 Pico, create or reconnect its bounded GP0/resistor/LED/GND cables from named pins, edit the two bounded source values, compile in the fixed isolated Arm toolchain, and run the source-bound UF2 in the browser worker.
 - Select ESP32-C3, create or reconnect its bounded GPIO2/resistor/LED/GND cables from named pins, edit only GPIO2 mode/level and an uppercase UART marker, compile a fixed DIO flash image, and run actual Espressif QEMU CPU/UART.
 - Select STM32F429ZI, create or reconnect its bounded PB0/resistor/LED/GND cables from named pins, edit the PB0 HIGH/LOW plus uppercase USART3 source values, compile a strict source-bound ELF, and run actual Renode PB0/USART3/reset replay.
+- In any narrow controller profile, restore one deleted resistor or LED from Supported parts after Save/Open, then explicitly reconnect its named pins. Add never infers a cable, and Open never restores executable authority.
 
 ## Important limits
 
@@ -38,6 +39,9 @@ Current public version: 1.1.0-rc.12
 - Controller support: https://lab.teachthecompany.com/controllers.html
 - Supported components: https://lab.teachthecompany.com/components.html
 - Starter examples: https://lab.teachthecompany.com/examples.html
+- Pico first project: https://lab.teachthecompany.com/examples.html#pico-first-project
+- ESP32-C3 first project: https://lab.teachthecompany.com/examples.html#esp32c3-first-project
+- STM32 first project: https://lab.teachthecompany.com/examples.html#stm32-first-project
 - Help and limitations: https://lab.teachthecompany.com/support.html
 - Contribution guide: https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/CONTRIBUTING.md
 - Security policy: https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/SECURITY.md
