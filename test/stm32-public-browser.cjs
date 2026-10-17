@@ -239,6 +239,7 @@ function assertEditorGeometry(geometry) {
   assert((await page.textContent('#stm32-message')).includes('Source rejected'), 'invalid source not explained');
 
   await page.locator('#stm32-open-input').setInputFiles(savedPath);
+  await page.waitForSelector('#unsaved-change-dialog[open]'); await page.click('#unsaved-discard');
   await waitPhase(page, 'editing');
   current = await state(page);
   assert(current.project.source === lowSource && !current.runnable && current.artifact === null, 'Open did not require fresh Build');

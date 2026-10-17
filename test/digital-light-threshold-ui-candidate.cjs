@@ -218,6 +218,7 @@ let browser;
     } catch { return false; }
   });
   await page.click('#project-new');
+  if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
   await page.click('#project-open');
   await page.waitForSelector('[data-component-id="light-threshold-1"]');
   assert((await page.inputValue('[data-control="light-threshold-1.lightLevelPercent"]')) === '48',

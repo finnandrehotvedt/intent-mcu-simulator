@@ -70,6 +70,12 @@ or physical-accuracy claim.
 
 ## Current source-release boundary
 
+The interactive workbench currently requires a desktop browser. Desktop
+keyboard, file and canvas workflows are the supported acceptance target.
+Responsive styles remain in place and the public controller, component,
+example and support pages remain useful on smaller screens, but phone/tablet
+workbench navigation and editing are not release-supported.
+
 The full circuit editor supports one ATmega328P learning profile and 16
 selectable parts: core passives, momentary and latching contacts, analogue and
 digital sensors, LEDs and displays, an active buzzer, and a quadrature encoder.
@@ -120,7 +126,9 @@ The intended manual workflow is:
 6. Save or open a project file on your computer. Save always requests the same
    deterministic local download on every controller; Open uses the browser's
    file picker or file-input fallback. Browser recovery is separate from the
-   durable user-owned file. Imported projects and
+   durable user-owned file. A valid same-profile Open, or AVR New, asks before
+   replacing authored changes; requesting a download copy does not claim that
+   the browser completed a durable write. Imported projects and
    Prompt Bridge proposals pass the same strict schema and electrical rules as
    manual edits.
 
@@ -170,7 +178,7 @@ source; it does not authorize redistributing the resulting image.
 
 Additional current limits:
 
-- source version `1.1.0-rc.18` is prepared for the release at
+- source version `1.1.0-rc.19` is prepared for the release at
   `https://lab.teachthecompany.com/`; hosted compiler/toolchain images and
   private deployment configuration remain outside this source repository;
 - public execution supports the tested ATmega328P subset, one bounded RP2040

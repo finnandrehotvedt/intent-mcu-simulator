@@ -1,17 +1,17 @@
-# Rollback basis for 1.1.0-rc.18
+# Rollback basis for 1.1.0-rc.19
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain the exact rc.17 source commit
-`85ec0459bfeec890021dff7dce3ef4a805209040`, VM103 image
-`sha256:c8164849d578d3387e3e3a171ac4b44009d3d32cc04b3e11c9a4dedbad1ce523`
-and pre-rc.18 Compose/environment backup. If release acceptance fails, restore
+Retain the exact rc.18 source commit
+`c9b80e2b99b73be64f8f397da269a99908857df1`, VM103 image
+`sha256:2b1fa85bb862f513f66c2b6f2830309553e49d35c9cdf4befe6594e79424d849`
+and pre-rc.19 Compose/environment backup. If release acceptance fails, restore
 that exact app image and files, recreate only the Lab container, wait for
 health and verify Lab plus the existing Teach-domain URLs.
 
-Rc.17 and rc.18 use the same common envelope, so learner-owned project files
+Rc.17, rc.18 and rc.19 use the same common envelope, so learner-owned project files
 open directly after rollback. The existing **Legacy copy** remains available
 for a further rollback to rc.16 and contains no executable/runtime authority.
 

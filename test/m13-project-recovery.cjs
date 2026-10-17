@@ -46,6 +46,7 @@ let browser;
   const exported = await Promise.all([page.waitForEvent('download'), page.click('#project-export')]);
   const exportPath = await exported[0].path();
   await page.click('#project-new');
+  if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
   await page.selectOption('#project-import-mode', 'replace');
   await page.setInputFiles('#project-import', exportPath);
   await page.waitForFunction(() => document.querySelector('#project-message').textContent.includes('Project replaced safely'));

@@ -88,6 +88,7 @@ function assertGeometry(profile, viewport, report) {
     const filePath = await download.path();
     assert(filePath && fs.statSync(filePath).size > 500, `${profile.id}: Save did not download`);
     await page.setInputFiles(profile.open, filePath);
+    await page.waitForSelector('#unsaved-change-dialog[open]'); await page.click('#unsaved-discard');
     await page.waitForFunction(({ global }) => window[global].state().runnable === false, profile);
     assert.equal(await rotation(page, profile), 90, `${profile.id}: reopened rotation changed`);
     for (const viewport of [{ name: 'desktop', width: 1440, height: 1000 }, { name: 'mobile', width: 390, height: 844 }]) {

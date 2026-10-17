@@ -16,6 +16,7 @@ const canonical = (value) => JSON.stringify(value);
 
 async function openExample(page, id) {
   await page.click('#project-new');
+  if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
   await page.selectOption('#example-select', id);
   await page.click('#project-demo');
   await page.waitForFunction(() => window.__M6_PROJECT__().circuit.components.length >= 2);
@@ -210,7 +211,9 @@ let browser;
   await page.click('#project-save'); await page.click('#project-reload');
   assert(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())) === repeatedFinal, 'save/reopen grew or changed the corrected route');
   const exportPromise = page.waitForEvent('download'); await page.click('#project-export'); const download = await exportPromise; const downloadPath = await download.path();
-  await page.click('#project-new'); await page.selectOption('#project-import-mode', 'replace'); await page.setInputFiles('#project-import', downloadPath);
+  await page.click('#project-new');
+  if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
+  await page.selectOption('#project-import-mode', 'replace'); await page.setInputFiles('#project-import', downloadPath);
   await page.waitForFunction(() => document.querySelector('#project-message').textContent.includes('Project replaced safely'));
   assert(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())) === repeatedFinal, 'export/import grew or changed the corrected route');
 

@@ -34,6 +34,7 @@ async function readDownload(download) {
 
 async function openBlink(page) {
   await page.click('#project-new');
+  if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
   await page.selectOption('#example-select', 'blink');
   await page.click('#project-demo');
   await page.waitForFunction(() => window.__M6_PROJECT__().circuit.nets.some((net) =>
@@ -151,7 +152,7 @@ async function visibilityInventory(page) {
   return page.evaluate(() => {
     const accepted = document.querySelectorAll('#circuit-wires .circuit-wire').length;
     const proposed = document.querySelectorAll('#circuit-wires .wire-drag-proposal').length;
-    const cards = [...document.querySelectorAll('.circuit-component')];
+    const cards = [...document.querySelectorAll('#component-layer > .circuit-component')];
     const layers = cards.map((card) => {
       const layer = card.querySelector('.component-terminal-wires');
       return {
@@ -182,7 +183,7 @@ function assertVisibilityInventory(inventory, { proposal = false } = {}) {
 
 async function defaultBodyCrossings(page) {
   return page.evaluate(() => {
-    const cards = [...document.querySelectorAll('.circuit-component')].map((card) => ({
+    const cards = [...document.querySelectorAll('#component-layer > .circuit-component')].map((card) => ({
       id: card.dataset.componentId, box: card.getBoundingClientRect(),
     }));
     const inside = (point, box) => point.x > box.left + 1 && point.x < box.right - 1
@@ -321,7 +322,7 @@ let browser;
   assertVisibilityInventory(await visibilityInventory(page));
   await screenshot(page, 'after-pointer-edit');
 
-  const board = page.locator('[data-component-id="board-1"]');
+  const board = page.locator('#component-layer > [data-component-id="board-1"]');
   const boardBox = await board.boundingBox();
   await page.mouse.move(boardBox.x + boardBox.width * 0.5, boardBox.y + boardBox.height * 0.5);
   await page.mouse.down(); await page.mouse.move(boardBox.x + boardBox.width * 0.5 + 66, boardBox.y + boardBox.height * 0.5 - 28, { steps: 5 }); await page.mouse.up();
@@ -349,6 +350,7 @@ let browser;
   assertVisibilityInventory(await visibilityInventory(page));
   const exported = await captureFixture(page);
   await page.click('#project-new');
+  if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
   await importFixture(page, exported);
   assert(canonical(await project(page)) === saved, 'actual export/import changed project or saved route geometry');
   assertVisible(await attachment(page, 'board-1.GND1'));

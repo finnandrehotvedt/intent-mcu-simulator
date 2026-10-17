@@ -165,6 +165,8 @@ const elements = Object.fromEntries([
   'editor-title', 'source-file', 'source-file-name', 'source-file-add', 'source-file-remove',
   'lifecycle-state', 'technical-error', 'technical-error-detail', 'delete-branch',
   'example-select', 'walkthrough-open', 'walkthrough', 'recovery-export', 'quick-state', 'quick-build', 'quick-run', 'quick-pause', 'quick-reset',
+  'unsaved-change-dialog', 'unsaved-change-title', 'unsaved-change-description', 'unsaved-change-status',
+  'unsaved-keep', 'unsaved-download', 'unsaved-discard',
   'toggle-catalog', 'toggle-inspector', 'catalog-resizer', 'inspector-resizer', 'show-pin-labels', 'focus-canvas', 'fullscreen-canvas',
   'source-lines', 'source-highlight', 'diagnostic-links', 'build-log', 'simulated-time', 'requested-speed', 'achieved-speed',
   'serial-text-mode', 'serial-event-mode', 'serial-export', 'serial-newline', 'logic-waveform', 'logic-cursor-a', 'logic-cursor-b',
@@ -1830,6 +1832,82 @@ function saveLegacyProject(profile) {
     return { ok: false, code: error.code ?? error.message };
   }
 }
+const projectBaselines = new Map();
+let pendingDestructiveProjectAction = null;
+let destructiveActionSequence = 0;
+function setProjectBaseline(profile) {
+  projectBaselines.set(profile, commonProjectText(profile));
+}
+function isProjectDirty(profile) {
+  const baseline = projectBaselines.get(profile);
+  if (baseline === undefined) return false;
+  try { return commonProjectText(profile) !== baseline; }
+  catch { return true; }
+}
+function authoredProjectFingerprint(profile) {
+  try { return commonProjectText(profile); }
+  catch {
+    if (profile === AVR_PROFILE) return JSON.stringify({
+      name: elements.projectname.value, source: elements.source.value, project: currentProject(),
+    });
+    const state = profile === RP2040_PROFILE ? picoPublicWorkbench.state()
+      : profile === ESP32C3_PROFILE ? c3PublicWorkbench.state() : stm32PublicWorkbench.state();
+    return JSON.stringify({ name: state.project?.name ?? state.name, source: state.project?.source ?? state.source,
+      circuit: state.project?.circuit ?? state.circuit });
+  }
+}
+function currentProjectNameForGuard(profile) {
+  const input = profile === AVR_PROFILE ? elements.projectname
+    : profile === RP2040_PROFILE ? elements.picoprojectname
+    : profile === ESP32C3_PROFILE ? elements.c3projectname : elements.stm32projectname;
+  return input?.value?.trim() || 'this project';
+}
+function closeUnsavedChangeGuard() {
+  const returnFocus = pendingDestructiveProjectAction?.returnFocus;
+  pendingDestructiveProjectAction = null;
+  if (elements.unsavedchangedialog.open) elements.unsavedchangedialog.close('keep');
+  queueMicrotask(() => { if (returnFocus?.isConnected) returnFocus.focus(); });
+}
+function requestUnsavedChangeGuard({ profile, actionLabel, continueAction }) {
+  if (!isProjectDirty(profile)) return false;
+  if (pendingDestructiveProjectAction || elements.unsavedchangedialog.open) {
+    elements.unsavedchangestatus.textContent = 'Finish the current decision first. No additional action was queued.';
+    return true;
+  }
+  const token = ++destructiveActionSequence;
+  pendingDestructiveProjectAction = { token, profile, continueAction,
+    fingerprint: authoredProjectFingerprint(profile), returnFocus: document.activeElement };
+  elements.unsavedchangetitle.textContent = `Keep ${currentProjectNameForGuard(profile)} before ${actionLabel}?`;
+  elements.unsavedchangedescription.textContent = `${actionLabel} will replace authored changes to this ${profile} project.`;
+  elements.unsavedchangestatus.textContent = 'Choose Keep editing, download a data-only copy, or discard the changes.';
+  elements.unsavedchangedialog.showModal();
+  elements.unsavedkeep.focus();
+  return true;
+}
+function installPreparedProjectEnvelope(result, handle = null) {
+  if (result.profile !== selectedCompilerProfile) {
+    elements.boardselect.value = result.profile;
+    elements.boardselect.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  if (result.profile === AVR_PROFILE) {
+    editor = result.prepared;
+    installProjectGeneration({
+      empty: currentProject().circuit.components.length === 0, reason: 'project.file-open',
+      runtimeMessage: 'Opened project requires build',
+    });
+    selectedSourceFile = 'main.ino';
+    projectFileHandle = result.report.legacy ? null : handle;
+    persistProject(); markFileSaved('opened file current'); renderCatalog(); renderProject();
+  } else if (result.profile === RP2040_PROFILE) picoPublicWorkbench.installPreparedProject(result.project);
+  else if (result.profile === ESP32C3_PROFILE) c3PublicWorkbench.installPreparedProject(result.project);
+  else if (result.profile === STM32F429ZI_PROFILE) stm32PublicWorkbench.installPreparedProject(result.project);
+  setProjectBaseline(result.profile);
+  window.__COMMON_PROJECT_FILE_STATE__ = structuredClone({ profile: result.profile, report: result.report });
+  profileMessage(result.profile, result.report.legacy
+    ? `Legacy ${result.report.inputSchema} migrated in memory to ${result.report.outputSchema}. Save creates a new file; fresh Build is required.`
+    : `Common project opened for ${result.profile}. Executable authority was cleared; fresh Build is required.`);
+  return result;
+}
 async function openCommonProjectFile(file, handle = null) {
   const activeBefore = selectedCompilerProfile;
   if (!file) return { ok: false, code: 'PROJECT_FILE_REQUIRED' };
@@ -1848,27 +1926,12 @@ async function openCommonProjectFile(file, handle = null) {
     profileMessage(activeBefore, `Open rejected (${result.code}). Profile and current project are unchanged.`);
     return result;
   }
-  if (result.profile !== selectedCompilerProfile) {
-    elements.boardselect.value = result.profile;
-    elements.boardselect.dispatchEvent(new Event('change', { bubbles: true }));
-  }
-  if (result.profile === AVR_PROFILE) {
-    editor = result.prepared;
-    installProjectGeneration({
-      empty: currentProject().circuit.components.length === 0, reason: 'project.file-open',
-      runtimeMessage: 'Opened project requires build',
-    });
-    selectedSourceFile = 'main.ino';
-    projectFileHandle = result.report.legacy ? null : handle;
-    persistProject(); markFileSaved('opened file current'); renderCatalog(); renderProject();
-  } else if (result.profile === RP2040_PROFILE) picoPublicWorkbench.installPreparedProject(result.project);
-  else if (result.profile === ESP32C3_PROFILE) c3PublicWorkbench.installPreparedProject(result.project);
-  else if (result.profile === STM32F429ZI_PROFILE) stm32PublicWorkbench.installPreparedProject(result.project);
-  window.__COMMON_PROJECT_FILE_STATE__ = structuredClone({ profile: result.profile, report: result.report });
-  profileMessage(result.profile, result.report.legacy
-    ? `Legacy ${result.report.inputSchema} migrated in memory to ${result.report.outputSchema}. Save creates a new file; fresh Build is required.`
-    : `Common project opened for ${result.profile}. Executable authority was cleared; fresh Build is required.`);
-  return result;
+  if (result.profile === activeBefore && requestUnsavedChangeGuard({
+    profile: activeBefore,
+    actionLabel: 'opening this file',
+    continueAction: () => installPreparedProjectEnvelope(result, handle),
+  })) return { ...result, pending: true };
+  return installPreparedProjectEnvelope(result, handle);
 }
 window.__COMMON_PROJECT_FILES__ = Object.freeze({
   schema: 'intent-mcu-project-envelope@1',
@@ -4316,12 +4379,18 @@ elements.fitproject.addEventListener('click', () => {
 elements.undo.addEventListener('click', () => applyEditor({ type: 'undo' }, 'Undo'));
 elements.redo.addEventListener('click', () => applyEditor({ type: 'redo' }, 'Redo'));
 
-elements.projectnew.addEventListener('click', () => {
+function createNewAvrProject() {
   editor = new ProjectEditorReducer(createEmptyProject());
   installProjectGeneration({ empty: true, reason: 'project.new', runtimeMessage: 'New empty project — build required' });
   selectedSourceFile = 'main.ino';
   projectFileHandle = null; fileSavedRevision = null; fileSavedProjectGeneration = null; fileSaveState = null;
-  localStorage.removeItem(PROJECT_STORAGE_KEY); localStorage.removeItem(PROJECT_RECOVERY_KEY); renderCatalog(); renderProject(); elements.projectmessage.textContent = 'Created an actually empty project.';
+  localStorage.removeItem(PROJECT_STORAGE_KEY); localStorage.removeItem(PROJECT_RECOVERY_KEY); renderCatalog(); renderProject();
+  setProjectBaseline(AVR_PROFILE);
+  elements.projectmessage.textContent = 'Created an actually empty project.';
+}
+elements.projectnew.addEventListener('click', () => {
+  if (requestUnsavedChangeGuard({ profile: AVR_PROFILE, actionLabel: 'creating a new empty project', continueAction: createNewAvrProject })) return;
+  createNewAvrProject();
 });
 function loadExampleProject(exampleId, reason = 'project.demo') {
   if (exampleId === THERMOSTAT_EXPERIMENT_ID) {
@@ -4525,6 +4594,35 @@ elements.projectreload.addEventListener('click', () => {
 elements.projectexport.addEventListener('click', () => saveLegacyProject(AVR_PROFILE));
 
 elements.walkthroughopen.addEventListener('click', () => elements.walkthrough.showModal());
+elements.unsavedkeep.addEventListener('click', closeUnsavedChangeGuard);
+elements.unsavedchangedialog.addEventListener('cancel', (event) => {
+  event.preventDefault();
+  closeUnsavedChangeGuard();
+});
+elements.unsavedchangedialog.addEventListener('click', (event) => {
+  if (event.target === elements.unsavedchangedialog) closeUnsavedChangeGuard();
+});
+elements.unsaveddownload.addEventListener('click', () => {
+  const pending = pendingDestructiveProjectAction;
+  if (!pending) return;
+  const result = saveCommonProject(pending.profile);
+  elements.unsavedchangestatus.textContent = result.ok
+    ? 'Download requested. Your browser or operating system decides whether and where it is stored. Choose Keep editing or Discard and continue.'
+    : 'Download could not be requested. Your project is unchanged; choose Keep editing or try again.';
+});
+elements.unsaveddiscard.addEventListener('click', () => {
+  const pending = pendingDestructiveProjectAction;
+  if (!pending) return;
+  if (selectedCompilerProfile !== pending.profile
+    || authoredProjectFingerprint(pending.profile) !== pending.fingerprint) {
+    closeUnsavedChangeGuard();
+    profileMessage(pending.profile, 'The project changed while the decision was open. The older action was cancelled; your newer draft is unchanged.');
+    return;
+  }
+  pendingDestructiveProjectAction = null;
+  elements.unsavedchangedialog.close('discard');
+  pending.continueAction();
+});
 elements.quickbuild.addEventListener('click', () => {
   if (selectedCompilerProfile === ESP32C3_PROFILE) void c3PublicWorkbench.build();
   else if (selectedCompilerProfile === RP2040_PROFILE) void picoPublicWorkbench.build();
@@ -4734,3 +4832,11 @@ elements.projectmessage.textContent = recoveryRestored?.ok
     : stored || recoveryStored ? 'A saved value was invalid and was left untouched. The empty in-memory project can be exported before retrying.'
       : 'No example or hidden template is loaded.';
 if ((stored || recoveryStored) && !restored?.ok) elements.recoveryexport.disabled = false;
+for (const profile of [AVR_PROFILE, RP2040_PROFILE, ESP32C3_PROFILE, STM32F429ZI_PROFILE]) setProjectBaseline(profile);
+window.__UNSAVED_CHANGE_GUARD__ = Object.freeze({
+  isDirty: (profile = selectedCompilerProfile) => isProjectDirty(profile),
+  baseline: (profile = selectedCompilerProfile) => projectBaselines.get(profile),
+  pending: () => pendingDestructiveProjectAction
+    ? { token: pendingDestructiveProjectAction.token, profile: pendingDestructiveProjectAction.profile }
+    : null,
+});

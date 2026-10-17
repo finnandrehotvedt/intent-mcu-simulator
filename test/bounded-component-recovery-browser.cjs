@@ -79,6 +79,7 @@ async function saveAndOpen(page, profile) {
   await page.setInputFiles(profile.openInput, {
     name: `${profile.option}-missing.json`, mimeType: 'application/json', buffer: Buffer.from(text),
   });
+  await page.waitForSelector('#unsaved-change-dialog[open]'); await page.click('#unsaved-discard');
   await page.waitForFunction(({ global }) => window[global].state().circuitEditor.canUndo === false, profile);
   return saved;
 }

@@ -249,6 +249,7 @@ const failures = [];
   await page.waitForFunction(() => document.querySelector('#c3-message').textContent.includes('Open rejected'));
   assert((await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state())).runnable, 'rejected C3 file changed accepted project');
   await page.locator('#c3-open-input').setInputFiles(savedPath);
+  await page.waitForSelector('#unsaved-change-dialog[open]'); await page.click('#unsaved-discard');
   await page.waitForFunction(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state().runnable === false);
   assert((await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state().project.circuit.layout.positions['resistor-1'].rotation)) === 90,
     'opened C3 project lost circuit layout');

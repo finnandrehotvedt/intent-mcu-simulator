@@ -275,6 +275,7 @@ async function selectWire(page, netId) {
   await page.waitForFunction(() => document.querySelector('#pico-message').textContent.includes('Open rejected'));
   assert.equal(await page.locator('#pico-source').inputValue(), HIGH);
   await page.locator('#pico-open-input').setInputFiles(savedPath);
+  await page.waitForSelector('#unsaved-change-dialog[open]'); await page.click('#unsaved-discard');
   await page.waitForFunction((expected) => document.querySelector('#pico-source').value === expected
     && window.__RP2040_PUBLIC_WORKBENCH__.state().runnable === false, LOW);
   assert.equal(await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuit.layout.positions['resistor-1'].rotation), 90);

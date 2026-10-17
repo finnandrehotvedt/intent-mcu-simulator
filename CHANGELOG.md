@@ -2,6 +2,22 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.19 — 2026-10-17
+
+- Added one accessible unsaved-change guard for destructive AVR New and valid
+  same-profile Open across AVR, Pico, ESP32-C3 and STM32F429ZI.
+- Added Keep, Escape/backdrop, data-only Download copy and explicit Discard
+  outcomes without treating a requested download as a confirmed durable save.
+- Serialized pending actions and bound them to the exact authored draft so a
+  repeated or stale Open cannot discard newer work or execute twice.
+- Added all-profile desktop browser acceptance for name, source,
+  properties, layout, rotation and wire styling, exact paused-runtime
+  preservation, focus restoration, invalid/cancelled input and cross-family
+  parking.
+- Declared the interactive workbench desktop-only while retaining existing
+  responsive styles and useful crawlable information pages for smaller screens;
+  phone/tablet workbench navigation is no longer a release acceptance gate.
+
 ## 1.1.0-rc.18 — 2026-10-17
 
 - Prevented rotated resistor part labels from colliding with Lead A or Lead B

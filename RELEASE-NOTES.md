@@ -1,4 +1,31 @@
-# Intent MCU Simulator 1.1.0-rc.18
+# Intent MCU Simulator 1.1.0-rc.19
+
+This file-safety release preserves the rc.18 controller, compiler, runtime,
+project-envelope and visual contracts while preventing accidental replacement
+of authored work.
+
+## Unsaved-change guard
+
+- AVR **New empty** and strictly validated same-profile **Open** now show one
+  accessible in-app decision when name, source, parts, supported properties,
+  topology, layout, rotation or wire styling differs from the clean baseline.
+- Keep editing, Escape and backdrop cancellation preserve the exact draft,
+  history, selected profile and runtime. Discard executes one validated action
+  exactly once and uses the existing runtime-authority retirement path.
+- Download copy requests the existing deterministic data-only download but
+  stays in the dialog and does not claim that a browser or operating system
+  completed a durable write.
+- Invalid, oversized and cancelled input never prompts. Cross-family Open
+  still validates before routing and parks the active draft without prompting.
+  Repeated or stale pending actions cannot replace newer authored work.
+- The interactive workbench is explicitly desktop-only for this release.
+  Existing responsive styles remain, and controller/component/example/support
+  information stays useful on smaller screens, but phone/tablet workbench
+  navigation is not a supported release path.
+
+---
+
+## 1.1.0-rc.18
 
 This visual maintenance release keeps the rc.17 common project format and all
 controller/runtime boundaries unchanged while making the rotated resistor's

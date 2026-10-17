@@ -44,6 +44,7 @@ function assert(condition, message) {
   await statusSeen;
   assert((await page.evaluate(() => window.__M11_STATE__.lifecycle.phase)) === 'building', 'lifecycle did not enter building');
   await page.click('#project-new');
+  if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
   releaseStatus();
   await page.unroute(statusPattern);
   await page.waitForTimeout(1_500);
@@ -92,6 +93,7 @@ function assert(condition, message) {
   await page.waitForFunction(() => window.__M11_STATE__.runtime?.cycle > 20_000, null, { timeout: 10_000 });
   const generationBeforeRunReplacement = await page.evaluate(() => window.__M11_STATE__.lifecycle.projectGeneration);
   await page.click('#project-new');
+  if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
   await page.waitForTimeout(350);
   const afterRunReplacement = await page.evaluate(() => ({
     lifecycle: structuredClone(window.__M11_STATE__.lifecycle),

@@ -240,6 +240,7 @@ function assertGeometry(value, profile) {
     await page.setInputFiles(profile.openInput, {
       name: `${profile.option}.json`, mimeType: 'application/json', buffer: Buffer.from(savedText),
     });
+    await page.waitForSelector('#unsaved-change-dialog[open]'); await page.click('#unsaved-discard');
     await page.waitForFunction(({ global, sourceNet, otherLead }) => {
       const value = window[global].state();
       const circuit = value.circuit ?? value.project.circuit;

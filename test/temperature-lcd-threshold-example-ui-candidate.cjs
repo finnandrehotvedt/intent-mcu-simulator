@@ -163,6 +163,7 @@ let browser;
   });
   const saved = await page.evaluate(() => window.__TEMPERATURE_EXAMPLE_FILE_TEXT__);
   await page.click('#project-new');
+  if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
   await page.click('#project-open');
   await page.waitForFunction(() => window.__M6_PROJECT__().candidateCircuit?.components
     .find((item) => item.id === 'temperature-sensor-1')?.controls.temperatureC === 100);

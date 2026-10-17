@@ -687,6 +687,7 @@ void loop() {
   assert(errors.length === 0, `page errors: ${errors.join(', ')}`);
 
   await page.click('#project-new');
+  if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
   const cleared = await page.evaluate(() => ({
     lifecycle: window.__M11_STATE__.lifecycle,
     cycle: document.querySelector('#cycle').textContent,

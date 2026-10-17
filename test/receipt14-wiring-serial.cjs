@@ -15,6 +15,7 @@ const canonical = (value) => JSON.stringify(value);
 
 async function openExample(page, id) {
   await page.click('#project-new');
+  if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
   await page.selectOption('#example-select', id);
   await page.click('#project-demo');
   await page.waitForFunction(() => window.__M6_PROJECT__().circuit.components.length >= 2);
@@ -110,6 +111,7 @@ let browser;
   assert(canonical(await project(page)) === beforeTextDelete, 'native textarea/select/contenteditable key mutated the project');
   await page.evaluate(() => document.querySelector('#receipt14-native-editors').remove());
   await page.click('#project-new');
+  if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
   const emptyBefore = canonical(await project(page)); await page.locator('#circuit-canvas').focus(); await page.keyboard.press('Delete');
   assert(canonical(await project(page)) === emptyBefore, 'Delete with no selection mutated the project');
 

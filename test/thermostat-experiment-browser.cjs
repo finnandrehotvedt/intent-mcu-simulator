@@ -124,6 +124,7 @@ let browser;
   assert(!/(firmwareHex|runtimeBinding|thermostatExperimentResults|"hex"\s*:|"elf"\s*:|"uf2"\s*:)/u.test(savedText), 'save retained executable bytes or runtime-result state');
   assert(saved.project.compiledFixture.id === 'button-pullup', 'legacy candidate compatibility reference unexpectedly changed');
   await page.click('#project-new');
+  if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
   await page.click('#project-open');
   await page.waitForFunction(() => window.__M6_STATE__.thermostatExperiment?.active === true);
   assert(await page.evaluate(() => window.__M6_PROJECT__

@@ -41,6 +41,7 @@ let browser;
       `${viewport.label}: starter keyboard activation did not load the validated Button graph`);
 
     await page.click('#project-new');
+    if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
     await page.waitForFunction(() => window.__M6_PROJECT__().circuit.components.length === 0);
     const row = page.locator('.catalog-item').first();
     const type = await row.getAttribute('data-type');

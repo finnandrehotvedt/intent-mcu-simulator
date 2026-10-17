@@ -226,6 +226,7 @@ let browser;
     } catch { return false; }
   });
   await page.click('#project-new');
+  if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
   await page.click('#project-open');
   await page.waitForSelector('[data-component-id="rgb-led-1"]');
   await page.waitForFunction(() => document.querySelector('#circuit-diagnostics').textContent.startsWith('Candidate accepted'));

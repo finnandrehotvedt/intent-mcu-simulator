@@ -37,6 +37,7 @@ const C3 = 'board.esp32-c3-devmodule-v1';
 
   await page.setInputFiles('#project-open-input', { name: 'legacy-contact.intent-mcu.json', mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(legacy)) });
+  if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
   await page.waitForFunction(() => document.querySelector('#project-message').textContent.includes('migrated in memory'));
   const migrated = await page.evaluate(() => ({
     project: window.__M6_PROJECT__(), state: window.__M6_STATE__, file: window.__COMMON_PROJECT_FILE_STATE__,
