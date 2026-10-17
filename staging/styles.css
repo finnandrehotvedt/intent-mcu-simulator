@@ -73,6 +73,23 @@ h2 { font-size: 1.22rem; margin: 0; }
 .pico-public-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .pico-public-heading h2 { margin: .1rem 0 0; }
 .pico-public-grid { display: grid; grid-template-columns: minmax(300px,.9fr) minmax(360px,1.1fr); gap: 1rem; }
+.pico-public-grid.shared-profile-grid,
+.c3-public-grid.shared-profile-grid,
+.stm32-public-grid.shared-profile-grid { grid-template-columns: var(--catalog-width) minmax(520px,1fr) var(--inspector-width); grid-template-areas: "parts canvas source" "parts canvas inspector"; align-items: start; }
+.shared-parts-surface { grid-area: parts; position: sticky; top: 58px; min-width: 0; }
+.shared-canvas-surface { grid-area: canvas; }
+.shared-source-surface { grid-area: source; }
+.shared-inspector-surface { grid-area: inspector; display: grid; gap: .65rem; min-width: 0; padding: 1rem; border: 1px solid var(--line); border-radius: 16px; background: rgba(5,16,27,.72); }
+.shared-inspector-surface h2 { font-size: 1rem; }
+.shared-project-tools::before { content: 'PROJECT'; width: 100%; color: var(--lime); font: 800 .65rem ui-monospace,monospace; letter-spacing: .12em; }
+.shared-runtime-tools::before { content: 'RUNTIME'; width: 100%; color: var(--lime); font: 800 .65rem ui-monospace,monospace; letter-spacing: .12em; }
+.shared-source-surface::before { content: '4 · SOURCE & PROJECT'; color: var(--lime); font: 800 .65rem ui-monospace,monospace; letter-spacing: .12em; }
+.shared-serial-surface { margin-top: .1rem; }
+.shared-profile-workbench.parts-collapsed .shared-parts-surface,
+.shared-profile-workbench.inspector-collapsed .shared-inspector-surface { display: none; }
+.shared-profile-workbench.parts-collapsed:not(.inspector-collapsed) .shared-profile-grid { grid-template-columns: minmax(520px,1fr) var(--inspector-width); grid-template-areas: "canvas source" "canvas inspector"; }
+.shared-profile-workbench.inspector-collapsed:not(.parts-collapsed) .shared-profile-grid { grid-template-columns: var(--catalog-width) minmax(520px,1fr) minmax(280px,.52fr); grid-template-areas: "parts canvas source"; }
+.shared-profile-workbench.parts-collapsed.inspector-collapsed .shared-profile-grid { grid-template-columns: minmax(520px,1fr) minmax(280px,.52fr); grid-template-areas: "canvas source"; }
 .pico-project-pane, .pico-circuit-pane { min-width: 0; padding: 1rem; border: 1px solid var(--line); border-radius: 16px; background: rgba(5,16,27,.72); }
 .pico-project-pane { display: grid; gap: .65rem; }
 .pico-project-pane input:not(.sr-only), .pico-project-pane textarea { width: 100%; }
@@ -653,6 +670,15 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   .catalog-list { grid-template-columns: repeat(5, minmax(145px, 1fr)); overflow-x: auto; }
   .inspector { position: static; }
   .instrument-grid { grid-template-columns: 1fr 1fr; }
+  .pico-public-grid.shared-profile-grid,
+  .c3-public-grid.shared-profile-grid,
+  .stm32-public-grid.shared-profile-grid,
+  .shared-profile-workbench.parts-collapsed:not(.inspector-collapsed) .shared-profile-grid,
+  .shared-profile-workbench.inspector-collapsed:not(.parts-collapsed) .shared-profile-grid,
+  .shared-profile-workbench.parts-collapsed.inspector-collapsed .shared-profile-grid { grid-template-columns: minmax(0,1fr) 280px; grid-template-areas: "parts parts" "canvas inspector" "source source"; }
+  .shared-profile-workbench.parts-collapsed .shared-profile-grid { grid-template-areas: "canvas inspector" "source source"; }
+  .shared-profile-workbench.inspector-collapsed .shared-profile-grid { grid-template-columns: 1fr; grid-template-areas: "parts" "canvas" "source"; }
+  .shared-parts-surface { position: static; }
   .logic-card { grid-column: 1 / -1; }
 }
 @media (max-width: 780px) {
@@ -692,6 +718,12 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   .serial-tab, .serial-tab[aria-expanded="true"] { top: auto; right: 8px; bottom: 0; min-width: 104px; min-height: 42px; border-right: 1px solid var(--lime); border-radius: 10px 10px 0 0; writing-mode: horizontal-tb; }
   .serial-tab[aria-expanded="true"] { bottom: 44vh; }
   .panel { padding: 14px; }
+  .pico-public-grid.shared-profile-grid,
+  .c3-public-grid.shared-profile-grid,
+  .stm32-public-grid.shared-profile-grid,
+  .shared-profile-workbench.parts-collapsed:not(.inspector-collapsed) .shared-profile-grid,
+  .shared-profile-workbench.inspector-collapsed:not(.parts-collapsed) .shared-profile-grid,
+  .shared-profile-workbench.parts-collapsed.inspector-collapsed .shared-profile-grid { grid-template-columns: minmax(0,1fr); grid-template-areas: "parts" "canvas" "inspector" "source"; }
 }
 @media (max-width: 390px) {
   .starter-grid { grid-template-columns: 1fr; }

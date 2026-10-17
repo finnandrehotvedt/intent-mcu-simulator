@@ -1,0 +1,52 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Finn Andre Hotvedt and IntentForce
+
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import test from 'node:test';
+import {
+  AVR_PROFILE,
+  ESP32C3_PROFILE,
+  RP2040_PROFILE,
+  STM32F429ZI_PROFILE,
+} from '../src/compile-targets.mjs';
+import {
+  SHARED_WORKBENCH_SCHEMA,
+  SHARED_WORKBENCH_SURFACES,
+  sharedWorkbenchAdapters,
+} from '../src/shared-workbench-shell.mjs';
+
+test('four real profiles declare the same shared workbench surfaces', () => {
+  const adapters = sharedWorkbenchAdapters();
+  assert.deepEqual(adapters.map(({ profile }) => profile), [
+    AVR_PROFILE, RP2040_PROFILE, ESP32C3_PROFILE, STM32F429ZI_PROFILE,
+  ]);
+  for (const adapter of adapters) {
+    assert.equal(adapter.schema, SHARED_WORKBENCH_SCHEMA);
+    assert.deepEqual(adapter.surfaces, SHARED_WORKBENCH_SURFACES);
+    for (const surface of SHARED_WORKBENCH_SURFACES) assert.equal(typeof adapter[surface], 'string');
+  }
+});
+
+test('unsupported common controls carry profile-specific truthful reasons', () => {
+  const adapters = Object.fromEntries(sharedWorkbenchAdapters().map((adapter) => [adapter.profile, adapter]));
+  assert.equal(adapters[AVR_PROFILE].pause.supported, true);
+  assert.equal(adapters[RP2040_PROFILE].pause.supported, true);
+  assert.match(adapters[ESP32C3_PROFILE].pause.reason, /QEMU/);
+  assert.match(adapters[ESP32C3_PROFILE].reset.reason, /Reset replay/);
+  assert.match(adapters[STM32F429ZI_PROFILE].pause.reason, /Renode/);
+  assert.equal(adapters[STM32F429ZI_PROFILE].reset.supported, true);
+});
+
+test('browser entry point mounts the shared shell without replacing profile implementations', async () => {
+  const [html, browser] = await Promise.all([
+    readFile(new URL('../staging/index.html', import.meta.url), 'utf8'),
+    readFile(new URL('../staging/main.mjs', import.meta.url), 'utf8'),
+  ]);
+  for (const id of ['workbench-workspace', 'pico-public-workbench', 'c3-public-workbench', 'stm32-public-workbench']) {
+    assert.match(html, new RegExp(`id="${id}"`));
+  }
+  assert.match(browser, /mountSharedWorkbenchShell/);
+  assert.match(browser, /sharedWorkbenchShell\.activate/);
+  assert.match(browser, /sharedWorkbenchShell\.toggle/);
+});

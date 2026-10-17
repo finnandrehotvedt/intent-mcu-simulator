@@ -32,6 +32,7 @@ import {
 } from '../src/route-model.mjs';
 import { explainError } from '../src/error-catalog.mjs';
 import { createLifecycleState, transitionLifecycle } from '../src/lifecycle.mjs';
+import { mountSharedWorkbenchShell } from '../src/shared-workbench-shell.mjs';
 import { createExampleProject, exampleCatalog } from '../src/example-projects.mjs';
 import {
   TEMPERATURE_LCD_THRESHOLD_CARD,
@@ -125,6 +126,7 @@ function createComponentArtwork(definition, component, options = {}) {
 }
 
 const byId = (id) => document.querySelector(`#${id}`);
+const sharedWorkbenchShell = mountSharedWorkbenchShell(document);
 const elements = Object.fromEntries([
   'source', 'build', 'cancel', 'build-state', 'diagnostics', 'worker-state', 'cycle', 'instructions', 'artifact', 'trace',
   'run', 'pause', 'step', 'reset', 'speed', 'canvas-title', 'circuit-canvas', 'canvas-transform', 'component-layer', 'circuit-wires',
@@ -149,7 +151,7 @@ const elements = Object.fromEntries([
   'canvas-select-mode', 'canvas-interact-mode',
   'thermostat-experiment', 'thermostat-experiment-state', 'thermostat-run-tests',
   'thermostat-load-bad', 'thermostat-restore', 'thermostat-results', 'thermostat-experiment-message',
-  'starter-examples', 'starter-gallery', 'quick-controls', 'workbench-workspace',
+  'starter-examples', 'starter-gallery', 'quick-controls', 'workbench-workspace', 'project-bar',
   'board-select', 'controller-status', 'toolchain-boundary',
   'controller-workbench', 'controller-workbench-eyebrow', 'controller-workbench-title', 'controller-workbench-badge',
   'controller-workbench-summary', 'controller-capability-project', 'controller-capability-source',
@@ -258,6 +260,8 @@ function renderPicoQuickControls(state = picoPublicState) {
   elements.quickrun.disabled = !state.runnable || ['running', 'starting'].includes(state.phase);
   elements.quickpause.disabled = !['running', 'paused'].includes(state.phase);
   elements.quickreset.disabled = !['running', 'paused'].includes(state.phase);
+  elements.quickpause.title = '';
+  elements.quickreset.title = '';
 }
 
 function renderC3QuickControls(state = c3PublicState) {
@@ -271,6 +275,8 @@ function renderC3QuickControls(state = c3PublicState) {
   elements.quickrun.disabled = !state.runnable || state.phase === 'running';
   elements.quickpause.disabled = true;
   elements.quickreset.disabled = true;
+  elements.quickpause.title = 'Pause is unavailable for the bounded QEMU run.';
+  elements.quickreset.title = 'Reset replay is already verified inside each QEMU Run.';
 }
 
 function renderStm32QuickControls(state = stm32PublicState) {
@@ -284,6 +290,8 @@ function renderStm32QuickControls(state = stm32PublicState) {
   elements.quickrun.disabled = !state.runnable || ['building', 'running'].includes(state.phase);
   elements.quickpause.disabled = true;
   elements.quickreset.disabled = !state.runnable || ['building', 'running'].includes(state.phase);
+  elements.quickpause.title = 'Pause is unavailable for the isolated Renode run.';
+  elements.quickreset.title = '';
 }
 
 let picoEditorZoom = 1;
@@ -1562,6 +1570,10 @@ function setPublicPreviewControls(preview) {
     }
     return;
   }
+  if (avr) {
+    elements.quickpause.title = '';
+    elements.quickreset.title = '';
+  }
   for (const [control, disabled] of publicPreviewControlStates.entries()) control.disabled = disabled;
   publicPreviewControlStates.clear();
 }
@@ -1596,6 +1608,7 @@ function renderPublicControllerWorkbench() {
       ? 'Public Pico source is compiled in a fixed networkless container, returned as a source-bound UF2, and executed only in this browser worker. No executable is stored with the project.'
       : 'Public AVR actions use the documented build service and one browser worker. Other controller previews never inherit those actions.';
   elements.startergallery.hidden = !avr;
+  elements.projectbar.hidden = !avr;
   elements.firmwaredrawer.hidden = !avr;
   elements.promptdrawer.hidden = !avr;
   elements.runtimedrawer.hidden = !avr;
@@ -1605,8 +1618,9 @@ function renderPublicControllerWorkbench() {
   elements.parkedcircuitnotice.hidden = true;
   elements.workbenchworkspace.hidden = !avr;
   elements.workbenchworkspace.setAttribute('aria-hidden', String(!avr));
-  elements.togglecatalog.hidden = !avr;
-  elements.toggleinspector.hidden = !avr;
+  elements.togglecatalog.hidden = false;
+  elements.toggleinspector.hidden = false;
+  sharedWorkbenchShell.activate(selectedCompilerProfile);
   elements.quickbuild.textContent = preview ? 'Build unavailable' : pico ? 'Build Pico' : c3 ? 'Build C3' : stm32 ? 'Build STM32 ELF' : 'Build';
   elements.quickrun.textContent = preview ? 'Run unavailable' : pico ? 'Run Pico' : c3 ? 'Run actual QEMU' : stm32 ? 'Run actual Renode' : 'Run';
   elements.quickbuild.disabled = preview || (avr && elements.build.disabled);
@@ -4032,7 +4046,9 @@ function workspacePreference(name, value = null) {
 }
 function toggleWorkspacePanel(kind) {
   const className = `${kind}-collapsed`; const button = kind === 'catalog' ? elements.togglecatalog : elements.toggleinspector;
-  const collapsed = document.querySelector('.workspace').classList.toggle(className);
+  const collapsed = selectedCompilerProfile === AVR_PROFILE
+    ? document.querySelector('.workspace').classList.toggle(className)
+    : sharedWorkbenchShell.toggle(kind === 'catalog' ? 'parts' : 'inspector');
   button.setAttribute('aria-pressed', String(collapsed)); workspacePreference(className, collapsed);
   requestAnimationFrame(() => requestAnimationFrame(drawCircuitWires));
 }
