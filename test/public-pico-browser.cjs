@@ -289,8 +289,14 @@ async function selectWire(page, netId) {
   }));
   assert.ok(mobile.overflow <= 1, JSON.stringify(mobile)); assert.ok(mobile.panel.left >= 8 && mobile.panel.right <= 382, JSON.stringify(mobile.panel));
   assert.ok(mobile.canvas.left >= 8 && mobile.canvas.right <= 382, JSON.stringify(mobile.canvas));
-  assert.deepEqual(mobile.controls.filter((item) => item.hidden).map((item) => item.id), ['toggle-catalog', 'toggle-inspector']);
+  assert.deepEqual(mobile.controls.filter((item) => item.hidden).map((item) => item.id), []);
   assert.ok(mobile.controls.filter((item) => !item.hidden).every((item) => item.rect.left >= 0 && item.rect.right <= 390), JSON.stringify(mobile.controls));
+  await page.click('#toggle-catalog');
+  assert.equal(await page.locator('#pico-public-workbench').evaluate((node) => node.classList.contains('parts-collapsed')), true);
+  await page.click('#toggle-catalog');
+  await page.click('#toggle-inspector');
+  assert.equal(await page.locator('#pico-public-workbench').evaluate((node) => node.classList.contains('inspector-collapsed')), true);
+  await page.click('#toggle-inspector');
   await page.locator('#pico-editor-components [data-component-id="resistor-1"]').click(); await page.keyboard.press('ArrowDown'); assertEditorGeometry(await editorGeometry(page));
   for (const expectedRotation of [90, 180, 270, 0]) {
     await page.locator('#pico-editor-components [data-component-id="resistor-1"]').click(); await page.keyboard.press('r');
