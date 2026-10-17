@@ -15,7 +15,7 @@
   <main class="docs-main">
     <header class="app-header"><div><p class="eyebrow">FOUR PUBLIC SUBSETS · EXPLICIT BOUNDARIES</p><h1>Controller status</h1></div><p class="lede">A selectable profile is not a broad execution claim. Each compiler, runtime and peripheral boundary is listed separately.</p></header>
     <nav class="docs-nav" aria-label="Lab documentation"><a href="/">Open workbench</a><a href="/components.html">Components</a><a href="/examples.html">Examples</a><a href="/support.html">Support</a></nav>
-    <section class="panel about"><h2>Choose a tested controller</h2><p class="docs-intro">In the workbench, choose the broad <strong>Architecture / family</strong> first, then the exact <strong>Tested controller / board</strong>. This release contains exactly one tested profile in each displayed group: ATmega328P, RP2040 Pico, ESP32-C3 development module and STM32F429ZI. A family label never claims support for every controller in that family.</p></section>
+    <section class="panel about"><h2>Choose a tested controller</h2><p class="docs-intro">In the workbench, choose the broad <strong>Architecture / family</strong> first, then the exact <strong>Tested controller / board</strong>. This release contains exactly one tested profile in each displayed group: ATmega328P, RP2040 Pico, ESP32-C3 development module and STM32F429ZI. A family label never claims support for every controller in that family.</p><p class="docs-intro"><strong>A profile lists three different things:</strong> source the compiler accepts, behavior the runtime executes, and the educational circuit model displayed on the canvas. Successful compilation does not prove every API, library or peripheral is simulated.</p></section>
     <section class="panel" aria-labelledby="matrix-title">
       <h2 id="matrix-title">Public release support matrix</h2>
       <table class="support-table">
@@ -28,6 +28,29 @@
         </tbody>
       </table>
     </section>
+    <section id="peripheral-capability-matrix" class="panel" aria-labelledby="peripheral-matrix-title">
+      <h2 id="peripheral-matrix-title">Exact peripheral capability matrix</h2>
+      <p class="docs-intro"><strong>Tested</strong> means the listed bounded path has release evidence. <strong>Project model</strong> means executed behavior feeds a separately labelled IntentForce model. <strong>Unavailable</strong> means this public profile has no accepted source/API or runtime path for that category.</p>
+      <table class="support-table">
+        <thead><tr><th>Profile</th><th>GPIO</th><th>ADC</th><th>PWM</th><th>UART</th><th>Timers</th><th>Interrupts</th></tr></thead>
+        <tbody>
+          <tr><th>ATmega328P</th><td><strong>Tested</strong><br>D0–D13; input, output, pull-up</td><td><strong>Tested</strong><br>A0–A5; bounded ideal 0–5 V</td><td><strong>Tested</strong><br>D3, D5, D6, D9, D10, D11</td><td><strong>Tested</strong><br>USART0</td><td><strong>Tested subset</strong><br>deterministic timing and stepping, not complete timer equivalence</td><td><strong>Tested subset</strong><br>INT0, INT1 and implemented pin-change masks</td></tr>
+          <tr><th>RP2040 Pico</th><td><strong>Tested</strong><br>GPIO0 output only</td><td><strong>Unavailable</strong></td><td><strong>Unavailable</strong></td><td><strong>Tested</strong><br>UART0 uppercase text</td><td><strong>Unavailable</strong></td><td><strong>Unavailable</strong></td></tr>
+          <tr><th>ESP32-C3</th><td><strong>Project model</strong><br>GPIO2 executed writes; QEMU pin state not observed</td><td><strong>Unavailable</strong></td><td><strong>Unavailable</strong></td><td><strong>Tested</strong><br>uppercase marker from actual QEMU CPU/UART</td><td><strong>Unavailable</strong><br>fixed <code>delay</code> is not a timer-model claim</td><td><strong>Unavailable</strong></td></tr>
+          <tr><th>STM32F429ZI</th><td><strong>Tested</strong><br>Renode-observed PB0</td><td><strong>Unavailable</strong></td><td><strong>Unavailable</strong></td><td><strong>Tested</strong><br>Renode-observed USART3</td><td><strong>Unavailable</strong></td><td><strong>Unavailable</strong></td></tr>
+        </tbody>
+      </table>
+    </section>
+    <section id="language-api-matrix" class="panel" aria-labelledby="language-api-title">
+      <h2 id="language-api-title">Language, API, headers and libraries</h2>
+      <div class="docs-grid">
+        <article class="docs-card"><h3>ATmega328P</h3><p><strong>Dialect:</strong> Arduino AVR sketch/C++ in the fixed isolated toolchain.</p><p><strong>Files:</strong> <code>main.ino</code> plus up to seven project-local <code>.h</code>, <code>.hpp</code>, <code>.c</code> or <code>.cpp</code> files.</p><p><strong>Headers:</strong> Arduino.h, standard bounded C headers, avr/io.h, avr/interrupt.h, avr/pgmspace.h, util/atomic.h and util/delay.h.</p><p><strong>Libraries:</strong> Arduino AVR core 1.8.8 only; no user-installed or network-fetched library. Compiler acceptance does not expand the documented runtime subset.</p></article>
+        <article class="docs-card"><h3>RP2040 Pico</h3><p><strong>Dialect:</strong> strict bounded C11 in Arm GNU 14.3.1.</p><p><strong>Files:</strong> <code>main.c</code> only.</p><p><strong>API:</strong> one GPIO0 call, one UART0 uppercase-text call and halt in the fixed template.</p><p><strong>Headers/libraries:</strong> no user-selectable headers, libraries or Pico SDK. A fixed internal contract header is injected by the worker.</p></article>
+        <article class="docs-card"><h3>ESP32-C3</h3><p><strong>Dialect:</strong> strict bounded Arduino sketch in Arduino-ESP32 3.3.10 / esp-rv32 2601.</p><p><strong>Files:</strong> <code>sketch.ino</code> only.</p><p><strong>API:</strong> fixed setup/loop template; only GPIO2 mode, level and one uppercase Serial marker may change.</p><p><strong>Headers/libraries:</strong> no user-selectable headers or libraries, network install, Wi-Fi or Bluetooth SDK surface.</p></article>
+        <article class="docs-card"><h3>STM32F429ZI</h3><p><strong>Dialect:</strong> strict bounded freestanding C11 in Arm GNU 14.3.1.</p><p><strong>Files:</strong> <code>main.c</code> only.</p><p><strong>API:</strong> one PB0 call, one USART3 uppercase-text call and halt in the fixed template.</p><p><strong>Headers/libraries:</strong> no user-selectable headers, HAL, CMSIS or broad STM32 SDK. Fixed startup, linker and runtime contracts remain internal.</p></article>
+      </div>
+      <p class="docs-intro">A failed Build shows only sanitized diagnostics. When a returned error contains a trustworthy current file and line, its button focuses that exact editor location. Missing, out-of-range, stale and cross-profile locations stay visible but never navigate. See <a href="/support.html#compiler-diagnostics">compiler diagnostic help</a>.</p>
+    </section>
     <section class="docs-grid" aria-label="Public controller support details">
       <article class="docs-card"><h2>Tested AVR subset</h2><ul><li>Digital GPIO D0–D13, input, output, and pull-up modes</li><li>ADC A0–A5 against bounded 0–5 V sources</li><li>PWM on D3, D5, D6, D9, D10, and D11</li><li>USART0, bounded timing, deterministic reset, and instruction stepping</li><li>INT0/INT1 and the implemented pin-change masks</li></ul></article>
       <article class="docs-card"><h2>Tested Pico subset</h2><ul><li>One exact bounded <code>main.c</code> grammar</li><li>GPIO0 HIGH or LOW from compiled firmware</li><li>UART0 uppercase text from compiled firmware</li><li>Source-bound strict UF2 execution in a browser worker</li><li>GP0 physical pin 1 through 220 Ω and LED to GND physical pin 3</li></ul></article>
@@ -37,7 +60,7 @@
     </section>
     <section class="panel about"><h2>Parts and project files in the narrow profiles</h2><p class="docs-intro">Pico, ESP32-C3 and STM32 each expose only one fixed controller, <code>resistor.fixed-v1</code> and <code>led.basic-v1</code>. The board cannot be removed. A deleted resistor or LED can be added back with its stable ID, but no cable is inferred: reconnect the named pins yourself and Build fresh. All four controllers save one common data-only envelope; its exact profile identity routes Open only after validation, and Open never restores executable authority. See <a href="/components.html#narrow-profile-parts">the exact part limits</a> and <a href="/support.html#repair-after-open">the recovery steps</a>.</p></section>
     <section class="panel about"><h2>Why the STM32 boundary is narrow</h2><p class="docs-intro">Only the fixed PB0/USART3 source grammar, strict ELF admission and reset-replayed Renode path are public. Arbitrary C or ELF, broad peripherals, SDK compatibility, physical timing, external hardware and full STM32 support remain explicitly outside this release.</p></section>
-    <footer>Verified for Intent MCU Simulator 1.1.0-rc.20 · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/COMPATIBILITY.md">source compatibility document</a></footer>
+    <footer>Verified for Intent MCU Simulator 1.1.0-rc.21 · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/COMPATIBILITY.md">source compatibility document</a></footer>
   </main>
 </body>
 </html>

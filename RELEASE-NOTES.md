@@ -1,4 +1,29 @@
-# Intent MCU Simulator 1.1.0-rc.20
+# Intent MCU Simulator 1.1.0-rc.21
+
+This controller-truth release completes the public capability, language/API
+and compiler-diagnostic reference without adding any compiler, runtime, SDK,
+pin or peripheral behavior.
+
+## Capability and compiler-diagnostic parity
+
+- Controllers now lists GPIO, ADC, PWM, UART, timer and interrupt status for
+  every public profile as tested, separate project model or unavailable.
+- Each profile has an exact entry-file, source grammar, admitted-header and
+  library boundary. Successful compilation is not presented as proof that an
+  API, library or peripheral is simulated.
+- AVR, Pico, ESP32-C3 and STM32 now show the same accessible Build diagnostics
+  panel. A trustworthy current file/line result can focus the exact source
+  position without changing source text.
+- Empty, unknown, out-of-range, stale-source and cross-profile locations stay
+  readable but cannot navigate. Internal paths and control characters are not
+  exposed.
+- Browser acceptance covers an actual failed source result, keyboard
+  navigation, corrected source and fresh successful Build on all four public
+  profiles. Existing file, wiring, Fullscreen and runtime contracts remain.
+
+---
+
+## 1.1.0-rc.20
 
 This local-file parity release preserves the rc.19 guard, project envelope,
 compiler and runtime boundaries while completing one optional desktop native

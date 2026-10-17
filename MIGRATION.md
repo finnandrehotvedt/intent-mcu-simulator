@@ -1,10 +1,10 @@
-# Migration to 1.1.0-rc.20
+# Migration to 1.1.0-rc.21
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
 
-Rc.17 through rc.20 save one `intent-mcu-project-envelope@1` format for AVR, RP2040 Pico,
+Rc.17 through rc.21 save one `intent-mcu-project-envelope@1` format for AVR, RP2040 Pico,
 ESP32-C3 and STM32F429ZI. The envelope identifies one exact tested profile and
 contains that profile's validated authored project. It contains no firmware,
 runtime/session authority, verdict or secret.
@@ -38,6 +38,11 @@ an in-memory handle for the current session, and Save copy may choose a new
 location without changing the original. A legacy file is never connected for
 automatic overwrite; first save a new common-format copy. Cancellation or an
 incomplete native write leaves the previous handle and dirty state unchanged.
+
+Rc.21 adds no file conversion. Compiler diagnostics are transient presentation
+data bound to the current profile and source revision; they are never stored in
+the project envelope or treated as executable authority. Open still requires a
+fresh Build.
 
 Use **Legacy copy** before rolling back to rc.16. The exported compatibility
 file uses that profile's prior accepted schema and contains authored data only.

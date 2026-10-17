@@ -11,9 +11,17 @@ import {
   validateEsp32C3Circuit,
 } from './esp32c3-public-circuit.mjs';
 import { parseStrictJson } from './strict-json.mjs';
+import { boundedPolicyDiagnostic, normalizeSourceDiagnostics } from './source-diagnostics.mjs';
 
 export const C3_PUBLIC_PROJECT_SCHEMA = 'intent-mcu-esp32c3-public-project@1';
 export const C3_PUBLIC_SOURCE = sourceForGpio2('C3_PUBLIC', 'OUTPUT', 'HIGH');
+const SOURCE_LINE_PATTERNS = Object.freeze([
+  /^\/\/ Copyright 2026 IntentForce$/u, /^\/\/ SPDX-License-Identifier: Apache-2\.0$/u, /^$/u,
+  /^void setup\(\) \{$/u, /^  Serial\.begin\(115200\);$/u,
+  /^  pinMode\(2, (?:OUTPUT|INPUT)\);$/u, /^  digitalWrite\(2, (?:HIGH|LOW)\);$/u,
+  /^  Serial\.println\("[A-Z0-9][A-Z0-9:_-]{2,63}"\);$/u, /^\}$/u, /^$/u,
+  /^void loop\(\) \{$/u, /^  delay\(1000\);$/u, /^\}$/u, /^$/u,
+]);
 const clone = (value) => structuredClone(value);
 const exactKeys = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
@@ -49,11 +57,12 @@ function download(name, text) {
 
 export class Esp32C3PublicWorkbench {
   constructor({ elements, endpoint = '/api/c3', fetchFn = globalThis.fetch,
-    onState = () => {}, onSave = null, onOpen = null } = {}) {
+    onState = () => {}, onDiagnostics = () => {}, onSave = null, onOpen = null } = {}) {
     this.elements = elements;
     this.endpoint = endpoint.replace(/\/$/u, '');
     this.fetch = fetchFn.bind(globalThis);
     this.onState = onState;
+    this.onDiagnostics = onDiagnostics;
     this.onSave = onSave;
     this.onOpen = onOpen;
     this.project = defaultProject();
@@ -71,6 +80,7 @@ export class Esp32C3PublicWorkbench {
     this.active = false;
     this.requestToken = 0;
     this.invalidationTimer = null;
+    this.diagnostics = [];
     this.bind();
     this.render();
   }
@@ -123,6 +133,7 @@ export class Esp32C3PublicWorkbench {
       actualQemuCpuUart: true, qemuPinStateObserved: false,
       gpioPeripheralModel: 'IntentForce project-owned GPIO2 register adapter',
       durableServerProject: false, transientExecutableMemoryOnly: true,
+      diagnostics: clone(this.diagnostics),
     };
   }
   publish() { const state = this.snapshot(); this.onState(state); return state; }
@@ -153,6 +164,7 @@ export class Esp32C3PublicWorkbench {
   activate() {
     this.active = true;
     this.phase = 'editing';
+    this.diagnostics = [];
     this.message = 'ESP32-C3 selected. Build this exact bounded source before Run.';
     this.render();
   }
@@ -168,6 +180,7 @@ export class Esp32C3PublicWorkbench {
     this.terminal = 'No QEMU UART output yet.';
     this.revision += 1;
     this.phase = 'editing';
+    this.diagnostics = [];
     this.message = message;
     if (this.sessionId) {
       clearTimeout(this.invalidationTimer);
@@ -199,10 +212,14 @@ export class Esp32C3PublicWorkbench {
     let parsed;
     try { parsed = validateBoundedSource(this.project.source); }
     catch {
-      this.phase = 'blocked';
+      this.phase = 'failed';
+      this.diagnostics = [boundedPolicyDiagnostic({
+        profile: PROFILE, revision: this.revision, source: this.project.source,
+        file: 'sketch.ino', linePatterns: SOURCE_LINE_PATTERNS,
+      })];
       this.message = 'Source rejected. Keep the complete template and edit only GPIO2 mode/level and the uppercase marker.';
       this.render();
-      return { ok: false, code: 'SOURCE_POLICY_REJECTED' };
+      return { ok: false, code: 'SOURCE_POLICY_REJECTED', diagnostics: clone(this.diagnostics) };
     }
     clearTimeout(this.invalidationTimer);
     this.invalidationTimer = null;
@@ -212,6 +229,7 @@ export class Esp32C3PublicWorkbench {
     this.artifactRevision = null;
     this.lastRuntime = null;
     this.phase = 'building';
+    this.diagnostics = [];
     this.message = 'Compiling in the fixed network-disabled ESP32-C3 toolchain…';
     this.render();
     try {
@@ -243,6 +261,10 @@ export class Esp32C3PublicWorkbench {
       this.artifact = clone(value.artifact);
       this.artifactRevision = revision;
       this.phase = 'built';
+      this.diagnostics = normalizeSourceDiagnostics(value.diagnostics ?? [], {
+        profile: PROFILE, revision, source: this.project.source,
+        files: [{ name: 'sketch.ino', content: this.project.source }],
+      });
       this.message = 'Fresh source-bound flash ready. Run starts actual Espressif QEMU CPU/UART.';
       this.render();
       return { ok: true, code: 'OK', artifact: clone(this.artifact) };
@@ -251,6 +273,10 @@ export class Esp32C3PublicWorkbench {
       this.artifact = null;
       this.artifactRevision = null;
       this.phase = 'failed';
+      this.diagnostics = normalizeSourceDiagnostics(error.diagnostics ?? [{
+        code: error.code ?? 'C3_BUILD_FAILED', severity: 'error', message: error.message,
+      }], { profile: PROFILE, revision, source: this.project.source,
+        files: [{ name: 'sketch.ino', content: this.project.source }] });
       this.message = `Build failed (${error.code ?? error.message}). No older flash remains runnable.`;
       this.render();
       return { ok: false, code: error.code ?? error.message };
@@ -307,6 +333,7 @@ export class Esp32C3PublicWorkbench {
     this.lastRuntime = null;
     this.terminal = 'No QEMU UART output yet.';
     this.phase = 'editing';
+    this.diagnostics = [];
     this.message = message;
     this.render();
     try {
@@ -428,6 +455,8 @@ export class Esp32C3PublicWorkbench {
       : circuit.ok
       ? `Project model accepted · GPIO2 J1 pin 4 → ${circuit.model.resistorOhms} Ω → ${circuit.model.ledColor} LED → GND J1 pin 6 · ${led?.code ?? 'waiting for Run'}`
       : `Project model rejected (${circuit.code}) · stale flash and LED authority retired`;
+    this.onDiagnostics({ profile: PROFILE, revision: this.revision, source: this.project.source,
+      file: 'sketch.ino', diagnostics: clone(this.diagnostics) });
     this.publish();
   }
 }

@@ -2,6 +2,21 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.21 — 2026-10-17
+
+- Added one exact GPIO, ADC, PWM, UART, timer and interrupt capability matrix
+  for all four public profiles, with tested, project-model and unavailable
+  boundaries kept distinct.
+- Documented each profile's actual language grammar, entry file, admitted
+  headers and library boundary without expanding its compiler, runtime or SDK.
+- Added shared accessible Build diagnostics panels. Current trustworthy
+  file/line results navigate to the correct editor position; missing,
+  out-of-range, stale and cross-profile locations remain readable but inert.
+- Bound diagnostic navigation to the exact profile, source revision and file.
+  Editing, Open, profile changes and newer builds retire stale navigation.
+- Added all-profile bad-source → navigate → correct → fresh-Build browser
+  acceptance while preserving local files, wiring and runtime boundaries.
+
 ## 1.1.0-rc.20 — 2026-10-17
 
 - Kept deterministic **Download copy** and file-input **Open project** as the

@@ -34,6 +34,9 @@ import {
 } from '../src/route-model.mjs';
 import { parallelWireConflicts, separateParallelWireLanes } from '../src/wire-lane-rules.mjs';
 import { explainError } from '../src/error-catalog.mjs';
+import {
+  diagnosticLabel, normalizeSourceDiagnostics, sourceSelection,
+} from '../src/source-diagnostics.mjs';
 import { createLifecycleState, transitionLifecycle } from '../src/lifecycle.mjs';
 import { mountSharedWorkbenchShell } from '../src/shared-workbench-shell.mjs';
 import { createExampleProject, exampleCatalog } from '../src/example-projects.mjs';
@@ -186,6 +189,7 @@ const elements = Object.fromEntries([
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
   'pico-source', 'pico-build', 'pico-run', 'pico-pause', 'pico-reset', 'pico-stop', 'pico-message',
+  'pico-diagnostics', 'pico-diagnostic-links',
   'pico-source-hash', 'pico-artifact-hash', 'pico-diagram', 'pico-circuit-state',
   'pico-editor-wires', 'pico-editor-components', 'pico-circuit-selection',
   'pico-parts-list', 'pico-part-properties',
@@ -194,6 +198,7 @@ const elements = Object.fromEntries([
   'c3-public-workbench', 'c3-state', 'c3-project-name', 'c3-save', 'c3-open', 'c3-open-input',
   'c3-native-open', 'c3-native-save', 'c3-native-save-copy', 'c3-file-connection', 'c3-legacy-copy',
   'c3-source', 'c3-build', 'c3-run', 'c3-stop', 'c3-message', 'c3-source-hash', 'c3-flash-hash',
+  'c3-diagnostics', 'c3-diagnostic-links',
   'c3-diagram', 'c3-external-led', 'c3-circuit-state', 'c3-reconnect', 'c3-wire-cancel', 'c3-wire-state', 'c3-terminal',
   'c3-editor-wires', 'c3-editor-components', 'c3-circuit-selection',
   'c3-parts-list', 'c3-part-properties',
@@ -201,6 +206,7 @@ const elements = Object.fromEntries([
   'stm32-public-workbench', 'stm32-state', 'stm32-project-name', 'stm32-save', 'stm32-open', 'stm32-open-input',
   'stm32-native-open', 'stm32-native-save', 'stm32-native-save-copy', 'stm32-file-connection', 'stm32-legacy-copy',
   'stm32-source', 'stm32-build', 'stm32-run', 'stm32-reset', 'stm32-stop', 'stm32-message',
+  'stm32-diagnostics', 'stm32-diagnostic-links',
   'stm32-source-hash', 'stm32-artifact-hash', 'stm32-diagram', 'stm32-external-led',
   'stm32-circuit-state', 'stm32-terminal', 'stm32-editor-wires', 'stm32-editor-components',
   'stm32-circuit-selection', 'stm32-delete', 'stm32-undo', 'stm32-redo', 'stm32-rotate',
@@ -277,6 +283,45 @@ const publicPreviewRegions = [
 let picoPublicState = null;
 let c3PublicState = null;
 let stm32PublicState = null;
+
+function renderProfileDiagnostics(snapshot, { textarea, summary, links, current }) {
+  const diagnostics = snapshot?.diagnostics ?? [];
+  const panel = summary.closest('.source-diagnostics');
+  panel.dataset.state = diagnostics.some((item) => item.severity === 'error') ? 'error' : 'clear';
+  summary.textContent = diagnostics.length
+    ? diagnostics.map((item) => `${diagnosticLabel(item)} · ${item.message}`).join('\n')
+    : 'No current build errors.';
+  const nodes = diagnostics.map((diagnostic) => {
+    if (!diagnostic.navigable) {
+      const message = document.createElement('p');
+      message.className = 'diagnostic-message';
+      message.textContent = diagnosticLabel(diagnostic);
+      return message;
+    }
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = `Go to ${diagnostic.file}:${diagnostic.line}${diagnostic.column ? `:${diagnostic.column}` : ''}`;
+    button.setAttribute('aria-label', `${button.textContent}. ${diagnostic.message}`);
+    button.addEventListener('click', () => {
+      const state = current();
+      const unchanged = selectedCompilerProfile === diagnostic.profile
+        && state?.revision === diagnostic.revision
+        && textarea.value === diagnostic.source;
+      const selection = unchanged ? sourceSelection(textarea.value, diagnostic.line, diagnostic.column) : null;
+      if (!selection) {
+        button.disabled = true;
+        summary.textContent = 'That diagnostic is stale or has no safe location. Build the current source again.';
+        return;
+      }
+      textarea.focus();
+      textarea.setSelectionRange(selection.start, selection.end);
+      const before = textarea.value.slice(0, selection.start).split('\n').length;
+      textarea.scrollTop = Math.max(0, (before - 4) * 21);
+    });
+    return button;
+  });
+  links.replaceChildren(...nodes);
+}
 
 function renderPicoQuickControls(state = picoPublicState) {
   if (selectedCompilerProfile !== RP2040_PROFILE || !state) return;
@@ -739,6 +784,10 @@ const picoPublicWorkbench = new Rp2040PublicWorkbench({
     renderPicoQuickControls(state);
     renderPicoCircuitEditor(state);
   },
+  onDiagnostics: (snapshot) => renderProfileDiagnostics(snapshot, {
+    textarea: elements.picosource, summary: elements.picodiagnostics,
+    links: elements.picodiagnosticlinks, current: () => picoPublicWorkbench.snapshot(),
+  }),
   onSave: () => saveCommonProject(RP2040_PROFILE),
   onOpen: (file) => openCommonProjectFile(file),
 });
@@ -975,6 +1024,10 @@ const c3PublicWorkbench = new Esp32C3PublicWorkbench({
     renderC3QuickControls(state);
     renderC3CircuitEditor(state);
   },
+  onDiagnostics: (snapshot) => renderProfileDiagnostics(snapshot, {
+    textarea: elements.c3source, summary: elements.c3diagnostics,
+    links: elements.c3diagnosticlinks, current: () => c3PublicWorkbench.snapshot(),
+  }),
   onSave: () => saveCommonProject(ESP32C3_PROFILE),
   onOpen: (file) => openCommonProjectFile(file),
 });
@@ -1219,6 +1272,10 @@ const stm32PublicWorkbench = new Stm32PublicWorkbench({
     renderStm32QuickControls(state);
     renderStm32CircuitEditor(state);
   },
+  onDiagnostics: (snapshot) => renderProfileDiagnostics(snapshot, {
+    textarea: elements.stm32source, summary: elements.stm32diagnostics,
+    links: elements.stm32diagnosticlinks, current: () => stm32PublicWorkbench.snapshot(),
+  }),
   onSave: () => saveCommonProject(STM32F429ZI_PROFILE),
   onOpen: (file) => openCommonProjectFile(file),
 });
@@ -1401,27 +1458,39 @@ function renderSourceEditor() {
   elements.sourcehighlight.scrollTop = elements.source.scrollTop;
   elements.sourcehighlight.scrollLeft = elements.source.scrollLeft;
 }
-function navigateDiagnostic(diagnostic) {
-  const targetName = diagnostic.file?.split('/').at(-1);
-  if (targetName && currentProject().source.files.some((file) => file.name === targetName)) selectedSourceFile = targetName;
-  renderProject();
-  const lines = elements.source.value.split('\n');
-  const line = Math.max(1, Math.min(lines.length, Number(diagnostic.line) || 1));
-  const start = lines.slice(0, line - 1).reduce((count, value) => count + value.length + 1, 0);
-  const end = start + lines[line - 1].length;
-  elements.source.focus(); elements.source.setSelectionRange(start, end);
-  elements.source.scrollTop = Math.max(0, (line - 4) * 21);
-  renderSourceEditor();
-}
 function renderBuildDiagnostics(result, fallback = 'No compiler diagnostics.') {
   latestBuildResult = result ?? null;
-  const diagnostics = result?.diagnostics ?? [];
-  const grouped = diagnostics.filter((item) => item.severity === 'error' || item.severity === 'warning');
+  const binding = currentProjectText();
+  const grouped = normalizeSourceDiagnostics(
+    (result?.diagnostics ?? []).filter((item) => item.severity === 'error' || item.severity === 'warning'),
+    { profile: AVR_PROFILE, revision: editor.revision, source: binding, files: currentProject().source.files },
+  );
   elements.diagnostics.textContent = grouped.length ? grouped.map((item) => `${item.severity}: ${item.message}`).join('\n') : fallback;
   const buttons = grouped.map((diagnostic) => {
+    if (!diagnostic.navigable) {
+      const message = document.createElement('p');
+      message.className = 'diagnostic-message';
+      message.textContent = diagnosticLabel(diagnostic);
+      return message;
+    }
     const button = document.createElement('button'); button.type = 'button';
-    button.textContent = `${diagnostic.file?.split('/').at(-1) ?? 'source'}:${diagnostic.line ?? 1} · ${diagnostic.severity}`;
-    button.addEventListener('click', () => navigateDiagnostic(diagnostic));
+    button.textContent = `${diagnostic.file}:${diagnostic.line}${diagnostic.column ? `:${diagnostic.column}` : ''} · ${diagnostic.severity}`;
+    button.addEventListener('click', () => {
+      const file = currentProject().source.files.find((item) => item.name === diagnostic.file);
+      const unchanged = selectedCompilerProfile === AVR_PROFILE && editor.revision === diagnostic.revision
+        && currentProjectText() === diagnostic.source && file;
+      const selection = unchanged ? sourceSelection(file.content, diagnostic.line, diagnostic.column) : null;
+      if (!selection) {
+        button.disabled = true;
+        elements.diagnostics.textContent = 'That diagnostic is stale or has no safe source location. Build the current source again.';
+        return;
+      }
+      selectedSourceFile = diagnostic.file;
+      renderProject();
+      elements.source.focus(); elements.source.setSelectionRange(selection.start, selection.end);
+      elements.source.scrollTop = Math.max(0, (diagnostic.line - 4) * 21);
+      renderSourceEditor();
+    });
     return button;
   });
   elements.diagnosticlinks.replaceChildren(...buttons);
@@ -4184,6 +4253,9 @@ elements.circuitcanvas.addEventListener('drop', (event) => {
   addComponent(type, { x, y });
 });
 elements.source.addEventListener('input', () => {
+  latestBuildResult = null;
+  elements.diagnosticlinks.replaceChildren();
+  elements.diagnostics.textContent = 'Source changed — build again for current diagnostics.';
   renderSourceEditor();
   const result = applyEditor({ type: 'source.set', name: selectedSourceFile, content: elements.source.value }, `${selectedSourceFile} changed`);
   if (result.ok) { elements.buildstate.textContent = 'Source changed — artifact stale'; elements.artifact.textContent = 'stale'; publish({ buildState: 'dirty', artifactIdentity: null }); }

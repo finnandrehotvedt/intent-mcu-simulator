@@ -124,7 +124,7 @@
           </div>
           <p id="pico-file-connection" class="file-connection" role="status">Download copy and Open project work without a native file connection.</p>
           <label for="pico-source">main.c · edit only level and UART text</label>
-          <textarea id="pico-source" class="pico-source" spellcheck="false" aria-describedby="pico-message"></textarea>
+          <textarea id="pico-source" class="pico-source" spellcheck="false" aria-describedby="pico-message pico-diagnostics"></textarea>
           <div class="pico-runtime-actions">
             <button id="pico-build" class="primary" type="button">Build Pico</button>
             <button id="pico-run" type="button" disabled>Run</button>
@@ -133,6 +133,11 @@
             <button id="pico-stop" type="button" disabled>Stop &amp; discard</button>
           </div>
           <p id="pico-message" class="pico-message" role="status">Edit the two bounded values, then build fresh firmware.</p>
+          <section class="source-diagnostics" aria-labelledby="pico-diagnostics-title">
+            <h3 id="pico-diagnostics-title">Build diagnostics</h3>
+            <p id="pico-diagnostics" role="status">No current build errors.</p>
+            <div id="pico-diagnostic-links" class="diagnostic-links"></div>
+          </section>
           <dl class="pico-identities">
             <div><dt>Source SHA-256</dt><dd><code id="pico-source-hash">not built</code></dd></div>
             <div><dt>UF2 SHA-256</dt><dd><code id="pico-artifact-hash">not built</code></dd></div>
@@ -195,13 +200,18 @@
           </div>
           <p id="c3-file-connection" class="file-connection" role="status">Download copy and Open project work without a native file connection.</p>
           <label for="c3-source">sketch.ino · edit only GPIO2 mode/level and uppercase marker</label>
-          <textarea id="c3-source" class="c3-source" spellcheck="false" aria-describedby="c3-message"></textarea>
+          <textarea id="c3-source" class="c3-source" spellcheck="false" aria-describedby="c3-message c3-diagnostics"></textarea>
           <div class="c3-runtime-actions">
             <button id="c3-build" class="primary" type="button">Build C3 flash</button>
             <button id="c3-run" type="button" disabled>Run actual QEMU</button>
             <button id="c3-stop" type="button" disabled>Stop &amp; discard</button>
           </div>
           <p id="c3-message" class="c3-message" role="status">Edit the bounded values, then build fresh ESP32-C3 flash.</p>
+          <section class="source-diagnostics" aria-labelledby="c3-diagnostics-title">
+            <h3 id="c3-diagnostics-title">Build diagnostics</h3>
+            <p id="c3-diagnostics" role="status">No current build errors.</p>
+            <div id="c3-diagnostic-links" class="diagnostic-links"></div>
+          </section>
           <dl class="c3-identities">
             <div><dt>Source SHA-256</dt><dd><code id="c3-source-hash">not built</code></dd></div>
             <div><dt>Flash SHA-256</dt><dd><code id="c3-flash-hash">not built</code></dd></div>
@@ -265,7 +275,7 @@
           </div>
           <p id="stm32-file-connection" class="file-connection" role="status">Download copy and Open project work without a native file connection.</p>
           <label for="stm32-source">main.c · edit only PB0 level and uppercase marker</label>
-          <textarea id="stm32-source" class="stm32-source" spellcheck="false" aria-describedby="stm32-message"></textarea>
+          <textarea id="stm32-source" class="stm32-source" spellcheck="false" aria-describedby="stm32-message stm32-diagnostics"></textarea>
           <div class="stm32-runtime-actions">
             <button id="stm32-build" class="primary" type="button">Build STM32 ELF</button>
             <button id="stm32-run" type="button" disabled>Run actual Renode</button>
@@ -273,6 +283,11 @@
             <button id="stm32-stop" type="button" disabled>Stop &amp; discard</button>
           </div>
           <p id="stm32-message" class="stm32-message" role="status">Edit the two bounded values, then build a fresh STM32 ELF.</p>
+          <section class="source-diagnostics" aria-labelledby="stm32-diagnostics-title">
+            <h3 id="stm32-diagnostics-title">Build diagnostics</h3>
+            <p id="stm32-diagnostics" role="status">No current build errors.</p>
+            <div id="stm32-diagnostic-links" class="diagnostic-links"></div>
+          </section>
           <dl class="stm32-identities">
             <div><dt>Source SHA-256</dt><dd><code id="stm32-source-hash">not built</code></dd></div>
             <div><dt>ELF SHA-256</dt><dd><code id="stm32-artifact-hash">not built</code></dd></div>
@@ -449,7 +464,7 @@
       </nav>
     </section>
 
-    <footer>Intent MCU Simulator 1.1.0-rc.20 public release · reliable Download/Open plus optional connected desktop files across AVR + bounded Pico + ESP32-C3 + STM32F429ZI · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
+    <footer>Intent MCU Simulator 1.1.0-rc.21 public release · exact controller boundaries and source-bound diagnostics across AVR + bounded Pico + ESP32-C3 + STM32F429ZI · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
   </main>
   <button id="serial-tab" class="serial-tab" type="button" aria-expanded="false" aria-controls="serial-dock"><span>Serial</span><span id="serial-new-output" class="serial-new-output" hidden>0 new</span></button>
   <aside id="serial-dock" class="serial-dock" aria-labelledby="serial-title" hidden>

@@ -600,6 +600,11 @@ textarea { width: 100%; min-height: 220px; resize: vertical; margin: 14px 0 10px
 .tok-comment { color: #7da68a; }.tok-string { color: #f0c975; }.tok-keyword { color: #65d9ff; }.tok-number { color: #f28cf3; }
 .diagnostic-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .diagnostic-links button { min-height: 32px; font: .7rem ui-monospace, monospace; color: #ffd0d4; border-color: #70434a; background: #2a1117; }
+.source-diagnostics { margin-top: 12px; padding: 11px; border: 1px solid #31495a; border-radius: 9px; background: #07141f; }
+.source-diagnostics h3 { margin: 0 0 6px; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: #dceaf0; }
+.source-diagnostics p { margin: 0; color: var(--muted); font: .74rem/1.45 ui-monospace, monospace; overflow-wrap: anywhere; }
+.source-diagnostics[data-state="error"] { border-color: #70434a; background: #1b0e13; }
+.source-diagnostics .diagnostic-message { width: 100%; margin-top: 6px; color: #ffd0d4; }
 .build-log { margin-top: 8px; color: var(--muted); font-size: .76rem; }
 .build-log pre { max-height: 240px; overflow: auto; padding: 10px; background: #040b11; color: #a9bdc7; white-space: pre-wrap; }
 .build-controls button:first-child { background: #194225; border-color: #4e9e4a; }

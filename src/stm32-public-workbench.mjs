@@ -9,8 +9,14 @@ import {
 import {
   Stm32CircuitEditor, createStm32CircuitDraft, normalizeStm32CircuitDraft, validateStm32Circuit,
 } from './stm32-public-circuit.mjs';
+import { boundedPolicyDiagnostic, normalizeSourceDiagnostics } from './source-diagnostics.mjs';
 
 export const STM32_PUBLIC_SOURCE = sourceForStm32('STM32 PUBLIC', true);
+const SOURCE_LINE_PATTERNS = Object.freeze([
+  /^\/\* Intent MCU Simulator public STM32F429 source v1 \*\/$/u,
+  /^int main\(void\)$/u, /^\{$/u, /^  intent_pb0_output\([01]u\);$/u,
+  /^  intent_usart3_text\("[A-Z0-9 _-]{1,24}"\);$/u, /^  intent_halt\(\);$/u, /^\}$/u, /^$/u,
+]);
 export const STM32_EDITABLE_PROJECT_SCHEMA = 'intent-mcu-stm32-public-project@2';
 const clone = (value) => value === null || value === undefined ? value : structuredClone(value);
 
@@ -65,11 +71,12 @@ async function sha256(value) {
 
 export class Stm32PublicWorkbench {
   constructor({ elements, endpoint = '/api/stm32', fetchFn = globalThis.fetch,
-    onState = () => {}, onSave = null, onOpen = null } = {}) {
+    onState = () => {}, onDiagnostics = () => {}, onSave = null, onOpen = null } = {}) {
     this.elements = elements;
     this.endpoint = endpoint.replace(/\/$/u, '');
     this.fetch = fetchFn.bind(globalThis);
     this.onState = onState;
+    this.onDiagnostics = onDiagnostics;
     this.onSave = onSave;
     this.onOpen = onOpen;
     this.project = defaultProject();
@@ -85,6 +92,7 @@ export class Stm32PublicWorkbench {
     this.active = false;
     this.requestToken = 0;
     this.operation = null;
+    this.diagnostics = [];
     this.bind();
     this.render();
   }
@@ -140,12 +148,14 @@ export class Stm32PublicWorkbench {
       runtime: clone(this.result), actualRenodeExecution: true, actualPb0Observed: true,
       circuitModel: 'Ideal teaching LED path driven by Renode-observed PB0',
       transientExecutableMemoryOnly: true, durableServerProject: false,
+      diagnostics: clone(this.diagnostics),
     };
   }
   publish() { const state = this.snapshot(); this.onState(state); return state; }
   activate() {
     this.active = true;
     this.phase = 'editing';
+    this.diagnostics = [];
     this.message = 'STM32F429ZI selected. Build this exact bounded source before Run.';
     this.render();
   }
@@ -160,6 +170,7 @@ export class Stm32PublicWorkbench {
     this.wipeArtifact();
     this.revision += 1;
     this.phase = 'editing';
+    this.diagnostics = [];
     this.message = message;
     this.render();
   }
@@ -185,10 +196,14 @@ export class Stm32PublicWorkbench {
     try { parsed = validateStm32Source(this.project.source); }
     catch {
       this.wipeArtifact();
-      this.phase = 'blocked';
+      this.phase = 'failed';
+      this.diagnostics = [boundedPolicyDiagnostic({
+        profile: STM32_PROFILE, revision: this.revision, source: this.project.source,
+        file: 'main.c', linePatterns: SOURCE_LINE_PATTERNS,
+      })];
       this.message = 'Source rejected. Keep the complete template and edit only PB0 HIGH/LOW and the uppercase marker.';
       this.render();
-      return { ok: false, code: 'SOURCE_POLICY_REJECTED' };
+      return { ok: false, code: 'SOURCE_POLICY_REJECTED', diagnostics: clone(this.diagnostics) };
     }
     this.wipeArtifact();
     const token = ++this.requestToken;
@@ -196,6 +211,7 @@ export class Stm32PublicWorkbench {
     const operation = new AbortController();
     this.operation = operation;
     this.phase = 'building';
+    this.diagnostics = [];
     this.message = 'Compiling in the fixed network-disabled ARM GNU toolchain…';
     this.render();
     try {
@@ -227,6 +243,10 @@ export class Stm32PublicWorkbench {
         sourceSha256: value.sourceSha256, behavior: clone(value.behavior),
         compiler: clone(value.compiler) };
       this.phase = 'built';
+      this.diagnostics = normalizeSourceDiagnostics(value.diagnostics ?? [], {
+        profile: STM32_PROFILE, revision, source: parsed.source,
+        files: [{ name: 'main.c', content: parsed.source }],
+      });
       this.message = 'Fresh source-bound ELF ready. Run starts a new isolated Renode process.';
       this.render();
       return { ok: true, code: 'OK', artifact: clone(this.artifact) };
@@ -234,6 +254,10 @@ export class Stm32PublicWorkbench {
       if (token !== this.requestToken) return { ok: false, code: 'STM32_BUILD_STALE' };
       this.wipeArtifact();
       this.phase = error.name === 'AbortError' ? 'editing' : 'blocked';
+      this.diagnostics = error.name === 'AbortError' ? [] : normalizeSourceDiagnostics(error.diagnostics ?? [{
+        code: error.code ?? 'STM32_BUILD_FAILED', severity: 'error', message: error.message,
+      }], { profile: STM32_PROFILE, revision, source: this.project.source,
+        files: [{ name: 'main.c', content: this.project.source }] });
       this.message = error.name === 'AbortError' ? 'Build cancelled; no executable retained.'
         : `Build rejected: ${error.code ?? error.message}. No stale executable remains.`;
       this.render();
@@ -301,6 +325,7 @@ export class Stm32PublicWorkbench {
     this.operation?.abort();
     this.operation = null;
     this.wipeArtifact();
+    this.diagnostics = [];
     this.phase = this.active ? 'editing' : 'inactive';
     this.message = `${message} Fresh Build is required before Run.`;
     this.render();
@@ -415,6 +440,8 @@ export class Stm32PublicWorkbench {
       : this.result
         ? `Renode observed PB0 ${on ? 'HIGH' : 'LOW'} · ideal ${circuit.model.resistorOhms} Ω / ${circuit.model.ledColor} LED teaching path renders ${on ? 'ON' : 'OFF'}`
         : `Named path: PB0 CN11 pin 34 → ${circuit.model.resistorOhms} Ω → ${circuit.model.ledColor} LED → GND CN11 pin 35 · awaiting actual Renode observation`;
+    this.onDiagnostics({ profile: STM32_PROFILE, revision: this.revision, source: this.project.source,
+      file: 'main.c', diagnostics: clone(this.diagnostics) });
     this.publish();
   }
 }

@@ -10,6 +10,7 @@ import {
   validateRp2040PicoCircuit,
 } from './rp2040-pico-circuit.mjs';
 import { parseStrictJson } from './strict-json.mjs';
+import { boundedPolicyDiagnostic, normalizeSourceDiagnostics } from './source-diagnostics.mjs';
 
 export const RP2040_PUBLIC_PROJECT_SCHEMA = 'intent-mcu-rp2040-public-project@1';
 export const RP2040_PUBLIC_BUILD_SCHEMA = 'intent-mcu-rp2040-source-build-request@1';
@@ -23,6 +24,11 @@ int main(void)
 `;
 
 const SOURCE_PATTERN = /^\/\* Intent MCU Simulator public RP2040 source v1 \*\/\nint main\(void\)\n\{\n  intent_gpio0_output\(([01])u\);\n  intent_uart0_text\("([A-Z0-9 _-]{1,24})"\);\n  intent_halt\(\);\n\}\n$/u;
+const SOURCE_LINE_PATTERNS = Object.freeze([
+  /^\/\* Intent MCU Simulator public RP2040 source v1 \*\/$/u,
+  /^int main\(void\)$/u, /^\{$/u, /^  intent_gpio0_output\([01]u\);$/u,
+  /^  intent_uart0_text\("[A-Z0-9 _-]{1,24}"\);$/u, /^  intent_halt\(\);$/u, /^\}$/u, /^$/u,
+]);
 const exactKeys = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
 const clone = (value) => structuredClone(value);
@@ -84,9 +90,10 @@ function download(name, text) {
 }
 
 export class Rp2040PublicWorkbench {
-  constructor({ elements, onState = () => {}, onSave = null, onOpen = null } = {}) {
+  constructor({ elements, onState = () => {}, onDiagnostics = () => {}, onSave = null, onOpen = null } = {}) {
     this.elements = elements;
     this.onState = onState;
+    this.onDiagnostics = onDiagnostics;
     this.onSave = onSave;
     this.onOpen = onOpen;
     this.project = defaultProject();
@@ -102,6 +109,7 @@ export class Rp2040PublicWorkbench {
     this.abort = null;
     this.active = false;
     this.lastRuntime = null;
+    this.diagnostics = [];
     this.bind();
     this.render();
   }
@@ -150,6 +158,7 @@ export class Rp2040PublicWorkbench {
       artifact: this.artifact ? clone(this.artifact) : null,
       runnable: Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok && wiringReady),
       runtime: this.lastRuntime ? clone(this.lastRuntime) : null,
+      diagnostics: clone(this.diagnostics),
       durableServerProject: false,
       transientExecutableMemoryOnly: true,
     };
@@ -170,6 +179,7 @@ export class Rp2040PublicWorkbench {
     this.active = false;
     this.terminateWorker();
     this.wipeArtifact();
+    this.diagnostics = [];
     this.phase = 'editing';
     this.message = 'Pico draft preserved. Build fresh firmware after returning.';
     this.render();
@@ -199,6 +209,7 @@ export class Rp2040PublicWorkbench {
     this.wipeArtifact();
     this.revision += 1;
     this.phase = 'editing';
+    this.diagnostics = [];
     this.message = message;
     this.render();
   }
@@ -247,6 +258,7 @@ export class Rp2040PublicWorkbench {
         compiler: clone(artifact.compiler),
       };
       this.phase = 'built';
+      this.diagnostics = [];
       this.message = 'Fresh source-bound UF2 ready. Run starts one browser worker.';
       this.abort = null;
       this.render();
@@ -271,10 +283,14 @@ export class Rp2040PublicWorkbench {
       return { ok: false, code: circuit.code };
     }
     if (!SOURCE_PATTERN.test(this.project.source)) {
-      this.phase = 'blocked';
+      this.phase = 'failed';
+      this.diagnostics = [boundedPolicyDiagnostic({
+        profile: RP2040_PICO_PROFILE, revision: this.revision, source: this.project.source,
+        file: 'main.c', linePatterns: SOURCE_LINE_PATTERNS,
+      })];
       this.message = 'Source rejected. Keep the complete template and line breaks exactly as shown; edit only GPIO0 level (0/1) and the uppercase UART text.';
       this.render();
-      return { ok: false, code: 'SOURCE_POLICY_REJECTED' };
+      return { ok: false, code: 'SOURCE_POLICY_REJECTED', diagnostics: clone(this.diagnostics) };
     }
     this.abort?.abort();
     this.terminateWorker();
@@ -283,6 +299,7 @@ export class Rp2040PublicWorkbench {
     const source = this.project.source;
     this.abort = new AbortController();
     this.phase = 'building';
+    this.diagnostics = [];
     this.message = 'Queued in the bounded public Arm compiler (one global build, one per visitor).';
     this.render();
     try {
@@ -304,6 +321,9 @@ export class Rp2040PublicWorkbench {
       this.abort = null;
       this.wipeArtifact();
       this.phase = 'failed';
+      this.diagnostics = normalizeSourceDiagnostics(error.diagnostics ?? [{
+        code: error.code ?? 'RP2040_BUILD_FAILED', severity: 'error', message: error.message,
+      }], { profile: RP2040_PICO_PROFILE, revision, source, files: [{ name: 'main.c', content: source }] });
       this.message = `Build failed (${error.code ?? error.message}). No older artifact remains runnable.`;
       this.render();
       return { ok: false, code: error.code ?? error.message };
@@ -379,6 +399,7 @@ export class Rp2040PublicWorkbench {
     this.abort = null;
     this.terminateWorker();
     this.wipeArtifact();
+    this.diagnostics = [];
     this.phase = 'editing';
     this.message = 'Stopped and discarded executable authority. Build fresh firmware to run again.';
     this.render();
@@ -490,6 +511,8 @@ export class Rp2040PublicWorkbench {
     this.elements.externalLed?.setAttribute('aria-label', `External LED is ${runtimeCircuit.on ? 'on' : 'off'}`);
     const serial = this.lastRuntime?.instruments?.serial;
     this.elements.serial.textContent = serial?.text || 'No Pico UART output yet.';
+    this.onDiagnostics({ profile: RP2040_PICO_PROFILE, revision: this.revision,
+      source: this.project.source, file: 'main.c', diagnostics: clone(this.diagnostics) });
     this.publish();
   }
 }
