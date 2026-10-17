@@ -50,6 +50,15 @@ physical or analogue model.
 Selecting a non-AVR profile parks the AVR project without remapping its circuit;
 returning to AVR restores that workbench.
 
+The Pico, ESP32-C3 and STM32 teaching circuits share a deliberately bounded
+named-pin cable workflow for their existing controller/resistor/LED/ground
+graphs. A learner can delete and recreate a cable from two compatible free
+pins, or select a cable and reconnect one explicitly chosen endpoint. Pending
+wire actions are visible and cancellable, invalid choices reject atomically,
+stable net IDs survive Undo/Redo and Save/Open, and every topology change
+requires a fresh Build. This does not activate general wiring across their
+other pins or add broader controller support.
+
 ## Current source-release boundary
 
 The full circuit editor supports one ATmega328P learning profile and 16
@@ -143,7 +152,7 @@ source; it does not authorize redistributing the resulting image.
 
 Additional current limits:
 
-- source version `1.1.0-rc.10` is prepared for the release at
+- source version `1.1.0-rc.11` is prepared for the release at
   `https://lab.teachthecompany.com/`; hosted compiler/toolchain images and
   private deployment configuration remain outside this source repository;
 - public execution supports the tested ATmega328P subset, one bounded RP2040

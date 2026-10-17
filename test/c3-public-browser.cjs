@@ -168,6 +168,23 @@ const failures = [];
   const high = await buildAndRun(source('C3_HIGH', 'OUTPUT', 'HIGH'), 'C3_HIGH');
   assert(high.state.runtime.modeledCircuit.epochs.at(-1).led.code === 'LED_ON', 'HIGH did not light modeled LED');
   assert(await page.locator('#c3-diagram').getAttribute('data-led') === 'on', 'HIGH LED visual stayed off');
+  const topologyBeforePending = high.state.project.circuit;
+  await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.selectCircuit({ kind: 'net', id: 'net-gpio2' }));
+  await page.click('#c3-reconnect');
+  let pending = await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state());
+  assert(pending.circuitCode === 'C3_WIRING_IN_PROGRESS' && pending.circuitEditor.wireDraft.mode === 'reconnect-source',
+    'C3 reconnect did not enter an explicit pending state');
+  assert(!pending.runnable && pending.artifact === null && pending.runtime === null,
+    'C3 pending wire retained executable or LED authority');
+  assert(await page.locator('#c3-build').isDisabled(), 'C3 Build enabled during pending wire');
+  assert(await page.locator('#c3-diagram').getAttribute('data-led') === 'off', 'C3 pending wire retained LED state');
+  await page.keyboard.press('Escape');
+  pending = await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state());
+  assert(JSON.stringify(pending.project.circuit) === JSON.stringify(topologyBeforePending), 'C3 Escape mutated topology');
+  assert(pending.circuitEditor.wireDraft.mode === 'none' && pending.artifact === null && !pending.runnable,
+    'C3 Escape restored stale executable authority');
+  await page.click('#c3-build');
+  await page.waitForFunction(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state().phase === 'built', null, { timeout: 190_000 });
 
   const resistorBeforeTextArrow = await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state().project.circuit.layout.positions['resistor-1']);
   await page.locator('#c3-source').focus(); await page.keyboard.press('ArrowRight');

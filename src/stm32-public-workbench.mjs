@@ -124,12 +124,14 @@ export class Stm32PublicWorkbench {
   }
   snapshot() {
     const circuit = validateStm32Circuit(this.project.circuit);
+    const wiringReady = this.circuitEditor.snapshot().wireDraft.mode === 'none';
     return {
       profile: STM32_PROFILE, phase: this.phase, active: this.active, revision: this.revision,
       message: this.message, project: clone(this.project), artifact: clone(this.artifact),
       circuitEditor: this.circuitEditor.snapshot(),
-      runnable: Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok),
-      circuitAccepted: circuit.ok, circuitCode: circuit.code,
+      runnable: Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok && wiringReady),
+      circuitAccepted: circuit.ok && wiringReady,
+      circuitCode: wiringReady ? circuit.code : 'STM32_WIRING_IN_PROGRESS',
       runtime: clone(this.result), actualRenodeExecution: true, actualPb0Observed: true,
       circuitModel: 'Ideal teaching LED path driven by Renode-observed PB0',
       transientExecutableMemoryOnly: true, durableServerProject: false,
@@ -160,11 +162,17 @@ export class Stm32PublicWorkbench {
     if (!this.active || ['building', 'running'].includes(this.phase)) {
       return { ok: false, code: 'STM32_BUILD_UNAVAILABLE' };
     }
+    if (this.circuitEditor.snapshot().wireDraft.mode !== 'none') {
+      this.phase = 'blocked';
+      this.message = 'Build blocked while a cable endpoint is being chosen. Finish the cable or press Escape, then build a fresh ELF.';
+      this.render();
+      return { ok: false, code: 'STM32_WIRING_IN_PROGRESS' };
+    }
     const circuit = validateStm32Circuit(this.project.circuit);
     if (!circuit.ok) {
       this.wipeArtifact();
       this.phase = 'blocked';
-      this.message = `Circuit blocked (${circuit.code}). Restore the exact PB0 CN11 pin 34 → resistor → LED → GND CN11 pin 35 path.`;
+      this.message = `Circuit blocked (${circuit.code}). Complete the exact PB0 CN11 pin 34 → resistor → LED → GND CN11 pin 35 path.`;
       this.render();
       return { ok: false, code: circuit.code };
     }
@@ -299,21 +307,31 @@ export class Stm32PublicWorkbench {
     return result;
   }
   editCircuit(operation, ...args) {
-    if (!['deleteSelected', 'undo', 'redo', 'restoreExample', 'moveComponent', 'rotateComponent'].includes(operation)) {
+    if (!['deleteSelected', 'undo', 'redo', 'moveComponent', 'rotateComponent',
+      'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint'].includes(operation)) {
       return { ok: false, code: 'STM32_CIRCUIT_OPERATION_INVALID' };
     }
+    const revision = this.circuitEditor.revision;
     const result = this.circuitEditor[operation](...args);
     if (!result.ok) { this.render(); return result; }
+    if (result.revision === revision) {
+      if (result.wireDraft?.mode !== 'none') {
+        this.invalidate('Wiring in progress. ELF and LED authority were retired; finish or cancel, then build fresh.');
+      } else this.render();
+      return result;
+    }
     this.project.circuit = clone(result.draft);
     const messages = {
       deleteSelected: `Circuit changed (${result.code}). ELF and LED authority retired; restore valid wiring and build fresh.`,
       undo: 'Circuit Undo applied. ELF and LED authority retired; build fresh.',
       redo: 'Circuit Redo applied. ELF and LED authority retired; build fresh.',
-      restoreExample: 'Validated PB0 CN11 pin 34 → 220 Ω → LED → GND CN11 pin 35 example restored. Build fresh.',
       moveComponent: 'Component moved; named pin attachments and orthogonal wires were recomputed. Build fresh.',
       rotateComponent: 'Component rotated; named pin attachments and orthogonal wires were recomputed. Build fresh.',
+      activateEndpoint: `Cable changed (${result.code}). ELF and LED authority retired; finish a valid circuit and build fresh.`,
+      connectEndpoints: `Cable created (${result.code}). ELF and LED authority retired; finish a valid circuit and build fresh.`,
+      reconnectEndpoint: `Cable endpoint reconnected (${result.code}). ELF and LED authority retired; finish a valid circuit and build fresh.`,
     };
-    this.invalidate(messages[operation]);
+    this.invalidate(messages[operation] ?? `Circuit changed (${result.code}). ELF and LED authority retired; build fresh.`);
     return result;
   }
   save() {
@@ -351,23 +369,26 @@ export class Stm32PublicWorkbench {
   }
   render() {
     const circuit = validateStm32Circuit(this.project.circuit);
-    const runnable = Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok);
+    const wiringReady = this.circuitEditor.snapshot().wireDraft.mode === 'none';
+    const runnable = Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok && wiringReady);
     this.elements.name.value = this.project.name;
     if (this.elements.source.value !== this.project.source) this.elements.source.value = this.project.source;
     this.elements.state.textContent = this.phase;
     this.elements.message.textContent = this.message;
     this.elements.sourceHash.textContent = this.artifact?.sourceSha256 ?? 'not built';
     this.elements.artifactHash.textContent = this.artifact?.sha256 ?? 'not built';
-    this.elements.build.disabled = !this.active || ['building', 'running'].includes(this.phase);
+    this.elements.build.disabled = !this.active || ['building', 'running'].includes(this.phase) || !wiringReady;
     this.elements.run.disabled = !this.active || !runnable || ['building', 'running'].includes(this.phase);
     this.elements.reset.disabled = !this.active || !runnable || ['building', 'running'].includes(this.phase);
     this.elements.stop.disabled = !this.active || (!runnable && !this.operation);
     this.elements.terminal.textContent = this.terminal;
-    const on = Boolean(circuit.ok && this.result?.observed?.pb0);
+    const on = Boolean(circuit.ok && wiringReady && this.result?.observed?.pb0);
     this.elements.diagram.dataset.led = on ? 'on' : 'off';
     this.elements.led?.setAttribute('aria-label', `External teaching LED is ${on ? 'on' : 'off'}`);
-    this.elements.diagram.dataset.connected = String(circuit.ok);
-    this.elements.circuitState.textContent = !circuit.ok
+    this.elements.diagram.dataset.connected = String(circuit.ok && wiringReady);
+    this.elements.circuitState.textContent = !wiringReady
+      ? 'Wiring in progress · ELF and LED authority retired · finish or cancel before Build'
+      : !circuit.ok
       ? `Teaching circuit rejected (${circuit.code}) · stale ELF and LED authority retired`
       : this.result
         ? `Renode observed PB0 ${on ? 'HIGH' : 'LOW'} · ideal 220 Ω teaching path renders LED ${on ? 'ON' : 'OFF'}`

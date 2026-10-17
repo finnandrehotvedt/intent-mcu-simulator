@@ -236,6 +236,22 @@ async function selectWire(page, netId) {
   await page.click('#pico-run');
   await page.waitForFunction(() => document.querySelector('#pico-serial').textContent.includes('PICO HIGH TEST')
     && document.querySelector('#pico-external-led').classList.contains('on'), null, { timeout: 10_000 });
+  const topologyBeforePending = high.circuit;
+  await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.selectCircuit({ kind: 'net', id: 'net-gpio0' }));
+  await page.click('#pico-reconnect');
+  const pending = await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state());
+  assert.equal(pending.circuitCode, 'RP2040_WIRING_IN_PROGRESS');
+  assert.equal(pending.circuitEditor.wireDraft.mode, 'reconnect-source');
+  assert.equal(pending.runnable, false); assert.equal(pending.artifact, null); assert.equal(pending.runtime, null);
+  assert.equal(await page.locator('#pico-build').isDisabled(), true);
+  assert.equal(await page.locator('#pico-external-led').evaluate((node) => node.classList.contains('on')), false);
+  await page.keyboard.press('Escape');
+  const cancelled = await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state());
+  assert.deepEqual(cancelled.circuit, topologyBeforePending); assert.equal(cancelled.circuitEditor.wireDraft.mode, 'none');
+  assert.equal(cancelled.artifact, null); assert.equal(cancelled.runnable, false);
+  await build(page, HIGH);
+  await page.click('#pico-run');
+  await page.waitForFunction(() => document.querySelector('#pico-serial').textContent.includes('PICO HIGH TEST'));
   await page.click('#pico-reset'); await page.waitForFunction(() => window.__RP2040_PUBLIC_WORKBENCH__.state().phase === 'paused');
   await page.click('#pico-run'); await page.waitForFunction(() => document.querySelector('#pico-serial').textContent.includes('PICO HIGH TEST'));
   await page.click('#pico-pause'); await page.waitForFunction(() => window.__RP2040_PUBLIC_WORKBENCH__.state().phase === 'paused');

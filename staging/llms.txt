@@ -5,7 +5,7 @@
 Canonical application: https://lab.teachthecompany.com/
 Source and setup: https://github.com/finnandrehotvedt/intent-mcu-simulator
 Licence: Apache-2.0 for project-owned source; third-party components keep their own terms.
-Current public version: 1.1.0-rc.10
+Current public version: 1.1.0-rc.11
 
 ## Supported public workflow
 
@@ -16,9 +16,9 @@ Current public version: 1.1.0-rc.10
 - Inspect GPIO, LEDs, buttons, potentiometers, serial bytes, logic traces, and pin state.
 - Save and reopen a project file on the learner's computer; browser recovery is separate.
 - Optionally generate a portable Prompt Bridge request and validate returned structured circuit data.
-- Select RP2040 Pico, edit the two bounded source values, compile in the fixed isolated Arm toolchain, and run the source-bound UF2 in the browser worker.
-- Select ESP32-C3, edit only GPIO2 mode/level and an uppercase UART marker, compile a fixed DIO flash image, and run actual Espressif QEMU CPU/UART.
-- Select STM32F429ZI, edit the named PB0/resistor/LED/GND teaching circuit and the bounded PB0 HIGH/LOW plus uppercase USART3 source values, compile a strict source-bound ELF, and run actual Renode PB0/USART3/reset replay.
+- Select RP2040 Pico, create or reconnect its bounded GP0/resistor/LED/GND cables from named pins, edit the two bounded source values, compile in the fixed isolated Arm toolchain, and run the source-bound UF2 in the browser worker.
+- Select ESP32-C3, create or reconnect its bounded GPIO2/resistor/LED/GND cables from named pins, edit only GPIO2 mode/level and an uppercase UART marker, compile a fixed DIO flash image, and run actual Espressif QEMU CPU/UART.
+- Select STM32F429ZI, create or reconnect its bounded PB0/resistor/LED/GND cables from named pins, edit the PB0 HIGH/LOW plus uppercase USART3 source values, compile a strict source-bound ELF, and run actual Renode PB0/USART3/reset replay.
 
 ## Important limits
 

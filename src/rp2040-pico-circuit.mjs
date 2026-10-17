@@ -1,7 +1,7 @@
 // Copyright 2026 IntentForce
 // SPDX-License-Identifier: Apache-2.0
 import { COMPONENT_CATALOG, LED_FORWARD_VOLTS, defaultProperties } from './component-catalog.mjs';
-import { NamedSeriesLedCircuitEditor } from './named-series-led-circuit-editor.mjs';
+import { NamedSeriesLedCircuitEditor, createSeriesLedConnectionPolicy } from './named-series-led-circuit-editor.mjs';
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
 
 export const RP2040_PICO_CIRCUIT_SCHEMA = 'intent-mcu-rp2040-pico-circuit@1';
@@ -27,7 +27,7 @@ export const RP2040_PICO_BOARD_DEFINITION = Object.freeze({
   pins: Object.freeze([
     picoPin('GP0', 'GPIO0 · physical pin 1', 'digital-io', ['digital.output', 'pwm.output'], 8 / 132, 27 / 300,
       { voltageMin: 0, voltageMax: 3.3, physicalPin: 1 }),
-    picoPin('GND3', 'GND · physical pin 3', 'ground', ['ground.reference'], 8 / 132, 40 / 300,
+    picoPin('GND3', 'GND · physical pin 3', 'ground', ['ground.reference'], 8 / 132, 53 / 300,
       { physicalPin: 3 }),
   ]),
   propertyKeys: Object.freeze([]), controlKeys: Object.freeze([]), propertySchema: Object.freeze({}),
@@ -60,6 +60,9 @@ const LABEL = /^[\p{L}\p{N} ._#()°Ω×+\-]{1,64}$/u;
 const BOARD = RP2040_PICO_PROFILE;
 const RESISTOR = 'resistor.fixed-v1';
 const LED = 'led.basic-v1';
+const resolveNetId = createSeriesLedConnectionPolicy({
+  boardType: BOARD, sourcePin: 'GP0', groundPin: 'GND3', sourceNetId: 'net-gpio0',
+});
 const TYPE_PINS = Object.freeze({
   [BOARD]: new Set(['GP0', 'GND3']),
   [RESISTOR]: new Set(['A', 'B']),
@@ -271,7 +274,7 @@ export class Rp2040PicoCircuitEditor extends NamedSeriesLedCircuitEditor {
   constructor(draft = createRp2040PicoCircuitDraft()) {
     super({ draft, normalize: normalizeRp2040PicoCircuitDraft,
       validate: validateRp2040PicoCircuit, createDefault: createRp2040PicoCircuitDraft,
-      fixedComponentType: BOARD, codePrefix: 'RP2040' });
+      fixedComponentType: BOARD, resolveNetId, codePrefix: 'RP2040' });
   }
 
   openText(source) {

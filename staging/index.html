@@ -136,15 +136,16 @@
             <output id="pico-zoom-value" aria-live="polite">100%</output>
             <button id="pico-zoom-in" type="button" aria-label="Zoom in">+</button>
             <button id="pico-fit" type="button">Fit</button>
-            <button id="pico-disconnect" type="button">Disconnect LED wire</button>
-            <button id="pico-reconnect" type="button" disabled>Restore example</button>
+            <button id="pico-reconnect" type="button" disabled>Reconnect endpoint</button>
+            <button id="pico-wire-cancel" type="button" disabled>Cancel wire</button>
           </div>
-          <div id="pico-diagram" class="pico-editor-canvas" data-connected="true" tabindex="0" aria-label="Editable Pico circuit. Select a part or cable. Arrow keys move selected parts; R rotates; Delete removes; Control Z and Control Shift Z undo and redo.">
+          <p id="pico-wire-state" class="truth named-wire-state" role="status">Select a free named pin, then a compatible free destination.</p>
+          <div id="pico-diagram" class="pico-editor-canvas" data-connected="true" tabindex="0" aria-label="Editable Pico circuit. Activate two free named pins to create a cable. Select a cable and choose Reconnect endpoint to move one end. Escape cancels wire selection.">
             <svg id="pico-editor-wires" class="pico-editor-wires" role="group" aria-label="Orthogonal named-pin wires"></svg>
             <div id="pico-editor-components" class="pico-editor-components"></div>
           </div>
           <p id="pico-circuit-state" class="truth">Validated: GP0 pin 1 → 220 Ω → LED anode/cathode → GND pin 3</p>
-          <p class="pico-editor-help">Drag a part or use Arrow keys to move it. Press R to rotate, Delete to remove, Ctrl/⌘ Z to undo, and Ctrl/⌘ Shift Z to redo. Fit redraws every cable at the current canvas size.</p>
+          <p class="pico-editor-help">Click or keyboard-activate two free named pins to create a cable. Select a cable, choose Reconnect endpoint, then choose its old and new pin. Escape cancels. Drag or Arrow keys move parts; R rotates; Delete removes; Ctrl/⌘ Z and Ctrl/⌘ Shift Z undo/redo.</p>
           <div class="pico-serial-card"><strong>UART0 output</strong><pre id="pico-serial" aria-live="polite">No Pico UART output yet.</pre></div>
         </section>
       </div>
@@ -193,17 +194,16 @@
             <output id="c3-zoom-value" aria-live="polite">100%</output>
             <button id="c3-zoom-in" type="button" aria-label="Zoom circuit in">+</button>
             <button id="c3-fit" type="button">Fit</button>
+            <button id="c3-reconnect" type="button" disabled>Reconnect endpoint</button>
+            <button id="c3-wire-cancel" type="button" disabled>Cancel wire</button>
           </div>
-          <div id="c3-diagram" class="pico-editor-canvas c3-editor-canvas" data-connected="true" data-led="off" tabindex="0" aria-label="Editable ESP32-C3 project-model circuit. Select a part or cable. Arrow keys move selected parts; R rotates; Delete removes; Control Z and Control Shift Z undo and redo.">
+          <p id="c3-wire-state" class="truth named-wire-state" role="status">Select a free named pin, then a compatible free destination.</p>
+          <div id="c3-diagram" class="pico-editor-canvas c3-editor-canvas" data-connected="true" data-led="off" tabindex="0" aria-label="Editable ESP32-C3 project-model circuit. Activate two free named pins to create a cable. Select a cable and choose Reconnect endpoint to move one end. Escape cancels wire selection.">
             <svg id="c3-editor-wires" class="pico-editor-wires" role="group" aria-label="Orthogonal ESP32-C3 named-pin wires"></svg>
             <div id="c3-editor-components" class="pico-editor-components"></div>
           </div>
           <p id="c3-circuit-state" class="truth">Project model accepted · GPIO2 → 220 Ω → LED → GND · waiting for Run</p>
-          <div class="c3-circuit-actions">
-            <button id="c3-disconnect" type="button">Disconnect LED return</button>
-            <button id="c3-reconnect" type="button" disabled>Restore model wiring</button>
-          </div>
-          <p class="pico-editor-help">Drag a part or use Arrow keys to move it. Press R to rotate, Delete to remove, Ctrl/⌘ Z to undo, and Ctrl/⌘ Shift Z to redo. Every edit retires flash and LED authority until a fresh valid Build.</p>
+          <p class="pico-editor-help">Click or keyboard-activate two free named pins to create a cable. Select a cable, choose Reconnect endpoint, then choose its old and new pin. Escape cancels. Every accepted edit retires flash and LED authority until a fresh valid Build.</p>
           <div class="c3-terminal-card"><strong>Actual QEMU UART / reset evidence</strong><pre id="c3-terminal" aria-live="polite">No QEMU UART output yet.</pre></div>
           <p class="c3-model-label"><strong>LED label:</strong> project-owned model from executed writes · <strong>not QEMU pin readback</strong></p>
         </section>
@@ -254,13 +254,16 @@
             <output id="stm32-zoom-value" aria-live="polite">100%</output>
             <button id="stm32-zoom-in" type="button" aria-label="Zoom STM32 circuit in">+</button>
             <button id="stm32-fit" type="button">Fit</button>
+            <button id="stm32-reconnect" type="button" disabled>Reconnect endpoint</button>
+            <button id="stm32-wire-cancel" type="button" disabled>Cancel wire</button>
           </div>
-          <div id="stm32-diagram" class="pico-editor-canvas stm32-editor-canvas" data-connected="true" data-led="off" tabindex="0" aria-label="Editable STM32F429ZI ideal teaching circuit. Select a part or cable. Arrow keys move selected parts; R rotates; Delete removes; Control Z and Control Shift Z undo and redo.">
+          <p id="stm32-wire-state" class="truth named-wire-state" role="status">Select a free named pin, then a compatible free destination.</p>
+          <div id="stm32-diagram" class="pico-editor-canvas stm32-editor-canvas" data-connected="true" data-led="off" tabindex="0" aria-label="Editable STM32F429ZI ideal teaching circuit. Activate two free named pins to create a cable. Select a cable and choose Reconnect endpoint to move one end. Escape cancels wire selection.">
             <svg id="stm32-editor-wires" class="pico-editor-wires" role="group" aria-label="Orthogonal STM32 named-pin wires"></svg>
             <div id="stm32-editor-components" class="pico-editor-components"></div>
           </div>
           <p id="stm32-circuit-state" class="truth">Named path: PB0 CN11 pin 34 → 220 Ω → LED → GND CN11 pin 35 · awaiting actual Renode observation</p>
-          <p class="pico-editor-help">Drag a part or use Arrow keys to move it. Press R to rotate, Delete to remove, Ctrl/⌘ Z to undo, and Ctrl/⌘ Shift Z to redo. Every edit retires ELF and LED authority until a fresh valid Build.</p>
+          <p class="pico-editor-help">Click or keyboard-activate two free named pins to create a cable. Select a cable, choose Reconnect endpoint, then choose its old and new pin. Escape cancels. Every accepted edit retires ELF and LED authority until a fresh valid Build.</p>
           <div class="stm32-terminal-card"><strong>Actual Renode PB0 / USART3 evidence</strong><pre id="stm32-terminal" aria-live="polite">No Renode execution yet.</pre></div>
           <p class="stm32-model-label"><strong>Runtime truth:</strong> PB0 and USART3 are observed in actual Renode. <strong>Circuit truth:</strong> the external resistor/LED path is an ideal educational rendering.</p>
         </section>
@@ -380,7 +383,7 @@
       </nav>
     </section>
 
-    <footer>Intent MCU Simulator 1.1.0-rc.10 public release · AVR + editable bounded Pico + editable bounded ESP32-C3 + editable bounded STM32F429ZI execution · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
+    <footer>Intent MCU Simulator 1.1.0-rc.11 public release · AVR + editable bounded Pico + editable bounded ESP32-C3 + editable bounded STM32F429ZI execution · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
   </main>
   <button id="serial-tab" class="serial-tab" type="button" aria-expanded="false" aria-controls="serial-dock"><span>Serial</span><span id="serial-new-output" class="serial-new-output" hidden>0 new</span></button>
   <aside id="serial-dock" class="serial-dock" aria-labelledby="serial-title" hidden>

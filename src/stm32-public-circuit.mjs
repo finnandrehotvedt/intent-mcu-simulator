@@ -2,7 +2,7 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import { LED_FORWARD_VOLTS, defaultProperties } from './component-catalog.mjs';
-import { NamedSeriesLedCircuitEditor } from './named-series-led-circuit-editor.mjs';
+import { NamedSeriesLedCircuitEditor, createSeriesLedConnectionPolicy } from './named-series-led-circuit-editor.mjs';
 import { exactKeys } from './strict-json.mjs';
 
 export const STM32_PUBLIC_CIRCUIT_SCHEMA = 'intent-mcu-stm32-public-circuit@1';
@@ -64,6 +64,9 @@ const LABEL = /^[\p{L}\p{N} ._#()°Ω×+\-]{1,64}$/u;
 const BOARD = STM32_PUBLIC_PROFILE;
 const RESISTOR = 'resistor.fixed-v1';
 const LED = 'led.basic-v1';
+const resolveNetId = createSeriesLedConnectionPolicy({
+  boardType: BOARD, sourcePin: 'PB0', groundPin: 'GND', sourceNetId: 'net-pb0',
+});
 const TYPE_PINS = Object.freeze({
   [BOARD]: new Set(['PB0', 'GND']),
   [RESISTOR]: new Set(['A', 'B']),
@@ -247,6 +250,6 @@ export class Stm32CircuitEditor extends NamedSeriesLedCircuitEditor {
   constructor(draft = createStm32CircuitDraft()) {
     super({ draft, normalize: normalizeStm32CircuitDraft,
       validate: validateStm32Circuit, createDefault: createStm32CircuitDraft,
-      fixedComponentType: BOARD, codePrefix: 'STM32' });
+      fixedComponentType: BOARD, resolveNetId, codePrefix: 'STM32' });
   }
 }

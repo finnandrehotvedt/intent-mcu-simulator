@@ -1,4 +1,38 @@
-# Intent MCU Simulator 1.1.0-rc.10
+# Intent MCU Simulator 1.1.0-rc.11
+
+This app-only release adds direct named-pin cable creation and endpoint
+reconnection to the three bounded non-AVR teaching circuits while preserving
+their accepted compiler and runtime contracts.
+
+## Shared bounded wire authoring
+
+- Pico, ESP32-C3 and STM32F429ZI now share one transactional wire-authoring
+  state machine for their existing controller → 220 Ω resistor → LED →
+  ground graphs. It does not add components, pins, peripherals or source
+  grammar.
+- Select a free named pin and then a compatible free destination to create a
+  cable. Select an existing cable, choose **Reconnect endpoint**, explicitly
+  choose the endpoint to move, and then choose its compatible free target.
+- Pending selections are visible and cancellable with the button or Escape.
+  Unknown, self, occupied and unsupported endpoints reject atomically without
+  changing topology or history.
+- Created and reconnected cables retain the established stable net IDs.
+  Delete, recreate, reconnect, Undo and Redo no longer require Restore Example
+  or hand-edited JSON.
+- Starting a wire operation retires any executable, runtime and LED authority
+  and disables Build until the operation is finished or cancelled. Every
+  accepted topology change and every local Open still requires a fresh Build.
+- Data-only Save/Open retains the authored endpoint pairs. Desktop and mobile
+  browser acceptance verifies exact rendered-terminal attachment and
+  component-body avoidance after movement, all quarter turns, Fit and resize.
+- The original Pico artwork now places GND on the correct physical pin 3 row;
+  its GP0 and GND pointer targets no longer overlap.
+- Actual AVR execution, Pico UF2/rp2040js, ESP32-C3 QEMU CPU/UART and STM32
+  Renode PB0/USART3/reset replay remain unchanged and were regression-tested.
+
+---
+
+## 1.1.0-rc.10
 
 This app-only release makes the bounded STM32F429ZI PB0 teaching circuit
 editable while preserving the accepted fixed Arm compiler, strict ELF32 and

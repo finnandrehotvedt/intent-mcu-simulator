@@ -118,8 +118,6 @@ export class Rp2040PublicWorkbench {
     this.elements.pause.addEventListener('click', () => this.pause());
     this.elements.reset.addEventListener('click', () => this.reset());
     this.elements.stop.addEventListener('click', () => this.stop());
-    this.elements.disconnect.addEventListener('click', () => this.disconnectLed());
-    this.elements.reconnect.addEventListener('click', () => this.reconnectLed());
     this.elements.save.addEventListener('click', () => this.save());
     this.elements.open.addEventListener('click', () => this.elements.openInput.click());
     this.elements.openInput.addEventListener('change', async () => {
@@ -131,6 +129,7 @@ export class Rp2040PublicWorkbench {
 
   snapshot() {
     const circuit = validateRp2040PicoCircuit(this.project.circuit);
+    const wiringReady = this.circuitEditor.snapshot().wireDraft.mode === 'none';
     return {
       profile: RP2040_PICO_PROFILE,
       phase: this.phase,
@@ -140,11 +139,11 @@ export class Rp2040PublicWorkbench {
       source: this.project.source,
       circuit: clone(this.project.circuit),
       circuitEditor: this.circuitEditor.snapshot(),
-      circuitValid: circuit.ok,
-      circuitCode: circuit.code,
+      circuitValid: circuit.ok && wiringReady,
+      circuitCode: wiringReady ? circuit.code : 'RP2040_WIRING_IN_PROGRESS',
       circuitObservation: observeRp2040PicoCircuit(this.project.circuit, this.lastRuntime),
       artifact: this.artifact ? clone(this.artifact) : null,
-      runnable: Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok),
+      runnable: Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok && wiringReady),
       runtime: this.lastRuntime ? clone(this.lastRuntime) : null,
       durableServerProject: false,
       transientExecutableMemoryOnly: true,
@@ -253,6 +252,12 @@ export class Rp2040PublicWorkbench {
 
   async build() {
     if (!this.active || this.phase === 'building') return { ok: false, code: 'RP2040_BUILD_UNAVAILABLE' };
+    if (this.circuitEditor.snapshot().wireDraft.mode !== 'none') {
+      this.phase = 'blocked';
+      this.message = 'Build blocked while a cable endpoint is being chosen. Finish the cable or press Escape, then build fresh firmware.';
+      this.render();
+      return { ok: false, code: 'RP2040_WIRING_IN_PROGRESS' };
+    }
     const circuit = validateRp2040PicoCircuit(this.project.circuit);
     if (!circuit.ok) {
       this.phase = 'blocked';
@@ -382,35 +387,32 @@ export class Rp2040PublicWorkbench {
   }
 
   editCircuit(operation, ...args) {
-    if (!['deleteSelected', 'undo', 'redo', 'restoreExample', 'moveComponent', 'rotateComponent'].includes(operation)) {
+    if (!['deleteSelected', 'undo', 'redo', 'moveComponent', 'rotateComponent',
+      'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint'].includes(operation)) {
       return { ok: false, code: 'RP2040_CIRCUIT_OPERATION_INVALID' };
     }
+    const revision = this.circuitEditor.revision;
     const result = this.circuitEditor[operation](...args);
     if (!result.ok) { this.render(); return result; }
+    if (result.revision === revision) {
+      if (result.wireDraft?.mode !== 'none') {
+        this.invalidate('Wiring in progress. Executable and LED authority were retired; finish or cancel, then build fresh firmware.');
+      } else this.render();
+      return result;
+    }
     this.project.circuit = clone(result.draft);
     const messages = {
       deleteSelected: `Circuit changed (${result.code}). Executable authority retired; build fresh firmware.`,
       undo: 'Circuit Undo applied. Executable authority retired; build fresh firmware.',
       redo: 'Circuit Redo applied. Executable authority retired; build fresh firmware.',
-      restoreExample: 'Validated GP0 → 220 Ω → LED → GND example restored. Build fresh firmware.',
       moveComponent: 'Component moved; named pin attachments and orthogonal wires were recomputed. Build fresh firmware.',
       rotateComponent: 'Component rotated; named pin attachments and orthogonal wires were recomputed. Build fresh firmware.',
+      activateEndpoint: `Cable changed (${result.code}). Executable authority retired; finish a valid circuit and build fresh firmware.`,
+      connectEndpoints: `Cable created (${result.code}). Executable authority retired; finish a valid circuit and build fresh firmware.`,
+      reconnectEndpoint: `Cable endpoint reconnected (${result.code}). Executable authority retired; finish a valid circuit and build fresh firmware.`,
     };
-    this.invalidate(messages[operation]);
+    this.invalidate(messages[operation] ?? `Circuit changed (${result.code}). Executable authority retired; build fresh firmware.`);
     return result;
-  }
-
-  disconnectLed() {
-    this.circuitEditor.select({ kind: 'net', id: 'net-series' });
-    const result = this.circuitEditor.deleteSelected();
-    if (result.ok) {
-      this.project.circuit = clone(result.draft);
-      this.invalidate('External LED disconnected. Runtime authority retired; validation now fails closed.');
-    }
-  }
-
-  reconnectLed() {
-    this.editCircuit('restoreExample');
   }
 
   save() {
@@ -441,8 +443,9 @@ export class Rp2040PublicWorkbench {
 
   render() {
     const circuit = validateRp2040PicoCircuit(this.project.circuit);
+    const wiringReady = this.circuitEditor.snapshot().wireDraft.mode === 'none';
     const runtimeCircuit = observeRp2040PicoCircuit(this.project.circuit, this.lastRuntime);
-    const runnable = Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok);
+    const runnable = Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok && wiringReady);
     const building = this.phase === 'building';
     this.elements.source.value = this.project.source;
     this.elements.name.value = this.project.name;
@@ -450,16 +453,16 @@ export class Rp2040PublicWorkbench {
     this.elements.message.textContent = this.message;
     this.elements.sourceHash.textContent = this.artifact?.sourceSha256?.slice(0, 16) ?? 'not built';
     this.elements.artifactHash.textContent = this.artifact?.uf2Sha256?.slice(0, 16) ?? 'not built';
-    this.elements.build.disabled = !this.active || building;
+    this.elements.build.disabled = !this.active || building || !wiringReady;
     this.elements.run.disabled = !this.active || !runnable || building
       || ['running', 'starting'].includes(this.phase);
     this.elements.pause.disabled = !this.worker;
     this.elements.reset.disabled = !this.worker;
     this.elements.stop.disabled = !this.worker && !this.artifact && !building;
-    this.elements.disconnect.disabled = !circuit.ok;
-    this.elements.reconnect.disabled = circuit.ok;
-    this.elements.diagram.dataset.connected = String(circuit.ok);
-    this.elements.circuitState.textContent = circuit.ok
+    this.elements.diagram.dataset.connected = String(circuit.ok && wiringReady);
+    this.elements.circuitState.textContent = !wiringReady
+      ? 'Wiring in progress · executable and LED authority retired · finish or cancel before Build'
+      : circuit.ok
       ? 'Validated: GP0 pin 1 → 220 Ω → LED anode/cathode → GND pin 3'
       : `Disconnected / rejected: ${circuit.code}`;
     this.elements.externalLed?.classList.toggle('on', Boolean(runtimeCircuit.on));

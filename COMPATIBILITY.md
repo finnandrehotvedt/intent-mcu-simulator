@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.10 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.11 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -32,6 +32,14 @@ Arm GNU 14.3.1 toolchain produces a strict source-bound UF2 that runs in the
 rp2040js 1.4.0 browser worker. The only validated external circuit is GP0
 physical pin 1 through 220 Ω and an LED to GND physical pin 3. GPIO25 is
 identified separately as an onboard-LED signal and is not a header anchor.
+
+The bounded Pico, ESP32-C3 and STM32 teaching graphs support the same direct
+named-pin cable workflow: choose a free source and compatible free target, or
+select a cable and reconnect one explicitly chosen endpoint. This is limited
+to each controller's existing controller/resistor/LED/ground graph and stable
+net IDs. It is not general cross-controller wiring support. Invalid or pending
+wire actions block Build and retire stale executable, runtime and LED
+authority; Escape cancels a pending choice without changing topology.
 
 The ESP32-C3 editor accepts one exact Arduino sketch grammar. It can set GPIO2
 to `OUTPUT` or `INPUT`, select `HIGH` or `LOW`, and print one bounded uppercase

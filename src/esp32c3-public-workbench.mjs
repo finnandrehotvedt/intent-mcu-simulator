@@ -95,8 +95,6 @@ export class Esp32C3PublicWorkbench {
     this.elements.build.addEventListener('click', () => { void this.build(); });
     this.elements.run.addEventListener('click', () => { void this.run(); });
     this.elements.stop.addEventListener('click', () => { void this.dispose('C3 session discarded.'); });
-    this.elements.disconnect.addEventListener('click', () => this.disconnectLed());
-    this.elements.reconnect.addEventListener('click', () => this.reconnectLed());
     this.elements.save.addEventListener('click', () => this.save());
     this.elements.open.addEventListener('click', () => this.elements.openInput.click());
     this.elements.openInput.addEventListener('change', async () => {
@@ -107,13 +105,15 @@ export class Esp32C3PublicWorkbench {
   }
   snapshot() {
     const circuit = validateEsp32C3Circuit(this.project.circuit);
+    const wiringReady = this.circuitEditor.snapshot().wireDraft.mode === 'none';
     return {
       profile: PROFILE, phase: this.phase, active: this.active, revision: this.revision,
       message: this.message, project: clone(this.project),
       circuitEditor: this.circuitEditor.snapshot(),
       artifact: this.artifact ? clone(this.artifact) : null,
-      runnable: Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok),
-      circuitAccepted: circuit.ok, circuitCode: circuit.code,
+      runnable: Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok && wiringReady),
+      circuitAccepted: circuit.ok && wiringReady,
+      circuitCode: wiringReady ? circuit.code : 'C3_WIRING_IN_PROGRESS',
       runtime: this.lastRuntime ? clone(this.lastRuntime) : null,
       actualQemuCpuUart: true, qemuPinStateObserved: false,
       gpioPeripheralModel: 'IntentForce project-owned GPIO2 register adapter',
@@ -178,10 +178,16 @@ export class Esp32C3PublicWorkbench {
   }
   async build() {
     if (!this.active || this.phase === 'building') return { ok: false, code: 'C3_BUILD_UNAVAILABLE' };
+    if (this.circuitEditor.snapshot().wireDraft.mode !== 'none') {
+      this.phase = 'blocked';
+      this.message = 'Build blocked while a cable endpoint is being chosen. Finish the cable or press Escape, then build fresh flash.';
+      this.render();
+      return { ok: false, code: 'C3_WIRING_IN_PROGRESS' };
+    }
     const circuit = validateEsp32C3Circuit(this.project.circuit);
     if (!circuit.ok) {
       this.phase = 'blocked';
-      this.message = `Circuit blocked (${circuit.code}). Restore the exact GPIO2 J1 pin 4 → resistor → LED → GND J1 pin 6 path.`;
+      this.message = `Circuit blocked (${circuit.code}). Complete the exact GPIO2 J1 pin 4 → resistor → LED → GND J1 pin 6 path.`;
       this.render();
       return { ok: false, code: circuit.code };
     }
@@ -323,35 +329,34 @@ export class Esp32C3PublicWorkbench {
   }
 
   editCircuit(operation, ...args) {
-    if (!['deleteSelected', 'undo', 'redo', 'restoreExample', 'moveComponent', 'rotateComponent'].includes(operation)) {
+    if (!['deleteSelected', 'undo', 'redo', 'moveComponent', 'rotateComponent',
+      'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint'].includes(operation)) {
       return { ok: false, code: 'C3_CIRCUIT_OPERATION_INVALID' };
     }
+    const revision = this.circuitEditor.revision;
     const result = this.circuitEditor[operation](...args);
     if (!result.ok) { this.render(); return result; }
+    if (result.revision === revision) {
+      if (result.wireDraft?.mode !== 'none') {
+        this.invalidate('Wiring in progress. Flash and LED authority were retired; finish or cancel, then build fresh.');
+      } else this.render();
+      return result;
+    }
     this.project.circuit = clone(result.draft);
     const messages = {
       deleteSelected: `Circuit changed (${result.code}). Flash and LED authority retired; restore valid wiring and build fresh.`,
       undo: 'Circuit Undo applied. Flash and LED authority retired; build fresh.',
       redo: 'Circuit Redo applied. Flash and LED authority retired; build fresh.',
-      restoreExample: 'Validated GPIO2 J1 pin 4 → 220 Ω → LED → GND J1 pin 6 example restored. Build fresh.',
       moveComponent: 'Component moved; named pin attachments and orthogonal wires were recomputed. Build fresh.',
       rotateComponent: 'Component rotated; named pin attachments and orthogonal wires were recomputed. Build fresh.',
+      activateEndpoint: `Cable changed (${result.code}). Flash and LED authority retired; finish a valid circuit and build fresh.`,
+      connectEndpoints: `Cable created (${result.code}). Flash and LED authority retired; finish a valid circuit and build fresh.`,
+      reconnectEndpoint: `Cable endpoint reconnected (${result.code}). Flash and LED authority retired; finish a valid circuit and build fresh.`,
     };
-    this.invalidate(messages[operation]);
+    this.invalidate(messages[operation] ?? `Circuit changed (${result.code}). Flash and LED authority retired; build fresh.`);
     return result;
   }
 
-  disconnectLed() {
-    this.circuitEditor.select({ kind: 'net', id: 'net-ground' });
-    const result = this.circuitEditor.deleteSelected();
-    if (result.ok) {
-      this.project.circuit = clone(result.draft);
-      this.invalidate('LED return wire disconnected. Flash and LED authority retired; validation now fails closed.');
-    }
-  }
-  reconnectLed() {
-    this.editCircuit('restoreExample');
-  }
   save() {
     this.project.circuit = clone(this.circuitEditor.snapshot().draft);
     download(`${this.project.name.replace(/[^a-z0-9]+/giu, '-').replace(/^-|-$/gu, '').toLowerCase() || 'c3-project'}.json`,
@@ -376,6 +381,7 @@ export class Esp32C3PublicWorkbench {
   }
   render() {
     const circuit = validateEsp32C3Circuit(this.project.circuit);
+    const wiringReady = this.circuitEditor.snapshot().wireDraft.mode === 'none';
     const modeled = this.lastRuntime?.modeledCircuit;
     const led = modeled?.epochs?.at(-1)?.led;
     this.elements.name.value = this.project.name;
@@ -385,17 +391,17 @@ export class Esp32C3PublicWorkbench {
     this.elements.terminal.textContent = this.terminal;
     this.elements.sourceHash.textContent = this.artifact?.sourceSha256 ?? 'not built';
     this.elements.flashHash.textContent = this.artifact?.flashSha256 ?? 'not built';
-    this.elements.build.disabled = !this.active || this.phase === 'building' || this.phase === 'running';
+    this.elements.build.disabled = !this.active || this.phase === 'building' || this.phase === 'running' || !wiringReady;
     this.elements.run.disabled = !this.active || !this.artifact
-      || this.artifactRevision !== this.revision || !circuit.ok || this.phase === 'running';
+      || this.artifactRevision !== this.revision || !circuit.ok || !wiringReady || this.phase === 'running';
     this.elements.stop.disabled = !this.sessionId;
-    this.elements.disconnect.disabled = !circuit.ok;
-    this.elements.reconnect.disabled = circuit.ok;
-    this.elements.diagram.dataset.connected = String(circuit.ok);
-    this.elements.diagram.dataset.led = circuit.ok && led?.on ? 'on' : 'off';
-    this.elements.led?.setAttribute('aria-label', circuit.ok && led?.on
+    this.elements.diagram.dataset.connected = String(circuit.ok && wiringReady);
+    this.elements.diagram.dataset.led = circuit.ok && wiringReady && led?.on ? 'on' : 'off';
+    this.elements.led?.setAttribute('aria-label', circuit.ok && wiringReady && led?.on
       ? 'Modeled external LED is on' : 'Modeled external LED is off');
-    this.elements.circuitState.textContent = circuit.ok
+    this.elements.circuitState.textContent = !wiringReady
+      ? 'Wiring in progress · flash and LED authority retired · finish or cancel before Build'
+      : circuit.ok
       ? `Project model accepted · GPIO2 J1 pin 4 → 220 Ω → LED → GND J1 pin 6 · ${led?.code ?? 'waiting for Run'}`
       : `Project model rejected (${circuit.code}) · stale flash and LED authority retired`;
     this.publish();

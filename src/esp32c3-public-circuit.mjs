@@ -3,7 +3,7 @@
 
 import { VALIDATED_LED_CIRCUIT } from '../c3/gpio2-adapter.mjs';
 import { LED_FORWARD_VOLTS, defaultProperties } from './component-catalog.mjs';
-import { NamedSeriesLedCircuitEditor } from './named-series-led-circuit-editor.mjs';
+import { NamedSeriesLedCircuitEditor, createSeriesLedConnectionPolicy } from './named-series-led-circuit-editor.mjs';
 import { exactKeys } from './strict-json.mjs';
 
 export const ESP32C3_PUBLIC_CIRCUIT_SCHEMA = 'intent-mcu-esp32c3-public-circuit@1';
@@ -60,6 +60,9 @@ const LABEL = /^[\p{L}\p{N} ._#()°Ω×+\-]{1,64}$/u;
 const BOARD = ESP32C3_PUBLIC_PROFILE;
 const RESISTOR = 'resistor.fixed-v1';
 const LED = 'led.basic-v1';
+const resolveNetId = createSeriesLedConnectionPolicy({
+  boardType: BOARD, sourcePin: 'GPIO2', groundPin: 'GND', sourceNetId: 'net-gpio2',
+});
 const TYPE_PINS = Object.freeze({
   [BOARD]: new Set(['GPIO2', 'GND']),
   [RESISTOR]: new Set(['A', 'B']),
@@ -245,6 +248,6 @@ export class Esp32C3CircuitEditor extends NamedSeriesLedCircuitEditor {
   constructor(draft = createEsp32C3CircuitDraft()) {
     super({ draft, normalize: normalizeEsp32C3CircuitDraft,
       validate: validateEsp32C3Circuit, createDefault: createEsp32C3CircuitDraft,
-      fixedComponentType: BOARD, codePrefix: 'C3' });
+      fixedComponentType: BOARD, resolveNetId, codePrefix: 'C3' });
   }
 }

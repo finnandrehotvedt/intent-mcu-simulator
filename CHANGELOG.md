@@ -2,6 +2,27 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.11 — 2026-10-17
+
+- Added one shared, bounded named-pin wire-authoring state machine to the
+  public Pico, ESP32-C3 and STM32F429ZI teaching circuits.
+- Users can now delete and recreate a cable by selecting two compatible free
+  named pins, or select a cable and explicitly reconnect one endpoint, without
+  editing JSON or restoring the example.
+- Added visible pending/cancel states, Escape cancellation, keyboard pin
+  activation, stable net IDs, atomic rejection of unknown, self, occupied and
+  unsupported endpoints, and exact Undo/Redo behavior.
+- Made every in-progress wire action retire executable, runtime and LED
+  authority and block Build until the action is finished or cancelled; a fresh
+  Build remains required after topology changes and local Open.
+- Preserved authored topology through data-only Save/Open and verified exact
+  terminal attachment and component-body avoidance after movement, rotation,
+  Fit, resize and mobile layout.
+- Corrected the Pico GND terminal to the physical pin 3 row and separated its
+  pointer target from GP0 without changing the bounded electrical contract.
+- Preserved actual AVR, Pico, QEMU and Renode Build/Run paths and all existing
+  controller, compiler/runtime, Caddy, DNS and unrelated-service boundaries.
+
 ## 1.1.0-rc.10 — 2026-10-17
 
 - Replaced the fixed STM32F429ZI PB0 teaching illustration with an original

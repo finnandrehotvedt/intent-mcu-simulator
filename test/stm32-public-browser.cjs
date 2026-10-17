@@ -129,6 +129,24 @@ function assertEditorGeometry(geometry) {
   await waitPhase(page, 'running');
   await waitPhase(page, 'completed');
   assert((await state(page)).artifact.sha256 === highElf, 'Reset changed accepted ELF');
+  const topologyBeforePending = (await state(page)).project.circuit;
+  await page.evaluate(() => window.__STM32_PUBLIC_WORKBENCH__.selectCircuit({ kind: 'net', id: 'net-pb0' }));
+  await page.click('#stm32-reconnect');
+  current = await state(page);
+  assert(current.circuitCode === 'STM32_WIRING_IN_PROGRESS'
+    && current.circuitEditor.wireDraft.mode === 'reconnect-source', 'STM32 reconnect did not enter pending state');
+  assert(!current.runnable && current.artifact === null && current.runtime === null,
+    'STM32 pending wire retained executable or LED authority');
+  assert(await page.locator('#stm32-build').isDisabled(), 'STM32 Build enabled during pending wire');
+  assert(await page.locator('#stm32-diagram').getAttribute('data-led') === 'off', 'STM32 pending wire retained LED state');
+  await page.keyboard.press('Escape');
+  current = await state(page);
+  assert(JSON.stringify(current.project.circuit) === JSON.stringify(topologyBeforePending), 'STM32 Escape mutated topology');
+  assert(current.circuitEditor.wireDraft.mode === 'none' && current.artifact === null && !current.runnable,
+    'STM32 Escape restored stale executable authority');
+  await page.click('#stm32-build');
+  await waitPhase(page, 'built');
+  assert((await state(page)).artifact.sha256 === highElf, 'fresh STM32 Build after wire cancellation changed identical ELF');
 
   const resistorBeforeTextArrow = await page.evaluate(() =>
     window.__STM32_PUBLIC_WORKBENCH__.state().project.circuit.layout.positions['resistor-1']);

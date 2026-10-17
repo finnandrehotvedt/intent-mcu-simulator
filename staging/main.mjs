@@ -144,10 +144,10 @@ const elements = Object.fromEntries([
   'pico-source-hash', 'pico-artifact-hash', 'pico-diagram', 'pico-circuit-state',
   'pico-editor-wires', 'pico-editor-components', 'pico-circuit-selection',
   'pico-delete', 'pico-undo', 'pico-redo', 'pico-rotate', 'pico-zoom-out', 'pico-zoom-value',
-  'pico-zoom-in', 'pico-fit', 'pico-disconnect', 'pico-reconnect', 'pico-serial',
+  'pico-zoom-in', 'pico-fit', 'pico-reconnect', 'pico-wire-cancel', 'pico-wire-state', 'pico-serial',
   'c3-public-workbench', 'c3-state', 'c3-project-name', 'c3-save', 'c3-open', 'c3-open-input',
   'c3-source', 'c3-build', 'c3-run', 'c3-stop', 'c3-message', 'c3-source-hash', 'c3-flash-hash',
-  'c3-diagram', 'c3-external-led', 'c3-circuit-state', 'c3-disconnect', 'c3-reconnect', 'c3-terminal',
+  'c3-diagram', 'c3-external-led', 'c3-circuit-state', 'c3-reconnect', 'c3-wire-cancel', 'c3-wire-state', 'c3-terminal',
   'c3-editor-wires', 'c3-editor-components', 'c3-circuit-selection',
   'c3-delete', 'c3-undo', 'c3-redo', 'c3-rotate', 'c3-zoom-out', 'c3-zoom-value', 'c3-zoom-in', 'c3-fit',
   'stm32-public-workbench', 'stm32-state', 'stm32-project-name', 'stm32-save', 'stm32-open', 'stm32-open-input',
@@ -156,6 +156,7 @@ const elements = Object.fromEntries([
   'stm32-circuit-state', 'stm32-terminal', 'stm32-editor-wires', 'stm32-editor-components',
   'stm32-circuit-selection', 'stm32-delete', 'stm32-undo', 'stm32-redo', 'stm32-rotate',
   'stm32-zoom-out', 'stm32-zoom-value', 'stm32-zoom-in', 'stm32-fit',
+  'stm32-reconnect', 'stm32-wire-cancel', 'stm32-wire-state',
 ].map((id) => [id.replaceAll('-', ''), byId(id)]));
 
 const runtimeControls = [elements.run, elements.pause, elements.step, elements.reset, elements.speed];
@@ -268,6 +269,64 @@ let picoEditorResponsiveScale = null;
 
 function picoEndpointKey(endpoint) { return `${endpoint.component}.${endpoint.pin}`; }
 
+function namedWireConnection(draft, key) {
+  return draft.nets.find((net) => net.endpoints.some((endpoint) => picoEndpointKey(endpoint) === key)) ?? null;
+}
+
+function namedWireInstruction(wireDraft) {
+  if (wireDraft.mode === 'connect-target') {
+    return `Start ${picoEndpointKey(wireDraft.from)} selected — choose a compatible free destination. Escape cancels.`;
+  }
+  if (wireDraft.mode === 'reconnect-source') {
+    return `Reconnect ${wireDraft.netId} — choose the connected endpoint to move. Escape cancels.`;
+  }
+  if (wireDraft.mode === 'reconnect-target') {
+    return `Move ${picoEndpointKey(wireDraft.from)} on ${wireDraft.netId} — choose a compatible free destination. Escape cancels.`;
+  }
+  return 'Select a free named pin, then a compatible free destination. Select a cable first to reconnect one endpoint.';
+}
+
+function decorateNamedWireAnchor(anchor, key, { draft, wireDraft }) {
+  const connection = namedWireConnection(draft, key);
+  const pending = ['connect-target', 'reconnect-target'].includes(wireDraft.mode)
+    && picoEndpointKey(wireDraft.from) === key;
+  const available = wireDraft.mode === 'connect-target' && !connection
+    || wireDraft.mode === 'reconnect-source' && connection?.id === wireDraft.netId
+    || wireDraft.mode === 'reconnect-target' && !connection;
+  anchor.classList.toggle('pending', pending);
+  anchor.classList.toggle('available', available && !pending);
+  anchor.dataset.wireState = pending ? 'pending-source' : available ? 'available' : connection ? 'connected' : 'free';
+  anchor.setAttribute('aria-pressed', String(pending));
+  const action = pending ? 'Selected wire source.' : available ? 'Available wire endpoint.'
+    : connection ? `Connected to ${connection.id}.` : 'Free wire endpoint.';
+  anchor.setAttribute('aria-label', `${anchor.title}. ${action}`);
+}
+
+function namedWireResultMessage(result) {
+  if (!result.ok) return `Connection rejected (${result.code}). The circuit is unchanged; choose a compatible free pin or press Escape.`;
+  if (result.code.endsWith('_NET_CREATED')) return `Created cable ${result.netId}. ${result.validation.ok ? 'Circuit validated.' : 'Continue wiring; Build remains blocked.'}`;
+  if (result.code.endsWith('_ENDPOINT_RECONNECTED')) return `Reconnected one endpoint of ${result.netId}. ${result.validation.ok ? 'Circuit validated.' : 'Continue wiring; Build remains blocked.'}`;
+  return namedWireInstruction(result.wireDraft);
+}
+
+function activateNamedWireEndpoint(workbench, statusElement, endpoint) {
+  const result = workbench.editCircuit('activateEndpoint', endpoint);
+  statusElement.textContent = namedWireResultMessage(result);
+  return result;
+}
+
+function beginNamedWireReconnect(workbench, statusElement) {
+  const result = workbench.editCircuit('beginReconnect');
+  statusElement.textContent = namedWireResultMessage(result);
+  return result;
+}
+
+function cancelNamedWire(workbench, statusElement) {
+  const result = workbench.editCircuit('cancelWireDraft');
+  statusElement.textContent = 'Wire selection cancelled. The circuit is unchanged.';
+  return result;
+}
+
 function picoEditorAnchor(endpoint, diagram = elements.picodiagram, components = elements.picoeditorcomponents) {
   const target = components.querySelector(`[data-editor-endpoint="${picoEndpointKey(endpoint)}"]`);
   if (!target) return null;
@@ -285,7 +344,7 @@ function picoEditorAnchor(endpoint, diagram = elements.picodiagram, components =
     { distance: Math.abs(pin.y - rendered.top), x: 0, y: -1 },
     { distance: Math.abs(rendered.bottom - pin.y), x: 0, y: 1 },
   ].sort((left, right) => left.distance - right.distance)[0];
-  const escapeDistance = canvas.width <= 430 ? 8 : 20;
+  const escapeDistance = direction.distance + (canvas.width <= 430 ? 4 : 14);
   return {
     pin,
     escape: { x: pin.x + direction.x * escapeDistance, y: pin.y + direction.y * escapeDistance },
@@ -295,7 +354,7 @@ function picoEditorAnchor(endpoint, diagram = elements.picodiagram, components =
 
 function picoEditorObstacles(diagram = elements.picodiagram, components = elements.picoeditorcomponents) {
   const canvas = diagram.getBoundingClientRect();
-  const clearance = canvas.width <= 430 ? 3 : 9;
+  const clearance = canvas.width <= 430 ? 1.5 : 9;
   return [...components.querySelectorAll('.pico-editor-part')].map((card) => {
     const box = card.getBoundingClientRect();
     return {
@@ -439,7 +498,7 @@ function finishPicoEditorDrag(event) {
 
 function renderPicoCircuitEditor(state) {
   if (!state?.circuitEditor) return;
-  const { draft, selection, canUndo, canRedo, validation } = state.circuitEditor;
+  const { draft, selection, wireDraft, canUndo, canRedo, validation } = state.circuitEditor;
   elements.picocircuitselection.textContent = selection.kind === 'none'
     ? 'Nothing selected' : `${selection.kind === 'net' ? 'Cable' : 'Part'} · ${selection.id}`;
   const selectedComponent = selection.kind === 'component'
@@ -449,6 +508,9 @@ function renderPicoCircuitEditor(state) {
   elements.picodelete.disabled = selection.kind === 'none' || selectedComponent?.type === RP2040_PROFILE;
   elements.picorotate.disabled = selection.kind !== 'component';
   elements.picoundo.disabled = !canUndo; elements.picoredo.disabled = !canRedo;
+  elements.picoreconnect.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  elements.picowirecancel.disabled = wireDraft.mode === 'none';
+  elements.picowirestate.textContent = namedWireInstruction(wireDraft);
   elements.picozoomvalue.value = `${Math.round(picoEditorZoom * 100)}%`;
   const cards = draft.components.map((component) => {
     const definition = uiComponentCatalog[component.type]; const position = draft.layout.positions[component.id];
@@ -458,8 +520,9 @@ function renderPicoCircuitEditor(state) {
     card.tabIndex = 0; card.setAttribute('role', 'button'); card.setAttribute('aria-label', `Select and move ${component.label}`);
     card.style.left = `${position.x * 100}%`; card.style.top = `${position.y * 100}%`;
     card.style.setProperty('--rotation', `${position.rotation}deg`);
-    card.style.setProperty('--part-width', `${definition.artwork.cssWidth * picoEditorZoom * responsiveScale}px`);
-    card.style.setProperty('--part-height', `${definition.artwork.cssHeight * picoEditorZoom * responsiveScale}px`);
+    const partScale = picoEditorZoom * responsiveScale;
+    card.style.setProperty('--part-width', `${definition.artwork.cssWidth * partScale}px`);
+    card.style.setProperty('--part-height', `${definition.artwork.cssHeight * partScale}px`);
     const artwork = createBaseComponentArtwork(definition, component); card.append(artwork);
     const led = artwork.querySelector('[data-led-id]');
     if (led) {
@@ -474,15 +537,19 @@ function renderPicoCircuitEditor(state) {
       anchor.title = `${component.id}.${pin.id} · ${pin.label}`; anchor.setAttribute('aria-label', anchor.title);
       anchor.style.setProperty('--pin-x', String(pin.anchor.x)); anchor.style.setProperty('--pin-y', String(pin.anchor.y));
       const pinLabel = document.createElement('span'); pinLabel.className = 'pico-editor-pin-label'; pinLabel.textContent = pin.label; anchor.append(pinLabel);
+      decorateNamedWireAnchor(anchor, anchor.dataset.editorEndpoint, state.circuitEditor);
       anchor.addEventListener('pointerdown', (event) => event.stopPropagation());
-      anchor.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); picoPublicWorkbench.selectCircuit({ kind: 'component', id: component.id }); });
+      anchor.addEventListener('click', (event) => {
+        event.preventDefault(); event.stopPropagation();
+        activateNamedWireEndpoint(picoPublicWorkbench, elements.picowirestate, { component: component.id, pin: pin.id });
+      });
       card.append(anchor);
     }
     card.addEventListener('pointerdown', (event) => startPicoEditorDrag(event, component.id, card));
     card.addEventListener('pointermove', movePicoEditorDrag); card.addEventListener('pointerup', finishPicoEditorDrag);
     card.addEventListener('pointercancel', finishPicoEditorDrag);
     card.addEventListener('keydown', (event) => {
-      if (['Enter', ' '].includes(event.key)) { event.preventDefault(); picoPublicWorkbench.selectCircuit({ kind: 'component', id: component.id }); }
+      if (event.target === card && ['Enter', ' '].includes(event.key)) { event.preventDefault(); picoPublicWorkbench.selectCircuit({ kind: 'component', id: component.id }); }
     });
     return card;
   });
@@ -510,8 +577,6 @@ const picoPublicWorkbench = new Rp2040PublicWorkbench({
     diagram: elements.picodiagram,
     externalLed: elements.picoexternalled,
     circuitState: elements.picocircuitstate,
-    disconnect: elements.picodisconnect,
-    reconnect: elements.picoreconnect,
     serial: elements.picoserial,
   },
   onState: (state) => {
@@ -534,6 +599,9 @@ window.__RP2040_PUBLIC_WORKBENCH__ = {
   redoCircuit: () => picoPublicWorkbench.editCircuit('redo'),
   moveCircuitComponent: (id, x, y) => picoPublicWorkbench.editCircuit('moveComponent', id, x, y),
   rotateCircuitComponent: (id) => picoPublicWorkbench.editCircuit('rotateComponent', id),
+  activateEndpoint: (endpoint) => picoPublicWorkbench.editCircuit('activateEndpoint', endpoint),
+  beginReconnect: () => picoPublicWorkbench.editCircuit('beginReconnect'),
+  cancelWire: () => picoPublicWorkbench.editCircuit('cancelWireDraft'),
 };
 elements.picodelete.addEventListener('click', () => picoPublicWorkbench.editCircuit('deleteSelected'));
 elements.picoundo.addEventListener('click', () => picoPublicWorkbench.editCircuit('undo'));
@@ -542,6 +610,8 @@ elements.picorotate.addEventListener('click', () => {
   const selection = picoPublicWorkbench.snapshot().circuitEditor.selection;
   if (selection.kind === 'component') picoPublicWorkbench.editCircuit('rotateComponent', selection.id);
 });
+elements.picoreconnect.addEventListener('click', () => beginNamedWireReconnect(picoPublicWorkbench, elements.picowirestate));
+elements.picowirecancel.addEventListener('click', () => cancelNamedWire(picoPublicWorkbench, elements.picowirestate));
 function setPicoEditorZoom(next) {
   picoEditorZoom = Math.max(0.7, Math.min(1.25, Math.round(next * 20) / 20));
   renderPicoCircuitEditor(picoPublicWorkbench.snapshot());
@@ -557,6 +627,9 @@ new ResizeObserver(() => requestAnimationFrame(() => {
 document.addEventListener('keydown', (event) => {
   if (selectedCompilerProfile !== RP2040_PROFILE || elements.picopublicworkbench.hidden || isTextEditingTarget(event.target)) return;
   const snapshot = picoPublicWorkbench.snapshot().circuitEditor;
+  if (event.key === 'Escape' && snapshot.wireDraft.mode !== 'none') {
+    event.preventDefault(); event.stopImmediatePropagation(); cancelNamedWire(picoPublicWorkbench, elements.picowirestate); return;
+  }
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
     event.preventDefault(); event.stopImmediatePropagation();
     picoPublicWorkbench.editCircuit(event.shiftKey ? 'redo' : 'undo'); return;
@@ -647,7 +720,7 @@ function finishC3EditorDrag(event) {
 
 function renderC3CircuitEditor(state) {
   if (!state?.circuitEditor) return;
-  const { draft, selection, canUndo, canRedo, validation } = state.circuitEditor;
+  const { draft, selection, wireDraft, canUndo, canRedo, validation } = state.circuitEditor;
   elements.c3circuitselection.textContent = selection.kind === 'none'
     ? 'Nothing selected' : `${selection.kind === 'net' ? 'Cable' : 'Part'} · ${selection.id}`;
   const selectedComponent = selection.kind === 'component'
@@ -657,6 +730,9 @@ function renderC3CircuitEditor(state) {
   elements.c3delete.disabled = selection.kind === 'none' || selectedComponent?.type === ESP32C3_PROFILE;
   elements.c3rotate.disabled = selection.kind !== 'component';
   elements.c3undo.disabled = !canUndo; elements.c3redo.disabled = !canRedo;
+  elements.c3reconnect.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  elements.c3wirecancel.disabled = wireDraft.mode === 'none';
+  elements.c3wirestate.textContent = namedWireInstruction(wireDraft);
   elements.c3zoomvalue.value = `${Math.round(c3EditorZoom * 100)}%`;
   const modeledLed = Boolean(state.circuitAccepted && state.runtime?.modeledCircuit?.epochs?.at(-1)?.led?.on);
   const cards = draft.components.map((component) => {
@@ -683,15 +759,19 @@ function renderC3CircuitEditor(state) {
       anchor.title = `${component.id}.${pin.id} · ${pin.label}`; anchor.setAttribute('aria-label', anchor.title);
       anchor.style.setProperty('--pin-x', String(pin.anchor.x)); anchor.style.setProperty('--pin-y', String(pin.anchor.y));
       const pinLabel = document.createElement('span'); pinLabel.className = 'pico-editor-pin-label'; pinLabel.textContent = pin.label; anchor.append(pinLabel);
+      decorateNamedWireAnchor(anchor, anchor.dataset.editorEndpoint, state.circuitEditor);
       anchor.addEventListener('pointerdown', (event) => event.stopPropagation());
-      anchor.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); c3PublicWorkbench.selectCircuit({ kind: 'component', id: component.id }); });
+      anchor.addEventListener('click', (event) => {
+        event.preventDefault(); event.stopPropagation();
+        activateNamedWireEndpoint(c3PublicWorkbench, elements.c3wirestate, { component: component.id, pin: pin.id });
+      });
       card.append(anchor);
     }
     card.addEventListener('pointerdown', (event) => startC3EditorDrag(event, component.id, card));
     card.addEventListener('pointermove', moveC3EditorDrag); card.addEventListener('pointerup', finishC3EditorDrag);
     card.addEventListener('pointercancel', finishC3EditorDrag);
     card.addEventListener('keydown', (event) => {
-      if (['Enter', ' '].includes(event.key)) { event.preventDefault(); c3PublicWorkbench.selectCircuit({ kind: 'component', id: component.id }); }
+      if (event.target === card && ['Enter', ' '].includes(event.key)) { event.preventDefault(); c3PublicWorkbench.selectCircuit({ kind: 'component', id: component.id }); }
     });
     return card;
   });
@@ -717,8 +797,6 @@ const c3PublicWorkbench = new Esp32C3PublicWorkbench({
     diagram: elements.c3diagram,
     led: elements.c3externalled,
     circuitState: elements.c3circuitstate,
-    disconnect: elements.c3disconnect,
-    reconnect: elements.c3reconnect,
     terminal: elements.c3terminal,
   },
   onState: (state) => {
@@ -739,6 +817,9 @@ window.__ESP32C3_PUBLIC_WORKBENCH__ = {
   redoCircuit: () => c3PublicWorkbench.editCircuit('redo'),
   moveCircuitComponent: (id, x, y) => c3PublicWorkbench.editCircuit('moveComponent', id, x, y),
   rotateCircuitComponent: (id) => c3PublicWorkbench.editCircuit('rotateComponent', id),
+  activateEndpoint: (endpoint) => c3PublicWorkbench.editCircuit('activateEndpoint', endpoint),
+  beginReconnect: () => c3PublicWorkbench.editCircuit('beginReconnect'),
+  cancelWire: () => c3PublicWorkbench.editCircuit('cancelWireDraft'),
 };
 elements.c3delete.addEventListener('click', () => c3PublicWorkbench.editCircuit('deleteSelected'));
 elements.c3undo.addEventListener('click', () => c3PublicWorkbench.editCircuit('undo'));
@@ -747,6 +828,8 @@ elements.c3rotate.addEventListener('click', () => {
   const selection = c3PublicWorkbench.snapshot().circuitEditor.selection;
   if (selection.kind === 'component') c3PublicWorkbench.editCircuit('rotateComponent', selection.id);
 });
+elements.c3reconnect.addEventListener('click', () => beginNamedWireReconnect(c3PublicWorkbench, elements.c3wirestate));
+elements.c3wirecancel.addEventListener('click', () => cancelNamedWire(c3PublicWorkbench, elements.c3wirestate));
 function setC3EditorZoom(next) {
   c3EditorZoom = Math.max(0.7, Math.min(1.25, Math.round(next * 20) / 20));
   renderC3CircuitEditor(c3PublicWorkbench.snapshot());
@@ -762,6 +845,9 @@ new ResizeObserver(() => requestAnimationFrame(() => {
 document.addEventListener('keydown', (event) => {
   if (selectedCompilerProfile !== ESP32C3_PROFILE || elements.c3publicworkbench.hidden || isTextEditingTarget(event.target)) return;
   const snapshot = c3PublicWorkbench.snapshot().circuitEditor;
+  if (event.key === 'Escape' && snapshot.wireDraft.mode !== 'none') {
+    event.preventDefault(); event.stopImmediatePropagation(); cancelNamedWire(c3PublicWorkbench, elements.c3wirestate); return;
+  }
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
     event.preventDefault(); event.stopImmediatePropagation();
     c3PublicWorkbench.editCircuit(event.shiftKey ? 'redo' : 'undo'); return;
@@ -856,7 +942,7 @@ function finishStm32EditorDrag(event) {
 
 function renderStm32CircuitEditor(state) {
   if (!state?.circuitEditor) return;
-  const { draft, selection, canUndo, canRedo, validation } = state.circuitEditor;
+  const { draft, selection, wireDraft, canUndo, canRedo, validation } = state.circuitEditor;
   elements.stm32circuitselection.textContent = selection.kind === 'none'
     ? 'Nothing selected' : `${selection.kind === 'net' ? 'Cable' : 'Part'} · ${selection.id}`;
   const selectedComponent = selection.kind === 'component'
@@ -866,6 +952,9 @@ function renderStm32CircuitEditor(state) {
   elements.stm32delete.disabled = selection.kind === 'none' || selectedComponent?.type === STM32F429ZI_PROFILE;
   elements.stm32rotate.disabled = selection.kind !== 'component';
   elements.stm32undo.disabled = !canUndo; elements.stm32redo.disabled = !canRedo;
+  elements.stm32reconnect.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  elements.stm32wirecancel.disabled = wireDraft.mode === 'none';
+  elements.stm32wirestate.textContent = namedWireInstruction(wireDraft);
   elements.stm32zoomvalue.value = `${Math.round(stm32EditorZoom * 100)}%`;
   const observedLed = Boolean(state.circuitAccepted && state.runtime?.observed?.pb0);
   const cards = draft.components.map((component) => {
@@ -894,10 +983,11 @@ function renderStm32CircuitEditor(state) {
       anchor.style.setProperty('--pin-x', String(pin.anchor.x)); anchor.style.setProperty('--pin-y', String(pin.anchor.y));
       const pinLabel = document.createElement('span'); pinLabel.className = 'pico-editor-pin-label';
       pinLabel.textContent = pin.label; anchor.append(pinLabel);
+      decorateNamedWireAnchor(anchor, anchor.dataset.editorEndpoint, state.circuitEditor);
       anchor.addEventListener('pointerdown', (event) => event.stopPropagation());
       anchor.addEventListener('click', (event) => {
         event.preventDefault(); event.stopPropagation();
-        stm32PublicWorkbench.selectCircuit({ kind: 'component', id: component.id });
+        activateNamedWireEndpoint(stm32PublicWorkbench, elements.stm32wirestate, { component: component.id, pin: pin.id });
       });
       card.append(anchor);
     }
@@ -906,7 +996,7 @@ function renderStm32CircuitEditor(state) {
     card.addEventListener('pointerup', finishStm32EditorDrag);
     card.addEventListener('pointercancel', finishStm32EditorDrag);
     card.addEventListener('keydown', (event) => {
-      if (['Enter', ' '].includes(event.key)) {
+      if (event.target === card && ['Enter', ' '].includes(event.key)) {
         event.preventDefault(); stm32PublicWorkbench.selectCircuit({ kind: 'component', id: component.id });
       }
     });
@@ -956,6 +1046,9 @@ window.__STM32_PUBLIC_WORKBENCH__ = {
   redoCircuit: () => stm32PublicWorkbench.editCircuit('redo'),
   moveCircuitComponent: (id, x, y) => stm32PublicWorkbench.editCircuit('moveComponent', id, x, y),
   rotateCircuitComponent: (id) => stm32PublicWorkbench.editCircuit('rotateComponent', id),
+  activateEndpoint: (endpoint) => stm32PublicWorkbench.editCircuit('activateEndpoint', endpoint),
+  beginReconnect: () => stm32PublicWorkbench.editCircuit('beginReconnect'),
+  cancelWire: () => stm32PublicWorkbench.editCircuit('cancelWireDraft'),
 };
 elements.stm32delete.addEventListener('click', () => stm32PublicWorkbench.editCircuit('deleteSelected'));
 elements.stm32undo.addEventListener('click', () => stm32PublicWorkbench.editCircuit('undo'));
@@ -964,6 +1057,8 @@ elements.stm32rotate.addEventListener('click', () => {
   const selection = stm32PublicWorkbench.snapshot().circuitEditor.selection;
   if (selection.kind === 'component') stm32PublicWorkbench.editCircuit('rotateComponent', selection.id);
 });
+elements.stm32reconnect.addEventListener('click', () => beginNamedWireReconnect(stm32PublicWorkbench, elements.stm32wirestate));
+elements.stm32wirecancel.addEventListener('click', () => cancelNamedWire(stm32PublicWorkbench, elements.stm32wirestate));
 function setStm32EditorZoom(next) {
   stm32EditorZoom = Math.max(0.7, Math.min(1.25, Math.round(next * 20) / 20));
   renderStm32CircuitEditor(stm32PublicWorkbench.snapshot());
@@ -980,6 +1075,9 @@ document.addEventListener('keydown', (event) => {
   if (selectedCompilerProfile !== STM32F429ZI_PROFILE || elements.stm32publicworkbench.hidden
       || isTextEditingTarget(event.target)) return;
   const snapshot = stm32PublicWorkbench.snapshot().circuitEditor;
+  if (event.key === 'Escape' && snapshot.wireDraft.mode !== 'none') {
+    event.preventDefault(); event.stopImmediatePropagation(); cancelNamedWire(stm32PublicWorkbench, elements.stm32wirestate); return;
+  }
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
     event.preventDefault(); event.stopImmediatePropagation();
     stm32PublicWorkbench.editCircuit(event.shiftKey ? 'redo' : 'undo'); return;

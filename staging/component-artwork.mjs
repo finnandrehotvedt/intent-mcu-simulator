@@ -67,11 +67,11 @@ function rp2040PicoBoard(svg, definition) {
     element('text', { x: 66, y: 247, class: 'pico-board-title', 'text-anchor': 'middle' }, 'RP2040'),
     element('text', { x: 66, y: 263, class: 'pico-board-subtitle', 'text-anchor': 'middle' }, '3.3 V · PUBLIC SUBSET'),
     element('text', { x: 21, y: 25, class: 'pico-board-pin-label' }, '1 · GP0'),
-    element('text', { x: 21, y: 43, class: 'pico-board-pin-label' }, '3 · GND'),
+    element('text', { x: 21, y: 61, class: 'pico-board-pin-label' }, '3 · GND'),
   );
   for (let row = 0; row < 20; row += 1) {
     const y = 27 + row * 13;
-    svg.append(element('circle', { cx: 8, cy: y, r: 3.3, class: row < 2 ? 'pico-board-pin proven' : 'pico-board-pin' }));
+    svg.append(element('circle', { cx: 8, cy: y, r: 3.3, class: [0, 2].includes(row) ? 'pico-board-pin proven' : 'pico-board-pin' }));
     svg.append(element('circle', { cx: 124, cy: y, r: 3.3, class: 'pico-board-pin' }));
   }
   for (let index = 0; index < 8; index += 1) {
