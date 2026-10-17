@@ -180,7 +180,7 @@ h2 { font-size: 1.22rem; margin: 0; }
 .pico-editor-part[data-component-type="led.basic-v1"] > .pico-editor-part-label { top: auto; bottom: calc(100% + 28px); }
 .pico-editor-part[data-component-type="led.basic-v1"] [data-editor-endpoint$=".ANODE"] .pico-editor-pin-label { left: auto; right: 55%; top: calc(100% + 5px); bottom: auto; transform: rotate(calc(-1 * var(--rotation))); transform-origin: 100% 0; }
 .pico-editor-part[data-component-type="led.basic-v1"] [data-editor-endpoint$=".CATHODE"] .pico-editor-pin-label { left: 55%; top: calc(100% + 5px); bottom: auto; transform: rotate(calc(-1 * var(--rotation))); transform-origin: 0 0; }
-.pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label { left: calc(50% + 150px); top: calc(100% + 22px); bottom: auto; }
+.pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label { top: calc(100% - 5px); bottom: auto; }
 .pico-editor-part[data-component-type="board.rp2040-pico-v1"] [data-editor-endpoint$=".GND3"] .pico-editor-pin-label,
 .pico-editor-part[data-component-type="board.esp32-c3-devmodule-v1"] [data-editor-endpoint$=".GND"] .pico-editor-pin-label,
 .pico-editor-part[data-component-type="board.stm32f429zi-nucleo144-v1"] [data-editor-endpoint$=".GND"] .pico-editor-pin-label { top: calc(100% + 5px); bottom: auto; }
@@ -741,7 +741,7 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   .shared-profile-workbench.inspector-collapsed:not(.parts-collapsed) .shared-profile-grid,
   .shared-profile-workbench.parts-collapsed.inspector-collapsed .shared-profile-grid { grid-template-columns: minmax(0,1fr); grid-template-areas: "parts" "canvas" "inspector"; }
   .shared-project-bar { grid-template-columns: 1fr; }
-  .pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label { left: calc(50% + 104px); }
+  .pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label { top: calc(100% + 22px); }
 }
 @media (max-width: 390px) {
   .starter-grid { grid-template-columns: 1fr; }
