@@ -5,6 +5,65 @@ const clone = (value) => structuredClone(value);
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
 const sameEndpoint = (left, right) => endpointKey(left) === endpointKey(right);
 
+export const BOUNDED_COMPONENT_CATALOG_SCHEMA = 'intent-mcu-bounded-component-catalog@1';
+export const BOUNDED_RESISTOR_TYPE = 'resistor.fixed-v1';
+export const BOUNDED_LED_TYPE = 'led.basic-v1';
+
+function freezeRecord(value) {
+  return Object.freeze(Object.fromEntries(Object.entries(value).map(([key, item]) => [key,
+    item && typeof item === 'object' ? Object.freeze({ ...item }) : item])));
+}
+
+/**
+ * Create the explicit, deliberately tiny parts contract shared by the three
+ * bounded public controller workbenches. It never inherits the AVR catalogue:
+ * each profile gets one fixed controller and the same existing resistor/LED
+ * definitions with profile-specific electrical limits.
+ */
+export function createSeriesLedComponentPolicy({
+  profile, boardId, boardLabel, resistorPosition, ledPosition,
+  nominalVolts, ledCurrentLimitAmps, ledForwardVolts,
+}) {
+  const part = (value) => Object.freeze({
+    ...value,
+    properties: Object.freeze({ ...value.properties }),
+    position: Object.freeze({ ...value.position }),
+    supportedProperties: freezeRecord(value.supportedProperties),
+  });
+  return Object.freeze({
+    schema: BOUNDED_COMPONENT_CATALOG_SCHEMA,
+    profile,
+    nominalVolts,
+    ledCurrentLimitAmps,
+    ledForwardVolts: Object.freeze({ ...ledForwardVolts }),
+    board: Object.freeze({
+      id: boardId, type: profile, displayName: boardLabel,
+      fixed: true, addable: false,
+      limitation: 'Fixed bounded controller profile; it cannot be added, duplicated or removed.',
+    }),
+    parts: Object.freeze([
+      part({
+        id: 'resistor-1', type: BOUNDED_RESISTOR_TYPE,
+        displayName: 'Axial fixed resistor', label: '220 Ω series resistor',
+        properties: { ohms: 220 }, position: resistorPosition,
+        supportedProperties: {
+          ohms: { kind: 'number', minimum: 1, maximum: 10_000_000, unit: 'Ω' },
+        },
+        limitation: 'Bounded ideal series resistance validated against 3.3 V and the selected LED colour; no tolerance or thermal model.',
+      }),
+      part({
+        id: 'led-1', type: BOUNDED_LED_TYPE,
+        displayName: '5 mm through-hole LED', label: 'External red LED',
+        properties: { color: 'red' }, position: ledPosition,
+        supportedProperties: {
+          color: { kind: 'enum', values: Object.freeze(Object.keys(ledForwardVolts)) },
+        },
+        limitation: 'Bounded polarity/current model; colour selects an ideal forward-voltage constant, not wavelength, brightness or physical accuracy.',
+      }),
+    ]),
+  });
+}
+
 function endpointConnection(draft, endpoint) {
   return draft.nets.find((net) => net.endpoints.some((candidate) => sameEndpoint(candidate, endpoint))) ?? null;
 }
@@ -42,12 +101,13 @@ export function createSeriesLedConnectionPolicy({
  */
 export class NamedSeriesLedCircuitEditor {
   constructor({ draft, normalize, validate, createDefault, fixedComponentType,
-    resolveNetId, codePrefix, historyLimit = 32 }) {
+    resolveNetId, componentPolicy, codePrefix, historyLimit = 32 }) {
     this.normalize = normalize;
     this.validate = validate;
     this.createDefault = createDefault;
     this.fixedComponentType = fixedComponentType;
     this.resolveNetId = resolveNetId;
+    this.componentPolicy = componentPolicy;
     this.codePrefix = codePrefix;
     this.historyLimit = historyLimit;
     this.draft = normalize(draft);
@@ -63,7 +123,24 @@ export class NamedSeriesLedCircuitEditor {
   snapshot() {
     return { draft: clone(this.draft), selection: clone(this.selection), wireDraft: clone(this.wireDraft), revision: this.revision,
       canUndo: this.history.length > 0, canRedo: this.future.length > 0,
-      validation: this.validate(this.draft) };
+      validation: this.validate(this.draft), catalog: this.componentCatalog() };
+  }
+
+  componentCatalog() {
+    const presentTypes = new Set(this.draft.components.map((component) => component.type));
+    const board = this.componentPolicy.board;
+    return {
+      schema: this.componentPolicy.schema,
+      profile: this.componentPolicy.profile,
+      parts: [
+        { ...clone(board), present: presentTypes.has(board.type), addable: false },
+        ...this.componentPolicy.parts.map((part) => ({
+          id: part.id, type: part.type, displayName: part.displayName,
+          limitation: part.limitation, supportedProperties: clone(part.supportedProperties),
+          present: presentTypes.has(part.type), addable: !presentTypes.has(part.type), fixed: false,
+        })),
+      ],
+    };
   }
 
   select(selection) {
@@ -109,7 +186,92 @@ export class NamedSeriesLedCircuitEditor {
     return { ok: true, code: this.code('NET_DELETED'), ...this.commit(next) };
   }
 
-  fail(suffix) { return { ok: false, changed: false, code: this.code(suffix), ...this.snapshot() }; }
+  fail(suffix, details = {}) {
+    return { ok: false, changed: false, code: this.code(suffix), details: clone(details), ...this.snapshot() };
+  }
+
+  propertyPair(draft) {
+    const resistorPolicy = this.componentPolicy.parts.find((part) => part.type === BOUNDED_RESISTOR_TYPE);
+    const ledPolicy = this.componentPolicy.parts.find((part) => part.type === BOUNDED_LED_TYPE);
+    const resistor = draft.components.find((component) => component.type === BOUNDED_RESISTOR_TYPE);
+    const led = draft.components.find((component) => component.type === BOUNDED_LED_TYPE);
+    return {
+      ohms: resistor?.properties.ohms ?? resistorPolicy.properties.ohms,
+      color: led?.properties.color ?? ledPolicy.properties.color,
+    };
+  }
+
+  validatePropertyPair(draft) {
+    const { ohms, color } = this.propertyPair(draft);
+    const forwardVolts = this.componentPolicy.ledForwardVolts[color];
+    const currentAmps = (this.componentPolicy.nominalVolts - forwardVolts) / ohms;
+    return Number.isFinite(currentAmps) && currentAmps > 0
+      && currentAmps <= this.componentPolicy.ledCurrentLimitAmps
+      ? { ok: true, currentAmps, forwardVolts }
+      : { ok: false, currentAmps, forwardVolts };
+  }
+
+  addMissingComponent(type) {
+    if (type === this.componentPolicy.board.type) return this.fail('BOARD_FIXED');
+    const policy = this.componentPolicy.parts.find((part) => part.type === type);
+    if (!policy) return this.fail('COMPONENT_UNSUPPORTED', { type });
+    if (this.draft.components.some((component) => component.type === type)) {
+      return this.fail('COMPONENT_EXISTS', { type });
+    }
+    const next = clone(this.draft);
+    next.components.push({
+      id: policy.id, type: policy.type, label: policy.label,
+      properties: clone(policy.properties), controls: {},
+    });
+    next.layout.positions[policy.id] = clone(policy.position);
+    const electrical = this.validatePropertyPair(next);
+    if (!electrical.ok) {
+      return this.fail('COMPONENT_PROPERTY_ELECTRICAL_LIMIT', {
+        type, nominalVolts: this.componentPolicy.nominalVolts,
+        currentAmps: electrical.currentAmps, limitAmps: this.componentPolicy.ledCurrentLimitAmps,
+      });
+    }
+    try {
+      return { ok: true, changed: true, code: this.code('COMPONENT_ADDED'), componentId: policy.id,
+        ...this.commit(next, { kind: 'component', id: policy.id }) };
+    } catch (error) {
+      return this.fail('COMPONENT_ADD_INVALID', { type, cause: error.code ?? error.message });
+    }
+  }
+
+  setComponentProperty(componentId, key, value) {
+    const component = this.draft.components.find((candidate) => candidate.id === componentId);
+    const policy = component && this.componentPolicy.parts.find((part) => part.type === component.type);
+    const contract = policy?.supportedProperties[key];
+    if (!component || !policy || !contract || Object.keys(component.properties).length !== 1) {
+      return this.fail('COMPONENT_PROPERTY_UNSUPPORTED', { componentId, key });
+    }
+    if (contract.kind === 'number' && (typeof value !== 'number' || !Number.isFinite(value)
+      || value < contract.minimum || value > contract.maximum)) {
+      return this.fail('COMPONENT_PROPERTY_UNSUPPORTED', { componentId, key, value });
+    }
+    if (contract.kind === 'enum' && (typeof value !== 'string' || !contract.values.includes(value))) {
+      return this.fail('COMPONENT_PROPERTY_UNSUPPORTED', { componentId, key, value });
+    }
+    const next = clone(this.draft);
+    const target = next.components.find((candidate) => candidate.id === componentId);
+    target.properties[key] = value;
+    if (target.type === BOUNDED_RESISTOR_TYPE && key === 'ohms') target.label = `${value} Ω series resistor`;
+    if (target.type === BOUNDED_LED_TYPE && key === 'color') target.label = `External ${value} LED`;
+    const electrical = this.validatePropertyPair(next);
+    if (!electrical.ok) {
+      return this.fail('COMPONENT_PROPERTY_ELECTRICAL_LIMIT', {
+        componentId, key, value, nominalVolts: this.componentPolicy.nominalVolts,
+        currentAmps: electrical.currentAmps, limitAmps: this.componentPolicy.ledCurrentLimitAmps,
+      });
+    }
+    try {
+      return { ok: true, changed: true, code: this.code('COMPONENT_PROPERTY_UPDATED'), componentId, key,
+        ...this.commit(next, { kind: 'component', id: componentId }) };
+    } catch (error) {
+      return this.fail('COMPONENT_PROPERTY_UNSUPPORTED', { componentId, key, value, cause: error.code ?? error.message });
+    }
+  }
 
   isKnownEndpoint(endpoint) {
     const component = this.draft.components.find((candidate) => candidate.id === endpoint?.component);

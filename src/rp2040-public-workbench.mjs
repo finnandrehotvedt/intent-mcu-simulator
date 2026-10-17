@@ -388,12 +388,18 @@ export class Rp2040PublicWorkbench {
 
   editCircuit(operation, ...args) {
     if (!['deleteSelected', 'undo', 'redo', 'moveComponent', 'rotateComponent',
-      'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint'].includes(operation)) {
+      'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint',
+      'addMissingComponent', 'setComponentProperty'].includes(operation)) {
       return { ok: false, code: 'RP2040_CIRCUIT_OPERATION_INVALID' };
     }
     const revision = this.circuitEditor.revision;
     const result = this.circuitEditor[operation](...args);
-    if (!result.ok) { this.render(); return result; }
+    if (!result.ok) {
+      if (['addMissingComponent', 'setComponentProperty'].includes(operation)) {
+        this.message = `Part change rejected (${result.code}). The circuit and executable authority are unchanged.`;
+      }
+      this.render(); return result;
+    }
     if (result.revision === revision) {
       if (result.wireDraft?.mode !== 'none') {
         this.invalidate('Wiring in progress. Executable and LED authority were retired; finish or cancel, then build fresh firmware.');
@@ -410,6 +416,8 @@ export class Rp2040PublicWorkbench {
       activateEndpoint: `Cable changed (${result.code}). Executable authority retired; finish a valid circuit and build fresh firmware.`,
       connectEndpoints: `Cable created (${result.code}). Executable authority retired; finish a valid circuit and build fresh firmware.`,
       reconnectEndpoint: `Cable endpoint reconnected (${result.code}). Executable authority retired; finish a valid circuit and build fresh firmware.`,
+      addMissingComponent: `Added ${result.componentId} without inferred cables. Connect its named pins, then build fresh firmware.`,
+      setComponentProperty: `Updated ${result.componentId}.${result.key}. Electrical rules revalidated; build fresh firmware.`,
     };
     this.invalidate(messages[operation] ?? `Circuit changed (${result.code}). Executable authority retired; build fresh firmware.`);
     return result;
@@ -463,7 +471,7 @@ export class Rp2040PublicWorkbench {
     this.elements.circuitState.textContent = !wiringReady
       ? 'Wiring in progress · executable and LED authority retired · finish or cancel before Build'
       : circuit.ok
-      ? 'Validated: GP0 pin 1 → 220 Ω → LED anode/cathode → GND pin 3'
+      ? `Validated: GP0 pin 1 → ${circuit.model.resistorOhms} Ω → ${circuit.model.ledColor} LED anode/cathode → GND pin 3`
       : `Disconnected / rejected: ${circuit.code}`;
     this.elements.externalLed?.classList.toggle('on', Boolean(runtimeCircuit.on));
     this.elements.externalLed?.setAttribute('aria-label', `External LED is ${runtimeCircuit.on ? 'on' : 'off'}`);

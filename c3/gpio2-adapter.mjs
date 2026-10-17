@@ -1,6 +1,8 @@
 // Copyright 2026 IntentForce
 // SPDX-License-Identifier: Apache-2.0
 
+import { LED_FORWARD_VOLTS } from '../src/component-catalog.mjs';
+
 export const GPIO2 = 2;
 export const GPIO2_MASK = 1 << GPIO2;
 export const C3_REGISTERS = Object.freeze({
@@ -125,6 +127,12 @@ export const VALIDATED_LED_CIRCUIT = Object.freeze({
   ]),
 });
 
+// These are the same ideal forward-voltage constants exposed by the bounded
+// public component policy. Keeping the runtime adapter on this exact set makes
+// a browser-validated property pair executable without widening it to arbitrary
+// physical LED claims.
+const SUPPORTED_LED_FORWARD_VOLTS = new Set(Object.values(LED_FORWARD_VOLTS));
+
 function edgeKey(edge) { return [...edge].sort().join('|'); }
 
 export function validateGpio2LedCircuit(value) {
@@ -136,9 +144,9 @@ export function validateGpio2LedCircuit(value) {
     && [...expectedEdges].every((edge) => observedEdges.has(edge));
   const electricalValid = value?.schema === VALIDATED_LED_CIRCUIT.schema
     && value.supplyVolts === 3.3 && value.gpio === GPIO2
-    && Number.isFinite(value.resistorOhms) && value.resistorOhms >= 150
-    && value.resistorOhms <= 1000 && Number.isFinite(value.ledForwardVolts)
-    && value.ledForwardVolts >= 1.6 && value.ledForwardVolts <= 2.4;
+    && Number.isFinite(value.resistorOhms) && value.resistorOhms >= 1
+    && value.resistorOhms <= 10_000_000 && Number.isFinite(value.ledForwardVolts)
+    && SUPPORTED_LED_FORWARD_VOLTS.has(value.ledForwardVolts);
   const milliamps = electricalValid
     ? ((value.supplyVolts - value.ledForwardVolts) / value.resistorOhms) * 1000 : null;
   const safeCurrent = milliamps !== null && milliamps > 0 && milliamps <= 12;

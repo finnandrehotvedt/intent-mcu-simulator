@@ -71,6 +71,19 @@ test('GPIO2 LED topology and current validation fail closed', () => {
   const unsafe = structuredClone(VALIDATED_LED_CIRCUIT);
   unsafe.resistorOhms = 10;
   assert.equal(validateGpio2LedCircuit(unsafe).accepted, false);
+
+  const redBoundary = structuredClone(VALIDATED_LED_CIRCUIT);
+  redBoundary.resistorOhms = 109;
+  assert.equal(validateGpio2LedCircuit(redBoundary).accepted, true);
+  redBoundary.resistorOhms = 108;
+  assert.equal(validateGpio2LedCircuit(redBoundary).code, 'CIRCUIT_OVERCURRENT');
+
+  const blueBoundary = structuredClone(VALIDATED_LED_CIRCUIT);
+  blueBoundary.resistorOhms = 30;
+  blueBoundary.ledForwardVolts = 3;
+  assert.equal(validateGpio2LedCircuit(blueBoundary).accepted, true);
+  blueBoundary.ledForwardVolts = 2.7;
+  assert.equal(validateGpio2LedCircuit(blueBoundary).code, 'CIRCUIT_ELECTRICAL_INVALID');
 });
 
 test('public C3 editable circuit uses named physical pins and fail-closed electrical rules', () => {

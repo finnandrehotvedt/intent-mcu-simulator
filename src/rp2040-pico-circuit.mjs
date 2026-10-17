@@ -1,7 +1,9 @@
 // Copyright 2026 IntentForce
 // SPDX-License-Identifier: Apache-2.0
 import { COMPONENT_CATALOG, LED_FORWARD_VOLTS, defaultProperties } from './component-catalog.mjs';
-import { NamedSeriesLedCircuitEditor, createSeriesLedConnectionPolicy } from './named-series-led-circuit-editor.mjs';
+import {
+  NamedSeriesLedCircuitEditor, createSeriesLedComponentPolicy, createSeriesLedConnectionPolicy,
+} from './named-series-led-circuit-editor.mjs';
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
 
 export const RP2040_PICO_CIRCUIT_SCHEMA = 'intent-mcu-rp2040-pico-circuit@1';
@@ -67,6 +69,14 @@ const TYPE_PINS = Object.freeze({
   [BOARD]: new Set(['GP0', 'GND3']),
   [RESISTOR]: new Set(['A', 'B']),
   [LED]: new Set(['ANODE', 'CATHODE']),
+});
+const COMPONENT_POLICY = createSeriesLedComponentPolicy({
+  profile: BOARD, boardId: 'pico-1', boardLabel: 'RP2040 Pico profile',
+  resistorPosition: { x: 0.48, y: 0.27, rotation: 0 },
+  ledPosition: { x: 0.22, y: 0.48, rotation: 0 },
+  nominalVolts: RP2040_PICO_NOMINAL_VOLTS,
+  ledCurrentLimitAmps: RP2040_PICO_LED_CURRENT_LIMIT_AMPS,
+  ledForwardVolts: LED_FORWARD_VOLTS,
 });
 
 const clone = (value) => structuredClone(value);
@@ -274,7 +284,7 @@ export class Rp2040PicoCircuitEditor extends NamedSeriesLedCircuitEditor {
   constructor(draft = createRp2040PicoCircuitDraft()) {
     super({ draft, normalize: normalizeRp2040PicoCircuitDraft,
       validate: validateRp2040PicoCircuit, createDefault: createRp2040PicoCircuitDraft,
-      fixedComponentType: BOARD, resolveNetId, codePrefix: 'RP2040' });
+      fixedComponentType: BOARD, resolveNetId, componentPolicy: COMPONENT_POLICY, codePrefix: 'RP2040' });
   }
 
   openText(source) {

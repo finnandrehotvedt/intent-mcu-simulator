@@ -2,7 +2,9 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import { LED_FORWARD_VOLTS, defaultProperties } from './component-catalog.mjs';
-import { NamedSeriesLedCircuitEditor, createSeriesLedConnectionPolicy } from './named-series-led-circuit-editor.mjs';
+import {
+  NamedSeriesLedCircuitEditor, createSeriesLedComponentPolicy, createSeriesLedConnectionPolicy,
+} from './named-series-led-circuit-editor.mjs';
 import { exactKeys } from './strict-json.mjs';
 
 export const STM32_PUBLIC_CIRCUIT_SCHEMA = 'intent-mcu-stm32-public-circuit@1';
@@ -72,6 +74,14 @@ const TYPE_PINS = Object.freeze({
   [RESISTOR]: new Set(['A', 'B']),
   [LED]: new Set(['ANODE', 'CATHODE']),
 });
+const COMPONENT_POLICY = createSeriesLedComponentPolicy({
+  profile: BOARD, boardId: 'stm32-1', boardLabel: 'STM32F429ZI PB0 profile',
+  resistorPosition: { x: 0.57, y: 0.27, rotation: 0 },
+  ledPosition: { x: 0.82, y: 0.48, rotation: 0 },
+  nominalVolts: STM32_NOMINAL_VOLTS,
+  ledCurrentLimitAmps: STM32_LED_CURRENT_LIMIT_AMPS,
+  ledForwardVolts: LED_FORWARD_VOLTS,
+});
 const clone = (value) => structuredClone(value);
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
 const failure = (code, details = {}) => ({ ok: false, code, details: clone(details), model: null });
@@ -97,7 +107,7 @@ export function createStm32CircuitDraft() {
     layout: {
       positions: {
         'stm32-1': { x: 0.2, y: 0.52, rotation: 0 },
-        'resistor-1': { x: 0.53, y: 0.27, rotation: 0 },
+        'resistor-1': { x: 0.57, y: 0.27, rotation: 0 },
         'led-1': { x: 0.82, y: 0.48, rotation: 0 },
       },
       wireStyles: { 'net-pb0': '#e2ab1b', 'net-series': '#e13e51', 'net-ground': '#202a34' },
@@ -250,6 +260,6 @@ export class Stm32CircuitEditor extends NamedSeriesLedCircuitEditor {
   constructor(draft = createStm32CircuitDraft()) {
     super({ draft, normalize: normalizeStm32CircuitDraft,
       validate: validateStm32Circuit, createDefault: createStm32CircuitDraft,
-      fixedComponentType: BOARD, resolveNetId, codePrefix: 'STM32' });
+      fixedComponentType: BOARD, resolveNetId, componentPolicy: COMPONENT_POLICY, codePrefix: 'STM32' });
   }
 }

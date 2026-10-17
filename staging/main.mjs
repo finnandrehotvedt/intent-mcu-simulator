@@ -143,18 +143,21 @@ const elements = Object.fromEntries([
   'pico-source', 'pico-build', 'pico-run', 'pico-pause', 'pico-reset', 'pico-stop', 'pico-message',
   'pico-source-hash', 'pico-artifact-hash', 'pico-diagram', 'pico-circuit-state',
   'pico-editor-wires', 'pico-editor-components', 'pico-circuit-selection',
+  'pico-parts-list', 'pico-part-properties',
   'pico-delete', 'pico-undo', 'pico-redo', 'pico-rotate', 'pico-zoom-out', 'pico-zoom-value',
   'pico-zoom-in', 'pico-fit', 'pico-reconnect', 'pico-wire-cancel', 'pico-wire-state', 'pico-serial',
   'c3-public-workbench', 'c3-state', 'c3-project-name', 'c3-save', 'c3-open', 'c3-open-input',
   'c3-source', 'c3-build', 'c3-run', 'c3-stop', 'c3-message', 'c3-source-hash', 'c3-flash-hash',
   'c3-diagram', 'c3-external-led', 'c3-circuit-state', 'c3-reconnect', 'c3-wire-cancel', 'c3-wire-state', 'c3-terminal',
   'c3-editor-wires', 'c3-editor-components', 'c3-circuit-selection',
+  'c3-parts-list', 'c3-part-properties',
   'c3-delete', 'c3-undo', 'c3-redo', 'c3-rotate', 'c3-zoom-out', 'c3-zoom-value', 'c3-zoom-in', 'c3-fit',
   'stm32-public-workbench', 'stm32-state', 'stm32-project-name', 'stm32-save', 'stm32-open', 'stm32-open-input',
   'stm32-source', 'stm32-build', 'stm32-run', 'stm32-reset', 'stm32-stop', 'stm32-message',
   'stm32-source-hash', 'stm32-artifact-hash', 'stm32-diagram', 'stm32-external-led',
   'stm32-circuit-state', 'stm32-terminal', 'stm32-editor-wires', 'stm32-editor-components',
   'stm32-circuit-selection', 'stm32-delete', 'stm32-undo', 'stm32-redo', 'stm32-rotate',
+  'stm32-parts-list', 'stm32-part-properties',
   'stm32-zoom-out', 'stm32-zoom-value', 'stm32-zoom-in', 'stm32-fit',
   'stm32-reconnect', 'stm32-wire-cancel', 'stm32-wire-state',
 ].map((id) => [id.replaceAll('-', ''), byId(id)]));
@@ -325,6 +328,86 @@ function cancelNamedWire(workbench, statusElement) {
   const result = workbench.editCircuit('cancelWireDraft');
   statusElement.textContent = 'Wire selection cancelled. The circuit is unchanged.';
   return result;
+}
+
+function boundedPartSummary(part, component) {
+  if (part.fixed) return 'Fixed controller';
+  if (!component) return 'Missing · add to repair';
+  if (part.type === 'resistor.fixed-v1') return `${component.properties.ohms} Ω · bounded ideal model`;
+  if (part.type === 'led.basic-v1') return `${component.properties.color} · bounded ideal LED model`;
+  return 'Unsupported';
+}
+
+function renderBoundedComponentCatalog({ state, editCircuit, list, properties }) {
+  const { draft, selection, catalog } = state.circuitEditor;
+  const rows = catalog.parts.map((part) => {
+    const component = draft.components.find((candidate) => candidate.type === part.type);
+    const row = document.createElement('article');
+    row.className = 'bounded-part-card'; row.dataset.type = part.type;
+    row.dataset.present = String(part.present); row.setAttribute('role', 'listitem');
+    const name = document.createElement('strong'); name.textContent = part.displayName;
+    const summary = document.createElement('small'); summary.textContent = boundedPartSummary(part, component);
+    const id = document.createElement('code'); id.textContent = component?.id ?? part.id;
+    const action = document.createElement('button'); action.type = 'button';
+    action.dataset.boundedAdd = part.type;
+    action.textContent = part.fixed ? 'Fixed' : part.present ? 'Added' : 'Add missing part';
+    action.disabled = !part.addable;
+    action.setAttribute('aria-label', part.fixed
+      ? `${part.displayName} is fixed for this profile`
+      : part.present ? `${part.displayName} is already present` : `Add missing ${part.displayName}`);
+    if (part.addable) action.addEventListener('click', () => editCircuit('addMissingComponent', part.type));
+    row.title = part.limitation;
+    row.append(name, summary, id, action);
+    return row;
+  });
+  list.replaceChildren(...rows);
+
+  const selected = selection.kind === 'component'
+    ? draft.components.find((component) => component.id === selection.id) : null;
+  const selectedPart = selected && catalog.parts.find((part) => part.type === selected.type);
+  if (!selected || !selectedPart || selectedPart.fixed) {
+    const note = document.createElement('p');
+    note.textContent = selectedPart?.fixed
+      ? 'This controller profile is fixed. Select the resistor or LED to edit its bounded model property.'
+      : 'Select the resistor or LED to edit only its tested bounded model property.';
+    properties.replaceChildren(note); return;
+  }
+
+  const row = document.createElement('div'); row.className = 'bounded-property-row';
+  const label = document.createElement('label');
+  const limit = document.createElement('small');
+  const commitOnChange = (control, value) => {
+    let committing = false;
+    control.addEventListener('change', () => {
+      if (committing) return;
+      committing = true;
+      const next = value();
+      // Programmatic browser tests can dispatch change while the control is
+      // still focused. Move focus first so the synchronous state render does
+      // not replace a focused node and trigger a re-entrant blur/change.
+      if (document.activeElement === control) control.blur();
+      editCircuit('setComponentProperty', selected.id, control.dataset.boundedProperty, next);
+    });
+  };
+  let input;
+  if (selected.type === 'resistor.fixed-v1') {
+    label.append('Resistance (Ω)');
+    limit.textContent = 'Accepted only when the selected LED remains within the exact 3.3 V / 12 mA ideal-model limit.';
+    input = document.createElement('input'); input.type = 'number'; input.min = '1'; input.max = '10000000';
+    input.step = '1'; input.value = String(selected.properties.ohms); input.dataset.boundedProperty = 'ohms';
+    commitOnChange(input, () => Number(input.value));
+  } else {
+    label.append('LED colour');
+    limit.textContent = 'Colour selects a tested ideal forward-voltage constant; it is not a wavelength, brightness or physical-accuracy claim.';
+    input = document.createElement('select'); input.dataset.boundedProperty = 'color';
+    for (const color of selectedPart.supportedProperties.color.values) {
+      const option = document.createElement('option'); option.value = color; option.textContent = color;
+      option.selected = color === selected.properties.color; input.append(option);
+    }
+    commitOnChange(input, () => input.value);
+  }
+  label.append(limit); input.id = `${selected.id}-${input.dataset.boundedProperty}`; label.htmlFor = input.id;
+  row.append(label, input); properties.replaceChildren(row);
 }
 
 function picoEditorAnchor(endpoint, diagram = elements.picodiagram, components = elements.picoeditorcomponents) {
@@ -512,6 +595,10 @@ function renderPicoCircuitEditor(state) {
   elements.picowirecancel.disabled = wireDraft.mode === 'none';
   elements.picowirestate.textContent = namedWireInstruction(wireDraft);
   elements.picozoomvalue.value = `${Math.round(picoEditorZoom * 100)}%`;
+  renderBoundedComponentCatalog({
+    state, editCircuit: (...args) => picoPublicWorkbench.editCircuit(...args),
+    list: elements.picopartslist, properties: elements.picopartproperties,
+  });
   const cards = draft.components.map((component) => {
     const definition = uiComponentCatalog[component.type]; const position = draft.layout.positions[component.id];
     const card = document.createElement('article');
@@ -600,6 +687,8 @@ window.__RP2040_PUBLIC_WORKBENCH__ = {
   moveCircuitComponent: (id, x, y) => picoPublicWorkbench.editCircuit('moveComponent', id, x, y),
   rotateCircuitComponent: (id) => picoPublicWorkbench.editCircuit('rotateComponent', id),
   activateEndpoint: (endpoint) => picoPublicWorkbench.editCircuit('activateEndpoint', endpoint),
+  addMissingComponent: (type) => picoPublicWorkbench.editCircuit('addMissingComponent', type),
+  setComponentProperty: (id, key, value) => picoPublicWorkbench.editCircuit('setComponentProperty', id, key, value),
   beginReconnect: () => picoPublicWorkbench.editCircuit('beginReconnect'),
   cancelWire: () => picoPublicWorkbench.editCircuit('cancelWireDraft'),
 };
@@ -734,6 +823,10 @@ function renderC3CircuitEditor(state) {
   elements.c3wirecancel.disabled = wireDraft.mode === 'none';
   elements.c3wirestate.textContent = namedWireInstruction(wireDraft);
   elements.c3zoomvalue.value = `${Math.round(c3EditorZoom * 100)}%`;
+  renderBoundedComponentCatalog({
+    state, editCircuit: (...args) => c3PublicWorkbench.editCircuit(...args),
+    list: elements.c3partslist, properties: elements.c3partproperties,
+  });
   const modeledLed = Boolean(state.circuitAccepted && state.runtime?.modeledCircuit?.epochs?.at(-1)?.led?.on);
   const cards = draft.components.map((component) => {
     const definition = uiComponentCatalog[component.type]; const position = draft.layout.positions[component.id];
@@ -818,6 +911,8 @@ window.__ESP32C3_PUBLIC_WORKBENCH__ = {
   moveCircuitComponent: (id, x, y) => c3PublicWorkbench.editCircuit('moveComponent', id, x, y),
   rotateCircuitComponent: (id) => c3PublicWorkbench.editCircuit('rotateComponent', id),
   activateEndpoint: (endpoint) => c3PublicWorkbench.editCircuit('activateEndpoint', endpoint),
+  addMissingComponent: (type) => c3PublicWorkbench.editCircuit('addMissingComponent', type),
+  setComponentProperty: (id, key, value) => c3PublicWorkbench.editCircuit('setComponentProperty', id, key, value),
   beginReconnect: () => c3PublicWorkbench.editCircuit('beginReconnect'),
   cancelWire: () => c3PublicWorkbench.editCircuit('cancelWireDraft'),
 };
@@ -956,6 +1051,10 @@ function renderStm32CircuitEditor(state) {
   elements.stm32wirecancel.disabled = wireDraft.mode === 'none';
   elements.stm32wirestate.textContent = namedWireInstruction(wireDraft);
   elements.stm32zoomvalue.value = `${Math.round(stm32EditorZoom * 100)}%`;
+  renderBoundedComponentCatalog({
+    state, editCircuit: (...args) => stm32PublicWorkbench.editCircuit(...args),
+    list: elements.stm32partslist, properties: elements.stm32partproperties,
+  });
   const observedLed = Boolean(state.circuitAccepted && state.runtime?.observed?.pb0);
   const cards = draft.components.map((component) => {
     const definition = uiComponentCatalog[component.type]; const position = draft.layout.positions[component.id];
@@ -1047,6 +1146,8 @@ window.__STM32_PUBLIC_WORKBENCH__ = {
   moveCircuitComponent: (id, x, y) => stm32PublicWorkbench.editCircuit('moveComponent', id, x, y),
   rotateCircuitComponent: (id) => stm32PublicWorkbench.editCircuit('rotateComponent', id),
   activateEndpoint: (endpoint) => stm32PublicWorkbench.editCircuit('activateEndpoint', endpoint),
+  addMissingComponent: (type) => stm32PublicWorkbench.editCircuit('addMissingComponent', type),
+  setComponentProperty: (id, key, value) => stm32PublicWorkbench.editCircuit('setComponentProperty', id, key, value),
   beginReconnect: () => stm32PublicWorkbench.editCircuit('beginReconnect'),
   cancelWire: () => stm32PublicWorkbench.editCircuit('cancelWireDraft'),
 };

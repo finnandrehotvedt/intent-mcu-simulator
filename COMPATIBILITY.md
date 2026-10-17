@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.11 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.12 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -29,8 +29,9 @@ installation is supported.
 The Pico editor accepts one exact project-owned `main.c` grammar. It can set
 GPIO0 HIGH or LOW, emit 1–24 uppercase UART0 characters and halt. The fixed
 Arm GNU 14.3.1 toolchain produces a strict source-bound UF2 that runs in the
-rp2040js 1.4.0 browser worker. The only validated external circuit is GP0
-physical pin 1 through 220 Ω and an LED to GND physical pin 3. GPIO25 is
+rp2040js 1.4.0 browser worker. The only validated external topology is GP0
+physical pin 1 through one bounded resistor and LED to GND physical pin 3; the
+default is a 220 Ω red-LED pair. GPIO25 is
 identified separately as an onboard-LED signal and is not a header anchor.
 
 The bounded Pico, ESP32-C3 and STM32 teaching graphs support the same direct
@@ -41,13 +42,22 @@ net IDs. It is not general cross-controller wiring support. Invalid or pending
 wire actions block Build and retire stale executable, runtime and LED
 authority; Escape cancels a pending choice without changing topology.
 
+Those three graphs also expose one profile-filtered recovery catalogue
+containing only the fixed controller, existing resistor and existing LED. A
+missing resistor or LED can be restored after data-only Save/Open, but no wire
+is inferred. The restored stable part must be connected through the same named
+pins before Build. Resistance and LED colour are limited to combinations that
+pass the exact 3.3 V / 12 mA ideal-model validator. The colour setting chooses
+a tested forward-voltage constant; it is not a physical colour, wavelength or
+brightness simulation.
+
 The ESP32-C3 editor accepts one exact Arduino sketch grammar. It can set GPIO2
 to `OUTPUT` or `INPUT`, select `HIGH` or `LOW`, and print one bounded uppercase
 UART marker. Arduino CLI 1.5.1, Arduino-ESP32 3.3.10, ESP-IDF 5.5.4 and esp-rv32
 2601 produce a strict 4 MiB DIO flash image. Actual Espressif QEMU esp32c3
 executes the CPU/UART path and reset replay. Executed GPIO MMIO stores feed a
 separate IntentForce GPIO2 register/LED model. QEMU pin state is not observed.
-The validated GPIO2 J1 pin 4 → 220 Ω → LED → GND J1 pin 6 circuit is editable:
+The validated GPIO2 J1 pin 4 → bounded resistor → LED → GND J1 pin 6 circuit is editable:
 parts and cables can be selected, moved, quarter-turned, deleted and restored
 with bounded Undo/Redo. Every circuit edit or local data-only Open retires
 executable and LED authority until a fresh successful Build.
@@ -56,7 +66,7 @@ The STM32F429ZI editor accepts one exact project-owned C11 grammar. It can set
 PB0 HIGH or LOW, emit 1–24 uppercase USART3 characters and halt. The fixed Arm
 GNU 14.3.1 toolchain produces a strict source-bound ELF32. Actual Renode 1.17.0
 observes PB0 and USART3 across two matching boot epochs. The named external
-PB0 → 220 Ω → LED → GND path is an ideal teaching rendering driven by the
+PB0 → bounded resistor → LED → GND path is an ideal teaching rendering driven by the
 observed PB0 level; it is not analogue or physical-board equivalence. Parts and
 cables can be selected, moved, quarter-turned, deleted and restored through
 bounded Undo/Redo. Every circuit edit or local data-only Open retires ELF and

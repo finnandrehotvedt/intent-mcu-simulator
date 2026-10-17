@@ -127,6 +127,11 @@
         </section>
         <section class="pico-circuit-pane" aria-label="Editable validated Pico GPIO0 circuit">
           <header class="pico-editor-heading"><div><strong>Editable circuit</strong><small>Named GP0 pin 1 and GND pin 3 anchors</small></div><span id="pico-circuit-selection">Nothing selected</span></header>
+          <section class="bounded-parts-panel" aria-labelledby="pico-parts-title">
+            <header><div><strong id="pico-parts-title">Supported parts</strong><small>Filtered for this bounded Pico profile</small></div><span>3.3 V model</span></header>
+            <div id="pico-parts-list" class="bounded-parts-list" role="list"></div>
+            <div id="pico-part-properties" class="bounded-part-properties" aria-live="polite"></div>
+          </section>
           <div class="pico-circuit-actions" aria-label="Pico circuit editor controls">
             <button id="pico-delete" type="button" disabled>Delete</button>
             <button id="pico-undo" type="button" disabled>Undo</button>
@@ -145,7 +150,7 @@
             <div id="pico-editor-components" class="pico-editor-components"></div>
           </div>
           <p id="pico-circuit-state" class="truth">Validated: GP0 pin 1 → 220 Ω → LED anode/cathode → GND pin 3</p>
-          <p class="pico-editor-help">Click or keyboard-activate two free named pins to create a cable. Select a cable, choose Reconnect endpoint, then choose its old and new pin. Escape cancels. Drag or Arrow keys move parts; R rotates; Delete removes; Ctrl/⌘ Z and Ctrl/⌘ Shift Z undo/redo.</p>
+          <p class="pico-editor-help">If the resistor or LED is missing after Save/Open, add it from Supported parts, then connect its named pins. Select a cable and choose Reconnect endpoint to move one end. Escape cancels. Every accepted edit requires a fresh valid Build.</p>
           <div class="pico-serial-card"><strong>UART0 output</strong><pre id="pico-serial" aria-live="polite">No Pico UART output yet.</pre></div>
         </section>
       </div>
@@ -185,6 +190,11 @@
         </section>
         <section class="c3-circuit-pane" aria-label="Project-owned ESP32-C3 GPIO2 LED model">
           <header class="pico-editor-heading"><div><strong>Editable project-model circuit</strong><small>Named GPIO2 J1 pin 4 and GND J1 pin 6 anchors</small></div><span id="c3-circuit-selection">Nothing selected</span></header>
+          <section class="bounded-parts-panel" aria-labelledby="c3-parts-title">
+            <header><div><strong id="c3-parts-title">Supported parts</strong><small>Filtered for this bounded ESP32-C3 profile</small></div><span>3.3 V model</span></header>
+            <div id="c3-parts-list" class="bounded-parts-list" role="list"></div>
+            <div id="c3-part-properties" class="bounded-part-properties" aria-live="polite"></div>
+          </section>
           <div class="c3-circuit-actions" aria-label="ESP32-C3 circuit editing controls">
             <button id="c3-delete" type="button" disabled>Delete</button>
             <button id="c3-undo" type="button" disabled>Undo</button>
@@ -203,7 +213,7 @@
             <div id="c3-editor-components" class="pico-editor-components"></div>
           </div>
           <p id="c3-circuit-state" class="truth">Project model accepted · GPIO2 → 220 Ω → LED → GND · waiting for Run</p>
-          <p class="pico-editor-help">Click or keyboard-activate two free named pins to create a cable. Select a cable, choose Reconnect endpoint, then choose its old and new pin. Escape cancels. Every accepted edit retires flash and LED authority until a fresh valid Build.</p>
+          <p class="pico-editor-help">If the resistor or LED is missing after Save/Open, add it from Supported parts, then connect its named pins. Select a cable and choose Reconnect endpoint to move one end. Escape cancels. Every accepted edit requires a fresh valid Build.</p>
           <div class="c3-terminal-card"><strong>Actual QEMU UART / reset evidence</strong><pre id="c3-terminal" aria-live="polite">No QEMU UART output yet.</pre></div>
           <p class="c3-model-label"><strong>LED label:</strong> project-owned model from executed writes · <strong>not QEMU pin readback</strong></p>
         </section>
@@ -217,7 +227,7 @@
       </div>
       <div class="stm32-boundary-grid" aria-label="STM32F429ZI execution boundaries">
         <article><small>ACTUAL EXECUTION</small><strong>Renode 1.17.0 · CPU, PB0 and USART3</strong><span>A strict compiler-generated ELF runs in a fresh isolated Renode process; PB0 and USART3 are observed twice across reset replay.</span></article>
-        <article><small>TEACHING CIRCUIT</small><strong>Named PB0 → 220 Ω → LED → GND path</strong><span>The visible ideal LED path follows the observed PB0 level. It is not an analogue, board-layout, timing or physical-hardware model.</span></article>
+        <article><small>TEACHING CIRCUIT</small><strong>Named PB0 → bounded resistor → LED → GND path</strong><span>The visible ideal LED path follows the observed PB0 level. It is not an analogue, board-layout, timing or physical-hardware model.</span></article>
       </div>
       <p class="truth">The fixed C11 grammar may set PB0 HIGH/LOW, write one 1–24 character uppercase USART3 marker and halt. No SDK, arbitrary C/ELF, broad peripherals, full STM32 family, physical board or hardware-programming claim.</p>
       <div class="stm32-public-grid">
@@ -245,6 +255,11 @@
         </section>
         <section class="stm32-circuit-pane" aria-label="Named STM32F429ZI PB0 teaching circuit">
           <header class="pico-editor-heading"><div><strong>Editable ideal teaching circuit</strong><small>Named PB0 CN11 pin 34 and GND CN11 pin 35 anchors</small></div><span id="stm32-circuit-selection">Nothing selected</span></header>
+          <section class="bounded-parts-panel" aria-labelledby="stm32-parts-title">
+            <header><div><strong id="stm32-parts-title">Supported parts</strong><small>Filtered for this bounded STM32 profile</small></div><span>3.3 V model</span></header>
+            <div id="stm32-parts-list" class="bounded-parts-list" role="list"></div>
+            <div id="stm32-part-properties" class="bounded-part-properties" aria-live="polite"></div>
+          </section>
           <div class="stm32-circuit-actions" aria-label="STM32 teaching circuit editing controls">
             <button id="stm32-delete" type="button" disabled>Delete</button>
             <button id="stm32-undo" type="button" disabled>Undo</button>
@@ -263,7 +278,7 @@
             <div id="stm32-editor-components" class="pico-editor-components"></div>
           </div>
           <p id="stm32-circuit-state" class="truth">Named path: PB0 CN11 pin 34 → 220 Ω → LED → GND CN11 pin 35 · awaiting actual Renode observation</p>
-          <p class="pico-editor-help">Click or keyboard-activate two free named pins to create a cable. Select a cable, choose Reconnect endpoint, then choose its old and new pin. Escape cancels. Every accepted edit retires ELF and LED authority until a fresh valid Build.</p>
+          <p class="pico-editor-help">If the resistor or LED is missing after Save/Open, add it from Supported parts, then connect its named pins. Select a cable and choose Reconnect endpoint to move one end. Escape cancels. Every accepted edit requires a fresh valid Build.</p>
           <div class="stm32-terminal-card"><strong>Actual Renode PB0 / USART3 evidence</strong><pre id="stm32-terminal" aria-live="polite">No Renode execution yet.</pre></div>
           <p class="stm32-model-label"><strong>Runtime truth:</strong> PB0 and USART3 are observed in actual Renode. <strong>Circuit truth:</strong> the external resistor/LED path is an ideal educational rendering.</p>
         </section>
@@ -383,7 +398,7 @@
       </nav>
     </section>
 
-    <footer>Intent MCU Simulator 1.1.0-rc.11 public release · AVR + editable bounded Pico + editable bounded ESP32-C3 + editable bounded STM32F429ZI execution · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
+    <footer>Intent MCU Simulator 1.1.0-rc.12 public release · AVR + editable bounded Pico + editable bounded ESP32-C3 + editable bounded STM32F429ZI execution · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
   </main>
   <button id="serial-tab" class="serial-tab" type="button" aria-expanded="false" aria-controls="serial-dock"><span>Serial</span><span id="serial-new-output" class="serial-new-output" hidden>0 new</span></button>
   <aside id="serial-dock" class="serial-dock" aria-labelledby="serial-title" hidden>

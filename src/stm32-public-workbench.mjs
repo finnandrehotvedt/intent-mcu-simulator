@@ -308,12 +308,18 @@ export class Stm32PublicWorkbench {
   }
   editCircuit(operation, ...args) {
     if (!['deleteSelected', 'undo', 'redo', 'moveComponent', 'rotateComponent',
-      'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint'].includes(operation)) {
+      'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint',
+      'addMissingComponent', 'setComponentProperty'].includes(operation)) {
       return { ok: false, code: 'STM32_CIRCUIT_OPERATION_INVALID' };
     }
     const revision = this.circuitEditor.revision;
     const result = this.circuitEditor[operation](...args);
-    if (!result.ok) { this.render(); return result; }
+    if (!result.ok) {
+      if (['addMissingComponent', 'setComponentProperty'].includes(operation)) {
+        this.message = `Part change rejected (${result.code}). The circuit and ELF authority are unchanged.`;
+      }
+      this.render(); return result;
+    }
     if (result.revision === revision) {
       if (result.wireDraft?.mode !== 'none') {
         this.invalidate('Wiring in progress. ELF and LED authority were retired; finish or cancel, then build fresh.');
@@ -330,6 +336,8 @@ export class Stm32PublicWorkbench {
       activateEndpoint: `Cable changed (${result.code}). ELF and LED authority retired; finish a valid circuit and build fresh.`,
       connectEndpoints: `Cable created (${result.code}). ELF and LED authority retired; finish a valid circuit and build fresh.`,
       reconnectEndpoint: `Cable endpoint reconnected (${result.code}). ELF and LED authority retired; finish a valid circuit and build fresh.`,
+      addMissingComponent: `Added ${result.componentId} without inferred cables. Connect its named pins, then build fresh.`,
+      setComponentProperty: `Updated ${result.componentId}.${result.key}. Electrical rules revalidated; build fresh.`,
     };
     this.invalidate(messages[operation] ?? `Circuit changed (${result.code}). ELF and LED authority retired; build fresh.`);
     return result;
@@ -391,8 +399,8 @@ export class Stm32PublicWorkbench {
       : !circuit.ok
       ? `Teaching circuit rejected (${circuit.code}) · stale ELF and LED authority retired`
       : this.result
-        ? `Renode observed PB0 ${on ? 'HIGH' : 'LOW'} · ideal 220 Ω teaching path renders LED ${on ? 'ON' : 'OFF'}`
-        : 'Named path: PB0 CN11 pin 34 → 220 Ω → LED → GND CN11 pin 35 · awaiting actual Renode observation';
+        ? `Renode observed PB0 ${on ? 'HIGH' : 'LOW'} · ideal ${circuit.model.resistorOhms} Ω / ${circuit.model.ledColor} LED teaching path renders ${on ? 'ON' : 'OFF'}`
+        : `Named path: PB0 CN11 pin 34 → ${circuit.model.resistorOhms} Ω → ${circuit.model.ledColor} LED → GND CN11 pin 35 · awaiting actual Renode observation`;
     this.publish();
   }
 }

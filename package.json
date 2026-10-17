@@ -1,6 +1,6 @@
 {
   "name": "intent-mcu-simulator",
-  "version": "1.1.0-rc.11",
+  "version": "1.1.0-rc.12",
   "private": true,
   "description": "Original browser-based microcontroller learning environment source",
   "license": "Apache-2.0",
@@ -11,7 +11,7 @@
   },
   "scripts": {
     "build": "node scripts/build-staging.mjs",
-    "test": "node --test --test-concurrency=1 test/circuit-model.test.mjs test/lifecycle.test.mjs test/workbench-instruments.test.mjs test/gateway-unit.test.mjs test/public-release-projection.test.mjs test/rp2040-pico-circuit.test.mjs test/esp32c3-public.test.mjs test/stm32-public.test.mjs test/named-pin-wire-authoring.test.mjs test/active-buzzer-candidate.test.mjs test/candidate-draft-runnable-transition.test.mjs test/character-lcd-16x2-4bit-candidate.test.mjs test/common-cathode-rgb-led-candidate.test.mjs test/digital-light-threshold-candidate.test.mjs test/foundation-primitives-draft.test.mjs test/light-analogue-sensor-candidate.test.mjs test/project-v3-envelope-draft.test.mjs test/seven-segment-common-cathode-candidate.test.mjs test/temperature-analogue-sensor-candidate.test.mjs test/temperature-lcd-threshold-example-candidate.test.mjs test/unavailable-controller-targets-candidate.test.mjs",
+    "test": "node --test --test-concurrency=1 test/circuit-model.test.mjs test/lifecycle.test.mjs test/workbench-instruments.test.mjs test/gateway-unit.test.mjs test/public-release-projection.test.mjs test/rp2040-pico-circuit.test.mjs test/esp32c3-public.test.mjs test/stm32-public.test.mjs test/named-pin-wire-authoring.test.mjs test/bounded-component-recovery.test.mjs test/active-buzzer-candidate.test.mjs test/candidate-draft-runnable-transition.test.mjs test/character-lcd-16x2-4bit-candidate.test.mjs test/common-cathode-rgb-led-candidate.test.mjs test/digital-light-threshold-candidate.test.mjs test/foundation-primitives-draft.test.mjs test/light-analogue-sensor-candidate.test.mjs test/project-v3-envelope-draft.test.mjs test/seven-segment-common-cathode-candidate.test.mjs test/temperature-analogue-sensor-candidate.test.mjs test/temperature-lcd-threshold-example-candidate.test.mjs test/unavailable-controller-targets-candidate.test.mjs",
     "setup:toolchain": "sh scripts/setup-local-toolchain.sh",
     "setup:rp2040-toolchain": "sh scripts/setup-rp2040-toolchain.sh",
     "setup:stm32-public-images": "sh scripts/setup-stm32-public-images.sh",

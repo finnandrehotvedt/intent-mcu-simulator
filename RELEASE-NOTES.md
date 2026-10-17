@@ -1,4 +1,38 @@
-# Intent MCU Simulator 1.1.0-rc.11
+# Intent MCU Simulator 1.1.0-rc.12
+
+This app-only release adds bounded recovery for the resistor and LED already
+supported by the Pico, ESP32-C3 and STM32F429ZI teaching circuits. It does not
+add a general parts library, controller, pin, source grammar or runtime.
+
+## Shared bounded component recovery
+
+- Each of the three non-AVR workbenches shows exactly its fixed controller,
+  one axial resistor and one through-hole LED. The controller cannot be
+  deleted, added or duplicated; unsupported and cross-profile types reject.
+- After a resistor or LED is deleted and a local Save/Open removes Undo
+  history, **Add missing part** restores the original stable component ID at a
+  deterministic safe position. It never infers a cable: the learner reconnects
+  the exact named pins and receives the existing electrical validation.
+- Recovery itself participates in bounded Undo/Redo. A duplicate recovery is
+  rejected, and every accepted part/property/topology edit retires stale
+  executable and runtime authority until a fresh successful Build.
+- Resistance and LED colour expose only the existing ideal model properties.
+  The selected pair must remain within 3.3 V / 12 mA validation. Colour chooses
+  one tested forward-voltage constant and makes no wavelength, brightness,
+  package-tolerance or physical-accuracy claim.
+- Desktop and 390 px browser acceptance verifies both recovery branches,
+  Save/Open history loss, no inferred nets, exact terminal attachment, body
+  avoidance and all four rotations. Fresh compiler-generated firmware then
+  runs through rp2040js, actual ESP32-C3 QEMU CPU/UART, and actual STM32 Renode.
+- The ESP32-C3 executed-register-write GPIO2 model now admits the same exact
+  tested resistor/forward-voltage pairs as its public circuit validator; QEMU
+  pin state remains explicitly unobserved and no provenance claim changed.
+- AVR, project schemas, source grammars, fixed image identities, Caddy, DNS and
+  unrelated services remain outside this app-only change.
+
+---
+
+## 1.1.0-rc.11
 
 This app-only release adds direct named-pin cable creation and endpoint
 reconnection to the three bounded non-AVR teaching circuits while preserving

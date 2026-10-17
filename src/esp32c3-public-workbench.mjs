@@ -330,12 +330,18 @@ export class Esp32C3PublicWorkbench {
 
   editCircuit(operation, ...args) {
     if (!['deleteSelected', 'undo', 'redo', 'moveComponent', 'rotateComponent',
-      'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint'].includes(operation)) {
+      'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint',
+      'addMissingComponent', 'setComponentProperty'].includes(operation)) {
       return { ok: false, code: 'C3_CIRCUIT_OPERATION_INVALID' };
     }
     const revision = this.circuitEditor.revision;
     const result = this.circuitEditor[operation](...args);
-    if (!result.ok) { this.render(); return result; }
+    if (!result.ok) {
+      if (['addMissingComponent', 'setComponentProperty'].includes(operation)) {
+        this.message = `Part change rejected (${result.code}). The circuit and flash authority are unchanged.`;
+      }
+      this.render(); return result;
+    }
     if (result.revision === revision) {
       if (result.wireDraft?.mode !== 'none') {
         this.invalidate('Wiring in progress. Flash and LED authority were retired; finish or cancel, then build fresh.');
@@ -352,6 +358,8 @@ export class Esp32C3PublicWorkbench {
       activateEndpoint: `Cable changed (${result.code}). Flash and LED authority retired; finish a valid circuit and build fresh.`,
       connectEndpoints: `Cable created (${result.code}). Flash and LED authority retired; finish a valid circuit and build fresh.`,
       reconnectEndpoint: `Cable endpoint reconnected (${result.code}). Flash and LED authority retired; finish a valid circuit and build fresh.`,
+      addMissingComponent: `Added ${result.componentId} without inferred cables. Connect its named pins, then build fresh.`,
+      setComponentProperty: `Updated ${result.componentId}.${result.key}. Electrical rules revalidated; build fresh.`,
     };
     this.invalidate(messages[operation] ?? `Circuit changed (${result.code}). Flash and LED authority retired; build fresh.`);
     return result;
@@ -402,7 +410,7 @@ export class Esp32C3PublicWorkbench {
     this.elements.circuitState.textContent = !wiringReady
       ? 'Wiring in progress · flash and LED authority retired · finish or cancel before Build'
       : circuit.ok
-      ? `Project model accepted · GPIO2 J1 pin 4 → 220 Ω → LED → GND J1 pin 6 · ${led?.code ?? 'waiting for Run'}`
+      ? `Project model accepted · GPIO2 J1 pin 4 → ${circuit.model.resistorOhms} Ω → ${circuit.model.ledColor} LED → GND J1 pin 6 · ${led?.code ?? 'waiting for Run'}`
       : `Project model rejected (${circuit.code}) · stale flash and LED authority retired`;
     this.publish();
   }

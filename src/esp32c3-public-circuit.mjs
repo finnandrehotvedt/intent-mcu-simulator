@@ -3,7 +3,9 @@
 
 import { VALIDATED_LED_CIRCUIT } from '../c3/gpio2-adapter.mjs';
 import { LED_FORWARD_VOLTS, defaultProperties } from './component-catalog.mjs';
-import { NamedSeriesLedCircuitEditor, createSeriesLedConnectionPolicy } from './named-series-led-circuit-editor.mjs';
+import {
+  NamedSeriesLedCircuitEditor, createSeriesLedComponentPolicy, createSeriesLedConnectionPolicy,
+} from './named-series-led-circuit-editor.mjs';
 import { exactKeys } from './strict-json.mjs';
 
 export const ESP32C3_PUBLIC_CIRCUIT_SCHEMA = 'intent-mcu-esp32c3-public-circuit@1';
@@ -67,6 +69,14 @@ const TYPE_PINS = Object.freeze({
   [BOARD]: new Set(['GPIO2', 'GND']),
   [RESISTOR]: new Set(['A', 'B']),
   [LED]: new Set(['ANODE', 'CATHODE']),
+});
+const COMPONENT_POLICY = createSeriesLedComponentPolicy({
+  profile: BOARD, boardId: 'c3-1', boardLabel: 'ESP32-C3 GPIO2 profile',
+  resistorPosition: { x: 0.52, y: 0.27, rotation: 0 },
+  ledPosition: { x: 0.8, y: 0.48, rotation: 0 },
+  nominalVolts: ESP32C3_NOMINAL_VOLTS,
+  ledCurrentLimitAmps: ESP32C3_LED_CURRENT_LIMIT_AMPS,
+  ledForwardVolts: LED_FORWARD_VOLTS,
 });
 const clone = (value) => structuredClone(value);
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
@@ -248,6 +258,6 @@ export class Esp32C3CircuitEditor extends NamedSeriesLedCircuitEditor {
   constructor(draft = createEsp32C3CircuitDraft()) {
     super({ draft, normalize: normalizeEsp32C3CircuitDraft,
       validate: validateEsp32C3Circuit, createDefault: createEsp32C3CircuitDraft,
-      fixedComponentType: BOARD, resolveNetId, codePrefix: 'C3' });
+      fixedComponentType: BOARD, resolveNetId, componentPolicy: COMPONENT_POLICY, codePrefix: 'C3' });
   }
 }

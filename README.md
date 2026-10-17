@@ -59,6 +59,15 @@ stable net IDs survive Undo/Redo and Save/Open, and every topology change
 requires a fresh Build. This does not activate general wiring across their
 other pins or add broader controller support.
 
+The same three teaching circuits expose a separate profile-filtered recovery
+list containing only their fixed controller, existing resistor and existing
+LED. If a resistor or LED is deleted and local Save/Open has discarded Undo
+history, the learner can restore that one stable part and reconnect its named
+pins manually. Recovery adds no wire implicitly. Resistance and LED colour are
+bounded by the same 3.3 V / 12 mA ideal validator used before Build; colour
+selects a tested forward-voltage constant and is not a brightness, wavelength
+or physical-accuracy claim.
+
 ## Current source-release boundary
 
 The full circuit editor supports one ATmega328P learning profile and 16
@@ -68,11 +77,11 @@ A separate bounded RP2040 Pico profile accepts one exact C11 source grammar,
 compiles a source-bound UF2 and executes GPIO0/UART0 in a browser worker against
 one validated GP0-to-resistor-to-LED-to-GND circuit. A separate bounded
 ESP32-C3 sketch grammar compiles a fixed DIO flash image and executes two UART
-boot epochs on actual Espressif QEMU. Its GPIO2-to-220-Ω-to-LED-to-GND result
+boot epochs on actual Espressif QEMU. Its default GPIO2-to-220-Ω-to-LED-to-GND result
 uses the separately labelled project-owned register model, not QEMU pin
 readback. A bounded STM32F429ZI C11 grammar compiles with Arm GNU 14.3.1,
 passes strict ELF32 admission, and executes PB0/USART3/reset replay in actual
-Renode 1.17.0. Its named PB0-to-220-Ω-to-LED-to-GND path is editable with the
+Renode 1.17.0. Its default named PB0-to-220-Ω-to-LED-to-GND path is editable with the
 same bounded selection, movement, rotation, deletion, history and responsive
 routing rules as the Pico and C3 paths. It follows the observed PB0 level
 without claiming broad peripherals or physical equivalence. The application also
@@ -152,7 +161,7 @@ source; it does not authorize redistributing the resulting image.
 
 Additional current limits:
 
-- source version `1.1.0-rc.11` is prepared for the release at
+- source version `1.1.0-rc.12` is prepared for the release at
   `https://lab.teachthecompany.com/`; hosted compiler/toolchain images and
   private deployment configuration remain outside this source repository;
 - public execution supports the tested ATmega328P subset, one bounded RP2040

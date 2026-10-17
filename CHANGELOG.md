@@ -2,6 +2,31 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.12 — 2026-10-17
+
+- Added one profile-filtered three-part recovery catalogue to the existing
+  Pico, ESP32-C3 and STM32F429ZI workbenches: the fixed controller plus the
+  already-supported resistor and LED only.
+- A deleted resistor or LED can now be restored after local Save/Open has
+  deliberately discarded Undo history. Recovery keeps the stable component
+  ID, adds no cable implicitly, and requires explicit named-pin reconnection.
+- Protected fixed controllers and rejected duplicate, unknown and
+  cross-profile parts atomically.
+- Added bounded resistance and LED-colour editing against the existing exact
+  ideal electrical model. Unsafe combinations reject without changing the
+  circuit; colour is not presented as a wavelength, brightness or physical
+  accuracy claim.
+- Kept every part/property/topology edit coupled to executable-authority
+  retirement and a fresh Build. Actual Pico, QEMU and Renode Run journeys pass
+  after component recovery.
+- Added desktop/mobile browser coverage for history-free recovery, filters,
+  property limits, Undo/Redo, all quarter turns, exact pin attachment and
+  component-body avoidance. Shifted the default STM32 resistor slightly right
+  so its recovered mobile route has a clear body-avoiding channel.
+- Preserved all controller/source grammars, stable pins/nets, project formats,
+  provenance labels and the accepted AVR path. No component family, runtime,
+  account, cloud store or hosted AI capability was added.
+
 ## 1.1.0-rc.11 — 2026-10-17
 
 - Added one shared, bounded named-pin wire-authoring state machine to the

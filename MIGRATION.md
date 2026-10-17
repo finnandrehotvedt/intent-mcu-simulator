@@ -1,4 +1,4 @@
-# Migration to 1.1.0-rc.11
+# Migration to 1.1.0-rc.12
 
 There is no account, cloud project database, or server-side project migration.
 Existing browser recovery remains readable. Before changing versions, save an
@@ -10,6 +10,12 @@ After the update:
 2. review any explicit migration or unsupported-field report;
 3. rebuild firmware because artifacts are deliberately not persisted;
 4. verify named-pin wiring and component limitations before Run.
+
+If a bounded Pico, ESP32-C3 or STM32 project was saved with its resistor or LED
+deleted, Open still preserves that missing-part state and intentionally starts
+with empty Undo history. Use the profile's **Add missing part** action, reconnect
+the named pins explicitly, validate the circuit and Build fresh. The action
+reuses the established stable ID and does not migrate or infer a cable.
 
 Rejected files and Prompt Bridge proposals remain atomic and do not partially
 replace the current project. The new components extend project-v3 data while
