@@ -5,7 +5,7 @@
 Canonical application: https://lab.teachthecompany.com/
 Source and setup: https://github.com/finnandrehotvedt/intent-mcu-simulator
 Licence: Apache-2.0 for project-owned source; third-party components keep their own terms.
-Current public version: 1.1.0-rc.9
+Current public version: 1.1.0-rc.10
 
 ## Supported public workflow
 
@@ -18,7 +18,7 @@ Current public version: 1.1.0-rc.9
 - Optionally generate a portable Prompt Bridge request and validate returned structured circuit data.
 - Select RP2040 Pico, edit the two bounded source values, compile in the fixed isolated Arm toolchain, and run the source-bound UF2 in the browser worker.
 - Select ESP32-C3, edit only GPIO2 mode/level and an uppercase UART marker, compile a fixed DIO flash image, and run actual Espressif QEMU CPU/UART.
-- Select STM32F429ZI, edit only PB0 HIGH/LOW and an uppercase USART3 marker, compile a strict source-bound ELF, and run actual Renode PB0/USART3/reset replay.
+- Select STM32F429ZI, edit the named PB0/resistor/LED/GND teaching circuit and the bounded PB0 HIGH/LOW plus uppercase USART3 source values, compile a strict source-bound ELF, and run actual Renode PB0/USART3/reset replay.
 
 ## Important limits
 
@@ -30,7 +30,7 @@ Current public version: 1.1.0-rc.9
 - Public execution supports the tested ATmega328P profile, one bounded RP2040 Pico GPIO0/UART0 source profile, one bounded ESP32-C3 GPIO2/UART source profile, and one bounded STM32F429ZI PB0/USART3/reset-replay source profile.
 - ESP32-C3 publicly compiles one strict sketch grammar and runs actual QEMU CPU/UART with reset replay. The GPIO2/LED result is a separately labelled project-owned executed-register-write model; QEMU pin state is not observed, and no broad ESP32, SDK, Wi-Fi, Bluetooth, timing, or physical-device claim is made.
 - RP2040 Pico publicly accepts one exact project-owned C11 grammar, compiles it in a networkless fixed Arm GNU 14.3.1 container, validates a source-bound UF2, and executes GPIO0/UART0 in rp2040js 1.4.0. It does not claim a complete Pico SDK, PIO, DMA, USB, multicore, timing, or physical-device model.
-- STM32F429ZI publicly accepts one exact project-owned C11 grammar, compiles it in a fixed networkless Arm GNU 14.3.1 container, validates a source-bound ELF32, and executes PB0/USART3 in actual Renode 1.17.0 across reset replay. Its visible external LED is an ideal teaching path; no arbitrary C/ELF, SDK, broad peripheral, timing, physical-board, programming, or full STM32 claim is made.
+- STM32F429ZI publicly accepts one exact project-owned C11 grammar, compiles it in a fixed networkless Arm GNU 14.3.1 container, validates a source-bound ELF32, and executes PB0/USART3 in actual Renode 1.17.0 across reset replay. Its editable named-pin external LED path remains an ideal teaching circuit; no arbitrary C/ELF, SDK, broad peripheral, timing, physical-board, programming, or full STM32 claim is made.
 
 ## Primary documentation
 

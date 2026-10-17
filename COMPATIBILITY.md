@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.9 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.10 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -49,7 +49,10 @@ PB0 HIGH or LOW, emit 1–24 uppercase USART3 characters and halt. The fixed Arm
 GNU 14.3.1 toolchain produces a strict source-bound ELF32. Actual Renode 1.17.0
 observes PB0 and USART3 across two matching boot epochs. The named external
 PB0 → 220 Ω → LED → GND path is an ideal teaching rendering driven by the
-observed PB0 level; it is not analogue or physical-board equivalence.
+observed PB0 level; it is not analogue or physical-board equivalence. Parts and
+cables can be selected, moved, quarter-turned, deleted and restored through
+bounded Undo/Redo. Every circuit edit or local data-only Open retires ELF and
+LED authority until a fresh successful Build.
 
 ## Explicitly unsupported
 

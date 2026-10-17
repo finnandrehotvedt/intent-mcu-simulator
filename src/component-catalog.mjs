@@ -21,6 +21,7 @@ export const ARTWORK_RENDERER_IDS = Object.freeze([
   'board-atmega328p',
   'board-rp2040-pico',
   'board-esp32-c3-profile',
+  'board-stm32f429zi-profile',
   'resistor-axial',
   'led-through-hole',
   'button-tactile',

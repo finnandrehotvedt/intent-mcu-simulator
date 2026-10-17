@@ -92,7 +92,7 @@ function worldAt(viewport, screenX, screenY) {
   assert((await page.textContent('#wire-state')).includes('board-1.D4'), 'dense header chose a different pin than D4');
   await densePin.click({ force: true });
 
-  const resistor = page.locator('[data-component-id="resistor-1"]');
+  const resistor = page.locator('#component-layer [data-component-id="resistor-1"]');
   await resistor.scrollIntoViewIfNeeded();
   const original = await page.evaluate(() => ({ revision: window.__M6_STATE__.revision, position: window.__M6_PROJECT__().layout.positions['resistor-1'] }));
   let box = await resistor.boundingBox();
@@ -175,7 +175,7 @@ function worldAt(viewport, screenX, screenY) {
   const afterPan = await page.evaluate(() => window.__M6_PROJECT__());
   assert(afterPan.circuit.nets.length === netsBeforePan && (afterPan.layout.viewport.panX !== afterZoom.panX || afterPan.layout.viewport.panY !== afterZoom.panY), 'background pan conflicted with wiring or did not commit');
 
-  await page.locator('[data-component-id="resistor-1"]').click({ force: true });
+  await page.locator('#component-layer [data-component-id="resistor-1"]').click({ force: true });
   assert((await page.textContent('#property-editor')).includes('Ω'), 'component property unit is missing');
   const widthBefore = await page.locator('.catalog').evaluate((node) => node.getBoundingClientRect().width);
   await page.locator('#catalog-resizer').focus(); await page.keyboard.press('ArrowRight');

@@ -110,7 +110,7 @@ h2 { font-size: 1.22rem; margin: 0; }
 .pico-serial-card pre { min-height: 72px; margin: .55rem 0 0; color: #a8ff3f; white-space: pre-wrap; }
 .pico-editor-heading { display: flex; justify-content: space-between; gap: .8rem; align-items: end; }
 .pico-editor-heading div { display: grid; gap: .2rem; }
-.pico-editor-heading small, #pico-circuit-selection, #c3-circuit-selection, .pico-editor-help { color: var(--muted); font-size: .72rem; line-height: 1.45; }
+.pico-editor-heading small, #pico-circuit-selection, #c3-circuit-selection, #stm32-circuit-selection, .pico-editor-help { color: var(--muted); font-size: .72rem; line-height: 1.45; }
 #pico-circuit-selection, #c3-circuit-selection { color: var(--cyan); font: 700 .68rem var(--mono); text-align: right; }
 .pico-circuit-actions { align-items: center; }
 .pico-circuit-actions button { min-height: 36px; padding-inline: .65rem; font-size: .72rem; }
@@ -129,7 +129,8 @@ h2 { font-size: 1.22rem; margin: 0; }
 .pico-editor-part[data-component-type="led.basic-v1"] [data-editor-endpoint$=".ANODE"] .pico-editor-pin-label { left: auto; right: 55%; top: calc(100% + 5px); bottom: auto; transform: rotate(calc(-1 * var(--rotation))); transform-origin: 100% 0; }
 .pico-editor-part[data-component-type="led.basic-v1"] [data-editor-endpoint$=".CATHODE"] .pico-editor-pin-label { left: 55%; top: calc(100% + 5px); bottom: auto; transform: rotate(calc(-1 * var(--rotation))); transform-origin: 0 0; }
 .pico-editor-part[data-component-type="board.rp2040-pico-v1"] [data-editor-endpoint$=".GND3"] .pico-editor-pin-label,
-.pico-editor-part[data-component-type="board.esp32-c3-devmodule-v1"] [data-editor-endpoint$=".GND"] .pico-editor-pin-label { top: calc(100% + 5px); bottom: auto; }
+.pico-editor-part[data-component-type="board.esp32-c3-devmodule-v1"] [data-editor-endpoint$=".GND"] .pico-editor-pin-label,
+.pico-editor-part[data-component-type="board.stm32f429zi-nucleo144-v1"] [data-editor-endpoint$=".GND"] .pico-editor-pin-label { top: calc(100% + 5px); bottom: auto; }
 .pico-editor-wire { fill: none; stroke: var(--wire-color,#39dff2); stroke-width: 4; vector-effect: non-scaling-stroke; opacity: .96; stroke-linejoin: round; stroke-linecap: round; pointer-events: none; filter: drop-shadow(0 2px 1px #0004); }
 .pico-editor-wire.selected { stroke-width: 6; filter: drop-shadow(0 0 5px #5aaf2b); }
 .pico-editor-wire-hit { fill: none; stroke: transparent; stroke-width: 22; vector-effect: non-scaling-stroke; pointer-events: stroke; cursor: pointer; }
@@ -152,6 +153,15 @@ h2 { font-size: 1.22rem; margin: 0; }
 .c3-editor-board-subtitle, .c3-editor-board-pin-label { fill: #d9f4ff; font: 650 6px ui-monospace,monospace; }
 .c3-editor-board-pin { fill: #bd8e2d; stroke: #f5d880; stroke-width: .8; }
 .c3-editor-board-pin.proven { fill: #ecba43; stroke: #fff1a6; stroke-width: 1.4; }
+.stm32-editor-board-pcb { fill: #3157a3; stroke: #19346f; stroke-width: 3; }
+.stm32-editor-board-usb { fill: #d7dce2; stroke: #687482; stroke-width: 2; }
+.stm32-editor-board-module { fill: #aebac8; stroke: #526477; stroke-width: 2; }
+.stm32-editor-board-chip { fill: #171c24; stroke: #7c8b9d; stroke-width: 2; }
+.stm32-editor-board-chip-label { fill: #eef4ff; font: 800 10px ui-monospace,monospace; letter-spacing: 1px; }
+.stm32-editor-board-title { fill: #f4f7ff; font: 800 13px ui-sans-serif,sans-serif; letter-spacing: .06em; }
+.stm32-editor-board-subtitle, .stm32-editor-board-pin-label { fill: #dce7ff; font: 650 6px ui-monospace,monospace; }
+.stm32-editor-board-pin { fill: #aa7d29; stroke: #f1d06a; stroke-width: .8; }
+.stm32-editor-board-pin.proven { fill: #efbd42; stroke: #fff2ab; stroke-width: 1.4; }
 
 @media (max-width: 860px) {
   .pico-public-grid { grid-template-columns: 1fr; }
@@ -253,13 +263,14 @@ h2 { font-size: 1.22rem; margin: 0; }
 .stm32-project-pane { display: grid; gap: .65rem; }
 .stm32-project-pane input:not(.sr-only), .stm32-project-pane textarea { width: 100%; }
 .stm32-source { min-height: 280px; resize: vertical; tab-size: 2; font: 500 .86rem/1.5 var(--mono); color: #e5ecff; background: #020813; border: 1px solid #405a87; border-radius: 12px; padding: .9rem; }
-.stm32-project-actions, .stm32-runtime-actions { display: flex; flex-wrap: wrap; gap: .55rem; }
+.stm32-project-actions, .stm32-runtime-actions, .stm32-circuit-actions { display: flex; flex-wrap: wrap; gap: .55rem; }
 .stm32-runtime-actions .primary { color: #031018; background: var(--lime); border-color: var(--lime); }
 .stm32-message { min-height: 2.8rem; margin: 0; color: #dce5fa; }
 .stm32-identities { display: grid; gap: .45rem; margin: 0; }
 .stm32-identities div { display: grid; grid-template-columns: 130px minmax(0,1fr); gap: .65rem; }
 .stm32-identities dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
 .stm32-circuit-pane { display: grid; gap: .8rem; align-content: start; }
+.stm32-editor-canvas { min-height: 500px; border-color: #405a87; }
 .stm32-diagram { display: block; width: 100%; height: auto; min-height: 310px; overflow: hidden; border: 1px solid #405a87; border-radius: 16px; background: #f5f0e6; }
 .stm32-board-body { fill: #3157a3; stroke: #19346f; stroke-width: 5; filter: drop-shadow(0 14px 12px rgba(0,0,0,.24)); }
 .stm32-board-module { fill: #d7dce2; stroke: #687482; stroke-width: 3; }

@@ -44,8 +44,9 @@ and fixed compiler. C3 flash executes on actual
 Espressif QEMU CPU/UART; its GPIO2 LED result is separately and visibly labelled
 as a project-owned executed-register-write model because QEMU pin state is not
 observed. The strict STM32F429ZI ELF executes on actual Renode 1.17.0, which
-observes PB0 and USART3 across reset replay; its external LED is visibly labelled
-as an ideal teaching circuit rather than a physical or analogue model.
+observes PB0 and USART3 across reset replay; its editable named-pin external
+LED path is visibly labelled as an ideal teaching circuit rather than a
+physical or analogue model.
 Selecting a non-AVR profile parks the AVR project without remapping its circuit;
 returning to AVR restores that workbench.
 
@@ -62,8 +63,10 @@ boot epochs on actual Espressif QEMU. Its GPIO2-to-220-Ω-to-LED-to-GND result
 uses the separately labelled project-owned register model, not QEMU pin
 readback. A bounded STM32F429ZI C11 grammar compiles with Arm GNU 14.3.1,
 passes strict ELF32 admission, and executes PB0/USART3/reset replay in actual
-Renode 1.17.0. Its named PB0-to-220-Ω-to-LED-to-GND path follows the observed
-PB0 level without claiming broad peripherals or physical equivalence. The application also
+Renode 1.17.0. Its named PB0-to-220-Ω-to-LED-to-GND path is editable with the
+same bounded selection, movement, rotation, deletion, history and responsive
+routing rules as the Pico and C3 paths. It follows the observed PB0 level
+without claiming broad peripherals or physical equivalence. The application also
 supports user-owned local project files, Prompt Bridge circuit-plan validation,
 serial display, logic traces, and pin inspection. Its manual-first workbench
 uses a data-driven catalogue with nine
@@ -140,7 +143,7 @@ source; it does not authorize redistributing the resulting image.
 
 Additional current limits:
 
-- source version `1.1.0-rc.9` is prepared for the release at
+- source version `1.1.0-rc.10` is prepared for the release at
   `https://lab.teachthecompany.com/`; hosted compiler/toolchain images and
   private deployment configuration remain outside this source repository;
 - public execution supports the tested ATmega328P subset, one bounded RP2040

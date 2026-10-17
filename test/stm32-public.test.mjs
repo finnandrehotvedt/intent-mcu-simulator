@@ -12,10 +12,39 @@ import {
   sourceForStm32, validateStm32Source,
 } from '../stm32/protocol.mjs';
 import { createStm32PublicService } from '../stm32/public-service.mjs';
+import {
+  Stm32CircuitEditor, createStm32CircuitDraft, normalizeStm32CircuitDraft, validateStm32Circuit,
+} from '../src/stm32-public-circuit.mjs';
 
 const digest = (value) => createHash('sha256').update(value).digest('hex');
 const imageLock = Object.freeze({ image: 'local/not-used:1', imageId: `sha256:${'a'.repeat(64)}`,
   runtimeImageIds: [], toolchainManifestSha256: 'b'.repeat(64) });
+
+test('STM32 named PB0 teaching circuit validates and edits transactionally', () => {
+  const draft = createStm32CircuitDraft();
+  const validated = validateStm32Circuit(draft);
+  assert.equal(validated.ok, true);
+  assert.deepEqual({ source: validated.model.sourcePin, sourcePin: validated.model.sourcePhysicalPin,
+    ground: validated.model.groundAnchor, groundPin: validated.model.groundPhysicalPin,
+    resistor: validated.model.resistorOhms },
+  { source: 'PB0', sourcePin: 34, ground: 'GND', groundPin: 35, resistor: 220 });
+  assert.deepEqual(normalizeStm32CircuitDraft(draft), validated.draft);
+
+  const editor = new Stm32CircuitEditor(draft);
+  editor.select({ kind: 'component', id: 'resistor-1' });
+  assert.equal(editor.moveComponent('resistor-1', 0.6, 0.4).ok, true);
+  assert.equal(editor.rotateComponent('resistor-1').draft.layout.positions['resistor-1'].rotation, 90);
+  const deleted = editor.deleteSelected();
+  assert.equal(deleted.ok, true);
+  assert.equal(deleted.validation.code, 'STM32_SERIES_RESISTOR_REQUIRED');
+  assert.equal(editor.undo().validation.ok, true);
+  assert.equal(editor.redo().validation.code, 'STM32_SERIES_RESISTOR_REQUIRED');
+  assert.equal(editor.undo().validation.ok, true);
+
+  const unsafe = createStm32CircuitDraft();
+  unsafe.components.find((item) => item.id === 'resistor-1').properties.ohms = 22;
+  assert.equal(validateStm32Circuit(unsafe).code, 'STM32_LED_OVERCURRENT');
+});
 
 function strictFixture() {
   const flash = new Uint8Array(0x102);

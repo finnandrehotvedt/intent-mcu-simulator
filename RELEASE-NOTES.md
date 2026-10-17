@@ -1,4 +1,33 @@
-# Intent MCU Simulator 1.1.0-rc.9
+# Intent MCU Simulator 1.1.0-rc.10
+
+This app-only release makes the bounded STM32F429ZI PB0 teaching circuit
+editable while preserving the accepted fixed Arm compiler, strict ELF32 and
+actual Renode PB0/USART3/reset-replay contract.
+
+## STM32F429ZI editable teaching circuit
+
+- The original project-owned STM32F429ZI profile board exposes named PB0 CN11
+  pin 34 and GND CN11 pin 35 terminals. The validated ideal route is PB0 →
+  220 Ω → LED anode/cathode → GND.
+- Parts and cables support selection, pointer or keyboard movement,
+  quarter-turn rotation, Delete, bounded Undo/Redo, zoom and Fit. Responsive
+  orthogonal routing keeps cables attached to the actual rendered terminals
+  and outside every component body.
+- Invalid topology fails closed. Every source, topology or layout edit and
+  every local data-only Open retires stale ELF, runtime and LED authority and
+  requires a fresh isolated Build.
+- Default HIGH, edited LOW and Reset acceptance continue to use the exact
+  compiler-generated ELF in actual Renode 1.17.0. PB0/USART3 execution truth
+  stays visibly separate from the ideal external teaching circuit.
+- STM32 project-v2 files contain only source and validated circuit data. The
+  prior source-only project-v1 format remains readable and gains the safe
+  default teaching circuit on Open; executable bytes are never imported.
+- AVR, Pico, ESP32-C3, Caddy, DNS, compiler/runtime images and unrelated
+  services remain unchanged.
+
+---
+
+## 1.1.0-rc.9
 
 This app-only release makes the bounded ESP32-C3 GPIO2 teaching circuit
 editable while preserving the accepted fixed compiler and actual QEMU CPU/UART

@@ -244,30 +244,23 @@
           </dl>
         </section>
         <section class="stm32-circuit-pane" aria-label="Named STM32F429ZI PB0 teaching circuit">
-          <svg id="stm32-diagram" class="stm32-diagram" data-led="off" viewBox="0 0 760 390" role="img" aria-labelledby="stm32-diagram-title stm32-diagram-desc">
-            <title id="stm32-diagram-title">Original F429ZI profile drawing with named PB0 and GND wiring</title>
-            <desc id="stm32-diagram-desc">PB0 exits the controller body to a 220 ohm resistor and LED. The return wire travels around the controller body to the named GND pin without crossing the controller.</desc>
-            <defs><pattern id="stm32-grid" width="18" height="18" patternUnits="userSpaceOnUse"><path d="M18 0H0V18" fill="none" stroke="#cfcbc1" stroke-width="1"/></pattern></defs>
-            <rect width="760" height="390" rx="18" fill="#f5f0e6"/><rect width="760" height="390" rx="18" fill="url(#stm32-grid)" opacity=".55"/>
-            <rect x="42" y="48" width="322" height="244" rx="20" class="stm32-board-body"/>
-            <rect x="72" y="88" width="74" height="112" rx="8" class="stm32-board-module"/>
-            <rect x="178" y="105" width="112" height="92" rx="8" class="stm32-chip"/>
-            <text x="234" y="145" text-anchor="middle" class="stm32-chip-label">F429ZI</text>
-            <text x="234" y="164" text-anchor="middle" class="stm32-chip-sub">PROFILE</text>
-            <circle cx="91" cy="247" r="13" class="stm32-board-hole"/><circle cx="315" cy="247" r="13" class="stm32-board-hole"/>
-            <rect x="330" y="91" width="54" height="45" rx="8" class="stm32-pin-block"/><text x="357" y="109" text-anchor="middle" class="stm32-pin-label">PB0</text><text x="357" y="124" text-anchor="middle" class="stm32-pin-number">PIN 34</text>
-            <rect x="330" y="218" width="54" height="45" rx="8" class="stm32-pin-block"/><text x="357" y="236" text-anchor="middle" class="stm32-pin-label">GND</text><text x="357" y="251" text-anchor="middle" class="stm32-pin-number">PIN 35</text>
-            <path d="M384 113 H430" class="stm32-wire-signal"/>
-            <line x1="430" y1="113" x2="448" y2="113" class="stm32-lead"/><rect x="448" y="98" width="108" height="30" rx="12" class="stm32-resistor"/><line x1="556" y1="113" x2="596" y2="113" class="stm32-lead"/>
-            <text x="502" y="88" text-anchor="middle" class="stm32-part-label">220 Ω</text>
-            <path d="M596 113 H635 V146" class="stm32-wire-led"/>
-            <path id="stm32-external-led" d="M614 146 Q635 119 656 146 V177 Q635 191 614 177 Z" class="stm32-led" aria-label="External teaching LED is off"/>
-            <line x1="621" y1="181" x2="621" y2="202" class="stm32-lead"/><line x1="649" y1="181" x2="649" y2="202" class="stm32-lead"/>
-            <path d="M635 202 V334 H384 V241" class="stm32-wire-ground"/>
-            <text x="620" y="229" text-anchor="end" class="stm32-path-label">cathode return</text>
-            <text x="513" y="360" text-anchor="middle" class="stm32-path-label">body-avoiding GND route</text>
-          </svg>
-          <p id="stm32-circuit-state" class="truth">Named path: PB0 → 220 Ω → LED → GND · awaiting actual Renode observation</p>
+          <header class="pico-editor-heading"><div><strong>Editable ideal teaching circuit</strong><small>Named PB0 CN11 pin 34 and GND CN11 pin 35 anchors</small></div><span id="stm32-circuit-selection">Nothing selected</span></header>
+          <div class="stm32-circuit-actions" aria-label="STM32 teaching circuit editing controls">
+            <button id="stm32-delete" type="button" disabled>Delete</button>
+            <button id="stm32-undo" type="button" disabled>Undo</button>
+            <button id="stm32-redo" type="button" disabled>Redo</button>
+            <button id="stm32-rotate" type="button" disabled>Rotate 90°</button>
+            <button id="stm32-zoom-out" type="button" aria-label="Zoom STM32 circuit out">−</button>
+            <output id="stm32-zoom-value" aria-live="polite">100%</output>
+            <button id="stm32-zoom-in" type="button" aria-label="Zoom STM32 circuit in">+</button>
+            <button id="stm32-fit" type="button">Fit</button>
+          </div>
+          <div id="stm32-diagram" class="pico-editor-canvas stm32-editor-canvas" data-connected="true" data-led="off" tabindex="0" aria-label="Editable STM32F429ZI ideal teaching circuit. Select a part or cable. Arrow keys move selected parts; R rotates; Delete removes; Control Z and Control Shift Z undo and redo.">
+            <svg id="stm32-editor-wires" class="pico-editor-wires" role="group" aria-label="Orthogonal STM32 named-pin wires"></svg>
+            <div id="stm32-editor-components" class="pico-editor-components"></div>
+          </div>
+          <p id="stm32-circuit-state" class="truth">Named path: PB0 CN11 pin 34 → 220 Ω → LED → GND CN11 pin 35 · awaiting actual Renode observation</p>
+          <p class="pico-editor-help">Drag a part or use Arrow keys to move it. Press R to rotate, Delete to remove, Ctrl/⌘ Z to undo, and Ctrl/⌘ Shift Z to redo. Every edit retires ELF and LED authority until a fresh valid Build.</p>
           <div class="stm32-terminal-card"><strong>Actual Renode PB0 / USART3 evidence</strong><pre id="stm32-terminal" aria-live="polite">No Renode execution yet.</pre></div>
           <p class="stm32-model-label"><strong>Runtime truth:</strong> PB0 and USART3 are observed in actual Renode. <strong>Circuit truth:</strong> the external resistor/LED path is an ideal educational rendering.</p>
         </section>
@@ -387,7 +380,7 @@
       </nav>
     </section>
 
-    <footer>Intent MCU Simulator 1.1.0-rc.9 public release · AVR + editable bounded Pico + editable bounded ESP32-C3 + bounded STM32F429ZI execution · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
+    <footer>Intent MCU Simulator 1.1.0-rc.10 public release · AVR + editable bounded Pico + editable bounded ESP32-C3 + editable bounded STM32F429ZI execution · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
   </main>
   <button id="serial-tab" class="serial-tab" type="button" aria-expanded="false" aria-controls="serial-dock"><span>Serial</span><span id="serial-new-output" class="serial-new-output" hidden>0 new</span></button>
   <aside id="serial-dock" class="serial-dock" aria-labelledby="serial-title" hidden>

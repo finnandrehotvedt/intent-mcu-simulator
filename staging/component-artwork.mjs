@@ -102,6 +102,30 @@ function esp32C3Board(svg, definition) {
   drawTerminals(svg, definition, 3.2);
 }
 
+function stm32F429ziBoard(svg, definition) {
+  append(svg,
+    element('rect', { x: 13, y: 5, width: 164, height: 220, rx: 18, class: 'stm32-editor-board-pcb' }),
+    element('rect', { x: 20, y: 72, width: 38, height: 62, rx: 5, class: 'stm32-editor-board-module' }),
+    element('rect', { x: 75, y: 70, width: 65, height: 64, rx: 6, class: 'stm32-editor-board-chip' }),
+    element('rect', { x: 61, y: 8, width: 68, height: 27, rx: 4, class: 'stm32-editor-board-usb' }),
+    element('text', { x: 107, y: 98, class: 'stm32-editor-board-chip-label', 'text-anchor': 'middle' }, 'F429ZI'),
+    element('text', { x: 95, y: 174, class: 'stm32-editor-board-title', 'text-anchor': 'middle' }, 'STM32F429ZI'),
+    element('text', { x: 95, y: 190, class: 'stm32-editor-board-subtitle', 'text-anchor': 'middle' }, 'ACTUAL RENODE PB0'),
+    element('text', { x: 174, y: 64, class: 'stm32-editor-board-pin-label', 'text-anchor': 'end' }, 'CN11·34 PB0'),
+    element('text', { x: 174, y: 160, class: 'stm32-editor-board-pin-label', 'text-anchor': 'end' }, 'CN11·35 GND'),
+  );
+  for (let row = 0; row < 14; row += 1) {
+    const y = 29 + row * 14;
+    svg.append(element('circle', { cx: 8, cy: y, r: 3.1, class: 'stm32-editor-board-pin' }));
+    svg.append(element('circle', { cx: 182, cy: y, r: 3.1,
+      class: [3, 10].includes(row) ? 'stm32-editor-board-pin proven' : 'stm32-editor-board-pin' }));
+  }
+  for (let index = 0; index < 8; index += 1) {
+    svg.append(element('path', { d: `M 61 ${43 + index * 14} H ${145 - index * 3}`, class: 'board-trace' }));
+  }
+  drawTerminals(svg, definition, 3.3);
+}
+
 function resistor(svg, definition, component) {
   append(svg,
     element('line', { x1: 4, y1: 24, x2: 43, y2: 24, class: 'metal-lead' }),
@@ -169,6 +193,7 @@ const renderers = Object.freeze({
   'board-atmega328p': board,
   'board-rp2040-pico': rp2040PicoBoard,
   'board-esp32-c3-profile': esp32C3Board,
+  'board-stm32f429zi-profile': stm32F429ziBoard,
   'resistor-axial': resistor,
   'led-through-hole': led,
   'button-tactile': button,

@@ -2,6 +2,20 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.10 — 2026-10-17
+
+- Replaced the fixed STM32F429ZI PB0 teaching illustration with an original
+  editable named-pin canvas using PB0 CN11 pin 34 and GND CN11 pin 35.
+- Added part and cable selection, pointer and keyboard movement, quarter-turn
+  rotation, Delete, bounded Undo/Redo, zoom, Fit and responsive rerouting by
+  reusing the accepted project-owned named-series-LED editor behavior.
+- Made every source/circuit/Open change retire stale ELF, runtime and LED
+  authority; invalid wiring blocks Build until restored and rebuilt.
+- Added desktop/mobile terminal-attachment, body-avoidance, all-rotation,
+  resize, local data-only Save/Open and actual Renode HIGH/LOW/Reset acceptance.
+- Preserved source-only STM32 project-v1 import while saving new project-v2
+  circuit data without executable authority.
+
 ## 1.1.0-rc.9 — 2026-10-17
 
 - Replaced the fixed ESP32-C3 GPIO2 circuit illustration with an original

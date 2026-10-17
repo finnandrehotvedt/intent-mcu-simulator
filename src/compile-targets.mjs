@@ -3,7 +3,7 @@
 
 export const CANDIDATE_BUILD_REQUEST_SCHEMA = 'teach-lab-build-request@2';
 export const TARGET_AVAILABILITY_SCHEMA = 'intent-mcu-compile-target-availability@1';
-export const TARGET_AVAILABILITY_REVISION = 'public-release-rc9-20261017';
+export const TARGET_AVAILABILITY_REVISION = 'public-release-rc10-20261017';
 export const AVR_PROFILE = 'board.atmega328p-16mhz-v1';
 export const ESP32C3_PROFILE = 'board.esp32-c3-devmodule-v1';
 export const RP2040_PROFILE = 'board.rp2040-pico-v1';

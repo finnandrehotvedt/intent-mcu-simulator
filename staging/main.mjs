@@ -59,6 +59,7 @@ import {
 } from '../src/rp2040-pico-circuit.mjs';
 import { ESP32C3_PUBLIC_COMPONENT_CATALOG } from '../src/esp32c3-public-circuit.mjs';
 import { Esp32C3PublicWorkbench } from '../src/esp32c3-public-workbench.mjs';
+import { STM32_PUBLIC_COMPONENT_CATALOG } from '../src/stm32-public-circuit.mjs';
 import { Stm32PublicWorkbench } from '../src/stm32-public-workbench.mjs';
 import { serialEventText, serialInputBytes, serialText } from '../src/serial-view.mjs';
 import { CPU_CYCLES_PER_MILLISECOND, cursorCycles, waveformPaths } from '../src/waveform-view.mjs';
@@ -100,6 +101,7 @@ import {
 const uiComponentCatalog = Object.freeze({
   ...COMPONENT_CATALOG, ...CANDIDATE_UI_COMPONENTS,
   ...RP2040_PICO_COMPONENT_CATALOG, ...ESP32C3_PUBLIC_COMPONENT_CATALOG,
+  ...STM32_PUBLIC_COMPONENT_CATALOG,
 });
 function createComponentArtwork(definition, component, options = {}) {
   return CANDIDATE_UI_COMPONENTS[component.type]
@@ -151,7 +153,9 @@ const elements = Object.fromEntries([
   'stm32-public-workbench', 'stm32-state', 'stm32-project-name', 'stm32-save', 'stm32-open', 'stm32-open-input',
   'stm32-source', 'stm32-build', 'stm32-run', 'stm32-reset', 'stm32-stop', 'stm32-message',
   'stm32-source-hash', 'stm32-artifact-hash', 'stm32-diagram', 'stm32-external-led',
-  'stm32-circuit-state', 'stm32-terminal',
+  'stm32-circuit-state', 'stm32-terminal', 'stm32-editor-wires', 'stm32-editor-components',
+  'stm32-circuit-selection', 'stm32-delete', 'stm32-undo', 'stm32-redo', 'stm32-rotate',
+  'stm32-zoom-out', 'stm32-zoom-value', 'stm32-zoom-in', 'stm32-fit',
 ].map((id) => [id.replaceAll('-', ''), byId(id)]));
 
 const runtimeControls = [elements.run, elements.pause, elements.step, elements.reset, elements.speed];
@@ -247,7 +251,7 @@ function renderC3QuickControls(state = c3PublicState) {
 
 function renderStm32QuickControls(state = stm32PublicState) {
   if (selectedCompilerProfile !== STM32F429ZI_PROFILE || !state) return;
-  elements.quickstate.textContent = `STM32F429ZI · ${state.phase} · named PB0 circuit`;
+  elements.quickstate.textContent = `STM32F429ZI · ${state.phase} · ${state.circuitAccepted ? 'PB0 wiring valid' : state.circuitCode}`;
   elements.quickbuild.textContent = 'Build STM32 ELF';
   elements.quickrun.textContent = 'Run actual Renode';
   elements.quickpause.textContent = 'Pause unavailable';
@@ -781,6 +785,138 @@ document.addEventListener('keydown', (event) => {
   c3PublicWorkbench.editCircuit('moveComponent', snapshot.selection.id, position.x + delta[0], position.y + delta[1]);
 });
 
+let stm32EditorZoom = 1;
+let stm32EditorDrag = null;
+let stm32EditorResponsiveScale = null;
+
+function drawStm32EditorWires() {
+  const canvas = elements.stm32diagram.getBoundingClientRect();
+  if (!canvas.width || !canvas.height || !stm32PublicState?.circuitEditor) return;
+  elements.stm32editorwires.setAttribute('viewBox', `0 0 ${canvas.width} ${canvas.height}`);
+  const { draft, selection } = stm32PublicState.circuitEditor;
+  const obstacles = picoEditorObstacles(elements.stm32diagram, elements.stm32editorcomponents);
+  const drawings = [];
+  for (const net of draft.nets) {
+    const anchors = net.endpoints.map((endpoint) => picoEditorAnchor(
+      endpoint, elements.stm32diagram, elements.stm32editorcomponents,
+    ));
+    if (anchors.some((anchor) => !anchor)) continue;
+    const points = picoEditorRoute(anchors, canvas, obstacles);
+    const d = points.map((point, index) => `${index ? 'L' : 'M'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
+    const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    hit.classList.add('pico-editor-wire-hit'); hit.dataset.net = net.id; hit.setAttribute('d', d);
+    hit.setAttribute('tabindex', '0'); hit.setAttribute('role', 'button');
+    hit.setAttribute('aria-label', `Select cable ${net.id}: ${net.endpoints.map(picoEndpointKey).join(' to ')}`);
+    const select = (event) => { event.preventDefault(); stm32PublicWorkbench.selectCircuit({ kind: 'net', id: net.id }); };
+    hit.addEventListener('click', select);
+    hit.addEventListener('keydown', (event) => { if (['Enter', ' '].includes(event.key)) select(event); });
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.classList.add('pico-editor-wire');
+    if (selection.kind === 'net' && selection.id === net.id) path.classList.add('selected');
+    path.dataset.net = net.id; path.style.setProperty('--wire-color', draft.layout.wireStyles[net.id] ?? '#39dff2');
+    path.setAttribute('d', d); path.dataset.points = JSON.stringify(points);
+    drawings.push(hit, path);
+  }
+  elements.stm32editorwires.replaceChildren(...drawings);
+}
+
+function startStm32EditorDrag(event, componentId, card) {
+  if (event.button !== 0) return;
+  event.preventDefault();
+  stm32PublicWorkbench.circuitEditor.select({ kind: 'component', id: componentId });
+  stm32PublicState = stm32PublicWorkbench.snapshot();
+  elements.stm32editorcomponents.querySelectorAll('.pico-editor-part').forEach((item) => item.classList.toggle('selected', item === card));
+  elements.stm32circuitselection.textContent = `Part · ${componentId}`;
+  elements.stm32delete.disabled = card.dataset.componentType === STM32F429ZI_PROFILE;
+  elements.stm32rotate.disabled = false;
+  stm32EditorDrag = { pointerId: event.pointerId, componentId, card, moved: false, last: null };
+  card.classList.add('dragging'); card.setPointerCapture(event.pointerId);
+}
+
+function moveStm32EditorDrag(event) {
+  if (!stm32EditorDrag || stm32EditorDrag.pointerId !== event.pointerId) return;
+  const position = picoEditorPosition(event, stm32EditorDrag.card, elements.stm32diagram);
+  stm32EditorDrag.last = position; stm32EditorDrag.moved = true;
+  stm32EditorDrag.card.style.left = `${position.x * 100}%`;
+  stm32EditorDrag.card.style.top = `${position.y * 100}%`;
+  requestAnimationFrame(drawStm32EditorWires);
+}
+
+function finishStm32EditorDrag(event) {
+  if (!stm32EditorDrag || stm32EditorDrag.pointerId !== event.pointerId) return;
+  const drag = stm32EditorDrag; stm32EditorDrag = null;
+  try { if (drag.card.hasPointerCapture(event.pointerId)) drag.card.releasePointerCapture(event.pointerId); } catch { /* released */ }
+  if (drag.moved && drag.last) {
+    stm32PublicWorkbench.editCircuit('moveComponent', drag.componentId, drag.last.x, drag.last.y);
+  } else {
+    stm32PublicWorkbench.selectCircuit({ kind: 'component', id: drag.componentId });
+    elements.stm32editorcomponents.querySelector(`[data-component-id="${drag.componentId}"]`)?.focus({ preventScroll: true });
+  }
+}
+
+function renderStm32CircuitEditor(state) {
+  if (!state?.circuitEditor) return;
+  const { draft, selection, canUndo, canRedo, validation } = state.circuitEditor;
+  elements.stm32circuitselection.textContent = selection.kind === 'none'
+    ? 'Nothing selected' : `${selection.kind === 'net' ? 'Cable' : 'Part'} · ${selection.id}`;
+  const selectedComponent = selection.kind === 'component'
+    ? draft.components.find((component) => component.id === selection.id) : null;
+  const responsiveScale = elements.stm32diagram.getBoundingClientRect().width <= 430 ? 0.6 : 1;
+  stm32EditorResponsiveScale = responsiveScale;
+  elements.stm32delete.disabled = selection.kind === 'none' || selectedComponent?.type === STM32F429ZI_PROFILE;
+  elements.stm32rotate.disabled = selection.kind !== 'component';
+  elements.stm32undo.disabled = !canUndo; elements.stm32redo.disabled = !canRedo;
+  elements.stm32zoomvalue.value = `${Math.round(stm32EditorZoom * 100)}%`;
+  const observedLed = Boolean(state.circuitAccepted && state.runtime?.observed?.pb0);
+  const cards = draft.components.map((component) => {
+    const definition = uiComponentCatalog[component.type]; const position = draft.layout.positions[component.id];
+    const card = document.createElement('article');
+    card.className = `circuit-component pico-editor-part${selection.kind === 'component' && selection.id === component.id ? ' selected' : ''}`;
+    card.dataset.componentId = component.id; card.dataset.componentType = component.type;
+    card.tabIndex = 0; card.setAttribute('role', 'button'); card.setAttribute('aria-label', `Select and move ${component.label}`);
+    card.style.left = `${position.x * 100}%`; card.style.top = `${position.y * 100}%`;
+    card.style.setProperty('--rotation', `${position.rotation}deg`);
+    card.style.setProperty('--part-width', `${definition.artwork.cssWidth * stm32EditorZoom * responsiveScale}px`);
+    card.style.setProperty('--part-height', `${definition.artwork.cssHeight * stm32EditorZoom * responsiveScale}px`);
+    const artwork = createBaseComponentArtwork(definition, component); card.append(artwork);
+    const led = artwork.querySelector('[data-led-id]');
+    if (led) {
+      led.id = 'stm32-external-led'; led.classList.toggle('on', observedLed);
+      led.setAttribute('aria-label', `Ideal teaching LED is ${observedLed ? 'on' : 'off'}`);
+    }
+    const label = document.createElement('span'); label.className = 'pico-editor-part-label';
+    label.textContent = component.label; card.append(label);
+    for (const pin of definition.pins) {
+      const anchor = document.createElement('button'); anchor.type = 'button'; anchor.className = 'pin-anchor';
+      anchor.dataset.stm32Endpoint = `${component.id}.${pin.id}`;
+      anchor.dataset.editorEndpoint = `${component.id}.${pin.id}`; anchor.dataset.label = pin.label;
+      anchor.title = `${component.id}.${pin.id} · ${pin.label}`; anchor.setAttribute('aria-label', anchor.title);
+      anchor.style.setProperty('--pin-x', String(pin.anchor.x)); anchor.style.setProperty('--pin-y', String(pin.anchor.y));
+      const pinLabel = document.createElement('span'); pinLabel.className = 'pico-editor-pin-label';
+      pinLabel.textContent = pin.label; anchor.append(pinLabel);
+      anchor.addEventListener('pointerdown', (event) => event.stopPropagation());
+      anchor.addEventListener('click', (event) => {
+        event.preventDefault(); event.stopPropagation();
+        stm32PublicWorkbench.selectCircuit({ kind: 'component', id: component.id });
+      });
+      card.append(anchor);
+    }
+    card.addEventListener('pointerdown', (event) => startStm32EditorDrag(event, component.id, card));
+    card.addEventListener('pointermove', moveStm32EditorDrag);
+    card.addEventListener('pointerup', finishStm32EditorDrag);
+    card.addEventListener('pointercancel', finishStm32EditorDrag);
+    card.addEventListener('keydown', (event) => {
+      if (['Enter', ' '].includes(event.key)) {
+        event.preventDefault(); stm32PublicWorkbench.selectCircuit({ kind: 'component', id: component.id });
+      }
+    });
+    return card;
+  });
+  elements.stm32editorcomponents.replaceChildren(...cards);
+  elements.stm32diagram.dataset.connected = String(validation.ok);
+  requestAnimationFrame(() => requestAnimationFrame(drawStm32EditorWires));
+}
+
 const stm32PublicWorkbench = new Stm32PublicWorkbench({
   elements: {
     state: elements.stm32state,
@@ -805,6 +941,7 @@ const stm32PublicWorkbench = new Stm32PublicWorkbench({
     stm32PublicState = state;
     window.__STM32_PUBLIC_STATE__ = structuredClone(state);
     renderStm32QuickControls(state);
+    renderStm32CircuitEditor(state);
   },
 });
 window.__STM32_PUBLIC_WORKBENCH__ = {
@@ -813,7 +950,58 @@ window.__STM32_PUBLIC_WORKBENCH__ = {
   run: () => stm32PublicWorkbench.run(false),
   reset: () => stm32PublicWorkbench.run(true),
   stop: () => stm32PublicWorkbench.stop(),
+  selectCircuit: (selection) => stm32PublicWorkbench.selectCircuit(selection),
+  deleteSelected: () => stm32PublicWorkbench.editCircuit('deleteSelected'),
+  undoCircuit: () => stm32PublicWorkbench.editCircuit('undo'),
+  redoCircuit: () => stm32PublicWorkbench.editCircuit('redo'),
+  moveCircuitComponent: (id, x, y) => stm32PublicWorkbench.editCircuit('moveComponent', id, x, y),
+  rotateCircuitComponent: (id) => stm32PublicWorkbench.editCircuit('rotateComponent', id),
 };
+elements.stm32delete.addEventListener('click', () => stm32PublicWorkbench.editCircuit('deleteSelected'));
+elements.stm32undo.addEventListener('click', () => stm32PublicWorkbench.editCircuit('undo'));
+elements.stm32redo.addEventListener('click', () => stm32PublicWorkbench.editCircuit('redo'));
+elements.stm32rotate.addEventListener('click', () => {
+  const selection = stm32PublicWorkbench.snapshot().circuitEditor.selection;
+  if (selection.kind === 'component') stm32PublicWorkbench.editCircuit('rotateComponent', selection.id);
+});
+function setStm32EditorZoom(next) {
+  stm32EditorZoom = Math.max(0.7, Math.min(1.25, Math.round(next * 20) / 20));
+  renderStm32CircuitEditor(stm32PublicWorkbench.snapshot());
+}
+elements.stm32zoomout.addEventListener('click', () => setStm32EditorZoom(stm32EditorZoom - 0.1));
+elements.stm32zoomin.addEventListener('click', () => setStm32EditorZoom(stm32EditorZoom + 0.1));
+elements.stm32fit.addEventListener('click', () => setStm32EditorZoom(1));
+new ResizeObserver(() => requestAnimationFrame(() => {
+  const nextScale = elements.stm32diagram.getBoundingClientRect().width <= 430 ? 0.6 : 1;
+  if (nextScale !== stm32EditorResponsiveScale) renderStm32CircuitEditor(stm32PublicWorkbench.snapshot());
+  else requestAnimationFrame(drawStm32EditorWires);
+})).observe(elements.stm32diagram);
+document.addEventListener('keydown', (event) => {
+  if (selectedCompilerProfile !== STM32F429ZI_PROFILE || elements.stm32publicworkbench.hidden
+      || isTextEditingTarget(event.target)) return;
+  const snapshot = stm32PublicWorkbench.snapshot().circuitEditor;
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+    event.preventDefault(); event.stopImmediatePropagation();
+    stm32PublicWorkbench.editCircuit(event.shiftKey ? 'redo' : 'undo'); return;
+  }
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+    event.preventDefault(); event.stopImmediatePropagation(); stm32PublicWorkbench.editCircuit('redo'); return;
+  }
+  if (['Delete', 'Backspace'].includes(event.key)) {
+    event.preventDefault(); event.stopImmediatePropagation(); stm32PublicWorkbench.editCircuit('deleteSelected'); return;
+  }
+  if (snapshot.selection.kind !== 'component') return;
+  if (event.key.toLowerCase() === 'r') {
+    event.preventDefault(); event.stopImmediatePropagation();
+    stm32PublicWorkbench.editCircuit('rotateComponent', snapshot.selection.id); return;
+  }
+  const distance = event.shiftKey ? 0.05 : 0.015;
+  const delta = { ArrowLeft: [-distance, 0], ArrowRight: [distance, 0], ArrowUp: [0, -distance], ArrowDown: [0, distance] }[event.key];
+  if (!delta) return;
+  event.preventDefault(); event.stopImmediatePropagation();
+  const position = snapshot.draft.layout.positions[snapshot.selection.id];
+  stm32PublicWorkbench.editCircuit('moveComponent', snapshot.selection.id, position.x + delta[0], position.y + delta[1]);
+});
 
 function setSelection(next) {
   selection = next?.kind ? structuredClone(next) : { kind: 'none' };

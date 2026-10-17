@@ -6,8 +6,12 @@ import {
   STM32_BUILD_RESPONSE_SCHEMA, STM32_BUILD_SCHEMA, STM32_PROFILE, STM32_PROJECT_SCHEMA,
   STM32_RUN_RESPONSE_SCHEMA, STM32_RUN_SCHEMA, exactKeys, sourceForStm32, validateStm32Source,
 } from '../stm32/protocol.mjs';
+import {
+  Stm32CircuitEditor, createStm32CircuitDraft, normalizeStm32CircuitDraft, validateStm32Circuit,
+} from './stm32-public-circuit.mjs';
 
 export const STM32_PUBLIC_SOURCE = sourceForStm32('STM32 PUBLIC', true);
+export const STM32_EDITABLE_PROJECT_SCHEMA = 'intent-mcu-stm32-public-project@2';
 const clone = (value) => value === null || value === undefined ? value : structuredClone(value);
 
 function validName(value) {
@@ -15,15 +19,22 @@ function validName(value) {
     && !/[\u0000-\u001f\u007f]/u.test(value);
 }
 function defaultProject() {
-  return { schema: STM32_PROJECT_SCHEMA, name: 'STM32F429 PB0 source project',
-    profile: STM32_PROFILE, source: STM32_PUBLIC_SOURCE };
+  return { schema: STM32_EDITABLE_PROJECT_SCHEMA, name: 'STM32F429 PB0 source project',
+    profile: STM32_PROFILE, source: STM32_PUBLIC_SOURCE,
+    circuit: normalizeStm32CircuitDraft(createStm32CircuitDraft()) };
 }
 function normalizeProject(value) {
-  if (!exactKeys(value, ['schema', 'name', 'profile', 'source'])
-    || value.schema !== STM32_PROJECT_SCHEMA || value.profile !== STM32_PROFILE
-    || !validName(value.name)) throw new Error('STM32_PROJECT_INVALID');
+  const legacy = value?.schema === STM32_PROJECT_SCHEMA;
+  const keys = legacy ? ['schema', 'name', 'profile', 'source']
+    : ['schema', 'name', 'profile', 'source', 'circuit'];
+  if (!exactKeys(value, keys)
+    || (!legacy && value.schema !== STM32_EDITABLE_PROJECT_SCHEMA)
+    || value.profile !== STM32_PROFILE || !validName(value.name)) throw new Error('STM32_PROJECT_INVALID');
   validateStm32Source(value.source);
-  return { ...value, name: value.name.trim() };
+  return { schema: STM32_EDITABLE_PROJECT_SCHEMA, name: value.name.trim(), profile: STM32_PROFILE,
+    source: value.source,
+    circuit: legacy ? normalizeStm32CircuitDraft(createStm32CircuitDraft())
+      : normalizeStm32CircuitDraft(value.circuit) };
 }
 function download(name, text) {
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
@@ -60,6 +71,7 @@ export class Stm32PublicWorkbench {
     this.fetch = fetchFn.bind(globalThis);
     this.onState = onState;
     this.project = defaultProject();
+    this.circuitEditor = new Stm32CircuitEditor(this.project.circuit);
     this.revision = 1;
     this.phase = 'editing';
     this.message = 'Edit the two bounded values, then build a fresh STM32 ELF.';
@@ -111,10 +123,13 @@ export class Stm32PublicWorkbench {
     this.terminal = 'No Renode execution yet.';
   }
   snapshot() {
+    const circuit = validateStm32Circuit(this.project.circuit);
     return {
       profile: STM32_PROFILE, phase: this.phase, active: this.active, revision: this.revision,
       message: this.message, project: clone(this.project), artifact: clone(this.artifact),
-      runnable: Boolean(this.artifact && this.artifactRevision === this.revision),
+      circuitEditor: this.circuitEditor.snapshot(),
+      runnable: Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok),
+      circuitAccepted: circuit.ok, circuitCode: circuit.code,
       runtime: clone(this.result), actualRenodeExecution: true, actualPb0Observed: true,
       circuitModel: 'Ideal teaching LED path driven by Renode-observed PB0',
       transientExecutableMemoryOnly: true, durableServerProject: false,
@@ -144,6 +159,14 @@ export class Stm32PublicWorkbench {
   async build() {
     if (!this.active || ['building', 'running'].includes(this.phase)) {
       return { ok: false, code: 'STM32_BUILD_UNAVAILABLE' };
+    }
+    const circuit = validateStm32Circuit(this.project.circuit);
+    if (!circuit.ok) {
+      this.wipeArtifact();
+      this.phase = 'blocked';
+      this.message = `Circuit blocked (${circuit.code}). Restore the exact PB0 CN11 pin 34 → resistor → LED → GND CN11 pin 35 path.`;
+      this.render();
+      return { ok: false, code: circuit.code };
     }
     let parsed;
     try { parsed = validateStm32Source(this.project.source); }
@@ -205,8 +228,9 @@ export class Stm32PublicWorkbench {
     } finally { if (this.operation === operation) this.operation = null; }
   }
   async run(reset = false) {
+    const circuit = validateStm32Circuit(this.project.circuit);
     if (!this.active || !this.artifact || !this.artifactBytes
-      || this.artifactRevision !== this.revision || ['building', 'running'].includes(this.phase)) {
+      || this.artifactRevision !== this.revision || !circuit.ok || ['building', 'running'].includes(this.phase)) {
       return { ok: false, code: 'STM32_RUN_UNAVAILABLE' };
     }
     let parsed;
@@ -269,10 +293,34 @@ export class Stm32PublicWorkbench {
     this.render();
     return { ok: true, code: 'OK' };
   }
+  selectCircuit(selection) {
+    const result = this.circuitEditor.select(selection);
+    this.render();
+    return result;
+  }
+  editCircuit(operation, ...args) {
+    if (!['deleteSelected', 'undo', 'redo', 'restoreExample', 'moveComponent', 'rotateComponent'].includes(operation)) {
+      return { ok: false, code: 'STM32_CIRCUIT_OPERATION_INVALID' };
+    }
+    const result = this.circuitEditor[operation](...args);
+    if (!result.ok) { this.render(); return result; }
+    this.project.circuit = clone(result.draft);
+    const messages = {
+      deleteSelected: `Circuit changed (${result.code}). ELF and LED authority retired; restore valid wiring and build fresh.`,
+      undo: 'Circuit Undo applied. ELF and LED authority retired; build fresh.',
+      redo: 'Circuit Redo applied. ELF and LED authority retired; build fresh.',
+      restoreExample: 'Validated PB0 CN11 pin 34 → 220 Ω → LED → GND CN11 pin 35 example restored. Build fresh.',
+      moveComponent: 'Component moved; named pin attachments and orthogonal wires were recomputed. Build fresh.',
+      rotateComponent: 'Component rotated; named pin attachments and orthogonal wires were recomputed. Build fresh.',
+    };
+    this.invalidate(messages[operation]);
+    return result;
+  }
   save() {
     try {
+      this.project.circuit = clone(this.circuitEditor.snapshot().draft);
       const project = normalizeProject({ ...this.project, source: this.elements.source.value,
-        name: this.elements.name.value });
+        name: this.elements.name.value, circuit: this.project.circuit });
       this.project = project;
       download(`${project.name.toLowerCase().replace(/[^a-z0-9]+/gu, '-').replace(/^-|-$/gu, '') || 'stm32-project'}.json`,
         `${JSON.stringify(project, null, 2)}\n`);
@@ -290,6 +338,7 @@ export class Stm32PublicWorkbench {
       if (file.size > 8192) throw new Error('STM32_PROJECT_SIZE');
       const project = normalizeProject(parseStrictJson(await file.text(), 8192));
       this.project = project;
+      this.circuitEditor = new Stm32CircuitEditor(project.circuit);
       this.elements.name.value = project.name;
       this.elements.source.value = project.source;
       this.invalidate('Project data opened. Executable state was excluded.');
@@ -301,7 +350,8 @@ export class Stm32PublicWorkbench {
     }
   }
   render() {
-    const runnable = Boolean(this.artifact && this.artifactRevision === this.revision);
+    const circuit = validateStm32Circuit(this.project.circuit);
+    const runnable = Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok);
     this.elements.name.value = this.project.name;
     if (this.elements.source.value !== this.project.source) this.elements.source.value = this.project.source;
     this.elements.state.textContent = this.phase;
@@ -313,12 +363,15 @@ export class Stm32PublicWorkbench {
     this.elements.reset.disabled = !this.active || !runnable || ['building', 'running'].includes(this.phase);
     this.elements.stop.disabled = !this.active || (!runnable && !this.operation);
     this.elements.terminal.textContent = this.terminal;
-    const on = Boolean(this.result?.observed?.pb0);
+    const on = Boolean(circuit.ok && this.result?.observed?.pb0);
     this.elements.diagram.dataset.led = on ? 'on' : 'off';
-    this.elements.led.setAttribute('aria-label', `External teaching LED is ${on ? 'on' : 'off'}`);
-    this.elements.circuitState.textContent = this.result
-      ? `Renode observed PB0 ${on ? 'HIGH' : 'LOW'} · ideal 220 Ω teaching path renders LED ${on ? 'ON' : 'OFF'}`
-      : 'Named path: PB0 → 220 Ω → LED → GND · awaiting actual Renode observation';
+    this.elements.led?.setAttribute('aria-label', `External teaching LED is ${on ? 'on' : 'off'}`);
+    this.elements.diagram.dataset.connected = String(circuit.ok);
+    this.elements.circuitState.textContent = !circuit.ok
+      ? `Teaching circuit rejected (${circuit.code}) · stale ELF and LED authority retired`
+      : this.result
+        ? `Renode observed PB0 ${on ? 'HIGH' : 'LOW'} · ideal 220 Ω teaching path renders LED ${on ? 'ON' : 'OFF'}`
+        : 'Named path: PB0 CN11 pin 34 → 220 Ω → LED → GND CN11 pin 35 · awaiting actual Renode observation';
     this.publish();
   }
 }
