@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
+import { normalizeStoredRoute } from './route-model.mjs';
+
 const clone = (value) => structuredClone(value);
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
 const sameEndpoint = (left, right) => endpointKey(left) === endpointKey(right);
@@ -8,6 +10,9 @@ const sameEndpoint = (left, right) => endpointKey(left) === endpointKey(right);
 export const BOUNDED_COMPONENT_CATALOG_SCHEMA = 'intent-mcu-bounded-component-catalog@1';
 export const BOUNDED_RESISTOR_TYPE = 'resistor.fixed-v1';
 export const BOUNDED_LED_TYPE = 'led.basic-v1';
+export const BOUNDED_WIRE_COLORS = Object.freeze([
+  '#39dff2', '#f5c451', '#f04f5f', '#a8ff3f', '#5f8cff', '#303943',
+]);
 
 function freezeRecord(value) {
   return Object.freeze(Object.fromEntries(Object.entries(value).map(([key, item]) => [key,
@@ -115,6 +120,8 @@ export class NamedSeriesLedCircuitEditor {
     this.wireDraft = { mode: 'none' };
     this.history = [];
     this.future = [];
+    this.historyKinds = [];
+    this.futureKinds = [];
     this.revision = 0;
   }
 
@@ -152,16 +159,18 @@ export class NamedSeriesLedCircuitEditor {
     return this.snapshot();
   }
 
-  commit(next, selection = { kind: 'none' }) {
+  commit(next, selection = { kind: 'none' }, changeKind = 'electrical') {
     const normalized = this.normalize(next);
     this.history.push(this.draft);
-    if (this.history.length > this.historyLimit) this.history.shift();
+    this.historyKinds.push(changeKind);
+    if (this.history.length > this.historyLimit) { this.history.shift(); this.historyKinds.shift(); }
     this.future = [];
+    this.futureKinds = [];
     this.draft = normalized;
     this.selection = clone(selection);
     this.wireDraft = { mode: 'none' };
     this.revision += 1;
-    return this.snapshot();
+    return { ...this.snapshot(), changeKind };
   }
 
   deleteSelected() {
@@ -178,11 +187,15 @@ export class NamedSeriesLedCircuitEditor {
       for (const id of Object.keys(next.layout.wireStyles)) {
         if (!next.nets.some((net) => net.id === id)) delete next.layout.wireStyles[id];
       }
+      for (const id of Object.keys(next.layout.wireRoutes ?? {})) {
+        if (!next.nets.some((net) => net.id === id)) delete next.layout.wireRoutes[id];
+      }
       return { ok: true, code: this.code('COMPONENT_DELETED'), ...this.commit(next) };
     }
     const next = clone(this.draft);
     next.nets = next.nets.filter((net) => net.id !== this.selection.id);
     delete next.layout.wireStyles[this.selection.id];
+    delete next.layout.wireRoutes?.[this.selection.id];
     return { ok: true, code: this.code('NET_DELETED'), ...this.commit(next) };
   }
 
@@ -334,6 +347,7 @@ export class NamedSeriesLedCircuitEditor {
     if (this.resolveNetId?.(this.draft, endpoints[0], endpoints[1]) !== netId) return this.fail('CONNECTION_UNSUPPORTED');
     const next = clone(this.draft);
     next.nets.find((candidate) => candidate.id === netId).endpoints = endpoints;
+    delete next.layout.wireRoutes?.[netId];
     try {
       return { ok: true, changed: true, code: this.code('ENDPOINT_RECONNECTED'), netId,
         ...this.commit(next, { kind: 'net', id: netId }) };
@@ -354,26 +368,57 @@ export class NamedSeriesLedCircuitEditor {
     return this.reconnectEndpoint(this.wireDraft.netId, this.wireDraft.from, endpoint);
   }
 
+  setWireColor(netId, color) {
+    if (!this.draft.nets.some((net) => net.id === netId) || !BOUNDED_WIRE_COLORS.includes(color)) {
+      return this.fail('WIRE_COLOR_INVALID', { netId, color });
+    }
+    if (this.draft.layout.wireStyles[netId] === color) {
+      return { ok: true, changed: false, code: this.code('WIRE_COLOR_UNCHANGED'), changeKind: 'layout', ...this.snapshot() };
+    }
+    const next = clone(this.draft);
+    next.layout.wireStyles[netId] = color;
+    return { ok: true, changed: true, code: this.code('WIRE_COLOR_UPDATED'), netId,
+      ...this.commit(next, { kind: 'net', id: netId }, 'layout') };
+  }
+
+  setWireRoute(netId, route) {
+    const net = this.draft.nets.find((candidate) => candidate.id === netId);
+    const normalized = net ? normalizeStoredRoute(route, net) : null;
+    if (!net || !normalized || Array.isArray(normalized)) return this.fail('WIRE_ROUTE_INVALID', { netId });
+    if (JSON.stringify(this.draft.layout.wireRoutes?.[netId]) === JSON.stringify(normalized)) {
+      return { ok: true, changed: false, code: this.code('WIRE_ROUTE_UNCHANGED'), changeKind: 'layout', ...this.snapshot() };
+    }
+    const next = clone(this.draft);
+    next.layout.wireRoutes ??= {};
+    next.layout.wireRoutes[netId] = normalized;
+    return { ok: true, changed: true, code: this.code('WIRE_ROUTE_UPDATED'), netId,
+      ...this.commit(next, { kind: 'net', id: netId }, 'layout') };
+  }
+
   undo() {
     if (!this.history.length) return { ok: false, code: this.code('UNDO_EMPTY'), ...this.snapshot() };
     this.future.push(this.draft);
-    if (this.future.length > this.historyLimit) this.future.shift();
+    const changeKind = this.historyKinds.pop() ?? 'electrical';
+    this.futureKinds.push(changeKind);
+    if (this.future.length > this.historyLimit) { this.future.shift(); this.futureKinds.shift(); }
     this.draft = this.history.pop();
     this.selection = { kind: 'none' };
     this.wireDraft = { mode: 'none' };
     this.revision += 1;
-    return { ok: true, code: this.code('UNDONE'), ...this.snapshot() };
+    return { ok: true, code: this.code('UNDONE'), changeKind, ...this.snapshot() };
   }
 
   redo() {
     if (!this.future.length) return { ok: false, code: this.code('REDO_EMPTY'), ...this.snapshot() };
     this.history.push(this.draft);
-    if (this.history.length > this.historyLimit) this.history.shift();
+    const changeKind = this.futureKinds.pop() ?? 'electrical';
+    this.historyKinds.push(changeKind);
+    if (this.history.length > this.historyLimit) { this.history.shift(); this.historyKinds.shift(); }
     this.draft = this.future.pop();
     this.selection = { kind: 'none' };
     this.wireDraft = { mode: 'none' };
     this.revision += 1;
-    return { ok: true, code: this.code('REDONE'), ...this.snapshot() };
+    return { ok: true, code: this.code('REDONE'), changeKind, ...this.snapshot() };
   }
 
   moveComponent(id, x, y) {

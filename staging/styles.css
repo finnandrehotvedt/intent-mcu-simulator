@@ -178,6 +178,11 @@ body.shared-canvas-focus-open { overflow: hidden; }
 .pico-circuit-actions { align-items: center; }
 .pico-circuit-actions button { min-height: 36px; padding-inline: .65rem; font-size: .72rem; }
 .named-wire-state { margin: 0; min-height: 2.7em; padding: .55rem .7rem; border: 1px solid #357086; border-radius: 9px; background: #071924; color: #dffaff; font: 700 .68rem/1.45 var(--mono); }
+.bounded-wire-colour { display: inline-flex; align-items: center; gap: .35rem; color: var(--muted); font: 700 .65rem/1.2 var(--mono); }
+.bounded-wire-colour select { min-width: 6.5rem; }
+.bounded-crossing-key { display: flex; align-items: center; gap: .55rem; margin: .45rem 0; color: var(--muted); font: 700 .66rem/1.35 var(--mono); }
+.crossing-sample { position: relative; width: 2.2rem; height: 1rem; flex: 0 0 auto; background: linear-gradient(90deg,transparent 45%,#39dff2 45% 55%,transparent 55%); }
+.crossing-sample::after { content: ""; position: absolute; left: 0; right: 0; top: .4rem; height: .2rem; border-radius: .2rem; background: #f04f5f; box-shadow: 0 0 0 2px #071924; }
 #pico-zoom-value { min-width: 48px; color: var(--cyan); font: 750 .7rem var(--mono); text-align: center; }
 .pico-editor-canvas { position: relative; width: 100%; min-height: 500px; overflow: hidden; border: 1px solid #31586a; border-radius: 12px; background-color: #f3efe4; background-image: linear-gradient(#71818e18 1px,transparent 1px),linear-gradient(90deg,#71818e18 1px,transparent 1px); background-size: 20px 20px; touch-action: none; }
 .pico-editor-wires, .pico-editor-components { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -201,6 +206,10 @@ body.shared-canvas-focus-open { overflow: hidden; }
 .pico-editor-wire.selected { stroke-width: 6; filter: drop-shadow(0 0 5px #5aaf2b); }
 .pico-editor-wire-hit { fill: none; stroke: transparent; stroke-width: 22; vector-effect: non-scaling-stroke; pointer-events: stroke; cursor: pointer; }
 .pico-editor-wire-hit:focus-visible { outline: none; stroke: #a8ff3f55; }
+.pico-editor-segment-hit { fill: none; stroke: transparent; stroke-width: 18; vector-effect: non-scaling-stroke; pointer-events: stroke; cursor: ns-resize; }
+.pico-editor-segment-hit[data-orientation="vertical"] { cursor: ew-resize; }
+.pico-editor-segment-hit:focus-visible, .pico-editor-segment-hit.selected { stroke: #a8ff3f66; }
+.pico-wire-crossing { fill: #071924; stroke: #dffaff; stroke-width: 1.5; vector-effect: non-scaling-stroke; pointer-events: none; }
 .pico-editor-help { margin: -.2rem 0 0; }
 .pico-board-pcb { fill: #226457; stroke: #0d342d; stroke-width: 2; }
 .pico-board-usb { fill: #bbc7cd; stroke: #63737c; stroke-width: 2; }

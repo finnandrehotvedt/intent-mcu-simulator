@@ -2,6 +2,24 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.22 — 2026-10-17
+
+- Added bounded orthogonal bend and interior-segment editing to the Pico,
+  ESP32-C3 and STM32 cable canvases, with snapped movement, keyboard-selectable
+  sections and Escape cancellation.
+- Added six fixed cable colours. Colour and route geometry are layout-only:
+  they do not alter topology, electrical acceptance, source or executable
+  authority, and each accepted edit has one exact Undo/Redo transaction.
+- Made crossings visibly separate from declared junctions and enforced
+  WIRE-LANE-01 after every accepted route edit. Diagonal, body-intersecting,
+  duplicate, malformed and unresolved overlapping routes reject atomically.
+- Extended the existing common project envelope so narrow-profile route
+  geometry and colour survive Download/Open. Older files migrate
+  deterministically to automatic routing without gaining executable authority.
+- Added all-three narrow-profile rendered acceptance for bend, movement,
+  colour, rejection, Escape, Undo/Redo and repeated file round trips while
+  preserving the established AVR route-authoring workflow.
+
 ## 1.1.0-rc.21 — 2026-10-17
 
 - Added one exact GPIO, ADC, PWM, UART, timer and interrupt capability matrix

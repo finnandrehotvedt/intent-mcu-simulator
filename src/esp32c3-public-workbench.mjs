@@ -363,7 +363,7 @@ export class Esp32C3PublicWorkbench {
   editCircuit(operation, ...args) {
     if (!['deleteSelected', 'undo', 'redo', 'moveComponent', 'rotateComponent',
       'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint',
-      'addMissingComponent', 'setComponentProperty'].includes(operation)) {
+      'addMissingComponent', 'setComponentProperty', 'setWireColor', 'setWireRoute'].includes(operation)) {
       return { ok: false, code: 'C3_CIRCUIT_OPERATION_INVALID' };
     }
     const revision = this.circuitEditor.revision;
@@ -381,6 +381,13 @@ export class Esp32C3PublicWorkbench {
       return result;
     }
     this.project.circuit = clone(result.draft);
+    const layoutOnly = ['setWireColor', 'setWireRoute'].includes(operation)
+      || ['undo', 'redo'].includes(operation) && result.changeKind === 'layout';
+    if (layoutOnly) {
+      this.message = `Cable layout changed (${result.code}). Flash and electrical authority are unchanged.`;
+      this.render();
+      return result;
+    }
     const messages = {
       deleteSelected: `Circuit changed (${result.code}). Flash and LED authority retired; restore valid wiring and build fresh.`,
       undo: 'Circuit Undo applied. Flash and LED authority retired; build fresh.',

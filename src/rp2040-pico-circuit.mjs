@@ -4,6 +4,7 @@ import { COMPONENT_CATALOG, LED_FORWARD_VOLTS, defaultProperties } from './compo
 import {
   NamedSeriesLedCircuitEditor, createSeriesLedComponentPolicy, createSeriesLedConnectionPolicy,
 } from './named-series-led-circuit-editor.mjs';
+import { normalizeStoredRoute } from './route-model.mjs';
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
 
 export const RP2040_PICO_CIRCUIT_SCHEMA = 'intent-mcu-rp2040-pico-circuit@1';
@@ -108,6 +109,7 @@ export function createRp2040PicoCircuitDraft() {
         'led-1': { x: 0.22, y: 0.48, rotation: 0 },
       },
       wireStyles: { 'net-gpio0': '#f5c451', 'net-series': '#f04f5f', 'net-ground': '#303943' },
+      wireRoutes: {},
     },
   };
 }
@@ -142,7 +144,8 @@ export function normalizeRp2040PicoCircuitDraft(value) {
       || value.schema !== RP2040_PICO_CIRCUIT_SCHEMA || value.boardProfile !== RP2040_PICO_PROFILE
       || !Array.isArray(value.components) || !Array.isArray(value.nets)
       || value.components.length > 4 || value.nets.length > 4
-      || !exactKeys(value.layout, ['positions', 'wireStyles'])
+      || !(exactKeys(value.layout, ['positions', 'wireStyles'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes']))
       || value.layout.positions === null || Array.isArray(value.layout.positions)
       || value.layout.wireStyles === null || Array.isArray(value.layout.wireStyles)) {
     throw Object.assign(new Error('RP2040_CIRCUIT_SHAPE'), { code: 'RP2040_CIRCUIT_SHAPE' });
@@ -191,7 +194,22 @@ export function normalizeRp2040PicoCircuitDraft(value) {
     throw Object.assign(new Error('RP2040_CIRCUIT_LAYOUT_INVALID'), { code: 'RP2040_CIRCUIT_LAYOUT_INVALID' });
   }
   const wireStyles = Object.fromEntries(wireStyleKeys.map((id) => [id, value.layout.wireStyles[id].toLowerCase()]));
-  return { schema: RP2040_PICO_CIRCUIT_SCHEMA, boardProfile: RP2040_PICO_PROFILE, components, nets, layout: { positions, wireStyles } };
+  const sourceRoutes = value.layout.wireRoutes ?? {};
+  if (sourceRoutes === null || Array.isArray(sourceRoutes)
+      || Object.keys(sourceRoutes).some((id) => !netIds.has(id))) {
+    throw Object.assign(new Error('RP2040_CIRCUIT_LAYOUT_INVALID'), { code: 'RP2040_CIRCUIT_LAYOUT_INVALID' });
+  }
+  const wireRoutes = {};
+  for (const net of nets) {
+    if (!Object.hasOwn(sourceRoutes, net.id)) continue;
+    const route = normalizeStoredRoute(sourceRoutes[net.id], net);
+    if (!route || Array.isArray(route)) {
+      throw Object.assign(new Error('RP2040_CIRCUIT_LAYOUT_INVALID'), { code: 'RP2040_CIRCUIT_LAYOUT_INVALID' });
+    }
+    wireRoutes[net.id] = route;
+  }
+  return { schema: RP2040_PICO_CIRCUIT_SCHEMA, boardProfile: RP2040_PICO_PROFILE, components, nets,
+    layout: { positions, wireStyles, wireRoutes } };
 }
 
 function hasPair(net, left, right) {

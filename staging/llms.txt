@@ -5,7 +5,7 @@
 Canonical application: https://lab.teachthecompany.com/
 Source and setup: https://github.com/finnandrehotvedt/intent-mcu-simulator
 Licence: Apache-2.0 for project-owned source; third-party components keep their own terms.
-Current public version: 1.1.0-rc.21
+Current public version: 1.1.0-rc.22
 
 Local files: Download copy and ordinary Open are the reliable all-browser
 actions. Supported secure desktop browsers may additionally offer explicit
@@ -32,6 +32,7 @@ locations remain readable and inert.
 - Select ESP32-C3, create or reconnect its bounded GPIO2/resistor/LED/GND cables from named pins, edit only GPIO2 mode/level and an uppercase UART marker, compile a fixed DIO flash image, and run actual Espressif QEMU CPU/UART.
 - Select STM32F429ZI, create or reconnect its bounded PB0/resistor/LED/GND cables from named pins, edit the PB0 HIGH/LOW plus uppercase USART3 source values, compile a strict source-bound ELF, and run actual Renode PB0/USART3/reset replay.
 - In any narrow controller profile, restore one deleted resistor or LED from Supported parts after Save/Open, then explicitly reconnect its named pins. Add never infers a cable, and Open never restores executable authority.
+- In any narrow controller profile, select a cable to add an orthogonal bend, move an eligible snapped section, or choose one of six fixed colours. Crossings remain electrically separate unless a declared junction dot says otherwise.
 
 ## Important limits
 

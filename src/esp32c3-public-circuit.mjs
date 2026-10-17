@@ -6,6 +6,7 @@ import { LED_FORWARD_VOLTS, defaultProperties } from './component-catalog.mjs';
 import {
   NamedSeriesLedCircuitEditor, createSeriesLedComponentPolicy, createSeriesLedConnectionPolicy,
 } from './named-series-led-circuit-editor.mjs';
+import { normalizeStoredRoute } from './route-model.mjs';
 import { exactKeys } from './strict-json.mjs';
 
 export const ESP32C3_PUBLIC_CIRCUIT_SCHEMA = 'intent-mcu-esp32c3-public-circuit@1';
@@ -107,6 +108,7 @@ export function createEsp32C3CircuitDraft() {
         'led-1': { x: 0.8, y: 0.48, rotation: 0 },
       },
       wireStyles: { 'net-gpio2': '#f5c451', 'net-series': '#f04f5f', 'net-ground': '#303943' },
+      wireRoutes: {},
     },
   };
 }
@@ -141,7 +143,8 @@ export function normalizeEsp32C3CircuitDraft(value) {
       || value.schema !== ESP32C3_PUBLIC_CIRCUIT_SCHEMA || value.boardProfile !== ESP32C3_PUBLIC_PROFILE
       || !Array.isArray(value.components) || !Array.isArray(value.nets)
       || value.components.length > 4 || value.nets.length > 4
-      || !exactKeys(value.layout, ['positions', 'wireStyles'])
+      || !(exactKeys(value.layout, ['positions', 'wireStyles'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes']))
       || value.layout.positions === null || Array.isArray(value.layout.positions)
       || value.layout.wireStyles === null || Array.isArray(value.layout.wireStyles)) {
     throw Object.assign(new Error('C3_CIRCUIT_SHAPE'), { code: 'C3_CIRCUIT_SHAPE' });
@@ -190,8 +193,22 @@ export function normalizeEsp32C3CircuitDraft(value) {
     throw Object.assign(new Error('C3_CIRCUIT_LAYOUT_INVALID'), { code: 'C3_CIRCUIT_LAYOUT_INVALID' });
   }
   const wireStyles = Object.fromEntries(wireStyleKeys.map((id) => [id, value.layout.wireStyles[id].toLowerCase()]));
+  const sourceRoutes = value.layout.wireRoutes ?? {};
+  if (sourceRoutes === null || Array.isArray(sourceRoutes)
+      || Object.keys(sourceRoutes).some((id) => !netIds.has(id))) {
+    throw Object.assign(new Error('C3_CIRCUIT_LAYOUT_INVALID'), { code: 'C3_CIRCUIT_LAYOUT_INVALID' });
+  }
+  const wireRoutes = {};
+  for (const net of nets) {
+    if (!Object.hasOwn(sourceRoutes, net.id)) continue;
+    const route = normalizeStoredRoute(sourceRoutes[net.id], net);
+    if (!route || Array.isArray(route)) {
+      throw Object.assign(new Error('C3_CIRCUIT_LAYOUT_INVALID'), { code: 'C3_CIRCUIT_LAYOUT_INVALID' });
+    }
+    wireRoutes[net.id] = route;
+  }
   return { schema: ESP32C3_PUBLIC_CIRCUIT_SCHEMA, boardProfile: ESP32C3_PUBLIC_PROFILE,
-    components, nets, layout: { positions, wireStyles } };
+    components, nets, layout: { positions, wireStyles, wireRoutes } };
 }
 
 function hasPair(net, left, right) {

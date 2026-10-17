@@ -17,6 +17,18 @@ test('WIRE-LANE-01 detects positive collinear overlap in either segment directio
   assert.equal(conflicts[0].overlap, 5);
 });
 
+test('WIRE-LANE-01 detects partial full and reversed vertical overlaps including short escapes', () => {
+  for (const [first, second, overlap] of [
+    [[{ x: 2, y: 0 }, { x: 2, y: 10 }], [{ x: 2, y: 4 }, { x: 2, y: 12 }], 6],
+    [[{ x: 4, y: 1 }, { x: 4, y: 8 }], [{ x: 4, y: 8 }, { x: 4, y: 1 }], 7],
+    [[{ x: 6, y: 0 }, { x: 6, y: 0.4 }], [{ x: 6, y: 0.1 }, { x: 6, y: 0.3 }], 0.2],
+  ]) {
+    const conflicts = parallelWireConflicts([route('a', first), route('b', second)], { clearance: 1 });
+    assert.equal(conflicts.length, 1);
+    assert(Math.abs(conflicts[0].overlap - overlap) < 1e-9);
+  }
+});
+
 test('WIRE-LANE-01 permits crossings, endpoint contact and deliberate same-net trunks', () => {
   assert.deepEqual(parallelWireConflicts([
     route('a', [{ x: 0, y: 2 }, { x: 5, y: 2 }]),

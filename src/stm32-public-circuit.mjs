@@ -5,6 +5,7 @@ import { LED_FORWARD_VOLTS, defaultProperties } from './component-catalog.mjs';
 import {
   NamedSeriesLedCircuitEditor, createSeriesLedComponentPolicy, createSeriesLedConnectionPolicy,
 } from './named-series-led-circuit-editor.mjs';
+import { normalizeStoredRoute } from './route-model.mjs';
 import { exactKeys } from './strict-json.mjs';
 
 export const STM32_PUBLIC_CIRCUIT_SCHEMA = 'intent-mcu-stm32-public-circuit@1';
@@ -111,6 +112,7 @@ export function createStm32CircuitDraft() {
         'led-1': { x: 0.82, y: 0.48, rotation: 0 },
       },
       wireStyles: { 'net-pb0': '#e2ab1b', 'net-series': '#e13e51', 'net-ground': '#202a34' },
+      wireRoutes: {},
     },
   };
 }
@@ -149,7 +151,8 @@ export function normalizeStm32CircuitDraft(value) {
       || value.schema !== STM32_PUBLIC_CIRCUIT_SCHEMA || value.boardProfile !== STM32_PUBLIC_PROFILE
       || !Array.isArray(value.components) || !Array.isArray(value.nets)
       || value.components.length > 4 || value.nets.length > 4
-      || !exactKeys(value.layout, ['positions', 'wireStyles'])
+      || !(exactKeys(value.layout, ['positions', 'wireStyles'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes']))
       || value.layout.positions === null || Array.isArray(value.layout.positions)
       || value.layout.wireStyles === null || Array.isArray(value.layout.wireStyles)) {
     throw Object.assign(new Error('STM32_CIRCUIT_SHAPE'), { code: 'STM32_CIRCUIT_SHAPE' });
@@ -202,8 +205,22 @@ export function normalizeStm32CircuitDraft(value) {
     throw Object.assign(new Error('STM32_CIRCUIT_LAYOUT_INVALID'), { code: 'STM32_CIRCUIT_LAYOUT_INVALID' });
   }
   const wireStyles = Object.fromEntries(wireStyleKeys.map((id) => [id, value.layout.wireStyles[id].toLowerCase()]));
+  const sourceRoutes = value.layout.wireRoutes ?? {};
+  if (sourceRoutes === null || Array.isArray(sourceRoutes)
+      || Object.keys(sourceRoutes).some((id) => !netIds.has(id))) {
+    throw Object.assign(new Error('STM32_CIRCUIT_LAYOUT_INVALID'), { code: 'STM32_CIRCUIT_LAYOUT_INVALID' });
+  }
+  const wireRoutes = {};
+  for (const net of nets) {
+    if (!Object.hasOwn(sourceRoutes, net.id)) continue;
+    const route = normalizeStoredRoute(sourceRoutes[net.id], net);
+    if (!route || Array.isArray(route)) {
+      throw Object.assign(new Error('STM32_CIRCUIT_LAYOUT_INVALID'), { code: 'STM32_CIRCUIT_LAYOUT_INVALID' });
+    }
+    wireRoutes[net.id] = route;
+  }
   return { schema: STM32_PUBLIC_CIRCUIT_SCHEMA, boardProfile: STM32_PUBLIC_PROFILE,
-    components, nets, layout: { positions, wireStyles } };
+    components, nets, layout: { positions, wireStyles, wireRoutes } };
 }
 
 function hasPair(net, left, right) {

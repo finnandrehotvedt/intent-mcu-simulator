@@ -194,12 +194,14 @@ const elements = Object.fromEntries([
   'pico-editor-wires', 'pico-editor-components', 'pico-circuit-selection',
   'pico-parts-list', 'pico-part-properties',
   'pico-delete', 'pico-undo', 'pico-redo', 'pico-rotate', 'pico-zoom-out', 'pico-zoom-value',
-  'pico-zoom-in', 'pico-fit', 'pico-reconnect', 'pico-wire-cancel', 'pico-wire-state', 'pico-serial',
+  'pico-zoom-in', 'pico-fit', 'pico-reconnect', 'pico-add-bend', 'pico-route-back', 'pico-route-forward',
+  'pico-wire-color', 'pico-wire-cancel', 'pico-wire-state', 'pico-serial',
   'c3-public-workbench', 'c3-state', 'c3-project-name', 'c3-save', 'c3-open', 'c3-open-input',
   'c3-native-open', 'c3-native-save', 'c3-native-save-copy', 'c3-file-connection', 'c3-legacy-copy',
   'c3-source', 'c3-build', 'c3-run', 'c3-stop', 'c3-message', 'c3-source-hash', 'c3-flash-hash',
   'c3-diagnostics', 'c3-diagnostic-links',
-  'c3-diagram', 'c3-external-led', 'c3-circuit-state', 'c3-reconnect', 'c3-wire-cancel', 'c3-wire-state', 'c3-terminal',
+  'c3-diagram', 'c3-external-led', 'c3-circuit-state', 'c3-reconnect', 'c3-add-bend', 'c3-route-back', 'c3-route-forward',
+  'c3-wire-color', 'c3-wire-cancel', 'c3-wire-state', 'c3-terminal',
   'c3-editor-wires', 'c3-editor-components', 'c3-circuit-selection',
   'c3-parts-list', 'c3-part-properties',
   'c3-delete', 'c3-undo', 'c3-redo', 'c3-rotate', 'c3-zoom-out', 'c3-zoom-value', 'c3-zoom-in', 'c3-fit',
@@ -212,7 +214,8 @@ const elements = Object.fromEntries([
   'stm32-circuit-selection', 'stm32-delete', 'stm32-undo', 'stm32-redo', 'stm32-rotate',
   'stm32-parts-list', 'stm32-part-properties',
   'stm32-zoom-out', 'stm32-zoom-value', 'stm32-zoom-in', 'stm32-fit',
-  'stm32-reconnect', 'stm32-wire-cancel', 'stm32-wire-state',
+  'stm32-reconnect', 'stm32-add-bend', 'stm32-route-back', 'stm32-route-forward',
+  'stm32-wire-color', 'stm32-wire-cancel', 'stm32-wire-state',
 ].map((id) => [id.replaceAll('-', ''), byId(id)]));
 
 const runtimeControls = [elements.run, elements.pause, elements.step, elements.reset, elements.speed];
@@ -615,7 +618,321 @@ function picoEditorRoute(anchors, canvas, obstacles, occupied = []) {
   })).sort((a, b) => a.conflicts - b.conflicts || picoRouteLength(a.points) - picoRouteLength(b.points) || a.order - b.order)[0].points;
 }
 
+const boundedRouteSelection = { pico: null, c3: null, stm32: null };
+
+function boundedRouteGeometry(config, draft) {
+  const box = config.diagram.getBoundingClientRect();
+  const anchors = {};
+  for (const net of draft.nets) for (const endpoint of net.endpoints) {
+    const anchor = picoEditorAnchor(endpoint, config.diagram, config.components);
+    if (!anchor) continue;
+    anchors[picoEndpointKey(endpoint)] = {
+      pin: { x: anchor.pin.x / box.width, y: anchor.pin.y / box.height },
+      escape: { x: anchor.escape.x / box.width, y: anchor.escape.y / box.height },
+    };
+  }
+  const obstacles = picoEditorObstacles(config.diagram, config.components).map((item) => ({
+    component: item.component, left: item.left / box.width, right: item.right / box.width,
+    top: item.top / box.height, bottom: item.bottom / box.height,
+  }));
+  return { box, anchors, obstacles };
+}
+
+function boundedCombinedPath(family, anchors) {
+  const branches = routeFamilyPaths(family, anchors);
+  if (branches.length !== 2) throw new TypeError('BOUNDED_ROUTE_BRANCH_COUNT');
+  return [...branches[0].points, ...branches[1].points.slice(0, -1).reverse()];
+}
+
+function boundedPixelPoints(points, box) {
+  return points.map((point) => ({ x: point.x * box.width, y: point.y * box.height }));
+}
+
+function boundedFamilyFromPixelRoute(net, points, box) {
+  const hubIndex = Math.max(2, Math.min(points.length - 3, Math.floor((points.length - 1) / 2)));
+  const normalized = (values) => values.map((point) => ({ x: point.x / box.width, y: point.y / box.height }));
+  const left = normalized(points.slice(2, hubIndex + 1));
+  const right = normalized(points.slice(hubIndex, points.length - 2).reverse());
+  const hub = normalized([points[hubIndex]])[0];
+  return {
+    schema: 'intent-mcu-route@1',
+    branches: [
+      { endpoint: structuredClone(net.endpoints[0]), points: left.length ? left : [hub] },
+      { endpoint: structuredClone(net.endpoints[1]), points: right.length ? right : [hub] },
+    ],
+  };
+}
+
+function boundedFamilyForNet(config, draft, net, geometry, occupied = []) {
+  const stored = draft.layout.wireRoutes?.[net.id];
+  if (stored) {
+    const family = materializeRouteFamily(net, stored, geometry.anchors, geometry.obstacles);
+    return { family, points: boundedPixelPoints(boundedCombinedPath(family, geometry.anchors), geometry.box) };
+  }
+  const pixelAnchors = net.endpoints.map((endpoint) => picoEditorAnchor(endpoint, config.diagram, config.components));
+  const points = picoEditorRoute(pixelAnchors, geometry.box,
+    picoEditorObstacles(config.diagram, config.components), occupied);
+  const storedFamily = boundedFamilyFromPixelRoute(net, points, geometry.box);
+  return { family: materializeRouteFamily(net, storedFamily, geometry.anchors, geometry.obstacles), points };
+}
+
+function boundedPathData(points) {
+  return points.map((point, index) => `${index ? 'L' : 'M'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
+}
+
+function boundedCrossings(routes) {
+  const result = [];
+  for (let leftIndex = 0; leftIndex < routes.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < routes.length; rightIndex += 1) {
+      const left = routes[leftIndex]; const right = routes[rightIndex];
+      for (let a = 0; a < left.points.length - 1; a += 1) {
+        const a1 = left.points[a]; const a2 = left.points[a + 1];
+        const aHorizontal = Math.abs(a1.y - a2.y) < 0.5;
+        for (let b = 0; b < right.points.length - 1; b += 1) {
+          const b1 = right.points[b]; const b2 = right.points[b + 1];
+          const bHorizontal = Math.abs(b1.y - b2.y) < 0.5;
+          if (aHorizontal === bHorizontal) continue;
+          const horizontal = aHorizontal ? [a1, a2] : [b1, b2];
+          const vertical = aHorizontal ? [b1, b2] : [a1, a2];
+          const x = vertical[0].x; const y = horizontal[0].y;
+          const within = x > Math.min(horizontal[0].x, horizontal[1].x) + 1
+            && x < Math.max(horizontal[0].x, horizontal[1].x) - 1
+            && y > Math.min(vertical[0].y, vertical[1].y) + 1
+            && y < Math.max(vertical[0].y, vertical[1].y) - 1;
+          if (within) result.push({ x, y, leftNet: left.netId, rightNet: right.netId });
+        }
+      }
+    }
+  }
+  return result;
+}
+
+function defaultBoundedSegment(family, anchors) {
+  const branches = routeFamilyPaths(family, anchors);
+  const candidates = [];
+  for (const branch of branches) {
+    for (let index = 1; index < branch.points.length - 1; index += 1) {
+      const orientation = routeSegmentOrientation(branch.points[index], branch.points[index + 1]);
+      if (orientation) candidates.push({
+        endpoint: picoEndpointKey(branch.endpoint), segmentIndex: index, orientation,
+        length: Math.abs(branch.points[index].x - branch.points[index + 1].x)
+          + Math.abs(branch.points[index].y - branch.points[index + 1].y),
+      });
+    }
+  }
+  // Prefer the section nearest the shared hub. It is furthest from the named
+  // terminal body and gives the first click-free bend the largest safe area.
+  candidates.sort((left, right) => right.segmentIndex - left.segmentIndex
+    || right.length - left.length || left.endpoint.localeCompare(right.endpoint));
+  if (candidates.length) {
+    const { length: _length, ...selected } = candidates[0];
+    return selected;
+  }
+  const branch = branches[0];
+  const index = Math.min(1, branch.points.length - 2);
+  return { endpoint: picoEndpointKey(branch.endpoint), segmentIndex: index,
+    orientation: routeSegmentOrientation(branch.points[index], branch.points[index + 1]) };
+}
+
+function renderBoundedWireLayer(config) {
+  const state = config.state();
+  if (!state?.circuitEditor) return;
+  const { draft, selection } = state.circuitEditor;
+  const geometry = boundedRouteGeometry(config, draft);
+  if (!geometry.box.width || !geometry.box.height) return;
+  config.svg.setAttribute('viewBox', `0 0 ${geometry.box.width} ${geometry.box.height}`);
+  const materialized = [];
+  for (const net of draft.nets) {
+    const resolved = boundedFamilyForNet(config, draft, net, geometry,
+      materialized.map((item) => ({ netId: item.net.id, points: item.points })));
+    materialized.push({ net, ...resolved });
+  }
+  const separated = separateParallelWireLanes(materialized.map((item) => ({
+    netId: item.net.id, points: item.points,
+  })), { clearance: 8, obstacles: picoEditorObstacles(config.diagram, config.components),
+    bounds: { left: 8, right: geometry.box.width - 8, top: 8, bottom: geometry.box.height - 8 } });
+  const drawings = [];
+  for (const item of materialized) {
+    const points = separated.routes.find((route) => route.netId === item.net.id)?.points ?? item.points;
+    const d = boundedPathData(points);
+    const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    hit.classList.add('pico-editor-wire-hit'); hit.dataset.net = item.net.id; hit.setAttribute('d', d);
+    hit.setAttribute('tabindex', '0'); hit.setAttribute('role', 'button');
+    hit.setAttribute('aria-label', `Select cable ${item.net.id}: ${item.net.endpoints.map(picoEndpointKey).join(' to ')}. Crossings are not connections.`);
+    const select = (event) => {
+      event.preventDefault(); config.workbench.selectCircuit({ kind: 'net', id: item.net.id });
+      boundedRouteSelection[config.key] = { netId: item.net.id, ...defaultBoundedSegment(item.family, geometry.anchors) };
+      requestAnimationFrame(config.draw);
+    };
+    hit.addEventListener('click', select);
+    hit.addEventListener('keydown', (event) => { if (['Enter', ' '].includes(event.key)) select(event); });
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.classList.add('pico-editor-wire');
+    if (selection.kind === 'net' && selection.id === item.net.id) path.classList.add('selected');
+    path.dataset.net = item.net.id; path.dataset.points = JSON.stringify(points);
+    path.dataset.laneConflicts = String(separated.conflicts.filter((value) => value.leftNet === item.net.id || value.rightNet === item.net.id).length);
+    path.style.setProperty('--wire-color', draft.layout.wireStyles[item.net.id] ?? '#39dff2');
+    path.setAttribute('d', d); drawings.push(hit, path);
+    if (selection.kind === 'net' && selection.id === item.net.id) {
+      for (const branch of routeFamilyPaths(item.family, geometry.anchors)) {
+        for (let index = 1; index < branch.points.length - 1; index += 1) {
+          const start = boundedPixelPoints([branch.points[index]], geometry.box)[0];
+          const end = boundedPixelPoints([branch.points[index + 1]], geometry.box)[0];
+          const orientation = routeSegmentOrientation(branch.points[index], branch.points[index + 1]);
+          if (!orientation) continue;
+          const segment = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          segment.classList.add('pico-editor-segment-hit');
+          const key = picoEndpointKey(branch.endpoint);
+          const selectedSegment = boundedRouteSelection[config.key];
+          if (selectedSegment?.netId === item.net.id && selectedSegment.endpoint === key
+              && selectedSegment.segmentIndex === index) segment.classList.add('selected');
+          segment.dataset.net = item.net.id; segment.dataset.endpoint = key;
+          segment.dataset.segmentIndex = String(index); segment.dataset.orientation = orientation;
+          segment.setAttribute('d', boundedPathData([start, end])); segment.setAttribute('tabindex', '0');
+          segment.setAttribute('role', 'button');
+          segment.setAttribute('aria-label', `Select ${orientation} editable segment ${index} on ${item.net.id}`);
+          const choose = (event) => {
+            event.preventDefault(); event.stopPropagation();
+            boundedRouteSelection[config.key] = { netId: item.net.id, endpoint: key, segmentIndex: index, orientation };
+            config.status.textContent = `Selected ${orientation} segment ${index} on ${item.net.id}. Add a bend or nudge it on the snapped grid.`;
+            requestAnimationFrame(config.draw);
+          };
+          segment.addEventListener('click', choose);
+          segment.addEventListener('keydown', (event) => {
+            if (['Enter', ' '].includes(event.key)) choose(event);
+            if (['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown'].includes(event.key)) {
+              choose(event);
+              editBoundedRoute(config.key, 'move', ['ArrowLeft', 'ArrowUp'].includes(event.key) ? -1 : 1);
+            }
+          });
+          drawings.push(segment);
+        }
+      }
+    }
+  }
+  for (const crossing of boundedCrossings(separated.routes)) {
+    const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    marker.classList.add('pico-wire-crossing'); marker.setAttribute('cx', crossing.x); marker.setAttribute('cy', crossing.y);
+    marker.setAttribute('r', '4'); marker.dataset.crossing = `${crossing.leftNet}:${crossing.rightNet}`;
+    drawings.push(marker);
+  }
+  config.svg.replaceChildren(...drawings);
+}
+
+function boundedRouteConfig(key) {
+  return {
+    pico: { key, workbench: picoPublicWorkbench, state: () => picoPublicState,
+      diagram: elements.picodiagram, components: elements.picoeditorcomponents,
+      status: elements.picowirestate, draw: drawPicoEditorWires },
+    c3: { key, workbench: c3PublicWorkbench, state: () => c3PublicState,
+      diagram: elements.c3diagram, components: elements.c3editorcomponents,
+      status: elements.c3wirestate, draw: drawC3EditorWires },
+    stm32: { key, workbench: stm32PublicWorkbench, state: () => stm32PublicState,
+      diagram: elements.stm32diagram, components: elements.stm32editorcomponents,
+      status: elements.stm32wirestate, draw: drawStm32EditorWires },
+  }[key];
+}
+
+function boundedRouteCandidateValid(config, draft, targetNetId, targetFamily, geometry) {
+  const routes = [];
+  for (const net of draft.nets) {
+    const resolved = net.id === targetNetId
+      ? { family: targetFamily, points: boundedPixelPoints(boundedCombinedPath(targetFamily, geometry.anchors), geometry.box) }
+      : boundedFamilyForNet(config, draft, net, geometry, routes);
+    const points = resolved.points;
+    const blocked = points.slice(0, -1).some((start, index) => {
+      const end = points[index + 1];
+      return picoEditorObstacles(config.diagram, config.components).some((body) => {
+        const endpointEscape = index === 0 && body.component === net.endpoints[0].component
+          || index === points.length - 2 && body.component === net.endpoints[1].component;
+        return !endpointEscape && picoSegmentCrossesBody(start, end, body);
+      });
+    });
+    if (blocked) return { ok: false, code: 'WIRE_ROUTE_BODY_INTERSECTION' };
+    routes.push({ netId: net.id, points });
+  }
+  const separated = separateParallelWireLanes(routes, {
+    clearance: 8, obstacles: picoEditorObstacles(config.diagram, config.components),
+    bounds: { left: 8, right: geometry.box.width - 8, top: 8, bottom: geometry.box.height - 8 },
+  });
+  return separated.conflicts.length
+    ? { ok: false, code: 'WIRE_LANE_01_OVERLAP' }
+    : { ok: true, crossings: boundedCrossings(separated.routes).length };
+}
+
+function editBoundedRoute(key, action, direction = 1) {
+  const config = boundedRouteConfig(key);
+  const state = config.workbench.snapshot().circuitEditor;
+  const netId = state.selection.kind === 'net' ? state.selection.id : null;
+  const net = state.draft.nets.find((candidate) => candidate.id === netId);
+  if (!net) return { ok: false, code: 'WIRE_SELECTION_REQUIRED' };
+  const geometry = boundedRouteGeometry(config, state.draft);
+  const occupied = [];
+  let resolvedTarget = null;
+  for (const candidateNet of state.draft.nets) {
+    const resolved = boundedFamilyForNet(config, state.draft, candidateNet, geometry, occupied);
+    if (candidateNet.id === net.id) resolvedTarget = resolved;
+    occupied.push({ netId: candidateNet.id, points: resolved.points });
+  }
+  const family = resolvedTarget.family;
+  const selected = boundedRouteSelection[key]?.netId === net.id
+    ? boundedRouteSelection[key] : { netId: net.id, ...defaultBoundedSegment(family, geometry.anchors) };
+  let candidate;
+  try {
+    if (action === 'bend') {
+      candidate = addRouteJog(family, geometry.anchors, selected.endpoint, selected.segmentIndex, net, direction);
+    } else {
+      const path = routeFamilyPaths(family, geometry.anchors)
+        .find((branch) => picoEndpointKey(branch.endpoint) === selected.endpoint);
+      const left = path?.points[selected.segmentIndex]; const right = path?.points[selected.segmentIndex + 1];
+      const orientation = left && right ? routeSegmentOrientation(left, right) : null;
+      if (!orientation) throw new TypeError('ROUTE_SEGMENT');
+      const coordinate = orientation === 'horizontal' ? left.y + 0.04 * direction : left.x + 0.04 * direction;
+      candidate = moveRouteSegment(family, geometry.anchors, selected.endpoint, selected.segmentIndex, coordinate, net);
+    }
+  } catch (error) {
+    config.status.textContent = `Route edit rejected (${error.message}). The cable and history are unchanged.`;
+    return { ok: false, code: error.message };
+  }
+  const validation = boundedRouteCandidateValid(config, state.draft, net.id, candidate, geometry);
+  if (!validation.ok) {
+    config.status.textContent = `Route edit rejected (${validation.code}). The cable and history are unchanged.`;
+    return validation;
+  }
+  const result = config.workbench.editCircuit('setWireRoute', net.id, candidate);
+  if (result.ok) {
+    boundedRouteSelection[key] = { netId: net.id, ...defaultBoundedSegment(candidate, geometry.anchors) };
+    config.status.textContent = `${action === 'bend' ? 'Added one orthogonal bend' : 'Moved one eligible segment'} on ${net.id}. Electrical connectivity and firmware authority are unchanged.${validation.crossings ? ` ${validation.crossings} crossing${validation.crossings === 1 ? '' : 's'} remain electrically separate.` : ''}`;
+    requestAnimationFrame(config.draw);
+  }
+  return result;
+}
+
+function setBoundedWireColor(key, color) {
+  const config = boundedRouteConfig(key);
+  const state = config.workbench.snapshot().circuitEditor;
+  if (state.selection.kind !== 'net') return { ok: false, code: 'WIRE_SELECTION_REQUIRED' };
+  const result = config.workbench.editCircuit('setWireColor', state.selection.id, color);
+  config.status.textContent = result.ok
+    ? `Changed ${state.selection.id} cable colour only. Connectivity, electrical verdict and firmware authority are unchanged.`
+    : `Cable colour rejected (${result.code}).`;
+  return result;
+}
+
+function cancelBoundedRouteSelection(key) {
+  if (!boundedRouteSelection[key]) return false;
+  boundedRouteSelection[key] = null;
+  const config = boundedRouteConfig(key);
+  config.status.textContent = 'Route edit cancelled. The cable, electrical verdict and history are unchanged.';
+  requestAnimationFrame(config.draw);
+  return true;
+}
+
 function drawPicoEditorWires() {
+  renderBoundedWireLayer({ key: 'pico', state: () => picoPublicState, workbench: picoPublicWorkbench,
+    diagram: elements.picodiagram, components: elements.picoeditorcomponents, svg: elements.picoeditorwires,
+    status: elements.picowirestate, draw: drawPicoEditorWires });
+  return;
   const canvas = elements.picodiagram.getBoundingClientRect();
   if (!canvas.width || !canvas.height || !picoPublicState?.circuitEditor) return;
   elements.picoeditorwires.setAttribute('viewBox', `0 0 ${canvas.width} ${canvas.height}`);
@@ -703,6 +1020,12 @@ function renderPicoCircuitEditor(state) {
   elements.picorotate.disabled = selection.kind !== 'component';
   elements.picoundo.disabled = !canUndo; elements.picoredo.disabled = !canRedo;
   elements.picoreconnect.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  const picoRouteSelected = selection.kind === 'net' && wireDraft.mode === 'none';
+  elements.picoaddbend.disabled = !picoRouteSelected;
+  elements.picorouteback.disabled = !picoRouteSelected;
+  elements.picorouteforward.disabled = !picoRouteSelected;
+  elements.picowirecolor.disabled = !picoRouteSelected;
+  if (picoRouteSelected) elements.picowirecolor.value = draft.layout.wireStyles[selection.id] ?? '#39dff2';
   elements.picowirecancel.disabled = wireDraft.mode === 'none';
   elements.picowirestate.textContent = namedWireInstruction(wireDraft);
   elements.picozoomvalue.value = `${Math.round(picoEditorZoom * 100)}%`;
@@ -809,6 +1132,10 @@ window.__RP2040_PUBLIC_WORKBENCH__ = {
   setComponentProperty: (id, key, value) => picoPublicWorkbench.editCircuit('setComponentProperty', id, key, value),
   beginReconnect: () => picoPublicWorkbench.editCircuit('beginReconnect'),
   cancelWire: () => picoPublicWorkbench.editCircuit('cancelWireDraft'),
+  addWireBend: () => editBoundedRoute('pico', 'bend'),
+  nudgeWireSegment: (direction) => editBoundedRoute('pico', 'move', direction),
+  setWireColor: (color) => setBoundedWireColor('pico', color),
+  setWireRoute: (netId, route) => picoPublicWorkbench.editCircuit('setWireRoute', netId, route),
 };
 elements.picodelete.addEventListener('click', () => picoPublicWorkbench.editCircuit('deleteSelected'));
 elements.picoundo.addEventListener('click', () => picoPublicWorkbench.editCircuit('undo'));
@@ -818,6 +1145,10 @@ elements.picorotate.addEventListener('click', () => {
   if (selection.kind === 'component') picoPublicWorkbench.editCircuit('rotateComponent', selection.id);
 });
 elements.picoreconnect.addEventListener('click', () => beginNamedWireReconnect(picoPublicWorkbench, elements.picowirestate));
+elements.picoaddbend.addEventListener('click', () => editBoundedRoute('pico', 'bend'));
+elements.picorouteback.addEventListener('click', () => editBoundedRoute('pico', 'move', -1));
+elements.picorouteforward.addEventListener('click', () => editBoundedRoute('pico', 'move', 1));
+elements.picowirecolor.addEventListener('change', () => setBoundedWireColor('pico', elements.picowirecolor.value));
 elements.picowirecancel.addEventListener('click', () => cancelNamedWire(picoPublicWorkbench, elements.picowirestate));
 elements.picolegacycopy.addEventListener('click', () => saveLegacyProject(RP2040_PROFILE));
 function setPicoEditorZoom(next) {
@@ -837,6 +1168,9 @@ document.addEventListener('keydown', (event) => {
   const snapshot = picoPublicWorkbench.snapshot().circuitEditor;
   if (event.key === 'Escape' && snapshot.wireDraft.mode !== 'none') {
     event.preventDefault(); event.stopImmediatePropagation(); cancelNamedWire(picoPublicWorkbench, elements.picowirestate); return;
+  }
+  if (event.key === 'Escape' && cancelBoundedRouteSelection('pico')) {
+    event.preventDefault(); event.stopImmediatePropagation(); return;
   }
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
     event.preventDefault(); event.stopImmediatePropagation();
@@ -866,6 +1200,10 @@ let c3EditorDrag = null;
 let c3EditorResponsiveScale = null;
 
 function drawC3EditorWires() {
+  renderBoundedWireLayer({ key: 'c3', state: () => c3PublicState, workbench: c3PublicWorkbench,
+    diagram: elements.c3diagram, components: elements.c3editorcomponents, svg: elements.c3editorwires,
+    status: elements.c3wirestate, draw: drawC3EditorWires });
+  return;
   const canvas = elements.c3diagram.getBoundingClientRect();
   if (!canvas.width || !canvas.height || !c3PublicState?.circuitEditor) return;
   elements.c3editorwires.setAttribute('viewBox', `0 0 ${canvas.width} ${canvas.height}`);
@@ -945,6 +1283,12 @@ function renderC3CircuitEditor(state) {
   elements.c3rotate.disabled = selection.kind !== 'component';
   elements.c3undo.disabled = !canUndo; elements.c3redo.disabled = !canRedo;
   elements.c3reconnect.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  const c3RouteSelected = selection.kind === 'net' && wireDraft.mode === 'none';
+  elements.c3addbend.disabled = !c3RouteSelected;
+  elements.c3routeback.disabled = !c3RouteSelected;
+  elements.c3routeforward.disabled = !c3RouteSelected;
+  elements.c3wirecolor.disabled = !c3RouteSelected;
+  if (c3RouteSelected) elements.c3wirecolor.value = draft.layout.wireStyles[selection.id] ?? '#39dff2';
   elements.c3wirecancel.disabled = wireDraft.mode === 'none';
   elements.c3wirestate.textContent = namedWireInstruction(wireDraft);
   elements.c3zoomvalue.value = `${Math.round(c3EditorZoom * 100)}%`;
@@ -1047,6 +1391,10 @@ window.__ESP32C3_PUBLIC_WORKBENCH__ = {
   setComponentProperty: (id, key, value) => c3PublicWorkbench.editCircuit('setComponentProperty', id, key, value),
   beginReconnect: () => c3PublicWorkbench.editCircuit('beginReconnect'),
   cancelWire: () => c3PublicWorkbench.editCircuit('cancelWireDraft'),
+  addWireBend: () => editBoundedRoute('c3', 'bend'),
+  nudgeWireSegment: (direction) => editBoundedRoute('c3', 'move', direction),
+  setWireColor: (color) => setBoundedWireColor('c3', color),
+  setWireRoute: (netId, route) => c3PublicWorkbench.editCircuit('setWireRoute', netId, route),
 };
 elements.c3delete.addEventListener('click', () => c3PublicWorkbench.editCircuit('deleteSelected'));
 elements.c3undo.addEventListener('click', () => c3PublicWorkbench.editCircuit('undo'));
@@ -1056,6 +1404,10 @@ elements.c3rotate.addEventListener('click', () => {
   if (selection.kind === 'component') c3PublicWorkbench.editCircuit('rotateComponent', selection.id);
 });
 elements.c3reconnect.addEventListener('click', () => beginNamedWireReconnect(c3PublicWorkbench, elements.c3wirestate));
+elements.c3addbend.addEventListener('click', () => editBoundedRoute('c3', 'bend'));
+elements.c3routeback.addEventListener('click', () => editBoundedRoute('c3', 'move', -1));
+elements.c3routeforward.addEventListener('click', () => editBoundedRoute('c3', 'move', 1));
+elements.c3wirecolor.addEventListener('change', () => setBoundedWireColor('c3', elements.c3wirecolor.value));
 elements.c3wirecancel.addEventListener('click', () => cancelNamedWire(c3PublicWorkbench, elements.c3wirestate));
 elements.c3legacycopy.addEventListener('click', () => saveLegacyProject(ESP32C3_PROFILE));
 function setC3EditorZoom(next) {
@@ -1075,6 +1427,9 @@ document.addEventListener('keydown', (event) => {
   const snapshot = c3PublicWorkbench.snapshot().circuitEditor;
   if (event.key === 'Escape' && snapshot.wireDraft.mode !== 'none') {
     event.preventDefault(); event.stopImmediatePropagation(); cancelNamedWire(c3PublicWorkbench, elements.c3wirestate); return;
+  }
+  if (event.key === 'Escape' && cancelBoundedRouteSelection('c3')) {
+    event.preventDefault(); event.stopImmediatePropagation(); return;
   }
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
     event.preventDefault(); event.stopImmediatePropagation();
@@ -1104,6 +1459,10 @@ let stm32EditorDrag = null;
 let stm32EditorResponsiveScale = null;
 
 function drawStm32EditorWires() {
+  renderBoundedWireLayer({ key: 'stm32', state: () => stm32PublicState, workbench: stm32PublicWorkbench,
+    diagram: elements.stm32diagram, components: elements.stm32editorcomponents, svg: elements.stm32editorwires,
+    status: elements.stm32wirestate, draw: drawStm32EditorWires });
+  return;
   const canvas = elements.stm32diagram.getBoundingClientRect();
   if (!canvas.width || !canvas.height || !stm32PublicState?.circuitEditor) return;
   elements.stm32editorwires.setAttribute('viewBox', `0 0 ${canvas.width} ${canvas.height}`);
@@ -1187,6 +1546,12 @@ function renderStm32CircuitEditor(state) {
   elements.stm32rotate.disabled = selection.kind !== 'component';
   elements.stm32undo.disabled = !canUndo; elements.stm32redo.disabled = !canRedo;
   elements.stm32reconnect.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  const stm32RouteSelected = selection.kind === 'net' && wireDraft.mode === 'none';
+  elements.stm32addbend.disabled = !stm32RouteSelected;
+  elements.stm32routeback.disabled = !stm32RouteSelected;
+  elements.stm32routeforward.disabled = !stm32RouteSelected;
+  elements.stm32wirecolor.disabled = !stm32RouteSelected;
+  if (stm32RouteSelected) elements.stm32wirecolor.value = draft.layout.wireStyles[selection.id] ?? '#39dff2';
   elements.stm32wirecancel.disabled = wireDraft.mode === 'none';
   elements.stm32wirestate.textContent = namedWireInstruction(wireDraft);
   elements.stm32zoomvalue.value = `${Math.round(stm32EditorZoom * 100)}%`;
@@ -1296,6 +1661,10 @@ window.__STM32_PUBLIC_WORKBENCH__ = {
   setComponentProperty: (id, key, value) => stm32PublicWorkbench.editCircuit('setComponentProperty', id, key, value),
   beginReconnect: () => stm32PublicWorkbench.editCircuit('beginReconnect'),
   cancelWire: () => stm32PublicWorkbench.editCircuit('cancelWireDraft'),
+  addWireBend: () => editBoundedRoute('stm32', 'bend'),
+  nudgeWireSegment: (direction) => editBoundedRoute('stm32', 'move', direction),
+  setWireColor: (color) => setBoundedWireColor('stm32', color),
+  setWireRoute: (netId, route) => stm32PublicWorkbench.editCircuit('setWireRoute', netId, route),
 };
 elements.stm32delete.addEventListener('click', () => stm32PublicWorkbench.editCircuit('deleteSelected'));
 elements.stm32undo.addEventListener('click', () => stm32PublicWorkbench.editCircuit('undo'));
@@ -1305,6 +1674,10 @@ elements.stm32rotate.addEventListener('click', () => {
   if (selection.kind === 'component') stm32PublicWorkbench.editCircuit('rotateComponent', selection.id);
 });
 elements.stm32reconnect.addEventListener('click', () => beginNamedWireReconnect(stm32PublicWorkbench, elements.stm32wirestate));
+elements.stm32addbend.addEventListener('click', () => editBoundedRoute('stm32', 'bend'));
+elements.stm32routeback.addEventListener('click', () => editBoundedRoute('stm32', 'move', -1));
+elements.stm32routeforward.addEventListener('click', () => editBoundedRoute('stm32', 'move', 1));
+elements.stm32wirecolor.addEventListener('change', () => setBoundedWireColor('stm32', elements.stm32wirecolor.value));
 elements.stm32wirecancel.addEventListener('click', () => cancelNamedWire(stm32PublicWorkbench, elements.stm32wirestate));
 elements.stm32legacycopy.addEventListener('click', () => saveLegacyProject(STM32F429ZI_PROFILE));
 function setStm32EditorZoom(next) {
@@ -1325,6 +1698,9 @@ document.addEventListener('keydown', (event) => {
   const snapshot = stm32PublicWorkbench.snapshot().circuitEditor;
   if (event.key === 'Escape' && snapshot.wireDraft.mode !== 'none') {
     event.preventDefault(); event.stopImmediatePropagation(); cancelNamedWire(stm32PublicWorkbench, elements.stm32wirestate); return;
+  }
+  if (event.key === 'Escape' && cancelBoundedRouteSelection('stm32')) {
+    event.preventDefault(); event.stopImmediatePropagation(); return;
   }
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
     event.preventDefault(); event.stopImmediatePropagation();

@@ -1,4 +1,31 @@
-# Intent MCU Simulator 1.1.0-rc.21
+# Intent MCU Simulator 1.1.0-rc.22
+
+This route-authoring release adds bounded cable layout controls to the three
+narrow controller canvases without changing their electrical graphs, compiler
+profiles or runtime claims.
+
+## Bounded cable route authoring
+
+- Select a cable, then use **Add bend**, **Nudge −**, or **Nudge +** to edit an
+  eligible orthogonal section on the snapped grid. A selected section can also
+  be reached with the keyboard; Escape leaves the project and history intact.
+- Choose one of six fixed cable colours. Colour is presentation only and never
+  creates a connection, changes an electrical verdict or invalidates current
+  source/executable authority.
+- A cable crossing remains electrically separate. Only a declared junction
+  dot means connected. Distinct nets cannot share a positive-length collinear
+  lane under WIRE-LANE-01.
+- Unsafe or ambiguous geometry rejects as one atomic operation: diagonal,
+  malformed, duplicate-endpoint, body-intersecting and unresolved overlapping
+  routes never replace the last accepted route.
+- Download/Open and browser recovery preserve accepted route geometry and
+  colour. Files from rc.21 and earlier open with deterministic automatic
+  routes, and any topology reconnect retires the affected saved route before
+  the established electrical invalidation path runs.
+
+---
+
+## 1.1.0-rc.21
 
 This controller-truth release completes the public capability, language/API
 and compiler-diagnostic reference without adding any compiler, runtime, SDK,

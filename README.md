@@ -172,6 +172,12 @@ keyboard-accessible from the same buttons. Route section moves are loop-safe:
 they cannot accumulate repeated rectangular laps, while non-overlapping custom
 jogs and unrelated branches remain intact.
 
+On Pico, ESP32-C3 and STM32, select a cable to add an orthogonal bend, move an
+eligible snapped section or choose one of six fixed colours. Crossings remain
+electrically separate unless a declared junction dot says otherwise. These are
+layout-only edits: named endpoints remain the topology authority, and accepted
+route or colour changes do not invalidate source or executable authority.
+
 The Apache-2.0 compiler gateway source, strict API contract, isolation tests,
 checksum-pinned toolchain recipe, notices and local operations guide are
 included. Prebuilt compiler/toolchain images, downloaded compiler archives,
@@ -182,7 +188,7 @@ source; it does not authorize redistributing the resulting image.
 
 Additional current limits:
 
-- source version `1.1.0-rc.21` is prepared for the release at
+- source version `1.1.0-rc.22` is prepared for the release at
   `https://lab.teachthecompany.com/`; hosted compiler/toolchain images and
   private deployment configuration remain outside this source repository;
 - public execution supports the tested ATmega328P subset, one bounded RP2040

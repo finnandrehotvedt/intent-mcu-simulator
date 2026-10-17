@@ -415,7 +415,7 @@ export class Rp2040PublicWorkbench {
   editCircuit(operation, ...args) {
     if (!['deleteSelected', 'undo', 'redo', 'moveComponent', 'rotateComponent',
       'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint',
-      'addMissingComponent', 'setComponentProperty'].includes(operation)) {
+      'addMissingComponent', 'setComponentProperty', 'setWireColor', 'setWireRoute'].includes(operation)) {
       return { ok: false, code: 'RP2040_CIRCUIT_OPERATION_INVALID' };
     }
     const revision = this.circuitEditor.revision;
@@ -433,6 +433,13 @@ export class Rp2040PublicWorkbench {
       return result;
     }
     this.project.circuit = clone(result.draft);
+    const layoutOnly = ['setWireColor', 'setWireRoute'].includes(operation)
+      || ['undo', 'redo'].includes(operation) && result.changeKind === 'layout';
+    if (layoutOnly) {
+      this.message = `Cable layout changed (${result.code}). Firmware and electrical authority are unchanged.`;
+      this.render();
+      return result;
+    }
     const messages = {
       deleteSelected: `Circuit changed (${result.code}). Executable authority retired; build fresh firmware.`,
       undo: 'Circuit Undo applied. Executable authority retired; build fresh firmware.',
