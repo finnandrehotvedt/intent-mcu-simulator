@@ -3,7 +3,13 @@
 import {
   BUILD_SCHEMA, COMMAND_SCHEMA, FQBN, PROFILE, sourceForGpio2, validateBoundedSource,
 } from '../c3/protocol.mjs';
-import { VALIDATED_LED_CIRCUIT, validateGpio2LedCircuit } from '../c3/gpio2-adapter.mjs';
+import {
+  Esp32C3CircuitEditor,
+  createEsp32C3CircuitDraft,
+  esp32C3RuntimeCircuit,
+  normalizeEsp32C3CircuitDraft,
+  validateEsp32C3Circuit,
+} from './esp32c3-public-circuit.mjs';
 import { parseStrictJson } from './strict-json.mjs';
 
 export const C3_PUBLIC_PROJECT_SCHEMA = 'intent-mcu-esp32c3-public-project@1';
@@ -22,7 +28,7 @@ function defaultProject() {
     name: 'ESP32-C3 GPIO2 source project',
     profile: PROFILE,
     source: C3_PUBLIC_SOURCE,
-    circuit: clone(VALIDATED_LED_CIRCUIT),
+    circuit: normalizeEsp32C3CircuitDraft(createEsp32C3CircuitDraft()),
   };
 }
 function normalizeProject(value) {
@@ -30,11 +36,7 @@ function normalizeProject(value) {
     || value.schema !== C3_PUBLIC_PROJECT_SCHEMA || value.profile !== PROFILE
     || !validName(value.name)) throw new Error('C3_PROJECT_INVALID');
   validateBoundedSource(value.source);
-  const circuit = validateGpio2LedCircuit(value.circuit);
-  if (!circuit.accepted && circuit.code !== 'CIRCUIT_DISCONNECTED') {
-    throw new Error('C3_PROJECT_INVALID');
-  }
-  return { ...value, name: value.name.trim(), circuit: clone(value.circuit) };
+  return { ...value, name: value.name.trim(), circuit: normalizeEsp32C3CircuitDraft(value.circuit) };
 }
 function download(name, text) {
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
@@ -53,6 +55,7 @@ export class Esp32C3PublicWorkbench {
     this.fetch = fetchFn.bind(globalThis);
     this.onState = onState;
     this.project = defaultProject();
+    this.circuitEditor = new Esp32C3CircuitEditor(this.project.circuit);
     this.revision = 1;
     this.phase = 'editing';
     this.message = 'Edit the bounded values, then build fresh ESP32-C3 flash.';
@@ -103,13 +106,14 @@ export class Esp32C3PublicWorkbench {
     });
   }
   snapshot() {
-    const circuit = validateGpio2LedCircuit(this.project.circuit);
+    const circuit = validateEsp32C3Circuit(this.project.circuit);
     return {
       profile: PROFILE, phase: this.phase, active: this.active, revision: this.revision,
       message: this.message, project: clone(this.project),
+      circuitEditor: this.circuitEditor.snapshot(),
       artifact: this.artifact ? clone(this.artifact) : null,
-      runnable: Boolean(this.artifact && this.artifactRevision === this.revision),
-      circuitAccepted: circuit.accepted, circuitCode: circuit.code,
+      runnable: Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok),
+      circuitAccepted: circuit.ok, circuitCode: circuit.code,
       runtime: this.lastRuntime ? clone(this.lastRuntime) : null,
       actualQemuCpuUart: true, qemuPinStateObserved: false,
       gpioPeripheralModel: 'IntentForce project-owned GPIO2 register adapter',
@@ -133,7 +137,7 @@ export class Esp32C3PublicWorkbench {
       profile: PROFILE, fqbn: FQBN,
       sourceSha256: this.artifact?.sourceSha256 ?? null,
       artifactSha256: this.artifact?.flashSha256 ?? null,
-      circuit: clone(this.project.circuit),
+      circuit: esp32C3RuntimeCircuit(this.project.circuit),
     };
   }
   async command(command) {
@@ -174,6 +178,13 @@ export class Esp32C3PublicWorkbench {
   }
   async build() {
     if (!this.active || this.phase === 'building') return { ok: false, code: 'C3_BUILD_UNAVAILABLE' };
+    const circuit = validateEsp32C3Circuit(this.project.circuit);
+    if (!circuit.ok) {
+      this.phase = 'blocked';
+      this.message = `Circuit blocked (${circuit.code}). Restore the exact GPIO2 J1 pin 4 → resistor → LED → GND J1 pin 6 path.`;
+      this.render();
+      return { ok: false, code: circuit.code };
+    }
     let parsed;
     try { parsed = validateBoundedSource(this.project.source); }
     catch {
@@ -235,8 +246,9 @@ export class Esp32C3PublicWorkbench {
     }
   }
   async run() {
-    if (!this.active || !this.artifact || this.artifactRevision !== this.revision) {
-      this.message = 'Run blocked. Build this exact source again.';
+    const circuit = validateEsp32C3Circuit(this.project.circuit);
+    if (!this.active || !this.artifact || this.artifactRevision !== this.revision || !circuit.ok) {
+      this.message = 'Run blocked. Restore the validated named-pin circuit and build this exact source again.';
       this.render();
       return { ok: false, code: 'RUN_REQUIRES_CURRENT_BUILD' };
     }
@@ -303,22 +315,55 @@ export class Esp32C3PublicWorkbench {
     this.sessionId = null;
     this.capability = null;
   }
+
+  selectCircuit(selection) {
+    const result = this.circuitEditor.select(selection);
+    this.render();
+    return result;
+  }
+
+  editCircuit(operation, ...args) {
+    if (!['deleteSelected', 'undo', 'redo', 'restoreExample', 'moveComponent', 'rotateComponent'].includes(operation)) {
+      return { ok: false, code: 'C3_CIRCUIT_OPERATION_INVALID' };
+    }
+    const result = this.circuitEditor[operation](...args);
+    if (!result.ok) { this.render(); return result; }
+    this.project.circuit = clone(result.draft);
+    const messages = {
+      deleteSelected: `Circuit changed (${result.code}). Flash and LED authority retired; restore valid wiring and build fresh.`,
+      undo: 'Circuit Undo applied. Flash and LED authority retired; build fresh.',
+      redo: 'Circuit Redo applied. Flash and LED authority retired; build fresh.',
+      restoreExample: 'Validated GPIO2 J1 pin 4 → 220 Ω → LED → GND J1 pin 6 example restored. Build fresh.',
+      moveComponent: 'Component moved; named pin attachments and orthogonal wires were recomputed. Build fresh.',
+      rotateComponent: 'Component rotated; named pin attachments and orthogonal wires were recomputed. Build fresh.',
+    };
+    this.invalidate(messages[operation]);
+    return result;
+  }
+
   disconnectLed() {
-    this.project.circuit.connections = this.project.circuit.connections.slice(0, 2);
-    this.invalidate('LED return wire disconnected. QEMU may run, but the project model will keep the LED off.');
+    this.circuitEditor.select({ kind: 'net', id: 'net-ground' });
+    const result = this.circuitEditor.deleteSelected();
+    if (result.ok) {
+      this.project.circuit = clone(result.draft);
+      this.invalidate('LED return wire disconnected. Flash and LED authority retired; validation now fails closed.');
+    }
   }
   reconnectLed() {
-    this.project.circuit = clone(VALIDATED_LED_CIRCUIT);
-    this.invalidate('Validated GPIO2 → 220 Ω → LED → GND path restored. Build fresh.');
+    this.editCircuit('restoreExample');
   }
   save() {
+    this.project.circuit = clone(this.circuitEditor.snapshot().draft);
     download(`${this.project.name.replace(/[^a-z0-9]+/giu, '-').replace(/^-|-$/gu, '').toLowerCase() || 'c3-project'}.json`,
-      `${JSON.stringify(this.project, null, 2)}\n`);
+      `${JSON.stringify(normalizeProject(this.project), null, 2)}\n`);
+    this.message = 'Saved a data-only local C3 project. Flash bytes and runtime authority were excluded.';
+    this.render();
   }
   async open(file) {
     try {
       if (file.size > 16 * 1024) throw new Error('C3_PROJECT_LIMIT');
       this.project = normalizeProject(parseStrictJson(await file.text()));
+      this.circuitEditor = new Esp32C3CircuitEditor(this.project.circuit);
       this.elements.source.value = this.project.source;
       this.elements.name.value = this.project.name;
       this.invalidate('Local C3 project opened. Build fresh flash before Run.');
@@ -330,7 +375,7 @@ export class Esp32C3PublicWorkbench {
     }
   }
   render() {
-    const circuit = validateGpio2LedCircuit(this.project.circuit);
+    const circuit = validateEsp32C3Circuit(this.project.circuit);
     const modeled = this.lastRuntime?.modeledCircuit;
     const led = modeled?.epochs?.at(-1)?.led;
     this.elements.name.value = this.project.name;
@@ -342,17 +387,17 @@ export class Esp32C3PublicWorkbench {
     this.elements.flashHash.textContent = this.artifact?.flashSha256 ?? 'not built';
     this.elements.build.disabled = !this.active || this.phase === 'building' || this.phase === 'running';
     this.elements.run.disabled = !this.active || !this.artifact
-      || this.artifactRevision !== this.revision || this.phase === 'running';
+      || this.artifactRevision !== this.revision || !circuit.ok || this.phase === 'running';
     this.elements.stop.disabled = !this.sessionId;
-    this.elements.disconnect.disabled = !circuit.accepted;
-    this.elements.reconnect.disabled = circuit.accepted;
-    this.elements.diagram.dataset.connected = String(circuit.accepted);
-    this.elements.diagram.dataset.led = led?.on ? 'on' : 'off';
-    this.elements.led.setAttribute('aria-label', led?.on
+    this.elements.disconnect.disabled = !circuit.ok;
+    this.elements.reconnect.disabled = circuit.ok;
+    this.elements.diagram.dataset.connected = String(circuit.ok);
+    this.elements.diagram.dataset.led = circuit.ok && led?.on ? 'on' : 'off';
+    this.elements.led?.setAttribute('aria-label', circuit.ok && led?.on
       ? 'Modeled external LED is on' : 'Modeled external LED is off');
-    this.elements.circuitState.textContent = circuit.accepted
-      ? `Project model accepted · GPIO2 → 220 Ω → LED → GND · ${led?.code ?? 'waiting for Run'}`
-      : 'Project model disconnected · actual QEMU CPU/UART remains separate';
+    this.elements.circuitState.textContent = circuit.ok
+      ? `Project model accepted · GPIO2 J1 pin 4 → 220 Ω → LED → GND J1 pin 6 · ${led?.code ?? 'waiting for Run'}`
+      : `Project model rejected (${circuit.code}) · stale flash and LED authority retired`;
     this.publish();
   }
 }

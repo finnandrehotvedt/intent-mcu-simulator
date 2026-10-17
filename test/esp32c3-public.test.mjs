@@ -13,6 +13,14 @@ import {
   C3_REGISTERS, ProjectOwnedC3Gpio2Adapter, VALIDATED_LED_CIRCUIT,
   resolveLed, validateGpio2LedCircuit,
 } from '../c3/gpio2-adapter.mjs';
+import {
+  ESP32C3_PIN_MAP,
+  Esp32C3CircuitEditor,
+  createEsp32C3CircuitDraft,
+  esp32C3RuntimeCircuit,
+  normalizeEsp32C3CircuitDraft,
+  validateEsp32C3Circuit,
+} from '../src/esp32c3-public-circuit.mjs';
 import { createC3PublicService } from '../c3/public-service.mjs';
 
 const imageLock = Object.freeze({
@@ -63,6 +71,51 @@ test('GPIO2 LED topology and current validation fail closed', () => {
   const unsafe = structuredClone(VALIDATED_LED_CIRCUIT);
   unsafe.resistorOhms = 10;
   assert.equal(validateGpio2LedCircuit(unsafe).accepted, false);
+});
+
+test('public C3 editable circuit uses named physical pins and fail-closed electrical rules', () => {
+  const draft = createEsp32C3CircuitDraft();
+  const accepted = validateEsp32C3Circuit(draft);
+  assert.equal(accepted.ok, true);
+  assert.deepEqual(ESP32C3_PIN_MAP.GPIO2, {
+    signal: 'GPIO2', connector: 'J1', physicalPin: 4, voltage: 3.3, capability: 'digital-output',
+  });
+  assert.deepEqual(ESP32C3_PIN_MAP.GND, {
+    signal: 'GND', connector: 'J1', physicalPin: 6, voltage: 0, capability: 'ground-reference',
+  });
+  assert.equal(accepted.model.peakCurrentAmps <= 0.012, true);
+  assert.equal(validateGpio2LedCircuit(esp32C3RuntimeCircuit(draft)).accepted, true);
+
+  const reversed = structuredClone(draft);
+  reversed.nets.find((net) => net.id === 'net-ground').endpoints[0].pin = 'ANODE';
+  assert.equal(validateEsp32C3Circuit(reversed).ok, false);
+  const overcurrent = structuredClone(draft);
+  overcurrent.components.find((item) => item.id === 'resistor-1').properties.ohms = 10;
+  assert.equal(validateEsp32C3Circuit(overcurrent).code, 'C3_LED_OVERCURRENT');
+  const unknownPin = structuredClone(draft);
+  unknownPin.nets[0].endpoints.find((endpoint) => endpoint.component === 'c3-1').pin = 'GPIO3';
+  assert.throws(() => normalizeEsp32C3CircuitDraft(unknownPin), /C3_PIN_UNPROVEN/u);
+});
+
+test('public C3 editor shares bounded move rotate delete and history semantics', () => {
+  const editor = new Esp32C3CircuitEditor();
+  assert.equal(editor.snapshot().validation.ok, true);
+  editor.select({ kind: 'component', id: 'resistor-1' });
+  assert.equal(editor.moveComponent('resistor-1', 0.6, 0.35).ok, true);
+  assert.equal(editor.rotateComponent('resistor-1').draft.layout.positions['resistor-1'].rotation, 90);
+  const deleted = editor.deleteSelected();
+  assert.equal(deleted.ok, true);
+  assert.equal(deleted.validation.code, 'C3_SERIES_RESISTOR_REQUIRED');
+  const undone = editor.undo();
+  assert.equal(undone.validation.ok, true);
+  assert.equal(undone.draft.layout.positions['resistor-1'].rotation, 90);
+  assert.equal(editor.redo().validation.code, 'C3_SERIES_RESISTOR_REQUIRED');
+  assert.equal(editor.undo().validation.ok, true);
+  editor.select({ kind: 'component', id: 'c3-1' });
+  assert.equal(editor.deleteSelected().code, 'C3_BOARD_FIXED');
+  editor.select({ kind: 'net', id: 'net-ground' });
+  assert.equal(editor.deleteSelected().validation.code, 'C3_GROUND_REQUIRED');
+  assert.equal(editor.restoreExample().validation.ok, true);
 });
 
 test('public C3 service rejects cross-context access, limits sessions and retires invalid source', async (context) => {

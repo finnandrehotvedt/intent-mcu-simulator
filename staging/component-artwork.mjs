@@ -80,6 +80,28 @@ function rp2040PicoBoard(svg, definition) {
   drawTerminals(svg, definition, 3.1);
 }
 
+function esp32C3Board(svg, definition) {
+  append(svg,
+    element('rect', { x: 12, y: 5, width: 136, height: 210, rx: 18, class: 'c3-editor-board-pcb' }),
+    element('rect', { x: 52, y: 3, width: 56, height: 28, rx: 5, class: 'c3-editor-board-usb' }),
+    element('rect', { x: 44, y: 67, width: 72, height: 56, rx: 7, class: 'c3-editor-board-chip' }),
+    element('rect', { x: 37, y: 137, width: 86, height: 30, rx: 5, class: 'c3-editor-board-module' }),
+    element('text', { x: 80, y: 190, class: 'c3-editor-board-title', 'text-anchor': 'middle' }, 'ESP32-C3'),
+    element('text', { x: 80, y: 204, class: 'c3-editor-board-subtitle', 'text-anchor': 'middle' }, 'PROJECT GPIO2 MODEL'),
+    element('text', { x: 145, y: 48, class: 'c3-editor-board-pin-label', 'text-anchor': 'end' }, 'J1·4 GPIO2'),
+    element('text', { x: 145, y: 158, class: 'c3-editor-board-pin-label', 'text-anchor': 'end' }, 'J1·6 GND'),
+  );
+  for (let row = 0; row < 12; row += 1) {
+    const y = 28 + row * 15;
+    svg.append(element('circle', { cx: 8, cy: y, r: 3.2, class: 'c3-editor-board-pin' }));
+    svg.append(element('circle', { cx: 152, cy: y, r: 3.2, class: [2, 9].includes(row) ? 'c3-editor-board-pin proven' : 'c3-editor-board-pin' }));
+  }
+  for (let index = 0; index < 7; index += 1) {
+    svg.append(element('path', { d: `M 39 ${42 + index * 13} H ${121 - index * 4}`, class: 'board-trace' }));
+  }
+  drawTerminals(svg, definition, 3.2);
+}
+
 function resistor(svg, definition, component) {
   append(svg,
     element('line', { x1: 4, y1: 24, x2: 43, y2: 24, class: 'metal-lead' }),
@@ -146,6 +168,7 @@ function serialInstrument(svg) {
 const renderers = Object.freeze({
   'board-atmega328p': board,
   'board-rp2040-pico': rp2040PicoBoard,
+  'board-esp32-c3-profile': esp32C3Board,
   'resistor-axial': resistor,
   'led-through-hole': led,
   'button-tactile': button,

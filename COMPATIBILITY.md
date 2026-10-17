@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.8 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.9 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -39,6 +39,10 @@ UART marker. Arduino CLI 1.5.1, Arduino-ESP32 3.3.10, ESP-IDF 5.5.4 and esp-rv32
 2601 produce a strict 4 MiB DIO flash image. Actual Espressif QEMU esp32c3
 executes the CPU/UART path and reset replay. Executed GPIO MMIO stores feed a
 separate IntentForce GPIO2 register/LED model. QEMU pin state is not observed.
+The validated GPIO2 J1 pin 4 → 220 Ω → LED → GND J1 pin 6 circuit is editable:
+parts and cables can be selected, moved, quarter-turned, deleted and restored
+with bounded Undo/Redo. Every circuit edit or local data-only Open retires
+executable and LED authority until a fresh successful Build.
 
 The STM32F429ZI editor accepts one exact project-owned C11 grammar. It can set
 PB0 HIGH or LOW, emit 1–24 uppercase USART3 characters and halt. The fixed Arm

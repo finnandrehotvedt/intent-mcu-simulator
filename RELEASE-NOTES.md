@@ -1,4 +1,32 @@
-# Intent MCU Simulator 1.1.0-rc.8
+# Intent MCU Simulator 1.1.0-rc.9
+
+This app-only release makes the bounded ESP32-C3 GPIO2 teaching circuit
+editable while preserving the accepted fixed compiler and actual QEMU CPU/UART
+execution path.
+
+## ESP32-C3 editable teaching circuit
+
+- The original project-owned ESP32-C3 profile board exposes named GPIO2 J1
+  physical pin 4 and GND J1 physical pin 6 terminals. Its validated route is
+  GPIO2 → 220 Ω → LED anode/cathode → GND.
+- Parts and cables support selection, pointer or keyboard movement,
+  quarter-turn rotation, Delete, bounded Undo/Redo, zoom and Fit. The shared
+  Pico routing behavior keeps every visible cable attached to the actual SVG
+  terminal and outside component bodies on desktop and mobile.
+- Invalid topology fails closed. Every source, topology or layout edit and
+  every local data-only Open retires stale flash/runtime/LED authority and
+  requires a fresh isolated Build.
+- HIGH, LOW and INPUT acceptance still executes the compiler-generated DIO
+  flash on actual Espressif QEMU CPU/UART. GPIO2 remains a separately labelled
+  project-owned executed-register-write model; QEMU pin state is not observed.
+- Save/Open contains only project source and validated circuit data. Executable
+  bytes, capabilities, artifacts and runtime sessions are never stored.
+- Pico LED component titles are separated from terminal chips. AVR, Pico,
+  STM32F429ZI, Caddy, DNS and all unrelated services remain unchanged.
+
+---
+
+## 1.1.0-rc.8
 
 This app-only correction makes rendered Pico wires follow the actual visible
 terminal geometry through every supported quarter-turn and responsive size.

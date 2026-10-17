@@ -28,6 +28,77 @@ void loop() {
 `;
 }
 
+async function editorGeometry(page) {
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(
+    () => requestAnimationFrame(() => requestAnimationFrame(resolve)),
+  ))));
+  return page.evaluate(() => {
+    const canvas = document.querySelector('#c3-diagram').getBoundingClientRect();
+    const state = window.__ESP32C3_PUBLIC_WORKBENCH__.state();
+    const anchors = Object.fromEntries([...document.querySelectorAll('[data-c3-endpoint]')].map((node) => {
+      const box = node.getBoundingClientRect();
+      const endpoint = node.dataset.c3Endpoint;
+      const pin = endpoint.slice(endpoint.lastIndexOf('.') + 1);
+      const terminal = node.closest('.pico-editor-part').querySelector(`[data-terminal-pin="${pin}"]`).getBoundingClientRect();
+      return [endpoint, {
+        x: box.left - canvas.left + box.width / 2,
+        y: box.top - canvas.top + box.height / 2,
+        terminalX: terminal.left - canvas.left + terminal.width / 2,
+        terminalY: terminal.top - canvas.top + terminal.height / 2,
+      }];
+    }));
+    const bodies = [...document.querySelectorAll('#c3-editor-components .pico-editor-part')].map((node) => {
+      const box = node.getBoundingClientRect();
+      return { id: node.dataset.componentId, left: box.left - canvas.left, right: box.right - canvas.left,
+        top: box.top - canvas.top, bottom: box.bottom - canvas.top };
+    });
+    const routes = [...document.querySelectorAll('#c3-editor-wires .pico-editor-wire')].map((node) => {
+      const points = JSON.parse(node.dataset.points);
+      const net = state.project.circuit.nets.find((candidate) => candidate.id === node.dataset.net);
+      const endpointKeys = net.endpoints.map((endpoint) => `${endpoint.component}.${endpoint.pin}`);
+      const attached = endpointKeys.every((key) => points.some((point) => Math.hypot(
+        point.x - anchors[key].terminalX, point.y - anchors[key].terminalY,
+      ) < 1));
+      const anchorsMatchTerminals = endpointKeys.every((key) => Math.hypot(
+        anchors[key].x - anchors[key].terminalX, anchors[key].y - anchors[key].terminalY,
+      ) < 1);
+      const crossesComponentBody = points.slice(1).some((end, index) => {
+        const start = points[index];
+        return bodies.some((body) => {
+          const namedEscape = index === 0 && body.id === net.endpoints[0].component
+            || index === points.length - 2 && body.id === net.endpoints[1].component;
+          if (namedEscape) return false;
+          if (Math.abs(start.y - end.y) < 0.5) return start.y > body.top && start.y < body.bottom
+            && Math.max(start.x, end.x) > body.left && Math.min(start.x, end.x) < body.right;
+          if (Math.abs(start.x - end.x) < 0.5) return start.x > body.left && start.x < body.right
+            && Math.max(start.y, end.y) > body.top && Math.min(start.y, end.y) < body.bottom;
+          return true;
+        });
+      });
+      return { net: node.dataset.net, endpointKeys, attached, anchorsMatchTerminals, crossesComponentBody,
+        orthogonal: points.slice(1).every((point, index) => point.x === points[index].x || point.y === points[index].y), points };
+    });
+    const labelGroups = [...document.querySelectorAll('#c3-editor-components .pico-editor-part')].map((part) => ({
+      id: part.dataset.componentId,
+      labels: [...part.querySelectorAll('.pico-editor-pin-label, .pico-editor-part-label')]
+        .map((label) => ({ text: label.textContent, rect: label.getBoundingClientRect().toJSON() })),
+    }));
+    const labelsReadable = labelGroups.every((group) => group.labels.every((label) => label.text.trim() && label.rect.width > 4 && label.rect.height > 4)
+      && group.labels.every((label, index) => group.labels.slice(index + 1).every((other) => !(
+        label.rect.left < other.rect.right - 1 && label.rect.right > other.rect.left + 1
+        && label.rect.top < other.rect.bottom - 1 && label.rect.bottom > other.rect.top + 1
+      ))));
+    return { routes, bodies, anchors, labelGroups, labelsReadable };
+  });
+}
+
+function assertEditorGeometry(geometry) {
+  assert(geometry.routes.length === 3, JSON.stringify(geometry));
+  assert(geometry.routes.every((route) => route.attached && route.anchorsMatchTerminals
+    && route.orthogonal && !route.crossesComponentBody), JSON.stringify(geometry));
+  assert(geometry.labelsReadable, JSON.stringify(geometry.labelGroups));
+}
+
 let browser;
 const failures = [];
 (async () => {
@@ -49,7 +120,12 @@ const failures = [];
   assert(response?.status() === 200, 'public root did not load');
   await page.waitForFunction(() => window.__M11_READY__ === true);
   await page.selectOption('#board-select', 'board.esp32-c3-devmodule-v1');
-  await page.waitForFunction(() => window.__ESP32C3_PUBLIC_WORKBENCH__?.state().active === true);
+  await page.waitForFunction(() => window.__ESP32C3_PUBLIC_WORKBENCH__?.state().active === true
+    && document.querySelectorAll('#c3-editor-wires .pico-editor-wire').length === 3);
+  const boundary = await page.locator('#c3-public-workbench').innerText();
+  assert(boundary.includes('ACTUAL EXECUTION') && boundary.includes('SEPARATE PROJECT MODEL')
+    && boundary.includes('QEMU pin state is not observed or claimed'), 'C3 execution/model labels missing');
+  const initialGeometry = await editorGeometry(page); assertEditorGeometry(initialGeometry);
 
   const activeLayout = await page.evaluate(() => ({
     c3Hidden: document.querySelector('#c3-public-workbench').hidden,
@@ -93,21 +169,72 @@ const failures = [];
   assert(high.state.runtime.modeledCircuit.epochs.at(-1).led.code === 'LED_ON', 'HIGH did not light modeled LED');
   assert(await page.locator('#c3-diagram').getAttribute('data-led') === 'on', 'HIGH LED visual stayed off');
 
-  await page.click('#c3-disconnect');
-  const disconnectedBeforeBuild = await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state());
-  assert(!disconnectedBeforeBuild.circuitAccepted && !disconnectedBeforeBuild.runnable,
-    'disconnect did not retire executable authority');
-  const disconnected = await buildAndRun(source('C3_DISCONNECTED', 'OUTPUT', 'HIGH'), 'C3_DISCONNECTED');
-  assert(disconnected.state.runtime.modeledCircuit.validation.code === 'CIRCUIT_DISCONNECTED',
-    'disconnected circuit was not reported');
-  assert(disconnected.state.runtime.modeledCircuit.epochs.at(-1).led.on === false,
-    'disconnected model lit the LED');
+  const resistorBeforeTextArrow = await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state().project.circuit.layout.positions['resistor-1']);
+  await page.locator('#c3-source').focus(); await page.keyboard.press('ArrowRight');
+  assert(JSON.stringify(await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state().project.circuit.layout.positions['resistor-1']))
+    === JSON.stringify(resistorBeforeTextArrow), 'source textarea arrow moved a circuit part');
 
-  await page.click('#c3-reconnect');
+  await page.locator('#c3-editor-components [data-component-id="resistor-1"]').click(); await page.keyboard.press('ArrowRight');
+  let edited = await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state());
+  assert(!edited.runnable && edited.artifact === null && edited.runtime === null,
+    `move retained stale flash/LED authority: ${JSON.stringify({ phase: edited.phase, runnable: edited.runnable,
+      artifact: Boolean(edited.artifact), runtime: Boolean(edited.runtime), selection: edited.circuitEditor.selection,
+      position: edited.project.circuit.layout.positions['resistor-1'] })}`);
+  assert(await page.locator('#c3-diagram').getAttribute('data-led') === 'off', 'move retained stale LED state');
+  assertEditorGeometry(await editorGeometry(page));
+
+  for (const expectedRotation of [90, 180, 270, 0]) {
+    await page.locator('#c3-editor-components [data-component-id="resistor-1"]').click(); await page.click('#c3-rotate');
+    assert((await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state().project.circuit.layout.positions['resistor-1'].rotation)) === expectedRotation,
+      `resistor rotation did not reach ${expectedRotation}`);
+    assertEditorGeometry(await editorGeometry(page));
+    if (screenshotDirectory) {
+      fs.mkdirSync(screenshotDirectory, { recursive: true });
+      await page.screenshot({ path: path.join(screenshotDirectory, `c3-editor-resistor-${expectedRotation}.png`), fullPage: true });
+    }
+  }
+
+  await page.locator('#c3-editor-components [data-component-id="resistor-1"]').click(); await page.keyboard.press('Delete');
+  edited = await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state());
+  assert(!edited.circuitAccepted && edited.circuitCode === 'C3_SERIES_RESISTOR_REQUIRED'
+    && !edited.runnable && edited.artifact === null && edited.runtime === null,
+  `invalid topology retained authority: ${JSON.stringify(edited)}`);
+  await page.click('#c3-build');
+  assert((await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state())).phase === 'blocked',
+    'invalid C3 circuit was allowed to build');
+  await page.click('#c3-undo'); assertEditorGeometry(await editorGeometry(page));
+  assert((await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state())).circuitAccepted, 'Undo did not restore valid circuit');
+  await page.click('#c3-redo');
+  assert(!(await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state())).circuitAccepted, 'Redo did not restore invalid circuit');
+  await page.click('#c3-undo'); assertEditorGeometry(await editorGeometry(page));
+  await page.locator('#c3-editor-components [data-component-id="resistor-1"]').click(); await page.click('#c3-rotate');
+  assert((await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state().project.circuit.layout.positions['resistor-1'].rotation)) === 90,
+    'saved rotation was not 90 degrees');
+  await page.click('#c3-zoom-in'); assert((await page.locator('#c3-zoom-value').textContent()) === '110%', 'C3 zoom in failed');
+  await page.click('#c3-fit'); assert((await page.locator('#c3-zoom-value').textContent()) === '100%', 'C3 Fit failed');
+  assertEditorGeometry(await editorGeometry(page));
+
   const low = await buildAndRun(source('C3_LOW', 'OUTPUT', 'LOW'), 'C3_LOW');
   assert(low.state.runtime.modeledCircuit.epochs.at(-1).led.code === 'LED_OFF', 'LOW did not turn modeled LED off');
   assert(low.state.artifact.sourceSha256 !== high.state.artifact.sourceSha256, 'edited source reused source identity');
   assert(low.state.artifact.flashSha256 !== high.state.artifact.flashSha256, 'edited source reused flash identity');
+
+  const downloadPromise = page.waitForEvent('download'); await page.click('#c3-save');
+  const download = await downloadPromise; const savedPath = await download.path(); const savedText = fs.readFileSync(savedPath, 'utf8');
+  const saved = JSON.parse(savedText);
+  assert(saved.schema === 'intent-mcu-esp32c3-public-project@1' && saved.source.includes('C3_LOW'), 'saved C3 project identity mismatch');
+  assert(saved.circuit.layout.positions['resistor-1'].rotation === 90, 'saved C3 circuit lost rotation');
+  assert(!/artifact|executable|flashSha256|sessionId|capability/iu.test(savedText), 'saved C3 project leaked executable authority');
+  await page.locator('#c3-open-input').setInputFiles({ name: 'invalid-c3.json', mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({ ...saved, executable: 'forbidden' })) });
+  await page.waitForFunction(() => document.querySelector('#c3-message').textContent.includes('Open rejected'));
+  assert((await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state())).runnable, 'rejected C3 file changed accepted project');
+  await page.locator('#c3-open-input').setInputFiles(savedPath);
+  await page.waitForFunction(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state().runnable === false);
+  assert((await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state().project.circuit.layout.positions['resistor-1'].rotation)) === 90,
+    'opened C3 project lost circuit layout');
+  const reopened = await buildAndRun(source('C3_LOW', 'OUTPUT', 'LOW'), 'C3_LOW');
+  assert(reopened.state.runtime.modeledCircuit.epochs.at(-1).led.code === 'LED_OFF', 'reopened C3 project did not rebuild/run LOW');
 
   const input = await buildAndRun(source('C3_INPUT', 'INPUT', 'HIGH'), 'C3_INPUT');
   assert(input.state.runtime.modeledCircuit.epochs.at(-1).led.code === 'GPIO_WRONG_MODE',
@@ -115,6 +242,8 @@ const failures = [];
 
   if (screenshotDirectory) {
     fs.mkdirSync(screenshotDirectory, { recursive: true });
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    assertEditorGeometry(await editorGeometry(page));
     await page.screenshot({ path: path.join(screenshotDirectory, 'c3-public-desktop.png'), fullPage: true });
   }
   await page.click('#c3-stop');
@@ -122,6 +251,7 @@ const failures = [];
     'Stop retained executable authority');
 
   await page.setViewportSize({ width: 390, height: 844 });
+  assertEditorGeometry(await editorGeometry(page));
   const mobile = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     panel: document.querySelector('#c3-public-workbench').getBoundingClientRect().toJSON(),
@@ -130,6 +260,24 @@ const failures = [];
   assert(mobile.overflow <= 1 && mobile.panel.left >= 8 && mobile.panel.right <= 382,
     `C3 mobile layout invalid: ${JSON.stringify(mobile)}`);
   assert(mobile.workspaceHidden, 'parked AVR canvas reappeared on mobile');
+  await page.locator('#c3-editor-components [data-component-id="resistor-1"]').click(); await page.keyboard.press('ArrowDown');
+  assertEditorGeometry(await editorGeometry(page));
+  for (const expectedRotation of [180, 270, 0, 90]) {
+    await page.locator('#c3-editor-components [data-component-id="resistor-1"]').click(); await page.keyboard.press('r');
+    assert((await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state().project.circuit.layout.positions['resistor-1'].rotation)) === expectedRotation,
+      `mobile resistor rotation did not reach ${expectedRotation}`);
+    assertEditorGeometry(await editorGeometry(page));
+  }
+  await page.keyboard.press('Control+z');
+  assert((await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state().project.circuit.layout.positions['resistor-1'].rotation)) === 0,
+    'mobile Undo failed');
+  assertEditorGeometry(await editorGeometry(page));
+  await page.keyboard.press('Control+Shift+z');
+  assert((await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state().project.circuit.layout.positions['resistor-1'].rotation)) === 90,
+    'mobile Redo failed');
+  assertEditorGeometry(await editorGeometry(page));
+  await page.setViewportSize({ width: 430, height: 900 }); assertEditorGeometry(await editorGeometry(page));
+  await page.setViewportSize({ width: 390, height: 844 }); assertEditorGeometry(await editorGeometry(page));
   if (screenshotDirectory) {
     await page.screenshot({ path: path.join(screenshotDirectory, 'c3-public-mobile.png'), fullPage: true });
   }
@@ -148,10 +296,10 @@ const failures = [];
   console.log(JSON.stringify({ result: 'pass', activeLayout,
     journeys: {
       high: { elapsedMs: high.elapsedMs, flash: high.state.artifact.flashSha256 },
-      disconnected: { elapsedMs: disconnected.elapsedMs },
       low: { elapsedMs: low.elapsedMs, flash: low.state.artifact.flashSha256 },
+      reopened: { elapsedMs: reopened.elapsedMs, flash: reopened.state.artifact.flashSha256 },
       input: { elapsedMs: input.elapsedMs },
-    }, mobile }));
+    }, initialGeometry, mobileGeometry: await editorGeometry(page), mobile }));
   await context.close();
 })().catch((error) => {
   console.error(`${error.stack || error}\n${failures.join('\n')}`);

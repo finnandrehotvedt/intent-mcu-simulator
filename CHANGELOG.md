@@ -2,6 +2,21 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.9 — 2026-10-17
+
+- Replaced the fixed ESP32-C3 GPIO2 circuit illustration with an original
+  editable named-pin canvas using J1 physical pin 4 and J1 physical pin 6.
+- Added selection, drag and keyboard move, quarter-turn rotation, Delete,
+  bounded Undo/Redo, zoom, Fit and responsive deterministic rerouting by
+  reusing the accepted project-owned Pico editor behavior.
+- Made every source/circuit/Open change retire stale flash, runtime and LED
+  authority; invalid wiring blocks Build until restored and a fresh Build is
+  completed.
+- Added desktop/mobile terminal-attachment, body-avoidance, all-rotation,
+  resize, local data-only Save/Open and actual QEMU HIGH/LOW/INPUT acceptance.
+- Preserved the explicit boundary between actual QEMU CPU/UART execution and
+  the separate project-owned executed-register-write GPIO2/LED model.
+
 ## 1.1.0-rc.8 — 2026-10-17
 
 - Fixed rotated Pico resistor routing so Lead A/B wires terminate at the actual

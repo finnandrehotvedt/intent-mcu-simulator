@@ -30,7 +30,7 @@ const definitions = Object.freeze({
     project: 'Local data-only Save/Open · fresh Build after Open',
     source: 'Strict GPIO2 mode/level and UART marker grammar · fixed DIO flash layout',
     runtime: 'Actual Espressif QEMU esp32c3 CPU/UART · two verified boot epochs',
-    circuit: 'Project-owned GPIO2 register model → 220 Ω → LED → GND',
+    circuit: 'Project-owned GPIO2 register model · editable named-pin circuit · J1 pin 4 → 220 Ω → LED → J1 pin 6',
     action: 'Build ESP32-C3 project', limitation: 'QEMU pin state is not observed. GPIO2/LED comes from the separately labelled project-owned executed-register-write model; no SDK, broad ESP32 family, arbitrary source, timing, Wi-Fi, Bluetooth or physical-device claim.',
     publicExecution: true,
   }),

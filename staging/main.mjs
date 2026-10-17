@@ -57,6 +57,7 @@ import { Rp2040PublicWorkbench } from '../src/rp2040-public-workbench.mjs';
 import {
   RP2040_PICO_COMPONENT_CATALOG,
 } from '../src/rp2040-pico-circuit.mjs';
+import { ESP32C3_PUBLIC_COMPONENT_CATALOG } from '../src/esp32c3-public-circuit.mjs';
 import { Esp32C3PublicWorkbench } from '../src/esp32c3-public-workbench.mjs';
 import { Stm32PublicWorkbench } from '../src/stm32-public-workbench.mjs';
 import { serialEventText, serialInputBytes, serialText } from '../src/serial-view.mjs';
@@ -97,7 +98,8 @@ import {
 } from '../expansion-drafts/rotary-encoder-quadrature-v1.mjs';
 
 const uiComponentCatalog = Object.freeze({
-  ...COMPONENT_CATALOG, ...CANDIDATE_UI_COMPONENTS, ...RP2040_PICO_COMPONENT_CATALOG,
+  ...COMPONENT_CATALOG, ...CANDIDATE_UI_COMPONENTS,
+  ...RP2040_PICO_COMPONENT_CATALOG, ...ESP32C3_PUBLIC_COMPONENT_CATALOG,
 });
 function createComponentArtwork(definition, component, options = {}) {
   return CANDIDATE_UI_COMPONENTS[component.type]
@@ -144,6 +146,8 @@ const elements = Object.fromEntries([
   'c3-public-workbench', 'c3-state', 'c3-project-name', 'c3-save', 'c3-open', 'c3-open-input',
   'c3-source', 'c3-build', 'c3-run', 'c3-stop', 'c3-message', 'c3-source-hash', 'c3-flash-hash',
   'c3-diagram', 'c3-external-led', 'c3-circuit-state', 'c3-disconnect', 'c3-reconnect', 'c3-terminal',
+  'c3-editor-wires', 'c3-editor-components', 'c3-circuit-selection',
+  'c3-delete', 'c3-undo', 'c3-redo', 'c3-rotate', 'c3-zoom-out', 'c3-zoom-value', 'c3-zoom-in', 'c3-fit',
   'stm32-public-workbench', 'stm32-state', 'stm32-project-name', 'stm32-save', 'stm32-open', 'stm32-open-input',
   'stm32-source', 'stm32-build', 'stm32-run', 'stm32-reset', 'stm32-stop', 'stm32-message',
   'stm32-source-hash', 'stm32-artifact-hash', 'stm32-diagram', 'stm32-external-led',
@@ -256,13 +260,14 @@ function renderStm32QuickControls(state = stm32PublicState) {
 
 let picoEditorZoom = 1;
 let picoEditorDrag = null;
+let picoEditorResponsiveScale = null;
 
 function picoEndpointKey(endpoint) { return `${endpoint.component}.${endpoint.pin}`; }
 
-function picoEditorAnchor(endpoint) {
-  const target = elements.picoeditorcomponents.querySelector(`[data-pico-endpoint="${picoEndpointKey(endpoint)}"]`);
+function picoEditorAnchor(endpoint, diagram = elements.picodiagram, components = elements.picoeditorcomponents) {
+  const target = components.querySelector(`[data-editor-endpoint="${picoEndpointKey(endpoint)}"]`);
   if (!target) return null;
-  const canvas = elements.picodiagram.getBoundingClientRect();
+  const canvas = diagram.getBoundingClientRect();
   const box = target.getBoundingClientRect();
   const cardBox = target.closest('.pico-editor-part').getBoundingClientRect();
   const pin = { x: box.left - canvas.left + box.width / 2, y: box.top - canvas.top + box.height / 2 };
@@ -284,10 +289,10 @@ function picoEditorAnchor(endpoint) {
   };
 }
 
-function picoEditorObstacles() {
-  const canvas = elements.picodiagram.getBoundingClientRect();
+function picoEditorObstacles(diagram = elements.picodiagram, components = elements.picoeditorcomponents) {
+  const canvas = diagram.getBoundingClientRect();
   const clearance = canvas.width <= 430 ? 3 : 9;
-  return [...elements.picoeditorcomponents.querySelectorAll('.pico-editor-part')].map((card) => {
+  return [...components.querySelectorAll('.pico-editor-part')].map((card) => {
     const box = card.getBoundingClientRect();
     return {
       component: card.dataset.componentId,
@@ -336,9 +341,8 @@ function picoRouteLength(points) {
     + Math.abs(point.x - points[index].x) + Math.abs(point.y - points[index].y), 0);
 }
 
-function picoEditorRoute(anchors, canvas) {
+function picoEditorRoute(anchors, canvas, obstacles) {
   const [left, right] = anchors;
-  const obstacles = picoEditorObstacles();
   const xChannels = [12, canvas.width - 12,
     ...obstacles.flatMap((body) => [Math.max(12, body.left - 14), Math.min(canvas.width - 12, body.right + 14)])];
   const yChannels = [12, canvas.height - 12,
@@ -365,11 +369,12 @@ function drawPicoEditorWires() {
   if (!canvas.width || !canvas.height || !picoPublicState?.circuitEditor) return;
   elements.picoeditorwires.setAttribute('viewBox', `0 0 ${canvas.width} ${canvas.height}`);
   const { draft, selection } = picoPublicState.circuitEditor;
+  const obstacles = picoEditorObstacles();
   const drawings = [];
   for (const net of draft.nets) {
-    const anchors = net.endpoints.map(picoEditorAnchor);
+    const anchors = net.endpoints.map((endpoint) => picoEditorAnchor(endpoint));
     if (anchors.some((anchor) => !anchor)) continue;
-    const points = picoEditorRoute(anchors, canvas);
+    const points = picoEditorRoute(anchors, canvas, obstacles);
     const d = points.map((point, index) => `${index ? 'L' : 'M'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
     const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     hit.classList.add('pico-editor-wire-hit'); hit.dataset.net = net.id; hit.setAttribute('d', d);
@@ -388,8 +393,8 @@ function drawPicoEditorWires() {
   elements.picoeditorwires.replaceChildren(...drawings);
 }
 
-function picoEditorPosition(event, card) {
-  const canvas = elements.picodiagram.getBoundingClientRect();
+function picoEditorPosition(event, card, diagram = elements.picodiagram) {
+  const canvas = diagram.getBoundingClientRect();
   const box = card.getBoundingClientRect();
   const x = Math.max(box.width / 2 + 12, Math.min(canvas.width - box.width / 2 - 12, event.clientX - canvas.left));
   const y = Math.max(box.height / 2 + 12, Math.min(canvas.height - box.height / 2 - 12, event.clientY - canvas.top));
@@ -422,7 +427,10 @@ function finishPicoEditorDrag(event) {
   const drag = picoEditorDrag; picoEditorDrag = null;
   try { if (drag.card.hasPointerCapture(event.pointerId)) drag.card.releasePointerCapture(event.pointerId); } catch { /* released */ }
   if (drag.moved && drag.last) picoPublicWorkbench.editCircuit('moveComponent', drag.componentId, drag.last.x, drag.last.y);
-  else picoPublicWorkbench.selectCircuit({ kind: 'component', id: drag.componentId });
+  else {
+    picoPublicWorkbench.selectCircuit({ kind: 'component', id: drag.componentId });
+    elements.picoeditorcomponents.querySelector(`[data-component-id="${drag.componentId}"]`)?.focus({ preventScroll: true });
+  }
 }
 
 function renderPicoCircuitEditor(state) {
@@ -433,6 +441,7 @@ function renderPicoCircuitEditor(state) {
   const selectedComponent = selection.kind === 'component'
     ? draft.components.find((component) => component.id === selection.id) : null;
   const responsiveScale = elements.picodiagram.getBoundingClientRect().width <= 430 ? 0.6 : 1;
+  picoEditorResponsiveScale = responsiveScale;
   elements.picodelete.disabled = selection.kind === 'none' || selectedComponent?.type === RP2040_PROFILE;
   elements.picorotate.disabled = selection.kind !== 'component';
   elements.picoundo.disabled = !canUndo; elements.picoredo.disabled = !canRedo;
@@ -456,7 +465,8 @@ function renderPicoCircuitEditor(state) {
     const label = document.createElement('span'); label.className = 'pico-editor-part-label'; label.textContent = component.label; card.append(label);
     for (const pin of definition.pins) {
       const anchor = document.createElement('button'); anchor.type = 'button'; anchor.className = 'pin-anchor';
-      anchor.dataset.picoEndpoint = `${component.id}.${pin.id}`; anchor.dataset.label = pin.label;
+      anchor.dataset.picoEndpoint = `${component.id}.${pin.id}`;
+      anchor.dataset.editorEndpoint = `${component.id}.${pin.id}`; anchor.dataset.label = pin.label;
       anchor.title = `${component.id}.${pin.id} · ${pin.label}`; anchor.setAttribute('aria-label', anchor.title);
       anchor.style.setProperty('--pin-x', String(pin.anchor.x)); anchor.style.setProperty('--pin-y', String(pin.anchor.y));
       const pinLabel = document.createElement('span'); pinLabel.className = 'pico-editor-pin-label'; pinLabel.textContent = pin.label; anchor.append(pinLabel);
@@ -535,7 +545,11 @@ function setPicoEditorZoom(next) {
 elements.picozoomout.addEventListener('click', () => setPicoEditorZoom(picoEditorZoom - 0.1));
 elements.picozoomin.addEventListener('click', () => setPicoEditorZoom(picoEditorZoom + 0.1));
 elements.picofit.addEventListener('click', () => setPicoEditorZoom(1));
-new ResizeObserver(() => requestAnimationFrame(() => requestAnimationFrame(drawPicoEditorWires))).observe(elements.picodiagram);
+new ResizeObserver(() => requestAnimationFrame(() => {
+  const nextScale = elements.picodiagram.getBoundingClientRect().width <= 430 ? 0.6 : 1;
+  if (nextScale !== picoEditorResponsiveScale) renderPicoCircuitEditor(picoPublicWorkbench.snapshot());
+  else requestAnimationFrame(drawPicoEditorWires);
+})).observe(elements.picodiagram);
 document.addEventListener('keydown', (event) => {
   if (selectedCompilerProfile !== RP2040_PROFILE || elements.picopublicworkbench.hidden || isTextEditingTarget(event.target)) return;
   const snapshot = picoPublicWorkbench.snapshot().circuitEditor;
@@ -562,6 +576,126 @@ document.addEventListener('keydown', (event) => {
   picoPublicWorkbench.editCircuit('moveComponent', snapshot.selection.id, position.x + delta[0], position.y + delta[1]);
 });
 
+let c3EditorZoom = 1;
+let c3EditorDrag = null;
+let c3EditorResponsiveScale = null;
+
+function drawC3EditorWires() {
+  const canvas = elements.c3diagram.getBoundingClientRect();
+  if (!canvas.width || !canvas.height || !c3PublicState?.circuitEditor) return;
+  elements.c3editorwires.setAttribute('viewBox', `0 0 ${canvas.width} ${canvas.height}`);
+  const { draft, selection } = c3PublicState.circuitEditor;
+  const obstacles = picoEditorObstacles(elements.c3diagram, elements.c3editorcomponents);
+  const drawings = [];
+  for (const net of draft.nets) {
+    const anchors = net.endpoints.map((endpoint) => picoEditorAnchor(endpoint, elements.c3diagram, elements.c3editorcomponents));
+    if (anchors.some((anchor) => !anchor)) continue;
+    const points = picoEditorRoute(anchors, canvas, obstacles);
+    const d = points.map((point, index) => `${index ? 'L' : 'M'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
+    const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    hit.classList.add('pico-editor-wire-hit'); hit.dataset.net = net.id; hit.setAttribute('d', d);
+    hit.setAttribute('tabindex', '0'); hit.setAttribute('role', 'button');
+    hit.setAttribute('aria-label', `Select cable ${net.id}: ${net.endpoints.map(picoEndpointKey).join(' to ')}`);
+    const select = (event) => { event.preventDefault(); c3PublicWorkbench.selectCircuit({ kind: 'net', id: net.id }); };
+    hit.addEventListener('click', select);
+    hit.addEventListener('keydown', (event) => { if (['Enter', ' '].includes(event.key)) select(event); });
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.classList.add('pico-editor-wire');
+    if (selection.kind === 'net' && selection.id === net.id) path.classList.add('selected');
+    path.dataset.net = net.id; path.style.setProperty('--wire-color', draft.layout.wireStyles[net.id] ?? '#39dff2');
+    path.setAttribute('d', d); path.dataset.points = JSON.stringify(points);
+    drawings.push(hit, path);
+  }
+  elements.c3editorwires.replaceChildren(...drawings);
+}
+
+function startC3EditorDrag(event, componentId, card) {
+  if (event.button !== 0) return;
+  event.preventDefault();
+  c3PublicWorkbench.circuitEditor.select({ kind: 'component', id: componentId });
+  c3PublicState = c3PublicWorkbench.snapshot();
+  elements.c3editorcomponents.querySelectorAll('.pico-editor-part').forEach((item) => item.classList.toggle('selected', item === card));
+  elements.c3circuitselection.textContent = `Part · ${componentId}`;
+  elements.c3delete.disabled = card.dataset.componentType === ESP32C3_PROFILE;
+  elements.c3rotate.disabled = false;
+  c3EditorDrag = { pointerId: event.pointerId, componentId, card, moved: false, last: null };
+  card.classList.add('dragging'); card.setPointerCapture(event.pointerId);
+}
+
+function moveC3EditorDrag(event) {
+  if (!c3EditorDrag || c3EditorDrag.pointerId !== event.pointerId) return;
+  const position = picoEditorPosition(event, c3EditorDrag.card, elements.c3diagram);
+  c3EditorDrag.last = position; c3EditorDrag.moved = true;
+  c3EditorDrag.card.style.left = `${position.x * 100}%`; c3EditorDrag.card.style.top = `${position.y * 100}%`;
+  requestAnimationFrame(drawC3EditorWires);
+}
+
+function finishC3EditorDrag(event) {
+  if (!c3EditorDrag || c3EditorDrag.pointerId !== event.pointerId) return;
+  const drag = c3EditorDrag; c3EditorDrag = null;
+  try { if (drag.card.hasPointerCapture(event.pointerId)) drag.card.releasePointerCapture(event.pointerId); } catch { /* released */ }
+  if (drag.moved && drag.last) c3PublicWorkbench.editCircuit('moveComponent', drag.componentId, drag.last.x, drag.last.y);
+  else {
+    c3PublicWorkbench.selectCircuit({ kind: 'component', id: drag.componentId });
+    elements.c3editorcomponents.querySelector(`[data-component-id="${drag.componentId}"]`)?.focus({ preventScroll: true });
+  }
+}
+
+function renderC3CircuitEditor(state) {
+  if (!state?.circuitEditor) return;
+  const { draft, selection, canUndo, canRedo, validation } = state.circuitEditor;
+  elements.c3circuitselection.textContent = selection.kind === 'none'
+    ? 'Nothing selected' : `${selection.kind === 'net' ? 'Cable' : 'Part'} · ${selection.id}`;
+  const selectedComponent = selection.kind === 'component'
+    ? draft.components.find((component) => component.id === selection.id) : null;
+  const responsiveScale = elements.c3diagram.getBoundingClientRect().width <= 430 ? 0.6 : 1;
+  c3EditorResponsiveScale = responsiveScale;
+  elements.c3delete.disabled = selection.kind === 'none' || selectedComponent?.type === ESP32C3_PROFILE;
+  elements.c3rotate.disabled = selection.kind !== 'component';
+  elements.c3undo.disabled = !canUndo; elements.c3redo.disabled = !canRedo;
+  elements.c3zoomvalue.value = `${Math.round(c3EditorZoom * 100)}%`;
+  const modeledLed = Boolean(state.circuitAccepted && state.runtime?.modeledCircuit?.epochs?.at(-1)?.led?.on);
+  const cards = draft.components.map((component) => {
+    const definition = uiComponentCatalog[component.type]; const position = draft.layout.positions[component.id];
+    const card = document.createElement('article');
+    card.className = `circuit-component pico-editor-part${selection.kind === 'component' && selection.id === component.id ? ' selected' : ''}`;
+    card.dataset.componentId = component.id; card.dataset.componentType = component.type;
+    card.tabIndex = 0; card.setAttribute('role', 'button'); card.setAttribute('aria-label', `Select and move ${component.label}`);
+    card.style.left = `${position.x * 100}%`; card.style.top = `${position.y * 100}%`;
+    card.style.setProperty('--rotation', `${position.rotation}deg`);
+    card.style.setProperty('--part-width', `${definition.artwork.cssWidth * c3EditorZoom * responsiveScale}px`);
+    card.style.setProperty('--part-height', `${definition.artwork.cssHeight * c3EditorZoom * responsiveScale}px`);
+    const artwork = createBaseComponentArtwork(definition, component); card.append(artwork);
+    const led = artwork.querySelector('[data-led-id]');
+    if (led) {
+      led.id = 'c3-external-led'; led.classList.toggle('on', modeledLed);
+      led.setAttribute('aria-label', `Modeled external LED is ${modeledLed ? 'on' : 'off'}`);
+    }
+    const label = document.createElement('span'); label.className = 'pico-editor-part-label'; label.textContent = component.label; card.append(label);
+    for (const pin of definition.pins) {
+      const anchor = document.createElement('button'); anchor.type = 'button'; anchor.className = 'pin-anchor';
+      anchor.dataset.c3Endpoint = `${component.id}.${pin.id}`;
+      anchor.dataset.editorEndpoint = `${component.id}.${pin.id}`; anchor.dataset.label = pin.label;
+      anchor.title = `${component.id}.${pin.id} · ${pin.label}`; anchor.setAttribute('aria-label', anchor.title);
+      anchor.style.setProperty('--pin-x', String(pin.anchor.x)); anchor.style.setProperty('--pin-y', String(pin.anchor.y));
+      const pinLabel = document.createElement('span'); pinLabel.className = 'pico-editor-pin-label'; pinLabel.textContent = pin.label; anchor.append(pinLabel);
+      anchor.addEventListener('pointerdown', (event) => event.stopPropagation());
+      anchor.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); c3PublicWorkbench.selectCircuit({ kind: 'component', id: component.id }); });
+      card.append(anchor);
+    }
+    card.addEventListener('pointerdown', (event) => startC3EditorDrag(event, component.id, card));
+    card.addEventListener('pointermove', moveC3EditorDrag); card.addEventListener('pointerup', finishC3EditorDrag);
+    card.addEventListener('pointercancel', finishC3EditorDrag);
+    card.addEventListener('keydown', (event) => {
+      if (['Enter', ' '].includes(event.key)) { event.preventDefault(); c3PublicWorkbench.selectCircuit({ kind: 'component', id: component.id }); }
+    });
+    return card;
+  });
+  elements.c3editorcomponents.replaceChildren(...cards);
+  elements.c3diagram.dataset.connected = String(validation.ok);
+  requestAnimationFrame(() => requestAnimationFrame(drawC3EditorWires));
+}
+
 const c3PublicWorkbench = new Esp32C3PublicWorkbench({
   elements: {
     state: elements.c3state,
@@ -587,6 +721,7 @@ const c3PublicWorkbench = new Esp32C3PublicWorkbench({
     c3PublicState = state;
     window.__ESP32C3_PUBLIC_STATE__ = structuredClone(state);
     renderC3QuickControls(state);
+    renderC3CircuitEditor(state);
   },
 });
 window.__ESP32C3_PUBLIC_WORKBENCH__ = {
@@ -594,7 +729,57 @@ window.__ESP32C3_PUBLIC_WORKBENCH__ = {
   build: () => c3PublicWorkbench.build(),
   run: () => c3PublicWorkbench.run(),
   dispose: () => c3PublicWorkbench.dispose(),
+  selectCircuit: (selection) => c3PublicWorkbench.selectCircuit(selection),
+  deleteSelected: () => c3PublicWorkbench.editCircuit('deleteSelected'),
+  undoCircuit: () => c3PublicWorkbench.editCircuit('undo'),
+  redoCircuit: () => c3PublicWorkbench.editCircuit('redo'),
+  moveCircuitComponent: (id, x, y) => c3PublicWorkbench.editCircuit('moveComponent', id, x, y),
+  rotateCircuitComponent: (id) => c3PublicWorkbench.editCircuit('rotateComponent', id),
 };
+elements.c3delete.addEventListener('click', () => c3PublicWorkbench.editCircuit('deleteSelected'));
+elements.c3undo.addEventListener('click', () => c3PublicWorkbench.editCircuit('undo'));
+elements.c3redo.addEventListener('click', () => c3PublicWorkbench.editCircuit('redo'));
+elements.c3rotate.addEventListener('click', () => {
+  const selection = c3PublicWorkbench.snapshot().circuitEditor.selection;
+  if (selection.kind === 'component') c3PublicWorkbench.editCircuit('rotateComponent', selection.id);
+});
+function setC3EditorZoom(next) {
+  c3EditorZoom = Math.max(0.7, Math.min(1.25, Math.round(next * 20) / 20));
+  renderC3CircuitEditor(c3PublicWorkbench.snapshot());
+}
+elements.c3zoomout.addEventListener('click', () => setC3EditorZoom(c3EditorZoom - 0.1));
+elements.c3zoomin.addEventListener('click', () => setC3EditorZoom(c3EditorZoom + 0.1));
+elements.c3fit.addEventListener('click', () => setC3EditorZoom(1));
+new ResizeObserver(() => requestAnimationFrame(() => {
+  const nextScale = elements.c3diagram.getBoundingClientRect().width <= 430 ? 0.6 : 1;
+  if (nextScale !== c3EditorResponsiveScale) renderC3CircuitEditor(c3PublicWorkbench.snapshot());
+  else requestAnimationFrame(drawC3EditorWires);
+})).observe(elements.c3diagram);
+document.addEventListener('keydown', (event) => {
+  if (selectedCompilerProfile !== ESP32C3_PROFILE || elements.c3publicworkbench.hidden || isTextEditingTarget(event.target)) return;
+  const snapshot = c3PublicWorkbench.snapshot().circuitEditor;
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+    event.preventDefault(); event.stopImmediatePropagation();
+    c3PublicWorkbench.editCircuit(event.shiftKey ? 'redo' : 'undo'); return;
+  }
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+    event.preventDefault(); event.stopImmediatePropagation(); c3PublicWorkbench.editCircuit('redo'); return;
+  }
+  if (['Delete', 'Backspace'].includes(event.key)) {
+    event.preventDefault(); event.stopImmediatePropagation(); c3PublicWorkbench.editCircuit('deleteSelected'); return;
+  }
+  if (snapshot.selection.kind !== 'component') return;
+  if (event.key.toLowerCase() === 'r') {
+    event.preventDefault(); event.stopImmediatePropagation();
+    c3PublicWorkbench.editCircuit('rotateComponent', snapshot.selection.id); return;
+  }
+  const distance = event.shiftKey ? 0.05 : 0.015;
+  const delta = { ArrowLeft: [-distance, 0], ArrowRight: [distance, 0], ArrowUp: [0, -distance], ArrowDown: [0, distance] }[event.key];
+  if (!delta) return;
+  event.preventDefault(); event.stopImmediatePropagation();
+  const position = snapshot.draft.layout.positions[snapshot.selection.id];
+  c3PublicWorkbench.editCircuit('moveComponent', snapshot.selection.id, position.x + delta[0], position.y + delta[1]);
+});
 
 const stm32PublicWorkbench = new Stm32PublicWorkbench({
   elements: {

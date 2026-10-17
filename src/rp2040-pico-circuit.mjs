@@ -1,6 +1,7 @@
 // Copyright 2026 IntentForce
 // SPDX-License-Identifier: Apache-2.0
 import { COMPONENT_CATALOG, LED_FORWARD_VOLTS, defaultProperties } from './component-catalog.mjs';
+import { NamedSeriesLedCircuitEditor } from './named-series-led-circuit-editor.mjs';
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
 
 export const RP2040_PICO_CIRCUIT_SCHEMA = 'intent-mcu-rp2040-pico-circuit@1';
@@ -54,7 +55,6 @@ export const RP2040_PICO_COMPONENT_CATALOG = Object.freeze({
   [RP2040_PICO_PROFILE]: RP2040_PICO_BOARD_DEFINITION,
 });
 
-const HISTORY_LIMIT = 32;
 const ID = /^[a-z][a-z0-9-]{0,47}$/u;
 const LABEL = /^[\p{L}\p{N} ._#()°Ω×+\-]{1,64}$/u;
 const BOARD = RP2040_PICO_PROFILE;
@@ -267,103 +267,17 @@ export function parseRp2040PicoCircuitText(source) {
   }
 }
 
-export class Rp2040PicoCircuitEditor {
+export class Rp2040PicoCircuitEditor extends NamedSeriesLedCircuitEditor {
   constructor(draft = createRp2040PicoCircuitDraft()) {
-    this.draft = normalizeRp2040PicoCircuitDraft(draft);
-    this.selection = { kind: 'none' };
-    this.history = [];
-    this.future = [];
-    this.revision = 0;
+    super({ draft, normalize: normalizeRp2040PicoCircuitDraft,
+      validate: validateRp2040PicoCircuit, createDefault: createRp2040PicoCircuitDraft,
+      fixedComponentType: BOARD, codePrefix: 'RP2040' });
   }
-
-  snapshot() {
-    return { draft: clone(this.draft), selection: clone(this.selection), revision: this.revision,
-      canUndo: this.history.length > 0, canRedo: this.future.length > 0,
-      validation: validateRp2040PicoCircuit(this.draft) };
-  }
-
-  select(selection) {
-    const next = selection?.kind === 'component' && this.draft.components.some((item) => item.id === selection.id)
-      ? { kind: 'component', id: selection.id }
-      : selection?.kind === 'net' && this.draft.nets.some((item) => item.id === selection.id)
-        ? { kind: 'net', id: selection.id } : { kind: 'none' };
-    this.selection = next;
-    return this.snapshot();
-  }
-
-  #commit(next, selection = { kind: 'none' }) {
-    this.history.push(this.draft);
-    if (this.history.length > HISTORY_LIMIT) this.history.shift();
-    this.future = [];
-    this.draft = normalizeRp2040PicoCircuitDraft(next);
-    this.selection = clone(selection);
-    this.revision += 1;
-    return this.snapshot();
-  }
-
-  deleteSelected() {
-    if (this.selection.kind === 'none') return { ok: false, code: 'RP2040_SELECTION_REQUIRED', ...this.snapshot() };
-    if (this.selection.kind === 'component') {
-      const selected = this.draft.components.find((item) => item.id === this.selection.id);
-      if (selected?.type === BOARD) return { ok: false, code: 'RP2040_BOARD_FIXED', ...this.snapshot() };
-      const next = clone(this.draft);
-      next.components = next.components.filter((item) => item.id !== this.selection.id);
-      next.nets = next.nets.filter((net) => !net.endpoints.some((endpoint) => endpoint.component === this.selection.id));
-      delete next.layout.positions[this.selection.id];
-      for (const id of Object.keys(next.layout.wireStyles)) if (!next.nets.some((net) => net.id === id)) delete next.layout.wireStyles[id];
-      return { ok: true, code: 'RP2040_COMPONENT_DELETED', ...this.#commit(next) };
-    }
-    const next = clone(this.draft);
-    next.nets = next.nets.filter((net) => net.id !== this.selection.id);
-    delete next.layout.wireStyles[this.selection.id];
-    return { ok: true, code: 'RP2040_NET_DELETED', ...this.#commit(next) };
-  }
-
-  undo() {
-    if (!this.history.length) return { ok: false, code: 'RP2040_UNDO_EMPTY', ...this.snapshot() };
-    this.future.push(this.draft);
-    if (this.future.length > HISTORY_LIMIT) this.future.shift();
-    this.draft = this.history.pop();
-    this.selection = { kind: 'none' };
-    this.revision += 1;
-    return { ok: true, code: 'RP2040_UNDONE', ...this.snapshot() };
-  }
-
-  redo() {
-    if (!this.future.length) return { ok: false, code: 'RP2040_REDO_EMPTY', ...this.snapshot() };
-    this.history.push(this.draft);
-    if (this.history.length > HISTORY_LIMIT) this.history.shift();
-    this.draft = this.future.pop();
-    this.selection = { kind: 'none' };
-    this.revision += 1;
-    return { ok: true, code: 'RP2040_REDONE', ...this.snapshot() };
-  }
-
-  moveComponent(id, x, y) {
-    if (!this.draft.components.some((item) => item.id === id) || !Number.isFinite(x) || !Number.isFinite(y)) {
-      return { ok: false, code: 'RP2040_COMPONENT_MOVE_INVALID', ...this.snapshot() };
-    }
-    const next = clone(this.draft);
-    next.layout.positions[id].x = Math.max(0.08, Math.min(0.92, x));
-    next.layout.positions[id].y = Math.max(0.1, Math.min(0.9, y));
-    return { ok: true, code: 'RP2040_COMPONENT_MOVED', ...this.#commit(next, { kind: 'component', id }) };
-  }
-
-  rotateComponent(id) {
-    if (!this.draft.components.some((item) => item.id === id)) {
-      return { ok: false, code: 'RP2040_COMPONENT_ROTATE_INVALID', ...this.snapshot() };
-    }
-    const next = clone(this.draft);
-    next.layout.positions[id].rotation = (next.layout.positions[id].rotation + 90) % 360;
-    return { ok: true, code: 'RP2040_COMPONENT_ROTATED', ...this.#commit(next, { kind: 'component', id }) };
-  }
-
-  restoreExample() { return { ok: true, code: 'RP2040_EXAMPLE_RESTORED', ...this.#commit(createRp2040PicoCircuitDraft()) }; }
 
   openText(source) {
     const parsed = parseRp2040PicoCircuitText(source);
     if (!parsed.ok) return { ...parsed, ...this.snapshot() };
-    return { ok: true, code: 'RP2040_DRAFT_OPENED', ...this.#commit(parsed.draft) };
+    return { ok: true, code: 'RP2040_DRAFT_OPENED', ...this.commit(parsed.draft) };
   }
 
   saveText() { return canonicalRp2040PicoCircuitJson(this.draft); }

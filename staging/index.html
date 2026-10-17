@@ -183,27 +183,27 @@
           </dl>
         </section>
         <section class="c3-circuit-pane" aria-label="Project-owned ESP32-C3 GPIO2 LED model">
-          <div id="c3-diagram" class="c3-diagram" data-connected="true" data-led="off">
-            <div class="c3-board-original" aria-label="Original project ESP32-C3 educational profile board">
-              <strong>ESP32-C3<br>PROFILE</strong>
-              <span class="c3-usb">USB</span>
-              <span class="c3-chip">RISC-V</span>
-              <span class="c3-pin c3-pin-gpio2">GPIO2 <small>J1 · pin 4</small></span>
-              <span class="c3-pin c3-pin-gnd">GND <small>J1 · pin 6</small></span>
-            </div>
-            <span class="c3-wire c3-wire-signal" aria-hidden="true"></span>
-            <span class="c3-resistor" aria-label="220 ohm series resistor"></span>
-            <span class="c3-resistor-label" aria-hidden="true">220 Ω</span>
-            <span class="c3-wire c3-wire-series" aria-hidden="true"></span>
-            <span id="c3-external-led" class="c3-external-led" aria-label="Modeled external LED is off"></span>
-            <span class="c3-wire c3-wire-return-vertical" aria-hidden="true"></span>
-            <span class="c3-wire c3-wire-ground" aria-hidden="true"></span>
+          <header class="pico-editor-heading"><div><strong>Editable project-model circuit</strong><small>Named GPIO2 J1 pin 4 and GND J1 pin 6 anchors</small></div><span id="c3-circuit-selection">Nothing selected</span></header>
+          <div class="c3-circuit-actions" aria-label="ESP32-C3 circuit editing controls">
+            <button id="c3-delete" type="button" disabled>Delete</button>
+            <button id="c3-undo" type="button" disabled>Undo</button>
+            <button id="c3-redo" type="button" disabled>Redo</button>
+            <button id="c3-rotate" type="button" disabled>Rotate 90°</button>
+            <button id="c3-zoom-out" type="button" aria-label="Zoom circuit out">−</button>
+            <output id="c3-zoom-value" aria-live="polite">100%</output>
+            <button id="c3-zoom-in" type="button" aria-label="Zoom circuit in">+</button>
+            <button id="c3-fit" type="button">Fit</button>
+          </div>
+          <div id="c3-diagram" class="pico-editor-canvas c3-editor-canvas" data-connected="true" data-led="off" tabindex="0" aria-label="Editable ESP32-C3 project-model circuit. Select a part or cable. Arrow keys move selected parts; R rotates; Delete removes; Control Z and Control Shift Z undo and redo.">
+            <svg id="c3-editor-wires" class="pico-editor-wires" role="group" aria-label="Orthogonal ESP32-C3 named-pin wires"></svg>
+            <div id="c3-editor-components" class="pico-editor-components"></div>
           </div>
           <p id="c3-circuit-state" class="truth">Project model accepted · GPIO2 → 220 Ω → LED → GND · waiting for Run</p>
           <div class="c3-circuit-actions">
             <button id="c3-disconnect" type="button">Disconnect LED return</button>
             <button id="c3-reconnect" type="button" disabled>Restore model wiring</button>
           </div>
+          <p class="pico-editor-help">Drag a part or use Arrow keys to move it. Press R to rotate, Delete to remove, Ctrl/⌘ Z to undo, and Ctrl/⌘ Shift Z to redo. Every edit retires flash and LED authority until a fresh valid Build.</p>
           <div class="c3-terminal-card"><strong>Actual QEMU UART / reset evidence</strong><pre id="c3-terminal" aria-live="polite">No QEMU UART output yet.</pre></div>
           <p class="c3-model-label"><strong>LED label:</strong> project-owned model from executed writes · <strong>not QEMU pin readback</strong></p>
         </section>
@@ -387,7 +387,7 @@
       </nav>
     </section>
 
-    <footer>Intent MCU Simulator 1.1.0-rc.8 public release · AVR + editable bounded Pico + bounded ESP32-C3 + bounded STM32F429ZI execution · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
+    <footer>Intent MCU Simulator 1.1.0-rc.9 public release · AVR + editable bounded Pico + editable bounded ESP32-C3 + bounded STM32F429ZI execution · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
   </main>
   <button id="serial-tab" class="serial-tab" type="button" aria-expanded="false" aria-controls="serial-dock"><span>Serial</span><span id="serial-new-output" class="serial-new-output" hidden>0 new</span></button>
   <aside id="serial-dock" class="serial-dock" aria-labelledby="serial-title" hidden>
