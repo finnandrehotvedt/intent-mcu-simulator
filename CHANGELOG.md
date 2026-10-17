@@ -2,6 +2,17 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.8 — 2026-10-17
+
+- Fixed rotated Pico resistor routing so Lead A/B wires terminate at the actual
+  rendered SVG terminals and approach through preserved outward doglegs.
+- Made route acceptance reject every non-terminal segment that crosses any
+  component body, including endpoint-owner bodies.
+- Added quarter-turn, Delete/Undo/Redo, Fit, resize, mobile and actual-terminal
+  browser geometry coverage, plus non-overlapping readable pin-label checks.
+- Kept the release app-only and preserved every accepted compiler/runtime,
+  project format, Caddy, DNS and unrelated service boundary.
+
 ## 1.1.0-rc.7 — 2026-10-17
 
 - Replaced the fixed Pico illustration with an original editable circuit

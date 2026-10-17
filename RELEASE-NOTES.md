@@ -1,4 +1,28 @@
-# Intent MCU Simulator 1.1.0-rc.7
+# Intent MCU Simulator 1.1.0-rc.8
+
+This app-only correction makes rendered Pico wires follow the actual visible
+terminal geometry through every supported quarter-turn and responsive size.
+
+## Rotated-terminal rendering correction
+
+- Named routes now derive each escape direction from the nearest rendered
+  component edge. GPIO0/GND, resistor Lead A/B and LED terminals therefore
+  leave the visible pin instead of using the card's unscaled centre axis.
+- Pin-to-escape doglegs are preserved during route compaction. Every later
+  segment must avoid every component body, including the two components that
+  own the route endpoints.
+- The public browser contract compares each interactive anchor with the actual
+  SVG terminal and checks 0°, 90°, 180° and 270° after movement, Delete,
+  Undo/Redo, Fit and viewport resize on desktop and mobile.
+- Closely spaced LED and Pico pin labels use separate placement so their text
+  remains readable. Mobile components receive a bounded responsive scale while
+  pin labels retain readable size.
+- AVR, compiler/runtime contracts, saved-project formats, C3, STM32, Caddy and
+  DNS are unchanged.
+
+---
+
+## 1.1.0-rc.7
 
 This incremental release makes the existing bounded public Pico circuit
 directly editable while preserving all accepted compiler and runtime paths.

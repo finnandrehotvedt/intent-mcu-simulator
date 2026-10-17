@@ -37,13 +37,23 @@ async function build(page, source) {
 }
 
 async function editorGeometry(page) {
-  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(
+    () => requestAnimationFrame(() => requestAnimationFrame(resolve)),
+  ))));
   return page.evaluate(() => {
     const canvas = document.querySelector('#pico-diagram').getBoundingClientRect();
     const state = window.__RP2040_PUBLIC_WORKBENCH__.state();
     const anchors = Object.fromEntries([...document.querySelectorAll('[data-pico-endpoint]')].map((node) => {
       const box = node.getBoundingClientRect();
-      return [node.dataset.picoEndpoint, { x: box.left - canvas.left + box.width / 2, y: box.top - canvas.top + box.height / 2 }];
+      const endpoint = node.dataset.picoEndpoint;
+      const pin = endpoint.slice(endpoint.lastIndexOf('.') + 1);
+      const terminal = node.closest('.pico-editor-part').querySelector(`[data-terminal-pin="${pin}"]`).getBoundingClientRect();
+      return [endpoint, {
+        x: box.left - canvas.left + box.width / 2,
+        y: box.top - canvas.top + box.height / 2,
+        terminalX: terminal.left - canvas.left + terminal.width / 2,
+        terminalY: terminal.top - canvas.top + terminal.height / 2,
+      }];
     }));
     const bodies = [...document.querySelectorAll('.pico-editor-part')].map((node) => {
       const box = node.getBoundingClientRect();
@@ -54,12 +64,16 @@ async function editorGeometry(page) {
       const points = JSON.parse(node.dataset.points);
       const net = state.circuit.nets.find((candidate) => candidate.id === node.dataset.net);
       const endpointKeys = net.endpoints.map((endpoint) => `${endpoint.component}.${endpoint.pin}`);
-      const attached = endpointKeys.every((key) => points.some((point) => Math.hypot(point.x - anchors[key].x, point.y - anchors[key].y) < 1));
-      const endpointOwners = new Set(net.endpoints.map((endpoint) => endpoint.component));
-      const crossesForeignBody = points.slice(1).some((end, index) => {
+      const attached = endpointKeys.every((key) => points.some((point) => Math.hypot(point.x - anchors[key].terminalX, point.y - anchors[key].terminalY) < 1));
+      const anchorsMatchTerminals = endpointKeys.every((key) => Math.hypot(
+        anchors[key].x - anchors[key].terminalX, anchors[key].y - anchors[key].terminalY,
+      ) < 1);
+      const crossesComponentBody = points.slice(1).some((end, index) => {
         const start = points[index];
         return bodies.some((body) => {
-          if (endpointOwners.has(body.id)) return false;
+          const namedEscape = index === 0 && body.id === net.endpoints[0].component
+            || index === points.length - 2 && body.id === net.endpoints[1].component;
+          if (namedEscape) return false;
           if (Math.abs(start.y - end.y) < 0.5) return start.y > body.top && start.y < body.bottom
             && Math.max(start.x, end.x) > body.left && Math.min(start.x, end.x) < body.right;
           if (Math.abs(start.x - end.x) < 0.5) return start.x > body.left && start.x < body.right
@@ -67,25 +81,41 @@ async function editorGeometry(page) {
           return true;
         });
       });
-      return { net: node.dataset.net, attached, crossesForeignBody,
+      return { net: node.dataset.net, attached, anchorsMatchTerminals, crossesComponentBody,
         orthogonal: points.slice(1).every((point, index) => point.x === points[index].x || point.y === points[index].y), points };
     });
-    return { routes, canvas: canvas.toJSON(), bodies, anchors };
+    const labelGroups = [...document.querySelectorAll('.pico-editor-part')].map((part) => ({
+      id: part.dataset.componentId,
+      labels: [...part.querySelectorAll('.pico-editor-pin-label')].map((label) => ({ text: label.textContent, rect: label.getBoundingClientRect().toJSON() })),
+    }));
+    const labelsReadable = labelGroups.every((group) => group.labels.every((label) => label.text.trim() && label.rect.width > 4 && label.rect.height > 4)
+      && group.labels.every((label, index) => group.labels.slice(index + 1).every((other) => !(
+        label.rect.left < other.rect.right - 1 && label.rect.right > other.rect.left + 1
+        && label.rect.top < other.rect.bottom - 1 && label.rect.bottom > other.rect.top + 1
+      ))));
+    return { routes, canvas: canvas.toJSON(), bodies, anchors, labelGroups, labelsReadable };
   });
 }
 
 function assertEditorGeometry(geometry) {
   assert.equal(geometry.routes.length, 3, JSON.stringify(geometry));
-  assert.ok(geometry.routes.every((route) => route.attached && route.orthogonal && !route.crossesForeignBody), JSON.stringify(geometry.routes));
+  assert.ok(geometry.routes.every((route) => route.attached && route.anchorsMatchTerminals
+    && route.orthogonal && !route.crossesComponentBody), JSON.stringify(geometry.routes));
+  assert.equal(geometry.labelsReadable, true, JSON.stringify(geometry.labelGroups));
 }
 
 async function selectWire(page, netId) {
   await page.locator('#pico-diagram').scrollIntoViewIfNeeded();
   const point = await page.evaluate((id) => {
     const wire = document.querySelector(`.pico-editor-wire-hit[data-net="${id}"]`);
-    const local = wire.getPointAtLength(wire.getTotalLength() / 2);
-    const screen = new DOMPoint(local.x, local.y).matrixTransform(wire.getScreenCTM());
-    return { x: screen.x, y: screen.y };
+    const length = wire.getTotalLength();
+    for (const fraction of [0.18, 0.3, 0.5, 0.7, 0.82]) {
+      const local = wire.getPointAtLength(length * fraction);
+      const screen = new DOMPoint(local.x, local.y).matrixTransform(wire.getScreenCTM());
+      const topHit = document.elementsFromPoint(screen.x, screen.y).find((node) => node.classList?.contains('pico-editor-wire-hit'));
+      if (topHit === wire) return { x: screen.x, y: screen.y };
+    }
+    throw new Error(`No independently clickable segment for ${id}`);
   }, netId);
   await page.mouse.click(point.x, point.y);
   await page.waitForFunction((id) => {
@@ -152,9 +182,23 @@ async function selectWire(page, netId) {
   await page.click('#pico-redo');
   assert.equal(await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuit.layout.positions['resistor-1'].rotation), 90);
   assertEditorGeometry(await editorGeometry(page));
+  for (const expectedRotation of [180, 270, 0, 90]) {
+    await page.locator('[data-component-id="resistor-1"]').click(); await page.click('#pico-rotate');
+    assert.equal(await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuit.layout.positions['resistor-1'].rotation), expectedRotation);
+    assertEditorGeometry(await editorGeometry(page));
+  }
+  await page.locator('[data-component-id="resistor-1"]').click(); await page.keyboard.press('Delete');
+  assert.equal((await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state())).circuitCode, 'RP2040_SERIES_RESISTOR_REQUIRED');
+  await page.click('#pico-undo'); assert.equal((await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state())).circuitValid, true);
+  assertEditorGeometry(await editorGeometry(page));
+  await page.click('#pico-redo'); assert.equal((await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state())).circuitCode, 'RP2040_SERIES_RESISTOR_REQUIRED');
+  await page.click('#pico-undo'); assert.equal((await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state())).circuitValid, true);
   await page.click('#pico-zoom-in'); assert.equal(await page.locator('#pico-zoom-value').textContent(), '110%');
   await page.click('#pico-fit'); assert.equal(await page.locator('#pico-zoom-value').textContent(), '100%');
   assertEditorGeometry(await editorGeometry(page));
+  await page.setViewportSize({ width: 1440, height: 900 }); assertEditorGeometry(await editorGeometry(page));
+  await page.setViewportSize({ width: 1920, height: 1080 }); assertEditorGeometry(await editorGeometry(page));
+  await page.screenshot({ path: `${screenshotDir}/public-pico-rotated-resistor-desktop-1920.png`, fullPage: true });
 
   await page.locator('[data-component-id="led-1"]').click();
   const ledBeforeKeyboard = await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuit.layout.positions['led-1']);
@@ -232,6 +276,18 @@ async function selectWire(page, netId) {
   assert.deepEqual(mobile.controls.filter((item) => item.hidden).map((item) => item.id), ['toggle-catalog', 'toggle-inspector']);
   assert.ok(mobile.controls.filter((item) => !item.hidden).every((item) => item.rect.left >= 0 && item.rect.right <= 390), JSON.stringify(mobile.controls));
   await page.locator('[data-component-id="resistor-1"]').click(); await page.keyboard.press('ArrowDown'); assertEditorGeometry(await editorGeometry(page));
+  for (const expectedRotation of [90, 180, 270, 0]) {
+    await page.locator('[data-component-id="resistor-1"]').click(); await page.keyboard.press('r');
+    assert.equal(await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuit.layout.positions['resistor-1'].rotation), expectedRotation);
+    assertEditorGeometry(await editorGeometry(page));
+  }
+  await page.keyboard.press('Control+z'); assert.equal(await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuit.layout.positions['resistor-1'].rotation), 270);
+  assertEditorGeometry(await editorGeometry(page));
+  await page.keyboard.press('Control+Shift+z'); assert.equal(await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuit.layout.positions['resistor-1'].rotation), 0);
+  assertEditorGeometry(await editorGeometry(page));
+  await page.locator('[data-component-id="resistor-1"]').click(); await page.keyboard.press('r'); assertEditorGeometry(await editorGeometry(page));
+  await page.setViewportSize({ width: 430, height: 900 }); assertEditorGeometry(await editorGeometry(page));
+  await page.setViewportSize({ width: 390, height: 844 }); assertEditorGeometry(await editorGeometry(page));
   await page.screenshot({ path: `${screenshotDir}/public-pico-editor-mobile-390.png`, fullPage: true });
 
   assert.deepEqual(outside, []); assert.deepEqual(errors, []); assert.deepEqual(await context.cookies(), []);

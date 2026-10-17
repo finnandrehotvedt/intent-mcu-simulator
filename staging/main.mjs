@@ -266,27 +266,35 @@ function picoEditorAnchor(endpoint) {
   const box = target.getBoundingClientRect();
   const cardBox = target.closest('.pico-editor-part').getBoundingClientRect();
   const pin = { x: box.left - canvas.left + box.width / 2, y: box.top - canvas.top + box.height / 2 };
-  const dx = pin.x - (cardBox.left - canvas.left + cardBox.width / 2);
-  const dy = pin.y - (cardBox.top - canvas.top + cardBox.height / 2);
-  const direction = Math.abs(dx) >= Math.abs(dy)
-    ? { x: Math.sign(dx) || 1, y: 0 } : { x: 0, y: Math.sign(dy) || 1 };
+  const rendered = {
+    left: cardBox.left - canvas.left, right: cardBox.right - canvas.left,
+    top: cardBox.top - canvas.top, bottom: cardBox.bottom - canvas.top,
+  };
+  const direction = [
+    { distance: Math.abs(pin.x - rendered.left), x: -1, y: 0 },
+    { distance: Math.abs(rendered.right - pin.x), x: 1, y: 0 },
+    { distance: Math.abs(pin.y - rendered.top), x: 0, y: -1 },
+    { distance: Math.abs(rendered.bottom - pin.y), x: 0, y: 1 },
+  ].sort((left, right) => left.distance - right.distance)[0];
+  const escapeDistance = canvas.width <= 430 ? 8 : 20;
   return {
     pin,
-    escape: { x: pin.x + direction.x * 20, y: pin.y + direction.y * 20 },
+    escape: { x: pin.x + direction.x * escapeDistance, y: pin.y + direction.y * escapeDistance },
     component: endpoint.component,
   };
 }
 
 function picoEditorObstacles() {
   const canvas = elements.picodiagram.getBoundingClientRect();
+  const clearance = canvas.width <= 430 ? 3 : 9;
   return [...elements.picoeditorcomponents.querySelectorAll('.pico-editor-part')].map((card) => {
     const box = card.getBoundingClientRect();
     return {
       component: card.dataset.componentId,
-      left: box.left - canvas.left - 9,
-      right: box.right - canvas.left + 9,
-      top: box.top - canvas.top - 9,
-      bottom: box.bottom - canvas.top + 9,
+      left: box.left - canvas.left - clearance,
+      right: box.right - canvas.left + clearance,
+      top: box.top - canvas.top - clearance,
+      bottom: box.bottom - canvas.top + clearance,
     };
   });
 }
@@ -312,7 +320,11 @@ function compactPicoRoute(points) {
   const unique = points.filter((point, index) => !index
     || Math.abs(point.x - points[index - 1].x) > 0.5 || Math.abs(point.y - points[index - 1].y) > 0.5);
   return unique.filter((point, index) => {
-    if (!index || index === unique.length - 1) return true;
+    // The first and last pairs are the electrically named pin-to-escape
+    // segments. Keep both escapes even when an intermediate channel happens
+    // to be collinear; otherwise a rotated part can lose its outward dogleg
+    // and the visible cable cuts back through the component body.
+    if (index <= 1 || index >= unique.length - 2) return true;
     const before = unique[index - 1]; const after = unique[index + 1];
     return !((Math.abs(before.x - point.x) <= 0.5 && Math.abs(point.x - after.x) <= 0.5)
       || (Math.abs(before.y - point.y) <= 0.5 && Math.abs(point.y - after.y) <= 0.5));
@@ -339,8 +351,11 @@ function picoEditorRoute(anchors, canvas) {
   ].map(compactPicoRoute);
   const accepted = candidates.filter((points) => points.slice(1).every((end, index) => {
     const start = points[index];
-    return obstacles.every((body) => anchors.some((anchor) => anchor.component === body.component)
-      || !picoSegmentCrossesBody(start, end, body));
+    return obstacles.every((body) => {
+      const namedEscape = index === 0 && body.component === anchors[0].component
+        || index === points.length - 2 && body.component === anchors[1].component;
+      return namedEscape || !picoSegmentCrossesBody(start, end, body);
+    });
   }));
   return (accepted.length ? accepted : candidates).sort((a, b) => picoRouteLength(a) - picoRouteLength(b))[0];
 }
@@ -417,6 +432,7 @@ function renderPicoCircuitEditor(state) {
     ? 'Nothing selected' : `${selection.kind === 'net' ? 'Cable' : 'Part'} · ${selection.id}`;
   const selectedComponent = selection.kind === 'component'
     ? draft.components.find((component) => component.id === selection.id) : null;
+  const responsiveScale = elements.picodiagram.getBoundingClientRect().width <= 430 ? 0.6 : 1;
   elements.picodelete.disabled = selection.kind === 'none' || selectedComponent?.type === RP2040_PROFILE;
   elements.picorotate.disabled = selection.kind !== 'component';
   elements.picoundo.disabled = !canUndo; elements.picoredo.disabled = !canRedo;
@@ -429,8 +445,8 @@ function renderPicoCircuitEditor(state) {
     card.tabIndex = 0; card.setAttribute('role', 'button'); card.setAttribute('aria-label', `Select and move ${component.label}`);
     card.style.left = `${position.x * 100}%`; card.style.top = `${position.y * 100}%`;
     card.style.setProperty('--rotation', `${position.rotation}deg`);
-    card.style.setProperty('--part-width', `${definition.artwork.cssWidth * picoEditorZoom}px`);
-    card.style.setProperty('--part-height', `${definition.artwork.cssHeight * picoEditorZoom}px`);
+    card.style.setProperty('--part-width', `${definition.artwork.cssWidth * picoEditorZoom * responsiveScale}px`);
+    card.style.setProperty('--part-height', `${definition.artwork.cssHeight * picoEditorZoom * responsiveScale}px`);
     const artwork = createBaseComponentArtwork(definition, component); card.append(artwork);
     const led = artwork.querySelector('[data-led-id]');
     if (led) {

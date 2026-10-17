@@ -1,4 +1,4 @@
-# Migration to 1.1.0-rc.7
+# Migration to 1.1.0-rc.8
 
 There is no account, cloud project database, or server-side project migration.
 Existing browser recovery remains readable. Before changing versions, save an
