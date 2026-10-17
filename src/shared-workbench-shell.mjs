@@ -206,7 +206,10 @@ export function mountSharedWorkbenchShell(document) {
       if (!roots.has(profile)) throw new Error('SHARED_WORKBENCH_PROFILE_UNKNOWN');
       activeProfile = profile;
       document.body.dataset.activeProfile = profile;
-      for (const [key, root] of roots) root?.classList.toggle('shared-active-profile', key === profile);
+      for (const [key, root] of roots) {
+        root?.classList.toggle('shared-active-profile', key === profile);
+        root?.setAttribute('aria-hidden', String(key !== profile));
+      }
     },
     toggle(surface) {
       if (!['parts', 'inspector'].includes(surface)) throw new Error('SHARED_WORKBENCH_TOGGLE_UNKNOWN');
