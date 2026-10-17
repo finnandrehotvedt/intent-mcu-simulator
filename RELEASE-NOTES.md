@@ -19,8 +19,10 @@ capability boundaries.
   properties, topology, layout, rotation and wire styling. Executable bytes,
   runtime/session authority, verdicts and secrets are rejected before adapter
   normalization.
-- Actual downloads reopen in fresh pages on desktop and mobile; repeated Open
-  remains canonical, creates no duplicates and leaves stale authority absent.
+- Save requests the same deterministic download on every controller, including
+  AVR browsers that expose an unusable native save picker. Actual downloads
+  reopen in fresh pages on desktop and mobile; repeated Open remains canonical,
+  creates no duplicates and leaves stale authority absent.
 
 ---
 

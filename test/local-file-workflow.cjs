@@ -37,7 +37,7 @@ let browser;
   assert((await fallback.textContent('#project-state')).includes('download requested'), 'fallback state overclaims a completed native write');
   await fallback.click('#project-new');
   await fallback.setInputFiles('#project-open-input', downloadPath);
-  await fallback.waitForFunction(() => document.querySelector('#project-message').textContent.includes('opened from your computer'));
+  await fallback.waitForFunction(() => document.querySelector('#project-message').textContent.includes('Common project opened'));
   assert(JSON.stringify(await fallback.evaluate(() => window.__M6_PROJECT__())) === canonical, 'fallback save/open changed canonical project bytes');
   assert(mutationRequests.length === 0, `file workflow made server mutation request: ${mutationRequests.join(', ')}`);
   progress('fallback-download-open');
@@ -70,13 +70,14 @@ let browser;
   await native.fill('#project-name', 'Native file trainer');
   await native.locator('#project-name').press('Tab');
   const nativeCanonical = await native.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
-  await native.click('#project-save');
-  await native.waitForFunction(() => document.querySelector('#project-message').textContent.includes('file you selected'));
-  assert(await native.evaluate(() => window.__LOCAL_FILE_TEXT__) === nativeCanonical, 'native save did not write canonical project bytes');
-  assert((await native.textContent('#project-state')).includes('saved to file'), 'native save state is not explicit');
+  const [nativeDownload] = await Promise.all([native.waitForEvent('download'), native.click('#project-save')]);
+  const nativeText = require('node:fs').readFileSync(await nativeDownload.path(), 'utf8');
+  await native.evaluate((text) => { window.__LOCAL_FILE_TEXT__ = text; }, nativeText);
+  assert(JSON.stringify(JSON.parse(nativeText).project) === nativeCanonical, 'common download changed native-authored project bytes');
+  assert((await native.textContent('#project-state')).includes('download requested'), 'common download state is not explicit');
   await native.click('#project-new');
   await native.click('#project-open');
-  await native.waitForFunction(() => document.querySelector('#project-message').textContent.includes('opened from your computer'));
+  await native.waitForFunction(() => document.querySelector('#project-message').textContent.includes('Common project opened'));
   assert(JSON.stringify(await native.evaluate(() => window.__M6_PROJECT__())) === nativeCanonical, 'native save/open changed canonical project bytes');
   const beforeCancel = await native.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
   await native.evaluate(() => {
@@ -88,8 +89,8 @@ let browser;
   await native.setInputFiles('#project-open-input', {
     name: 'invalid.intent-mcu.json', mimeType: 'application/json', buffer: Buffer.from('{"schema":'),
   });
-  await native.waitForFunction(() => document.querySelector('#technical-error-detail').textContent.includes('Open rejected atomically'));
-  assert((await native.textContent('#technical-error-detail')).includes('project unchanged'), 'invalid open is not explained');
+  await native.waitForFunction(() => document.querySelector('#project-message').textContent.includes('Open rejected'));
+  assert((await native.textContent('#project-message')).includes('unchanged'), 'invalid open is not explained');
   assert(await native.evaluate(() => JSON.stringify(window.__M6_PROJECT__())) === beforeCancel, 'invalid open changed project state');
   for (const viewport of [
     { width: 1440, height: 900 }, { width: 768, height: 900 },
@@ -104,7 +105,7 @@ let browser;
     assert(responsive.overflow <= 1 && responsive.save && responsive.open, `file controls overflow at ${viewport.width}px`);
   }
   assert(nativeMutations.length === 0, `native file workflow made server mutation request: ${nativeMutations.join(', ')}`);
-  progress('native-save-open-cancel-invalid-responsive');
+  progress('deterministic-download-native-open-cancel-invalid-responsive');
   await nativeContext.close();
 
   console.log(JSON.stringify({ browser: browserName, result: 'pass', account: false, serverProjectWrites: 0 }));

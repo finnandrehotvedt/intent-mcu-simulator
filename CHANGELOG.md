@@ -16,6 +16,8 @@ All notable public source changes are recorded here.
 - Added all-four actual-download/fresh-page Open, canonical byte stability,
   repeated Open, cross-family parking, raw-authority, legacy thermostat and
   desktop/mobile acceptance while preserving WIRE-LANE-01 and Fullscreen.
+- Standardized AVR Save on the same immediate deterministic download as Pico,
+  C3 and STM32 so a present-but-unusable native picker cannot swallow Save.
 
 ## 1.1.0-rc.16 — 2026-10-17
 

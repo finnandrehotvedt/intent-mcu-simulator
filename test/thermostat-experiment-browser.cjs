@@ -110,9 +110,9 @@ let browser;
   assert(correct.results.every((result) => result.virtualMilliseconds >= 160 && result.virtualMilliseconds <= 350), 'verdict escaped the virtual-time window');
   assert(correct.results.every((result) => result.checks.primaryExecutedPin && result.checks.corroboratingSerial && result.checks.inputsComplete), 'a pass lacked executed evidence');
 
-  await page.click('#project-save');
-  await page.waitForFunction(() => window.__THERMOSTAT_FILE_TEXT__.length > 1000);
-  const savedText = await page.evaluate(() => window.__THERMOSTAT_FILE_TEXT__);
+  const [savedDownload] = await Promise.all([page.waitForEvent('download'), page.click('#project-save')]);
+  const savedText = fs.readFileSync(await savedDownload.path(), 'utf8');
+  await page.evaluate((text) => { window.__THERMOSTAT_FILE_TEXT__ = text; }, savedText);
   const saved = JSON.parse(savedText);
   assert(saved.schema === 'intent-mcu-project-envelope@1'
     && saved.profile === 'board.atmega328p-16mhz-v1'

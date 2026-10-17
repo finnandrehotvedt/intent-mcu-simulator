@@ -117,9 +117,10 @@ The intended manual workflow is:
    identity, and routed wire endpoints remain attached to their actual pins.
 5. Edit one or more source files. Source, circuit, and board profile together
    determine build freshness; changing any of them invalidates an old artifact.
-6. Save or open a project file on your computer. Browsers without a native file
-   picker use deterministic download and file-input fallback. Browser recovery
-   is separate from the durable user-owned file. Imported projects and
+6. Save or open a project file on your computer. Save always requests the same
+   deterministic local download on every controller; Open uses the browser's
+   file picker or file-input fallback. Browser recovery is separate from the
+   durable user-owned file. Imported projects and
    Prompt Bridge proposals pass the same strict schema and electrical rules as
    manual edits.
 

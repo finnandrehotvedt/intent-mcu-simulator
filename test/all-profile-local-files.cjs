@@ -189,7 +189,7 @@ async function verifyNarrowOpen(browser, record, wrongProfilePath) {
 }
 
 async function saveAvr(page) {
-  await page.evaluate(() => { window.showSaveFilePicker = undefined; window.showOpenFilePicker = undefined; });
+  await page.evaluate(() => { window.showOpenFilePicker = undefined; });
   await page.click('#project-demo');
   await page.fill('#project-name', 'AVR file contract');
   await page.locator('#project-name').press('Tab');
@@ -288,6 +288,9 @@ async function verifyCrossProfileRouting(browser, pico, c3) {
 (async () => {
   const browser = await chromium.launch({ headless: true });
   const saveContext = await browser.newContext({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true });
+  await saveContext.addInitScript(() => {
+    window.showSaveFilePicker = () => new Promise(() => {});
+  });
   const page = await saveContext.newPage();
   await ready(page);
   const avr = await saveAvr(page);
@@ -312,6 +315,7 @@ async function verifyCrossProfileRouting(browser, pico, c3) {
       repeatOpenMs: opened[item.profile.name].repeatOpenMs,
     })),
     freshPageFileChooser: true,
+    avrSaveIgnoresUnavailableNativePicker: true,
     authoredDataDeepCompared: true,
     dataOnlyNoExecutableOrSecrets: true,
     malformedWrongProfileUnsupportedAtomic: true,

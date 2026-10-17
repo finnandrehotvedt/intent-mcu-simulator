@@ -1960,30 +1960,6 @@ async function saveProjectFile() {
   let text;
   try { text = boundedProjectText(); }
   catch (error) { showActionableError(elements.projectmessage, error.message, 'Project file was not saved.'); return; }
-  if (typeof window.showSaveFilePicker === 'function') {
-    try {
-      projectFileHandle ??= await window.showSaveFilePicker({
-        suggestedName: projectFilename(),
-        types: [{ description: 'Intent MCU project', accept: { 'application/json': ['.json'] } }],
-      });
-      const writable = await projectFileHandle.createWritable();
-      await writable.write(new Blob([text], { type: 'application/json' }));
-      await writable.close();
-      const recoverySaved = persistProject(); markFileSaved(); renderProject();
-      elements.projectmessage.textContent = recoverySaved
-        ? 'Project saved to the file you selected. Browser recovery was updated separately.'
-        : 'Project saved to the selected file, but browser recovery/local save failed. The in-memory project remains usable.';
-      return;
-    } catch (error) {
-      if (error?.name === 'AbortError') {
-        elements.projectmessage.textContent = 'Save cancelled. The project remains in memory; browser recovery is unchanged.';
-        return;
-      }
-      projectFileHandle = null;
-      showActionableError(elements.projectmessage, 'FILE_SAVE_FAILED', `${error?.name || 'Error'}: ${error?.message || 'write failed'}`);
-      return;
-    }
-  }
   const recoverySaved = persistProject();
   downloadText(projectFilename(), text, 'application/json');
   markFileSaved('download requested'); renderProject();
