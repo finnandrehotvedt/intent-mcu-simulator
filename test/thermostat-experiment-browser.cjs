@@ -3,6 +3,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const strictAssert = require('node:assert/strict');
 
 const moduleRoot = process.env.PLAYWRIGHT_NODE_MODULES || '/runner/node_modules';
 const { chromium, firefox, webkit } = require(path.join(moduleRoot, 'playwright'));
@@ -142,10 +143,10 @@ let browser;
     results: window.__M6_STATE__.thermostatExperiment?.results ?? [],
     fileState: window.__COMMON_PROJECT_FILE_STATE__,
   }));
-  assert.deepEqual(legacyMigration.project, saved.project, 'legacy contact migration changed authored data or compiledFixture reference');
-  assert.equal(legacyMigration.artifact, null, 'legacy contact migration restored executable authority');
-  assert.deepEqual(legacyMigration.results, [], 'legacy contact migration restored experiment verdicts');
-  assert.equal(legacyMigration.fileState.report.legacy, true, 'legacy contact migration was not reported');
+  strictAssert.deepEqual(legacyMigration.project, saved.project, 'legacy contact migration changed authored data or compiledFixture reference');
+  strictAssert.equal(legacyMigration.artifact, null, 'legacy contact migration restored executable authority');
+  strictAssert.deepEqual(legacyMigration.results, [], 'legacy contact migration restored experiment verdicts');
+  strictAssert.equal(legacyMigration.fileState.report.legacy, true, 'legacy contact migration was not reported');
 
   await page.click('#thermostat-load-bad');
   await page.waitForFunction(() => window.__M6_STATE__.thermostatExperiment?.variant === 'known-bad-equality');
