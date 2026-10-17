@@ -88,6 +88,9 @@ export class Esp32C3PublicWorkbench {
       this.project.source = this.elements.source.value;
       this.invalidate('Source changed. The previous flash was retired.');
     });
+    this.elements.name.addEventListener('input', () => {
+      if (validName(this.elements.name.value)) this.project.name = this.elements.name.value.trim();
+    });
     this.elements.name.addEventListener('change', () => {
       if (!validName(this.elements.name.value)) this.elements.name.value = this.project.name;
       else { this.project.name = this.elements.name.value.trim(); this.render(); }
