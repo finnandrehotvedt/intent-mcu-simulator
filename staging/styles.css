@@ -713,6 +713,8 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   .panel-resizer { display: none; }
   .workspace > .catalog, .workspace > .board-card, .workspace > .inspector, .logic-card { grid-column: 1; }
   body.serial-dock-open .workspace { grid-template-columns: 1fr; }
+  body.serial-dock-open .workspace.inspector-collapsed,
+  body.serial-dock-open .workspace.catalog-collapsed.inspector-collapsed { grid-template-columns: minmax(0, 1fr); }
   body.serial-dock-open .workspace .catalog, body.serial-dock-open .workspace .inspector { display: block; grid-column: 1; }
   body.serial-dock-open .workspace #catalog-resizer, body.serial-dock-open .workspace #inspector-resizer { display: none; }
   .workspace.catalog-collapsed:not(.inspector-collapsed),
