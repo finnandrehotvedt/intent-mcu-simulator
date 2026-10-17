@@ -1,4 +1,28 @@
-# Intent MCU Simulator 1.1.0-rc.14
+# Intent MCU Simulator 1.1.0-rc.15
+
+This release gives all four accepted controller profiles one coherent AVR-style
+workbench without expanding any compiler, runtime, pin or component claim.
+
+## Shared controller workflow and clear wire lanes
+
+- ATmega328P, RP2040 Pico, ESP32-C3 and STM32F429ZI now use the same local
+  project toolbar, Parts–Canvas–Inspector row, Firmware and Runtime drawers,
+  persistent Build/Run controls and named Serial access.
+- The bounded profiles retain their real existing editors and runtimes behind
+  explicit adapters. Switching preserves authored drafts while retiring stale
+  build/runtime authority.
+- Unsupported Pause/Reset operations remain disabled with profile-specific
+  QEMU or Renode reasons. No capability is inferred from the common layout.
+- `WIRE-LANE-01` prevents distinct electrical nets from sharing a collinear
+  visible path and reserves useful parallel clearance. Perpendicular crossings
+  and explicit same-net junction trunks remain valid.
+- Rendered desktop/mobile acceptance covers the dense AVR examples and all
+  three bounded profiles, including movement, rotation, responsive rerouting,
+  project files and fresh-build boundaries.
+
+---
+
+## 1.1.0-rc.14
 
 This release adds one bounded, visible requirements-to-execution experiment
 without expanding the AVR controller, compiler or peripheral claim.

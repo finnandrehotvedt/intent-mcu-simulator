@@ -1,12 +1,12 @@
-# Migration to 1.1.0-rc.14
+# Migration to 1.1.0-rc.15
 
 There is no account, cloud project database, or server-side project migration.
 Existing browser recovery remains readable. Before changing versions, save an
 important project to a local `.intent-mcu.json` file.
 
-This release adds one candidate-project thermostat starter but does not change
-the project schema. Files saved by rc.13 remain readable with the same
-profile-specific rules.
+This release changes the visible shell and routing presentation but does not
+change a project schema. Files saved by rc.14 remain readable with the same
+profile-specific rules and require a fresh Build after Open.
 
 After the update:
 

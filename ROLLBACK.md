@@ -1,11 +1,11 @@
-# Rollback basis for 1.1.0-rc.14
+# Rollback basis for 1.1.0-rc.15
 
 Rollback is scoped to the Lab application container and the exact retained
-pre-rc.14 Lab response-header configuration. DNS, Caddy routing, the Teach
+pre-rc.15 Lab response-header configuration. DNS, Caddy routing, the Teach
 apex, classroom, security lab, mail, and unrelated containers stay unchanged.
 
-The deployment must retain the known-good `1.1.0-rc.13` app image and the exact
-pre-rc.14 Compose, environment and Caddy files on VM103. If any mandatory
+The deployment must retain the known-good `1.1.0-rc.14` app image and the exact
+pre-rc.15 Compose, environment and Caddy files on VM103. If any mandatory
 acceptance check fails, restore those files and that image, recreate only the
 Lab and existing Caddy containers, wait for health, and verify Lab plus the
 related Teach URLs.
@@ -14,8 +14,8 @@ Learner projects require no server restore. Local files remain owned by the
 learner, and versioned browser recovery is not deleted by either deployment or
 rollback.
 
-The rc.14 release adds the bounded thermostat experiment UI and source files;
-it reuses the accepted image-ID-locked compiler and browser runtime. Roll back
+The rc.15 release adds the shared controller shell and rendered wire-lane
+separation; it reuses the accepted image-ID-locked compilers and runtimes. Roll back
 by restoring the exact pre-release
 app image, Compose, compiler-lock and Caddy files retained immediately before
 deployment, then recreating only the Lab and existing Caddy containers. The

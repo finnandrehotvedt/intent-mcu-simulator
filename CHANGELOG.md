@@ -2,6 +2,17 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.15 — 2026-10-17
+
+- Mounted all four accepted controller implementations in one shared AVR-style
+  project, Parts, Canvas, Inspector, Firmware, Runtime and Serial workflow.
+- Preserved each profile's existing file schema, compiler/runtime boundary,
+  parked draft and fresh-build rules through controller switching.
+- Added truthful capability reasons for controls unavailable in QEMU or Renode.
+- Added `WIRE-LANE-01`, deterministic lane separation and rendered checks so
+  distinct nets cannot lie collinearly on top of one another; crossings and
+  explicit same-net trunks remain distinct and valid.
+
 ## 1.1.0-rc.14 — 2026-10-17
 
 - Added one bounded AVR thermostat experiment with exact A1 temperature,
