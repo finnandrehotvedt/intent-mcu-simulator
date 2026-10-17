@@ -80,6 +80,12 @@ mobile widths.
 
 ### Wiring and execution
 
+- `WIRE-LANE-01`: distinct electrical nets never share a collinear visible
+  segment of positive length and maintain a useful visible lane clearance.
+  Perpendicular crossings are allowed and remain visually different from an
+  explicit same-net junction. Same-net branches may share only their rendered
+  trunk/junction; endpoint contact is not overlap. This is checked from the
+  rendered SVG after move, rotate, resize, zoom/Fit, Undo/Redo and Save/Open.
 - On every profile, accepted movement and named-pin wire operations keep cable
   endpoints attached to the intended anchors and require a fresh Build.
 - Pico, C3 and STM32 support their accepted delete/recreate, reconnect,

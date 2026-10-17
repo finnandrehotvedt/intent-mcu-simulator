@@ -30,6 +30,7 @@ import {
   routeFamilyPaths,
   routeSegmentOrientation,
 } from '../src/route-model.mjs';
+import { parallelWireConflicts, separateParallelWireLanes } from '../src/wire-lane-rules.mjs';
 import { explainError } from '../src/error-catalog.mjs';
 import { createLifecycleState, transitionLifecycle } from '../src/lifecycle.mjs';
 import { mountSharedWorkbenchShell } from '../src/shared-workbench-shell.mjs';
@@ -515,7 +516,7 @@ function picoRouteLength(points) {
     + Math.abs(point.x - points[index].x) + Math.abs(point.y - points[index].y), 0);
 }
 
-function picoEditorRoute(anchors, canvas, obstacles) {
+function picoEditorRoute(anchors, canvas, obstacles, occupied = []) {
   const [left, right] = anchors;
   const xChannels = [12, canvas.width - 12,
     ...obstacles.flatMap((body) => [Math.max(12, body.left - 14), Math.min(canvas.width - 12, body.right + 14)])];
@@ -535,7 +536,10 @@ function picoEditorRoute(anchors, canvas, obstacles) {
       return namedEscape || !picoSegmentCrossesBody(start, end, body);
     });
   }));
-  return (accepted.length ? accepted : candidates).sort((a, b) => picoRouteLength(a) - picoRouteLength(b))[0];
+  return (accepted.length ? accepted : candidates).map((points, order) => ({
+    points, order,
+    conflicts: parallelWireConflicts([...occupied, { netId: `candidate-${order}`, points }], { clearance: 8 }).length,
+  })).sort((a, b) => a.conflicts - b.conflicts || picoRouteLength(a.points) - picoRouteLength(b.points) || a.order - b.order)[0].points;
 }
 
 function drawPicoEditorWires() {
@@ -545,10 +549,16 @@ function drawPicoEditorWires() {
   const { draft, selection } = picoPublicState.circuitEditor;
   const obstacles = picoEditorObstacles();
   const drawings = [];
+  const routed = [];
   for (const net of draft.nets) {
     const anchors = net.endpoints.map((endpoint) => picoEditorAnchor(endpoint));
     if (anchors.some((anchor) => !anchor)) continue;
-    const points = picoEditorRoute(anchors, canvas, obstacles);
+    const candidate = picoEditorRoute(anchors, canvas, obstacles, routed);
+    const lanes = separateParallelWireLanes([...routed, { netId: net.id, points: candidate }], {
+      clearance: 8, obstacles, bounds: { left: 8, right: canvas.width - 8, top: 8, bottom: canvas.height - 8 },
+    });
+    const points = lanes.routes.at(-1).points;
+    routed.push({ netId: net.id, points });
     const d = points.map((point, index) => `${index ? 'L' : 'M'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
     const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     hit.classList.add('pico-editor-wire-hit'); hit.dataset.net = net.id; hit.setAttribute('d', d);
@@ -781,10 +791,16 @@ function drawC3EditorWires() {
   const { draft, selection } = c3PublicState.circuitEditor;
   const obstacles = picoEditorObstacles(elements.c3diagram, elements.c3editorcomponents);
   const drawings = [];
+  const routed = [];
   for (const net of draft.nets) {
     const anchors = net.endpoints.map((endpoint) => picoEditorAnchor(endpoint, elements.c3diagram, elements.c3editorcomponents));
     if (anchors.some((anchor) => !anchor)) continue;
-    const points = picoEditorRoute(anchors, canvas, obstacles);
+    const candidate = picoEditorRoute(anchors, canvas, obstacles, routed);
+    const lanes = separateParallelWireLanes([...routed, { netId: net.id, points: candidate }], {
+      clearance: 8, obstacles, bounds: { left: 8, right: canvas.width - 8, top: 8, bottom: canvas.height - 8 },
+    });
+    const points = lanes.routes.at(-1).points;
+    routed.push({ netId: net.id, points });
     const d = points.map((point, index) => `${index ? 'L' : 'M'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
     const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     hit.classList.add('pico-editor-wire-hit'); hit.dataset.net = net.id; hit.setAttribute('d', d);
@@ -1005,12 +1021,18 @@ function drawStm32EditorWires() {
   const { draft, selection } = stm32PublicState.circuitEditor;
   const obstacles = picoEditorObstacles(elements.stm32diagram, elements.stm32editorcomponents);
   const drawings = [];
+  const routed = [];
   for (const net of draft.nets) {
     const anchors = net.endpoints.map((endpoint) => picoEditorAnchor(
       endpoint, elements.stm32diagram, elements.stm32editorcomponents,
     ));
     if (anchors.some((anchor) => !anchor)) continue;
-    const points = picoEditorRoute(anchors, canvas, obstacles);
+    const candidate = picoEditorRoute(anchors, canvas, obstacles, routed);
+    const lanes = separateParallelWireLanes([...routed, { netId: net.id, points: candidate }], {
+      clearance: 8, obstacles, bounds: { left: 8, right: canvas.width - 8, top: 8, bottom: canvas.height - 8 },
+    });
+    const points = lanes.routes.at(-1).points;
+    routed.push({ netId: net.id, points });
     const d = points.map((point, index) => `${index ? 'L' : 'M'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
     const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     hit.classList.add('pico-editor-wire-hit'); hit.dataset.net = net.id; hit.setAttribute('d', d);
@@ -1570,10 +1592,6 @@ function setPublicPreviewControls(preview) {
     }
     return;
   }
-  if (avr) {
-    elements.quickpause.title = '';
-    elements.quickreset.title = '';
-  }
   for (const [control, disabled] of publicPreviewControlStates.entries()) control.disabled = disabled;
   publicPreviewControlStates.clear();
 }
@@ -1633,6 +1651,10 @@ function renderPublicControllerWorkbench() {
   if (pico) renderPicoQuickControls();
   if (c3) renderC3QuickControls();
   if (stm32) renderStm32QuickControls();
+  if (avr) {
+    elements.quickpause.title = '';
+    elements.quickreset.title = '';
+  }
   window.__PUBLIC_CONTROLLER_PROJECTION__.selectedProfile = view.profile;
   window.__PUBLIC_CONTROLLER_PROJECTION__.selected = view;
   publish({
@@ -2510,17 +2532,29 @@ function drawCircuitWires() {
   const drawings = [];
   const paint = [];
   const obstacles = routeObstacles(canvasBox);
+  const records = [];
   for (const net of currentProject().circuit.nets) {
     const anchors = netAnchors(net, canvasBox);
     if (Object.keys(anchors).length < 2) continue;
     const family = materializeRouteFamily(net, currentProject().layout.wireRoutes[net.id], anchors, obstacles);
     const branches = routeFamilyPaths(family, anchors);
     for (const branch of branches) {
+      records.push({ net, family, anchors, branch, netId: net.id, points: branch.points });
+    }
+  }
+  const lanes = separateParallelWireLanes(records.map(({ netId, points }) => ({ netId, points })), {
+    clearance: 0.012, obstacles, bounds: { left: -1, right: 2, top: -1, bottom: 2 },
+  });
+  const separated = records.map((record, index) => ({
+    ...record, branch: { ...record.branch, points: lanes.routes[index].points },
+  }));
+  for (const { net, family, anchors, branch } of separated) {
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.classList.add('circuit-wire');
       path.dataset.net = net.id;
       path.dataset.endpoint = endpointKey(branch.endpoint);
       path.dataset.kind = netKind(net);
+      path.dataset.points = JSON.stringify(branch.points);
       path.style.setProperty('--wire-color', currentProject().layout.wireStyles[net.id]?.color ?? '#39dff2');
       path.setAttribute('d', routePathText(branch.points, canvasBox));
       drawings.push(path);
@@ -2534,8 +2568,10 @@ function drawCircuitWires() {
       for (let index = 0; index < branch.points.length - 1; index += 1) {
         drawings.push(...createSegmentInteraction(net, family, anchors, branch, index, canvasBox));
       }
-    }
-    if (currentProject().circuit.junctions.some((junction) => junction.net === net.id)) {
+  }
+  for (const net of currentProject().circuit.nets) {
+    const branches = separated.filter((record) => record.net.id === net.id).map((record) => record.branch);
+    if (branches.length && currentProject().circuit.junctions.some((junction) => junction.net === net.id)) {
       const hub = screenRoutePoint(branches[0].points.at(-1), canvasBox);
       const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       dot.classList.add('junction-dot');
@@ -3878,7 +3914,14 @@ function setCanvasInteractionMode(mode) {
   renderComponents();
 }
 
-elements.serialtab.addEventListener('click', () => setSerialDock(elements.serialtab.getAttribute('aria-expanded') !== 'true'));
+elements.serialtab.addEventListener('click', () => {
+  if (selectedCompilerProfile !== AVR_PROFILE) {
+    setSerialDock(false);
+    sharedWorkbenchShell.openSerial();
+    return;
+  }
+  setSerialDock(elements.serialtab.getAttribute('aria-expanded') !== 'true');
+});
 elements.serialclose.addEventListener('click', () => setSerialDock(false, { returnFocus: true }));
 elements.serialresume.addEventListener('pointerdown', resumeSerialAutoscrollFromControl);
 elements.serialresume.addEventListener('click', resumeSerialAutoscrollFromControl);

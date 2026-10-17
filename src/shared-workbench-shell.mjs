@@ -74,6 +74,38 @@ function labelSurface(node, name) {
   return node;
 }
 
+function sharedResizer(document, name, variable, direction) {
+  const handle = document.createElement('div');
+  handle.className = 'shared-panel-resizer';
+  handle.dataset.sharedResizer = name;
+  handle.setAttribute('role', 'separator');
+  handle.setAttribute('tabindex', '0');
+  handle.setAttribute('aria-label', `Resize ${name === 'parts' ? 'Parts' : 'Inspector'} panel`);
+  const resize = (start, delta) => {
+    const width = Math.max(210, Math.min(430, start + delta * direction));
+    document.documentElement.style.setProperty(variable, `${width}px`);
+  };
+  let drag = null;
+  handle.addEventListener('pointerdown', (event) => {
+    drag = { id: event.pointerId, x: event.clientX,
+      width: Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(variable)) };
+    handle.setPointerCapture(event.pointerId);
+  });
+  handle.addEventListener('pointermove', (event) => {
+    if (drag?.id === event.pointerId) resize(drag.width, event.clientX - drag.x);
+  });
+  const finish = () => { drag = null; };
+  handle.addEventListener('pointerup', finish);
+  handle.addEventListener('pointercancel', finish);
+  handle.addEventListener('keydown', (event) => {
+    if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+    event.preventDefault();
+    const width = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(variable));
+    resize(width, (event.key === 'ArrowRight' ? 16 : -16));
+  });
+  return handle;
+}
+
 function mountNarrowProfile(document, adapter) {
   const root = document.querySelector(adapter.root);
   const grid = root?.querySelector(adapter.grid);
@@ -106,8 +138,54 @@ function mountNarrowProfile(document, adapter) {
   heading.textContent = 'Selected part';
   inspector.append(eyebrow, heading, properties);
 
-  grid.prepend(parts);
-  grid.append(inspector);
+  const name = root.querySelector(`#${adapter.prefix}-project-name`);
+  const nameLabel = root.querySelector(`label[for="${adapter.prefix}-project-name"]`);
+  const projectBar = document.createElement('section');
+  projectBar.className = 'shared-project-bar';
+  projectBar.dataset.sharedSurface = 'project';
+  projectBar.setAttribute('aria-label', `${adapter.profile} project controls`);
+  project.removeAttribute('data-shared-surface');
+  const projectHeading = document.createElement('div');
+  projectHeading.className = 'shared-project-heading';
+  const projectEyebrow = document.createElement('p');
+  projectEyebrow.className = 'eyebrow';
+  projectEyebrow.textContent = 'LOCAL PROJECT';
+  projectHeading.append(projectEyebrow, nameLabel, name);
+  projectBar.append(projectHeading, project);
+
+  const build = root.querySelector(`#${adapter.prefix}-build`);
+  const buildControls = document.createElement('div');
+  buildControls.className = 'build-controls shared-build-controls';
+  buildControls.append(build);
+  source.append(buildControls);
+
+  const runtimePanel = document.createElement('section');
+  runtimePanel.className = 'shared-runtime-surface';
+  runtimePanel.dataset.sharedSurface = 'runtime';
+  runtime.removeAttribute('data-shared-surface');
+  const message = root.querySelector(`#${adapter.prefix}-message`);
+  const identities = root.querySelector(`.${adapter.prefix}-identities`);
+  runtimePanel.append(runtime, message, identities, serial);
+
+  const sourceDrawer = document.createElement('details');
+  sourceDrawer.className = 'workbench-drawer shared-workbench-drawer';
+  sourceDrawer.open = true;
+  const sourceSummary = document.createElement('summary');
+  sourceSummary.textContent = 'Firmware editor';
+  sourceDrawer.append(sourceSummary, source);
+  const runtimeDrawer = document.createElement('details');
+  runtimeDrawer.className = 'workbench-drawer shared-workbench-drawer';
+  runtimeDrawer.open = true;
+  const runtimeSummary = document.createElement('summary');
+  runtimeSummary.textContent = 'Firmware runtime and instruments';
+  runtimeDrawer.append(runtimeSummary, runtimePanel);
+
+  const partsResizer = sharedResizer(document, 'parts', '--catalog-width', 1);
+  const inspectorResizer = sharedResizer(document, 'inspector', '--inspector-width', -1);
+
+  grid.replaceChildren(parts, partsResizer, canvas, inspectorResizer, inspector);
+  root.insertBefore(projectBar, grid);
+  root.append(sourceDrawer, runtimeDrawer);
   source.classList.add('shared-source-surface');
   canvas.classList.add('shared-canvas-surface');
   parts.classList.add('shared-parts-surface');
@@ -137,6 +215,17 @@ export function mountSharedWorkbenchShell(document) {
       const collapsed = root.classList.toggle(`${surface}-collapsed`);
       root.querySelector(`[data-shared-surface="${surface}"]`)?.setAttribute('aria-hidden', String(collapsed));
       return collapsed;
+    },
+    openSerial() {
+      const root = roots.get(activeProfile);
+      const serial = root?.querySelector('[data-shared-surface="serial"]');
+      const drawer = serial?.closest('details');
+      if (!serial || !drawer) return false;
+      drawer.open = true;
+      serial.setAttribute('tabindex', '-1');
+      serial.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      serial.focus({ preventScroll: true });
+      return true;
     },
     adapter(profile = activeProfile) { return sharedWorkbenchAdapter(profile); },
   });
