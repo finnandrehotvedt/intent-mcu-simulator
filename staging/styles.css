@@ -59,6 +59,15 @@ h2 { font-size: 1.22rem; margin: 0; }
 .starter-parts { color: var(--cyan); font: 650 .69rem ui-monospace, monospace; }
 .starter-action { margin-top: auto; color: var(--text); font-size: .75rem; font-weight: 800; }
 .starter-card:hover .starter-action, .starter-card:focus-visible .starter-action { color: var(--lime); }
+.profile-example-picker { margin: 12px 0; padding: 12px; border: 1px solid #29465d; border-radius: 10px; background: #081722; }
+.profile-example-picker h3, .profile-example-picker p { margin: 0 0 8px; }
+.profile-example-picker p { color: var(--muted); font-size: .82rem; }
+.profile-example-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.profile-example-card { min-width: 0; padding: 10px; border: 1px solid #31536c; border-radius: 8px; background: linear-gradient(145deg, #102d41, #091a28); color: var(--text); text-align: left; }
+.profile-example-card strong, .profile-example-card span { display: block; }
+.profile-example-card span { margin-top: 4px; color: var(--muted); font-size: .78rem; }
+.profile-example-card span b { color: var(--cyan); font-weight: 700; }
+.profile-example-card:hover, .profile-example-card:focus-visible { border-color: var(--cyan); }
 .quick-controls { position: sticky; z-index: 20; top: 8px; display: flex; align-items: center; justify-content: flex-end; gap: 7px; margin: 0 0 12px; padding: 8px 10px; border-radius: 12px; backdrop-filter: blur(16px); pointer-events: none; }
 .quick-controls > * { pointer-events: auto; }
 .quick-controls > span { display: grid; margin-right: auto; }

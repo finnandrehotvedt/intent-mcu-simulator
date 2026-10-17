@@ -101,6 +101,7 @@ import {
   prepareProjectEnvelope,
 } from '../src/project-envelope.mjs';
 import { serialEventText, serialInputBytes, serialText } from '../src/serial-view.mjs';
+import { createSupportedProfileExample, supportedProfileExamples } from '../src/supported-example-pack.mjs';
 import { CPU_CYCLES_PER_MILLISECOND, cursorCycles, waveformPaths } from '../src/waveform-view.mjs';
 import { createComponentArtwork as createBaseComponentArtwork } from './component-artwork.mjs';
 import {
@@ -188,6 +189,7 @@ const elements = Object.fromEntries([
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
+  'pico-profile-examples',
   'pico-source', 'pico-build', 'pico-run', 'pico-pause', 'pico-reset', 'pico-stop', 'pico-message',
   'pico-diagnostics', 'pico-diagnostic-links',
   'pico-source-hash', 'pico-artifact-hash', 'pico-diagram', 'pico-circuit-state',
@@ -198,6 +200,7 @@ const elements = Object.fromEntries([
   'pico-wire-color', 'pico-wire-cancel', 'pico-wire-state', 'pico-serial',
   'c3-public-workbench', 'c3-state', 'c3-project-name', 'c3-save', 'c3-open', 'c3-open-input',
   'c3-native-open', 'c3-native-save', 'c3-native-save-copy', 'c3-file-connection', 'c3-legacy-copy',
+  'c3-profile-examples',
   'c3-source', 'c3-build', 'c3-run', 'c3-stop', 'c3-message', 'c3-source-hash', 'c3-flash-hash',
   'c3-diagnostics', 'c3-diagnostic-links',
   'c3-diagram', 'c3-external-led', 'c3-circuit-state', 'c3-reconnect', 'c3-add-bend', 'c3-route-back', 'c3-route-forward',
@@ -207,6 +210,7 @@ const elements = Object.fromEntries([
   'c3-delete', 'c3-undo', 'c3-redo', 'c3-rotate', 'c3-zoom-out', 'c3-zoom-value', 'c3-zoom-in', 'c3-fit',
   'stm32-public-workbench', 'stm32-state', 'stm32-project-name', 'stm32-save', 'stm32-open', 'stm32-open-input',
   'stm32-native-open', 'stm32-native-save', 'stm32-native-save-copy', 'stm32-file-connection', 'stm32-legacy-copy',
+  'stm32-profile-examples',
   'stm32-source', 'stm32-build', 'stm32-run', 'stm32-reset', 'stm32-stop', 'stm32-message',
   'stm32-diagnostics', 'stm32-diagnostic-links',
   'stm32-source-hash', 'stm32-artifact-hash', 'stm32-diagram', 'stm32-external-led',
@@ -513,6 +517,34 @@ function renderBoundedComponentCatalog({ state, editCircuit, list, properties })
   }
   label.append(limit); input.id = `${selected.id}-${input.dataset.boundedProperty}`; label.htmlFor = input.id;
   row.append(label, input); properties.replaceChildren(row);
+}
+
+function renderProfileExampleCards(profile, container, workbench) {
+  const cards = supportedProfileExamples(profile).map((example) => {
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'profile-example-card';
+    button.dataset.profileExample = example.id;
+    button.setAttribute('aria-label', `Load ${example.name}. ${example.learn}`);
+    const name = document.createElement('strong'); name.textContent = example.name;
+    const line = (label, value) => {
+      const row = document.createElement('span'); const heading = document.createElement('b');
+      heading.textContent = label; row.append(heading, ` · ${value}`); return row;
+    };
+    const learn = line('Learn', example.learn);
+    const tryIt = line('Try', example.try);
+    const outcome = line('Observe', example.outcome);
+    const limits = line('Limits', example.limits);
+    button.append(name, learn, tryIt, outcome, limits);
+    button.addEventListener('click', () => {
+      const install = () => workbench.installPreparedProject(
+        createSupportedProfileExample(profile, example.id),
+        `${example.name} loaded as authored data only. Build fresh before Run.`,
+      );
+      if (!requestUnsavedChangeGuard({ profile, actionLabel: `loading ${example.name}`, continueAction: install })) install();
+    });
+    return button;
+  });
+  container.replaceChildren(...cards);
 }
 
 function picoEditorAnchor(endpoint, diagram = elements.picodiagram, components = elements.picoeditorcomponents) {
@@ -1137,6 +1169,7 @@ window.__RP2040_PUBLIC_WORKBENCH__ = {
   setWireColor: (color) => setBoundedWireColor('pico', color),
   setWireRoute: (netId, route) => picoPublicWorkbench.editCircuit('setWireRoute', netId, route),
 };
+renderProfileExampleCards(RP2040_PROFILE, elements.picoprofileexamples, picoPublicWorkbench);
 elements.picodelete.addEventListener('click', () => picoPublicWorkbench.editCircuit('deleteSelected'));
 elements.picoundo.addEventListener('click', () => picoPublicWorkbench.editCircuit('undo'));
 elements.picoredo.addEventListener('click', () => picoPublicWorkbench.editCircuit('redo'));
@@ -1396,6 +1429,7 @@ window.__ESP32C3_PUBLIC_WORKBENCH__ = {
   setWireColor: (color) => setBoundedWireColor('c3', color),
   setWireRoute: (netId, route) => c3PublicWorkbench.editCircuit('setWireRoute', netId, route),
 };
+renderProfileExampleCards(ESP32C3_PROFILE, elements.c3profileexamples, c3PublicWorkbench);
 elements.c3delete.addEventListener('click', () => c3PublicWorkbench.editCircuit('deleteSelected'));
 elements.c3undo.addEventListener('click', () => c3PublicWorkbench.editCircuit('undo'));
 elements.c3redo.addEventListener('click', () => c3PublicWorkbench.editCircuit('redo'));
@@ -1666,6 +1700,7 @@ window.__STM32_PUBLIC_WORKBENCH__ = {
   setWireColor: (color) => setBoundedWireColor('stm32', color),
   setWireRoute: (netId, route) => stm32PublicWorkbench.editCircuit('setWireRoute', netId, route),
 };
+renderProfileExampleCards(STM32F429ZI_PROFILE, elements.stm32profileexamples, stm32PublicWorkbench);
 elements.stm32delete.addEventListener('click', () => stm32PublicWorkbench.editCircuit('deleteSelected'));
 elements.stm32undo.addEventListener('click', () => stm32PublicWorkbench.editCircuit('undo'));
 elements.stm32redo.addEventListener('click', () => stm32PublicWorkbench.editCircuit('redo'));

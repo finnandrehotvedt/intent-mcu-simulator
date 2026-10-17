@@ -2,6 +2,21 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.24 — 2026-10-17
+
+- Added one second validated AVR PWM lesson and paired on/off UART lessons for
+  each bounded Pico, ESP32-C3 and STM32 profile.
+- Added an explicit machine-readable U03 coverage matrix. Every supported
+  button, ADC, PWM or Serial cell has multiple example IDs; unavailable cells
+  remain empty and explicit.
+- Added visible profile-local example cards with Learn, Try, Observe and Limits
+  copy. Every card loads through the existing strict project/source/circuit
+  validators and requires a fresh Build before Run.
+- Protected example switching with the existing Keep, Download copy and
+  Discard unsaved-change decision. No example restores executable authority.
+- Added unit and rendered browser acceptance, including actual fresh Build/Run
+  proof for all seven new lessons and exact expected LED, PWM and UART results.
+
 ## 1.1.0-rc.23 — 2026-10-17
 
 - Unified the AVR, Pico, ESP32-C3 and STM32 circuit canvases on the same dark

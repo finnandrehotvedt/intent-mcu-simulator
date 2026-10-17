@@ -89,6 +89,6 @@ test('an invalid starter derivative is rejected without changing an accepted ses
   assert.equal(session.saveText(), before);
 });
 
-test('the existing four public example factories remain unchanged', () => {
-  assert.deepEqual(exampleCatalog().map((item) => item.id), ['blink', 'button', 'adc', 'pwm']);
+test('the ordinary public example factories retain prior examples and add the reviewed PWM pair', () => {
+  assert.deepEqual(exampleCatalog().map((item) => item.id), ['blink', 'button', 'adc', 'pwm', 'pwm-pulse']);
 });

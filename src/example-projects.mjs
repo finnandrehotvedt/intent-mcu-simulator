@@ -37,6 +37,14 @@ const EXAMPLES = Object.freeze({
     nets: [['board', 'D3', 1, 'A'], [1, 'B', 2, 'ANODE'], [2, 'CATHODE', 'board', 'GND1']],
     source: `void setup() { pinMode(3, OUTPUT); Serial.begin(9600); }\nvoid loop() {\n  for (int level = 0; level <= 255; level += 15) { analogWrite(3, level); delay(30); }\n  Serial.println("FADE");\n}`,
   },
+  'pwm-pulse': {
+    name: 'PWM pulse', description: 'Compare two fixed PWM levels on D3 and print each phase.',
+    focus: 'PWM output + duty-cycle boundary', partsLabel: 'Controller · resistor · LED',
+    outcome: 'See 25% and 75% duty cycles in the LED and waveform.',
+    parts: ['board.atmega328p-16mhz-v1', 'resistor.fixed-v1', 'led.basic-v1'],
+    nets: [['board', 'D3', 1, 'A'], [1, 'B', 2, 'ANODE'], [2, 'CATHODE', 'board', 'GND1']],
+    source: `void setup() { pinMode(3, OUTPUT); Serial.begin(9600); }\nvoid loop() {\n  analogWrite(3, 64); Serial.println("PWM 25"); delay(300);\n  analogWrite(3, 191); Serial.println("PWM 75"); delay(300);\n}`,
+  },
 });
 
 export function exampleCatalog() {
@@ -69,7 +77,7 @@ export function createExampleProject(id) {
   project.circuit.components.forEach((component, index) => {
     project.layout.positions[component.id] = { x: placements[index][0], y: placements[index][1], rotation: 0 };
   });
-  if (id === 'pwm') project.instruments.logicChannels = ['D3'];
+  if (id === 'pwm' || id === 'pwm-pulse') project.instruments.logicChannels = ['D3'];
   if (id === 'button') project.instruments.logicChannels = ['D2'];
   if (id === 'adc') project.instruments.selectedPin = 'A0';
   return { name: example.name, description: example.description, project };

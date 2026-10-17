@@ -1,4 +1,29 @@
-# Intent MCU Simulator 1.1.0-rc.23
+# Intent MCU Simulator 1.1.0-rc.24
+
+This supported-example release completes the bounded U03 teaching catalogue
+without adding a controller capability, component, pin, electrical topology,
+source API or runtime.
+
+## Supported-function example pack
+
+- AVR now has two PWM lessons: the existing fade and a fixed 25%/75% pulse
+  comparison. Existing button, ADC and Serial lessons already provide multiple
+  distinct validated examples.
+- Pico, ESP32-C3 and STM32 each show two visible authored-data cards for their
+  already-supported UART/output subset: one HIGH/on result and one LOW/off
+  result with distinct exact terminal text.
+- Each narrow card states what to learn, what to try, the exact LED/terminal
+  observation and the profile limitation. C3 keeps actual QEMU UART separate
+  from its project-owned GPIO2 LED model.
+- Loading another card uses the existing unsaved-change decision and always
+  retires executable/runtime authority. Download/Open remains data-only and a
+  fresh Build is required before Run.
+- Button, ADC and PWM remain explicitly unavailable on the narrow profiles.
+  The release does not claim broad SDK, physical hardware or family support.
+
+---
+
+## 1.1.0-rc.23
 
 This visual-consistency and routing-correction release keeps all rc.22
 electrical, compiler, runtime and local-file boundaries unchanged.

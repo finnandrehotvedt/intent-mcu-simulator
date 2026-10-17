@@ -8,8 +8,8 @@ import { createExampleProject, exampleCatalog } from '../src/example-projects.mj
 import { serialInputBytes, serialLines, serialText } from '../src/serial-view.mjs';
 import { cursorCycles, waveformPaths } from '../src/waveform-view.mjs';
 
-test('four ordinary examples are validated editable projects', () => {
-  assert.deepEqual(exampleCatalog().map((entry) => entry.id), ['blink', 'button', 'adc', 'pwm']);
+test('five ordinary examples are validated editable projects', () => {
+  assert.deepEqual(exampleCatalog().map((entry) => entry.id), ['blink', 'button', 'adc', 'pwm', 'pwm-pulse']);
   for (const entry of exampleCatalog()) {
     const { id } = entry;
     assert.match(entry.focus, /output|input|PWM/u);

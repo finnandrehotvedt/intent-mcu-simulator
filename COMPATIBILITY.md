@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.23 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.24 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -15,6 +15,13 @@ positive-length collinear lane.
 All four actual circuit editors use the same dark workbench canvas and grid.
 This presentation parity does not alter any profile's component graphics,
 named pins, topology, compiler or runtime capability.
+
+The workbench provides multiple deterministic examples for each currently
+supported U03 teaching function. AVR has multiple button, ADC, PWM and Serial
+examples. Each bounded Pico, ESP32-C3 and STM32 profile has two UART/LED
+examples using only its existing fixed source grammar and three-part circuit.
+Button, ADC and PWM remain unavailable on those narrow profiles; examples do
+not imply a new peripheral, API, pin or topology.
 
 ## Supported and tested
 

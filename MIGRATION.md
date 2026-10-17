@@ -1,10 +1,10 @@
-# Migration to 1.1.0-rc.23
+# Migration to 1.1.0-rc.24
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
 
-Rc.17 through rc.23 save one `intent-mcu-project-envelope@1` format for AVR, RP2040 Pico,
+Rc.17 through rc.24 save one `intent-mcu-project-envelope@1` format for AVR, RP2040 Pico,
 ESP32-C3 and STM32F429ZI. The envelope identifies one exact tested profile and
 contains that profile's validated authored project. It contains no firmware,
 runtime/session authority, verdict or secret.
@@ -56,6 +56,10 @@ new topology cannot inherit stale geometry.
 Rc.23 adds no file conversion. The shared dark canvas and corrected automatic
 AVR lane placement are deterministic presentation changes. Stored user routes,
 named-pin topology, source and executable authority are unchanged.
+
+Rc.24 adds no file conversion. Example cards construct the same validated
+authored project documents already accepted by each profile. Loading or opening
+an example excludes executable state and requires a fresh Build before Run.
 
 Use **Legacy copy** before rolling back to rc.16. The exported compatibility
 file uses that profile's prior accepted schema and contains authored data only.

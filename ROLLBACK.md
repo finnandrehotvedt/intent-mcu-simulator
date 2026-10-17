@@ -1,18 +1,18 @@
-# Rollback basis for 1.1.0-rc.23
+# Rollback basis for 1.1.0-rc.24
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain the exact accepted rc.22 source commit
-`51f306c7b07a030ffb59caca89496b57b27f3d78`, VM103 image
-`sha256:81d7f83e525a3d576020e0fc4d1cf175e296cb3a12ecb6cf91c407222b73f204`
-and the pre-rc.23 Compose/environment backup recorded in the release receipt.
+Retain the exact accepted rc.23 source commit
+`c40312d60e5ce2c16e713ecbb0cc34491c5895e9`, VM103 image
+`sha256:d7d4ee0d6166c73ac0d8d386f1ce5752652e7b2c9a1ad6314867710dd667ad9c`
+and the pre-rc.24 Compose/environment backup recorded in the release receipt.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
 
-Rc.17 through rc.23 use the same common envelope. An rc.22 or rc.23 file that contains
+Rc.17 through rc.24 use the same common envelope. An rc.22, rc.23 or rc.24 file that contains
 narrow-profile `wireRoutes` should be retained as the learner's original, then
 opened in rc.21 only through an rc.21-compatible copy if strict older nested
 validation rejects the added layout field. The existing **Legacy copy** remains
@@ -32,6 +32,10 @@ Rc.23 changes only shared canvas presentation, deterministic automatic AVR
 lane placement, acceptance coverage and routing guidance. Rolling back restores
 the rc.22 cream narrow-profile canvases and earlier automatic AVR lane choice;
 it does not migrate or discard learner-owned data.
+
+Rc.24 adds only validated authored-data examples and their visible cards.
+Rolling back removes those cards and the second AVR PWM lesson; it does not
+alter learner-owned files, controller runtimes or electrical topology.
 
 Browser recovery and learner-owned files are never deleted by deployment or
 rollback. Do not change DNS, shared Caddy configuration, compiler/runtime

@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Validated AVR starters plus first-project guides for bounded Pico, ESP32-C3 and STM32 source, wiring, Save/Open and results.">
+  <meta name="description" content="Validated AVR button, ADC, PWM and Serial examples plus paired UART/LED lessons for bounded Pico, ESP32-C3 and STM32 profiles.">
   <meta name="robots" content="index,follow,max-snippet:-1">
   <title>Starter examples | Intent MCU Simulator</title>
   <link rel="canonical" href="https://lab.teachthecompany.com/examples.html">
@@ -20,6 +20,7 @@
       <article class="docs-card"><h2>Button input</h2><p>Read a tactile button on D2 with <code>INPUT_PULLUP</code>. Press it in Interact mode and inspect firmware-derived input and Serial state.</p></article>
       <article class="docs-card"><h2>ADC dial</h2><p>Turn a potentiometer feeding A0 and compare its ideal 0–5 V position with the 10-bit ADC values produced by executed firmware.</p></article>
       <article class="docs-card"><h2>PWM fade</h2><p>Drive a current-limited LED from D3 and relate duty cycle, relative brightness, and the logic analyser waveform.</p></article>
+      <article class="docs-card"><h2>PWM pulse</h2><p>Compare fixed 25% and 75% duty cycles on the same validated D3, resistor, LED and ground path. Executed firmware prints each phase over Serial.</p></article>
       <article class="docs-card"><h2>Temperature display</h2><p>Read the ideal temperature module on A1, write whole Celsius to a 16×2 LCD, and select a current-limited RGB status colour.</p></article>
       <article id="thermostat-boundary-test" class="docs-card"><h2>Thermostat boundary test</h2><p>Build the exact A1 temperature, D2 active-low enable and current-limited D13 indicator circuit. Run three virtual-time scenarios and then load the known-bad <code>&lt;=</code> firmware to prove the equality defect is caught from executed D13 and matching UART evidence.</p></article>
     </section>
@@ -32,11 +33,13 @@
         <article id="esp32c3-first-project" class="docs-card"><h3>ESP32-C3 · GPIO2 model and QEMU UART</h3><p><strong>Goal:</strong> boot compiled flash in actual QEMU and compare its UART with the separately labelled GPIO2 LED model.</p><p><strong>Wire:</strong> GPIO2 J1 pin 4 → series resistor → LED anode; LED cathode → GND J1 pin 6.</p><p><strong>Edit:</strong> change only GPIO2 <code>OUTPUT/INPUT</code>, <code>HIGH/LOW</code> and the uppercase marker in the fixed sketch.</p><p><strong>Expect:</strong> QEMU supplies CPU/UART/reset evidence. The LED comes from executed register writes in the project model; QEMU pin state is not claimed.</p><p><strong>Save/Open:</strong> the local <code>.intent-mcu.json</code> common envelope contains project data only. Open retires flash/runtime authority until Build and Run succeed again.</p></article>
         <article id="stm32-first-project" class="docs-card"><h3>STM32F429ZI · PB0 and USART3</h3><p><strong>Goal:</strong> compile the strict C11 source and observe PB0 plus USART3 in actual Renode.</p><p><strong>Wire:</strong> PB0 CN11 pin 34 → series resistor → LED anode; LED cathode → GND CN11 pin 35.</p><p><strong>Edit:</strong> change only PB0 <code>HIGH/LOW</code> and the uppercase USART3 marker in the fixed <code>main.c</code>.</p><p><strong>Expect:</strong> Renode reports PB0 and USART3 twice across reset replay; the external LED path remains an ideal teaching rendering.</p><p><strong>Save/Open:</strong> the local <code>.intent-mcu.json</code> common envelope excludes ELF and runtime state. Open requires a fresh Build before Run or Reset.</p></article>
       </div>
+      <h3>Paired working examples</h3>
+      <p>Each narrow-controller workbench now offers two visible authored-data cards: output HIGH with one UART marker, and output LOW with a different marker. Loading a card never restores firmware or runtime state. Build and Run must succeed again before the LED or terminal result is authoritative. Button, ADC and PWM remain explicitly unavailable on these three narrow public profiles.</p>
       <h3>Repair after deleting a part</h3>
       <ol><li>Save the incomplete project and Open it again if you want to prove history-free recovery.</li><li>In <strong>Supported parts</strong>, add the one missing resistor or LED. The fixed stable ID returns, with no cable.</li><li>Activate two compatible free named pins for each missing connection. Unsafe resistance/colour pairs reject without changing the accepted draft.</li><li>When the circuit state says accepted, Build fresh and Run. Old executable authority never returns from the file.</li></ol>
       <nav class="docs-nav" aria-label="Recovery help"><a href="/components.html#narrow-profile-parts">Part and property limits</a><a href="/support.html#routing-help">Cable routing help</a><a href="/support.html#repair-after-open">Detailed Save/Open recovery</a><a href="/">Open the workbench</a></nav>
     </section>
-    <footer>Six validated AVR starters and three bounded controller first-project guides in Intent MCU Simulator 1.1.0-rc.23</footer>
+    <footer>Seven validated AVR starters and paired bounded Pico, ESP32-C3 and STM32 examples in Intent MCU Simulator 1.1.0-rc.24</footer>
   </main>
 </body>
 </html>

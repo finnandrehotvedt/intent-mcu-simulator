@@ -40,7 +40,7 @@
       <div><p class="eyebrow">LOCAL PROJECT</p><label class="project-name-field" for="project-name">Project name <input id="project-name" type="text" maxlength="80" value="Untitled project" autocomplete="off"></label><strong id="project-state">Untitled project · empty · not saved</strong><span id="lifecycle-state" class="lifecycle-state">empty</span></div>
       <div class="toolbar">
         <button id="project-new" type="button">New empty</button>
-        <select id="example-select" aria-label="Example project"><option value="blink">Blink LED</option><option value="button">Button input</option><option value="adc">ADC dial</option><option value="pwm">PWM fade</option><option value="temperature-lcd-threshold">Temperature display</option><option value="avr-thermostat-boundary-v1">Thermostat boundary test</option></select>
+        <select id="example-select" aria-label="Example project"><option value="blink">Blink LED</option><option value="button">Button input</option><option value="adc">ADC dial</option><option value="pwm">PWM fade</option><option value="pwm-pulse">PWM pulse</option><option value="temperature-lcd-threshold">Temperature display</option><option value="avr-thermostat-boundary-v1">Thermostat boundary test</option></select>
         <button id="project-demo" type="button">Open example</button>
         <button id="walkthrough-open" type="button">First project guide</button>
         <button id="undo" type="button" disabled>Undo</button><button id="redo" type="button" disabled>Redo</button>
@@ -123,6 +123,7 @@
             <input id="pico-open-input" class="sr-only" type="file" accept="application/json,.json" aria-label="Open Pico project file">
           </div>
           <p id="pico-file-connection" class="file-connection" role="status">Download copy and Open project work without a native file connection.</p>
+          <section class="profile-example-picker" aria-labelledby="pico-examples-title"><h3 id="pico-examples-title">Working examples</h3><p>Each card loads authored project data only. Build fresh before Run.</p><div id="pico-profile-examples" class="profile-example-grid"></div></section>
           <label for="pico-source">main.c · edit only level and UART text</label>
           <textarea id="pico-source" class="pico-source" spellcheck="false" aria-describedby="pico-message pico-diagnostics"></textarea>
           <div class="pico-runtime-actions">
@@ -204,6 +205,7 @@
             <input id="c3-open-input" class="sr-only" type="file" accept="application/json,.json" aria-label="Open ESP32-C3 project file">
           </div>
           <p id="c3-file-connection" class="file-connection" role="status">Download copy and Open project work without a native file connection.</p>
+          <section class="profile-example-picker" aria-labelledby="c3-examples-title"><h3 id="c3-examples-title">Working examples</h3><p>Each card loads authored project data only. Build fresh before Run.</p><div id="c3-profile-examples" class="profile-example-grid"></div></section>
           <label for="c3-source">sketch.ino · edit only GPIO2 mode/level and uppercase marker</label>
           <textarea id="c3-source" class="c3-source" spellcheck="false" aria-describedby="c3-message c3-diagnostics"></textarea>
           <div class="c3-runtime-actions">
@@ -284,6 +286,7 @@
             <input id="stm32-open-input" class="sr-only" type="file" accept="application/json,.json" aria-label="Open STM32 project file">
           </div>
           <p id="stm32-file-connection" class="file-connection" role="status">Download copy and Open project work without a native file connection.</p>
+          <section class="profile-example-picker" aria-labelledby="stm32-examples-title"><h3 id="stm32-examples-title">Working examples</h3><p>Each card loads authored project data only. Build fresh before Run.</p><div id="stm32-profile-examples" class="profile-example-grid"></div></section>
           <label for="stm32-source">main.c · edit only PB0 level and uppercase marker</label>
           <textarea id="stm32-source" class="stm32-source" spellcheck="false" aria-describedby="stm32-message stm32-diagnostics"></textarea>
           <div class="stm32-runtime-actions">
@@ -479,7 +482,7 @@
       </nav>
     </section>
 
-    <footer>Intent MCU Simulator 1.1.0-rc.23 public release · shared dark circuit workbench, bounded cable routes and exact controller boundaries across AVR + bounded Pico + ESP32-C3 + STM32F429ZI · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
+    <footer>Intent MCU Simulator 1.1.0-rc.24 public release · supported-function example pack, shared dark circuit workbench and exact controller boundaries across AVR + bounded Pico + ESP32-C3 + STM32F429ZI · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no physical safety certification</footer>
   </main>
   <button id="serial-tab" class="serial-tab" type="button" aria-expanded="false" aria-controls="serial-dock"><span>Serial</span><span id="serial-new-output" class="serial-new-output" hidden>0 new</span></button>
   <aside id="serial-dock" class="serial-dock" aria-labelledby="serial-title" hidden>
