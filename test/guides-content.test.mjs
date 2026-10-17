@@ -25,8 +25,15 @@ test('public guides cover every narrow controller and the exact recovery boundar
   ]) assert(examples.includes(phrase) || support.includes(phrase) || components.includes(phrase), phrase);
   assert(components.includes('id="narrow-profile-parts"')
     && components.includes('resistor.fixed-v1') && components.includes('led.basic-v1'));
-  assert(support.includes('Pico directly downloads <code>.intent-mcu.json</code>')
-    && support.includes('ESP32-C3 and STM32 directly download <code>.json</code>'));
+  assert(support.includes('all four profiles')
+    && support.includes('requests one deterministic <code>.intent-mcu.json</code> download')
+    && support.includes('cannot confirm a durable disk write'));
+  assert(support.includes('valid common file routes to its declared installed profile')
+    && support.includes('not a claim that source code is portable'));
+  assert(support.includes('Preserve the original file unchanged')
+    && support.includes('Legacy copy</strong> only when rc.16 compatibility is needed'));
+  assert(controllers.includes('Architecture / family') && controllers.includes('Tested controller / board')
+    && controllers.includes('exactly one tested profile'));
   assert(index.includes('/examples.html#narrow-controller-guides'));
   assert(examples.includes('id="thermostat-boundary-test"')
     && examples.includes('executed D13 and matching UART evidence'));

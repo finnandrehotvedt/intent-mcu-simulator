@@ -22,6 +22,10 @@ of authored work.
   Existing responsive styles remain, and controller/component/example/support
   information stays useful on smaller screens, but phone/tablet workbench
   navigation is not a supported release path.
+- File guidance now matches the common envelope exactly: all four profiles
+  request a `.intent-mcu.json` download, exact-profile routing is distinct from
+  source portability, and older files have a preserve–inspect–save-copy–reopen
+  recipe with Legacy copy reserved for rc.16 compatibility.
 
 ---
 
