@@ -2,6 +2,13 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.18 — 2026-10-17
+
+- Prevented rotated resistor part labels from colliding with Lead A or Lead B
+  at 0/90/180/270 degrees on desktop, mobile and fullscreen canvases.
+- Added saved/reopened all-rotation browser acceptance across Pico, ESP32-C3
+  and STM32 while preserving terminal attachment and WIRE-LANE-01.
+
 ## 1.1.0-rc.17 — 2026-10-17
 
 - Added one strict `intent-mcu-project-envelope@1` Save/Open format for AVR,

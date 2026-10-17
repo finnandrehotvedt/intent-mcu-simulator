@@ -662,6 +662,7 @@ function renderPicoCircuitEditor(state) {
     const card = document.createElement('article');
     card.className = `circuit-component pico-editor-part${selection.kind === 'component' && selection.id === component.id ? ' selected' : ''}`;
     card.dataset.componentId = component.id; card.dataset.componentType = component.type;
+    card.dataset.rotation = String(position.rotation);
     card.tabIndex = 0; card.setAttribute('role', 'button'); card.setAttribute('aria-label', `Select and move ${component.label}`);
     card.style.left = `${position.x * 100}%`; card.style.top = `${position.y * 100}%`;
     card.style.setProperty('--rotation', `${position.rotation}deg`);
@@ -900,6 +901,7 @@ function renderC3CircuitEditor(state) {
     const card = document.createElement('article');
     card.className = `circuit-component pico-editor-part${selection.kind === 'component' && selection.id === component.id ? ' selected' : ''}`;
     card.dataset.componentId = component.id; card.dataset.componentType = component.type;
+    card.dataset.rotation = String(position.rotation);
     card.tabIndex = 0; card.setAttribute('role', 'button'); card.setAttribute('aria-label', `Select and move ${component.label}`);
     card.style.left = `${position.x * 100}%`; card.style.top = `${position.y * 100}%`;
     card.style.setProperty('--rotation', `${position.rotation}deg`);
@@ -1137,6 +1139,7 @@ function renderStm32CircuitEditor(state) {
     const card = document.createElement('article');
     card.className = `circuit-component pico-editor-part${selection.kind === 'component' && selection.id === component.id ? ' selected' : ''}`;
     card.dataset.componentId = component.id; card.dataset.componentType = component.type;
+    card.dataset.rotation = String(position.rotation);
     card.tabIndex = 0; card.setAttribute('role', 'button'); card.setAttribute('aria-label', `Select and move ${component.label}`);
     card.style.left = `${position.x * 100}%`; card.style.top = `${position.y * 100}%`;
     card.style.setProperty('--rotation', `${position.rotation}deg`);

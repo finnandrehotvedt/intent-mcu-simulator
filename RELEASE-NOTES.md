@@ -1,4 +1,19 @@
-# Intent MCU Simulator 1.1.0-rc.17
+# Intent MCU Simulator 1.1.0-rc.18
+
+This visual maintenance release keeps the rc.17 common project format and all
+controller/runtime boundaries unchanged while making the rotated resistor's
+part and terminal labels readable in every supported orientation.
+
+## Rotated label clearance
+
+- Pico, ESP32-C3 and STM32 resistor labels remain distinct at 0, 90, 180 and
+  270 degrees on desktop, mobile and fullscreen canvases.
+- Lead A and Lead B stay adjacent to their own named terminals. Save/Open,
+  terminal attachment, body avoidance and WIRE-LANE-01 remain unchanged.
+
+---
+
+## 1.1.0-rc.17
 
 This release gives all four accepted controller profiles one canonical local
 project-file workflow without changing their compiler, runtime or circuit

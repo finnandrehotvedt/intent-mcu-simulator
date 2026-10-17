@@ -749,7 +749,7 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   .shared-profile-workbench.inspector-collapsed:not(.parts-collapsed) .shared-profile-grid,
   .shared-profile-workbench.parts-collapsed.inspector-collapsed .shared-profile-grid { grid-template-columns: minmax(0,1fr); grid-template-areas: "parts" "canvas" "inspector"; }
   .shared-project-bar { grid-template-columns: 1fr; }
-  .pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label { top: calc(100% + 22px); }
+  .pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label { top: calc(100% + 28px); }
   .shared-canvas-surface:fullscreen .pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label,
   .shared-profile-workbench.shared-canvas-focus .pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label { top: calc(100% - 5px); }
 }

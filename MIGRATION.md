@@ -1,10 +1,10 @@
-# Migration to 1.1.0-rc.17
+# Migration to 1.1.0-rc.18
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
 
-Rc.17 saves one `intent-mcu-project-envelope@1` format for AVR, RP2040 Pico,
+Rc.17 and rc.18 save one `intent-mcu-project-envelope@1` format for AVR, RP2040 Pico,
 ESP32-C3 and STM32F429ZI. The envelope identifies one exact tested profile and
 contains that profile's validated authored project. It contains no firmware,
 runtime/session authority, verdict or secret.
