@@ -50,6 +50,9 @@ Each profile adapter supplies stable identity and capability data plus the
 existing project/editor/runtime implementation. The shell, not the adapter,
 owns common panel placement and navigation. An adapter must expose:
 
+- a stable architecture/family `groupId` distinct from its exact tested
+  `profileId`; the visible two-level selector currently has one real profile
+  per group and must not imply family-wide support;
 - stable profile ID, label and truthful limitation;
 - Parts, Canvas, Inspector, Source, Runtime, Serial and Project surfaces;
 - supported action labels and unsupported-action reasons;

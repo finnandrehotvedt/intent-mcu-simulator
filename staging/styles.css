@@ -67,6 +67,7 @@ h2 { font-size: 1.22rem; margin: 0; }
 .controller-workbench[data-mode="c3-source"]::before { background: #24d7ef; }
 .controller-workbench[data-mode="rp2040-preview"]::before { background: #d78df2; }
 .controller-workbench[data-mode="rp2040-source"]::before { background: #d78df2; }
+.profile-future-note { margin: .55rem 0 0; color: var(--muted); font-size: .68rem; line-height: 1.45; }
 
 .pico-public-workbench { display: grid; gap: 1rem; border-color: rgba(215,141,242,.55); }
 .pico-public-workbench[hidden] { display: none; }

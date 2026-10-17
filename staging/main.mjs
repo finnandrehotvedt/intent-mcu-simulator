@@ -153,7 +153,7 @@ const elements = Object.fromEntries([
   'thermostat-experiment', 'thermostat-experiment-state', 'thermostat-run-tests',
   'thermostat-load-bad', 'thermostat-restore', 'thermostat-results', 'thermostat-experiment-message',
   'starter-examples', 'starter-gallery', 'quick-controls', 'workbench-workspace', 'project-bar',
-  'board-select', 'controller-status', 'toolchain-boundary',
+  'family-select', 'board-select', 'controller-status', 'toolchain-boundary',
   'controller-workbench', 'controller-workbench-eyebrow', 'controller-workbench-title', 'controller-workbench-badge',
   'controller-workbench-summary', 'controller-capability-project', 'controller-capability-source',
   'controller-capability-runtime', 'controller-capability-circuit', 'controller-primary-action', 'controller-return-avr',
@@ -4296,9 +4296,23 @@ function renderStarterExamples() {
 }
 
 elements.projectdemo.addEventListener('click', () => loadExampleProject(elements.exampleselect.value));
+function syncControllerSelectors(profile) {
+  const adapter = sharedWorkbenchShell.adapter(profile);
+  if (!adapter) return;
+  elements.familyselect.value = adapter.groupId;
+  for (const option of elements.boardselect.options) option.hidden = option.dataset.group !== adapter.groupId;
+  elements.boardselect.value = profile;
+}
+elements.familyselect.addEventListener('change', () => {
+  const option = [...elements.boardselect.options].find((candidate) => candidate.dataset.group === elements.familyselect.value);
+  if (!option) return;
+  elements.boardselect.value = option.value;
+  elements.boardselect.dispatchEvent(new Event('change', { bubbles: true }));
+});
 elements.boardselect.addEventListener('change', () => {
   const selected = candidateCompilerTarget(elements.boardselect.value);
   selectedCompilerProfile = selected ? selected.profile : AVR_PROFILE;
+  syncControllerSelectors(selectedCompilerProfile);
   const target = currentCompilerTarget();
   const view = publicControllerView(target.profile) ?? publicControllerView(AVR_PROFILE);
   if (selectedCompilerProfile === RP2040_PROFILE) picoPublicWorkbench.activate();
@@ -4582,6 +4596,7 @@ window.__M7_CATALOG_BENCHMARK__ = benchmarkCatalogFixture;
 
 for (const category of CATALOG_CATEGORIES) elements.catalogcategory.append(new Option(category.label, category.id));
 renderStarterExamples();
+syncControllerSelectors(selectedCompilerProfile);
 
 let stored = null; let recoveryStored = null;
 try { stored = localStorage.getItem(PROJECT_STORAGE_KEY); recoveryStored = localStorage.getItem(PROJECT_RECOVERY_KEY); } catch { /* storage denial is recoverable */ }

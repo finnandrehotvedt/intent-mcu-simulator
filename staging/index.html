@@ -77,8 +77,11 @@
         <p id="controller-workbench-summary" class="controller-summary">Build a circuit, edit source, compile in the fixed AVR toolchain and run the tested deterministic browser-worker subset.</p>
       </div>
       <div class="controller-profile-picker">
-        <label for="board-select">Active controller workbench</label>
-        <select id="board-select"><option value="board.atmega328p-16mhz-v1">ATmega328P · public build + run</option><option value="board.esp32-c3-devmodule-v1">ESP32-C3 · bounded public build + actual QEMU</option><option value="board.rp2040-pico-v1">RP2040 Pico · bounded public build + run</option><option value="board.stm32f429zi-nucleo144-v1">STM32F429ZI · bounded public build + actual Renode</option></select>
+        <label for="family-select">Architecture / family workbench</label>
+        <select id="family-select"><option value="architecture.avr-v1">AVR</option><option value="architecture.esp32-v1">ESP32</option><option value="architecture.rp2040-v1">RP2040</option><option value="architecture.stm32-v1">STM32</option></select>
+        <label for="board-select">Tested controller / board profile</label>
+        <select id="board-select"><option value="board.atmega328p-16mhz-v1" data-group="architecture.avr-v1">ATmega328P · exact tested profile</option><option value="board.esp32-c3-devmodule-v1" data-group="architecture.esp32-v1" hidden>ESP32-C3 · exact tested QEMU profile</option><option value="board.rp2040-pico-v1" data-group="architecture.rp2040-v1" hidden>RP2040 Pico · exact tested browser profile</option><option value="board.stm32f429zi-nucleo144-v1" data-group="architecture.stm32-v1" hidden>STM32F429ZI · exact tested Renode profile</option></select>
+        <p class="profile-future-note">One tested profile is available in each group today. The group name does not claim support for every chip or board in that family.</p>
         <p id="controller-status" class="truth">ATmega328P · compile and tested virtual runtime.</p>
       </div>
       <dl class="controller-capabilities" aria-label="Selected controller capabilities">

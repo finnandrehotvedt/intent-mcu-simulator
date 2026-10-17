@@ -15,7 +15,7 @@ export const SHARED_WORKBENCH_SURFACES = Object.freeze([
 
 const adapters = Object.freeze({
   [AVR_PROFILE]: Object.freeze({
-    profile: AVR_PROFILE,
+    profile: AVR_PROFILE, groupId: 'architecture.avr-v1', groupLabel: 'AVR',
     root: '#workbench-workspace',
     project: '.project-bar',
     parts: '.catalog',
@@ -28,7 +28,7 @@ const adapters = Object.freeze({
     reset: Object.freeze({ supported: true, reason: '' }),
   }),
   [RP2040_PROFILE]: Object.freeze({
-    profile: RP2040_PROFILE,
+    profile: RP2040_PROFILE, groupId: 'architecture.rp2040-v1', groupLabel: 'RP2040',
     root: '#pico-public-workbench', grid: '.pico-public-grid',
     project: '.pico-project-actions', parts: '.bounded-parts-panel',
     canvas: '.pico-circuit-pane', inspector: '#pico-part-properties',
@@ -38,7 +38,7 @@ const adapters = Object.freeze({
     reset: Object.freeze({ supported: true, reason: '' }),
   }),
   [ESP32C3_PROFILE]: Object.freeze({
-    profile: ESP32C3_PROFILE,
+    profile: ESP32C3_PROFILE, groupId: 'architecture.esp32-v1', groupLabel: 'ESP32',
     root: '#c3-public-workbench', grid: '.c3-public-grid',
     project: '.c3-project-actions', parts: '.bounded-parts-panel',
     canvas: '.c3-circuit-pane', inspector: '#c3-part-properties',
@@ -48,7 +48,7 @@ const adapters = Object.freeze({
     reset: Object.freeze({ supported: false, reason: 'Reset replay is already verified inside each QEMU Run.' }),
   }),
   [STM32F429ZI_PROFILE]: Object.freeze({
-    profile: STM32F429ZI_PROFILE,
+    profile: STM32F429ZI_PROFILE, groupId: 'architecture.stm32-v1', groupLabel: 'STM32',
     root: '#stm32-public-workbench', grid: '.stm32-public-grid',
     project: '.stm32-project-actions', parts: '.bounded-parts-panel',
     canvas: '.stm32-circuit-pane', inspector: '#stm32-part-properties',

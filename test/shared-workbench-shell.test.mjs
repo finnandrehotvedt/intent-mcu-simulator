@@ -25,7 +25,10 @@ test('four real profiles declare the same shared workbench surfaces', () => {
     assert.equal(adapter.schema, SHARED_WORKBENCH_SCHEMA);
     assert.deepEqual(adapter.surfaces, SHARED_WORKBENCH_SURFACES);
     for (const surface of SHARED_WORKBENCH_SURFACES) assert.equal(typeof adapter[surface], 'string');
+    assert.match(adapter.groupId, /^architecture\.[a-z0-9-]+-v1$/u);
+    assert.match(adapter.groupLabel, /^(?:AVR|RP2040|ESP32|STM32)$/u);
   }
+  assert.equal(new Set(adapters.map(({ groupId }) => groupId)).size, 4);
 });
 
 test('unsupported common controls carry profile-specific truthful reasons', () => {
