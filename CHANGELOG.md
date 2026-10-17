@@ -2,6 +2,21 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.17 — 2026-10-17
+
+- Added one strict `intent-mcu-project-envelope@1` Save/Open format for AVR,
+  Pico, ESP32-C3 and STM32F429ZI with exact profile identity and existing
+  profile validators behind a common coordinator.
+- Added detached cross-profile validation and atomic routing. Malformed,
+  oversized, unknown, profile-mismatched, unsupported and executable-bearing
+  files leave the active profile and draft unchanged.
+- Added deterministic in-memory migration for accepted legacy schemas, kept
+  lossy AVR v1 migration explicit and added per-profile **Legacy copy** exports
+  so rc.17-created work can be recovered after an rc.16 rollback.
+- Added all-four actual-download/fresh-page Open, canonical byte stability,
+  repeated Open, cross-family parking, raw-authority, legacy thermostat and
+  desktop/mobile acceptance while preserving WIRE-LANE-01 and Fullscreen.
+
 ## 1.1.0-rc.16 — 2026-10-17
 
 - Added explicit Fullscreen/Exit controls to the Pico, ESP32-C3 and STM32

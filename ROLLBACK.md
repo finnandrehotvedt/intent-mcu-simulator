@@ -1,28 +1,23 @@
-# Rollback basis for 1.1.0-rc.16
+# Rollback basis for 1.1.0-rc.17
 
-Rollback is scoped to the Lab application container and the exact retained
-pre-rc.16 Lab response-header configuration. DNS, Caddy routing, the Teach
-apex, classroom, security lab, mail, and unrelated containers stay unchanged.
+Rollback is limited to the Lab application container. DNS, Caddy routing, the
+Teach apex, classroom, security lab, mail and unrelated containers remain
+unchanged.
 
-The deployment must retain the known-good `1.1.0-rc.15` app image from source
-commit `a56f6689ac5978f005dedfb7e193ce5ea15f97dc` and the exact pre-rc.16
-Compose, environment and Caddy files on VM103. If any mandatory
-acceptance check fails, restore those files and that image, recreate only the
-Lab and existing Caddy containers, wait for health, and verify Lab plus the
-related Teach URLs.
+Retain the exact rc.16 source commit
+`e0b377087084d58764a4246aaa33a9457638e4cc`, VM103 image
+`sha256:f87b3d6c70c177171dd4377fc8da214a93d97ecd51908e0253d759de17dc3271`
+and pre-rc.17 Compose/environment backup. If release acceptance fails, restore
+that exact app image and files, recreate only the Lab container, wait for
+health and verify Lab plus the existing Teach-domain URLs.
 
-Learner projects require no server restore. Local files remain owned by the
-learner, and versioned browser recovery is not deleted by either deployment or
-rollback.
+Rc.16 does not read the new outer envelope. Before rollback, open each important
+rc.17 project and choose **Legacy copy**. The resulting profile-specific
+data-only file is accepted by rc.16. This compatibility export is tested for
+all four profiles and does not contain executable or runtime authority.
 
-The rc.16 release adds narrow-profile Fullscreen canvas parity to the accepted
-shared controller shell and rendered wire-lane separation; it reuses the
-accepted image-ID-locked compilers and runtimes. Roll back
-by restoring the exact pre-release
-app image, Compose, compiler-lock and Caddy files retained immediately before
-deployment, then recreating only the Lab and existing Caddy containers. The
-prior compiler and runtime images remain in place. Do not change DNS, the
-shared Caddy route, or any private verification service. After rollback,
-verify `/`, `/healthz`, `/readyz`, `/controllers.html`, the related Teach URLs,
-confirm that the accepted Pico, C3 and STM32 paths still respond, and confirm
-that no `/private-*` route is exposed.
+Browser recovery and learner-owned files are never deleted by deployment or
+rollback. Do not change DNS, shared Caddy configuration, compiler/runtime
+images or unrelated services. After rollback verify `/`, `/healthz`,
+`/readyz`, `/controllers.html`, all four bounded Build/Run paths and the apex,
+www, agent and security domain suite.

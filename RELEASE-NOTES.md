@@ -1,4 +1,30 @@
-# Intent MCU Simulator 1.1.0-rc.16
+# Intent MCU Simulator 1.1.0-rc.17
+
+This release gives all four accepted controller profiles one canonical local
+project-file workflow without changing their compiler, runtime or circuit
+capability boundaries.
+
+## Common local project envelope
+
+- AVR, RP2040 Pico, ESP32-C3 and STM32F429ZI now save
+  `intent-mcu-project-envelope@1` files with an explicit exact profile and one
+  strictly validated profile-owned authored project.
+- Open validates detached data before switching profile, rejects profile/schema
+  mismatch atomically and requires a fresh Build. Cross-profile Open parks the
+  previous draft and never reinterprets it.
+- Current legacy AVR, Pico, C3 and STM32 files migrate deterministically in
+  memory and are never overwritten. Each workbench exposes a data-only
+  **Legacy copy** for rc.16 rollback recovery.
+- The envelope preserves source, stable parts and pins, supported controls and
+  properties, topology, layout, rotation and wire styling. Executable bytes,
+  runtime/session authority, verdicts and secrets are rejected before adapter
+  normalization.
+- Actual downloads reopen in fresh pages on desktop and mobile; repeated Open
+  remains canonical, creates no duplicates and leaves stale authority absent.
+
+---
+
+## 1.1.0-rc.16
 
 This release gives all four accepted controller profiles one coherent AVR-style
 workbench without expanding any compiler, runtime, pin or component claim.

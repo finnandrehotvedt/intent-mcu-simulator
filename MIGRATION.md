@@ -1,42 +1,31 @@
-# Migration to 1.1.0-rc.16
+# Migration to 1.1.0-rc.17
 
-There is no account, cloud project database, or server-side project migration.
-Existing browser recovery remains readable. Before changing versions, save an
-important project to a local `.intent-mcu.json` file.
+There is no account, cloud project database or server-side project migration.
+All project files remain learner-owned local files and browser recovery remains
+local and separately labelled.
 
-This release adds reversible canvas fullscreen presentation but does not
-change a project schema. Files saved by rc.15 remain readable with the same
-profile-specific rules and require a fresh Build after Open.
+Rc.17 saves one `intent-mcu-project-envelope@1` format for AVR, RP2040 Pico,
+ESP32-C3 and STM32F429ZI. The envelope identifies one exact tested profile and
+contains that profile's validated authored project. It contains no firmware,
+runtime/session authority, verdict or secret.
 
-After the update:
+Existing accepted files remain readable:
 
-1. open the local project file;
-2. review any explicit migration or unsupported-field report;
-3. rebuild firmware because artifacts are deliberately not persisted;
-4. verify named-pin wiring and component limitations before Run.
+- AVR contact-persistence and `teach-lab-project@2` files;
+- RP2040 Pico project-v1 files;
+- ESP32-C3 project-v1 files;
+- STM32 project-v2 and source-only project-v1 files.
 
-If a bounded Pico, ESP32-C3 or STM32 project was saved with its resistor or LED
-deleted, Open still preserves that missing-part state and intentionally starts
-with empty Undo history. Use the profile's **Add missing part** action, reconnect
-the named pins explicitly, validate the circuit and Build fresh. The action
-reuses the established stable ID and does not migrate or infer a cable.
+Migration occurs in detached memory only after strict validation. It never
+overwrites the source file. STM32 v1 receives the documented default teaching
+circuit. Lossy AVR project-v1 conversion remains available only through the
+explicit legacy migration action.
 
-Rejected files and Prompt Bridge proposals remain atomic and do not partially
-replace the current project. The new components extend project-v3 data while
-the established v2 import path remains available.
+After Open, review the migration message and Build fresh. A successful Open
+clears executable authority and transient history; malformed, oversized,
+unknown, profile-mismatched or unsupported input leaves the active profile and
+draft unchanged. A valid file for another installed profile routes to that
+profile only after complete validation and leaves the previous profile parked.
 
-Selecting any non-AVR profile parks the current AVR data without migrating,
-reinterpreting or uploading it, and the inactive AVR canvas is hidden to avoid
-presenting two circuits as active. RP2040 Pico, ESP32-C3 and STM32F429ZI each have a
-separate local data-only project format; Pico, ESP32-C3 and STM32F429ZI files
-retain their validated editable circuit layouts and authored bounded cable
-endpoint pairs. Existing source-only STM32
-project-v1 files open with the default validated teaching circuit and save as
-project-v2. Open never restores executable bytes
-and a fresh Build is required before Run. The existing Return to AVR action
-restores the parked AVR editor. No prior private or public executable authority
-is imported.
-
-The six AVR starter projects can replace one another across both project
-schema generations without retaining a stale reducer. Firmware artifacts are
-still never migrated or reused; build again after choosing a starter.
+Use **Legacy copy** before rolling back to rc.16. The exported compatibility
+file uses that profile's prior accepted schema and contains authored data only.
