@@ -23,7 +23,7 @@ const profile = 'board.rp2040-pico-v1';
     await page.waitForFunction(() => ['built', 'failed'].includes(window.__RP2040_PUBLIC_STATE__?.phase), null, { timeout: 120_000 });
     assert.equal(await page.evaluate(() => window.__RP2040_PUBLIC_STATE__.phase), 'built');
     await page.click('#pico-run');
-    await page.waitForFunction(() => window.__RP2040_PUBLIC_STATE__?.phase === 'complete'
+    await page.waitForFunction(() => document.querySelector('#pico-serial')?.textContent.includes('PICO PUBLIC')
       && window.__SHARED_INSTRUMENT_SUMMARY__?.state === 'current-runtime', null, { timeout: 60_000 });
     const before = await page.evaluate((selected) => ({
       project: JSON.stringify(window.__COMMON_PROJECT_FILES__.prepare(window.__COMMON_PROJECT_FILES__.current(selected)).project),
