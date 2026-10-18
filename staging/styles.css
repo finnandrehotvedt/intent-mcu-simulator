@@ -806,6 +806,25 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .experiment-fail { color: var(--danger); font-weight: 850; }
 .experiment-running, .experiment-pending { color: var(--amber); font-weight: 800; }
 .thermostat-limit { margin: 10px 0 0; color: #d7c38f; font-size: .75rem; line-height: 1.5; }
+.regression-matrix { margin: 16px 0; border-color: #34758f; background: linear-gradient(145deg, #0d2534, #081720 70%); }
+.regression-matrix-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.regression-matrix-intro, .regression-matrix-limit { color: var(--muted); font-size: .78rem; line-height: 1.55; }
+.regression-matrix-limit strong { color: var(--amber); }
+.regression-matrix-actions { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin: 14px 0 10px; }
+.regression-matrix-actions label { display: grid; gap: 5px; min-width: min(100%, 340px); color: var(--muted); font-size: .72rem; font-weight: 800; }
+.regression-matrix-actions select { width: 100%; }
+#regression-matrix-run { color: #06111a; background: var(--lime); border-color: var(--lime); }
+#regression-matrix-negative { border-color: var(--amber); }
+.regression-matrix-identity { margin: 8px 0; color: var(--cyan); font: .68rem/1.5 ui-monospace, monospace; overflow-wrap: anywhere; }
+.regression-matrix-table-wrap { overflow-x: auto; border: 1px solid #28566d; border-radius: 12px; }
+.regression-matrix-table { width: 100%; min-width: 980px; border-collapse: collapse; background: #06131e; }
+.regression-matrix-table th, .regression-matrix-table td { padding: 10px; border-bottom: 1px solid #244559; text-align: left; vertical-align: top; font-size: .7rem; line-height: 1.45; }
+.regression-matrix-table thead th { color: var(--cyan); background: #0d2637; }
+.regression-matrix-table tbody tr:last-child > * { border-bottom: 0; }
+.regression-matrix-table code { color: var(--text); overflow-wrap: anywhere; }
+.regression-matrix-outcome[data-status="passed"] { color: var(--lime); font-weight: 900; }
+.regression-matrix-outcome[data-status="failed"] { color: var(--danger); font-weight: 900; }
+.regression-matrix-outcome[data-status="indeterminate"], .regression-matrix-outcome[data-status="unsupported"] { color: var(--amber); font-weight: 900; }
 .instrument-grid { display: grid; grid-template-columns: 1.5fr .72fr; gap: 16px; margin-top: 16px; }
 .instrument-evidence { grid-column: 1 / -1; overflow: hidden; background: linear-gradient(135deg, #0a1b29 0%, #0b2531 58%, #10271f 100%); border-color: #2a627f; }
 .instrument-evidence::before { content: ''; display: block; height: 3px; margin: -18px -18px 16px; background: linear-gradient(90deg, var(--cyan), var(--lime)); }
@@ -971,6 +990,8 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   .counterexample-reduction-controls .truth { grid-column: 1; }
   .project-brief-purpose { grid-column: 1; }
   .project-brief-heading, .project-brief-footer, .requirement-trace-heading { align-items: flex-start; flex-direction: column; }
+  .regression-matrix-heading { flex-direction: column; }
+  .regression-matrix-actions { display: grid; grid-template-columns: 1fr; }
   .instrument-evidence-heading { display: grid; }
   .instrument-evidence-state { justify-self: start; }
   .instrument-evidence-facts, .instrument-boundary-list, .instrument-summary-list { grid-template-columns: 1fr; }

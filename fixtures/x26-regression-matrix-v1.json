@@ -1,0 +1,68 @@
+{
+  "schema": "intent-mcu-regression-matrix@1",
+  "matrixId": "x26-four-profile-output-observation-v1",
+  "matrixVersion": "1.0.0",
+  "requirementFamilyId": "REQ-EDITED-SOURCE-OUTPUT-OBSERVATION",
+  "cells": [
+    {
+      "caseId": "X26-AVR-THERMOSTAT-D13",
+      "profile": "board.atmega328p-16mhz-v1",
+      "profileVersion": "atmega328p-16mhz-v1",
+      "adapterId": "existing.avr-thermostat-worker-v1",
+      "fixtureId": "avr-thermostat-boundary-v1",
+      "fixtureSha256": "1b7bcd61cb63bc7c9ae0e6166ef924b1b97ecb299ea93b5fabda1caf26783b89",
+      "sourceSha256": "abc65e1212c72aaed7325c059cb785a8872b45fddc7ba67ceb0cb098d2c0da76",
+      "toolchain": "Arduino AVR core 1.8.8 · avr-gcc 7.3.0-atmel3.6.1-arduino7",
+      "runtime": "avr8js 0.21.1 browser worker",
+      "scenarioId": "avr-thermostat-four-boundary-scenarios-v1",
+      "observationOwner": "actual worker D13 plus UART and ordered input evidence",
+      "expected": { "kind": "avr.thermostat-summary", "scenariosPassed": 4, "scenariosTotal": 4, "equalityD13": false },
+      "limitation": "Ideal A1 sensor, ideal no-bounce D2 input and D13 command indicator only; no physical heater or broad AVR equivalence."
+    },
+    {
+      "caseId": "X26-RP2040-GPIO0-UART0",
+      "profile": "board.rp2040-pico-v1",
+      "profileVersion": "rp2040-pico-v1",
+      "adapterId": "existing.rp2040-public-workbench-v1",
+      "fixtureId": "rp2040-public-default-v1",
+      "fixtureSha256": "db7abd4b93898d3bfefa14da3af679ce4b521e7b1d1f32f68eaff4a7fa6b7e25",
+      "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
+      "toolchain": "Arm GNU 14.3.1 · fixed project startup/runtime/linker contract",
+      "runtime": "rp2040js 1.4.0 browser worker",
+      "scenarioId": "rp2040-default-gpio0-high-uart0-v1",
+      "observationOwner": "actual rp2040js GPIO0 and UART0 worker snapshot",
+      "expected": { "kind": "rp2040.gpio-uart", "gpio0": true, "uartText": "PICO PUBLIC" },
+      "limitation": "Bounded GPIO0/UART0 subset only; no full Pico SDK, PIO, DMA, USB, multicore or physical-device equivalence."
+    },
+    {
+      "caseId": "X26-ESP32C3-QEMU-UART-GPIO2-MODEL",
+      "profile": "board.esp32-c3-devmodule-v1",
+      "profileVersion": "esp32-c3-devmodule-v1",
+      "adapterId": "existing.esp32c3-public-workbench-v1",
+      "fixtureId": "esp32c3-public-default-v1",
+      "fixtureSha256": "78c0641945735992c29d870115679a128c0a2a419f91cbd0a2397b111744f623",
+      "sourceSha256": "d936fc50b2c874d6af660ece56abbb024c86e7b30462c403542b8d2166b85480",
+      "toolchain": "Arduino CLI 1.5.1 · Arduino-ESP32 3.3.10 · esp-rv32 2601",
+      "runtime": "Espressif QEMU 9.2.2-esp_develop_20260417 CPU/UART",
+      "scenarioId": "esp32c3-default-qemu-marker-gpio2-model-v1",
+      "observationOwner": "actual QEMU CPU/UART plus separately labelled project-owned GPIO2 register model",
+      "expected": { "kind": "esp32c3.qemu-uart-plus-gpio2-model", "qemuMarker": "C3_PUBLIC", "qemuBootEpochs": 2, "qemuPinStateObserved": false, "modeledLedCode": "LED_ON" },
+      "limitation": "QEMU pin state is not observed. GPIO2/LED is a separate project model and is never reported as QEMU pin evidence."
+    },
+    {
+      "caseId": "X26-STM32-RENODE-PB0-USART3",
+      "profile": "board.stm32f429zi-nucleo144-v1",
+      "profileVersion": "stm32f429zi-nucleo144-v1",
+      "adapterId": "existing.stm32-public-workbench-v1",
+      "fixtureId": "stm32-public-default-v1",
+      "fixtureSha256": "e2712e377581f52b9e8e5af44326bc86a5b50e9a253345d98f1cf315859b8920",
+      "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
+      "toolchain": "Arm GNU 14.3.1 · fixed project startup/runtime/linker contract",
+      "runtime": "Renode 1.17.0 CPU/PB0/USART3",
+      "scenarioId": "stm32-default-pb0-high-usart3-v1",
+      "observationOwner": "actual Renode PB0 and USART3 across reset replay",
+      "expected": { "kind": "stm32.renode-pb0-usart3", "pb0": true, "uartText": "STM32 PUBLIC\n", "bootEpochs": 2 },
+      "limitation": "Bounded STM32F429ZI source and Renode subset with an ideal LED path; no analogue, arbitrary ELF or physical-board equivalence."
+    }
+  ]
+}

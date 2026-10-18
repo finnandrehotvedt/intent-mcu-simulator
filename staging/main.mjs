@@ -77,6 +77,13 @@ import {
 } from '../src/scenario-timeline.mjs';
 import { aggregateExperimentOutcomes } from '../src/experiment-outcomes.mjs';
 import {
+  X26_REGRESSION_MATRIX, createExpectationOverride, regressionFixture,
+  regressionMatrixIdentity, sha256Text,
+} from '../src/regression-matrix-contract.mjs';
+import {
+  executeRegressionMatrix, regressionReportPassed,
+} from '../src/regression-matrix-runner.mjs';
+import {
   COUNTEREXAMPLE_REDUCTION_SEED, reduceThermostatCounterexample,
 } from '../src/counterexample-reduction.mjs';
 import {
@@ -274,6 +281,9 @@ const elements = Object.fromEntries([
   'shared-domain-engine-inspect', 'shared-domain-engine-summary', 'shared-domain-engine-status',
   'shared-domain-engine-stages',
   'bounded-actions-summary', 'bounded-actions-status', 'bounded-actions-list', 'release-version',
+  'regression-matrix', 'regression-matrix-state', 'regression-matrix-identity',
+  'regression-matrix-selector', 'regression-matrix-run', 'regression-matrix-negative',
+  'regression-matrix-export', 'regression-matrix-results', 'regression-matrix-summary',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -1940,6 +1950,256 @@ window.__PUBLIC_CONTROLLER_PROJECTION__ = {
 };
 
 function publish(update) { Object.assign(window.__M6_STATE__, update); }
+
+let regressionMatrixReport = null;
+let regressionMatrixRunning = false;
+let regressionMatrixReady = false;
+
+const waitForMatrixState = async (read, accept, code, timeoutMilliseconds = 30_000) => {
+  const deadline = performance.now() + timeoutMilliseconds;
+  while (performance.now() < deadline) {
+    const value = read();
+    if (accept(value)) return value;
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  throw Object.assign(new Error(code), { code });
+};
+
+function renderRegressionMatrixReport(report = regressionMatrixReport) {
+  elements.regressionmatrixresults.replaceChildren();
+  if (!report) {
+    const row = document.createElement('tr');
+    const cell = document.createElement('td'); cell.colSpan = 5;
+    cell.textContent = 'No matrix report. Reports are transient review data and never project or verdict authority.';
+    row.append(cell); elements.regressionmatrixresults.append(row);
+    elements.regressionmatrixstate.textContent = 'Not run';
+    elements.regressionmatrixexport.disabled = true;
+    return;
+  }
+  for (const result of report.results) {
+    const row = document.createElement('tr');
+    const cells = [
+      `${result.caseId}\n${result.profile}\n${result.profileVersion}`,
+      `${result.producer}\nartifact ${result.artifactSha256}`,
+      `expected ${JSON.stringify(result.expected)}\nactual ${JSON.stringify(result.actual)}\nraw time ${JSON.stringify(result.rawVirtualTime)}`,
+      `${result.outcome.academicStatus} · job ${result.outcome.jobStatus}`,
+      result.limitation,
+    ];
+    for (const [index, text] of cells.entries()) {
+      const cell = document.createElement(index === 0 ? 'th' : 'td');
+      const pre = document.createElement('code'); pre.textContent = text; cell.append(pre);
+      if (index === 3) {
+        cell.className = 'regression-matrix-outcome';
+        cell.dataset.status = result.outcome.academicStatus;
+      }
+      row.append(cell);
+    }
+    elements.regressionmatrixresults.append(row);
+  }
+  const passed = report.results.filter((item) => item.outcome.academicStatus === 'passed').length;
+  const failed = report.results.filter((item) => item.outcome.academicStatus === 'failed').length;
+  elements.regressionmatrixstate.textContent = `${passed} passed · ${failed} failed · ${report.results.length} completed`;
+  elements.regressionmatrixexport.disabled = false;
+  elements.regressionmatrixsummary.textContent = `Matrix ${report.matrixSha256} · semantic report ${report.semanticSha256}. ${report.expectationOverrideSha256 ? 'A separate wrong-expectation reference was applied to exactly one selected cell.' : 'No expectation override was applied.'} Raw profile timebases remain separate.`;
+}
+
+function invalidateRegressionMatrixReport(message = 'Project state changed. Run the matrix again for current evidence.') {
+  if (regressionMatrixRunning || !regressionMatrixReport) return;
+  regressionMatrixReport = null;
+  renderRegressionMatrixReport(null);
+  elements.regressionmatrixsummary.textContent = message;
+}
+
+async function selectRegressionProfile(profile) {
+  if (selectedCompilerProfile === profile) return;
+  elements.boardselect.value = profile;
+  elements.boardselect.dispatchEvent(new Event('change', { bubbles: true }));
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  if (selectedCompilerProfile !== profile) throw Object.assign(new Error('REGRESSION_PROFILE_ACTIVATION_FAILED'), { code: 'REGRESSION_PROFILE_ACTIVATION_FAILED' });
+}
+
+function fixtureSource(cell, fixture) {
+  return cell.profile === AVR_PROFILE
+    ? fixture.project.source.files.find((file) => file.name === 'main.ino')?.content ?? ''
+    : fixture.source;
+}
+
+async function verifiedRegressionFixture(cell) {
+  const fixture = regressionFixture(cell.caseId);
+  const [fixtureSha256, sourceSha256] = await Promise.all([
+    sha256Text(JSON.stringify(fixture)), sha256Text(fixtureSource(cell, fixture)),
+  ]);
+  if (fixtureSha256 !== cell.fixtureSha256) throw Object.assign(new Error('REGRESSION_MATRIX_FIXTURE_HASH_STALE'), { code: 'REGRESSION_MATRIX_FIXTURE_HASH_STALE' });
+  if (sourceSha256 !== cell.sourceSha256) throw Object.assign(new Error('REGRESSION_MATRIX_SOURCE_HASH_STALE'), { code: 'REGRESSION_MATRIX_SOURCE_HASH_STALE' });
+  return fixture;
+}
+
+async function executeAvrRegressionCell(cell, fixture, started) {
+  const loaded = loadExampleProject(cell.fixtureId, 'x26.regression-matrix');
+  if (!loaded.ok || JSON.stringify(currentProject()) !== JSON.stringify(fixture)) {
+    throw Object.assign(new Error('REGRESSION_AVR_FIXTURE_INSTALL'), { code: 'REGRESSION_AVR_FIXTURE_INSTALL' });
+  }
+  await build();
+  if (window.__M6_STATE__.buildState !== 'succeeded' || !lifecycle.artifact?.artifactIdentity) {
+    throw Object.assign(new Error('REGRESSION_AVR_BUILD_FAILED'), { code: 'REGRESSION_AVR_BUILD_FAILED' });
+  }
+  const artifactSha256 = lifecycle.artifact.artifactIdentity;
+  const results = await new Promise((resolve, reject) => {
+    authoredExperimentWaiter = { resolve, reject };
+    const run = startAuthoredScenarioExperiment();
+    if (!run.ok) { authoredExperimentWaiter = null; reject(Object.assign(new Error(run.code), { code: run.code })); }
+  });
+  const equality = results.find((item) => item.scenarioId === 'THERM-SCENARIO-EQUALITY-ENABLED');
+  const actual = {
+    kind: 'avr.thermostat-summary', scenariosPassed: results.filter((item) => item.status === 'passed').length,
+    scenariosTotal: results.length, equalityD13: equality?.observed?.d13 ?? null,
+  };
+  const rawVirtualTime = { timebase: 'avr-worker-virtual-milliseconds', values: results.map((item) => item.virtualMilliseconds) };
+  stopRuntime('X26 AVR cell completed; report retained as review data only.');
+  return { artifactSha256, actual, rawVirtualTime, durationMilliseconds: performance.now() - started };
+}
+
+async function executePicoRegressionCell(cell, fixture, started) {
+  picoPublicWorkbench.installPreparedProject(fixture, 'X26 fixture installed; fresh Build required.');
+  const built = await picoPublicWorkbench.build();
+  if (!built.ok || built.artifact.sourceSha256 !== cell.sourceSha256) throw Object.assign(new Error(built.code), { code: built.code });
+  const run = await picoPublicWorkbench.run();
+  if (!run.ok) throw Object.assign(new Error(run.code), { code: run.code });
+  const state = await waitForMatrixState(() => picoPublicWorkbench.snapshot(),
+    (value) => value.runtime?.instruments?.serial?.text?.includes('PICO PUBLIC'), 'REGRESSION_PICO_RUNTIME_TIMEOUT');
+  const runtime = state.runtime;
+  const actual = { kind: 'rp2040.gpio-uart', gpio0: runtime.experimental.gpio0.level,
+    uartText: runtime.instruments.serial.text.trim() };
+  const rawVirtualTime = { timebase: 'rp2040js-worker-cycles-and-virtual-nanoseconds',
+    values: { cycle: runtime.cycle, trace: runtime.trace.map((item) => ({ cycle: item.cycle, virtualNanos: item.virtualNanos })) } };
+  picoPublicWorkbench.stop();
+  return { artifactSha256: built.artifact.uf2Sha256, actual, rawVirtualTime,
+    durationMilliseconds: performance.now() - started };
+}
+
+async function executeC3RegressionCell(cell, fixture, started) {
+  c3PublicWorkbench.installPreparedProject(fixture, 'X26 fixture installed; fresh Build required.');
+  const built = await c3PublicWorkbench.build();
+  if (!built.ok || built.artifact.sourceSha256 !== cell.sourceSha256) throw Object.assign(new Error(built.code), { code: built.code });
+  const run = await c3PublicWorkbench.run();
+  if (!run.ok) throw Object.assign(new Error(run.code), { code: run.code });
+  const runtime = run.runtime;
+  const actual = {
+    kind: 'esp32c3.qemu-uart-plus-gpio2-model',
+    qemuMarker: runtime.uart.bootEpochs[0]?.marker ?? null,
+    qemuBootEpochs: runtime.uart.bootEpochs.length,
+    qemuPinStateObserved: runtime.gpio.qemuPinStateObserved,
+    modeledLedCode: runtime.modeledCircuit.epochs.at(-1)?.led?.code ?? null,
+  };
+  const rawVirtualTime = { timebase: 'qemu-boot-epochs-and-project-model-epochs-kept-separate',
+    values: { qemuBootEpochs: runtime.uart.bootEpochs.map((epoch, index) => ({ index: index + 1, marker: epoch.marker })),
+      projectModelEpochs: runtime.modeledCircuit.epochs.map((epoch, index) => ({ index: index + 1, source: epoch.source ?? 'executed-register-write' })) } };
+  await c3PublicWorkbench.dispose('X26 C3 cell completed; report retained as review data only.');
+  return { artifactSha256: built.artifact.flashSha256, actual, rawVirtualTime,
+    durationMilliseconds: performance.now() - started };
+}
+
+async function executeStm32RegressionCell(cell, fixture, started) {
+  stm32PublicWorkbench.installPreparedProject(fixture, 'X26 fixture installed; fresh Build required.');
+  const built = await stm32PublicWorkbench.build();
+  if (!built.ok || built.artifact.sourceSha256 !== cell.sourceSha256) throw Object.assign(new Error(built.code), { code: built.code });
+  const run = await stm32PublicWorkbench.run(false);
+  if (!run.ok) throw Object.assign(new Error(run.code), { code: run.code });
+  const runtime = run.result;
+  const actual = { kind: 'stm32.renode-pb0-usart3', pb0: runtime.observed.pb0,
+    uartText: runtime.observed.uartText, bootEpochs: runtime.bootEpochs };
+  const rawVirtualTime = { timebase: 'renode-result-without-invented-cycle-axis',
+    values: { bootEpochs: runtime.bootEpochs, timedWaveformAvailable: false } };
+  stm32PublicWorkbench.stop('X26 STM32 cell completed; report retained as review data only.');
+  return { artifactSha256: built.artifact.sha256, actual, rawVirtualTime,
+    durationMilliseconds: performance.now() - started };
+}
+
+async function executeBrowserRegressionCell(cell) {
+  const started = performance.now();
+  await selectRegressionProfile(cell.profile);
+  const fixture = await verifiedRegressionFixture(cell);
+  let result;
+  if (cell.profile === AVR_PROFILE) result = await executeAvrRegressionCell(cell, fixture, started);
+  else if (cell.profile === RP2040_PROFILE) result = await executePicoRegressionCell(cell, fixture, started);
+  else if (cell.profile === ESP32C3_PROFILE) result = await executeC3RegressionCell(cell, fixture, started);
+  else if (cell.profile === STM32F429ZI_PROFILE) result = await executeStm32RegressionCell(cell, fixture, started);
+  else throw Object.assign(new Error('REGRESSION_PROFILE_UNSUPPORTED'), { code: 'REGRESSION_PROFILE_UNSUPPORTED' });
+  return {
+    caseId: cell.caseId, profile: cell.profile, profileVersion: cell.profileVersion,
+    fixtureSha256: cell.fixtureSha256, sourceSha256: cell.sourceSha256,
+    artifactSha256: result.artifactSha256, producer: cell.observationOwner,
+    actual: result.actual, rawVirtualTime: result.rawVirtualTime,
+    durationMilliseconds: result.durationMilliseconds,
+  };
+}
+
+async function runBrowserRegressionMatrix(selector = 'all', expectationOverride = null) {
+  if (regressionMatrixRunning) throw Object.assign(new Error('REGRESSION_MATRIX_BUSY'), { code: 'REGRESSION_MATRIX_BUSY' });
+  regressionMatrixRunning = true;
+  for (const control of [elements.regressionmatrixselector, elements.regressionmatrixrun,
+    elements.regressionmatrixnegative]) control.disabled = true;
+  elements.regressionmatrixstate.textContent = 'Running fresh builds…';
+  elements.regressionmatrixsummary.textContent = 'Each selected cell is executing sequentially through its existing compiler and runtime.';
+  try {
+    regressionMatrixReport = await executeRegressionMatrix({
+      selector, expectationOverride, executeCell: executeBrowserRegressionCell,
+    });
+    renderRegressionMatrixReport(regressionMatrixReport);
+    return structuredClone(regressionMatrixReport);
+  } finally {
+    regressionMatrixRunning = false;
+    for (const control of [elements.regressionmatrixselector, elements.regressionmatrixrun,
+      elements.regressionmatrixnegative]) control.disabled = false;
+  }
+}
+
+async function runWrongRegressionExpectation(selector = 'X26-RP2040-GPIO0-UART0') {
+  const caseId = selector === 'all' ? 'X26-RP2040-GPIO0-UART0' : selector;
+  if (caseId !== 'X26-RP2040-GPIO0-UART0') throw Object.assign(new Error('REGRESSION_NEGATIVE_CELL_FIXED'), { code: 'REGRESSION_NEGATIVE_CELL_FIXED' });
+  const override = await createExpectationOverride(caseId, {
+    kind: 'rp2040.gpio-uart', gpio0: false, uartText: 'PICO PUBLIC',
+  });
+  return runBrowserRegressionMatrix(caseId, override);
+}
+
+function exportRegressionMatrixReport() {
+  if (!regressionMatrixReport) return;
+  const text = `${JSON.stringify(regressionMatrixReport, null, 2)}\n`;
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const link = document.createElement('a'); link.href = url;
+  link.download = `${regressionMatrixReport.matrixId}-${regressionMatrixReport.semanticSha256.slice(0, 12)}.intent-mcu-regression.json`;
+  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+elements.regressionmatrixrun.addEventListener('click', () => {
+  void runBrowserRegressionMatrix(elements.regressionmatrixselector.value);
+});
+elements.regressionmatrixnegative.addEventListener('click', () => { void runWrongRegressionExpectation(); });
+elements.regressionmatrixexport.addEventListener('click', exportRegressionMatrixReport);
+for (const input of [elements.source, elements.picosource, elements.c3source, elements.stm32source,
+  elements.projectopeninput, elements.picoopeninput, elements.c3openinput, elements.stm32openinput]) {
+  input.addEventListener(input.type === 'file' ? 'change' : 'input', () => invalidateRegressionMatrixReport());
+}
+document.addEventListener('pointerup', (event) => {
+  if (!regressionMatrixRunning && event.target.closest?.('.circuit-canvas,.shared-circuit-editor')) {
+    invalidateRegressionMatrixReport('Circuit geometry or topology changed. Run the matrix again for current evidence.');
+  }
+});
+
+window.__X26_REGRESSION_MATRIX__ = Object.freeze({
+  get ready() { return regressionMatrixReady; },
+  matrix: () => structuredClone(X26_REGRESSION_MATRIX),
+  report: () => regressionMatrixReport ? structuredClone(regressionMatrixReport) : null,
+  run: (selector = 'all') => runBrowserRegressionMatrix(selector),
+  runWrongExpectation: (selector = 'X26-RP2040-GPIO0-UART0') => runWrongRegressionExpectation(selector),
+  passed: () => regressionMatrixReport ? regressionReportPassed(regressionMatrixReport) : false,
+});
+void regressionMatrixIdentity().then((identity) => {
+  elements.regressionmatrixidentity.textContent = `Immutable matrix SHA-256 ${identity} · four exact fixture/source hashes · four distinct oracles`;
+  regressionMatrixReady = true;
+});
+
 function renderLifecycle() {
   elements.lifecyclestate.textContent = lifecycle.phase;
   elements.lifecyclestate.dataset.phase = lifecycle.phase;
@@ -7076,6 +7336,7 @@ elements.boardselect.addEventListener('change', () => {
   const previousProfile = selectedCompilerProfile;
   const selected = candidateCompilerTarget(elements.boardselect.value);
   selectedCompilerProfile = selected ? selected.profile : AVR_PROFILE;
+  if (previousProfile !== selectedCompilerProfile) invalidateRegressionMatrixReport('Controller profile changed. Run the matrix again for current evidence.');
   if (previousProfile !== selectedCompilerProfile) clearRequirementResultLinks(previousProfile);
   if (previousProfile !== selectedCompilerProfile) clearProjectPatchReview('Profile changed. Review a patch for the active project.');
   syncControllerSelectors(selectedCompilerProfile);

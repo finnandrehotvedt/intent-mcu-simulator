@@ -583,6 +583,24 @@
       <article class="instrument-card panel" aria-labelledby="pin-title"><div class="card-heading"><div><p class="eyebrow">SAME MACHINE STATE</p><h2 id="pin-title">Pin inspector</h2></div></div><label for="pin-select">Pin</label><select id="pin-select"><option>D0</option><option>D1</option><option>D2</option><option>D3</option><option>D4</option><option>D5</option><option>D6</option><option>D7</option><option>D8</option><option>D9</option><option>D10</option><option>D11</option><option>D12</option><option selected>D13</option><option>A0</option><option>A1</option><option>A2</option><option>A3</option><option>A4</option><option>A5</option></select><dl class="pin-readout"><div><dt>Mode</dt><dd id="pin-mode">—</dd></div><div><dt>Level</dt><dd id="pin-level">—</dd></div><div><dt>PWM / ADC</dt><dd id="pin-detail">—</dd></div><div><dt>Diagnostic</dt><dd id="pin-diagnostic">—</dd></div><div><dt>Cycle</dt><dd id="pin-cycle">0</dd></div></dl></article>
     </section></details>
 
+    <section id="regression-matrix" class="regression-matrix panel" aria-labelledby="regression-matrix-title">
+      <div class="regression-matrix-heading">
+        <div><p class="eyebrow">X26 · PROFILE-SPECIFIC REGRESSION</p><h2 id="regression-matrix-title">Run one requirement across four distinct machines</h2></div>
+        <span id="regression-matrix-state" class="state">Not run</span>
+      </div>
+      <p class="regression-matrix-intro">Each row starts from its checksum-locked fixture, builds fresh firmware, and uses that profile’s existing producer and oracle. Matching rows do not mean AVR, RP2040, ESP32-C3 and STM32 behave alike.</p>
+      <div class="regression-matrix-actions">
+        <label for="regression-matrix-selector">Cases<select id="regression-matrix-selector"><option value="all">All four profiles</option><option value="X26-AVR-THERMOSTAT-D13">AVR · D13 thermostat</option><option value="X26-RP2040-GPIO0-UART0">RP2040 · GPIO0/UART0</option><option value="X26-ESP32C3-QEMU-UART-GPIO2-MODEL">ESP32-C3 · QEMU UART + separate GPIO2 model</option><option value="X26-STM32-RENODE-PB0-USART3">STM32 · Renode PB0/USART3</option></select></label>
+        <button id="regression-matrix-run" type="button">Run selected matrix</button>
+        <button id="regression-matrix-negative" type="button">Run wrong RP2040 expectation</button>
+        <button id="regression-matrix-export" type="button" disabled>Export review JSON</button>
+      </div>
+      <p id="regression-matrix-identity" class="regression-matrix-identity">Loading immutable matrix identity…</p>
+      <div class="regression-matrix-table-wrap"><table class="regression-matrix-table"><thead><tr><th>Profile-bound case</th><th>Fresh producer</th><th>Expected / actual</th><th>Outcome</th><th>Limits</th></tr></thead><tbody id="regression-matrix-results"><tr><td colspan="5">No matrix report. Reports are transient review data and never project or verdict authority.</td></tr></tbody></table></div>
+      <p id="regression-matrix-summary" class="truth" role="status">Choose one cell or all four. The negative control reruns only RP2040 with a deliberately wrong expectation and must finish academically failed while the job completes.</p>
+      <p class="regression-matrix-limit"><strong>Evidence boundary:</strong> C3 actual QEMU CPU/UART remains separate from the project-owned GPIO2 model. Raw native timebases are retained per row and are never compared as equivalent. Save/Open never stores this report.</p>
+    </section>
+
     <section class="about panel" aria-labelledby="about-title">
       <div class="about-intro"><div><p class="eyebrow">OPEN SOURCE · VERIFIED BOUNDARIES</p><h2 id="about-title">What is Intent MCU Simulator?</h2></div><p>It is an original browser workbench that turns supported firmware into observable virtual hardware behaviour. Build a circuit by connecting named pins, compile edited source in an isolated fixed toolchain, then inspect GPIO, LEDs, inputs, serial bytes, and logic traces.</p></div>
       <div class="answer-grid">
