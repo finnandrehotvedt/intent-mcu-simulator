@@ -1,18 +1,18 @@
-# Rollback basis for 1.1.0-rc.26
+# Rollback basis for 1.1.0-rc.27
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain the exact accepted rc.24 source commit
-`b1e559ab3dce87a9aae031664a0333bb9b425d9f`, VM103 image
-`sha256:1085eb9e11b9de3628f3ddd59801077e0ab0016b84e614db17a94fe82e500acc`
-and the pre-rc.26 Compose/environment backup recorded in the release receipt.
+Retain exact accepted source commit
+`9d18ddde600e842cdb6dc98073f0aae429c408cb` and VM103 image
+`sha256:5843452d6e587513e20133ff8001d63adccdbecd0daebf84a696ce149d282aa5`
+as the pre-rc.27 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
 
-Rc.17 through rc.26 use the same common envelope. An rc.22, rc.23, rc.24, rc.25 or rc.26 file that contains
+Rc.17 through rc.27 use the same common envelope. An rc.22 through rc.27 file that contains
 narrow-profile `wireRoutes` should be retained as the learner's original, then
 opened in rc.21 only through an rc.21-compatible copy if strict older nested
 validation rejects the added layout field. The existing **Legacy copy** remains
@@ -40,6 +40,11 @@ alter learner-owned files, controller runtimes or electrical topology.
 Rc.25 adds only the derived compatibility matrix, documentation and acceptance
 tests. Rolling back removes that presentation without changing learner files,
 catalogue definitions, compiler/runtime behavior or electrical topology.
+
+Rc.27 adds strict candidate-v3 branch reconnect and completes the existing
+branch-versus-whole-net transaction controls. Rolling back removes reconnect
+authority but does not migrate learner files or alter their named-pin graph;
+open the retained file in the older release and Build fresh.
 
 Browser recovery and learner-owned files are never deleted by deployment or
 rollback. Do not change DNS, shared Caddy configuration, compiler/runtime

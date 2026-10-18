@@ -463,6 +463,27 @@ export class CandidateEditorSession {
           runtimeDirty = true;
           break;
         }
+        case 'wire.reconnect': {
+          if (!exactCommand(command, ['netId', 'from', 'to'])) {
+            return failure('EDITOR_COMMAND_SHAPE', this.revision);
+          }
+          const net = draft.candidateCircuit.nets.find((item) => item.id === command.netId);
+          if (!net) return failure('EDITOR_NET_MISSING', this.revision, [command.netId]);
+          const fromKey = endpointKey(command.from);
+          const toKey = endpointKey(command.to);
+          if (fromKey === toKey) {
+            return failure('EDITOR_RECONNECT_SAME_ENDPOINT', this.revision, [fromKey]);
+          }
+          const index = net.endpoints.findIndex((endpoint) => endpointKey(endpoint) === fromKey);
+          if (index < 0) return failure('EDITOR_ENDPOINT_MISSING', this.revision, [fromKey]);
+          if (draft.candidateCircuit.nets.some((item) => item.endpoints.some(
+            (endpoint) => endpointKey(endpoint) === toKey,
+          ))) return failure('PROJECT_CONTACT_REUSED_ENDPOINT', this.revision, [toKey]);
+          net.endpoints[index] = clone(command.to);
+          normalizeChangedNet(draft, command.netId);
+          runtimeDirty = true;
+          break;
+        }
         case 'component.move': {
           if (!exactCommand(command, ['componentId', 'x', 'y'])
               || !draft.candidateLayout.positions[command.componentId]) {

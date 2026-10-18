@@ -25,8 +25,8 @@ const narrowSafety = (prefix) => Object.freeze({
 });
 
 export const EXISTING_GRAPH_EDIT_SAFETY_CONTRACT = Object.freeze({
-  schema: 'intent-mcu-existing-graph-edit-safety@1',
-  scope: 'The four existing public graph editors and their existing commands only.',
+  schema: 'intent-mcu-existing-graph-edit-safety@2',
+  scope: 'The four public profile workflows, including ordinary AVR v2 and candidate-v3 graph editors.',
   requirements: Object.freeze(['W06', 'W07', 'W08', 'W10']),
   invariants: Object.freeze([
     'No new topology, component, controller, runtime model or narrow-profile branch capability.',
@@ -55,6 +55,22 @@ export const EXISTING_GRAPH_EDIT_SAFETY_CONTRACT = Object.freeze({
         missingResistance: 'LED_SERIES_RESISTOR_REQUIRED', overcurrent: 'LED_OVERCURRENT',
       }),
     }),
+    avrCandidate: Object.freeze({
+      graph: 'candidate-v3-explicit-junction-graph',
+      operations: Object.freeze({
+        branchDelete: supported('CandidateEditorSession wire.branch.delete'),
+        netDelete: supported('CandidateEditorSession wire.delete'),
+        branchReconnect: supported('CandidateEditorSession wire.reconnect'),
+        branchCreate: supported('CandidateEditorSession wire.branch'),
+        undoRedo: supported('CandidateEditorSession complete-document bounded history'),
+      }),
+      safety: Object.freeze({
+        atomicValidation: supported('validateContactPersistenceDraft before history commit'),
+        powerShort: 'PROJECT_CONTACT_POWER_SHORT',
+        reusedEndpoint: 'PROJECT_CONTACT_REUSED_ENDPOINT',
+        unknownPin: 'PROJECT_CONTACT_UNKNOWN_PIN',
+      }),
+    }),
     rp2040: Object.freeze({ graph: 'fixed-two-endpoint-series-led', operations: narrowOperations,
       safety: narrowSafety('RP2040') }),
     esp32c3: Object.freeze({ graph: 'fixed-two-endpoint-series-led', operations: narrowOperations,
@@ -63,8 +79,8 @@ export const EXISTING_GRAPH_EDIT_SAFETY_CONTRACT = Object.freeze({
       safety: narrowSafety('STM32') }),
   }),
   completion: Object.freeze({
-    w06: 'partial: branch editing remains AVR-only',
-    w07: 'partial: arbitrary/shared-graph transactions remain outside the bounded profiles',
+    w06: 'complete: exact branch reconnect/delete and separately labelled whole-net delete are public on explicit-junction AVR graphs; fixed two-endpoint profiles truthfully expose no branch',
+    w07: 'complete: every supported authored graph operation is one atomic complete-document Undo/Redo transaction; rejection changes no project, revision or history',
     w08: 'partial: narrow duplication and arbitrary placement remain unavailable',
     w10: 'partial: broad contention and voltage-short coverage remains AVR-only',
   }),

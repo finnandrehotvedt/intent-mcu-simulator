@@ -1,12 +1,14 @@
 # Existing-graph edit safety contract
 
-This private candidate covers W06, W07, W08 and W10 only for the four current
-public graphs and commands. It does not add topology, components, controllers,
-runtime models, narrow-profile branches, narrow duplication or arbitrary part
-placement.
+This public contract covers W06, W07, W08 and W10 for the four controller
+workflows, including ordinary AVR v2 and candidate-v3 graphs. It does not add
+components, controllers, runtime models, narrow-profile branches, narrow
+duplication or arbitrary part placement.
 
-The AVR editor keeps its existing branched graph, branch-versus-net deletion,
-duplication and broad electrical validator. Pico, ESP32-C3 and STM32 keep their
+The AVR editors expose explicit junction branches, branch reconnect and
+branch-versus-net deletion. Candidate-v3 reconnect passes the same strict
+validation and complete-document history boundary as its other graph commands.
+Pico, ESP32-C3 and STM32 keep their
 fixed board → resistor → LED → ground graphs, one resistor and one LED.
 Unsupported operations are explicit unavailable states, not hidden failures.
 
@@ -18,6 +20,6 @@ authority because they do not change named-pin connectivity. Component,
 property and wire changes still require a fresh Build.
 
 Save/Open remains data-only. It never restores history, artifact, runtime,
-GPIO/Serial observation or event authority. The four requirements remain
-partial until their stated broader gaps are resolved and public acceptance is
-completed.
+GPIO/Serial observation or event authority. W06 and W07 are complete after
+public source and browser acceptance. W08 and W10 remain partial until their
+stated broader gaps are implemented and accepted.

@@ -109,7 +109,7 @@ function assertFreshGeometry(value, label) {
     await page.waitForFunction((x) => window.__M6_PROJECT__().candidateLayout.positions['lcd-1'].x === x, originalPosition.x);
     assertFreshGeometry(await geometry(page), 'move/rotate undo');
 
-    const beforeUnsupportedReconnect = JSON.stringify(await page.evaluate(() => window.__M6_PROJECT__()));
+    const beforeCandidateReconnect = JSON.stringify(await page.evaluate(() => window.__M6_PROJECT__()));
     await page.locator('.wire-segment-hit[data-net="net-0"][data-endpoint="lcd-1.RS"]').first().focus();
     await page.click('#reconnect-mode');
     await page.locator('.pin-anchor[data-endpoint="lcd-63.D7"]').evaluate((anchor) => {
@@ -118,11 +118,26 @@ function assertFreshGeometry(value, label) {
         bubbles: true, clientX: box.left + box.width / 2, clientY: box.top + box.height / 2,
       }));
     });
-    await page.waitForFunction(() => document.querySelector('#technical-error').textContent
-      .includes('CANDIDATE_EDITOR_COMMAND_UNSUPPORTED'));
-    assert.equal(JSON.stringify(await page.evaluate(() => window.__M6_PROJECT__())), beforeUnsupportedReconnect,
-      'unsupported candidate reconnect changed the project');
-    assertFreshGeometry(await geometry(page), 'unsupported candidate reconnect');
+    await page.waitForFunction(() => window.__M6_PROJECT__().candidateCircuit.nets
+      .find((net) => net.id === 'net-0').endpoints
+      .some((endpoint) => endpoint.component === 'lcd-63' && endpoint.pin === 'D7'));
+    const reconnectedCandidate = JSON.stringify(await page.evaluate(() => window.__M6_PROJECT__()));
+    assert.notEqual(reconnectedCandidate, beforeCandidateReconnect, 'candidate reconnect did not change the project');
+    assertFreshGeometry(await geometry(page), 'candidate reconnect');
+    await page.click('#undo');
+    await page.waitForFunction(() => window.__M6_PROJECT__().candidateCircuit.nets
+      .find((net) => net.id === 'net-0').endpoints
+      .some((endpoint) => endpoint.component === 'lcd-1' && endpoint.pin === 'RS'));
+    assert.equal(JSON.stringify(await page.evaluate(() => window.__M6_PROJECT__())), beforeCandidateReconnect,
+      'candidate reconnect Undo did not restore the exact project');
+    assertFreshGeometry(await geometry(page), 'candidate reconnect undo');
+    await page.click('#redo');
+    await page.waitForFunction(() => window.__M6_PROJECT__().candidateCircuit.nets
+      .find((net) => net.id === 'net-0').endpoints
+      .some((endpoint) => endpoint.component === 'lcd-63' && endpoint.pin === 'D7'));
+    assert.equal(JSON.stringify(await page.evaluate(() => window.__M6_PROJECT__())), reconnectedCandidate,
+      'candidate reconnect Redo did not restore the exact project');
+    assertFreshGeometry(await geometry(page), 'candidate reconnect redo');
 
     await page.evaluate(() => document.querySelector('[data-component-id="lcd-1"]')
       .dispatchEvent(new MouseEvent('click', { bubbles: true })));
@@ -176,7 +191,7 @@ function assertFreshGeometry(value, label) {
 
     assert.deepEqual(errors, []);
     process.stdout.write(`${JSON.stringify({ ok: true, maximum: fixture.counts,
-      operations: ['move', 'rotate', 'property', 'delete', 'candidate-reconnect-rejection', 'v2-reconnect', 'undo', 'open', 'unsafe-open'],
+      operations: ['move', 'rotate', 'property', 'delete', 'candidate-reconnect', 'candidate-reconnect-undo-redo', 'v2-reconnect', 'undo', 'open', 'unsafe-open'],
       freshGeometry: true, staleAcceptance: false })}\n`);
   } finally {
     await browser.close();

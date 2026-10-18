@@ -1,4 +1,17 @@
-# Intent MCU Simulator 1.1.0-rc.26
+# Intent MCU Simulator 1.1.0-rc.27
+
+This branch-transaction release completes W06 and W07. AVR candidate projects
+can reconnect an exact selected branch to a free named pin, delete only that
+branch, or separately delete the whole net. Every accepted operation is one
+complete Undo/Redo transaction; invalid or unsafe attempts are atomic.
+
+Crossings remain electrically separate from explicit junction dots. The three
+narrow controller profiles remain fixed two-endpoint teaching graphs and gain
+no implied branch capability.
+
+---
+
+## 1.1.0-rc.26
 
 This reference-completion release gives every available public component cell
 a real working starter without adding a component, pin, electrical topology,

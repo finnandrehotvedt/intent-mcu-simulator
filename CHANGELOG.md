@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.27 — 2026-10-18
+
+- Completed W06 with exact AVR branch selection, candidate-v3 branch endpoint
+  reconnect, branch-only deletion and separately labelled whole-net deletion.
+- Completed W07 by accepting each graph authoring operation as one complete-
+  document Undo/Redo transaction. Invalid, unsafe, stale and conflicting
+  reconnects leave project, revision and history unchanged.
+- Added source and real Chromium acceptance for candidate reconnect, branch
+  delete, whole-net delete, Undo/Redo and Download/Open while preserving named-
+  pin attachment, explicit junctions, WIRE-LANE-01 and runtime invalidation.
+- Kept Pico, ESP32-C3 and STM32 fixed two-endpoint profiles truthful: they keep
+  their existing reconnect/delete/history paths and do not claim branches.
+
 ## 1.1.0-rc.26 — 2026-10-17
 
 - Added exactly eight public AVR reference starters for the rc.25 available
