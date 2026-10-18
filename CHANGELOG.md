@@ -2,6 +2,18 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.42 — 2026-10-18
+
+- Completed X12 by treating each existing bounded stdio action request as an
+  ephemeral in-memory job whose request ID and existing expiry timestamp are
+  its handle and deletion deadline.
+- Added strict read/export controls outside the seven-action set. Evidence is
+  data only, carries request/profile/generation/source/result association and
+  cannot restore runtime, verdict, project or Apply authority.
+- Proved actual active test cancellation, no late success, a fresh successful
+  rerun, pre-expiry export and real short-TTL cleanup. Deterministic fixture
+  clock evidence and separately retained compiler cache are labelled exactly.
+
 ## 1.1.0-rc.41 — 2026-10-18
 
 - Completed X11 with one stable stdio result envelope that distinguishes

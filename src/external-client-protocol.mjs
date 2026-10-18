@@ -10,6 +10,7 @@ import {
 export const EXTERNAL_CLIENT_READY_SCHEMA = 'intent-mcu-external-client-ready@1';
 export const EXTERNAL_CLIENT_CANCEL_SCHEMA = 'intent-mcu-external-client-cancel@1';
 export const EXTERNAL_CLIENT_CONTROL_RESULT_SCHEMA = 'intent-mcu-external-client-control-result@1';
+export const EXTERNAL_CLIENT_JOB_REQUEST_SCHEMA = 'intent-mcu-external-client-job-request@1';
 export const EXTERNAL_CLIENT_ERROR_SCHEMA = 'intent-mcu-external-client-error@1';
 export const EXTERNAL_CLIENT_ORIGIN = 'https://lab.teachthecompany.com';
 
@@ -41,6 +42,14 @@ export function parseExternalClientLine(line, now = Date.now()) {
       throw Object.assign(new Error('EXTERNAL_CLIENT_CANCEL_SHAPE'), { code: 'EXTERNAL_CLIENT_CANCEL_SHAPE' });
     }
     return Object.freeze({ kind: 'cancel', value: structuredClone(value) });
+  }
+  if (value?.schema === EXTERNAL_CLIENT_JOB_REQUEST_SCHEMA) {
+    if (!exactKeys(value, ['schema', 'requestId', 'targetRequestId', 'operation'])
+        || !REQUEST_ID.test(value.requestId) || !REQUEST_ID.test(value.targetRequestId)
+        || !['read', 'export'].includes(value.operation)) {
+      throw Object.assign(new Error('EXTERNAL_CLIENT_JOB_REQUEST_SHAPE'), { code: 'EXTERNAL_CLIENT_JOB_REQUEST_SHAPE' });
+    }
+    return Object.freeze({ kind: 'job', value: structuredClone(value) });
   }
   return Object.freeze({ kind: 'action', value: parseBoundedActionRequest(line, now), source: line });
 }

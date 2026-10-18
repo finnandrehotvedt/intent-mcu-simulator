@@ -1,4 +1,21 @@
-# Intent MCU Simulator 1.1.0-rc.41
+# Intent MCU Simulator 1.1.0-rc.42
+
+This ephemeral-job release completes X12 without adding an action, account or
+endpoint. Every existing bounded stdio action request is a short-lived job
+whose existing request ID and `expiresAtMs` define its handle and exact
+in-memory deletion deadline.
+
+The existing cancel control retires the exact active request. Before expiry,
+strict read/export job controls let the client download a data-only evidence
+package with request, profile, generation, source and authoritative result
+association. After expiry the result payload is actually removed and access
+returns `JOB_EXPIRED`. A bounded ID-only tombstone contains no evidence.
+Artifact-cache retention remains separately labelled and is not claimed to be
+cleared. Downloaded evidence cannot restore runtime or verdict authority.
+
+---
+
+## 1.1.0-rc.41
 
 This result-contract release completes X11 without adding an action or public
 endpoint. The existing local stdio adapter now gives every bounded action one

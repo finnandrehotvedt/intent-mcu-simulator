@@ -60,3 +60,14 @@ that experiment. The resulting actual three-scenario verdict is available in
 `runtime.run` and `result.read`, associated with the compiler input hash,
 artifact hash, project/runtime generations and scenario observation. This is a
 fixed test capability, not arbitrary source selection or a new action.
+
+Each action request is also a short-lived in-memory job. Its request ID is the
+job handle and its existing `expiresAtMs` is the deletion deadline. The
+existing cancel line retires an active request. Before expiry, a client can
+send `intent-mcu-external-client-job-request@1` with exact operation `read` or
+`export`; export returns a data-only evidence package associated with the
+request, profile, generation, source identity and authoritative result. After
+expiry the payload is removed and access returns `JOB_EXPIRED`. The bounded
+expired-ID marker stores no evidence. Compiler artifact-cache retention is
+separate and is not cleared or implied cleared by job deletion. See
+`X12-EPHEMERAL-JOBS-SPEC.md`.

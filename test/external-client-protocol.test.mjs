@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { boundedActionRequest } from '../src/bounded-action-contracts.mjs';
 import {
-  EXTERNAL_CLIENT_CANCEL_SCHEMA, EXTERNAL_CLIENT_ORIGIN,
+  EXTERNAL_CLIENT_CANCEL_SCHEMA, EXTERNAL_CLIENT_JOB_REQUEST_SCHEMA, EXTERNAL_CLIENT_ORIGIN,
   externalClientLineAssociation, parseExternalClientLine, resolveExternalClientOrigin,
 } from '../src/external-client-protocol.mjs';
 import {
@@ -31,9 +31,23 @@ test('transport accepts the existing action request, bounded cancel and read-onl
   const cancel = parseExternalClientLine(JSON.stringify({ schema: EXTERNAL_CLIENT_CANCEL_SCHEMA,
     requestId: 'external-cancel-request', targetRequestId: 'external-valid-request' }), now);
   assert.equal(cancel.kind, 'cancel');
+  const job = parseExternalClientLine(JSON.stringify({ schema: EXTERNAL_CLIENT_JOB_REQUEST_SCHEMA,
+    requestId: 'external-job-export', targetRequestId: 'external-valid-request', operation: 'export' }), now);
+  assert.equal(job.kind, 'job'); assert.equal(job.value.operation, 'export');
   const discovery = parseExternalClientLine(JSON.stringify({ schema: CAPABILITY_DISCOVERY_REQUEST_SCHEMA,
     requestId: 'external-discovery-request', acceptSchema: CAPABILITY_DISCOVERY_SCHEMA }), now);
   assert.equal(discovery.kind, 'discovery');
+});
+
+test('ephemeral job control is read/export only and adds no action or authority', () => {
+  for (const operation of ['delete', 'apply', 'run']) assert.throws(() => parseExternalClientLine(JSON.stringify({
+    schema: EXTERNAL_CLIENT_JOB_REQUEST_SCHEMA, requestId: `external-job-${operation}-request`,
+    targetRequestId: 'external-valid-request', operation,
+  }), now), /JOB_REQUEST_SHAPE/u);
+  assert.throws(() => parseExternalClientLine(JSON.stringify({
+    schema: EXTERNAL_CLIENT_JOB_REQUEST_SCHEMA, requestId: 'external-job-extra-request',
+    targetRequestId: 'external-valid-request', operation: 'read', durable: true,
+  }), now), /JOB_REQUEST_SHAPE/u);
 });
 
 test('discovery transport rejects unsupported versions and added authority fields', () => {

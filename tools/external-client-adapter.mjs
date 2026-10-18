@@ -7,8 +7,10 @@ import { pathToFileURL } from 'node:url';
 import readline from 'node:readline';
 import {
   EXTERNAL_CLIENT_CONTROL_RESULT_SCHEMA, EXTERNAL_CLIENT_READY_SCHEMA,
+  EXTERNAL_CLIENT_JOB_REQUEST_SCHEMA,
   externalClientError, externalClientLineAssociation, parseExternalClientLine, resolveExternalClientOrigin,
 } from '../src/external-client-protocol.mjs';
+import { createExternalClientJobLedger } from '../src/external-client-jobs.mjs';
 import {
   EXTERNAL_CLIENT_RESULT_SCHEMA, externalClientRequestAssociation, externalClientResult,
 } from '../src/external-client-results.mjs';
@@ -26,6 +28,7 @@ export async function runExternalClientAdapter({ environment = process.env } = {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ serviceWorkers: 'block' });
   const page = await context.newPage();
+  let jobs = null;
   let closing = false;
   const close = async () => {
     if (closing) return;
@@ -56,8 +59,11 @@ export async function runExternalClientAdapter({ environment = process.env } = {
       throw new Error('EXTERNAL_CLIENT_PAGE_CONTRACT_MISMATCH');
     }
     write({ ...ready, transport: 'stdio', origin, durableServerProject: false,
-      resultSchema: EXTERNAL_CLIENT_RESULT_SCHEMA });
+      resultSchema: EXTERNAL_CLIENT_RESULT_SCHEMA,
+      jobRequestSchema: EXTERNAL_CLIENT_JOB_REQUEST_SCHEMA,
+      jobLifetime: 'action-request-expiresAtMs', jobEvidenceDataOnly: true });
 
+    jobs = createExternalClientJobLedger();
     const input = readline.createInterface({ input: process.stdin, crlfDelay: Infinity, terminal: false });
     input.on('line', async (line) => {
       let parsed;
@@ -69,8 +75,15 @@ export async function runExternalClientAdapter({ environment = process.env } = {
       }
       if (parsed.kind === 'cancel') {
         const result = await page.evaluate((target) => window.__AGENT_ACTIONS__.cancel(target), parsed.value.targetRequestId);
+        if (result.ok) jobs.cancellationRequested(parsed.value.targetRequestId);
         write({ schema: EXTERNAL_CLIENT_CONTROL_RESULT_SCHEMA, requestId: parsed.value.requestId,
           targetRequestId: parsed.value.targetRequestId, ...result });
+        return;
+      }
+      if (parsed.kind === 'job') {
+        write({ requestId: parsed.value.requestId, ...jobs.inspect(
+          parsed.value.targetRequestId, parsed.value.operation,
+        ) });
         return;
       }
       if (parsed.kind === 'discovery') {
@@ -85,19 +98,25 @@ export async function runExternalClientAdapter({ environment = process.env } = {
         }
         return;
       }
+      let tracked = false;
       try {
+        tracked = Boolean(jobs.begin(parsed.value, ready.sourceIdentity));
         // Fixed adapter code forwards data only. The client cannot provide a function or script.
         const result = await page.evaluate((source) => window.__AGENT_ACTIONS__.execute(source), parsed.source);
-        write(externalClientResult(result, parsed.value, ready.sourceIdentity));
+        const external = externalClientResult(result, parsed.value, ready.sourceIdentity);
+        if (tracked) jobs.complete(parsed.value.requestId, external);
+        write(external);
       } catch (error) {
         const failure = externalClientError(
           error.code ?? error.message ?? 'EXTERNAL_CLIENT_ACTION_FAILED', parsed.value.requestId,
         );
-        write(externalClientResult(failure, externalClientRequestAssociation(parsed.value), ready.sourceIdentity));
+        const external = externalClientResult(failure, externalClientRequestAssociation(parsed.value), ready.sourceIdentity);
+        if (tracked) jobs.complete(parsed.value.requestId, external);
+        write(external);
       }
     });
     await new Promise((resolve) => input.once('close', resolve));
-  } finally { await close(); }
+  } finally { jobs?.dispose(); await close(); }
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {

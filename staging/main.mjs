@@ -1896,8 +1896,10 @@ window.__M4_STATE__ = window.__M6_STATE__;
 window.__M5_STATE__ = window.__M6_STATE__;
 window.__M7_STATE__ = window.__M6_STATE__;
 window.__M11_STATE__ = window.__M6_STATE__;
+window.__M12_STATE__ = window.__M6_STATE__;
 window.__M3_READY__ = true; window.__M4_READY__ = true; window.__M5_READY__ = true; window.__M6_READY__ = true; window.__M7_READY__ = true;
 window.__M11_READY__ = true;
+window.__M12_READY__ = true;
 window.__PUBLIC_CONTROLLER_PROJECTION__ = {
   schema: PUBLIC_CONTROLLER_VIEW_SCHEMA,
   selectedProfile: AVR_PROFILE,
