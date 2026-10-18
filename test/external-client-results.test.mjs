@@ -13,6 +13,7 @@ import {
   THERMOSTAT_SCENARIOS, evaluateThermostatObservation,
   thermostatScenarioControls,
 } from '../src/thermostat-experiment-contract.mjs';
+import { completedExperimentOutcome } from '../src/experiment-outcomes.mjs';
 
 const association = {
   requestId: 'x11-result-request-01', action: 'result.read',
@@ -37,18 +38,19 @@ function knownBadObservation() {
 
 test('X11 preserves authoritative results while assigning stable disjoint categories', () => {
   const cases = [
-    [{ ok: true, code: 'ACTION_CURRENT_RESULT', executed: true }, 'success'],
-    [{ ok: false, code: 'ACTION_REQUEST_SHAPE', executed: false }, 'validation-failure'],
-    [{ ok: false, code: 'ACTION_STARTER_UNSUPPORTED', executed: true }, 'unsupported'],
-    [{ ok: false, code: 'ACTION_BUSY', executed: false }, 'temporarily-busy'],
-    [{ ok: false, code: 'ACTION_TIMEOUT', executed: false }, 'timeout'],
-    [{ ok: false, code: 'ACTION_CANCELLED', executed: false }, 'cancelled'],
-    [{ ok: false, code: 'BROKER_FAILED', executed: true }, 'execution-failure'],
+    [{ ok: true, code: 'ACTION_CURRENT_RESULT', executed: true }, 'success', 'completed'],
+    [{ ok: false, code: 'ACTION_REQUEST_SHAPE', executed: false }, 'validation-failure', 'not-started'],
+    [{ ok: false, code: 'ACTION_STARTER_UNSUPPORTED', executed: true }, 'unsupported', 'not-started'],
+    [{ ok: false, code: 'ACTION_BUSY', executed: false }, 'temporarily-busy', 'not-started'],
+    [{ ok: false, code: 'ACTION_TIMEOUT', executed: false }, 'timeout', 'timeout'],
+    [{ ok: false, code: 'ACTION_CANCELLED', executed: false }, 'cancelled', 'cancelled'],
+    [{ ok: false, code: 'BROKER_FAILED', executed: true }, 'execution-failure', 'infrastructure-error'],
   ];
-  for (const [raw, category] of cases) {
+  for (const [raw, category, jobStatus] of cases) {
     const result = externalClientResult(raw, association, identity);
     assert.equal(result.schema, EXTERNAL_CLIENT_RESULT_SCHEMA);
     assert.equal(result.category, category);
+    assert.equal(result.jobStatus, jobStatus);
     assert.deepEqual(result.authoritativeResult, raw);
     assert.equal(result.request.requestId, association.requestId);
     assert.equal(result.request.profile, association.profile);
@@ -58,6 +60,32 @@ test('X11 preserves authoritative results while assigning stable disjoint catego
   }
   assert.deepEqual(new Set(cases.map(([, category]) => category)),
     new Set(EXTERNAL_CLIENT_RESULT_CATEGORIES.filter((category) => category !== 'test-failure')));
+});
+
+test('X18 external results keep academic indeterminate and unsupported separate from job lifecycle', () => {
+  const incomplete = completedExperimentOutcome({
+    evidence: [{ code: 'OBSERVATION_PIN_MISSING', complete: false }],
+  });
+  const raw = { ok: true, code: 'ACTION_TEST_EVALUATED', executed: true, result: {
+    testEvidence: {
+      schema: 'intent-mcu-bounded-test-evidence@1', experimentId: 'TEST',
+      status: 'indeterminate', outcome: incomplete,
+      artifactIdentity: 'a'.repeat(64), sourceIdentity: 'b'.repeat(64),
+      primaryObservation: { scenarioId: 'S1' }, observations: [],
+    },
+  } };
+  const classified = externalClientResult(raw, association, identity);
+  assert.equal(classified.category, 'success');
+  assert.equal(classified.jobStatus, 'completed');
+  assert.equal(classified.testVerdict.status, 'indeterminate');
+  assert.equal(classified.testVerdict.outcome.evidenceStatus, 'incomplete');
+
+  const unsupported = externalClientResult({ ok: false, code: 'ACTION_TEST_UNSUPPORTED', executed: false },
+    { ...association, action: 'test.run' }, identity);
+  assert.equal(unsupported.category, 'unsupported');
+  assert.equal(unsupported.jobStatus, 'not-started');
+  assert.equal(unsupported.testVerdict.status, 'unsupported');
+  assert.equal(unsupported.testVerdict.outcome.academicStatus, 'unsupported');
 });
 
 test('X11 recognizes only an authoritative producer-backed failed verdict as test failure', () => {

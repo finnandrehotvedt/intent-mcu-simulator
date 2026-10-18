@@ -3,6 +3,7 @@
 
 import { exactKeys } from './strict-json.mjs';
 import { THERMOSTAT_EXPERIMENT_ID, THERMOSTAT_SCENARIOS } from './thermostat-experiment-contract.mjs';
+import { completedExperimentOutcome } from './experiment-outcomes.mjs';
 
 export const SCENARIO_TIMELINE_SCHEMA = 'intent-mcu-scenario-timeline@1';
 export const SCENARIO_TIMELINE_PROFILE = 'board.atmega328p-16mhz-v1';
@@ -217,11 +218,21 @@ export function evaluateScenarioTimelineObservation(scenario, snapshot) {
   const timeInWindow = virtualMilliseconds !== null
     && virtualMilliseconds >= captureWindow.minimumMilliseconds
     && virtualMilliseconds <= captureWindow.maximumMilliseconds;
+  const pinObserved = Boolean(pin) && typeof pin.level === 'boolean';
   const primaryExecutedPin = pin?.mode === 'OUTPUT' && pin.level === expectation.level;
+  const outcome = completedExperimentOutcome({
+    evidence: [
+      { code: 'OBSERVATION_TIME_OUT_OF_WINDOW', complete: timeInWindow },
+      { code: 'OBSERVATION_INPUTS_INCOMPLETE', complete: inputsComplete },
+      { code: 'OBSERVATION_PIN_MISSING', complete: pinObserved },
+    ],
+    assertions: [{ code: 'EXPECTED_PIN_LEVEL_MISMATCH', passed: primaryExecutedPin }],
+  });
   return {
     schema: 'intent-mcu-scenario-observation-result@1',
     scenarioId: normalized.id,
-    status: timeInWindow && inputsComplete && primaryExecutedPin ? 'passed' : 'failed',
+    status: outcome.academicStatus,
+    outcome,
     virtualMilliseconds,
     expected: { eventId: expectation.id, pin: expectation.pin, level: expectation.level,
       observationWindow: { startMilliseconds: expectation.atMilliseconds,
@@ -230,7 +241,7 @@ export function evaluateScenarioTimelineObservation(scenario, snapshot) {
       level: typeof pin?.level === 'boolean' ? pin.level : null,
       captureWindow,
       inputControls: logged.map(({ componentId, key, value, targetCycle }) => ({ componentId, key, value, targetCycle })) },
-    checks: { timeInWindow, inputsComplete, primaryExecutedPin },
+    checks: { timeInWindow, inputsComplete, pinObserved, primaryExecutedPin },
   };
 }
 

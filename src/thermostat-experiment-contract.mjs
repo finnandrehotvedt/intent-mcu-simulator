@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
+import { completedExperimentOutcome } from './experiment-outcomes.mjs';
+
 export const THERMOSTAT_EXPERIMENT_ID = 'avr-thermostat-boundary-v1';
 export const THERMOSTAT_REQUIREMENTS_SCHEMA = 'intent-mcu-requirement-set@1';
 export const THERMOSTAT_SCENARIOS_SCHEMA = 'intent-mcu-scenario-set@1';
@@ -175,17 +177,31 @@ export function evaluateThermostatObservation(id, snapshot) {
   const timeInWindow = virtualMilliseconds !== null
     && virtualMilliseconds >= THERMOSTAT_TIME.observeAtOrAfterMilliseconds
     && virtualMilliseconds <= THERMOSTAT_TIME.deadlineMilliseconds;
+  const pinObserved = Boolean(pin) && typeof pin.level === 'boolean';
+  const serialObserved = serial?.dropped === 0 && typeof serial.text === 'string';
   const primaryPassed = pin?.mode === THERMOSTAT_OBSERVATION.primary.requiredMode
     && pin.level === scenario.expectedD13;
-  const serialPassed = serial?.dropped === 0 && typeof serial.text === 'string'
+  const serialPassed = serialObserved
     && serial.text.includes(expectedSerialLine);
-  const passed = timeInWindow && inputsComplete && primaryPassed && serialPassed;
+  const outcome = completedExperimentOutcome({
+    evidence: [
+      { code: 'OBSERVATION_TIME_OUT_OF_WINDOW', complete: timeInWindow },
+      { code: 'OBSERVATION_INPUTS_INCOMPLETE', complete: inputsComplete },
+      { code: 'OBSERVATION_PIN_MISSING', complete: pinObserved },
+      { code: 'OBSERVATION_SERIAL_MISSING', complete: serialObserved },
+    ],
+    assertions: [
+      { code: 'EXPECTED_PIN_LEVEL_MISMATCH', passed: primaryPassed },
+      { code: 'EXPECTED_SERIAL_MISMATCH', passed: serialPassed },
+    ],
+  });
   return {
     schema: 'intent-mcu-thermostat-observation-result@1',
     experimentId: THERMOSTAT_EXPERIMENT_ID,
     scenarioId: scenario.id,
     requirementIds: [...scenario.requirementIds],
-    status: passed ? 'passed' : 'failed',
+    status: outcome.academicStatus,
+    outcome,
     virtualMilliseconds,
     expected: {
       d13: scenario.expectedD13,
@@ -205,6 +221,8 @@ export function evaluateThermostatObservation(id, snapshot) {
     checks: {
       timeInWindow,
       inputsComplete,
+      pinObserved,
+      serialObserved,
       primaryExecutedPin: primaryPassed,
       corroboratingSerial: serialPassed,
     },

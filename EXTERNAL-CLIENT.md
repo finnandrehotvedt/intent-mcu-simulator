@@ -53,6 +53,12 @@ recommends one delayed retry with a fresh request ID. A test failure requires
 an executed producer-backed supported verdict; error text or a failed job can
 never manufacture one. See `X11-RESULT-CODES-SPEC.md` for the exact contract.
 
+For experiment actions, `jobStatus` is separate from `testVerdict.status`.
+The latter is passed, failed, indeterminate or unsupported; the former is
+completed, not-started, cancelled, timeout or infrastructure-error. Missing or
+out-of-window producer evidence is indeterminate, not a failed assertion. See
+`X18-OUTCOME-CONTRACT-SPEC.md`.
+
 The bounded thermostat acceptance uses the same seven actions. For the exact
 `avr-thermostat-boundary-v1` starter, `project.create` may select the approved
 `correct` or `known-bad-equality` firmware variant, and `runtime.run` may name

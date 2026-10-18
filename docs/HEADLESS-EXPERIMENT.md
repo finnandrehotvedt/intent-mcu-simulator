@@ -31,6 +31,11 @@ same validated data. Each case has one explicit D13 observation window; the
 result reports the actual capture time and never claims evidence from another
 instant. Expected values remain comparison input only and cannot supply a pass.
 
+The result exposes academic `passed`, `failed`, `indeterminate` or `unsupported`
+separately from job `completed`, `not-started`, `cancelled`, `timeout` or
+`infrastructure-error`. Failed requires complete contradictory producer
+evidence; missing or out-of-window evidence is indeterminate.
+
 ## Supported subset
 
 Only `board.atmega328p-16mhz-v1` with the exact

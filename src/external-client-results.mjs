@@ -2,6 +2,9 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import { BOUNDED_ACTION_RESULT_LIMIT } from './bounded-action-contracts.mjs';
+import {
+  ACADEMIC_OUTCOMES, EXPERIMENT_OUTCOME_SCHEMA, unsupportedExperimentOutcome,
+} from './experiment-outcomes.mjs';
 
 export const EXTERNAL_CLIENT_RESULT_SCHEMA = 'intent-mcu-external-client-result@1';
 export const EXTERNAL_CLIENT_RESULT_LIMIT = BOUNDED_ACTION_RESULT_LIMIT;
@@ -42,7 +45,7 @@ function testVerdictFrom(result) {
   const evidence = result?.result?.testEvidence;
   if (result?.executed === true
       && evidence?.schema === 'intent-mcu-bounded-test-evidence@1'
-      && ['passed', 'failed'].includes(evidence.status)
+      && ACADEMIC_OUTCOMES.includes(evidence.status)
       && typeof evidence.artifactIdentity === 'string'
       && typeof evidence.sourceIdentity === 'string') {
     return {
@@ -50,6 +53,8 @@ function testVerdictFrom(result) {
       experimentId: safeString(evidence.experimentId),
       scenarioId: safeString(evidence.primaryObservation?.scenarioId),
       status: evidence.status,
+      outcome: evidence.outcome?.schema === EXPERIMENT_OUTCOME_SCHEMA
+        ? clone(evidence.outcome) : null,
       artifactIdentity: safeString(evidence.artifactIdentity),
       sourceIdentity: safeString(evidence.sourceIdentity),
     };
@@ -57,12 +62,14 @@ function testVerdictFrom(result) {
   const candidate = result?.result?.observation;
   if (result?.executed !== true || result?.result?.code !== 'DOMAIN_TEST_EVALUATED'
       || candidate?.schema !== 'intent-mcu-thermostat-observation-result@1'
-      || !['passed', 'failed'].includes(candidate.status)) return null;
+      || !ACADEMIC_OUTCOMES.includes(candidate.status)) return null;
   return {
     schema: candidate.schema,
     experimentId: safeString(candidate.experimentId),
     scenarioId: safeString(candidate.scenarioId),
     status: candidate.status,
+    outcome: candidate.outcome?.schema === EXPERIMENT_OUTCOME_SCHEMA
+      ? clone(candidate.outcome) : null,
     artifactIdentity: null,
     sourceIdentity: null,
   };
@@ -81,6 +88,28 @@ export function classifyExternalClientResult(result) {
   return 'execution-failure';
 }
 
+function unsupportedTestVerdict(result, association) {
+  const code = String(result?.code ?? '').toUpperCase();
+  if (association?.action !== 'test.run' || !code.includes('UNSUPPORTED')) return null;
+  return {
+    schema: EXPERIMENT_OUTCOME_SCHEMA,
+    experimentId: null,
+    scenarioId: null,
+    status: 'unsupported',
+    outcome: unsupportedExperimentOutcome(code),
+    artifactIdentity: null,
+    sourceIdentity: null,
+  };
+}
+
+function jobStatusForCategory(category) {
+  if (['success', 'test-failure'].includes(category)) return 'completed';
+  if (category === 'cancelled') return 'cancelled';
+  if (category === 'timeout') return 'timeout';
+  if (category === 'execution-failure') return 'infrastructure-error';
+  return 'not-started';
+}
+
 export function externalClientRequestAssociation(value = {}) {
   return Object.freeze({
     requestId: safeString(value.requestId),
@@ -95,11 +124,14 @@ export function externalClientResult(result, association = {}, sourceIdentity = 
     ? clone(result) : { ok: false, code: 'EXTERNAL_CLIENT_RESULT_INVALID', executed: false };
   const request = externalClientRequestAssociation(association);
   const category = classifyExternalClientResult(authoritativeResult);
-  const verdict = testVerdictFrom(authoritativeResult);
+  const verdict = testVerdictFrom(authoritativeResult)
+    ?? unsupportedTestVerdict(authoritativeResult, request);
+  const jobStatus = jobStatusForCategory(category);
   const envelope = {
     schema: EXTERNAL_CLIENT_RESULT_SCHEMA,
     ok: category === 'success',
     category,
+    jobStatus,
     code: CATEGORY_CODES[category],
     request,
     generation: {

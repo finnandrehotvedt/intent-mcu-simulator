@@ -83,15 +83,33 @@ test('verdict requires complete timed input, executed D13 and agreeing Serial ev
     assert.deepEqual(result.checks, {
       timeInWindow: true,
       inputsComplete: true,
+      pinObserved: true,
+      serialObserved: true,
       primaryExecutedPin: true,
       corroboratingSerial: true,
     });
+    assert.equal(result.outcome.jobStatus, 'completed');
   }
   const equality = THERMOSTAT_SCENARIOS.scenarios[1];
   assert.equal(evaluateThermostatObservation(equality.id, snapshotFor(equality, { d13: true })).status, 'failed');
   assert.equal(evaluateThermostatObservation(equality.id, snapshotFor(equality, { serial: false })).status, 'failed');
-  assert.equal(evaluateThermostatObservation(equality.id, snapshotFor(equality, { cycle: 5_600_001 })).status, 'failed');
+  const late = evaluateThermostatObservation(equality.id, snapshotFor(equality, { cycle: 5_600_001 }));
+  assert.equal(late.status, 'indeterminate');
+  assert.deepEqual(late.outcome.reasons, ['OBSERVATION_TIME_OUT_OF_WINDOW']);
   assert.equal(THERMOSTAT_OBSERVATION.corroborating.mayPassAlone, false);
+});
+
+test('X18 missing producer evidence is indeterminate rather than passed or failed', () => {
+  const scenario = THERMOSTAT_SCENARIOS.scenarios[0];
+  const missingPin = snapshotFor(scenario); missingPin.pins = [];
+  const pinResult = evaluateThermostatObservation(scenario.id, missingPin);
+  assert.equal(pinResult.status, 'indeterminate');
+  assert.equal(pinResult.outcome.evidenceStatus, 'incomplete');
+  assert(pinResult.outcome.reasons.includes('OBSERVATION_PIN_MISSING'));
+  const missingInputs = snapshotFor(scenario); missingInputs.eventLog.log = [];
+  assert.equal(evaluateThermostatObservation(scenario.id, missingInputs).status, 'indeterminate');
+  const missingSerial = snapshotFor(scenario); delete missingSerial.instruments.serial;
+  assert.equal(evaluateThermostatObservation(scenario.id, missingSerial).status, 'indeterminate');
 });
 
 test('known-bad equality behavior is contractually visible as an executed-output failure', () => {

@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.44 — 2026-10-18
+
+- Completed X18 for the existing AVR thermostat paths with one shared academic
+  outcome contract: passed, failed, indeterminate and unsupported.
+- Reserved failed for complete producer evidence that contradicts a supported
+  assertion. Missing inputs/pins/Serial, dropped evidence and out-of-window
+  captures are indeterminate and can never pass.
+- Exposed job status separately as completed, not-started, cancelled, timeout
+  or infrastructure-error across browser, external-client and headless results,
+  while preserving raw evidence and source/artifact identity.
+- Reused X11 and X17 contracts; no generic assertion language or X19 reporting
+  was added.
+
 ## 1.1.0-rc.43 — 2026-10-18
 
 - Added X17's bounded AVR thermostat scenario timeline editor with ordered

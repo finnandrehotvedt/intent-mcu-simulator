@@ -1,4 +1,18 @@
-# Intent MCU Simulator 1.1.0-rc.43
+# Intent MCU Simulator 1.1.0-rc.44
+
+## X18 honest outcomes and separate job state
+
+The existing M1 and authored X17 thermostat paths now share four academic
+outcomes: passed, failed, indeterminate and unsupported. A failed outcome
+requires complete producer evidence that contradicts a supported assertion.
+Missing inputs, pins or Serial data, dropped evidence and captures outside the
+saved observation window are indeterminate instead of being mislabeled as a
+failed learner assertion.
+
+Job execution remains separate: completed, not-started, cancelled, timeout and
+infrastructure-error. Browser, local external-client and headless results expose
+both dimensions while preserving actual observation time, raw evidence and
+source/artifact identity. No X19 reporting or broader runtime was added.
 
 ## X17 bounded scenario timeline editor
 

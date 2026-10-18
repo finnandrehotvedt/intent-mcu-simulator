@@ -13,6 +13,10 @@ import {
   THERMOSTAT_EXPERIMENT_ID, THERMOSTAT_SCENARIOS, THERMOSTAT_TIME, thermostatScenarioControls,
 } from './thermostat-experiment-contract.mjs';
 import { scenarioTimelineControls } from './scenario-timeline.mjs';
+import {
+  aggregateExperimentOutcomes, interruptedExperimentOutcome, jobStatusFromCode,
+  unsupportedExperimentOutcome,
+} from './experiment-outcomes.mjs';
 
 export const HEADLESS_EXPERIMENT_RESULT_SCHEMA = 'intent-mcu-headless-experiment-result@1';
 export const HEADLESS_SUPPORTED_PROFILES = Object.freeze(['board.atmega328p-16mhz-v1']);
@@ -26,10 +30,23 @@ const SHA256 = /^[a-f0-9]{64}$/u;
 const adapters = Object.freeze({ [AVR_PROFILE]: THERMOSTAT_PROJECT_ADAPTER });
 const clone = (value) => structuredClone(value);
 
-const failure = (code, details = []) => ({
-  schema: HEADLESS_EXPERIMENT_RESULT_SCHEMA, ok: false, code, details,
-  executed: false, browserUsed: false, authorityRestoredFromFile: false,
-});
+const failure = (code, details = []) => {
+  const unsupported = code.includes('UNSUPPORTED');
+  const jobStatus = code.includes('CANCEL') || code.includes('TIMEOUT')
+    ? jobStatusFromCode(code) : 'not-started';
+  const outcome = unsupported ? unsupportedExperimentOutcome(code)
+    : interruptedExperimentOutcome(jobStatus, code);
+  return {
+    schema: HEADLESS_EXPERIMENT_RESULT_SCHEMA, ok: false, code, details,
+    executed: false, browserUsed: false, authorityRestoredFromFile: false,
+    jobStatus: outcome.jobStatus, status: outcome.academicStatus, outcome,
+  };
+};
+const runtimeFailure = (code, details = []) => {
+  const outcome = interruptedExperimentOutcome(jobStatusFromCode(code), code);
+  return { ...failure(code, details), jobStatus: outcome.jobStatus,
+    status: outcome.academicStatus, outcome };
+};
 
 export async function prepareSavedHeadlessExperiment(projectText) {
   const prepared = prepareProjectEnvelope(projectText, adapters);
@@ -107,14 +124,17 @@ export async function runSavedHeadlessExperiment(projectText, {
     if (!prepared.ok) return prepared;
     const artifact = await compile(prepared.buildRequest, { signal });
     if (!SHA256.test(artifact?.inputIdentity) || !SHA256.test(artifact?.artifactIdentity)
-        || typeof artifact?.artifact?.hex !== 'string') return failure('HEADLESS_BUILD_RESULT_INVALID');
+        || typeof artifact?.artifact?.hex !== 'string') return runtimeFailure('HEADLESS_BUILD_RESULT_INVALID');
     const observations = await execute(prepared, artifact);
     const expectedObservationCount = prepared.scenarioTimeline?.scenarios.length
       ?? THERMOSTAT_SCENARIOS.scenarios.length;
     if (!Array.isArray(observations) || observations.length !== expectedObservationCount) {
-      return failure('HEADLESS_OBSERVATION_SET_INVALID');
+      return runtimeFailure('HEADLESS_OBSERVATION_SET_INVALID');
     }
-    const primaryObservation = observations.find((item) => item.status === 'failed') ?? observations.at(-1);
+    const outcome = aggregateExperimentOutcomes(observations);
+    const primaryObservation = observations.find((item) => item.status === 'failed')
+      ?? observations.find((item) => item.status === 'indeterminate')
+      ?? observations.find((item) => item.status === 'unsupported') ?? observations.at(-1);
     return {
       schema: HEADLESS_EXPERIMENT_RESULT_SCHEMA,
       ok: true,
@@ -123,10 +143,12 @@ export async function runSavedHeadlessExperiment(projectText, {
       browserUsed: false,
       authorityRestoredFromFile: false,
       compiledFresh: true,
+      jobStatus: outcome.jobStatus,
       profile: prepared.profile,
       experimentId: prepared.experimentId,
       firmwareVariant: prepared.firmwareVariant,
-      status: observations.every((item) => item.status === 'passed') ? 'passed' : 'failed',
+      status: outcome.academicStatus,
+      outcome,
       association: {
         projectSha256: prepared.projectSha256,
         sourceDigest: prepared.sourceDigest,
@@ -139,6 +161,7 @@ export async function runSavedHeadlessExperiment(projectText, {
       observations: clone(observations),
     };
   } catch (error) {
-    return failure(error.code ?? error.message ?? 'HEADLESS_EXPERIMENT_FAILED', error.details ?? []);
+    const code = error.code ?? error.message ?? 'HEADLESS_EXPERIMENT_FAILED';
+    return runtimeFailure(code, error.details ?? []);
   }
 }

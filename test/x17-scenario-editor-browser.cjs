@@ -70,6 +70,15 @@ let browser;
   }, null, { timeout: 40_000 });
   assert.equal(await page.evaluate(() => window.__M6_STATE__.thermostatExperiment.results
     .every((result) => result.status === 'passed')), true, 'correct M1 regression did not pass 3/3');
+  const missingEvidence = await page.evaluate(async () => {
+    const prior = window.__SHARED_DOMAIN_ENGINE__.lastTest();
+    const request = JSON.parse(prior.request);
+    request.snapshot.pins = [];
+    return window.__AGENT_DOMAIN_ENGINE__.execute(JSON.stringify(request), 'board.atmega328p-16mhz-v1');
+  });
+  assert.equal(missingEvidence.observation.status, 'indeterminate');
+  assert.equal(missingEvidence.observation.outcome.jobStatus, 'completed');
+  assert.equal(missingEvidence.observation.outcome.reasons.includes('OBSERVATION_PIN_MISSING'), true);
 
   const firmwareBefore = await page.evaluate(() => ({
     artifactIdentity: window.__M6_STATE__.artifactIdentity,
@@ -127,6 +136,9 @@ let browser;
   assert.equal(caught.expected.level, true);
   assert.equal(caught.observed.level, false);
   assert.equal(caught.checks.primaryExecutedPin, false);
+  assert.equal(caught.outcome.academicStatus, 'failed');
+  assert.equal(caught.outcome.jobStatus, 'completed');
+  assert.equal(caught.outcome.evidenceStatus, 'complete');
 
   await page.click('#project-reload');
   await page.waitForFunction(() => {
@@ -182,13 +194,15 @@ let browser;
   assert.equal(knownBad.knownBadCaught, true, 'known-bad M1 equality defect was not caught');
   assert.equal(knownBad.results.find((result) => result.scenarioId === 'THERM-SCENARIO-EQUALITY-ENABLED').status,
     'failed', 'known-bad equality scenario did not retain timing-bound failure detection');
+  assert.equal(knownBad.results.every((result) => result.outcome.jobStatus === 'completed'), true);
 
   assert.deepEqual(errors, [], `browser errors: ${JSON.stringify(errors)}`);
   console.log(JSON.stringify({ result: 'pass', scenarios: 4, authoredPasses: 4,
     wrongExpectationCaught: true, sourceHashPreserved: true, browserRecoveryClearedVerdict: true,
     fileOpenClearedVerdict: true,
     artifactIdentityPreservedAcrossTimelineEdit: true, correctM1Passes: 3,
-    knownBadM1Caught: true, wrongObservedAtMilliseconds: caught.virtualMilliseconds,
+    knownBadM1Caught: true, missingEvidenceRefused: true,
+    academicAndJobStatusSeparated: true, wrongObservedAtMilliseconds: caught.virtualMilliseconds,
     observationWindow: caught.expected.observationWindow, savedPath }));
   await context.close(); await browser.close(); browser = null;
 })().catch((error) => { console.error(error.stack || error); process.exitCode = 1; })

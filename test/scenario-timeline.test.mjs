@@ -133,3 +133,19 @@ test('X17 imported expectation never becomes observed evidence or a passing verd
   assert.equal(caught.observed.level, false);
   assert.equal(caught.checks.primaryExecutedPin, false);
 });
+
+test('X18 incomplete or out-of-window authored evidence is indeterminate, never green or failed', () => {
+  const scenario = defaultThermostatScenarioTimeline().scenarios[0];
+  const missingPin = snapshot(scenario, true); missingPin.pins = [];
+  const missing = evaluateScenarioTimelineObservation(scenario, missingPin);
+  assert.equal(missing.status, 'indeterminate');
+  assert.equal(missing.outcome.jobStatus, 'completed');
+  assert(missing.outcome.reasons.includes('OBSERVATION_PIN_MISSING'));
+  const lateSnapshot = snapshot(scenario, true);
+  lateSnapshot.cycle = (scenario.events.at(-1).throughMilliseconds + 1) * 16_000;
+  const late = evaluateScenarioTimelineObservation(scenario, lateSnapshot);
+  assert.equal(late.status, 'indeterminate');
+  assert(late.outcome.reasons.includes('OBSERVATION_TIME_OUT_OF_WINDOW'));
+  const incomplete = snapshot(scenario, true); incomplete.eventLog.log = [];
+  assert.equal(evaluateScenarioTimelineObservation(scenario, incomplete).status, 'indeterminate');
+});

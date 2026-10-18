@@ -73,6 +73,7 @@ import {
 import {
   ScenarioTimelineEditor, defaultThermostatScenarioTimeline, scenarioTimelineControls,
 } from '../src/scenario-timeline.mjs';
+import { aggregateExperimentOutcomes } from '../src/experiment-outcomes.mjs';
 import {
   AVR_PROFILE,
   ESP32C3_PROFILE,
@@ -2188,7 +2189,7 @@ function renderScenarioTimelineEditor() {
     const observedLevel = result?.observed.level === true ? 'HIGH'
       : result?.observed.level === false ? 'LOW' : 'missing';
     evidence.textContent = result
-      ? `${result.status === 'passed' ? 'PASS' : 'FAIL'} · expected D13 ${result.expected.level ? 'HIGH' : 'LOW'} during ${result.expected.observationWindow.startMilliseconds}–${result.expected.observationWindow.endMilliseconds} ms · actually observed D13 ${observedLevel} at ${result.virtualMilliseconds.toFixed(3)} ms · ${result.checks.inputsComplete ? 'timed inputs logged' : 'input evidence missing'}`
+      ? `${result.status.toUpperCase()} · expected D13 ${result.expected.level ? 'HIGH' : 'LOW'} during ${result.expected.observationWindow.startMilliseconds}–${result.expected.observationWindow.endMilliseconds} ms · actually observed D13 ${observedLevel} at ${result.virtualMilliseconds?.toFixed(3) ?? 'missing'} ms · ${result.checks.inputsComplete ? 'timed inputs logged' : 'input evidence missing'} · job ${result.outcome.jobStatus}`
       : 'Not run · no observed result';
     card.append(addInputs, evidence); return card;
   });
@@ -2251,7 +2252,10 @@ function renderThermostatExperimentPanel() {
     verdict.className = result?.status === 'passed'
       ? 'experiment-pass'
       : result?.status === 'failed' ? 'experiment-fail' : current ? 'experiment-running' : 'experiment-pending';
-    verdict.textContent = result?.status === 'passed' ? 'Pass' : result?.status === 'failed' ? 'Fail' : current ? 'Running' : 'Pending';
+    verdict.textContent = result?.status === 'passed' ? 'Pass'
+      : result?.status === 'failed' ? 'Fail'
+        : result?.status === 'indeterminate' ? 'Indeterminate'
+          : result?.status === 'unsupported' ? 'Unsupported' : current ? 'Running' : 'Pending';
     evidence.textContent = result
       ? `${result.virtualMilliseconds?.toFixed(3) ?? '—'} ms · D13 ${result.observed.d13 === null ? 'missing' : result.observed.d13 ? 'HIGH' : 'LOW'} · ${result.checks.corroboratingSerial ? 'UART matched' : 'UART mismatch'} · ${result.checks.inputsComplete ? 'inputs logged' : 'input evidence missing'}`
       : current ? 'Resetting, applying inputs and executing firmware…' : 'Not run';
@@ -2265,7 +2269,8 @@ function renderThermostatExperimentPanel() {
     elements.thermostatexperimentstate.textContent = 'Known-bad caught';
   } else if (thermostatExperimentResults.length === THERMOSTAT_SCENARIOS.scenarios.length) {
     const passed = thermostatExperimentResults.filter((result) => result.status === 'passed').length;
-    elements.thermostatexperimentstate.textContent = `${passed}/3 passed`;
+    const outcome = aggregateExperimentOutcomes(thermostatExperimentResults);
+    elements.thermostatexperimentstate.textContent = `${passed}/3 passed · ${outcome.academicStatus} · job ${outcome.jobStatus}`;
   } else {
     elements.thermostatexperimentstate.textContent = freshBuildReady ? 'Ready to test' : 'Fresh build required';
   }
@@ -2401,13 +2406,14 @@ async function advanceThermostatExperiment(message) {
   thermostatExperimentRun = null;
   const completedResults = run.authored ? authoredScenarioResults : thermostatExperimentResults;
   const passed = completedResults.filter((item) => item.status === 'passed').length;
+  const aggregate = aggregateExperimentOutcomes(completedResults);
   thermostatExperimentNotice = run.authored
-    ? `${passed}/${scenarios.length} authored scenarios passed from executed D13 and complete timed-input evidence.`
+    ? `${passed}/${scenarios.length} authored scenarios passed · academic ${aggregate.academicStatus} · job ${aggregate.jobStatus}. Only complete in-window producer evidence can pass or fail.`
     : run.variant === 'known-bad-equality' && thermostatKnownBadCaught()
     ? 'Known-bad firmware caught: the equality scenario executed D13 HIGH and reported HEAT, while the other two scenarios passed.'
     : passed === THERMOSTAT_SCENARIOS.scenarios.length
       ? '3/3 passed from executed D13, matching UART and complete virtual-cycle input evidence.'
-      : `${passed}/3 passed. Failed evidence remains visible; no missing evidence was treated as a pass.`;
+      : `${passed}/3 passed · academic ${aggregate.academicStatus} · job ${aggregate.jobStatus}. Failed or incomplete evidence remains visible; missing evidence is never a pass or failed assertion.`;
   renderThermostatExperimentPanel();
 }
 function loadThermostatFirmwareVariant(variant) {
@@ -3324,12 +3330,17 @@ function boundedThermostatTestEvidence(profile = selectedCompilerProfile) {
       || thermostatExperimentResults.length !== THERMOSTAT_SCENARIOS.scenarios.length
       || !lifecycle.runtimeBinding || loadedSourceIdentity !== buildInputIdentity()) return null;
   const observations = structuredClone(thermostatExperimentResults);
-  const primaryObservation = observations.find((item) => item.status === 'failed') ?? observations.at(-1);
+  const outcome = aggregateExperimentOutcomes(observations);
+  const primaryObservation = observations.find((item) => item.status === 'failed')
+    ?? observations.find((item) => item.status === 'indeterminate')
+    ?? observations.find((item) => item.status === 'unsupported') ?? observations.at(-1);
   return {
     schema: 'intent-mcu-bounded-test-evidence@1',
     experimentId: THERMOSTAT_EXPERIMENT_ID,
     firmwareVariant: thermostatFirmwareVariant(currentProject()),
-    status: observations.every((item) => item.status === 'passed') ? 'passed' : 'failed',
+    status: outcome.academicStatus,
+    outcome,
+    jobStatus: outcome.jobStatus,
     artifactIdentity: lifecycle.runtimeBinding.artifactIdentity,
     sourceIdentity: lifecycle.artifact.inputIdentity,
     projectGeneration: lifecycle.runtimeBinding.projectGeneration,
@@ -3439,7 +3450,7 @@ async function runThermostatTestThroughUi(profile, signal) {
     throwIfActionCancelled(signal);
     const testEvidence = boundedThermostatTestEvidence(profile);
     return {
-      ok: testEvidence.status === 'passed',
+      ok: true,
       code: 'ACTION_TEST_EVALUATED',
       artifactIdentity: testEvidence.artifactIdentity,
       sourceIdentity: testEvidence.sourceIdentity,

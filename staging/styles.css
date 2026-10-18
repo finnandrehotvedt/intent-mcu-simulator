@@ -774,6 +774,7 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .scenario-result { margin: 10px 0 0; padding: 9px 11px; border-radius: 8px; color: var(--muted); background: #06121c; font: .72rem/1.45 ui-monospace, monospace; }
 .scenario-result.pass { color: var(--lime); border: 1px solid #3c7438; }
 .scenario-result.fail { color: #ffd0d4; border: 1px solid #70434a; }
+.scenario-result:not(.pass):not(.fail) { color: var(--amber); border: 1px solid #796126; }
 .scenario-empty { padding: 14px; border: 1px dashed var(--line); border-radius: 9px; }
 .thermostat-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
 .thermostat-table { width: 100%; min-width: 780px; border-collapse: collapse; background: #07141f; }

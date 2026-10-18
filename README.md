@@ -70,6 +70,11 @@ explicit D13 observation window per case. The browser and headless runner use
 the same validated timeline and shared evaluator; each reports the actual
 capture time, and an expected value never becomes observed evidence.
 
+Experiment results keep academic outcome separate from job execution. Passed
+and failed require complete producer evidence; missing or out-of-window evidence
+is indeterminate, and unavailable experiment support is unsupported. Cancelled,
+timed-out and infrastructure-failed jobs never become academic pass or fail.
+
 This source release supports only the exact AVR thermostat experiment.
 Headless Pico, ESP32-C3 and STM32 execution is explicitly unavailable; their
 different runtime integrations are not silently substituted or claimed. See

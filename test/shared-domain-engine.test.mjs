@@ -65,7 +65,7 @@ test('X07 UI and agent delegate exact thermostat evidence to the same test engin
   assert.equal(ui.stages.tests, 'evaluateThermostatObservation');
   const serialOnly = JSON.parse(request); serialOnly.snapshot.pins = [];
   const rejectedClaim = await executeDomainRequest(JSON.stringify(serialOnly), thermostatAdapters, AVR, 'agent');
-  assert.equal(rejectedClaim.observation.status, 'failed');
+  assert.equal(rejectedClaim.observation.status, 'indeterminate');
   assert.equal(rejectedClaim.observation.checks.primaryExecutedPin, false);
   assert.equal(rejectedClaim.observation.checks.corroboratingSerial, true);
 });

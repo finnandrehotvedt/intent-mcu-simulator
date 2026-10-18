@@ -13,6 +13,7 @@ import {
   THERMOSTAT_PROJECT_ADAPTER, createThermostatExperiment,
 } from '../src/thermostat-experiment.mjs';
 import { THERMOSTAT_SCENARIOS } from '../src/thermostat-experiment-contract.mjs';
+import { completedExperimentOutcome } from '../src/experiment-outcomes.mjs';
 
 const AVR = 'board.atmega328p-16mhz-v1';
 const adapters = Object.freeze({ [AVR]: THERMOSTAT_PROJECT_ADAPTER });
@@ -40,7 +41,8 @@ test('X15 compiles fresh and binds result identity without accepting an artifact
   let compileCalls = 0; let executeCalls = 0;
   const observations = THERMOSTAT_SCENARIOS.scenarios.map((scenario) => ({
     schema: 'intent-mcu-thermostat-observation-result@1', scenarioId: scenario.id,
-    status: 'passed', virtualMilliseconds: 160, observed: { d13: scenario.expectedD13 },
+    status: 'passed', outcome: completedExperimentOutcome(),
+    virtualMilliseconds: 160, observed: { d13: scenario.expectedD13 },
   }));
   const result = await runSavedHeadlessExperiment(saved(), {
     compile: async (request) => {
@@ -58,9 +60,46 @@ test('X15 compiles fresh and binds result identity without accepting an artifact
   assert.equal(result.ok, true);
   assert.equal(result.compiledFresh, true);
   assert.equal(result.authorityRestoredFromFile, false);
+  assert.equal(result.jobStatus, 'completed');
+  assert.equal(result.outcome.academicStatus, 'passed');
   assert.equal(result.association.compilerInputIdentity, 'a'.repeat(64));
   assert.equal(result.association.artifactIdentity, 'b'.repeat(64));
   assert.equal(compileCalls, 1); assert.equal(executeCalls, 1);
+});
+
+test('X18 headless completion preserves indeterminate evidence separately from job status', async () => {
+  const pass = completedExperimentOutcome();
+  const unknown = completedExperimentOutcome({
+    evidence: [{ code: 'OBSERVATION_PIN_MISSING', complete: false }],
+  });
+  const result = await runSavedHeadlessExperiment(saved(), {
+    compile: async () => ({ inputIdentity: 'a'.repeat(64), artifactIdentity: 'b'.repeat(64),
+      artifact: { hex: ':00000001FF' } }),
+    execute: async () => THERMOSTAT_SCENARIOS.scenarios.map((scenario, index) => ({
+      schema: 'intent-mcu-thermostat-observation-result@1', scenarioId: scenario.id,
+      status: index === 1 ? 'indeterminate' : 'passed', outcome: index === 1 ? unknown : pass,
+    })),
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.jobStatus, 'completed');
+  assert.equal(result.status, 'indeterminate');
+  assert.equal(result.primaryObservation.scenarioId, 'THERM-SCENARIO-EQUALITY-ENABLED');
+  assert.equal(result.outcome.reasons.includes(
+    'THERM-SCENARIO-EQUALITY-ENABLED:OBSERVATION_PIN_MISSING'), true);
+});
+
+test('X18 headless cancellation timeout and infrastructure error remain non-academic', async () => {
+  for (const [code, jobStatus] of [
+    ['ACTION_CANCELLED', 'cancelled'], ['ACTION_TIMEOUT', 'timeout'],
+    ['COMPILER_CONNECTION_FAILED', 'infrastructure-error'],
+  ]) {
+    const result = await runSavedHeadlessExperiment(saved(), {
+      compile: async () => { throw Object.assign(new Error(code), { code }); },
+    });
+    assert.equal(result.ok, false);
+    assert.equal(result.status, 'indeterminate');
+    assert.equal(result.jobStatus, jobStatus);
+  }
 });
 
 test('X15 compiler client submits the strict wire shape and rejects a mismatched result identity', async () => {
@@ -96,6 +135,8 @@ test('X15 rejects malformed modified unsupported and authority-bearing saved fil
   unsupported.profile = 'board.rp2040-pico-v1';
   assert.equal((await prepareSavedHeadlessExperiment(JSON.stringify(unsupported))).code,
     'HEADLESS_PROFILE_UNSUPPORTED');
+  assert.equal((await prepareSavedHeadlessExperiment(JSON.stringify(unsupported))).status,
+    'unsupported');
 
   const stale = JSON.parse(saved());
   stale.project.project.artifact = {
