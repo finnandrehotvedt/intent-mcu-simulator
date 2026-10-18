@@ -273,31 +273,42 @@ export class Stm32PublicWorkbench {
     let parsed;
     try { parsed = validateStm32Source(this.project.source); }
     catch { this.invalidate('Source no longer passes policy.'); return { ok: false, code: 'SOURCE_POLICY_REJECTED' }; }
-    const sourceSha256 = await sha256(parsed.source);
-    if (sourceSha256 !== this.artifact.sourceSha256) {
-      this.invalidate('Source identity changed.');
-      return { ok: false, code: 'STM32_RUN_STALE' };
-    }
+    const artifact = this.artifact;
+    const artifactBytes = this.artifactBytes;
+    const revision = this.revision;
     const token = ++this.requestToken;
     const operation = new AbortController();
     this.operation = operation;
+    if (reset) {
+      this.result = null;
+      this.terminal = 'Reset replay pending; earlier Renode evidence was retired.';
+    }
     this.phase = 'running';
     this.message = reset ? 'Reset: replaying the same accepted ELF in a fresh Renode process…'
       : 'Running the accepted ELF in isolated Renode…';
     this.render();
     try {
+      const sourceSha256 = await sha256(parsed.source);
+      if (token !== this.requestToken || this.artifactRevision !== revision
+        || artifact !== this.artifact || artifactBytes !== this.artifactBytes) {
+        return { ok: false, code: 'STM32_RUN_STALE' };
+      }
+      if (sourceSha256 !== artifact.sourceSha256) {
+        this.invalidate('Source identity changed.');
+        return { ok: false, code: 'STM32_RUN_STALE' };
+      }
       const value = await this.response(await this.fetch(`${this.endpoint}/run`, {
         method: 'POST', headers: this.headers(), signal: operation.signal,
         body: JSON.stringify({ schema: STM32_RUN_SCHEMA, profile: STM32_PROFILE,
-          sourceRevision: this.revision, source: parsed.source, sourceSha256,
-          artifact: { format: 'elf32', bytes: this.artifact.bytes,
-            sha256: this.artifact.sha256, base64: base64FromBytes(this.artifactBytes) } }),
+          sourceRevision: revision, source: parsed.source, sourceSha256,
+          artifact: { format: 'elf32', bytes: artifact.bytes,
+            sha256: artifact.sha256, base64: base64FromBytes(artifactBytes) } }),
       }));
-      if (token !== this.requestToken || this.artifactRevision !== this.revision) {
+      if (token !== this.requestToken || this.artifactRevision !== revision) {
         return { ok: false, code: 'STM32_RUN_STALE' };
       }
       if (value.schema !== STM32_RUN_RESPONSE_SCHEMA || value.profile !== STM32_PROFILE
-        || value.sourceSha256 !== sourceSha256 || value.elfSha256 !== this.artifact.sha256
+        || value.sourceSha256 !== sourceSha256 || value.elfSha256 !== artifact.sha256
         || value.engine?.id !== 'renode' || value.engine?.actualExecution !== true
         || value.resetReplay !== true || value.bootEpochs !== 2 || value.retainedServerBytes !== 0) {
         throw new Error('STM32_RUNTIME_RESPONSE_INVALID');
@@ -357,10 +368,10 @@ export class Stm32PublicWorkbench {
       return result;
     }
     this.project.circuit = clone(result.draft);
-    const layoutOnly = ['setWireColor', 'setWireRoute'].includes(operation)
+    const layoutOnly = ['moveComponent', 'rotateComponent', 'setWireColor', 'setWireRoute'].includes(operation)
       || ['undo', 'redo'].includes(operation) && result.changeKind === 'layout';
     if (layoutOnly) {
-      this.message = `Cable layout changed (${result.code}). ELF and electrical authority are unchanged.`;
+      this.message = `Layout changed (${result.code}). ELF and electrical authority are unchanged.`;
       this.render();
       return result;
     }
@@ -368,8 +379,6 @@ export class Stm32PublicWorkbench {
       deleteSelected: `Circuit changed (${result.code}). ELF and LED authority retired; restore valid wiring and build fresh.`,
       undo: 'Circuit Undo applied. ELF and LED authority retired; build fresh.',
       redo: 'Circuit Redo applied. ELF and LED authority retired; build fresh.',
-      moveComponent: 'Component moved; named pin attachments and orthogonal wires were recomputed. Build fresh.',
-      rotateComponent: 'Component rotated; named pin attachments and orthogonal wires were recomputed. Build fresh.',
       activateEndpoint: `Cable changed (${result.code}). ELF and LED authority retired; finish a valid circuit and build fresh.`,
       connectEndpoints: `Cable created (${result.code}). ELF and LED authority retired; finish a valid circuit and build fresh.`,
       reconnectEndpoint: `Cable endpoint reconnected (${result.code}). ELF and LED authority retired; finish a valid circuit and build fresh.`,

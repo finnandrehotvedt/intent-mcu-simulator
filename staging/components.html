@@ -26,6 +26,7 @@
       <p class="eyebrow">EXACT PUBLIC CONTRACT</p><h2 id="compatibility-matrix-title">Controller compatibility matrix</h2>
       <p class="docs-intro">There are 19 unique public models and 76 profile/model cells. AVR has 16 available models: 13 Simulated and 3 Partial. Each narrow controller profile has exactly 3 available models: its Partial controller plus the Simulated resistor and LED. Across the complete matrix, 25 cells are available and 51 are unavailable.</p>
       <p class="docs-intro"><strong>AVR project modes:</strong> ordinary project-v2 shows 5 Simulated parts. Candidate-v3 shows 13 by default; choose All statuses to see all 16, including 3 Partial models. Partial always means the stated bounded behaviour, never broad hardware equivalence.</p>
+      <p class="docs-intro"><strong>Control persistence:</strong> validated AVR button, potentiometer, switch, sensor, threshold and encoder values are canonical project data. Open never restores runtime events or executable authority and always requires a fresh Build. The current narrow profiles have no interactive control keys.</p>
       <div class="support-table-wrap"><table class="support-table component-doc-matrix">
         <thead><tr><th scope="col">Public model</th><th scope="col">AVR</th><th scope="col">RP2040 Pico</th><th scope="col">ESP32-C3</th><th scope="col">STM32F429ZI</th></tr></thead>
         <tbody>

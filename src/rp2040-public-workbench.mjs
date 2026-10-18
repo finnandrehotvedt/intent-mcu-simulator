@@ -388,8 +388,9 @@ export class Rp2040PublicWorkbench {
 
   reset() {
     if (!this.worker) return { ok: false, code: 'RUNTIME_NOT_ACTIVE' };
+    this.lastRuntime = null;
     this.worker.postMessage({ command: 'reset' });
-    this.message = 'Pico runtime reset to the source-bound artifact entry point.';
+    this.message = 'Pico reset requested. Earlier evidence was retired while the fresh reset snapshot is pending.';
     this.render();
     return { ok: true, code: 'OK' };
   }
@@ -433,10 +434,10 @@ export class Rp2040PublicWorkbench {
       return result;
     }
     this.project.circuit = clone(result.draft);
-    const layoutOnly = ['setWireColor', 'setWireRoute'].includes(operation)
+    const layoutOnly = ['moveComponent', 'rotateComponent', 'setWireColor', 'setWireRoute'].includes(operation)
       || ['undo', 'redo'].includes(operation) && result.changeKind === 'layout';
     if (layoutOnly) {
-      this.message = `Cable layout changed (${result.code}). Firmware and electrical authority are unchanged.`;
+      this.message = `Layout changed (${result.code}). Firmware and electrical authority are unchanged.`;
       this.render();
       return result;
     }
@@ -444,8 +445,6 @@ export class Rp2040PublicWorkbench {
       deleteSelected: `Circuit changed (${result.code}). Executable authority retired; build fresh firmware.`,
       undo: 'Circuit Undo applied. Executable authority retired; build fresh firmware.',
       redo: 'Circuit Redo applied. Executable authority retired; build fresh firmware.',
-      moveComponent: 'Component moved; named pin attachments and orthogonal wires were recomputed. Build fresh firmware.',
-      rotateComponent: 'Component rotated; named pin attachments and orthogonal wires were recomputed. Build fresh firmware.',
       activateEndpoint: `Cable changed (${result.code}). Executable authority retired; finish a valid circuit and build fresh firmware.`,
       connectEndpoints: `Cable created (${result.code}). Executable authority retired; finish a valid circuit and build fresh firmware.`,
       reconnectEndpoint: `Cable endpoint reconnected (${result.code}). Executable authority retired; finish a valid circuit and build fresh firmware.`,

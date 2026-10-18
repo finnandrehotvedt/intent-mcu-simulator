@@ -21,8 +21,8 @@ import {
 import { parseIntelHex } from './hex.mjs';
 
 export const CLOCK_HZ = 16_000_000;
-const TRACE_LIMIT = 100_000;
-const SERIAL_LIMIT = 4_096;
+export const TRACE_LIMIT = 100_000;
+export const SERIAL_LIMIT = 4_096;
 const SAMPLE_LIMIT = 4_096;
 const UNSUPPORTED_LIMIT = 256;
 const PIN_MAP = Object.freeze({
@@ -50,7 +50,7 @@ const UNSUPPORTED_REGISTERS = Object.freeze([
   { address: 0xb6, name: 'asynchronous-timer2', active: (value) => Boolean(value & 0x20) },
 ]);
 
-function boundedPush(target, entry, limit) {
+export function boundedPush(target, entry, limit) {
   target.push(entry);
   if (target.length <= limit) return 0;
   const dropped = target.length - limit;

@@ -62,4 +62,20 @@ test('browser entry point mounts the shared shell without replacing profile impl
   assert.match(css, /--canvas-workbench:\s*#08141f/);
   assert.match(css, /\.pico-editor-canvas[^}]+background-color:\s*var\(--canvas-workbench\)/s);
   assert.match(css, /\.circuit-canvas[^}]+background-color:\s*var\(--canvas-workbench\)/s);
+  assert.match(shell, /instrumentCapability/);
+  assert.match(shell, /RECORDED INSTRUMENT BOUNDARY/);
+  assert.match(shell, /item\.status === 'unavailable'/);
+  assert.match(css, /\.instrument-boundary-list/);
+});
+
+test('shared Serial export names its retained full-log scope accessibly', async () => {
+  const [html, shell] = await Promise.all([
+    readFile(new URL('../staging/index.html', import.meta.url), 'utf8'),
+    readFile(new URL('../src/shared-workbench-shell.mjs', import.meta.url), 'utf8'),
+  ]);
+  for (const source of [html, shell]) {
+    assert.match(source, /Export full log \(\.txt\)/);
+    assert.match(source, /Exports the current retained accepted log, including rows hidden by Clear view\./);
+    assert.match(source, /data-shared-serial-export aria-describedby=/);
+  }
 });

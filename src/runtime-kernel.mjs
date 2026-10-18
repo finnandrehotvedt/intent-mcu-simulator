@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
-import { Atmega328PAdapter } from './atmega328p-adapter.mjs';
+import {
+  Atmega328PAdapter,
+  SERIAL_LIMIT,
+  TRACE_LIMIT,
+} from './atmega328p-adapter.mjs';
 import { CircuitRuntime } from './circuit-engine.mjs';
 
 export const INPUT_EVENT_LIMIT = 10_000;
-const LOGIC_TRANSITION_LIMIT = 100_000;
-const LOGIC_CHANNEL_LIMIT = 8;
-const SERIAL_HISTORY_MAX = 4_096;
+export const LOGIC_TRANSITION_LIMIT = TRACE_LIMIT;
+export const LOGIC_CHANNEL_LIMIT = 8;
+export const SERIAL_HISTORY_MAX = SERIAL_LIMIT;
 const DIGITAL_SEQUENCE_EVENT_MAX = 8;
 const DIGITAL_SEQUENCE_OFFSET_MAX = 1_600_000;
 

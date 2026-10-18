@@ -7,6 +7,7 @@ import {
   RP2040_PROFILE,
   STM32F429ZI_PROFILE,
 } from './compile-targets.mjs';
+import { instrumentCapability } from './instrument-capabilities.mjs';
 
 export const SHARED_WORKBENCH_SCHEMA = 'intent-mcu-shared-workbench@1';
 export const SHARED_WORKBENCH_SURFACES = Object.freeze([
@@ -210,7 +211,74 @@ function mountNarrowProfile(document, adapter) {
   runtime.removeAttribute('data-shared-surface');
   const message = root.querySelector(`#${adapter.prefix}-message`);
   const identities = root.querySelector(`.${adapter.prefix}-identities`);
-  runtimePanel.append(runtime, message, identities, serial);
+  const capability = instrumentCapability(adapter.profile);
+  const boundary = document.createElement('section');
+  boundary.className = 'instrument-boundary';
+  boundary.dataset.instrumentProfile = adapter.profile;
+  boundary.dataset.instrumentStatus = 'bounded-profile';
+  boundary.setAttribute('aria-label', `${capability.label} instrument boundary`);
+  const boundaryHeading = document.createElement('div');
+  boundaryHeading.className = 'instrument-boundary-heading';
+  const boundaryEyebrow = document.createElement('p');
+  boundaryEyebrow.className = 'eyebrow';
+  boundaryEyebrow.textContent = 'RECORDED INSTRUMENT BOUNDARY';
+  const boundaryTitle = document.createElement('h3');
+  boundaryTitle.textContent = capability.label;
+  boundaryHeading.append(boundaryEyebrow, boundaryTitle);
+  const boundaryList = document.createElement('dl');
+  boundaryList.className = 'instrument-boundary-list';
+  for (const [name, item] of Object.entries({ Serial: capability.serial, Pins: capability.pin, Logic: capability.logic, Inputs: capability.input })) {
+    const row = document.createElement('div');
+    const term = document.createElement('dt');
+    const detail = document.createElement('dd');
+    term.textContent = name;
+    detail.dataset.instrument = name.toLowerCase();
+    detail.dataset.status = item.status;
+    detail.textContent = item.status === 'unavailable'
+      ? `Unavailable — ${item.reason}`
+      : `${item.status === 'output-only' ? 'Output only' : 'Recorded'} — ${item.source}${item.reason ? ` · ${item.reason}` : ''}`;
+    row.append(term, detail);
+    boundaryList.append(row);
+  }
+  const liveHeading = document.createElement('div');
+  liveHeading.className = 'instrument-summary-heading';
+  const liveTitle = document.createElement('strong');
+  liveTitle.textContent = 'Current-generation summary';
+  const liveState = document.createElement('span');
+  liveState.dataset.instrumentSummaryState = '';
+  liveState.textContent = 'No current runtime';
+  liveHeading.append(liveTitle, liveState);
+  const liveList = document.createElement('dl');
+  liveList.className = 'instrument-summary-list';
+  liveList.dataset.instrumentSummary = '';
+  for (const channel of ['serial', 'gpio', 'logic', 'input']) {
+    const row = document.createElement('div');
+    const term = document.createElement('dt');
+    const detail = document.createElement('dd');
+    term.textContent = channel;
+    detail.dataset.instrumentSummaryChannel = channel;
+    detail.textContent = 'unavailable · no current runtime';
+    row.append(term, detail);
+    liveList.append(row);
+  }
+  const sharedTools = document.createElement('div');
+  sharedTools.className = 'shared-instrument-tools';
+  sharedTools.dataset.sharedInstrumentTools = '';
+  sharedTools.innerHTML = `
+    <section class="shared-serial-view" aria-label="Shared Serial output viewer">
+      <div class="shared-instrument-tool-heading"><strong>Serial output</strong><span data-shared-serial-classification>unavailable</span></div>
+      <pre data-shared-serial-output aria-live="polite">No current Serial output.</pre>
+      <p data-shared-serial-meta>No current source-bound runtime.</p>
+      <div class="shared-instrument-actions"><button type="button" data-shared-serial-clear disabled>Clear view</button><button type="button" data-shared-serial-export aria-describedby="${adapter.prefix}-shared-export-description" disabled>Export full log (.txt)</button><span id="${adapter.prefix}-shared-export-description" class="sr-only">Exports the current retained accepted log, including rows hidden by Clear view.</span></div>
+    </section>
+    <section class="shared-pin-view" aria-label="Shared pin inspector">
+      <div class="shared-instrument-tool-heading"><strong>Pin inspector</strong><span data-shared-pin-classification>unavailable</span></div>
+      <label>Observed pin <select data-shared-pin-select disabled><option value="">Unavailable</option></select></label>
+      <dl data-shared-pin-fields></dl>
+      <p data-shared-pin-provenance>No current source-bound pin evidence.</p>
+    </section>`;
+  boundary.append(boundaryHeading, boundaryList, liveHeading, liveList, sharedTools);
+  runtimePanel.append(runtime, message, identities, boundary, serial);
 
   const sourceDrawer = document.createElement('details');
   sourceDrawer.className = 'workbench-drawer shared-workbench-drawer';

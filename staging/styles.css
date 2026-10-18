@@ -665,6 +665,53 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .experiment-running, .experiment-pending { color: var(--amber); font-weight: 800; }
 .thermostat-limit { margin: 10px 0 0; color: #d7c38f; font-size: .75rem; line-height: 1.5; }
 .instrument-grid { display: grid; grid-template-columns: 1.5fr .72fr; gap: 16px; margin-top: 16px; }
+.instrument-evidence { grid-column: 1 / -1; overflow: hidden; background: linear-gradient(135deg, #0a1b29 0%, #0b2531 58%, #10271f 100%); border-color: #2a627f; }
+.instrument-evidence::before { content: ''; display: block; height: 3px; margin: -18px -18px 16px; background: linear-gradient(90deg, var(--cyan), var(--lime)); }
+.instrument-evidence-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.instrument-evidence-heading h2 { margin-bottom: 0; }
+.instrument-evidence-state { flex: 0 0 auto; padding: 7px 11px; border: 1px solid var(--amber); border-radius: 999px; color: var(--amber); font: 850 .7rem ui-monospace, monospace; text-transform: uppercase; }
+.instrument-evidence[data-state="recorded-runtime"] .instrument-evidence-state { border-color: var(--lime); color: #07121d; background: var(--lime); }
+.instrument-evidence-provenance { color: var(--cyan); font: .76rem/1.45 ui-monospace, monospace; }
+.instrument-evidence-facts, .instrument-boundary-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 14px 0 0; }
+.instrument-evidence-facts div, .instrument-boundary-list div { min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: #06111bc7; }
+.instrument-evidence-facts dt, .instrument-boundary-list dt { color: var(--muted); font: 750 .64rem ui-monospace, monospace; text-transform: uppercase; }
+.instrument-evidence-facts dd, .instrument-boundary-list dd { margin: 5px 0 0; color: var(--text); font: .72rem/1.45 ui-monospace, monospace; overflow-wrap: anywhere; }
+.instrument-summary-heading { display: flex; justify-content: space-between; gap: 12px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--text); font: 750 .7rem ui-monospace, monospace; text-transform: uppercase; }
+.instrument-summary-heading span { color: var(--cyan); }
+.instrument-summary-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 9px 0 0; }
+.instrument-summary-list div { min-width: 0; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; background: #06111ba8; }
+.instrument-summary-list dt { color: var(--muted); font: 750 .62rem ui-monospace, monospace; text-transform: uppercase; }
+.instrument-summary-list dd { margin: 4px 0 0; color: var(--text); font: .68rem/1.4 ui-monospace, monospace; overflow-wrap: anywhere; }
+.instrument-summary-list dd[data-classification="recorded-runtime"]::first-line { color: var(--lime); }
+.instrument-summary-list dd[data-classification="project-model"]::first-line { color: var(--amber); }
+.instrument-boundary { margin: 14px 0; padding: 14px; border: 1px solid #2a627f; border-radius: 12px; background: #071722; }
+.instrument-boundary-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.instrument-boundary-heading h3 { margin: 0; font-size: .95rem; }
+.instrument-boundary-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.instrument-boundary-list dd[data-status="unavailable"] { color: #d7c38f; }
+.shared-instrument-tools { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(260px, .75fr); gap: 10px; margin-top: 12px; }
+.shared-instrument-tools > section { min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #040d15; }
+.shared-instrument-tool-heading { display: flex; justify-content: space-between; gap: 10px; color: var(--text); font: 800 .7rem ui-monospace, monospace; text-transform: uppercase; }
+.shared-instrument-tool-heading span { color: var(--cyan); }
+.shared-serial-view pre { min-height: 92px; max-height: 180px; overflow: auto; margin: 10px 0 7px; padding: 10px; border: 1px solid #17364a; border-radius: 8px; background: #02070b; color: #baf9cb; white-space: pre-wrap; overflow-wrap: anywhere; font: .72rem/1.45 ui-monospace, monospace; }
+.shared-serial-view p, .shared-pin-view p { margin: 7px 0; color: var(--muted); font: .66rem/1.45 ui-monospace, monospace; overflow-wrap: anywhere; }
+.shared-instrument-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.shared-instrument-actions button { min-height: 34px; }
+.shared-pin-view label { display: grid; grid-template-columns: auto minmax(100px, 1fr); align-items: center; gap: 9px; margin-top: 10px; color: var(--muted); font: .68rem ui-monospace, monospace; }
+.shared-pin-view dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 9px 0; }
+.shared-pin-view dl div { display: block; min-width: 0; padding: 7px 8px; border: 1px solid var(--line); border-radius: 7px; }
+.shared-pin-view dt { font: 750 .6rem ui-monospace, monospace; text-transform: uppercase; }
+.shared-pin-view dd { margin-top: 3px; text-align: left; font: .67rem/1.35 ui-monospace, monospace; }
+.shared-pin-view dd[data-status="unavailable"] { color: #d7c38f; }
+@media (max-width: 760px) { .shared-instrument-tools { grid-template-columns: 1fr; } }
+.control-runtime-evidence { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+.control-runtime-evidence summary { cursor: pointer; color: var(--cyan); font: 800 .72rem ui-monospace, monospace; }
+.control-runtime-evidence > p { color: var(--muted); font-size: .72rem; line-height: 1.5; }
+.control-runtime-table-wrap { overflow-x: auto; }
+.control-runtime-evidence table { width: 100%; min-width: 760px; border-collapse: collapse; background: #040d15; }
+.control-runtime-evidence th, .control-runtime-evidence td { padding: 8px 9px; border: 1px solid var(--line); text-align: left; vertical-align: top; font: .64rem/1.4 ui-monospace, monospace; }
+.control-runtime-evidence th { color: var(--cyan); }
+.control-runtime-evidence td:last-child { color: var(--lime); }
 .instrument-output { min-height: 150px; max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: 12px; border-radius: 9px; background: #040b11; color: #baf9cb; font: .77rem/1.5 ui-monospace, monospace; }
 .mode-switch { display: flex; gap: 7px; margin: 12px 0 8px; }
 .mode-switch button { min-height: 34px; }
@@ -768,6 +815,9 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   .app-header { align-items: start; flex-direction: column; gap: 8px; }
   .lede { text-align: left; }
   .project-bar, .controller-workbench, .workspace, .runtime, .instrument-grid, .prompt-grid, .about-intro, .answer-grid, .starter-heading, .thermostat-contract { grid-template-columns: 1fr; }
+  .instrument-evidence-heading { display: grid; }
+  .instrument-evidence-state { justify-self: start; }
+  .instrument-evidence-facts, .instrument-boundary-list, .instrument-summary-list { grid-template-columns: 1fr; }
   .unsaved-change-actions { display: grid; grid-template-columns: 1fr; }
   .controller-capabilities { grid-template-columns: 1fr; }
   .panel-resizer { display: none; }

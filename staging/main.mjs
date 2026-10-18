@@ -40,6 +40,9 @@ import {
 import { createLifecycleState, transitionLifecycle } from '../src/lifecycle.mjs';
 import { mountSharedWorkbenchShell } from '../src/shared-workbench-shell.mjs';
 import {
+  avrInstrumentEvidence, instrumentCapability, sharedInstrumentSummary, sharedInstrumentView,
+} from '../src/instrument-capabilities.mjs';
+import {
   COMPONENT_SUPPORT_CELLS,
   COMPONENT_SUPPORT_MODELS,
   COMPONENT_SUPPORT_PROFILES,
@@ -108,6 +111,7 @@ import {
   prepareProjectEnvelope,
 } from '../src/project-envelope.mjs';
 import { serialEventText, serialInputBytes, serialText } from '../src/serial-view.mjs';
+import { SERIAL_HISTORY_MAX } from '../src/runtime-kernel.mjs';
 import { createSupportedProfileExample, supportedProfileExamples } from '../src/supported-example-pack.mjs';
 import { CPU_CYCLES_PER_MILLISECOND, cursorCycles, waveformPaths } from '../src/waveform-view.mjs';
 import { createComponentArtwork as createBaseComponentArtwork } from './component-artwork.mjs';
@@ -120,6 +124,7 @@ import {
   openCandidateUiSession,
 } from '../src/candidate-existing-ui-adapter.mjs';
 import { CONTACT_PERSISTENCE_SCHEMA } from '../expansion-drafts/project-v3-contact-persistence.mjs';
+import { controlRuntimeEvidenceMatrix } from '../src/control-runtime-evidence.mjs';
 import {
   TEMPERATURE_MAX_C,
   TEMPERATURE_MIN_C,
@@ -185,6 +190,9 @@ const elements = Object.fromEntries([
   'toggle-catalog', 'toggle-inspector', 'catalog-resizer', 'inspector-resizer', 'show-pin-labels', 'focus-canvas', 'fullscreen-canvas',
   'source-lines', 'source-highlight', 'diagnostic-links', 'build-log', 'simulated-time', 'requested-speed', 'achieved-speed',
   'serial-text-mode', 'serial-event-mode', 'serial-export', 'serial-newline', 'logic-waveform', 'logic-cursor-a', 'logic-cursor-b',
+  'serial-provenance', 'instrument-evidence', 'instrument-evidence-state', 'instrument-evidence-profile',
+  'instrument-evidence-artifact', 'instrument-evidence-time', 'instrument-evidence-retention',
+  'control-runtime-evidence-body',
   'serial-tab', 'serial-dock', 'serial-close', 'serial-resizer', 'serial-resume', 'serial-new-output',
   'canvas-select-mode', 'canvas-interact-mode',
   'thermostat-experiment', 'thermostat-experiment-state', 'thermostat-run-tests',
@@ -231,6 +239,17 @@ const elements = Object.fromEntries([
   'stm32-wire-color', 'stm32-wire-cancel', 'stm32-wire-state',
 ].map((id) => [id.replaceAll('-', ''), byId(id)]));
 
+const controlRuntimeEvidence = controlRuntimeEvidenceMatrix();
+window.__CONTROL_RUNTIME_EVIDENCE_MATRIX__ = structuredClone(controlRuntimeEvidence);
+for (const row of controlRuntimeEvidence.rows) {
+  const tableRow = document.createElement('tr');
+  for (const value of [`${row.model} · ${row.field}${row.authored ? '' : ' (derived)'}`,
+    row.workerEvent, row.observable, row.evidence]) {
+    tableRow.append(Object.assign(document.createElement('td'), { textContent: value }));
+  }
+  elements.controlruntimeevidencebody.append(tableRow);
+}
+
 const runtimeControls = [elements.run, elements.pause, elements.step, elements.reset, elements.speed];
 const CATALOG_PREFERENCES_KEY = 'intent-mcu.catalog-preferences.v1';
 const MAX_RECENT_COMPONENTS = 8;
@@ -243,8 +262,12 @@ let pendingEndpoint = null;
 let wireMode = 'connect';
 let worker = null;
 let workerToken = 0;
+let runtimeRenderTimer = null;
+let pendingRuntimeRender = null;
 let runtimeWorkerCreations = 0;
 let selectedCompilerProfile = AVR_PROFILE;
+const sharedInstrumentSummaries = new Map();
+const sharedInstrumentLocals = new Map();
 let activeJob = null;
 let loadedSourceIdentity = null;
 let running = false;
@@ -1145,6 +1168,7 @@ const picoPublicWorkbench = new Rp2040PublicWorkbench({
   onState: (state) => {
     picoPublicState = state;
     window.__RP2040_PUBLIC_STATE__ = structuredClone(state);
+    renderSharedInstrumentSummary(RP2040_PROFILE, state);
     renderPicoQuickControls(state);
     renderPicoCircuitEditor(state);
   },
@@ -1407,6 +1431,7 @@ const c3PublicWorkbench = new Esp32C3PublicWorkbench({
   onState: (state) => {
     c3PublicState = state;
     window.__ESP32C3_PUBLIC_STATE__ = structuredClone(state);
+    renderSharedInstrumentSummary(ESP32C3_PROFILE, state);
     renderC3QuickControls(state);
     renderC3CircuitEditor(state);
   },
@@ -1677,6 +1702,7 @@ const stm32PublicWorkbench = new Stm32PublicWorkbench({
   onState: (state) => {
     stm32PublicState = state;
     window.__STM32_PUBLIC_STATE__ = structuredClone(state);
+    renderSharedInstrumentSummary(STM32F429ZI_PROFILE, state);
     renderStm32QuickControls(state);
     renderStm32CircuitEditor(state);
   },
@@ -2752,6 +2778,7 @@ function clearRuntimePresentation() {
   elements.trace.replaceChildren(Object.assign(document.createElement('li'), { textContent: '0000000000 · LOW' }));
   elements.serialoutput.textContent = 'No firmware bytes.';
   elements.serialcount.textContent = '0 records';
+  renderInstrumentEvidence();
   if (serialScrollFrame !== null) cancelAnimationFrame(serialScrollFrame);
   serialScrollFrame = null;
   serialRenderedRecords = 0; serialUnreadRecords = 0; serialAutoscroll = true;
@@ -2784,6 +2811,137 @@ function clearRuntimePresentation() {
     artwork.querySelector('[data-lcd-line="2"]')?.replaceChildren();
   }
   publish({ runtime: null });
+}
+
+function renderInstrumentEvidence(runtime = null) {
+  const artifactIdentity = currentProject().build?.artifactIdentity ?? null;
+  const evidence = avrInstrumentEvidence(runtime, artifactIdentity);
+  const capability = instrumentCapability(AVR_PROFILE);
+  const configuredSerialLimit = currentProject().instruments.serial.historyLimit;
+  window.__INSTRUMENT_EVIDENCE__ = structuredClone(evidence);
+  elements.instrumentevidence.dataset.state = evidence.state;
+  elements.instrumentevidencestate.textContent = evidence.state === 'recorded-runtime' ? 'Recorded runtime' : 'No recorded evidence';
+  elements.instrumentevidenceprofile.textContent = capability.label;
+  elements.instrumentevidenceartifact.textContent = evidence.artifactIdentity
+    ? `${evidence.artifactIdentity.slice(0, 12)}…${evidence.artifactIdentity.slice(-8)}`
+    : 'Build and run to bind evidence';
+  elements.instrumentevidencetime.textContent = evidence.cycle === null
+    ? 'No runtime snapshot'
+    : `cycle ${evidence.cycle.toLocaleString('en-US')} · ${evidence.virtualMilliseconds.toFixed(3)} ms`;
+  elements.instrumentevidenceretention.textContent = evidence.state === 'recorded-runtime'
+    ? `Serial ${evidence.serial.retained.toLocaleString('en-US')} / ${configuredSerialLimit.toLocaleString('en-US')} configured (max ${capability.serial.retained.toLocaleString('en-US')})${evidence.serial.dropped ? ` · ${evidence.serial.dropped} dropped` : ''} · logic ${evidence.logic.retained.toLocaleString('en-US')} / ${capability.logic.retained.toLocaleString('en-US')}${evidence.logic.dropped ? ` · ${evidence.logic.dropped} dropped` : ''} · inputs ${evidence.input.recorded.toLocaleString('en-US')} / ${capability.input.retained.toLocaleString('en-US')}`
+    : `Serial 0 / ${configuredSerialLimit.toLocaleString('en-US')} configured (max ${capability.serial.retained.toLocaleString('en-US')}) · logic 0 / ${capability.logic.retained.toLocaleString('en-US')} · inputs 0 / ${capability.input.retained.toLocaleString('en-US')}`;
+  elements.serialprovenance.textContent = evidence.state === 'recorded-runtime'
+    ? `USART0 records from the same avr8js worker snapshot at cycle ${evidence.cycle.toLocaleString('en-US')}; artifact ${evidence.artifactIdentity.slice(0, 12)}…`
+    : 'No recorded USART0 evidence. Build and run to bind output to an artifact and virtual cycle.';
+  renderSharedInstrumentSummary(AVR_PROFILE, {
+    ...window.__M6_STATE__, runtime, project: currentProject(),
+  });
+}
+
+function instrumentSummaryLine(channel) {
+  const retention = channel.retention;
+  const counts = retention.retained === null ? 'retention unavailable'
+    : `${retention.retained.toLocaleString('en-US')} retained · ${retention.dropped.toLocaleString('en-US')} dropped${retention.limit === null ? '' : ` · limit ${retention.limit.toLocaleString('en-US')}`}`;
+  const time = channel.time.cycle === null ? channel.time.basis
+    : `cycle ${channel.time.cycle.toLocaleString('en-US')} · ${channel.time.virtualMilliseconds.toFixed(3)} ms`;
+  return `${channel.classification} · ${counts} · ${time} · ${channel.provenance}`;
+}
+
+function sharedFieldText(field) {
+  if (field.status === 'unavailable') return 'Unavailable';
+  if (typeof field.value === 'boolean') return field.value ? 'HIGH / true' : 'LOW / false';
+  if (typeof field.value === 'object') return JSON.stringify(field.value);
+  return String(field.value);
+}
+
+function renderSharedInstrumentTools(root, view) {
+  const tools = root.querySelector('[data-shared-instrument-tools]');
+  if (!tools) return;
+  const serialClass = tools.querySelector('[data-shared-serial-classification]');
+  const serialOutput = tools.querySelector('[data-shared-serial-output]');
+  const serialMeta = tools.querySelector('[data-shared-serial-meta]');
+  const serialClear = tools.querySelector('[data-shared-serial-clear]');
+  const serialExport = tools.querySelector('[data-shared-serial-export]');
+  serialClass.textContent = view.serial.classification;
+  serialOutput.textContent = view.serial.classification === 'unavailable'
+    ? 'No current Serial output.' : view.serial.cleared ? 'View cleared locally.' : view.serial.text || 'No output bytes recorded.';
+  serialMeta.textContent = `${view.serial.provenance} · ${view.serial.input.status === 'unavailable'
+    ? 'RX unavailable.' : 'RX stays in the existing AVR console.'}`;
+  serialClear.disabled = view.serial.classification === 'unavailable' || view.serial.cleared;
+  serialExport.disabled = view.serial.classification === 'unavailable';
+
+  const pinClass = tools.querySelector('[data-shared-pin-classification]');
+  const pinSelect = tools.querySelector('[data-shared-pin-select]');
+  const pinFields = tools.querySelector('[data-shared-pin-fields]');
+  const pinProvenance = tools.querySelector('[data-shared-pin-provenance]');
+  pinClass.textContent = view.pin.classification;
+  pinSelect.replaceChildren();
+  if (!view.pin.options.length) {
+    pinSelect.append(Object.assign(document.createElement('option'), { value: '', textContent: 'Unavailable' }));
+    pinSelect.disabled = true;
+  } else {
+    for (const pin of view.pin.options) pinSelect.append(Object.assign(document.createElement('option'), {
+      value: pin, textContent: pin, selected: pin === view.pin.selectedPin,
+    }));
+    pinSelect.disabled = false;
+  }
+  pinFields.replaceChildren();
+  for (const [name, fieldValue] of Object.entries(view.pin.fields)) {
+    const row = document.createElement('div');
+    const term = document.createElement('dt');
+    const detail = document.createElement('dd');
+    term.textContent = name; detail.textContent = sharedFieldText(fieldValue); detail.dataset.status = fieldValue.status;
+    if (fieldValue.reason) detail.title = fieldValue.reason;
+    row.append(term, detail); pinFields.append(row);
+  }
+  pinProvenance.textContent = view.pin.provenance;
+}
+
+function renderSharedInstrumentSummary(profile, state) {
+  if (profile !== selectedCompilerProfile) return null;
+  const summary = sharedInstrumentSummary(profile, state);
+  if (!summary) return null;
+  sharedInstrumentSummaries.set(profile, structuredClone(summary));
+  const previousLocal = sharedInstrumentLocals.get(profile) ?? {};
+  const view = sharedInstrumentView(summary, previousLocal);
+  sharedInstrumentLocals.set(profile, structuredClone(view.local));
+  window.__SHARED_INSTRUMENT_SUMMARY__ = structuredClone(summary);
+  window.__SHARED_INSTRUMENT_VIEW__ = structuredClone(view);
+  const roots = profile === AVR_PROFILE
+    ? [elements.instrumentevidence]
+    : [...document.querySelectorAll(`[data-instrument-profile="${profile}"]`)];
+  for (const root of roots) {
+    root.dataset.summaryState = summary.state;
+    const stateNode = root.querySelector('[data-instrument-summary-state]');
+    if (stateNode) stateNode.textContent = summary.state === 'current-runtime' ? 'Current runtime' : 'No current runtime';
+    for (const [name, channel] of Object.entries(summary.channels)) {
+      const node = root.querySelector(`[data-instrument-summary-channel="${name}"]`);
+      if (!node) continue;
+      node.dataset.classification = channel.classification;
+      node.textContent = instrumentSummaryLine(channel);
+    }
+    renderSharedInstrumentTools(root, view);
+  }
+  return summary;
+}
+
+function renderStoredSharedInstrumentView(profile) {
+  const summary = sharedInstrumentSummaries.get(profile);
+  if (!summary || profile !== selectedCompilerProfile) return null;
+  const view = sharedInstrumentView(summary, sharedInstrumentLocals.get(profile) ?? {});
+  sharedInstrumentLocals.set(profile, structuredClone(view.local));
+  window.__SHARED_INSTRUMENT_VIEW__ = structuredClone(view);
+  const roots = profile === AVR_PROFILE
+    ? [elements.instrumentevidence]
+    : [...document.querySelectorAll(`[data-instrument-profile="${profile}"]`)];
+  for (const root of roots) renderSharedInstrumentTools(root, view);
+  return view;
+}
+
+function sharedInstrumentProfileFor(node) {
+  const boundary = node.closest('[data-instrument-profile]');
+  return boundary?.dataset.instrumentProfile ?? (node.closest('#instrument-evidence') ? AVR_PROFILE : null);
 }
 
 function updateSerialAutoscroll(serial) {
@@ -2896,6 +3054,8 @@ function stopRuntime(message = 'No current artifact loaded', { updateLifecycle =
   workerToken += 1;
   worker?.terminate();
   worker = null;
+  if (runtimeRenderTimer !== null) clearTimeout(runtimeRenderTimer);
+  runtimeRenderTimer = null; pendingRuntimeRender = null;
   running = false;
   setRuntimeEnabled(false);
   elements.workerstate.textContent = message;
@@ -2953,11 +3113,13 @@ function applyEditor(command, message = command.type) {
   }
   const relevance = result.changeRelevance ?? (result.buildRelevant ? 'build' : commandBuildRelevance(command.type));
   if (relevance === 'build') {
+    const empty = result.project.circuit.components.length === 0;
     detachOutstandingBuild();
     stopRuntime('Circuit or source changed — rebuild required', { updateLifecycle: false });
     applyLifecycle({
-      type: 'project.edit', relevance: 'build', empty: result.project.circuit.components.length === 0,
+      type: 'project.edit', relevance: 'build', empty,
     });
+    publish({ buildState: empty ? 'empty' : 'dirty', artifactIdentity: null, inputIdentity: null, cacheHit: false });
   } else {
     applyLifecycle({ type: 'project.edit', relevance });
   }
@@ -3103,7 +3265,15 @@ function drawComponentWireVisibility(canvasBox = elements.circuitcanvas.getBound
     const matrix = layer.getScreenCTM();
     if (!matrix) continue;
     const inverse = matrix.inverse();
-    for (const record of [...acceptedRoutePaint, ...proposedRoutePaint]) {
+    const allPaint = [...acceptedRoutePaint, ...proposedRoutePaint];
+    const componentPrefix = `${layer.parentElement.dataset.componentId}.`;
+    // A full cross-product keeps every tiny circuit-wire overlay available for
+    // the detailed teaching view, but grows quadratically at the graph limit.
+    // At that limit, only a route's own terminal card needs the clipped copy;
+    // the canonical canvas path remains visible everywhere else.
+    const visiblePaint = allPaint.length <= 64
+      ? allPaint : allPaint.filter((record) => record.endpoint.startsWith(componentPrefix));
+    for (const record of visiblePaint) {
       const local = record.points.map((point) => {
         const screen = screenRoutePoint(point, canvasBox);
         const transformed = new DOMPoint(canvasBox.left + screen.x, canvasBox.top + screen.y).matrixTransform(inverse);
@@ -3379,16 +3549,17 @@ function drawCircuitWires() {
   const obstacles = routeObstacles(canvasBox);
   const automaticLaneObstacles = [];
   const records = [];
+  const denseGraph = currentProject().circuit.nets.length > 64;
   for (const net of currentProject().circuit.nets) {
     const anchors = netAnchors(net, canvasBox);
     if (Object.keys(anchors).length < 2) continue;
     const storedRoute = currentProject().layout.wireRoutes[net.id];
     const family = materializeRouteFamily(net, storedRoute, anchors,
-      storedRoute ? obstacles : [...obstacles, ...automaticLaneObstacles]);
+      storedRoute || denseGraph ? obstacles : [...obstacles, ...automaticLaneObstacles]);
     const branches = routeFamilyPaths(family, anchors);
     for (const branch of branches) {
       records.push({ net, family, anchors, branch, netId: net.id, points: branch.points });
-      if (!storedRoute) branch.points.slice(1, -1).forEach((point, index) => {
+      if (!storedRoute && !denseGraph) branch.points.slice(1, -1).forEach((point, index) => {
         const next = branch.points[index + 2];
         const laneMargin = 0.006;
         automaticLaneObstacles.push({
@@ -3653,13 +3824,21 @@ function renderComponents() {
         card.append(control);
       }
     }
-    card.addEventListener('click', () => { selectComponent(component.id); renderInspector(); renderComponents(); });
+    card.addEventListener('click', () => {
+      selectComponent(component.id);
+      renderInspector();
+      for (const candidate of elements.componentlayer.querySelectorAll('.circuit-component')) {
+        candidate.classList.toggle('selected', candidate.dataset.componentId === component.id);
+      }
+    });
     cardPointerDrag(card, component.id);
     return card;
   });
   elements.componentlayer.replaceChildren(...cards);
   drawCircuitWires();
-  requestAnimationFrame(() => requestAnimationFrame(drawCircuitWires));
+  if (currentProject().circuit.nets.length <= 64) {
+    requestAnimationFrame(() => requestAnimationFrame(drawCircuitWires));
+  }
 }
 
 function hydrateCatalogThumbnail(slot) {
@@ -3956,9 +4135,13 @@ function renderPropertyEditor(component) {
       if (typeof value === 'number') input.step = contract.kind === 'integer' ? '1' : 'any';
     }
     input.dataset.property = key;
+    let committing = false;
     input.addEventListener('change', () => {
+      if (committing) return;
+      committing = true;
       const next = typeof value === 'number' ? Number(input.value) : typeof value === 'boolean' ? input.value === 'true' : input.value;
-      applyEditor({ type: 'component.property.set', componentId: component.id, key, value: next }, `Updated ${component.id}.${key}`);
+      const result = applyEditor({ type: 'component.property.set', componentId: component.id, key, value: next }, `Updated ${component.id}.${key}`);
+      if (!result?.ok) committing = false;
     });
     label.htmlFor = `${component.id}-${key}`; input.id = label.htmlFor; row.append(label, input); return row;
   });
@@ -4309,6 +4492,34 @@ function renderWaveform(logic) {
   return model;
 }
 
+window.__M6_INSTRUMENT_RENDER_BENCHMARK__ = () => {
+  const records = Array.from({ length: SERIAL_HISTORY_MAX }, (_, index) => ({
+    direction: index % 7 === 0 ? 'rx' : 'tx', value: 65 + (index % 26), cycle: index * 160,
+  }));
+  const serialStarted = performance.now();
+  const serialNode = document.createElement('pre');
+  serialNode.textContent = serialEventText(records);
+  const serialMilliseconds = performance.now() - serialStarted;
+  const transitions = Array.from({ length: 500 }, (_, index) => ({
+    pin: index % 2 ? 'D13' : 'D2', cycle: index * 160, level: Boolean(index % 4),
+  }));
+  const waveformStarted = performance.now();
+  const model = waveformPaths(transitions, ['D2', 'D13'], { edgeLimit: 500 });
+  const waveformNode = svgNode('svg');
+  waveformNode.replaceChildren(...model.paths.map((path) => svgNode('path', { d: path.d })));
+  const cursors = cursorCycles(model, 0.25, 0.75);
+  waveformNode.append(
+    svgNode('line', { 'data-cycle': cursors.first }),
+    svgNode('line', { 'data-cycle': cursors.second }),
+  );
+  const waveformMilliseconds = performance.now() - waveformStarted;
+  return {
+    schema: 'intent-mcu-instrument-render-benchmark@1',
+    serial: { records: records.length, textLength: serialNode.textContent.length, milliseconds: serialMilliseconds },
+    logic: { edges: model.records.length, paths: waveformNode.querySelectorAll('path').length, cursors: waveformNode.querySelectorAll('line').length, milliseconds: waveformMilliseconds },
+  };
+};
+
 function renderRgbLedRuntime(message) {
   if (editor.kind !== 'candidate-project-v3') return;
   const pins = new Map((message.pins ?? []).map((pin) => [pin.pin, pin]));
@@ -4447,8 +4658,9 @@ function renderCharacterLcdRuntime(message) {
   publish({ characterLcd: published });
 }
 
-function renderRuntime(message) {
-  publish({ runtime: structuredClone(message) });
+function renderRuntime(message, { publishState = true } = {}) {
+  if (publishState) publish({ runtime: structuredClone(message) });
+  renderInstrumentEvidence(message);
   elements.cycle.textContent = message.cycle.toLocaleString('en-US');
   elements.simulatedtime.textContent = `${(message.cycle / CPU_CYCLES_PER_MILLISECOND).toFixed(3)} ms`;
   elements.instructions.textContent = message.instructions.toLocaleString('en-US');
@@ -4501,6 +4713,23 @@ function renderRuntime(message) {
   renderThermostatExperimentPanel();
 }
 
+function scheduleWorkerRuntimeRender(message) {
+  publish({ runtime: message });
+  pendingRuntimeRender = message;
+  if (message.paused !== false || message.kind === 'ready' || message.kind === 'error' || message.kind === 'stopped-error') {
+    if (runtimeRenderTimer !== null) clearTimeout(runtimeRenderTimer);
+    runtimeRenderTimer = null; pendingRuntimeRender = null;
+    renderRuntime(message, { publishState: false });
+    return;
+  }
+  if (runtimeRenderTimer !== null) return;
+  runtimeRenderTimer = setTimeout(() => {
+    runtimeRenderTimer = null;
+    const latest = pendingRuntimeRender; pendingRuntimeRender = null;
+    if (latest) renderRuntime(latest, { publishState: false });
+  }, 100);
+}
+
 function loadArtifact(hex, artifactIdentity) {
   stopRuntime('Loading verified artifact…');
   const loaded = applyLifecycle({ type: 'runtime.load' });
@@ -4519,7 +4748,7 @@ function loadArtifact(hex, artifactIdentity) {
     if (!acceptedMessage.accepted) return;
     lastWorkerMessage = performance.now(); running = data.paused === false && data.kind !== 'error';
     if (data.kind === 'ready') setRuntimeEnabled(true);
-    renderRuntime(data);
+    scheduleWorkerRuntimeRender(data);
   });
   worker.addEventListener('error', (event) => {
     if (token !== workerToken) return;
@@ -4781,7 +5010,11 @@ elements.pause.addEventListener('click', () => {
   if (result.accepted) worker?.postMessage({ command: 'pause' });
 });
 elements.step.addEventListener('click', () => worker?.postMessage({ command: 'step' }));
-elements.reset.addEventListener('click', () => worker?.postMessage({ command: 'reset' }));
+elements.reset.addEventListener('click', () => {
+  if (!worker) return;
+  renderInstrumentEvidence(null);
+  worker.postMessage({ command: 'reset' });
+});
 elements.thermostatruntests.addEventListener('click', startThermostatExperiment);
 elements.thermostatloadbad.addEventListener('click', () => loadThermostatFirmwareVariant('known-bad-equality'));
 elements.thermostatrestore.addEventListener('click', () => loadThermostatFirmwareVariant('correct'));
@@ -4887,6 +5120,31 @@ elements.serialeventmode.addEventListener('click', () => {
 elements.serialexport.addEventListener('click', () => {
   const records = window.__M6_STATE__.runtime?.instruments?.serial?.records ?? [];
   downloadText('intent-mcu-serial.txt', serialText(records));
+});
+document.addEventListener('click', (event) => {
+  const clear = event.target.closest('[data-shared-serial-clear]');
+  const exportButton = event.target.closest('[data-shared-serial-export]');
+  if (!clear && !exportButton) return;
+  const profile = sharedInstrumentProfileFor(event.target);
+  const summary = profile ? sharedInstrumentSummaries.get(profile) : null;
+  if (!profile || !summary || summary.state !== 'current-runtime') return;
+  const local = sharedInstrumentLocals.get(profile) ?? {};
+  if (clear) {
+    sharedInstrumentLocals.set(profile, { ...local, cleared: true });
+    renderStoredSharedInstrumentView(profile);
+    return;
+  }
+  const exportView = sharedInstrumentView(summary, { ...local, cleared: false });
+  downloadText(`intent-mcu-${profile.replace(/[^a-z0-9]+/giu, '-')}-serial.txt`, exportView.serial.text);
+});
+document.addEventListener('change', (event) => {
+  const select = event.target.closest('[data-shared-pin-select]');
+  if (!select) return;
+  const profile = sharedInstrumentProfileFor(select);
+  if (!profile) return;
+  const local = sharedInstrumentLocals.get(profile) ?? {};
+  sharedInstrumentLocals.set(profile, { ...local, selectedPin: select.value });
+  renderStoredSharedInstrumentView(profile);
 });
 elements.logicchannels.addEventListener('change', () => {
   const selected = [...elements.logicchannels.selectedOptions].map((option) => option.value);

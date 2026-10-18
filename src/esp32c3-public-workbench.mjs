@@ -381,10 +381,10 @@ export class Esp32C3PublicWorkbench {
       return result;
     }
     this.project.circuit = clone(result.draft);
-    const layoutOnly = ['setWireColor', 'setWireRoute'].includes(operation)
+    const layoutOnly = ['moveComponent', 'rotateComponent', 'setWireColor', 'setWireRoute'].includes(operation)
       || ['undo', 'redo'].includes(operation) && result.changeKind === 'layout';
     if (layoutOnly) {
-      this.message = `Cable layout changed (${result.code}). Flash and electrical authority are unchanged.`;
+      this.message = `Layout changed (${result.code}). Flash and electrical authority are unchanged.`;
       this.render();
       return result;
     }
@@ -392,8 +392,6 @@ export class Esp32C3PublicWorkbench {
       deleteSelected: `Circuit changed (${result.code}). Flash and LED authority retired; restore valid wiring and build fresh.`,
       undo: 'Circuit Undo applied. Flash and LED authority retired; build fresh.',
       redo: 'Circuit Redo applied. Flash and LED authority retired; build fresh.',
-      moveComponent: 'Component moved; named pin attachments and orthogonal wires were recomputed. Build fresh.',
-      rotateComponent: 'Component rotated; named pin attachments and orthogonal wires were recomputed. Build fresh.',
       activateEndpoint: `Cable changed (${result.code}). Flash and LED authority retired; finish a valid circuit and build fresh.`,
       connectEndpoints: `Cable created (${result.code}). Flash and LED authority retired; finish a valid circuit and build fresh.`,
       reconnectEndpoint: `Cable endpoint reconnected (${result.code}). Flash and LED authority retired; finish a valid circuit and build fresh.`,

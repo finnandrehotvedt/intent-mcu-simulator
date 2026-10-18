@@ -428,7 +428,8 @@ export class NamedSeriesLedCircuitEditor {
     const next = clone(this.draft);
     next.layout.positions[id].x = Math.max(0.08, Math.min(0.92, x));
     next.layout.positions[id].y = Math.max(0.1, Math.min(0.9, y));
-    return { ok: true, code: this.code('COMPONENT_MOVED'), ...this.commit(next, { kind: 'component', id }) };
+    return { ok: true, code: this.code('COMPONENT_MOVED'),
+      ...this.commit(next, { kind: 'component', id }, 'layout') };
   }
 
   rotateComponent(id) {
@@ -437,7 +438,8 @@ export class NamedSeriesLedCircuitEditor {
     }
     const next = clone(this.draft);
     next.layout.positions[id].rotation = (next.layout.positions[id].rotation + 90) % 360;
-    return { ok: true, code: this.code('COMPONENT_ROTATED'), ...this.commit(next, { kind: 'component', id }) };
+    return { ok: true, code: this.code('COMPONENT_ROTATED'),
+      ...this.commit(next, { kind: 'component', id }, 'layout') };
   }
 
   restoreExample() {

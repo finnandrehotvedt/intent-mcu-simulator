@@ -50,6 +50,24 @@ export function parallelWireConflicts(routes, { clearance = 0 } = {}) {
   return conflicts;
 }
 
+function conflictsWithPreviousRoutes(route, previousRoutes, clearance, targetSegment = null) {
+  const prior = previousRoutes.flatMap(segments);
+  const current = segments(route).filter(
+    (segment) => targetSegment === null || segment.index === targetSegment,
+  );
+  const conflicts = [];
+  for (const right of current) for (const left of prior) {
+    const detail = conflict(left, right, clearance);
+    if (detail) conflicts.push({
+      requirement: WIRE_LANE_REQUIREMENT,
+      leftNet: left.route.netId, rightNet: right.route.netId,
+      leftSegment: left.index, rightSegment: right.index,
+      ...detail,
+    });
+  }
+  return conflicts;
+}
+
 function segmentHitsObstacle(left, right, obstacle) {
   const axis = orientation(left, right);
   if (axis === 'horizontal') {
@@ -81,10 +99,9 @@ export function separateParallelWireLanes(routes, { clearance, obstacles = [], b
   let movedSegments = 0;
   for (let routeIndex = 0; routeIndex < separated.length; routeIndex += 1) {
     const route = separated[routeIndex];
+    const previousRoutes = separated.slice(0, routeIndex);
     for (let segmentIndex = 1; segmentIndex < route.points.length - 2; segmentIndex += 1) {
-      const baseline = separated.slice(0, routeIndex + 1);
-      const relevant = parallelWireConflicts(baseline, { clearance })
-        .filter((item) => item.rightNet === route.netId && item.rightSegment === segmentIndex);
+      const relevant = conflictsWithPreviousRoutes(route, previousRoutes, clearance, segmentIndex);
       if (!relevant.length) continue;
       const left = route.points[segmentIndex];
       const right = route.points[segmentIndex + 1];
@@ -98,8 +115,8 @@ export function separateParallelWireLanes(routes, { clearance, obstacles = [], b
         if (bounds && candidate.some((point) => point.x < bounds.left || point.x > bounds.right
           || point.y < bounds.top || point.y > bounds.bottom)) continue;
         if (hitsObstacle(candidate, obstacles)) continue;
-        const trial = [...separated.slice(0, routeIndex), { ...route, points: candidate }];
-        if (!parallelWireConflicts(trial, { clearance }).some((item) => item.rightNet === route.netId)) {
+        const trial = { ...route, points: candidate };
+        if (!conflictsWithPreviousRoutes(trial, previousRoutes, clearance).length) {
           accepted = candidate; break;
         }
       }
