@@ -755,6 +755,26 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .thermostat-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
 .thermostat-actions #thermostat-run-tests { color: #07121d; background: var(--lime); border-color: var(--lime); }
 .thermostat-actions #thermostat-load-bad { border-color: var(--amber); }
+.scenario-editor { margin: 18px 0; padding: 16px; border: 1px solid #2a627f; border-radius: 14px; background: #071722; }
+.scenario-editor-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.scenario-editor-heading h3 { margin: 0; font-size: 1.05rem; }
+.scenario-editor > p { color: var(--muted); line-height: 1.5; }
+.scenario-editor-actions, .scenario-add-events { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.scenario-editor-actions #scenario-run { color: #07121d; border-color: var(--lime); background: var(--lime); }
+.scenario-list { display: grid; gap: 12px; }
+.scenario-card { padding: 13px; border: 1px solid var(--line); border-radius: 11px; background: #091c29; }
+.scenario-card-heading { display: flex; align-items: end; justify-content: space-between; gap: 12px; }
+.scenario-card-heading label { flex: 1; }
+.scenario-card label { display: grid; gap: 5px; color: var(--muted); font: 700 .68rem/1.3 ui-monospace, monospace; text-transform: uppercase; }
+.scenario-card input, .scenario-card select { min-width: 0; width: 100%; }
+.scenario-events { display: grid; gap: 8px; margin: 12px 0; padding: 0; list-style: none; }
+.scenario-event { display: grid; grid-template-columns: minmax(145px, 1fr) minmax(95px, .55fr) minmax(150px, .85fr) auto; gap: 9px; align-items: end; padding: 10px; border-left: 3px solid var(--cyan); border-radius: 8px; background: #06121c; }
+.scenario-event.expect-pin-level { grid-template-columns: minmax(145px, 1fr) minmax(85px, .45fr) minmax(85px, .45fr) minmax(120px, .7fr) auto; border-left-color: var(--lime); }
+.scenario-event strong { align-self: center; color: var(--text); font-size: .75rem; }
+.scenario-result { margin: 10px 0 0; padding: 9px 11px; border-radius: 8px; color: var(--muted); background: #06121c; font: .72rem/1.45 ui-monospace, monospace; }
+.scenario-result.pass { color: var(--lime); border: 1px solid #3c7438; }
+.scenario-result.fail { color: #ffd0d4; border: 1px solid #70434a; }
+.scenario-empty { padding: 14px; border: 1px dashed var(--line); border-radius: 9px; }
 .thermostat-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
 .thermostat-table { width: 100%; min-width: 780px; border-collapse: collapse; background: #07141f; }
 .thermostat-table th, .thermostat-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: .75rem; line-height: 1.4; }
@@ -920,7 +940,8 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   main { width: min(100% - 18px, 680px); padding-top: 30px; }
   .app-header { align-items: start; flex-direction: column; gap: 8px; }
   .lede { text-align: left; }
-  .project-bar, .project-brief-grid, .controller-workbench, .workspace, .runtime, .instrument-grid, .prompt-grid, .about-intro, .answer-grid, .starter-heading, .thermostat-contract, .requirement-trace-row, .open-assumption-row, .feasibility-row { grid-template-columns: 1fr; }
+  .project-bar, .project-brief-grid, .controller-workbench, .workspace, .runtime, .instrument-grid, .prompt-grid, .about-intro, .answer-grid, .starter-heading, .thermostat-contract, .requirement-trace-row, .open-assumption-row, .feasibility-row, .scenario-event, .scenario-event.expect-pin-level { grid-template-columns: 1fr; }
+  .scenario-card-heading, .scenario-editor-heading { align-items: stretch; flex-direction: column; }
   .project-brief-purpose { grid-column: 1; }
   .project-brief-heading, .project-brief-footer, .requirement-trace-heading { align-items: flex-start; flex-direction: column; }
   .instrument-evidence-heading { display: grid; }

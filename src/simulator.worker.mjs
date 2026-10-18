@@ -141,7 +141,8 @@ async function handleMessage(data) {
       }
     } else if (data.command === 'control') {
       if (isRp2040()) throw new Error('RP2040_CONTROL_UNSUPPORTED');
-      kernel.queueControl(data.componentId, data.key, data.value);
+      if (data.targetCycle === undefined) kernel.queueControl(data.componentId, data.key, data.value);
+      else kernel.queueControlAtCycle(data.componentId, data.key, data.value, data.targetCycle);
       status('control');
     } else if (data.command === 'digital-input') {
       if (isRp2040()) throw new Error('RP2040_DIGITAL_INPUT_UNSUPPORTED');

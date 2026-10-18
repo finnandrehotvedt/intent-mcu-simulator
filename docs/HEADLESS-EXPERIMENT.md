@@ -17,14 +17,19 @@ The runner does not implement a second simulator or verdict engine. It:
 3. reuses the thermostat project adapter and electrical admission;
 4. submits the exact normalized source to the existing fixed AVR compiler
    route and accepts only its source-bound artifact identity;
-5. creates a fresh shared `RuntimeKernel` for each M1 scenario;
-6. applies the existing ordered controls at virtual cycle zero; and
-7. asks the shared domain engine and existing M1 evaluator for each verdict.
+5. creates a fresh shared `RuntimeKernel` for each fixed M1 or saved X17 case;
+6. applies validated ordered controls at their authored virtual cycles; and
+7. asks the shared domain engine and matching M1/X17 evaluator for each verdict.
 
 The result associates the canonical project hash, normalized source digest,
 compiler input identity, artifact identity, profile, firmware variant,
 scenario IDs, virtual times and observed D13/UART/input evidence. No artifact,
 generation, verdict or runtime session is restored from the saved file.
+
+When envelope v6 contains an X17 timeline, the headless runner consumes that
+same validated data. Each case has one explicit D13 observation window; the
+result reports the actual capture time and never claims evidence from another
+instant. Expected values remain comparison input only and cannot supply a pass.
 
 ## Supported subset
 

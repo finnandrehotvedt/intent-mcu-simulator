@@ -1,4 +1,19 @@
-# Intent MCU Simulator 1.1.0-rc.42
+# Intent MCU Simulator 1.1.0-rc.43
+
+## X17 bounded scenario timeline editor
+
+Rc.43 adds a reusable data-only timeline editor to the existing AVR thermostat
+experiment. Learners can add, rename and delete cases; schedule bounded ideal
+temperature and button inputs; define an explicit D13 observation window; and
+run the same saved timeline in the browser or headless runner. Invalid edits
+reject atomically with a location, Undo/Redo is bounded, and any timeline edit
+clears the prior authored result without changing firmware identity.
+
+The project wrapper advances to `intent-mcu-project-envelope@6`. It stores no
+runtime evidence or verdict, and Open still requires a fresh Build. X17 remains
+limited to the reviewed thermostat subset; it does not introduce X18 general
+assertions or X19 reporting. The public rc.42 deployment is unchanged while
+the VM103 transport gate is unavailable.
 
 ## X15 source-side headless experiment runner
 

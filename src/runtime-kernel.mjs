@@ -123,11 +123,15 @@ export class RuntimeKernel {
   }
 
   queueControl(componentId, key, value) {
+    return this.queueControlAtCycle(componentId, key, value, this.adapter.cpu.cycles);
+  }
+
+  queueControlAtCycle(componentId, key, value, targetCycle) {
     const probe = new CircuitRuntime(this.circuit.graph);
     probe.controls = clone(this.circuit.controls);
     probe.setControl(componentId, key, value, { setDigitalPin() {}, setAnalogChannel() {} });
     const event = this.inputs.enqueue(
-      { type: 'control', componentId, key, value: clone(value) }, this.adapter.cpu.cycles,
+      { type: 'control', componentId, key, value: clone(value) }, this.adapter.cpu.cycles, targetCycle,
     );
     this.#flushInputs();
     return event;

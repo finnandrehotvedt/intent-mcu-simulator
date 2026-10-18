@@ -4,7 +4,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  ASSUMPTION_PROJECT_ENVELOPE_SCHEMA, LEGACY_PROJECT_BRIEF_SCHEMA, LEGACY_PROJECT_ENVELOPE_SCHEMA,
+  ASSUMPTION_PROJECT_ENVELOPE_SCHEMA, CAPABILITY_PROJECT_ENVELOPE_SCHEMA,
+  LEGACY_PROJECT_BRIEF_SCHEMA, LEGACY_PROJECT_ENVELOPE_SCHEMA,
   PREVIOUS_PROJECT_BRIEF_SCHEMA, PREVIOUS_PROJECT_ENVELOPE_SCHEMA,
   PROJECT_BRIEF_SCHEMA, PROJECT_ENVELOPE_SCHEMA, TRACE_PROJECT_BRIEF_SCHEMA, TRACE_PROJECT_ENVELOPE_SCHEMA,
   canonicalProjectEnvelope, emptyProjectBrief, prepareProjectEnvelope,
@@ -83,7 +84,7 @@ test('rc32 v3 envelope migrates with an explicit empty unresolved assumption lis
 
 test('rc33 v4 envelope migrates with an explicit empty required capability list', () => {
   const previous = {
-    schema: PREVIOUS_PROJECT_ENVELOPE_SCHEMA, profile,
+    schema: CAPABILITY_PROJECT_ENVELOPE_SCHEMA, profile,
     brief: { schema: PREVIOUS_PROJECT_BRIEF_SCHEMA, purpose: 'Questioned goal', inputs: [], outputs: [],
       boundaryCases: [], acceptanceCriteria: [{ id: 'REQ-OLD', text: 'Old criterion', codeRefs: [], testRefs: [] }],
       openAssumptions: [{ id: 'ASK-PIN', kind: 'pin', question: 'Which pin?', requirementIds: ['REQ-OLD'] }] }, project,
@@ -92,6 +93,15 @@ test('rc33 v4 envelope migrates with an explicit empty required capability list'
   assert.equal(opened.code, 'PROJECT_ENVELOPE_MIGRATED');
   assert.deepEqual(opened.brief.requiredCapabilities, []);
   assert(opened.report.defaultsAdded.includes('empty required capability list'));
+});
+
+test('rc42 v5 envelope migrates with an explicit empty scenario timeline', () => {
+  const previous = { schema: PREVIOUS_PROJECT_ENVELOPE_SCHEMA, profile,
+    brief: emptyProjectBrief(), project };
+  const opened = prepareProjectEnvelope(JSON.stringify(previous), adapters);
+  assert.equal(opened.code, 'PROJECT_ENVELOPE_MIGRATED');
+  assert.equal(opened.scenarioTimeline, null);
+  assert(opened.report.defaultsAdded.includes('empty scenario timeline'));
 });
 
 test('X01 brief round-trips purpose, inputs, outputs, boundaries and unevaluated acceptance IDs', () => {
@@ -125,7 +135,8 @@ test('X01 brief round-trips purpose, inputs, outputs, boundaries and unevaluated
 test('X01 brief rejects unknown fields, duplicate IDs, malformed IDs and result authority', () => {
   const base = { schema: PROJECT_BRIEF_SCHEMA, purpose: '', inputs: [], outputs: [],
     boundaryCases: [], acceptanceCriteria: [], openAssumptions: [], requiredCapabilities: [] };
-  const wrap = (brief) => JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, brief, project });
+  const wrap = (brief) => JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, brief,
+    scenarioTimeline: null, project });
   assert.equal(prepareProjectEnvelope(wrap({ ...base, extra: true }), adapters).code, 'PROJECT_BRIEF_SHAPE');
   assert.equal(prepareProjectEnvelope(wrap({ ...base, acceptanceCriteria: [
     { id: 'REQ-1', text: 'One', codeRefs: [], testRefs: [] },
@@ -150,7 +161,8 @@ test('X03 assumptions remain unresolved data and reject malformed or authority-b
   const criterion = { id: 'REQ-1', text: 'Known requirement', codeRefs: [], testRefs: [] };
   const base = { schema: PROJECT_BRIEF_SCHEMA, purpose: '', inputs: [], outputs: [],
     boundaryCases: [], acceptanceCriteria: [criterion], openAssumptions: [], requiredCapabilities: [] };
-  const wrap = (brief) => JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, brief, project });
+  const wrap = (brief) => JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, brief,
+    scenarioTimeline: null, project });
   const valid = { id: 'ASK-PIN', kind: 'pin', question: 'Which pin is required?', requirementIds: ['REQ-1'] };
   assert.equal(prepareProjectEnvelope(wrap({ ...base, openAssumptions: [valid] }), adapters).ok, true);
   assert.equal(prepareProjectEnvelope(wrap({ ...base, openAssumptions: [{ ...valid, kind: 'bus' }] }), adapters).code,
@@ -167,7 +179,8 @@ test('X04 required capabilities reject status claims, duplicates and unknown req
   const criterion = { id: 'REQ-1', text: 'Known requirement', codeRefs: [], testRefs: [] };
   const base = { schema: PROJECT_BRIEF_SCHEMA, purpose: '', inputs: [], outputs: [], boundaryCases: [],
     acceptanceCriteria: [criterion], openAssumptions: [], requiredCapabilities: [] };
-  const wrap = (brief) => JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, brief, project });
+  const wrap = (brief) => JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, brief,
+    scenarioTimeline: null, project });
   const valid = { id: 'NEED-GPIO', kind: 'peripheral', target: 'gpio', requirementIds: ['REQ-1'] };
   assert.equal(prepareProjectEnvelope(wrap({ ...base, requiredCapabilities: [valid] }), adapters).ok, true);
   assert.equal(prepareProjectEnvelope(wrap({ ...base, requiredCapabilities: [valid, valid] }), adapters).code,
@@ -185,7 +198,7 @@ test('X04 required capabilities reject status claims, duplicates and unknown req
 test('strict failures reject duplicate keys, unknown versions and profile mismatches', () => {
   assert.equal(prepareProjectEnvelope('{"schema":"x","schema":"y"}', adapters).code, 'DUPLICATE_KEY');
   assert.equal(prepareProjectEnvelope('{"schema":"unknown@1"}', adapters).code, 'PROJECT_ENVELOPE_VERSION');
-  const mismatch = { schema: PROJECT_ENVELOPE_SCHEMA, profile, brief: emptyProjectBrief(),
+  const mismatch = { schema: PROJECT_ENVELOPE_SCHEMA, profile, brief: emptyProjectBrief(), scenarioTimeline: null,
     project: { ...project, profile: 'board.other-v1' } };
   assert.equal(prepareProjectEnvelope(JSON.stringify(mismatch), adapters).code, 'PROJECT_ENVELOPE_PROFILE_MISMATCH');
 });

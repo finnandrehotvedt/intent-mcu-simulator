@@ -1,4 +1,4 @@
-# Migration to 1.1.0-rc.41
+# Migration to 1.1.0-rc.43
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
@@ -91,6 +91,13 @@ Rc.40 does not change the common project-file schema or any of the seven action
 contracts. Capability discovery is a transient read-only stdio response. It is
 never stored in a project and cannot restore Build, runtime, Apply or topology
 authority. Existing local projects and rc.39 clients remain compatible.
+
+Rc.43 advances the common wrapper to `intent-mcu-project-envelope@6`. It adds
+one optional, strictly validated data-only AVR thermostat scenario timeline.
+Each authored case stores ordered bounded input events and one explicit D13
+observation window. The actual executed pin and capture time are runtime
+evidence and are never saved. Rc.42/version-5 files open with an empty timeline;
+Open clears every prior result and still requires a fresh source-bound Build.
 
 Existing accepted files remain readable:
 

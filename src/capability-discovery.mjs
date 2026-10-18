@@ -23,7 +23,7 @@ export const CAPABILITY_DISCOVERY_SCHEMA = 'intent-mcu-capability-discovery@1';
 export const CAPABILITY_DISCOVERY_REQUEST_SCHEMA = 'intent-mcu-capability-discovery-request@1';
 export const CAPABILITY_DISCOVERY_RESULT_SCHEMA = 'intent-mcu-capability-discovery-result@1';
 export const CAPABILITY_DISCOVERY_LIMIT = BOUNDED_ACTION_RESULT_LIMIT;
-export const PRODUCT_VERSION = '1.1.0-rc.42';
+export const PRODUCT_VERSION = '1.1.0-rc.43';
 export const PRODUCT_SOURCE = 'https://github.com/finnandrehotvedt/intent-mcu-simulator';
 
 const PROFILE_ORDER = COMPONENT_SUPPORT_PROFILES.map(({ id }) => id);

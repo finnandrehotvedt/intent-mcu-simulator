@@ -2,6 +2,17 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.43 — 2026-10-18
+
+- Added X17's bounded AVR thermostat scenario timeline editor with ordered
+  ideal-temperature/button inputs and one explicit D13 observation window.
+- Advanced the common data-only envelope to version 6; results, actual capture
+  times, runtime state and executable authority remain excluded.
+- Reused the same validated timeline and evaluator in browser and headless
+  execution, including an intentionally wrong expectation caught by both.
+- Preserved correct and known-bad M1 regression behaviour; no X18 general
+  assertion language or X19 reporting was added.
+
 ## 1.1.0-rc.42 — 2026-10-18
 
 - Completed X12 by treating each existing bounded stdio action request as an

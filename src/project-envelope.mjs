@@ -2,9 +2,11 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
+import { normalizeScenarioTimeline } from './scenario-timeline.mjs';
 
-export const PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@5';
-export const PREVIOUS_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@4';
+export const PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@6';
+export const PREVIOUS_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@5';
+export const CAPABILITY_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@4';
 export const ASSUMPTION_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@3';
 export const TRACE_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@2';
 export const LEGACY_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@1';
@@ -279,7 +281,7 @@ function prepare(adapter, value) {
   return { ...result, project: clone(result.project) };
 }
 
-export function canonicalProjectEnvelope(profile, project, adapters, brief = emptyProjectBrief()) {
+export function canonicalProjectEnvelope(profile, project, adapters, brief = emptyProjectBrief(), scenarioTimeline = null) {
   const adapter = adapterForProfile(adapters, profile);
   if (!adapter) throw new Error('PROJECT_ENVELOPE_PROFILE');
   const prepared = prepare(adapter, project);
@@ -287,16 +289,17 @@ export function canonicalProjectEnvelope(profile, project, adapters, brief = emp
     throw new Error('PROJECT_ENVELOPE_PROFILE_MISMATCH');
   }
   return `${JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile,
-    brief: normalizeProjectBrief(brief), project: prepared.project }, null, 2)}\n`;
+    brief: normalizeProjectBrief(brief), scenarioTimeline: normalizeScenarioTimeline(scenarioTimeline, profile),
+    project: prepared.project }, null, 2)}\n`;
 }
 
 export function prepareProjectEnvelope(source, adapters) {
   try {
     const value = parseStrictJson(source, PROJECT_ENVELOPE_LIMIT);
-    let profile; let adapter; let nested; let brief; let legacy = false; let inputSchema;
+    let profile; let adapter; let nested; let brief; let scenarioTimeline = null; let legacy = false; let inputSchema;
     let migrationDefaults = [];
     if (value?.schema === PROJECT_ENVELOPE_SCHEMA) {
-      if (!exactKeys(value, ['schema', 'profile', 'brief', 'project']) || typeof value.profile !== 'string') {
+      if (!exactKeys(value, ['schema', 'profile', 'brief', 'scenarioTimeline', 'project']) || typeof value.profile !== 'string') {
         return failure('PROJECT_ENVELOPE_SHAPE');
       }
       profile = value.profile;
@@ -304,6 +307,7 @@ export function prepareProjectEnvelope(source, adapters) {
       if (!adapter) return failure('PROJECT_ENVELOPE_PROFILE', [profile]);
       nested = value.project;
       brief = normalizeProjectBrief(value.brief);
+      scenarioTimeline = normalizeScenarioTimeline(value.scenarioTimeline, profile);
       inputSchema = PROJECT_ENVELOPE_SCHEMA;
       if (!adapter.schemas?.includes(nested?.schema)) {
         return failure('PROJECT_ENVELOPE_PROFILE_MISMATCH', [profile, nested?.schema ?? null]);
@@ -319,8 +323,23 @@ export function prepareProjectEnvelope(source, adapters) {
       adapter = adapterForProfile(adapters, profile);
       if (!adapter) return failure('PROJECT_ENVELOPE_PROFILE', [profile]);
       nested = value.project;
-      brief = normalizePreviousProjectBrief(value.brief);
+      brief = normalizeProjectBrief(value.brief);
       inputSchema = PREVIOUS_PROJECT_ENVELOPE_SCHEMA;
+      legacy = true;
+      migrationDefaults = ['empty scenario timeline'];
+      if (!adapter.schemas?.includes(nested?.schema) || (nested?.profile && nested.profile !== profile)) {
+        return failure('PROJECT_ENVELOPE_PROFILE_MISMATCH', [profile, nested?.schema ?? nested?.profile ?? null]);
+      }
+    } else if (value?.schema === CAPABILITY_PROJECT_ENVELOPE_SCHEMA) {
+      if (!exactKeys(value, ['schema', 'profile', 'brief', 'project']) || typeof value.profile !== 'string') {
+        return failure('PROJECT_ENVELOPE_SHAPE');
+      }
+      profile = value.profile;
+      adapter = adapterForProfile(adapters, profile);
+      if (!adapter) return failure('PROJECT_ENVELOPE_PROFILE', [profile]);
+      nested = value.project;
+      brief = normalizePreviousProjectBrief(value.brief);
+      inputSchema = CAPABILITY_PROJECT_ENVELOPE_SCHEMA;
       legacy = true;
       migrationDefaults = ['empty required capability list'];
       if (!adapter.schemas?.includes(nested?.schema) || (nested?.profile && nested.profile !== profile)) {
@@ -387,18 +406,21 @@ export function prepareProjectEnvelope(source, adapters) {
       return failure('PROJECT_ENVELOPE_PROFILE_MISMATCH', [profile, prepared.project.profile]);
     }
     const canonical = `${JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile,
-      brief: normalizeProjectBrief(brief), project: prepared.project }, null, 2)}\n`;
+      brief: normalizeProjectBrief(brief), scenarioTimeline: normalizeScenarioTimeline(scenarioTimeline, profile),
+      project: prepared.project }, null, 2)}\n`;
     const reparsed = parseStrictJson(canonical, PROJECT_ENVELOPE_LIMIT);
     if (reparsed.schema !== PROJECT_ENVELOPE_SCHEMA || reparsed.profile !== profile) {
       throw new Error('PROJECT_ENVELOPE_CANONICAL');
     }
     return {
       ok: true, code: legacy ? 'PROJECT_ENVELOPE_MIGRATED' : 'OK', profile,
-      project: clone(prepared.project), brief: clone(brief), prepared: prepared.prepared ?? null, canonical,
+      project: clone(prepared.project), brief: clone(brief), scenarioTimeline: clone(scenarioTimeline),
+      prepared: prepared.prepared ?? null, canonical,
       report: {
         inputSchema, outputSchema: PROJECT_ENVELOPE_SCHEMA, profile, legacy,
         preserved: [...(prepared.preserved ?? ['source', 'circuit', 'layout', 'properties', 'controls']),
-          'brief purpose/inputs/outputs/boundary cases/acceptance criteria/open assumptions/required capabilities'],
+          'brief purpose/inputs/outputs/boundary cases/acceptance criteria/open assumptions/required capabilities',
+          ...(scenarioTimeline ? ['scenario timeline'] : [])],
         defaultsAdded: [...(prepared.defaultsAdded ?? []), ...migrationDefaults],
         executableAuthorityCleared: true,
       },

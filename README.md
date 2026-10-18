@@ -61,8 +61,14 @@ npm run experiment:headless -- ./Thermostat-boundary-test.intent-mcu.json
 The runner strictly reopens and electrically validates the data-only file,
 compiles its exact source afresh through the fixed existing compiler contract,
 executes the returned Intel HEX directly in the shared Node/avr8js runtime,
-and delegates all three scenario verdicts to the existing M1 evaluator. It
+and delegates fixed M1 or saved X17 scenario verdicts to the shared evaluator. It
 never accepts executable bytes or a prior verdict from the file.
+
+The thermostat workbench can also save an X17 data-only scenario timeline.
+Its bounded editor supports ordered ideal-temperature/button inputs and one
+explicit D13 observation window per case. The browser and headless runner use
+the same validated timeline and shared evaluator; each reports the actual
+capture time, and an expected value never becomes observed evidence.
 
 This source release supports only the exact AVR thermostat experiment.
 Headless Pico, ESP32-C3 and STM32 execution is explicitly unavailable; their

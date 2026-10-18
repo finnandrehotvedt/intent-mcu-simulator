@@ -71,6 +71,9 @@ import {
   thermostatFirmwareVariant,
 } from '../src/thermostat-experiment.mjs';
 import {
+  ScenarioTimelineEditor, defaultThermostatScenarioTimeline, scenarioTimelineControls,
+} from '../src/scenario-timeline.mjs';
+import {
   AVR_PROFILE,
   ESP32C3_PROFILE,
   RP2040_PROFILE,
@@ -232,6 +235,8 @@ const elements = Object.fromEntries([
   'canvas-select-mode', 'canvas-interact-mode',
   'thermostat-experiment', 'thermostat-experiment-state', 'thermostat-run-tests',
   'thermostat-load-bad', 'thermostat-restore', 'thermostat-results', 'thermostat-experiment-message',
+  'scenario-editor', 'scenario-add', 'scenario-undo', 'scenario-redo', 'scenario-run',
+  'scenario-list', 'scenario-editor-message',
   'starter-examples', 'starter-gallery', 'quick-controls', 'workbench-workspace', 'project-bar',
   'family-select', 'board-select', 'controller-status', 'toolchain-boundary',
   'controller-workbench', 'controller-workbench-eyebrow', 'controller-workbench-title', 'controller-workbench-badge',
@@ -358,6 +363,8 @@ let canvasInteractionMode = 'select';
 let activeCanvasButton = null;
 let thermostatExperimentRun = null;
 let thermostatExperimentResults = [];
+let authoredScenarioResults = [];
+let scenarioTimelineEditor = null;
 let thermostatExperimentNotice = 'Build this exact local project before running the experiment.';
 const characterLcdRuntime = new Map();
 const publicPreviewControlStates = new Map();
@@ -2010,6 +2017,183 @@ function thermostatRuntimeReady() {
     && ['ready', 'paused'].includes(lifecycle.phase)
     && loadedSourceIdentity === buildInputIdentity();
 }
+function nextScenarioId() {
+  const used = new Set(scenarioTimelineEditor?.timeline.scenarios.map((item) => item.id) ?? []);
+  for (let index = 1; index <= 999; index += 1) {
+    const id = `USER-SCENARIO-${index}`;
+    if (!used.has(id)) return id;
+  }
+  throw new Error('SCENARIO_ID_LIMIT');
+}
+function nextScenarioEventId(scenario) {
+  const used = new Set(scenario.events.map((item) => item.id));
+  for (let index = 1; index <= 999; index += 1) {
+    const id = `USER-EVENT-${index}`;
+    if (!used.has(id)) return id;
+  }
+  throw new Error('SCENARIO_EVENT_ID_LIMIT');
+}
+function authoredScenarioTemplate() {
+  const id = nextScenarioId();
+  return { id, name: 'New authored case', events: [
+    { id: `${id}-TEMP`, atMilliseconds: 0, kind: 'input.temperature-c',
+      componentId: 'temperature-sensor-1', valueC: 31 },
+    { id: `${id}-BUTTON`, atMilliseconds: 0, kind: 'input.button-pressed',
+      componentId: 'enable-button-1', pressed: true },
+    { id: `${id}-D13`, atMilliseconds: 160, throughMilliseconds: 350,
+      kind: 'expect.pin-level', pin: 'D13', level: false },
+  ] };
+}
+function scenarioControl(label, value, onChange, options = {}) {
+  const wrapper = document.createElement('label'); wrapper.textContent = label;
+  let control;
+  if (options.values) {
+    control = document.createElement('select');
+    for (const [optionValue, text] of options.values) {
+      const option = document.createElement('option'); option.value = optionValue; option.textContent = text;
+      control.append(option);
+    }
+    control.value = String(value);
+  } else {
+    control = document.createElement('input'); control.type = options.type ?? 'text'; control.value = String(value);
+    if (options.min !== undefined) control.min = String(options.min);
+    if (options.max !== undefined) control.max = String(options.max);
+    if (options.step !== undefined) control.step = String(options.step);
+  }
+  if (options.focusId) control.dataset.scenarioFocus = options.focusId;
+  control.setAttribute('aria-label', options.ariaLabel ?? label);
+  control.disabled = Boolean(thermostatExperimentRun);
+  control.addEventListener('change', () => onChange(control.value, control));
+  wrapper.append(control); return wrapper;
+}
+function applyScenarioTimelineCommand(command, { focusId = null } = {}) {
+  if (!scenarioTimelineEditor) scenarioTimelineEditor = new ScenarioTimelineEditor(defaultThermostatScenarioTimeline());
+  const result = scenarioTimelineEditor.dispatch(command);
+  if (!result.ok) {
+    const location = result.details?.length ? ` Location: ${result.details.join(', ')}.` : '';
+    elements.scenarioeditormessage.textContent = `Timeline edit rejected (${result.code}).${location} The accepted timeline is unchanged.`;
+    renderScenarioTimelineEditor();
+    if (focusId) requestAnimationFrame(() => elements.scenariolist.querySelector(
+      `[data-scenario-focus="${CSS.escape(focusId)}"]`,
+    )?.focus());
+    return result;
+  }
+  authoredScenarioResults = [];
+  persistProject();
+  elements.scenarioeditormessage.textContent = 'Timeline updated as data only. Prior authored results were cleared; the matching firmware artifact remains available.';
+  renderScenarioTimelineEditor();
+  renderThermostatExperimentPanel();
+  if (focusId) requestAnimationFrame(() => elements.scenariolist.querySelector(
+    `[data-scenario-focus="${CSS.escape(focusId)}"]`,
+  )?.focus());
+  return result;
+}
+function renderScenarioTimelineEditor() {
+  const active = thermostatProjectActive();
+  elements.scenarioeditor.hidden = !active;
+  if (!active) return;
+  const timeline = scenarioTimelineEditor?.timeline ?? null;
+  const running = Boolean(thermostatExperimentRun);
+  elements.scenarioadd.disabled = running;
+  elements.scenarioundo.disabled = running || !scenarioTimelineEditor?.undoStack.length;
+  elements.scenarioredo.disabled = running || !scenarioTimelineEditor?.redoStack.length;
+  elements.scenariorun.disabled = running || !timeline || !thermostatRuntimeReady()
+    || thermostatFirmwareVariant(currentProject()) === 'modified';
+  elements.scenarioadd.textContent = timeline ? 'Add scenario' : 'Create editable timeline';
+  if (!timeline) {
+    const empty = document.createElement('p'); empty.className = 'scenario-empty';
+    empty.textContent = 'This older project has no authored timeline. Create one from the reviewed boundary cases; firmware is unchanged.';
+    elements.scenariolist.replaceChildren(empty); return;
+  }
+  const cards = timeline.scenarios.map((scenario, scenarioIndex) => {
+    const card = document.createElement('article'); card.className = 'scenario-card'; card.dataset.scenarioId = scenario.id;
+    const heading = document.createElement('div'); heading.className = 'scenario-card-heading';
+    const nameFocus = `${scenario.id}-name`;
+    const title = scenarioControl(`Scenario ${scenarioIndex + 1}`, scenario.name, (name) => {
+      applyScenarioTimelineCommand({ type: 'scenario.rename', scenarioId: scenario.id, name }, { focusId: nameFocus });
+    }, { focusId: nameFocus, ariaLabel: `Scenario ${scenarioIndex + 1} name` });
+    const removeScenario = document.createElement('button'); removeScenario.type = 'button'; removeScenario.textContent = 'Delete scenario';
+    removeScenario.disabled = running || timeline.scenarios.length === 1;
+    removeScenario.addEventListener('click', () => applyScenarioTimelineCommand({ type: 'scenario.delete', scenarioId: scenario.id }));
+    heading.append(title, removeScenario); card.append(heading);
+    const events = document.createElement('ol'); events.className = 'scenario-events';
+    for (const event of scenario.events) {
+      const item = document.createElement('li'); item.className = `scenario-event ${event.kind.replaceAll('.', '-')}`;
+      item.dataset.eventId = event.id;
+      const kind = document.createElement('strong');
+      kind.textContent = event.kind === 'input.temperature-c' ? 'Temperature input'
+        : event.kind === 'input.button-pressed' ? 'Button input' : 'Expected D13 (window)';
+      const timeFocus = `${event.id}-time`;
+      const time = scenarioControl(event.kind === 'expect.pin-level' ? 'From ms' : 'At ms', event.atMilliseconds, (raw) => {
+        applyScenarioTimelineCommand({ type: 'event.update', scenarioId: scenario.id, eventId: event.id,
+          event: { ...event, atMilliseconds: Number(raw) } }, { focusId: timeFocus });
+      }, { type: 'number', min: event.kind === 'expect.pin-level' ? 160 : 0, max: event.kind === 'expect.pin-level' ? 350 : 300, step: 1,
+        focusId: timeFocus, ariaLabel: `${event.id} virtual time in milliseconds` });
+      let value;
+      const valueFocus = `${event.id}-value`;
+      if (event.kind === 'input.temperature-c') value = scenarioControl('Module °C', event.valueC, (raw) => {
+        applyScenarioTimelineCommand({ type: 'event.update', scenarioId: scenario.id, eventId: event.id,
+          event: { ...event, valueC: Number(raw) } }, { focusId: valueFocus });
+      }, { type: 'number', min: -50, max: 150, step: 1, focusId: valueFocus,
+        ariaLabel: `${event.id} ideal module temperature in degrees Celsius` });
+      else if (event.kind === 'input.button-pressed') value = scenarioControl('Contact', event.pressed, (raw) => {
+        applyScenarioTimelineCommand({ type: 'event.update', scenarioId: scenario.id, eventId: event.id,
+          event: { ...event, pressed: raw === 'true' } }, { focusId: valueFocus });
+      }, { values: [['true', 'Pressed · D2 LOW'], ['false', 'Released · D2 HIGH']], focusId: valueFocus,
+        ariaLabel: `${event.id} button contact state` });
+      else value = scenarioControl('D13 must be', event.level, (raw) => {
+        applyScenarioTimelineCommand({ type: 'event.update', scenarioId: scenario.id, eventId: event.id,
+          event: { ...event, level: raw === 'true' } }, { focusId: valueFocus });
+      }, { values: [['true', 'HIGH'], ['false', 'LOW']], focusId: valueFocus,
+        ariaLabel: `${event.id} expected D13 level` });
+      let windowEnd = null;
+      if (event.kind === 'expect.pin-level') {
+        const endFocus = `${event.id}-window-end`;
+        windowEnd = scenarioControl('Through ms', event.throughMilliseconds, (raw) => {
+          applyScenarioTimelineCommand({ type: 'event.update', scenarioId: scenario.id, eventId: event.id,
+            event: { ...event, throughMilliseconds: Number(raw) } }, { focusId: endFocus });
+        }, { type: 'number', min: event.atMilliseconds, max: 350, step: 1,
+          focusId: endFocus, ariaLabel: `${event.id} observation window end in milliseconds` });
+      }
+      const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Delete event';
+      remove.disabled = running;
+      remove.addEventListener('click', () => applyScenarioTimelineCommand({ type: 'event.delete',
+        scenarioId: scenario.id, eventId: event.id }));
+      item.append(kind, time, ...(windowEnd ? [windowEnd] : []), value, remove); events.append(item);
+    }
+    card.append(events);
+    const addInputs = document.createElement('div'); addInputs.className = 'scenario-add-events';
+    for (const [kind, label] of [['input.temperature-c', 'Add temperature event'], ['input.button-pressed', 'Add button event']]) {
+      const button = document.createElement('button'); button.type = 'button'; button.textContent = label; button.disabled = running;
+      button.addEventListener('click', () => {
+        const id = nextScenarioEventId(scenario);
+        const usedTimes = new Set(scenario.events.filter((item) => item.kind === kind)
+          .map((item) => item.atMilliseconds));
+        const atMilliseconds = Array.from({ length: scenario.events.at(-1).atMilliseconds }, (_, index) => index)
+          .find((candidate) => !usedTimes.has(candidate));
+        if (atMilliseconds === undefined) {
+          elements.scenarioeditormessage.textContent = 'Timeline edit rejected (SCENARIO_INPUT_SLOT_LIMIT). No unique input time remains before the observation point.';
+          return;
+        }
+        const event = kind === 'input.temperature-c'
+          ? { id, atMilliseconds, kind, componentId: 'temperature-sensor-1', valueC: 31 }
+          : { id, atMilliseconds, kind, componentId: 'enable-button-1', pressed: true };
+        applyScenarioTimelineCommand({ type: 'event.add', scenarioId: scenario.id, event });
+      });
+      addInputs.append(button);
+    }
+    const result = authoredScenarioResults.find((item) => item.scenarioId === scenario.id);
+    const evidence = document.createElement('p'); evidence.className = result?.status === 'passed'
+      ? 'scenario-result pass' : result?.status === 'failed' ? 'scenario-result fail' : 'scenario-result';
+    const observedLevel = result?.observed.level === true ? 'HIGH'
+      : result?.observed.level === false ? 'LOW' : 'missing';
+    evidence.textContent = result
+      ? `${result.status === 'passed' ? 'PASS' : 'FAIL'} · expected D13 ${result.expected.level ? 'HIGH' : 'LOW'} during ${result.expected.observationWindow.startMilliseconds}–${result.expected.observationWindow.endMilliseconds} ms · actually observed D13 ${observedLevel} at ${result.virtualMilliseconds.toFixed(3)} ms · ${result.checks.inputsComplete ? 'timed inputs logged' : 'input evidence missing'}`
+      : 'Not run · no observed result';
+    card.append(addInputs, evidence); return card;
+  });
+  elements.scenariolist.replaceChildren(...cards);
+}
 function thermostatKnownBadCaught() {
   if (thermostatExperimentResults.length !== THERMOSTAT_SCENARIOS.scenarios.length) return false;
   return thermostatExperimentResults.every((result) => (
@@ -2029,6 +2213,8 @@ function thermostatPublishedState() {
     phase: thermostatExperimentRun?.phase ?? 'idle',
     scenarioIndex: thermostatExperimentRun?.scenarioIndex ?? null,
     results: structuredClone(thermostatExperimentResults),
+    authoredTimeline: scenarioTimelineEditor?.timeline ?? null,
+    authoredResults: structuredClone(authoredScenarioResults),
     knownBadCaught: thermostatKnownBadCaught(),
     freshBuildReady: thermostatRuntimeReady(),
   };
@@ -2037,6 +2223,7 @@ function renderThermostatExperimentPanel() {
   const active = thermostatProjectActive();
   elements.thermostatexperiment.hidden = !active;
   if (!active) {
+    renderScenarioTimelineEditor();
     publish({ thermostatExperiment: thermostatPublishedState() });
     return;
   }
@@ -2052,6 +2239,7 @@ function renderThermostatExperimentPanel() {
     elements.quickpause.disabled = true;
     elements.quickreset.disabled = true;
   }
+  renderScenarioTimelineEditor();
 
   for (const [index, scenario] of THERMOSTAT_SCENARIOS.scenarios.entries()) {
     const row = elements.thermostatresults.querySelector(`[data-scenario="${scenario.id}"]`);
@@ -2070,7 +2258,9 @@ function renderThermostatExperimentPanel() {
   }
 
   if (runActive) {
-    elements.thermostatexperimentstate.textContent = `Scenario ${thermostatExperimentRun.scenarioIndex + 1}/3`;
+    const total = thermostatExperimentRun.authored
+      ? scenarioTimelineEditor.timeline.scenarios.length : THERMOSTAT_SCENARIOS.scenarios.length;
+    elements.thermostatexperimentstate.textContent = `${thermostatExperimentRun.authored ? 'Authored ' : ''}scenario ${thermostatExperimentRun.scenarioIndex + 1}/${total}`;
   } else if (thermostatKnownBadCaught() && variant === 'known-bad-equality') {
     elements.thermostatexperimentstate.textContent = 'Known-bad caught';
   } else if (thermostatExperimentResults.length === THERMOSTAT_SCENARIOS.scenarios.length) {
@@ -2084,9 +2274,31 @@ function renderThermostatExperimentPanel() {
 }
 function cancelThermostatExperiment(message, { clearResults = true, render = true } = {}) {
   thermostatExperimentRun = null;
-  if (clearResults) thermostatExperimentResults = [];
+  if (clearResults) { thermostatExperimentResults = []; authoredScenarioResults = []; }
   if (message) thermostatExperimentNotice = message;
   if (render) renderThermostatExperimentPanel();
+}
+function startAuthoredScenarioExperiment() {
+  if (!scenarioTimelineEditor) {
+    elements.scenarioeditormessage.textContent = 'Create an editable timeline before running it.';
+    return { ok: false, code: 'SCENARIO_TIMELINE_REQUIRED' };
+  }
+  if (!thermostatRuntimeReady()) {
+    elements.scenarioeditormessage.textContent = 'Build this exact local project before running the authored timeline.';
+    renderScenarioTimelineEditor();
+    return { ok: false, code: 'THERMOSTAT_FRESH_BUILD_REQUIRED' };
+  }
+  const variant = thermostatFirmwareVariant(currentProject());
+  if (!['correct', 'known-bad-equality'].includes(variant)) {
+    elements.scenarioeditormessage.textContent = 'The source no longer matches a supported experiment variant.';
+    return { ok: false, code: 'THERMOSTAT_SOURCE_MODIFIED' };
+  }
+  authoredScenarioResults = [];
+  thermostatExperimentRun = { phase: 'await-reset', scenarioIndex: 0, variant, authored: true };
+  thermostatExperimentNotice = 'Running the authored data-only timeline from fresh reset. Expected events are compared with executed D13 evidence.';
+  worker.postMessage({ command: 'reset' });
+  renderThermostatExperimentPanel();
+  return { ok: true, code: 'SCENARIO_TIMELINE_STARTED' };
 }
 function startThermostatExperiment() {
   if (!thermostatRuntimeReady()) {
@@ -2101,7 +2313,7 @@ function startThermostatExperiment() {
     return { ok: false, code: 'THERMOSTAT_SOURCE_MODIFIED' };
   }
   thermostatExperimentResults = [];
-  thermostatExperimentRun = { phase: 'await-reset', scenarioIndex: 0, variant };
+  thermostatExperimentRun = { phase: 'await-reset', scenarioIndex: 0, variant, authored: false };
   thermostatExperimentNotice = 'Running three isolated scenarios from virtual cycle 0. Wall-clock speed does not affect the verdict.';
   worker.postMessage({ command: 'reset' });
   renderThermostatExperimentPanel();
@@ -2114,7 +2326,8 @@ async function advanceThermostatExperiment(message) {
     cancelThermostatExperiment(`Experiment unresolved: ${message.message ?? 'runtime error'}. Nothing was marked passed.`, { clearResults: false, render: false });
     return;
   }
-  const scenario = THERMOSTAT_SCENARIOS.scenarios[run.scenarioIndex];
+  const scenarios = run.authored ? scenarioTimelineEditor?.timeline.scenarios : THERMOSTAT_SCENARIOS.scenarios;
+  const scenario = scenarios?.[run.scenarioIndex];
   if (!scenario) {
     cancelThermostatExperiment('Experiment unresolved: scenario contract was unavailable.', { clearResults: false, render: false });
     return;
@@ -2122,15 +2335,16 @@ async function advanceThermostatExperiment(message) {
   if (run.phase === 'await-reset') {
     if (message.cycle !== 0 || !message.paused || !['reset', 'ready'].includes(message.kind)) return;
     run.phase = 'await-controls';
-    for (const control of thermostatScenarioControls(scenario.id)) worker.postMessage(control);
+    const controls = run.authored ? scenarioTimelineControls(scenario) : thermostatScenarioControls(scenario.id);
+    for (const control of controls) worker.postMessage(control);
     return;
   }
   if (run.phase === 'await-controls') {
-    const required = thermostatScenarioControls(scenario.id);
+    const required = run.authored ? scenarioTimelineControls(scenario) : thermostatScenarioControls(scenario.id);
     const logged = message.eventLog?.log?.filter((event) => event.type === 'control') ?? [];
     const complete = message.eventLog?.dropped === 0 && required.every((control) => logged.some(
       (event) => event.componentId === control.componentId && event.key === control.key
-        && event.value === control.value && event.targetCycle === 0,
+        && event.value === control.value && event.targetCycle === (control.targetCycle ?? 0),
     ));
     if (!complete) return;
     const accepted = applyLifecycle({ type: 'runtime.run' });
@@ -2145,7 +2359,9 @@ async function advanceThermostatExperiment(message) {
   }
   if (run.phase === 'running') {
     const virtualMilliseconds = message.cycle / THERMOSTAT_TIME.clockHertz * 1000;
-    if (virtualMilliseconds < THERMOSTAT_TIME.observeAtOrAfterMilliseconds) return;
+    const observeAt = run.authored ? scenario.events.at(-1).atMilliseconds
+      : THERMOSTAT_TIME.observeAtOrAfterMilliseconds;
+    if (virtualMilliseconds < observeAt) return;
     run.phase = 'await-pause';
     const paused = applyLifecycle({ type: 'runtime.pause' });
     if (!paused.accepted) {
@@ -2163,7 +2379,8 @@ async function advanceThermostatExperiment(message) {
     eventLog: message.eventLog,
     instruments: { serial: message.instruments?.serial },
   };
-  const request = domainRequest('evaluate-thermostat-observation', commonProjectText(AVR_PROFILE),
+  const request = domainRequest(run.authored
+    ? 'evaluate-scenario-timeline-observation' : 'evaluate-thermostat-observation', commonProjectText(AVR_PROFILE),
     { scenarioId: scenario.id, snapshot: observationSnapshot });
   const domainResult = await executeDomainRequest(request, commonProjectAdapters, AVR_PROFILE, 'ui');
   lastSharedDomainTest = { request, result: structuredClone(domainResult) };
@@ -2173,8 +2390,8 @@ async function advanceThermostatExperiment(message) {
     return;
   }
   const result = domainResult.observation;
-  thermostatExperimentResults.push(result);
-  if (run.scenarioIndex + 1 < THERMOSTAT_SCENARIOS.scenarios.length) {
+  if (run.authored) authoredScenarioResults.push(result); else thermostatExperimentResults.push(result);
+  if (run.scenarioIndex + 1 < scenarios.length) {
     run.scenarioIndex += 1;
     run.phase = 'await-reset';
     worker.postMessage({ command: 'reset' });
@@ -2182,8 +2399,11 @@ async function advanceThermostatExperiment(message) {
     return;
   }
   thermostatExperimentRun = null;
-  const passed = thermostatExperimentResults.filter((item) => item.status === 'passed').length;
-  thermostatExperimentNotice = run.variant === 'known-bad-equality' && thermostatKnownBadCaught()
+  const completedResults = run.authored ? authoredScenarioResults : thermostatExperimentResults;
+  const passed = completedResults.filter((item) => item.status === 'passed').length;
+  thermostatExperimentNotice = run.authored
+    ? `${passed}/${scenarios.length} authored scenarios passed from executed D13 and complete timed-input evidence.`
+    : run.variant === 'known-bad-equality' && thermostatKnownBadCaught()
     ? 'Known-bad firmware caught: the equality scenario executed D13 HIGH and reported HEAT, while the other two scenarios passed.'
     : passed === THERMOSTAT_SCENARIOS.scenarios.length
       ? '3/3 passed from executed D13, matching UART and complete virtual-cycle input evidence.'
@@ -2661,6 +2881,15 @@ const commonProjectAdapters = Object.freeze({
     electrical: (result) => validateStm32Circuit(result.project.circuit),
   }),
 });
+function parseAvrRecoverySource(source) {
+  const common = prepareProjectEnvelope(source, commonProjectAdapters);
+  if (common.ok && common.profile === AVR_PROFILE) {
+    return { ok: true, code: common.code, session: common.prepared,
+      scenarioTimeline: common.scenarioTimeline, report: common.report };
+  }
+  const legacy = parseEditorSource(source);
+  return legacy.ok ? { ...legacy, scenarioTimeline: null } : common;
+}
 function profileProjectDocument(profile) {
   if (profile === AVR_PROFILE) return JSON.parse(currentProjectText());
   if (profile === RP2040_PROFILE) return picoPublicWorkbench.projectDocument();
@@ -2679,7 +2908,7 @@ function commonProjectFilename(profile) {
 }
 function commonProjectText(profile) {
   return canonicalProjectEnvelope(profile, profileProjectDocument(profile), commonProjectAdapters,
-    projectBriefForProfile(profile));
+    projectBriefForProfile(profile), profile === AVR_PROFILE ? scenarioTimelineEditor?.timeline ?? null : null);
 }
 function legacyProjectText(profile) {
   return `${JSON.stringify(profileProjectDocument(profile), null, 2)}\n`;
@@ -2848,6 +3077,9 @@ function installPreparedProjectEnvelope(result, handle = null) {
   }
   if (result.profile === AVR_PROFILE) {
     editor = result.prepared;
+    scenarioTimelineEditor = result.scenarioTimeline
+      ? new ScenarioTimelineEditor(result.scenarioTimeline) : null;
+    authoredScenarioResults = [];
     installProjectGeneration({
       empty: currentProject().circuit.components.length === 0, reason: 'project.file-open',
       runtimeMessage: 'Opened project requires build',
@@ -3552,7 +3784,7 @@ function toggleFavorite(type, { restoreFocus = false } = {}) {
 }
 function persistProject(message = null) {
   try {
-    const text = currentProjectText();
+    const text = commonProjectText(AVR_PROFILE);
     if (new TextEncoder().encode(text).length > 4 * 1024 * 1024) throw new Error('STORAGE_PROJECT_LIMIT');
     localStorage.setItem(PROJECT_RECOVERY_KEY, text);
     localStorage.setItem(PROJECT_STORAGE_KEY, text);
@@ -5962,6 +6194,22 @@ elements.reset.addEventListener('click', () => {
 elements.thermostatruntests.addEventListener('click', startThermostatExperiment);
 elements.thermostatloadbad.addEventListener('click', () => loadThermostatFirmwareVariant('known-bad-equality'));
 elements.thermostatrestore.addEventListener('click', () => loadThermostatFirmwareVariant('correct'));
+elements.scenarioadd.addEventListener('click', () => {
+  if (!scenarioTimelineEditor) {
+    scenarioTimelineEditor = new ScenarioTimelineEditor(defaultThermostatScenarioTimeline());
+    authoredScenarioResults = [];
+    persistProject();
+    elements.scenarioeditormessage.textContent = 'Editable timeline created. Firmware and its loaded artifact identity were not changed.';
+    renderThermostatExperimentPanel();
+    requestAnimationFrame(() => elements.scenariolist.querySelector('input')?.focus());
+    return;
+  }
+  const scenario = authoredScenarioTemplate();
+  applyScenarioTimelineCommand({ type: 'scenario.add', scenario }, { focusId: `${scenario.id}-name` });
+});
+elements.scenarioundo.addEventListener('click', () => applyScenarioTimelineCommand({ type: 'undo' }));
+elements.scenarioredo.addEventListener('click', () => applyScenarioTimelineCommand({ type: 'redo' }));
+elements.scenariorun.addEventListener('click', startAuthoredScenarioExperiment);
 elements.speed.addEventListener('change', () => {
   const speed = elements.speed.value === 'maximum' ? 'maximum' : Number(elements.speed.value);
   elements.requestedspeed.textContent = speed === 'maximum' ? 'Maximum' : `${speed}×`;
@@ -6304,6 +6552,7 @@ elements.redo.addEventListener('click', () => applyEditor({ type: 'redo' }, 'Red
 
 function createNewAvrProject() {
   editor = new ProjectEditorReducer(createEmptyProject());
+  scenarioTimelineEditor = null; authoredScenarioResults = [];
   installProjectGeneration({ empty: true, reason: 'project.new', runtimeMessage: 'New empty project — build required' });
   selectedSourceFile = 'main.ino';
   clearProjectFileConnection(AVR_PROFILE);
@@ -6333,6 +6582,7 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
       return parsed;
     }
     editor = parsed.session;
+    scenarioTimelineEditor = null; authoredScenarioResults = [];
     installProjectGeneration({ empty: false, reason, runtimeMessage: `${example.name} loaded — build required` });
     selectedSourceFile = 'main.ino';
     elements.exampleselect.value = exampleId;
@@ -6357,6 +6607,8 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
       return parsed;
     }
     editor = parsed.session;
+    scenarioTimelineEditor = new ScenarioTimelineEditor(defaultThermostatScenarioTimeline());
+    authoredScenarioResults = [];
     installProjectGeneration({
       empty: false, reason, runtimeMessage: `${example.name} loaded — build required`,
     });
@@ -6384,6 +6636,7 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
       return parsed;
     }
     editor = parsed.session;
+    scenarioTimelineEditor = null; authoredScenarioResults = [];
     installProjectGeneration({
       empty: false, reason, runtimeMessage: `${example.name} loaded — build required`,
     });
@@ -6543,12 +6796,15 @@ elements.projectname.addEventListener('change', () => {
   const result = applyEditor({ type: 'project.rename', name: elements.projectname.value }, 'Project renamed');
   if (!result.ok) elements.projectname.value = currentProject().metadata.name;
 });
-elements.recoveryexport.addEventListener('click', () => downloadText('intent-mcu-recovery.json', currentProjectText(), 'application/json'));
+elements.recoveryexport.addEventListener('click', () => downloadText('intent-mcu-recovery.json', commonProjectText(AVR_PROFILE), 'application/json'));
 elements.projectreload.addEventListener('click', () => {
   const recovery = localStorage.getItem(PROJECT_RECOVERY_KEY);
-  const stored = recovery ?? localStorage.getItem(PROJECT_STORAGE_KEY); const parsed = stored ? parseEditorSource(stored) : { ok: false, code: 'NO_LOCAL_SAVE' };
+  const stored = recovery ?? localStorage.getItem(PROJECT_STORAGE_KEY); const parsed = stored ? parseAvrRecoverySource(stored) : { ok: false, code: 'NO_LOCAL_SAVE' };
   if (!parsed.ok) { showActionableError(elements.projectmessage, parsed.code, 'Reload validation failed.'); return; }
   editor = parsed.session;
+  scenarioTimelineEditor = parsed.scenarioTimeline
+    ? new ScenarioTimelineEditor(parsed.scenarioTimeline) : null;
+  authoredScenarioResults = [];
   installProjectGeneration({
     empty: editor.project.circuit.components.length === 0, reason: 'project.reload',
     runtimeMessage: 'Reloaded project requires build',
@@ -6778,10 +7034,13 @@ syncControllerSelectors(selectedCompilerProfile);
 
 let stored = null; let recoveryStored = null;
 try { stored = localStorage.getItem(PROJECT_STORAGE_KEY); recoveryStored = localStorage.getItem(PROJECT_RECOVERY_KEY); } catch { /* storage denial is recoverable */ }
-const recoveryRestored = recoveryStored ? parseEditorSource(recoveryStored) : null;
-const currentRestored = stored ? parseEditorSource(stored) : null;
+const recoveryRestored = recoveryStored ? parseAvrRecoverySource(recoveryStored) : null;
+const currentRestored = stored ? parseAvrRecoverySource(stored) : null;
 const restored = recoveryRestored?.ok ? recoveryRestored : currentRestored;
 editor = restored?.ok ? restored.session : new ProjectEditorReducer(createEmptyProject());
+scenarioTimelineEditor = restored?.scenarioTimeline
+  ? new ScenarioTimelineEditor(restored.scenarioTimeline) : null;
+authoredScenarioResults = [];
 lifecycle = createLifecycleState({ empty: currentProject().circuit.components.length === 0 });
 if (restored?.ok) persistProject();
 const workspace = document.querySelector('.workspace');

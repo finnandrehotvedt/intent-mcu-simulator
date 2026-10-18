@@ -12,6 +12,7 @@ import {
 import {
   THERMOSTAT_EXPERIMENT_ID, THERMOSTAT_SCENARIOS, THERMOSTAT_TIME, thermostatScenarioControls,
 } from './thermostat-experiment-contract.mjs';
+import { scenarioTimelineControls } from './scenario-timeline.mjs';
 
 export const HEADLESS_EXPERIMENT_RESULT_SCHEMA = 'intent-mcu-headless-experiment-result@1';
 export const HEADLESS_SUPPORTED_PROFILES = Object.freeze(['board.atmega328p-16mhz-v1']);
@@ -57,6 +58,7 @@ export async function prepareSavedHeadlessExperiment(projectText) {
     experimentId: THERMOSTAT_EXPERIMENT_ID, firmwareVariant,
     project: clone(prepared.project), canonicalProjectText: prepared.canonical,
     runtimeProject: clone(prepared.prepared.runtimeProject),
+    scenarioTimeline: clone(prepared.scenarioTimeline),
     projectSha256: sha256(prepared.canonical),
     sourceDigest: sourceDigest(buildRequest), buildRequest,
     authorityRestoredFromFile: false,
@@ -65,17 +67,23 @@ export async function prepareSavedHeadlessExperiment(projectText) {
 
 async function executeCompiledThermostat(prepared, artifact) {
   const observations = [];
-  for (const scenario of THERMOSTAT_SCENARIOS.scenarios) {
+  const authored = prepared.scenarioTimeline?.scenarios ?? null;
+  for (const scenario of authored ?? THERMOSTAT_SCENARIOS.scenarios) {
     const runtime = new RuntimeKernel(artifact.artifact.hex, prepared.runtimeProject.circuit, {
       speed: 'maximum', logicChannels: ['D2', 'D13'], selectedPin: 'D13',
     });
-    for (const control of thermostatScenarioControls(scenario.id)) {
+    const controls = authored ? scenarioTimelineControls(scenario)
+      : thermostatScenarioControls(scenario.id).map((control) => ({ ...control, targetCycle: 0 }));
+    for (const control of controls) {
+      runtime.runUntilCycle(control.targetCycle);
       runtime.queueControl(control.componentId, control.key, control.value);
     }
-    runtime.runUntilCycle(THERMOSTAT_TIME.observeAtOrAfterMilliseconds * 16_000);
+    const observationMilliseconds = authored ? scenario.events.at(-1).atMilliseconds
+      : THERMOSTAT_TIME.observeAtOrAfterMilliseconds;
+    runtime.runUntilCycle(observationMilliseconds * 16_000);
     const snapshot = runtime.snapshot();
     const evaluated = await executeDomainRequest(domainRequest(
-      'evaluate-thermostat-observation', prepared.canonicalProjectText,
+      authored ? 'evaluate-scenario-timeline-observation' : 'evaluate-thermostat-observation', prepared.canonicalProjectText,
       { scenarioId: scenario.id, snapshot: {
         cycle: snapshot.cycle, pins: snapshot.pins, eventLog: snapshot.eventLog,
         instruments: { serial: snapshot.instruments.serial },
@@ -101,7 +109,9 @@ export async function runSavedHeadlessExperiment(projectText, {
     if (!SHA256.test(artifact?.inputIdentity) || !SHA256.test(artifact?.artifactIdentity)
         || typeof artifact?.artifact?.hex !== 'string') return failure('HEADLESS_BUILD_RESULT_INVALID');
     const observations = await execute(prepared, artifact);
-    if (!Array.isArray(observations) || observations.length !== THERMOSTAT_SCENARIOS.scenarios.length) {
+    const expectedObservationCount = prepared.scenarioTimeline?.scenarios.length
+      ?? THERMOSTAT_SCENARIOS.scenarios.length;
+    if (!Array.isArray(observations) || observations.length !== expectedObservationCount) {
       return failure('HEADLESS_OBSERVATION_SET_INVALID');
     }
     const primaryObservation = observations.find((item) => item.status === 'failed') ?? observations.at(-1);
@@ -120,6 +130,8 @@ export async function runSavedHeadlessExperiment(projectText, {
       association: {
         projectSha256: prepared.projectSha256,
         sourceDigest: prepared.sourceDigest,
+        scenarioTimelineSha256: prepared.scenarioTimeline
+          ? sha256(JSON.stringify(prepared.scenarioTimeline)) : null,
         compilerInputIdentity: artifact.inputIdentity,
         artifactIdentity: artifact.artifactIdentity,
       },

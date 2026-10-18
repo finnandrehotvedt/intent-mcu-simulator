@@ -225,7 +225,7 @@ function assertEditorGeometry(geometry) {
   const savedPath = await download.path();
   assert(savedPath && fs.statSync(savedPath).size < 8192, 'data-only Save missing or oversized');
   const saved = JSON.parse(fs.readFileSync(savedPath, 'utf8'));
-  assert(saved.schema === 'intent-mcu-project-envelope@5' && saved.profile === 'board.stm32f429zi-nucleo144-v1'
+  assert(saved.schema === 'intent-mcu-project-envelope@6' && saved.profile === 'board.stm32f429zi-nucleo144-v1'
     && saved.project.schema === 'intent-mcu-stm32-public-project@2' && saved.project.source === lowSource,
     'saved STM32 project identity mismatch');
   assert(saved.project.circuit.layout.positions['resistor-1'].rotation === 90, 'saved STM32 circuit lost rotation');

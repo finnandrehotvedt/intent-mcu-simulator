@@ -64,7 +64,7 @@ test('X05 prompt binds the exact project without calling or granting AI authorit
   assert.match(prompt, new RegExp(await projectTextSha256(current)));
   assert.match(prompt, /Return ONLY strict JSON/u);
   assert.match(prompt, /Do not include artifacts/u);
-  assert.match(prompt, /intent-mcu-project-envelope@5/u);
+  assert.match(prompt, /intent-mcu-project-envelope@6/u);
 });
 
 test('X05 review lists source component and wire changes without mutating the current project', async () => {
