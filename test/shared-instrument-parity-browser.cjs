@@ -44,6 +44,34 @@ async function select(page, profile) {
   await page.waitForFunction((expected) => window.__SHARED_INSTRUMENT_SUMMARY__?.profile === expected, profile);
 }
 
+async function assertBriefIsInert(page, profile, artifactIdentity) {
+  const before = await page.evaluate((selected) => ({
+    project: JSON.stringify(window.__COMMON_PROJECT_FILES__.prepare(
+      window.__COMMON_PROJECT_FILES__.current(selected),
+    ).project),
+    summary: structuredClone(window.__SHARED_INSTRUMENT_SUMMARY__),
+  }), profile);
+  await page.fill('#project-brief-purpose', `Record the bounded ${profile} teaching goal.`);
+  await page.fill('#project-brief-inputs', 'Named input\nReset');
+  await page.fill('#project-brief-outputs', 'Observed LED\nSerial evidence');
+  await page.fill('#project-brief-boundaries', 'Startup reset\nDisconnected ground');
+  await page.fill('#project-brief-acceptance', 'REQ-OBSERVE | The supported output is observed\nREQ-RESET | Reset does not manufacture a pass');
+  const after = await page.evaluate((selected) => ({
+    project: JSON.stringify(window.__COMMON_PROJECT_FILES__.prepare(
+      window.__COMMON_PROJECT_FILES__.current(selected),
+    ).project),
+    brief: window.__PROJECT_BRIEF__.status(selected),
+    summary: structuredClone(window.__SHARED_INSTRUMENT_SUMMARY__),
+    evaluation: document.querySelector('#project-brief-evaluation').textContent,
+  }), profile);
+  assert.equal(after.project, before.project, `${profile}: brief changed source/circuit bytes`);
+  assert.equal(after.brief.ok, true, `${profile}: brief invalid`);
+  assert.equal(after.brief.evaluated, false, `${profile}: brief claimed a verdict`);
+  assert.match(after.evaluation, /Not evaluated/u);
+  assert.equal(after.summary.state, 'current-runtime', `${profile}: brief retired runtime`);
+  assert.equal(after.summary.artifactIdentity, artifactIdentity, `${profile}: brief retired artifact`);
+}
+
 (async () => {
   const browser = await chromium.launch({ headless: true });
   try {
@@ -71,6 +99,7 @@ async function select(page, profile) {
       && window.__SHARED_INSTRUMENT_SUMMARY__?.state === 'current-runtime', null, { timeout: 20_000 });
     const avr = await assertPresentation(page, profiles.avr,
       ['recorded-runtime', 'recorded-runtime', 'recorded-runtime', 'recorded-runtime']);
+    await assertBriefIsInert(page, profiles.avr, avr.artifactIdentity);
     if (process.env.I03_SCREENSHOT) {
       await page.locator('#instrument-evidence').scrollIntoViewIfNeeded();
       await page.screenshot({ path: process.env.I03_SCREENSHOT, fullPage: false });
@@ -94,6 +123,7 @@ async function select(page, profile) {
     await page.waitForFunction(() => window.__SHARED_INSTRUMENT_SUMMARY__?.state === 'current-runtime', null, { timeout: 20_000 });
     const pico = await assertPresentation(page, profiles.pico,
       ['recorded-runtime', 'recorded-runtime', 'recorded-runtime', 'unavailable']);
+    await assertBriefIsInert(page, profiles.pico, pico.artifactIdentity);
     const picoPosition = await page.evaluate(() => window.__RP2040_PUBLIC_STATE__.circuit.layout.positions['resistor-1']);
     await page.evaluate(({ x, y }) => window.__RP2040_PUBLIC_WORKBENCH__.moveCircuitComponent('resistor-1', x + 0.02, y), picoPosition);
     assert.equal((await summary(page)).artifactIdentity, pico.artifactIdentity);
@@ -118,6 +148,7 @@ async function select(page, profile) {
       && window.__SHARED_INSTRUMENT_SUMMARY__?.state === 'current-runtime', null, { timeout: 50_000 });
     const c3 = await assertPresentation(page, profiles.c3,
       ['recorded-runtime', 'project-model', 'project-model', 'unavailable']);
+    await assertBriefIsInert(page, profiles.c3, c3.artifactIdentity);
     assert.match(c3.channels.gpio.provenance, /not QEMU pin state/u);
     assert.match(c3.channels.logic.provenance, /not QEMU CPU GPIO/u);
     const c3Position = await page.evaluate(() => window.__ESP32C3_PUBLIC_STATE__.project.circuit.layout.positions['resistor-1']);
@@ -139,6 +170,7 @@ async function select(page, profile) {
       && window.__SHARED_INSTRUMENT_SUMMARY__?.state === 'current-runtime', null, { timeout: 120_000 });
     const stm32 = await assertPresentation(page, profiles.stm32,
       ['recorded-runtime', 'recorded-runtime', 'recorded-runtime', 'unavailable']);
+    await assertBriefIsInert(page, profiles.stm32, stm32.artifactIdentity);
     const stmPosition = await page.evaluate(() => window.__STM32_PUBLIC_STATE__.project.circuit.layout.positions['resistor-1']);
     await page.evaluate(({ x, y }) => window.__STM32_PUBLIC_WORKBENCH__.moveCircuitComponent('resistor-1', x + 0.02, y), stmPosition);
     assert.equal((await summary(page)).artifactIdentity, stm32.artifactIdentity);
@@ -161,6 +193,6 @@ async function select(page, profile) {
         c3: Object.values(c3.channels).map((x) => x.classification),
         stm32: Object.values(stm32.channels).map((x) => x.classification) },
       invalidation: ['source', 'electrical', 'open', 'profile', 'reset'], layoutRetained: true,
-      outsideRequests: 0, browserErrors: 0 })}\n`);
+      projectBriefInertWithCurrentRuntime: true, outsideRequests: 0, browserErrors: 0 })}\n`);
   } finally { await browser.close(); }
 })().catch((error) => { process.stderr.write(`${error.stack}\n`); process.exitCode = 1; });
