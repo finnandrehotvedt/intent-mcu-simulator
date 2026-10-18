@@ -10,7 +10,7 @@ services:
     group_add:
       - "112"
     init: true
-    restart: unless-stopped
+    restart: "no"
     ports:
       - "127.0.0.1:18793:18766"
     read_only: true
@@ -47,3 +47,6 @@ services:
       timeout: 3s
       retries: 6
       start_period: 10s
+
+volumes:
+  {}

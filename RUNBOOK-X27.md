@@ -14,6 +14,14 @@ docker-compose -f compose.x27-private.yaml up -d --no-build
 curl -fsS http://127.0.0.1:18793/readyz
 ```
 
+Status and health:
+
+```sh
+docker-compose -f compose.x27-private.yaml ps
+curl -fsS http://127.0.0.1:18793/healthz
+curl -fsS http://127.0.0.1:18793/readyz
+```
+
 Run the targeted contract suite:
 
 ```sh
@@ -34,6 +42,28 @@ Stop and remove only this private candidate:
 
 ```sh
 docker-compose -f compose.x27-private.yaml down
+```
+
+Update by pulling the exact source commit, rebuilding the pinned image, and
+recreating only this private service:
+
+```sh
+git pull --ff-only origin main
+docker-compose -f compose.x27-private.yaml build
+docker-compose -f compose.x27-private.yaml up -d --force-recreate --no-build
+```
+
+Backup is limited to copying exported data-only coverage JSON and screenshots;
+the container has no authoritative persistent state or named volume. Restore
+means rerunning the immutable matrix from fresh builds; never import a report
+as runtime, project or verdict authority.
+
+Reset the transient environment by stopping it, recreating the service, and
+rerunning the matrix. This preserves source and evidence files:
+
+```sh
+docker-compose -f compose.x27-private.yaml down
+docker-compose -f compose.x27-private.yaml up -d --no-build
 ```
 
 The service binds only `127.0.0.1:18793`. It does not alter public DNS, Caddy,
