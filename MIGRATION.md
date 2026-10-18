@@ -52,6 +52,13 @@ pin, timing and other clarification questions. Every item is unresolved by
 definition: no status, support claim, verdict or runtime authority is stored.
 Rc.32 files migrate with an explicit empty unresolved-question list.
 
+Rc.34 advances the common wrapper to `intent-mcu-project-envelope@5` and the
+brief to `intent-mcu-project-brief@4`. Explicit required peripheral/component
+targets are saved without feasibility status. The current app recomputes each
+as available, unsupported, unknown or unresolved from project-owned authority;
+this cannot grant Build, runtime or verdict authority. Rc.33 files migrate with
+an explicit empty required-capability list.
+
 Existing accepted files remain readable:
 
 - AVR contact-persistence and `teach-lab-project@2` files;

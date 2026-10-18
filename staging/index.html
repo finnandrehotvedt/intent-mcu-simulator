@@ -116,6 +116,7 @@
         <label>Boundary cases <small>one per line</small><textarea id="project-brief-boundaries" rows="4" placeholder="Reset while button is pressed"></textarea></label>
         <label>Acceptance criteria <small><code>ID | statement | code refs | test IDs</code>, comma-separate references</small><textarea id="project-brief-acceptance" rows="5" placeholder="REQ-LED-ON | Observe the supported LED output | main.ino:12-18 | TEST-BUTTON-LOW"></textarea></label>
         <label class="project-brief-purpose">Open questions <small><code>ID | voltage/pin/timing/other | question | requirement IDs</code>. Every saved item remains unresolved.</small><textarea id="project-brief-assumptions" rows="4" placeholder="ASK-VOLTAGE | voltage | What supply voltage is required? | REQ-LED-ON"></textarea></label>
+        <label class="project-brief-purpose">Required capabilities <small><code>ID | peripheral/component | exact target or ? | requirement IDs</code>. Checked against this profile before Build.</small><textarea id="project-brief-capabilities" rows="4" placeholder="NEED-GPIO | peripheral | gpio | REQ-LED-ON"></textarea></label>
       </div>
       <div class="project-brief-footer"><strong>Evaluation</strong><span id="project-brief-evaluation">No criteria · Not evaluated</span><span id="project-brief-status" role="status">Empty brief is valid and will be saved in the common project file.</span></div>
       <section class="requirement-trace" aria-labelledby="requirement-trace-title">
@@ -127,6 +128,11 @@
         <div class="requirement-trace-heading"><div><p class="eyebrow">CLARIFICATIONS · NO ASSUMED SUPPORT</p><h3 id="open-assumptions-title">Open questions</h3></div><span id="open-assumptions-summary">No open questions</span></div>
         <p>Voltage, pin and timing gaps stay unresolved until you edit the project brief. They do not grant hardware, compiler, electrical or runtime support.</p>
         <div id="open-assumptions-list" class="open-assumptions-list"><p class="requirement-trace-empty">Add an open question when a required detail is missing.</p></div>
+      </section>
+      <section class="project-feasibility" aria-labelledby="project-feasibility-title">
+        <div class="requirement-trace-heading"><div><p class="eyebrow">BEFORE BUILD · PROJECT-SPECIFIC</p><h3 id="project-feasibility-title">Feasibility preflight</h3></div><span id="project-feasibility-summary">No required capabilities</span></div>
+        <p>Checks only explicit project needs against current controller and component authorities. This is not a firmware verdict and does not authorize or block Build.</p>
+        <div id="project-feasibility-list" class="project-feasibility-list"><p class="requirement-trace-empty">Add a required peripheral or component to preflight this project.</p></div>
       </section>
     </section>
 
@@ -527,7 +533,7 @@
       </nav>
     </section>
 
-    <footer>Intent MCU Simulator 1.1.0-rc.33 public release · explicit unresolved questions, stable requirement traceability and source-bound runtime evidence · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no inferred support, fabricated verdict, pin timing, general circuit solver or physical safety certification</footer>
+    <footer>Intent MCU Simulator 1.1.0-rc.34 public release · project-specific feasibility, explicit unresolved questions and stable requirement traceability · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no inferred support, fabricated verdict, pin timing, general circuit solver or physical safety certification</footer>
   </main>
   <button id="serial-tab" class="serial-tab" type="button" aria-expanded="false" aria-controls="serial-dock"><span>Serial</span><span id="serial-new-output" class="serial-new-output" hidden>0 new</span></button>
   <aside id="serial-dock" class="serial-dock" aria-labelledby="serial-title" hidden>

@@ -118,6 +118,7 @@ import {
   createRequirementResultLink,
   currentRequirementResultLink,
 } from '../src/requirement-traceability.mjs';
+import { evaluateProjectFeasibility } from '../src/project-feasibility.mjs';
 import { serialEventText, serialInputBytes, serialText } from '../src/serial-view.mjs';
 import { SERIAL_HISTORY_MAX } from '../src/runtime-kernel.mjs';
 import { createSupportedProfileExample, supportedProfileExamples } from '../src/supported-example-pack.mjs';
@@ -213,8 +214,8 @@ const elements = Object.fromEntries([
   'controller-workbench-limitation', 'controller-public-boundary', 'parked-circuit-notice',
   'project-brief', 'project-brief-profile', 'project-brief-purpose', 'project-brief-inputs',
   'project-brief-outputs', 'project-brief-boundaries', 'project-brief-acceptance',
-  'project-brief-assumptions', 'project-brief-evaluation', 'project-brief-status', 'requirement-trace-list', 'requirement-trace-summary',
-  'open-assumptions-list', 'open-assumptions-summary',
+  'project-brief-assumptions', 'project-brief-capabilities', 'project-brief-evaluation', 'project-brief-status', 'requirement-trace-list', 'requirement-trace-summary',
+  'open-assumptions-list', 'open-assumptions-summary', 'project-feasibility-list', 'project-feasibility-summary',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -2290,6 +2291,7 @@ function briefDraftFromBrief(value = emptyProjectBrief()) {
     boundaryCases: brief.boundaryCases.join('\n'),
     acceptanceCriteria: brief.acceptanceCriteria.map((item) => `${item.id} | ${item.text} | ${item.codeRefs.join(', ')} | ${item.testRefs.join(', ')}`).join('\n'),
     openAssumptions: brief.openAssumptions.map((item) => `${item.id} | ${item.kind} | ${item.question} | ${item.requirementIds.join(', ')}`).join('\n'),
+    requiredCapabilities: brief.requiredCapabilities.map((item) => `${item.id} | ${item.kind} | ${item.target} | ${item.requirementIds.join(', ')}`).join('\n'),
   };
 }
 function emptyProjectBriefDraft() { return briefDraftFromBrief(emptyProjectBrief()); }
@@ -2305,6 +2307,7 @@ function captureProjectBriefDraft() {
     boundaryCases: elements.projectbriefboundaries.value,
     acceptanceCriteria: elements.projectbriefacceptance.value,
     openAssumptions: elements.projectbriefassumptions.value,
+    requiredCapabilities: elements.projectbriefcapabilities.value,
   });
 }
 function briefLines(value) {
@@ -2328,6 +2331,13 @@ function projectBriefFromDraft(draft) {
     return { id: fields[0], kind: fields[1], question: fields[2],
       requirementIds: briefReferences(fields[3] ?? '') };
   });
+  const requiredCapabilities = briefLines(draft.requiredCapabilities).map((line, index) => {
+    const fields = line.split('|').map((field) => field.trim());
+    if (fields.length < 3 || fields.length > 4) throw Object.assign(new Error('PROJECT_BRIEF_CAPABILITY_FORMAT'),
+      { details: [`$brief.requiredCapabilities[${index}]`] });
+    return { id: fields[0], kind: fields[1], target: fields[2],
+      requirementIds: briefReferences(fields[3] ?? '') };
+  });
   return normalizeProjectBrief({
     schema: PROJECT_BRIEF_SCHEMA,
     purpose: draft.purpose.trim(),
@@ -2336,7 +2346,35 @@ function projectBriefFromDraft(draft) {
     boundaryCases: briefLines(draft.boundaryCases),
     acceptanceCriteria,
     openAssumptions,
+    requiredCapabilities,
   });
+}
+function currentProjectFeasibility(profile = selectedCompilerProfile, brief = null) {
+  return evaluateProjectFeasibility(profile, (brief ?? projectBriefForProfile(profile)).requiredCapabilities);
+}
+function renderProjectFeasibility(brief = null) {
+  const result = currentProjectFeasibility(selectedCompilerProfile, brief);
+  const { available, unsupported, unknown, unresolved } = result.counts;
+  elements.projectfeasibilitysummary.textContent = result.items.length
+    ? `${available} available · ${unsupported} unsupported · ${unknown} unknown · ${unresolved} unresolved`
+    : 'No required capabilities';
+  if (!result.items.length) {
+    elements.projectfeasibilitylist.replaceChildren(Object.assign(document.createElement('p'), {
+      className: 'requirement-trace-empty', textContent: 'Add a required peripheral or component to preflight this project.',
+    }));
+    return;
+  }
+  elements.projectfeasibilitylist.replaceChildren(...result.items.map((item) => {
+    const row = document.createElement('article'); row.className = 'feasibility-row'; row.dataset.feasibilityId = item.id;
+    const identity = document.createElement('div'); identity.append(Object.assign(document.createElement('strong'), { textContent: 'Project need' }), Object.assign(document.createElement('b'), { textContent: item.id }));
+    const target = document.createElement('div'); target.append(Object.assign(document.createElement('strong'), { textContent: item.kind }), Object.assign(document.createElement('code'), { textContent: item.target }));
+    const state = document.createElement('div');
+    const stateValue = Object.assign(document.createElement('span'), { className: 'feasibility-state', textContent: item.state });
+    stateValue.dataset.state = item.state;
+    state.append(Object.assign(document.createElement('strong'), { textContent: 'Preflight state' }), stateValue);
+    const reason = document.createElement('div'); reason.append(Object.assign(document.createElement('strong'), { textContent: 'Authority reason' }), document.createTextNode(item.reason));
+    row.append(identity, target, state, reason); return row;
+  }));
 }
 function renderOpenAssumptions(brief = null) {
   const items = brief?.openAssumptions ?? [];
@@ -2469,6 +2507,7 @@ function renderProjectBrief() {
   elements.projectbriefboundaries.value = draft.boundaryCases;
   elements.projectbriefacceptance.value = draft.acceptanceCriteria;
   elements.projectbriefassumptions.value = draft.openAssumptions;
+  elements.projectbriefcapabilities.value = draft.requiredCapabilities;
   elements.projectbriefprofile.textContent = publicControllerView(selectedCompilerProfile)?.label ?? selectedCompilerProfile;
   try {
     const brief = projectBriefFromDraft(draft);
@@ -2478,12 +2517,15 @@ function renderProjectBrief() {
     elements.projectbriefstatus.textContent = 'Valid data-only brief · saved with Download/Save; Build and runtime authority are unchanged.';
     renderRequirementTraceability(brief);
     renderOpenAssumptions(brief);
+    renderProjectFeasibility(brief);
   } catch (error) {
     elements.projectbriefevaluation.textContent = 'Not evaluated';
     elements.projectbriefstatus.dataset.valid = 'false';
     elements.projectbriefstatus.textContent = `Brief not saveable (${error.code ?? error.message}). Use ID | statement and unique uppercase IDs.`;
     renderRequirementTraceability();
     renderOpenAssumptions();
+    elements.projectfeasibilitysummary.textContent = 'Invalid project needs';
+    elements.projectfeasibilitylist.replaceChildren();
   }
 }
 elements.requirementtracelist.addEventListener('click', (event) => {
@@ -2514,7 +2556,8 @@ function handleProjectBriefInput(event) {
   renderProjectBrief();
 }
 for (const input of [elements.projectbriefpurpose, elements.projectbriefinputs, elements.projectbriefoutputs,
-  elements.projectbriefboundaries, elements.projectbriefacceptance, elements.projectbriefassumptions]) {
+  elements.projectbriefboundaries, elements.projectbriefacceptance, elements.projectbriefassumptions,
+  elements.projectbriefcapabilities]) {
   input.addEventListener('input', handleProjectBriefInput);
 }
 for (const [button, profile] of [[elements.reset, AVR_PROFILE], [elements.picoreset, RP2040_PROFILE],
@@ -2919,6 +2962,10 @@ window.__REQUIREMENT_TRACEABILITY__ = Object.freeze({
   schema: 'intent-mcu-requirement-traceability-view@1',
   current: (profile = selectedCompilerProfile) => structuredClone(requirementTraceRows(profile)),
   attachCurrentResult: (requirementId, profile = selectedCompilerProfile) => attachCurrentRequirementResult(requirementId, profile),
+});
+window.__PROJECT_FEASIBILITY__ = Object.freeze({
+  schema: 'intent-mcu-project-feasibility@1',
+  current: (profile = selectedCompilerProfile) => structuredClone(currentProjectFeasibility(profile)),
 });
 function endpointKey(endpoint) { return `${endpoint.component}.${endpoint.pin}`; }
 function parseEndpoint(key) {

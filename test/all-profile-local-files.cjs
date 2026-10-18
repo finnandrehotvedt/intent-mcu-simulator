@@ -68,6 +68,7 @@ async function authorBrief(page, label) {
     boundaries: 'Reset at startup\nDisconnected ground',
     acceptance: 'REQ-LED-ON | Observed output is active for the supported input | main.c:1-8 | TEST-LED-ON\nREQ-RESET | Reset does not manufacture a passing observation | main.c:9-12 | TEST-RESET',
     assumptions: 'ASK-VOLTAGE | voltage | Which supply voltage is required? | REQ-LED-ON\nASK-PIN | pin | Which named pin is required? | REQ-LED-ON\nASK-TIMING | timing | What timing limit is required? | REQ-RESET',
+    capabilities: 'NEED-GPIO | peripheral | gpio | REQ-LED-ON',
   };
   await page.fill('#project-brief-purpose', values.purpose);
   await page.fill('#project-brief-inputs', values.inputs);
@@ -75,6 +76,7 @@ async function authorBrief(page, label) {
   await page.fill('#project-brief-boundaries', values.boundaries);
   await page.fill('#project-brief-acceptance', values.acceptance);
   await page.fill('#project-brief-assumptions', values.assumptions);
+  await page.fill('#project-brief-capabilities', values.capabilities);
   const result = await page.evaluate(() => ({
     status: window.__PROJECT_BRIEF__.status(),
     project: JSON.stringify(window.__COMMON_PROJECT_FILES__.prepare(window.__COMMON_PROJECT_FILES__.current()).project),
@@ -87,6 +89,10 @@ async function authorBrief(page, label) {
   assert.deepEqual(result.status.brief.acceptanceCriteria[0].codeRefs, ['main.c:1-8']);
   assert.deepEqual(result.status.brief.acceptanceCriteria[0].testRefs, ['TEST-LED-ON']);
   assert.deepEqual(result.status.brief.openAssumptions.map((item) => item.kind), ['voltage', 'pin', 'timing']);
+  assert.deepEqual(result.status.brief.requiredCapabilities, [
+    { id: 'NEED-GPIO', kind: 'peripheral', target: 'gpio', requirementIds: ['REQ-LED-ON'] },
+  ]);
+  assert.equal(await page.evaluate(() => window.__PROJECT_FEASIBILITY__.current().items[0].state), 'available');
   assert.deepEqual(await page.locator('.open-assumption-status').allTextContents(),
     ['Unresolved', 'Unresolved', 'Unresolved']);
   if (label === 'ATmega328P') {
@@ -158,7 +164,7 @@ async function saveNarrow(page, profile) {
   assert(filename.endsWith(profile.extension), `${profile.name}: unexpected filename ${filename}`);
   const text = fs.readFileSync(filePath, 'utf8');
   const saved = JSON.parse(text);
-  assert.equal(saved.schema, 'intent-mcu-project-envelope@4', `${profile.name}: envelope schema`);
+  assert.equal(saved.schema, 'intent-mcu-project-envelope@5', `${profile.name}: envelope schema`);
   assert.equal(saved.profile, profile.option, `${profile.name}: envelope profile`);
   assert.equal(saved.project.schema, profile.schema, `${profile.name}: nested schema`);
   assert.deepEqual(saved.brief, expectedBrief, `${profile.name}: brief not saved with circuit`);
@@ -270,7 +276,7 @@ async function saveAvr(page) {
   const saveMs = Date.now() - started;
   const text = fs.readFileSync(filePath, 'utf8');
   const saved = JSON.parse(text);
-  assert.equal(saved.schema, 'intent-mcu-project-envelope@4', 'AVR: envelope schema');
+  assert.equal(saved.schema, 'intent-mcu-project-envelope@5', 'AVR: envelope schema');
   assert.equal(saved.profile, 'board.atmega328p-16mhz-v1', 'AVR: envelope profile');
   assert.deepEqual(saved.project, expected, 'AVR: downloaded file differs from canonical authored project');
   assert.deepEqual(saved.brief, expectedBrief, 'AVR: brief not saved with circuit');

@@ -4,9 +4,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  LEGACY_PROJECT_BRIEF_SCHEMA, LEGACY_PROJECT_ENVELOPE_SCHEMA,
+  ASSUMPTION_PROJECT_ENVELOPE_SCHEMA, LEGACY_PROJECT_BRIEF_SCHEMA, LEGACY_PROJECT_ENVELOPE_SCHEMA,
   PREVIOUS_PROJECT_BRIEF_SCHEMA, PREVIOUS_PROJECT_ENVELOPE_SCHEMA,
-  PROJECT_BRIEF_SCHEMA, PROJECT_ENVELOPE_SCHEMA, TRACE_PROJECT_ENVELOPE_SCHEMA,
+  PROJECT_BRIEF_SCHEMA, PROJECT_ENVELOPE_SCHEMA, TRACE_PROJECT_BRIEF_SCHEMA, TRACE_PROJECT_ENVELOPE_SCHEMA,
   canonicalProjectEnvelope, emptyProjectBrief, prepareProjectEnvelope,
 } from '../src/project-envelope.mjs';
 
@@ -70,8 +70,8 @@ test('rc31 v2 envelope migrates criteria to explicit empty traceability and assu
 
 test('rc32 v3 envelope migrates with an explicit empty unresolved assumption list', () => {
   const previous = {
-    schema: PREVIOUS_PROJECT_ENVELOPE_SCHEMA, profile,
-    brief: { schema: PREVIOUS_PROJECT_BRIEF_SCHEMA, purpose: 'Traceable goal', inputs: [], outputs: [],
+    schema: ASSUMPTION_PROJECT_ENVELOPE_SCHEMA, profile,
+    brief: { schema: TRACE_PROJECT_BRIEF_SCHEMA, purpose: 'Traceable goal', inputs: [], outputs: [],
       boundaryCases: [], acceptanceCriteria: [{ id: 'REQ-OLD', text: 'Old criterion',
         codeRefs: ['main.c:1'], testRefs: ['TEST-OLD'] }] }, project,
   };
@@ -79,6 +79,19 @@ test('rc32 v3 envelope migrates with an explicit empty unresolved assumption lis
   assert.equal(opened.code, 'PROJECT_ENVELOPE_MIGRATED');
   assert.deepEqual(opened.brief.openAssumptions, []);
   assert(opened.report.defaultsAdded.includes('empty unresolved assumption list'));
+});
+
+test('rc33 v4 envelope migrates with an explicit empty required capability list', () => {
+  const previous = {
+    schema: PREVIOUS_PROJECT_ENVELOPE_SCHEMA, profile,
+    brief: { schema: PREVIOUS_PROJECT_BRIEF_SCHEMA, purpose: 'Questioned goal', inputs: [], outputs: [],
+      boundaryCases: [], acceptanceCriteria: [{ id: 'REQ-OLD', text: 'Old criterion', codeRefs: [], testRefs: [] }],
+      openAssumptions: [{ id: 'ASK-PIN', kind: 'pin', question: 'Which pin?', requirementIds: ['REQ-OLD'] }] }, project,
+  };
+  const opened = prepareProjectEnvelope(JSON.stringify(previous), adapters);
+  assert.equal(opened.code, 'PROJECT_ENVELOPE_MIGRATED');
+  assert.deepEqual(opened.brief.requiredCapabilities, []);
+  assert(opened.report.defaultsAdded.includes('empty required capability list'));
 });
 
 test('X01 brief round-trips purpose, inputs, outputs, boundaries and unevaluated acceptance IDs', () => {
@@ -98,6 +111,9 @@ test('X01 brief round-trips purpose, inputs, outputs, boundaries and unevaluated
       { id: 'ASK-VOLTAGE', kind: 'voltage', question: 'Which supply voltage is required?',
         requirementIds: ['REQ-LED-ON'] },
     ],
+    requiredCapabilities: [
+      { id: 'NEED-GPIO', kind: 'peripheral', target: 'gpio', requirementIds: ['REQ-LED-ON'] },
+    ],
   };
   const text = canonicalProjectEnvelope(profile, project, adapters, brief);
   const opened = prepareProjectEnvelope(text, adapters);
@@ -108,7 +124,7 @@ test('X01 brief round-trips purpose, inputs, outputs, boundaries and unevaluated
 
 test('X01 brief rejects unknown fields, duplicate IDs, malformed IDs and result authority', () => {
   const base = { schema: PROJECT_BRIEF_SCHEMA, purpose: '', inputs: [], outputs: [],
-    boundaryCases: [], acceptanceCriteria: [], openAssumptions: [] };
+    boundaryCases: [], acceptanceCriteria: [], openAssumptions: [], requiredCapabilities: [] };
   const wrap = (brief) => JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, brief, project });
   assert.equal(prepareProjectEnvelope(wrap({ ...base, extra: true }), adapters).code, 'PROJECT_BRIEF_SHAPE');
   assert.equal(prepareProjectEnvelope(wrap({ ...base, acceptanceCriteria: [
@@ -133,7 +149,7 @@ test('X01 brief rejects unknown fields, duplicate IDs, malformed IDs and result 
 test('X03 assumptions remain unresolved data and reject malformed or authority-bearing claims', () => {
   const criterion = { id: 'REQ-1', text: 'Known requirement', codeRefs: [], testRefs: [] };
   const base = { schema: PROJECT_BRIEF_SCHEMA, purpose: '', inputs: [], outputs: [],
-    boundaryCases: [], acceptanceCriteria: [criterion], openAssumptions: [] };
+    boundaryCases: [], acceptanceCriteria: [criterion], openAssumptions: [], requiredCapabilities: [] };
   const wrap = (brief) => JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, brief, project });
   const valid = { id: 'ASK-PIN', kind: 'pin', question: 'Which pin is required?', requirementIds: ['REQ-1'] };
   assert.equal(prepareProjectEnvelope(wrap({ ...base, openAssumptions: [valid] }), adapters).ok, true);
@@ -145,6 +161,25 @@ test('X03 assumptions remain unresolved data and reject malformed or authority-b
     'PROJECT_BRIEF_ASSUMPTION_REQUIREMENT_UNKNOWN');
   assert.equal(prepareProjectEnvelope(wrap({ ...base, openAssumptions: [{ ...valid, status: 'supported' }] }), adapters).code,
     'PROJECT_BRIEF_ASSUMPTION_SHAPE');
+});
+
+test('X04 required capabilities reject status claims, duplicates and unknown requirement links', () => {
+  const criterion = { id: 'REQ-1', text: 'Known requirement', codeRefs: [], testRefs: [] };
+  const base = { schema: PROJECT_BRIEF_SCHEMA, purpose: '', inputs: [], outputs: [], boundaryCases: [],
+    acceptanceCriteria: [criterion], openAssumptions: [], requiredCapabilities: [] };
+  const wrap = (brief) => JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, brief, project });
+  const valid = { id: 'NEED-GPIO', kind: 'peripheral', target: 'gpio', requirementIds: ['REQ-1'] };
+  assert.equal(prepareProjectEnvelope(wrap({ ...base, requiredCapabilities: [valid] }), adapters).ok, true);
+  assert.equal(prepareProjectEnvelope(wrap({ ...base, requiredCapabilities: [valid, valid] }), adapters).code,
+    'PROJECT_BRIEF_CAPABILITY_DUPLICATE');
+  assert.equal(prepareProjectEnvelope(wrap({ ...base, requiredCapabilities: [{ ...valid, kind: 'library' }] }), adapters).code,
+    'PROJECT_BRIEF_CAPABILITY_KIND');
+  assert.equal(prepareProjectEnvelope(wrap({ ...base, requiredCapabilities: [{ ...valid, target: 'Bad Target' }] }), adapters).code,
+    'PROJECT_BRIEF_CAPABILITY_TARGET');
+  assert.equal(prepareProjectEnvelope(wrap({ ...base, requiredCapabilities: [{ ...valid, requirementIds: ['REQ-X'] }] }), adapters).code,
+    'PROJECT_BRIEF_CAPABILITY_REQUIREMENT_UNKNOWN');
+  assert.equal(prepareProjectEnvelope(wrap({ ...base, requiredCapabilities: [{ ...valid, status: 'available' }] }), adapters).code,
+    'PROJECT_BRIEF_CAPABILITY_SHAPE');
 });
 
 test('strict failures reject duplicate keys, unknown versions and profile mismatches', () => {

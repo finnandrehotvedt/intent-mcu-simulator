@@ -2,6 +2,17 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.34 — 2026-10-18
+
+- Completed X04 with project-specific preflight for explicitly required
+  peripherals and components before Build.
+- Distinguishes available, unsupported, unknown and unresolved using only the
+  existing controller-capability and component-support authorities.
+- Advanced common files to envelope v5 / brief v4; rc.33 files migrate with
+  empty required capabilities while preserving all X01–X03 data.
+- Preflight remains data-only and cannot infer firmware support, block or
+  authorize Build, execute code or create a verdict.
+
 ## 1.1.0-rc.33 — 2026-10-18
 
 - Completed X03 with explicit unresolved voltage, pin, timing and other
