@@ -84,6 +84,9 @@ import {
   executeRegressionMatrix, regressionReportPassed,
 } from '../src/regression-matrix-runner.mjs';
 import {
+  createPartitionEvidence, projectCoverageReport,
+} from '../src/coverage-report.mjs';
+import {
   COUNTEREXAMPLE_REDUCTION_SEED, reduceThermostatCounterexample,
 } from '../src/counterexample-reduction.mjs';
 import {
@@ -284,6 +287,7 @@ const elements = Object.fromEntries([
   'regression-matrix', 'regression-matrix-state', 'regression-matrix-identity',
   'regression-matrix-selector', 'regression-matrix-run', 'regression-matrix-negative',
   'regression-matrix-export', 'regression-matrix-results', 'regression-matrix-summary',
+  'coverage-report-state', 'coverage-report-export', 'coverage-report-results', 'coverage-report-summary',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -1952,6 +1956,8 @@ window.__PUBLIC_CONTROLLER_PROJECTION__ = {
 function publish(update) { Object.assign(window.__M6_STATE__, update); }
 
 let regressionMatrixReport = null;
+let coverageReport = null;
+let regressionPartitionEvidence = [];
 let regressionMatrixRunning = false;
 let regressionMatrixReady = false;
 
@@ -2006,8 +2012,45 @@ function renderRegressionMatrixReport(report = regressionMatrixReport) {
 function invalidateRegressionMatrixReport(message = 'Project state changed. Run the matrix again for current evidence.') {
   if (regressionMatrixRunning || !regressionMatrixReport) return;
   regressionMatrixReport = null;
+  coverageReport = null;
+  regressionPartitionEvidence = [];
   renderRegressionMatrixReport(null);
+  renderCoverageReport(null);
   elements.regressionmatrixsummary.textContent = message;
+  elements.coveragereportsummary.textContent = message;
+}
+
+function renderCoverageReport(report = coverageReport) {
+  elements.coveragereportresults.replaceChildren();
+  if (!report) {
+    const row = document.createElement('tr');
+    const cell = document.createElement('td'); cell.colSpan = 6;
+    cell.textContent = 'No current coverage report. Run the immutable matrix to project its seven declared partitions.';
+    row.append(cell); elements.coveragereportresults.append(row);
+    elements.coveragereportstate.textContent = 'Not run';
+    elements.coveragereportexport.disabled = true;
+    return;
+  }
+  for (const rowReport of report.rows) {
+    const row = document.createElement('tr');
+    const partitionSummary = rowReport.partitions.map((item) => `${item.partitionId}: ${item.status}`).join('\n');
+    const cells = [
+      `${rowReport.caseId}\n${rowReport.profile}`,
+      `${rowReport.partitions.length} declared`, partitionSummary,
+      `${rowReport.evidenceCompleteness}\nacademic ${rowReport.academicOutcome}\njob ${rowReport.jobOutcome}\n${rowReport.exercisedPartitions.length} exercised`,
+      `${rowReport.producer}\nraw timebase: ${rowReport.rawTimebase}`,
+      rowReport.limitation,
+    ];
+    for (const [index, text] of cells.entries()) {
+      const cell = document.createElement(index === 0 ? 'th' : 'td');
+      const pre = document.createElement('code'); pre.textContent = text; cell.append(pre); row.append(cell);
+    }
+    elements.coveragereportresults.append(row);
+  }
+  const counts = report.counts;
+  elements.coveragereportstate.textContent = `${counts.passed}/${counts.declared} partitions passed`;
+  elements.coveragereportexport.disabled = false;
+  elements.coveragereportsummary.textContent = `${counts.executed} executed · ${counts.passed} passed · ${counts.failed} failed · ${counts.notRun} not run · ${counts.unsupported} unsupported · ${counts.indeterminate} indeterminate · ${counts.infrastructureError} infrastructure error. Semantic report ${report.semanticSha256}.`;
 }
 
 async function selectRegressionProfile(profile) {
@@ -2059,7 +2102,9 @@ async function executeAvrRegressionCell(cell, fixture, started) {
   };
   const rawVirtualTime = { timebase: 'avr-worker-virtual-milliseconds', values: results.map((item) => item.virtualMilliseconds) };
   stopRuntime('X26 AVR cell completed; report retained as review data only.');
-  return { artifactSha256, actual, rawVirtualTime, durationMilliseconds: performance.now() - started };
+  return { artifactSha256, actual, rawVirtualTime, durationMilliseconds: performance.now() - started,
+    coveragePartitions: results.map((item) => ({ partitionId: item.scenarioId,
+      complete: item.status === 'passed' || item.status === 'failed', passed: item.status === 'passed', observed: item.observed })) };
 }
 
 async function executePicoRegressionCell(cell, fixture, started) {
@@ -2077,7 +2122,8 @@ async function executePicoRegressionCell(cell, fixture, started) {
     values: { cycle: runtime.cycle, trace: runtime.trace.map((item) => ({ cycle: item.cycle, virtualNanos: item.virtualNanos })) } };
   picoPublicWorkbench.stop();
   return { artifactSha256: built.artifact.uf2Sha256, actual, rawVirtualTime,
-    durationMilliseconds: performance.now() - started };
+    durationMilliseconds: performance.now() - started,
+    coveragePartitions: [{ partitionId: cell.scenarioId, complete: true, passed: true, observed: actual }] };
 }
 
 async function executeC3RegressionCell(cell, fixture, started) {
@@ -2099,7 +2145,8 @@ async function executeC3RegressionCell(cell, fixture, started) {
       projectModelEpochs: runtime.modeledCircuit.epochs.map((epoch, index) => ({ index: index + 1, source: epoch.source ?? 'executed-register-write' })) } };
   await c3PublicWorkbench.dispose('X26 C3 cell completed; report retained as review data only.');
   return { artifactSha256: built.artifact.flashSha256, actual, rawVirtualTime,
-    durationMilliseconds: performance.now() - started };
+    durationMilliseconds: performance.now() - started,
+    coveragePartitions: [{ partitionId: cell.scenarioId, complete: true, passed: true, observed: actual }] };
 }
 
 async function executeStm32RegressionCell(cell, fixture, started) {
@@ -2115,7 +2162,8 @@ async function executeStm32RegressionCell(cell, fixture, started) {
     values: { bootEpochs: runtime.bootEpochs, timedWaveformAvailable: false } };
   stm32PublicWorkbench.stop('X26 STM32 cell completed; report retained as review data only.');
   return { artifactSha256: built.artifact.sha256, actual, rawVirtualTime,
-    durationMilliseconds: performance.now() - started };
+    durationMilliseconds: performance.now() - started,
+    coveragePartitions: [{ partitionId: cell.scenarioId, complete: true, passed: true, observed: actual }] };
 }
 
 async function executeBrowserRegressionCell(cell) {
@@ -2128,18 +2176,23 @@ async function executeBrowserRegressionCell(cell) {
   else if (cell.profile === ESP32C3_PROFILE) result = await executeC3RegressionCell(cell, fixture, started);
   else if (cell.profile === STM32F429ZI_PROFILE) result = await executeStm32RegressionCell(cell, fixture, started);
   else throw Object.assign(new Error('REGRESSION_PROFILE_UNSUPPORTED'), { code: 'REGRESSION_PROFILE_UNSUPPORTED' });
-  return {
+  const execution = {
     caseId: cell.caseId, profile: cell.profile, profileVersion: cell.profileVersion,
     fixtureSha256: cell.fixtureSha256, sourceSha256: cell.sourceSha256,
     artifactSha256: result.artifactSha256, producer: cell.observationOwner,
     actual: result.actual, rawVirtualTime: result.rawVirtualTime,
     durationMilliseconds: result.durationMilliseconds,
   };
+  regressionPartitionEvidence.push(await createPartitionEvidence(execution, result.coveragePartitions));
+  return execution;
 }
 
 async function runBrowserRegressionMatrix(selector = 'all', expectationOverride = null) {
   if (regressionMatrixRunning) throw Object.assign(new Error('REGRESSION_MATRIX_BUSY'), { code: 'REGRESSION_MATRIX_BUSY' });
   regressionMatrixRunning = true;
+  coverageReport = null;
+  regressionPartitionEvidence = [];
+  renderCoverageReport(null);
   for (const control of [elements.regressionmatrixselector, elements.regressionmatrixrun,
     elements.regressionmatrixnegative]) control.disabled = true;
   elements.regressionmatrixstate.textContent = 'Running fresh builds…';
@@ -2148,7 +2201,11 @@ async function runBrowserRegressionMatrix(selector = 'all', expectationOverride 
     regressionMatrixReport = await executeRegressionMatrix({
       selector, expectationOverride, executeCell: executeBrowserRegressionCell,
     });
+    coverageReport = await projectCoverageReport({
+      regressionReport: regressionMatrixReport, partitionEvidence: regressionPartitionEvidence,
+    });
     renderRegressionMatrixReport(regressionMatrixReport);
+    renderCoverageReport(coverageReport);
     return structuredClone(regressionMatrixReport);
   } finally {
     regressionMatrixRunning = false;
@@ -2175,11 +2232,21 @@ function exportRegressionMatrixReport() {
   link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+function exportCoverageReport() {
+  if (!coverageReport) return;
+  const text = `${JSON.stringify(coverageReport, null, 2)}\n`;
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const link = document.createElement('a'); link.href = url;
+  link.download = `x27-coverage-${coverageReport.semanticSha256.slice(0, 12)}.intent-mcu-coverage.json`;
+  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 elements.regressionmatrixrun.addEventListener('click', () => {
   void runBrowserRegressionMatrix(elements.regressionmatrixselector.value);
 });
 elements.regressionmatrixnegative.addEventListener('click', () => { void runWrongRegressionExpectation(); });
 elements.regressionmatrixexport.addEventListener('click', exportRegressionMatrixReport);
+elements.coveragereportexport.addEventListener('click', exportCoverageReport);
 for (const input of [elements.source, elements.picosource, elements.c3source, elements.stm32source,
   elements.projectopeninput, elements.picoopeninput, elements.c3openinput, elements.stm32openinput]) {
   input.addEventListener(input.type === 'file' ? 'change' : 'input', () => invalidateRegressionMatrixReport());
@@ -2197,6 +2264,13 @@ window.__X26_REGRESSION_MATRIX__ = Object.freeze({
   run: (selector = 'all') => runBrowserRegressionMatrix(selector),
   runWrongExpectation: (selector = 'X26-RP2040-GPIO0-UART0') => runWrongRegressionExpectation(selector),
   passed: () => regressionMatrixReport ? regressionReportPassed(regressionMatrixReport) : false,
+});
+window.__X27_COVERAGE_REPORT__ = Object.freeze({
+  get ready() { return regressionMatrixReady; },
+  report: () => coverageReport ? structuredClone(coverageReport) : null,
+  run: async (selector = 'all') => { await runBrowserRegressionMatrix(selector); return structuredClone(coverageReport); },
+  runWrongExpectation: async () => { await runWrongRegressionExpectation(); return structuredClone(coverageReport); },
+  clear: () => invalidateRegressionMatrixReport('Coverage cleared. Run the matrix again for current evidence.'),
 });
 void regressionMatrixIdentity().then((identity) => {
   elements.regressionmatrixidentity.textContent = `Immutable matrix SHA-256 ${identity} · four exact fixture/source hashes · four distinct oracles`;

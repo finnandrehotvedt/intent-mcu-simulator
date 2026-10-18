@@ -1,0 +1,49 @@
+services:
+  lab-x27-private:
+    image: local/intent-mcu-x27-private:1.1.0-rc.50
+    build:
+      context: .
+      dockerfile: Dockerfile.x27-source
+    container_name: intent-mcu-x27-private
+    network_mode: bridge
+    user: "1000:1000"
+    group_add:
+      - "112"
+    init: true
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:18793:18766"
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 128
+    mem_limit: 768m
+    cpus: 2.0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /srv/codex-workspaces/_staging/stm32-source-build-20261016/intent-mcu-stm32-source-build-private-candidate-1.1.0-rc.22/compiler/image-lock.json:/run/locks/avr.json:ro
+    environment:
+      HOME: /tmp
+      NO_UPDATE_NOTIFIER: "1"
+      STAGING_HOST: 0.0.0.0
+      STAGING_PORT: "18766"
+      PUBLIC_ORIGIN: http://127.0.0.1:18793
+      COMPILER_IMAGE_LOCK: /run/locks/avr.json
+      RP2040_COMPILER_IMAGE_LOCK: /workspace/compiler/rp2040-image-lock.json
+      ENABLE_ESP32C3_PUBLIC: "1"
+      ESP32C3_BUILDER_IMAGE_LOCK: /workspace/compiler/esp32c3-image-lock.json
+      ESP32C3_RUNTIME_IMAGE_LOCK: /workspace/c3/runtime-image-lock.json
+      ENABLE_STM32_PUBLIC: "1"
+      STM32_BUILDER_IMAGE_LOCK: /workspace/stm32/builder-image-lock.json
+      STM32_RUNTIME_IMAGE_LOCK: /workspace/stm32/runtime-image-lock.json
+      DEPLOYMENT_SCOPE: local-source
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:18766/readyz"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
