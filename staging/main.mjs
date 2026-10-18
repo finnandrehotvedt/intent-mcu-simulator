@@ -60,7 +60,6 @@ import {
   THERMOSTAT_EXPERIMENT_ID,
   THERMOSTAT_SCENARIOS,
   THERMOSTAT_TIME,
-  evaluateThermostatObservation,
   thermostatScenarioControls,
 } from '../src/thermostat-experiment-contract.mjs';
 import {
@@ -92,14 +91,15 @@ import {
 } from '../src/rp2040-public-workbench.mjs';
 import {
   RP2040_PICO_COMPONENT_CATALOG,
+  validateRp2040PicoCircuit,
 } from '../src/rp2040-pico-circuit.mjs';
-import { ESP32C3_PUBLIC_COMPONENT_CATALOG } from '../src/esp32c3-public-circuit.mjs';
+import { ESP32C3_PUBLIC_COMPONENT_CATALOG, validateEsp32C3Circuit } from '../src/esp32c3-public-circuit.mjs';
 import {
   C3_PUBLIC_PROJECT_SCHEMA,
   Esp32C3PublicWorkbench,
   normalizeEsp32C3PublicProject,
 } from '../src/esp32c3-public-workbench.mjs';
-import { STM32_PUBLIC_COMPONENT_CATALOG } from '../src/stm32-public-circuit.mjs';
+import { STM32_PUBLIC_COMPONENT_CATALOG, validateStm32Circuit } from '../src/stm32-public-circuit.mjs';
 import {
   STM32_EDITABLE_PROJECT_SCHEMA,
   Stm32PublicWorkbench,
@@ -125,6 +125,12 @@ import {
   reviewProjectPatch,
 } from '../src/project-patch.mjs';
 import { compareDesignAlternatives, DESIGN_COMPARISON_SCHEMA } from '../src/design-comparison.mjs';
+import {
+  DOMAIN_REQUEST_SCHEMA,
+  SHARED_DOMAIN_ENGINE_SCHEMA,
+  domainRequest,
+  executeDomainRequest,
+} from '../src/shared-domain-engine.mjs';
 import { serialEventText, serialInputBytes, serialText } from '../src/serial-view.mjs';
 import { SERIAL_HISTORY_MAX } from '../src/runtime-kernel.mjs';
 import { createSupportedProfileExample, supportedProfileExamples } from '../src/supported-example-pack.mjs';
@@ -227,6 +233,8 @@ const elements = Object.fromEntries([
   'project-patch-changes', 'project-patch-summary',
   'design-comparison-create', 'design-comparison-summary', 'design-comparison-status',
   'design-comparison-alternatives', 'design-comparison-differences',
+  'shared-domain-engine-inspect', 'shared-domain-engine-summary', 'shared-domain-engine-status',
+  'shared-domain-engine-stages',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -2082,7 +2090,7 @@ function startThermostatExperiment() {
   renderThermostatExperimentPanel();
   return { ok: true, code: 'THERMOSTAT_EXPERIMENT_STARTED' };
 }
-function advanceThermostatExperiment(message) {
+async function advanceThermostatExperiment(message) {
   const run = thermostatExperimentRun;
   if (!run) return;
   if (message.kind === 'error' || message.kind === 'stopped-error') {
@@ -2131,12 +2139,29 @@ function advanceThermostatExperiment(message) {
     return;
   }
   if (run.phase !== 'await-pause' || !message.paused) return;
-  const result = evaluateThermostatObservation(scenario.id, message);
+  run.phase = 'evaluating';
+  const observationSnapshot = {
+    cycle: message.cycle,
+    pins: message.pins,
+    eventLog: message.eventLog,
+    instruments: { serial: message.instruments?.serial },
+  };
+  const request = domainRequest('evaluate-thermostat-observation', commonProjectText(AVR_PROFILE),
+    { scenarioId: scenario.id, snapshot: observationSnapshot });
+  const domainResult = await executeDomainRequest(request, commonProjectAdapters, AVR_PROFILE, 'ui');
+  lastSharedDomainTest = { request, result: structuredClone(domainResult) };
+  if (!domainResult.ok || !domainResult.observation) {
+    cancelThermostatExperiment(`Experiment unresolved: shared domain engine rejected ${domainResult.code}. Nothing was marked passed.`,
+      { clearResults: false });
+    return;
+  }
+  const result = domainResult.observation;
   thermostatExperimentResults.push(result);
   if (run.scenarioIndex + 1 < THERMOSTAT_SCENARIOS.scenarios.length) {
     run.scenarioIndex += 1;
     run.phase = 'await-reset';
     worker.postMessage({ command: 'reset' });
+    renderThermostatExperimentPanel();
     return;
   }
   thermostatExperimentRun = null;
@@ -2146,6 +2171,7 @@ function advanceThermostatExperiment(message) {
     : passed === THERMOSTAT_SCENARIOS.scenarios.length
       ? '3/3 passed from executed D13, matching UART and complete virtual-cycle input evidence.'
       : `${passed}/3 passed. Failed evidence remains visible; no missing evidence was treated as a pass.`;
+  renderThermostatExperimentPanel();
 }
 function loadThermostatFirmwareVariant(variant) {
   if (!thermostatProjectActive()) return { ok: false, code: 'THERMOSTAT_PROJECT_REQUIRED' };
@@ -2593,16 +2619,19 @@ const commonProjectAdapters = Object.freeze({
         fieldsDropped: ['build.inputIdentity', 'build.artifactIdentity', 'runtime results'],
       };
     },
+    electrical: (result) => result.prepared?.runnable ?? validateCircuit(result.project.circuit),
   }),
   [RP2040_PROFILE]: Object.freeze({
     schemas: Object.freeze([RP2040_PUBLIC_PROJECT_SCHEMA]),
     prepare: (value) => ({ project: normalizeRp2040PublicProject(value),
       preserved: ['name', 'source', 'components', 'pins', 'nets', 'properties', 'layout', 'rotation', 'wires'] }),
+    electrical: (result) => validateRp2040PicoCircuit(result.project.circuit),
   }),
   [ESP32C3_PROFILE]: Object.freeze({
     schemas: Object.freeze([C3_PUBLIC_PROJECT_SCHEMA]),
     prepare: (value) => ({ project: normalizeEsp32C3PublicProject(value),
       preserved: ['name', 'source', 'components', 'pins', 'nets', 'properties', 'layout', 'rotation', 'wires'] }),
+    electrical: (result) => validateEsp32C3Circuit(result.project.circuit),
   }),
   [STM32F429ZI_PROFILE]: Object.freeze({
     schemas: Object.freeze([STM32_EDITABLE_PROJECT_SCHEMA, 'intent-mcu-stm32-public-project@1']),
@@ -2612,6 +2641,7 @@ const commonProjectAdapters = Object.freeze({
         preserved: ['name', 'source', ...(legacy ? [] : ['components', 'pins', 'nets', 'properties', 'layout', 'rotation', 'wires'])],
         defaultsAdded: legacy ? ['default validated STM32 teaching circuit'] : [] };
     },
+    electrical: (result) => validateStm32Circuit(result.project.circuit),
   }),
 });
 function profileProjectDocument(profile) {
@@ -2960,6 +2990,48 @@ window.__COMMON_PROJECT_FILES__ = Object.freeze({
   current: (profile = selectedCompilerProfile) => commonProjectText(profile),
   legacy: (profile = selectedCompilerProfile) => legacyProjectText(profile),
   prepare: (source) => prepareProjectEnvelope(source, commonProjectAdapters),
+});
+let lastSharedDomainInspection = null;
+let lastSharedDomainTest = null;
+function renderSharedDomainInspection(result) {
+  lastSharedDomainInspection = structuredClone(result);
+  elements.shareddomainenginesummary.textContent = result.ok ? 'Same engine accepted' : 'Rejected';
+  elements.shareddomainenginestatus.dataset.valid = String(Boolean(result.ok));
+  elements.shareddomainenginestatus.textContent = result.ok
+    ? `${result.engine} accepted ${result.profile} without mutation or Build authority.`
+    : `Shared engine rejected (${result.code}). The project is unchanged.`;
+  if (!result.ok) {
+    elements.shareddomainenginestages.replaceChildren(Object.assign(document.createElement('p'), {
+      className: 'requirement-trace-empty', textContent: (result.details ?? []).join(' · ') || 'No weaker fallback ran.',
+    })); return;
+  }
+  const stages = [['Project', result.stages.project], ['Electrical', result.stages.electrical],
+    ['Tests', result.stages.tests]];
+  elements.shareddomainenginestages.replaceChildren(...stages.map(([label, owner]) => {
+    const card = document.createElement('div'); card.className = 'shared-domain-stage';
+    const title = document.createElement('strong'); title.textContent = label;
+    const value = document.createElement('code'); value.textContent = owner;
+    card.append(title, value); return card;
+  }));
+}
+async function inspectCurrentProjectThroughDomainEngine(profile = selectedCompilerProfile) {
+  const request = domainRequest('validate-project', commonProjectText(profile));
+  const result = await executeDomainRequest(request, commonProjectAdapters, profile, 'ui');
+  renderSharedDomainInspection(result); return result;
+}
+elements.shareddomainengineinspect.addEventListener('click', () => { void inspectCurrentProjectThroughDomainEngine(); });
+window.__SHARED_DOMAIN_ENGINE__ = Object.freeze({
+  schema: SHARED_DOMAIN_ENGINE_SCHEMA,
+  requestSchema: DOMAIN_REQUEST_SCHEMA,
+  inspect: (profile = selectedCompilerProfile) => inspectCurrentProjectThroughDomainEngine(profile),
+  state: () => lastSharedDomainInspection ? structuredClone(lastSharedDomainInspection) : null,
+  lastTest: () => lastSharedDomainTest ? structuredClone(lastSharedDomainTest) : null,
+});
+window.__AGENT_DOMAIN_ENGINE__ = Object.freeze({
+  schema: SHARED_DOMAIN_ENGINE_SCHEMA,
+  requestSchema: DOMAIN_REQUEST_SCHEMA,
+  execute: (source, profile = selectedCompilerProfile) => executeDomainRequest(source, commonProjectAdapters, profile, 'agent'),
+  authority: Object.freeze({ network: false, mutation: false, build: false, run: false, persistence: false }),
 });
 window.__PROJECT_BRIEF__ = Object.freeze({
   schema: PROJECT_BRIEF_SCHEMA,
@@ -5312,7 +5384,7 @@ function renderRuntime(message, { publishState = true } = {}) {
   if (stopped) { elements.run.disabled = true; elements.pause.disabled = true; elements.step.disabled = true; }
   else { elements.run.disabled = !message.paused; elements.pause.disabled = message.paused; elements.step.disabled = !message.paused; }
   elements.quickrun.disabled = elements.run.disabled; elements.quickpause.disabled = elements.pause.disabled; elements.quickreset.disabled = elements.reset.disabled;
-  advanceThermostatExperiment(message);
+  void advanceThermostatExperiment(message);
   renderThermostatExperimentPanel();
 }
 

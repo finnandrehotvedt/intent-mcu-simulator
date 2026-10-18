@@ -1,4 +1,4 @@
-# Migration to 1.1.0-rc.36
+# Migration to 1.1.0-rc.37
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
@@ -70,6 +70,11 @@ transient presentation derived from the strictly revalidated current project
 and one reviewed rc.35 candidate. Both must retain the exact same normalized
 brief. Documented model limits and capability states are recomputed from the
 existing project-owned authorities; no score, winner or verdict is stored.
+
+Rc.37 does not change the common project-file schema. Shared domain requests
+are transient, strict local inputs to the same project, electrical and test
+engine used by the visible UI. The local agent adapter cannot mutate or persist
+a project, call the network, Build, Run or restore executable authority.
 
 Existing accepted files remain readable:
 

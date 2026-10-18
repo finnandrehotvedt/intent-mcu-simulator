@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.37 — 2026-10-18
+
+- Completed X07 with one strict domain engine shared by the visible UI and a
+  bounded local programmatic agent adapter.
+- Both paths use the same common-project parsing, profile electrical admission
+  and existing thermostat observation evaluator; caller identity is provenance
+  only and cannot weaken validation.
+- The actual AVR thermostat journey now obtains all three scenario verdicts
+  through that engine, while executed D13 remains primary evidence and Serial
+  cannot pass alone.
+- The adapter has no network, mutation, persistence, Build or Run authority;
+  project content remains data and cannot supply instructions.
+
 ## 1.1.0-rc.36 — 2026-10-18
 
 - Completed X06 with a side-by-side current/proposed design comparison across

@@ -20,9 +20,9 @@ MCP endpoint or authorization to build/run. X08–X15 remain separate.
 - `validate-project` accepts exactly `schema`, `action` and `projectText`.
 - `evaluate-thermostat-observation` accepts exactly `schema`, `action`,
   `projectText`, `scenarioId` and `snapshot`.
-- Requests are strict duplicate/prototype-safe JSON below the established
-  common project bound. Unknown actions/fields, oversized input, URLs and
-  authority-bearing project content reject.
+- Requests are strict duplicate/prototype-safe JSON below a bound derived from
+  the established common project limit. Unknown actions/fields, oversized
+  input and authority-bearing project content reject.
 - Both actions first run `prepareProjectEnvelope` with the exact active-profile
   adapter. This is the same parser, project validator and electrical admission
   used by Open and X05/X06. Cross-profile data rejects.
