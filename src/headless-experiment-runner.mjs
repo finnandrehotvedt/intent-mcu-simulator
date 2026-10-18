@@ -3,7 +3,7 @@
 
 import { normalizeBuildRequestValue, sha256, sourceDigest } from '../compiler/build-protocol.mjs';
 import { RuntimeKernel } from './runtime-kernel.mjs';
-import { prepareProjectEnvelope } from './project-envelope.mjs';
+import { canonicalProjectEnvelope, prepareProjectEnvelope } from './project-envelope.mjs';
 import { domainRequest, executeDomainRequest } from './shared-domain-engine.mjs';
 import { compileHeadlessAvr } from './headless-compiler-client.mjs';
 import {
@@ -17,8 +17,10 @@ import {
   aggregateExperimentOutcomes, interruptedExperimentOutcome, jobStatusFromCode,
   unsupportedExperimentOutcome,
 } from './experiment-outcomes.mjs';
+import { reduceThermostatCounterexample } from './counterexample-reduction.mjs';
 
 export const HEADLESS_EXPERIMENT_RESULT_SCHEMA = 'intent-mcu-headless-experiment-result@1';
+export const HEADLESS_COUNTEREXAMPLE_REDUCTION_RESULT_SCHEMA = 'intent-mcu-headless-counterexample-reduction-result@1';
 export const HEADLESS_SUPPORTED_PROFILES = Object.freeze(['board.atmega328p-16mhz-v1']);
 export const HEADLESS_UNAVAILABLE_PROFILES = Object.freeze({
   'board.rp2040-pico-v1': 'HEADLESS_RUNTIME_NOT_IMPLEMENTED',
@@ -74,6 +76,7 @@ export async function prepareSavedHeadlessExperiment(projectText) {
     ok: true, code: 'HEADLESS_PROJECT_ACCEPTED', profile: AVR_PROFILE,
     experimentId: THERMOSTAT_EXPERIMENT_ID, firmwareVariant,
     project: clone(prepared.project), canonicalProjectText: prepared.canonical,
+    brief: clone(prepared.brief),
     runtimeProject: clone(prepared.prepared.runtimeProject),
     scenarioTimeline: clone(prepared.scenarioTimeline),
     projectSha256: sha256(prepared.canonical),
@@ -82,7 +85,7 @@ export async function prepareSavedHeadlessExperiment(projectText) {
   };
 }
 
-async function executeCompiledThermostat(prepared, artifact) {
+export async function executeCompiledThermostat(prepared, artifact) {
   const observations = [];
   const authored = prepared.scenarioTimeline?.scenarios ?? null;
   for (const scenario of authored ?? THERMOSTAT_SCENARIOS.scenarios) {
@@ -118,6 +121,64 @@ async function executeCompiledThermostat(prepared, artifact) {
     observations.push(evaluated.observation);
   }
   return observations;
+}
+
+export async function runSavedHeadlessCounterexampleReduction(projectText, {
+  compile = compileHeadlessAvr, execute = executeCompiledThermostat, signal,
+} = {}) {
+  try {
+    const prepared = await prepareSavedHeadlessExperiment(projectText);
+    if (!prepared.ok) return { ...prepared, schema: HEADLESS_COUNTEREXAMPLE_REDUCTION_RESULT_SCHEMA };
+    if (prepared.firmwareVariant !== 'known-bad-equality') {
+      return { ...failure('COUNTEREXAMPLE_KNOWN_BAD_REQUIRED'),
+        schema: HEADLESS_COUNTEREXAMPLE_REDUCTION_RESULT_SCHEMA };
+    }
+    const artifact = await compile(prepared.buildRequest, { signal });
+    if (!SHA256.test(artifact?.inputIdentity) || !SHA256.test(artifact?.artifactIdentity)
+        || typeof artifact?.artifact?.hex !== 'string') {
+      return { ...runtimeFailure('HEADLESS_BUILD_RESULT_INVALID'),
+        schema: HEADLESS_COUNTEREXAMPLE_REDUCTION_RESULT_SCHEMA };
+    }
+    const baselineObservations = await execute(prepared, artifact);
+    const reduction = await reduceThermostatCounterexample({
+      sourceTimeline: prepared.scenarioTimeline,
+      baselineObservations,
+      sourceBuildInputSha256: artifact.inputIdentity,
+      artifactSha256: artifact.artifactIdentity,
+      replay: async (scenarioTimeline) => execute({
+        ...prepared,
+        scenarioTimeline,
+        canonicalProjectText: canonicalProjectEnvelope(prepared.profile, prepared.project,
+          adapters, prepared.brief, scenarioTimeline),
+      }, artifact),
+    });
+    const reducedProjectText = canonicalProjectEnvelope(prepared.profile, prepared.project,
+      adapters, prepared.brief, reduction.reducedTimeline);
+    return {
+      schema: HEADLESS_COUNTEREXAMPLE_REDUCTION_RESULT_SCHEMA,
+      ok: true,
+      code: 'HEADLESS_COUNTEREXAMPLE_REDUCTION_COMPLETED',
+      executed: true,
+      browserUsed: false,
+      compiledFresh: true,
+      authorityRestoredFromFile: false,
+      profile: prepared.profile,
+      experimentId: prepared.experimentId,
+      firmwareVariant: prepared.firmwareVariant,
+      association: {
+        projectSha256: prepared.projectSha256,
+        sourceDigest: prepared.sourceDigest,
+        compilerInputIdentity: artifact.inputIdentity,
+        artifactIdentity: artifact.artifactIdentity,
+      },
+      reduction: clone(reduction),
+      reducedProjectText,
+    };
+  } catch (error) {
+    const code = error.code ?? error.message ?? 'HEADLESS_COUNTEREXAMPLE_REDUCTION_FAILED';
+    return { ...runtimeFailure(code, error.details ?? []),
+      schema: HEADLESS_COUNTEREXAMPLE_REDUCTION_RESULT_SCHEMA };
+  }
 }
 
 export async function runSavedHeadlessExperiment(projectText, {

@@ -11,6 +11,10 @@ import {
   BUTTON_BOUNCE_PATTERN_MS, FAULT_SCENARIO_TIMELINE_SCHEMA,
   faultInjectionSuite, generateFaultInjectionScenarios, normalizeFaultInjectionSuite,
 } from './fault-injection-suite.mjs';
+import {
+  REDUCED_SCENARIO_TIMELINE_SCHEMA, COUNTEREXAMPLE_REDUCTION_SEED,
+  normalizeCounterexampleReductionProvenance,
+} from './counterexample-reduction.mjs';
 
 export const SCENARIO_TIMELINE_SCHEMA = 'intent-mcu-scenario-timeline@1';
 export const SEEDED_SCENARIO_TIMELINE_SCHEMA = 'intent-mcu-scenario-timeline@2';
@@ -183,13 +187,15 @@ export function normalizeScenarioTimeline(value, profile = SCENARIO_TIMELINE_PRO
   if (value === null) return null;
   const seeded = value?.schema === SEEDED_SCENARIO_TIMELINE_SCHEMA;
   const faulted = value?.schema === FAULT_SCENARIO_TIMELINE_SCHEMA;
+  const reduced = value?.schema === REDUCED_SCENARIO_TIMELINE_SCHEMA;
   if (!value || typeof value !== 'object' || Array.isArray(value)
       || !exactKeys(value, seeded
         ? ['schema', 'profile', 'experimentId', 'propertySuite', 'scenarios']
         : faulted ? ['schema', 'profile', 'experimentId', 'faultSuite', 'scenarios']
+        : reduced ? ['schema', 'profile', 'experimentId', 'reductionProvenance', 'scenarios']
         : ['schema', 'profile', 'experimentId', 'scenarios'])
       || ![SCENARIO_TIMELINE_SCHEMA, SEEDED_SCENARIO_TIMELINE_SCHEMA,
-        FAULT_SCENARIO_TIMELINE_SCHEMA].includes(value.schema)
+        FAULT_SCENARIO_TIMELINE_SCHEMA, REDUCED_SCENARIO_TIMELINE_SCHEMA].includes(value.schema)
       || value.profile !== SCENARIO_TIMELINE_PROFILE || value.profile !== profile
       || value.experimentId !== THERMOSTAT_EXPERIMENT_ID
       || !Array.isArray(value.scenarios) || value.scenarios.length < 1
@@ -228,6 +234,18 @@ export function normalizeScenarioTimeline(value, profile = SCENARIO_TIMELINE_PRO
     }
     return { schema: FAULT_SCENARIO_TIMELINE_SCHEMA, profile: value.profile,
       experimentId: value.experimentId, faultSuite, scenarios };
+  }
+  if (reduced) {
+    const reductionProvenance = normalizeCounterexampleReductionProvenance(value.reductionProvenance);
+    const generated = generateSeededPropertyScenarios(seededPropertySuite(COUNTEREXAMPLE_REDUCTION_SEED))
+      .map((scenario, index) => normalizeScenario(scenario, `$scenarioTimeline.generated[${index}]`));
+    const counterexample = generated.at(-1);
+    if (scenarios.length !== 1 || JSON.stringify(scenarios[0]) !== JSON.stringify(counterexample)) {
+      throw Object.assign(new Error('COUNTEREXAMPLE_REDUCED_SEQUENCE_MISMATCH'),
+        { details: ['$scenarioTimeline.scenarios'] });
+    }
+    return { schema: REDUCED_SCENARIO_TIMELINE_SCHEMA, profile: value.profile,
+      experimentId: value.experimentId, reductionProvenance, scenarios };
   }
   return { schema: SCENARIO_TIMELINE_SCHEMA, profile: value.profile,
     experimentId: value.experimentId, scenarios };
@@ -431,10 +449,12 @@ export class ScenarioTimelineEditor {
     }
     const draft = this.timeline;
     try {
-      if ([SEEDED_SCENARIO_TIMELINE_SCHEMA, FAULT_SCENARIO_TIMELINE_SCHEMA].includes(draft.schema)) {
+      if ([SEEDED_SCENARIO_TIMELINE_SCHEMA, FAULT_SCENARIO_TIMELINE_SCHEMA,
+        REDUCED_SCENARIO_TIMELINE_SCHEMA].includes(draft.schema)) {
         draft.schema = SCENARIO_TIMELINE_SCHEMA;
         delete draft.propertySuite;
         delete draft.faultSuite;
+        delete draft.reductionProvenance;
       }
       if (command?.type === 'scenario.add') draft.scenarios.push(clone(command.scenario));
       else {

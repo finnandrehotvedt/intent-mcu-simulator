@@ -42,13 +42,16 @@ async function runFixed(page) {
 }
 
 function semanticEvidence(observation) {
+  const observed = structuredClone(observation.observed);
+  if (observed.actualInputs?.a1) delete observed.actualInputs.a1.sampleCycle;
+  if (observed.actualInputs?.d2) delete observed.actualInputs.d2.sampleCycle;
   return {
     schema: observation.schema,
     scenarioId: observation.scenarioId,
     status: observation.status,
     outcome: observation.outcome,
     expected: observation.expected,
-    observed: observation.observed,
+    observed,
     checks: observation.checks,
   };
 }

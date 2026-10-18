@@ -526,6 +526,11 @@
           <button id="fault-suite-replay" type="button" disabled>Replay stored faults</button>
           <p id="fault-suite-summary" class="truth" role="status">Supports ideal D2 bounce, stuck A1 temperature and actual D2 external-drive release. Incorrect bus response is unsupported because no response-producing bus model exists.</p>
         </div>
+        <div class="counterexample-reduction-controls" aria-labelledby="counterexample-reduction-title">
+          <div><p class="eyebrow">X24 · MINIMAL REPRODUCIBLE FAILURE</p><h4 id="counterexample-reduction-title">Reduce the failing sequence</h4></div>
+          <button id="counterexample-reduce" type="button" disabled>Reduce 8 cases to 1</button>
+          <p id="counterexample-reduction-summary" class="truth" role="status">Requires seed 305419896, the fresh known-bad build and its one producer-backed D13 failure. Reduction is deterministic and private.</p>
+        </div>
         <div class="scenario-editor-actions"><button id="scenario-add" type="button">Add scenario</button><button id="scenario-undo" type="button">Undo timeline edit</button><button id="scenario-redo" type="button">Redo timeline edit</button><button id="scenario-run" type="button" disabled>Run authored timeline</button></div>
         <div id="scenario-list" class="scenario-list"></div>
         <p id="scenario-editor-message" class="truth" role="status">The timeline is saved with the local project. A fresh matching firmware build is required to run it.</p>

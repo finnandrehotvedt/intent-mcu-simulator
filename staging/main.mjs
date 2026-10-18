@@ -77,6 +77,9 @@ import {
 } from '../src/scenario-timeline.mjs';
 import { aggregateExperimentOutcomes } from '../src/experiment-outcomes.mjs';
 import {
+  COUNTEREXAMPLE_REDUCTION_SEED, reduceThermostatCounterexample,
+} from '../src/counterexample-reduction.mjs';
+import {
   AVR_PROFILE,
   ESP32C3_PROFILE,
   RP2040_PROFILE,
@@ -241,6 +244,7 @@ const elements = Object.fromEntries([
   'scenario-editor', 'scenario-add', 'scenario-undo', 'scenario-redo', 'scenario-run',
   'scenario-list', 'scenario-editor-message',
   'seeded-property-seed', 'seeded-property-exact-value', 'seeded-property-generate', 'seeded-property-replay', 'seeded-property-summary',
+  'counterexample-reduce', 'counterexample-reduction-summary',
   'fault-suite-load', 'fault-suite-replay', 'fault-suite-summary',
   'starter-examples', 'starter-gallery', 'quick-controls', 'workbench-workspace', 'project-bar',
   'family-select', 'board-select', 'controller-status', 'toolchain-boundary',
@@ -372,6 +376,9 @@ let thermostatExperimentRun = null;
 let thermostatExperimentResults = [];
 let authoredScenarioResults = [];
 let scenarioTimelineEditor = null;
+let authoredExperimentWaiter = null;
+let counterexampleReductionActive = false;
+let counterexampleReductionResult = null;
 let thermostatExperimentNotice = 'Build this exact local project before running the experiment.';
 const characterLcdRuntime = new Map();
 const publicPreviewControlStates = new Map();
@@ -2086,6 +2093,7 @@ function applyScenarioTimelineCommand(command, { focusId = null } = {}) {
     return result;
   }
   authoredScenarioResults = [];
+  counterexampleReductionResult = null;
   persistProject();
   elements.scenarioeditormessage.textContent = 'Timeline updated as data only. Prior authored results were cleared; the matching firmware artifact remains available.';
   renderScenarioTimelineEditor();
@@ -2102,6 +2110,7 @@ function renderScenarioTimelineEditor() {
   const timeline = scenarioTimelineEditor?.timeline ?? null;
   const propertySuite = timeline?.propertySuite ?? null;
   const faultSuite = timeline?.faultSuite ?? null;
+  const reductionProvenance = timeline?.reductionProvenance ?? null;
   const running = Boolean(thermostatExperimentRun);
   elements.scenarioadd.disabled = running;
   elements.scenarioundo.disabled = running || !scenarioTimelineEditor?.undoStack.length;
@@ -2112,6 +2121,14 @@ function renderScenarioTimelineEditor() {
   elements.seededpropertyreplay.disabled = running || !propertySuite;
   elements.faultsuiteload.disabled = running;
   elements.faultsuitereplay.disabled = running || !faultSuite;
+  const reducibleFailure = propertySuite?.seed === COUNTEREXAMPLE_REDUCTION_SEED
+    && timeline.scenarios.length === 8
+    && thermostatFirmwareVariant(currentProject()) === 'known-bad-equality'
+    && authoredScenarioResults.length === 8
+    && authoredScenarioResults.filter((item) => item.status === 'failed').length === 1
+    && authoredScenarioResults.every((item) => ['passed', 'failed'].includes(item.status));
+  elements.counterexamplereduce.disabled = running || counterexampleReductionActive
+    || !thermostatRuntimeReady() || !reducibleFailure;
   if (propertySuite) elements.seededpropertyseed.value = String(propertySuite.seed);
   elements.seededpropertyexactvalue.textContent = `Exact seed value: ${elements.seededpropertyseed.value}`;
   const observedFailure = propertySuite
@@ -2123,6 +2140,13 @@ function renderScenarioTimelineEditor() {
   elements.faultsuitesummary.textContent = faultSuite
     ? `Stored model v${faultSuite.modelVersion} · ${faultSuite.limits.scenarios} cases · ideal D2 bounce, stuck A1 temperature and D2 external-drive release${authoredScenarioResults.length ? ` · ${authoredScenarioResults.length - faultFailures}/${authoredScenarioResults.length} producer-backed cases passed` : ''}. Bus-response fault remains unsupported: no response-producing bus model.`
     : 'Supports ideal D2 bounce, stuck A1 temperature and actual D2 external-drive release. Incorrect bus response is unsupported because no response-producing bus model exists.';
+  elements.counterexamplereductionsummary.textContent = counterexampleReductionActive
+    ? 'Reduction running deterministic fresh-reset candidate replays. The public release is unchanged.'
+    : counterexampleReductionResult
+      ? `${counterexampleReductionResult.original.scenarioCount} scenarios / ${counterexampleReductionResult.original.eventCount} events → ${counterexampleReductionResult.reduced.scenarioCount} scenario / ${counterexampleReductionResult.reduced.eventCount} necessary events · ${counterexampleReductionResult.attempts.filter((item) => item.replayed).length} deterministic candidate replays · exact D13 failure preserved · one-minimal, not globally shortest.`
+      : reductionProvenance
+        ? `Saved inert provenance: ${reductionProvenance.originalScenarioCount}/${reductionProvenance.originalEventCount} → ${reductionProvenance.reducedScenarioCount}/${reductionProvenance.reducedEventCount}. Fresh Build and replay are required; no prior result or verdict was restored.`
+        : 'Requires seed 305419896, the fresh known-bad build and its one producer-backed D13 failure. Reduction is deterministic and private.';
   elements.scenarioadd.textContent = timeline ? 'Add scenario' : 'Create editable timeline';
   if (!timeline) {
     const empty = document.createElement('p'); empty.className = 'scenario-empty';
@@ -2254,6 +2278,8 @@ function thermostatPublishedState() {
     results: structuredClone(thermostatExperimentResults),
     authoredTimeline: scenarioTimelineEditor?.timeline ?? null,
     authoredResults: structuredClone(authoredScenarioResults),
+    counterexampleReduction: counterexampleReductionResult ? structuredClone(counterexampleReductionResult) : null,
+    counterexampleReductionActive,
     knownBadCaught: thermostatKnownBadCaught(),
     freshBuildReady: thermostatRuntimeReady(),
   };
@@ -2317,6 +2343,11 @@ function renderThermostatExperimentPanel() {
 }
 function cancelThermostatExperiment(message, { clearResults = true, render = true } = {}) {
   thermostatExperimentRun = null;
+  const waiter = authoredExperimentWaiter;
+  authoredExperimentWaiter = null;
+  if (waiter) waiter.reject(Object.assign(new Error('COUNTEREXAMPLE_REPLAY_INTERRUPTED'), {
+    code: 'COUNTEREXAMPLE_REPLAY_INTERRUPTED', details: [message ?? 'experiment cancelled'],
+  }));
   if (clearResults) { thermostatExperimentResults = []; authoredScenarioResults = []; }
   if (message) thermostatExperimentNotice = message;
   if (render) renderThermostatExperimentPanel();
@@ -2455,7 +2486,10 @@ async function advanceThermostatExperiment(message) {
     : passed === THERMOSTAT_SCENARIOS.scenarios.length
       ? `${THERMOSTAT_SCENARIOS.scenarios.length}/${THERMOSTAT_SCENARIOS.scenarios.length} passed from executed D13, matching UART and complete virtual-cycle input evidence.`
       : `${passed}/${THERMOSTAT_SCENARIOS.scenarios.length} passed · academic ${aggregate.academicStatus} · job ${aggregate.jobStatus}. Failed or incomplete evidence remains visible; missing evidence is never a pass or failed assertion.`;
+  const waiter = run.authored ? authoredExperimentWaiter : null;
+  if (waiter) authoredExperimentWaiter = null;
   renderThermostatExperimentPanel();
+  if (waiter) waiter.resolve(structuredClone(completedResults));
 }
 function loadThermostatFirmwareVariant(variant) {
   if (!thermostatProjectActive()) return { ok: false, code: 'THERMOSTAT_PROJECT_REQUIRED' };
@@ -2463,6 +2497,7 @@ function loadThermostatFirmwareVariant(variant) {
     type: 'source.set', name: 'main.ino', content: thermostatFirmwareSource(variant),
   }, variant === 'known-bad-equality' ? 'Loaded known-bad equality variant' : 'Restored correct equality variant');
   if (result.ok) {
+    counterexampleReductionResult = null;
     thermostatExperimentNotice = variant === 'known-bad-equality'
       ? `Known-bad ≤ firmware loaded. Build it fresh, then run the same ${THERMOSTAT_SCENARIOS.scenarios.length} scenarios.`
       : 'Correct < firmware restored. Build it fresh before testing.';
@@ -4286,6 +4321,8 @@ function detachOutstandingBuild() {
 function installProjectGeneration({ empty, reason, runtimeMessage }) {
   detachOutstandingBuild();
   stopRuntime(runtimeMessage, { updateLifecycle: false });
+  counterexampleReductionResult = null;
+  counterexampleReductionActive = false;
   applyLifecycle({ type: 'project.install', empty, reason });
   savedRevision = null;
   savedProjectGeneration = null;
@@ -6251,6 +6288,7 @@ function installSeededPropertyTimeline(seed, action) {
     const timeline = generateSeededThermostatTimeline(seed);
     scenarioTimelineEditor = new ScenarioTimelineEditor(timeline);
     authoredScenarioResults = [];
+    counterexampleReductionResult = null;
     persistProject();
     elements.scenarioeditormessage.textContent = action === 'replay'
       ? `Replayed stored seed ${seed}; the identical validated input sequence was regenerated. Build authority was unchanged and no verdict was imported.`
@@ -6283,6 +6321,7 @@ function installFaultInjectionTimeline(action) {
     const timeline = faultInjectionThermostatTimeline();
     scenarioTimelineEditor = new ScenarioTimelineEditor(timeline);
     authoredScenarioResults = [];
+    counterexampleReductionResult = null;
     persistProject();
     elements.scenarioeditormessage.textContent = action === 'replay'
       ? 'Replayed the identical stored fault schedule. No build, runtime or verdict authority was imported.'
@@ -6303,6 +6342,60 @@ elements.faultsuitereplay.addEventListener('click', () => {
     throw new Error('FAULT_INJECTION_REPLAY_MISMATCH');
   }
 });
+function replayReductionCandidate(timeline) {
+  if (authoredExperimentWaiter || thermostatExperimentRun) {
+    return Promise.reject(Object.assign(new Error('COUNTEREXAMPLE_REPLAY_BUSY'), { code: 'COUNTEREXAMPLE_REPLAY_BUSY' }));
+  }
+  scenarioTimelineEditor = new ScenarioTimelineEditor(timeline);
+  authoredScenarioResults = [];
+  renderThermostatExperimentPanel();
+  return new Promise((resolve, reject) => {
+    authoredExperimentWaiter = { resolve, reject };
+    const started = startAuthoredScenarioExperiment();
+    if (!started.ok) {
+      authoredExperimentWaiter = null;
+      reject(Object.assign(new Error(started.code), { code: started.code }));
+    }
+  });
+}
+async function startCounterexampleReduction() {
+  if (counterexampleReductionActive || elements.counterexamplereduce.disabled) return;
+  const sourceTimeline = scenarioTimelineEditor.timeline;
+  const baselineObservations = structuredClone(authoredScenarioResults);
+  const association = {
+    inputIdentity: lifecycle.artifact?.inputIdentity ?? null,
+    artifactIdentity: lifecycle.artifact?.artifactIdentity ?? null,
+  };
+  counterexampleReductionActive = true;
+  counterexampleReductionResult = null;
+  elements.scenarioeditormessage.textContent = 'Reducing the failing seeded suite with fixed-order fresh-reset replays. No source, service or public release is changing.';
+  renderThermostatExperimentPanel();
+  try {
+    const result = await reduceThermostatCounterexample({
+      sourceTimeline,
+      baselineObservations,
+      sourceBuildInputSha256: association.inputIdentity,
+      artifactSha256: association.artifactIdentity,
+      replay: replayReductionCandidate,
+    });
+    if (lifecycle.artifact?.inputIdentity !== association.inputIdentity
+        || lifecycle.artifact?.artifactIdentity !== association.artifactIdentity) {
+      throw Object.assign(new Error('COUNTEREXAMPLE_BUILD_BINDING_CHANGED'), { code: 'COUNTEREXAMPLE_BUILD_BINDING_CHANGED' });
+    }
+    scenarioTimelineEditor = new ScenarioTimelineEditor(result.reducedTimeline);
+    counterexampleReductionResult = result;
+    persistProject();
+    elements.scenarioeditormessage.textContent = 'Reduced 8 scenarios / 24 events to one three-event producer-backed failure. Saved provenance is inert; Open still requires a fresh Build and replay.';
+  } catch (error) {
+    scenarioTimelineEditor = new ScenarioTimelineEditor(sourceTimeline);
+    authoredScenarioResults = baselineObservations;
+    elements.scenarioeditormessage.textContent = `Reduction stopped (${error.code ?? error.message}). The original accepted seeded timeline was restored.`;
+  } finally {
+    counterexampleReductionActive = false;
+    renderThermostatExperimentPanel();
+  }
+}
+elements.counterexamplereduce.addEventListener('click', () => { void startCounterexampleReduction(); });
 elements.scenarioadd.addEventListener('click', () => {
   if (!scenarioTimelineEditor) {
     scenarioTimelineEditor = new ScenarioTimelineEditor(defaultThermostatScenarioTimeline());

@@ -767,6 +767,9 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .fault-suite-controls { display: grid; grid-template-columns: minmax(260px, 1fr) auto auto; gap: 10px; align-items: end; margin: 14px 0; padding: 12px; border: 1px solid #725a2d; border-radius: 10px; background: #1d170a; }
 .fault-suite-controls h4, .fault-suite-controls p { margin: 0; }
 .fault-suite-controls .truth { grid-column: 1 / -1; color: var(--muted); font: .72rem/1.45 ui-monospace, monospace; }
+.counterexample-reduction-controls { display: grid; grid-template-columns: minmax(260px, 1fr) auto; gap: 10px; align-items: end; margin: 14px 0; padding: 12px; border: 1px solid #48792f; border-radius: 10px; background: #10220d; }
+.counterexample-reduction-controls h4, .counterexample-reduction-controls p { margin: 0; }
+.counterexample-reduction-controls .truth { grid-column: 1 / -1; color: var(--muted); font: .72rem/1.45 ui-monospace, monospace; }
 .scenario-editor-actions, .scenario-add-events { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
 .scenario-editor-actions #scenario-run { color: #07121d; border-color: var(--lime); background: var(--lime); }
 .scenario-list { display: grid; gap: 12px; }
@@ -955,6 +958,8 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   .seeded-property-controls .truth { grid-column: 1; }
   .fault-suite-controls { grid-template-columns: 1fr; }
   .fault-suite-controls .truth { grid-column: 1; }
+  .counterexample-reduction-controls { grid-template-columns: 1fr; }
+  .counterexample-reduction-controls .truth { grid-column: 1; }
   .project-brief-purpose { grid-column: 1; }
   .project-brief-heading, .project-brief-footer, .requirement-trace-heading { align-items: flex-start; flex-direction: column; }
   .instrument-evidence-heading { display: grid; }
