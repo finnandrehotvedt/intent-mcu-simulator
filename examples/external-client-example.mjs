@@ -31,8 +31,8 @@ try {
     const result = await send(boundedActionRequest(action, ready.context.profile, generation, payload,
       { ttlMs: 30_000, requestId }));
     if (!result.ok) throw new Error(`${action}:${JSON.stringify(result)}`);
-    generation = result.generationAfter;
-    return result;
+    generation = result.generation.after;
+    return result.authoritativeResult;
   };
   const created = await call('project.create', { starterId: 'avr-thermostat-boundary-v1' });
   const proposed = await call('patch.propose', { description: 'Change the thermostat status message while preserving every requirement.' });

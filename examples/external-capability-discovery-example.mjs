@@ -35,10 +35,11 @@ try {
   if (!starterId) throw new Error('DISCOVERED_STARTER_MISSING');
   const supported = await send(JSON.parse(boundedActionRequest(supportedAction, avr.id,
     ready.context.generation, { starterId }, { requestId: 'external-discovered-action', ttlMs: 30_000 })));
+  if (!supported.ok || supported.category !== 'success') throw new Error(`DISCOVERED_ACTION_FAILED:${JSON.stringify(supported)}`);
   const unsupportedVersion = await send({ schema: CAPABILITY_DISCOVERY_REQUEST_SCHEMA,
     requestId: 'external-unsupported-version', acceptSchema: 'intent-mcu-capability-discovery@99' });
   const inventedAction = JSON.parse(boundedActionRequest('project.validate', avr.id,
-    supported.generationAfter ?? ready.context.generation, {}, { requestId: 'external-invented-action', ttlMs: 30_000 }));
+    supported.generation.after ?? ready.context.generation, {}, { requestId: 'external-invented-action', ttlMs: 30_000 }));
   inventedAction.action = 'capability.adc.enable';
   const rejectedAction = await send(inventedAction);
   process.stdout.write(`${JSON.stringify({ status: 'pass', ready, discovery, supported,

@@ -45,6 +45,20 @@ export function parseExternalClientLine(line, now = Date.now()) {
   return Object.freeze({ kind: 'action', value: parseBoundedActionRequest(line, now), source: line });
 }
 
+export function externalClientLineAssociation(line) {
+  try {
+    if (typeof line !== 'string' || new TextEncoder().encode(line).byteLength > BOUNDED_ACTION_REQUEST_LIMIT) return {};
+    const value = parseStrictJson(line, BOUNDED_ACTION_REQUEST_LIMIT);
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+    return {
+      requestId: value.requestId,
+      action: value.schema === CAPABILITY_DISCOVERY_REQUEST_SCHEMA ? null : value.action,
+      profile: value.profile,
+      expectedGeneration: value.expectedGeneration,
+    };
+  } catch { return {}; }
+}
+
 export function externalClientError(code, requestId = null) {
   return Object.freeze({
     schema: EXTERNAL_CLIENT_ERROR_SCHEMA,

@@ -1,4 +1,25 @@
-# Intent MCU Simulator 1.1.0-rc.40
+# Intent MCU Simulator 1.1.0-rc.41
+
+This result-contract release completes X11 without adding an action or public
+endpoint. The existing local stdio adapter now gives every bounded action one
+stable machine-readable category while retaining the complete authoritative
+router result.
+
+Clients can distinguish validation failure, unsupported capability, temporary
+busy, timeout, cancellation, producer-backed test failure and other execution
+failure. Request ID, action, profile, generation and public source identity
+remain associated. Only busy recommends a delayed retry with a fresh request
+ID. Unsupported, timeout, cancellation and environment failure never become a
+test failure, and no runtime evidence is manufactured. The integrated
+acceptance also runs the existing three-scenario AVR thermostat test through
+the external client: correct firmware passes, while the compiled known-bad
+equality variant reports its actual D13 HIGH observation as `test-failure`,
+with distinct source and artifact identities. Controlled busy/timeout cases
+remain explicitly separate fixtures and never claim production overload.
+
+---
+
+## 1.1.0-rc.40
 
 This capability-discovery release completes X10 without expanding the seven
 existing action contracts. A separate local client can request one strict,

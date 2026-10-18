@@ -26,13 +26,16 @@ child.on('exit', (code) => {
   assert.equal(result.discovery.discovery.profiles.length, 4);
   assert.equal(result.discovery.discovery.parts.length, 19);
   assert.equal(result.supported.ok, true);
-  assert.equal(result.supported.action, 'project.create');
+  assert.equal(result.supported.category, 'success');
+  assert.equal(result.supported.authoritativeResult.action, 'project.create');
   assert.equal(result.unsupportedCapability.status, 'unavailable');
-  assert.equal(result.unsupportedVersion.code, 'CAPABILITY_DISCOVERY_VERSION_UNSUPPORTED');
-  assert.equal(result.unsupportedVersion.executed, false);
-  assert.equal(result.rejectedAction.code, 'ACTION_UNSUPPORTED');
-  assert.equal(result.rejectedAction.executed, false);
+  assert.equal(result.unsupportedVersion.category, 'unsupported');
+  assert.equal(result.unsupportedVersion.source.code, 'CAPABILITY_DISCOVERY_VERSION_UNSUPPORTED');
+  assert.equal(result.unsupportedVersion.source.executed, false);
+  assert.equal(result.rejectedAction.category, 'unsupported');
+  assert.equal(result.rejectedAction.source.code, 'ACTION_UNSUPPORTED');
+  assert.equal(result.rejectedAction.source.executed, false);
   process.stdout.write(`${JSON.stringify({ status: 'pass', profiles: 4, parts: 19,
-    supportedAction: result.supported.action, unsupportedCapability: 'Pico ADC',
-    unsupportedVersion: result.unsupportedVersion.code, inventedAction: result.rejectedAction.code })}\n`);
+    supportedAction: result.supported.authoritativeResult.action, unsupportedCapability: 'Pico ADC',
+    unsupportedVersion: result.unsupportedVersion.source.code, inventedAction: result.rejectedAction.source.code })}\n`);
 });

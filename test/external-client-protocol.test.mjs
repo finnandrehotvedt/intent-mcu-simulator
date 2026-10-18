@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { boundedActionRequest } from '../src/bounded-action-contracts.mjs';
 import {
   EXTERNAL_CLIENT_CANCEL_SCHEMA, EXTERNAL_CLIENT_ORIGIN,
-  parseExternalClientLine, resolveExternalClientOrigin,
+  externalClientLineAssociation, parseExternalClientLine, resolveExternalClientOrigin,
 } from '../src/external-client-protocol.mjs';
 import {
   CAPABILITY_DISCOVERY_REQUEST_SCHEMA, CAPABILITY_DISCOVERY_SCHEMA,
@@ -37,8 +37,12 @@ test('transport accepts the existing action request, bounded cancel and read-onl
 });
 
 test('discovery transport rejects unsupported versions and added authority fields', () => {
-  assert.throws(() => parseExternalClientLine(JSON.stringify({ schema: CAPABILITY_DISCOVERY_REQUEST_SCHEMA,
-    requestId: 'external-discovery-version', acceptSchema: 'intent-mcu-capability-discovery@99' }), now), /VERSION_UNSUPPORTED/);
+  const unsupported = JSON.stringify({ schema: CAPABILITY_DISCOVERY_REQUEST_SCHEMA,
+    requestId: 'external-discovery-version', acceptSchema: 'intent-mcu-capability-discovery@99' });
+  assert.throws(() => parseExternalClientLine(unsupported, now), /VERSION_UNSUPPORTED/);
+  assert.deepEqual(externalClientLineAssociation(unsupported), {
+    requestId: 'external-discovery-version', action: null, profile: undefined, expectedGeneration: undefined,
+  });
   assert.throws(() => parseExternalClientLine(JSON.stringify({ schema: CAPABILITY_DISCOVERY_REQUEST_SCHEMA,
     requestId: 'external-discovery-authority', acceptSchema: CAPABILITY_DISCOVERY_SCHEMA,
     apply: true }), now), /REQUEST_SHAPE/);

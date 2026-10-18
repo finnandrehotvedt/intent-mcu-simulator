@@ -1,4 +1,4 @@
-# Migration to 1.1.0-rc.40
+# Migration to 1.1.0-rc.41
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains

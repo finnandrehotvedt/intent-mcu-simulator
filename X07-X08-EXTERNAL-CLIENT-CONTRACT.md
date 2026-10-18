@@ -13,3 +13,7 @@ the visible UI path. Client data is never used as JavaScript or a command.
 The ready event declares `applyAuthority:false`, `genericCommand:false`,
 `externalEndpoint:false` and `durableServerProject:false`. These values are
 acceptance boundaries, not feature flags.
+
+Action responses are projected through the additive X11 result envelope. The
+original bounded-action response remains unchanged in `authoritativeResult`;
+the projection grants no additional action or authority.

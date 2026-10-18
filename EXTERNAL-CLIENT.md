@@ -43,3 +43,20 @@ worker observations; other controller profiles retain their documented
 runtime/model boundaries. Deterministic prompt, validation and project-export
 bytes may be compared exactly. Runtime cycles are observations and are never
 normalized or presented as byte-identical runs.
+
+Every action response uses `intent-mcu-external-client-result@1` and separates
+`validation-failure`, `unsupported`, `temporarily-busy`, `timeout`,
+`cancelled`, `test-failure` and other execution failures from success. The
+unchanged router response remains in `authoritativeResult`, with stable
+request/profile/generation and public source-identity association. Only busy
+recommends one delayed retry with a fresh request ID. A test failure requires
+an executed producer-backed supported verdict; error text or a failed job can
+never manufacture one. See `X11-RESULT-CODES-SPEC.md` for the exact contract.
+
+The bounded thermostat acceptance uses the same seven actions. For the exact
+`avr-thermostat-boundary-v1` starter, `project.create` may select the approved
+`correct` or `known-bad-equality` firmware variant, and `runtime.run` may name
+that experiment. The resulting actual three-scenario verdict is available in
+`runtime.run` and `result.read`, associated with the compiler input hash,
+artifact hash, project/runtime generations and scenario observation. This is a
+fixed test capability, not arbitrary source selection or a new action.

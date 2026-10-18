@@ -8,6 +8,7 @@ import {
   PRODUCT_VERSION, capabilityDiscoveryResult, capabilityDiscoverySnapshot,
 } from '../src/capability-discovery.mjs';
 import { BOUNDED_ACTIONS } from '../src/bounded-action-contracts.mjs';
+import { EXTERNAL_CLIENT_RESULT_LIMIT, EXTERNAL_CLIENT_RESULT_SCHEMA } from '../src/external-client-results.mjs';
 import { COMPONENT_SUPPORT_CELLS } from '../src/component-support-matrix.mjs';
 import { CONTROLLER_CAPABILITIES } from '../src/controller-capabilities.mjs';
 import { CANDIDATE_COMPILER_TARGETS } from '../src/compile-targets.mjs';
@@ -37,6 +38,8 @@ test('discovery exposes all four canonical profile, UI, pin, API, part and toolc
   assert.equal(discovered.actions.count, 7);
   assert.deepEqual(discovered.actions.names, BOUNDED_ACTIONS);
   assert.equal(discovered.actions.applyAuthority, false);
+  assert.equal(discovered.contracts.externalClientResult, EXTERNAL_CLIENT_RESULT_SCHEMA);
+  assert.equal(discovered.quotas.externalClientResultBytes, EXTERNAL_CLIENT_RESULT_LIMIT);
   assert.equal(discovered.transport.publicEndpoint, false);
   assert(new TextEncoder().encode(JSON.stringify(discovered)).byteLength <= discovered.transport.maximumResponseBytes);
 });

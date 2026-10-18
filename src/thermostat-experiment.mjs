@@ -153,7 +153,7 @@ function thermostatLayout(graph) {
   };
 }
 
-export function createThermostatExperiment() {
+export function createThermostatExperiment(firmwareVariant = 'correct') {
   const graph = thermostatCircuit();
   const boardOnly = {
     schema: CIRCUIT_SCHEMA,
@@ -161,7 +161,7 @@ export function createThermostatExperiment() {
     nets: [],
     junctions: [],
   };
-  const baseV2 = projectFromCircuit(boardOnly, THERMOSTAT_EXPERIMENT_SOURCE);
+  const baseV2 = projectFromCircuit(boardOnly, thermostatFirmwareSource(firmwareVariant));
   baseV2.metadata.name = THERMOSTAT_EXPERIMENT_CARD.name;
   baseV2.instruments.logicChannels = ['D2', 'D13'];
   baseV2.instruments.selectedPin = 'D13';

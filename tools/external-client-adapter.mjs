@@ -7,8 +7,11 @@ import { pathToFileURL } from 'node:url';
 import readline from 'node:readline';
 import {
   EXTERNAL_CLIENT_CONTROL_RESULT_SCHEMA, EXTERNAL_CLIENT_READY_SCHEMA,
-  externalClientError, parseExternalClientLine, resolveExternalClientOrigin,
+  externalClientError, externalClientLineAssociation, parseExternalClientLine, resolveExternalClientOrigin,
 } from '../src/external-client-protocol.mjs';
+import {
+  EXTERNAL_CLIENT_RESULT_SCHEMA, externalClientRequestAssociation, externalClientResult,
+} from '../src/external-client-results.mjs';
 
 const write = (value) => process.stdout.write(`${JSON.stringify(value)}\n`);
 
@@ -46,18 +49,24 @@ export async function runExternalClientAdapter({ environment = process.env } = {
       discoverySchema: window.__CAPABILITY_DISCOVERY__.schema,
       discoveryRequestSchema: window.__CAPABILITY_DISCOVERY__.requestSchema,
       discoveryReadOnly: window.__CAPABILITY_DISCOVERY__.readOnly,
+      sourceIdentity: window.__CAPABILITY_DISCOVERY__.snapshot().identity,
     }));
     if (ready.schema !== EXTERNAL_CLIENT_READY_SCHEMA || ready.actions.length !== 7
         || ready.externalEndpoint !== false || ready.applyAuthority !== false || ready.discoveryReadOnly !== true) {
       throw new Error('EXTERNAL_CLIENT_PAGE_CONTRACT_MISMATCH');
     }
-    write({ ...ready, transport: 'stdio', origin, durableServerProject: false });
+    write({ ...ready, transport: 'stdio', origin, durableServerProject: false,
+      resultSchema: EXTERNAL_CLIENT_RESULT_SCHEMA });
 
     const input = readline.createInterface({ input: process.stdin, crlfDelay: Infinity, terminal: false });
     input.on('line', async (line) => {
       let parsed;
       try { parsed = parseExternalClientLine(line); }
-      catch (error) { write(externalClientError(error.code ?? error.message)); return; }
+      catch (error) {
+        const association = externalClientLineAssociation(line);
+        write(externalClientResult(externalClientError(error.code ?? error.message, association.requestId),
+          association, ready.sourceIdentity)); return;
+      }
       if (parsed.kind === 'cancel') {
         const result = await page.evaluate((target) => window.__AGENT_ACTIONS__.cancel(target), parsed.value.targetRequestId);
         write({ schema: EXTERNAL_CLIENT_CONTROL_RESULT_SCHEMA, requestId: parsed.value.requestId,
@@ -69,16 +78,22 @@ export async function runExternalClientAdapter({ environment = process.env } = {
           const result = await page.evaluate((request) => window.__CAPABILITY_DISCOVERY__.request(request), parsed.value);
           write(result);
         } catch (error) {
-          write(externalClientError(error.code ?? error.message ?? 'CAPABILITY_DISCOVERY_FAILED', parsed.value.requestId));
+          const failure = externalClientError(
+            error.code ?? error.message ?? 'CAPABILITY_DISCOVERY_FAILED', parsed.value.requestId,
+          );
+          write(externalClientResult(failure, parsed.value, ready.sourceIdentity));
         }
         return;
       }
       try {
         // Fixed adapter code forwards data only. The client cannot provide a function or script.
         const result = await page.evaluate((source) => window.__AGENT_ACTIONS__.execute(source), parsed.source);
-        write(result);
+        write(externalClientResult(result, parsed.value, ready.sourceIdentity));
       } catch (error) {
-        write(externalClientError(error.code ?? error.message ?? 'EXTERNAL_CLIENT_ACTION_FAILED', parsed.value.requestId));
+        const failure = externalClientError(
+          error.code ?? error.message ?? 'EXTERNAL_CLIENT_ACTION_FAILED', parsed.value.requestId,
+        );
+        write(externalClientResult(failure, externalClientRequestAssociation(parsed.value), ready.sourceIdentity));
       }
     });
     await new Promise((resolve) => input.once('close', resolve));

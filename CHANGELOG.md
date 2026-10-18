@@ -2,6 +2,23 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.41 — 2026-10-18
+
+- Completed X11 with one stable stdio result envelope that distinguishes
+  validation failure, unsupported capability, temporary busy, timeout,
+  cancellation, producer-backed test failure and other execution failure.
+- Preserved the unchanged authoritative router result and bound each outcome
+  to request, action, profile, generation and public source identity. Only
+  temporary busy recommends a bounded delayed retry with a fresh request ID.
+- Split timeout from cancellation in the existing bounded router and proved
+  every category in a separate deterministic fixture process. The known-bad
+  thermostat result uses the existing observation evaluator. An integrated
+  external-client acceptance compiles and runs both the correct and known-bad
+  equality firmware through the actual three-scenario AVR path, associates
+  each verdict with its source/artifact identity, and observes only the known-
+  bad equality scenario fail with D13 HIGH. Controlled busy/timeout output is
+  explicitly labelled fixture evidence, not production runtime observation.
+
 ## 1.1.0-rc.40 — 2026-10-18
 
 - Completed X10 with a strict read-only capability-discovery request on the

@@ -13,6 +13,7 @@ import {
 import { CONTROLLER_CAPABILITIES } from './controller-capabilities.mjs';
 import { CANDIDATE_COMPILER_TARGETS } from './compile-targets.mjs';
 import { ESP32C3_BOARD_DEFINITION } from './esp32c3-public-circuit.mjs';
+import { EXTERNAL_CLIENT_RESULT_LIMIT, EXTERNAL_CLIENT_RESULT_SCHEMA } from './external-client-results.mjs';
 import { PROJECT_ENVELOPE_LIMIT, PROJECT_ENVELOPE_SCHEMA } from './project-envelope.mjs';
 import { PUBLIC_CONTROLLER_VIEW_SCHEMA, publicControllerViews } from './public-controller-workbench-view.mjs';
 import { RP2040_PICO_BOARD_DEFINITION } from './rp2040-pico-circuit.mjs';
@@ -22,7 +23,7 @@ export const CAPABILITY_DISCOVERY_SCHEMA = 'intent-mcu-capability-discovery@1';
 export const CAPABILITY_DISCOVERY_REQUEST_SCHEMA = 'intent-mcu-capability-discovery-request@1';
 export const CAPABILITY_DISCOVERY_RESULT_SCHEMA = 'intent-mcu-capability-discovery-result@1';
 export const CAPABILITY_DISCOVERY_LIMIT = BOUNDED_ACTION_RESULT_LIMIT;
-export const PRODUCT_VERSION = '1.1.0-rc.40';
+export const PRODUCT_VERSION = '1.1.0-rc.41';
 export const PRODUCT_SOURCE = 'https://github.com/finnandrehotvedt/intent-mcu-simulator';
 
 const PROFILE_ORDER = COMPONENT_SUPPORT_PROFILES.map(({ id }) => id);
@@ -98,6 +99,7 @@ export function capabilityDiscoverySnapshot() {
     quotas: {
       actionRequestBytes: BOUNDED_ACTION_REQUEST_LIMIT,
       actionResultBytes: BOUNDED_ACTION_RESULT_LIMIT,
+      externalClientResultBytes: EXTERNAL_CLIENT_RESULT_LIMIT,
       actionTtlMaximumMs: BOUNDED_ACTION_TTL_MAX_MS,
       build: clone(BUILD_LIMITS),
       circuit: clone(CIRCUIT_LIMITS),
@@ -107,6 +109,7 @@ export function capabilityDiscoverySnapshot() {
       projectEnvelope: PROJECT_ENVELOPE_SCHEMA,
       controllerCapabilities: CONTROLLER_CAPABILITIES.schema,
       componentSupport: COMPONENT_SUPPORT_CELLS[0]?.schema ?? null,
+      externalClientResult: EXTERNAL_CLIENT_RESULT_SCHEMA,
     },
     profiles: PROFILE_ORDER.map(profileRecord),
     parts: COMPONENT_SUPPORT_MODELS.map(clone),

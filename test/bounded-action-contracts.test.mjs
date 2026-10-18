@@ -55,6 +55,14 @@ test('X08 request parser rejects unknown duplicate malformed payload and stale t
   assert.throws(() => parseBoundedActionRequest(JSON.stringify({ ...valid, command: 'rm' }), NOW), /ACTION_REQUEST_SHAPE/u);
   assert.throws(() => parseBoundedActionRequest(JSON.stringify({ ...valid, action: 'firmware.shell' }), NOW), /ACTION_UNSUPPORTED/u);
   assert.throws(() => parseBoundedActionRequest(JSON.stringify({ ...valid, payload: { build: true } }), NOW), /ACTION_PAYLOAD_SHAPE/u);
+  assert.doesNotThrow(() => parseBoundedActionRequest(request('runtime.run', { experimentId: 'avr-thermostat-boundary-v1' }), NOW));
+  assert.throws(() => parseBoundedActionRequest(request('runtime.run', { experimentId: 'invented-test' }), NOW), /ACTION_RUN_PAYLOAD/u);
+  assert.doesNotThrow(() => parseBoundedActionRequest(request('project.create', {
+    starterId: 'avr-thermostat-boundary-v1', firmwareVariant: 'known-bad-equality',
+  }), NOW));
+  assert.throws(() => parseBoundedActionRequest(request('project.create', {
+    starterId: 'avr-blink-v1', firmwareVariant: 'known-bad-equality',
+  }), NOW), /VARIANT_UNSUPPORTED/u);
   assert.throws(() => parseBoundedActionRequest('{"schema":"intent-mcu-bounded-action-request@1","schema":"other"}', NOW), /DUPLICATE_KEY/u);
   assert.throws(() => parseBoundedActionRequest({ ...valid, expiresAtMs: NOW }, NOW), /ACTION_EXPIRED|ACTION_TTL/u);
   assert.throws(() => parseBoundedActionRequest({ ...valid, issuedAtMs: NOW + 2_000, expiresAtMs: NOW + 3_000 }, NOW), /ACTION_NOT_YET_VALID/u);
@@ -86,7 +94,7 @@ test('X08 cancellation reaches the active handler and prevents a result', async 
   const executing = router.execute(request('firmware.build', {}, 'request-cancel-build'));
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.deepEqual(router.cancel('request-cancel-build'), { ok: true, code: 'ACTION_CANCEL_REQUESTED' });
-  assert.equal((await executing).code, 'ACTION_CANCELLED_OR_EXPIRED');
+  assert.equal((await executing).code, 'ACTION_CANCELLED');
   assert.deepEqual(router.active(), []);
 });
 

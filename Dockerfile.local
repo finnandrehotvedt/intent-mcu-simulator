@@ -6,7 +6,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts --no-audit --no-fund \
     && npm cache clean --force
 COPY . ./
-RUN npm run build
+RUN npm run build && chmod -R a+rX /workspace
 
 ENV HOME=/tmp NO_UPDATE_NOTIFIER=1 \
     STAGING_HOST=0.0.0.0 STAGING_PORT=18766 \

@@ -35,7 +35,7 @@ const REQUEST_KEYS = Object.freeze([
   'issuedAtMs', 'expiresAtMs', 'payload',
 ]);
 const EMPTY_PAYLOAD_ACTIONS = new Set([
-  'project.validate', 'firmware.build', 'runtime.run', 'result.read', 'project.export',
+  'project.validate', 'firmware.build', 'result.read', 'project.export',
 ]);
 const clone = (value) => structuredClone(value);
 
@@ -57,11 +57,24 @@ function actionError(code, details = []) {
 function parsePayload(action, payload) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) actionError('ACTION_PAYLOAD_SHAPE');
   if (action === 'project.create') {
-    if (!exactKeys(payload, ['starterId']) || typeof payload.starterId !== 'string'
+    const keysValid = exactKeys(payload, ['starterId'])
+      || exactKeys(payload, ['starterId', 'firmwareVariant']);
+    if (!keysValid || typeof payload.starterId !== 'string'
         || !/^[a-z0-9][a-z0-9-]{0,63}$/u.test(payload.starterId)) actionError('ACTION_CREATE_PAYLOAD');
+    if (Object.hasOwn(payload, 'firmwareVariant')
+        && (payload.starterId !== 'avr-thermostat-boundary-v1'
+          || !['correct', 'known-bad-equality'].includes(payload.firmwareVariant))) {
+      actionError('ACTION_CREATE_VARIANT_UNSUPPORTED');
+    }
   } else if (action === 'patch.propose') {
     if (!exactKeys(payload, ['description']) || typeof payload.description !== 'string'
         || !payload.description.trim() || payload.description.length > 2_000) actionError('ACTION_PATCH_PAYLOAD');
+  } else if (action === 'runtime.run') {
+    if (!exactKeys(payload, [])
+        && (!exactKeys(payload, ['experimentId'])
+          || payload.experimentId !== 'avr-thermostat-boundary-v1')) {
+      actionError('ACTION_RUN_PAYLOAD');
+    }
   } else if (!EMPTY_PAYLOAD_ACTIONS.has(action) || !exactKeys(payload, [])) {
     actionError('ACTION_PAYLOAD_SHAPE');
   }
@@ -131,7 +144,7 @@ export function createBoundedActionRouter({ handlers, currentContext, now = () =
     if (before.generation !== request.expectedGeneration) return fail('ACTION_STALE_GENERATION');
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort('ACTION_EXPIRED'), Math.max(1, request.expiresAtMs - now()));
+    const timeout = setTimeout(() => controller.abort('ACTION_TIMEOUT'), Math.max(1, request.expiresAtMs - now()));
     active.set(request.requestId, controller);
     try {
       const result = await handlers[request.action](clone(request.payload), {
@@ -139,7 +152,10 @@ export function createBoundedActionRouter({ handlers, currentContext, now = () =
         request: clone(request),
         context: clone(before),
       });
-      if (controller.signal.aborted || request.expiresAtMs <= now()) return fail('ACTION_CANCELLED_OR_EXPIRED');
+      if (controller.signal.aborted || request.expiresAtMs <= now()) {
+        return fail(controller.signal.reason === 'ACTION_TIMEOUT' || request.expiresAtMs <= now()
+          ? 'ACTION_TIMEOUT' : 'ACTION_CANCELLED');
+      }
       if (!result || typeof result !== 'object' || Array.isArray(result)) return fail('ACTION_RESULT_SHAPE');
       const encoded = JSON.stringify(result);
       if (new TextEncoder().encode(encoded).byteLength > BOUNDED_ACTION_RESULT_LIMIT) return fail('ACTION_RESULT_LIMIT');
@@ -161,7 +177,10 @@ export function createBoundedActionRouter({ handlers, currentContext, now = () =
         executed: true,
       };
     } catch (error) {
-      return fail(controller.signal.aborted ? 'ACTION_CANCELLED_OR_EXPIRED' : (error.code ?? error.message ?? 'ACTION_FAILED'));
+      if (controller.signal.aborted) {
+        return fail(controller.signal.reason === 'ACTION_TIMEOUT' ? 'ACTION_TIMEOUT' : 'ACTION_CANCELLED');
+      }
+      return fail(error.code ?? error.message ?? 'ACTION_FAILED');
     } finally {
       clearTimeout(timeout);
       active.delete(request.requestId);

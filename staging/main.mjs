@@ -3085,6 +3085,25 @@ function waitForActionEvidence(predicate, signal, timeoutMs = 8_000) {
     }, 25);
   });
 }
+function boundedThermostatTestEvidence(profile = selectedCompilerProfile) {
+  if (profile !== AVR_PROFILE || !thermostatProjectActive()
+      || thermostatExperimentResults.length !== THERMOSTAT_SCENARIOS.scenarios.length
+      || !lifecycle.runtimeBinding || loadedSourceIdentity !== buildInputIdentity()) return null;
+  const observations = structuredClone(thermostatExperimentResults);
+  const primaryObservation = observations.find((item) => item.status === 'failed') ?? observations.at(-1);
+  return {
+    schema: 'intent-mcu-bounded-test-evidence@1',
+    experimentId: THERMOSTAT_EXPERIMENT_ID,
+    firmwareVariant: thermostatFirmwareVariant(currentProject()),
+    status: observations.every((item) => item.status === 'passed') ? 'passed' : 'failed',
+    artifactIdentity: lifecycle.runtimeBinding.artifactIdentity,
+    sourceIdentity: lifecycle.artifact.inputIdentity,
+    projectGeneration: lifecycle.runtimeBinding.projectGeneration,
+    runtimeGeneration: lifecycle.runtimeBinding.runtimeGeneration,
+    primaryObservation,
+    observations,
+  };
+}
 function boundedRuntimeResult(profile = selectedCompilerProfile) {
   if (profile === AVR_PROFILE) {
     const runtime = window.__M6_STATE__.runtime;
@@ -3104,6 +3123,7 @@ function boundedRuntimeResult(profile = selectedCompilerProfile) {
       serial: structuredClone((runtime.instruments?.serial?.records ?? []).slice(-64)),
       serialRetainedCount: runtime.instruments?.serial?.records?.length ?? 0,
       verdict: null,
+      testEvidence: boundedThermostatTestEvidence(profile),
     };
   }
   const state = actionWorkbench(profile)?.snapshot();
@@ -3168,12 +3188,37 @@ async function runThroughActiveUi(profile, signal) {
     signal.removeEventListener('abort', cancel);
   }
 }
+async function runThermostatTestThroughUi(profile, signal) {
+  if (profile !== AVR_PROFILE || !thermostatProjectActive()) {
+    return { ok: false, code: 'ACTION_TEST_UNSUPPORTED' };
+  }
+  const cancel = () => {
+    cancelThermostatExperiment('Agent test action cancelled; no verdict retained.');
+    const paused = applyLifecycle({ type: 'runtime.pause' });
+    if (paused.accepted) worker?.postMessage({ command: 'pause' });
+  };
+  signal.addEventListener('abort', cancel, { once: true });
+  try {
+    const started = startThermostatExperiment();
+    if (!started.ok) return started;
+    await waitForActionEvidence(() => boundedThermostatTestEvidence(profile), signal);
+    throwIfActionCancelled(signal);
+    const testEvidence = boundedThermostatTestEvidence(profile);
+    return {
+      ok: testEvidence.status === 'passed',
+      code: 'ACTION_TEST_EVALUATED',
+      artifactIdentity: testEvidence.artifactIdentity,
+      sourceIdentity: testEvidence.sourceIdentity,
+      testEvidence,
+    };
+  } finally { signal.removeEventListener('abort', cancel); }
+}
 const boundedActionHandlers = Object.freeze({
-  async 'project.create'({ starterId }, { signal, context }) {
+  async 'project.create'({ starterId, firmwareVariant = 'correct' }, { signal, context }) {
     throwIfActionCancelled(signal);
     if (isProjectDirty(context.profile)) return { ok: false, code: 'ACTION_UNSAVED_CHANGES' };
     if (context.profile === AVR_PROFILE) {
-      const result = loadExampleProject(starterId, 'agent.project.create');
+      const result = loadExampleProject(starterId, 'agent.project.create', { firmwareVariant });
       return result?.ok ? { ok: true, code: 'ACTION_PROJECT_CREATED', starterId }
         : { ok: false, code: result?.code ?? 'ACTION_STARTER_UNSUPPORTED' };
     }
@@ -3202,7 +3247,8 @@ const boundedActionHandlers = Object.freeze({
     return result;
   },
   'firmware.build': (_payload, { signal, context }) => buildThroughActiveUi(context.profile, signal),
-  'runtime.run': (_payload, { signal, context }) => runThroughActiveUi(context.profile, signal),
+  'runtime.run': (payload, { signal, context }) => payload.experimentId
+    ? runThermostatTestThroughUi(context.profile, signal) : runThroughActiveUi(context.profile, signal),
   async 'result.read'(_payload, { signal, context }) {
     throwIfActionCancelled(signal); return boundedRuntimeResult(context.profile);
   },
@@ -6268,7 +6314,7 @@ elements.projectnew.addEventListener('click', () => {
   if (requestUnsavedChangeGuard({ profile: AVR_PROFILE, actionLabel: 'creating a new empty project', continueAction: createNewAvrProject })) return;
   createNewAvrProject();
 });
-function loadExampleProject(exampleId, reason = 'project.demo') {
+function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVariant = 'correct' } = {}) {
   const referenceCard = avrReferenceStarterCatalog().find((entry) => entry.id === exampleId);
   if (referenceCard) {
     const before = currentProjectText();
@@ -6297,7 +6343,7 @@ function loadExampleProject(exampleId, reason = 'project.demo') {
   if (exampleId === THERMOSTAT_EXPERIMENT_ID) {
     const before = currentProjectText();
     let example;
-    try { example = createThermostatExperiment(); }
+    try { example = createThermostatExperiment(firmwareVariant); }
     catch (error) {
       showActionableError(elements.projectmessage, error?.message ?? 'EXAMPLE_INVALID', 'Thermostat experiment could not be constructed.');
       return { ok: false, code: error?.message ?? 'EXAMPLE_INVALID' };
