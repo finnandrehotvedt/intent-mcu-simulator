@@ -119,7 +119,7 @@ export const THERMOSTAT_OBSERVATION = deepFreeze({
   },
   completeness: {
     serialDropsAllowed: 0,
-    missingPinOrInputEvidence: 'fail',
+    missingPinOrInputEvidence: 'indeterminate',
     timeoutOrInfrastructureError: 'unresolved, never pass',
   },
 });

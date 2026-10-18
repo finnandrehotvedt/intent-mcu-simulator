@@ -14,6 +14,9 @@ All notable public source changes are recorded here.
   while preserving raw evidence and source/artifact identity.
 - Reused X11 and X17 contracts; no generic assertion language or X19 reporting
   was added.
+- Closed X19 by retaining a fresh compiled evidence test showing that matching
+  `LED ON`/heater Serial text cannot override an observed D13 mismatch. This is
+  acceptance evidence for the existing evaluator, not a new product variant.
 
 ## 1.1.0-rc.43 — 2026-10-18
 

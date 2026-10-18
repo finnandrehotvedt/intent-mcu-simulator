@@ -122,3 +122,16 @@ test('known-bad equality behavior is contractually visible as an executed-output
   assert.equal(result.checks.corroboratingSerial, false);
   assert(equality.requirementIds.includes('THERM-REQ-05'));
 });
+
+test('X19 matching Serial text cannot pass when the executed D13 observation is wrong', () => {
+  const scenario = THERMOSTAT_SCENARIOS.scenarios[0];
+  const claim = snapshotFor(scenario, { d13: false, serial: true });
+  claim.instruments.serial.text += 'LED ON\n';
+  const result = evaluateThermostatObservation(scenario.id, claim);
+  assert.equal(result.status, 'failed');
+  assert.equal(result.observed.d13, false);
+  assert.equal(result.checks.primaryExecutedPin, false);
+  assert.equal(result.checks.corroboratingSerial, true);
+  assert.match(result.observed.serialText, /LED ON/u);
+  assert.equal(THERMOSTAT_OBSERVATION.corroborating.mayPassAlone, false);
+});

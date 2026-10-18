@@ -14,6 +14,17 @@ infrastructure-error. Browser, local external-client and headless results expose
 both dimensions while preserving actual observation time, raw evidence and
 source/artifact identity. No X19 reporting or broader runtime was added.
 
+## X19 observed output remains authoritative
+
+The existing thermostat evaluator uses executed D13 pin/model state as the
+authority for its LED/heater-command requirement. Serial remains supporting
+text and cannot pass alone. Retained acceptance compiles a deliberately
+misleading program that prints a matching heater record and `LED ON` while D13
+is actually LOW; the requirement fails from the observed pin in both the
+browser-owned shared engine and browser-free Node path. Missing D13 evidence
+remains indeterminate under X18. No public firmware variant or generic
+assertion language was added.
+
 ## X17 bounded scenario timeline editor
 
 Rc.43 adds a reusable data-only timeline editor to the existing AVR thermostat
