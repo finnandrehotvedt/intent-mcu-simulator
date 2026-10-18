@@ -18,12 +18,13 @@ import { PROJECT_ENVELOPE_LIMIT, PROJECT_ENVELOPE_SCHEMA } from './project-envel
 import { PUBLIC_CONTROLLER_VIEW_SCHEMA, publicControllerViews } from './public-controller-workbench-view.mjs';
 import { RP2040_PICO_BOARD_DEFINITION } from './rp2040-pico-circuit.mjs';
 import { STM32_BOARD_DEFINITION } from './stm32-public-circuit.mjs';
+import { RELEASE_VERSION } from './release-metadata.mjs';
 
 export const CAPABILITY_DISCOVERY_SCHEMA = 'intent-mcu-capability-discovery@1';
 export const CAPABILITY_DISCOVERY_REQUEST_SCHEMA = 'intent-mcu-capability-discovery-request@1';
 export const CAPABILITY_DISCOVERY_RESULT_SCHEMA = 'intent-mcu-capability-discovery-result@1';
 export const CAPABILITY_DISCOVERY_LIMIT = BOUNDED_ACTION_RESULT_LIMIT;
-export const PRODUCT_VERSION = '1.1.0-rc.44';
+export const PRODUCT_VERSION = RELEASE_VERSION;
 export const PRODUCT_SOURCE = 'https://github.com/finnandrehotvedt/intent-mcu-simulator';
 
 const PROFILE_ORDER = COMPONENT_SUPPORT_PROFILES.map(({ id }) => id);

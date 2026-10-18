@@ -515,7 +515,7 @@
         <p>Create isolated cases without editing firmware. Inputs are scheduled in virtual milliseconds and must settle for at least 1 ms before an explicit observation window. The browser reports the actual worker-snapshot time inside that saved window; it does not claim the pin was observed at the window start. Expected D13 is compared with actually observed D13 and never becomes evidence.</p>
         <div class="seeded-property-controls" aria-labelledby="seeded-property-title">
           <div><p class="eyebrow">X22 · REPRODUCIBLE INPUT VARIANTS</p><h4 id="seeded-property-title">Seeded property suite</h4></div>
-          <label>Unsigned 32-bit seed<input id="seeded-property-seed" type="number" min="0" max="4294967295" step="1" value="305419896"></label>
+          <label>Unsigned 32-bit seed<input id="seeded-property-seed" type="number" min="0" max="4294967295" step="1" value="305419896" aria-describedby="seeded-property-exact-value"><output id="seeded-property-exact-value" for="seeded-property-seed">Exact seed value: 305419896</output></label>
           <button id="seeded-property-generate" type="button">Generate 8 cases</button>
           <button id="seeded-property-replay" type="button" disabled>Replay stored seed</button>
           <p id="seeded-property-summary" class="truth" role="status">No seeded suite stored. Generation is bounded to eight valid AVR thermostat cases.</p>
@@ -585,7 +585,7 @@
       </nav>
     </section>
 
-    <footer>Intent MCU Simulator 1.1.0-rc.41 public release · comprehensible result codes plus seven bounded actions and read-only discovery over optional local stdio · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no public agent endpoint, client Apply, live AI call, inferred support, fabricated verdict, general circuit solver or physical safety certification</footer>
+    <footer>Intent MCU Simulator <span id="release-version"></span> public release · comprehensible result codes plus seven bounded actions and read-only discovery over optional local stdio · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no public agent endpoint, client Apply, live AI call, inferred support, fabricated verdict, general circuit solver or physical safety certification</footer>
   </main>
   <button id="serial-tab" class="serial-tab" type="button" aria-expanded="false" aria-controls="serial-dock"><span>Serial</span><span id="serial-new-output" class="serial-new-output" hidden>0 new</span></button>
   <aside id="serial-dock" class="serial-dock" aria-labelledby="serial-title" hidden>

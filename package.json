@@ -1,6 +1,6 @@
 {
   "name": "intent-mcu-simulator",
-  "version": "1.1.0-rc.44",
+  "version": "1.1.0-rc.46",
   "private": true,
   "description": "Original browser-based microcontroller learning environment source",
   "license": "Apache-2.0",
@@ -10,6 +10,10 @@
     "npm": "10.8.2"
   },
   "scripts": {
+    "release:sync": "node scripts/sync-release-version.mjs --write",
+    "release:check": "node scripts/sync-release-version.mjs --check",
+    "prebuild": "npm run release:check",
+    "test:release-identity": "node --test --test-concurrency=1 test/release-identity-copy.test.mjs test/capability-discovery.test.mjs",
     "test:w06-w07": "node --test --test-concurrency=1 test/candidate-branch-transactions.test.mjs test/existing-graph-edit-safety.test.mjs",
     "test:w08": "node --test --test-concurrency=1 test/candidate-placement-duplication.test.mjs test/existing-graph-edit-safety.test.mjs test/circuit-model.test.mjs",
     "test:w10": "node --test --test-concurrency=1 test/w10-fault-validation.test.mjs test/existing-graph-edit-safety.test.mjs test/circuit-model.test.mjs",
@@ -34,7 +38,7 @@
     "test:x23": "node --test --test-concurrency=1 test/fault-injection-suite.test.mjs test/scenario-timeline.test.mjs test/project-envelope.test.mjs test/headless-experiment-runner.test.mjs",
     "example:mcp": "node examples/mcp-reference-experiment.mjs",
     "experiment:headless": "node tools/headless-experiment-runner.mjs",
-    "pretest": "node --test --test-concurrency=1 test/control-persistence-policy.test.mjs test/control-runtime-evidence.test.mjs test/avr-reference-starters.test.mjs test/component-support-matrix.test.mjs test/controller-capability-diagnostics.test.mjs test/bounded-route-authoring.test.mjs test/supported-example-pack.test.mjs test/existing-graph-edit-safety.test.mjs test/candidate-branch-transactions.test.mjs test/candidate-placement-duplication.test.mjs test/w10-fault-validation.test.mjs test/i03-runtime-traces.test.mjs",
+    "pretest": "node --test --test-concurrency=1 test/release-identity-copy.test.mjs test/control-persistence-policy.test.mjs test/control-runtime-evidence.test.mjs test/avr-reference-starters.test.mjs test/component-support-matrix.test.mjs test/controller-capability-diagnostics.test.mjs test/bounded-route-authoring.test.mjs test/supported-example-pack.test.mjs test/existing-graph-edit-safety.test.mjs test/candidate-branch-transactions.test.mjs test/candidate-placement-duplication.test.mjs test/w10-fault-validation.test.mjs test/i03-runtime-traces.test.mjs",
     "build": "node scripts/build-staging.mjs",
     "test": "node --test --test-concurrency=1 test/experiment-outcomes.test.mjs test/scenario-timeline.test.mjs test/seeded-property-suite.test.mjs test/fault-injection-suite.test.mjs test/project-envelope.test.mjs test/project-feasibility.test.mjs test/project-patch.test.mjs test/design-comparison.test.mjs test/shared-domain-engine.test.mjs test/bounded-action-contracts.test.mjs test/external-client-protocol.test.mjs test/external-client-results.test.mjs test/external-client-jobs.test.mjs test/mcp-adapter-protocol.test.mjs test/headless-experiment-runner.test.mjs test/capability-discovery.test.mjs test/requirement-traceability.test.mjs test/circuit-model.test.mjs test/lifecycle.test.mjs test/workbench-instruments.test.mjs test/gateway-unit.test.mjs test/guides-content.test.mjs test/public-release-projection.test.mjs test/shared-workbench-shell.test.mjs test/wire-lane-rules.test.mjs test/rp2040-pico-circuit.test.mjs test/esp32c3-public.test.mjs test/stm32-public.test.mjs test/named-pin-wire-authoring.test.mjs test/bounded-component-recovery.test.mjs test/thermostat-experiment-contract.test.mjs test/thermostat-experiment.test.mjs test/active-buzzer-candidate.test.mjs test/candidate-draft-runnable-transition.test.mjs test/character-lcd-16x2-4bit-candidate.test.mjs test/common-cathode-rgb-led-candidate.test.mjs test/digital-light-threshold-candidate.test.mjs test/foundation-primitives-draft.test.mjs test/light-analogue-sensor-candidate.test.mjs test/project-v3-envelope-draft.test.mjs test/seven-segment-common-cathode-candidate.test.mjs test/temperature-analogue-sensor-candidate.test.mjs test/temperature-lcd-threshold-example-candidate.test.mjs test/unavailable-controller-targets-candidate.test.mjs",
     "setup:toolchain": "sh scripts/setup-local-toolchain.sh",

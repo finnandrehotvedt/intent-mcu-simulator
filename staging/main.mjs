@@ -10,6 +10,7 @@ import {
   filterCatalog,
 } from '../src/component-catalog.mjs';
 import { CIRCUIT_SCHEMA, validateCircuit } from '../src/circuit-engine.mjs';
+import { RELEASE_VERSION } from '../src/release-metadata.mjs';
 import {
   commandBuildRelevance,
   ProjectEditorReducer,
@@ -239,7 +240,7 @@ const elements = Object.fromEntries([
   'thermostat-load-bad', 'thermostat-restore', 'thermostat-results', 'thermostat-experiment-message',
   'scenario-editor', 'scenario-add', 'scenario-undo', 'scenario-redo', 'scenario-run',
   'scenario-list', 'scenario-editor-message',
-  'seeded-property-seed', 'seeded-property-generate', 'seeded-property-replay', 'seeded-property-summary',
+  'seeded-property-seed', 'seeded-property-exact-value', 'seeded-property-generate', 'seeded-property-replay', 'seeded-property-summary',
   'fault-suite-load', 'fault-suite-replay', 'fault-suite-summary',
   'starter-examples', 'starter-gallery', 'quick-controls', 'workbench-workspace', 'project-bar',
   'family-select', 'board-select', 'controller-status', 'toolchain-boundary',
@@ -258,7 +259,7 @@ const elements = Object.fromEntries([
   'design-comparison-alternatives', 'design-comparison-differences',
   'shared-domain-engine-inspect', 'shared-domain-engine-summary', 'shared-domain-engine-status',
   'shared-domain-engine-stages',
-  'bounded-actions-summary', 'bounded-actions-status', 'bounded-actions-list',
+  'bounded-actions-summary', 'bounded-actions-status', 'bounded-actions-list', 'release-version',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -294,6 +295,8 @@ const elements = Object.fromEntries([
   'stm32-reconnect', 'stm32-add-bend', 'stm32-route-back', 'stm32-route-forward',
   'stm32-wire-color', 'stm32-wire-cancel', 'stm32-wire-state',
 ].map((id) => [id.replaceAll('-', ''), byId(id)]));
+
+elements.releaseversion.textContent = RELEASE_VERSION;
 
 const controlRuntimeEvidence = controlRuntimeEvidenceMatrix();
 window.__CONTROL_RUNTIME_EVIDENCE_MATRIX__ = structuredClone(controlRuntimeEvidence);
@@ -2110,6 +2113,7 @@ function renderScenarioTimelineEditor() {
   elements.faultsuiteload.disabled = running;
   elements.faultsuitereplay.disabled = running || !faultSuite;
   if (propertySuite) elements.seededpropertyseed.value = String(propertySuite.seed);
+  elements.seededpropertyexactvalue.textContent = `Exact seed value: ${elements.seededpropertyseed.value}`;
   const observedFailure = propertySuite
     ? authoredScenarioResults.find((item) => item.status === 'failed') ?? null : null;
   elements.seededpropertysummary.textContent = propertySuite
@@ -6262,6 +6266,9 @@ elements.seededpropertygenerate.addEventListener('click', () => {
   const seed = Number(elements.seededpropertyseed.value);
   installSeededPropertyTimeline(seed, 'generate');
 });
+elements.seededpropertyseed.addEventListener('input', () => {
+  elements.seededpropertyexactvalue.textContent = `Exact seed value: ${elements.seededpropertyseed.value}`;
+});
 elements.seededpropertyreplay.addEventListener('click', () => {
   const seed = scenarioTimelineEditor?.timeline.propertySuite?.seed;
   if (seed === undefined) return;
@@ -6716,7 +6723,7 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
     });
     selectedSourceFile = 'main.ino';
     elements.exampleselect.value = exampleId;
-    thermostatExperimentNotice = 'Build this exact local project before running the three boundary scenarios.';
+    thermostatExperimentNotice = 'Build this exact local project before running the four boundary scenarios.';
     persistProject();
     publish({ lastAction: 'THERMOSTAT_EXPERIMENT_LOADED', importReport: parsed.report ?? parsed.code });
     renderCatalog(); renderProject();

@@ -1,13 +1,15 @@
 # Copyright 2026 IntentForce
 # SPDX-License-Identifier: Apache-2.0
 
+ARG SOURCE_IMAGE=local/intent-mcu-source-check:1.1.0-rc.46
 FROM local/intent-mcu-compiler-integration:1.0.0-rc.2 AS dockercli
-FROM local/intent-mcu-source-check:1.1.0-rc.44
+FROM ${SOURCE_IMAGE}
 
 ARG RELEASE_COMMIT
+ARG RELEASE_VERSION
 
 LABEL org.opencontainers.image.title="Intent MCU Simulator production" \
-      org.opencontainers.image.version="1.1.0-rc.44" \
+      org.opencontainers.image.version="${RELEASE_VERSION}" \
       org.opencontainers.image.revision="${RELEASE_COMMIT}" \
       org.opencontainers.image.source="https://github.com/finnandrehotvedt/intent-mcu-simulator" \
       org.opencontainers.image.licenses="Apache-2.0 AND MIT"
