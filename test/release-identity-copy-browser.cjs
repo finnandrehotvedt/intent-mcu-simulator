@@ -20,7 +20,7 @@ let browser;
   const response = await page.goto(base, { waitUntil: 'networkidle' });
   assert.equal(response?.status(), 200);
   await page.waitForFunction(() => window.__M11_READY__ === true);
-  assert.match(await page.locator('footer').textContent(), /Intent MCU Simulator 1\.1\.0-rc\.47 public release/u);
+  assert.match(await page.locator('footer').textContent(), /Intent MCU Simulator 1\.1\.0-rc\.48 public release/u);
 
   await page.selectOption('#example-select', 'avr-thermostat-boundary-v1');
   await page.click('#project-demo');
@@ -44,7 +44,7 @@ let browser;
   }
   assert.deepEqual(errors, []);
   assert.equal((await context.cookies()).length, 0);
-  console.log(JSON.stringify({ result: 'pass', version: '1.1.0-rc.47', boundaryCases: 4,
+  console.log(JSON.stringify({ result: 'pass', version: '1.1.0-rc.48', boundaryCases: 4,
     exactSeed: '305419896', faultCases: 3, busResponse: 'unsupported', screenshot }));
 })().catch((error) => { console.error(error.stack || error); process.exitCode = 1; })
   .finally(async () => { if (browser) await browser.close(); });
