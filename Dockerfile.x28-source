@@ -1,0 +1,17 @@
+FROM local/intent-mcu-x27-private:1.1.0-rc.50
+
+# Reuse the accepted rc.50 dependency/toolchain boundary; X28 changes source only.
+USER root
+WORKDIR /workspace
+COPY . ./
+RUN npm run build \
+    && npm run test:x28 \
+    && chmod -R a+rX /workspace
+
+ENV HOME=/tmp NO_UPDATE_NOTIFIER=1 \
+    STAGING_HOST=0.0.0.0 STAGING_PORT=18766 \
+    COMPILER_IMAGE_LOCK=/run/locks/avr.json \
+    RP2040_COMPILER_IMAGE_LOCK=/workspace/compiler/rp2040-image-lock.json \
+    DEPLOYMENT_SCOPE=local-source
+USER node
+CMD ["npm", "run", "start:local"]

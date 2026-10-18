@@ -87,6 +87,12 @@ import {
   createPartitionEvidence, projectCoverageReport,
 } from '../src/coverage-report.mjs';
 import {
+  X28_LONG_DURATION_SUITE, longDurationSuiteIdentity,
+} from '../src/long-duration-contract.mjs';
+import {
+  executeLongDurationSuite, longDurationReportPassed,
+} from '../src/long-duration-runner.mjs';
+import {
   COUNTEREXAMPLE_REDUCTION_SEED, reduceThermostatCounterexample,
 } from '../src/counterexample-reduction.mjs';
 import {
@@ -288,6 +294,8 @@ const elements = Object.fromEntries([
   'regression-matrix-selector', 'regression-matrix-run', 'regression-matrix-negative',
   'regression-matrix-export', 'regression-matrix-results', 'regression-matrix-summary',
   'coverage-report-state', 'coverage-report-export', 'coverage-report-results', 'coverage-report-summary',
+  'long-duration', 'long-duration-state', 'long-duration-identity', 'long-duration-run',
+  'long-duration-export', 'long-duration-results', 'long-duration-summary',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -1960,6 +1968,9 @@ let coverageReport = null;
 let regressionPartitionEvidence = [];
 let regressionMatrixRunning = false;
 let regressionMatrixReady = false;
+let longDurationReport = null;
+let longDurationRunning = false;
+let longDurationReady = false;
 
 const waitForMatrixState = async (read, accept, code, timeoutMilliseconds = 30_000) => {
   const deadline = performance.now() + timeoutMilliseconds;
@@ -2009,15 +2020,24 @@ function renderRegressionMatrixReport(report = regressionMatrixReport) {
   elements.regressionmatrixsummary.textContent = `Matrix ${report.matrixSha256} · semantic report ${report.semanticSha256}. ${report.expectationOverrideSha256 ? 'A separate wrong-expectation reference was applied to exactly one selected cell.' : 'No expectation override was applied.'} Raw profile timebases remain separate.`;
 }
 
+function invalidateLongDurationReport(message = 'Project state changed. Run X28 again for current evidence.') {
+  if (longDurationRunning || !longDurationReport) return;
+  longDurationReport = null;
+  renderLongDurationReport(null);
+  elements.longdurationsummary.textContent = message;
+}
+
 function invalidateRegressionMatrixReport(message = 'Project state changed. Run the matrix again for current evidence.') {
-  if (regressionMatrixRunning || !regressionMatrixReport) return;
-  regressionMatrixReport = null;
-  coverageReport = null;
-  regressionPartitionEvidence = [];
-  renderRegressionMatrixReport(null);
-  renderCoverageReport(null);
-  elements.regressionmatrixsummary.textContent = message;
-  elements.coveragereportsummary.textContent = message;
+  if (!regressionMatrixRunning && regressionMatrixReport) {
+    regressionMatrixReport = null;
+    coverageReport = null;
+    regressionPartitionEvidence = [];
+    renderRegressionMatrixReport(null);
+    renderCoverageReport(null);
+    elements.regressionmatrixsummary.textContent = message;
+    elements.coveragereportsummary.textContent = message;
+  }
+  invalidateLongDurationReport(message);
 }
 
 function renderCoverageReport(report = coverageReport) {
@@ -2051,6 +2071,88 @@ function renderCoverageReport(report = coverageReport) {
   elements.coveragereportstate.textContent = `${counts.passed}/${counts.declared} partitions passed`;
   elements.coveragereportexport.disabled = false;
   elements.coveragereportsummary.textContent = `${counts.executed} executed · ${counts.passed} passed · ${counts.failed} failed · ${counts.notRun} not run · ${counts.unsupported} unsupported · ${counts.indeterminate} indeterminate · ${counts.infrastructureError} infrastructure error. Semantic report ${report.semanticSha256}.`;
+}
+
+function renderLongDurationReport(report = longDurationReport) {
+  elements.longdurationresults.replaceChildren();
+  if (!report) {
+    const row = document.createElement('tr');
+    const cell = document.createElement('td'); cell.colSpan = 5;
+    cell.textContent = 'No current X28 report. Reports are transient and never project, timer or verdict authority.';
+    row.append(cell); elements.longdurationresults.append(row);
+    elements.longdurationstate.textContent = 'Not run';
+    elements.longdurationexport.disabled = true;
+    return;
+  }
+  const rows = [...report.results, { cellId: 'X28-KNOWN-BAD-DIRECT-DEADLINE',
+    expected: { academicStatus: 'failed', jobStatus: 'completed' }, actual: report.knownBad.actual,
+    outcome: report.knownBad.outcome, rawVirtualTime: report.knownBad.rawVirtualTime }];
+  for (const result of rows) {
+    const row = document.createElement('tr');
+    const values = [result.cellId, JSON.stringify(result.expected), JSON.stringify(result.actual),
+      `${result.outcome.academicStatus} · job ${result.outcome.jobStatus}`,
+      JSON.stringify(result.rawVirtualTime)];
+    for (const [index, value] of values.entries()) {
+      const cell = document.createElement(index === 0 ? 'th' : 'td');
+      const code = document.createElement('code'); code.textContent = value; cell.append(code);
+      if (index === 3) { cell.className = 'regression-matrix-outcome'; cell.dataset.status = result.outcome.academicStatus; }
+      row.append(cell);
+    }
+    elements.longdurationresults.append(row);
+  }
+  const passed = report.results.filter((result) => result.outcome.academicStatus === 'passed').length;
+  const badRejected = report.knownBad.outcome.academicStatus === 'failed'
+    && report.knownBad.outcome.jobStatus === 'completed' && report.knownBad.actual.failedAsExpected;
+  elements.longdurationstate.textContent = `${passed}/3 passed · known-bad ${badRejected ? 'rejected' : 'not rejected'}`;
+  elements.longdurationexport.disabled = false;
+  elements.longdurationsummary.textContent = `Artifact ${report.artifactSha256} · semantic report ${report.semanticSha256}. Raw cycles and observed unsigned millisecond values are retained separately; wall duration is diagnostic only.`;
+}
+
+async function compileLongDurationSource(source) {
+  const response = await fetch('/api/build', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Teach-Lab-Build': '1' },
+    body: JSON.stringify({ schema: 'teach-lab-build-request@1', board: 'board.atmega328p-16mhz-v1',
+      files: [{ name: 'main.ino', content: source }] }),
+  });
+  const submitted = await response.json();
+  if (!response.ok) throw Object.assign(new Error(submitted.code ?? 'LONG_DURATION_BUILD_REJECTED'), { code: submitted.code });
+  while (true) {
+    const statusResponse = await fetch(`/api/build/${submitted.jobId}`, {
+      headers: { Authorization: `Bearer ${submitted.capability}` }, cache: 'no-store',
+    });
+    const status = await statusResponse.json();
+    if (!statusResponse.ok) throw Object.assign(new Error(status.code ?? 'LONG_DURATION_BUILD_STATUS'), { code: status.code });
+    if (status.status === 'building') { await new Promise((resolve) => setTimeout(resolve, 100)); continue; }
+    if (status.status !== 'succeeded') {
+      const code = status.error ?? status.result?.code ?? `LONG_DURATION_BUILD_${status.status.toUpperCase()}`;
+      throw Object.assign(new Error(code), { code });
+    }
+    return { hex: status.result.artifact.hex, artifactSha256: status.result.artifactIdentity };
+  }
+}
+
+async function runBrowserLongDurationSuite() {
+  if (longDurationRunning) throw Object.assign(new Error('LONG_DURATION_BUSY'), { code: 'LONG_DURATION_BUSY' });
+  longDurationRunning = true; longDurationReport = null; renderLongDurationReport(null);
+  elements.longdurationrun.disabled = true;
+  elements.longdurationstate.textContent = 'Running actual AVR virtual time…';
+  elements.longdurationsummary.textContent = 'Compiling the checksum-locked good and known-bad fixtures, then executing one integrated suite.';
+  try {
+    longDurationReport = await executeLongDurationSuite({ compile: compileLongDurationSource });
+    renderLongDurationReport(longDurationReport);
+    return structuredClone(longDurationReport);
+  } finally {
+    longDurationRunning = false; elements.longdurationrun.disabled = false;
+  }
+}
+
+function exportLongDurationReport() {
+  if (!longDurationReport) return;
+  const text = `${JSON.stringify(longDurationReport, null, 2)}\n`;
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const link = document.createElement('a'); link.href = url;
+  link.download = `x28-long-duration-${longDurationReport.semanticSha256.slice(0, 12)}.intent-mcu-long-duration.json`;
+  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 async function selectRegressionProfile(profile) {
@@ -2247,8 +2349,11 @@ elements.regressionmatrixrun.addEventListener('click', () => {
 elements.regressionmatrixnegative.addEventListener('click', () => { void runWrongRegressionExpectation(); });
 elements.regressionmatrixexport.addEventListener('click', exportRegressionMatrixReport);
 elements.coveragereportexport.addEventListener('click', exportCoverageReport);
+elements.longdurationrun.addEventListener('click', () => { void runBrowserLongDurationSuite(); });
+elements.longdurationexport.addEventListener('click', exportLongDurationReport);
 for (const input of [elements.source, elements.picosource, elements.c3source, elements.stm32source,
-  elements.projectopeninput, elements.picoopeninput, elements.c3openinput, elements.stm32openinput]) {
+  elements.projectopeninput, elements.picoopeninput, elements.c3openinput, elements.stm32openinput,
+  elements.boardselect]) {
   input.addEventListener(input.type === 'file' ? 'change' : 'input', () => invalidateRegressionMatrixReport());
 }
 document.addEventListener('pointerup', (event) => {
@@ -2272,9 +2377,21 @@ window.__X27_COVERAGE_REPORT__ = Object.freeze({
   runWrongExpectation: async () => { await runWrongRegressionExpectation(); return structuredClone(coverageReport); },
   clear: () => invalidateRegressionMatrixReport('Coverage cleared. Run the matrix again for current evidence.'),
 });
+window.__X28_LONG_DURATION__ = Object.freeze({
+  get ready() { return longDurationReady; },
+  suite: () => structuredClone(X28_LONG_DURATION_SUITE),
+  report: () => longDurationReport ? structuredClone(longDurationReport) : null,
+  run: () => runBrowserLongDurationSuite(),
+  passed: () => longDurationReport ? longDurationReportPassed(longDurationReport) : false,
+  clear: (reason = 'X28 report cleared. Run the suite again for current evidence.') => invalidateLongDurationReport(reason),
+});
 void regressionMatrixIdentity().then((identity) => {
   elements.regressionmatrixidentity.textContent = `Immutable matrix SHA-256 ${identity} · four exact fixture/source hashes · four distinct oracles`;
   regressionMatrixReady = true;
+});
+void longDurationSuiteIdentity().then((identity) => {
+  elements.longdurationidentity.textContent = `Immutable X28 suite SHA-256 ${identity} · exact source hashes · fixture-only timer0_millis seam`;
+  longDurationReady = true;
 });
 
 function renderLifecycle() {
@@ -6585,6 +6702,7 @@ async function pollJob(job, inputAtSubmit, binding) {
 }
 
 async function build() {
+  invalidateLongDurationReport('A new build cleared the prior X28 report. Run the suite again for current evidence.');
   const target = currentCompilerTarget();
   if (!target.compileAvailable) {
     const missing = firstMissingTargetPrerequisite(target.profile);
