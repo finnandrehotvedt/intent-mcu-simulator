@@ -22,10 +22,32 @@ when explaining or checking a change.
 The project is open source so people can use it, enjoy it, study it, and
 contribute improvements. Development is ongoing, with no fixed final date or
 predetermined finish line. That direction is an invitation to participate, not
-a promise of perpetual maintenance. The current product has no hosted AI API
-or agent/tool interface: AI-assisted use happens through ordinary source work
-and the optional portable Prompt Bridge, while deterministic project rules
-remain the authority.
+a promise of perpetual maintenance. The current product has no hosted AI API.
+AI-assisted use happens through ordinary source work, the optional portable
+Prompt Bridge, or an optional local stdio client. The local MCP adapter exposes
+only the same bounded deterministic contracts; it is not a public endpoint and
+does not gain Apply or generic-command authority.
+
+## Optional local MCP client
+
+`tools/mcp-adapter.mjs` is a thin MCP 2025-06-18 stdio wrapper around the
+existing local external-client adapter. It implements the required
+`initialize`/`notifications/initialized` lifecycle and `tools/list`/
+`tools/call`, then forwards canonical discovery, bounded action and ephemeral
+job envelopes without reimplementing the project, compiler or runtime engine.
+MCP cancellation maps only the active tool request to the existing exact
+request-ID cancellation contract.
+
+Run the independent correct/known-bad thermostat reference client with:
+
+```sh
+npm run example:mcp
+```
+
+The adapter is fixed to `https://lab.teachthecompany.com`; only the existing
+test-only loopback override remains available. It has no listener, account,
+credential, cloud persistence, origin selector, shell/eval, autonomous Apply
+or broader controller authority. See [docs/MCP-ADAPTER.md](docs/MCP-ADAPTER.md).
 
 ## Public discovery and factual machine context
 

@@ -1,5 +1,21 @@
 # Intent MCU Simulator 1.1.0-rc.42
 
+## X14 source-side MCP adapter
+
+The source checkout now includes an optional thin MCP 2025-06-18 stdio wrapper
+and independent reference client. This does not change the deployed rc.42 web
+application or add a public endpoint. The wrapper negotiates the actual MCP
+lifecycle and exposes four bounded tools: current context, canonical discovery,
+one of the existing seven actions, and short-lived job read/export. It forwards
+all domain work to the existing external-client adapter and maps MCP
+cancellation to its exact request-ID cancellation control.
+
+The independent example starts separate clean MCP sessions for correct and
+known-bad thermostat variants, propagates only authoritative generation values,
+and observes a passed result versus the real equality-scenario failure. There
+is still no Apply, generic command, shell/eval, origin override, account,
+credential, public listener or durable server project authority.
+
 This ephemeral-job release completes X12 without adding an action, account or
 endpoint. Every existing bounded stdio action request is a short-lived job
 whose existing request ID and `expiresAtMs` define its handle and exact
