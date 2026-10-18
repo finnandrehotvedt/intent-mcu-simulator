@@ -12,7 +12,7 @@ import {
 import {
   THERMOSTAT_EXPERIMENT_ID, THERMOSTAT_SCENARIOS, THERMOSTAT_TIME, thermostatScenarioControls,
 } from './thermostat-experiment-contract.mjs';
-import { scenarioTimelineControls } from './scenario-timeline.mjs';
+import { scenarioTimelineRuntimeEvents } from './scenario-timeline.mjs';
 import {
   aggregateExperimentOutcomes, interruptedExperimentOutcome, jobStatusFromCode,
   unsupportedExperimentOutcome,
@@ -89,11 +89,14 @@ async function executeCompiledThermostat(prepared, artifact) {
     const runtime = new RuntimeKernel(artifact.artifact.hex, prepared.runtimeProject.circuit, {
       speed: 'maximum', logicChannels: ['D2', 'D13'], selectedPin: 'D13',
     });
-    const controls = authored ? scenarioTimelineControls(scenario)
+    const controls = authored ? scenarioTimelineRuntimeEvents(scenario)
       : thermostatScenarioControls(scenario.id).map((control) => ({ ...control, targetCycle: 0 }));
-    for (const control of controls) {
+    for (const control of controls.filter((item) => item.command === 'fault')) {
+      runtime.queueFaultAtCycle(control.event, control.targetCycle);
+    }
+    for (const control of controls.filter((item) => item.command !== 'fault')) {
       runtime.runUntilCycle(control.targetCycle);
-      runtime.queueControl(control.componentId, control.key, control.value);
+      runtime.queueControlAtCycle(control.componentId, control.key, control.value, control.targetCycle);
     }
     const observationMilliseconds = authored ? scenario.events.at(-1).atMilliseconds
       : THERMOSTAT_TIME.observeAtOrAfterMilliseconds;
@@ -103,6 +106,7 @@ async function executeCompiledThermostat(prepared, artifact) {
       authored ? 'evaluate-scenario-timeline-observation' : 'evaluate-thermostat-observation', prepared.canonicalProjectText,
       { scenarioId: scenario.id, snapshot: {
         cycle: snapshot.cycle, pins: snapshot.pins, eventLog: snapshot.eventLog,
+        faultEvents: snapshot.faultEvents,
         instruments: { serial: snapshot.instruments.serial },
       } },
     ), adapters, AVR_PROFILE, 'agent');

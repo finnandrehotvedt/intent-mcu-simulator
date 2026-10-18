@@ -763,6 +763,9 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .seeded-property-controls h4, .seeded-property-controls p { margin: 0; }
 .seeded-property-controls label { display: grid; gap: 5px; color: var(--muted); font: 700 .68rem/1.3 ui-monospace, monospace; text-transform: uppercase; }
 .seeded-property-controls .truth { grid-column: 1 / -1; color: var(--muted); font: .72rem/1.45 ui-monospace, monospace; }
+.fault-suite-controls { display: grid; grid-template-columns: minmax(260px, 1fr) auto auto; gap: 10px; align-items: end; margin: 14px 0; padding: 12px; border: 1px solid #725a2d; border-radius: 10px; background: #1d170a; }
+.fault-suite-controls h4, .fault-suite-controls p { margin: 0; }
+.fault-suite-controls .truth { grid-column: 1 / -1; color: var(--muted); font: .72rem/1.45 ui-monospace, monospace; }
 .scenario-editor-actions, .scenario-add-events { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
 .scenario-editor-actions #scenario-run { color: #07121d; border-color: var(--lime); background: var(--lime); }
 .scenario-list { display: grid; gap: 12px; }
@@ -949,6 +952,8 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   .scenario-card-heading, .scenario-editor-heading { align-items: stretch; flex-direction: column; }
   .seeded-property-controls { grid-template-columns: 1fr; }
   .seeded-property-controls .truth { grid-column: 1; }
+  .fault-suite-controls { grid-template-columns: 1fr; }
+  .fault-suite-controls .truth { grid-column: 1; }
   .project-brief-purpose { grid-column: 1; }
   .project-brief-heading, .project-brief-footer, .requirement-trace-heading { align-items: flex-start; flex-direction: column; }
   .instrument-evidence-heading { display: grid; }

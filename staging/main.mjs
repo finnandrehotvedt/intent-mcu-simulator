@@ -71,8 +71,8 @@ import {
   thermostatFirmwareVariant,
 } from '../src/thermostat-experiment.mjs';
 import {
-  ScenarioTimelineEditor, defaultThermostatScenarioTimeline, generateSeededThermostatTimeline,
-  scenarioTimelineControls,
+  ScenarioTimelineEditor, defaultThermostatScenarioTimeline, faultInjectionThermostatTimeline,
+  generateSeededThermostatTimeline, scenarioTimelineRuntimeEvents,
 } from '../src/scenario-timeline.mjs';
 import { aggregateExperimentOutcomes } from '../src/experiment-outcomes.mjs';
 import {
@@ -240,6 +240,7 @@ const elements = Object.fromEntries([
   'scenario-editor', 'scenario-add', 'scenario-undo', 'scenario-redo', 'scenario-run',
   'scenario-list', 'scenario-editor-message',
   'seeded-property-seed', 'seeded-property-generate', 'seeded-property-replay', 'seeded-property-summary',
+  'fault-suite-load', 'fault-suite-replay', 'fault-suite-summary',
   'starter-examples', 'starter-gallery', 'quick-controls', 'workbench-workspace', 'project-bar',
   'family-select', 'board-select', 'controller-status', 'toolchain-boundary',
   'controller-workbench', 'controller-workbench-eyebrow', 'controller-workbench-title', 'controller-workbench-badge',
@@ -2097,6 +2098,7 @@ function renderScenarioTimelineEditor() {
   if (!active) return;
   const timeline = scenarioTimelineEditor?.timeline ?? null;
   const propertySuite = timeline?.propertySuite ?? null;
+  const faultSuite = timeline?.faultSuite ?? null;
   const running = Boolean(thermostatExperimentRun);
   elements.scenarioadd.disabled = running;
   elements.scenarioundo.disabled = running || !scenarioTimelineEditor?.undoStack.length;
@@ -2105,12 +2107,18 @@ function renderScenarioTimelineEditor() {
     || thermostatFirmwareVariant(currentProject()) === 'modified';
   elements.seededpropertygenerate.disabled = running;
   elements.seededpropertyreplay.disabled = running || !propertySuite;
+  elements.faultsuiteload.disabled = running;
+  elements.faultsuitereplay.disabled = running || !faultSuite;
   if (propertySuite) elements.seededpropertyseed.value = String(propertySuite.seed);
   const observedFailure = propertySuite
     ? authoredScenarioResults.find((item) => item.status === 'failed') ?? null : null;
   elements.seededpropertysummary.textContent = propertySuite
     ? `Stored seed ${propertySuite.seed} · ${propertySuite.algorithm} · ${propertySuite.caseCount} cases · ${propertySuite.resourceBudget.generatorSteps} generator steps · integer ${propertySuite.validInputs.temperatureC.minimum}…${propertySuite.validInputs.temperatureC.maximum} °C + boolean button · max ${propertySuite.resourceBudget.maximumVirtualMilliseconds} ms${observedFailure ? ` · observed counterexample ${observedFailure.scenarioId} at ${observedFailure.virtualMilliseconds.toFixed(3)} ms` : ''}.`
     : 'No seeded suite stored. Generation is bounded to eight valid AVR thermostat cases.';
+  const faultFailures = faultSuite ? authoredScenarioResults.filter((item) => item.status !== 'passed').length : 0;
+  elements.faultsuitesummary.textContent = faultSuite
+    ? `Stored model v${faultSuite.modelVersion} · ${faultSuite.limits.scenarios} cases · ideal D2 bounce, stuck A1 temperature and D2 external-drive release${authoredScenarioResults.length ? ` · ${authoredScenarioResults.length - faultFailures}/${authoredScenarioResults.length} producer-backed cases passed` : ''}. Bus-response fault remains unsupported: no response-producing bus model.`
+    : 'Supports ideal D2 bounce, stuck A1 temperature and actual D2 external-drive release. Incorrect bus response is unsupported because no response-producing bus model exists.';
   elements.scenarioadd.textContent = timeline ? 'Add scenario' : 'Create editable timeline';
   if (!timeline) {
     const empty = document.createElement('p'); empty.className = 'scenario-empty';
@@ -2134,7 +2142,11 @@ function renderScenarioTimelineEditor() {
       item.dataset.eventId = event.id;
       const kind = document.createElement('strong');
       kind.textContent = event.kind === 'input.temperature-c' ? 'Temperature input'
-        : event.kind === 'input.button-pressed' ? 'Button input' : 'Expected D13 (window)';
+        : event.kind === 'input.button-pressed' ? 'Button input'
+          : event.kind === 'fault.button-bounce-v1' ? 'Ideal D2 bounce fault'
+            : event.kind === 'fault.temperature-stuck-v1' ? 'Stuck A1 sensor fault'
+              : event.kind === 'fault.button-open-circuit-v1' ? 'Release external D2 drive'
+                : 'Expected D13 (window)';
       const timeFocus = `${event.id}-time`;
       const time = scenarioControl(event.kind === 'expect.pin-level' ? 'From ms' : 'At ms', event.atMilliseconds, (raw) => {
         applyScenarioTimelineCommand({ type: 'event.update', scenarioId: scenario.id, eventId: event.id,
@@ -2153,7 +2165,18 @@ function renderScenarioTimelineEditor() {
           event: { ...event, pressed: raw === 'true' } }, { focusId: valueFocus });
       }, { values: [['true', 'Pressed · D2 LOW'], ['false', 'Released · D2 HIGH']], focusId: valueFocus,
         ariaLabel: `${event.id} button contact state` });
-      else value = scenarioControl('D13 must be', event.level, (raw) => {
+      else if (event.kind === 'fault.button-bounce-v1') {
+        value = document.createElement('span');
+        value.textContent = `Fixed 0/2/4/6/8 ms transitions · ends pressed (D2 LOW)`;
+      } else if (event.kind === 'fault.temperature-stuck-v1') value = scenarioControl('Stuck module °C', event.stuckValueC, (raw) => {
+        applyScenarioTimelineCommand({ type: 'event.update', scenarioId: scenario.id, eventId: event.id,
+          event: { ...event, stuckValueC: Number(raw) } }, { focusId: valueFocus });
+      }, { type: 'number', min: -50, max: 150, step: 1, focusId: valueFocus,
+        ariaLabel: `${event.id} stuck ideal module temperature in degrees Celsius` });
+      else if (event.kind === 'fault.button-open-circuit-v1') {
+        value = document.createElement('span');
+        value.textContent = 'External D2 drive released · INPUT_PULLUP must resolve HIGH';
+      } else value = scenarioControl('D13 must be', event.level, (raw) => {
         applyScenarioTimelineCommand({ type: 'event.update', scenarioId: scenario.id, eventId: event.id,
           event: { ...event, level: raw === 'true' } }, { focusId: valueFocus });
       }, { values: [['true', 'HIGH'], ['false', 'LOW']], focusId: valueFocus,
@@ -2351,17 +2374,19 @@ async function advanceThermostatExperiment(message) {
   if (run.phase === 'await-reset') {
     if (message.cycle !== 0 || !message.paused || !['reset', 'ready'].includes(message.kind)) return;
     run.phase = 'await-controls';
-    const controls = run.authored ? scenarioTimelineControls(scenario) : thermostatScenarioControls(scenario.id);
+    const controls = run.authored ? scenarioTimelineRuntimeEvents(scenario) : thermostatScenarioControls(scenario.id);
     for (const control of controls) worker.postMessage(control);
     return;
   }
   if (run.phase === 'await-controls') {
-    const required = run.authored ? scenarioTimelineControls(scenario) : thermostatScenarioControls(scenario.id);
+    const required = run.authored ? scenarioTimelineRuntimeEvents(scenario) : thermostatScenarioControls(scenario.id);
     const logged = message.eventLog?.log?.filter((event) => event.type === 'control') ?? [];
+    const faultRequests = message.eventLog?.log?.filter((event) => event.type === 'fault-request') ?? [];
     const complete = message.eventLog?.dropped === 0 && required.every((control) => logged.some(
-      (event) => event.componentId === control.componentId && event.key === control.key
+      (event) => control.command !== 'fault' && event.componentId === control.componentId && event.key === control.key
         && event.value === control.value && event.targetCycle === (control.targetCycle ?? 0),
-    ));
+    ) || control.command === 'fault' && faultRequests.some((event) => event.event?.id === control.event.id
+      && event.targetCycle === control.targetCycle));
     if (!complete) return;
     const accepted = applyLifecycle({ type: 'runtime.run' });
     if (!accepted.accepted) {
@@ -2393,6 +2418,7 @@ async function advanceThermostatExperiment(message) {
     cycle: message.cycle,
     pins: message.pins,
     eventLog: message.eventLog,
+    faultEvents: message.faultEvents,
     instruments: { serial: message.instruments?.serial },
   };
   const request = domainRequest(run.authored
@@ -6243,6 +6269,31 @@ elements.seededpropertyreplay.addEventListener('click', () => {
   const result = installSeededPropertyTimeline(seed, 'replay');
   if (result.ok && JSON.stringify(scenarioTimelineEditor.timeline.scenarios) !== before) {
     throw new Error('SEEDED_PROPERTY_REPLAY_MISMATCH');
+  }
+});
+function installFaultInjectionTimeline(action) {
+  try {
+    const timeline = faultInjectionThermostatTimeline();
+    scenarioTimelineEditor = new ScenarioTimelineEditor(timeline);
+    authoredScenarioResults = [];
+    persistProject();
+    elements.scenarioeditormessage.textContent = action === 'replay'
+      ? 'Replayed the identical stored fault schedule. No build, runtime or verdict authority was imported.'
+      : 'Loaded three bounded data-only fault cases. Build this exact firmware, then run the authored timeline.';
+    renderThermostatExperimentPanel();
+    return { ok: true, code: action === 'replay' ? 'FAULT_SUITE_REPLAYED' : 'FAULT_SUITE_LOADED' };
+  } catch (error) {
+    elements.faultsuitesummary.textContent = `Fault suite rejected (${error.code ?? error.message}).`;
+    return { ok: false, code: error.code ?? error.message ?? 'FAULT_SUITE_REJECTED' };
+  }
+}
+elements.faultsuiteload.addEventListener('click', () => installFaultInjectionTimeline('load'));
+elements.faultsuitereplay.addEventListener('click', () => {
+  if (!scenarioTimelineEditor?.timeline.faultSuite) return;
+  const before = JSON.stringify(scenarioTimelineEditor.timeline.scenarios);
+  const result = installFaultInjectionTimeline('replay');
+  if (result.ok && JSON.stringify(scenarioTimelineEditor.timeline.scenarios) !== before) {
+    throw new Error('FAULT_INJECTION_REPLAY_MISMATCH');
   }
 });
 elements.scenarioadd.addEventListener('click', () => {

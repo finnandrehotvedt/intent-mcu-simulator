@@ -115,6 +115,7 @@ export class RuntimeKernel {
       return;
     }
     if (event.type === 'digital-scheduled') return;
+    if (event.type === 'fault-request') return;
     throw new Error(`Unsupported input event: ${event.type}`);
   }
 
@@ -133,6 +134,35 @@ export class RuntimeKernel {
     const event = this.inputs.enqueue(
       { type: 'control', componentId, key, value: clone(value) }, this.adapter.cpu.cycles, targetCycle,
     );
+    this.#flushInputs();
+    return event;
+  }
+
+  queueFaultAtCycle(value, targetCycle) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)
+        || !validateCycle(targetCycle, this.adapter.cpu.cycles)
+        || !['fault.button-bounce-v1', 'fault.temperature-stuck-v1',
+          'fault.button-open-circuit-v1'].includes(value.kind)
+        || typeof value.id !== 'string') throw new TypeError('INVALID_FAULT_REQUEST');
+    const event = this.inputs.enqueue(
+      { type: 'fault-request', event: clone(value) }, this.adapter.cpu.cycles, targetCycle,
+    );
+    if (value.kind === 'fault.button-bounce-v1') {
+      if (value.componentId !== 'enable-button-1' || value.finalPressed !== true
+          || JSON.stringify(value.patternMilliseconds) !== JSON.stringify([0, 2, 4, 6, 8])) {
+        throw new TypeError('INVALID_BUTTON_BOUNCE_FAULT');
+      }
+      this.adapter.scheduleButtonBounce(targetCycle, 2, value.id, value.patternMilliseconds);
+    } else if (value.kind === 'fault.temperature-stuck-v1') {
+      if (value.componentId !== 'temperature-sensor-1' || !Number.isInteger(value.stuckValueC)
+          || value.stuckValueC < -50 || value.stuckValueC > 150) {
+        throw new TypeError('INVALID_TEMPERATURE_STUCK_FAULT');
+      }
+      this.adapter.scheduleAnalogStuck(targetCycle, 1, value.stuckValueC, value.id);
+    } else {
+      if (value.componentId !== 'enable-button-1') throw new TypeError('INVALID_BUTTON_OPEN_FAULT');
+      this.adapter.scheduleDigitalRelease(targetCycle, 2, value.id);
+    }
     this.#flushInputs();
     return event;
   }

@@ -74,6 +74,8 @@ export class Atmega328PAdapter {
     this.speed = options.speed ?? 1;
     this.inputLevels = new Map();
     this.analogVoltages = new Map();
+    this.stuckAnalogChannels = new Map();
+    this.faultEvents = [];
     this.scheduledEvents = [];
     this.paused = true;
     this.#createMachine();
@@ -98,6 +100,8 @@ export class Atmega328PAdapter {
     this.serial = [];
     this.adcReads = [];
     this.unsupported = [];
+    this.stuckAnalogChannels = new Map();
+    this.faultEvents = [];
     this.retentionDrops = { logic: 0, serial: 0, adc: 0, unsupported: 0 };
     this.blocked = false;
     this.instructions = 0;
@@ -264,6 +268,24 @@ export class Atmega328PAdapter {
       const event = this.scheduledEvents.shift();
       if (event.type === 'digital') this.#setDigitalPinNow(event.pin, event.level);
       if (event.type === 'analogue') this.setAnalogChannel(event.channel, event.voltage);
+      if (event.type === 'fault-digital-drive') {
+        this.inputLevels.set(event.pin, event.level);
+        this.#setDigitalPinNow(event.pin, event.level);
+        this.faultEvents.push({ kind: 'button-bounce-transition', eventId: event.eventId,
+          requestedCycle: event.cycle, appliedCycle: this.cpu.cycles,
+          drive: event.level ? 'HIGH' : 'LOW' });
+      }
+      if (event.type === 'fault-digital-release') this.#releaseDigitalPinNow(event);
+      if (event.type === 'fault-analogue-stuck') {
+        const appliedVoltage = ((event.stuckValueC + 50) / 200) * 5;
+        this.stuckAnalogChannels.set(event.channel,
+          { eventId: event.eventId, stuckValueC: event.stuckValueC, appliedVoltage });
+        this.analogVoltages.set(event.channel, appliedVoltage);
+        this.adc.channelValues[event.channel] = appliedVoltage;
+        this.faultEvents.push({ kind: 'temperature-stuck', eventId: event.eventId,
+          requestedCycle: event.cycle, appliedCycle: this.cpu.cycles,
+          stuckValueC: event.stuckValueC, appliedVoltage });
+      }
       if (event.type === 'uart-rx') {
         const accepted = this.usart.writeByte(event.value, event.immediate ?? false);
         this.retentionDrops.serial += boundedPush(this.serial, {
@@ -298,11 +320,55 @@ export class Atmega328PAdapter {
     this.#setDigitalPinNow(pin, level, alreadyInitialized);
   }
 
+  #releaseDigitalPinNow(event) {
+    if (event.pin !== 2) throw new Error('FAULT_OPEN_CIRCUIT_PIN_UNSUPPORTED');
+    const [port, bit] = PIN_MAP[event.pin];
+    const config = { B: portBConfig, C: portCConfig, D: portDConfig }[port];
+    const mask = 1 << bit;
+    const output = Boolean(this.cpu.data[config.DDR] & mask);
+    const pullup = !output && Boolean(this.cpu.data[config.PORT] & mask);
+    if (output || !pullup) throw new Error('FAULT_OPEN_CIRCUIT_REQUIRES_INPUT_PULLUP');
+    this.inputLevels.delete(event.pin);
+    this.#setDigitalPinNow(event.pin, true);
+    this.faultEvents.push({ kind: 'button-open-circuit', eventId: event.eventId,
+      requestedCycle: event.cycle, appliedCycle: this.cpu.cycles,
+      externalDrive: 'RELEASED', resolvedBy: 'INPUT_PULLUP' });
+  }
+
   setAnalogChannel(channel, voltage) {
     if (!Number.isInteger(channel) || channel < 0 || channel > 5) throw new Error('ADC channel must be A0..A5');
     if (!Number.isFinite(voltage) || voltage < 0 || voltage > 5) throw new Error('ADC voltage must be between 0 and 5');
+    const stuck = this.stuckAnalogChannels.get(channel);
+    if (stuck) {
+      this.faultEvents.push({ kind: 'temperature-stuck-held', eventId: stuck.eventId,
+        requestedCycle: this.cpu.cycles, appliedCycle: this.cpu.cycles,
+        requestedVoltage: voltage, appliedVoltage: stuck.appliedVoltage });
+      this.analogVoltages.set(channel, stuck.appliedVoltage);
+      this.adc.channelValues[channel] = stuck.appliedVoltage;
+      return;
+    }
     this.analogVoltages.set(channel, voltage);
     this.adc.channelValues[channel] = voltage;
+  }
+
+  scheduleButtonBounce(cycle, pin, eventId, patternMilliseconds) {
+    if (pin !== 2 || typeof eventId !== 'string' || !Array.isArray(patternMilliseconds)
+        || patternMilliseconds.length !== 5) throw new Error('FAULT_BUTTON_BOUNCE_INVALID');
+    for (const [index, offsetMilliseconds] of patternMilliseconds.entries()) {
+      this.#schedule({ type: 'fault-digital-drive', cycle: cycle + offsetMilliseconds * 16_000,
+        pin, level: index % 2 === 1, eventId });
+    }
+  }
+
+  scheduleDigitalRelease(cycle, pin, eventId) {
+    if (pin !== 2 || typeof eventId !== 'string') throw new Error('FAULT_BUTTON_OPEN_INVALID');
+    this.#schedule({ type: 'fault-digital-release', cycle, pin, eventId });
+  }
+
+  scheduleAnalogStuck(cycle, channel, stuckValueC, eventId) {
+    if (channel !== 1 || !Number.isInteger(stuckValueC) || stuckValueC < -50 || stuckValueC > 150
+        || typeof eventId !== 'string') throw new Error('FAULT_TEMPERATURE_STUCK_INVALID');
+    this.#schedule({ type: 'fault-analogue-stuck', cycle, channel, stuckValueC, eventId });
   }
 
   scheduleDigital(cycle, pin, level) {
@@ -414,6 +480,7 @@ export class Atmega328PAdapter {
         pin: `D${pin}`,
         mode: output ? (pwm ? 'DIGITAL_PWM' : 'OUTPUT') : pullup ? 'INPUT_PULLUP' : 'INPUT',
         level: Boolean(this.cpu.data[config.PIN] & mask),
+        externalDrive: this.inputLevels.has(pin) ? (this.inputLevels.get(pin) ? 'HIGH' : 'LOW') : 'RELEASED',
         pwm,
         diagnostic: this.blocked ? 'UNSUPPORTED_PERIPHERAL' : 'OK',
       };
@@ -428,6 +495,7 @@ export class Atmega328PAdapter {
         mode: output ? 'OUTPUT' : read ? 'ANALOG_INPUT' : pullup ? 'INPUT_PULLUP' : 'INPUT',
         level: Boolean(this.cpu.data[portCConfig.PIN] & mask),
         voltage: this.analogVoltages.get(channel) ?? 0,
+        faultState: this.stuckAnalogChannels.has(channel) ? 'STUCK' : 'NONE',
         adc: read ? read.value : null,
         sampleCycle: read ? read.completionCycle : null,
         diagnostic: this.blocked ? 'UNSUPPORTED_PERIPHERAL' : 'OK',
@@ -452,6 +520,7 @@ export class Atmega328PAdapter {
       serial: this.serial.slice(),
       adcReads: this.adcReads.map((entry) => ({ ...entry })),
       unsupported: this.unsupported.slice(),
+      faultEvents: this.faultEvents.map((entry) => ({ ...entry })),
       pins: this.pinSnapshot(),
       retentionDrops: { ...this.retentionDrops },
     };

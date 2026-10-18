@@ -148,6 +148,10 @@ async function handleMessage(data) {
       if (isRp2040()) throw new Error('RP2040_DIGITAL_INPUT_UNSUPPORTED');
       applyDigitalInput(data);
       status('digital-input');
+    } else if (data.command === 'fault') {
+      if (isRp2040()) throw new Error('FAULT_INJECTION_PROFILE_UNSUPPORTED');
+      kernel.queueFaultAtCycle(data.event, data.targetCycle);
+      status('fault-request');
     } else if (data.command === 'digital-sequence') {
       if (isRp2040()) throw new Error('RP2040_DIGITAL_INPUT_UNSUPPORTED');
       kernel.queueDigitalSequence(data.events);

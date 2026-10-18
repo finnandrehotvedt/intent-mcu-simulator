@@ -520,6 +520,12 @@
           <button id="seeded-property-replay" type="button" disabled>Replay stored seed</button>
           <p id="seeded-property-summary" class="truth" role="status">No seeded suite stored. Generation is bounded to eight valid AVR thermostat cases.</p>
         </div>
+        <div class="fault-suite-controls" aria-labelledby="fault-suite-title">
+          <div><p class="eyebrow">X23 · BOUNDED INPUT FAULTS</p><h4 id="fault-suite-title">Fault-injection cases</h4></div>
+          <button id="fault-suite-load" type="button">Load 3 fault cases</button>
+          <button id="fault-suite-replay" type="button" disabled>Replay stored faults</button>
+          <p id="fault-suite-summary" class="truth" role="status">Supports ideal D2 bounce, stuck A1 temperature and actual D2 external-drive release. Incorrect bus response is unsupported because no response-producing bus model exists.</p>
+        </div>
         <div class="scenario-editor-actions"><button id="scenario-add" type="button">Add scenario</button><button id="scenario-undo" type="button">Undo timeline edit</button><button id="scenario-redo" type="button">Redo timeline edit</button><button id="scenario-run" type="button" disabled>Run authored timeline</button></div>
         <div id="scenario-list" class="scenario-list"></div>
         <p id="scenario-editor-message" class="truth" role="status">The timeline is saved with the local project. A fresh matching firmware build is required to run it.</p>
