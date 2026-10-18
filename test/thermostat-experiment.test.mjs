@@ -8,6 +8,7 @@ import { openCandidateUiSession } from '../src/candidate-existing-ui-adapter.mjs
 import {
   THERMOSTAT_EXPERIMENT_CARD,
   THERMOSTAT_EXPERIMENT_KNOWN_BAD_SOURCE,
+  THERMOSTAT_EXPERIMENT_COMPARISON_ONLY_BAD_SOURCE,
   THERMOSTAT_EXPERIMENT_SOURCE,
   createThermostatExperiment,
   isThermostatExperimentProject,
@@ -58,6 +59,8 @@ test('sensor, button and heater indicator project through existing tested runtim
 test('correct and known-bad firmware variants are exact, visible and bounded', () => {
   assert.equal(thermostatFirmwareVariant(THERMOSTAT_EXPERIMENT_SOURCE), 'correct');
   assert.equal(thermostatFirmwareVariant(THERMOSTAT_EXPERIMENT_KNOWN_BAD_SOURCE), 'known-bad-equality');
+  assert.equal(thermostatFirmwareVariant(THERMOSTAT_EXPERIMENT_COMPARISON_ONLY_BAD_SOURCE),
+    'known-bad-equality');
   assert.equal(thermostatFirmwareSource('correct'), THERMOSTAT_EXPERIMENT_SOURCE);
   assert.equal(thermostatFirmwareSource('known-bad-equality'), THERMOSTAT_EXPERIMENT_KNOWN_BAD_SOURCE);
   assert.match(THERMOSTAT_EXPERIMENT_KNOWN_BAD_SOURCE, /temperatureC <= SETPOINT_C/u);

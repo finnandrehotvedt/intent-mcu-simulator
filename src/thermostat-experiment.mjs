@@ -77,6 +77,11 @@ export const THERMOSTAT_EXPERIMENT_KNOWN_BAD_SOURCE = THERMOSTAT_EXPERIMENT_SOUR
   '// KNOWN-BAD TEACHING VARIANT: equality incorrectly keeps the heater on.',
 );
 
+export const THERMOSTAT_EXPERIMENT_COMPARISON_ONLY_BAD_SOURCE = THERMOSTAT_EXPERIMENT_SOURCE.replace(
+  'temperatureC < SETPOINT_C',
+  'temperatureC <= SETPOINT_C',
+);
+
 const clone = (value) => structuredClone(value);
 const endpoint = (component, pin) => ({ component, pin });
 const net = (id, ...endpoints) => ({ id, endpoints });
@@ -232,7 +237,8 @@ function sourceFromProject(value) {
 export function thermostatFirmwareVariant(value) {
   const source = typeof value === 'string' ? value : sourceFromProject(value);
   if (source === THERMOSTAT_EXPERIMENT_SOURCE) return 'correct';
-  if (source === THERMOSTAT_EXPERIMENT_KNOWN_BAD_SOURCE) return 'known-bad-equality';
+  if (source === THERMOSTAT_EXPERIMENT_KNOWN_BAD_SOURCE
+      || source === THERMOSTAT_EXPERIMENT_COMPARISON_ONLY_BAD_SOURCE) return 'known-bad-equality';
   return 'modified';
 }
 

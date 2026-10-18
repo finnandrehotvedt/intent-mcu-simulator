@@ -136,10 +136,18 @@ import {
 import { evaluateProjectFeasibility } from '../src/project-feasibility.mjs';
 import {
   PROJECT_PATCH_SCHEMA,
+  REFERENCED_PROJECT_PATCH_SCHEMA,
   createProjectPatchPrompt,
   projectTextSha256,
   reviewProjectPatch,
 } from '../src/project-patch.mjs';
+import {
+  EXPECTATION_REFERENCE_LIMIT,
+  EXPECTATION_REFERENCE_SCHEMA,
+  createExpectationReference,
+  expectationReferenceMatchesPrepared,
+  parseExpectationReference,
+} from '../src/expectation-reference.mjs';
 import { compareDesignAlternatives, DESIGN_COMPARISON_SCHEMA } from '../src/design-comparison.mjs';
 import {
   DOMAIN_REQUEST_SCHEMA,
@@ -258,7 +266,9 @@ const elements = Object.fromEntries([
   'open-assumptions-list', 'open-assumptions-summary', 'project-feasibility-list', 'project-feasibility-summary',
   'project-patch-description', 'project-patch-generate', 'project-patch-copy', 'project-patch-prompt',
   'project-patch-input', 'project-patch-review', 'project-patch-apply', 'project-patch-status',
-  'project-patch-changes', 'project-patch-summary',
+  'project-patch-changes', 'project-patch-summary', 'project-patch-implementation-changes',
+  'project-patch-expectation-changes', 'expectation-reference-lock', 'expectation-reference-open',
+  'expectation-reference-input', 'expectation-reference-status', 'expectation-reference-identity',
   'design-comparison-create', 'design-comparison-summary', 'design-comparison-status',
   'design-comparison-alternatives', 'design-comparison-differences',
   'shared-domain-engine-inspect', 'shared-domain-engine-summary', 'shared-domain-engine-status',
@@ -2098,6 +2108,7 @@ function applyScenarioTimelineCommand(command, { focusId = null } = {}) {
   elements.scenarioeditormessage.textContent = 'Timeline updated as data only. Prior authored results were cleared; the matching firmware artifact remains available.';
   renderScenarioTimelineEditor();
   renderThermostatExperimentPanel();
+  renderExpectationReference();
   if (focusId) requestAnimationFrame(() => elements.scenariolist.querySelector(
     `[data-scenario-focus="${CSS.escape(focusId)}"]`,
   )?.focus());
@@ -2913,6 +2924,7 @@ function handleProjectBriefInput(event) {
   if (event?.target === elements.projectbriefacceptance) clearRequirementResultLinks(selectedCompilerProfile);
   captureProjectBriefDraft();
   renderProjectBrief();
+  renderExpectationReference();
 }
 for (const input of [elements.projectbriefpurpose, elements.projectbriefinputs, elements.projectbriefoutputs,
   elements.projectbriefboundaries, elements.projectbriefacceptance, elements.projectbriefassumptions,
@@ -3155,7 +3167,7 @@ function requestUnsavedChangeGuard({ profile, actionLabel, continueAction }) {
   elements.unsavedkeep.focus();
   return true;
 }
-function installPreparedProjectEnvelope(result, handle = null) {
+function installPreparedProjectEnvelope(result, handle = null, { preserveExpectationReference = false } = {}) {
   if (result.profile !== selectedCompilerProfile) {
     elements.boardselect.value = result.profile;
     elements.boardselect.dispatchEvent(new Event('change', { bubbles: true }));
@@ -3181,8 +3193,13 @@ function installPreparedProjectEnvelope(result, handle = null) {
     handle, name: safeHandleName(handle, result.profile),
   });
   else projectFileConnections.delete(result.profile);
+  if (!preserveExpectationReference) {
+    loadedExpectationReference = null;
+    clearProjectPatchReview('Opened project contains authored data only. Lock or open an independent expectation reference separately.');
+  }
   setProjectBaseline(result.profile);
   renderNativeFileControls();
+  renderExpectationReference();
   window.__COMMON_PROJECT_FILE_STATE__ = structuredClone({ profile: result.profile, report: result.report });
   profileMessage(result.profile, result.report.legacy
     ? `Legacy ${result.report.inputSchema} migrated in memory to ${result.report.outputSchema}. Save creates a new file; fresh Build is required.`
@@ -3643,6 +3660,81 @@ window.__PROJECT_FEASIBILITY__ = Object.freeze({
 });
 let pendingProjectPatch = null;
 let pendingDesignComparison = null;
+let loadedExpectationReference = null;
+function expectationReferenceFilename() {
+  const stem = profileProjectName(AVR_PROFILE).normalize('NFKD')
+    .replace(/[^A-Za-z0-9 _.-]/gu, '').trim().replace(/\s+/gu, '-').slice(0, 64);
+  return `${stem || 'avr-thermostat'}.intent-mcu-expectations.json`;
+}
+function currentExpectationReferenceMatch() {
+  if (!loadedExpectationReference?.ok) return false;
+  const prepared = prepareProjectEnvelope(commonProjectText(AVR_PROFILE), commonProjectAdapters);
+  return prepared.ok && expectationReferenceMatchesPrepared(loadedExpectationReference.reference, prepared);
+}
+function renderExpectationReference() {
+  const supported = selectedCompilerProfile === AVR_PROFILE && thermostatProjectActive()
+    && Boolean(scenarioTimelineEditor?.timeline);
+  elements.expectationreferencelock.disabled = !supported;
+  if (!loadedExpectationReference?.ok) {
+    elements.expectationreferencestatus.dataset.valid = '';
+    elements.expectationreferencestatus.textContent = supported
+      ? 'No independent expectation reference loaded. Lock this authored thermostat timeline before requesting a firmware change.'
+      : 'Expectation locking is available only for the supported AVR thermostat project.';
+    elements.expectationreferenceidentity.textContent = 'Unlocked';
+    return;
+  }
+  const matches = currentExpectationReferenceMatch();
+  elements.expectationreferencestatus.dataset.valid = String(matches);
+  elements.expectationreferencestatus.textContent = matches
+    ? 'Locked local reference matches the current authored tests. Firmware may change without changing this baseline.'
+    : 'Loaded reference is valid, but current authored tests differ. Generate a new lock only after reviewing that test change.';
+  elements.expectationreferenceidentity.textContent = `SHA-256 ${loadedExpectationReference.sha256}`;
+}
+async function lockCurrentExpectationReference() {
+  const result = await createExpectationReference(
+    commonProjectText(AVR_PROFILE), commonProjectAdapters, AVR_PROFILE,
+  );
+  if (!result.ok) {
+    elements.expectationreferencestatus.dataset.valid = 'false';
+    elements.expectationreferencestatus.textContent = `Lock rejected (${result.code}). No file or reference was created.`;
+    return result;
+  }
+  loadedExpectationReference = result;
+  downloadText(expectationReferenceFilename(), result.canonical, 'application/json');
+  clearProjectPatchReview('Expectations locked independently. Generate a fresh reference-bound patch prompt.');
+  renderExpectationReference();
+  return result;
+}
+async function openExpectationReferenceFile(file) {
+  if (!file) return { ok: false, code: 'EXPECTATION_REFERENCE_FILE_REQUIRED' };
+  if (file.size > EXPECTATION_REFERENCE_LIMIT) {
+    elements.expectationreferencestatus.dataset.valid = 'false';
+    elements.expectationreferencestatus.textContent = 'Open rejected (INPUT_LIMIT). The current reference is unchanged.';
+    return { ok: false, code: 'INPUT_LIMIT' };
+  }
+  let source;
+  try { source = await file.text(); }
+  catch {
+    elements.expectationreferencestatus.dataset.valid = 'false';
+    elements.expectationreferencestatus.textContent = 'Open rejected (EXPECTATION_REFERENCE_READ_FAILED).';
+    return { ok: false, code: 'EXPECTATION_REFERENCE_READ_FAILED' };
+  }
+  const result = await parseExpectationReference(source);
+  if (!result.ok) {
+    elements.expectationreferencestatus.dataset.valid = 'false';
+    elements.expectationreferencestatus.textContent = `Open rejected (${result.code}). The current reference is unchanged.`;
+    return result;
+  }
+  loadedExpectationReference = result;
+  clearProjectPatchReview('Independent reference opened. Generate a fresh reference-bound patch prompt.');
+  renderExpectationReference();
+  return result;
+}
+function clearExpectationReference() {
+  loadedExpectationReference = null;
+  clearProjectPatchReview('Project changed or opened. Lock or open its independent expectations before requesting a referenced patch.');
+  renderExpectationReference();
+}
 function clearDesignComparison(message = 'Review a proposal above, then compare it with the current design.') {
   pendingDesignComparison = null;
   elements.designcomparisonsummary.textContent = 'No comparison';
@@ -3662,25 +3754,42 @@ function clearProjectPatchReview(message = 'No project mutation has been propose
   elements.projectpatchstatus.dataset.valid = '';
   elements.projectpatchstatus.textContent = message;
   const empty = document.createElement('p'); empty.className = 'requirement-trace-empty';
-  empty.textContent = 'Reviewed source, component and wire changes appear here before Apply.';
-  elements.projectpatchchanges.replaceChildren(empty);
+  empty.textContent = 'No implementation changes reviewed.';
+  const expectationEmpty = empty.cloneNode(); expectationEmpty.textContent = 'No test or expectation changes reviewed.';
+  elements.projectpatchimplementationchanges.replaceChildren(empty);
+  elements.projectpatchexpectationchanges.replaceChildren(expectationEmpty);
 }
-function renderProjectPatchReview(reviewed) {
-  pendingProjectPatch = reviewed;
-  elements.projectpatchapply.disabled = false;
-  elements.designcomparisoncreate.disabled = false;
-  clearDesignComparison('Proposal reviewed. Compare it with the current design before Apply.');
-  elements.projectpatchsummary.textContent = `${reviewed.result.changes.length} proposed change${reviewed.result.changes.length === 1 ? '' : 's'}`;
-  elements.projectpatchstatus.dataset.valid = 'true';
-  elements.projectpatchstatus.textContent = 'Proposal validated against the current base. Review every row, then explicitly Apply or keep editing.';
-  const rows = reviewed.result.changes.map((change) => {
+function patchChangeRows(changes, emptyText) {
+  if (!changes.length) {
+    const empty = document.createElement('p'); empty.className = 'requirement-trace-empty';
+    empty.textContent = emptyText; return [empty];
+  }
+  return changes.map((change) => {
     const row = document.createElement('div'); row.className = 'project-patch-change';
     const kind = document.createElement('strong'); kind.textContent = change.kind;
     const action = document.createElement('b'); action.dataset.action = change.action; action.textContent = change.action;
     const summary = document.createElement('span'); summary.textContent = change.summary;
     row.append(kind, action, summary); return row;
   });
-  elements.projectpatchchanges.replaceChildren(...rows);
+}
+function renderProjectPatchReview(reviewed) {
+  pendingProjectPatch = reviewed;
+  elements.projectpatchapply.disabled = reviewed.result.applyBlocked;
+  elements.designcomparisoncreate.disabled = false;
+  clearDesignComparison('Proposal reviewed. Compare it with the current design before Apply.');
+  elements.projectpatchsummary.textContent = `${reviewed.result.changes.length} proposed change${reviewed.result.changes.length === 1 ? '' : 's'}`;
+  elements.projectpatchstatus.dataset.valid = String(!reviewed.result.applyBlocked);
+  elements.projectpatchstatus.textContent = reviewed.result.applyBlocked
+    ? 'Review complete: tests or expectations changed separately. Apply is blocked (PROJECT_PATCH_EXPECTATIONS_CHANGED); the locked baseline and project are unchanged.'
+    : reviewed.result.expectationReferenceState === 'locked'
+      ? 'Reference-bound proposal validated. Tests and expectations are unchanged; review the implementation rows before explicit Apply.'
+      : 'Unlocked v1 proposal validated without an independent expectation reference. Review every row; this makes no X25 claim.';
+  elements.projectpatchimplementationchanges.replaceChildren(...patchChangeRows(
+    reviewed.result.implementationChanges, 'No implementation changes.',
+  ));
+  elements.projectpatchexpectationchanges.replaceChildren(...patchChangeRows(
+    reviewed.result.testExpectationChanges, 'No test or expectation changes.',
+  ));
 }
 function renderDesignComparison(result) {
   pendingDesignComparison = structuredClone(result);
@@ -3726,7 +3835,8 @@ function renderDesignComparison(result) {
 }
 async function generateCurrentProjectPatchPrompt(description = elements.projectpatchdescription.value,
   profile = selectedCompilerProfile) {
-  const prompt = await createProjectPatchPrompt(description.trim(), commonProjectText(profile), commonProjectAdapters, profile);
+  const prompt = await createProjectPatchPrompt(description.trim(), commonProjectText(profile),
+    commonProjectAdapters, profile, loadedExpectationReference);
   elements.projectpatchprompt.value = prompt;
   elements.projectpatchcopy.disabled = false;
   elements.projectpatchstatus.dataset.valid = 'true';
@@ -3736,7 +3846,8 @@ async function generateCurrentProjectPatchPrompt(description = elements.projectp
 async function reviewCurrentProjectPatch(source = elements.projectpatchinput.value,
   profile = selectedCompilerProfile) {
   const baseText = commonProjectText(profile);
-  const result = await reviewProjectPatch(source, baseText, commonProjectAdapters, profile);
+  const result = await reviewProjectPatch(source, baseText, commonProjectAdapters, profile,
+    loadedExpectationReference);
   if (!result.ok) {
     clearProjectPatchReview(`Review rejected (${result.code}). The current project is unchanged.`);
     elements.projectpatchstatus.dataset.valid = 'false';
@@ -3749,7 +3860,8 @@ async function compareReviewedProjectDesigns() {
   if (!pendingProjectPatch) return { ok: false, code: 'DESIGN_COMPARISON_REVIEW_REQUIRED' };
   const reviewed = pendingProjectPatch;
   const currentText = commonProjectText(reviewed.profile);
-  const refreshed = await reviewProjectPatch(reviewed.raw, currentText, commonProjectAdapters, reviewed.profile);
+  const refreshed = await reviewProjectPatch(reviewed.raw, currentText, commonProjectAdapters,
+    reviewed.profile, loadedExpectationReference);
   if (!refreshed.ok || reviewed.profile !== selectedCompilerProfile) {
     const code = reviewed.profile !== selectedCompilerProfile ? 'PROJECT_PATCH_PROFILE_MISMATCH' : refreshed.code;
     clearProjectPatchReview(`Comparison rejected (${code}). Review a fresh proposal against the current project.`);
@@ -3770,15 +3882,21 @@ async function applyReviewedProjectPatch() {
   if (!pendingProjectPatch) return { ok: false, code: 'PROJECT_PATCH_REVIEW_REQUIRED' };
   const reviewed = pendingProjectPatch;
   const currentText = commonProjectText(reviewed.profile);
-  const result = await reviewProjectPatch(reviewed.raw, currentText, commonProjectAdapters, reviewed.profile);
+  const result = await reviewProjectPatch(reviewed.raw, currentText, commonProjectAdapters,
+    reviewed.profile, loadedExpectationReference);
   if (!result.ok || reviewed.profile !== selectedCompilerProfile) {
     const code = reviewed.profile !== selectedCompilerProfile ? 'PROJECT_PATCH_PROFILE_MISMATCH' : result.code;
     clearProjectPatchReview(`Apply rejected (${code}). The current project is unchanged; review a fresh proposal.`);
     elements.projectpatchstatus.dataset.valid = 'false';
     return { ...result, ok: false, code };
   }
+  if (result.applyBlocked) {
+    elements.projectpatchstatus.dataset.valid = 'false';
+    elements.projectpatchstatus.textContent = 'Apply blocked (PROJECT_PATCH_EXPECTATIONS_CHANGED). Review test changes separately; project and locked baseline are unchanged.';
+    return { ok: false, code: 'PROJECT_PATCH_EXPECTATIONS_CHANGED' };
+  }
   const priorBaseline = projectBaselines.get(reviewed.profile) ?? currentText;
-  installPreparedProjectEnvelope(result.proposed);
+  installPreparedProjectEnvelope(result.proposed, null, { preserveExpectationReference: true });
   projectBaselines.set(reviewed.profile, priorBaseline);
   profileMessage(reviewed.profile, 'Reviewed data-only patch applied atomically. Executable and runtime authority were cleared; inspect the project and Build fresh.');
   clearProjectPatchReview('Reviewed patch applied. A fresh Build is required; replay requires a new base hash and review.');
@@ -3806,8 +3924,17 @@ elements.projectpatchinput.addEventListener('input', () => clearProjectPatchRevi
 elements.projectpatchreview.addEventListener('click', () => { void reviewCurrentProjectPatch(); });
 elements.designcomparisoncreate.addEventListener('click', () => { void compareReviewedProjectDesigns(); });
 elements.projectpatchapply.addEventListener('click', () => { void applyReviewedProjectPatch(); });
+elements.expectationreferencelock.addEventListener('click', () => { void lockCurrentExpectationReference(); });
+elements.expectationreferenceopen.addEventListener('click', () => elements.expectationreferenceinput.click());
+elements.expectationreferenceinput.addEventListener('change', async () => {
+  const file = elements.expectationreferenceinput.files[0];
+  elements.expectationreferenceinput.value = '';
+  await openExpectationReferenceFile(file);
+});
 window.__PROJECT_PATCH__ = Object.freeze({
   schema: PROJECT_PATCH_SCHEMA,
+  referencedSchema: REFERENCED_PROJECT_PATCH_SCHEMA,
+  schemas: Object.freeze([PROJECT_PATCH_SCHEMA, REFERENCED_PROJECT_PATCH_SCHEMA]),
   prompt: (description, profile = selectedCompilerProfile) => generateCurrentProjectPatchPrompt(description, profile),
   review: (source, profile = selectedCompilerProfile) => reviewCurrentProjectPatch(source, profile),
   apply: () => applyReviewedProjectPatch(),
@@ -3816,8 +3943,34 @@ window.__PROJECT_PATCH__ = Object.freeze({
     baseProjectSha256: pendingProjectPatch.result.baseProjectSha256,
     candidateProjectSha256: pendingProjectPatch.result.candidateProjectSha256,
     changes: structuredClone(pendingProjectPatch.result.changes),
+    implementationChanges: structuredClone(pendingProjectPatch.result.implementationChanges),
+    testExpectationChanges: structuredClone(pendingProjectPatch.result.testExpectationChanges),
+    expectationReferenceSha256: pendingProjectPatch.result.expectationReferenceSha256,
+    expectationReferenceState: pendingProjectPatch.result.expectationReferenceState,
+    applyBlocked: pendingProjectPatch.result.applyBlocked,
+    applyBlockCode: pendingProjectPatch.result.applyBlockCode,
     evaluated: false,
     buildAuthority: false,
+  } : null,
+});
+window.__EXPECTATION_REFERENCE__ = Object.freeze({
+  schema: EXPECTATION_REFERENCE_SCHEMA,
+  lock: () => lockCurrentExpectationReference(),
+  openText: async (source) => {
+    const result = await parseExpectationReference(source);
+    if (result.ok) {
+      loadedExpectationReference = result;
+      clearProjectPatchReview('Independent reference opened from data. Generate a fresh reference-bound patch prompt.');
+      renderExpectationReference();
+    }
+    return result;
+  },
+  state: () => loadedExpectationReference?.ok ? {
+    sha256: loadedExpectationReference.sha256,
+    canonical: loadedExpectationReference.canonical,
+    matchesCurrent: currentExpectationReferenceMatch(),
+    executableAuthority: false,
+    verdictAuthority: false,
   } : null,
 });
 window.__DESIGN_COMPARISON__ = Object.freeze({
@@ -5728,6 +5881,7 @@ function renderProject() {
   renderLifecycle();
   renderComponents(); renderInspector(); renderRuntimeControls(); renderPublicControllerWorkbench();
   renderThermostatExperimentPanel();
+  renderExpectationReference();
 }
 
 function svgNode(name, attributes = {}, text = null) {
@@ -6758,6 +6912,7 @@ elements.redo.addEventListener('click', () => applyEditor({ type: 'redo' }, 'Red
 function createNewAvrProject() {
   editor = new ProjectEditorReducer(createEmptyProject());
   scenarioTimelineEditor = null; authoredScenarioResults = [];
+  clearExpectationReference();
   installProjectGeneration({ empty: true, reason: 'project.new', runtimeMessage: 'New empty project — build required' });
   selectedSourceFile = 'main.ino';
   clearProjectFileConnection(AVR_PROFILE);
@@ -6788,6 +6943,7 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
     }
     editor = parsed.session;
     scenarioTimelineEditor = null; authoredScenarioResults = [];
+    clearExpectationReference();
     installProjectGeneration({ empty: false, reason, runtimeMessage: `${example.name} loaded — build required` });
     selectedSourceFile = 'main.ino';
     elements.exampleselect.value = exampleId;
@@ -6814,6 +6970,7 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
     editor = parsed.session;
     scenarioTimelineEditor = new ScenarioTimelineEditor(defaultThermostatScenarioTimeline());
     authoredScenarioResults = [];
+    clearExpectationReference();
     installProjectGeneration({
       empty: false, reason, runtimeMessage: `${example.name} loaded — build required`,
     });
@@ -6842,6 +6999,7 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
     }
     editor = parsed.session;
     scenarioTimelineEditor = null; authoredScenarioResults = [];
+    clearExpectationReference();
     installProjectGeneration({
       empty: false, reason, runtimeMessage: `${example.name} loaded — build required`,
     });
@@ -6863,6 +7021,8 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
   const result = replacement.importProject(example.project, 'replace', { running, requireRunnable: true });
   if (!result.ok) { showActionableError(elements.projectmessage, result.code, `${example.name} example could not be loaded.`); return; }
   editor = replacement;
+  scenarioTimelineEditor = null; authoredScenarioResults = [];
+  clearExpectationReference();
   installProjectGeneration({ empty: false, reason, runtimeMessage: `${projectLabel} loaded — build required` });
   selectedSourceFile = 'main.ino';
   elements.exampleselect.value = exampleId;
@@ -7010,6 +7170,7 @@ elements.projectreload.addEventListener('click', () => {
   scenarioTimelineEditor = parsed.scenarioTimeline
     ? new ScenarioTimelineEditor(parsed.scenarioTimeline) : null;
   authoredScenarioResults = [];
+  clearExpectationReference();
   installProjectGeneration({
     empty: editor.project.circuit.components.length === 0, reason: 'project.reload',
     runtimeMessage: 'Reloaded project requires build',

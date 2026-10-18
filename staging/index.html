@@ -137,13 +137,24 @@
       <section class="project-patch" aria-labelledby="project-patch-title">
         <div class="requirement-trace-heading"><div><p class="eyebrow">DESCRIBE → REVIEW → APPLY</p><h3 id="project-patch-title">Reviewable project patch</h3></div><span id="project-patch-summary">No proposal reviewed</span></div>
         <p>Generate a portable prompt for an assistant of your choice. The Lab makes no AI request. A pasted proposal changes nothing until strict validation, visible review and explicit Apply.</p>
+        <section class="expectation-reference" aria-labelledby="expectation-reference-title">
+          <div><p class="eyebrow">INDEPENDENT LOCAL REFERENCE</p><h4 id="expectation-reference-title">Lock tests before changing firmware</h4></div>
+          <p>The separate file contains authored requirements and the thermostat timeline only. It never contains firmware, a build, runtime state or a verdict.</p>
+          <div class="project-patch-actions"><button id="expectation-reference-lock" type="button">Lock &amp; download expectations</button><button id="expectation-reference-open" type="button">Open locked reference</button></div>
+          <input id="expectation-reference-input" class="sr-only" type="file" accept="application/json,.json,.intent-mcu-expectations.json" aria-label="Open locked expectation reference file">
+          <p id="expectation-reference-status" role="status">No independent expectation reference loaded.</p>
+          <code id="expectation-reference-identity">Unlocked</code>
+        </section>
         <label>Requested change<textarea id="project-patch-description" rows="3" maxlength="2000" placeholder="Move the LED, route its cable clearly, and update main.c to drive the reviewed pin."></textarea></label>
         <div class="project-patch-actions"><button id="project-patch-generate" type="button">Generate patch prompt</button><button id="project-patch-copy" type="button" disabled>Copy prompt</button></div>
         <label>Portable prompt<textarea id="project-patch-prompt" rows="7" readonly placeholder="The generated prompt binds the exact current project hash."></textarea></label>
-        <label>Proposed patch JSON<textarea id="project-patch-input" rows="8" spellcheck="false" placeholder='{"schema":"intent-mcu-project-patch@1", ...}'></textarea></label>
+        <label>Proposed patch JSON<textarea id="project-patch-input" rows="8" spellcheck="false" placeholder='{"schema":"intent-mcu-project-patch@2", ...}'></textarea></label>
         <div class="project-patch-actions"><button id="project-patch-review" type="button">Review proposal</button><button id="design-comparison-create" type="button" disabled>Compare current ↔ proposal</button><button id="project-patch-apply" class="primary" type="button" disabled>Apply reviewed patch</button></div>
         <p id="project-patch-status" role="status">No project mutation has been proposed.</p>
-        <div id="project-patch-changes" class="project-patch-changes"><p class="requirement-trace-empty">Reviewed source, component and wire changes appear here before Apply.</p></div>
+        <div id="project-patch-changes" class="project-patch-diff-groups">
+          <section aria-labelledby="project-patch-implementation-title"><h4 id="project-patch-implementation-title">Implementation</h4><div id="project-patch-implementation-changes" class="project-patch-changes"><p class="requirement-trace-empty">No proposal reviewed.</p></div></section>
+          <section aria-labelledby="project-patch-expectations-title"><h4 id="project-patch-expectations-title">Tests &amp; expectations</h4><div id="project-patch-expectation-changes" class="project-patch-changes"><p class="requirement-trace-empty">No proposal reviewed.</p></div></section>
+        </div>
       </section>
       <section class="design-comparison" aria-labelledby="design-comparison-title">
         <div class="requirement-trace-heading"><div><p class="eyebrow">SAME REQUIREMENTS · DOCUMENTED LIMITS</p><h3 id="design-comparison-title">Compare two design alternatives</h3></div><span id="design-comparison-summary">No comparison</span></div>
