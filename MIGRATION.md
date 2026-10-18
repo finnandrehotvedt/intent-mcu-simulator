@@ -1,4 +1,4 @@
-# Migration to 1.1.0-rc.32
+# Migration to 1.1.0-rc.35
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
@@ -58,6 +58,12 @@ targets are saved without feasibility status. The current app recomputes each
 as available, unsupported, unknown or unresolved from project-owned authority;
 this cannot grant Build, runtime or verdict authority. Rc.33 files migrate with
 an explicit empty required-capability list.
+
+Rc.35 does not change the common project-file schema. A reviewable patch is
+transient `intent-mcu-project-patch@1` input containing one complete current
+envelope plus the exact base hash. It is never project authority or persisted
+state. Review changes nothing; Apply revalidates the base and candidate, then
+installs authored data only and requires a fresh Build.
 
 Existing accepted files remain readable:
 

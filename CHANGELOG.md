@@ -2,6 +2,18 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.35 — 2026-10-18
+
+- Completed X05 with a local description-to-prompt bridge and strict
+  `intent-mcu-project-patch@1` proposals across all four public profiles.
+- Shows every proposed source-file, component and wire addition, removal or
+  change before an explicit Apply; review itself never mutates the project.
+- Binds review and Apply to the exact canonical base hash, rejects stale,
+  malformed, unsupported and authority-bearing input, and applies through the
+  existing validated common-project boundary as one fresh-Build-required edit.
+- Makes no live AI request and grants no support, Build, runtime or verdict
+  authority from a description or pasted project patch.
+
 ## 1.1.0-rc.34 — 2026-10-18
 
 - Completed X04 with project-specific preflight for explicitly required

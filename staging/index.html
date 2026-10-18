@@ -134,6 +134,17 @@
         <p>Checks only explicit project needs against current controller and component authorities. This is not a firmware verdict and does not authorize or block Build.</p>
         <div id="project-feasibility-list" class="project-feasibility-list"><p class="requirement-trace-empty">Add a required peripheral or component to preflight this project.</p></div>
       </section>
+      <section class="project-patch" aria-labelledby="project-patch-title">
+        <div class="requirement-trace-heading"><div><p class="eyebrow">DESCRIBE → REVIEW → APPLY</p><h3 id="project-patch-title">Reviewable project patch</h3></div><span id="project-patch-summary">No proposal reviewed</span></div>
+        <p>Generate a portable prompt for an assistant of your choice. The Lab makes no AI request. A pasted proposal changes nothing until strict validation, visible review and explicit Apply.</p>
+        <label>Requested change<textarea id="project-patch-description" rows="3" maxlength="2000" placeholder="Move the LED, route its cable clearly, and update main.c to drive the reviewed pin."></textarea></label>
+        <div class="project-patch-actions"><button id="project-patch-generate" type="button">Generate patch prompt</button><button id="project-patch-copy" type="button" disabled>Copy prompt</button></div>
+        <label>Portable prompt<textarea id="project-patch-prompt" rows="7" readonly placeholder="The generated prompt binds the exact current project hash."></textarea></label>
+        <label>Proposed patch JSON<textarea id="project-patch-input" rows="8" spellcheck="false" placeholder='{"schema":"intent-mcu-project-patch@1", ...}'></textarea></label>
+        <div class="project-patch-actions"><button id="project-patch-review" type="button">Review proposal</button><button id="project-patch-apply" class="primary" type="button" disabled>Apply reviewed patch</button></div>
+        <p id="project-patch-status" role="status">No project mutation has been proposed.</p>
+        <div id="project-patch-changes" class="project-patch-changes"><p class="requirement-trace-empty">Reviewed source, component and wire changes appear here before Apply.</p></div>
+      </section>
     </section>
 
     <section id="pico-public-workbench" class="pico-public-workbench panel" aria-labelledby="pico-public-title" hidden>
@@ -533,7 +544,7 @@
       </nav>
     </section>
 
-    <footer>Intent MCU Simulator 1.1.0-rc.34 public release · project-specific feasibility, explicit unresolved questions and stable requirement traceability · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no inferred support, fabricated verdict, pin timing, general circuit solver or physical safety certification</footer>
+    <footer>Intent MCU Simulator 1.1.0-rc.35 public release · reviewable project patches, project-specific feasibility and stable requirement traceability · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no live AI call, inferred support, fabricated verdict, general circuit solver or physical safety certification</footer>
   </main>
   <button id="serial-tab" class="serial-tab" type="button" aria-expanded="false" aria-controls="serial-dock"><span>Serial</span><span id="serial-new-output" class="serial-new-output" hidden>0 new</span></button>
   <aside id="serial-dock" class="serial-dock" aria-labelledby="serial-title" hidden>

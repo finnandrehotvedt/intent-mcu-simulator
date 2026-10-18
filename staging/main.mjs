@@ -119,6 +119,11 @@ import {
   currentRequirementResultLink,
 } from '../src/requirement-traceability.mjs';
 import { evaluateProjectFeasibility } from '../src/project-feasibility.mjs';
+import {
+  PROJECT_PATCH_SCHEMA,
+  createProjectPatchPrompt,
+  reviewProjectPatch,
+} from '../src/project-patch.mjs';
 import { serialEventText, serialInputBytes, serialText } from '../src/serial-view.mjs';
 import { SERIAL_HISTORY_MAX } from '../src/runtime-kernel.mjs';
 import { createSupportedProfileExample, supportedProfileExamples } from '../src/supported-example-pack.mjs';
@@ -216,6 +221,9 @@ const elements = Object.fromEntries([
   'project-brief-outputs', 'project-brief-boundaries', 'project-brief-acceptance',
   'project-brief-assumptions', 'project-brief-capabilities', 'project-brief-evaluation', 'project-brief-status', 'requirement-trace-list', 'requirement-trace-summary',
   'open-assumptions-list', 'open-assumptions-summary', 'project-feasibility-list', 'project-feasibility-summary',
+  'project-patch-description', 'project-patch-generate', 'project-patch-copy', 'project-patch-prompt',
+  'project-patch-input', 'project-patch-review', 'project-patch-apply', 'project-patch-status',
+  'project-patch-changes', 'project-patch-summary',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -2966,6 +2974,106 @@ window.__REQUIREMENT_TRACEABILITY__ = Object.freeze({
 window.__PROJECT_FEASIBILITY__ = Object.freeze({
   schema: 'intent-mcu-project-feasibility@1',
   current: (profile = selectedCompilerProfile) => structuredClone(currentProjectFeasibility(profile)),
+});
+let pendingProjectPatch = null;
+function clearProjectPatchReview(message = 'No project mutation has been proposed.') {
+  pendingProjectPatch = null;
+  elements.projectpatchapply.disabled = true;
+  elements.projectpatchsummary.textContent = 'No proposal reviewed';
+  elements.projectpatchstatus.dataset.valid = '';
+  elements.projectpatchstatus.textContent = message;
+  const empty = document.createElement('p'); empty.className = 'requirement-trace-empty';
+  empty.textContent = 'Reviewed source, component and wire changes appear here before Apply.';
+  elements.projectpatchchanges.replaceChildren(empty);
+}
+function renderProjectPatchReview(reviewed) {
+  pendingProjectPatch = reviewed;
+  elements.projectpatchapply.disabled = false;
+  elements.projectpatchsummary.textContent = `${reviewed.result.changes.length} proposed change${reviewed.result.changes.length === 1 ? '' : 's'}`;
+  elements.projectpatchstatus.dataset.valid = 'true';
+  elements.projectpatchstatus.textContent = 'Proposal validated against the current base. Review every row, then explicitly Apply or keep editing.';
+  const rows = reviewed.result.changes.map((change) => {
+    const row = document.createElement('div'); row.className = 'project-patch-change';
+    const kind = document.createElement('strong'); kind.textContent = change.kind;
+    const action = document.createElement('b'); action.dataset.action = change.action; action.textContent = change.action;
+    const summary = document.createElement('span'); summary.textContent = change.summary;
+    row.append(kind, action, summary); return row;
+  });
+  elements.projectpatchchanges.replaceChildren(...rows);
+}
+async function generateCurrentProjectPatchPrompt(description = elements.projectpatchdescription.value,
+  profile = selectedCompilerProfile) {
+  const prompt = await createProjectPatchPrompt(description.trim(), commonProjectText(profile), commonProjectAdapters, profile);
+  elements.projectpatchprompt.value = prompt;
+  elements.projectpatchcopy.disabled = false;
+  elements.projectpatchstatus.dataset.valid = 'true';
+  elements.projectpatchstatus.textContent = 'Portable prompt generated locally. No network or AI request was made.';
+  return prompt;
+}
+async function reviewCurrentProjectPatch(source = elements.projectpatchinput.value,
+  profile = selectedCompilerProfile) {
+  const baseText = commonProjectText(profile);
+  const result = await reviewProjectPatch(source, baseText, commonProjectAdapters, profile);
+  if (!result.ok) {
+    clearProjectPatchReview(`Review rejected (${result.code}). The current project is unchanged.`);
+    elements.projectpatchstatus.dataset.valid = 'false';
+    return result;
+  }
+  renderProjectPatchReview({ raw: source, result, profile, baseText });
+  return result;
+}
+async function applyReviewedProjectPatch() {
+  if (!pendingProjectPatch) return { ok: false, code: 'PROJECT_PATCH_REVIEW_REQUIRED' };
+  const reviewed = pendingProjectPatch;
+  const currentText = commonProjectText(reviewed.profile);
+  const result = await reviewProjectPatch(reviewed.raw, currentText, commonProjectAdapters, reviewed.profile);
+  if (!result.ok || reviewed.profile !== selectedCompilerProfile) {
+    const code = reviewed.profile !== selectedCompilerProfile ? 'PROJECT_PATCH_PROFILE_MISMATCH' : result.code;
+    clearProjectPatchReview(`Apply rejected (${code}). The current project is unchanged; review a fresh proposal.`);
+    elements.projectpatchstatus.dataset.valid = 'false';
+    return { ...result, ok: false, code };
+  }
+  const priorBaseline = projectBaselines.get(reviewed.profile) ?? currentText;
+  installPreparedProjectEnvelope(result.proposed);
+  projectBaselines.set(reviewed.profile, priorBaseline);
+  profileMessage(reviewed.profile, 'Reviewed data-only patch applied atomically. Executable and runtime authority were cleared; inspect the project and Build fresh.');
+  clearProjectPatchReview('Reviewed patch applied. A fresh Build is required; replay requires a new base hash and review.');
+  elements.projectpatchinput.value = '';
+  return { ok: true, code: 'PROJECT_PATCH_APPLIED', profile: reviewed.profile,
+    changes: structuredClone(result.changes), freshBuildRequired: true };
+}
+elements.projectpatchgenerate.addEventListener('click', async () => {
+  try { await generateCurrentProjectPatchPrompt(); }
+  catch (error) {
+    elements.projectpatchstatus.dataset.valid = 'false';
+    elements.projectpatchstatus.textContent = `Prompt rejected (${error.code ?? error.message}). The current project is unchanged.`;
+  }
+});
+elements.projectpatchcopy.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(elements.projectpatchprompt.value);
+    elements.projectpatchstatus.textContent = 'Patch prompt copied. No AI request was made by the Lab.';
+  } catch {
+    elements.projectpatchprompt.select();
+    elements.projectpatchstatus.textContent = 'Patch prompt selected; copy it with your browser shortcut.';
+  }
+});
+elements.projectpatchinput.addEventListener('input', () => clearProjectPatchReview('Patch text changed. Review the complete proposal before Apply.'));
+elements.projectpatchreview.addEventListener('click', () => { void reviewCurrentProjectPatch(); });
+elements.projectpatchapply.addEventListener('click', () => { void applyReviewedProjectPatch(); });
+window.__PROJECT_PATCH__ = Object.freeze({
+  schema: PROJECT_PATCH_SCHEMA,
+  prompt: (description, profile = selectedCompilerProfile) => generateCurrentProjectPatchPrompt(description, profile),
+  review: (source, profile = selectedCompilerProfile) => reviewCurrentProjectPatch(source, profile),
+  apply: () => applyReviewedProjectPatch(),
+  state: () => pendingProjectPatch ? {
+    profile: pendingProjectPatch.profile,
+    baseProjectSha256: pendingProjectPatch.result.baseProjectSha256,
+    candidateProjectSha256: pendingProjectPatch.result.candidateProjectSha256,
+    changes: structuredClone(pendingProjectPatch.result.changes),
+    evaluated: false,
+    buildAuthority: false,
+  } : null,
 });
 function endpointKey(endpoint) { return `${endpoint.component}.${endpoint.pin}`; }
 function parseEndpoint(key) {
@@ -5923,6 +6031,7 @@ elements.boardselect.addEventListener('change', () => {
   const selected = candidateCompilerTarget(elements.boardselect.value);
   selectedCompilerProfile = selected ? selected.profile : AVR_PROFILE;
   if (previousProfile !== selectedCompilerProfile) clearRequirementResultLinks(previousProfile);
+  if (previousProfile !== selectedCompilerProfile) clearProjectPatchReview('Profile changed. Review a patch for the active project.');
   syncControllerSelectors(selectedCompilerProfile);
   if (elements.componentsupportdialog.open) {
     elements.componentsupportprofile.value = selectedCompilerProfile;
