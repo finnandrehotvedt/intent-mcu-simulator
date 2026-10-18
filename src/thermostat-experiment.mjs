@@ -205,6 +205,25 @@ export function openThermostatExperiment(source) {
   return opened;
 }
 
+export const THERMOSTAT_PROJECT_ADAPTER = Object.freeze({
+  schemas: Object.freeze([CONTACT_PERSISTENCE_SCHEMA]),
+  prepare(value) {
+    const opened = openThermostatExperiment(JSON.stringify(value));
+    if (!opened.ok) {
+      throw Object.assign(new Error(opened.code), {
+        code: opened.code, details: opened.details ?? [],
+      });
+    }
+    return {
+      project: JSON.parse(opened.session.saveText()),
+      prepared: opened.session,
+      preserved: ['source', 'circuit', 'layout', 'wire routes/styles', 'instruments', 'supported controls'],
+      fieldsDropped: ['build.inputIdentity', 'build.artifactIdentity', 'runtime results'],
+    };
+  },
+  electrical: (result) => result.prepared?.runnable,
+});
+
 function sourceFromProject(value) {
   const project = value?.schema === CONTACT_PERSISTENCE_SCHEMA ? value.project : value;
   return project?.source?.files?.find((file) => file.name === 'main.ino')?.content ?? null;

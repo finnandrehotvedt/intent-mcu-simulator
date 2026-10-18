@@ -1,5 +1,20 @@
 # Intent MCU Simulator 1.1.0-rc.42
 
+## X15 source-side headless experiment runner
+
+The source checkout now includes a true browser-free runner for the same saved
+AVR thermostat experiment. It uses the existing project-envelope and
+electrical admission, fixed AVR build contract, Node/avr8js `RuntimeKernel`
+and shared M1 scenario evaluator. It does not use Playwright or reproduce the
+verdict rules.
+
+Saved files remain data only. The runner compiles fresh and associates project,
+source, compiler input, artifact, profile, scenario and virtual-time evidence;
+authority-bearing or stale-artifact files reject before execution. Pico,
+ESP32-C3 and STM32 headless runtime paths remain explicitly unavailable in
+this release. This source-side tool does not change the deployed rc.42 web app
+or add an account, persistence service, listener or public endpoint.
+
 ## X14 source-side MCP adapter
 
 The source checkout now includes an optional thin MCP 2025-06-18 stdio wrapper

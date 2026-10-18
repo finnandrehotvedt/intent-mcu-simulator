@@ -49,6 +49,26 @@ test-only loopback override remains available. It has no listener, account,
 credential, cloud persistence, origin selector, shell/eval, autonomous Apply
 or broader controller authority. See [docs/MCP-ADAPTER.md](docs/MCP-ADAPTER.md).
 
+## Local headless saved-experiment runner
+
+The AVR thermostat experiment can also run from the same downloaded
+`.intent-mcu.json` file without launching a browser:
+
+```sh
+npm run experiment:headless -- ./Thermostat-boundary-test.intent-mcu.json
+```
+
+The runner strictly reopens and electrically validates the data-only file,
+compiles its exact source afresh through the fixed existing compiler contract,
+executes the returned Intel HEX directly in the shared Node/avr8js runtime,
+and delegates all three scenario verdicts to the existing M1 evaluator. It
+never accepts executable bytes or a prior verdict from the file.
+
+This source release supports only the exact AVR thermostat experiment.
+Headless Pico, ESP32-C3 and STM32 execution is explicitly unavailable; their
+different runtime integrations are not silently substituted or claimed. See
+[docs/HEADLESS-EXPERIMENT.md](docs/HEADLESS-EXPERIMENT.md).
+
 ## Public discovery and factual machine context
 
 The live workbench publishes crawlable controller, component, example and
