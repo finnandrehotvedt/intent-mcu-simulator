@@ -14,6 +14,8 @@ All notable public source changes are recorded here.
   parser tests and integrated actual compiler/runtime acceptance. Deterministic
   prompt/validation/export bytes compare exactly with the UI path; runtime
   cycles remain observations and are not normalized into false equality.
+- The AVR Run action now waits for a source-bound positive worker-cycle
+  observation instead of accepting the worker's initial cycle-zero state.
 
 ## 1.1.0-rc.38 — 2026-10-18
 

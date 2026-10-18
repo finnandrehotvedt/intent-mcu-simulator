@@ -3147,7 +3147,7 @@ async function runThroughActiveUi(profile, signal) {
       worker?.postMessage({ command: 'run' });
       await waitForActionEvidence(() => {
         const runtime = window.__M6_STATE__.runtime;
-        return runtime && runtime.cycle > before ? runtime : null;
+        return runtime && runtime.cycle > Math.max(before, 0) ? runtime : null;
       }, signal);
     } else {
       const started = profile === STM32F429ZI_PROFILE

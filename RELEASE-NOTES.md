@@ -14,7 +14,8 @@ Acceptance exercises all seven contracts through the separate process,
 including one actual isolated compiler Build, worker Run, GPIO/result read and
 canonical project export. Deterministic prompt, validation and export data are
 compared exactly; runtime cycles remain observations and are not normalized or
-claimed equal.
+claimed equal. AVR Run completes only after an actual positive worker-cycle
+observation; cancellation and the existing bounded wait remain authoritative.
 
 ---
 
