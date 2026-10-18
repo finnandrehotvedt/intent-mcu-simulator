@@ -1,4 +1,25 @@
-# Intent MCU Simulator 1.1.0-rc.39
+# Intent MCU Simulator 1.1.0-rc.40
+
+This capability-discovery release completes X10 without expanding the seven
+existing action contracts. A separate local client can request one strict,
+read-only machine-readable snapshot over the optional stdio adapter instead of
+scraping the workbench screen.
+
+The snapshot derives from the same project-owned authorities as the visible
+UI. It identifies all four exact board profiles, their named pins, source and
+API boundaries, compiler/runtime status, toolchain identities, 19 part models,
+the complete profile/part support cells, transport/build/circuit/project
+quotas, contract schemas, release version and public source repository.
+
+Discovery adds no action, Apply path, generic command, listener, public API,
+account, credential, persistent state or topology authority. Unsupported
+versions, unknown fields and invented actions reject before execution. The
+integrated acceptance discovers a supported AVR action and starter, invokes it
+through a separate process, and confirms that Pico ADC remains unavailable.
+
+---
+
+## 1.1.0-rc.39
 
 This external-client adapter release completes the bounded X07/X08 integration
 without expanding the seven existing action contracts. A separate local Node

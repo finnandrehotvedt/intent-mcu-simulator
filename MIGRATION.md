@@ -1,4 +1,4 @@
-# Migration to 1.1.0-rc.39
+# Migration to 1.1.0-rc.40
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
@@ -86,6 +86,11 @@ adapter carries only the same seven rc.38 action contracts to the same browser
 engine at the fixed Lab origin. It adds no server project, account, credential,
 public endpoint or Apply authority. Export remains the same canonical data-only
 envelope, and Open still requires a fresh Build before Run.
+
+Rc.40 does not change the common project-file schema or any of the seven action
+contracts. Capability discovery is a transient read-only stdio response. It is
+never stored in a project and cannot restore Build, runtime, Apply or topology
+authority. Existing local projects and rc.39 clients remain compatible.
 
 Existing accepted files remain readable:
 

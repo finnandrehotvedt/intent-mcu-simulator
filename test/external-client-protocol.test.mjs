@@ -8,6 +8,9 @@ import {
   EXTERNAL_CLIENT_CANCEL_SCHEMA, EXTERNAL_CLIENT_ORIGIN,
   parseExternalClientLine, resolveExternalClientOrigin,
 } from '../src/external-client-protocol.mjs';
+import {
+  CAPABILITY_DISCOVERY_REQUEST_SCHEMA, CAPABILITY_DISCOVERY_SCHEMA,
+} from '../src/capability-discovery.mjs';
 
 const profile = 'board.atmega328p-16mhz-v1';
 const now = 1_800_000_000_000;
@@ -21,13 +24,24 @@ test('production origin is fixed and only a test-only loopback override is accep
   }
 });
 
-test('transport accepts exactly the existing action request and bounded cancel envelope', () => {
+test('transport accepts the existing action request, bounded cancel and read-only discovery envelope', () => {
   const source = boundedActionRequest('project.validate', profile, 3, {}, { now, ttlMs: 5_000, requestId: 'external-valid-request' });
   const action = parseExternalClientLine(source, now + 1);
   assert.equal(action.kind, 'action'); assert.equal(action.value.action, 'project.validate'); assert.equal(action.source, source);
   const cancel = parseExternalClientLine(JSON.stringify({ schema: EXTERNAL_CLIENT_CANCEL_SCHEMA,
     requestId: 'external-cancel-request', targetRequestId: 'external-valid-request' }), now);
   assert.equal(cancel.kind, 'cancel');
+  const discovery = parseExternalClientLine(JSON.stringify({ schema: CAPABILITY_DISCOVERY_REQUEST_SCHEMA,
+    requestId: 'external-discovery-request', acceptSchema: CAPABILITY_DISCOVERY_SCHEMA }), now);
+  assert.equal(discovery.kind, 'discovery');
+});
+
+test('discovery transport rejects unsupported versions and added authority fields', () => {
+  assert.throws(() => parseExternalClientLine(JSON.stringify({ schema: CAPABILITY_DISCOVERY_REQUEST_SCHEMA,
+    requestId: 'external-discovery-version', acceptSchema: 'intent-mcu-capability-discovery@99' }), now), /VERSION_UNSUPPORTED/);
+  assert.throws(() => parseExternalClientLine(JSON.stringify({ schema: CAPABILITY_DISCOVERY_REQUEST_SCHEMA,
+    requestId: 'external-discovery-authority', acceptSchema: CAPABILITY_DISCOVERY_SCHEMA,
+    apply: true }), now), /REQUEST_SHAPE/);
 });
 
 test('client cannot select origin, apply, shell, eval, generic command or unknown fields', () => {

@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.40 — 2026-10-18
+
+- Completed X10 with a strict read-only capability-discovery request on the
+  existing optional local stdio adapter. It exposes all four exact profiles,
+  named pins, API/runtime boundaries, 19 part models, support cells, quotas,
+  schemas, release version and source identity from canonical authorities.
+- Discovery adds no eighth action and no Apply, generic command, listener,
+  public endpoint, account, credential, persistence or topology authority.
+  Unsupported discovery versions and added fields reject before execution.
+- A separate client acceptance proves discovery followed by one discovered
+  supported action, while unavailable Pico ADC, an unsupported discovery
+  version and an invented action all fail closed.
+
 ## 1.1.0-rc.39 — 2026-10-18
 
 - Added an optional local stdio external-client adapter as a separate process

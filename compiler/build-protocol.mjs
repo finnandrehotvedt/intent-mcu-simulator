@@ -8,6 +8,9 @@ import {
   validateCandidateTarget,
   validateUnavailableCandidateTarget,
 } from './candidate-target-contract.mjs';
+import { BUILD_LIMITS } from '../src/build-limits.mjs';
+
+export { BUILD_LIMITS } from '../src/build-limits.mjs';
 
 export const BUILD_REQUEST_SCHEMA = 'teach-lab-build-request@1';
 export const RP2040_BUILD_REQUEST_SCHEMA = 'intent-mcu-rp2040-source-build-request@1';
@@ -19,14 +22,6 @@ export const FIXED_BUILD_FLAGS = Object.freeze([
   '--warnings=all',
   '--no-color',
 ]);
-export const BUILD_LIMITS = Object.freeze({
-  files: 8,
-  sourceBytes: 128 * 1024,
-  requestBytes: 160 * 1024,
-  diagnosticsBytes: 1024 * 1024,
-  outputBytes: 1024 * 1024,
-});
-
 const FORBIDDEN_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
 const FILE_NAME = /^(?:main\.ino|[A-Za-z][A-Za-z0-9_-]{0,47}\.(?:h|hpp|c|cpp))$/;
 const RP2040_SOURCE_PATTERN = /^\/\* Intent MCU Simulator public RP2040 source v1 \*\/\nint main\(void\)\n\{\n  intent_gpio0_output\(([01])u\);\n  intent_uart0_text\("([A-Z0-9 _-]{1,24})"\);\n  intent_halt\(\);\n\}\n$/u;

@@ -32,7 +32,8 @@ export async function runExternalClientAdapter({ environment = process.env } = {
   };
   try {
     await page.goto(`${origin}/`, { waitUntil: 'networkidle' });
-    await page.waitForFunction(() => window.__M11_READY__ === true && Boolean(window.__AGENT_ACTIONS__));
+    await page.waitForFunction(() => window.__M11_READY__ === true && Boolean(window.__AGENT_ACTIONS__)
+      && Boolean(window.__CAPABILITY_DISCOVERY__));
     const ready = await page.evaluate(() => ({
       schema: 'intent-mcu-external-client-ready@1',
       router: window.__AGENT_ACTIONS__.schema,
@@ -42,9 +43,12 @@ export async function runExternalClientAdapter({ environment = process.env } = {
       externalEndpoint: window.__AGENT_ACTIONS__.externalEndpoint,
       applyAuthority: false,
       genericCommand: false,
+      discoverySchema: window.__CAPABILITY_DISCOVERY__.schema,
+      discoveryRequestSchema: window.__CAPABILITY_DISCOVERY__.requestSchema,
+      discoveryReadOnly: window.__CAPABILITY_DISCOVERY__.readOnly,
     }));
     if (ready.schema !== EXTERNAL_CLIENT_READY_SCHEMA || ready.actions.length !== 7
-        || ready.externalEndpoint !== false || ready.applyAuthority !== false) {
+        || ready.externalEndpoint !== false || ready.applyAuthority !== false || ready.discoveryReadOnly !== true) {
       throw new Error('EXTERNAL_CLIENT_PAGE_CONTRACT_MISMATCH');
     }
     write({ ...ready, transport: 'stdio', origin, durableServerProject: false });
@@ -58,6 +62,15 @@ export async function runExternalClientAdapter({ environment = process.env } = {
         const result = await page.evaluate((target) => window.__AGENT_ACTIONS__.cancel(target), parsed.value.targetRequestId);
         write({ schema: EXTERNAL_CLIENT_CONTROL_RESULT_SCHEMA, requestId: parsed.value.requestId,
           targetRequestId: parsed.value.targetRequestId, ...result });
+        return;
+      }
+      if (parsed.kind === 'discovery') {
+        try {
+          const result = await page.evaluate((request) => window.__CAPABILITY_DISCOVERY__.request(request), parsed.value);
+          write(result);
+        } catch (error) {
+          write(externalClientError(error.code ?? error.message ?? 'CAPABILITY_DISCOVERY_FAILED', parsed.value.requestId));
+        }
         return;
       }
       try {

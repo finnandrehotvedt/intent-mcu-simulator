@@ -3,6 +3,9 @@
 
 import { BOUNDED_ACTION_REQUEST_LIMIT, parseBoundedActionRequest } from './bounded-action-contracts.mjs';
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
+import {
+  CAPABILITY_DISCOVERY_REQUEST_SCHEMA, parseCapabilityDiscoveryRequest,
+} from './capability-discovery.mjs';
 
 export const EXTERNAL_CLIENT_READY_SCHEMA = 'intent-mcu-external-client-ready@1';
 export const EXTERNAL_CLIENT_CANCEL_SCHEMA = 'intent-mcu-external-client-cancel@1';
@@ -29,6 +32,9 @@ export function parseExternalClientLine(line, now = Date.now()) {
     throw Object.assign(new Error('EXTERNAL_CLIENT_LINE_LIMIT'), { code: 'EXTERNAL_CLIENT_LINE_LIMIT' });
   }
   const value = parseStrictJson(line, BOUNDED_ACTION_REQUEST_LIMIT);
+  if (value?.schema === CAPABILITY_DISCOVERY_REQUEST_SCHEMA) {
+    return Object.freeze({ kind: 'discovery', value: parseCapabilityDiscoveryRequest(value) });
+  }
   if (value?.schema === EXTERNAL_CLIENT_CANCEL_SCHEMA) {
     if (!exactKeys(value, ['schema', 'requestId', 'targetRequestId'])
         || !REQUEST_ID.test(value.requestId) || !REQUEST_ID.test(value.targetRequestId)) {

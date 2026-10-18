@@ -85,6 +85,12 @@ import {
   publicControllerViews,
 } from '../src/public-controller-workbench-view.mjs';
 import {
+  CAPABILITY_DISCOVERY_REQUEST_SCHEMA,
+  CAPABILITY_DISCOVERY_SCHEMA,
+  capabilityDiscoveryResult,
+  capabilityDiscoverySnapshot,
+} from '../src/capability-discovery.mjs';
+import {
   RP2040_PUBLIC_PROJECT_SCHEMA,
   Rp2040PublicWorkbench,
   normalizeRp2040PublicProject,
@@ -3239,6 +3245,14 @@ window.__AGENT_ACTIONS__ = Object.freeze({
   cancel: (requestId) => boundedActionRouter.cancel(requestId),
   state: () => lastBoundedAction ? structuredClone(lastBoundedAction) : null,
   externalEndpoint: false,
+});
+window.__CAPABILITY_DISCOVERY__ = Object.freeze({
+  schema: CAPABILITY_DISCOVERY_SCHEMA,
+  requestSchema: CAPABILITY_DISCOVERY_REQUEST_SCHEMA,
+  snapshot: () => capabilityDiscoverySnapshot(),
+  request: (value) => capabilityDiscoveryResult(value),
+  externalEndpoint: false,
+  readOnly: true,
 });
 window.__PROJECT_BRIEF__ = Object.freeze({
   schema: PROJECT_BRIEF_SCHEMA,
