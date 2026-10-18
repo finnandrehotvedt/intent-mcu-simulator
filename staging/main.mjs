@@ -2502,7 +2502,7 @@ function loadThermostatFirmwareVariant(variant) {
   if (result.ok) {
     counterexampleReductionResult = null;
     thermostatExperimentNotice = variant === 'known-bad-equality'
-      ? `Known-bad ≤ firmware loaded. Build it fresh, then run the same ${THERMOSTAT_SCENARIOS.scenarios.length} scenarios.`
+      ? 'Known-bad ≤ firmware loaded. Build it fresh, then run the current authored timeline or the four fixed boundary scenarios.'
       : 'Correct < firmware restored. Build it fresh before testing.';
     renderThermostatExperimentPanel();
   }

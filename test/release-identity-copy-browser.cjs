@@ -20,7 +20,7 @@ let browser;
   const response = await page.goto(base, { waitUntil: 'networkidle' });
   assert.equal(response?.status(), 200);
   await page.waitForFunction(() => window.__M11_READY__ === true);
-  assert.match(await page.locator('footer').textContent(), /Intent MCU Simulator 1\.1\.0-rc\.46 public release/u);
+  assert.match(await page.locator('footer').textContent(), /Intent MCU Simulator 1\.1\.0-rc\.47 public release/u);
 
   await page.selectOption('#example-select', 'avr-thermostat-boundary-v1');
   await page.click('#project-demo');
@@ -33,6 +33,9 @@ let browser;
   assert.equal(await page.evaluate(() => window.__M6_STATE__.thermostatExperiment.authoredTimeline.propertySuite.seed), 305419896);
   assert.equal(await page.inputValue('#seeded-property-seed'), '305419896');
   assert.equal(await page.locator('#seeded-property-exact-value').textContent(), 'Exact seed value: 305419896');
+  await page.click('#thermostat-load-bad');
+  assert.match(await page.locator('#thermostat-experiment-message').textContent(),
+    /current authored timeline or the four fixed boundary scenarios/u);
   await page.click('#fault-suite-load');
   assert.match(await page.locator('#fault-suite-summary').textContent(), /Bus-response fault remains unsupported/iu);
   if (screenshot) {
@@ -41,7 +44,7 @@ let browser;
   }
   assert.deepEqual(errors, []);
   assert.equal((await context.cookies()).length, 0);
-  console.log(JSON.stringify({ result: 'pass', version: '1.1.0-rc.46', boundaryCases: 4,
+  console.log(JSON.stringify({ result: 'pass', version: '1.1.0-rc.47', boundaryCases: 4,
     exactSeed: '305419896', faultCases: 3, busResponse: 'unsupported', screenshot }));
 })().catch((error) => { console.error(error.stack || error); process.exitCode = 1; })
   .finally(async () => { if (browser) await browser.close(); });
