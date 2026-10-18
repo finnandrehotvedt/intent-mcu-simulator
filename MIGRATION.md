@@ -1,4 +1,4 @@
-# Migration to 1.1.0-rc.38
+# Migration to 1.1.0-rc.39
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
@@ -80,6 +80,12 @@ Rc.38 does not change the common project-file schema. The seven local action
 requests and their generation/TTL/cancellation state are transient browser
 state. Export returns the same canonical data-only envelope and never stores
 action authority, executable bytes or runtime evidence in a project file.
+
+Rc.39 does not change the common project-file schema. Its optional local stdio
+adapter carries only the same seven rc.38 action contracts to the same browser
+engine at the fixed Lab origin. It adds no server project, account, credential,
+public endpoint or Apply authority. Export remains the same canonical data-only
+envelope, and Open still requires a fresh Build before Run.
 
 Existing accepted files remain readable:
 

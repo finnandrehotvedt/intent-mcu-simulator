@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.39 — 2026-10-18
+
+- Added an optional local stdio external-client adapter as a separate process
+  over exactly the seven existing bounded action contracts and X07 shared
+  engine. The production origin is fixed; test override is loopback-only.
+- The client has no Apply, shell, eval, generic-command, account, credential,
+  listener, public API, server-project or infrastructure authority. Data-only
+  patch proposals still require separate visible browser review and Apply.
+- Added a genuinely separate stdio client example, strict transport/cancel
+  parser tests and integrated actual compiler/runtime acceptance. Deterministic
+  prompt/validation/export bytes compare exactly with the UI path; runtime
+  cycles remain observations and are not normalized into false equality.
+
 ## 1.1.0-rc.38 — 2026-10-18
 
 - Completed X08 with seven separate generation-bound local action contracts:

@@ -1,4 +1,24 @@
-# Intent MCU Simulator 1.1.0-rc.32
+# Intent MCU Simulator 1.1.0-rc.39
+
+This external-client adapter release completes the bounded X07/X08 integration
+without expanding the seven existing action contracts. A separate local Node
+process connects over JSON Lines on stdio to the same browser engine used by
+the visible UI at the fixed Lab origin.
+
+The adapter has no listener, public API, account, credential, server project,
+generic shell/eval command or Apply authority. Profile, generation, TTL,
+replay, cancellation and result-size checks remain authoritative. Patch Apply
+still requires a separate explicit browser-user review and action.
+
+Acceptance exercises all seven contracts through the separate process,
+including one actual isolated compiler Build, worker Run, GPIO/result read and
+canonical project export. Deterministic prompt, validation and export data are
+compared exactly; runtime cycles remain observations and are not normalized or
+claimed equal.
+
+---
+
+## 1.1.0-rc.32
 
 This requirement-traceability release completes X02. Each stable acceptance
 ID can now carry explicit project-local code references and stable test IDs.
