@@ -48,11 +48,11 @@ test('M1 locks one exact bounded controller, sensor, button, output and equality
   assert.equal(THERMOSTAT_REQUIREMENTS.parts.heaterIndicator.resistorOhms, 220);
   assert.equal(THERMOSTAT_REQUIREMENTS.setpointC, 30);
   assert.match(THERMOSTAT_REQUIREMENTS.equalityRule, /== 30.*LOW/iu);
-  assert.equal(THERMOSTAT_REQUIREMENTS.requirements.length, 5);
+  assert.equal(THERMOSTAT_REQUIREMENTS.requirements.length, 6);
   assert(Object.isFrozen(THERMOSTAT_REQUIREMENTS));
 });
 
-test('M1 locks three quantization-aware scenarios and one virtual-time window', () => {
+test('X21 locks four quantization-aware below equal above and disabled scenarios', () => {
   assert.deepEqual(THERMOSTAT_SCENARIOS.scenarios.map((scenario) => ({
     id: scenario.id,
     controlC: scenario.sensorControlC,
@@ -62,6 +62,7 @@ test('M1 locks three quantization-aware scenarios and one virtual-time window', 
   })), [
     { id: 'THERM-SCENARIO-BELOW-ENABLED', controlC: 30, measuredC: 29, pressed: true, d13: true },
     { id: 'THERM-SCENARIO-EQUALITY-ENABLED', controlC: 31, measuredC: 30, pressed: true, d13: false },
+    { id: 'THERM-SCENARIO-ABOVE-ENABLED', controlC: 32, measuredC: 31, pressed: true, d13: false },
     { id: 'THERM-SCENARIO-BELOW-DISABLED', controlC: 30, measuredC: 29, pressed: false, d13: false },
   ]);
   assert.deepEqual(THERMOSTAT_TIME, {
@@ -74,6 +75,7 @@ test('M1 locks three quantization-aware scenarios and one virtual-time window', 
     resetBetweenScenarios: true,
     wallClockAffectsVerdict: false,
   });
+  assert.equal(200 / 1024, 0.1953125);
 });
 
 test('verdict requires complete timed input, executed D13 and agreeing Serial evidence', () => {
@@ -121,6 +123,18 @@ test('known-bad equality behavior is contractually visible as an executed-output
   assert.equal(result.checks.primaryExecutedPin, false);
   assert.equal(result.checks.corroboratingSerial, false);
   assert(equality.requirementIds.includes('THERM-REQ-05'));
+});
+
+test('X21 above-threshold evidence is independent from equality and remains LOW HOLD', () => {
+  const above = THERMOSTAT_SCENARIOS.scenarios.find(
+    (scenario) => scenario.id === 'THERM-SCENARIO-ABOVE-ENABLED',
+  );
+  assert(above);
+  const result = evaluateThermostatObservation(above.id, snapshotFor(above));
+  assert.equal(result.status, 'passed');
+  assert.equal(result.expected.d13, false);
+  assert.match(result.expected.serialLine, /TEMP_C=31.*HEATER=OFF STATE=HOLD/u);
+  assert(above.requirementIds.includes('THERM-REQ-06'));
 });
 
 test('X19 matching Serial text cannot pass when the executed D13 observation is wrong', () => {

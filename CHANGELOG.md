@@ -17,6 +17,10 @@ All notable public source changes are recorded here.
 - Closed X19 by retaining a fresh compiled evidence test showing that matching
   `LED ON`/heater Serial text cannot override an observed D13 mismatch. This is
   acceptance evidence for the existing evaluator, not a new product variant.
+- Closed X21 for the declared AVR thermostat subset with a visible fourth
+  above-threshold case, fresh cycle-zero isolation for every compiled case and
+  fail-closed removal tests for all six declared circuit nets. Connection-break
+  evidence is structural validation, not a physical hot-unplug simulation.
 
 ## 1.1.0-rc.43 — 2026-10-18
 

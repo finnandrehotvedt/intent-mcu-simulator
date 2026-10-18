@@ -518,7 +518,7 @@
         <p id="scenario-editor-message" class="truth" role="status">The timeline is saved with the local project. A fresh matching firmware build is required to run it.</p>
       </section>
       <div class="thermostat-actions">
-        <button id="thermostat-run-tests" type="button" disabled>Run 3 boundary tests</button>
+        <button id="thermostat-run-tests" type="button" disabled>Run 4 boundary tests</button>
         <button id="thermostat-load-bad" type="button">Load known-bad ≤ variant</button>
         <button id="thermostat-restore" type="button" disabled>Restore correct &lt; variant</button>
       </div>
@@ -528,6 +528,7 @@
           <tbody id="thermostat-results">
             <tr data-scenario="THERM-SCENARIO-BELOW-ENABLED"><th>Below · enabled</th><td>module 30 °C → measured 29 °C · pressed</td><td>HIGH · HEAT</td><td>Not run</td><td class="experiment-pending">Pending</td></tr>
             <tr data-scenario="THERM-SCENARIO-EQUALITY-ENABLED"><th>Equality · enabled</th><td>module 31 °C → measured 30 °C · pressed</td><td>LOW · HOLD</td><td>Not run</td><td class="experiment-pending">Pending</td></tr>
+            <tr data-scenario="THERM-SCENARIO-ABOVE-ENABLED"><th>Above · enabled</th><td>module 32 °C → measured 31 °C · pressed</td><td>LOW · HOLD</td><td>Not run</td><td class="experiment-pending">Pending</td></tr>
             <tr data-scenario="THERM-SCENARIO-BELOW-DISABLED"><th>Below · disabled</th><td>module 30 °C → measured 29 °C · released</td><td>LOW · OFF</td><td>Not run</td><td class="experiment-pending">Pending</td></tr>
           </tbody>
         </table>

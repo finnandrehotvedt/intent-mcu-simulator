@@ -34,8 +34,17 @@ async function installCompilerRoute(page) {
 
 async function build(page) {
   await page.click('#build');
-  await page.waitForFunction(() => document.querySelector('#build-state').textContent === 'Build succeeded',
-    null, { timeout: 60_000 });
+  try {
+    await page.waitForFunction(() => document.querySelector('#build-state').textContent === 'Build succeeded',
+      null, { timeout: 60_000 });
+  } catch (error) {
+    const diagnostic = await page.evaluate(() => ({
+      buildState: document.querySelector('#build-state')?.textContent,
+      compilerOutput: document.querySelector('#compiler-output')?.textContent,
+      projectMessage: document.querySelector('#project-message')?.textContent,
+    }));
+    throw new Error(`${error.message}; X17_BUILD=${JSON.stringify(diagnostic)}`);
+  }
 }
 
 async function runAuthored(page) {
@@ -60,16 +69,16 @@ let browser;
   await page.waitForFunction(() => window.__M11_READY__ === true);
   await page.selectOption('#example-select', 'avr-thermostat-boundary-v1');
   await page.click('#project-demo');
-  await page.waitForFunction(() => window.__M6_STATE__.thermostatExperiment?.authoredTimeline?.scenarios.length === 3);
+  await page.waitForFunction(() => window.__M6_STATE__.thermostatExperiment?.authoredTimeline?.scenarios.length === 4);
   await build(page);
 
   await page.click('#thermostat-run-tests');
   await page.waitForFunction(() => {
     const state = window.__M6_STATE__.thermostatExperiment;
-    return state && !state.running && state.results.length === 3;
+    return state && !state.running && state.results.length === 4;
   }, null, { timeout: 40_000 });
   assert.equal(await page.evaluate(() => window.__M6_STATE__.thermostatExperiment.results
-    .every((result) => result.status === 'passed')), true, 'correct M1 regression did not pass 3/3');
+    .every((result) => result.status === 'passed')), true, 'correct M1 regression did not pass 4/4');
   const missingEvidence = await page.evaluate(async () => {
     const prior = window.__SHARED_DOMAIN_ENGINE__.lastTest();
     const request = JSON.parse(prior.request);
@@ -87,9 +96,9 @@ let browser;
   }));
 
   await page.click('#scenario-add');
-  assert.equal(await page.locator('.scenario-card').count(), 4, 'keyboard-editable scenario was not added');
+  assert.equal(await page.locator('.scenario-card').count(), 5, 'keyboard-editable scenario was not added');
   const authoredCard = page.locator('.scenario-card').last();
-  const name = authoredCard.locator('input[aria-label="Scenario 4 name"]');
+  const name = authoredCard.locator('input[aria-label="Scenario 5 name"]');
   await name.focus(); await name.press('Control+A'); await name.type('Hot enabled authored case'); await name.press('Tab');
   await page.waitForFunction(() => window.__M6_STATE__.thermostatExperiment.authoredTimeline.scenarios.at(-1).name === 'Hot enabled authored case');
 
@@ -123,7 +132,7 @@ let browser;
   }, 'timeline edit changed firmware identity or retained a prior verdict');
 
   const passing = await runAuthored(page);
-  assert.equal(passing.authoredResults.length, 4);
+  assert.equal(passing.authoredResults.length, 5);
   assert.equal(passing.authoredResults.every((result) => result.status === 'passed'), true,
     `meaningful authored boundary did not pass: ${JSON.stringify(passing.authoredResults)}`);
 
@@ -143,7 +152,7 @@ let browser;
   await page.click('#project-reload');
   await page.waitForFunction(() => {
     const state = window.__M6_STATE__.thermostatExperiment;
-    return state && !state.running && state.authoredTimeline?.scenarios.length === 4
+    return state && !state.running && state.authoredTimeline?.scenarios.length === 5
       && state.authoredResults.length === 0 && !state.freshBuildReady;
   });
   assert.equal(await page.evaluate(() => window.__M6_STATE__.thermostatExperiment
@@ -153,7 +162,7 @@ let browser;
     'browser recovery allowed a stale artifact to run');
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__M11_READY__ === true
-    && window.__M6_STATE__.thermostatExperiment?.authoredTimeline?.scenarios.length === 4);
+    && window.__M6_STATE__.thermostatExperiment?.authoredTimeline?.scenarios.length === 5);
   assert.equal(await page.evaluate(() => window.__M6_STATE__.thermostatExperiment
     .authoredTimeline.scenarios.at(-1).events.at(-1).level), true,
   'full page reload did not retain the accepted timeline edit');
@@ -165,7 +174,7 @@ let browser;
   const savedText = fs.readFileSync(savedPath, 'utf8');
   const saved = JSON.parse(savedText);
   assert.equal(saved.schema, 'intent-mcu-project-envelope@6');
-  assert.equal(saved.scenarioTimeline.scenarios.length, 4);
+  assert.equal(saved.scenarioTimeline.scenarios.length, 5);
   assert.doesNotMatch(savedText, /authoredResults|runtimeBinding|firmwareHex|"verdict"/u);
   const sourceHash = crypto.createHash('sha256').update(firmwareBefore.source).digest('hex');
   const savedSourceHash = crypto.createHash('sha256').update(
@@ -176,7 +185,7 @@ let browser;
   await page.click('#project-new');
   if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
   await page.setInputFiles('#project-open-input', savedPath);
-  await page.waitForFunction(() => window.__M6_STATE__.thermostatExperiment?.authoredTimeline?.scenarios.length === 4);
+  await page.waitForFunction(() => window.__M6_STATE__.thermostatExperiment?.authoredTimeline?.scenarios.length === 5);
   const opened = await page.evaluate(() => structuredClone(window.__M6_STATE__.thermostatExperiment));
   assert.deepEqual(opened.authoredResults, [], 'Open restored a prior authored verdict');
   assert.equal(opened.freshBuildReady, false, 'Open restored stale firmware authority');
@@ -188,7 +197,7 @@ let browser;
   await page.click('#thermostat-run-tests');
   await page.waitForFunction(() => {
     const state = window.__M6_STATE__.thermostatExperiment;
-    return state && !state.running && state.results.length === 3;
+    return state && !state.running && state.results.length === 4;
   }, null, { timeout: 40_000 });
   const knownBad = await page.evaluate(() => structuredClone(window.__M6_STATE__.thermostatExperiment));
   assert.equal(knownBad.knownBadCaught, true, 'known-bad M1 equality defect was not caught');
@@ -197,10 +206,10 @@ let browser;
   assert.equal(knownBad.results.every((result) => result.outcome.jobStatus === 'completed'), true);
 
   assert.deepEqual(errors, [], `browser errors: ${JSON.stringify(errors)}`);
-  console.log(JSON.stringify({ result: 'pass', scenarios: 4, authoredPasses: 4,
+  console.log(JSON.stringify({ result: 'pass', scenarios: 5, authoredPasses: 5,
     wrongExpectationCaught: true, sourceHashPreserved: true, browserRecoveryClearedVerdict: true,
     fileOpenClearedVerdict: true,
-    artifactIdentityPreservedAcrossTimelineEdit: true, correctM1Passes: 3,
+    artifactIdentityPreservedAcrossTimelineEdit: true, correctM1Passes: 4,
     knownBadM1Caught: true, missingEvidenceRefused: true,
     academicAndJobStatusSeparated: true, wrongObservedAtMilliseconds: caught.virtualMilliseconds,
     observationWindow: caught.expected.observationWindow, savedPath }));

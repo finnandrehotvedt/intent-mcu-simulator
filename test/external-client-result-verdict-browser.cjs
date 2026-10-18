@@ -66,7 +66,7 @@ async function runVariant(firmwareVariant, prefix, expectedCategory) {
     assert.equal(run.testVerdict.artifactIdentity, build.authoritativeResult.result.artifactIdentity);
     assert.equal(read.testVerdict.artifactIdentity, run.testVerdict.artifactIdentity);
     assert.equal(run.testVerdict.sourceIdentity, read.testVerdict.sourceIdentity);
-    assert.equal(run.authoritativeResult.result.testEvidence.observations.length, 3);
+    assert.equal(run.authoritativeResult.result.testEvidence.observations.length, 4);
     return { ready, build, run, read };
   } catch (error) {
     operationError = error;

@@ -2270,7 +2270,7 @@ function renderThermostatExperimentPanel() {
   } else if (thermostatExperimentResults.length === THERMOSTAT_SCENARIOS.scenarios.length) {
     const passed = thermostatExperimentResults.filter((result) => result.status === 'passed').length;
     const outcome = aggregateExperimentOutcomes(thermostatExperimentResults);
-    elements.thermostatexperimentstate.textContent = `${passed}/3 passed · ${outcome.academicStatus} · job ${outcome.jobStatus}`;
+    elements.thermostatexperimentstate.textContent = `${passed}/${THERMOSTAT_SCENARIOS.scenarios.length} passed · ${outcome.academicStatus} · job ${outcome.jobStatus}`;
   } else {
     elements.thermostatexperimentstate.textContent = freshBuildReady ? 'Ready to test' : 'Fresh build required';
   }
@@ -2319,7 +2319,7 @@ function startThermostatExperiment() {
   }
   thermostatExperimentResults = [];
   thermostatExperimentRun = { phase: 'await-reset', scenarioIndex: 0, variant, authored: false };
-  thermostatExperimentNotice = 'Running three isolated scenarios from virtual cycle 0. Wall-clock speed does not affect the verdict.';
+  thermostatExperimentNotice = `Running ${THERMOSTAT_SCENARIOS.scenarios.length} isolated scenarios from virtual cycle 0. Wall-clock speed does not affect the verdict.`;
   worker.postMessage({ command: 'reset' });
   renderThermostatExperimentPanel();
   return { ok: true, code: 'THERMOSTAT_EXPERIMENT_STARTED' };
@@ -2410,10 +2410,10 @@ async function advanceThermostatExperiment(message) {
   thermostatExperimentNotice = run.authored
     ? `${passed}/${scenarios.length} authored scenarios passed · academic ${aggregate.academicStatus} · job ${aggregate.jobStatus}. Only complete in-window producer evidence can pass or fail.`
     : run.variant === 'known-bad-equality' && thermostatKnownBadCaught()
-    ? 'Known-bad firmware caught: the equality scenario executed D13 HIGH and reported HEAT, while the other two scenarios passed.'
+    ? `Known-bad firmware caught: the equality scenario executed D13 HIGH and reported HEAT, while the other ${THERMOSTAT_SCENARIOS.scenarios.length - 1} scenarios passed.`
     : passed === THERMOSTAT_SCENARIOS.scenarios.length
-      ? '3/3 passed from executed D13, matching UART and complete virtual-cycle input evidence.'
-      : `${passed}/3 passed · academic ${aggregate.academicStatus} · job ${aggregate.jobStatus}. Failed or incomplete evidence remains visible; missing evidence is never a pass or failed assertion.`;
+      ? `${THERMOSTAT_SCENARIOS.scenarios.length}/${THERMOSTAT_SCENARIOS.scenarios.length} passed from executed D13, matching UART and complete virtual-cycle input evidence.`
+      : `${passed}/${THERMOSTAT_SCENARIOS.scenarios.length} passed · academic ${aggregate.academicStatus} · job ${aggregate.jobStatus}. Failed or incomplete evidence remains visible; missing evidence is never a pass or failed assertion.`;
   renderThermostatExperimentPanel();
 }
 function loadThermostatFirmwareVariant(variant) {
@@ -2423,7 +2423,7 @@ function loadThermostatFirmwareVariant(variant) {
   }, variant === 'known-bad-equality' ? 'Loaded known-bad equality variant' : 'Restored correct equality variant');
   if (result.ok) {
     thermostatExperimentNotice = variant === 'known-bad-equality'
-      ? 'Known-bad ≤ firmware loaded. Build it fresh, then run the same three scenarios.'
+      ? `Known-bad ≤ firmware loaded. Build it fresh, then run the same ${THERMOSTAT_SCENARIOS.scenarios.length} scenarios.`
       : 'Correct < firmware restored. Build it fresh before testing.';
     renderThermostatExperimentPanel();
   }

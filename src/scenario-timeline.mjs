@@ -159,7 +159,8 @@ function presetScenario(scenario) {
   return {
     id: scenario.id,
     name: scenario.id === 'THERM-SCENARIO-BELOW-ENABLED' ? 'Below · enabled'
-      : scenario.id === 'THERM-SCENARIO-EQUALITY-ENABLED' ? 'Equality · enabled' : 'Below · disabled',
+      : scenario.id === 'THERM-SCENARIO-EQUALITY-ENABLED' ? 'Equality · enabled'
+        : scenario.id === 'THERM-SCENARIO-ABOVE-ENABLED' ? 'Above · enabled' : 'Below · disabled',
     events: [
       { id: `${scenario.id}-TEMP`, atMilliseconds: 0, kind: 'input.temperature-c',
         componentId: 'temperature-sensor-1', valueC: scenario.sensorControlC },

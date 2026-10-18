@@ -46,7 +46,7 @@ test('X17 editor adds renames edits and deletes authored scenarios with exact un
   scenario.id = 'USER-BOUNDARY'; scenario.name = 'My authored boundary';
   scenario.events = scenario.events.map((event, index) => ({ ...event, id: `USER-EVENT-${index + 1}` }));
   assert.equal(editor.dispatch({ type: 'scenario.add', scenario }).ok, true);
-  assert.equal(editor.timeline.scenarios.length, 4);
+  assert.equal(editor.timeline.scenarios.length, 5);
   assert.equal(editor.dispatch({ type: 'scenario.rename', scenarioId: scenario.id, name: 'Renamed boundary' }).ok, true);
   const expected = editor.timeline.scenarios.at(-1).events.at(-1);
   assert.equal(editor.dispatch({ type: 'event.update', scenarioId: scenario.id, eventId: expected.id,

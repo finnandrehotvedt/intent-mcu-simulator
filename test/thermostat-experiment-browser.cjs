@@ -46,7 +46,7 @@ async function runScenarios(page) {
   await page.click('#thermostat-run-tests');
   await page.waitForFunction(() => {
     const experiment = window.__M6_STATE__.thermostatExperiment;
-    return experiment && !experiment.running && experiment.results.length === 3;
+    return experiment && !experiment.running && experiment.results.length === 4;
   }, null, { timeout: 30_000 });
   return page.evaluate(() => structuredClone(window.__M6_STATE__.thermostatExperiment));
 }
@@ -106,12 +106,20 @@ let browser;
     artifactIdentity: window.__M6_STATE__.artifactIdentity,
   }));
   const correct = await runScenarios(page);
-  assert(correct.variant === 'correct' && correct.results.every((result) => result.status === 'passed'), `correct firmware did not pass 3/3: ${JSON.stringify(correct)}`);
+  assert(correct.variant === 'correct' && correct.results.every((result) => result.status === 'passed'), `correct firmware did not pass 4/4: ${JSON.stringify(correct)}`);
   assert(correct.results.every((result) => result.virtualMilliseconds >= 160 && result.virtualMilliseconds <= 350), 'verdict escaped the virtual-time window');
   assert(correct.results.every((result) => result.checks.primaryExecutedPin && result.checks.corroboratingSerial && result.checks.inputsComplete), 'a pass lacked executed evidence');
+  assert(correct.results.every((result) => result.observed.inputControls.length === 2
+    && result.observed.inputControls.every((event) => event.targetCycle === 0)),
+  'scenario start/reset isolation did not retain exactly its own two cycle-zero controls');
+  const above = correct.results.find((result) => result.scenarioId === 'THERM-SCENARIO-ABOVE-ENABLED');
+  assert(above?.status === 'passed' && above.observed.d13 === false
+    && /TEMP_C=31.*HEATER=OFF STATE=HOLD/u.test(above.observed.serialText),
+  `above-threshold execution was not observed: ${JSON.stringify(above)}`);
 
   const [savedDownload] = await Promise.all([page.waitForEvent('download'), page.click('#project-save')]);
-  const savedText = fs.readFileSync(await savedDownload.path(), 'utf8');
+  const savedDownloadPath = await savedDownload.path();
+  const savedText = fs.readFileSync(savedDownloadPath, 'utf8');
   await page.evaluate((text) => { window.__THERMOSTAT_FILE_TEXT__ = text; }, savedText);
   const saved = JSON.parse(savedText);
   assert(saved.schema === 'intent-mcu-project-envelope@6'
@@ -125,7 +133,7 @@ let browser;
   assert(saved.project.compiledFixture.id === 'button-pullup', 'legacy candidate compatibility reference unexpectedly changed');
   await page.click('#project-new');
   if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
-  await page.click('#project-open');
+  await page.setInputFiles('#project-open-input', savedDownloadPath);
   await page.waitForFunction(() => window.__M6_STATE__.thermostatExperiment?.active === true);
   assert(await page.evaluate(() => window.__M6_PROJECT__
     && JSON.stringify(window.__M6_PROJECT__()) === JSON.stringify(JSON.parse(window.__THERMOSTAT_FILE_TEXT__).project)), 'Open did not restore exact authored thermostat data');
@@ -134,10 +142,11 @@ let browser;
 
   await build(page);
   const reopened = await runScenarios(page);
-  assert(reopened.results.every((result) => result.status === 'passed'), 'fresh Build after Open did not pass 3/3');
+  assert(reopened.results.every((result) => result.status === 'passed'), 'fresh Build after Open did not pass 4/4');
 
-  await page.evaluate((legacy) => { window.__THERMOSTAT_FILE_TEXT__ = JSON.stringify(legacy); }, saved.project);
-  await page.click('#project-open');
+  const legacyPath = path.join('/tmp', 'thermostat-legacy-contact-project.json');
+  fs.writeFileSync(legacyPath, JSON.stringify(saved.project));
+  await page.setInputFiles('#project-open-input', legacyPath);
   await page.waitForFunction(() => document.querySelector('#project-message').textContent.includes('migrated in memory'));
   const legacyMigration = await page.evaluate(() => ({
     project: window.__M6_PROJECT__(), artifact: window.__M6_STATE__.artifactIdentity,
@@ -166,7 +175,7 @@ let browser;
   assert(equality.status === 'failed' && equality.observed.d13 === true
     && !equality.checks.primaryExecutedPin && !equality.checks.corroboratingSerial,
   `known-bad equality evidence was not an executed D13/UART failure: ${JSON.stringify(equality)}`);
-  assert(knownBad.results.filter((result) => result.status === 'passed').length === 2, 'known-bad control scenarios did not stay green');
+  assert(knownBad.results.filter((result) => result.status === 'passed').length === 3, 'known-bad control scenarios did not stay green');
 
   await page.setViewportSize({ width: 390, height: 844 });
   const mobile = await page.evaluate(() => ({

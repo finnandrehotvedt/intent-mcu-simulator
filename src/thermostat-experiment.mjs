@@ -30,7 +30,7 @@ export const THERMOSTAT_EXPERIMENT_CARD = Object.freeze({
   description: 'Test an ideal temperature input and enable button at the exact 30 °C boundary.',
   focus: 'M1 · Executed requirements',
   partsLabel: 'ATmega328P · temperature module · button · 220 Ω · LED',
-  outcome: 'Run three virtual-time scenarios, then prove that a known-bad equality rule is caught.',
+  outcome: 'Run four reset-isolated boundary scenarios, then prove that a known-bad equality rule is caught.',
   componentTypes: Object.freeze([
     'board.atmega328p-16mhz-v1',
     'sensor.temperature-analogue-v1',

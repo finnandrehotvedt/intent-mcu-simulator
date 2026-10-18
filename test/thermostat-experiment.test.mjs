@@ -94,15 +94,24 @@ test('canonical data-only save/open stays exact and recognizes either teaching v
   assert.equal(isThermostatExperimentProject(reopened.session.project), true);
 });
 
-test('broken thermostat wiring rejects instead of inferring a missing connection', () => {
+test('X21 every declared thermostat connection break rejects before execution', () => {
   const { example } = openExample();
-  const invalid = structuredClone(example.project);
-  invalid.candidateCircuit.nets = invalid.candidateCircuit.nets.filter(
-    (item) => item.id !== 'net-thermostat-enable',
-  );
-  const rejected = openThermostatExperiment(JSON.stringify(invalid));
-  assert.equal(rejected.ok, false);
-  assert.match(rejected.code, /BUTTON|DISCONNECTED|PROJECT_CONTACT/iu);
+  const expected = new Map([
+    ['net-thermostat-5v', 'PROJECT_CONTACT_TEMPERATURE_SENSOR_VCC_DISCONNECTED'],
+    ['net-thermostat-ground', 'PROJECT_CONTACT_JUNCTION'],
+    ['net-thermostat-temperature', 'PROJECT_CONTACT_TEMPERATURE_SENSOR_AOUT_DISCONNECTED'],
+    ['net-thermostat-enable', 'PROJECT_CONTACT_BUTTON_UNSUPPORTED_PATH'],
+    ['net-thermostat-heater-drive', 'PROJECT_CONTACT_LED_UNSUPPORTED_PATH'],
+    ['net-thermostat-heater-led', 'PROJECT_CONTACT_LED_UNSUPPORTED_PATH'],
+  ]);
+  assert.deepEqual(new Set(example.project.candidateCircuit.nets.map((item) => item.id)), new Set(expected.keys()));
+  for (const [netId, code] of expected) {
+    const invalid = structuredClone(example.project);
+    invalid.candidateCircuit.nets = invalid.candidateCircuit.nets.filter((item) => item.id !== netId);
+    const rejected = openThermostatExperiment(JSON.stringify(invalid));
+    assert.equal(rejected.ok, false, netId);
+    assert.equal(rejected.code, code, netId);
+  }
 });
 
 test('experiment identity requires the exact A1 D2 D13 and 220 ohm topology', () => {

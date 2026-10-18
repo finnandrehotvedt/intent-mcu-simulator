@@ -55,6 +55,7 @@ export const THERMOSTAT_REQUIREMENTS = deepFreeze({
     { id: 'THERM-REQ-03', text: 'When the active-low enable button is released, executed firmware drives D13 LOW.' },
     { id: 'THERM-REQ-04', text: 'A verdict uses executed D13 state as primary evidence; Serial text alone cannot pass.' },
     { id: 'THERM-REQ-05', text: 'The known-bad <= boundary variant must fail THERM-REQ-02 from observed executed output.' },
+    { id: 'THERM-REQ-06', text: 'When enabled and measured temperature is above 30 C, executed firmware drives D13 LOW.' },
   ],
   limitations: [
     'The analogue sensor is an ideal linear -50..150 C to 0..5 V source with AVR ADC quantization.',
@@ -82,6 +83,15 @@ export const THERMOSTAT_SCENARIOS = deepFreeze({
       requirementIds: ['THERM-REQ-02', 'THERM-REQ-04', 'THERM-REQ-05'],
       sensorControlC: 31,
       expectedMeasuredTemperatureC: 30,
+      buttonPressed: true,
+      expectedD13: false,
+      expectedState: 'HOLD',
+    },
+    {
+      id: 'THERM-SCENARIO-ABOVE-ENABLED',
+      requirementIds: ['THERM-REQ-06', 'THERM-REQ-04'],
+      sensorControlC: 32,
+      expectedMeasuredTemperatureC: 31,
       buttonPressed: true,
       expectedD13: false,
       expectedState: 'HOLD',

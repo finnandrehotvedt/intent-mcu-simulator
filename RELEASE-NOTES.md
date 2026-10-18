@@ -25,6 +25,21 @@ browser-owned shared engine and browser-free Node path. Missing D13 evidence
 remains indeterminate under X18. No public firmware variant or generic
 assertion language was added.
 
+## X21 exact boundary and break suite
+
+The AVR thermostat's fixed suite now visibly covers measured values immediately
+below, exactly at and immediately above its 30 °C integer threshold, plus the
+disabled-button control. The ideal module settings 30/31/32 °C produce executed
+integer readings 29/30/31 °C through the documented 0.1953125 °C ADC-count
+resolution. Each compiled case starts from an independent cycle-zero runtime;
+correct firmware passes 4/4 and the known-bad `<=` source fails equality only.
+
+Removing each of the six declared thermostat nets is also tested and rejected
+before execution with the existing validation codes. This is honest structural
+connection-break coverage; it does not claim that the runtime models a physical
+wire being pulled while firmware runs. Browser and headless execution retain
+the same shared evaluator and no generic assertion framework was added.
+
 ## X17 bounded scenario timeline editor
 
 Rc.43 adds a reusable data-only timeline editor to the existing AVR thermostat

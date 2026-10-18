@@ -46,7 +46,7 @@ const base = process.env.X07_URL || 'http://127.0.0.1:18766';
     try {
       await page.waitForFunction(() => {
         const state = window.__M6_STATE__.thermostatExperiment;
-        return state && !state.running && state.results.length === 3;
+        return state && !state.running && state.results.length === 4;
       }, null, { timeout: 60_000 });
     } catch (error) {
       const debug = await page.evaluate(() => {
@@ -64,16 +64,16 @@ const base = process.env.X07_URL || 'http://127.0.0.1:18766';
       const agent = await window.__AGENT_DOMAIN_ENGINE__.execute(ui.request, 'board.atmega328p-16mhz-v1');
       return { actual, ui: ui.result, agent };
     });
-    assert.equal(sharedTest.actual.results.length, 3);
+    assert.equal(sharedTest.actual.results.length, 4);
     assert(sharedTest.actual.results.every((result) => result.status === 'passed'));
     assert.equal(sharedTest.ui.caller, 'ui'); assert.equal(sharedTest.agent.caller, 'agent');
     assert.equal(sharedTest.ui.stages.tests, 'evaluateThermostatObservation');
     assert.deepEqual(sharedTest.ui.observation, sharedTest.agent.observation);
-    assert.deepEqual(sharedTest.ui.observation, sharedTest.actual.results[2]);
+    assert.deepEqual(sharedTest.ui.observation, sharedTest.actual.results[3]);
     assert.equal(outside.length, 0, JSON.stringify(outside)); assert.equal(errors.length, 0, JSON.stringify(errors));
     assert.deepEqual(mutations, ['POST /api/build']);
     process.stdout.write(`${JSON.stringify({ status: 'pass', sharedEngine: paths.ui.engine,
-      picoUiAgentIdentityMatch: true, picoMutation: false, thermostatActualScenarios: 3,
+      picoUiAgentIdentityMatch: true, picoMutation: false, thermostatActualScenarios: 4,
       thermostatUiAgentResultMatch: true, compilerRequests: 1, outsideRequests: 0, browserErrors: 0 })}\n`);
   } finally { await browser.close(); }
 })().catch((error) => { console.error(error); process.exitCode = 1; });
