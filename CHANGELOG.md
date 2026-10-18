@@ -2,6 +2,18 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.30 — 2026-10-18
+
+- Completed I03 with one shared source-bound runtime trace viewer, channel
+  selection, explicit timebase, bounded retention, generation and artifact
+  provenance.
+- Published actual avr8js D0–D13 and rp2040js GPIO0 worker transitions.
+- Kept ESP32-C3 GPIO2 as a separately labelled project-model epoch sequence,
+  never QEMU CPU GPIO, and exposed only Renode's actual final PB0 observation
+  without inventing a timed STM32 waveform.
+- Preserved W06/W07/W08/W10 behavior, data-only files and four bounded profile
+  limits.
+
 ## 1.1.0-rc.29 — 2026-10-18
 
 - Completed W10 for every electrical fault representable by the four bounded

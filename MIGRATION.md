@@ -1,4 +1,4 @@
-# Migration to 1.1.0-rc.29
+# Migration to 1.1.0-rc.30
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
@@ -21,7 +21,12 @@ Rc.29 adds no file conversion. Fault classification and corrective copy derive
 from the existing validated topology and are not stored as project authority.
 Open remains data-only and a fresh Build is required.
 
-Rc.17 through rc.29 save one `intent-mcu-project-envelope@1` format for AVR, RP2040 Pico,
+Rc.30 adds no file conversion. Runtime trace selection is local presentation
+state; transition records, timebases, artifact identities and generations are
+never project-file authority. Open clears prior trace evidence and requires a
+fresh Build/Run.
+
+Rc.17 through rc.30 save one `intent-mcu-project-envelope@1` format for AVR, RP2040 Pico,
 ESP32-C3 and STM32F429ZI. The envelope identifies one exact tested profile and
 contains that profile's validated authored project. It contains no firmware,
 runtime/session authority, verdict or secret.

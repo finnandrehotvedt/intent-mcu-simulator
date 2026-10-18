@@ -22,8 +22,8 @@ test('four profiles expose immutable, explicit instrument boundaries', () => {
     AVR_PROFILE, RP2040_PROFILE, ESP32C3_PROFILE, STM32F429ZI_PROFILE,
   ]);
   assert.equal(instrumentCapability(AVR_PROFILE).serial.status, 'recorded');
-  assert.equal(instrumentCapability(RP2040_PROFILE).logic.status, 'unavailable');
-  assert.match(instrumentCapability(RP2040_PROFILE).logic.reason, /dormant internal trace/u);
+  assert.equal(instrumentCapability(RP2040_PROFILE).logic.status, 'recorded');
+  assert.match(instrumentCapability(RP2040_PROFILE).logic.source, /rp2040js worker/u);
   assert.match(instrumentCapability(ESP32C3_PROFILE).pin.reason, /not QEMU pin state/u);
   assert.equal(instrumentCapability(STM32F429ZI_PROFILE).serial.status, 'output-only');
   assert.equal(instrumentCapability('unknown'), null);
@@ -103,11 +103,13 @@ test('shared summary classifies only current existing evidence for all four prof
   const pico = sharedInstrumentSummary(RP2040_PROFILE, {
     revision: 4, artifact: { uf2Sha256: hash('b') },
     runtime: { artifactIdentity: hash('b'), cycle: 250_000, cyclesPerMillisecond: 125_000,
-      instruments: { serial: { records: [{ text: 'P' }], text: 'P', dropped: 1 } },
+      instruments: { serial: { records: [{ text: 'P' }], text: 'P', dropped: 1 },
+        logic: { channels: ['GPIO0'], transitions: [{ pin: 'GPIO0', cycle: 125_000,
+          virtualNanos: 1_000_000, level: true }], dropped: 0 } },
       experimental: { gpio0: { mode: 'output', level: true } } },
   });
   assert.deepEqual(Object.values(pico.channels).map((channel) => channel.classification),
-    ['recorded-runtime', 'recorded-runtime', 'unavailable', 'unavailable']);
+    ['recorded-runtime', 'recorded-runtime', 'recorded-runtime', 'unavailable']);
   assert.equal(pico.channels.gpio.time.virtualMilliseconds, 2);
   assert.equal(pico.channels.serial.retention.dropped, 1);
 
@@ -119,9 +121,10 @@ test('shared summary classifies only current existing evidence for all four prof
     } },
   });
   assert.deepEqual(Object.values(c3.channels).map((channel) => channel.classification),
-    ['recorded-runtime', 'project-model', 'unavailable', 'unavailable']);
+    ['recorded-runtime', 'project-model', 'project-model', 'unavailable']);
   assert.match(c3.channels.gpio.provenance, /not QEMU pin state/u);
   assert.equal(c3.channels.serial.time.basis, 'reset-epoch-sequence');
+  assert.match(c3.channels.logic.provenance, /not QEMU CPU GPIO/u);
   const c3View = sharedInstrumentView(sharedInstrumentSummary(ESP32C3_PROFILE, {
     revision: 8, artifact: { flashSha256: hash('c') },
     runtime: { flashSha256: hash('c'), uart: { exactApplicationText: 'C3', markerCount: 1,
@@ -140,7 +143,7 @@ test('shared summary classifies only current existing evidence for all four prof
       observed: { pb0: true, uartText: 'STM32\n' } },
   });
   assert.deepEqual(Object.values(stm32.channels).map((channel) => channel.classification),
-    ['recorded-runtime', 'recorded-runtime', 'unavailable', 'unavailable']);
+    ['recorded-runtime', 'recorded-runtime', 'recorded-runtime', 'unavailable']);
   assert.equal(stm32.channels.serial.time.basis, 'reset-epoch-sequence');
   assert.equal(stm32.channels.gpio.time.basis, 'instruction-order-only');
   const stm32View = sharedInstrumentView(stm32);
@@ -188,6 +191,8 @@ test('shared viewer is a truthful local projection with bounded pin choices', ()
   assert.deepEqual(initial.pin.options, ['D13', 'A0']);
   assert.equal(initial.pin.selectedPin, 'D13');
   assert.equal(initial.pin.fields.voltage.status, 'unavailable');
+  assert.equal(initial.trace.schema, 'intent-mcu-runtime-trace@1');
+  assert.deepEqual(initial.trace.channels, []);
 
   const local = sharedInstrumentView(summary, { ...initial.local, cleared: true, selectedPin: 'A0' });
   assert.equal(local.serial.text, '');
@@ -200,4 +205,5 @@ test('shared viewer is a truthful local projection with bounded pin choices', ()
   assert.equal(retired.state, 'no-current-runtime');
   assert.equal(retired.local.cleared, false);
   assert.deepEqual(retired.pin.options, []);
+  assert.equal(retired.trace.classification, 'unavailable');
 });

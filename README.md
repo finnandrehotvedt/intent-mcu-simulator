@@ -193,7 +193,7 @@ source; it does not authorize redistributing the resulting image.
 
 Additional current limits:
 
-- source version `1.1.0-rc.29` is the public release for
+- source version `1.1.0-rc.30` is the public release for
   `https://lab.teachthecompany.com/`; hosted compiler/toolchain images and
   private deployment configuration remain outside this source repository;
 - public execution supports the tested ATmega328P subset, one bounded RP2040

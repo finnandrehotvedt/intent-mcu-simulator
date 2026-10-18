@@ -276,6 +276,14 @@ function mountNarrowProfile(document, adapter) {
       <label>Observed pin <select data-shared-pin-select disabled><option value="">Unavailable</option></select></label>
       <dl data-shared-pin-fields></dl>
       <p data-shared-pin-provenance>No current source-bound pin evidence.</p>
+    </section>
+    <section class="shared-trace-view" aria-label="Shared runtime trace viewer">
+      <div class="shared-instrument-tool-heading"><strong>Runtime trace</strong><span data-shared-trace-classification>unavailable</span></div>
+      <label>Channel <select data-shared-trace-select disabled><option value="">Unavailable</option></select></label>
+      <p data-shared-trace-axis>No verified timebase.</p>
+      <ol data-shared-trace-records><li>No current source-bound trace.</li></ol>
+      <p data-shared-trace-retention>Retention unavailable.</p>
+      <p data-shared-trace-provenance>No verified trace producer.</p>
     </section>`;
   boundary.append(boundaryHeading, boundaryList, liveHeading, liveList, sharedTools);
   runtimePanel.append(runtime, message, identities, boundary, serial);

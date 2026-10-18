@@ -18,6 +18,7 @@ export const INSTRUMENT_CAPABILITY_SCHEMA = 'intent-mcu-instrument-capability@1'
 export const INSTRUMENT_EVIDENCE_SCHEMA = 'intent-mcu-instrument-evidence@1';
 export const SHARED_INSTRUMENT_SUMMARY_SCHEMA = 'intent-mcu-shared-instrument-summary@1';
 export const SHARED_INSTRUMENT_VIEW_SCHEMA = 'intent-mcu-shared-instrument-view@1';
+export const RUNTIME_TRACE_SCHEMA = 'intent-mcu-runtime-trace@1';
 
 const freeze = (value) => {
   if (value && typeof value === 'object' && !Object.isFrozen(value)) {
@@ -48,7 +49,7 @@ const contracts = freeze({
     clockHertz: 125_000_000,
     serial: { status: 'output-only', surface: 'profile-UART0-output', source: 'bounded worker UART0 output', reason: 'The shared Serial console and RX input are not public for this profile.' },
     pin: unavailable('No shared pin inspector is public for Pico.'),
-    logic: unavailable('No shared logic analyser is public for Pico; dormant internal trace data is not a capability.'),
+    logic: { status: 'recorded', surface: 'shared-analyser', source: 'rp2040js worker GPIO0 transition records', channels: 1, retained: null },
     input: unavailable('No public Pico button, analogue or Serial-input control is modelled.'),
   },
   [ESP32C3_PROFILE]: {
@@ -58,7 +59,8 @@ const contracts = freeze({
     clockHertz: null,
     serial: { status: 'output-only', surface: 'profile-QEMU-UART-output', source: 'actual QEMU UART boot output', reason: 'The shared Serial console and RX input are not public for this profile.' },
     pin: unavailable('No shared pin inspector is public; GPIO2 LED is a separately labelled project register model, not QEMU pin state.'),
-    logic: unavailable('No public QEMU pin-level logic trace is available.'),
+    logic: { status: 'project-model', surface: 'shared-analyser', source: 'project-owned GPIO2 executed-register-write adapter epochs', channels: 1, retained: 2,
+      reason: 'This is not QEMU CPU GPIO or pin timing; public QEMU pin-level logic trace is unavailable.' },
     input: unavailable('No public ESP32-C3 runtime input control is modelled.'),
   },
   [STM32F429ZI_PROFILE]: {
@@ -68,7 +70,8 @@ const contracts = freeze({
     clockHertz: null,
     serial: { status: 'output-only', surface: 'profile-Renode-USART3-output', source: 'actual Renode USART3 output', reason: 'The shared Serial console and RX input are not public for this profile.' },
     pin: unavailable('No shared pin inspector is public; only the bounded PB0 observation is accepted.'),
-    logic: unavailable('No shared logic analyser is public for STM32F429ZI.'),
+    logic: { status: 'recorded-final-observation', surface: 'shared-analyser', source: 'actual Renode PB0 final observation', channels: 1, retained: 1,
+      reason: 'Renode supplies one final PB0 observation, not a timed transition waveform.' },
     input: unavailable('No public STM32F429ZI runtime input control is modelled.'),
   },
 });
@@ -179,7 +182,8 @@ export function sharedInstrumentSummary(profile, state = {}) {
         { cycle: evidence.cycle, virtualMilliseconds: evidence.virtualMilliseconds,
           retained: state.runtime.pins.length, dropped: 0, limit: state.runtime.pins.length }),
       logic: observed('recorded-runtime', 'Digital transitions from the current avr8js worker snapshot',
-        { channels: evidence.logic.channels }, { cycle: evidence.cycle, virtualMilliseconds: evidence.virtualMilliseconds,
+        { channels: evidence.logic.channels, transitions: clone(state.runtime.instruments.logic.transitions) },
+        { cycle: evidence.cycle, virtualMilliseconds: evidence.virtualMilliseconds,
           retained: evidence.logic.retained, dropped: evidence.logic.dropped, limit: LOGIC_TRANSITION_LIMIT }),
       input: observed('recorded-runtime', 'Ordered controls and USART0 RX from the current avr8js worker snapshot',
         { records: evidence.input.recorded }, { cycle: evidence.cycle, virtualMilliseconds: evidence.virtualMilliseconds,
@@ -209,7 +213,15 @@ export function sharedInstrumentSummary(profile, state = {}) {
           : [{ pin: 'GPIO0', ...clone(runtime.experimental.gpio0) }], selectedPin: 'GPIO0' },
         { cycle, virtualMilliseconds: milliseconds, retained: 1, dropped: 0, limit: 1 })
         : noValue('No current source-bound GPIO0 worker snapshot.'),
-      logic: noValue('No shared RP2040 logic-analyser evidence is approved.'),
+      logic: current && Array.isArray(runtime.instruments?.logic?.transitions) ? observed('recorded-runtime',
+        'GPIO0 transitions from the current rp2040js worker snapshot',
+        { channels: clone(runtime.instruments.logic.channels ?? ['GPIO0']),
+          transitions: clone(runtime.instruments.logic.transitions) },
+        { cycle, virtualMilliseconds: milliseconds,
+          retained: runtime.instruments.logic.transitions.length,
+          dropped: runtime.instruments.logic.dropped ?? 0, limit: null,
+          timeBasis: 'virtual-cycle-and-nanoseconds' })
+        : noValue('No current source-bound rp2040js GPIO0 transition snapshot.'),
       input: noValue('No public RP2040 runtime input evidence is approved.'),
     };
     return summary;
@@ -236,7 +248,16 @@ export function sharedInstrumentSummary(profile, state = {}) {
         { retained: runtime.modeledCircuit.epochs?.length ?? 0, dropped: 0, limit: null,
           timeBasis: 'adapter-epoch-sequence' })
         : noValue('No current source-bound GPIO2 project-model result.'),
-      logic: noValue('QEMU pin-level logic transitions are unavailable.'),
+      logic: current && Array.isArray(runtime.modeledCircuit?.epochs) ? observed('project-model',
+        'Project-owned GPIO2 adapter epoch sequence; not QEMU CPU GPIO or pin timing',
+        { channels: ['GPIO2 model'], transitions: runtime.modeledCircuit.epochs.map((epoch, index) => ({
+          channel: 'GPIO2 model', sequence: index + 1,
+          level: epoch?.adapter?.drive === 'high' ? true : epoch?.adapter?.drive === 'low' ? false : null,
+          state: epoch?.adapter?.drive ?? 'unavailable',
+        })) },
+        { retained: runtime.modeledCircuit.epochs.length, dropped: 0, limit: 2,
+          timeBasis: 'adapter-epoch-sequence' })
+        : noValue('QEMU pin-level logic transitions are unavailable; no current GPIO2 model epochs exist.'),
       input: noValue('No public ESP32-C3 runtime input evidence is available.'),
     };
     return summary;
@@ -257,7 +278,12 @@ export function sharedInstrumentSummary(profile, state = {}) {
       { pins: [{ pin: 'PB0', level: runtime.observed.pb0 }], selectedPin: 'PB0' },
       { retained: 1, dropped: 0, limit: 1, timeBasis: 'instruction-order-only' })
       : noValue('No current source-bound Renode PB0 observation.'),
-    logic: noValue('No shared STM32 logic-analyser evidence is available.'),
+    logic: current && typeof runtime.observed?.pb0 === 'boolean' ? observed('recorded-runtime',
+      'Actual Renode PB0 final observation; no timed transition waveform is produced',
+      { channels: ['PB0'], transitions: [{ channel: 'PB0', sequence: 1, level: runtime.observed.pb0,
+        state: 'final-observation' }] },
+      { retained: 1, dropped: 0, limit: 1, timeBasis: 'instruction-order-only' })
+      : noValue('No current source-bound Renode PB0 observation.'),
     input: noValue('No public STM32 runtime input evidence is available.'),
   };
   return summary;
@@ -294,6 +320,7 @@ export function sharedInstrumentView(summary, local = {}) {
   const localCurrent = local.identity === identity ? local : { identity, cleared: false, selectedPin: null };
   const serial = summary.channels.serial;
   const gpio = summary.channels.gpio;
+  const logic = summary.channels.logic;
   const availablePins = Array.isArray(gpio?.value?.pins) ? clone(gpio.value.pins) : [];
   const requestedPin = localCurrent.selectedPin ?? gpio?.value?.selectedPin ?? availablePins[0]?.pin ?? null;
   const selected = availablePins.find((pin) => pin.pin === requestedPin) ?? availablePins[0] ?? null;
@@ -305,6 +332,13 @@ export function sharedInstrumentView(summary, local = {}) {
     ? selected.drive === 'high' : undefined);
   const voltage = selected?.voltage ?? (c3Model ? selected?.volts : undefined);
   const text = serial?.classification === 'unavailable' ? '' : serialOutput(serial.value);
+  const traceRecords = Array.isArray(logic?.value?.transitions) ? clone(logic.value.transitions) : [];
+  const traceChannels = Array.isArray(logic?.value?.channels) ? [...logic.value.channels]
+    : [...new Set(traceRecords.map((record) => record.pin ?? record.channel).filter(Boolean))];
+  const requestedTrace = localCurrent.selectedTraceChannel ?? traceChannels[0] ?? null;
+  const selectedTraceChannel = traceChannels.includes(requestedTrace) ? requestedTrace : traceChannels[0] ?? null;
+  const selectedTraceRecords = selectedTraceChannel === null ? [] : traceRecords
+    .filter((record) => (record.pin ?? record.channel) === selectedTraceChannel).slice(-100);
   return {
     schema: SHARED_INSTRUMENT_VIEW_SCHEMA,
     profile: summary.profile,
@@ -336,6 +370,21 @@ export function sharedInstrumentView(summary, local = {}) {
         adc: field(selected?.adc, classification, missing),
       },
     },
-    local: { identity, cleared: Boolean(localCurrent.cleared), selectedPin: selected?.pin ?? null },
+    trace: {
+      schema: RUNTIME_TRACE_SCHEMA,
+      profile: summary.profile,
+      revision: summary.revision,
+      artifactIdentity: summary.artifactIdentity,
+      classification: logic?.classification ?? 'unavailable',
+      provenance: logic?.provenance ?? 'No verified trace producer.',
+      time: clone(logic?.time ?? { basis: 'unavailable', cycle: null, virtualMilliseconds: null }),
+      retention: clone(logic?.retention ?? { retained: null, dropped: null, limit: null }),
+      channels: traceChannels,
+      selectedChannel: selectedTraceChannel,
+      records: selectedTraceRecords,
+      displayed: selectedTraceRecords.length,
+    },
+    local: { identity, cleared: Boolean(localCurrent.cleared), selectedPin: selected?.pin ?? null,
+      selectedTraceChannel },
   };
 }

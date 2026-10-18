@@ -1,18 +1,18 @@
-# Rollback basis for 1.1.0-rc.29
+# Rollback basis for 1.1.0-rc.30
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
 Retain exact accepted source commit
-`c1acf18f2f9a1387acc7847f04a86ce0cc95434d` and VM103 image
-`sha256:7ebf36514d9ff7a6301578194ee43f8ca20c5744a6bab5ec98a8980a51cbebb5`
-as the pre-rc.29 app-only recovery basis.
+`03f9b2251ebc9ca17b6c195c2f771c08786202a8` and VM103 image
+`sha256:2a5886ee49c87ff2615460b77521902411f85c341e74f235cb92545185e93b0e`
+as the pre-rc.30 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
 
-Rc.17 through rc.29 use the same common envelope. An rc.22 through rc.29 file that contains
+Rc.17 through rc.30 use the same common envelope. An rc.22 through rc.30 file that contains
 narrow-profile `wireRoutes` should be retained as the learner's original, then
 opened in rc.21 only through an rc.21-compatible copy if strict older nested
 validation rejects the added layout field. The existing **Legacy copy** remains
@@ -55,6 +55,10 @@ Rc.29 adds actionable fault classification and documentation without changing
 the project envelope. Rolling back restores rc.28 diagnostic copy; learner
 files and named-pin topology need no conversion. Open the retained file and
 Build fresh.
+
+Rc.30 adds only source-bound runtime trace projection and visible viewer state.
+Rolling back removes the shared viewer without converting learner files. Trace
+records and selection are transient and are not restored after rollback.
 
 Browser recovery and learner-owned files are never deleted by deployment or
 rollback. Do not change DNS, shared Caddy configuration, compiler/runtime

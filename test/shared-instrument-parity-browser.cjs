@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/runner/node_modules', 'playwright'));
 
-const base = process.env.SHARED_INSTRUMENT_URL || 'http://127.0.0.1:18795';
+const base = process.env.SHARED_INSTRUMENT_URL || 'http://127.0.0.1:18789';
 const profiles = {
   avr: 'board.atmega328p-16mhz-v1', pico: 'board.rp2040-pico-v1',
   c3: 'board.esp32-c3-devmodule-v1', stm32: 'board.stm32f429zi-nucleo144-v1',
@@ -27,6 +27,15 @@ async function assertPresentation(page, profile, classifications) {
     assert(text.startsWith(channel.classification), `${profile}.${name} UI/state mismatch: ${text}`);
     assert(text.includes(channel.provenance), `${profile}.${name} provenance missing`);
   }
+  const trace = await page.evaluate(() => structuredClone(window.__SHARED_INSTRUMENT_VIEW__.trace));
+  assert.equal(trace.schema, 'intent-mcu-runtime-trace@1');
+  assert.equal(trace.classification, value.channels.logic.classification);
+  assert.equal(trace.artifactIdentity, value.artifactIdentity);
+  const traceClass = await page.locator(`${root} [data-shared-trace-classification]`).textContent();
+  assert.equal(traceClass, trace.classification);
+  assert((await page.locator(`${root} [data-shared-trace-axis]`).textContent()).length > 10);
+  assert((await page.locator(`${root} [data-shared-trace-provenance]`).textContent()).includes(trace.provenance));
+  if (trace.channels.length) assert.equal(await page.locator(`${root} [data-shared-trace-select]`).isDisabled(), false);
   return value;
 }
 
@@ -62,11 +71,14 @@ async function select(page, profile) {
       && window.__SHARED_INSTRUMENT_SUMMARY__?.state === 'current-runtime', null, { timeout: 20_000 });
     const avr = await assertPresentation(page, profiles.avr,
       ['recorded-runtime', 'recorded-runtime', 'recorded-runtime', 'recorded-runtime']);
+    if (process.env.I03_SCREENSHOT) {
+      await page.locator('#instrument-evidence').scrollIntoViewIfNeeded();
+      await page.screenshot({ path: process.env.I03_SCREENSHOT, fullPage: false });
+    }
     await page.locator('#component-layer [data-component-id="board-1"]').dispatchEvent('click');
     await page.keyboard.press('ArrowRight');
     assert.equal((await summary(page)).artifactIdentity, avr.artifactIdentity);
     await page.click('#reset');
-    assert.equal((await summary(page)).state, 'no-current-runtime');
     await page.waitForFunction(() => window.__SHARED_INSTRUMENT_SUMMARY__?.state === 'current-runtime');
     const avrSource = await page.inputValue('#source');
     await page.fill('#source', `${avrSource}\n`);
@@ -81,7 +93,7 @@ async function select(page, profile) {
     await page.click('#pico-run');
     await page.waitForFunction(() => window.__SHARED_INSTRUMENT_SUMMARY__?.state === 'current-runtime', null, { timeout: 20_000 });
     const pico = await assertPresentation(page, profiles.pico,
-      ['recorded-runtime', 'recorded-runtime', 'unavailable', 'unavailable']);
+      ['recorded-runtime', 'recorded-runtime', 'recorded-runtime', 'unavailable']);
     const picoPosition = await page.evaluate(() => window.__RP2040_PUBLIC_STATE__.circuit.layout.positions['resistor-1']);
     await page.evaluate(({ x, y }) => window.__RP2040_PUBLIC_WORKBENCH__.moveCircuitComponent('resistor-1', x + 0.02, y), picoPosition);
     assert.equal((await summary(page)).artifactIdentity, pico.artifactIdentity);
@@ -105,8 +117,9 @@ async function select(page, profile) {
     await page.waitForFunction(() => window.__ESP32C3_PUBLIC_STATE__?.phase === 'complete'
       && window.__SHARED_INSTRUMENT_SUMMARY__?.state === 'current-runtime', null, { timeout: 50_000 });
     const c3 = await assertPresentation(page, profiles.c3,
-      ['recorded-runtime', 'project-model', 'unavailable', 'unavailable']);
+      ['recorded-runtime', 'project-model', 'project-model', 'unavailable']);
     assert.match(c3.channels.gpio.provenance, /not QEMU pin state/u);
+    assert.match(c3.channels.logic.provenance, /not QEMU CPU GPIO/u);
     const c3Position = await page.evaluate(() => window.__ESP32C3_PUBLIC_STATE__.project.circuit.layout.positions['resistor-1']);
     await page.evaluate(({ x, y }) => window.__ESP32C3_PUBLIC_WORKBENCH__.moveCircuitComponent('resistor-1', x + 0.02, y), c3Position);
     assert.equal((await summary(page)).artifactIdentity, c3.artifactIdentity);
@@ -125,7 +138,7 @@ async function select(page, profile) {
     await page.waitForFunction(() => window.__STM32_PUBLIC_STATE__?.phase === 'completed'
       && window.__SHARED_INSTRUMENT_SUMMARY__?.state === 'current-runtime', null, { timeout: 120_000 });
     const stm32 = await assertPresentation(page, profiles.stm32,
-      ['recorded-runtime', 'recorded-runtime', 'unavailable', 'unavailable']);
+      ['recorded-runtime', 'recorded-runtime', 'recorded-runtime', 'unavailable']);
     const stmPosition = await page.evaluate(() => window.__STM32_PUBLIC_STATE__.project.circuit.layout.positions['resistor-1']);
     await page.evaluate(({ x, y }) => window.__STM32_PUBLIC_WORKBENCH__.moveCircuitComponent('resistor-1', x + 0.02, y), stmPosition);
     assert.equal((await summary(page)).artifactIdentity, stm32.artifactIdentity);

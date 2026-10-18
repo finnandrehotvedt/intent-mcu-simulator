@@ -2855,6 +2855,29 @@ function sharedFieldText(field) {
   return String(field.value);
 }
 
+function sharedTraceRecordText(record, basis) {
+  const level = typeof record.level === 'boolean' ? (record.level ? 'HIGH' : 'LOW')
+    : String(record.state ?? 'level unavailable');
+  if (Number.isSafeInteger(record.cycle)) {
+    const virtual = Number.isFinite(record.virtualNanos) ? ` · ${record.virtualNanos.toLocaleString('en-US')} ns` : '';
+    return `cycle ${record.cycle.toLocaleString('en-US')}${virtual} · ${level}`;
+  }
+  if (Number.isSafeInteger(record.sequence)) {
+    const prefix = basis === 'adapter-epoch-sequence' ? 'adapter epoch' : 'observation';
+    return `${prefix} ${record.sequence.toLocaleString('en-US')} · ${level}`;
+  }
+  return `position unavailable · ${level}`;
+}
+
+function sharedTraceAxisText(trace) {
+  if (trace.classification === 'unavailable') return 'No verified timebase.';
+  if (trace.time.basis === 'virtual-cycle') return `avr8js cycles at 16 MHz · snapshot ${trace.time.cycle.toLocaleString('en-US')} · ${trace.time.virtualMilliseconds.toFixed(3)} ms`;
+  if (trace.time.basis === 'virtual-cycle-and-nanoseconds') return `rp2040js worker cycles · producer-supplied virtual nanoseconds · snapshot ${trace.time.cycle.toLocaleString('en-US')}`;
+  if (trace.time.basis === 'adapter-epoch-sequence') return 'Ordered project-model adapter epochs · no QEMU pin timing.';
+  if (trace.time.basis === 'instruction-order-only') return 'Final Renode PB0 observation · instruction order only, no duration.';
+  return trace.time.basis;
+}
+
 function renderSharedInstrumentTools(root, view) {
   const tools = root.querySelector('[data-shared-instrument-tools]');
   if (!tools) return;
@@ -2896,6 +2919,36 @@ function renderSharedInstrumentTools(root, view) {
     row.append(term, detail); pinFields.append(row);
   }
   pinProvenance.textContent = view.pin.provenance;
+
+  const traceClass = tools.querySelector('[data-shared-trace-classification]');
+  const traceSelect = tools.querySelector('[data-shared-trace-select]');
+  const traceAxis = tools.querySelector('[data-shared-trace-axis]');
+  const traceRecords = tools.querySelector('[data-shared-trace-records]');
+  const traceRetention = tools.querySelector('[data-shared-trace-retention]');
+  const traceProvenance = tools.querySelector('[data-shared-trace-provenance]');
+  if (!traceClass || !traceSelect || !traceAxis || !traceRecords || !traceRetention || !traceProvenance) return;
+  traceClass.textContent = view.trace.classification;
+  traceClass.dataset.sharedTraceClassification = view.trace.classification;
+  traceSelect.replaceChildren();
+  if (!view.trace.channels.length) {
+    traceSelect.append(Object.assign(document.createElement('option'), { value: '', textContent: 'Unavailable' }));
+    traceSelect.disabled = true;
+  } else {
+    for (const channel of view.trace.channels) traceSelect.append(Object.assign(document.createElement('option'), {
+      value: channel, textContent: channel, selected: channel === view.trace.selectedChannel,
+    }));
+    traceSelect.disabled = false;
+  }
+  traceAxis.textContent = sharedTraceAxisText(view.trace);
+  const displayed = view.trace.records.map((record) => Object.assign(document.createElement('li'), {
+    textContent: sharedTraceRecordText(record, view.trace.time.basis),
+  }));
+  traceRecords.replaceChildren(...(displayed.length ? displayed
+    : [Object.assign(document.createElement('li'), { textContent: view.trace.classification === 'unavailable'
+      ? 'No verified trace producer.' : 'No transitions recorded for this channel.' })]));
+  traceRetention.textContent = view.trace.retention.retained === null ? 'Retention unavailable.'
+    : `${view.trace.retention.retained.toLocaleString('en-US')} retained · ${view.trace.retention.dropped.toLocaleString('en-US')} dropped${view.trace.retention.limit === null ? '' : ` · limit ${view.trace.retention.limit.toLocaleString('en-US')}`} · showing ${view.trace.displayed.toLocaleString('en-US')}`;
+  traceProvenance.textContent = `${view.trace.provenance} · generation ${view.trace.revision ?? 'unavailable'} · artifact ${view.trace.artifactIdentity ? `${view.trace.artifactIdentity.slice(0, 12)}…` : 'unavailable'}`;
 }
 
 function renderSharedInstrumentSummary(profile, state) {
@@ -5163,12 +5216,14 @@ document.addEventListener('click', (event) => {
   downloadText(`intent-mcu-${profile.replace(/[^a-z0-9]+/giu, '-')}-serial.txt`, exportView.serial.text);
 });
 document.addEventListener('change', (event) => {
-  const select = event.target.closest('[data-shared-pin-select]');
+  const select = event.target.closest('[data-shared-pin-select], [data-shared-trace-select]');
   if (!select) return;
   const profile = sharedInstrumentProfileFor(select);
   if (!profile) return;
   const local = sharedInstrumentLocals.get(profile) ?? {};
-  sharedInstrumentLocals.set(profile, { ...local, selectedPin: select.value });
+  sharedInstrumentLocals.set(profile, select.matches('[data-shared-trace-select]')
+    ? { ...local, selectedTraceChannel: select.value }
+    : { ...local, selectedPin: select.value });
   renderStoredSharedInstrumentView(profile);
 });
 elements.logicchannels.addEventListener('change', () => {

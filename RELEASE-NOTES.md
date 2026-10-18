@@ -1,4 +1,19 @@
-# Intent MCU Simulator 1.1.0-rc.29
+# Intent MCU Simulator 1.1.0-rc.30
+
+This source-bound runtime-trace release completes I03. The shared instrument
+area now includes a readable trace viewer with channel selection, explicit
+timebase, retention and dropped-record counts, project generation and exact
+artifact provenance.
+
+AVR and Pico show actual worker transitions. ESP32-C3 exposes only its
+separately labelled project-owned GPIO2 adapter epochs and explicitly says they
+are not QEMU CPU GPIO or pin timing. STM32 shows Renode's actual final PB0
+observation with instruction-order-only provenance and does not fabricate a
+waveform or duration. Missing producers remain visibly unavailable.
+
+---
+
+## 1.1.0-rc.29
 
 This bounded fault-validation release completes W10. Supported profile faults
 now carry stable corrective actions: named supply-to-ground shorts, known
