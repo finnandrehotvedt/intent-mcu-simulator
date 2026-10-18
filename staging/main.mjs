@@ -122,6 +122,7 @@ import { evaluateProjectFeasibility } from '../src/project-feasibility.mjs';
 import {
   PROJECT_PATCH_SCHEMA,
   createProjectPatchPrompt,
+  projectTextSha256,
   reviewProjectPatch,
 } from '../src/project-patch.mjs';
 import { compareDesignAlternatives, DESIGN_COMPARISON_SCHEMA } from '../src/design-comparison.mjs';
@@ -131,6 +132,13 @@ import {
   domainRequest,
   executeDomainRequest,
 } from '../src/shared-domain-engine.mjs';
+import {
+  BOUNDED_ACTIONS,
+  BOUNDED_ACTION_REQUEST_SCHEMA,
+  BOUNDED_ACTION_ROUTER_SCHEMA,
+  boundedActionRequest,
+  createBoundedActionRouter,
+} from '../src/bounded-action-contracts.mjs';
 import { serialEventText, serialInputBytes, serialText } from '../src/serial-view.mjs';
 import { SERIAL_HISTORY_MAX } from '../src/runtime-kernel.mjs';
 import { createSupportedProfileExample, supportedProfileExamples } from '../src/supported-example-pack.mjs';
@@ -235,6 +243,7 @@ const elements = Object.fromEntries([
   'design-comparison-alternatives', 'design-comparison-differences',
   'shared-domain-engine-inspect', 'shared-domain-engine-summary', 'shared-domain-engine-status',
   'shared-domain-engine-stages',
+  'bounded-actions-summary', 'bounded-actions-status', 'bounded-actions-list',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -3032,6 +3041,204 @@ window.__AGENT_DOMAIN_ENGINE__ = Object.freeze({
   requestSchema: DOMAIN_REQUEST_SCHEMA,
   execute: (source, profile = selectedCompilerProfile) => executeDomainRequest(source, commonProjectAdapters, profile, 'agent'),
   authority: Object.freeze({ network: false, mutation: false, build: false, run: false, persistence: false }),
+});
+function actionContext(profile = selectedCompilerProfile) {
+  const revision = profile === AVR_PROFILE ? editor.revision
+    : profile === RP2040_PROFILE ? picoPublicWorkbench.snapshot().revision
+    : profile === ESP32C3_PROFILE ? c3PublicWorkbench.snapshot().revision
+    : profile === STM32F429ZI_PROFILE ? stm32PublicWorkbench.snapshot().revision : null;
+  if (!Number.isInteger(revision)) throw new Error('ACTION_PROFILE_UNSUPPORTED');
+  const projectGeneration = profile === AVR_PROFILE ? lifecycle.projectGeneration : 1;
+  return { profile, generation: projectGeneration * 1_000_000 + revision };
+}
+function actionWorkbench(profile) {
+  if (profile === RP2040_PROFILE) return picoPublicWorkbench;
+  if (profile === ESP32C3_PROFILE) return c3PublicWorkbench;
+  if (profile === STM32F429ZI_PROFILE) return stm32PublicWorkbench;
+  return null;
+}
+function throwIfActionCancelled(signal) {
+  if (signal.aborted) throw Object.assign(new Error('ACTION_CANCELLED'), { code: 'ACTION_CANCELLED' });
+}
+function waitForActionEvidence(predicate, signal, timeoutMs = 8_000) {
+  return new Promise((resolve, reject) => {
+    const started = Date.now();
+    let timer;
+    const finish = (error, value) => {
+      clearInterval(timer); signal.removeEventListener('abort', cancelled);
+      if (error) reject(error); else resolve(value);
+    };
+    const cancelled = () => finish(Object.assign(new Error('ACTION_CANCELLED'), { code: 'ACTION_CANCELLED' }));
+    signal.addEventListener('abort', cancelled, { once: true });
+    timer = setInterval(() => {
+      try {
+        const value = predicate();
+        if (value) finish(null, value);
+        else if (Date.now() - started >= timeoutMs) finish(Object.assign(new Error('ACTION_EVIDENCE_TIMEOUT'), { code: 'ACTION_EVIDENCE_TIMEOUT' }));
+      } catch (error) { finish(error); }
+    }, 25);
+  });
+}
+function boundedRuntimeResult(profile = selectedCompilerProfile) {
+  if (profile === AVR_PROFILE) {
+    const runtime = window.__M6_STATE__.runtime;
+    if (!runtime) return { ok: false, code: 'ACTION_CURRENT_RUNTIME_REQUIRED' };
+    if (!lifecycle.runtimeBinding) return { ok: false, code: 'ACTION_RUNTIME_BINDING_REQUIRED' };
+    if (loadedSourceIdentity !== buildInputIdentity()) return { ok: false, code: 'ACTION_RUNTIME_SOURCE_STALE' };
+    if (lifecycle.runtimeBinding.artifactIdentity !== window.__M6_STATE__.artifactIdentity) {
+      return { ok: false, code: 'ACTION_RUNTIME_ARTIFACT_STALE' };
+    }
+    return {
+      ok: true, code: 'ACTION_CURRENT_RESULT',
+      artifactIdentity: lifecycle.runtimeBinding.artifactIdentity,
+      projectGeneration: lifecycle.runtimeBinding.projectGeneration,
+      runtimeGeneration: lifecycle.runtimeBinding.runtimeGeneration,
+      cycle: runtime.cycle,
+      pins: structuredClone(runtime.pins ?? []),
+      serial: structuredClone((runtime.instruments?.serial?.records ?? []).slice(-64)),
+      serialRetainedCount: runtime.instruments?.serial?.records?.length ?? 0,
+      verdict: null,
+    };
+  }
+  const state = actionWorkbench(profile)?.snapshot();
+  const artifactIdentity = state?.artifact?.artifactIdentity ?? state?.artifact?.uf2Sha256
+    ?? state?.artifact?.flashSha256 ?? state?.artifact?.elfSha256 ?? null;
+  if (!state?.runtime || !artifactIdentity) return { ok: false, code: 'ACTION_CURRENT_RUNTIME_REQUIRED' };
+  return {
+    ok: true, code: 'ACTION_CURRENT_RESULT', artifactIdentity,
+    revision: state.revision, phase: state.phase,
+    runtime: structuredClone(state.runtime), verdict: null,
+  };
+}
+async function buildThroughActiveUi(profile, signal) {
+  const cancel = () => {
+    if (profile === AVR_PROFILE) elements.cancel.click();
+    else if (profile === RP2040_PROFILE) picoPublicWorkbench.stop();
+    else if (profile === ESP32C3_PROFILE) void c3PublicWorkbench.dispose('Agent action cancelled; transient C3 session discarded.');
+    else if (profile === STM32F429ZI_PROFILE) stm32PublicWorkbench.stop('Agent action cancelled; transient STM32 executable discarded.');
+  };
+  signal.addEventListener('abort', cancel, { once: true });
+  try {
+    if (profile === AVR_PROFILE) {
+      await build(); throwIfActionCancelled(signal);
+      return window.__M6_STATE__.buildState === 'succeeded'
+        ? { ok: true, code: 'ACTION_BUILD_SUCCEEDED', artifactIdentity: window.__M6_STATE__.artifactIdentity }
+        : { ok: false, code: `ACTION_BUILD_${String(window.__M6_STATE__.buildState).toUpperCase()}` };
+    }
+    const result = await actionWorkbench(profile).build(); throwIfActionCancelled(signal);
+    return result.ok ? { ...result, code: 'ACTION_BUILD_SUCCEEDED' } : result;
+  } finally { signal.removeEventListener('abort', cancel); }
+}
+async function runThroughActiveUi(profile, signal) {
+  const cancel = () => {
+    if (profile === AVR_PROFILE) {
+      const paused = applyLifecycle({ type: 'runtime.pause' });
+      if (paused.accepted) worker?.postMessage({ command: 'pause' });
+    } else if (profile === RP2040_PROFILE) picoPublicWorkbench.pause();
+    else if (profile === ESP32C3_PROFILE) void c3PublicWorkbench.dispose('Agent Run cancelled; transient C3 session discarded.');
+    else if (profile === STM32F429ZI_PROFILE) stm32PublicWorkbench.stop('Agent Run cancelled; transient STM32 executable discarded.');
+  };
+  signal.addEventListener('abort', cancel, { once: true });
+  try {
+    const before = profile === AVR_PROFILE ? (window.__M6_STATE__.runtime?.cycle ?? -1) : null;
+    if (profile === AVR_PROFILE) {
+      const accepted = applyLifecycle({ type: 'runtime.run' });
+      if (!accepted.accepted) return { ok: false, code: accepted.code };
+      worker?.postMessage({ command: 'run' });
+      await waitForActionEvidence(() => {
+        const runtime = window.__M6_STATE__.runtime;
+        return runtime && runtime.cycle > before ? runtime : null;
+      }, signal);
+    } else {
+      const started = profile === STM32F429ZI_PROFILE
+        ? await stm32PublicWorkbench.run(false) : await actionWorkbench(profile).run();
+      if (!started.ok) return started;
+      await waitForActionEvidence(() => actionWorkbench(profile).snapshot().runtime, signal);
+    }
+    throwIfActionCancelled(signal);
+    const result = boundedRuntimeResult(profile);
+    return result.ok ? { ...result, code: 'ACTION_RUN_EVIDENCE_READY' } : result;
+  } finally {
+    signal.removeEventListener('abort', cancel);
+  }
+}
+const boundedActionHandlers = Object.freeze({
+  async 'project.create'({ starterId }, { signal, context }) {
+    throwIfActionCancelled(signal);
+    if (isProjectDirty(context.profile)) return { ok: false, code: 'ACTION_UNSAVED_CHANGES' };
+    if (context.profile === AVR_PROFILE) {
+      const result = loadExampleProject(starterId, 'agent.project.create');
+      return result?.ok ? { ok: true, code: 'ACTION_PROJECT_CREATED', starterId }
+        : { ok: false, code: result?.code ?? 'ACTION_STARTER_UNSUPPORTED' };
+    }
+    if (!supportedProfileExamples(context.profile).some((example) => example.id === starterId)) {
+      return { ok: false, code: 'ACTION_STARTER_UNSUPPORTED' };
+    }
+    const result = actionWorkbench(context.profile).installPreparedProject(
+      createSupportedProfileExample(context.profile, starterId),
+      'Project created through the bounded local action contract. Build fresh before Run.',
+    );
+    return result.ok ? { ok: true, code: 'ACTION_PROJECT_CREATED', starterId } : result;
+  },
+  async 'patch.propose'({ description }, { signal, context }) {
+    throwIfActionCancelled(signal);
+    const prompt = await generateCurrentProjectPatchPrompt(description, context.profile);
+    throwIfActionCancelled(signal);
+    return { ok: true, code: 'ACTION_PATCH_PROMPT_CREATED', prompt, liveAiRequest: false, mutation: false };
+  },
+  async 'project.validate'(_payload, { signal, context }) {
+    throwIfActionCancelled(signal);
+    const result = await executeDomainRequest(
+      domainRequest('validate-project', commonProjectText(context.profile)),
+      commonProjectAdapters, context.profile, 'agent',
+    );
+    throwIfActionCancelled(signal);
+    return result;
+  },
+  'firmware.build': (_payload, { signal, context }) => buildThroughActiveUi(context.profile, signal),
+  'runtime.run': (_payload, { signal, context }) => runThroughActiveUi(context.profile, signal),
+  async 'result.read'(_payload, { signal, context }) {
+    throwIfActionCancelled(signal); return boundedRuntimeResult(context.profile);
+  },
+  async 'project.export'(_payload, { signal, context }) {
+    throwIfActionCancelled(signal);
+    const text = commonProjectText(context.profile);
+    return { ok: true, code: 'ACTION_PROJECT_EXPORTED', filename: commonProjectFilename(context.profile),
+      projectText: text, projectSha256: await projectTextSha256(text), browserWriteClaimed: false };
+  },
+});
+const boundedActionRouter = createBoundedActionRouter({
+  handlers: boundedActionHandlers,
+  currentContext: () => actionContext(),
+});
+let lastBoundedAction = null;
+function renderBoundedAction(result) {
+  lastBoundedAction = structuredClone(result);
+  elements.boundedactionssummary.textContent = result.ok ? 'Completed' : 'Rejected';
+  elements.boundedactionsstatus.dataset.valid = String(Boolean(result.ok));
+  elements.boundedactionsstatus.textContent = result.executed
+    ? `${result.action} · ${result.code} · generation ${result.generationBefore} → ${result.generationAfter}`
+    : `No action ran · ${result.code}`;
+}
+elements.boundedactionslist.replaceChildren(...BOUNDED_ACTIONS.map((action) => {
+  const item = document.createElement('li'); const code = document.createElement('code'); code.textContent = action;
+  const effect = document.createElement('span');
+  effect.textContent = action === 'firmware.build' ? 'Build only' : action === 'runtime.run' ? 'Run only'
+    : action === 'project.create' ? 'Project mutation only' : action === 'project.export' ? 'Data export only' : 'Read-only';
+  item.append(code, effect); return item;
+}));
+window.__AGENT_ACTIONS__ = Object.freeze({
+  schema: BOUNDED_ACTION_ROUTER_SCHEMA,
+  requestSchema: BOUNDED_ACTION_REQUEST_SCHEMA,
+  actions: BOUNDED_ACTIONS,
+  context: () => structuredClone(actionContext()),
+  request: (action, payload = {}, options = {}) => boundedActionRequest(
+    action, selectedCompilerProfile, actionContext().generation, payload, options,
+  ),
+  execute: async (source) => { const result = await boundedActionRouter.execute(source); renderBoundedAction(result); return result; },
+  cancel: (requestId) => boundedActionRouter.cancel(requestId),
+  state: () => lastBoundedAction ? structuredClone(lastBoundedAction) : null,
+  externalEndpoint: false,
 });
 window.__PROJECT_BRIEF__ = Object.freeze({
   schema: PROJECT_BRIEF_SCHEMA,

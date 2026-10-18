@@ -2,6 +2,20 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.38 — 2026-10-18
+
+- Completed X08 with seven separate generation-bound local action contracts:
+  create, propose, validate, Build, Run, read and export.
+- Each action delegates to the existing UI implementation and exact X07
+  project/electrical engine, compiler/runtime lifecycle and source-bound
+  evidence rules; there is no generic command or external agent endpoint.
+- Strict payloads, profile/generation matching, 30-second maximum TTL, replay
+  rejection, one active request, cancellation and bounded results prevent a
+  content-controlled or weaker agent shortcut.
+- The integrated action journey creates the thermostat starter, generates a
+  local patch prompt, validates, compiles, runs, reads current evidence and
+  exports the exact common envelope without an account or durable server data.
+
 ## 1.1.0-rc.37 — 2026-10-18
 
 - Completed X07 with one strict domain engine shared by the visible UI and a

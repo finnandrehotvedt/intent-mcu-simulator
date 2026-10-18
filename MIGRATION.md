@@ -1,4 +1,4 @@
-# Migration to 1.1.0-rc.37
+# Migration to 1.1.0-rc.38
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
@@ -75,6 +75,11 @@ Rc.37 does not change the common project-file schema. Shared domain requests
 are transient, strict local inputs to the same project, electrical and test
 engine used by the visible UI. The local agent adapter cannot mutate or persist
 a project, call the network, Build, Run or restore executable authority.
+
+Rc.38 does not change the common project-file schema. The seven local action
+requests and their generation/TTL/cancellation state are transient browser
+state. Export returns the same canonical data-only envelope and never stores
+action authority, executable bytes or runtime evidence in a project file.
 
 Existing accepted files remain readable:
 
