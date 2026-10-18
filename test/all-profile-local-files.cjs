@@ -57,6 +57,34 @@ async function choose(page, profile) {
   await page.waitForFunction((global) => window[global]?.state().active === true, profile.global);
 }
 
+async function authorBrief(page, label) {
+  const before = await page.evaluate(() => JSON.stringify(window.__COMMON_PROJECT_FILES__.prepare(
+    window.__COMMON_PROJECT_FILES__.current(),
+  ).project));
+  const values = {
+    purpose: `Prove the bounded ${label} teaching circuit behavior.`,
+    inputs: 'Named digital input\nReset',
+    outputs: 'Observed LED state\nSerial evidence',
+    boundaries: 'Reset at startup\nDisconnected ground',
+    acceptance: 'REQ-LED-ON | Observed output is active for the supported input\nREQ-RESET | Reset does not manufacture a passing observation',
+  };
+  await page.fill('#project-brief-purpose', values.purpose);
+  await page.fill('#project-brief-inputs', values.inputs);
+  await page.fill('#project-brief-outputs', values.outputs);
+  await page.fill('#project-brief-boundaries', values.boundaries);
+  await page.fill('#project-brief-acceptance', values.acceptance);
+  const result = await page.evaluate(() => ({
+    status: window.__PROJECT_BRIEF__.status(),
+    project: JSON.stringify(window.__COMMON_PROJECT_FILES__.prepare(window.__COMMON_PROJECT_FILES__.current()).project),
+    evaluation: document.querySelector('#project-brief-evaluation').textContent,
+  }));
+  assert.equal(result.status.ok, true, `${label}: brief invalid`);
+  assert.equal(result.status.evaluated, false, `${label}: brief claimed evaluation`);
+  assert.equal(result.project, before, `${label}: brief changed source or circuit project bytes`);
+  assert.match(result.evaluation, /2 criteria · Not evaluated/u);
+  return result.status.brief;
+}
+
 async function authored(page, profile) {
   return page.evaluate(({ global, nameInput, schema }) => {
     const state = window[global].state();
@@ -79,6 +107,7 @@ async function openThroughChooser(page, profile, filePath) {
 
 async function saveNarrow(page, profile) {
   await choose(page, profile);
+  const expectedBrief = await authorBrief(page, profile.name);
   const name = `${profile.name} file contract`;
   await page.fill(profile.nameInput, name);
   await page.fill(profile.sourceInput, profile.sourceEdit(await page.inputValue(profile.sourceInput)));
@@ -105,16 +134,17 @@ async function saveNarrow(page, profile) {
   assert(filename.endsWith(profile.extension), `${profile.name}: unexpected filename ${filename}`);
   const text = fs.readFileSync(filePath, 'utf8');
   const saved = JSON.parse(text);
-  assert.equal(saved.schema, 'intent-mcu-project-envelope@1', `${profile.name}: envelope schema`);
+  assert.equal(saved.schema, 'intent-mcu-project-envelope@2', `${profile.name}: envelope schema`);
   assert.equal(saved.profile, profile.option, `${profile.name}: envelope profile`);
   assert.equal(saved.project.schema, profile.schema, `${profile.name}: nested schema`);
+  assert.deepEqual(saved.brief, expectedBrief, `${profile.name}: brief not saved with circuit`);
   assert.deepEqual(saved.project, expected, `${profile.name}: downloaded file differs from authored data`);
   assertDataOnly(text, profile.name);
   assert.equal(saved.project.circuit.layout.positions['resistor-1'].rotation, 90);
   assert.equal(saved.project.circuit.components.find((item) => item.id === 'resistor-1').properties.ohms, 109);
   assert.equal(saved.project.circuit.components.find((item) => item.id === 'led-1').properties.color, 'green');
   assert.equal(saved.project.circuit.nets.filter((net) => net.id === 'net-series').length, 1);
-  return { profile, expected, filePath, filename, saveMs, saved };
+  return { profile, expected, expectedBrief, filePath, filename, saveMs, saved };
 }
 
 async function verifyNarrowOpen(browser, record, wrongProfilePath) {
@@ -129,6 +159,8 @@ async function verifyNarrowOpen(browser, record, wrongProfilePath) {
   await choose(page, record.profile);
   const firstOpenMs = await openThroughChooser(page, record.profile, record.filePath);
   assert.deepEqual(await authored(page, record.profile), record.expected, `${record.profile.name}: fresh-page Open changed authored data`);
+  assert.deepEqual(await page.evaluate(() => window.__PROJECT_BRIEF__.current()), record.expectedBrief,
+    `${record.profile.name}: fresh-page Open changed project brief`);
   assert.equal(await page.evaluate((profile) => window.__COMMON_PROJECT_FILES__.current(profile), record.profile.option),
     fs.readFileSync(record.filePath, 'utf8'), `${record.profile.name}: canonical envelope bytes changed after Open`);
   let state = await page.evaluate((global) => window[global].state(), record.profile.global);
@@ -205,6 +237,7 @@ async function saveAvr(page) {
   const netId = project.circuit.nets[0].id;
   await page.selectOption('#selected-net', netId);
   await page.selectOption('#wire-color', '#5f8cff');
+  const expectedBrief = await authorBrief(page, 'ATmega328P');
   const expected = await page.evaluate(() => window.__M6_PROJECT__());
   const started = Date.now();
   const [download] = await Promise.all([page.waitForEvent('download'), page.click('#project-save')]);
@@ -212,13 +245,14 @@ async function saveAvr(page) {
   const saveMs = Date.now() - started;
   const text = fs.readFileSync(filePath, 'utf8');
   const saved = JSON.parse(text);
-  assert.equal(saved.schema, 'intent-mcu-project-envelope@1', 'AVR: envelope schema');
+  assert.equal(saved.schema, 'intent-mcu-project-envelope@2', 'AVR: envelope schema');
   assert.equal(saved.profile, 'board.atmega328p-16mhz-v1', 'AVR: envelope profile');
   assert.deepEqual(saved.project, expected, 'AVR: downloaded file differs from canonical authored project');
+  assert.deepEqual(saved.brief, expectedBrief, 'AVR: brief not saved with circuit');
   assert.equal(saved.project.build.artifactIdentity, null, 'AVR: saved artifact identity');
   assert.equal(saved.project.build.inputIdentity, null, 'AVR: saved input identity');
   assertDataOnly(text, 'AVR');
-  return { profile: { name: 'ATmega328P' }, expected, filePath,
+  return { profile: { name: 'ATmega328P' }, expected, expectedBrief, filePath,
     filename: download.suggestedFilename(), saveMs, saved };
 }
 
@@ -233,6 +267,8 @@ async function verifyAvrOpen(browser, record, wrongProfilePath) {
   await page.waitForFunction(() => document.querySelector('#project-message').textContent.includes('Common project opened'));
   const firstMs = Date.now() - firstOpenMs;
   assert.deepEqual(await page.evaluate(() => window.__M6_PROJECT__()), record.expected, 'AVR: fresh-page Open changed project');
+  assert.deepEqual(await page.evaluate(() => window.__PROJECT_BRIEF__.current()), record.expectedBrief,
+    'AVR: fresh-page Open changed project brief');
   assert.equal(await page.evaluate(() => window.__COMMON_PROJECT_FILES__.current('board.atmega328p-16mhz-v1')),
     fs.readFileSync(record.filePath, 'utf8'), 'AVR: canonical envelope bytes changed after Open');
   const unchanged = JSON.stringify(await page.evaluate(() => window.__M6_PROJECT__()));

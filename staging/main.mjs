@@ -106,8 +106,11 @@ import {
   normalizeStm32PublicProject,
 } from '../src/stm32-public-workbench.mjs';
 import {
+  PROJECT_BRIEF_SCHEMA,
   PROJECT_ENVELOPE_LIMIT,
   canonicalProjectEnvelope,
+  emptyProjectBrief,
+  normalizeProjectBrief,
   prepareProjectEnvelope,
 } from '../src/project-envelope.mjs';
 import { serialEventText, serialInputBytes, serialText } from '../src/serial-view.mjs';
@@ -203,6 +206,9 @@ const elements = Object.fromEntries([
   'controller-workbench-summary', 'controller-capability-project', 'controller-capability-source',
   'controller-capability-runtime', 'controller-capability-circuit', 'controller-primary-action', 'controller-return-avr',
   'controller-workbench-limitation', 'controller-public-boundary', 'parked-circuit-notice',
+  'project-brief', 'project-brief-profile', 'project-brief-purpose', 'project-brief-inputs',
+  'project-brief-outputs', 'project-brief-boundaries', 'project-brief-acceptance',
+  'project-brief-evaluation', 'project-brief-status',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -266,6 +272,7 @@ let runtimeRenderTimer = null;
 let pendingRuntimeRender = null;
 let runtimeWorkerCreations = 0;
 let selectedCompilerProfile = AVR_PROFILE;
+const projectBriefDrafts = new Map();
 const sharedInstrumentSummaries = new Map();
 const sharedInstrumentLocals = new Map();
 let activeJob = null;
@@ -2267,6 +2274,82 @@ function parseEditorSource(source) {
   project.build = { status: 'dirty', inputIdentity: null, artifactIdentity: null };
   return { ...parsed, project, session: new ProjectEditorReducer(project) };
 }
+function briefDraftFromBrief(value = emptyProjectBrief()) {
+  const brief = normalizeProjectBrief(value);
+  return {
+    purpose: brief.purpose,
+    inputs: brief.inputs.join('\n'),
+    outputs: brief.outputs.join('\n'),
+    boundaryCases: brief.boundaryCases.join('\n'),
+    acceptanceCriteria: brief.acceptanceCriteria.map((item) => `${item.id} | ${item.text}`).join('\n'),
+  };
+}
+function emptyProjectBriefDraft() { return briefDraftFromBrief(emptyProjectBrief()); }
+function projectBriefDraft(profile) {
+  if (!projectBriefDrafts.has(profile)) projectBriefDrafts.set(profile, emptyProjectBriefDraft());
+  return projectBriefDrafts.get(profile);
+}
+function captureProjectBriefDraft() {
+  projectBriefDrafts.set(selectedCompilerProfile, {
+    purpose: elements.projectbriefpurpose.value,
+    inputs: elements.projectbriefinputs.value,
+    outputs: elements.projectbriefoutputs.value,
+    boundaryCases: elements.projectbriefboundaries.value,
+    acceptanceCriteria: elements.projectbriefacceptance.value,
+  });
+}
+function briefLines(value) {
+  return value.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean);
+}
+function projectBriefFromDraft(draft) {
+  const acceptanceCriteria = briefLines(draft.acceptanceCriteria).map((line, index) => {
+    const separator = line.indexOf('|');
+    if (separator < 0) throw Object.assign(new Error('PROJECT_BRIEF_CRITERION_FORMAT'),
+      { details: [`$brief.acceptanceCriteria[${index}]`] });
+    return { id: line.slice(0, separator).trim(), text: line.slice(separator + 1).trim() };
+  });
+  return normalizeProjectBrief({
+    schema: PROJECT_BRIEF_SCHEMA,
+    purpose: draft.purpose.trim(),
+    inputs: briefLines(draft.inputs),
+    outputs: briefLines(draft.outputs),
+    boundaryCases: briefLines(draft.boundaryCases),
+    acceptanceCriteria,
+  });
+}
+function projectBriefForProfile(profile) {
+  if (profile === selectedCompilerProfile) captureProjectBriefDraft();
+  return projectBriefFromDraft(projectBriefDraft(profile));
+}
+function renderProjectBrief() {
+  const draft = projectBriefDraft(selectedCompilerProfile);
+  elements.projectbriefpurpose.value = draft.purpose;
+  elements.projectbriefinputs.value = draft.inputs;
+  elements.projectbriefoutputs.value = draft.outputs;
+  elements.projectbriefboundaries.value = draft.boundaryCases;
+  elements.projectbriefacceptance.value = draft.acceptanceCriteria;
+  elements.projectbriefprofile.textContent = publicControllerView(selectedCompilerProfile)?.label ?? selectedCompilerProfile;
+  try {
+    const brief = projectBriefFromDraft(draft);
+    const count = brief.acceptanceCriteria.length;
+    elements.projectbriefevaluation.textContent = `${count || 'No'} ${count === 1 ? 'criterion' : 'criteria'} · Not evaluated`;
+    elements.projectbriefstatus.dataset.valid = 'true';
+    elements.projectbriefstatus.textContent = 'Valid data-only brief · saved with Download/Save; Build and runtime authority are unchanged.';
+  } catch (error) {
+    elements.projectbriefevaluation.textContent = 'Not evaluated';
+    elements.projectbriefstatus.dataset.valid = 'false';
+    elements.projectbriefstatus.textContent = `Brief not saveable (${error.code ?? error.message}). Use ID | statement and unique uppercase IDs.`;
+  }
+}
+function handleProjectBriefInput() {
+  captureProjectBriefDraft();
+  renderProjectBrief();
+}
+for (const input of [elements.projectbriefpurpose, elements.projectbriefinputs, elements.projectbriefoutputs,
+  elements.projectbriefboundaries, elements.projectbriefacceptance]) {
+  input.addEventListener('input', handleProjectBriefInput);
+}
+
 const commonProjectAdapters = Object.freeze({
   [AVR_PROFILE]: Object.freeze({
     schemas: Object.freeze([PROJECT_SCHEMA, CONTACT_PERSISTENCE_SCHEMA]),
@@ -2319,7 +2402,8 @@ function commonProjectFilename(profile) {
   return `${stem || 'intent-mcu-project'}.intent-mcu.json`;
 }
 function commonProjectText(profile) {
-  return canonicalProjectEnvelope(profile, profileProjectDocument(profile), commonProjectAdapters);
+  return canonicalProjectEnvelope(profile, profileProjectDocument(profile), commonProjectAdapters,
+    projectBriefForProfile(profile));
 }
 function legacyProjectText(profile) {
   return `${JSON.stringify(profileProjectDocument(profile), null, 2)}\n`;
@@ -2497,6 +2581,8 @@ function installPreparedProjectEnvelope(result, handle = null) {
   } else if (result.profile === RP2040_PROFILE) picoPublicWorkbench.installPreparedProject(result.project);
   else if (result.profile === ESP32C3_PROFILE) c3PublicWorkbench.installPreparedProject(result.project);
   else if (result.profile === STM32F429ZI_PROFILE) stm32PublicWorkbench.installPreparedProject(result.project);
+  projectBriefDrafts.set(result.profile, briefDraftFromBrief(result.brief));
+  renderProjectBrief();
   if (handle && !result.report.legacy) projectFileConnections.set(result.profile, {
     handle, name: safeHandleName(handle, result.profile),
   });
@@ -2640,10 +2726,18 @@ window.__NATIVE_PROJECT_FILES__ = Object.freeze({
   }),
 });
 window.__COMMON_PROJECT_FILES__ = Object.freeze({
-  schema: 'intent-mcu-project-envelope@1',
+  schema: 'intent-mcu-project-envelope@2',
   current: (profile = selectedCompilerProfile) => commonProjectText(profile),
   legacy: (profile = selectedCompilerProfile) => legacyProjectText(profile),
   prepare: (source) => prepareProjectEnvelope(source, commonProjectAdapters),
+});
+window.__PROJECT_BRIEF__ = Object.freeze({
+  schema: PROJECT_BRIEF_SCHEMA,
+  current: (profile = selectedCompilerProfile) => structuredClone(projectBriefForProfile(profile)),
+  status: (profile = selectedCompilerProfile) => {
+    try { return { ok: true, profile, brief: structuredClone(projectBriefForProfile(profile)), evaluated: false }; }
+    catch (error) { return { ok: false, profile, code: error.code ?? error.message, evaluated: false }; }
+  },
 });
 function endpointKey(endpoint) { return `${endpoint.component}.${endpoint.pin}`; }
 function parseEndpoint(key) {
@@ -5650,6 +5744,7 @@ elements.boardselect.addEventListener('change', () => {
   if (selectedCompilerProfile === RP2040_PROFILE) picoPublicWorkbench.render();
   if (selectedCompilerProfile === ESP32C3_PROFILE) c3PublicWorkbench.render();
   if (selectedCompilerProfile === STM32F429ZI_PROFILE) stm32PublicWorkbench.render();
+  renderProjectBrief();
 });
 elements.controllerprimaryaction.addEventListener('click', () => {
   if (selectedCompilerProfile === AVR_PROFILE) elements.build.click();
@@ -5919,7 +6014,7 @@ for (const [name, button] of [['catalog-collapsed', elements.togglecatalog], ['i
   if (workspacePreference(name)) { workspace.classList.add(name); button.setAttribute('aria-pressed', 'true'); }
 }
 if (workspacePreference('pin-labels')) { elements.circuitcanvas.classList.add('show-pin-labels'); elements.showpinlabels.setAttribute('aria-pressed', 'true'); }
-renderCompilerTarget(); renderCatalog(); renderProject(); setRuntimeEnabled(false);
+renderCompilerTarget(); renderCatalog(); renderProject(); renderProjectBrief(); setRuntimeEnabled(false);
 clearRuntimePresentation(); renderLifecycle();
 setCanvasInteractionMode('select'); setSerialDock(false);
 elements.projectmessage.textContent = recoveryRestored?.ok

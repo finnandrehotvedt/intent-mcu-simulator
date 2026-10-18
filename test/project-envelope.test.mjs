@@ -4,7 +4,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  PROJECT_ENVELOPE_SCHEMA, canonicalProjectEnvelope, prepareProjectEnvelope,
+  LEGACY_PROJECT_ENVELOPE_SCHEMA, PROJECT_BRIEF_SCHEMA, PROJECT_ENVELOPE_SCHEMA,
+  canonicalProjectEnvelope, emptyProjectBrief, prepareProjectEnvelope,
 } from '../src/project-envelope.mjs';
 
 const profile = 'board.example-v1';
@@ -38,10 +39,53 @@ test('known legacy project migrates without changing its authored document', () 
   assert.equal(prepareProjectEnvelope(opened.canonical, adapters).canonical, opened.canonical);
 });
 
+test('v1 envelope migrates with an explicit empty inert brief', () => {
+  const old = { schema: LEGACY_PROJECT_ENVELOPE_SCHEMA, profile, project };
+  const opened = prepareProjectEnvelope(JSON.stringify(old), adapters);
+  assert.equal(opened.code, 'PROJECT_ENVELOPE_MIGRATED');
+  assert.deepEqual(opened.brief, emptyProjectBrief());
+  assert.equal(JSON.parse(opened.canonical).schema, PROJECT_ENVELOPE_SCHEMA);
+  assert(opened.report.defaultsAdded.includes('empty project brief'));
+});
+
+test('X01 brief round-trips purpose, inputs, outputs, boundaries and unevaluated acceptance IDs', () => {
+  const brief = {
+    schema: PROJECT_BRIEF_SCHEMA,
+    purpose: 'Turn the teaching LED on only when the button is pressed.',
+    inputs: ['D2 button level'],
+    outputs: ['D13 LED level'],
+    boundaryCases: ['Reset while button is pressed', 'Disconnected ground'],
+    acceptanceCriteria: [
+      { id: 'REQ-LED-ON', text: 'Observed D13 is HIGH while D2 is LOW.' },
+      { id: 'REQ-RESET', text: 'Reset does not manufacture a passing observation.' },
+    ],
+  };
+  const text = canonicalProjectEnvelope(profile, project, adapters, brief);
+  const opened = prepareProjectEnvelope(text, adapters);
+  assert.deepEqual(opened.brief, brief);
+  assert.deepEqual(JSON.parse(opened.canonical).brief, brief);
+  assert.equal(opened.canonical, text);
+});
+
+test('X01 brief rejects unknown fields, duplicate IDs, malformed IDs and result authority', () => {
+  const base = { schema: PROJECT_BRIEF_SCHEMA, purpose: '', inputs: [], outputs: [],
+    boundaryCases: [], acceptanceCriteria: [] };
+  const wrap = (brief) => JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, brief, project });
+  assert.equal(prepareProjectEnvelope(wrap({ ...base, extra: true }), adapters).code, 'PROJECT_BRIEF_SHAPE');
+  assert.equal(prepareProjectEnvelope(wrap({ ...base, acceptanceCriteria: [
+    { id: 'REQ-1', text: 'One' }, { id: 'REQ-1', text: 'Two' },
+  ] }), adapters).code, 'PROJECT_BRIEF_CRITERION_DUPLICATE');
+  assert.equal(prepareProjectEnvelope(wrap({ ...base, acceptanceCriteria: [
+    { id: 'bad id', text: 'No' },
+  ] }), adapters).code, 'PROJECT_BRIEF_CRITERION_ID');
+  assert.equal(prepareProjectEnvelope(wrap({ ...base, verdict: 'passed' }), adapters).code, 'PROJECT_BRIEF_SHAPE');
+});
+
 test('strict failures reject duplicate keys, unknown versions and profile mismatches', () => {
   assert.equal(prepareProjectEnvelope('{"schema":"x","schema":"y"}', adapters).code, 'DUPLICATE_KEY');
   assert.equal(prepareProjectEnvelope('{"schema":"unknown@1"}', adapters).code, 'PROJECT_ENVELOPE_VERSION');
-  const mismatch = { schema: PROJECT_ENVELOPE_SCHEMA, profile, project: { ...project, profile: 'board.other-v1' } };
+  const mismatch = { schema: PROJECT_ENVELOPE_SCHEMA, profile, brief: emptyProjectBrief(),
+    project: { ...project, profile: 'board.other-v1' } };
   assert.equal(prepareProjectEnvelope(JSON.stringify(mismatch), adapters).code, 'PROJECT_ENVELOPE_PROFILE_MISMATCH');
 });
 

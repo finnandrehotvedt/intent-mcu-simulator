@@ -2,6 +2,17 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.31 — 2026-10-18
+
+- Completed X01 with a shared per-profile project brief for purpose, inputs,
+  outputs, boundary cases and stable-ID acceptance criteria.
+- Advanced the strict common local file to `intent-mcu-project-envelope@2` and
+  retained deterministic v1/legacy migration with an explicit empty brief.
+- Kept all brief text inert and every criterion visibly `Not evaluated`; no
+  source, circuit, build, runtime or test-result authority was added.
+- Preserved rc.30 runtime-trace truth boundaries and all four bounded profile
+  compiler, electrical and Save/Open paths.
+
 ## 1.1.0-rc.30 — 2026-10-18
 
 - Completed I03 with one shared source-bound runtime trace viewer, channel

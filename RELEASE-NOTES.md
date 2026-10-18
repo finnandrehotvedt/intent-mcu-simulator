@@ -1,4 +1,20 @@
-# Intent MCU Simulator 1.1.0-rc.30
+# Intent MCU Simulator 1.1.0-rc.31
+
+This project-context release completes X01. Every public profile now has one
+visible data-only brief for purpose, inputs, outputs, boundary cases and
+acceptance criteria with stable author-supplied IDs. The brief is saved beside
+the validated circuit and source in common project envelope v2 and survives
+strict Download/Open and connected-file round trips.
+
+Brief prose remains inert. It cannot change compiler input, electrical rules,
+runtime behavior or a verdict, and every criterion is visibly `Not evaluated`
+until a future evidence-bearing test contract evaluates it. Version-1 common
+envelopes and legacy inner projects migrate to an explicit empty brief without
+restoring executable authority.
+
+---
+
+## 1.1.0-rc.30
 
 This source-bound runtime-trace release completes I03. The shared instrument
 area now includes a readable trace viewer with channel selection, explicit

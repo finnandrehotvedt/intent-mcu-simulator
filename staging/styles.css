@@ -78,6 +78,17 @@ h2 { font-size: 1.22rem; margin: 0; }
 .quick-controls button { min-height: 34px; padding-inline: 10px; }
 .quick-controls #quick-build { color: #06111a; background: var(--lime); border-color: var(--lime); }
 .controller-workbench { display: grid; grid-template-columns: minmax(280px, .85fr) 1.35fr; gap: 16px 24px; margin-bottom: 12px; overflow: hidden; position: relative; }
+.project-brief { margin-bottom: 12px; border-color: #315c72; background: linear-gradient(145deg, rgba(12,28,43,.98), rgba(8,24,36,.98)); }
+.project-brief-heading, .project-brief-footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.project-brief-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.project-brief-grid label { display: grid; gap: 6px; color: var(--text); font-size: .76rem; font-weight: 800; letter-spacing: .03em; }
+.project-brief-grid label small { color: var(--muted); font-weight: 500; letter-spacing: 0; }
+.project-brief-grid textarea { width: 100%; min-height: 82px; resize: vertical; color: var(--text); background: #06131e; border: 1px solid #31536c; border-radius: 9px; padding: 10px; font: 500 .78rem/1.45 ui-monospace, monospace; }
+.project-brief-grid textarea:focus { outline: 2px solid var(--cyan); outline-offset: 1px; }
+.project-brief-purpose { grid-column: 1 / -1; }
+.project-brief-footer { margin-top: 12px; padding-top: 11px; border-top: 1px solid #26475b; color: var(--muted); font-size: .75rem; }
+.project-brief-footer strong, #project-brief-evaluation { color: var(--lime); }
+#project-brief-status[data-valid="false"] { color: var(--danger); }
 .controller-workbench::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--lime); }
 .controller-workbench[data-mode="c3-preview"]::before,
 .controller-workbench[data-mode="c3-source"]::before { background: #24d7ef; }

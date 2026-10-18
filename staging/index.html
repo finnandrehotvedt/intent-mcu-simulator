@@ -103,6 +103,22 @@
       <p id="controller-public-boundary" class="truth">A preview changes only this browser view. It cannot upload a project, call a private endpoint, build firmware, or create a runtime session.</p>
     </section>
 
+    <section id="project-brief" class="project-brief panel" aria-labelledby="project-brief-title">
+      <header class="project-brief-heading">
+        <div><p class="eyebrow">PROJECT CONTEXT · SAVED WITH THIS CIRCUIT</p><h2 id="project-brief-title">Define what this project must do</h2></div>
+        <span id="project-brief-profile" class="controller-badge supported">ATmega328P</span>
+      </header>
+      <p class="truth">This is inert project data, not firmware or a test result. Acceptance criteria remain <strong>Not evaluated</strong> until a separate evidence-bearing test evaluates them.</p>
+      <div class="project-brief-grid">
+        <label class="project-brief-purpose">Purpose<textarea id="project-brief-purpose" maxlength="2000" rows="3" placeholder="Why does this circuit exist, and what should it achieve?"></textarea></label>
+        <label>Inputs <small>one per line</small><textarea id="project-brief-inputs" rows="4" placeholder="D2 button level"></textarea></label>
+        <label>Outputs <small>one per line</small><textarea id="project-brief-outputs" rows="4" placeholder="D13 LED level"></textarea></label>
+        <label>Boundary cases <small>one per line</small><textarea id="project-brief-boundaries" rows="4" placeholder="Reset while button is pressed"></textarea></label>
+        <label>Acceptance criteria <small><code>ID | statement</code>, one per line</small><textarea id="project-brief-acceptance" rows="4" placeholder="REQ-LED-ON | Observed D13 is HIGH while D2 is LOW"></textarea></label>
+      </div>
+      <div class="project-brief-footer"><strong>Evaluation</strong><span id="project-brief-evaluation">No criteria · Not evaluated</span><span id="project-brief-status" role="status">Empty brief is valid and will be saved in the common project file.</span></div>
+    </section>
+
     <section id="pico-public-workbench" class="pico-public-workbench panel" aria-labelledby="pico-public-title" hidden>
       <div class="pico-public-heading">
         <div><p class="eyebrow">RP2040 PICO · PUBLIC BOUNDED SOURCE</p><h2 id="pico-public-title">Edit, build and run GPIO0</h2></div>
@@ -500,7 +516,7 @@
       </nav>
     </section>
 
-    <footer>Intent MCU Simulator 1.1.0-rc.30 public release · source-bound runtime traces, actionable fail-closed checks, AVR placement, exact branch transactions and controller boundaries · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no fabricated pin timing, general circuit solver or physical safety certification</footer>
+    <footer>Intent MCU Simulator 1.1.0-rc.31 public release · source-bound runtime traces, actionable fail-closed checks, AVR placement, exact branch transactions and controller boundaries · <a href="https://github.com/finnandrehotvedt/intent-mcu-simulator">source</a> · <a href="/controllers.html">controller status</a> · <a href="/support.html">support</a> · no fabricated pin timing, general circuit solver or physical safety certification</footer>
   </main>
   <button id="serial-tab" class="serial-tab" type="button" aria-expanded="false" aria-controls="serial-dock"><span>Serial</span><span id="serial-new-output" class="serial-new-output" hidden>0 new</span></button>
   <aside id="serial-dock" class="serial-dock" aria-labelledby="serial-title" hidden>

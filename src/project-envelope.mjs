@@ -3,8 +3,15 @@
 
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
 
-export const PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@1';
+export const PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@2';
+export const LEGACY_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@1';
+export const PROJECT_BRIEF_SCHEMA = 'intent-mcu-project-brief@1';
 export const PROJECT_ENVELOPE_LIMIT = 1024 * 1024;
+
+const BRIEF_LIST_LIMIT = 16;
+const BRIEF_CRITERIA_LIMIT = 24;
+const BRIEF_TEXT_LIMIT = 240;
+const PURPOSE_TEXT_LIMIT = 2000;
 
 const FORBIDDEN_AUTHORITY_KEYS = new Set([
   'artifact', 'artifactBytes', 'capability', 'elf', 'executable', 'firmwareBytes',
@@ -13,6 +20,70 @@ const FORBIDDEN_AUTHORITY_KEYS = new Set([
 ]);
 const clone = (value) => structuredClone(value);
 const failure = (code, details = []) => ({ ok: false, code, details });
+
+export function emptyProjectBrief() {
+  return {
+    schema: PROJECT_BRIEF_SCHEMA,
+    purpose: '',
+    inputs: [],
+    outputs: [],
+    boundaryCases: [],
+    acceptanceCriteria: [],
+  };
+}
+
+function boundedText(value, path, limit, { empty = false } = {}) {
+  if (typeof value !== 'string' || value !== value.trim() || (!empty && !value)
+      || new TextEncoder().encode(value).length > limit) {
+    throw Object.assign(new Error('PROJECT_BRIEF_TEXT'), { details: [path] });
+  }
+  return value;
+}
+
+function briefList(value, path) {
+  if (!Array.isArray(value) || value.length > BRIEF_LIST_LIMIT) {
+    throw Object.assign(new Error('PROJECT_BRIEF_LIST'), { details: [path] });
+  }
+  return value.map((item, index) => boundedText(item, `${path}[${index}]`, BRIEF_TEXT_LIMIT));
+}
+
+export function normalizeProjectBrief(value = emptyProjectBrief()) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+      || !exactKeys(value, ['schema', 'purpose', 'inputs', 'outputs', 'boundaryCases', 'acceptanceCriteria'])
+      || value.schema !== PROJECT_BRIEF_SCHEMA) {
+    throw Object.assign(new Error('PROJECT_BRIEF_SHAPE'), { details: ['$brief'] });
+  }
+  if (!Array.isArray(value.acceptanceCriteria) || value.acceptanceCriteria.length > BRIEF_CRITERIA_LIMIT) {
+    throw Object.assign(new Error('PROJECT_BRIEF_CRITERIA'), { details: ['$brief.acceptanceCriteria'] });
+  }
+  const ids = new Set();
+  const acceptanceCriteria = value.acceptanceCriteria.map((criterion, index) => {
+    const path = `$brief.acceptanceCriteria[${index}]`;
+    if (!criterion || typeof criterion !== 'object' || Array.isArray(criterion)
+        || !exactKeys(criterion, ['id', 'text'])) {
+      throw Object.assign(new Error('PROJECT_BRIEF_CRITERION_SHAPE'), { details: [path] });
+    }
+    const id = boundedText(criterion.id, `${path}.id`, 32);
+    if (!/^[A-Z][A-Z0-9_-]{1,31}$/u.test(id)) {
+      throw Object.assign(new Error('PROJECT_BRIEF_CRITERION_ID'), { details: [`${path}.id`] });
+    }
+    if (ids.has(id)) {
+      throw Object.assign(new Error('PROJECT_BRIEF_CRITERION_DUPLICATE'), { details: [id] });
+    }
+    ids.add(id);
+    return { id, text: boundedText(criterion.text, `${path}.text`, BRIEF_TEXT_LIMIT) };
+  });
+  const brief = {
+    schema: PROJECT_BRIEF_SCHEMA,
+    purpose: boundedText(value.purpose, '$brief.purpose', PURPOSE_TEXT_LIMIT, { empty: true }),
+    inputs: briefList(value.inputs, '$brief.inputs'),
+    outputs: briefList(value.outputs, '$brief.outputs'),
+    boundaryCases: briefList(value.boundaryCases, '$brief.boundaryCases'),
+    acceptanceCriteria,
+  };
+  rejectAuthority(brief, '$brief');
+  return brief;
+}
 
 function rejectAuthority(value, path = '$') {
   if (!value || typeof value !== 'object') return;
@@ -62,28 +133,30 @@ function prepare(adapter, value) {
   return { ...result, project: clone(result.project) };
 }
 
-export function canonicalProjectEnvelope(profile, project, adapters) {
+export function canonicalProjectEnvelope(profile, project, adapters, brief = emptyProjectBrief()) {
   const adapter = adapterForProfile(adapters, profile);
   if (!adapter) throw new Error('PROJECT_ENVELOPE_PROFILE');
   const prepared = prepare(adapter, project);
   if (prepared.project.profile && prepared.project.profile !== profile) {
     throw new Error('PROJECT_ENVELOPE_PROFILE_MISMATCH');
   }
-  return `${JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, project: prepared.project }, null, 2)}\n`;
+  return `${JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile,
+    brief: normalizeProjectBrief(brief), project: prepared.project }, null, 2)}\n`;
 }
 
 export function prepareProjectEnvelope(source, adapters) {
   try {
     const value = parseStrictJson(source, PROJECT_ENVELOPE_LIMIT);
-    let profile; let adapter; let nested; let legacy = false; let inputSchema;
+    let profile; let adapter; let nested; let brief; let legacy = false; let inputSchema;
     if (value?.schema === PROJECT_ENVELOPE_SCHEMA) {
-      if (!exactKeys(value, ['schema', 'profile', 'project']) || typeof value.profile !== 'string') {
+      if (!exactKeys(value, ['schema', 'profile', 'brief', 'project']) || typeof value.profile !== 'string') {
         return failure('PROJECT_ENVELOPE_SHAPE');
       }
       profile = value.profile;
       adapter = adapterForProfile(adapters, profile);
       if (!adapter) return failure('PROJECT_ENVELOPE_PROFILE', [profile]);
       nested = value.project;
+      brief = normalizeProjectBrief(value.brief);
       inputSchema = PROJECT_ENVELOPE_SCHEMA;
       if (!adapter.schemas?.includes(nested?.schema)) {
         return failure('PROJECT_ENVELOPE_PROFILE_MISMATCH', [profile, nested?.schema ?? null]);
@@ -91,12 +164,27 @@ export function prepareProjectEnvelope(source, adapters) {
       if (nested?.profile && nested.profile !== profile) {
         return failure('PROJECT_ENVELOPE_PROFILE_MISMATCH', [profile, nested.profile]);
       }
+    } else if (value?.schema === LEGACY_PROJECT_ENVELOPE_SCHEMA) {
+      if (!exactKeys(value, ['schema', 'profile', 'project']) || typeof value.profile !== 'string') {
+        return failure('PROJECT_ENVELOPE_SHAPE');
+      }
+      profile = value.profile;
+      adapter = adapterForProfile(adapters, profile);
+      if (!adapter) return failure('PROJECT_ENVELOPE_PROFILE', [profile]);
+      nested = value.project;
+      brief = emptyProjectBrief();
+      inputSchema = LEGACY_PROJECT_ENVELOPE_SCHEMA;
+      legacy = true;
+      if (!adapter.schemas?.includes(nested?.schema) || (nested?.profile && nested.profile !== profile)) {
+        return failure('PROJECT_ENVELOPE_PROFILE_MISMATCH', [profile, nested?.schema ?? nested?.profile ?? null]);
+      }
     } else {
       inputSchema = value?.schema;
       const matched = adapterForSchema(adapters, inputSchema);
       if (!matched) return failure('PROJECT_ENVELOPE_VERSION', [inputSchema ?? null]);
       ({ profile, adapter } = matched);
       nested = value;
+      brief = emptyProjectBrief();
       legacy = true;
     }
     rejectAuthority(nested);
@@ -104,18 +192,20 @@ export function prepareProjectEnvelope(source, adapters) {
     if (prepared.project.profile && prepared.project.profile !== profile) {
       return failure('PROJECT_ENVELOPE_PROFILE_MISMATCH', [profile, prepared.project.profile]);
     }
-    const canonical = `${JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, project: prepared.project }, null, 2)}\n`;
+    const canonical = `${JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile,
+      brief: normalizeProjectBrief(brief), project: prepared.project }, null, 2)}\n`;
     const reparsed = parseStrictJson(canonical, PROJECT_ENVELOPE_LIMIT);
     if (reparsed.schema !== PROJECT_ENVELOPE_SCHEMA || reparsed.profile !== profile) {
       throw new Error('PROJECT_ENVELOPE_CANONICAL');
     }
     return {
       ok: true, code: legacy ? 'PROJECT_ENVELOPE_MIGRATED' : 'OK', profile,
-      project: clone(prepared.project), prepared: prepared.prepared ?? null, canonical,
+      project: clone(prepared.project), brief: clone(brief), prepared: prepared.prepared ?? null, canonical,
       report: {
         inputSchema, outputSchema: PROJECT_ENVELOPE_SCHEMA, profile, legacy,
-        preserved: prepared.preserved ?? ['source', 'circuit', 'layout', 'properties', 'controls'],
-        defaultsAdded: prepared.defaultsAdded ?? [], fieldsDropped: prepared.fieldsDropped ?? [],
+        preserved: [...(prepared.preserved ?? ['source', 'circuit', 'layout', 'properties', 'controls']),
+          'brief purpose/inputs/outputs/boundary cases/acceptance criteria'],
+        defaultsAdded: [...(prepared.defaultsAdded ?? []), ...(legacy ? ['empty project brief'] : [])],
         executableAuthorityCleared: true,
       },
     };
