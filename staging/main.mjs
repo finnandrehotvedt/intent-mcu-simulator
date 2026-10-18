@@ -124,6 +124,7 @@ import {
   createProjectPatchPrompt,
   reviewProjectPatch,
 } from '../src/project-patch.mjs';
+import { compareDesignAlternatives, DESIGN_COMPARISON_SCHEMA } from '../src/design-comparison.mjs';
 import { serialEventText, serialInputBytes, serialText } from '../src/serial-view.mjs';
 import { SERIAL_HISTORY_MAX } from '../src/runtime-kernel.mjs';
 import { createSupportedProfileExample, supportedProfileExamples } from '../src/supported-example-pack.mjs';
@@ -224,6 +225,8 @@ const elements = Object.fromEntries([
   'project-patch-description', 'project-patch-generate', 'project-patch-copy', 'project-patch-prompt',
   'project-patch-input', 'project-patch-review', 'project-patch-apply', 'project-patch-status',
   'project-patch-changes', 'project-patch-summary',
+  'design-comparison-create', 'design-comparison-summary', 'design-comparison-status',
+  'design-comparison-alternatives', 'design-comparison-differences',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -2976,9 +2979,22 @@ window.__PROJECT_FEASIBILITY__ = Object.freeze({
   current: (profile = selectedCompilerProfile) => structuredClone(currentProjectFeasibility(profile)),
 });
 let pendingProjectPatch = null;
+let pendingDesignComparison = null;
+function clearDesignComparison(message = 'Review a proposal above, then compare it with the current design.') {
+  pendingDesignComparison = null;
+  elements.designcomparisonsummary.textContent = 'No comparison';
+  elements.designcomparisonstatus.dataset.valid = '';
+  elements.designcomparisonstatus.textContent = message;
+  const empty = document.createElement('p'); empty.className = 'requirement-trace-empty';
+  empty.textContent = 'Two validated alternatives will appear here.';
+  elements.designcomparisonalternatives.replaceChildren(empty);
+  elements.designcomparisondifferences.replaceChildren();
+}
 function clearProjectPatchReview(message = 'No project mutation has been proposed.') {
   pendingProjectPatch = null;
   elements.projectpatchapply.disabled = true;
+  elements.designcomparisoncreate.disabled = true;
+  clearDesignComparison();
   elements.projectpatchsummary.textContent = 'No proposal reviewed';
   elements.projectpatchstatus.dataset.valid = '';
   elements.projectpatchstatus.textContent = message;
@@ -2989,6 +3005,8 @@ function clearProjectPatchReview(message = 'No project mutation has been propose
 function renderProjectPatchReview(reviewed) {
   pendingProjectPatch = reviewed;
   elements.projectpatchapply.disabled = false;
+  elements.designcomparisoncreate.disabled = false;
+  clearDesignComparison('Proposal reviewed. Compare it with the current design before Apply.');
   elements.projectpatchsummary.textContent = `${reviewed.result.changes.length} proposed change${reviewed.result.changes.length === 1 ? '' : 's'}`;
   elements.projectpatchstatus.dataset.valid = 'true';
   elements.projectpatchstatus.textContent = 'Proposal validated against the current base. Review every row, then explicitly Apply or keep editing.';
@@ -3000,6 +3018,48 @@ function renderProjectPatchReview(reviewed) {
     row.append(kind, action, summary); return row;
   });
   elements.projectpatchchanges.replaceChildren(...rows);
+}
+function renderDesignComparison(result) {
+  pendingDesignComparison = structuredClone(result);
+  elements.designcomparisonsummary.textContent = `2 alternatives · ${result.requirements.ids.length} same requirement${result.requirements.ids.length === 1 ? '' : 's'}`;
+  elements.designcomparisonstatus.dataset.valid = 'true';
+  elements.designcomparisonstatus.textContent = 'Compared without mutation, execution, ranking or verdict. Apply remains a separate explicit action.';
+  const cards = result.alternatives.map((alternative) => {
+    const card = document.createElement('article'); card.className = 'design-alternative'; card.dataset.alternativeId = alternative.id;
+    const title = document.createElement('h4'); title.textContent = alternative.label;
+    const identity = document.createElement('code'); identity.textContent = alternative.projectSha256;
+    const metric = document.createElement('div'); metric.className = 'design-metrics';
+    for (const [label, value] of [['Source files', alternative.metrics.sourceFiles],
+      ['Components', alternative.metrics.components], ['Wires', alternative.metrics.wires]]) {
+      const cell = document.createElement('div'); const count = document.createElement('b'); count.textContent = String(value);
+      cell.append(count, label); metric.append(cell);
+    }
+    const requirements = document.createElement('p'); requirements.className = 'design-requirements';
+    requirements.textContent = `Same requirements: ${alternative.requirementIds.join(', ') || 'none saved'} · identity ${alternative.requirementsSha256.slice(0, 12)}…`;
+    const limit = document.createElement('p'); limit.className = 'design-limit';
+    limit.textContent = `${alternative.model.label} model limit: ${alternative.model.limitation}`;
+    const capabilities = document.createElement('div'); capabilities.className = 'design-capabilities';
+    for (const item of alternative.requiredCapabilities) {
+      const row = document.createElement('div'); row.className = 'design-capability';
+      const id = document.createElement('b'); id.textContent = item.id;
+      const state = document.createElement('span'); state.dataset.state = item.state; state.textContent = item.state;
+      const reason = document.createElement('small'); reason.textContent = item.reason;
+      row.append(id, state, reason); capabilities.append(row);
+    }
+    if (!alternative.requiredCapabilities.length) {
+      capabilities.append(Object.assign(document.createElement('p'), { className: 'requirement-trace-empty',
+        textContent: 'No required capabilities saved; no support is inferred.' }));
+    }
+    card.append(title, identity, metric, requirements, limit, capabilities); return card;
+  });
+  elements.designcomparisonalternatives.replaceChildren(...cards);
+  elements.designcomparisondifferences.replaceChildren(...result.changes.map((change) => {
+    const row = document.createElement('div'); row.className = 'project-patch-change';
+    const kind = document.createElement('strong'); kind.textContent = change.kind;
+    const action = document.createElement('b'); action.dataset.action = change.action; action.textContent = change.action;
+    const summary = document.createElement('span'); summary.textContent = change.summary;
+    row.append(kind, action, summary); return row;
+  }));
 }
 async function generateCurrentProjectPatchPrompt(description = elements.projectpatchdescription.value,
   profile = selectedCompilerProfile) {
@@ -3021,6 +3081,27 @@ async function reviewCurrentProjectPatch(source = elements.projectpatchinput.val
   }
   renderProjectPatchReview({ raw: source, result, profile, baseText });
   return result;
+}
+async function compareReviewedProjectDesigns() {
+  if (!pendingProjectPatch) return { ok: false, code: 'DESIGN_COMPARISON_REVIEW_REQUIRED' };
+  const reviewed = pendingProjectPatch;
+  const currentText = commonProjectText(reviewed.profile);
+  const refreshed = await reviewProjectPatch(reviewed.raw, currentText, commonProjectAdapters, reviewed.profile);
+  if (!refreshed.ok || reviewed.profile !== selectedCompilerProfile) {
+    const code = reviewed.profile !== selectedCompilerProfile ? 'PROJECT_PATCH_PROFILE_MISMATCH' : refreshed.code;
+    clearProjectPatchReview(`Comparison rejected (${code}). Review a fresh proposal against the current project.`);
+    elements.projectpatchstatus.dataset.valid = 'false';
+    return { ok: false, code };
+  }
+  const result = await compareDesignAlternatives({ currentProjectText: currentText,
+    candidateProjectText: refreshed.proposed.canonical, adapters: commonProjectAdapters,
+    activeProfile: reviewed.profile, expectedBaseSha256: reviewed.result.baseProjectSha256,
+    expectedCandidateSha256: reviewed.result.candidateProjectSha256 });
+  if (!result.ok) {
+    clearDesignComparison(`Comparison rejected (${result.code}). The current project is unchanged.`);
+    elements.designcomparisonstatus.dataset.valid = 'false'; return result;
+  }
+  renderDesignComparison(result); return result;
 }
 async function applyReviewedProjectPatch() {
   if (!pendingProjectPatch) return { ok: false, code: 'PROJECT_PATCH_REVIEW_REQUIRED' };
@@ -3060,6 +3141,7 @@ elements.projectpatchcopy.addEventListener('click', async () => {
 });
 elements.projectpatchinput.addEventListener('input', () => clearProjectPatchReview('Patch text changed. Review the complete proposal before Apply.'));
 elements.projectpatchreview.addEventListener('click', () => { void reviewCurrentProjectPatch(); });
+elements.designcomparisoncreate.addEventListener('click', () => { void compareReviewedProjectDesigns(); });
 elements.projectpatchapply.addEventListener('click', () => { void applyReviewedProjectPatch(); });
 window.__PROJECT_PATCH__ = Object.freeze({
   schema: PROJECT_PATCH_SCHEMA,
@@ -3074,6 +3156,11 @@ window.__PROJECT_PATCH__ = Object.freeze({
     evaluated: false,
     buildAuthority: false,
   } : null,
+});
+window.__DESIGN_COMPARISON__ = Object.freeze({
+  schema: DESIGN_COMPARISON_SCHEMA,
+  compare: () => compareReviewedProjectDesigns(),
+  state: () => pendingDesignComparison ? structuredClone(pendingDesignComparison) : null,
 });
 function endpointKey(endpoint) { return `${endpoint.component}.${endpoint.pin}`; }
 function parseEndpoint(key) {

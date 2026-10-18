@@ -1,4 +1,4 @@
-# Migration to 1.1.0-rc.35
+# Migration to 1.1.0-rc.36
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
@@ -64,6 +64,12 @@ transient `intent-mcu-project-patch@1` input containing one complete current
 envelope plus the exact base hash. It is never project authority or persisted
 state. Review changes nothing; Apply revalidates the base and candidate, then
 installs authored data only and requires a fresh Build.
+
+Rc.36 does not change the common project-file schema. A design comparison is
+transient presentation derived from the strictly revalidated current project
+and one reviewed rc.35 candidate. Both must retain the exact same normalized
+brief. Documented model limits and capability states are recomputed from the
+existing project-owned authorities; no score, winner or verdict is stored.
 
 Existing accepted files remain readable:
 

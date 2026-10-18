@@ -139,6 +139,28 @@ h2 { font-size: 1.22rem; margin: 0; }
 .project-patch-change [data-action="added"] { color: var(--lime); }
 .project-patch-change [data-action="removed"] { color: var(--danger); }
 .project-patch-change [data-action="changed"] { color: var(--amber); }
+.design-comparison { margin-top: 14px; padding-top: 14px; border-top: 1px solid #26475b; display: grid; gap: 10px; }
+.design-comparison > p { color: var(--muted); font-size: .73rem; line-height: 1.5; }
+#design-comparison-summary { color: var(--cyan); font: 700 .72rem ui-monospace, monospace; }
+#design-comparison-status[data-valid="true"] { color: var(--lime); }
+#design-comparison-status[data-valid="false"] { color: var(--danger); }
+.design-comparison-alternatives { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.design-alternative { min-width: 0; padding: 12px; border: 1px solid #2d6179; border-radius: 12px; background: #061722; display: grid; gap: 9px; }
+.design-alternative h4 { margin: 0; color: var(--text); font-size: .88rem; }
+.design-alternative code { color: var(--cyan); font-size: .66rem; overflow-wrap: anywhere; }
+.design-metrics { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+.design-metrics div { padding: 7px; border-radius: 7px; background: #0a2330; color: var(--muted); font-size: .65rem; text-align: center; }
+.design-metrics b { display: block; color: var(--text); font-size: .88rem; }
+.design-requirements { color: var(--muted); font-size: .68rem; overflow-wrap: anywhere; }
+.design-limit { padding: 8px; border-left: 3px solid var(--amber); background: #18170d; color: var(--muted); font-size: .68rem; line-height: 1.45; }
+.design-capabilities { display: grid; gap: 5px; }
+.design-capability { display: grid; grid-template-columns: minmax(80px,.5fr) minmax(90px,.5fr) minmax(0,1.4fr); gap: 7px; color: var(--muted); font-size: .65rem; }
+.design-capability b { color: var(--cyan); }
+.design-capability span { text-transform: uppercase; font-weight: 900; }
+.design-capability span[data-state="available"] { color: var(--lime); }
+.design-capability span[data-state="unsupported"] { color: var(--danger); }
+.design-capability span[data-state="unknown"], .design-capability span[data-state="unresolved"] { color: var(--amber); }
+@media (max-width: 900px) { .design-comparison-alternatives { grid-template-columns: 1fr; } }
 .controller-workbench::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--lime); }
 .controller-workbench[data-mode="c3-preview"]::before,
 .controller-workbench[data-mode="c3-source"]::before { background: #24d7ef; }

@@ -2,6 +2,18 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.36 — 2026-10-18
+
+- Completed X06 with a side-by-side current/proposed design comparison across
+  all four public profiles after strict X05 review.
+- Requires byte-equivalent normalized project briefs so both alternatives are
+  compared against the same acceptance criteria, questions and required
+  capabilities; stale or requirement-drifted candidates reject.
+- Shows source/component/wire counts and differences, the existing X04
+  capability states and the active profile's documented controller-model limit.
+- Produces no score, recommendation, winner, runtime evidence, verdict or Build
+  authority and changes no project data during comparison.
+
 ## 1.1.0-rc.35 — 2026-10-18
 
 - Completed X05 with a local description-to-prompt bridge and strict

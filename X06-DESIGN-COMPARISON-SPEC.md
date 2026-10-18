@@ -37,8 +37,9 @@ Run, support or test-verdict authority.
   No score, recommendation, winner, pass/fail result or synthetic runtime
   evidence is produced.
 - Comparison is transient, local to the tab and never saved with the project.
-  Editing the patch, changing profile, applying a patch or changing the
-  current project clears it.
+  Editing the patch, changing profile or applying a patch clears it. A changed
+  current project makes the reviewed base hash stale; the next comparison
+  rejects and clears the prior review instead of showing a refreshed claim.
 
 ## Acceptance
 
