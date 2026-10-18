@@ -25,7 +25,7 @@ const narrowSafety = (prefix) => Object.freeze({
 });
 
 export const EXISTING_GRAPH_EDIT_SAFETY_CONTRACT = Object.freeze({
-  schema: 'intent-mcu-existing-graph-edit-safety@3',
+  schema: 'intent-mcu-existing-graph-edit-safety@4',
   scope: 'The four public profile workflows, including ordinary AVR v2 and candidate-v3 graph editors.',
   requirements: Object.freeze(['W06', 'W07', 'W08', 'W10']),
   invariants: Object.freeze([
@@ -51,8 +51,10 @@ export const EXISTING_GRAPH_EDIT_SAFETY_CONTRACT = Object.freeze({
       }),
       safety: Object.freeze({
         powerShort: 'POWER_SHORT', outputContention: 'OUTPUT_CONTENTION',
+        unresolvedMultipleIo: 'MULTIPLE_DIGITAL_IO_NET_UNSUPPORTED',
         floatingInput: 'FLOATING_REQUIRED_INPUT', reversePolarity: 'LED_REVERSE_POLARITY',
         missingResistance: 'LED_SERIES_RESISTOR_REQUIRED', overcurrent: 'LED_OVERCURRENT',
+        crossVoltage: unavailable('CROSS_CONTROLLER_TOPOLOGY_UNAVAILABLE', 'Only the named AVR 5 V profile is representable.'),
       }),
     }),
     avrCandidate: Object.freeze({
@@ -71,8 +73,11 @@ export const EXISTING_GRAPH_EDIT_SAFETY_CONTRACT = Object.freeze({
       safety: Object.freeze({
         atomicValidation: supported('validateContactPersistenceDraft before history commit'),
         powerShort: 'PROJECT_CONTACT_POWER_SHORT',
+        outputContention: 'PROJECT_CONTACT_OUTPUT_CONTENTION',
+        wrongSupply: 'PROJECT_CONTACT_*_VCC_REQUIRES_5V',
         reusedEndpoint: 'PROJECT_CONTACT_REUSED_ENDPOINT',
         unknownPin: 'PROJECT_CONTACT_UNKNOWN_PIN',
+        crossVoltage: unavailable('CROSS_CONTROLLER_TOPOLOGY_UNAVAILABLE', 'Candidate AVR parts use the named 5 V profile only.'),
       }),
     }),
     rp2040: Object.freeze({ graph: 'fixed-two-endpoint-series-led', operations: narrowOperations,
@@ -86,6 +91,6 @@ export const EXISTING_GRAPH_EDIT_SAFETY_CONTRACT = Object.freeze({
     w06: 'complete: exact branch reconnect/delete and separately labelled whole-net delete are public on explicit-junction AVR graphs; fixed two-endpoint profiles truthfully expose no branch',
     w07: 'complete: every supported authored graph operation is one atomic complete-document Undo/Redo transaction; rejection changes no project, revision or history',
     w08: 'complete: the general AVR editors support click-add, drag placement, duplicate, move, rotate, delete and keyboard history with fresh stable IDs; bounded narrow teaching profiles preserve their explicit single-instance contracts',
-    w10: 'partial: broad contention and voltage-short coverage remains AVR-only',
+    w10: 'complete: every fault representable by each public profile rejects fail-closed with a stable actionable diagnostic; arbitrary rail mixing, physical damage prediction and a general circuit solver remain explicitly unavailable',
   }),
 });

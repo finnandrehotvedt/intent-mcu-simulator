@@ -20,9 +20,16 @@ authority because they do not change named-pin connectivity. Component,
 property and wire changes still require a fresh Build.
 
 Save/Open remains data-only. It never restores history, artifact, runtime,
-GPIO/Serial observation or event authority. W06, W07 and W08 are complete
-after public source and browser acceptance. W10 remains partial until its
-stated broader gap is implemented and accepted. W08 includes every selectable
+GPIO/Serial observation or event authority. W06, W07, W08 and W10 are complete
+after public source and browser acceptance. W08 includes every selectable
 AVR model: click and drag placement, disconnected duplication with a fresh
 stable ID, pointer and keyboard movement, rotation and deletion. Narrow-profile
 fixed-graph limits remain explicit.
+
+W10 covers every fault representable by those exact profiles: named supply to
+ground shorts, known opposing AVR output levels, declared 5 V supply-role
+mismatch, missing ground, LED polarity, required series resistance and bounded
+ideal LED overcurrent. The narrow 3.3 V profiles retain fixed graphs and cannot
+represent arbitrary rail mixing or multiple outputs. The product does not
+claim a general circuit solver, physical damage prediction or safety
+certification.

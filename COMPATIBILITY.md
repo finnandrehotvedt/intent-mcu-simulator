@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.28 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.29 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -11,6 +11,13 @@ six fixed colours. These controls modify only accepted local layout data.
 Named endpoints and the existing net graph remain the sole electrical
 authority; crossings do not connect nets, and distinct nets cannot share a
 positive-length collinear lane.
+
+Fault validation is bounded to each representable profile. AVR detects its
+named 5 V-to-ground short, known opposing logical outputs and declared 5 V
+supply-role mismatch. All profiles reject their representable missing-ground,
+LED-polarity, required-resistance and ideal-model overcurrent faults with a
+corrective action. This is not arbitrary rail mixing, a general circuit solver,
+physical damage prediction or safety certification.
 
 AVR projects allow every selectable catalogue part to be click-placed or
 drag-placed, moved, rotated, deleted and duplicated. A duplicate receives a

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
+import { faultDiagnostic } from './fault-diagnostics.mjs';
+
 const CATALOG = Object.freeze({
   EDITOR_STALE_REVISION: 'The project changed before this edit finished. Try the action again.',
   EDITOR_ROUTE: 'That route would not stay orthogonal. Select a straight section and try again.',
@@ -25,7 +27,8 @@ const CATALOG = Object.freeze({
 
 export function explainError(code, technical = '') {
   const stableCode = typeof code === 'string' && code ? code : 'UNEXPECTED_ERROR';
-  let action = CATALOG[stableCode];
+  const fault = faultDiagnostic(stableCode);
+  let action = fault?.action ?? CATALOG[stableCode];
   if (!action && /^(?:INVALID_|MISSING_|CONFLICTING_|UNSUPPORTED_|AMBIGUOUS_)/u.test(stableCode)) {
     action = 'Review the circuit diagnostics, correct the named connection, then try again.';
   }
@@ -39,6 +42,6 @@ export function explainError(code, technical = '') {
   return {
     code: stableCode,
     action,
-    technical: String(technical || stableCode).slice(0, 8_192),
+    technical: String(technical || fault?.modelBoundary || stableCode).slice(0, 8_192),
   };
 }

@@ -1,4 +1,19 @@
-# Intent MCU Simulator 1.1.0-rc.28
+# Intent MCU Simulator 1.1.0-rc.29
+
+This bounded fault-validation release completes W10. Supported profile faults
+now carry stable corrective actions: named supply-to-ground shorts, known
+opposing digital outputs, declared 5 V supply-role mismatch, missing ground,
+LED polarity, required series resistance and bounded ideal LED overcurrent.
+
+The boundary stays explicit. Narrow profiles retain one fixed 3.3 V series-LED
+graph; arbitrary cross-controller rail wiring, physical damage prediction,
+component tolerances and a general circuit solver remain unavailable. Unsafe
+edits remain atomic and electrically incomplete drafts remain data-only with
+Build/Run blocked.
+
+---
+
+## 1.1.0-rc.28
 
 This placement and duplication release completes W08. Every selectable AVR
 part can be placed by click or catalogue drag, moved with pointer or keyboard,

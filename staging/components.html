@@ -21,7 +21,7 @@
       <article class="docs-card"><h2>Sensors</h2><ul><li>Analogue light sensor module</li><li>Analogue temperature module</li><li>Digital light-threshold module</li></ul></article>
       <article class="docs-card"><h2>Outputs and displays</h2><ul><li>Common-cathode RGB LED</li><li>Active buzzer module</li><li>Single-digit common-cathode seven-segment display</li><li>16×2 character LCD in write-only 4-bit GPIO mode</li></ul></article>
     </section>
-    <section class="panel"><h2>Model limits matter</h2><p class="docs-intro">Sensors use ideal bounded values, contacts do not model bounce or wear, light and sound outputs are relative indicators, and the LCD implements a tested command subset. The thermostat experiment uses the temperature module only as an ideal linear signal, its button as an ideal active-low contact and its LED as a heater-command indicator; it does not model a room or physical heater. Invalid polarity, missing current limiting, ambiguous ground, reused output pins, shorts, and unsupported topologies fail closed.</p></section>
+    <section class="panel"><h2>Model limits matter</h2><p class="docs-intro">Sensors use ideal bounded values, contacts do not model bounce or wear, light and sound outputs are relative indicators, and the LCD implements a tested command subset. The thermostat experiment uses the temperature module only as an ideal linear signal, its button as an ideal active-low contact and its LED as a heater-command indicator; it does not model a room or physical heater. Representable invalid polarity, missing current limiting, ground, known output contention, named-rail shorts and unsupported topologies fail closed with corrective actions. These checks are not physical-damage prediction or safety certification, and arbitrary cross-controller voltage wiring is unavailable.</p></section>
     <section id="compatibility-matrix" class="panel" aria-labelledby="compatibility-matrix-title">
       <p class="eyebrow">EXACT PUBLIC CONTRACT</p><h2 id="compatibility-matrix-title">Controller compatibility matrix</h2>
       <p class="docs-intro">There are 19 unique public models and 76 profile/model cells. AVR has 16 available models: 13 Simulated and 3 Partial. Each narrow controller profile has exactly 3 available models: its Partial controller plus the Simulated resistor and LED. Across the complete matrix, 25 cells are available and 51 are unavailable.</p>
@@ -64,7 +64,7 @@
       </div>
       <nav class="docs-nav" aria-label="Narrow profile learning links"><a href="/examples.html#narrow-controller-guides">First project guides</a><a href="/support.html#repair-after-open">Save/Open recovery</a></nav>
     </section>
-    <footer>19 public models and 25 available cells with public references across four exact controller profiles in Intent MCU Simulator 1.1.0-rc.28 · original project graphics · no third-party simulator artwork or branding</footer>
+    <footer>19 public models and 25 available cells with public references across four exact controller profiles in Intent MCU Simulator 1.1.0-rc.29 · original project graphics · no third-party simulator artwork or branding</footer>
   </main>
 </body>
 </html>

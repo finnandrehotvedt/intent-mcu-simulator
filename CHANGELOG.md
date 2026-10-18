@@ -2,6 +2,18 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.29 — 2026-10-18
+
+- Completed W10 for every electrical fault representable by the four bounded
+  public profiles, including named-rail shorts, known opposing outputs,
+  declared supply-role mismatch, ground, polarity, resistance and ideal-model
+  LED overcurrent.
+- Added stable corrective actions and explicit model-boundary text while
+  retaining atomic unsafe-edit rejection and data-only Save/Open.
+- Kept arbitrary rail mixing, cross-controller wiring, physical damage
+  prediction and general circuit solving explicitly unavailable.
+- Preserved W06/W07/W08 graph, history, placement and duplication behavior.
+
 ## 1.1.0-rc.28 — 2026-10-18
 
 - Completed W08 for AVR projects with click and drag placement, pointer and

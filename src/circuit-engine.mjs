@@ -185,9 +185,19 @@ function analyzeElectrical(graph, options = {}) {
     const hasFive = Boolean(boardEndpoint(indexes, net.id, (pin) => pin === '5V'));
     const hasGround = Boolean(boardEndpoint(indexes, net.id, (pin) => /^GND[123]$/.test(pin)));
     if (hasFive && hasGround) diagnostics.push(diagnostic('POWER_SHORT', { netId: net.id }));
-    const resolution = resolveDigitalDrivers(net.endpoints.map((endpoint) => drivers[endpointKey(endpoint)] ?? 'HIGH_Z'));
+    const digitalBoardEndpoints = net.endpoints.filter((endpoint) => {
+      const component = indexes.components.get(endpoint.component);
+      return component?.type === 'board.atmega328p-16mhz-v1' && /^D\d+$/u.test(endpoint.pin);
+    });
+    const levels = net.endpoints.map((endpoint) => drivers[endpointKey(endpoint)] ?? 'HIGH_Z');
+    const resolution = resolveDigitalDrivers(levels);
     models.resolvedNets.push({ netId: net.id, resolution });
+    const passiveInputNet = levels.every((level) => level === 'HIGH_Z' || level === 'PULLED_HIGH')
+      && levels.includes('PULLED_HIGH');
     if (resolution === 'CONFLICT') diagnostics.push(diagnostic('OUTPUT_CONTENTION', { netId: net.id }));
+    else if (digitalBoardEndpoints.length > 1 && !passiveInputNet) {
+      diagnostics.push(diagnostic('MULTIPLE_DIGITAL_IO_NET_UNSUPPORTED', { netId: net.id }));
+    }
   }
   for (const required of options.requiredInputs ?? []) {
     const netId = indexes.endpointToNet.get(required);

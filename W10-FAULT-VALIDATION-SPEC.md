@@ -23,7 +23,9 @@ parasitics, current sourcing accuracy or real-world safety certification.
    `PROJECT_CONTACT_POWER_SHORT` before execution.
 2. Multiple supported digital outputs with opposing known drive levels reject
    as `OUTPUT_CONTENTION`; same-level or high-impedance combinations do not
-   fabricate contention.
+   fabricate contention. A shared AVR net with multiple unresolved digital I/O
+   pins rejects separately as `MULTIPLE_DIGITAL_IO_NET_UNSUPPORTED` because
+   firmware can later change pin direction or drive.
 3. A component terminal connected outside its declared voltage/supply role
    rejects with the existing component-specific wrong-supply/ground/path code.
    Unsupported cross-controller voltage topology remains explicitly
