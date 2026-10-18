@@ -107,12 +107,17 @@ import {
 } from '../src/stm32-public-workbench.mjs';
 import {
   PROJECT_BRIEF_SCHEMA,
+  PROJECT_ENVELOPE_SCHEMA,
   PROJECT_ENVELOPE_LIMIT,
   canonicalProjectEnvelope,
   emptyProjectBrief,
   normalizeProjectBrief,
   prepareProjectEnvelope,
 } from '../src/project-envelope.mjs';
+import {
+  createRequirementResultLink,
+  currentRequirementResultLink,
+} from '../src/requirement-traceability.mjs';
 import { serialEventText, serialInputBytes, serialText } from '../src/serial-view.mjs';
 import { SERIAL_HISTORY_MAX } from '../src/runtime-kernel.mjs';
 import { createSupportedProfileExample, supportedProfileExamples } from '../src/supported-example-pack.mjs';
@@ -208,7 +213,7 @@ const elements = Object.fromEntries([
   'controller-workbench-limitation', 'controller-public-boundary', 'parked-circuit-notice',
   'project-brief', 'project-brief-profile', 'project-brief-purpose', 'project-brief-inputs',
   'project-brief-outputs', 'project-brief-boundaries', 'project-brief-acceptance',
-  'project-brief-evaluation', 'project-brief-status',
+  'project-brief-evaluation', 'project-brief-status', 'requirement-trace-list', 'requirement-trace-summary',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -273,6 +278,7 @@ let pendingRuntimeRender = null;
 let runtimeWorkerCreations = 0;
 let selectedCompilerProfile = AVR_PROFILE;
 const projectBriefDrafts = new Map();
+const requirementResultLinks = new Map();
 const sharedInstrumentSummaries = new Map();
 const sharedInstrumentLocals = new Map();
 let activeJob = null;
@@ -2281,7 +2287,7 @@ function briefDraftFromBrief(value = emptyProjectBrief()) {
     inputs: brief.inputs.join('\n'),
     outputs: brief.outputs.join('\n'),
     boundaryCases: brief.boundaryCases.join('\n'),
-    acceptanceCriteria: brief.acceptanceCriteria.map((item) => `${item.id} | ${item.text}`).join('\n'),
+    acceptanceCriteria: brief.acceptanceCriteria.map((item) => `${item.id} | ${item.text} | ${item.codeRefs.join(', ')} | ${item.testRefs.join(', ')}`).join('\n'),
   };
 }
 function emptyProjectBriefDraft() { return briefDraftFromBrief(emptyProjectBrief()); }
@@ -2301,12 +2307,16 @@ function captureProjectBriefDraft() {
 function briefLines(value) {
   return value.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean);
 }
+function briefReferences(value) {
+  return value.split(',').map((reference) => reference.trim()).filter(Boolean);
+}
 function projectBriefFromDraft(draft) {
   const acceptanceCriteria = briefLines(draft.acceptanceCriteria).map((line, index) => {
-    const separator = line.indexOf('|');
-    if (separator < 0) throw Object.assign(new Error('PROJECT_BRIEF_CRITERION_FORMAT'),
+    const fields = line.split('|').map((field) => field.trim());
+    if (fields.length < 2 || fields.length > 4) throw Object.assign(new Error('PROJECT_BRIEF_CRITERION_FORMAT'),
       { details: [`$brief.acceptanceCriteria[${index}]`] });
-    return { id: line.slice(0, separator).trim(), text: line.slice(separator + 1).trim() };
+    return { id: fields[0], text: fields[1], codeRefs: briefReferences(fields[2] ?? ''),
+      testRefs: briefReferences(fields[3] ?? '') };
   });
   return normalizeProjectBrief({
     schema: PROJECT_BRIEF_SCHEMA,
@@ -2320,6 +2330,106 @@ function projectBriefFromDraft(draft) {
 function projectBriefForProfile(profile) {
   if (profile === selectedCompilerProfile) captureProjectBriefDraft();
   return projectBriefFromDraft(projectBriefDraft(profile));
+}
+function requirementResultKey(profile, requirementId) { return `${profile}::${requirementId}`; }
+function clearRequirementResultLinks(profile) {
+  for (const key of requirementResultLinks.keys()) if (key.startsWith(`${profile}::`)) requirementResultLinks.delete(key);
+}
+function hasRequirementResultLinks(profile) {
+  return [...requirementResultLinks.keys()].some((key) => key.startsWith(`${profile}::`));
+}
+function refreshRequirementResultButtons(profile) {
+  if (profile !== selectedCompilerProfile) return;
+  const summary = sharedInstrumentSummaries.get(profile);
+  for (const button of elements.requirementtracelist.querySelectorAll('[data-link-requirement-result]')) {
+    const criterion = projectBriefForProfile(profile).acceptanceCriteria
+      .find((item) => item.id === button.dataset.linkRequirementResult);
+    button.disabled = !criterion?.testRefs.length || summary?.state !== 'current-runtime';
+    button.title = !criterion?.testRefs.length ? 'Add at least one stable test ID first.'
+      : summary?.state !== 'current-runtime' ? 'Build and Run this profile first.'
+        : 'Link current runtime provenance without a verdict.';
+  }
+}
+function requirementTraceRows(profile = selectedCompilerProfile) {
+  const brief = projectBriefForProfile(profile);
+  const summary = sharedInstrumentSummaries.get(profile) ?? null;
+  return brief.acceptanceCriteria.map((criterion) => {
+    const key = requirementResultKey(profile, criterion.id);
+    const result = currentRequirementResultLink(requirementResultLinks.get(key), profile, criterion, summary);
+    return { requirement: structuredClone(criterion), result, state: result ? 'current-result-linked' : 'untested',
+      evaluated: false };
+  });
+}
+function attachCurrentRequirementResult(requirementId, profile = selectedCompilerProfile) {
+  const criterion = projectBriefForProfile(profile).acceptanceCriteria.find((item) => item.id === requirementId);
+  if (!criterion) throw new Error('REQUIREMENT_ID_UNKNOWN');
+  const result = createRequirementResultLink(profile, criterion, sharedInstrumentSummaries.get(profile));
+  requirementResultLinks.set(requirementResultKey(profile, requirementId), result);
+  return structuredClone(result);
+}
+function referenceText(references, missing) { return references.length ? references.join(' · ') : missing; }
+function renderRequirementTraceability(brief = null) {
+  let rows;
+  try { rows = brief ? brief.acceptanceCriteria.map((criterion) => {
+    const result = currentRequirementResultLink(requirementResultLinks.get(requirementResultKey(selectedCompilerProfile, criterion.id)),
+      selectedCompilerProfile, criterion, sharedInstrumentSummaries.get(selectedCompilerProfile));
+    return { requirement: criterion, result, state: result ? 'current-result-linked' : 'untested', evaluated: false };
+  }) : requirementTraceRows(); }
+  catch {
+    elements.requirementtracelist.dataset.renderIdentity = 'invalid';
+    elements.requirementtracesummary.textContent = 'Invalid requirement data';
+    elements.requirementtracelist.replaceChildren(Object.assign(document.createElement('p'), {
+      className: 'requirement-trace-empty', textContent: 'Fix the acceptance-criterion format before traceability can be shown.',
+    }));
+    return;
+  }
+  const activeSummary = sharedInstrumentSummaries.get(selectedCompilerProfile);
+  const renderIdentity = JSON.stringify({ profile: selectedCompilerProfile,
+    summary: { state: activeSummary?.state ?? null, artifactIdentity: activeSummary?.artifactIdentity ?? null },
+    rows: rows.map((row) => ({ requirement: row.requirement, result: row.result })) });
+  if (elements.requirementtracelist.dataset.renderIdentity === renderIdentity) return;
+  elements.requirementtracelist.dataset.renderIdentity = renderIdentity;
+  elements.requirementtracesummary.textContent = `${rows.filter((row) => row.result).length} current · ${rows.filter((row) => !row.result).length} untested`;
+  if (!rows.length) {
+    elements.requirementtracelist.replaceChildren(Object.assign(document.createElement('p'), {
+      className: 'requirement-trace-empty', textContent: 'Add an acceptance criterion to start its trace.',
+    }));
+    return;
+  }
+  const nodes = rows.map(({ requirement, result }) => {
+    const row = document.createElement('article'); row.className = 'requirement-trace-row'; row.dataset.requirementId = requirement.id;
+    const identity = document.createElement('div'); identity.className = 'requirement-trace-cell requirement-trace-id';
+    identity.append(Object.assign(document.createElement('strong'), { textContent: 'Requirement' }),
+      Object.assign(document.createElement('b'), { textContent: requirement.id }),
+      Object.assign(document.createElement('div'), { textContent: requirement.text }));
+    const code = document.createElement('div'); code.className = 'requirement-trace-cell';
+    code.append(Object.assign(document.createElement('strong'), { textContent: 'Code' }),
+      Object.assign(document.createElement('code'), { textContent: referenceText(requirement.codeRefs, 'No code linked') }));
+    const tests = document.createElement('div'); tests.className = 'requirement-trace-cell';
+    tests.append(Object.assign(document.createElement('strong'), { textContent: 'Tests' }),
+      Object.assign(document.createElement('code'), { textContent: referenceText(requirement.testRefs, 'No test linked') }));
+    const resultCell = document.createElement('div'); resultCell.className = 'requirement-trace-cell requirement-trace-result';
+    resultCell.append(Object.assign(document.createElement('strong'), { textContent: 'Current result' }));
+    const state = document.createElement('span'); state.dataset.resultState = result ? 'current' : 'untested';
+    state.textContent = result
+      ? `Linked · generation ${result.generation ?? 'unavailable'} · artifact ${result.artifactIdentity.slice(0, 12)}… · Not evaluated`
+      : 'Untested · no current result linked';
+    resultCell.append(state);
+    if (result) {
+      resultCell.append(Object.assign(document.createElement('small'), { textContent: Object.values(result.channels)
+        .map((channel) => channel.classification).join(' · ') }));
+    } else {
+      const button = Object.assign(document.createElement('button'), { type: 'button', textContent: 'Link current result' });
+      button.dataset.linkRequirementResult = requirement.id;
+      const summary = sharedInstrumentSummaries.get(selectedCompilerProfile);
+      button.disabled = !requirement.testRefs.length || summary?.state !== 'current-runtime';
+      button.title = !requirement.testRefs.length ? 'Add at least one stable test ID first.'
+        : summary?.state !== 'current-runtime' ? 'Build and Run this profile first.' : 'Link current runtime provenance without a verdict.';
+      resultCell.append(button);
+    }
+    row.append(identity, code, tests, resultCell); return row;
+  });
+  elements.requirementtracelist.replaceChildren(...nodes);
 }
 function renderProjectBrief() {
   const draft = projectBriefDraft(selectedCompilerProfile);
@@ -2335,19 +2445,51 @@ function renderProjectBrief() {
     elements.projectbriefevaluation.textContent = `${count || 'No'} ${count === 1 ? 'criterion' : 'criteria'} · Not evaluated`;
     elements.projectbriefstatus.dataset.valid = 'true';
     elements.projectbriefstatus.textContent = 'Valid data-only brief · saved with Download/Save; Build and runtime authority are unchanged.';
+    renderRequirementTraceability(brief);
   } catch (error) {
     elements.projectbriefevaluation.textContent = 'Not evaluated';
     elements.projectbriefstatus.dataset.valid = 'false';
     elements.projectbriefstatus.textContent = `Brief not saveable (${error.code ?? error.message}). Use ID | statement and unique uppercase IDs.`;
+    renderRequirementTraceability();
   }
 }
-function handleProjectBriefInput() {
+elements.requirementtracelist.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-link-requirement-result]');
+  if (!button) return;
+  try {
+    const result = attachCurrentRequirementResult(button.dataset.linkRequirementResult);
+    const state = button.closest('.requirement-trace-result')?.querySelector('[data-result-state]');
+    if (state) {
+      state.dataset.resultState = 'current';
+      state.textContent = `Linked · generation ${result.generation ?? 'unavailable'} · artifact ${result.artifactIdentity.slice(0, 12)}… · Not evaluated`;
+    }
+    button.disabled = true;
+    button.removeAttribute('data-link-requirement-result');
+    button.textContent = 'Current result linked';
+    button.title = 'Current runtime provenance linked without a verdict.';
+    elements.requirementtracesummary.textContent = `${requirementTraceRows().filter((row) => row.result).length} current · ${requirementTraceRows().filter((row) => !row.result).length} untested`;
+    elements.requirementtracelist.dataset.renderIdentity = '';
+  }
+  catch (error) {
+    elements.projectbriefstatus.dataset.valid = 'false';
+    elements.projectbriefstatus.textContent = `Current result was not linked (${error.message}). Build and Run, then try again.`;
+  }
+});
+function handleProjectBriefInput(event) {
+  if (event?.target === elements.projectbriefacceptance) clearRequirementResultLinks(selectedCompilerProfile);
   captureProjectBriefDraft();
   renderProjectBrief();
 }
 for (const input of [elements.projectbriefpurpose, elements.projectbriefinputs, elements.projectbriefoutputs,
   elements.projectbriefboundaries, elements.projectbriefacceptance]) {
   input.addEventListener('input', handleProjectBriefInput);
+}
+for (const [button, profile] of [[elements.reset, AVR_PROFILE], [elements.picoreset, RP2040_PROFILE],
+  [elements.stm32reset, STM32F429ZI_PROFILE]]) {
+  button.addEventListener('click', () => {
+    clearRequirementResultLinks(profile);
+    if (profile === selectedCompilerProfile) renderRequirementTraceability();
+  });
 }
 
 const commonProjectAdapters = Object.freeze({
@@ -2582,6 +2724,7 @@ function installPreparedProjectEnvelope(result, handle = null) {
   else if (result.profile === ESP32C3_PROFILE) c3PublicWorkbench.installPreparedProject(result.project);
   else if (result.profile === STM32F429ZI_PROFILE) stm32PublicWorkbench.installPreparedProject(result.project);
   projectBriefDrafts.set(result.profile, briefDraftFromBrief(result.brief));
+  clearRequirementResultLinks(result.profile);
   renderProjectBrief();
   if (handle && !result.report.legacy) projectFileConnections.set(result.profile, {
     handle, name: safeHandleName(handle, result.profile),
@@ -2726,7 +2869,7 @@ window.__NATIVE_PROJECT_FILES__ = Object.freeze({
   }),
 });
 window.__COMMON_PROJECT_FILES__ = Object.freeze({
-  schema: 'intent-mcu-project-envelope@2',
+  schema: PROJECT_ENVELOPE_SCHEMA,
   current: (profile = selectedCompilerProfile) => commonProjectText(profile),
   legacy: (profile = selectedCompilerProfile) => legacyProjectText(profile),
   prepare: (source) => prepareProjectEnvelope(source, commonProjectAdapters),
@@ -2738,6 +2881,11 @@ window.__PROJECT_BRIEF__ = Object.freeze({
     try { return { ok: true, profile, brief: structuredClone(projectBriefForProfile(profile)), evaluated: false }; }
     catch (error) { return { ok: false, profile, code: error.code ?? error.message, evaluated: false }; }
   },
+});
+window.__REQUIREMENT_TRACEABILITY__ = Object.freeze({
+  schema: 'intent-mcu-requirement-traceability-view@1',
+  current: (profile = selectedCompilerProfile) => structuredClone(requirementTraceRows(profile)),
+  attachCurrentResult: (requirementId, profile = selectedCompilerProfile) => attachCurrentRequirementResult(requirementId, profile),
 });
 function endpointKey(endpoint) { return `${endpoint.component}.${endpoint.pin}`; }
 function parseEndpoint(key) {
@@ -3049,6 +3197,12 @@ function renderSharedInstrumentSummary(profile, state) {
   if (profile !== selectedCompilerProfile) return null;
   const summary = sharedInstrumentSummary(profile, state);
   if (!summary) return null;
+  const previousSummary = sharedInstrumentSummaries.get(profile);
+  const resultBecameStale = hasRequirementResultLinks(profile)
+    && (summary.state !== 'current-runtime' || previousSummary?.artifactIdentity !== summary.artifactIdentity);
+  if (resultBecameStale) {
+    clearRequirementResultLinks(profile);
+  }
   sharedInstrumentSummaries.set(profile, structuredClone(summary));
   const previousLocal = sharedInstrumentLocals.get(profile) ?? {};
   const view = sharedInstrumentView(summary, previousLocal);
@@ -3070,6 +3224,8 @@ function renderSharedInstrumentSummary(profile, state) {
     }
     renderSharedInstrumentTools(root, view);
   }
+  if (resultBecameStale) renderRequirementTraceability();
+  else refreshRequirementResultButtons(profile);
   return summary;
 }
 
@@ -5683,8 +5839,10 @@ elements.familyselect.addEventListener('change', () => {
   elements.boardselect.dispatchEvent(new Event('change', { bubbles: true }));
 });
 elements.boardselect.addEventListener('change', () => {
+  const previousProfile = selectedCompilerProfile;
   const selected = candidateCompilerTarget(elements.boardselect.value);
   selectedCompilerProfile = selected ? selected.profile : AVR_PROFILE;
+  if (previousProfile !== selectedCompilerProfile) clearRequirementResultLinks(previousProfile);
   syncControllerSelectors(selectedCompilerProfile);
   if (elements.componentsupportdialog.open) {
     elements.componentsupportprofile.value = selectedCompilerProfile;

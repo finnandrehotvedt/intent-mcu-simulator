@@ -66,7 +66,7 @@ async function authorBrief(page, label) {
     inputs: 'Named digital input\nReset',
     outputs: 'Observed LED state\nSerial evidence',
     boundaries: 'Reset at startup\nDisconnected ground',
-    acceptance: 'REQ-LED-ON | Observed output is active for the supported input\nREQ-RESET | Reset does not manufacture a passing observation',
+    acceptance: 'REQ-LED-ON | Observed output is active for the supported input | main.c:1-8 | TEST-LED-ON\nREQ-RESET | Reset does not manufacture a passing observation | main.c:9-12 | TEST-RESET',
   };
   await page.fill('#project-brief-purpose', values.purpose);
   await page.fill('#project-brief-inputs', values.inputs);
@@ -82,7 +82,18 @@ async function authorBrief(page, label) {
   assert.equal(result.status.evaluated, false, `${label}: brief claimed evaluation`);
   assert.equal(result.project, before, `${label}: brief changed source or circuit project bytes`);
   assert.match(result.evaluation, /2 criteria · Not evaluated/u);
+  assert.deepEqual(result.status.brief.acceptanceCriteria[0].codeRefs, ['main.c:1-8']);
+  assert.deepEqual(result.status.brief.acceptanceCriteria[0].testRefs, ['TEST-LED-ON']);
   return result.status.brief;
+}
+
+async function assertOpenTraceabilityIsDataOnly(page, profile, label) {
+  const rows = await page.evaluate((selected) => window.__REQUIREMENT_TRACEABILITY__.current(selected), profile);
+  assert.equal(rows.length, 2, `${label}: missing requirement trace rows`);
+  assert.deepEqual(rows[0].requirement.codeRefs, ['main.c:1-8'], `${label}: code refs changed`);
+  assert.deepEqual(rows[0].requirement.testRefs, ['TEST-LED-ON'], `${label}: test refs changed`);
+  assert(rows.every((row) => row.state === 'untested' && row.result === null && row.evaluated === false),
+    `${label}: Open restored a result or verdict`);
 }
 
 async function authored(page, profile) {
@@ -134,7 +145,7 @@ async function saveNarrow(page, profile) {
   assert(filename.endsWith(profile.extension), `${profile.name}: unexpected filename ${filename}`);
   const text = fs.readFileSync(filePath, 'utf8');
   const saved = JSON.parse(text);
-  assert.equal(saved.schema, 'intent-mcu-project-envelope@2', `${profile.name}: envelope schema`);
+  assert.equal(saved.schema, 'intent-mcu-project-envelope@3', `${profile.name}: envelope schema`);
   assert.equal(saved.profile, profile.option, `${profile.name}: envelope profile`);
   assert.equal(saved.project.schema, profile.schema, `${profile.name}: nested schema`);
   assert.deepEqual(saved.brief, expectedBrief, `${profile.name}: brief not saved with circuit`);
@@ -161,6 +172,7 @@ async function verifyNarrowOpen(browser, record, wrongProfilePath) {
   assert.deepEqual(await authored(page, record.profile), record.expected, `${record.profile.name}: fresh-page Open changed authored data`);
   assert.deepEqual(await page.evaluate(() => window.__PROJECT_BRIEF__.current()), record.expectedBrief,
     `${record.profile.name}: fresh-page Open changed project brief`);
+  await assertOpenTraceabilityIsDataOnly(page, record.profile.option, record.profile.name);
   assert.equal(await page.evaluate((profile) => window.__COMMON_PROJECT_FILES__.current(profile), record.profile.option),
     fs.readFileSync(record.filePath, 'utf8'), `${record.profile.name}: canonical envelope bytes changed after Open`);
   let state = await page.evaluate((global) => window[global].state(), record.profile.global);
@@ -245,7 +257,7 @@ async function saveAvr(page) {
   const saveMs = Date.now() - started;
   const text = fs.readFileSync(filePath, 'utf8');
   const saved = JSON.parse(text);
-  assert.equal(saved.schema, 'intent-mcu-project-envelope@2', 'AVR: envelope schema');
+  assert.equal(saved.schema, 'intent-mcu-project-envelope@3', 'AVR: envelope schema');
   assert.equal(saved.profile, 'board.atmega328p-16mhz-v1', 'AVR: envelope profile');
   assert.deepEqual(saved.project, expected, 'AVR: downloaded file differs from canonical authored project');
   assert.deepEqual(saved.brief, expectedBrief, 'AVR: brief not saved with circuit');
@@ -269,6 +281,7 @@ async function verifyAvrOpen(browser, record, wrongProfilePath) {
   assert.deepEqual(await page.evaluate(() => window.__M6_PROJECT__()), record.expected, 'AVR: fresh-page Open changed project');
   assert.deepEqual(await page.evaluate(() => window.__PROJECT_BRIEF__.current()), record.expectedBrief,
     'AVR: fresh-page Open changed project brief');
+  await assertOpenTraceabilityIsDataOnly(page, 'board.atmega328p-16mhz-v1', 'AVR');
   assert.equal(await page.evaluate(() => window.__COMMON_PROJECT_FILES__.current('board.atmega328p-16mhz-v1')),
     fs.readFileSync(record.filePath, 'utf8'), 'AVR: canonical envelope bytes changed after Open');
   const unchanged = JSON.stringify(await page.evaluate(() => window.__M6_PROJECT__()));

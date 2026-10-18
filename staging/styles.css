@@ -89,6 +89,22 @@ h2 { font-size: 1.22rem; margin: 0; }
 .project-brief-footer { margin-top: 12px; padding-top: 11px; border-top: 1px solid #26475b; color: var(--muted); font-size: .75rem; }
 .project-brief-footer strong, #project-brief-evaluation { color: var(--lime); }
 #project-brief-status[data-valid="false"] { color: var(--danger); }
+.requirement-trace { margin-top: 14px; padding-top: 14px; border-top: 1px solid #26475b; }
+.requirement-trace-heading { display: flex; align-items: end; justify-content: space-between; gap: 14px; }
+.requirement-trace-heading h3 { margin: 0; font-size: 1rem; }
+.requirement-trace-heading .eyebrow { margin-bottom: 5px; }
+#requirement-trace-summary { color: var(--amber); font: 700 .72rem ui-monospace, monospace; }
+.requirement-trace > p, .requirement-trace-empty { color: var(--muted); font-size: .73rem; line-height: 1.5; }
+.requirement-trace-list { display: grid; gap: 9px; margin-top: 10px; }
+.requirement-trace-row { display: grid; grid-template-columns: minmax(170px,.8fr) minmax(190px,1fr) minmax(190px,1fr) minmax(220px,1.2fr); gap: 10px; align-items: stretch; padding: 10px; border: 1px solid #284c62; border-radius: 10px; background: #06131e; }
+.requirement-trace-cell { min-width: 0; color: var(--muted); font-size: .7rem; line-height: 1.45; }
+.requirement-trace-cell strong { display: block; margin-bottom: 4px; color: var(--cyan); font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; }
+.requirement-trace-cell code { color: var(--text); overflow-wrap: anywhere; }
+.requirement-trace-id b { color: var(--text); font: 800 .8rem ui-monospace, monospace; }
+.requirement-trace-result { display: grid; gap: 6px; }
+.requirement-trace-result [data-result-state="current"] { color: var(--lime); }
+.requirement-trace-result [data-result-state="untested"] { color: var(--amber); font-weight: 800; }
+.requirement-trace-result button { justify-self: start; min-height: 30px; padding: 5px 9px; }
 .controller-workbench::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--lime); }
 .controller-workbench[data-mode="c3-preview"]::before,
 .controller-workbench[data-mode="c3-source"]::before { background: #24d7ef; }
@@ -797,6 +813,7 @@ dialog li span { display: block; color: var(--muted); margin-top: 3px; line-heig
 footer { text-align: center; font-size: .76rem; padding-top: 28px; }
 
 @media (max-width: 1120px) {
+  .requirement-trace-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .starter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .workspace { grid-template-columns: 1fr 8px 280px; }
   .workspace > .catalog { grid-column: 1 / -1; position: static; }
@@ -829,7 +846,9 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   main { width: min(100% - 18px, 680px); padding-top: 30px; }
   .app-header { align-items: start; flex-direction: column; gap: 8px; }
   .lede { text-align: left; }
-  .project-bar, .controller-workbench, .workspace, .runtime, .instrument-grid, .prompt-grid, .about-intro, .answer-grid, .starter-heading, .thermostat-contract { grid-template-columns: 1fr; }
+  .project-bar, .project-brief-grid, .controller-workbench, .workspace, .runtime, .instrument-grid, .prompt-grid, .about-intro, .answer-grid, .starter-heading, .thermostat-contract, .requirement-trace-row { grid-template-columns: 1fr; }
+  .project-brief-purpose { grid-column: 1; }
+  .project-brief-heading, .project-brief-footer, .requirement-trace-heading { align-items: flex-start; flex-direction: column; }
   .instrument-evidence-heading { display: grid; }
   .instrument-evidence-state { justify-self: start; }
   .instrument-evidence-facts, .instrument-boundary-list, .instrument-summary-list { grid-template-columns: 1fr; }

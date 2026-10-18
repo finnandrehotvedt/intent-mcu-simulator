@@ -1,4 +1,4 @@
-# Migration to 1.1.0-rc.31
+# Migration to 1.1.0-rc.32
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
@@ -37,6 +37,14 @@ Rc.31 saves `intent-mcu-project-envelope@2` for AVR, RP2040 Pico,
 ESP32-C3 and STM32F429ZI. The envelope identifies one exact tested profile and
 contains that profile's validated authored project plus its inert brief. It contains no firmware,
 runtime/session authority, verdict or secret.
+
+Rc.32 advances the common wrapper to `intent-mcu-project-envelope@3` and the
+brief to `intent-mcu-project-brief@2`. Each criterion gains bounded
+project-local `codeRefs` and stable uppercase `testRefs`. Rc.31 envelope-v2
+files migrate each criterion with explicit empty reference arrays. Current
+runtime result links are never serialized, so Open always starts requirements
+as `Untested` and requires a fresh Build/Run before a current result can be
+linked.
 
 Existing accepted files remain readable:
 

@@ -2,6 +2,18 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.32 — 2026-10-18
+
+- Completed X02 with visible per-requirement code, test and current-result
+  traceability across all four existing public profiles.
+- Advanced the strict common local file to `intent-mcu-project-envelope@3`
+  and the inert brief to `intent-mcu-project-brief@2`; rc.31 v2 files migrate
+  with explicit empty code/test references.
+- Kept current-result links transient, producer-backed and verdict-free. They
+  are never serialized and become `Untested` on Open or runtime invalidation.
+- Preserved X01 data-only project context, profile runtimes, electrical rules,
+  compiler isolation and the X29/X40 timebase limitations.
+
 ## 1.1.0-rc.31 — 2026-10-18
 
 - Completed X01 with a shared per-profile project brief for purpose, inputs,

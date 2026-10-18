@@ -1,20 +1,23 @@
-# Rollback basis for 1.1.0-rc.31
+# Rollback basis for 1.1.0-rc.32
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
 Retain exact accepted source commit
-`d587941c67107cd343cb1f3967cb311a5870754d` and VM103 image
-`sha256:e52831bde8e94ac110a8490fd1d6e2dca5e54e63989965ce19d81fb417b4d789`
-as the pre-rc.31 app-only recovery basis.
+`0dd1add86ce18bc4d990d7867870f1dd1e5254b3` and VM103 image
+`sha256:37346438c80c94ff6c002fec5ba7ddc0eb9861f5103a574d86d75ab523077554`
+as the pre-rc.32 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
 
-Rc.31 writes common envelope v2. Before an app rollback, retain the learner's
-v2 file unchanged; rc.30 cannot open its added brief field. Export or preserve
-an rc.30-compatible version-1 copy only through a separately verified conversion
+Rc.32 writes common envelope v3. Before an app rollback, retain the learner's
+v3 file unchanged; rc.31 cannot open its added criterion reference fields.
+Preserve an rc.31-compatible version-2 copy only through a separately verified
+conversion that intentionally omits code/test references. Rc.31 writes common
+envelope v2; rc.30 cannot open its added brief field. Export or preserve an
+rc.30-compatible version-1 copy only through a separately verified conversion
 that intentionally omits the brief. An rc.22 through rc.30 file that contains
 narrow-profile `wireRoutes` should be retained as the learner's original, then
 opened in rc.21 only through an rc.21-compatible copy if strict older nested

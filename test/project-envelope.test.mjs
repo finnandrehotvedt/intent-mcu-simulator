@@ -4,7 +4,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  LEGACY_PROJECT_ENVELOPE_SCHEMA, PROJECT_BRIEF_SCHEMA, PROJECT_ENVELOPE_SCHEMA,
+  LEGACY_PROJECT_BRIEF_SCHEMA, LEGACY_PROJECT_ENVELOPE_SCHEMA,
+  PREVIOUS_PROJECT_ENVELOPE_SCHEMA, PROJECT_BRIEF_SCHEMA, PROJECT_ENVELOPE_SCHEMA,
   canonicalProjectEnvelope, emptyProjectBrief, prepareProjectEnvelope,
 } from '../src/project-envelope.mjs';
 
@@ -48,6 +49,23 @@ test('v1 envelope migrates with an explicit empty inert brief', () => {
   assert(opened.report.defaultsAdded.includes('empty project brief'));
 });
 
+test('rc31 v2 envelope migrates criteria to explicit empty traceability', () => {
+  const previous = {
+    schema: PREVIOUS_PROJECT_ENVELOPE_SCHEMA,
+    profile,
+    brief: { schema: LEGACY_PROJECT_BRIEF_SCHEMA, purpose: 'Legacy goal', inputs: [], outputs: [],
+      boundaryCases: [], acceptanceCriteria: [{ id: 'REQ-OLD', text: 'Old criterion' }] },
+    project,
+  };
+  const opened = prepareProjectEnvelope(JSON.stringify(previous), adapters);
+  assert.equal(opened.code, 'PROJECT_ENVELOPE_MIGRATED');
+  assert.deepEqual(opened.brief.acceptanceCriteria[0], {
+    id: 'REQ-OLD', text: 'Old criterion', codeRefs: [], testRefs: [],
+  });
+  assert(opened.report.defaultsAdded.includes('empty requirement code/test references'));
+  assert.equal(JSON.parse(opened.canonical).schema, PROJECT_ENVELOPE_SCHEMA);
+});
+
 test('X01 brief round-trips purpose, inputs, outputs, boundaries and unevaluated acceptance IDs', () => {
   const brief = {
     schema: PROJECT_BRIEF_SCHEMA,
@@ -56,8 +74,10 @@ test('X01 brief round-trips purpose, inputs, outputs, boundaries and unevaluated
     outputs: ['D13 LED level'],
     boundaryCases: ['Reset while button is pressed', 'Disconnected ground'],
     acceptanceCriteria: [
-      { id: 'REQ-LED-ON', text: 'Observed D13 is HIGH while D2 is LOW.' },
-      { id: 'REQ-RESET', text: 'Reset does not manufacture a passing observation.' },
+      { id: 'REQ-LED-ON', text: 'Observed D13 is HIGH while D2 is LOW.',
+        codeRefs: ['main.ino:12-18'], testRefs: ['TEST-BUTTON-LOW'] },
+      { id: 'REQ-RESET', text: 'Reset does not manufacture a passing observation.',
+        codeRefs: ['main.ino:4'], testRefs: ['TEST-RESET'] },
     ],
   };
   const text = canonicalProjectEnvelope(profile, project, adapters, brief);
@@ -73,12 +93,22 @@ test('X01 brief rejects unknown fields, duplicate IDs, malformed IDs and result 
   const wrap = (brief) => JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, brief, project });
   assert.equal(prepareProjectEnvelope(wrap({ ...base, extra: true }), adapters).code, 'PROJECT_BRIEF_SHAPE');
   assert.equal(prepareProjectEnvelope(wrap({ ...base, acceptanceCriteria: [
-    { id: 'REQ-1', text: 'One' }, { id: 'REQ-1', text: 'Two' },
+    { id: 'REQ-1', text: 'One', codeRefs: [], testRefs: [] },
+    { id: 'REQ-1', text: 'Two', codeRefs: [], testRefs: [] },
   ] }), adapters).code, 'PROJECT_BRIEF_CRITERION_DUPLICATE');
   assert.equal(prepareProjectEnvelope(wrap({ ...base, acceptanceCriteria: [
-    { id: 'bad id', text: 'No' },
+    { id: 'bad id', text: 'No', codeRefs: [], testRefs: [] },
   ] }), adapters).code, 'PROJECT_BRIEF_CRITERION_ID');
   assert.equal(prepareProjectEnvelope(wrap({ ...base, verdict: 'passed' }), adapters).code, 'PROJECT_BRIEF_SHAPE');
+  assert.equal(prepareProjectEnvelope(wrap({ ...base, acceptanceCriteria: [
+    { id: 'REQ-1', text: 'No', codeRefs: ['/etc/passwd'], testRefs: [] },
+  ] }), adapters).code, 'PROJECT_BRIEF_CODE_REFERENCE');
+  assert.equal(prepareProjectEnvelope(wrap({ ...base, acceptanceCriteria: [
+    { id: 'REQ-1', text: 'No', codeRefs: [], testRefs: ['bad test'] },
+  ] }), adapters).code, 'PROJECT_BRIEF_TEST_REFERENCE');
+  assert.equal(prepareProjectEnvelope(wrap({ ...base, acceptanceCriteria: [
+    { id: 'REQ-1', text: 'No', codeRefs: ['main.c', 'main.c'], testRefs: [] },
+  ] }), adapters).code, 'PROJECT_BRIEF_REFERENCE_DUPLICATE');
 });
 
 test('strict failures reject duplicate keys, unknown versions and profile mismatches', () => {

@@ -1,4 +1,19 @@
-# Intent MCU Simulator 1.1.0-rc.31
+# Intent MCU Simulator 1.1.0-rc.32
+
+This requirement-traceability release completes X02. Each stable acceptance
+ID can now carry explicit project-local code references and stable test IDs.
+The project-context panel renders a visible Code → test → current result row
+for every requirement and labels missing current evidence `Untested`.
+
+A result link can be created only from the active profile's current runtime
+summary. It records the real artifact, generation, evidence classifications
+and producer provenance, but never invents a pass/fail verdict. Result links
+are transient and are not written into project files. Open, runtime
+invalidation and changed trace identity return the requirement to `Untested`.
+
+---
+
+## 1.1.0-rc.31
 
 This project-context release completes X01. Every public profile now has one
 visible data-only brief for purpose, inputs, outputs, boundary cases and

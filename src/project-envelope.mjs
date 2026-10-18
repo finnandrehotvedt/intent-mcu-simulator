@@ -3,13 +3,16 @@
 
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
 
-export const PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@2';
+export const PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@3';
+export const PREVIOUS_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@2';
 export const LEGACY_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@1';
-export const PROJECT_BRIEF_SCHEMA = 'intent-mcu-project-brief@1';
+export const PROJECT_BRIEF_SCHEMA = 'intent-mcu-project-brief@2';
+export const LEGACY_PROJECT_BRIEF_SCHEMA = 'intent-mcu-project-brief@1';
 export const PROJECT_ENVELOPE_LIMIT = 1024 * 1024;
 
 const BRIEF_LIST_LIMIT = 16;
 const BRIEF_CRITERIA_LIMIT = 24;
+const BRIEF_REFERENCE_LIMIT = 8;
 const BRIEF_TEXT_LIMIT = 240;
 const PURPOSE_TEXT_LIMIT = 2000;
 
@@ -47,6 +50,56 @@ function briefList(value, path) {
   return value.map((item, index) => boundedText(item, `${path}[${index}]`, BRIEF_TEXT_LIMIT));
 }
 
+function codeReferences(value, path) {
+  const references = briefList(value, path);
+  const seen = new Set();
+  for (const reference of references) {
+    if (reference.startsWith('/') || reference.includes('..') || reference.includes('\\')
+        || reference.includes('://') || !/^[A-Za-z0-9_.\/-]+(?::[1-9][0-9]{0,5}(?:-[1-9][0-9]{0,5})?)?$/u.test(reference)) {
+      throw Object.assign(new Error('PROJECT_BRIEF_CODE_REFERENCE'), { details: [path] });
+    }
+    if (seen.has(reference)) throw Object.assign(new Error('PROJECT_BRIEF_REFERENCE_DUPLICATE'), { details: [path, reference] });
+    seen.add(reference);
+  }
+  if (references.length > BRIEF_REFERENCE_LIMIT) {
+    throw Object.assign(new Error('PROJECT_BRIEF_REFERENCE_LIMIT'), { details: [path] });
+  }
+  return references;
+}
+
+function testReferences(value, path) {
+  const references = briefList(value, path);
+  const seen = new Set();
+  for (const reference of references) {
+    if (!/^[A-Z][A-Z0-9_-]{1,63}$/u.test(reference)) {
+      throw Object.assign(new Error('PROJECT_BRIEF_TEST_REFERENCE'), { details: [path] });
+    }
+    if (seen.has(reference)) throw Object.assign(new Error('PROJECT_BRIEF_REFERENCE_DUPLICATE'), { details: [path, reference] });
+    seen.add(reference);
+  }
+  if (references.length > BRIEF_REFERENCE_LIMIT) {
+    throw Object.assign(new Error('PROJECT_BRIEF_REFERENCE_LIMIT'), { details: [path] });
+  }
+  return references;
+}
+
+function normalizeLegacyProjectBrief(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+      || !exactKeys(value, ['schema', 'purpose', 'inputs', 'outputs', 'boundaryCases', 'acceptanceCriteria'])
+      || value.schema !== LEGACY_PROJECT_BRIEF_SCHEMA || !Array.isArray(value.acceptanceCriteria)) {
+    throw Object.assign(new Error('PROJECT_BRIEF_SHAPE'), { details: ['$brief'] });
+  }
+  return normalizeProjectBrief({ ...value, schema: PROJECT_BRIEF_SCHEMA,
+    acceptanceCriteria: value.acceptanceCriteria.map((criterion, index) => {
+      if (!criterion || typeof criterion !== 'object' || Array.isArray(criterion)
+          || !exactKeys(criterion, ['id', 'text'])) {
+        throw Object.assign(new Error('PROJECT_BRIEF_CRITERION_SHAPE'),
+          { details: [`$brief.acceptanceCriteria[${index}]`] });
+      }
+      return { ...criterion, codeRefs: [], testRefs: [] };
+    }) });
+}
+
 export function normalizeProjectBrief(value = emptyProjectBrief()) {
   if (!value || typeof value !== 'object' || Array.isArray(value)
       || !exactKeys(value, ['schema', 'purpose', 'inputs', 'outputs', 'boundaryCases', 'acceptanceCriteria'])
@@ -60,7 +113,7 @@ export function normalizeProjectBrief(value = emptyProjectBrief()) {
   const acceptanceCriteria = value.acceptanceCriteria.map((criterion, index) => {
     const path = `$brief.acceptanceCriteria[${index}]`;
     if (!criterion || typeof criterion !== 'object' || Array.isArray(criterion)
-        || !exactKeys(criterion, ['id', 'text'])) {
+        || !exactKeys(criterion, ['id', 'text', 'codeRefs', 'testRefs'])) {
       throw Object.assign(new Error('PROJECT_BRIEF_CRITERION_SHAPE'), { details: [path] });
     }
     const id = boundedText(criterion.id, `${path}.id`, 32);
@@ -71,7 +124,12 @@ export function normalizeProjectBrief(value = emptyProjectBrief()) {
       throw Object.assign(new Error('PROJECT_BRIEF_CRITERION_DUPLICATE'), { details: [id] });
     }
     ids.add(id);
-    return { id, text: boundedText(criterion.text, `${path}.text`, BRIEF_TEXT_LIMIT) };
+    return {
+      id,
+      text: boundedText(criterion.text, `${path}.text`, BRIEF_TEXT_LIMIT),
+      codeRefs: codeReferences(criterion.codeRefs, `${path}.codeRefs`),
+      testRefs: testReferences(criterion.testRefs, `${path}.testRefs`),
+    };
   });
   const brief = {
     schema: PROJECT_BRIEF_SCHEMA,
@@ -148,6 +206,7 @@ export function prepareProjectEnvelope(source, adapters) {
   try {
     const value = parseStrictJson(source, PROJECT_ENVELOPE_LIMIT);
     let profile; let adapter; let nested; let brief; let legacy = false; let inputSchema;
+    let migrationDefaults = [];
     if (value?.schema === PROJECT_ENVELOPE_SCHEMA) {
       if (!exactKeys(value, ['schema', 'profile', 'brief', 'project']) || typeof value.profile !== 'string') {
         return failure('PROJECT_ENVELOPE_SHAPE');
@@ -164,6 +223,21 @@ export function prepareProjectEnvelope(source, adapters) {
       if (nested?.profile && nested.profile !== profile) {
         return failure('PROJECT_ENVELOPE_PROFILE_MISMATCH', [profile, nested.profile]);
       }
+    } else if (value?.schema === PREVIOUS_PROJECT_ENVELOPE_SCHEMA) {
+      if (!exactKeys(value, ['schema', 'profile', 'brief', 'project']) || typeof value.profile !== 'string') {
+        return failure('PROJECT_ENVELOPE_SHAPE');
+      }
+      profile = value.profile;
+      adapter = adapterForProfile(adapters, profile);
+      if (!adapter) return failure('PROJECT_ENVELOPE_PROFILE', [profile]);
+      nested = value.project;
+      brief = normalizeLegacyProjectBrief(value.brief);
+      inputSchema = PREVIOUS_PROJECT_ENVELOPE_SCHEMA;
+      legacy = true;
+      migrationDefaults = ['empty requirement code/test references'];
+      if (!adapter.schemas?.includes(nested?.schema) || (nested?.profile && nested.profile !== profile)) {
+        return failure('PROJECT_ENVELOPE_PROFILE_MISMATCH', [profile, nested?.schema ?? nested?.profile ?? null]);
+      }
     } else if (value?.schema === LEGACY_PROJECT_ENVELOPE_SCHEMA) {
       if (!exactKeys(value, ['schema', 'profile', 'project']) || typeof value.profile !== 'string') {
         return failure('PROJECT_ENVELOPE_SHAPE');
@@ -175,6 +249,7 @@ export function prepareProjectEnvelope(source, adapters) {
       brief = emptyProjectBrief();
       inputSchema = LEGACY_PROJECT_ENVELOPE_SCHEMA;
       legacy = true;
+      migrationDefaults = ['empty project brief', 'empty requirement code/test references'];
       if (!adapter.schemas?.includes(nested?.schema) || (nested?.profile && nested.profile !== profile)) {
         return failure('PROJECT_ENVELOPE_PROFILE_MISMATCH', [profile, nested?.schema ?? nested?.profile ?? null]);
       }
@@ -186,6 +261,7 @@ export function prepareProjectEnvelope(source, adapters) {
       nested = value;
       brief = emptyProjectBrief();
       legacy = true;
+      migrationDefaults = ['empty project brief', 'empty requirement code/test references'];
     }
     rejectAuthority(nested);
     const prepared = prepare(adapter, nested);
@@ -205,7 +281,7 @@ export function prepareProjectEnvelope(source, adapters) {
         inputSchema, outputSchema: PROJECT_ENVELOPE_SCHEMA, profile, legacy,
         preserved: [...(prepared.preserved ?? ['source', 'circuit', 'layout', 'properties', 'controls']),
           'brief purpose/inputs/outputs/boundary cases/acceptance criteria'],
-        defaultsAdded: [...(prepared.defaultsAdded ?? []), ...(legacy ? ['empty project brief'] : [])],
+        defaultsAdded: [...(prepared.defaultsAdded ?? []), ...migrationDefaults],
         executableAuthorityCleared: true,
       },
     };

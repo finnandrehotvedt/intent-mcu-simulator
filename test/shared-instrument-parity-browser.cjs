@@ -55,7 +55,7 @@ async function assertBriefIsInert(page, profile, artifactIdentity) {
   await page.fill('#project-brief-inputs', 'Named input\nReset');
   await page.fill('#project-brief-outputs', 'Observed LED\nSerial evidence');
   await page.fill('#project-brief-boundaries', 'Startup reset\nDisconnected ground');
-  await page.fill('#project-brief-acceptance', 'REQ-OBSERVE | The supported output is observed\nREQ-RESET | Reset does not manufacture a pass');
+  await page.fill('#project-brief-acceptance', 'REQ-OBSERVE | The supported output is observed | main.c:1-8 | TEST-OBSERVE\nREQ-RESET | Reset does not manufacture a pass | main.c:9-12 | TEST-RESET');
   const after = await page.evaluate((selected) => ({
     project: JSON.stringify(window.__COMMON_PROJECT_FILES__.prepare(
       window.__COMMON_PROJECT_FILES__.current(selected),
@@ -70,6 +70,24 @@ async function assertBriefIsInert(page, profile, artifactIdentity) {
   assert.match(after.evaluation, /Not evaluated/u);
   assert.equal(after.summary.state, 'current-runtime', `${profile}: brief retired runtime`);
   assert.equal(after.summary.artifactIdentity, artifactIdentity, `${profile}: brief retired artifact`);
+  const beforeLink = await page.evaluate((selected) => window.__REQUIREMENT_TRACEABILITY__.current(selected), profile);
+  assert.deepEqual(beforeLink.map((row) => row.state), ['untested', 'untested']);
+  assert.deepEqual(beforeLink[0].requirement.codeRefs, ['main.c:1-8']);
+  assert.deepEqual(beforeLink[0].requirement.testRefs, ['TEST-OBSERVE']);
+  await page.locator('[data-requirement-id="REQ-OBSERVE"] [data-link-requirement-result]').click();
+  const afterLink = await page.evaluate((selected) => window.__REQUIREMENT_TRACEABILITY__.current(selected), profile);
+  assert.equal(afterLink[0].state, 'current-result-linked');
+  assert.equal(afterLink[0].evaluated, false);
+  assert.equal(afterLink[0].result.artifactIdentity, artifactIdentity);
+  assert.equal(Object.hasOwn(afterLink[0].result, 'verdict'), false);
+  assert(Object.values(afterLink[0].result.channels).every((channel) => channel.classification && channel.provenance));
+  assert.equal(afterLink[1].state, 'untested');
+}
+
+async function assertTraceUntested(page, profile) {
+  const rows = await page.evaluate((selected) => window.__REQUIREMENT_TRACEABILITY__.current(selected), profile);
+  assert(rows.every((row) => row.state === 'untested' && row.result === null && row.evaluated === false),
+    `${profile}: stale result link survived invalidation`);
 }
 
 (async () => {
@@ -112,6 +130,7 @@ async function assertBriefIsInert(page, profile, artifactIdentity) {
     const avrSource = await page.inputValue('#source');
     await page.fill('#source', `${avrSource}\n`);
     await page.waitForFunction(() => window.__SHARED_INSTRUMENT_SUMMARY__?.state === 'no-current-runtime');
+    await assertTraceUntested(page, profiles.avr);
 
     // RP2040: current UF2 worker evidence survives layout-only movement, reset
     // retires the old snapshot, and an electrical edit clears authority.
@@ -136,6 +155,7 @@ async function assertBriefIsInert(page, profile, artifactIdentity) {
       window.__RP2040_PUBLIC_WORKBENCH__.deleteSelected();
     });
     await page.waitForFunction(() => window.__SHARED_INSTRUMENT_SUMMARY__?.state === 'no-current-runtime');
+    await assertTraceUntested(page, profiles.pico);
 
     // C3: actual QEMU UART and separately labelled project GPIO2 model; Open
     // imports authored data only and clears the runtime summary.
@@ -158,6 +178,7 @@ async function assertBriefIsInert(page, profile, artifactIdentity) {
     await page.setInputFiles('#c3-open-input', { name: 'c3.intent-mcu.json', mimeType: 'application/json', buffer: Buffer.from(c3Project) });
     if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
     await page.waitForFunction(() => window.__SHARED_INSTRUMENT_SUMMARY__?.state === 'no-current-runtime');
+    await assertTraceUntested(page, profiles.c3);
 
     // STM32: actual Renode USART3/PB0 result, layout retention, reset retirement,
     // and source invalidation.
@@ -181,6 +202,7 @@ async function assertBriefIsInert(page, profile, artifactIdentity) {
     const stmSource = await page.inputValue('#stm32-source');
     await page.fill('#stm32-source', `${stmSource}\n`);
     await page.waitForFunction(() => window.__SHARED_INSTRUMENT_SUMMARY__?.state === 'no-current-runtime');
+    await assertTraceUntested(page, profiles.stm32);
 
     await select(page, profiles.avr);
     assert.equal((await summary(page)).state, 'no-current-runtime', 'profile return revived stale AVR evidence');
@@ -193,6 +215,7 @@ async function assertBriefIsInert(page, profile, artifactIdentity) {
         c3: Object.values(c3.channels).map((x) => x.classification),
         stm32: Object.values(stm32.channels).map((x) => x.classification) },
       invalidation: ['source', 'electrical', 'open', 'profile', 'reset'], layoutRetained: true,
-      projectBriefInertWithCurrentRuntime: true, outsideRequests: 0, browserErrors: 0 })}\n`);
+      projectBriefInertWithCurrentRuntime: true, requirementTraceability: 'code-test-current-result-without-verdict',
+      invalidationReturnsUntested: true, outsideRequests: 0, browserErrors: 0 })}\n`);
   } finally { await browser.close(); }
 })().catch((error) => { process.stderr.write(`${error.stack}\n`); process.exitCode = 1; });
