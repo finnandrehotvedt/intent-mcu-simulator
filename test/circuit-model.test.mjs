@@ -660,6 +660,17 @@ test('I-01/I-03/I-05 prompt bridge is deterministic, provider-neutral and circui
   assert.equal(exportCanonicalProject(editor.project), before);
 });
 
+test('X03 prompt bridge carries unresolved questions and forbids inferred support', () => {
+  const { editor } = buildManualProject();
+  const unresolved = [{ id: 'ASK-TIMING', kind: 'timing', question: 'What interval is required?',
+    requirementIds: ['REQ-BLINK'] }];
+  const prompt = generatePromptBridgeV2(editor.project, unresolved);
+  assert.match(prompt, /ASK-TIMING/u);
+  assert.match(prompt, /What interval is required\?/u);
+  assert.match(prompt, /Do not claim or infer support/u);
+  assert.match(prompt, /Ask for clarification/u);
+});
+
 test('C-18 manual, prompt and reopen origins normalize to the same circuit', () => {
   const { editor } = buildManualProject();
   const manual = canonicalCircuitJson(editor.project.circuit);

@@ -56,6 +56,7 @@ async function assertBriefIsInert(page, profile, artifactIdentity) {
   await page.fill('#project-brief-outputs', 'Observed LED\nSerial evidence');
   await page.fill('#project-brief-boundaries', 'Startup reset\nDisconnected ground');
   await page.fill('#project-brief-acceptance', 'REQ-OBSERVE | The supported output is observed | main.c:1-8 | TEST-OBSERVE\nREQ-RESET | Reset does not manufacture a pass | main.c:9-12 | TEST-RESET');
+  await page.fill('#project-brief-assumptions', 'ASK-VOLTAGE | voltage | Which supply voltage is required? | REQ-OBSERVE\nASK-PIN | pin | Which named pin is required? | REQ-OBSERVE\nASK-TIMING | timing | What timing limit is required? | REQ-RESET');
   const after = await page.evaluate((selected) => ({
     project: JSON.stringify(window.__COMMON_PROJECT_FILES__.prepare(
       window.__COMMON_PROJECT_FILES__.current(selected),
@@ -67,6 +68,9 @@ async function assertBriefIsInert(page, profile, artifactIdentity) {
   assert.equal(after.project, before.project, `${profile}: brief changed source/circuit bytes`);
   assert.equal(after.brief.ok, true, `${profile}: brief invalid`);
   assert.equal(after.brief.evaluated, false, `${profile}: brief claimed a verdict`);
+  assert.deepEqual(after.brief.brief.openAssumptions.map((item) => item.kind), ['voltage', 'pin', 'timing']);
+  assert.deepEqual(await page.locator('.open-assumption-status').allTextContents(),
+    ['Unresolved', 'Unresolved', 'Unresolved']);
   assert.match(after.evaluation, /Not evaluated/u);
   assert.equal(after.summary.state, 'current-runtime', `${profile}: brief retired runtime`);
   assert.equal(after.summary.artifactIdentity, artifactIdentity, `${profile}: brief retired artifact`);
@@ -215,7 +219,8 @@ async function assertTraceUntested(page, profile) {
         c3: Object.values(c3.channels).map((x) => x.classification),
         stm32: Object.values(stm32.channels).map((x) => x.classification) },
       invalidation: ['source', 'electrical', 'open', 'profile', 'reset'], layoutRetained: true,
-      projectBriefInertWithCurrentRuntime: true, requirementTraceability: 'code-test-current-result-without-verdict',
+      projectBriefInertWithCurrentRuntime: true, openAssumptions: 'voltage-pin-timing-unresolved-without-support',
+      requirementTraceability: 'code-test-current-result-without-verdict',
       invalidationReturnsUntested: true, outsideRequests: 0, browserErrors: 0 })}\n`);
   } finally { await browser.close(); }
 })().catch((error) => { process.stderr.write(`${error.stack}\n`); process.exitCode = 1; });

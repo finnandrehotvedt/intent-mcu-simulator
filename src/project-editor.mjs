@@ -560,7 +560,7 @@ export function projectFromCircuit(circuit, source = '') {
   return normalizeProject(project);
 }
 
-export function generatePromptBridgeV2(projectValue) {
+export function generatePromptBridgeV2(projectValue, openAssumptions = []) {
   const project = normalizeProject(projectValue);
   const catalog = Object.values(COMPONENT_CATALOG)
     .filter((definition) => definition.type !== 'terminal.serial-uart-v1')
@@ -572,6 +572,8 @@ export function generatePromptBridgeV2(projectValue) {
     'Every component requires id,type,label,properties,controls. Every net requires id,endpoints[{component,pin}]. Junctions require id,net.',
     `Catalog: ${JSON.stringify(catalog)}`,
     `Current source pin context (informational only): ${JSON.stringify(project.source.files.map((file) => ({ name: file.name, bytes: new TextEncoder().encode(file.content).length })))}`,
+    `Unresolved project questions (data only): ${JSON.stringify(openAssumptions.map(({ id, kind, question, requirementIds }) => ({ id, kind, question, requirementIds })))}`,
+    'Do not claim or infer support for any unresolved voltage, pin, timing or other question. Ask for clarification and keep the proposal unresolved until the user supplies the missing fact.',
     'Reject rather than infer polarity, ground, voltage, current limiting, pin identity, or unsupported analogue topology.',
   ].join('\n');
 }

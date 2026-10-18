@@ -3,16 +3,19 @@
 
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
 
-export const PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@3';
-export const PREVIOUS_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@2';
+export const PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@4';
+export const PREVIOUS_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@3';
+export const TRACE_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@2';
 export const LEGACY_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@1';
-export const PROJECT_BRIEF_SCHEMA = 'intent-mcu-project-brief@2';
+export const PROJECT_BRIEF_SCHEMA = 'intent-mcu-project-brief@3';
+export const PREVIOUS_PROJECT_BRIEF_SCHEMA = 'intent-mcu-project-brief@2';
 export const LEGACY_PROJECT_BRIEF_SCHEMA = 'intent-mcu-project-brief@1';
 export const PROJECT_ENVELOPE_LIMIT = 1024 * 1024;
 
 const BRIEF_LIST_LIMIT = 16;
 const BRIEF_CRITERIA_LIMIT = 24;
 const BRIEF_REFERENCE_LIMIT = 8;
+const BRIEF_ASSUMPTION_LIMIT = 24;
 const BRIEF_TEXT_LIMIT = 240;
 const PURPOSE_TEXT_LIMIT = 2000;
 
@@ -32,6 +35,7 @@ export function emptyProjectBrief() {
     outputs: [],
     boundaryCases: [],
     acceptanceCriteria: [],
+    openAssumptions: [],
   };
 }
 
@@ -89,7 +93,7 @@ function normalizeLegacyProjectBrief(value) {
       || value.schema !== LEGACY_PROJECT_BRIEF_SCHEMA || !Array.isArray(value.acceptanceCriteria)) {
     throw Object.assign(new Error('PROJECT_BRIEF_SHAPE'), { details: ['$brief'] });
   }
-  return normalizeProjectBrief({ ...value, schema: PROJECT_BRIEF_SCHEMA,
+  return normalizeProjectBrief({ ...value, schema: PROJECT_BRIEF_SCHEMA, openAssumptions: [],
     acceptanceCriteria: value.acceptanceCriteria.map((criterion, index) => {
       if (!criterion || typeof criterion !== 'object' || Array.isArray(criterion)
           || !exactKeys(criterion, ['id', 'text'])) {
@@ -100,9 +104,18 @@ function normalizeLegacyProjectBrief(value) {
     }) });
 }
 
-export function normalizeProjectBrief(value = emptyProjectBrief()) {
+function normalizePreviousProjectBrief(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)
       || !exactKeys(value, ['schema', 'purpose', 'inputs', 'outputs', 'boundaryCases', 'acceptanceCriteria'])
+      || value.schema !== PREVIOUS_PROJECT_BRIEF_SCHEMA) {
+    throw Object.assign(new Error('PROJECT_BRIEF_SHAPE'), { details: ['$brief'] });
+  }
+  return normalizeProjectBrief({ ...value, schema: PROJECT_BRIEF_SCHEMA, openAssumptions: [] });
+}
+
+export function normalizeProjectBrief(value = emptyProjectBrief()) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+      || !exactKeys(value, ['schema', 'purpose', 'inputs', 'outputs', 'boundaryCases', 'acceptanceCriteria', 'openAssumptions'])
       || value.schema !== PROJECT_BRIEF_SCHEMA) {
     throw Object.assign(new Error('PROJECT_BRIEF_SHAPE'), { details: ['$brief'] });
   }
@@ -131,6 +144,34 @@ export function normalizeProjectBrief(value = emptyProjectBrief()) {
       testRefs: testReferences(criterion.testRefs, `${path}.testRefs`),
     };
   });
+  if (!Array.isArray(value.openAssumptions) || value.openAssumptions.length > BRIEF_ASSUMPTION_LIMIT) {
+    throw Object.assign(new Error('PROJECT_BRIEF_ASSUMPTIONS'), { details: ['$brief.openAssumptions'] });
+  }
+  const assumptionIds = new Set();
+  const openAssumptions = value.openAssumptions.map((item, index) => {
+    const path = `$brief.openAssumptions[${index}]`;
+    if (!item || typeof item !== 'object' || Array.isArray(item)
+        || !exactKeys(item, ['id', 'kind', 'question', 'requirementIds'])) {
+      throw Object.assign(new Error('PROJECT_BRIEF_ASSUMPTION_SHAPE'), { details: [path] });
+    }
+    const id = boundedText(item.id, `${path}.id`, 32);
+    if (!/^[A-Z][A-Z0-9_-]{1,31}$/u.test(id)) {
+      throw Object.assign(new Error('PROJECT_BRIEF_ASSUMPTION_ID'), { details: [`${path}.id`] });
+    }
+    if (assumptionIds.has(id)) {
+      throw Object.assign(new Error('PROJECT_BRIEF_ASSUMPTION_DUPLICATE'), { details: [id] });
+    }
+    assumptionIds.add(id);
+    if (!['voltage', 'pin', 'timing', 'other'].includes(item.kind)) {
+      throw Object.assign(new Error('PROJECT_BRIEF_ASSUMPTION_KIND'), { details: [`${path}.kind`] });
+    }
+    const requirementIds = testReferences(item.requirementIds, `${path}.requirementIds`);
+    const unknown = requirementIds.find((requirementId) => !ids.has(requirementId));
+    if (unknown) throw Object.assign(new Error('PROJECT_BRIEF_ASSUMPTION_REQUIREMENT_UNKNOWN'),
+      { details: [`${path}.requirementIds`, unknown] });
+    return { id, kind: item.kind,
+      question: boundedText(item.question, `${path}.question`, BRIEF_TEXT_LIMIT), requirementIds };
+  });
   const brief = {
     schema: PROJECT_BRIEF_SCHEMA,
     purpose: boundedText(value.purpose, '$brief.purpose', PURPOSE_TEXT_LIMIT, { empty: true }),
@@ -138,6 +179,7 @@ export function normalizeProjectBrief(value = emptyProjectBrief()) {
     outputs: briefList(value.outputs, '$brief.outputs'),
     boundaryCases: briefList(value.boundaryCases, '$brief.boundaryCases'),
     acceptanceCriteria,
+    openAssumptions,
   };
   rejectAuthority(brief, '$brief');
   return brief;
@@ -231,10 +273,25 @@ export function prepareProjectEnvelope(source, adapters) {
       adapter = adapterForProfile(adapters, profile);
       if (!adapter) return failure('PROJECT_ENVELOPE_PROFILE', [profile]);
       nested = value.project;
-      brief = normalizeLegacyProjectBrief(value.brief);
+      brief = normalizePreviousProjectBrief(value.brief);
       inputSchema = PREVIOUS_PROJECT_ENVELOPE_SCHEMA;
       legacy = true;
-      migrationDefaults = ['empty requirement code/test references'];
+      migrationDefaults = ['empty unresolved assumption list'];
+      if (!adapter.schemas?.includes(nested?.schema) || (nested?.profile && nested.profile !== profile)) {
+        return failure('PROJECT_ENVELOPE_PROFILE_MISMATCH', [profile, nested?.schema ?? nested?.profile ?? null]);
+      }
+    } else if (value?.schema === TRACE_PROJECT_ENVELOPE_SCHEMA) {
+      if (!exactKeys(value, ['schema', 'profile', 'brief', 'project']) || typeof value.profile !== 'string') {
+        return failure('PROJECT_ENVELOPE_SHAPE');
+      }
+      profile = value.profile;
+      adapter = adapterForProfile(adapters, profile);
+      if (!adapter) return failure('PROJECT_ENVELOPE_PROFILE', [profile]);
+      nested = value.project;
+      brief = normalizeLegacyProjectBrief(value.brief);
+      inputSchema = TRACE_PROJECT_ENVELOPE_SCHEMA;
+      legacy = true;
+      migrationDefaults = ['empty requirement code/test references', 'empty unresolved assumption list'];
       if (!adapter.schemas?.includes(nested?.schema) || (nested?.profile && nested.profile !== profile)) {
         return failure('PROJECT_ENVELOPE_PROFILE_MISMATCH', [profile, nested?.schema ?? nested?.profile ?? null]);
       }
@@ -249,7 +306,7 @@ export function prepareProjectEnvelope(source, adapters) {
       brief = emptyProjectBrief();
       inputSchema = LEGACY_PROJECT_ENVELOPE_SCHEMA;
       legacy = true;
-      migrationDefaults = ['empty project brief', 'empty requirement code/test references'];
+      migrationDefaults = ['empty project brief', 'empty requirement code/test references', 'empty unresolved assumption list'];
       if (!adapter.schemas?.includes(nested?.schema) || (nested?.profile && nested.profile !== profile)) {
         return failure('PROJECT_ENVELOPE_PROFILE_MISMATCH', [profile, nested?.schema ?? nested?.profile ?? null]);
       }
@@ -261,7 +318,7 @@ export function prepareProjectEnvelope(source, adapters) {
       nested = value;
       brief = emptyProjectBrief();
       legacy = true;
-      migrationDefaults = ['empty project brief', 'empty requirement code/test references'];
+      migrationDefaults = ['empty project brief', 'empty requirement code/test references', 'empty unresolved assumption list'];
     }
     rejectAuthority(nested);
     const prepared = prepare(adapter, nested);
@@ -280,7 +337,7 @@ export function prepareProjectEnvelope(source, adapters) {
       report: {
         inputSchema, outputSchema: PROJECT_ENVELOPE_SCHEMA, profile, legacy,
         preserved: [...(prepared.preserved ?? ['source', 'circuit', 'layout', 'properties', 'controls']),
-          'brief purpose/inputs/outputs/boundary cases/acceptance criteria'],
+          'brief purpose/inputs/outputs/boundary cases/acceptance criteria/open assumptions'],
         defaultsAdded: [...(prepared.defaultsAdded ?? []), ...migrationDefaults],
         executableAuthorityCleared: true,
       },

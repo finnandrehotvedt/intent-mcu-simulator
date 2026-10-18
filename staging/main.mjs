@@ -213,7 +213,8 @@ const elements = Object.fromEntries([
   'controller-workbench-limitation', 'controller-public-boundary', 'parked-circuit-notice',
   'project-brief', 'project-brief-profile', 'project-brief-purpose', 'project-brief-inputs',
   'project-brief-outputs', 'project-brief-boundaries', 'project-brief-acceptance',
-  'project-brief-evaluation', 'project-brief-status', 'requirement-trace-list', 'requirement-trace-summary',
+  'project-brief-assumptions', 'project-brief-evaluation', 'project-brief-status', 'requirement-trace-list', 'requirement-trace-summary',
+  'open-assumptions-list', 'open-assumptions-summary',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -2288,6 +2289,7 @@ function briefDraftFromBrief(value = emptyProjectBrief()) {
     outputs: brief.outputs.join('\n'),
     boundaryCases: brief.boundaryCases.join('\n'),
     acceptanceCriteria: brief.acceptanceCriteria.map((item) => `${item.id} | ${item.text} | ${item.codeRefs.join(', ')} | ${item.testRefs.join(', ')}`).join('\n'),
+    openAssumptions: brief.openAssumptions.map((item) => `${item.id} | ${item.kind} | ${item.question} | ${item.requirementIds.join(', ')}`).join('\n'),
   };
 }
 function emptyProjectBriefDraft() { return briefDraftFromBrief(emptyProjectBrief()); }
@@ -2302,6 +2304,7 @@ function captureProjectBriefDraft() {
     outputs: elements.projectbriefoutputs.value,
     boundaryCases: elements.projectbriefboundaries.value,
     acceptanceCriteria: elements.projectbriefacceptance.value,
+    openAssumptions: elements.projectbriefassumptions.value,
   });
 }
 function briefLines(value) {
@@ -2318,6 +2321,13 @@ function projectBriefFromDraft(draft) {
     return { id: fields[0], text: fields[1], codeRefs: briefReferences(fields[2] ?? ''),
       testRefs: briefReferences(fields[3] ?? '') };
   });
+  const openAssumptions = briefLines(draft.openAssumptions).map((line, index) => {
+    const fields = line.split('|').map((field) => field.trim());
+    if (fields.length < 3 || fields.length > 4) throw Object.assign(new Error('PROJECT_BRIEF_ASSUMPTION_FORMAT'),
+      { details: [`$brief.openAssumptions[${index}]`] });
+    return { id: fields[0], kind: fields[1], question: fields[2],
+      requirementIds: briefReferences(fields[3] ?? '') };
+  });
   return normalizeProjectBrief({
     schema: PROJECT_BRIEF_SCHEMA,
     purpose: draft.purpose.trim(),
@@ -2325,7 +2335,27 @@ function projectBriefFromDraft(draft) {
     outputs: briefLines(draft.outputs),
     boundaryCases: briefLines(draft.boundaryCases),
     acceptanceCriteria,
+    openAssumptions,
   });
+}
+function renderOpenAssumptions(brief = null) {
+  const items = brief?.openAssumptions ?? [];
+  elements.openassumptionssummary.textContent = items.length
+    ? `${items.length} unresolved` : 'No open questions';
+  if (!items.length) {
+    elements.openassumptionslist.replaceChildren(Object.assign(document.createElement('p'), {
+      className: 'requirement-trace-empty', textContent: 'Add an open question when a required detail is missing.',
+    }));
+    return;
+  }
+  elements.openassumptionslist.replaceChildren(...items.map((item) => {
+    const row = document.createElement('article'); row.className = 'open-assumption-row'; row.dataset.assumptionId = item.id;
+    const identity = document.createElement('div'); identity.append(Object.assign(document.createElement('strong'), { textContent: 'Question ID' }), Object.assign(document.createElement('b'), { textContent: item.id }));
+    const kind = document.createElement('div'); kind.append(Object.assign(document.createElement('strong'), { textContent: 'Missing detail' }), Object.assign(document.createElement('span'), { textContent: item.kind }));
+    const question = document.createElement('div'); question.append(Object.assign(document.createElement('strong'), { textContent: 'Clarification needed' }), document.createTextNode(item.question));
+    const state = document.createElement('div'); state.append(Object.assign(document.createElement('strong'), { textContent: 'Status' }), Object.assign(document.createElement('span'), { className: 'open-assumption-status', textContent: 'Unresolved' }), Object.assign(document.createElement('small'), { textContent: item.requirementIds.length ? ` · ${item.requirementIds.join(', ')}` : ' · no requirement link' }));
+    row.append(identity, kind, question, state); return row;
+  }));
 }
 function projectBriefForProfile(profile) {
   if (profile === selectedCompilerProfile) captureProjectBriefDraft();
@@ -2438,6 +2468,7 @@ function renderProjectBrief() {
   elements.projectbriefoutputs.value = draft.outputs;
   elements.projectbriefboundaries.value = draft.boundaryCases;
   elements.projectbriefacceptance.value = draft.acceptanceCriteria;
+  elements.projectbriefassumptions.value = draft.openAssumptions;
   elements.projectbriefprofile.textContent = publicControllerView(selectedCompilerProfile)?.label ?? selectedCompilerProfile;
   try {
     const brief = projectBriefFromDraft(draft);
@@ -2446,11 +2477,13 @@ function renderProjectBrief() {
     elements.projectbriefstatus.dataset.valid = 'true';
     elements.projectbriefstatus.textContent = 'Valid data-only brief · saved with Download/Save; Build and runtime authority are unchanged.';
     renderRequirementTraceability(brief);
+    renderOpenAssumptions(brief);
   } catch (error) {
     elements.projectbriefevaluation.textContent = 'Not evaluated';
     elements.projectbriefstatus.dataset.valid = 'false';
     elements.projectbriefstatus.textContent = `Brief not saveable (${error.code ?? error.message}). Use ID | statement and unique uppercase IDs.`;
     renderRequirementTraceability();
+    renderOpenAssumptions();
   }
 }
 elements.requirementtracelist.addEventListener('click', (event) => {
@@ -2481,7 +2514,7 @@ function handleProjectBriefInput(event) {
   renderProjectBrief();
 }
 for (const input of [elements.projectbriefpurpose, elements.projectbriefinputs, elements.projectbriefoutputs,
-  elements.projectbriefboundaries, elements.projectbriefacceptance]) {
+  elements.projectbriefboundaries, elements.projectbriefacceptance, elements.projectbriefassumptions]) {
   input.addEventListener('input', handleProjectBriefInput);
 }
 for (const [button, profile] of [[elements.reset, AVR_PROFILE], [elements.picoreset, RP2040_PROFILE],
@@ -6024,7 +6057,7 @@ elements.projectimport.addEventListener('change', async () => {
 
 elements.promptgenerate.addEventListener('click', () => {
   try {
-    elements.promptoutput.value = generatePromptBridgeV2(currentRuntimeProject());
+    elements.promptoutput.value = generatePromptBridgeV2(currentRuntimeProject(), projectBriefForProfile(selectedCompilerProfile).openAssumptions);
     elements.promptcopy.disabled = false;
     elements.promptmessage.textContent = 'Portable prompt generated locally. No network request was made.';
   } catch (error) {

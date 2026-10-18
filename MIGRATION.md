@@ -46,6 +46,12 @@ runtime result links are never serialized, so Open always starts requirements
 as `Untested` and requires a fresh Build/Run before a current result can be
 linked.
 
+Rc.33 advances the common wrapper to `intent-mcu-project-envelope@4` and the
+brief to `intent-mcu-project-brief@3`. The brief may contain bounded voltage,
+pin, timing and other clarification questions. Every item is unresolved by
+definition: no status, support claim, verdict or runtime authority is stored.
+Rc.32 files migrate with an explicit empty unresolved-question list.
+
 Existing accepted files remain readable:
 
 - AVR contact-persistence and `teach-lab-project@2` files;

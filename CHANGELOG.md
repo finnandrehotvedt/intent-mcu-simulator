@@ -2,6 +2,18 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.33 — 2026-10-18
+
+- Completed X03 with explicit unresolved voltage, pin, timing and other
+  clarification questions across all four public profiles.
+- Advanced the strict common file to `intent-mcu-project-envelope@4` and the
+  inert brief to `intent-mcu-project-brief@3`; rc.32 files migrate with an
+  empty unresolved-question list.
+- Added unresolved questions to the portable Prompt Bridge while explicitly
+  prohibiting inferred support; no live AI or third-party request was added.
+- Preserved X01/X02 data-only context, transient verdict-free result links,
+  all bounded runtimes and exact controller/model limitations.
+
 ## 1.1.0-rc.32 — 2026-10-18
 
 - Completed X02 with visible per-requirement code, test and current-result
