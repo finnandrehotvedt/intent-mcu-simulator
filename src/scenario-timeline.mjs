@@ -4,8 +4,12 @@
 import { exactKeys } from './strict-json.mjs';
 import { THERMOSTAT_EXPERIMENT_ID, THERMOSTAT_SCENARIOS } from './thermostat-experiment-contract.mjs';
 import { completedExperimentOutcome } from './experiment-outcomes.mjs';
+import {
+  generateSeededPropertyScenarios, normalizeSeededPropertySuite, seededPropertySuite,
+} from './seeded-property-suite.mjs';
 
 export const SCENARIO_TIMELINE_SCHEMA = 'intent-mcu-scenario-timeline@1';
+export const SEEDED_SCENARIO_TIMELINE_SCHEMA = 'intent-mcu-scenario-timeline@2';
 export const SCENARIO_TIMELINE_PROFILE = 'board.atmega328p-16mhz-v1';
 export const SCENARIO_TIMELINE_LIMITS = Object.freeze({
   scenarios: 8, eventsPerScenario: 24, textBytes: 80,
@@ -133,9 +137,12 @@ function normalizeScenario(value, path) {
 
 export function normalizeScenarioTimeline(value, profile = SCENARIO_TIMELINE_PROFILE) {
   if (value === null) return null;
+  const seeded = value?.schema === SEEDED_SCENARIO_TIMELINE_SCHEMA;
   if (!value || typeof value !== 'object' || Array.isArray(value)
-      || !exactKeys(value, ['schema', 'profile', 'experimentId', 'scenarios'])
-      || value.schema !== SCENARIO_TIMELINE_SCHEMA
+      || !exactKeys(value, seeded
+        ? ['schema', 'profile', 'experimentId', 'propertySuite', 'scenarios']
+        : ['schema', 'profile', 'experimentId', 'scenarios'])
+      || ![SCENARIO_TIMELINE_SCHEMA, SEEDED_SCENARIO_TIMELINE_SCHEMA].includes(value.schema)
       || value.profile !== SCENARIO_TIMELINE_PROFILE || value.profile !== profile
       || value.experimentId !== THERMOSTAT_EXPERIMENT_ID
       || !Array.isArray(value.scenarios) || value.scenarios.length < 1
@@ -151,8 +158,32 @@ export function normalizeScenarioTimeline(value, profile = SCENARIO_TIMELINE_PRO
     if (ids.has(scenario.id)) throw Object.assign(new Error('SCENARIO_ID_DUPLICATE'), { details: [scenario.id] });
     ids.add(scenario.id);
   }
+  if (seeded) {
+    const propertySuite = normalizeSeededPropertySuite(value.propertySuite);
+    const generated = generateSeededPropertyScenarios(propertySuite).map((scenario, index) => normalizeScenario(
+      scenario, `$scenarioTimeline.scenarios[${index}]`,
+    ));
+    if (JSON.stringify(generated) !== JSON.stringify(scenarios)) {
+      throw Object.assign(new Error('SEEDED_PROPERTY_SEQUENCE_MISMATCH'),
+        { details: ['$scenarioTimeline.scenarios'] });
+    }
+    return { schema: SEEDED_SCENARIO_TIMELINE_SCHEMA, profile: value.profile,
+      experimentId: value.experimentId, propertySuite, scenarios };
+  }
   return { schema: SCENARIO_TIMELINE_SCHEMA, profile: value.profile,
     experimentId: value.experimentId, scenarios };
+}
+
+export function generateSeededThermostatTimeline(seed, profile = SCENARIO_TIMELINE_PROFILE) {
+  if (profile !== SCENARIO_TIMELINE_PROFILE) throw new TypeError('SEEDED_PROPERTY_PROFILE_UNSUPPORTED');
+  const propertySuite = seededPropertySuite(seed);
+  return normalizeScenarioTimeline({
+    schema: SEEDED_SCENARIO_TIMELINE_SCHEMA,
+    profile,
+    experimentId: THERMOSTAT_EXPERIMENT_ID,
+    propertySuite,
+    scenarios: generateSeededPropertyScenarios(propertySuite),
+  }, profile);
 }
 
 function presetScenario(scenario) {
@@ -266,6 +297,10 @@ export class ScenarioTimelineEditor {
     }
     const draft = this.timeline;
     try {
+      if (draft.schema === SEEDED_SCENARIO_TIMELINE_SCHEMA) {
+        draft.schema = SCENARIO_TIMELINE_SCHEMA;
+        delete draft.propertySuite;
+      }
       if (command?.type === 'scenario.add') draft.scenarios.push(clone(command.scenario));
       else {
         const scenario = draft.scenarios.find((item) => item.id === command?.scenarioId);

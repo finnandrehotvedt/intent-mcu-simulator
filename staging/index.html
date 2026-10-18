@@ -513,6 +513,13 @@
       <section id="scenario-editor" class="scenario-editor" aria-labelledby="scenario-editor-title">
         <div class="scenario-editor-heading"><div><p class="eyebrow">X17 · DATA-ONLY TEST AUTHORING</p><h3 id="scenario-editor-title">Scenario timeline</h3></div><span class="state">AVR thermostat subset</span></div>
         <p>Create isolated cases without editing firmware. Inputs are scheduled in virtual milliseconds and must settle for at least 1 ms before an explicit observation window. The browser reports the actual worker-snapshot time inside that saved window; it does not claim the pin was observed at the window start. Expected D13 is compared with actually observed D13 and never becomes evidence.</p>
+        <div class="seeded-property-controls" aria-labelledby="seeded-property-title">
+          <div><p class="eyebrow">X22 · REPRODUCIBLE INPUT VARIANTS</p><h4 id="seeded-property-title">Seeded property suite</h4></div>
+          <label>Unsigned 32-bit seed<input id="seeded-property-seed" type="number" min="0" max="4294967295" step="1" value="305419896"></label>
+          <button id="seeded-property-generate" type="button">Generate 8 cases</button>
+          <button id="seeded-property-replay" type="button" disabled>Replay stored seed</button>
+          <p id="seeded-property-summary" class="truth" role="status">No seeded suite stored. Generation is bounded to eight valid AVR thermostat cases.</p>
+        </div>
         <div class="scenario-editor-actions"><button id="scenario-add" type="button">Add scenario</button><button id="scenario-undo" type="button">Undo timeline edit</button><button id="scenario-redo" type="button">Redo timeline edit</button><button id="scenario-run" type="button" disabled>Run authored timeline</button></div>
         <div id="scenario-list" class="scenario-list"></div>
         <p id="scenario-editor-message" class="truth" role="status">The timeline is saved with the local project. A fresh matching firmware build is required to run it.</p>

@@ -71,7 +71,8 @@ import {
   thermostatFirmwareVariant,
 } from '../src/thermostat-experiment.mjs';
 import {
-  ScenarioTimelineEditor, defaultThermostatScenarioTimeline, scenarioTimelineControls,
+  ScenarioTimelineEditor, defaultThermostatScenarioTimeline, generateSeededThermostatTimeline,
+  scenarioTimelineControls,
 } from '../src/scenario-timeline.mjs';
 import { aggregateExperimentOutcomes } from '../src/experiment-outcomes.mjs';
 import {
@@ -238,6 +239,7 @@ const elements = Object.fromEntries([
   'thermostat-load-bad', 'thermostat-restore', 'thermostat-results', 'thermostat-experiment-message',
   'scenario-editor', 'scenario-add', 'scenario-undo', 'scenario-redo', 'scenario-run',
   'scenario-list', 'scenario-editor-message',
+  'seeded-property-seed', 'seeded-property-generate', 'seeded-property-replay', 'seeded-property-summary',
   'starter-examples', 'starter-gallery', 'quick-controls', 'workbench-workspace', 'project-bar',
   'family-select', 'board-select', 'controller-status', 'toolchain-boundary',
   'controller-workbench', 'controller-workbench-eyebrow', 'controller-workbench-title', 'controller-workbench-badge',
@@ -2094,12 +2096,21 @@ function renderScenarioTimelineEditor() {
   elements.scenarioeditor.hidden = !active;
   if (!active) return;
   const timeline = scenarioTimelineEditor?.timeline ?? null;
+  const propertySuite = timeline?.propertySuite ?? null;
   const running = Boolean(thermostatExperimentRun);
   elements.scenarioadd.disabled = running;
   elements.scenarioundo.disabled = running || !scenarioTimelineEditor?.undoStack.length;
   elements.scenarioredo.disabled = running || !scenarioTimelineEditor?.redoStack.length;
   elements.scenariorun.disabled = running || !timeline || !thermostatRuntimeReady()
     || thermostatFirmwareVariant(currentProject()) === 'modified';
+  elements.seededpropertygenerate.disabled = running;
+  elements.seededpropertyreplay.disabled = running || !propertySuite;
+  if (propertySuite) elements.seededpropertyseed.value = String(propertySuite.seed);
+  const observedFailure = propertySuite
+    ? authoredScenarioResults.find((item) => item.status === 'failed') ?? null : null;
+  elements.seededpropertysummary.textContent = propertySuite
+    ? `Stored seed ${propertySuite.seed} · ${propertySuite.algorithm} · ${propertySuite.caseCount} cases · ${propertySuite.resourceBudget.generatorSteps} generator steps · integer ${propertySuite.validInputs.temperatureC.minimum}…${propertySuite.validInputs.temperatureC.maximum} °C + boolean button · max ${propertySuite.resourceBudget.maximumVirtualMilliseconds} ms${observedFailure ? ` · observed counterexample ${observedFailure.scenarioId} at ${observedFailure.virtualMilliseconds.toFixed(3)} ms` : ''}.`
+    : 'No seeded suite stored. Generation is bounded to eight valid AVR thermostat cases.';
   elements.scenarioadd.textContent = timeline ? 'Add scenario' : 'Create editable timeline';
   if (!timeline) {
     const empty = document.createElement('p'); empty.className = 'scenario-empty';
@@ -6205,6 +6216,35 @@ elements.reset.addEventListener('click', () => {
 elements.thermostatruntests.addEventListener('click', startThermostatExperiment);
 elements.thermostatloadbad.addEventListener('click', () => loadThermostatFirmwareVariant('known-bad-equality'));
 elements.thermostatrestore.addEventListener('click', () => loadThermostatFirmwareVariant('correct'));
+function installSeededPropertyTimeline(seed, action) {
+  try {
+    const timeline = generateSeededThermostatTimeline(seed);
+    scenarioTimelineEditor = new ScenarioTimelineEditor(timeline);
+    authoredScenarioResults = [];
+    persistProject();
+    elements.scenarioeditormessage.textContent = action === 'replay'
+      ? `Replayed stored seed ${seed}; the identical validated input sequence was regenerated. Build authority was unchanged and no verdict was imported.`
+      : `Generated eight bounded cases from stored seed ${seed}. Build this exact firmware, then run the authored timeline.`;
+    renderThermostatExperimentPanel();
+    return { ok: true, code: action === 'replay' ? 'SEEDED_PROPERTY_REPLAYED' : 'SEEDED_PROPERTY_GENERATED' };
+  } catch (error) {
+    elements.seededpropertysummary.textContent = `Seed rejected (${error.code ?? error.message}). Use an integer from 0 through 4294967295.`;
+    return { ok: false, code: error.code ?? error.message ?? 'SEEDED_PROPERTY_REJECTED' };
+  }
+}
+elements.seededpropertygenerate.addEventListener('click', () => {
+  const seed = Number(elements.seededpropertyseed.value);
+  installSeededPropertyTimeline(seed, 'generate');
+});
+elements.seededpropertyreplay.addEventListener('click', () => {
+  const seed = scenarioTimelineEditor?.timeline.propertySuite?.seed;
+  if (seed === undefined) return;
+  const before = JSON.stringify(scenarioTimelineEditor.timeline.scenarios);
+  const result = installSeededPropertyTimeline(seed, 'replay');
+  if (result.ok && JSON.stringify(scenarioTimelineEditor.timeline.scenarios) !== before) {
+    throw new Error('SEEDED_PROPERTY_REPLAY_MISMATCH');
+  }
+});
 elements.scenarioadd.addEventListener('click', () => {
   if (!scenarioTimelineEditor) {
     scenarioTimelineEditor = new ScenarioTimelineEditor(defaultThermostatScenarioTimeline());
