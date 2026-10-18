@@ -2489,7 +2489,10 @@ async function advanceThermostatExperiment(message) {
   const waiter = run.authored ? authoredExperimentWaiter : null;
   if (waiter) authoredExperimentWaiter = null;
   renderThermostatExperimentPanel();
-  if (waiter) waiter.resolve(structuredClone(completedResults));
+  if (waiter) {
+    const settledResults = structuredClone(completedResults);
+    setTimeout(() => waiter.resolve(settledResults), 0);
+  }
 }
 function loadThermostatFirmwareVariant(variant) {
   if (!thermostatProjectActive()) return { ok: false, code: 'THERMOSTAT_PROJECT_REQUIRED' };
