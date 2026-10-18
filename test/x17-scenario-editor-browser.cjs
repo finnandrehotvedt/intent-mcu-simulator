@@ -107,6 +107,25 @@ let browser;
   assert.equal(await authoredCard.locator('.input-temperature-c').count(), 2, 'keyboard Add did not create a row');
   await page.locator('#scenario-undo').focus(); await page.locator('#scenario-undo').press('Enter');
   assert.equal(await authoredCard.locator('.input-temperature-c').count(), 1, 'keyboard Undo did not remove the row');
+  await page.locator('#scenario-redo').focus(); await page.locator('#scenario-redo').press('Enter');
+  assert.equal(await authoredCard.locator('.input-temperature-c').count(), 2, 'keyboard Redo did not restore the row');
+  await page.locator('#scenario-undo').focus(); await page.locator('#scenario-undo').press('Enter');
+  assert.equal(await authoredCard.locator('.input-temperature-c').count(), 1,
+    'second keyboard Undo did not restore the intended authored state');
+
+  const addButton = authoredCard.getByRole('button', { name: 'Add button event' });
+  await addButton.focus(); await addButton.press('Enter');
+  assert.equal(await authoredCard.locator('.input-button-pressed').count(), 2,
+    'keyboard Add did not create the temporary button event');
+  await authoredCard.locator('.input-button-pressed').last().getByRole('button', { name: 'Delete event' }).click();
+  assert.equal(await authoredCard.locator('.input-button-pressed').count(), 1,
+    'Delete did not remove the temporary button event');
+  await page.locator('#scenario-undo').click();
+  assert.equal(await authoredCard.locator('.input-button-pressed').count(), 2,
+    'Undo did not restore the deleted button event');
+  await page.locator('#scenario-redo').click();
+  assert.equal(await authoredCard.locator('.input-button-pressed').count(), 1,
+    'Redo did not reapply the button-event deletion');
 
   const temperature = authoredCard.locator('.input-temperature-c input[type="number"]').last();
   await temperature.focus(); await temperature.press('Control+A'); await temperature.type('151'); await temperature.press('Tab');
@@ -207,6 +226,7 @@ let browser;
 
   assert.deepEqual(errors, [], `browser errors: ${JSON.stringify(errors)}`);
   console.log(JSON.stringify({ result: 'pass', scenarios: 5, authoredPasses: 5,
+    editorAddEditDeleteUndoRedo: true,
     wrongExpectationCaught: true, sourceHashPreserved: true, browserRecoveryClearedVerdict: true,
     fileOpenClearedVerdict: true,
     artifactIdentityPreservedAcrossTimelineEdit: true, correctM1Passes: 4,
