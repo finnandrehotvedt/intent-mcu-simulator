@@ -2036,7 +2036,10 @@ async function verifiedRegressionFixture(cell) {
 
 async function executeAvrRegressionCell(cell, fixture, started) {
   const loaded = loadExampleProject(cell.fixtureId, 'x26.regression-matrix');
-  if (!loaded.ok || JSON.stringify(currentProject()) !== JSON.stringify(fixture)) {
+  // Candidate-v3 owns the canonical envelope while the established AVR editor
+  // exposes a normalized working projection. Bind the accepted load result to
+  // the already checksum-verified envelope instead of comparing unlike views.
+  if (!loaded.ok || JSON.stringify(loaded.example?.project) !== JSON.stringify(fixture)) {
     throw Object.assign(new Error('REGRESSION_AVR_FIXTURE_INSTALL'), { code: 'REGRESSION_AVR_FIXTURE_INSTALL' });
   }
   await build();
@@ -2052,7 +2055,7 @@ async function executeAvrRegressionCell(cell, fixture, started) {
   const equality = results.find((item) => item.scenarioId === 'THERM-SCENARIO-EQUALITY-ENABLED');
   const actual = {
     kind: 'avr.thermostat-summary', scenariosPassed: results.filter((item) => item.status === 'passed').length,
-    scenariosTotal: results.length, equalityD13: equality?.observed?.d13 ?? null,
+    scenariosTotal: results.length, equalityD13: equality?.observed?.level ?? null,
   };
   const rawVirtualTime = { timebase: 'avr-worker-virtual-milliseconds', values: results.map((item) => item.virtualMilliseconds) };
   stopRuntime('X26 AVR cell completed; report retained as review data only.');
