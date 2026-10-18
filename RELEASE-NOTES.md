@@ -1,4 +1,20 @@
-# Intent MCU Simulator 1.1.0-rc.27
+# Intent MCU Simulator 1.1.0-rc.28
+
+This placement and duplication release completes W08. Every selectable AVR
+part can be placed by click or catalogue drag, moved with pointer or keyboard,
+rotated, deleted and duplicated as a disconnected copy with a fresh stable ID.
+All accepted edits are one Undo/Redo transaction and invalidate stale runtime
+authority when topology changes.
+
+Automatic multi-branch routes now list their exact named endpoints beside the
+canvas. Activating an endpoint selects the corresponding visible SVG branch;
+branch-only and separately labelled whole-net actions retain the W06/W07
+validation and history boundary. Narrow controller profiles remain fixed and
+do not claim general placement or duplication.
+
+---
+
+## 1.1.0-rc.27
 
 This branch-transaction release completes W06 and W07. AVR candidate projects
 can reconnect an exact selected branch to a free named pin, delete only that

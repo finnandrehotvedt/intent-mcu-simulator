@@ -1,18 +1,18 @@
-# Rollback basis for 1.1.0-rc.27
+# Rollback basis for 1.1.0-rc.28
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
 Retain exact accepted source commit
-`9d18ddde600e842cdb6dc98073f0aae429c408cb` and VM103 image
-`sha256:5843452d6e587513e20133ff8001d63adccdbecd0daebf84a696ce149d282aa5`
-as the pre-rc.27 app-only recovery basis.
+`517f25c04d67e30ac66d91ceda5f7c039e44ef6c` and VM103 image
+`sha256:432895919e1c883f995583db8e6f1b1e348d35716a53763a4ecd7b2a82e5c56a`
+as the pre-rc.28 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
 
-Rc.17 through rc.27 use the same common envelope. An rc.22 through rc.27 file that contains
+Rc.17 through rc.28 use the same common envelope. An rc.22 through rc.28 file that contains
 narrow-profile `wireRoutes` should be retained as the learner's original, then
 opened in rc.21 only through an rc.21-compatible copy if strict older nested
 validation rejects the added layout field. The existing **Legacy copy** remains
@@ -45,6 +45,11 @@ Rc.27 adds strict candidate-v3 branch reconnect and completes the existing
 branch-versus-whole-net transaction controls. Rolling back removes reconnect
 authority but does not migrate learner files or alter their named-pin graph;
 open the retained file in the older release and Build fresh.
+
+Rc.28 adds AVR placement, disconnected duplication and visible automatic-route
+branch selectors. Rolling back removes those controls without converting or
+discarding learner-owned files; open the retained file in rc.27 and Build
+fresh. Narrow-profile graphs are unchanged.
 
 Browser recovery and learner-owned files are never deleted by deployment or
 rollback. Do not change DNS, shared Caddy configuration, compiler/runtime

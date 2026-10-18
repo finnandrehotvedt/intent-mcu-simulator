@@ -4057,9 +4057,8 @@ async function benchmarkCatalogFixture(action = 'start') {
   };
 }
 
-function addComponent(type, point = null) {
-  try {
-    const candidatePrefix = {
+function candidateComponentPrefix(type) {
+  return {
       'reference.ground-v1': 'ground-reference',
       'switch.toggle-spst-v1': 'toggle-switch',
       'switch.changeover-spdt-v1': 'selector',
@@ -4071,9 +4070,21 @@ function addComponent(type, point = null) {
       [SEVEN_SEGMENT_TYPE]: 'seven-segment',
       [CHARACTER_LCD_TYPE]: 'character-lcd',
       [ROTARY_ENCODER_TYPE]: 'rotary-encoder',
-    }[type];
+  }[type] ?? null;
+}
+
+function freshComponentId(type) {
+  const prefix = editor.kind === 'candidate-project-v3' ? candidateComponentPrefix(type) : null;
+  return prefix
+    ? nextEntityId(prefix, currentProject().circuit.components.map((item) => item.id))
+    : newComponent(type, currentProject().circuit).id;
+}
+
+function addComponent(type, point = null) {
+  try {
+    const candidatePrefix = candidateComponentPrefix(type);
     const component = editor.kind === 'candidate-project-v3' && candidatePrefix
-      ? createCandidateUiComponent(type, nextEntityId(candidatePrefix, currentProject().circuit.components.map((item) => item.id)))
+      ? createCandidateUiComponent(type, freshComponentId(type))
       : newComponent(type, currentProject().circuit);
     const index = currentProject().circuit.components.length;
     const firstPosition = {
@@ -4096,10 +4107,10 @@ function addComponent(type, point = null) {
     }[type];
     const sameTypeCount = currentProject().circuit.components.filter((item) => item.type === type).length;
     const slot = index % 16;
-    const position = point ?? (sameTypeCount === 0 ? firstPosition : {
+    const position = snappedComponentPoint(point ?? (sameTypeCount === 0 ? firstPosition : {
       x: 0.12 + (slot % 4) * 0.25,
       y: 0.12 + Math.floor(slot / 4) * 0.25,
-    });
+    }));
     const result = applyEditor({ type: 'component.add', component, position }, `Added ${component.id}`);
     if (result.ok) {
       selectComponent(component.id);
@@ -4175,7 +4186,21 @@ function renderWireBends(net) {
     return;
   }
   const points = storedRoute ?? [];
-  if (!points.length) { elements.wirebends.textContent = 'Automatic body-avoiding orthogonal route. Add a bend to override it.'; return; }
+  if (!points.length) {
+    const summary = document.createElement('p');
+    summary.textContent = 'Automatic body-avoiding orthogonal route. Choose one named branch below, or add a bend to override it.';
+    const buttons = net.endpoints.map((item) => {
+      const endpoint = endpointKey(item);
+      const button = document.createElement('button'); button.type = 'button';
+      button.textContent = `${endpoint} · automatic route`;
+      button.addEventListener('click', () => requestAnimationFrame(() => elements.circuitwires.querySelector(
+        `.wire-segment-hit[data-net="${net.id}"][data-endpoint="${endpoint}"]`,
+      )?.focus()));
+      return button;
+    });
+    elements.wirebends.replaceChildren(summary, ...buttons);
+    return;
+  }
   const rows = points.map((point, index) => {
     const row = document.createElement('div'); row.className = 'bend-row';
     const x = document.createElement('input'); x.type = 'number'; x.min = '0'; x.max = '1'; x.step = '0.01'; x.value = String(point.x); x.setAttribute('aria-label', `Bend ${index + 1} x`);
@@ -4945,14 +4970,14 @@ elements.catalogprev.addEventListener('click', () => {
 elements.catalognext.addEventListener('click', () => {
   catalogWindowStart += CATALOG_WINDOW_LIMIT; renderCatalog();
 });
-elements.circuitcanvas.addEventListener('dragover', (event) => event.preventDefault());
+elements.circuitcanvas.addEventListener('dragover', (event) => event.preventDefault(), true);
 elements.circuitcanvas.addEventListener('drop', (event) => {
   event.preventDefault(); const type = event.dataTransfer.getData('application/x-intent-component'); if (!uiComponentCatalog[type]?.selectable) return;
   const box = elements.circuitcanvas.getBoundingClientRect(); const view = currentProject().layout.viewport;
   const x = Math.max(0.07, Math.min(0.93, ((event.clientX - box.left) / box.width - 0.5 - view.panX) / view.zoom + 0.5));
   const y = Math.max(0.08, Math.min(0.92, ((event.clientY - box.top) / box.height - 0.5 - view.panY) / view.zoom + 0.5));
   addComponent(type, { x, y });
-});
+}, true);
 elements.source.addEventListener('input', () => {
   latestBuildResult = null;
   elements.diagnosticlinks.replaceChildren();
@@ -5163,7 +5188,7 @@ elements.rotatecomponent.addEventListener('click', () => {
 });
 elements.duplicatecomponent.addEventListener('click', () => {
   const source = currentProject().circuit.components.find((component) => component.id === selectedComponentId); if (!source) return;
-  const newId = newComponent(source.type, currentProject().circuit).id;
+  const newId = freshComponentId(source.type);
   const result = applyEditor({ type: 'component.duplicate', sourceId: source.id, newId }, `Duplicated ${source.id}`);
   if (result.ok) { selectComponent(newId); renderProject(); }
 });

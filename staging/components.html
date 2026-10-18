@@ -55,7 +55,7 @@
     </section>
     <section id="narrow-profile-parts" class="panel" aria-labelledby="narrow-profile-parts-title">
       <h2 id="narrow-profile-parts-title">Pico, ESP32-C3 and STM32 supported parts</h2>
-      <p class="docs-intro">Each narrow workbench filters the panel to exactly three entries: its fixed controller, <code>resistor.fixed-v1</code> and <code>led.basic-v1</code>. Controllers cannot be added, duplicated or deleted. A missing resistor or LED is restored with the same stable ID and deterministic safe placement, but with no inferred cable.</p>
+      <p class="docs-intro">The general AVR editor supports click-add, drag placement and disconnected duplication with fresh stable IDs. Each narrow workbench filters the panel to exactly three entries: its fixed controller, <code>resistor.fixed-v1</code> and <code>led.basic-v1</code>. Narrow controllers cannot be added, duplicated or deleted. A missing resistor or LED is restored with the same stable ID and deterministic safe placement, but with no inferred cable.</p>
       <div class="docs-grid">
         <article class="docs-card"><h3>Fixed controller</h3><p>Pico exposes GP0 physical pin 1 and GND pin 3; ESP32-C3 exposes GPIO2 J1 pin 4 and GND J1 pin 6; STM32F429ZI exposes PB0 CN11 pin 34 and GND CN11 pin 35. These are profile-specific, not interchangeable.</p></article>
         <article class="docs-card"><h3>Series resistor</h3><p>The resistance field is accepted only when the selected LED remains inside the exact ideal 3.3 V / 12 mA model. Unsafe values reject atomically and leave the previous project unchanged.</p></article>
@@ -64,7 +64,7 @@
       </div>
       <nav class="docs-nav" aria-label="Narrow profile learning links"><a href="/examples.html#narrow-controller-guides">First project guides</a><a href="/support.html#repair-after-open">Save/Open recovery</a></nav>
     </section>
-    <footer>19 public models and 25 available cells with public references across four exact controller profiles in Intent MCU Simulator 1.1.0-rc.27 · original project graphics · no third-party simulator artwork or branding</footer>
+    <footer>19 public models and 25 available cells with public references across four exact controller profiles in Intent MCU Simulator 1.1.0-rc.28 · original project graphics · no third-party simulator artwork or branding</footer>
   </main>
 </body>
 </html>

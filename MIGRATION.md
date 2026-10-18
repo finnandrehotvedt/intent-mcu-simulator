@@ -1,4 +1,4 @@
-# Migration to 1.1.0-rc.27
+# Migration to 1.1.0-rc.28
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
@@ -12,7 +12,12 @@ Existing explicit net, endpoint and junction IDs remain canonical. Reconnect
 removes only stale stored route geometry for the changed net; Save/Open remains
 data-only and requires a fresh Build.
 
-Rc.17 through rc.27 save one `intent-mcu-project-envelope@1` format for AVR, RP2040 Pico,
+Rc.28 adds no file conversion. Newly placed and duplicated AVR parts use the
+existing project schemas and stable-ID rules. A duplicate begins disconnected;
+Download/Open stores authored data only, clears history and requires a fresh
+Build. Visible automatic-route branch selectors are presentation only.
+
+Rc.17 through rc.28 save one `intent-mcu-project-envelope@1` format for AVR, RP2040 Pico,
 ESP32-C3 and STM32F429ZI. The envelope identifies one exact tested profile and
 contains that profile's validated authored project. It contains no firmware,
 runtime/session authority, verdict or secret.

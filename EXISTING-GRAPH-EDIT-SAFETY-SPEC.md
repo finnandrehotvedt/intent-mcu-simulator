@@ -2,8 +2,8 @@
 
 This public contract covers W06, W07, W08 and W10 for the four controller
 workflows, including ordinary AVR v2 and candidate-v3 graphs. It does not add
-components, controllers, runtime models, narrow-profile branches, narrow
-duplication or arbitrary part placement.
+components, controllers, runtime models, narrow-profile branches or narrow
+duplication.
 
 The AVR editors expose explicit junction branches, branch reconnect and
 branch-versus-net deletion. Candidate-v3 reconnect passes the same strict
@@ -20,6 +20,9 @@ authority because they do not change named-pin connectivity. Component,
 property and wire changes still require a fresh Build.
 
 Save/Open remains data-only. It never restores history, artifact, runtime,
-GPIO/Serial observation or event authority. W06 and W07 are complete after
-public source and browser acceptance. W08 and W10 remain partial until their
-stated broader gaps are implemented and accepted.
+GPIO/Serial observation or event authority. W06, W07 and W08 are complete
+after public source and browser acceptance. W10 remains partial until its
+stated broader gap is implemented and accepted. W08 includes every selectable
+AVR model: click and drag placement, disconnected duplication with a fresh
+stable ID, pointer and keyboard movement, rotation and deletion. Narrow-profile
+fixed-graph limits remain explicit.

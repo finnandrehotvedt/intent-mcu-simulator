@@ -380,6 +380,34 @@ export class CandidateEditorSession {
           runtimeDirty = true;
           break;
         }
+        case 'component.duplicate': {
+          if (!exactCommand(command, ['sourceId', 'newId'])
+              || typeof command.newId !== 'string' || command.newId.length === 0) {
+            return failure('EDITOR_COMMAND_SHAPE', this.revision);
+          }
+          const source = draft.candidateCircuit.components.find(
+            (item) => item.id === command.sourceId,
+          );
+          if (!source) return failure('EDITOR_COMPONENT_MISSING', this.revision, [command.sourceId]);
+          if (source.type.startsWith('board.')) {
+            return failure('CANDIDATE_EDITOR_CONTROLLER_PROTECTED', this.revision, [command.sourceId]);
+          }
+          if (draft.candidateCircuit.components.some((item) => item.id === command.newId)) {
+            return failure('PROJECT_CONTACT_COMPONENT_DUPLICATE', this.revision, [command.newId]);
+          }
+          const copy = clone(source);
+          copy.id = command.newId;
+          copy.label = `${source.label} copy`;
+          draft.candidateCircuit.components.push(copy);
+          const position = draft.candidateLayout.positions[source.id];
+          draft.candidateLayout.positions[copy.id] = {
+            x: Math.min(0.93, Math.max(0.07, position.x + 0.04)),
+            y: Math.min(0.92, Math.max(0.08, position.y + 0.04)),
+            rotation: position.rotation,
+          };
+          runtimeDirty = true;
+          break;
+        }
         case 'component.remove': {
           if (!exactCommand(command, ['componentId'])) {
             return failure('EDITOR_COMMAND_SHAPE', this.revision);

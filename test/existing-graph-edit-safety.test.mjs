@@ -31,7 +31,7 @@ const narrowProfiles = Object.freeze([
 ]);
 
 test('contract names the four workflows and both AVR graph editors without widening narrow profiles', () => {
-  assert.equal(contract.schema, 'intent-mcu-existing-graph-edit-safety@2');
+  assert.equal(contract.schema, 'intent-mcu-existing-graph-edit-safety@3');
   assert.deepEqual(Object.keys(contract.profiles), ['avr', 'avrCandidate', 'rp2040', 'esp32c3', 'stm32']);
   assert.deepEqual(contract.requirements, ['W06', 'W07', 'W08', 'W10']);
   assert.deepEqual(Object.keys(contract.completion), ['w06', 'w07', 'w08', 'w10']);
@@ -42,9 +42,10 @@ test('contract names the four workflows and both AVR graph editors without widen
     assert.equal(contract.profiles[id].safety.arbitraryVoltageShort.status, 'unavailable');
   }
   assert.equal(contract.profiles.avrCandidate.operations.branchReconnect.status, 'supported');
+  assert.equal(contract.profiles.avrCandidate.operations.duplicate.status, 'supported');
   assert.match(contract.completion.w06, /^complete:/u);
   assert.match(contract.completion.w07, /^complete:/u);
-  assert.match(contract.completion.w08, /^partial:/u);
+  assert.match(contract.completion.w08, /^complete:/u);
   assert.match(contract.completion.w10, /^partial:/u);
 });
 

@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.27 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.28 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -12,11 +12,19 @@ Named endpoints and the existing net graph remain the sole electrical
 authority; crossings do not connect nets, and distinct nets cannot share a
 positive-length collinear lane.
 
+AVR projects allow every selectable catalogue part to be click-placed or
+drag-placed, moved, rotated, deleted and duplicated. A duplicate receives a
+fresh stable ID, copies authored properties and controls, and starts with no
+net references. Existing IDs, nets, endpoints, junctions and routes are
+preserved exactly. The narrow profiles retain fixed three-part graphs and do
+not claim general placement or duplication.
+
 AVR ordinary and candidate-v3 graphs support explicit junction branches.
 Selecting one branch reconnects or deletes only that endpoint; deleting the
 whole net remains a separate labelled action. Every accepted operation has one
 complete-document Undo/Redo transaction, while rejected operations add no
-history.
+history. Automatic-route endpoint buttons provide a visible keyboard- and
+pointer-operable way to select an exact branch.
 
 All four actual circuit editors use the same dark workbench canvas and grid.
 This presentation parity does not alter any profile's component graphics,

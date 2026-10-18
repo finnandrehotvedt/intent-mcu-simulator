@@ -2,6 +2,20 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.28 — 2026-10-18
+
+- Completed W08 for AVR projects with click and drag placement, pointer and
+  keyboard movement, rotation, deletion and disconnected duplication with a
+  fresh stable ID.
+- Preserved every existing component, net, endpoint, junction and route while
+  new and duplicated parts remain disconnected until the learner wires them.
+- Added complete Undo/Redo and data-only Download/Open acceptance for all W08
+  edits, including atomic rejection and stale-runtime invalidation.
+- Added visible named endpoint buttons for automatic branch routes so an exact
+  SVG branch can be selected reproducibly before reconnect or branch deletion.
+- Kept Pico, ESP32-C3 and STM32 fixed-profile placement and duplication limits
+  explicit and unchanged.
+
 ## 1.1.0-rc.27 — 2026-10-18
 
 - Completed W06 with exact AVR branch selection, candidate-v3 branch endpoint
