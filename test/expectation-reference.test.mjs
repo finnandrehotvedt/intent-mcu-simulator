@@ -5,6 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { webcrypto } from 'node:crypto';
 import {
+  EXPECTATION_REFERENCE_LIMIT,
   EXPECTATION_REFERENCE_SCHEMA,
   createExpectationReference,
   parseExpectationReference,
@@ -115,13 +116,26 @@ test('X25 reference rejects duplicate keys, unknown data, URLs and executable or
   assert.equal((await parseExpectationReference(duplicate)).code, 'DUPLICATE_KEY');
   assert.equal((await parseExpectationReference(JSON.stringify({ ...value, extra: true }))).code,
     'EXPECTATION_REFERENCE_SHAPE');
-  assert.equal((await parseExpectationReference(JSON.stringify({ ...value, verdict: 'passed' }))).code,
-    'EXPECTATION_REFERENCE_AUTHORITY');
-  assert.equal((await parseExpectationReference(JSON.stringify({ ...value, firmwareBytes: 'AA==' }))).code,
-    'EXPECTATION_REFERENCE_AUTHORITY');
+  for (const forbidden of ['artifact', 'artifactBytes', 'capability', 'elf', 'executable',
+    'firmwareBytes', 'firmwareHex', 'flash', 'runtime', 'runtimeState', 'sessionId',
+    'token', 'password', 'secret', 'verdict', 'experimentResults', 'observations', 'results',
+    'payloadBase64']) {
+    assert.equal((await parseExpectationReference(JSON.stringify({ ...value, [forbidden]: 'forbidden' }))).code,
+      'EXPECTATION_REFERENCE_AUTHORITY', forbidden);
+  }
   assert.equal((await parseExpectationReference(JSON.stringify({
     ...value, boundaryCases: ['See https://example.invalid'],
   }))).code, 'EXPECTATION_REFERENCE_URL');
+  assert.equal((await parseExpectationReference(JSON.stringify({
+    ...value, originProjectSha256: 'not-a-digest',
+  }))).code, 'EXPECTATION_REFERENCE_ORIGIN_IDENTITY');
+  assert.equal((await parseExpectationReference(JSON.stringify({
+    ...value, profile: 'board.unsupported-v1',
+  }))).code, 'EXPECTATION_REFERENCE_PROFILE');
+  const malformedId = structuredClone(value);
+  malformedId.acceptanceCriteria[0].id = 'invalid id';
+  assert.notEqual((await parseExpectationReference(JSON.stringify(malformedId))).ok, true);
+  assert.equal((await parseExpectationReference(' '.repeat(EXPECTATION_REFERENCE_LIMIT + 1))).code, 'INPUT_LIMIT');
 });
 
 test('X25 referenced source-only patch is applicable and keeps tests separate and unchanged', async () => {
