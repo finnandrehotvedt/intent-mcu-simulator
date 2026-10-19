@@ -1,0 +1,349 @@
+{
+  "artifactSha256": "641638d63dad25852d4f6b754f4bf92c3f1003437ea617ae8d87d6358cb75f3e",
+  "badgesSingleLine": true,
+  "browserErrors": 0,
+  "classSemanticSha256": {
+    "cpu-reset": "f8ec3225b108f405dbc9bd3224de98a69e166f40429d1f0c75e60cb690bf0d3a",
+    "experiment-restart": "51e693eb45938fa7eb25fb7c294a0fcafa28394bace70ea7bde4ade537a00074",
+    "power-on": "d5f10c2348d081ff35f5bdf64ca2eee4bdd9c88acd6015d500ad6169bff9a6e1"
+  },
+  "cookies": 0,
+  "evidenceFailureProbe": {
+    "code": "RESET_MEMORY_LEAK",
+    "outcome": {
+      "academicCode": "ACADEMIC_FAILED",
+      "academicStatus": "failed",
+      "evidenceStatus": "complete",
+      "jobCode": "JOB_COMPLETED",
+      "jobStatus": "completed",
+      "reasons": [
+        "RESET_VOLATILE_MEMORY_CLEARED"
+      ],
+      "schema": "intent-mcu-experiment-outcome@1"
+    },
+    "status": "failed-as-expected"
+  },
+  "executions": [
+    {
+      "after": {
+        "artifactSha256": "641638d63dad25852d4f6b754f4bf92c3f1003437ea617ae8d87d6358cb75f3e",
+        "controls": {
+          "buttonPressed": true,
+          "potPosition": 0.75
+        },
+        "cpuCycles": 0,
+        "faults": 0,
+        "inputLog": 0,
+        "instructions": 0,
+        "pending": 0,
+        "priorResultPresent": false,
+        "serial": 0,
+        "trace": 0,
+        "volatileByte": 0
+      },
+      "before": {
+        "artifactSha256": "641638d63dad25852d4f6b754f4bf92c3f1003437ea617ae8d87d6358cb75f3e",
+        "controls": {
+          "buttonPressed": true,
+          "potPosition": 0.75
+        },
+        "cpuCycles": 0,
+        "faults": 1,
+        "inputLog": 3,
+        "instructions": 0,
+        "pending": 1,
+        "priorResultPresent": true,
+        "serial": 1,
+        "trace": 2,
+        "volatileByte": 165
+      },
+      "diagnostics": {
+        "fixtureOnlyMemoryAddress": 256
+      },
+      "executionId": "X31-CPU-RESET-A",
+      "outcome": {
+        "academicCode": "ACADEMIC_PASSED",
+        "academicStatus": "passed",
+        "evidenceStatus": "complete",
+        "jobCode": "JOB_COMPLETED",
+        "jobStatus": "completed",
+        "reasons": [],
+        "schema": "intent-mcu-experiment-outcome@1"
+      },
+      "repeat": "A",
+      "resetClass": "cpu-reset",
+      "workerGenerationRetired": false
+    },
+    {
+      "after": {
+        "artifactSha256": "641638d63dad25852d4f6b754f4bf92c3f1003437ea617ae8d87d6358cb75f3e",
+        "controls": {
+          "buttonPressed": true,
+          "potPosition": 0.75
+        },
+        "cpuCycles": 0,
+        "faults": 0,
+        "inputLog": 0,
+        "instructions": 0,
+        "pending": 0,
+        "priorResultPresent": false,
+        "serial": 0,
+        "trace": 0,
+        "volatileByte": 0
+      },
+      "before": {
+        "artifactSha256": "641638d63dad25852d4f6b754f4bf92c3f1003437ea617ae8d87d6358cb75f3e",
+        "controls": {
+          "buttonPressed": true,
+          "potPosition": 0.75
+        },
+        "cpuCycles": 0,
+        "faults": 1,
+        "inputLog": 3,
+        "instructions": 0,
+        "pending": 1,
+        "priorResultPresent": true,
+        "serial": 1,
+        "trace": 2,
+        "volatileByte": 165
+      },
+      "diagnostics": {
+        "fixtureOnlyMemoryAddress": 256
+      },
+      "executionId": "X31-CPU-RESET-B",
+      "outcome": {
+        "academicCode": "ACADEMIC_PASSED",
+        "academicStatus": "passed",
+        "evidenceStatus": "complete",
+        "jobCode": "JOB_COMPLETED",
+        "jobStatus": "completed",
+        "reasons": [],
+        "schema": "intent-mcu-experiment-outcome@1"
+      },
+      "repeat": "B",
+      "resetClass": "cpu-reset",
+      "workerGenerationRetired": false
+    },
+    {
+      "after": {
+        "artifactSha256": "641638d63dad25852d4f6b754f4bf92c3f1003437ea617ae8d87d6358cb75f3e",
+        "controls": {
+          "buttonPressed": false,
+          "potPosition": 0.25
+        },
+        "cpuCycles": 0,
+        "faults": 0,
+        "inputLog": 2,
+        "instructions": 0,
+        "pending": 0,
+        "priorResultPresent": false,
+        "serial": 0,
+        "trace": 0,
+        "volatileByte": 0
+      },
+      "before": {
+        "artifactSha256": "641638d63dad25852d4f6b754f4bf92c3f1003437ea617ae8d87d6358cb75f3e",
+        "controls": {
+          "buttonPressed": true,
+          "potPosition": 0.75
+        },
+        "cpuCycles": 0,
+        "faults": 1,
+        "inputLog": 3,
+        "instructions": 0,
+        "pending": 1,
+        "priorResultPresent": true,
+        "serial": 1,
+        "trace": 2,
+        "volatileByte": 165
+      },
+      "diagnostics": {
+        "fixtureOnlyMemoryAddress": 256
+      },
+      "executionId": "X31-EXPERIMENT-RESTART-A",
+      "outcome": {
+        "academicCode": "ACADEMIC_PASSED",
+        "academicStatus": "passed",
+        "evidenceStatus": "complete",
+        "jobCode": "JOB_COMPLETED",
+        "jobStatus": "completed",
+        "reasons": [],
+        "schema": "intent-mcu-experiment-outcome@1"
+      },
+      "repeat": "A",
+      "resetClass": "experiment-restart",
+      "workerGenerationRetired": false
+    },
+    {
+      "after": {
+        "artifactSha256": "641638d63dad25852d4f6b754f4bf92c3f1003437ea617ae8d87d6358cb75f3e",
+        "controls": {
+          "buttonPressed": false,
+          "potPosition": 0.25
+        },
+        "cpuCycles": 0,
+        "faults": 0,
+        "inputLog": 2,
+        "instructions": 0,
+        "pending": 0,
+        "priorResultPresent": false,
+        "serial": 0,
+        "trace": 0,
+        "volatileByte": 0
+      },
+      "before": {
+        "artifactSha256": "641638d63dad25852d4f6b754f4bf92c3f1003437ea617ae8d87d6358cb75f3e",
+        "controls": {
+          "buttonPressed": true,
+          "potPosition": 0.75
+        },
+        "cpuCycles": 0,
+        "faults": 1,
+        "inputLog": 3,
+        "instructions": 0,
+        "pending": 1,
+        "priorResultPresent": true,
+        "serial": 1,
+        "trace": 2,
+        "volatileByte": 165
+      },
+      "diagnostics": {
+        "fixtureOnlyMemoryAddress": 256
+      },
+      "executionId": "X31-EXPERIMENT-RESTART-B",
+      "outcome": {
+        "academicCode": "ACADEMIC_PASSED",
+        "academicStatus": "passed",
+        "evidenceStatus": "complete",
+        "jobCode": "JOB_COMPLETED",
+        "jobStatus": "completed",
+        "reasons": [],
+        "schema": "intent-mcu-experiment-outcome@1"
+      },
+      "repeat": "B",
+      "resetClass": "experiment-restart",
+      "workerGenerationRetired": false
+    },
+    {
+      "after": {
+        "artifactSha256": "641638d63dad25852d4f6b754f4bf92c3f1003437ea617ae8d87d6358cb75f3e",
+        "controls": {
+          "buttonPressed": false,
+          "potPosition": 0.5
+        },
+        "cpuCycles": 0,
+        "faults": 0,
+        "inputLog": 0,
+        "instructions": 0,
+        "pending": 0,
+        "priorResultPresent": false,
+        "serial": 0,
+        "trace": 0,
+        "volatileByte": 0
+      },
+      "before": {
+        "artifactSha256": "641638d63dad25852d4f6b754f4bf92c3f1003437ea617ae8d87d6358cb75f3e",
+        "controls": {
+          "buttonPressed": true,
+          "potPosition": 0.75
+        },
+        "cpuCycles": 0,
+        "faults": 1,
+        "inputLog": 3,
+        "instructions": 0,
+        "pending": 1,
+        "priorResultPresent": true,
+        "serial": 1,
+        "trace": 2,
+        "volatileByte": 165
+      },
+      "diagnostics": {
+        "fixtureOnlyMemoryAddress": 256
+      },
+      "executionId": "X31-POWER-ON-A",
+      "outcome": {
+        "academicCode": "ACADEMIC_PASSED",
+        "academicStatus": "passed",
+        "evidenceStatus": "complete",
+        "jobCode": "JOB_COMPLETED",
+        "jobStatus": "completed",
+        "reasons": [],
+        "schema": "intent-mcu-experiment-outcome@1"
+      },
+      "repeat": "A",
+      "resetClass": "power-on",
+      "workerGenerationRetired": true
+    },
+    {
+      "after": {
+        "artifactSha256": "641638d63dad25852d4f6b754f4bf92c3f1003437ea617ae8d87d6358cb75f3e",
+        "controls": {
+          "buttonPressed": false,
+          "potPosition": 0.5
+        },
+        "cpuCycles": 0,
+        "faults": 0,
+        "inputLog": 0,
+        "instructions": 0,
+        "pending": 0,
+        "priorResultPresent": false,
+        "serial": 0,
+        "trace": 0,
+        "volatileByte": 0
+      },
+      "before": {
+        "artifactSha256": "641638d63dad25852d4f6b754f4bf92c3f1003437ea617ae8d87d6358cb75f3e",
+        "controls": {
+          "buttonPressed": true,
+          "potPosition": 0.75
+        },
+        "cpuCycles": 0,
+        "faults": 1,
+        "inputLog": 3,
+        "instructions": 0,
+        "pending": 1,
+        "priorResultPresent": true,
+        "serial": 1,
+        "trace": 2,
+        "volatileByte": 165
+      },
+      "diagnostics": {
+        "fixtureOnlyMemoryAddress": 256
+      },
+      "executionId": "X31-POWER-ON-B",
+      "outcome": {
+        "academicCode": "ACADEMIC_PASSED",
+        "academicStatus": "passed",
+        "evidenceStatus": "complete",
+        "jobCode": "JOB_COMPLETED",
+        "jobStatus": "completed",
+        "reasons": [],
+        "schema": "intent-mcu-experiment-outcome@1"
+      },
+      "repeat": "B",
+      "resetClass": "power-on",
+      "workerGenerationRetired": true
+    }
+  ],
+  "exportBytes": 11120,
+  "exportMatched": true,
+  "infrastructureProbe": {
+    "academicOutcomeCreated": false,
+    "code": "RESET_WORKER_UNAVAILABLE",
+    "status": "classified-without-execution"
+  },
+  "nativeDetails": true,
+  "openCleared": true,
+  "overflow": 0,
+  "reloadCleared": true,
+  "schema": "x31-private-browser-evidence@1",
+  "semanticSha256": "f6ddd791bc550925b74a755afb79fc5f66883d91b7509e18098b8cd1ce04e628",
+  "serialNoOverlap": true,
+  "suiteSha256": "6fe983fd99ff5e7f543325f628e2eb2a6c35ad1ec5c956aa4f95f0c4f1cfc9e1",
+  "thirdPartyRequests": 0,
+  "validationProbe": {
+    "academicOutcomeCreated": false,
+    "code": "RESET_CLASS_UNKNOWN",
+    "status": "rejected-before-execution"
+  }
+}

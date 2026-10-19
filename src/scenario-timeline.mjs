@@ -428,9 +428,9 @@ export function evaluateScenarioTimelineObservation(scenario, snapshot) {
       faultRequestsComplete, faultProducerEvidenceComplete, faultBehaviorMatched },
     retention: {
       inputEventsDropped: Number.isSafeInteger(snapshot?.eventLog?.dropped)
-        && snapshot.eventLog.dropped >= 0 ? snapshot.eventLog.dropped : 0,
+        && snapshot.eventLog.dropped >= 0 ? snapshot.eventLog.dropped : null,
       serialEventsDropped: Number.isSafeInteger(snapshot?.instruments?.serial?.dropped)
-        && snapshot.instruments.serial.dropped >= 0 ? snapshot.instruments.serial.dropped : 0,
+        && snapshot.instruments.serial.dropped >= 0 ? snapshot.instruments.serial.dropped : null,
     },
   };
 }

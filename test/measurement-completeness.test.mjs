@@ -28,6 +28,8 @@ import {
 
 if (!globalThis.crypto) Object.defineProperty(globalThis, 'crypto', { value: webcrypto });
 const clone = (value) => structuredClone(value);
+const retainedAuthoredReport = async () => JSON.parse(await readFile(
+  new URL('fixtures/x80-authored-scenario-report.json', import.meta.url), 'utf8'));
 
 const REPORT_SCHEMAS = [
   'intent-mcu-regression-report@1',
@@ -83,6 +85,7 @@ test('complete native facts and interval produce a validated complete projection
     (item) => item.reportSchema === longReport().schema).channels;
   const projection = await createMeasurementCompleteness(longReport(), {
     channelFacts: completeFacts(ids), observedFrom: known(10), observedThrough: known(20),
+    requiredFrom: known(10), requiredThrough: known(20),
   });
   assert.equal(projection.schema, MEASUREMENT_COMPLETENESS_SCHEMA);
   assert.equal(projection.completeForRequirements, true);
@@ -101,13 +104,14 @@ test('missing, dropped, sampled, truncated and reversed-window evidence fail clo
   facts.logic.truncated = known(true, { boundary: 'retention-limit' });
   const projection = await createMeasurementCompleteness(longReport(), {
     channelFacts: facts, observedFrom: known(20), observedThrough: known(10),
+    requiredFrom: known(10), requiredThrough: known(20),
   });
   assert.equal(projection.completeForRequirements, false);
   assert.ok(projection.missingEvidence.includes('input:dropped:unknown'));
   assert.ok(projection.missingEvidence.includes('gpio:dropped:3'));
   assert.ok(projection.missingEvidence.includes('serial:sampling-insufficient'));
   assert.ok(projection.missingEvidence.includes('logic:truncated'));
-  assert.ok(projection.missingEvidence.includes('observedInterval:reversed'));
+  assert.ok(projection.missingEvidence.includes('interval:explicit:observed-reversed'));
   assert.equal(completenessAcademicStatus('passed', projection), 'indeterminate');
 });
 
@@ -186,7 +190,7 @@ test('unregistered report and invalid numeric facts are rejected', async () => {
     { code: 'MEASUREMENT_COMPLETENESS_CHANNEL' });
 });
 
-test('current outcome projection retains a complete pass and blocks a stale pass with missing evidence', async () => {
+test('thermostat outcome flags cannot invent loss, identity or interval completeness', async () => {
   const scenario = THERMOSTAT_SCENARIOS.scenarios[0];
   const controls = thermostatScenarioControls(scenario.id).map((control, index) => ({
     sequence: index + 1, targetCycle: 0, type: 'control',
@@ -199,11 +203,14 @@ test('current outcome projection retains a complete pass and blocks a stale pass
     instruments: { serial: { text: `${thermostatExpectedSerialLine(scenario.id)}\n`, dropped: 0 } },
   });
   assert.equal(observation.status, 'passed');
-  assert.equal(measurementRequirementStatus(observation).completeForRequirements, true);
-  assert.equal(projectMeasurementOutcome(observation.outcome, observation).academicStatus, 'passed');
-  const completeEnvelope = await createMeasurementReportEnvelope(observation);
-  assert.equal(completeEnvelope.reportedAcademicStatus, 'passed');
-  assert.equal(completeEnvelope.effectiveAcademicStatus, 'passed');
+  const status = measurementRequirementStatus(observation);
+  assert.equal(status.completeForRequirements, false);
+  assert.ok(status.missingEvidence.includes('identity:source:unknown'));
+  assert.ok(status.missingEvidence.includes('input:dropped:unknown'));
+  assert.equal(projectMeasurementOutcome(observation.outcome, observation).academicStatus, 'indeterminate');
+  const incompleteEnvelope = await createMeasurementReportEnvelope(observation);
+  assert.equal(incompleteEnvelope.reportedAcademicStatus, 'passed');
+  assert.equal(incompleteEnvelope.effectiveAcademicStatus, 'indeterminate');
 
   const missing = clone(observation);
   missing.checks.serialObserved = false;
@@ -212,6 +219,84 @@ test('current outcome projection retains a complete pass and blocks a stale pass
   assert.equal(projected.academicStatus, 'indeterminate');
   assert.equal(projected.evidenceStatus, 'incomplete');
   assert.ok(projected.reasons.includes('MEASUREMENT_COMPLETENESS_REQUIRED'));
+});
+
+test('retained X80 report stays complete while deleted native facts and arbitrary targets fail closed', async () => {
+  const retained = await retainedAuthoredReport();
+  const before = stableMeasurementStringify(retained);
+  const envelope = await createMeasurementReportEnvelope(retained);
+  assert.equal(stableMeasurementStringify(retained), before);
+  assert.equal(envelope.measurementCompleteness.completeForRequirements, true);
+  assert.equal(envelope.effectiveAcademicStatus, 'passed');
+  assert.equal(envelope.measurementCompleteness.intervals.length, 4);
+  assert.ok(envelope.measurementCompleteness.intervals.every((item) => item.id.startsWith('THERM-SCENARIO-')));
+  await validateMeasurementReportEnvelope(envelope);
+
+  const mutations = [
+    ['drop counter', (value) => { delete value.results[0].retention.inputEventsDropped; }],
+    ['identity', (value) => { delete value.artifactIdentitySha256; }],
+    ['observed window', (value) => { delete value.results[0].observed.windowEndMilliseconds; }],
+  ];
+  for (const [name, mutate] of mutations) {
+    const changed = clone(retained); mutate(changed);
+    changed.results[0].targetCycle = 9_999_999_999;
+    changed.results[0].requestedDurationCycles = 8_888_888_888;
+    const projected = await createMeasurementReportEnvelope(changed);
+    assert.equal(projected.measurementCompleteness.completeForRequirements, false, name);
+    assert.equal(projected.effectiveAcademicStatus, 'indeterminate', name);
+    assert.notEqual(projected.measurementCompleteness.observedThrough.value, 9_999_999_999, name);
+  }
+});
+
+test('retained X34 sampling members are not replaced by passed outcomes or target cycles', async () => {
+  const retained = JSON.parse(await readFile(new URL(
+    'fixtures/x34-two-repeat-runtime.json',
+    import.meta.url), 'utf8'));
+  const report = { ...retained, schema: 'intent-mcu-x34-instrumented-precision-report@1',
+    sourceSha256: retained.sourceSha256, artifactIdentity: retained.artifactIdentity,
+    repeats: retained.repeats.map((repeat) => ({ ...repeat,
+      control: { targetCycle: 9_999_999_999 }, adc: repeat.transaction.adc,
+      outcome: { academicStatus: 'passed', jobStatus: 'completed' } })) };
+  const baseline = measurementRequirementStatus(report);
+  assert.equal(baseline.completeForRequirements, false);
+  const missingSample = clone(report);
+  delete missingSample.repeats[0].adc.sampleCycles;
+  const changed = measurementRequirementStatus(missingSample);
+  assert.equal(changed.completeForRequirements, false);
+  assert.ok(changed.missingEvidence.includes('adc:sampled:unknown'));
+  assert.ok(changed.missingEvidence.some((item) => item.startsWith('interval:')));
+});
+
+test('retained X29-X32 evidence cannot turn verdicts or requested targets into completeness', async () => {
+  const fixtures = [
+    ['x29-private-browser-evidence.json', 'intent-mcu-time-invariance-report@1',
+      (value) => { delete value.executions[0].actual.finalCpuCycles; }],
+    ['x30-private-browser-evidence.json', 'intent-mcu-event-order-report@1',
+      (value) => { delete value.executions[0].phases[3].producer.cpuCycles; }],
+    ['x31-private-browser-evidence.json', 'intent-mcu-reset-class-report@1',
+      (value) => { delete value.executions[0].after.cpuCycles; }],
+    ['x32-private-browser-evidence.json', 'intent-mcu-unsupported-access-report@1',
+      (value) => { delete value.executions[0].stop.cycle; }],
+  ];
+  for (const [filename, schema, mutate] of fixtures) {
+    const retained = JSON.parse(await readFile(new URL(`fixtures/${filename}`, import.meta.url), 'utf8'));
+    retained.schema = schema;
+    retained.sourceSha256 ??= 'b'.repeat(64);
+    retained.artifactSha256 ??= retained.artifactIdentity ?? 'a'.repeat(64);
+    const passedOutcomeExists = JSON.stringify(retained).includes('"academicStatus":"passed"')
+      || JSON.stringify(retained).includes('"academicStatus":"unsupported"');
+    assert.equal(passedOutcomeExists, true, filename);
+    const baseline = measurementRequirementStatus(retained);
+    assert.equal(baseline.completeForRequirements, false, filename);
+    const changed = clone(retained);
+    mutate(changed);
+    changed.targetCycle = 9_999_999_999;
+    changed.requestedDurationCycles = 8_888_888_888;
+    const projected = measurementRequirementStatus(changed);
+    assert.equal(projected.completeForRequirements, false, filename);
+    assert.notEqual(projected.observedFrom.value, 9_999_999_999, filename);
+    assert.notEqual(projected.observedThrough.value, 9_999_999_999, filename);
+  }
 });
 
 test('current report renderers apply the shared measurement presentation boundary', async () => {

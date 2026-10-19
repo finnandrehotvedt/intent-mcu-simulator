@@ -24,7 +24,7 @@ const REPORT_OWNERS = [
 
 const SURFACE_OWNERS = [
   ['intent-mcu-thermostat-observation-result@1', 'thermostat-observation-avr', 'actual-runtime', 'virtual-millisecond', ['input', 'gpio', 'serial']],
-  ['intent-mcu-scenario-observation-result@1', 'scenario-observation-avr', 'actual-runtime', 'virtual-millisecond', ['input', 'gpio', 'serial']],
+  ['intent-mcu-scenario-observation-result@1', 'scenario-observation-avr', 'actual-runtime', 'virtual-millisecond', ['input', 'gpio']],
   ['intent-mcu-x39-failure-location@1', 'x39-failure-location', 'derived-projection', 'virtual-millisecond', ['source-observation']],
   ['intent-mcu-x40-avr-shared-timeline@1', 'x40-shared-timeline-avr', 'actual-runtime', 'cpu-cycle', ['reset', 'input', 'gpio', 'serial', 'test']],
   ['intent-mcu-instrument-evidence@1', 'shared-instrument-evidence', 'derived-projection', 'unavailable', ['instrument']],
@@ -54,6 +54,15 @@ export const MEASUREMENT_PRODUCER_REGISTRY = freeze({
   reportOwners: REPORT_OWNERS.map(owner),
   surfaceOwners: SURFACE_OWNERS.map(owner),
 });
+
+const REQUIRED_IDENTITIES = Object.freeze(Object.fromEntries([
+  ...REPORT_OWNERS.filter(([, , evidenceClass]) => evidenceClass === 'actual-runtime')
+    .map(([schema]) => [schema, ['source', 'artifact']]),
+  ['intent-mcu-authored-scenario-report@1', ['project', 'artifact']],
+  ['intent-mcu-thermostat-observation-result@1', ['source', 'artifact']],
+  ['intent-mcu-scenario-observation-result@1', ['source', 'artifact']],
+  ['intent-mcu-x40-avr-shared-timeline@1', ['source', 'artifact']],
+]));
 
 const exactKeys = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
@@ -105,196 +114,179 @@ function provenance(report) {
   const identities = [
     ['report-schema', report.schema],
     ['semantic-report', report.semanticSha256],
+    ['project', report.projectSha256 ?? report.bindings?.projectSha256],
     ['source', report.sourceSha256 ?? report.bindings?.sourceSha256],
-    ['artifact', report.artifactSha256 ?? report.artifactIdentity ?? report.bindings?.artifactIdentitySha256],
+    ['artifact', report.artifactSha256 ?? report.artifactIdentity ?? report.artifactIdentitySha256
+      ?? report.bindings?.artifactIdentitySha256],
     ['topology', report.topologySha256 ?? report.graphSha256],
     ['runtime', report.runtimeIdentity?.artifactIdentity],
   ].map(([kind, value]) => ({ kind, value: identity(value, `${kind} identity is not carried by this report`) }));
   return { profile, identities };
 }
 
-function numbersForKeys(value, matcher, output = []) {
-  if (!value || typeof value !== 'object') return output;
-  for (const [key, child] of Object.entries(value)) {
-    if (NON_NEGATIVE(child) && matcher.test(key)) output.push(child);
-    else if (child && typeof child === 'object') numbersForKeys(child, matcher, output);
-  }
-  return output;
+function unavailableBounds(reason) {
+  return { from: unavailable(reason), through: unavailable(reason) };
 }
 
-function observedBounds(report, timeBasis) {
+function unknownBounds(reason) {
+  return { from: unknown(`${reason} lower bound`), through: unknown(`${reason} upper bound`) };
+}
+
+function bound(value, reason) {
+  return NON_NEGATIVE(value) ? known(value) : unknown(reason);
+}
+
+function interval(id, observedFrom, observedThrough, requiredFrom, requiredThrough,
+  mode = 'contains-required') {
+  return { id, mode, observedFrom, observedThrough, requiredFrom, requiredThrough };
+}
+
+function observedIntervals(report, timeBasis) {
   if (timeBasis === 'static-no-time') return {
-    from: unavailable('static model has no runtime interval'),
-    through: unavailable('static model has no runtime interval'),
+    bounds: unavailableBounds('static model has no runtime interval'),
+    intervals: [interval('static', unavailable('static model has no runtime interval'),
+      unavailable('static model has no runtime interval'), unavailable('static requirement has no runtime interval'),
+      unavailable('static requirement has no runtime interval'))],
   };
   if (timeBasis === 'instruction-order-only') return {
-    from: unavailable('instruction-order evidence has no accepted numeric time unit'),
-    through: unavailable('instruction-order evidence has no accepted numeric time unit'),
+    bounds: unavailableBounds('instruction-order evidence has no accepted numeric time unit'),
+    intervals: [interval('instruction-order',
+      unavailable('instruction-order evidence has no accepted numeric time unit'),
+      unavailable('instruction-order evidence has no accepted numeric time unit'),
+      unavailable('instruction-order requirement has no accepted numeric time unit'),
+      unavailable('instruction-order requirement has no accepted numeric time unit'))],
   };
   if (timeBasis === 'unavailable') return {
-    from: unavailable('owner combines or derives evidence without one comparable native timebase'),
-    through: unavailable('owner combines or derives evidence without one comparable native timebase'),
+    bounds: unavailableBounds('owner combines or derives evidence without one comparable native timebase'),
+    intervals: [interval('derived',
+      unavailable('derived evidence has no comparable native interval'),
+      unavailable('derived evidence has no comparable native interval'),
+      unavailable('derived requirement has no comparable native interval'),
+      unavailable('derived requirement has no comparable native interval'))],
   };
-  if (['reset-epoch-sequence', 'adapter-epoch-sequence'].includes(timeBasis)) {
-    const count = Array.isArray(report.executions) ? report.executions.length
-      : Array.isArray(report.repeats) ? report.repeats.length
-        : Array.isArray(report.results) ? report.results.length : null;
-    return count === null ? {
-      from: unknown(`report does not expose a ${timeBasis} lower bound`),
-      through: unknown(`report does not expose a ${timeBasis} upper bound`),
-    } : { from: known(0), through: known(Math.max(0, count - 1)) };
+  if (['reset-epoch-sequence', 'adapter-epoch-sequence'].includes(timeBasis)) return {
+    bounds: unavailableBounds(`${timeBasis} keeps independent epochs rather than one numeric interval`),
+    intervals: (report.executions ?? report.repeats ?? report.results ?? [{}]).map((_, index) => interval(
+      `${timeBasis}-${index + 1}`,
+      unavailable(`${timeBasis} has no cross-epoch numeric lower bound`),
+      unavailable(`${timeBasis} has no cross-epoch numeric upper bound`),
+      unavailable(`${timeBasis} requirement is sequence based`),
+      unavailable(`${timeBasis} requirement is sequence based`),
+    )),
+  };
+  if (report.schema === 'intent-mcu-authored-scenario-report@1' && Array.isArray(report.results)) {
+    const intervals = report.results.map((result, index) => interval(
+      result.scenarioId ?? `scenario-${index + 1}`,
+      bound(result.observed?.windowStartMilliseconds, 'scenario observed start is missing'),
+      bound(result.observed?.windowEndMilliseconds, 'scenario observed end is missing'),
+      bound(result.expected?.windowStartMilliseconds, 'scenario required start is missing'),
+      bound(result.expected?.windowEndMilliseconds, 'scenario required end is missing'),
+    ));
+    return {
+      bounds: intervals.length === 1 ? { from: intervals[0].observedFrom, through: intervals[0].observedThrough }
+        : unavailableBounds('scenario reports use independent runtime epochs; see per-scenario intervals'),
+      intervals,
+    };
   }
-  const matcher = timeBasis === 'virtual-millisecond'
-    ? /(?:at|start|from|through|end|observation|virtual)Milliseconds$/iu
-    : timeBasis === 'virtual-nanosecond' ? /(?:virtual|finalVirtual)Nanoseconds$/u
-      : timeBasis === 'cpu-cycle' ? /(?:^cycle|Cycle$|Cycles$)/u
-        : /(?:epoch|sequence|ordinal)$/iu;
-  const values = numbersForKeys(report, matcher);
-  if (!values.length) return {
-    from: unknown(`report does not expose a ${timeBasis} lower bound`),
-    through: unknown(`report does not expose a ${timeBasis} upper bound`),
+  if (report.schema === 'intent-mcu-scenario-observation-result@1') {
+    const observed = report.observed?.captureWindow;
+    const required = report.expected?.observationWindow;
+    const item = interval(report.scenarioId ?? 'scenario',
+      bound(observed?.minimumMilliseconds, 'scenario observed start is missing'),
+      bound(observed?.maximumMilliseconds, 'scenario observed end is missing'),
+      bound(required?.startMilliseconds, 'scenario required start is missing'),
+      bound(required?.endMilliseconds, 'scenario required end is missing'));
+    return { bounds: { from: item.observedFrom, through: item.observedThrough }, intervals: [item] };
+  }
+  if (report.schema === 'intent-mcu-time-invariance-report@1' && Array.isArray(report.executions)) {
+    const intervals = report.executions.map((execution, index) => interval(
+      execution.executionId ?? `execution-${index + 1}`,
+      bound(execution.ready?.cpuCycles, 'execution observed start cycle is missing'),
+      bound(execution.actual?.finalCpuCycles, 'execution observed final cycle is missing'),
+      bound(execution.requirement?.observationStartCycle, 'execution required start cycle is missing'),
+      bound(execution.requirement?.observationEndCycle, 'execution required end cycle is missing')));
+    return { bounds: unavailableBounds('executions use independent worker epochs; see per-execution intervals'), intervals };
+  }
+  const reason = `owner does not expose explicit comparable ${timeBasis} observation and requirement bounds`;
+  return { bounds: unknownBounds(reason), intervals: [interval('report',
+    unknown(`${reason}: observed start`), unknown(`${reason}: observed end`),
+    unknown(`${reason}: required start`), unknown(`${reason}: required end`))] };
+}
+
+function unknownChannelFacts(reason = 'producer report does not expose this channel fact') {
+  return {
+    retained: unknown(`${reason}: retained count`),
+    dropped: unknown(`${reason}: dropped count`),
+    sampled: unknown(`${reason}: sampling strategy`),
+    truncated: unknown(`${reason}: truncation boundary`),
   };
-  return { from: known(Math.min(...values)), through: known(Math.max(...values)) };
 }
 
-function explicitDropValues(report) {
-  return numbersForKeys(report, /(?:dropped|dropCount|lostCount)$/iu);
-}
-
-function completeFacts(retained, { dropped = 0, sampled = false, sampledDetail, truncated = false } = {}) {
+function fullRetentionFacts(retained, dropped, proof, { sampled, samplingStrategy }) {
+  if (!NON_NEGATIVE(retained) || !NON_NEGATIVE(dropped) || typeof sampled !== 'boolean'
+      || typeof samplingStrategy !== 'string' || samplingStrategy.length === 0) return null;
+  const sampledDetail = sampled
+    ? { strategy: samplingStrategy, sufficientForRequirements: true, proof }
+    : { strategy: samplingStrategy, sufficientForRequirements: true, proof };
   return {
     retained: known(retained),
     dropped: known(dropped),
-    sampled: sampledDetail === undefined ? known(sampled) : known(sampled, sampledDetail),
-    truncated: known(truncated),
+    sampled: known(sampled, sampledDetail),
+    truncated: known(dropped > 0, { boundary: dropped > 0 ? 'producer drop counter' : 'none', proof }),
   };
 }
 
-function outcomeEvidenceComplete(value) {
-  const outcomes = [];
-  const visit = (item) => {
-    if (!item || typeof item !== 'object') return;
-    if (item.schema === 'intent-mcu-experiment-outcome@1') outcomes.push(item);
-    for (const child of Object.values(item)) if (child && typeof child === 'object') visit(child);
-  };
-  visit(value);
-  return outcomes.length > 0 && outcomes.every((item) => item.jobStatus === 'completed'
-    && item.evidenceStatus === 'complete' && ['passed', 'failed'].includes(item.academicStatus));
-}
-
-function sumNamed(report, names) {
-  const matcher = new RegExp(`^(?:${names.join('|')})$`, 'u');
-  const values = numbersForKeys(report, matcher);
-  return values.length ? values.reduce((sum, value) => sum + value, 0) : null;
-}
-
-function closedOwnerFacts(report, item, channelId) {
-  const rows = Array.isArray(report.results) ? report.results.length
-    : Array.isArray(report.executions) ? report.executions.length
-      : Array.isArray(report.repeats) ? report.repeats.length
-        : Array.isArray(report.rows) ? report.rows.length : 1;
-  const schema = report.schema;
-  if (schema === 'intent-mcu-authored-scenario-report@1') {
-    const input = sumNamed(report, ['inputEventsDropped']);
-    const serial = sumNamed(report, ['serialEventsDropped']);
-    if (report.completeness?.allEvidenceComplete !== true || input === null || serial === null) return null;
-    return completeFacts(rows, { dropped: channelId === 'input' ? input : channelId === 'serial' ? serial : 0 });
+function explicitOwnerFacts(report, channelId) {
+  if (report.schema === 'intent-mcu-authored-scenario-report@1') {
+    const results = report.results;
+    if (!Array.isArray(results) || !NON_NEGATIVE(report.resultCount)
+        || report.resultCount !== results.length || report.completeness?.allEvidenceComplete !== true
+        || report.completeness?.scenariosReported !== results.length) return null;
+    const validRetention = results.every((result) => NON_NEGATIVE(result.retention?.inputEventsDropped)
+      && NON_NEGATIVE(result.retention?.serialEventsDropped));
+    if (!validRetention) return null;
+    if (channelId === 'input') return fullRetentionFacts(results.length,
+      results.reduce((sum, result) => sum + result.retention.inputEventsDropped, 0),
+      'authored-scenario-report@1 requires one complete declared input observation and explicit input loss per result',
+      { sampled: false, samplingStrategy: 'full retained input-event set per scenario' });
+    if (channelId === 'serial') return fullRetentionFacts(results.length,
+      results.reduce((sum, result) => sum + result.retention.serialEventsDropped, 0),
+      'authored-scenario-report@1 retains an explicit Serial loss counter per result',
+      { sampled: false, samplingStrategy: 'full retained Serial evidence set per scenario' });
+    if (channelId === 'gpio' && results.every((result) => typeof result.observed?.level === 'boolean'
+        && result.checks?.pinObserved === true)) return fullRetentionFacts(results.length, 0,
+      'authored-scenario-report@1 requires exactly one accepted pin observation per result',
+      { sampled: true, samplingStrategy: 'one requirement-owned capture window per scenario' });
+    return null;
   }
-  if (['intent-mcu-thermostat-observation-result@1',
-    'intent-mcu-scenario-observation-result@1'].includes(schema)) {
-    if (schema === 'intent-mcu-thermostat-observation-result@1') {
-      const complete = report.outcome?.evidenceStatus === 'complete'
-        && report.checks?.timeInWindow === true && report.checks?.inputsComplete === true
-        && report.checks?.pinObserved === true && report.checks?.serialObserved === true;
-      return complete ? completeFacts(1) : null;
-    }
-    const input = sumNamed(report, ['inputEventsDropped']);
-    const serial = sumNamed(report, ['serialEventsDropped']);
-    if (report.outcome?.evidenceStatus !== 'complete' || input === null || serial === null) return null;
-    return completeFacts(1, { dropped: channelId === 'input' ? input : channelId === 'serial' ? serial : 0 });
+  if (report.schema === 'intent-mcu-scenario-observation-result@1') {
+    if (channelId === 'input' && Array.isArray(report.observed?.inputControls)
+        && NON_NEGATIVE(report.retention?.inputEventsDropped)) return fullRetentionFacts(
+      report.observed.inputControls.length, report.retention.inputEventsDropped,
+      'scenario-observation-result@1 carries the retained control records and explicit event-log drop counter',
+      { sampled: false, samplingStrategy: 'full retained input-event set for the scenario' });
+    if (channelId === 'gpio' && typeof report.observed?.level === 'boolean'
+        && report.checks?.pinObserved === true) return fullRetentionFacts(1, 0,
+      'scenario-observation-result@1 requires exactly one pin capture for its requirement-owned window',
+      { sampled: true, samplingStrategy: 'one requirement-owned pin capture window' });
+    return null;
   }
-  if (schema === 'intent-mcu-x40-avr-shared-timeline@1') {
-    const mapping = { reset: null, input: ['requestedInputs', 'appliedInputs'], gpio: ['gpio'], serial: ['serial'], test: null };
-    const groups = mapping[channelId];
-    const records = groups ? groups.map((name) => report.retention?.[name]).filter(Boolean) : [];
-    if (groups && records.length !== groups.length) return null;
-    const dropped = records.reduce((sum, value) => sum + value.dropped, 0);
-    const retained = records.length ? records.reduce((sum, value) => sum + value.retained, 0) : rows;
-    if (!records.every((value) => NON_NEGATIVE(value.retained) && NON_NEGATIVE(value.dropped))) return null;
-    return completeFacts(retained, { dropped });
+  if (report.schema === 'intent-mcu-x40-avr-shared-timeline@1') {
+    const names = { input: ['requestedInputs', 'appliedInputs'], gpio: ['gpio'], serial: ['serial'] }[channelId];
+    if (!names) return null;
+    const records = names.map((name) => report.retention?.[name]);
+    if (!records.every((value) => NON_NEGATIVE(value?.retained) && NON_NEGATIVE(value?.dropped))) return null;
+    return fullRetentionFacts(records.reduce((sum, value) => sum + value.retained, 0),
+      records.reduce((sum, value) => sum + value.dropped, 0),
+      `x40-avr-shared-timeline@1 carries explicit ${names.join('+')} retained and dropped counters`,
+      { sampled: false, samplingStrategy: 'full retained shared-timeline class' });
   }
-  if (schema === 'intent-mcu-x39-failure-location@1') {
-    const complete = report.outcome?.evidenceStatus === 'complete'
-      && report.completeness?.inputsComplete === true
-      && report.completeness?.serialObserved === true
-      && report.completeness?.inputDrops === 0
-      && report.completeness?.serialDrops === 0;
-    return complete ? completeFacts(1) : null;
-  }
-  if (schema === 'intent-mcu-long-duration-report@1' && outcomeEvidenceComplete(report)) {
-    const names = channelId === 'input' ? ['droppedInputs']
-      : channelId === 'serial' ? ['droppedSerial']
-        : channelId === 'logic' ? ['droppedLogic'] : [];
-    const dropped = names.length ? sumNamed(report, names) : 0;
-    return dropped === null ? null : completeFacts(rows, { dropped });
-  }
-  if (schema === 'intent-mcu-x23-usart-response-report@1') {
-    const drops = sumNamed(report, ['logic', 'serial', 'adc', 'unsupported']);
-    const accepted = report.runs?.length === 5 && report.runs.every((run) =>
-      run.retentionDrops && Object.values(run.retentionDrops).every((value) => value === 0)
-      && run.classifications?.validation?.status === 'accepted');
-    return accepted && drops !== null ? completeFacts(report.runs.length, { dropped: drops }) : null;
-  }
-  if (schema === 'intent-mcu-x35-causal-chain-report@1') {
-    const drops = sumNamed(report, ['logic', 'serial', 'adc', 'unsupported']);
-    return report.repeats?.length === 2 && drops !== null && report.repeats.every((repeat) =>
-      repeat.outcome?.academicStatus === 'passed' && repeat.outcome?.jobStatus === 'completed')
-      ? completeFacts(report.repeats.length, { dropped: drops }) : null;
-  }
-  if (schema === 'intent-mcu-x36-failure-replay-report@1') {
-    const drops = report.recipe?.retentionDrops
-      ? Object.values(report.recipe.retentionDrops).reduce((sum, value) => sum + value, 0) : null;
-    return report.repeats?.length === 2 && drops !== null ? completeFacts(2, { dropped: drops }) : null;
-  }
-  if (schema === 'intent-mcu-x34-instrumented-precision-report@1' && report.repeats?.length === 2
-      && report.repeats.every((repeat) => repeat.outcome?.academicStatus === 'passed'
-        && repeat.outcome?.jobStatus === 'completed')) {
-    return channelId === 'adc'
-      ? completeFacts(2, { sampled: true, sampledDetail: {
-        strategy: 'firmware-bound ADC conversion window', sufficientForRequirements: true,
-      } }) : completeFacts(2);
-  }
-  if (schema === 'intent-mcu-x33-runtime-digital-state-report@1'
-      && report.repeats?.length === 2 && report.repeats.every((repeat) =>
-        repeat.drops && Object.values(repeat.drops).every((value) => value === 0)
-        && repeat.rows?.[1]?.requirement?.academicVerdict === 'passed')) return completeFacts(2);
-  if (schema === 'intent-mcu-digital-state-report@1'
-      && report.repeats?.length === 2 && report.repeats.every((repeat) =>
-        repeat.rows?.[0]?.outcome?.academicStatus === 'passed'
-        && repeat.rows?.[1]?.outcome?.academicStatus === 'indeterminate'
-        && repeat.rows?.[2]?.outcome === null
-        && repeat.rows?.[3]?.outcome?.academicStatus === 'indeterminate')) return completeFacts(2);
-  if (schema === 'intent-mcu-time-invariance-report@1'
-      && report.executions?.length === 3 && outcomeEvidenceComplete(report)) return completeFacts(3);
-  if (schema === 'intent-mcu-event-order-report@1'
-      && report.executions?.length === 2 && outcomeEvidenceComplete(report)) return completeFacts(2);
-  if (schema === 'intent-mcu-reset-class-report@1'
-      && report.executions?.length === 6 && outcomeEvidenceComplete(report)) return completeFacts(6);
-  if (schema === 'intent-mcu-unsupported-access-report@1'
-      && report.executions?.length === 2 && report.executions.every((execution) =>
-        execution.outcome?.academicStatus === 'unsupported'
-        && execution.outcome?.jobStatus === 'completed')) return completeFacts(report.executions.length);
   return null;
 }
 
 function inferredChannelFacts(report, item, channelId) {
-  const closed = closedOwnerFacts(report, item, channelId);
-  if (closed) return closed;
-  const dropValues = explicitDropValues(report);
-  const rowCount = Array.isArray(report.results) ? report.results.length
-    : Array.isArray(report.executions) ? report.executions.length
-      : Array.isArray(report.repeats) ? report.repeats.length
-        : Array.isArray(report.rows) ? report.rows.length : null;
+  const explicit = explicitOwnerFacts(report, channelId);
+  if (explicit) return explicit;
   if (item.evidenceClass === 'static-model') return {
     retained: unavailable('static evidence has no runtime retention counter'),
     dropped: unavailable('static evidence has no runtime drop counter'),
@@ -307,15 +299,7 @@ function inferredChannelFacts(report, item, channelId) {
     sampled: unknown('historical reviewed report did not declare sampling'),
     truncated: unknown('historical reviewed report did not declare truncation'),
   };
-  return {
-    retained: rowCount === null
-      ? unknown('producer report does not expose a retained count for this channel') : known(rowCount),
-    dropped: dropValues.length
-      ? known(dropValues.reduce((sum, value) => sum + value, 0))
-      : unknown('producer report does not expose a drop counter for this channel'),
-    sampled: unknown('producer report does not prove a sampling strategy for this channel'),
-    truncated: unknown('producer report does not prove a truncation boundary for this channel'),
-  };
+  return unknownChannelFacts(`${item.producerId}:${channelId} lacks explicit native facts`);
 }
 
 function factMissing(channel, fact) {
@@ -335,39 +319,77 @@ function projectionWithoutHash(value) {
   return projected;
 }
 
+function intervalMissingEvidence(intervals, timeBasis) {
+  if (['static-no-time', 'instruction-order-only', 'unavailable',
+    'reset-epoch-sequence', 'adapter-epoch-sequence'].includes(timeBasis)) return [];
+  const missing = [];
+  for (const item of intervals) {
+    for (const [name, value] of [['observedFrom', item.observedFrom], ['observedThrough', item.observedThrough],
+      ['requiredFrom', item.requiredFrom], ['requiredThrough', item.requiredThrough]]) {
+      if (value.state !== 'known') missing.push(`interval:${item.id}:${name}:${value.state}`);
+    }
+    if ([item.observedFrom, item.observedThrough, item.requiredFrom, item.requiredThrough]
+      .some((value) => value.state !== 'known')) continue;
+    if (item.observedFrom.value > item.observedThrough.value) missing.push(`interval:${item.id}:observed-reversed`);
+    if (item.requiredFrom.value > item.requiredThrough.value) missing.push(`interval:${item.id}:required-reversed`);
+    if (item.mode === 'contains-required'
+        && (item.observedFrom.value > item.requiredFrom.value
+          || item.observedThrough.value < item.requiredThrough.value)) {
+      missing.push(`interval:${item.id}:required-not-covered`);
+    }
+    if (item.mode === 'point-within-required'
+        && (item.observedFrom.value !== item.observedThrough.value
+          || item.observedFrom.value < item.requiredFrom.value
+          || item.observedThrough.value > item.requiredThrough.value)) {
+      missing.push(`interval:${item.id}:point-outside-required`);
+    }
+  }
+  return missing;
+}
+
+function identityMissingEvidence(value, schema) {
+  const required = REQUIRED_IDENTITIES[schema] ?? [];
+  const identities = new Map(value.identities.map((item) => [item.kind, item.value]));
+  return required.filter((kind) => identities.get(kind)?.state !== 'known')
+    .map((kind) => `identity:${kind}:${identities.get(kind)?.state ?? 'missing'}`);
+}
+
 function measurementCompletenessDraft(report, {
-  channelFacts = {}, observedFrom, observedThrough, limitations = [],
+  channelFacts = {}, observedFrom, observedThrough, requiredFrom, requiredThrough,
+  intervals: suppliedIntervals, limitations = [],
 } = {}) {
   if (!report || typeof report !== 'object' || Array.isArray(report)) throw new Error('MEASUREMENT_REPORT_REQUIRED');
   const item = registryOwner(report.schema);
   if (!item) throw Object.assign(new Error('MEASUREMENT_PRODUCER_UNREGISTERED'), { code: 'MEASUREMENT_PRODUCER_UNREGISTERED' });
-  const bounds = observedBounds(report, item.timeBasis);
+  const observations = observedIntervals(report, item.timeBasis);
   const channels = item.channels.map((id) => ({
     id,
     provenance: `${item.producerId}:${id}`,
     ...structuredClone(channelFacts[id] ?? inferredChannelFacts(report, item, id)),
   }));
-  const missingEvidence = [];
+  const reportProvenance = provenance(report);
+  const missingEvidence = identityMissingEvidence(reportProvenance, report.schema);
   for (const channel of channels) for (const fact of ['retained', 'dropped', 'sampled', 'truncated']) {
     const missing = factMissing(channel, fact);
     if (missing) missingEvidence.push(missing);
   }
-  const from = observedFrom ?? bounds.from;
-  const through = observedThrough ?? bounds.through;
-  const numericIntervalRequired = !['static-no-time', 'instruction-order-only', 'unavailable'].includes(item.timeBasis);
-  if (numericIntervalRequired && from.state !== 'known') missingEvidence.push(`observedFrom:${from.state}`);
-  if (numericIntervalRequired && through.state !== 'known') missingEvidence.push(`observedThrough:${through.state}`);
-  if (from.state === 'known' && through.state === 'known' && from.value > through.value) {
-    missingEvidence.push('observedInterval:reversed');
-  }
+  const from = observedFrom ?? observations.bounds.from;
+  const through = observedThrough ?? observations.bounds.through;
+  const intervals = suppliedIntervals ?? (observedFrom || observedThrough || requiredFrom || requiredThrough
+    ? [interval('explicit', from, through,
+      requiredFrom ?? unknown('required interval lower bound was not supplied'),
+      requiredThrough ?? unknown('required interval upper bound was not supplied'))]
+    : observations.intervals);
+  missingEvidence.push(...intervalMissingEvidence(intervals, item.timeBasis));
   return {
     schema: MEASUREMENT_COMPLETENESS_SCHEMA,
     producerId: item.producerId,
     evidenceClass: item.evidenceClass,
-    provenance: provenance(report),
+    provenance: reportProvenance,
     timeBasis: item.timeBasis,
     observedFrom: structuredClone(from),
     observedThrough: structuredClone(through),
+    intervals: structuredClone(intervals),
     channels,
     requiredEvidence: [...item.channels],
     missingEvidence,
@@ -389,6 +411,7 @@ export function measurementRequirementStatus(report, options = {}) {
     timeBasis: projection.timeBasis,
     observedFrom: structuredClone(projection.observedFrom),
     observedThrough: structuredClone(projection.observedThrough),
+    intervals: structuredClone(projection.intervals),
   });
 }
 
@@ -400,19 +423,20 @@ export async function createMeasurementCompleteness(report, options = {}) {
 
 export async function validateMeasurementCompleteness(value, reportSchema = null) {
   const topKeys = ['schema', 'producerId', 'evidenceClass', 'provenance', 'timeBasis',
-    'observedFrom', 'observedThrough', 'channels', 'requiredEvidence', 'missingEvidence',
+    'observedFrom', 'observedThrough', 'intervals', 'channels', 'requiredEvidence', 'missingEvidence',
     'completeForRequirements', 'limitations', 'projectionSha256'];
   if (!exactKeys(value, topKeys) || value.schema !== MEASUREMENT_COMPLETENESS_SCHEMA
       || !HASH.test(value.projectionSha256 ?? '') || !Array.isArray(value.channels)
       || !value.channels.length || !Array.isArray(value.requiredEvidence)
       || !Array.isArray(value.missingEvidence) || !Array.isArray(value.limitations)
       || !value.limitations.length || typeof value.completeForRequirements !== 'boolean'
+      || !Array.isArray(value.intervals) || value.intervals.length === 0
       || !exactKeys(value.provenance, ['profile', 'identities'])
       || typeof value.provenance.profile !== 'string' || !Array.isArray(value.provenance.identities)
       || !tagged(value.observedFrom, 'bound') || !tagged(value.observedThrough, 'bound')) {
     throw Object.assign(new Error('MEASUREMENT_COMPLETENESS_SHAPE'), { code: 'MEASUREMENT_COMPLETENESS_SHAPE' });
   }
-  const identityKinds = ['report-schema', 'semantic-report', 'source', 'artifact', 'topology', 'runtime'];
+  const identityKinds = ['report-schema', 'semantic-report', 'project', 'source', 'artifact', 'topology', 'runtime'];
   if (JSON.stringify(value.provenance.identities.map((item) => item?.kind)) !== JSON.stringify(identityKinds)
       || value.provenance.identities.some((item) => !exactKeys(item, ['kind', 'value'])
         || !tagged(item.value, 'string'))) {
@@ -435,16 +459,22 @@ export async function validateMeasurementCompleteness(value, reportSchema = null
       throw Object.assign(new Error('MEASUREMENT_COMPLETENESS_CHANNEL'), { code: 'MEASUREMENT_COMPLETENESS_CHANNEL' });
     }
   }
-  const computedMissing = [];
+  for (const observed of value.intervals) {
+    if (!exactKeys(observed, ['id', 'mode', 'observedFrom', 'observedThrough', 'requiredFrom', 'requiredThrough'])
+        || typeof observed.id !== 'string' || observed.id.length === 0
+        || !['contains-required', 'point-within-required'].includes(observed.mode)
+        || !tagged(observed.observedFrom, 'bound') || !tagged(observed.observedThrough, 'bound')
+        || !tagged(observed.requiredFrom, 'bound') || !tagged(observed.requiredThrough, 'bound')) {
+      throw Object.assign(new Error('MEASUREMENT_COMPLETENESS_INTERVAL'),
+        { code: 'MEASUREMENT_COMPLETENESS_INTERVAL' });
+    }
+  }
+  const computedMissing = identityMissingEvidence(value.provenance, reportSchema ?? item.reportSchema);
   for (const channel of value.channels) for (const fact of ['retained', 'dropped', 'sampled', 'truncated']) {
     const missing = factMissing(channel, fact);
     if (missing) computedMissing.push(missing);
   }
-  const numericIntervalRequired = !['static-no-time', 'instruction-order-only', 'unavailable'].includes(value.timeBasis);
-  if (numericIntervalRequired && value.observedFrom.state !== 'known') computedMissing.push(`observedFrom:${value.observedFrom.state}`);
-  if (numericIntervalRequired && value.observedThrough.state !== 'known') computedMissing.push(`observedThrough:${value.observedThrough.state}`);
-  if (value.observedFrom.state === 'known' && value.observedThrough.state === 'known'
-      && value.observedFrom.value > value.observedThrough.value) computedMissing.push('observedInterval:reversed');
+  computedMissing.push(...intervalMissingEvidence(value.intervals, value.timeBasis));
   if (JSON.stringify(value.missingEvidence) !== JSON.stringify(computedMissing)
       || value.completeForRequirements !== (computedMissing.length === 0)
       || value.projectionSha256 !== await measurementSha256(projectionWithoutHash(value))) {
@@ -580,16 +610,31 @@ export async function deriveMeasurementCompleteness(source, report, limitations 
   if (!item || !['derived-projection', 'reviewed-import'].includes(item.evidenceClass)) {
     throw Object.assign(new Error('MEASUREMENT_DERIVATION_OWNER'), { code: 'MEASUREMENT_DERIVATION_OWNER' });
   }
+  const knownForEverySource = (fact) => validatedSource.channels.every(
+    (channel) => channel[fact].state === 'known');
   const facts = Object.fromEntries(item.channels.map((id) => [id, {
-    retained: unavailable('derived owner does not have an independent retained counter'),
-    dropped: validatedSource.completeForRequirements ? known(0) : unknown('source completeness is incomplete'),
-    sampled: validatedSource.completeForRequirements ? known(false) : unknown('source sampling completeness is incomplete'),
-    truncated: validatedSource.completeForRequirements ? known(false) : unknown('source truncation completeness is incomplete'),
+    retained: knownForEverySource('retained')
+      ? known(validatedSource.channels.reduce((sum, channel) => sum + channel.retained.value, 0))
+      : unknown('one or more source retained counts are unknown'),
+    dropped: knownForEverySource('dropped')
+      ? known(validatedSource.channels.reduce((sum, channel) => sum + channel.dropped.value, 0))
+      : unknown('one or more source dropped counts are unknown'),
+    sampled: knownForEverySource('sampled') ? known(validatedSource.channels.some(
+      (channel) => channel.sampled.value), {
+      strategy: 'weakest-source projection',
+      sufficientForRequirements: validatedSource.channels.every((channel) => channel.sampled.value === false
+        || channel.sampled.detail?.sufficientForRequirements === true),
+    }) : unknown('one or more source sampling states are unknown'),
+    truncated: knownForEverySource('truncated')
+      ? known(validatedSource.channels.some((channel) => channel.truncated.value), {
+        boundary: 'weakest-source projection',
+      }) : unknown('one or more source truncation states are unknown'),
   }]));
   const projected = await createMeasurementCompleteness(report, {
     channelFacts: facts,
     observedFrom: structuredClone(validatedSource.observedFrom),
     observedThrough: structuredClone(validatedSource.observedThrough),
+    intervals: structuredClone(validatedSource.intervals),
     limitations: ['Derived evidence cannot increase the source evidence class or completeness.', ...limitations],
   });
   if (projected.completeForRequirements && !validatedSource.completeForRequirements) {

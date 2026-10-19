@@ -1,0 +1,649 @@
+{
+  "artifactIdentity": "63948ec3f1adca161ff7849fcd6b0598ed163bde80e3c58b86cba5f9e4f2407e",
+  "inputIdentity": "b47e4a7b75a3057857825edde30c628d642a127107b017fa1b940b3125012d22",
+  "passed": true,
+  "repeats": [
+    {
+      "a1": {
+        "adc": 414,
+        "diagnostic": "OK",
+        "faultState": "NONE",
+        "level": false,
+        "mode": "ANALOG_INPUT",
+        "pin": "A1",
+        "sampleCycle": 1615164,
+        "voltage": 2.0250000000000004
+      },
+      "cycle": 2560000,
+      "d13": {
+        "diagnostic": "OK",
+        "externalDrive": "RELEASED",
+        "level": false,
+        "mode": "OUTPUT",
+        "pin": "D13",
+        "pwm": null
+      },
+      "observer": {
+        "activeOddCommit": null,
+        "completed": [
+          {
+            "adc": {
+              "channel": 1,
+              "completionCycle": 5424,
+              "sampleCycles": 3200,
+              "startCycle": 2224,
+              "value": 414
+            },
+            "artifactIdentity": "63948ec3f1adca161ff7849fcd6b0598ed163bde80e3c58b86cba5f9e4f2407e",
+            "beginCycle": 6172,
+            "beginPc": 946,
+            "commit": 2,
+            "commitCycle": 6183,
+            "commitPc": 957,
+            "commitPcAfter": 959,
+            "d13Level": 0,
+            "fixtureId": "x34-avr-thermostat-instrumented-v1",
+            "pinObservation": {
+              "diagnostic": "OK",
+              "externalDrive": "RELEASED",
+              "level": false,
+              "mode": "OUTPUT",
+              "pin": "D13",
+              "pwm": null
+            },
+            "schema": "intent-mcu-x34-firmware-producer@1",
+            "sourceSha256": "1aa5a8e612e58dd76c5a72d3860d3e6bd45c6f48900f37fba9e7464ae9e34163",
+            "symbol": {
+              "binding": "global",
+              "dataAddress": 256,
+              "elfSha256": "04a5648d9bfaad0020ecd79db601e864a8fe9f15c4ffcb796abf4dbf9e054508",
+              "size": 4,
+              "symbol": "intent_x34_probe_v1",
+              "type": "object"
+            },
+            "temperatureC": 30,
+            "writes": [
+              {
+                "after": [
+                  1,
+                  0,
+                  128,
+                  255
+                ],
+                "before": [
+                  0,
+                  0,
+                  128,
+                  255
+                ],
+                "changedOffsets": [
+                  0
+                ],
+                "cycle": 6172,
+                "pcAfter": 948,
+                "pcBefore": 946
+              },
+              {
+                "after": [
+                  1,
+                  0,
+                  0,
+                  255
+                ],
+                "before": [
+                  1,
+                  0,
+                  128,
+                  255
+                ],
+                "changedOffsets": [
+                  2
+                ],
+                "cycle": 6174,
+                "pcAfter": 950,
+                "pcBefore": 948
+              },
+              {
+                "after": [
+                  1,
+                  30,
+                  0,
+                  255
+                ],
+                "before": [
+                  1,
+                  0,
+                  0,
+                  255
+                ],
+                "changedOffsets": [
+                  1
+                ],
+                "cycle": 6176,
+                "pcAfter": 952,
+                "pcBefore": 950
+              },
+              {
+                "after": [
+                  1,
+                  30,
+                  0,
+                  0
+                ],
+                "before": [
+                  1,
+                  30,
+                  0,
+                  255
+                ],
+                "changedOffsets": [
+                  3
+                ],
+                "cycle": 6178,
+                "pcAfter": 954,
+                "pcBefore": 952
+              },
+              {
+                "after": [
+                  2,
+                  30,
+                  0,
+                  0
+                ],
+                "before": [
+                  1,
+                  30,
+                  0,
+                  0
+                ],
+                "changedOffsets": [
+                  0
+                ],
+                "cycle": 6183,
+                "pcAfter": 959,
+                "pcBefore": 957
+              }
+            ]
+          }
+        ],
+        "fixtureId": "x34-avr-thermostat-instrumented-v1",
+        "limits": {
+          "arbitraryMemoryExposed": false,
+          "commitWrapAccepted": false,
+          "maximumCompletedTransactions": 16
+        },
+        "rejected": null,
+        "runtimeIdentity": null,
+        "schema": "intent-mcu-x34-observer-state@1",
+        "sealed": true,
+        "witnessedOdd": true
+      },
+      "repeatId": "A",
+      "transaction": {
+        "adc": {
+          "channel": 1,
+          "completionCycle": 5424,
+          "sampleCycles": 3200,
+          "startCycle": 2224,
+          "value": 414
+        },
+        "artifactIdentity": "63948ec3f1adca161ff7849fcd6b0598ed163bde80e3c58b86cba5f9e4f2407e",
+        "beginCycle": 6172,
+        "beginPc": 946,
+        "commit": 2,
+        "commitCycle": 6183,
+        "commitPc": 957,
+        "commitPcAfter": 959,
+        "d13Level": 0,
+        "fixtureId": "x34-avr-thermostat-instrumented-v1",
+        "pinObservation": {
+          "diagnostic": "OK",
+          "externalDrive": "RELEASED",
+          "level": false,
+          "mode": "OUTPUT",
+          "pin": "D13",
+          "pwm": null
+        },
+        "schema": "intent-mcu-x34-firmware-producer@1",
+        "sourceSha256": "1aa5a8e612e58dd76c5a72d3860d3e6bd45c6f48900f37fba9e7464ae9e34163",
+        "symbol": {
+          "binding": "global",
+          "dataAddress": 256,
+          "elfSha256": "04a5648d9bfaad0020ecd79db601e864a8fe9f15c4ffcb796abf4dbf9e054508",
+          "size": 4,
+          "symbol": "intent_x34_probe_v1",
+          "type": "object"
+        },
+        "temperatureC": 30,
+        "writes": [
+          {
+            "after": [
+              1,
+              0,
+              128,
+              255
+            ],
+            "before": [
+              0,
+              0,
+              128,
+              255
+            ],
+            "changedOffsets": [
+              0
+            ],
+            "cycle": 6172,
+            "pcAfter": 948,
+            "pcBefore": 946
+          },
+          {
+            "after": [
+              1,
+              0,
+              0,
+              255
+            ],
+            "before": [
+              1,
+              0,
+              128,
+              255
+            ],
+            "changedOffsets": [
+              2
+            ],
+            "cycle": 6174,
+            "pcAfter": 950,
+            "pcBefore": 948
+          },
+          {
+            "after": [
+              1,
+              30,
+              0,
+              255
+            ],
+            "before": [
+              1,
+              0,
+              0,
+              255
+            ],
+            "changedOffsets": [
+              1
+            ],
+            "cycle": 6176,
+            "pcAfter": 952,
+            "pcBefore": 950
+          },
+          {
+            "after": [
+              1,
+              30,
+              0,
+              0
+            ],
+            "before": [
+              1,
+              30,
+              0,
+              255
+            ],
+            "changedOffsets": [
+              3
+            ],
+            "cycle": 6178,
+            "pcAfter": 954,
+            "pcBefore": 952
+          },
+          {
+            "after": [
+              2,
+              30,
+              0,
+              0
+            ],
+            "before": [
+              1,
+              30,
+              0,
+              0
+            ],
+            "changedOffsets": [
+              0
+            ],
+            "cycle": 6183,
+            "pcAfter": 959,
+            "pcBefore": 957
+          }
+        ]
+      }
+    },
+    {
+      "a1": {
+        "adc": 414,
+        "diagnostic": "OK",
+        "faultState": "NONE",
+        "level": false,
+        "mode": "ANALOG_INPUT",
+        "pin": "A1",
+        "sampleCycle": 1615164,
+        "voltage": 2.0250000000000004
+      },
+      "cycle": 2560000,
+      "d13": {
+        "diagnostic": "OK",
+        "externalDrive": "RELEASED",
+        "level": false,
+        "mode": "OUTPUT",
+        "pin": "D13",
+        "pwm": null
+      },
+      "observer": {
+        "activeOddCommit": null,
+        "completed": [
+          {
+            "adc": {
+              "channel": 1,
+              "completionCycle": 5424,
+              "sampleCycles": 3200,
+              "startCycle": 2224,
+              "value": 414
+            },
+            "artifactIdentity": "63948ec3f1adca161ff7849fcd6b0598ed163bde80e3c58b86cba5f9e4f2407e",
+            "beginCycle": 6172,
+            "beginPc": 946,
+            "commit": 2,
+            "commitCycle": 6183,
+            "commitPc": 957,
+            "commitPcAfter": 959,
+            "d13Level": 0,
+            "fixtureId": "x34-avr-thermostat-instrumented-v1",
+            "pinObservation": {
+              "diagnostic": "OK",
+              "externalDrive": "RELEASED",
+              "level": false,
+              "mode": "OUTPUT",
+              "pin": "D13",
+              "pwm": null
+            },
+            "schema": "intent-mcu-x34-firmware-producer@1",
+            "sourceSha256": "1aa5a8e612e58dd76c5a72d3860d3e6bd45c6f48900f37fba9e7464ae9e34163",
+            "symbol": {
+              "binding": "global",
+              "dataAddress": 256,
+              "elfSha256": "04a5648d9bfaad0020ecd79db601e864a8fe9f15c4ffcb796abf4dbf9e054508",
+              "size": 4,
+              "symbol": "intent_x34_probe_v1",
+              "type": "object"
+            },
+            "temperatureC": 30,
+            "writes": [
+              {
+                "after": [
+                  1,
+                  0,
+                  128,
+                  255
+                ],
+                "before": [
+                  0,
+                  0,
+                  128,
+                  255
+                ],
+                "changedOffsets": [
+                  0
+                ],
+                "cycle": 6172,
+                "pcAfter": 948,
+                "pcBefore": 946
+              },
+              {
+                "after": [
+                  1,
+                  0,
+                  0,
+                  255
+                ],
+                "before": [
+                  1,
+                  0,
+                  128,
+                  255
+                ],
+                "changedOffsets": [
+                  2
+                ],
+                "cycle": 6174,
+                "pcAfter": 950,
+                "pcBefore": 948
+              },
+              {
+                "after": [
+                  1,
+                  30,
+                  0,
+                  255
+                ],
+                "before": [
+                  1,
+                  0,
+                  0,
+                  255
+                ],
+                "changedOffsets": [
+                  1
+                ],
+                "cycle": 6176,
+                "pcAfter": 952,
+                "pcBefore": 950
+              },
+              {
+                "after": [
+                  1,
+                  30,
+                  0,
+                  0
+                ],
+                "before": [
+                  1,
+                  30,
+                  0,
+                  255
+                ],
+                "changedOffsets": [
+                  3
+                ],
+                "cycle": 6178,
+                "pcAfter": 954,
+                "pcBefore": 952
+              },
+              {
+                "after": [
+                  2,
+                  30,
+                  0,
+                  0
+                ],
+                "before": [
+                  1,
+                  30,
+                  0,
+                  0
+                ],
+                "changedOffsets": [
+                  0
+                ],
+                "cycle": 6183,
+                "pcAfter": 959,
+                "pcBefore": 957
+              }
+            ]
+          }
+        ],
+        "fixtureId": "x34-avr-thermostat-instrumented-v1",
+        "limits": {
+          "arbitraryMemoryExposed": false,
+          "commitWrapAccepted": false,
+          "maximumCompletedTransactions": 16
+        },
+        "rejected": null,
+        "runtimeIdentity": null,
+        "schema": "intent-mcu-x34-observer-state@1",
+        "sealed": true,
+        "witnessedOdd": true
+      },
+      "repeatId": "B",
+      "transaction": {
+        "adc": {
+          "channel": 1,
+          "completionCycle": 5424,
+          "sampleCycles": 3200,
+          "startCycle": 2224,
+          "value": 414
+        },
+        "artifactIdentity": "63948ec3f1adca161ff7849fcd6b0598ed163bde80e3c58b86cba5f9e4f2407e",
+        "beginCycle": 6172,
+        "beginPc": 946,
+        "commit": 2,
+        "commitCycle": 6183,
+        "commitPc": 957,
+        "commitPcAfter": 959,
+        "d13Level": 0,
+        "fixtureId": "x34-avr-thermostat-instrumented-v1",
+        "pinObservation": {
+          "diagnostic": "OK",
+          "externalDrive": "RELEASED",
+          "level": false,
+          "mode": "OUTPUT",
+          "pin": "D13",
+          "pwm": null
+        },
+        "schema": "intent-mcu-x34-firmware-producer@1",
+        "sourceSha256": "1aa5a8e612e58dd76c5a72d3860d3e6bd45c6f48900f37fba9e7464ae9e34163",
+        "symbol": {
+          "binding": "global",
+          "dataAddress": 256,
+          "elfSha256": "04a5648d9bfaad0020ecd79db601e864a8fe9f15c4ffcb796abf4dbf9e054508",
+          "size": 4,
+          "symbol": "intent_x34_probe_v1",
+          "type": "object"
+        },
+        "temperatureC": 30,
+        "writes": [
+          {
+            "after": [
+              1,
+              0,
+              128,
+              255
+            ],
+            "before": [
+              0,
+              0,
+              128,
+              255
+            ],
+            "changedOffsets": [
+              0
+            ],
+            "cycle": 6172,
+            "pcAfter": 948,
+            "pcBefore": 946
+          },
+          {
+            "after": [
+              1,
+              0,
+              0,
+              255
+            ],
+            "before": [
+              1,
+              0,
+              128,
+              255
+            ],
+            "changedOffsets": [
+              2
+            ],
+            "cycle": 6174,
+            "pcAfter": 950,
+            "pcBefore": 948
+          },
+          {
+            "after": [
+              1,
+              30,
+              0,
+              255
+            ],
+            "before": [
+              1,
+              0,
+              0,
+              255
+            ],
+            "changedOffsets": [
+              1
+            ],
+            "cycle": 6176,
+            "pcAfter": 952,
+            "pcBefore": 950
+          },
+          {
+            "after": [
+              1,
+              30,
+              0,
+              0
+            ],
+            "before": [
+              1,
+              30,
+              0,
+              255
+            ],
+            "changedOffsets": [
+              3
+            ],
+            "cycle": 6178,
+            "pcAfter": 954,
+            "pcBefore": 952
+          },
+          {
+            "after": [
+              2,
+              30,
+              0,
+              0
+            ],
+            "before": [
+              1,
+              30,
+              0,
+              0
+            ],
+            "changedOffsets": [
+              0
+            ],
+            "cycle": 6183,
+            "pcAfter": 959,
+            "pcBefore": 957
+          }
+        ]
+      }
+    }
+  ],
+  "schema": "intent-mcu-x34-two-repeat-runtime-proof@1",
+  "sourceSha256": "1aa5a8e612e58dd76c5a72d3860d3e6bd45c6f48900f37fba9e7464ae9e34163",
+  "symbol": {
+    "binding": "global",
+    "dataAddress": 256,
+    "elfSha256": "04a5648d9bfaad0020ecd79db601e864a8fe9f15c4ffcb796abf4dbf9e054508",
+    "size": 4,
+    "symbol": "intent_x34_probe_v1",
+    "type": "object"
+  }
+}

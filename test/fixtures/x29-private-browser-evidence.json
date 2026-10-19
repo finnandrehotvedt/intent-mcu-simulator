@@ -1,0 +1,134 @@
+{
+  "artifactSha256": "641638d63dad25852d4f6b754f4bf92c3f1003437ea617ae8d87d6358cb75f3e",
+  "badgesSingleLine": true,
+  "browserErrors": 0,
+  "cookies": 0,
+  "executions": [
+    {
+      "actual": {
+        "d13HighCycle": 1608631,
+        "eventLoggedTarget": 1600000,
+        "finalCpuCycles": 1743976,
+        "finalD13": true,
+        "finalInstructions": 1040000,
+        "finalVirtualNanoseconds": 108998500,
+        "pauseProbe": null,
+        "uartMarkerCycle": 1608795
+      },
+      "diagnostics": {
+        "measuredCyclesPerSecond": 3496343.222400011,
+        "wallDurationMilliseconds": 498.80000019073486
+      },
+      "executionId": "X29-REFERENCE-1X",
+      "outcome": {
+        "academicCode": "ACADEMIC_PASSED",
+        "academicStatus": "passed",
+        "evidenceStatus": "complete",
+        "jobCode": "JOB_COMPLETED",
+        "jobStatus": "completed",
+        "reasons": [],
+        "schema": "intent-mcu-experiment-outcome@1"
+      },
+      "pacing": 1,
+      "ready": {
+        "cpuCycles": 0,
+        "instructions": 0,
+        "virtualNanoseconds": 0
+      }
+    },
+    {
+      "actual": {
+        "d13HighCycle": 1693283,
+        "eventLoggedTarget": 1600000,
+        "finalCpuCycles": 1843658,
+        "finalD13": true,
+        "finalInstructions": 1100000,
+        "finalVirtualNanoseconds": 115228625,
+        "pauseProbe": null,
+        "uartMarkerCycle": 1693447
+      },
+      "diagnostics": {
+        "measuredCyclesPerSecond": 16699800.638082404,
+        "wallDurationMilliseconds": 110.40000057220459
+      },
+      "executionId": "X29-MAXIMUM",
+      "outcome": {
+        "academicCode": "ACADEMIC_PASSED",
+        "academicStatus": "passed",
+        "evidenceStatus": "complete",
+        "jobCode": "JOB_COMPLETED",
+        "jobStatus": "completed",
+        "reasons": [],
+        "schema": "intent-mcu-experiment-outcome@1"
+      },
+      "pacing": "maximum",
+      "ready": {
+        "cpuCycles": 0,
+        "instructions": 0,
+        "virtualNanoseconds": 0
+      }
+    },
+    {
+      "actual": {
+        "d13HighCycle": 1608631,
+        "eventLoggedTarget": 1600000,
+        "finalCpuCycles": 1743976,
+        "finalD13": true,
+        "finalInstructions": 1040000,
+        "finalVirtualNanoseconds": 108998500,
+        "pauseProbe": {
+          "after": {
+            "cpuCycles": 203081,
+            "instructions": 120000,
+            "pendingTarget": 1600000,
+            "virtualNanoseconds": 12692563
+          },
+          "before": {
+            "cpuCycles": 203081,
+            "instructions": 120000,
+            "pendingTarget": 1600000,
+            "virtualNanoseconds": 12692563
+          },
+          "requirementSatisfiedAfterWait": false,
+          "requirementSatisfiedBeforeWait": false,
+          "wallWaitMilliseconds": 175.60000038146973
+        },
+        "uartMarkerCycle": 1608795
+      },
+      "diagnostics": {
+        "measuredCyclesPerSecond": 2739085.9084502016,
+        "wallDurationMilliseconds": 636.7000007629395
+      },
+      "executionId": "X29-PAUSE-RESUME",
+      "outcome": {
+        "academicCode": "ACADEMIC_PASSED",
+        "academicStatus": "passed",
+        "evidenceStatus": "complete",
+        "jobCode": "JOB_COMPLETED",
+        "jobStatus": "completed",
+        "reasons": [],
+        "schema": "intent-mcu-experiment-outcome@1"
+      },
+      "pacing": 1,
+      "ready": {
+        "cpuCycles": 0,
+        "instructions": 0,
+        "virtualNanoseconds": 0
+      }
+    }
+  ],
+  "exportMatched": true,
+  "openCleared": true,
+  "overflow": 0,
+  "reloadCleared": true,
+  "schema": "x29-private-browser-evidence@1",
+  "semanticSha256": "39d4827e6df9c3f4d934c9401eae7583e658ac635fa903e8ff5be9f363d3f50c",
+  "serialNoOverlap": true,
+  "suiteSha256": "cfa35c30cbf93c01a25eecf6d6f2a832f6e9eca795be367a8b255a5917adca02",
+  "thirdPartyRequests": 0,
+  "validationProbe": {
+    "academicOutcomeCreated": false,
+    "code": "TIME_CONTRACT_WALL_REQUIREMENT_FORBIDDEN",
+    "status": "rejected-before-execution"
+  }
+}

@@ -148,4 +148,11 @@ test('X18 incomplete or out-of-window authored evidence is indeterminate, never 
   assert(late.outcome.reasons.includes('OBSERVATION_TIME_OUT_OF_WINDOW'));
   const incomplete = snapshot(scenario, true); incomplete.eventLog.log = [];
   assert.equal(evaluateScenarioTimelineObservation(scenario, incomplete).status, 'indeterminate');
+  const missingCounters = snapshot(scenario, true);
+  delete missingCounters.eventLog.dropped;
+  delete missingCounters.instruments.serial.dropped;
+  const noCounters = evaluateScenarioTimelineObservation(scenario, missingCounters);
+  assert.equal(noCounters.retention.inputEventsDropped, null);
+  assert.equal(noCounters.retention.serialEventsDropped, null);
+  assert.equal(noCounters.status, 'indeterminate');
 });

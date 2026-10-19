@@ -1,0 +1,419 @@
+{
+  "artifactSha256": "641638d63dad25852d4f6b754f4bf92c3f1003437ea617ae8d87d6358cb75f3e",
+  "badgesSingleLine": true,
+  "browserErrors": 0,
+  "cookies": 0,
+  "evidenceFailureProbe": {
+    "code": "EVENT_ORDER_OLD_PENDING_LEAK",
+    "outcome": {
+      "academicCode": "ACADEMIC_FAILED",
+      "academicStatus": "failed",
+      "evidenceStatus": "complete",
+      "jobCode": "JOB_COMPLETED",
+      "jobStatus": "completed",
+      "reasons": [
+        "EVENT_ORDER_OLD_PENDING_RETIRED"
+      ],
+      "schema": "intent-mcu-experiment-outcome@1"
+    },
+    "status": "failed-as-expected"
+  },
+  "executions": [
+    {
+      "diagnostics": {
+        "wallDurationMilliseconds": 171.30000019073486
+      },
+      "executionId": "X30-REPEAT-A",
+      "outcome": {
+        "academicCode": "ACADEMIC_PASSED",
+        "academicStatus": "passed",
+        "evidenceStatus": "complete",
+        "jobCode": "JOB_COMPLETED",
+        "jobStatus": "completed",
+        "reasons": [],
+        "schema": "intent-mcu-experiment-outcome@1"
+      },
+      "phases": [
+        {
+          "epochId": "X30-EPOCH-1",
+          "phase": "RESET_BARRIER",
+          "phaseOrdinal": 1,
+          "producer": {
+            "controls": {
+              "buttonPressed": false,
+              "potPosition": 0.5
+            },
+            "cpuCycles": 0,
+            "d13": false,
+            "d13HighCycle": null,
+            "inputLog": [],
+            "instructions": 0,
+            "paused": true,
+            "pending": [],
+            "uartMarkerCycle": null
+          },
+          "snapshotKind": "reset"
+        },
+        {
+          "epochId": "X30-EPOCH-1",
+          "phase": "INPUT_ORDINAL_ASC",
+          "phaseOrdinal": 2,
+          "producer": {
+            "controls": {
+              "buttonPressed": true,
+              "potPosition": 0.75
+            },
+            "cpuCycles": 0,
+            "d13": false,
+            "d13HighCycle": null,
+            "inputLog": [
+              {
+                "componentId": "pot-1",
+                "key": "position",
+                "sequence": 1,
+                "targetCycle": 0,
+                "value": 0.75
+              },
+              {
+                "componentId": "button-1",
+                "key": "pressed",
+                "sequence": 2,
+                "targetCycle": 0,
+                "value": true
+              }
+            ],
+            "instructions": 0,
+            "paused": true,
+            "pending": [],
+            "uartMarkerCycle": null
+          },
+          "snapshotKind": "control-boundary"
+        },
+        {
+          "epochId": "X30-EPOCH-1",
+          "phase": "PRE_EXECUTION_SAMPLE",
+          "phaseOrdinal": 3,
+          "producer": {
+            "controls": {
+              "buttonPressed": true,
+              "potPosition": 0.75
+            },
+            "cpuCycles": 0,
+            "d13": false,
+            "d13HighCycle": null,
+            "inputLog": [
+              {
+                "componentId": "pot-1",
+                "key": "position",
+                "sequence": 1,
+                "targetCycle": 0,
+                "value": 0.75
+              },
+              {
+                "componentId": "button-1",
+                "key": "pressed",
+                "sequence": 2,
+                "targetCycle": 0,
+                "value": true
+              }
+            ],
+            "instructions": 0,
+            "paused": true,
+            "pending": [],
+            "uartMarkerCycle": null
+          },
+          "snapshotKind": "sample"
+        },
+        {
+          "epochId": "X30-EPOCH-1",
+          "phase": "CPU_EXECUTION",
+          "phaseOrdinal": 4,
+          "producer": {
+            "controls": {
+              "buttonPressed": true,
+              "potPosition": 0.75
+            },
+            "cpuCycles": 1652710,
+            "d13": true,
+            "d13HighCycle": 3272,
+            "inputLog": [
+              {
+                "componentId": "pot-1",
+                "key": "position",
+                "sequence": 1,
+                "targetCycle": 0,
+                "value": 0.75
+              },
+              {
+                "componentId": "button-1",
+                "key": "pressed",
+                "sequence": 2,
+                "targetCycle": 0,
+                "value": true
+              }
+            ],
+            "instructions": 1100000,
+            "paused": true,
+            "pending": [],
+            "uartMarkerCycle": 185722
+          },
+          "snapshotKind": "paused"
+        },
+        {
+          "epochId": "X30-EPOCH-1",
+          "phase": "FINAL_SAMPLE",
+          "phaseOrdinal": 5,
+          "producer": {
+            "controls": {
+              "buttonPressed": true,
+              "potPosition": 0.75
+            },
+            "cpuCycles": 1652710,
+            "d13": true,
+            "d13HighCycle": 3272,
+            "inputLog": [
+              {
+                "componentId": "pot-1",
+                "key": "position",
+                "sequence": 1,
+                "targetCycle": 0,
+                "value": 0.75
+              },
+              {
+                "componentId": "button-1",
+                "key": "pressed",
+                "sequence": 2,
+                "targetCycle": 0,
+                "value": true
+              }
+            ],
+            "instructions": 1100000,
+            "paused": true,
+            "pending": [],
+            "uartMarkerCycle": 185722
+          },
+          "snapshotKind": "sample"
+        }
+      ],
+      "preReset": {
+        "generationRetired": true,
+        "pendingBeforeReset": 1,
+        "queuedSequence": 1,
+        "resetCleared": true,
+        "runningCycleBeforeReset": 1561,
+        "targetCycle": 1000000
+      },
+      "ready": {
+        "cpuCycles": 0,
+        "instructions": 0
+      }
+    },
+    {
+      "diagnostics": {
+        "wallDurationMilliseconds": 161.4000005722046
+      },
+      "executionId": "X30-REPEAT-B",
+      "outcome": {
+        "academicCode": "ACADEMIC_PASSED",
+        "academicStatus": "passed",
+        "evidenceStatus": "complete",
+        "jobCode": "JOB_COMPLETED",
+        "jobStatus": "completed",
+        "reasons": [],
+        "schema": "intent-mcu-experiment-outcome@1"
+      },
+      "phases": [
+        {
+          "epochId": "X30-EPOCH-1",
+          "phase": "RESET_BARRIER",
+          "phaseOrdinal": 1,
+          "producer": {
+            "controls": {
+              "buttonPressed": false,
+              "potPosition": 0.5
+            },
+            "cpuCycles": 0,
+            "d13": false,
+            "d13HighCycle": null,
+            "inputLog": [],
+            "instructions": 0,
+            "paused": true,
+            "pending": [],
+            "uartMarkerCycle": null
+          },
+          "snapshotKind": "reset"
+        },
+        {
+          "epochId": "X30-EPOCH-1",
+          "phase": "INPUT_ORDINAL_ASC",
+          "phaseOrdinal": 2,
+          "producer": {
+            "controls": {
+              "buttonPressed": true,
+              "potPosition": 0.75
+            },
+            "cpuCycles": 0,
+            "d13": false,
+            "d13HighCycle": null,
+            "inputLog": [
+              {
+                "componentId": "pot-1",
+                "key": "position",
+                "sequence": 1,
+                "targetCycle": 0,
+                "value": 0.75
+              },
+              {
+                "componentId": "button-1",
+                "key": "pressed",
+                "sequence": 2,
+                "targetCycle": 0,
+                "value": true
+              }
+            ],
+            "instructions": 0,
+            "paused": true,
+            "pending": [],
+            "uartMarkerCycle": null
+          },
+          "snapshotKind": "control-boundary"
+        },
+        {
+          "epochId": "X30-EPOCH-1",
+          "phase": "PRE_EXECUTION_SAMPLE",
+          "phaseOrdinal": 3,
+          "producer": {
+            "controls": {
+              "buttonPressed": true,
+              "potPosition": 0.75
+            },
+            "cpuCycles": 0,
+            "d13": false,
+            "d13HighCycle": null,
+            "inputLog": [
+              {
+                "componentId": "pot-1",
+                "key": "position",
+                "sequence": 1,
+                "targetCycle": 0,
+                "value": 0.75
+              },
+              {
+                "componentId": "button-1",
+                "key": "pressed",
+                "sequence": 2,
+                "targetCycle": 0,
+                "value": true
+              }
+            ],
+            "instructions": 0,
+            "paused": true,
+            "pending": [],
+            "uartMarkerCycle": null
+          },
+          "snapshotKind": "sample"
+        },
+        {
+          "epochId": "X30-EPOCH-1",
+          "phase": "CPU_EXECUTION",
+          "phaseOrdinal": 4,
+          "producer": {
+            "controls": {
+              "buttonPressed": true,
+              "potPosition": 0.75
+            },
+            "cpuCycles": 1652710,
+            "d13": true,
+            "d13HighCycle": 3272,
+            "inputLog": [
+              {
+                "componentId": "pot-1",
+                "key": "position",
+                "sequence": 1,
+                "targetCycle": 0,
+                "value": 0.75
+              },
+              {
+                "componentId": "button-1",
+                "key": "pressed",
+                "sequence": 2,
+                "targetCycle": 0,
+                "value": true
+              }
+            ],
+            "instructions": 1100000,
+            "paused": true,
+            "pending": [],
+            "uartMarkerCycle": 185722
+          },
+          "snapshotKind": "paused"
+        },
+        {
+          "epochId": "X30-EPOCH-1",
+          "phase": "FINAL_SAMPLE",
+          "phaseOrdinal": 5,
+          "producer": {
+            "controls": {
+              "buttonPressed": true,
+              "potPosition": 0.75
+            },
+            "cpuCycles": 1652710,
+            "d13": true,
+            "d13HighCycle": 3272,
+            "inputLog": [
+              {
+                "componentId": "pot-1",
+                "key": "position",
+                "sequence": 1,
+                "targetCycle": 0,
+                "value": 0.75
+              },
+              {
+                "componentId": "button-1",
+                "key": "pressed",
+                "sequence": 2,
+                "targetCycle": 0,
+                "value": true
+              }
+            ],
+            "instructions": 1100000,
+            "paused": true,
+            "pending": [],
+            "uartMarkerCycle": 185722
+          },
+          "snapshotKind": "sample"
+        }
+      ],
+      "preReset": {
+        "generationRetired": true,
+        "pendingBeforeReset": 1,
+        "queuedSequence": 1,
+        "resetCleared": true,
+        "runningCycleBeforeReset": 1561,
+        "targetCycle": 1000000
+      },
+      "ready": {
+        "cpuCycles": 0,
+        "instructions": 0
+      }
+    }
+  ],
+  "exportMatched": true,
+  "oldPendingRetired": true,
+  "openCleared": true,
+  "overflow": 0,
+  "reloadCleared": true,
+  "repeatSemanticParity": true,
+  "repeatSemanticSha256": "0e943bfaf9245f852ceb25f3c6315b6d23c1889ad8128579ff76e8a81719ebe4",
+  "sampleReadOnly": true,
+  "schema": "x30-private-browser-evidence@1",
+  "semanticSha256": "e333f5f47745dd34e616694e483f1c75847876a25bfe198829aa2b5065fc982f",
+  "serialNoOverlap": true,
+  "suiteSha256": "f4dbe5bce69ef716a4ab7b6badd917cd6e297b8fac425af1e679a82e5ef46f76",
+  "thirdPartyRequests": 0,
+  "validationProbe": {
+    "academicOutcomeCreated": false,
+    "code": "EVENT_ORDER_ORDINAL_SEQUENCE",
+    "status": "rejected-before-execution"
+  }
+}

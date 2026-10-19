@@ -52,7 +52,7 @@ test('X15 admits the canonical saved AVR thermostat without restoring executable
   ]);
 });
 
-test('X15 compiles fresh and binds result identity without accepting an artifact from the file', async () => {
+test('X15 compiles fresh, binds identity, and fails closed when observations omit native completeness', async () => {
   let compileCalls = 0; let executeCalls = 0;
   const observations = completeObservations();
   const result = await runSavedHeadlessExperiment(saved(), {
@@ -72,7 +72,9 @@ test('X15 compiles fresh and binds result identity without accepting an artifact
   assert.equal(result.compiledFresh, true);
   assert.equal(result.authorityRestoredFromFile, false);
   assert.equal(result.jobStatus, 'completed');
-  assert.equal(result.outcome.academicStatus, 'passed');
+  assert.equal(result.outcome.academicStatus, 'indeterminate');
+  assert.ok(result.observations.every((observation) =>
+    observation.outcome.reasons.includes('MEASUREMENT_COMPLETENESS_REQUIRED')));
   assert.equal(result.association.compilerInputIdentity, 'a'.repeat(64));
   assert.equal(result.association.artifactIdentity, 'b'.repeat(64));
   assert.equal(compileCalls, 1); assert.equal(executeCalls, 1);
@@ -92,7 +94,10 @@ test('X18 headless completion preserves indeterminate evidence separately from j
   assert.equal(result.ok, true);
   assert.equal(result.jobStatus, 'completed');
   assert.equal(result.status, 'indeterminate');
-  assert.equal(result.primaryObservation.scenarioId, 'THERM-SCENARIO-EQUALITY-ENABLED');
+  assert.equal(result.primaryObservation.scenarioId, 'THERM-SCENARIO-BELOW-ENABLED');
+  const equality = result.observations.find(
+    (observation) => observation.scenarioId === 'THERM-SCENARIO-EQUALITY-ENABLED');
+  assert.equal(equality.status, 'indeterminate');
   assert.equal(result.outcome.reasons.includes(
     'THERM-SCENARIO-EQUALITY-ENABLED:OBSERVATION_PIN_MISSING'), true);
 });

@@ -1,0 +1,161 @@
+{
+  "artifactSha256": "b1934fb4c70c78b3be691f8faf35562c338c21cdaff16269c77761b203a1f14e",
+  "badgesSingleLine": true,
+  "browserErrors": 0,
+  "classifications": {
+    "academic": {
+      "code": "UNSUPPORTED_ACCESS_EVIDENCE_MISSING",
+      "outcome": {
+        "academicCode": "ACADEMIC_INDETERMINATE",
+        "academicStatus": "indeterminate",
+        "evidenceStatus": "incomplete",
+        "jobCode": "JOB_COMPLETED",
+        "jobStatus": "completed",
+        "reasons": [
+          "UNSUPPORTED_ACCESS_EVIDENCE_MISSING"
+        ],
+        "schema": "intent-mcu-experiment-outcome@1"
+      },
+      "status": "indeterminate-as-expected"
+    },
+    "compiler": {
+      "academicOutcomeCreated": false,
+      "artifactCreated": false,
+      "code": "COMPILE_FAILED",
+      "status": "rejected-before-runtime"
+    },
+    "infrastructure": {
+      "academicOutcomeCreated": false,
+      "code": "UNSUPPORTED_ACCESS_WORKER_UNAVAILABLE",
+      "status": "classified-without-execution"
+    },
+    "runtimeCapability": {
+      "academicStatus": "unsupported",
+      "code": "RUNTIME_CAPABILITY_UNSUPPORTED",
+      "status": "stopped-unsupported"
+    },
+    "validation": {
+      "academicOutcomeCreated": false,
+      "code": "UNSUPPORTED_ACCESS_DETECTOR_UNKNOWN",
+      "status": "rejected-before-execution"
+    }
+  },
+  "cookies": 0,
+  "executions": [
+    {
+      "access": {
+        "address": 76,
+        "cycle": 224,
+        "instructionOrdinal": 152,
+        "operation": "write",
+        "peripheral": "SPI",
+        "value": 64
+      },
+      "artifactSha256": "b1934fb4c70c78b3be691f8faf35562c338c21cdaff16269c77761b203a1f14e",
+      "detectorId": "avr8js-atmega328p-unsupported-spi-spcr-v1",
+      "diagnostics": {
+        "blockedReplayNoAdvance": true,
+        "workerMessageKind": "stopped-error"
+      },
+      "executionId": "X32-SPI-A",
+      "lastSupportedObservation": {
+        "cycle": 220,
+        "kind": "gpio",
+        "level": true,
+        "pin": "D13"
+      },
+      "outcome": {
+        "academicCode": "ACADEMIC_UNSUPPORTED",
+        "academicStatus": "unsupported",
+        "evidenceStatus": "unsupported",
+        "jobCode": "JOB_COMPLETED",
+        "jobStatus": "completed",
+        "reasons": [
+          "EXPERIMENT_NOT_SUPPORTED"
+        ],
+        "schema": "intent-mcu-experiment-outcome@1"
+      },
+      "projectSha256": "44df07606fd0b1917c7b2c44372a8a6e7b968e400bbb8d7462190b92c1fc6530",
+      "repeat": "A",
+      "sourceSha256": "1d3ae51f4aebd1e4c15f2eccab00742854dc39ecadee277b46075e91a78f6763",
+      "stop": {
+        "code": "RUNTIME_CAPABILITY_UNSUPPORTED",
+        "cycle": 225,
+        "instructionOrdinal": 152,
+        "postFaultAcceptedRecords": 0,
+        "status": "stopped-unsupported"
+      }
+    },
+    {
+      "access": {
+        "address": 76,
+        "cycle": 224,
+        "instructionOrdinal": 152,
+        "operation": "write",
+        "peripheral": "SPI",
+        "value": 64
+      },
+      "artifactSha256": "b1934fb4c70c78b3be691f8faf35562c338c21cdaff16269c77761b203a1f14e",
+      "detectorId": "avr8js-atmega328p-unsupported-spi-spcr-v1",
+      "diagnostics": {
+        "blockedReplayNoAdvance": true,
+        "workerMessageKind": "stopped-error"
+      },
+      "executionId": "X32-SPI-B",
+      "lastSupportedObservation": {
+        "cycle": 220,
+        "kind": "gpio",
+        "level": true,
+        "pin": "D13"
+      },
+      "outcome": {
+        "academicCode": "ACADEMIC_UNSUPPORTED",
+        "academicStatus": "unsupported",
+        "evidenceStatus": "unsupported",
+        "jobCode": "JOB_COMPLETED",
+        "jobStatus": "completed",
+        "reasons": [
+          "EXPERIMENT_NOT_SUPPORTED"
+        ],
+        "schema": "intent-mcu-experiment-outcome@1"
+      },
+      "projectSha256": "44df07606fd0b1917c7b2c44372a8a6e7b968e400bbb8d7462190b92c1fc6530",
+      "repeat": "B",
+      "sourceSha256": "1d3ae51f4aebd1e4c15f2eccab00742854dc39ecadee277b46075e91a78f6763",
+      "stop": {
+        "code": "RUNTIME_CAPABILITY_UNSUPPORTED",
+        "cycle": 225,
+        "instructionOrdinal": 152,
+        "postFaultAcceptedRecords": 0,
+        "status": "stopped-unsupported"
+      }
+    }
+  ],
+  "exportBytes": 5744,
+  "exportMatched": true,
+  "goodCompanion": {
+    "artifactSha256": "3fe51bbd31beb05dd65f7f5e46db27dc5d38a41e51f3eb604ff2c274a37c7bb2",
+    "sourceSha256": "e4319650540c94669082d07f630478e81da93871fc42a8a94a8cf4aa5022476d",
+    "status": "completed-supported",
+    "supportedObservation": true,
+    "unsupportedRecords": 0
+  },
+  "lifecycleAuthorityNeverRestored": true,
+  "nativeDetails": true,
+  "newBuildCleared": true,
+  "openCleared": true,
+  "overflow": 0,
+  "reloadCleared": true,
+  "repeatSemanticSha256": "135f472df84ee0d1262b5fa1147d574f77c17307f155c25d2c3f62f35e2791cb",
+  "resetCleared": true,
+  "schema": "x32-private-browser-evidence@1",
+  "semanticSha256": "33cb42006fc9cfbc04eaf37d5f8cd7f0268cdfed658a171f65693054c482aa86",
+  "serialNoOverlap": true,
+  "staleRecordProbe": {
+    "code": "UNSUPPORTED_ACCESS_REPORT_STALE_OR_UNKNOWN",
+    "priorReportRetained": true,
+    "status": "rejected-atomically"
+  },
+  "suiteSha256": "8b8882353f330de76a8cb9e262700d45f731ca25a30b35138425e6d46e92fa57",
+  "thirdPartyRequests": 0
+}

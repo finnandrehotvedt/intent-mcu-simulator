@@ -8,6 +8,7 @@ import { externalClientResult } from '../../src/external-client-results.mjs';
 import {
   THERMOSTAT_SCENARIOS, evaluateThermostatObservation, thermostatScenarioControls,
 } from '../../src/thermostat-experiment-contract.mjs';
+import { completedExperimentOutcome } from '../../src/experiment-outcomes.mjs';
 
 const profile = 'board.atmega328p-16mhz-v1';
 let now = 1_800_000_000_000;
@@ -74,10 +75,27 @@ const observation = evaluateThermostatObservation(scenario.id, {
   eventLog: { pending: [], log: controls, dropped: 0 },
   instruments: { serial: { text: 'TEMP_C=30 BUTTON=PRESSED HEATER=ON STATE=HEAT\n', dropped: 0 } },
 });
+const completeFailureOutcome = completedExperimentOutcome({ assertions: [
+  { code: 'EXPECTED_PIN_LEVEL_MISMATCH', passed: false },
+] });
+const completeFailure = {
+  schema: 'intent-mcu-scenario-observation-result@1',
+  sourceSha256: 'b'.repeat(64), artifactSha256: 'a'.repeat(64),
+  scenarioId: scenario.id, status: 'failed', outcome: completeFailureOutcome,
+  expected: { observationWindow: { startMilliseconds: 160, endMilliseconds: 350 } },
+  observed: { level: false, captureWindow: { minimumMilliseconds: 160, maximumMilliseconds: 350 },
+    inputControls: controls },
+  checks: { pinObserved: true }, retention: { inputEventsDropped: 0, serialEventsDropped: 0 },
+};
 outputs.push(envelope({
-  ok: true, schema: 'intent-mcu-bounded-action-result@1', code: 'DOMAIN_TEST_EVALUATED',
+  ok: false, schema: 'intent-mcu-bounded-action-result@1', code: 'ACTION_TEST_EVALUATED',
   action: 'result.read', executed: true,
-  result: { ok: true, code: 'DOMAIN_TEST_EVALUATED', observation },
+  result: { ok: false, code: 'ACTION_TEST_EVALUATED', testEvidence: {
+    schema: 'intent-mcu-bounded-test-evidence@1', experimentId: observation.experimentId,
+    status: 'failed', outcome: completeFailureOutcome,
+    artifactIdentity: 'a'.repeat(64), sourceIdentity: 'b'.repeat(64),
+    primaryObservation: completeFailure, observations: [completeFailure],
+  } },
 }, 'x11-known-bad-request', 'result.read'));
 outputs.push(envelope({ ok: false, code: 'BROKER_FAILED', executed: true }, 'x11-execution-failure'));
 

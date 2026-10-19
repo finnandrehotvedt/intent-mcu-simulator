@@ -1,0 +1,167 @@
+{
+  "aggregate": {
+    "academicStatus": "passed",
+    "evidenceStatus": "complete",
+    "jobStatus": "completed",
+    "reasons": []
+  },
+  "artifactIdentitySha256": "1501248cde92e96d417ae24a6f9e9a5a82faa057dabfdd97fbe5bc922b42100c",
+  "authority": {
+    "executable": false,
+    "runtime": false,
+    "verdict": false
+  },
+  "completeness": {
+    "allEvidenceComplete": true,
+    "anyDataLoss": false,
+    "observedFromMilliseconds": 160,
+    "observedThroughMilliseconds": 350,
+    "scenariosExpected": 4,
+    "scenariosReported": 4
+  },
+  "expectationSha256": "aa026bdf6437e4550c16f95ce3c155761f1ef0476dd8e1cd77bf2ad3ea4e063e",
+  "experimentId": "avr-thermostat-boundary-v1",
+  "profile": "board.atmega328p-16mhz-v1",
+  "projectSha256": "4e4aba569f55d7c709f35230fa7c6cbad0dd43a748c56221196f93ab56489585",
+  "resultCount": 4,
+  "results": [
+    {
+      "academicStatus": "passed",
+      "checks": {
+        "faultBehaviorMatched": true,
+        "faultProducerEvidenceComplete": true,
+        "faultRequestsComplete": true,
+        "inputsComplete": true,
+        "pinObserved": true,
+        "primaryExecutedPin": true,
+        "timeInWindow": true
+      },
+      "evidenceStatus": "complete",
+      "expected": {
+        "level": true,
+        "pin": "D13",
+        "windowEndMilliseconds": 350,
+        "windowStartMilliseconds": 160
+      },
+      "jobStatus": "completed",
+      "observed": {
+        "level": true,
+        "mode": "OUTPUT",
+        "pin": "D13",
+        "windowEndMilliseconds": 350,
+        "windowStartMilliseconds": 160
+      },
+      "reasons": [],
+      "retention": {
+        "inputEventsDropped": 0,
+        "serialEventsDropped": 0
+      },
+      "scenarioId": "THERM-SCENARIO-BELOW-ENABLED",
+      "virtualMilliseconds": 234.5650625
+    },
+    {
+      "academicStatus": "passed",
+      "checks": {
+        "faultBehaviorMatched": true,
+        "faultProducerEvidenceComplete": true,
+        "faultRequestsComplete": true,
+        "inputsComplete": true,
+        "pinObserved": true,
+        "primaryExecutedPin": true,
+        "timeInWindow": true
+      },
+      "evidenceStatus": "complete",
+      "expected": {
+        "level": false,
+        "pin": "D13",
+        "windowEndMilliseconds": 350,
+        "windowStartMilliseconds": 160
+      },
+      "jobStatus": "completed",
+      "observed": {
+        "level": false,
+        "mode": "OUTPUT",
+        "pin": "D13",
+        "windowEndMilliseconds": 350,
+        "windowStartMilliseconds": 160
+      },
+      "reasons": [],
+      "retention": {
+        "inputEventsDropped": 0,
+        "serialEventsDropped": 0
+      },
+      "scenarioId": "THERM-SCENARIO-EQUALITY-ENABLED",
+      "virtualMilliseconds": 234.57475
+    },
+    {
+      "academicStatus": "passed",
+      "checks": {
+        "faultBehaviorMatched": true,
+        "faultProducerEvidenceComplete": true,
+        "faultRequestsComplete": true,
+        "inputsComplete": true,
+        "pinObserved": true,
+        "primaryExecutedPin": true,
+        "timeInWindow": true
+      },
+      "evidenceStatus": "complete",
+      "expected": {
+        "level": false,
+        "pin": "D13",
+        "windowEndMilliseconds": 350,
+        "windowStartMilliseconds": 160
+      },
+      "jobStatus": "completed",
+      "observed": {
+        "level": false,
+        "mode": "OUTPUT",
+        "pin": "D13",
+        "windowEndMilliseconds": 350,
+        "windowStartMilliseconds": 160
+      },
+      "reasons": [],
+      "retention": {
+        "inputEventsDropped": 0,
+        "serialEventsDropped": 0
+      },
+      "scenarioId": "THERM-SCENARIO-ABOVE-ENABLED",
+      "virtualMilliseconds": 242.6625625
+    },
+    {
+      "academicStatus": "passed",
+      "checks": {
+        "faultBehaviorMatched": true,
+        "faultProducerEvidenceComplete": true,
+        "faultRequestsComplete": true,
+        "inputsComplete": true,
+        "pinObserved": true,
+        "primaryExecutedPin": true,
+        "timeInWindow": true
+      },
+      "evidenceStatus": "complete",
+      "expected": {
+        "level": false,
+        "pin": "D13",
+        "windowEndMilliseconds": 350,
+        "windowStartMilliseconds": 160
+      },
+      "jobStatus": "completed",
+      "observed": {
+        "level": false,
+        "mode": "OUTPUT",
+        "pin": "D13",
+        "windowEndMilliseconds": 350,
+        "windowStartMilliseconds": 160
+      },
+      "reasons": [],
+      "retention": {
+        "inputEventsDropped": 0,
+        "serialEventsDropped": 0
+      },
+      "scenarioId": "THERM-SCENARIO-BELOW-DISABLED",
+      "virtualMilliseconds": 242.662625
+    }
+  ],
+  "schema": "intent-mcu-authored-scenario-report@1",
+  "sourceVariant": "correct"
+}

@@ -36,6 +36,21 @@ function knownBadObservation() {
   });
 }
 
+function completeFailedScenarioObservation() {
+  const outcome = completedExperimentOutcome({ assertions: [
+    { code: 'EXPECTED_PIN_LEVEL_MISMATCH', passed: false },
+  ] });
+  return {
+    schema: 'intent-mcu-scenario-observation-result@1',
+    sourceSha256: 'b'.repeat(64), artifactSha256: 'a'.repeat(64),
+    scenarioId: 'THERM-SCENARIO-EQUALITY-ENABLED', status: 'failed', outcome,
+    expected: { observationWindow: { startMilliseconds: 160, endMilliseconds: 350 } },
+    observed: { level: false, captureWindow: { minimumMilliseconds: 160, maximumMilliseconds: 350 },
+      inputControls: [{ componentId: 'enable-button-1', key: 'pressed', value: true, targetCycle: 0 }] },
+    checks: { pinObserved: true }, retention: { inputEventsDropped: 0, serialEventsDropped: 0 },
+  };
+}
+
 test('X11 preserves authoritative results while assigning stable disjoint categories', () => {
   const cases = [
     [{ ok: true, code: 'ACTION_CURRENT_RESULT', executed: true }, 'success', 'completed'],
@@ -90,7 +105,7 @@ test('X18 external results keep academic indeterminate and unsupported separate 
   assert.equal(unsupported.testVerdict.outcome.academicStatus, 'unsupported');
 });
 
-test('X11 recognizes only an authoritative producer-backed failed verdict as test failure', () => {
+test('X11 fails closed for incomplete producer verdicts and retains complete failures', () => {
   const observation = knownBadObservation();
   assert.equal(observation.status, 'failed');
   assert.equal(observation.checks.primaryExecutedPin, false);
@@ -100,12 +115,12 @@ test('X11 recognizes only an authoritative producer-backed failed verdict as tes
     result: { ok: true, code: 'DOMAIN_TEST_EVALUATED', observation },
   };
   const result = externalClientResult(raw, association, identity);
-  assert.equal(result.ok, false);
-  assert.equal(result.category, 'test-failure');
-  assert.equal(result.code, 'RESULT_TEST_FAILURE');
-  assert.equal(result.testVerdict.status, 'failed');
+  assert.equal(result.ok, true);
+  assert.equal(result.category, 'success');
+  assert.equal(result.testVerdict.status, 'indeterminate');
   assert.deepEqual(result.authoritativeResult.result.observation, observation);
 
+  const completeFailure = completeFailedScenarioObservation();
   const bound = externalClientResult({
     ok: false, schema: 'intent-mcu-bounded-action-result@1', code: 'ACTION_TEST_EVALUATED',
     action: 'runtime.run', executed: true,
@@ -113,8 +128,9 @@ test('X11 recognizes only an authoritative producer-backed failed verdict as tes
       ok: false, code: 'ACTION_TEST_EVALUATED',
       testEvidence: {
         schema: 'intent-mcu-bounded-test-evidence@1', experimentId: observation.experimentId,
-        status: 'failed', artifactIdentity: 'a'.repeat(64), sourceIdentity: 'b'.repeat(64),
-        primaryObservation: observation, observations: [observation],
+        status: 'failed', outcome: completeFailure.outcome,
+        artifactIdentity: 'a'.repeat(64), sourceIdentity: 'b'.repeat(64),
+        primaryObservation: completeFailure, observations: [completeFailure],
       },
     },
   }, association, identity);
