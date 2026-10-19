@@ -4997,7 +4997,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/simulator.worker.mjs",
-      "sha256": "c7ef450fe9243d53912eaa16bc3c464feda5211f94ed1db709d193036ce77cb1"
+      "sha256": "93aa0e8c10b5d448cc688c5b7488a0d4482f744a4c4a826b8b558b8ede5ae425"
     },
     {
       "path": "staging/main.mjs",
@@ -5096,9 +5096,9 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "f0c5342f11b63ecc595eb23449c3cdea162175f9a7d7cb8fd48f9a644f17949a"
     }
   ],
-  "implementationSha256": "5e26b3ae3140e073d96521a728f7805f28d9d0d53b6095910965a44f884f26f5",
+  "implementationSha256": "4e0fc926236de5edda6b3e85c3770b709a4ae3643d47b8cd9b3138c4c1b61633",
   "libraryId": "intent-mcu-public-models",
-  "manifestSha256": "ab40f9a5c319919e31f7834d5537a6505b1888c18a5efce40a4f4f8ef6e2f4fa",
+  "manifestSha256": "5c94ce070526d2e7e417fed0cb152fc28bdea24ee9beb52c65488328d41eac0b",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

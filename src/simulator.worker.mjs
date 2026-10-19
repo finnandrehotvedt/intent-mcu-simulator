@@ -14,8 +14,14 @@ let running = false;
 let generation = 0;
 let initialization = 0;
 let runtimeIdentity = null;
+let validatedModelExecutionContextSha256 = null;
 
-const identityFields = () => runtimeIdentity ? { runtimeIdentity: structuredClone(runtimeIdentity) } : {};
+const identityFields = () => runtimeIdentity ? {
+  runtimeIdentity: structuredClone(runtimeIdentity),
+  ...(validatedModelExecutionContextSha256 ? {
+    modelExecutionContextSha256: validatedModelExecutionContextSha256,
+  } : {}),
+} : {};
 const emit = (message) => postMessage({ ...message, ...identityFields() });
 
 function isRp2040() { return rp2040 !== null; }
@@ -64,6 +70,7 @@ function disposeRuntime() {
   rp2040 = null;
   kernel = null;
   runtimeIdentity = null;
+  validatedModelExecutionContextSha256 = null;
 }
 
 function pump(activeGeneration) {
@@ -120,13 +127,15 @@ async function handleMessage(data) {
         if (!modelLibrary.manifest.runtimeContracts.includes('avr8js@0.21.1')) {
           throw new Error('MODEL_LIBRARY_RUNTIME_CONTRACT_UNAVAILABLE');
         }
-        kernel = modelLibrary.implementation.createAvrRuntimeKernel(data.hex, data.circuit, {
+        const candidate = modelLibrary.implementation.createAvrRuntimeKernel(data.hex, data.circuit, {
           ...(data.instruments ?? {}),
           modelLibraryLock: data.modelLibraryLock,
           modelExecutionContextSha256: data.modelExecutionContextSha256,
           ...(data.x34Probe ? { x34Probe: data.x34Probe } : {}),
           ...(data.x35Probe ? { x35Probe: data.x35Probe } : {}),
         });
+        kernel = candidate;
+        validatedModelExecutionContextSha256 = binding.modelExecutionContextSha256;
       } else {
         // Legacy diagnostic workers predate the production model-binding
         // contract. New production runs always take the branch above.
