@@ -52,7 +52,7 @@ async function validatedRp2040Artifact(artifact, request) {
 }
 
 export class BuildCoordinator {
-  constructor({ broker, imageLock, identityLockFor = null, globalLimit = 1, perOriginLimit = 1, queueLimit = 3, rateLimit = 12, jobLimit = 16, cacheLimit = 8, jobTtlMs = 5 * 60_000 }) {
+  constructor({ broker, imageLock, identityLockFor = null, globalLimit = 1, perOriginLimit = 1, queueLimit = 3, rateLimit = 12, jobLimit = 16, jobTtlMs = 5 * 60_000 }) {
     this.broker = broker;
     this.imageLock = imageLock;
     this.identityLockFor = identityLockFor ?? (() => this.imageLock);
@@ -61,13 +61,11 @@ export class BuildCoordinator {
     this.queueLimit = queueLimit;
     this.rateLimit = rateLimit;
     this.jobLimit = jobLimit;
-    this.cacheLimit = cacheLimit;
     this.jobTtlMs = jobTtlMs;
     this.jobs = new Map();
     this.queue = [];
     this.active = new Map();
     this.rate = new Map();
-    this.cache = new Map();
   }
 
   enforceRate(origin) {
@@ -95,18 +93,8 @@ export class BuildCoordinator {
       cacheHit: false, result: null, error: null, controller: null,
     };
     this.jobs.set(jobId, job);
-    const cached = this.cache.get(inputIdentity);
-    if (cached) {
-      job.status = 'succeeded';
-      job.phase = 'complete';
-      job.completedAt = Date.now();
-      job.cacheHit = true;
-      job.result = structuredClone(cached);
-      job.request = null;
-    } else {
-      this.queue.push(job);
-      this.pump();
-    }
+    this.queue.push(job);
+    this.pump();
     return { jobId, capability, status: job.status, inputIdentity };
   }
 
@@ -163,8 +151,6 @@ export class BuildCoordinator {
           job.status = 'succeeded';
           job.phase = 'complete';
           job.result = result;
-          if (this.cache.size >= this.cacheLimit) this.cache.delete(this.cache.keys().next().value);
-          this.cache.set(job.inputIdentity, structuredClone(result));
         } else if (target?.compileOnly) {
           if (!validateCandidateCompileArtifact(artifact, target.profile)) {
             throw new BrokerError('CANDIDATE_ARTIFACT_INVALID');
@@ -188,8 +174,6 @@ export class BuildCoordinator {
           job.status = 'succeeded';
           job.phase = 'complete';
           job.result = result;
-          if (this.cache.size >= this.cacheLimit) this.cache.delete(this.cache.keys().next().value);
-          this.cache.set(job.inputIdentity, structuredClone(result));
         } else {
           if (!artifact || sha256(artifact.hex) !== artifact.hexSha256
             || sha256(Buffer.from(artifact.elfBase64, 'base64')) !== artifact.elfSha256) {
@@ -213,8 +197,6 @@ export class BuildCoordinator {
           job.status = 'succeeded';
           job.phase = 'complete';
           job.result = result;
-          if (this.cache.size >= this.cacheLimit) this.cache.delete(this.cache.keys().next().value);
-          this.cache.set(job.inputIdentity, structuredClone(result));
         }
       }
     } catch (error) {

@@ -24,7 +24,7 @@ test('X12 exports bounded data-only evidence then deletes job payload at exact e
   assert.equal(exported.evidence.dataOnly, true);
   assert.equal(exported.evidence.restoresRuntimeAuthority, false);
   assert.equal(exported.evidence.restoresVerdictAuthority, false);
-  assert.equal(exported.evidence.artifactCacheRetainedSeparately, true);
+  assert.equal(exported.evidence.artifactCacheRetainedSeparately, false);
   assert.equal(timers[0].delay, 1_000);
   now = 2_000; ledger.prune();
   assert.equal(ledger.hasPayload(request.requestId), false);
@@ -43,7 +43,7 @@ test('X12 cancellation remains distinct and active evidence cannot export early'
   assert.equal(read.job.durableServerProject, false);
 });
 
-test('X12 real short timer removes payload without claiming artifact-cache deletion', async () => {
+test('X12 real short timer removes its requester-scoped payload with no shared artifact cache', async () => {
   const start = Date.now();
   const ledger = createExternalClientJobLedger();
   ledger.begin({ ...request, issuedAtMs: start, expiresAtMs: start + 30 }, identity);

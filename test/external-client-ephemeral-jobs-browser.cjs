@@ -91,7 +91,7 @@ const profile = 'board.atmega328p-16mhz-v1';
     assert.equal(exported.evidence.dataOnly, true);
     assert.equal(exported.evidence.restoresRuntimeAuthority, false);
     assert.equal(exported.evidence.restoresVerdictAuthority, false);
-    assert.equal(exported.evidence.artifactCacheRetainedSeparately, true);
+    assert.equal(exported.evidence.artifactCacheRetainedSeparately, false);
     const { parseExternalClientLine } = await import('../src/external-client-protocol.mjs');
     assert.throws(() => parseExternalClientLine(JSON.stringify(exported.evidence)), /ACTION_REQUEST_SHAPE/u);
     await new Promise((resolve) => setTimeout(resolve, 1_100));
@@ -105,7 +105,7 @@ const profile = 'board.atmega328p-16mhz-v1';
       rerunVerdict: rerun.testVerdict.status, exportedJob: shortId,
       exportedDataOnly: exported.evidence.dataOnly, expiredCode: expired.code,
       fixtureClock: false, controlledShortTtlMs: 1_000,
-      artifactCacheRetainedSeparately: true, durableServerProject: false })}\n`);
+      artifactCacheRetainedSeparately: false, durableServerProject: false })}\n`);
   } finally {
     child.stdin.end();
     await new Promise((resolve) => child.once('exit', resolve));

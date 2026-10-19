@@ -67,7 +67,7 @@ export function createExternalClientJobLedger({ now = () => Date.now(), schedule
       expectedGeneration: job.expectedGeneration, issuedAtMs: job.issuedAtMs,
       expiresAtMs: job.expiresAtMs, state: job.state,
       evidenceAvailable: Boolean(job.result), durableServerProject: false,
-      artifactCacheRetainedSeparately: true,
+      artifactCacheRetainedSeparately: false,
     };
   }
 
@@ -100,7 +100,7 @@ export function createExternalClientJobLedger({ now = () => Date.now(), schedule
         sourceIdentity: clone(job.sourceIdentity),
         result: clone(job.result),
         dataOnly: true, restoresRuntimeAuthority: false, restoresVerdictAuthority: false,
-        durableServerProject: false, artifactCacheRetainedSeparately: true,
+        durableServerProject: false, artifactCacheRetainedSeparately: false,
       },
     };
   }

@@ -79,6 +79,8 @@
     "test:x65:browser": "node test/x65-profile-migration-browser.cjs",
     "test:x67": "node --test --test-concurrency=1 test/x67-experiment-package.test.mjs test/scenario-timeline.test.mjs test/expectation-reference.test.mjs test/project-envelope.test.mjs",
     "test:x67:browser": "node test/x67-experiment-package-browser.cjs",
+    "test:x85": "node --test --test-concurrency=1 test/x85-no-shared-artifact-cache.test.mjs test/external-client-jobs.test.mjs test/gateway-unit.test.mjs",
+    "test:x85:browser": "node test/x85-no-shared-artifact-cache-browser.cjs",
     "test:docs-release": "node --test --test-concurrency=1 test/docs-x72-release.test.mjs test/x72-example-progression.test.mjs test/release-identity-copy.test.mjs test/public-release-projection.test.mjs",
     "example:mcp": "node examples/mcp-reference-experiment.mjs",
     "experiment:headless": "node tools/headless-experiment-runner.mjs",

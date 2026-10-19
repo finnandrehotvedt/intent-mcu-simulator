@@ -76,7 +76,6 @@ const coordinator = new BuildCoordinator({
   queueLimit: 4,
   rateLimit: 6,
   jobLimit: 24,
-  cacheLimit: 8,
 });
 const publicOrigin = process.env.PUBLIC_ORIGIN || null;
 const trustProxy = process.env.TRUST_PROXY === '1';
