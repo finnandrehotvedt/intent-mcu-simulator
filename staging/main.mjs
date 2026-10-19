@@ -169,6 +169,9 @@ import {
   createX39FailureLocator, validateX39FailureLocator,
 } from '../src/x39-failure-navigation.mjs';
 import {
+  createX40SharedTimeline, validateX40SharedTimeline, x40TimelineRetainsForLifecycle,
+} from '../src/x40-shared-timeline.mjs';
+import {
   X23_USART_KNOWN_BAD_SOURCE, X23_USART_REPORT_SCHEMA, X23_USART_SOURCE,
   X23_USART_SUITE, X23_USART_SUITE_ID, createX23UsartRecipe,
   semanticX23UsartProjection, validateX23UsartReport, x23UsartReportPassed,
@@ -349,6 +352,8 @@ const elements = Object.fromEntries([
   'thermostat-load-bad', 'thermostat-restore', 'thermostat-results', 'thermostat-experiment-message',
   'x39-failure-location', 'x39-failure-location-summary', 'x39-failure-source',
   'x39-failure-pin', 'x39-failure-net', 'x39-failure-time', 'x39-failure-export',
+  'x40-shared-timeline', 'x40-shared-timeline-summary', 'x40-shared-timeline-body',
+  'x40-shared-timeline-export',
   'scenario-editor', 'scenario-add', 'scenario-undo', 'scenario-redo', 'scenario-run',
   'scenario-list', 'scenario-editor-message',
   'seeded-property-seed', 'seeded-property-exact-value', 'seeded-property-generate', 'seeded-property-replay', 'seeded-property-summary',
@@ -519,6 +524,10 @@ let thermostatExperimentResults = [];
 let thermostatFailureLocator = null;
 let pendingThermostatFailureLocator = null;
 let x39FailureLocationOpened = false;
+let x40SharedTimeline = null;
+let x40TimelineReset = null;
+let x40TimelineResult = null;
+let x40TimelineNotice = 'Run one isolated authored AVR thermostat scenario to create current producer evidence.';
 let authoredScenarioResults = [];
 let scenarioTimelineEditor = null;
 let authoredExperimentWaiter = null;
@@ -5118,6 +5127,71 @@ async function exportX39FailureLocation() {
   downloadText(`x39-failure-location-${locator.semanticSha256.slice(0, 12)}.intent-mcu-x39.json`,
     `${JSON.stringify(locator, null, 2)}\n`, 'application/json');
 }
+function clearX40SharedTimeline(reason = 'Run one isolated authored AVR thermostat scenario to create current producer evidence.') {
+  x40SharedTimeline = null;
+  x40TimelineReset = null;
+  x40TimelineResult = null;
+  x40TimelineNotice = reason;
+  elements.x40sharedtimeline.hidden = true;
+  elements.x40sharedtimelinebody.replaceChildren();
+  publish({ x40SharedTimeline: null });
+}
+function x40Context({ reset = x40TimelineReset, result = x40TimelineResult,
+  observation = window.__M6_STATE__.runtime } = {}) {
+  const binding = lifecycle.runtimeBinding;
+  if (!reset || !result || !observation || !binding || !lifecycle.artifact) return null;
+  return {
+    profile: selectedCompilerProfile,
+    projectGeneration: lifecycle.projectGeneration,
+    runtimeBinding: { schema: RUNTIME_BINDING_SCHEMA, projectGeneration: binding.projectGeneration,
+      runtimeGeneration: binding.runtimeGeneration, artifactIdentity: binding.artifactIdentity },
+    reset: structuredClone(reset), observation: structuredClone(observation),
+    inputIdentity: lifecycle.artifact.inputIdentity,
+    artifactIdentity: lifecycle.artifact.artifactIdentity,
+    scenarioId: result.scenarioId, result: structuredClone(result),
+  };
+}
+function x40RowValue(row) {
+  if (row.class === 'reset') return 'Paused worker reset';
+  if (row.class === 'input') return `${row.value.componentId}.${row.value.key} = ${JSON.stringify(row.value.value)} · requested cycle ${row.value.targetCycle.toLocaleString('en-US')}`;
+  if (row.class === 'gpio') return `${row.value.pin} ${row.value.level ? 'HIGH' : 'LOW'}`;
+  if (row.class === 'serial') return `${row.value.direction.toUpperCase()} byte ${row.value.value} · ${JSON.stringify(row.value.text)}`;
+  return `${row.value.scenarioId} · ${row.value.status} · ${row.value.jobStatus}`;
+}
+function renderX40SharedTimeline() {
+  const timeline = x40SharedTimeline;
+  elements.x40sharedtimeline.hidden = !timeline;
+  elements.x40sharedtimelinesummary.textContent = timeline
+    ? `${timeline.rows.length} current rows · cycles ${timeline.firstCycle.toLocaleString('en-US')}–${timeline.lastCycle.toLocaleString('en-US')} · worker ${timeline.identity.workerInstanceNonce.slice(0, 12)}… · zero relevant drops.`
+    : x40TimelineNotice;
+  elements.x40sharedtimelinebody.replaceChildren(...(timeline?.rows ?? []).map((row) => {
+    const tableRow = document.createElement('tr');
+    tableRow.tabIndex = 0;
+    tableRow.dataset.eventClass = row.class;
+    tableRow.dataset.cycle = String(row.cycle);
+    tableRow.dataset.sameCycleSequence = String(row.sameCycleSequence);
+    for (const value of [row.cycle.toLocaleString('en-US'),
+      (row.cycle / 16_000).toFixed(6), row.class, x40RowValue(row), row.provenance]) {
+      const cell = document.createElement('td'); cell.textContent = value; tableRow.append(cell);
+    }
+    return tableRow;
+  }));
+  publish({ x40SharedTimeline: timeline ? structuredClone(timeline) : null });
+}
+async function exportX40SharedTimeline() {
+  const context = x40Context();
+  if (!x40SharedTimeline || !context) {
+    clearX40SharedTimeline('Current timeline authority is unavailable. Run one isolated authored scenario again.');
+    return;
+  }
+  try { await validateX40SharedTimeline(x40SharedTimeline, context); }
+  catch {
+    clearX40SharedTimeline('Current timeline authority became stale. Run one isolated authored scenario again.');
+    renderX40SharedTimeline(); return;
+  }
+  downloadText(`x40-shared-timeline-${x40SharedTimeline.semanticSha256.slice(0, 12)}.intent-mcu-x40.json`,
+    `${JSON.stringify(x40SharedTimeline, null, 2)}\n`, 'application/json');
+}
 function thermostatPublishedState() {
   return {
     experimentId: THERMOSTAT_EXPERIMENT_ID,
@@ -5140,6 +5214,7 @@ function renderThermostatExperimentPanel() {
   elements.thermostatexperiment.hidden = !active;
   if (!active) {
     renderScenarioTimelineEditor();
+    renderX40SharedTimeline();
     publish({ thermostatExperiment: thermostatPublishedState() });
     return;
   }
@@ -5204,11 +5279,13 @@ function renderThermostatExperimentPanel() {
   }
   elements.thermostatexperimentmessage.textContent = thermostatExperimentNotice;
   renderX39FailureLocation();
+  renderX40SharedTimeline();
   publish({ thermostatExperiment: thermostatPublishedState() });
 }
 function cancelThermostatExperiment(message, { clearResults = true, render = true } = {}) {
   thermostatExperimentRun = null;
   clearX39FailureLocator();
+  clearX40SharedTimeline(message ?? 'The experiment ended without current complete timeline evidence.');
   const waiter = authoredExperimentWaiter;
   authoredExperimentWaiter = null;
   if (waiter) waiter.reject(Object.assign(new Error('COUNTEREXAMPLE_REPLAY_INTERRUPTED'), {
@@ -5235,6 +5312,7 @@ function startAuthoredScenarioExperiment() {
   }
   authoredScenarioResults = [];
   clearX39FailureLocator();
+  clearX40SharedTimeline('Running one authored scenario. Current timeline authority was cleared first.');
   thermostatExperimentRun = { phase: 'await-reset', scenarioIndex: 0, variant, authored: true };
   thermostatExperimentNotice = 'Running the authored data-only timeline from fresh reset. Expected events are compared with executed D13 evidence.';
   worker.postMessage({ command: 'reset' });
@@ -5255,6 +5333,7 @@ function startThermostatExperiment() {
   }
   thermostatExperimentResults = [];
   clearX39FailureLocator();
+  clearX40SharedTimeline('The fixed four-scenario suite does not create the bounded X40 isolated timeline.');
   thermostatExperimentRun = { phase: 'await-reset', scenarioIndex: 0, variant, authored: false };
   thermostatExperimentNotice = `Running ${THERMOSTAT_SCENARIOS.scenarios.length} isolated scenarios from virtual cycle 0. Wall-clock speed does not affect the verdict.`;
   worker.postMessage({ command: 'reset' });
@@ -5276,6 +5355,7 @@ async function advanceThermostatExperiment(message) {
   }
   if (run.phase === 'await-reset') {
     if (message.cycle !== 0 || !message.paused || !['reset', 'ready'].includes(message.kind)) return;
+    if (run.authored) run.x40Reset = structuredClone(message);
     run.phase = 'await-controls';
     const controls = run.authored ? scenarioTimelineRuntimeEvents(scenario) : thermostatScenarioControls(scenario.id);
     for (const control of controls) worker.postMessage(control);
@@ -5335,6 +5415,21 @@ async function advanceThermostatExperiment(message) {
     return;
   }
   const result = domainResult.observation;
+  if (run.authored && scenarios.length === 1) {
+    try {
+      const context = x40Context({ reset: run.x40Reset, result, observation: message });
+      if (!context) throw new Error('X40_CONTEXT_UNAVAILABLE');
+      const timeline = await createX40SharedTimeline(context);
+      x40TimelineReset = structuredClone(run.x40Reset);
+      x40TimelineResult = structuredClone(result);
+      x40SharedTimeline = timeline;
+      x40TimelineNotice = 'Current five-class AVR producer timeline accepted.';
+    } catch (error) {
+      clearX40SharedTimeline(`Shared timeline unavailable: ${error.code ?? error.message}.`);
+    }
+  } else if (run.authored) {
+    clearX40SharedTimeline('Shared timeline requires exactly one isolated authored scenario.');
+  }
   if (!run.authored && scenario.id === 'THERM-SCENARIO-EQUALITY-ENABLED') {
     const binding = lifecycle.runtimeBinding;
     const source = currentProject().source.files.find((file) => file.name === 'main.ino');
@@ -7322,6 +7417,7 @@ function releaseCanvasButton(reason = 'canvas button') {
 
 function stopRuntime(message = 'No current artifact loaded', { updateLifecycle = true, stale = false } = {}) {
   invalidateDigitalStateRuntimeReport('Runtime worker retirement cleared the prior X33 runtime report. Run the producer check again.');
+  clearX40SharedTimeline(`${message}. The prior shared timeline was invalidated.`);
   cancelThermostatExperiment(
     thermostatProjectActive() ? `${message}. A fresh build is required before the experiment can run.` : null,
     { clearResults: true, render: false },
@@ -7389,6 +7485,9 @@ function applyEditor(command, message = command.type) {
     return result;
   }
   const relevance = result.changeRelevance ?? (result.buildRelevant ? 'build' : commandBuildRelevance(command.type));
+  if (x40SharedTimeline && !x40TimelineRetainsForLifecycle({ type: 'project.edit', relevance })) {
+    clearX40SharedTimeline('A non-visual project edit invalidated the prior shared timeline.');
+  }
   if (relevance === 'build') {
     const empty = result.project.circuit.components.length === 0;
     detachOutstandingBuild();
@@ -9065,6 +9164,9 @@ function loadArtifact(hex, artifactIdentity, { x34Probe = null } = {}) {
     }
     const acceptedMessage = applyLifecycle({ type: 'runtime.message', binding: runtimeBinding, message: data });
     if (!acceptedMessage.accepted) return;
+    if (x40SharedTimeline) {
+      clearX40SharedTimeline('A later worker message invalidated the prior shared timeline.');
+    }
     lastWorkerMessage = performance.now(); running = data.paused === false && data.kind !== 'error';
     if (data.kind === 'ready') setRuntimeEnabled(true);
     scheduleWorkerRuntimeRender(data);
@@ -9335,6 +9437,7 @@ elements.cancel.addEventListener('click', () => {
   publish({ buildState: 'cancelled', artifactIdentity: null, inputIdentity: null, cacheHit: false });
 });
 elements.run.addEventListener('click', () => {
+  clearX40SharedTimeline('Run invalidated the prior shared timeline.');
   const result = applyLifecycle({ type: 'runtime.run' });
   if (result.accepted) worker?.postMessage({ command: 'run' });
 });
@@ -9344,6 +9447,7 @@ elements.pause.addEventListener('click', () => {
 });
 elements.step.addEventListener('click', () => worker?.postMessage({ command: 'step' }));
 elements.reset.addEventListener('click', () => {
+  clearX40SharedTimeline('Reset invalidated the prior shared timeline.');
   invalidateVersionRegressionReport('Reset cleared active comparison review authority.');
   invalidateFailureReplayReport('Reset retired the X36 replay workers and cleared export authority. Open the replay point again.');
   invalidateUsartResponseReport('Reset retired the X23 USART0 workers and cleared export authority. Run the suite again.');
@@ -9361,6 +9465,7 @@ elements.thermostatruntests.addEventListener('click', startThermostatExperiment)
 elements.thermostatloadbad.addEventListener('click', () => loadThermostatFirmwareVariant('known-bad-equality'));
 elements.thermostatrestore.addEventListener('click', () => loadThermostatFirmwareVariant('correct'));
 elements.x39failureexport.addEventListener('click', () => { void exportX39FailureLocation(); });
+elements.x40sharedtimelineexport.addEventListener('click', () => { void exportX40SharedTimeline(); });
 function installSeededPropertyTimeline(seed, action) {
   try {
     const timeline = generateSeededThermostatTimeline(seed);
