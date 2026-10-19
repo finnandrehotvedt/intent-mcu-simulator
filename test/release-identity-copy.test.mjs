@@ -16,7 +16,7 @@ test('one release authority matches package capability and dynamic OCI projectio
   ]);
   assert.deepEqual(Object.keys(release).sort(), ['schema', 'version']);
   assert.equal(release.schema, 'intent-mcu-release@1');
-  assert.equal(release.version, '1.1.0-rc.62');
+  assert.equal(release.version, '1.1.0-rc.63');
   assert.equal(RELEASE_VERSION, release.version);
   assert.equal(PRODUCT_VERSION, release.version);
   assert.equal(packageValue.version, release.version);
@@ -54,4 +54,8 @@ test('footer, four-case helper and exact seed accessibility are coherent without
   assert.match(html, /Compiled AVR runtime state — independently reviewed/u);
   assert.match(html, /The independently reviewed X33 report is transient/u);
   assert.doesNotMatch(html, /Compiled AVR runtime state — private proof/u);
+  assert.match(html, /Failure location — independently reviewed/u);
+  assert.match(html, /Reviewed historical observation/u);
+  assert.match(html, /This independently reviewed X39 locator is transient/u);
+  assert.doesNotMatch(html, />Failure location<\/h3>/u);
 });
