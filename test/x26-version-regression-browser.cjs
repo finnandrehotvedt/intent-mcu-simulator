@@ -66,6 +66,8 @@ const output = process.env.X26_VERSION_EVIDENCE_PATH;
     await page.waitForFunction(() => window.__X26_VERSION_REGRESSION__.report() === null);
     await page.waitForFunction(() => !document.querySelector('#build').disabled, null, { timeout: 30_000 });
     assert.equal(buildRequests, 1);
+    assert.equal(await page.locator('#build-state').textContent(), 'Build succeeded',
+      await page.locator('#diagnostics').textContent());
 
     await page.waitForFunction(() => !document.querySelector('#reset').disabled, null, { timeout: 30_000 });
     await page.evaluate(() => window.__X26_VERSION_REGRESSION__.loadReviewed());
@@ -74,10 +76,9 @@ const output = process.env.X26_VERSION_EVIDENCE_PATH;
 
     await page.evaluate(() => window.__X26_VERSION_REGRESSION__.loadReviewed());
     await page.setInputFiles('#project-open-input', projectPath);
-    if (await page.locator('#unsaved-change-dialog').getAttribute('open') !== null) {
-      await page.click('#unsaved-discard');
-      await page.waitForFunction(() => !document.querySelector('#unsaved-change-dialog').open);
-    }
+    await page.waitForFunction(() => document.querySelector('#unsaved-change-dialog').open);
+    await page.click('#unsaved-discard');
+    await page.waitForFunction(() => !document.querySelector('#unsaved-change-dialog').open);
     assert.equal(await page.evaluate(() => window.__X26_VERSION_REGRESSION__.report()), null);
     assert.equal(await page.locator('#version-regression-export').isDisabled(), true);
 
