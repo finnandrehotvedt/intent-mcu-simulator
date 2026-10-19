@@ -1,8 +1,16 @@
-# Migration to 1.1.0-rc.44
+# Migration to 1.1.0-rc.73
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.73 publishes two immutable project-owned model-library bundles. Recognized
+older files bind to the retained pre-X56 bundle only after strict validation.
+Moving a retained project to the current bundle is an explicit
+preview-and-download operation that creates a new
+`intent-mcu-project-envelope@8` data-only copy and never overwrites the open
+original. Opening or migrating clears executable authority and requires a fresh
+Build; no firmware, runtime state, evidence, result or verdict is replayed.
 
 Rc.25 adds only derived compatibility presentation and tests. It changes no
 project schema, accepted source, circuit topology or local-file migration.

@@ -1,4 +1,24 @@
-# Intent MCU Simulator 1.1.0-rc.72
+# Intent MCU Simulator 1.1.0-rc.73
+
+## Version-locked project model libraries
+
+This release publishes the independently reviewed X56 model-library boundary.
+Projects bind to one of exactly two immutable project-owned bundles: the
+retained pre-X56 library or the current library. Recognized older files resolve
+to the retained bundle only after complete strict validation, so opening a
+legacy project does not silently adopt current component semantics.
+
+Migration is an explicit preview-and-download operation. It creates a new
+`intent-mcu-project-envelope@8` data-only copy bound to the current bundle and
+never overwrites the open original. Open and migration both clear executable
+authority and require a fresh Build before Run. Neither operation restores or
+replays firmware, runtime state, measured evidence, results or verdicts. The
+existing compiler/runtime producers, local-file ownership and privacy limits
+are unchanged.
+
+---
+
+## 1.1.0-rc.72
 
 ## Current-measurement completeness
 

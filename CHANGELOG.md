@@ -2,6 +2,21 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.73 — 2026-10-19
+
+- Published the independently reviewed X56 version-locked model-library
+  boundary with exactly two immutable project-owned bundles: the retained
+  pre-X56 library and the current library.
+- Recognized older files bind to the retained bundle only after strict
+  validation. An explicit preview-and-download migration creates a new
+  envelope-v8 copy bound to the current bundle and never overwrites the open
+  original.
+- Opening or migrating a file grants no executable authority. A fresh Build is
+  required before Run, and migration cannot replay prior firmware, runtime,
+  result or verdict evidence.
+- Preserved the four existing compiler/runtime producers, local-only project
+  ownership, current privacy boundaries and public infrastructure.
+
 ## 1.1.0-rc.72 — 2026-10-19
 
 - Published the independently reviewed X91 current-measurement completeness
