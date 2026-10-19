@@ -1,19 +1,19 @@
-# Intent MCU Simulator 1.1.0-rc.66
+# Intent MCU Simulator 1.1.0-rc.67
 
-## Current documentation and guided examples
+## Honest controller-migration explanation
 
-This release publishes the independently reviewed X72 example progression in
-the existing concise desktop chooser and narrow-profile cards. Every one of the
-21 existing examples now exposes Learn, Try, Observe, Limits and Next guidance,
-while all generated project payloads remain byte-identical.
+This release publishes the independently reviewed X65 migration explanation in
+one compact, closed-by-default disclosure inside the existing controller panel.
+For every directed pair among the exact AVR, RP2040 Pico, ESP32-C3 and
+STM32F429ZI profiles, it explains which current source file and bounded APIs,
+named connected pins, parts and saved requirements need manual review.
 
-The public documentation now identifies rc.66, fifteen AVR cards and the four
-reset-isolated thermostat cases. It also explains the precise privacy boundary:
-saved projects remain local, while Build sends only the active profile's
-bounded source to the same-origin isolated compiler for one temporary job.
-Controller/runtime claims are unchanged, including QEMU CPU/UART versus the
-separate GPIO2 project model and actual Renode PB0/USART3 versus the ideal LED
-teaching path.
+The explanation is read-only. It never treats D13, GP0, GPIO2 or PB0 as aliases,
+never rewires a circuit, translates source, changes a parked draft or restores
+runtime/build authority. Exact narrow-profile grammars report only the APIs they
+can prove; arbitrary AVR sketch semantics and unresolved requirements remain
+explicitly unknown. All 21 existing examples, compiler/runtime boundaries,
+saved-file guards and rc.66 documentation remain otherwise unchanged.
 
 ## X18 honest outcomes and separate job state
 

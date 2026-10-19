@@ -2,6 +2,20 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.67 — 2026-10-19
+
+- Published the independently reviewed X65 controller-migration explanation as
+  one compact, closed-by-default disclosure in the existing controller panel.
+- Covered all 12 directed pairs among the exact AVR, RP2040 Pico, ESP32-C3 and
+  STM32F429ZI profiles using current project source, named connected pins,
+  component support and saved requirement authorities.
+- Kept arbitrary AVR semantics and unresolved needs explicitly unknown. D13,
+  GP0, GPIO2 and PB0 are never treated as aliases; no source, wire, part,
+  project, result, executable or runtime authority is migrated automatically.
+- Preserved parked and unsaved drafts, Open/cancel guards, the 21 existing
+  examples and all compiler/runtime boundaries. A target project still needs
+  manual source/circuit work followed by a fresh Build.
+
 ## 1.1.0-rc.66 — 2026-10-19
 
 - Published the independently reviewed X72 learning progression: all fifteen
