@@ -234,9 +234,14 @@ import {
   PROJECT_ENVELOPE_LIMIT,
   canonicalProjectEnvelope,
   emptyProjectBrief,
+  migrateProjectModelLibrary,
   normalizeProjectBrief,
   prepareProjectEnvelope,
 } from '../src/project-envelope.mjs';
+import {
+  CURRENT_MODEL_LIBRARY_LOCK,
+  modelLibraryMigrationPreview,
+} from '../src/model-library.mjs';
 import {
   createRequirementResultLink,
   currentRequirementResultLink,
@@ -343,6 +348,7 @@ const elements = Object.fromEntries([
   'zoom-in', 'zoom-out', 'pan-left', 'pan-right', 'pan-up', 'pan-down', 'view-reset', 'fit-project', 'project-state',
   'project-message', 'project-name', 'project-new', 'project-demo', 'project-save', 'project-open', 'project-open-input',
   'project-native-open', 'project-native-save', 'project-native-save-copy', 'project-file-connection',
+  'model-library-detail', 'model-library-summary', 'model-library-status', 'model-library-changes', 'model-library-migrate',
   'project-reload', 'project-export', 'project-import',
   'project-import-mode', 'undo', 'redo', 'prompt-generate', 'prompt-copy', 'prompt-output', 'prompt-response',
   'prompt-mode', 'prompt-apply', 'prompt-message', 'component-controls',
@@ -520,6 +526,12 @@ let fileSavedRevision = null;
 let fileSavedProjectGeneration = null;
 let fileSaveState = null;
 const projectFileConnections = new Map();
+const projectModelLibraryLocks = new Map([
+  [AVR_PROFILE, structuredClone(CURRENT_MODEL_LIBRARY_LOCK)],
+  [RP2040_PROFILE, structuredClone(CURRENT_MODEL_LIBRARY_LOCK)],
+  [ESP32C3_PROFILE, structuredClone(CURRENT_MODEL_LIBRARY_LOCK)],
+  [STM32F429ZI_PROFILE, structuredClone(CURRENT_MODEL_LIBRARY_LOCK)],
+]);
 let nativeFileOperation = null;
 let buildAbortController = null;
 let serialViewMode = 'text';
@@ -6049,7 +6061,7 @@ function parseAvrRecoverySource(source) {
   const common = prepareProjectEnvelope(source, commonProjectAdapters);
   if (common.ok && common.profile === AVR_PROFILE) {
     return { ok: true, code: common.code, session: common.prepared,
-      scenarioTimeline: common.scenarioTimeline, report: common.report };
+      scenarioTimeline: common.scenarioTimeline, modelLibrary: common.modelLibrary, report: common.report };
   }
   const legacy = parseEditorSource(source);
   return legacy.ok ? { ...legacy, scenarioTimeline: null } : common;
@@ -6072,7 +6084,8 @@ function commonProjectFilename(profile) {
 }
 function commonProjectText(profile) {
   return canonicalProjectEnvelope(profile, profileProjectDocument(profile), commonProjectAdapters,
-    projectBriefForProfile(profile), profile === AVR_PROFILE ? scenarioTimelineEditor?.timeline ?? null : null);
+    projectBriefForProfile(profile), profile === AVR_PROFILE ? scenarioTimelineEditor?.timeline ?? null : null,
+    projectModelLibraryLocks.get(profile) ?? CURRENT_MODEL_LIBRARY_LOCK);
 }
 function legacyProjectText(profile) {
   return `${JSON.stringify(profileProjectDocument(profile), null, 2)}\n`;
@@ -6082,6 +6095,51 @@ function profileMessage(profile, message) {
     : profile === RP2040_PROFILE ? elements.picomessage
     : profile === ESP32C3_PROFILE ? elements.c3message : elements.stm32message;
   target.textContent = message;
+}
+function renderModelLibraryStatus() {
+  const lock = projectModelLibraryLocks.get(selectedCompilerProfile) ?? CURRENT_MODEL_LIBRARY_LOCK;
+  const preview = modelLibraryMigrationPreview(lock, CURRENT_MODEL_LIBRARY_LOCK);
+  if (!preview.ok) {
+    elements.modellibrarysummary.textContent = 'Model library · invalid lock';
+    elements.modellibrarystatus.textContent = `Trusted model-library check failed (${preview.code}). Save and migration are blocked.`;
+    elements.modellibrarychanges.replaceChildren();
+    elements.modellibrarymigrate.disabled = true;
+    return;
+  }
+  const retained = preview.migrationRequired;
+  elements.modellibrarysummary.textContent = `Model library · ${lock.version} · ${retained ? 'retained' : 'current'}`;
+  elements.modellibrarystatus.textContent = retained
+    ? 'This project stays bound to its retained, immutable pre-X56 model behavior until you explicitly create a migrated copy.'
+    : 'This project uses the current immutable project-owned component/model library.';
+  const rows = retained
+    ? [`Semantic changes: ${preview.semanticChanges.length}`,
+      `Renderer-only changes: ${preview.rendererChanges.length}`,
+      `Unchanged profile/component cells: ${preview.unchanged.length}`,
+      preview.semanticChanges.length === 0
+        ? 'No component semantics change in this retained-to-current comparison.'
+        : 'Review every semantic change before choosing migration.']
+    : ['No migration is required.'];
+  elements.modellibrarychanges.replaceChildren(...rows.map((text) => {
+    const item = document.createElement('li'); item.textContent = text; return item;
+  }));
+  elements.modellibrarymigrate.disabled = !retained;
+}
+function resetProjectModelLibrary(profile) {
+  projectModelLibraryLocks.set(profile, structuredClone(CURRENT_MODEL_LIBRARY_LOCK));
+  if (profile === selectedCompilerProfile) renderModelLibraryStatus();
+}
+function downloadMigratedModelLibraryCopy() {
+  const profile = selectedCompilerProfile;
+  const original = commonProjectText(profile);
+  const migrated = migrateProjectModelLibrary(original, commonProjectAdapters);
+  if (!migrated.ok) {
+    profileMessage(profile, `Model-library migration rejected (${migrated.code}). The original project is unchanged.`);
+    return migrated;
+  }
+  const name = commonProjectFilename(profile).replace(/\.intent-mcu\.json$/u, '.migrated.intent-mcu.json');
+  downloadText(name, migrated.canonical, 'application/json');
+  profileMessage(profile, 'Migrated data-only copy downloaded. The open project and original file were not changed; open the copy and Build fresh.');
+  return migrated;
 }
 function nativeFileUi(profile) {
   if (profile === AVR_PROFILE) return {
@@ -6254,6 +6312,7 @@ function installPreparedProjectEnvelope(result, handle = null, { preserveExpecta
   else if (result.profile === ESP32C3_PROFILE) c3PublicWorkbench.installPreparedProject(result.project);
   else if (result.profile === STM32F429ZI_PROFILE) stm32PublicWorkbench.installPreparedProject(result.project);
   projectBriefDrafts.set(result.profile, briefDraftFromBrief(result.brief));
+  projectModelLibraryLocks.set(result.profile, structuredClone(result.modelLibrary));
   clearRequirementResultLinks(result.profile);
   renderProjectBrief();
   if (handle && !result.report.legacy) projectFileConnections.set(result.profile, {
@@ -6266,6 +6325,7 @@ function installPreparedProjectEnvelope(result, handle = null, { preserveExpecta
   }
   setProjectBaseline(result.profile);
   renderNativeFileControls();
+  renderModelLibraryStatus();
   renderExpectationReference();
   window.__COMMON_PROJECT_FILE_STATE__ = structuredClone({ profile: result.profile, report: result.report });
   profileMessage(result.profile, result.report.legacy
@@ -6408,7 +6468,14 @@ window.__COMMON_PROJECT_FILES__ = Object.freeze({
   current: (profile = selectedCompilerProfile) => commonProjectText(profile),
   legacy: (profile = selectedCompilerProfile) => legacyProjectText(profile),
   prepare: (source) => prepareProjectEnvelope(source, commonProjectAdapters),
+  modelLibraryLock: (profile = selectedCompilerProfile) => structuredClone(
+    projectModelLibraryLocks.get(profile) ?? CURRENT_MODEL_LIBRARY_LOCK),
+  modelLibraryPreview: (profile = selectedCompilerProfile) => modelLibraryMigrationPreview(
+    projectModelLibraryLocks.get(profile) ?? CURRENT_MODEL_LIBRARY_LOCK, CURRENT_MODEL_LIBRARY_LOCK),
+  migrateModelLibraryCopy: (source = commonProjectText(selectedCompilerProfile)) =>
+    migrateProjectModelLibrary(source, commonProjectAdapters),
 });
+elements.modellibrarymigrate.addEventListener('click', downloadMigratedModelLibraryCopy);
 let lastSharedDomainInspection = null;
 let lastSharedDomainTest = null;
 function renderSharedDomainInspection(result) {
@@ -10185,6 +10252,7 @@ function createNewAvrProject() {
   editor = new ProjectEditorReducer(createEmptyProject());
   scenarioTimelineEditor = null; authoredScenarioResults = [];
   clearExpectationReference();
+  resetProjectModelLibrary(AVR_PROFILE);
   installProjectGeneration({ empty: true, reason: 'project.new', runtimeMessage: 'New empty project — build required' });
   selectedSourceFile = 'main.ino';
   clearProjectFileConnection(AVR_PROFILE);
@@ -10216,6 +10284,7 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
     editor = parsed.session;
     scenarioTimelineEditor = null; authoredScenarioResults = [];
     clearExpectationReference();
+    resetProjectModelLibrary(AVR_PROFILE);
     installProjectGeneration({ empty: false, reason, runtimeMessage: `${example.name} loaded — build required` });
     selectedSourceFile = 'main.ino';
     elements.exampleselect.value = exampleId;
@@ -10243,6 +10312,7 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
     scenarioTimelineEditor = new ScenarioTimelineEditor(defaultThermostatScenarioTimeline());
     authoredScenarioResults = [];
     clearExpectationReference();
+    resetProjectModelLibrary(AVR_PROFILE);
     installProjectGeneration({
       empty: false, reason, runtimeMessage: `${example.name} loaded — build required`,
     });
@@ -10272,6 +10342,7 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
     editor = parsed.session;
     scenarioTimelineEditor = null; authoredScenarioResults = [];
     clearExpectationReference();
+    resetProjectModelLibrary(AVR_PROFILE);
     installProjectGeneration({
       empty: false, reason, runtimeMessage: `${example.name} loaded — build required`,
     });
@@ -10295,6 +10366,7 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
   editor = replacement;
   scenarioTimelineEditor = null; authoredScenarioResults = [];
   clearExpectationReference();
+  resetProjectModelLibrary(AVR_PROFILE);
   installProjectGeneration({ empty: false, reason, runtimeMessage: `${projectLabel} loaded — build required` });
   selectedSourceFile = 'main.ino';
   elements.exampleselect.value = exampleId;
@@ -10480,6 +10552,7 @@ elements.boardselect.addEventListener('change', () => {
   if (selectedCompilerProfile === ESP32C3_PROFILE) c3PublicWorkbench.render();
   if (selectedCompilerProfile === STM32F429ZI_PROFILE) stm32PublicWorkbench.render();
   renderProjectBrief();
+  renderModelLibraryStatus();
 });
 elements.controllerprimaryaction.addEventListener('click', () => {
   if (selectedCompilerProfile === AVR_PROFILE) elements.build.click();
@@ -10748,6 +10821,7 @@ const recoveryRestored = recoveryStored ? parseAvrRecoverySource(recoveryStored)
 const currentRestored = stored ? parseAvrRecoverySource(stored) : null;
 const restored = recoveryRestored?.ok ? recoveryRestored : currentRestored;
 editor = restored?.ok ? restored.session : new ProjectEditorReducer(createEmptyProject());
+if (restored?.modelLibrary) projectModelLibraryLocks.set(AVR_PROFILE, structuredClone(restored.modelLibrary));
 scenarioTimelineEditor = restored?.scenarioTimeline
   ? new ScenarioTimelineEditor(restored.scenarioTimeline) : null;
 authoredScenarioResults = [];
@@ -10758,7 +10832,7 @@ for (const [name, button] of [['catalog-collapsed', elements.togglecatalog], ['i
   if (workspacePreference(name)) { workspace.classList.add(name); button.setAttribute('aria-pressed', 'true'); }
 }
 if (workspacePreference('pin-labels')) { elements.circuitcanvas.classList.add('show-pin-labels'); elements.showpinlabels.setAttribute('aria-pressed', 'true'); }
-renderCompilerTarget(); renderCatalog(); renderProject(); renderProjectBrief(); setRuntimeEnabled(false);
+renderCompilerTarget(); renderCatalog(); renderProject(); renderProjectBrief(); renderModelLibraryStatus(); setRuntimeEnabled(false);
 clearRuntimePresentation(); renderLifecycle();
 setCanvasInteractionMode('select'); setSerialDock(false);
 elements.projectmessage.textContent = recoveryRestored?.ok

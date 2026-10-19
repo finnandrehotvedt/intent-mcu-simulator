@@ -77,6 +77,8 @@
     "test:x72:browser": "node test/x72-example-progression-browser.cjs",
     "test:x65": "node --test --test-concurrency=1 test/x65-profile-migration.test.mjs",
     "test:x65:browser": "node test/x65-profile-migration-browser.cjs",
+    "test:x56": "node --test --test-concurrency=1 test/model-library.test.mjs test/project-envelope.test.mjs",
+    "test:x56:browser": "node test/x56-model-library-browser.cjs",
     "test:x67": "node --test --test-concurrency=1 test/x67-experiment-package.test.mjs test/scenario-timeline.test.mjs test/expectation-reference.test.mjs test/project-envelope.test.mjs",
     "test:x67:browser": "node test/x67-experiment-package-browser.cjs",
     "test:x85": "node --test --test-concurrency=1 test/x85-no-shared-artifact-cache.test.mjs test/external-client-jobs.test.mjs test/gateway-unit.test.mjs",

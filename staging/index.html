@@ -57,6 +57,13 @@
       </div>
       <p id="project-file-connection" class="file-connection" role="status">Download copy and Open project work without a native file connection.</p>
       <p id="project-message" class="truth" role="status">No account or cloud project store. Save/Open uses a file on your computer; your browser or operating system chooses its location. Browser recovery is separate.</p>
+      <details id="model-library-detail" class="model-library-detail">
+        <summary><span id="model-library-summary">Model library · current locked version</span></summary>
+        <p id="model-library-status" class="truth">This project uses the current immutable project-owned component/model library.</p>
+        <ul id="model-library-changes" aria-label="Model-library migration changes"><li>No migration is required.</li></ul>
+        <button id="model-library-migrate" type="button" disabled>Download migrated copy</button>
+        <p class="model-library-limit">Migration is opt-in and creates a new local data-only copy. It never overwrites the original file, restores firmware/runtime/results, downloads model code or installs a package. Open the new copy and Build fresh.</p>
+      </details>
       <details id="technical-error" class="technical-error" hidden><summary>Technical details</summary><pre id="technical-error-detail"></pre></details>
     </section>
 

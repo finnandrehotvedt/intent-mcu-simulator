@@ -164,7 +164,7 @@ async function saveNarrow(page, profile) {
   assert(filename.endsWith(profile.extension), `${profile.name}: unexpected filename ${filename}`);
   const text = fs.readFileSync(filePath, 'utf8');
   const saved = JSON.parse(text);
-  assert.equal(saved.schema, 'intent-mcu-project-envelope@6', `${profile.name}: envelope schema`);
+  assert.equal(saved.schema, 'intent-mcu-project-envelope@7', `${profile.name}: envelope schema`);
   assert.equal(saved.profile, profile.option, `${profile.name}: envelope profile`);
   assert.equal(saved.project.schema, profile.schema, `${profile.name}: nested schema`);
   assert.deepEqual(saved.brief, expectedBrief, `${profile.name}: brief not saved with circuit`);
@@ -254,6 +254,7 @@ async function verifyNarrowOpen(browser, record, wrongProfilePath) {
 async function saveAvr(page) {
   await page.evaluate(() => { window.showOpenFilePicker = undefined; });
   await page.click('#project-demo');
+  await page.click('.starter-card[data-example="blink"]');
   await page.fill('#project-name', 'AVR file contract');
   await page.locator('#project-name').press('Tab');
   const source = (await page.inputValue('#source')).replaceAll('delay(300)', 'delay(250)');
@@ -276,7 +277,7 @@ async function saveAvr(page) {
   const saveMs = Date.now() - started;
   const text = fs.readFileSync(filePath, 'utf8');
   const saved = JSON.parse(text);
-  assert.equal(saved.schema, 'intent-mcu-project-envelope@6', 'AVR: envelope schema');
+  assert.equal(saved.schema, 'intent-mcu-project-envelope@7', 'AVR: envelope schema');
   assert.equal(saved.profile, 'board.atmega328p-16mhz-v1', 'AVR: envelope profile');
   assert.deepEqual(saved.project, expected, 'AVR: downloaded file differs from canonical authored project');
   assert.deepEqual(saved.brief, expectedBrief, 'AVR: brief not saved with circuit');

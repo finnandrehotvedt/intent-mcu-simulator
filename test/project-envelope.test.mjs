@@ -7,9 +7,11 @@ import {
   ASSUMPTION_PROJECT_ENVELOPE_SCHEMA, CAPABILITY_PROJECT_ENVELOPE_SCHEMA,
   LEGACY_PROJECT_BRIEF_SCHEMA, LEGACY_PROJECT_ENVELOPE_SCHEMA,
   PREVIOUS_PROJECT_BRIEF_SCHEMA, PREVIOUS_PROJECT_ENVELOPE_SCHEMA,
-  PROJECT_BRIEF_SCHEMA, PROJECT_ENVELOPE_SCHEMA, TRACE_PROJECT_BRIEF_SCHEMA, TRACE_PROJECT_ENVELOPE_SCHEMA,
-  canonicalProjectEnvelope, emptyProjectBrief, prepareProjectEnvelope,
+  PROJECT_BRIEF_SCHEMA, PROJECT_ENVELOPE_SCHEMA, SCENARIOLESS_PROJECT_ENVELOPE_SCHEMA,
+  TRACE_PROJECT_BRIEF_SCHEMA, TRACE_PROJECT_ENVELOPE_SCHEMA,
+  canonicalProjectEnvelope, emptyProjectBrief, migrateProjectModelLibrary, prepareProjectEnvelope,
 } from '../src/project-envelope.mjs';
+import { CURRENT_MODEL_LIBRARY_LOCK, RETAINED_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
 
 const profile = 'board.example-v1';
 const adapters = {
@@ -96,12 +98,45 @@ test('rc33 v4 envelope migrates with an explicit empty required capability list'
 });
 
 test('rc42 v5 envelope migrates with an explicit empty scenario timeline', () => {
-  const previous = { schema: PREVIOUS_PROJECT_ENVELOPE_SCHEMA, profile,
+  const previous = { schema: SCENARIOLESS_PROJECT_ENVELOPE_SCHEMA, profile,
     brief: emptyProjectBrief(), project };
   const opened = prepareProjectEnvelope(JSON.stringify(previous), adapters);
   assert.equal(opened.code, 'PROJECT_ENVELOPE_MIGRATED');
   assert.equal(opened.scenarioTimeline, null);
   assert(opened.report.defaultsAdded.includes('empty scenario timeline'));
+});
+
+test('pre-X56 v6 maps unambiguously to the retained finite snapshot and preserves scenario data', () => {
+  const scenarioTimeline = null;
+  const previous = { schema: PREVIOUS_PROJECT_ENVELOPE_SCHEMA, profile,
+    brief: emptyProjectBrief(), scenarioTimeline, project };
+  const opened = prepareProjectEnvelope(JSON.stringify(previous), adapters);
+  assert.equal(opened.ok, true);
+  assert.deepEqual(opened.modelLibrary, RETAINED_MODEL_LIBRARY_LOCK);
+  assert.equal(opened.modelLibraryRetained, true);
+  assert.equal(opened.report.modelLibrary.migrationAvailable, true);
+  assert.equal(opened.scenarioTimeline, scenarioTimeline);
+});
+
+test('model-library migration creates a deterministic current copy without changing original bytes or authority', () => {
+  const previous = JSON.stringify({ schema: PREVIOUS_PROJECT_ENVELOPE_SCHEMA, profile,
+    brief: emptyProjectBrief(), scenarioTimeline: null, project });
+  const migrated = migrateProjectModelLibrary(previous, adapters);
+  const repeated = migrateProjectModelLibrary(previous, adapters);
+  assert.equal(migrated.ok, true);
+  assert.deepEqual(repeated, migrated);
+  assert.equal(migrated.originalUnchanged, previous);
+  assert.equal(migrated.executableAuthorityCleared, true);
+  assert.equal(migrated.preview.semanticChanges.length, 0);
+  assert.equal(migrated.preview.rendererChanges.length, 0);
+  assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(migrateProjectModelLibrary(migrated.canonical, adapters).code, 'MODEL_LIBRARY_ALREADY_CURRENT');
+});
+
+test('current envelope rejects a rehashed or unknown model-library lock atomically', () => {
+  const envelope = JSON.parse(canonicalProjectEnvelope(profile, project, adapters));
+  envelope.modelLibrary = { ...envelope.modelLibrary, version: 'forged', manifestSha256: 'a'.repeat(64) };
+  assert.equal(prepareProjectEnvelope(JSON.stringify(envelope), adapters).code, 'MODEL_LIBRARY_LOCK_UNTRUSTED');
 });
 
 test('X01 brief round-trips purpose, inputs, outputs, boundaries and unevaluated acceptance IDs', () => {
@@ -135,7 +170,8 @@ test('X01 brief round-trips purpose, inputs, outputs, boundaries and unevaluated
 test('X01 brief rejects unknown fields, duplicate IDs, malformed IDs and result authority', () => {
   const base = { schema: PROJECT_BRIEF_SCHEMA, purpose: '', inputs: [], outputs: [],
     boundaryCases: [], acceptanceCriteria: [], openAssumptions: [], requiredCapabilities: [] };
-  const wrap = (brief) => JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, brief,
+  const wrap = (brief) => JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile,
+    modelLibrary: CURRENT_MODEL_LIBRARY_LOCK, brief,
     scenarioTimeline: null, project });
   assert.equal(prepareProjectEnvelope(wrap({ ...base, extra: true }), adapters).code, 'PROJECT_BRIEF_SHAPE');
   assert.equal(prepareProjectEnvelope(wrap({ ...base, acceptanceCriteria: [
@@ -161,7 +197,8 @@ test('X03 assumptions remain unresolved data and reject malformed or authority-b
   const criterion = { id: 'REQ-1', text: 'Known requirement', codeRefs: [], testRefs: [] };
   const base = { schema: PROJECT_BRIEF_SCHEMA, purpose: '', inputs: [], outputs: [],
     boundaryCases: [], acceptanceCriteria: [criterion], openAssumptions: [], requiredCapabilities: [] };
-  const wrap = (brief) => JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, brief,
+  const wrap = (brief) => JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile,
+    modelLibrary: CURRENT_MODEL_LIBRARY_LOCK, brief,
     scenarioTimeline: null, project });
   const valid = { id: 'ASK-PIN', kind: 'pin', question: 'Which pin is required?', requirementIds: ['REQ-1'] };
   assert.equal(prepareProjectEnvelope(wrap({ ...base, openAssumptions: [valid] }), adapters).ok, true);
@@ -179,7 +216,8 @@ test('X04 required capabilities reject status claims, duplicates and unknown req
   const criterion = { id: 'REQ-1', text: 'Known requirement', codeRefs: [], testRefs: [] };
   const base = { schema: PROJECT_BRIEF_SCHEMA, purpose: '', inputs: [], outputs: [], boundaryCases: [],
     acceptanceCriteria: [criterion], openAssumptions: [], requiredCapabilities: [] };
-  const wrap = (brief) => JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, brief,
+  const wrap = (brief) => JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile,
+    modelLibrary: CURRENT_MODEL_LIBRARY_LOCK, brief,
     scenarioTimeline: null, project });
   const valid = { id: 'NEED-GPIO', kind: 'peripheral', target: 'gpio', requirementIds: ['REQ-1'] };
   assert.equal(prepareProjectEnvelope(wrap({ ...base, requiredCapabilities: [valid] }), adapters).ok, true);
@@ -198,7 +236,8 @@ test('X04 required capabilities reject status claims, duplicates and unknown req
 test('strict failures reject duplicate keys, unknown versions and profile mismatches', () => {
   assert.equal(prepareProjectEnvelope('{"schema":"x","schema":"y"}', adapters).code, 'DUPLICATE_KEY');
   assert.equal(prepareProjectEnvelope('{"schema":"unknown@1"}', adapters).code, 'PROJECT_ENVELOPE_VERSION');
-  const mismatch = { schema: PROJECT_ENVELOPE_SCHEMA, profile, brief: emptyProjectBrief(), scenarioTimeline: null,
+  const mismatch = { schema: PROJECT_ENVELOPE_SCHEMA, profile, modelLibrary: CURRENT_MODEL_LIBRARY_LOCK,
+    brief: emptyProjectBrief(), scenarioTimeline: null,
     project: { ...project, profile: 'board.other-v1' } };
   assert.equal(prepareProjectEnvelope(JSON.stringify(mismatch), adapters).code, 'PROJECT_ENVELOPE_PROFILE_MISMATCH');
 });

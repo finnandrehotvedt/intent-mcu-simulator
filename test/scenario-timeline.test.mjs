@@ -27,7 +27,7 @@ function snapshot(scenario, observedLevel) {
   };
 }
 
-test('X17 default timeline is editable data and round-trips in envelope v6 without authority', () => {
+test('X17 default timeline is editable data and round-trips in the current envelope without authority', () => {
   const timeline = defaultThermostatScenarioTimeline();
   const experiment = createThermostatExperiment();
   const text = canonicalProjectEnvelope(AVR, experiment.project, adapters, emptyProjectBrief(), timeline);
@@ -35,7 +35,7 @@ test('X17 default timeline is editable data and round-trips in envelope v6 witho
   assert.equal(opened.ok, true);
   assert.deepEqual(opened.scenarioTimeline, timeline);
   assert.equal(opened.canonical, text);
-  assert.equal(JSON.parse(text).schema, 'intent-mcu-project-envelope@6');
+  assert.equal(JSON.parse(text).schema, 'intent-mcu-project-envelope@7');
   assert.doesNotMatch(text, /firmwareHex|runtimeState|experimentResults|"verdict"/u);
 });
 

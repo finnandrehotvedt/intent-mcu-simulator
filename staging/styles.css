@@ -44,6 +44,12 @@ h2 { font-size: 1.22rem; margin: 0; }
 .desktop-required strong { color: var(--lime); }
 .desktop-required a { color: var(--cyan); }
 .project-bar .truth { grid-column: 1 / -1; margin: 0; }
+.model-library-detail { grid-column: 1 / -1; min-width: 0; border: 1px solid #31536c; border-radius: 9px; background: #07141f; }
+.model-library-detail summary { padding: 8px 10px; color: var(--cyan); cursor: pointer; font: 800 .72rem/1.4 ui-monospace, monospace; }
+.model-library-detail[open] summary { border-bottom: 1px solid #26475b; }
+.model-library-detail > .truth, .model-library-detail ul, .model-library-detail button, .model-library-limit { margin: 8px 10px; }
+.model-library-detail ul { padding-left: 18px; color: var(--muted); font-size: .7rem; line-height: 1.5; overflow-wrap: anywhere; }
+.model-library-limit { color: var(--amber); font-size: .7rem; line-height: 1.45; }
 .project-name-field { display: grid; gap: 4px; max-width: 360px; color: var(--muted); font-size: .72rem; letter-spacing: .05em; text-transform: uppercase; }
 .project-name-field input { min-width: 0; color: var(--text); font-size: .95rem; font-weight: 700; letter-spacing: 0; text-transform: none; }
 .project-name-field + #project-state { display: block; margin-top: 6px; }

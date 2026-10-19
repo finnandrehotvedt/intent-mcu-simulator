@@ -77,7 +77,7 @@ let browser;
   assert.match(packageDownload.suggestedFilename(), /\.intent-mcu-experiment\.json$/u);
   assert.equal(value.schema, 'intent-mcu-experiment-package@2');
   assert.equal(value.profile, 'board.atmega328p-16mhz-v1');
-  assert.equal(value.project.schema, 'intent-mcu-project-envelope@6');
+  assert.equal(value.project.schema, 'intent-mcu-project-envelope@7');
   const authored = value.project.project.project ?? value.project.project;
   const circuit = value.project.project.candidateCircuit ?? authored.circuit;
   const manifestCircuit = authored.circuit;

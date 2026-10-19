@@ -3,9 +3,14 @@
 
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
 import { normalizeScenarioTimeline } from './scenario-timeline.mjs';
+import {
+  CURRENT_MODEL_LIBRARY_LOCK, RETAINED_MODEL_LIBRARY_LOCK,
+  modelLibraryMigrationPreview, modelLibrarySupportsProfile, normalizeModelLibraryLock, validateProjectModelLibrary,
+} from './model-library.mjs';
 
-export const PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@6';
-export const PREVIOUS_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@5';
+export const PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@7';
+export const PREVIOUS_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@6';
+export const SCENARIOLESS_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@5';
 export const CAPABILITY_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@4';
 export const ASSUMPTION_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@3';
 export const TRACE_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@2';
@@ -281,14 +286,21 @@ function prepare(adapter, value) {
   return { ...result, project: clone(result.project) };
 }
 
-export function canonicalProjectEnvelope(profile, project, adapters, brief = emptyProjectBrief(), scenarioTimeline = null) {
+export function canonicalProjectEnvelope(profile, project, adapters, brief = emptyProjectBrief(), scenarioTimeline = null,
+  modelLibrary = CURRENT_MODEL_LIBRARY_LOCK) {
   const adapter = adapterForProfile(adapters, profile);
   if (!adapter) throw new Error('PROJECT_ENVELOPE_PROFILE');
   const prepared = prepare(adapter, project);
   if (prepared.project.profile && prepared.project.profile !== profile) {
     throw new Error('PROJECT_ENVELOPE_PROFILE_MISMATCH');
   }
-  return `${JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile,
+  const library = normalizeModelLibraryLock(modelLibrary);
+  if (!library.ok) throw Object.assign(new Error(library.code), { code: library.code, details: library.details });
+  const admitted = modelLibrarySupportsProfile(profile)
+    ? validateProjectModelLibrary(library.lock, profile, prepared.project)
+    : { ok: true };
+  if (!admitted.ok) throw Object.assign(new Error(admitted.code), { code: admitted.code, details: admitted.details });
+  return `${JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, modelLibrary: library.lock,
     brief: normalizeProjectBrief(brief), scenarioTimeline: normalizeScenarioTimeline(scenarioTimeline, profile),
     project: prepared.project }, null, 2)}\n`;
 }
@@ -297,15 +309,19 @@ export function prepareProjectEnvelope(source, adapters) {
   try {
     const value = parseStrictJson(source, PROJECT_ENVELOPE_LIMIT);
     let profile; let adapter; let nested; let brief; let scenarioTimeline = null; let legacy = false; let inputSchema;
+    let modelLibrary = null;
     let migrationDefaults = [];
     if (value?.schema === PROJECT_ENVELOPE_SCHEMA) {
-      if (!exactKeys(value, ['schema', 'profile', 'brief', 'scenarioTimeline', 'project']) || typeof value.profile !== 'string') {
+      if (!exactKeys(value, ['schema', 'profile', 'modelLibrary', 'brief', 'scenarioTimeline', 'project']) || typeof value.profile !== 'string') {
         return failure('PROJECT_ENVELOPE_SHAPE');
       }
       profile = value.profile;
       adapter = adapterForProfile(adapters, profile);
       if (!adapter) return failure('PROJECT_ENVELOPE_PROFILE', [profile]);
       nested = value.project;
+      const library = normalizeModelLibraryLock(value.modelLibrary);
+      if (!library.ok) return library;
+      modelLibrary = library.lock;
       brief = normalizeProjectBrief(value.brief);
       scenarioTimeline = normalizeScenarioTimeline(value.scenarioTimeline, profile);
       inputSchema = PROJECT_ENVELOPE_SCHEMA;
@@ -316,6 +332,23 @@ export function prepareProjectEnvelope(source, adapters) {
         return failure('PROJECT_ENVELOPE_PROFILE_MISMATCH', [profile, nested.profile]);
       }
     } else if (value?.schema === PREVIOUS_PROJECT_ENVELOPE_SCHEMA) {
+      if (!exactKeys(value, ['schema', 'profile', 'brief', 'scenarioTimeline', 'project']) || typeof value.profile !== 'string') {
+        return failure('PROJECT_ENVELOPE_SHAPE');
+      }
+      profile = value.profile;
+      adapter = adapterForProfile(adapters, profile);
+      if (!adapter) return failure('PROJECT_ENVELOPE_PROFILE', [profile]);
+      nested = value.project;
+      brief = normalizeProjectBrief(value.brief);
+      scenarioTimeline = normalizeScenarioTimeline(value.scenarioTimeline, profile);
+      inputSchema = PREVIOUS_PROJECT_ENVELOPE_SCHEMA;
+      modelLibrary = RETAINED_MODEL_LIBRARY_LOCK;
+      legacy = true;
+      migrationDefaults = ['retained pre-X56 model-library lock'];
+      if (!adapter.schemas?.includes(nested?.schema) || (nested?.profile && nested.profile !== profile)) {
+        return failure('PROJECT_ENVELOPE_PROFILE_MISMATCH', [profile, nested?.schema ?? nested?.profile ?? null]);
+      }
+    } else if (value?.schema === SCENARIOLESS_PROJECT_ENVELOPE_SCHEMA) {
       if (!exactKeys(value, ['schema', 'profile', 'brief', 'project']) || typeof value.profile !== 'string') {
         return failure('PROJECT_ENVELOPE_SHAPE');
       }
@@ -324,7 +357,8 @@ export function prepareProjectEnvelope(source, adapters) {
       if (!adapter) return failure('PROJECT_ENVELOPE_PROFILE', [profile]);
       nested = value.project;
       brief = normalizeProjectBrief(value.brief);
-      inputSchema = PREVIOUS_PROJECT_ENVELOPE_SCHEMA;
+      inputSchema = SCENARIOLESS_PROJECT_ENVELOPE_SCHEMA;
+      modelLibrary = RETAINED_MODEL_LIBRARY_LOCK;
       legacy = true;
       migrationDefaults = ['empty scenario timeline'];
       if (!adapter.schemas?.includes(nested?.schema) || (nested?.profile && nested.profile !== profile)) {
@@ -340,6 +374,7 @@ export function prepareProjectEnvelope(source, adapters) {
       nested = value.project;
       brief = normalizePreviousProjectBrief(value.brief);
       inputSchema = CAPABILITY_PROJECT_ENVELOPE_SCHEMA;
+      modelLibrary = RETAINED_MODEL_LIBRARY_LOCK;
       legacy = true;
       migrationDefaults = ['empty required capability list'];
       if (!adapter.schemas?.includes(nested?.schema) || (nested?.profile && nested.profile !== profile)) {
@@ -355,6 +390,7 @@ export function prepareProjectEnvelope(source, adapters) {
       nested = value.project;
       brief = normalizeTraceProjectBrief(value.brief);
       inputSchema = ASSUMPTION_PROJECT_ENVELOPE_SCHEMA;
+      modelLibrary = RETAINED_MODEL_LIBRARY_LOCK;
       legacy = true;
       migrationDefaults = ['empty unresolved assumption list', 'empty required capability list'];
       if (!adapter.schemas?.includes(nested?.schema) || (nested?.profile && nested.profile !== profile)) {
@@ -370,6 +406,7 @@ export function prepareProjectEnvelope(source, adapters) {
       nested = value.project;
       brief = normalizeLegacyProjectBrief(value.brief);
       inputSchema = TRACE_PROJECT_ENVELOPE_SCHEMA;
+      modelLibrary = RETAINED_MODEL_LIBRARY_LOCK;
       legacy = true;
       migrationDefaults = ['empty requirement code/test references', 'empty unresolved assumption list', 'empty required capability list'];
       if (!adapter.schemas?.includes(nested?.schema) || (nested?.profile && nested.profile !== profile)) {
@@ -385,6 +422,7 @@ export function prepareProjectEnvelope(source, adapters) {
       nested = value.project;
       brief = emptyProjectBrief();
       inputSchema = LEGACY_PROJECT_ENVELOPE_SCHEMA;
+      modelLibrary = RETAINED_MODEL_LIBRARY_LOCK;
       legacy = true;
       migrationDefaults = ['empty project brief', 'empty requirement code/test references', 'empty unresolved assumption list', 'empty required capability list'];
       if (!adapter.schemas?.includes(nested?.schema) || (nested?.profile && nested.profile !== profile)) {
@@ -397,6 +435,7 @@ export function prepareProjectEnvelope(source, adapters) {
       ({ profile, adapter } = matched);
       nested = value;
       brief = emptyProjectBrief();
+      modelLibrary = RETAINED_MODEL_LIBRARY_LOCK;
       legacy = true;
       migrationDefaults = ['empty project brief', 'empty requirement code/test references', 'empty unresolved assumption list', 'empty required capability list'];
     }
@@ -405,7 +444,11 @@ export function prepareProjectEnvelope(source, adapters) {
     if (prepared.project.profile && prepared.project.profile !== profile) {
       return failure('PROJECT_ENVELOPE_PROFILE_MISMATCH', [profile, prepared.project.profile]);
     }
-    const canonical = `${JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile,
+    const libraryAdmission = modelLibrarySupportsProfile(profile)
+      ? validateProjectModelLibrary(modelLibrary, profile, prepared.project)
+      : { ok: true, retained: modelLibrary.manifestSha256 === RETAINED_MODEL_LIBRARY_LOCK.manifestSha256 };
+    if (!libraryAdmission.ok) return libraryAdmission;
+    const canonical = `${JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, modelLibrary,
       brief: normalizeProjectBrief(brief), scenarioTimeline: normalizeScenarioTimeline(scenarioTimeline, profile),
       project: prepared.project }, null, 2)}\n`;
     const reparsed = parseStrictJson(canonical, PROJECT_ENVELOPE_LIMIT);
@@ -415,6 +458,7 @@ export function prepareProjectEnvelope(source, adapters) {
     return {
       ok: true, code: legacy ? 'PROJECT_ENVELOPE_MIGRATED' : 'OK', profile,
       project: clone(prepared.project), brief: clone(brief), scenarioTimeline: clone(scenarioTimeline),
+      modelLibrary: clone(modelLibrary), modelLibraryRetained: libraryAdmission.retained,
       prepared: prepared.prepared ?? null, canonical,
       report: {
         inputSchema, outputSchema: PROJECT_ENVELOPE_SCHEMA, profile, legacy,
@@ -423,9 +467,24 @@ export function prepareProjectEnvelope(source, adapters) {
           ...(scenarioTimeline ? ['scenario timeline'] : [])],
         defaultsAdded: [...(prepared.defaultsAdded ?? []), ...migrationDefaults],
         executableAuthorityCleared: true,
+        modelLibrary: { version: modelLibrary.version, manifestSha256: modelLibrary.manifestSha256,
+          retained: libraryAdmission.retained,
+          migrationAvailable: modelLibrary.manifestSha256 !== CURRENT_MODEL_LIBRARY_LOCK.manifestSha256 },
       },
     };
   } catch (error) {
     return failure(error.code ?? error.message ?? 'PROJECT_ENVELOPE_INVALID', error.details ?? []);
   }
+}
+
+export function migrateProjectModelLibrary(source, adapters) {
+  const opened = prepareProjectEnvelope(source, adapters);
+  if (!opened.ok) return opened;
+  const preview = modelLibraryMigrationPreview(opened.modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
+  if (!preview.ok) return preview;
+  if (!preview.migrationRequired) return failure('MODEL_LIBRARY_ALREADY_CURRENT');
+  const canonical = canonicalProjectEnvelope(opened.profile, opened.project, adapters, opened.brief,
+    opened.scenarioTimeline, CURRENT_MODEL_LIBRARY_LOCK);
+  return { ok: true, code: 'OK', profile: opened.profile, preview, canonical,
+    originalUnchanged: source, executableAuthorityCleared: true };
 }
