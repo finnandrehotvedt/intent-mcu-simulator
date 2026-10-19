@@ -129,6 +129,22 @@ test('X11 recognizes only an authoritative producer-backed failed verdict as tes
   assert.equal(untrusted.testVerdict, null);
 });
 
+test('X91 external projection cannot expose pass when current measurement evidence is incomplete', () => {
+  const observation = knownBadObservation();
+  observation.status = 'passed';
+  observation.outcome = completedExperimentOutcome();
+  observation.checks.serialObserved = false;
+  const result = externalClientResult({
+    ok: true, schema: 'intent-mcu-bounded-action-result@1', code: 'DOMAIN_TEST_EVALUATED',
+    action: 'result.read', executed: true,
+    result: { ok: true, code: 'DOMAIN_TEST_EVALUATED', observation },
+  }, association, identity);
+  assert.equal(result.category, 'success');
+  assert.equal(result.testVerdict.status, 'indeterminate');
+  assert.equal(result.testVerdict.outcome.evidenceStatus, 'incomplete');
+  assert.ok(result.testVerdict.outcome.reasons.includes('MEASUREMENT_COMPLETENESS_REQUIRED'));
+});
+
 test('X11 separate fixture process proves success and every failure category deterministically', async () => {
   const fixture = fileURLToPath(new URL('fixtures/x11-result-process.mjs', import.meta.url));
   const child = spawn(process.execPath, [fixture], { stdio: ['ignore', 'pipe', 'pipe'] });

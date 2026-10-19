@@ -12,7 +12,10 @@ import { compileHeadlessAvr } from '../src/headless-compiler-client.mjs';
 import {
   THERMOSTAT_PROJECT_ADAPTER, createThermostatExperiment,
 } from '../src/thermostat-experiment.mjs';
-import { THERMOSTAT_SCENARIOS } from '../src/thermostat-experiment-contract.mjs';
+import {
+  THERMOSTAT_SCENARIOS, evaluateThermostatObservation, thermostatExpectedSerialLine,
+  thermostatScenarioControls,
+} from '../src/thermostat-experiment-contract.mjs';
 import { completedExperimentOutcome } from '../src/experiment-outcomes.mjs';
 
 const AVR = 'board.atmega328p-16mhz-v1';
@@ -21,6 +24,18 @@ const saved = (variant = 'correct') => {
   const experiment = createThermostatExperiment(variant);
   return canonicalProjectEnvelope(AVR, experiment.project, adapters, emptyProjectBrief());
 };
+const completeObservations = () => THERMOSTAT_SCENARIOS.scenarios.map((scenario) => {
+  const controls = thermostatScenarioControls(scenario.id).map((control, index) => ({
+    sequence: index + 1, targetCycle: 0, type: 'control',
+    componentId: control.componentId, key: control.key, value: control.value,
+  }));
+  return evaluateThermostatObservation(scenario.id, {
+    cycle: 2_560_000,
+    pins: [{ pin: 'D13', mode: 'OUTPUT', level: scenario.expectedD13 }],
+    eventLog: { pending: [], log: controls, dropped: 0 },
+    instruments: { serial: { text: `${thermostatExpectedSerialLine(scenario.id)}\n`, dropped: 0 } },
+  });
+});
 
 test('X15 admits the canonical saved AVR thermostat without restoring executable authority', async () => {
   const prepared = await prepareSavedHeadlessExperiment(saved());
@@ -39,11 +54,7 @@ test('X15 admits the canonical saved AVR thermostat without restoring executable
 
 test('X15 compiles fresh and binds result identity without accepting an artifact from the file', async () => {
   let compileCalls = 0; let executeCalls = 0;
-  const observations = THERMOSTAT_SCENARIOS.scenarios.map((scenario) => ({
-    schema: 'intent-mcu-thermostat-observation-result@1', scenarioId: scenario.id,
-    status: 'passed', outcome: completedExperimentOutcome(),
-    virtualMilliseconds: 160, observed: { d13: scenario.expectedD13 },
-  }));
+  const observations = completeObservations();
   const result = await runSavedHeadlessExperiment(saved(), {
     compile: async (request) => {
       compileCalls += 1;
@@ -68,17 +79,15 @@ test('X15 compiles fresh and binds result identity without accepting an artifact
 });
 
 test('X18 headless completion preserves indeterminate evidence separately from job status', async () => {
-  const pass = completedExperimentOutcome();
   const unknown = completedExperimentOutcome({
     evidence: [{ code: 'OBSERVATION_PIN_MISSING', complete: false }],
   });
   const result = await runSavedHeadlessExperiment(saved(), {
     compile: async () => ({ inputIdentity: 'a'.repeat(64), artifactIdentity: 'b'.repeat(64),
       artifact: { hex: ':00000001FF' } }),
-    execute: async () => THERMOSTAT_SCENARIOS.scenarios.map((scenario, index) => ({
-      schema: 'intent-mcu-thermostat-observation-result@1', scenarioId: scenario.id,
-      status: index === 1 ? 'indeterminate' : 'passed', outcome: index === 1 ? unknown : pass,
-    })),
+    execute: async () => completeObservations().map((observation, index) => index === 1
+      ? { ...observation, status: 'indeterminate', outcome: unknown,
+        checks: { ...observation.checks, pinObserved: false } } : observation),
   });
   assert.equal(result.ok, true);
   assert.equal(result.jobStatus, 'completed');
@@ -86,6 +95,19 @@ test('X18 headless completion preserves indeterminate evidence separately from j
   assert.equal(result.primaryObservation.scenarioId, 'THERM-SCENARIO-EQUALITY-ENABLED');
   assert.equal(result.outcome.reasons.includes(
     'THERM-SCENARIO-EQUALITY-ENABLED:OBSERVATION_PIN_MISSING'), true);
+});
+
+test('X91 headless projection turns a source pass with missing measurement evidence indeterminate', async () => {
+  const observations = completeObservations();
+  observations[0] = { ...observations[0], checks: { ...observations[0].checks, serialObserved: false } };
+  const result = await runSavedHeadlessExperiment(saved(), {
+    compile: async () => ({ inputIdentity: 'a'.repeat(64), artifactIdentity: 'b'.repeat(64),
+      artifact: { hex: ':00000001FF' } }),
+    execute: async () => observations,
+  });
+  assert.equal(result.status, 'indeterminate');
+  assert.equal(result.observations[0].outcome.evidenceStatus, 'incomplete');
+  assert.ok(result.observations[0].outcome.reasons.includes('MEASUREMENT_COMPLETENESS_REQUIRED'));
 });
 
 test('X18 headless cancellation timeout and infrastructure error remain non-academic', async () => {

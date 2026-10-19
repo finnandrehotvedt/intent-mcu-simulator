@@ -83,6 +83,7 @@
     "test:x85:browser": "node test/x85-no-shared-artifact-cache-browser.cjs",
     "test:x83": "node --test --test-concurrency=1 test/x83-fair-access-retry.test.mjs test/external-client-results.test.mjs test/gateway-unit.test.mjs",
     "test:x83:browser": "node test/x83-fair-access-retry-browser.cjs",
+    "test:x91": "node --test --test-concurrency=1 test/measurement-completeness.test.mjs",
     "test:docs-release": "node --test --test-concurrency=1 test/docs-x72-release.test.mjs test/x72-example-progression.test.mjs test/release-identity-copy.test.mjs test/public-release-projection.test.mjs",
     "example:mcp": "node examples/mcp-reference-experiment.mjs",
     "experiment:headless": "node tools/headless-experiment-runner.mjs",

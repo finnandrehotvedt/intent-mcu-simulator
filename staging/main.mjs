@@ -49,6 +49,10 @@ import {
   avrInstrumentEvidence, instrumentCapability, sharedInstrumentSummary, sharedInstrumentView,
 } from '../src/instrument-capabilities.mjs';
 import {
+  completenessAcademicStatus, createMeasurementReportEnvelope, measurementCompletenessDisclosure,
+  measurementRequirementStatus, validateMeasurementReportEnvelope,
+} from '../src/measurement-completeness.mjs';
+import {
   COMPONENT_SUPPORT_CELLS,
   COMPONENT_SUPPORT_MODELS,
   COMPONENT_SUPPORT_PROFILES,
@@ -2157,6 +2161,30 @@ const waitForMatrixState = async (read, accept, code, timeoutMilliseconds = 30_0
   throw Object.assign(new Error(code), { code });
 };
 
+function applyMeasurementPresentation(report, root, state, summary, { historical = false } = {}) {
+  const completeness = measurementRequirementStatus(report);
+  const effective = completenessAcademicStatus('passed', completeness);
+  if (!completeness.completeForRequirements) {
+    const prefix = historical ? 'historical source ' : 'source ';
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) {
+      if (!walker.currentNode.parentElement?.closest('pre')) nodes.push(walker.currentNode);
+    }
+    for (const node of nodes) {
+      node.nodeValue = node.nodeValue
+        .replace(/\bpassed\b/giu, `${prefix}passed (current indeterminate)`)
+        .replace(/\bfailed\b/giu, `${prefix}failed (current indeterminate)`);
+    }
+    for (const element of root.querySelectorAll('[data-status="passed"], [data-status="failed"]')) {
+      element.dataset.status = 'indeterminate';
+    }
+    state.textContent = `Current academic ${effective} · ${state.textContent}`;
+  }
+  summary.textContent = `${summary.textContent} ${measurementCompletenessDisclosure(completeness)}`;
+  return completeness;
+}
+
 function renderRegressionMatrixReport(report = regressionMatrixReport) {
   elements.regressionmatrixresults.replaceChildren();
   if (!report) {
@@ -2193,6 +2221,8 @@ function renderRegressionMatrixReport(report = regressionMatrixReport) {
   elements.regressionmatrixstate.textContent = `${passed} passed · ${failed} failed · ${report.results.length} completed`;
   elements.regressionmatrixexport.disabled = false;
   elements.regressionmatrixsummary.textContent = `Matrix ${report.matrixSha256} · semantic report ${report.semanticSha256}. ${report.expectationOverrideSha256 ? 'A separate wrong-expectation reference was applied to exactly one selected cell.' : 'No expectation override was applied.'} Raw profile timebases remain separate.`;
+  applyMeasurementPresentation(report, elements.regressionmatrixresults,
+    elements.regressionmatrixstate, elements.regressionmatrixsummary);
 }
 
 function invalidateLongDurationReport(message = 'Project state changed. Run X28 again for current evidence.') {
@@ -2346,6 +2376,8 @@ function renderVersionRegressionReport(report = versionRegressionReport) {
   elements.versionregressionstate.textContent = 'Reviewed evidence loaded · no producer executed';
   elements.versionregressionexport.disabled = false;
   elements.versionregressionsummary.textContent = `Independently reviewed reports: 8 passed / 8 completed across rc.49 and rc.60. Comparison ${report.semanticSha256}. Loading this report did not build or run firmware.`;
+  applyMeasurementPresentation(report, elements.versionregressionresults,
+    elements.versionregressionstate, elements.versionregressionsummary, { historical: true });
 }
 
 function invalidateVersionRegressionReport(message = 'Project state changed. Load the reviewed comparison again.') {
@@ -2374,12 +2406,10 @@ async function rejectSyntheticVersionMutation() {
   }
 }
 
-function exportVersionRegressionReport() {
+async function exportVersionRegressionReport() {
   if (!versionRegressionReport || !x26VersionReportPassed(versionRegressionReport)) return;
-  const url = URL.createObjectURL(new Blob([`${JSON.stringify(versionRegressionReport, null, 2)}\n`], { type: 'application/json' }));
-  const link = document.createElement('a'); link.href = url;
-  link.download = `x26-version-regression-${versionRegressionReport.semanticSha256.slice(0, 12)}.intent-mcu-x26-version.json`;
-  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+  await downloadMeasurementReport(versionRegressionReport,
+    `x26-version-regression-${versionRegressionReport.semanticSha256.slice(0, 12)}.intent-mcu-x26-version.json`);
 }
 
 function renderCoverageReport(report = coverageReport) {
@@ -2413,6 +2443,8 @@ function renderCoverageReport(report = coverageReport) {
   elements.coveragereportstate.textContent = `${counts.passed}/${counts.declared} partitions passed`;
   elements.coveragereportexport.disabled = false;
   elements.coveragereportsummary.textContent = `${counts.executed} executed · ${counts.passed} passed · ${counts.failed} failed · ${counts.notRun} not run · ${counts.unsupported} unsupported · ${counts.indeterminate} indeterminate · ${counts.infrastructureError} infrastructure error. Semantic report ${report.semanticSha256}.`;
+  applyMeasurementPresentation(report, elements.coveragereportresults,
+    elements.coveragereportstate, elements.coveragereportsummary);
 }
 
 function renderLongDurationReport(report = longDurationReport) {
@@ -2469,6 +2501,8 @@ function renderLongDurationReport(report = longDurationReport) {
   elements.longdurationstate.textContent = `${passed}/3 passed · known-bad ${badRejected ? 'rejected' : 'not rejected'}`;
   elements.longdurationexport.disabled = false;
   elements.longdurationsummary.textContent = `Artifact ${report.artifactSha256} · semantic report ${report.semanticSha256}. Raw cycles and observed unsigned millisecond values are retained separately; wall duration is diagnostic only.`;
+  applyMeasurementPresentation(report, elements.longdurationresults,
+    elements.longdurationstate, elements.longdurationsummary);
 }
 
 async function compileLongDurationSource(source) {
@@ -2509,13 +2543,10 @@ async function runBrowserLongDurationSuite() {
   }
 }
 
-function exportLongDurationReport() {
+async function exportLongDurationReport() {
   if (!longDurationReport) return;
-  const text = `${JSON.stringify(longDurationReport, null, 2)}\n`;
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-  const link = document.createElement('a'); link.href = url;
-  link.download = `x28-long-duration-${longDurationReport.semanticSha256.slice(0, 12)}.intent-mcu-long-duration.json`;
-  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+  await downloadMeasurementReport(longDurationReport,
+    `x28-long-duration-${longDurationReport.semanticSha256.slice(0, 12)}.intent-mcu-long-duration.json`);
 }
 
 function timeMarkerCycle(records, marker) {
@@ -2684,6 +2715,8 @@ function renderTimeInvarianceReport(report = timeInvarianceReport) {
   elements.timeinvariancestate.textContent = `${report.executions.filter((entry) => entry.outcome.academicStatus === 'passed').length}/3 passed · wall requirement rejected`;
   elements.timeinvarianceexport.disabled = false;
   elements.timeinvariancesummary.textContent = `Semantic report ${report.semanticSha256}. Wall diagnostics are excluded. ${report.validationProbe.code} rejected before execution; no academic outcome was created.`;
+  applyMeasurementPresentation(report, elements.timeinvarianceresults,
+    elements.timeinvariancestate, elements.timeinvariancesummary);
 }
 
 async function runBrowserTimeInvarianceSuite() {
@@ -2717,13 +2750,10 @@ async function runBrowserTimeInvarianceSuite() {
   }
 }
 
-function exportTimeInvarianceReport() {
+async function exportTimeInvarianceReport() {
   if (!timeInvarianceReport) return;
-  const text = `${JSON.stringify(timeInvarianceReport, null, 2)}\n`;
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-  const link = document.createElement('a'); link.href = url;
-  link.download = `x29-time-invariance-${timeInvarianceReport.semanticSha256.slice(0, 12)}.intent-mcu-time.json`;
-  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+  await downloadMeasurementReport(timeInvarianceReport,
+    `x29-time-invariance-${timeInvarianceReport.semanticSha256.slice(0, 12)}.intent-mcu-time.json`);
 }
 
 function eventOrderProducer(message) {
@@ -2895,6 +2925,8 @@ function renderEventOrderReport(report = eventOrderReport) {
   elements.eventorderstate.textContent = '2/2 repeats · semantic parity';
   elements.eventorderexport.disabled = false;
   elements.eventordersummary.textContent = `Semantic report ${report.semanticSha256}. Repeat identity ${report.repeatSemanticSha256}. ${report.validationProbe.code} rejected before execution; leaked producer evidence failed academically while its evaluator job completed.`;
+  applyMeasurementPresentation(report, elements.eventorderresults,
+    elements.eventorderstate, elements.eventordersummary);
 }
 
 async function runBrowserEventOrderSuite() {
@@ -2939,13 +2971,10 @@ async function runBrowserEventOrderSuite() {
   }
 }
 
-function exportEventOrderReport() {
+async function exportEventOrderReport() {
   if (!eventOrderReport) return;
-  const text = `${JSON.stringify(eventOrderReport, null, 2)}\n`;
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-  const link = document.createElement('a'); link.href = url;
-  link.download = `x30-event-order-${eventOrderReport.semanticSha256.slice(0, 12)}.intent-mcu-event-order.json`;
-  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+  await downloadMeasurementReport(eventOrderReport,
+    `x30-event-order-${eventOrderReport.semanticSha256.slice(0, 12)}.intent-mcu-event-order.json`);
 }
 
 const resetClassLabels = Object.freeze({
@@ -2998,6 +3027,8 @@ function renderResetClassReport(report = resetClassReport) {
   elements.resetclassstate.textContent = '3 classes · 2/2 repeats each';
   elements.resetclassexport.disabled = false;
   elements.resetclasssummary.textContent = `Semantic report ${report.semanticSha256}. Validation, infrastructure and academic evidence failure remain distinct.`;
+  applyMeasurementPresentation(report, elements.resetclassresults,
+    elements.resetclassstate, elements.resetclasssummary);
 }
 
 async function proveFreshPowerWorker(hex) {
@@ -3060,13 +3091,10 @@ async function runBrowserResetClassSuite() {
   } finally { resetClassRunning = false; elements.resetclassrun.disabled = false; }
 }
 
-function exportResetClassReport() {
+async function exportResetClassReport() {
   if (!resetClassReport) return;
-  const text = `${JSON.stringify(resetClassReport, null, 2)}\n`;
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-  const link = document.createElement('a'); link.href = url;
-  link.download = `x31-reset-classes-${resetClassReport.semanticSha256.slice(0, 12)}.intent-mcu-reset.json`;
-  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+  await downloadMeasurementReport(resetClassReport,
+    `x31-reset-classes-${resetClassReport.semanticSha256.slice(0, 12)}.intent-mcu-reset.json`);
 }
 
 function renderUnsupportedAccessReport(report = unsupportedAccessReport) {
@@ -3111,6 +3139,8 @@ function renderUnsupportedAccessReport(report = unsupportedAccessReport) {
   elements.unsupportedaccessstate.textContent = 'SPI stopped · 2/2 semantic repeats';
   elements.unsupportedaccessexport.disabled = false;
   elements.unsupportedaccesssummary.textContent = `Affected requirement ${report.affectedRequirement.id}: unsupported, never passed. Semantic report ${report.semanticSha256}. Compiler, validation, capability, infrastructure and academic states remain distinct.`;
+  applyMeasurementPresentation(report, elements.unsupportedaccessresults,
+    elements.unsupportedaccessstate, elements.unsupportedaccesssummary);
 }
 
 async function executeUnsupportedAccessWorkerRepeat(artifact, repeat) {
@@ -3215,13 +3245,10 @@ async function runBrowserUnsupportedAccessSuite() {
   } finally { unsupportedAccessRunning = false; elements.unsupportedaccessrun.disabled = false; }
 }
 
-function exportUnsupportedAccessReport() {
+async function exportUnsupportedAccessReport() {
   if (!unsupportedAccessReport) return;
-  const text = `${JSON.stringify(unsupportedAccessReport, null, 2)}\n`;
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-  const link = document.createElement('a'); link.href = url;
-  link.download = `x32-unsupported-access-${unsupportedAccessReport.semanticSha256.slice(0, 12)}.intent-mcu-unsupported.json`;
-  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+  await downloadMeasurementReport(unsupportedAccessReport,
+    `x32-unsupported-access-${unsupportedAccessReport.semanticSha256.slice(0, 12)}.intent-mcu-unsupported.json`);
 }
 
 function renderDigitalStateReport(report = digitalStateReport) {
@@ -3268,6 +3295,8 @@ function renderDigitalStateReport(report = digitalStateReport) {
   elements.digitalstatestate.textContent = '4 states · 2/2 semantic repeats';
   elements.digitalstateexport.disabled = false;
   elements.digitalstatesummary.textContent = `Only known LOW passes. HIGH_Z and missing evidence are indeterminate; conflict is rejected before execution with no academic verdict. Pull-up companion: ${first.pullupCompanion.resolution}. Semantic report ${report.semanticSha256}.`;
+  applyMeasurementPresentation(report, elements.digitalstateresults,
+    elements.digitalstatestate, elements.digitalstatesummary);
 }
 
 async function runBrowserDigitalStateSuite() {
@@ -3313,13 +3342,10 @@ async function runBrowserDigitalStateSuite() {
   } finally { digitalStateRunning = false; elements.digitalstaterun.disabled = false; }
 }
 
-function exportDigitalStateReport() {
+async function exportDigitalStateReport() {
   if (!digitalStateReport) return;
-  const text = `${JSON.stringify(digitalStateReport, null, 2)}\n`;
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-  const link = document.createElement('a'); link.href = url;
-  link.download = `x33-digital-state-${digitalStateReport.semanticSha256.slice(0, 12)}.intent-mcu-state.json`;
-  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+  await downloadMeasurementReport(digitalStateReport,
+    `x33-digital-state-${digitalStateReport.semanticSha256.slice(0, 12)}.intent-mcu-state.json`);
 }
 
 function renderDigitalStateRuntimeReport(report = digitalStateRuntimeReport) {
@@ -3358,6 +3384,8 @@ function renderDigitalStateRuntimeReport(report = digitalStateRuntimeReport) {
     ? '3 classifications · 2/2 fresh workers passed' : 'Evidence failed';
   elements.digitalstateruntimeexport.disabled = !x33RuntimeReportPassed(report);
   elements.digitalstateruntimesummary.textContent = `Artifact ${report.artifactIdentity.slice(0, 12)}… · topology ${report.topologySha256.slice(0, 12)}… · semantic report ${report.semanticSha256}. Worker nonces differ; producer semantics match exactly.`;
+  applyMeasurementPresentation(report, elements.digitalstateruntimeresults,
+    elements.digitalstateruntimestate, elements.digitalstateruntimesummary);
 }
 
 async function compileX33RuntimeFixture() {
@@ -3501,13 +3529,10 @@ async function runBrowserDigitalStateRuntimeSuite() {
   } finally { digitalStateRuntimeRunning = false; elements.digitalstateruntimerun.disabled = false; }
 }
 
-function exportDigitalStateRuntimeReport() {
+async function exportDigitalStateRuntimeReport() {
   if (!digitalStateRuntimeReport || !x33RuntimeReportPassed(digitalStateRuntimeReport)) return;
-  const text = `${JSON.stringify(digitalStateRuntimeReport, null, 2)}\n`;
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-  const link = document.createElement('a'); link.href = url;
-  link.download = `x33-runtime-digital-state-${digitalStateRuntimeReport.semanticSha256.slice(0, 12)}.json`;
-  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+  await downloadMeasurementReport(digitalStateRuntimeReport,
+    `x33-runtime-digital-state-${digitalStateRuntimeReport.semanticSha256.slice(0, 12)}.json`);
 }
 
 function renderPrecisionCheckReport(report = precisionCheckReport) {
@@ -3547,6 +3572,8 @@ function renderPrecisionCheckReport(report = precisionCheckReport) {
   elements.precisioncheckstate.textContent = x34ReportPassed(report) ? '6 joins · 2/2 fresh workers passed' : 'Evidence failed';
   elements.precisioncheckexport.disabled = !x34ReportPassed(report);
   elements.precisionchecksummary.textContent = `Firmware-owned SRAM symbol ${report.symbol.symbol} at 0x${report.symbol.dataAddress.toString(16)} · semantic report ${report.semanticSha256}. Worker nonces are provenance and excluded from semantic equality.`;
+  applyMeasurementPresentation(report, elements.precisioncheckresults,
+    elements.precisioncheckstate, elements.precisionchecksummary);
 }
 
 async function compilePrecisionFixture() {
@@ -3692,13 +3719,10 @@ async function runBrowserPrecisionCheck() {
   } finally { precisionCheckRunning = false; elements.precisioncheckrun.disabled = false; }
 }
 
-function exportPrecisionCheckReport() {
+async function exportPrecisionCheckReport() {
   if (!precisionCheckReport || !x34ReportPassed(precisionCheckReport)) return;
-  const text = `${JSON.stringify(precisionCheckReport, null, 2)}\n`;
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-  const link = document.createElement('a'); link.href = url;
-  link.download = `x34-instrumented-precision-${precisionCheckReport.semanticSha256.slice(0, 12)}.intent-mcu-x34.json`;
-  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+  await downloadMeasurementReport(precisionCheckReport,
+    `x34-instrumented-precision-${precisionCheckReport.semanticSha256.slice(0, 12)}.intent-mcu-x34.json`);
 }
 
 function renderCausalChainReport(report = causalChainReport) {
@@ -3738,6 +3762,8 @@ function renderCausalChainReport(report = causalChainReport) {
   elements.causalchainstate.textContent = '5 stages · 2/2 fresh workers passed';
   elements.causalchainexport.disabled = !x35ReportPassed(report);
   elements.causalchainsummary.textContent = `Selected event ${chain.eventId} · semantic report ${report.semanticSha256}. The topology/model projection is a synchronous project-owned consequence, not independent physical causality.`;
+  applyMeasurementPresentation(report, elements.causalchainresults,
+    elements.causalchainstate, elements.causalchainsummary);
 }
 
 async function compileCausalFixture() {
@@ -3837,13 +3863,10 @@ async function runBrowserCausalChain() {
   } finally { causalChainRunning = false; elements.causalchainrun.disabled = false; }
 }
 
-function exportCausalChainReport() {
+async function exportCausalChainReport() {
   if (!causalChainReport || !x35ReportPassed(causalChainReport)) return;
-  const text = `${JSON.stringify(causalChainReport, null, 2)}\n`;
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-  const link = document.createElement('a'); link.href = url;
-  link.download = `x35-causal-chain-${causalChainReport.semanticSha256.slice(0, 12)}.intent-mcu-x35.json`;
-  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+  await downloadMeasurementReport(causalChainReport,
+    `x35-causal-chain-${causalChainReport.semanticSha256.slice(0, 12)}.intent-mcu-x35.json`);
 }
 
 function usartResponseWorkerChannel(worker, runtimeBinding, token) {
@@ -4013,6 +4036,8 @@ function renderUsartResponseReport(report = usartResponseReport) {
   }
   elements.usartresponsestate.textContent = '4 passed · known-bad failed · 5 completed';
   elements.usartresponseexport.disabled = !x23UsartReportPassed(report);
+  applyMeasurementPresentation(report, elements.usartresponseresults,
+    elements.usartresponsestate, elements.usartresponsesummary);
 }
 
 async function runUsartResponseSuite() {
@@ -4046,6 +4071,8 @@ async function runUsartResponseSuite() {
     usartResponseReport = await validateX23UsartReport(report);
     renderUsartResponseReport(usartResponseReport);
     elements.usartresponsesummary.textContent = `Actual firmware TX → fixture match → scheduled RX → accepted request → RX complete → D13/Serial consumption passed in two fresh repeats per correct mode. Known-bad acceptance failed academically while its job completed. Report ${report.semanticSha256}.`;
+    applyMeasurementPresentation(report, elements.usartresponseresults,
+      elements.usartresponsestate, elements.usartresponsesummary);
     return structuredClone(usartResponseReport);
   } catch (error) {
     if (token === usartResponseToken) {
@@ -4059,12 +4086,10 @@ async function runUsartResponseSuite() {
   }
 }
 
-function exportUsartResponseReport() {
+async function exportUsartResponseReport() {
   if (!usartResponseReport || !x23UsartReportPassed(usartResponseReport)) return;
-  const url = URL.createObjectURL(new Blob([`${JSON.stringify(usartResponseReport, null, 2)}\n`], { type: 'application/json' }));
-  const link = document.createElement('a'); link.href = url;
-  link.download = `x23-usart-response-${usartResponseReport.semanticSha256.slice(0, 12)}.intent-mcu-x23.json`;
-  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+  await downloadMeasurementReport(usartResponseReport,
+    `x23-usart-response-${usartResponseReport.semanticSha256.slice(0, 12)}.intent-mcu-x23.json`);
 }
 
 function failureReplayWorkerChannel(worker, runtimeBinding, token) {
@@ -4228,6 +4253,8 @@ function renderFailureReplay(report = failureReplayReport) {
   elements.failurereplaystate.textContent = 'Exact fault reproduced · 2/2';
   elements.failurereplayadvance.disabled = true;
   elements.failurereplayexport.disabled = !x36ReplayReportPassed(report);
+  applyMeasurementPresentation(report, elements.failurereplayresults,
+    elements.failurereplaystate, elements.failurereplaysummary);
 }
 
 async function openFailureReplayPoint() {
@@ -4302,6 +4329,8 @@ async function advanceFailureReplayInstruction() {
     retireFailureReplayWorkers(); renderFailureReplay(failureReplayReport);
     failureReplayRunning = false; elements.failurereplayopen.disabled = false;
     elements.failurereplaysummary.textContent = `Exact one-step SPI capability stop reproduced in two fresh workers. Academic disposition is unsupported; infrastructure and validation are separately accepted. Report ${failureReplayReport.semanticSha256}.`;
+    applyMeasurementPresentation(failureReplayReport, elements.failurereplayresults,
+      elements.failurereplaystate, elements.failurereplaysummary);
     return structuredClone(failureReplayReport);
   } catch (error) {
     if (token === failureReplayToken) {
@@ -4316,12 +4345,10 @@ async function advanceFailureReplayInstruction() {
   }
 }
 
-function exportFailureReplayReport() {
+async function exportFailureReplayReport() {
   if (!failureReplayReport || !x36ReplayReportPassed(failureReplayReport)) return;
-  const url = URL.createObjectURL(new Blob([`${JSON.stringify(failureReplayReport, null, 2)}\n`], { type: 'application/json' }));
-  const link = document.createElement('a'); link.href = url;
-  link.download = `x36-failure-replay-${failureReplayReport.semanticSha256.slice(0, 12)}.intent-mcu-x36.json`;
-  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+  await downloadMeasurementReport(failureReplayReport,
+    `x36-failure-replay-${failureReplayReport.semanticSha256.slice(0, 12)}.intent-mcu-x36.json`);
 }
 
 async function selectRegressionProfile(profile) {
@@ -4494,22 +4521,16 @@ async function runWrongRegressionExpectation(selector = 'X26-RP2040-GPIO0-UART0'
   return runBrowserRegressionMatrix(caseId, override);
 }
 
-function exportRegressionMatrixReport() {
+async function exportRegressionMatrixReport() {
   if (!regressionMatrixReport) return;
-  const text = `${JSON.stringify(regressionMatrixReport, null, 2)}\n`;
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-  const link = document.createElement('a'); link.href = url;
-  link.download = `${regressionMatrixReport.matrixId}-${regressionMatrixReport.semanticSha256.slice(0, 12)}.intent-mcu-regression.json`;
-  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+  await downloadMeasurementReport(regressionMatrixReport,
+    `${regressionMatrixReport.matrixId}-${regressionMatrixReport.semanticSha256.slice(0, 12)}.intent-mcu-regression.json`);
 }
 
-function exportCoverageReport() {
+async function exportCoverageReport() {
   if (!coverageReport) return;
-  const text = `${JSON.stringify(coverageReport, null, 2)}\n`;
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-  const link = document.createElement('a'); link.href = url;
-  link.download = `x27-coverage-${coverageReport.semanticSha256.slice(0, 12)}.intent-mcu-coverage.json`;
-  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+  await downloadMeasurementReport(coverageReport,
+    `x27-coverage-${coverageReport.semanticSha256.slice(0, 12)}.intent-mcu-coverage.json`);
 }
 
 elements.regressionmatrixrun.addEventListener('click', () => {
@@ -5137,8 +5158,8 @@ async function exportX39FailureLocation() {
   if (!locator || !context) return;
   try { await validateX39FailureLocator(locator, context); }
   catch { clearX39FailureLocator(); renderThermostatExperimentPanel(); return; }
-  downloadText(`x39-failure-location-${locator.semanticSha256.slice(0, 12)}.intent-mcu-x39.json`,
-    `${JSON.stringify(locator, null, 2)}\n`, 'application/json');
+  await downloadMeasurementReport(locator,
+    `x39-failure-location-${locator.semanticSha256.slice(0, 12)}.intent-mcu-x39.json`);
 }
 function clearX40SharedTimeline(reason = 'Run one isolated authored AVR thermostat scenario to create current producer evidence.') {
   x40SharedTimeline = null;
@@ -5206,8 +5227,8 @@ async function exportX40SharedTimeline() {
     clearX40SharedTimeline('Current timeline authority became stale. Run one isolated authored scenario again.');
     renderX40SharedTimeline(); return;
   }
-  downloadText(`x40-shared-timeline-${x40SharedTimeline.semanticSha256.slice(0, 12)}.intent-mcu-x40.json`,
-    `${JSON.stringify(x40SharedTimeline, null, 2)}\n`, 'application/json');
+  await downloadMeasurementReport(x40SharedTimeline,
+    `x40-shared-timeline-${x40SharedTimeline.semanticSha256.slice(0, 12)}.intent-mcu-x40.json`);
 }
 function thermostatPublishedState() {
   return {
@@ -6835,9 +6856,16 @@ async function downloadCurrentExperimentPackage() {
     showExperimentPackageState(false, `Package self-check failed (${reparsed.code ?? 'HASH_MISMATCH'}). Nothing was downloaded.`);
     return { ok: false, code: reparsed.code ?? 'EXPERIMENT_PACKAGE_HASH_MISMATCH' };
   }
+  const measurementEnvelope = await createMeasurementReportEnvelope(reparsed.value.report);
+  await validateMeasurementReportEnvelope(measurementEnvelope);
+  if (!measurementEnvelope.measurementCompleteness.completeForRequirements) {
+    showExperimentPackageState(false,
+      `Package rejected: current measurement evidence is incomplete (${measurementEnvelope.measurementCompleteness.missingEvidence.length} declared gaps). Nothing was downloaded.`);
+    return { ok: false, code: 'MEASUREMENT_COMPLETENESS_REQUIRED' };
+  }
   downloadText(experimentPackageFilename(), created.canonical, 'application/json');
   showExperimentPackageState(true,
-    `Local package downloaded · SHA-256 ${created.sha256.slice(0, 12)}… · review your authored text before sharing.`, created.sha256);
+    `Local package downloaded · SHA-256 ${created.sha256.slice(0, 12)}… · measurement completeness ${measurementEnvelope.measurementCompleteness.projectionSha256.slice(0, 12)}… (identity/integrity, not truth) · review your authored text before sharing.`, created.sha256);
   return created;
 }
 function renderExpectationReference() {
@@ -7224,6 +7252,12 @@ function downloadText(filename, text, type = 'text/plain') {
   const link = document.createElement('a');
   link.download = filename; link.href = URL.createObjectURL(new Blob([text], { type }));
   link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 0);
+}
+async function downloadMeasurementReport(report, filename) {
+  const envelope = await createMeasurementReportEnvelope(report);
+  await validateMeasurementReportEnvelope(envelope);
+  downloadText(filename, `${JSON.stringify(envelope, null, 2)}\n`, 'application/json');
+  return envelope;
 }
 function projectFilename() {
   return commonProjectFilename(AVR_PROFILE);

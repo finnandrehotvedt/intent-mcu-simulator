@@ -6,6 +6,7 @@ import {
   ACADEMIC_OUTCOMES, EXPERIMENT_OUTCOME_SCHEMA, unsupportedExperimentOutcome,
 } from './experiment-outcomes.mjs';
 import { RETRYABLE_CAPACITY_CODES, retryResultFields } from './retry-guidance.mjs';
+import { projectMeasurementOutcome } from './measurement-completeness.mjs';
 
 export const EXTERNAL_CLIENT_RESULT_SCHEMA = 'intent-mcu-external-client-result@1';
 export const EXTERNAL_CLIENT_RESULT_LIMIT = BOUNDED_ACTION_RESULT_LIMIT;
@@ -43,6 +44,16 @@ const safeString = (value) => typeof value === 'string' && value.length <= 160 ?
 const safeGeneration = (value) => Number.isSafeInteger(value) && value >= 1 ? value : null;
 const retryableCodes = new Set(RETRYABLE_CAPACITY_CODES);
 
+function currentMeasurementOutcome(outcome, report) {
+  try { return projectMeasurementOutcome(outcome, report); }
+  catch {
+    if (!['passed', 'failed'].includes(outcome?.academicStatus)) return outcome;
+    return { ...clone(outcome), academicStatus: 'indeterminate',
+      academicCode: 'ACADEMIC_INDETERMINATE', evidenceStatus: 'incomplete',
+      reasons: [...new Set([...(outcome.reasons ?? []), 'MEASUREMENT_COMPLETENESS_UNAVAILABLE'])] };
+  }
+}
+
 function testVerdictFrom(result) {
   const evidence = result?.result?.testEvidence;
   if (result?.executed === true
@@ -50,13 +61,15 @@ function testVerdictFrom(result) {
       && ACADEMIC_OUTCOMES.includes(evidence.status)
       && typeof evidence.artifactIdentity === 'string'
       && typeof evidence.sourceIdentity === 'string') {
+    const primary = evidence.primaryObservation;
+    const outcome = primary?.schema
+      ? currentMeasurementOutcome(evidence.outcome, primary) : evidence.outcome;
     return {
       schema: evidence.schema,
       experimentId: safeString(evidence.experimentId),
       scenarioId: safeString(evidence.primaryObservation?.scenarioId),
-      status: evidence.status,
-      outcome: evidence.outcome?.schema === EXPERIMENT_OUTCOME_SCHEMA
-        ? clone(evidence.outcome) : null,
+      status: outcome?.academicStatus ?? evidence.status,
+      outcome: outcome?.schema === EXPERIMENT_OUTCOME_SCHEMA ? clone(outcome) : null,
       artifactIdentity: safeString(evidence.artifactIdentity),
       sourceIdentity: safeString(evidence.sourceIdentity),
     };
@@ -65,13 +78,13 @@ function testVerdictFrom(result) {
   if (result?.executed !== true || result?.result?.code !== 'DOMAIN_TEST_EVALUATED'
       || candidate?.schema !== 'intent-mcu-thermostat-observation-result@1'
       || !ACADEMIC_OUTCOMES.includes(candidate.status)) return null;
+  const outcome = currentMeasurementOutcome(candidate.outcome, candidate);
   return {
     schema: candidate.schema,
     experimentId: safeString(candidate.experimentId),
     scenarioId: safeString(candidate.scenarioId),
-    status: candidate.status,
-    outcome: candidate.outcome?.schema === EXPERIMENT_OUTCOME_SCHEMA
-      ? clone(candidate.outcome) : null,
+    status: outcome?.academicStatus ?? candidate.status,
+    outcome: outcome?.schema === EXPERIMENT_OUTCOME_SCHEMA ? clone(outcome) : null,
     artifactIdentity: null,
     sourceIdentity: null,
   };

@@ -621,6 +621,7 @@
         <span id="regression-matrix-state" class="state">Not run</span>
       </div>
       <p class="regression-matrix-intro">Each row starts from its checksum-locked fixture, builds fresh firmware, and uses that profile’s existing producer and oracle. Matching rows do not mean AVR, RP2040, ESP32-C3 and STM32 behave alike.</p>
+      <p class="regression-matrix-limit"><strong>Measurement completeness:</strong> Current JSON report exports use a versioned envelope that states retention, loss, sampling, truncation and the native observed interval. Unknown and unavailable are distinct from zero. Incomplete required evidence changes an exported pass to indeterminate; the completeness hash binds identity and integrity, not truth.</p>
       <div class="regression-matrix-actions">
         <label for="regression-matrix-selector">Cases<select id="regression-matrix-selector"><option value="all">All four profiles</option><option value="X26-AVR-THERMOSTAT-D13">AVR · D13 thermostat</option><option value="X26-RP2040-GPIO0-UART0">RP2040 · GPIO0/UART0</option><option value="X26-ESP32C3-QEMU-UART-GPIO2-MODEL">ESP32-C3 · QEMU UART + separate GPIO2 model</option><option value="X26-STM32-RENODE-PB0-USART3">STM32 · Renode PB0/USART3</option></select></label>
         <button id="regression-matrix-run" type="button">Run selected matrix</button>

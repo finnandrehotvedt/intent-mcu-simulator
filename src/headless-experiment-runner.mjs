@@ -18,6 +18,7 @@ import {
   unsupportedExperimentOutcome,
 } from './experiment-outcomes.mjs';
 import { reduceThermostatCounterexample } from './counterexample-reduction.mjs';
+import { projectMeasurementOutcome } from './measurement-completeness.mjs';
 
 export const HEADLESS_EXPERIMENT_RESULT_SCHEMA = 'intent-mcu-headless-experiment-result@1';
 export const HEADLESS_COUNTEREXAMPLE_REDUCTION_RESULT_SCHEMA = 'intent-mcu-headless-counterexample-reduction-result@1';
@@ -190,12 +191,16 @@ export async function runSavedHeadlessExperiment(projectText, {
     const artifact = await compile(prepared.buildRequest, { signal });
     if (!SHA256.test(artifact?.inputIdentity) || !SHA256.test(artifact?.artifactIdentity)
         || typeof artifact?.artifact?.hex !== 'string') return runtimeFailure('HEADLESS_BUILD_RESULT_INVALID');
-    const observations = await execute(prepared, artifact);
+    const sourceObservations = await execute(prepared, artifact);
     const expectedObservationCount = prepared.scenarioTimeline?.scenarios.length
       ?? THERMOSTAT_SCENARIOS.scenarios.length;
-    if (!Array.isArray(observations) || observations.length !== expectedObservationCount) {
+    if (!Array.isArray(sourceObservations) || sourceObservations.length !== expectedObservationCount) {
       return runtimeFailure('HEADLESS_OBSERVATION_SET_INVALID');
     }
+    const observations = sourceObservations.map((observation) => {
+      const outcome = projectMeasurementOutcome(observation.outcome, observation);
+      return { ...clone(observation), status: outcome.academicStatus, outcome };
+    });
     const outcome = aggregateExperimentOutcomes(observations);
     const primaryObservation = observations.find((item) => item.status === 'failed')
       ?? observations.find((item) => item.status === 'indeterminate')
