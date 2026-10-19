@@ -2,6 +2,24 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.57 — 2026-10-19
+
+- Published the independently accepted bounded X34 units/precision report for
+  one explicitly instrumented private ATmega328P thermostat fixture. Two fresh
+  bound workers join cycle-zero controls, exact 81/40 V ideal input, ADC1 414,
+  firmware-owned SRAM integer 30 and actual D13 OUTPUT LOW.
+- Added strict exact-symbol ELF/SRAM validation, one four-byte read-only
+  observer and worker generation/nonces so stale or mixed evidence cannot pass.
+  Missing/incomplete transactions, Serial-only claims and host recomputation
+  remain insufficient.
+- Added concise quantity/unit/producer/comparison rows and transient JSON
+  export. Build, Reset, source edit, Open and reload clear report authority;
+  project files retain no probe, ELF, address or worker-nonce authority.
+- The page prominently states that this is an instrumented fixture, not the
+  unmodified public artifact. It does not claim physical SRAM/hardware,
+  compiler correctness, sensor/ADC accuracy, generic memory/debug access or
+  other-profile equivalence; X34 therefore remains partial.
+
 ## 1.1.0-rc.56 — 2026-10-19
 
 - Published the independently accepted bounded X33 static synthetic AVR
