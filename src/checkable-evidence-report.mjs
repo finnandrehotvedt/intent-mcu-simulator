@@ -121,7 +121,7 @@ const ADAPTER_SPECS = [
     row('channels.gpio.retention.retained', 'Retained GPIO records', 'count', 'instrument', { unit: 'records', observationPath: 'channels.gpio.time.cycle', timeBasisPath: 'channels.gpio.time.basis' }),
   ]),
   adapter('intent-mcu-shared-instrument-view@1', 'x82-instrument-view-native-v2', 'A rendered instrument view is not an independent measurement producer.', [
-    row('pin.fields.level.value', 'Selected pin level', 'digital-level', 'instrument', { unit: 'logic-level', observationPath: 'serial.time.cycle', timeBasisPath: 'serial.time.basis' }),
+    row('pin.fields.level.value', 'Selected pin level', 'digital-level', 'instrument', { unit: 'logic-level', observationPath: 'pin.time.cycle', timeBasisPath: 'pin.time.basis' }),
     row('serial.retainedTextLength', 'Retained serial text length', 'count', 'instrument', { unit: 'characters', observationPath: 'serial.time.cycle', timeBasisPath: 'serial.time.basis' }),
   ]),
   adapter('intent-mcu-runtime-trace@1', 'x82-runtime-trace-native-v2', 'Trace retention and native timebase remain mandatory; display rows do not prove completeness.', [

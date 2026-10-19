@@ -359,6 +359,7 @@ export function sharedInstrumentView(summary, local = {}) {
     pin: {
       classification,
       provenance: gpio?.provenance ?? 'Unavailable.',
+      time: clone(gpio?.time ?? { basis: 'unavailable', cycle: null, virtualMilliseconds: null }),
       options: availablePins.map((pin) => pin.pin),
       selectedPin: selected?.pin ?? null,
       fields: {

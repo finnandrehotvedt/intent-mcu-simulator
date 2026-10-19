@@ -135,6 +135,7 @@ test('shared summary classifies only current existing evidence for all four prof
   assert.equal(c3View.pin.classification, 'project-model');
   assert.equal(c3View.pin.fields.mode.value, 'high');
   assert.equal(c3View.pin.fields.level.value, true);
+  assert.equal(c3View.pin.time.basis, 'adapter-epoch-sequence');
   assert.equal(c3View.pin.fields.voltage.value, 3.3);
   assert.equal(c3View.pin.fields.pwm.status, 'unavailable');
 
@@ -149,6 +150,7 @@ test('shared summary classifies only current existing evidence for all four prof
   const stm32View = sharedInstrumentView(stm32);
   assert.deepEqual(stm32View.pin.options, ['PB0']);
   assert.equal(stm32View.pin.fields.level.value, true);
+  assert.equal(stm32View.pin.time.basis, 'instruction-order-only');
   assert.equal(stm32View.pin.fields.mode.status, 'unavailable');
 });
 

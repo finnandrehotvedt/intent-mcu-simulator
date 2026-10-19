@@ -104,21 +104,16 @@ test('X82 strict canonical validation rejects forged value, unit, time, limit, o
   assert.equal(baseline.truthBoundary, CHECKABLE_EVIDENCE_TRUTH_BOUNDARY);
 });
 
-test('X82 retained X29-X32 and X34 shapes expose only explicit primitive native fields', async () => {
+test('X82 retained X29-X32 report shapes expose only explicit primitive native fields', async () => {
   const fixtures = [
     ['x29-private-browser-evidence.json', 'intent-mcu-time-invariance-report@1'],
     ['x30-private-browser-evidence.json', 'intent-mcu-event-order-report@1'],
     ['x31-private-browser-evidence.json', 'intent-mcu-reset-class-report@1'],
     ['x32-private-browser-evidence.json', 'intent-mcu-unsupported-access-report@1'],
-    ['x34-two-repeat-runtime.json', 'intent-mcu-x34-instrumented-precision-report@1'],
   ];
   for (const [filename, schema] of fixtures) {
     const source = JSON.parse(await readFile(new URL(`fixtures/${filename}`, import.meta.url), 'utf8'));
     source.schema = schema;
-    if (filename.startsWith('x34-')) source.repeats = source.repeats.map((repeat) => ({
-      ...repeat, repeat: repeat.repeatId, adc: repeat.transaction.adc,
-      voltage: { value: repeat.a1.voltage },
-    }));
     const report = await createCheckableEvidenceReport(source);
     const knownRows = report.measurements.filter((item) => item.value.state === 'known');
     assert.ok(knownRows.length > 0, filename);
@@ -126,6 +121,29 @@ test('X82 retained X29-X32 and X34 shapes expose only explicit primitive native 
     assert.ok(report.measurements.every((item) => !/(^|\.)outcome(\.|$)|academicStatus/u.test(item.sourcePath)), filename);
     await validateCheckableEvidenceReport(report);
   }
+});
+
+test('X82 X34 paths match the canonical report producer without rewriting retained raw evidence', async () => {
+  const [main, contract, browser, retainedText] = await Promise.all([
+    readFile(new URL('../staging/main.mjs', import.meta.url), 'utf8'),
+    readFile(new URL('../src/x34-precision-contract.mjs', import.meta.url), 'utf8'),
+    readFile(new URL('x34-precision-browser.cjs', import.meta.url), 'utf8'),
+    readFile(new URL('fixtures/x34-two-repeat-runtime.json', import.meta.url), 'utf8'),
+  ]);
+  const retained = JSON.parse(retainedText);
+  assert.equal(retained.repeats[0].transaction.adc.value, 414);
+  assert.equal(retained.repeats[0].a1.voltage, 2.0250000000000004);
+  assert.equal(Object.hasOwn(retained.repeats[0], 'adc'), false);
+  assert.equal(Object.hasOwn(retained.repeats[0], 'voltage'), false);
+  assert.match(main, /voltage: \{ value: a1\.voltage/u);
+  assert.match(main, /adc: structuredClone\(transaction\.adc\)/u);
+  assert.match(contract, /'adc', 'firmwareTransaction', 'pin', 'time', 'outcome'/u);
+  assert.match(browser, /first\.repeats\[0\]\.adc\.value, 414/u);
+  assert.match(browser, /first\.repeats\[0\]\.voltage\.numerator, 81/u);
+  const x34 = CHECKABLE_EVIDENCE_ADAPTERS.find((item) =>
+    item.reportSchema === 'intent-mcu-x34-instrumented-precision-report@1');
+  assert.deepEqual(x34.rowMaps.map((item) => item.sourcePath),
+    ['repeats[].adc.value', 'repeats[].voltage.value']);
 });
 
 test('X82 exercises every one of the 27 owner maps against its current native shape', async () => {
@@ -152,7 +170,7 @@ test('X82 exercises every one of the 27 owner maps against its current native sh
     ['intent-mcu-x40-avr-shared-timeline@1', { rows: [{ sameCycleSequence: 1, cycle: 12 }] }, 1],
     ['intent-mcu-instrument-evidence@1', { cycle: 12, virtualMilliseconds: 0.00075 }, 2],
     ['intent-mcu-shared-instrument-summary@1', { channels: { serial: { retention: { retained: 2 }, time: { cycle: 12, basis: 'virtual-cycle' } }, gpio: { retention: { retained: 1 }, time: { cycle: 12, basis: 'virtual-cycle' } } } }, 2],
-    ['intent-mcu-shared-instrument-view@1', { pin: { fields: { level: { value: false } } }, serial: { retainedTextLength: 4, time: { cycle: 12, basis: 'virtual-cycle' } } }, 2],
+    ['intent-mcu-shared-instrument-view@1', { pin: { fields: { level: { value: false } }, time: { cycle: 12, basis: 'virtual-cycle' } }, serial: { retainedTextLength: 4, time: { cycle: 15, basis: 'serial-sequence' } } }, 2],
     ['intent-mcu-runtime-trace@1', { records: [{ sequence: 1, cycle: 12, level: false }] }, 1],
     ['intent-mcu-headless-experiment-result@1', { observations: [{ scenarioId: 'a', virtualMilliseconds: 200, observed: { level: false } }] }, 1],
     ['intent-mcu-headless-counterexample-reduction-result@1', { reduction: { reduced: { scenarioCount: 1, eventCount: 3 } } }, 2],
@@ -166,6 +184,12 @@ test('X82 exercises every one of the 27 owner maps against its current native sh
     assert.equal(knownRows.length, expectedKnown, schema);
     assert.ok(knownRows.every((item) => ['string', 'number', 'boolean'].includes(typeof item.value.value)), schema);
     if (expectedKnown === 0) assert.ok(report.measurements.every((item) => item.value.state === 'unavailable'), schema);
+    if (schema === 'intent-mcu-shared-instrument-view@1') {
+      assert.equal(report.measurements[0].observation.value, 12);
+      assert.equal(report.measurements[0].timeBasis, 'virtual-cycle');
+      assert.equal(report.measurements[1].observation.value, 15);
+      assert.equal(report.measurements[1].timeBasis, 'serial-sequence');
+    }
     await validateCheckableEvidenceReport(report);
   }
 });
