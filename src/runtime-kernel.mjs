@@ -29,6 +29,7 @@ export class OrderedInputQueue {
     this.nextSequence = 1;
     this.pending = [];
     this.log = [];
+    this.applied = [];
     this.dropped = 0;
   }
 
@@ -49,9 +50,12 @@ export class OrderedInputQueue {
     if (!validateCycle(cycle) || typeof apply !== 'function') throw new TypeError('Invalid input queue drain');
     const applied = [];
     while (this.pending.length && this.pending[0].targetCycle <= cycle) {
-      const event = this.pending.shift();
-      apply(event);
-      applied.push(clone(event));
+      const event = this.pending[0];
+      apply(clone(event));
+      this.pending.shift();
+      const record = clone({ ...event, appliedCycle: cycle });
+      this.applied.push(record);
+      applied.push(clone(record));
     }
     return applied;
   }
@@ -60,11 +64,22 @@ export class OrderedInputQueue {
     this.nextSequence = 1;
     this.pending = [];
     this.log = [];
+    this.applied = [];
     this.dropped = 0;
   }
 
   snapshot() {
-    return { pending: clone(this.pending), log: clone(this.log), dropped: this.dropped };
+    return {
+      pending: clone(this.pending),
+      log: clone(this.log),
+      applied: clone(this.applied),
+      dropped: this.dropped,
+      retention: {
+        limit: this.limit,
+        requested: { retained: this.log.length, dropped: this.dropped },
+        applied: { retained: this.applied.length, dropped: 0 },
+      },
+    };
   }
 }
 
