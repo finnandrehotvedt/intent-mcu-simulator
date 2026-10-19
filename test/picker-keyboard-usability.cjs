@@ -32,6 +32,7 @@ let browser;
     await page.goto(base, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.__M11_READY__ === true);
 
+    await page.click('#project-demo');
     const starter = page.locator('.starter-card[data-example="button"]');
     await starter.focus();
     assert(await starter.evaluate((node) => node.matches(':focus-visible')), `${viewport.label}: starter card has no keyboard focus indicator`);

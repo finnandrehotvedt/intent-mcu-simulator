@@ -24,6 +24,7 @@ const C3 = 'board.esp32-c3-devmodule-v1';
   await page.goto(base, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.__M11_READY__ === true);
 
+  await page.click('#project-demo');
   await page.click('.starter-card[data-example="avr-thermostat-boundary-v1"]');
   const legacy = await page.evaluate(() => window.__M6_PROJECT__());
   assert.equal(legacy.schema, 'intent-mcu-project-contact-persistence@1');

@@ -40,8 +40,8 @@
       <div><p class="eyebrow">LOCAL PROJECT</p><label class="project-name-field" for="project-name">Project name <input id="project-name" type="text" maxlength="80" value="Untitled project" autocomplete="off"></label><strong id="project-state">Untitled project · empty · not saved</strong><span id="lifecycle-state" class="lifecycle-state">empty</span></div>
       <div class="toolbar">
         <button id="project-new" type="button">New empty</button>
-        <select id="example-select" aria-label="Example project"><option value="blink">Blink LED</option><option value="button">Button input</option><option value="adc">ADC dial</option><option value="pwm">PWM fade</option><option value="pwm-pulse">PWM pulse</option><option value="temperature-lcd-threshold">Temperature display</option><option value="avr-thermostat-boundary-v1">Thermostat boundary test</option><option value="avr-ground-reference-input">Ground reference input</option><option value="avr-toggle-input">SPST toggle input</option><option value="avr-spdt-selector">SPDT input selector</option><option value="avr-light-analogue">Analogue light level</option><option value="avr-light-threshold">Digital light threshold</option><option value="avr-active-buzzer">Logical active buzzer</option><option value="avr-seven-segment">Seven-segment digits</option><option value="avr-rotary-encoder">Quadrature encoder</option></select>
-        <button id="project-demo" type="button">Open example</button>
+        <select id="example-select" hidden aria-hidden="true" tabindex="-1" aria-label="Selected example project"><option value="blink">Blink LED</option><option value="button">Button input</option><option value="adc">ADC dial</option><option value="pwm">PWM fade</option><option value="pwm-pulse">PWM pulse</option><option value="temperature-lcd-threshold">Temperature display</option><option value="avr-thermostat-boundary-v1">Thermostat boundary test</option><option value="avr-ground-reference-input">Ground reference input</option><option value="avr-toggle-input">SPST toggle input</option><option value="avr-spdt-selector">SPDT input selector</option><option value="avr-light-analogue">Analogue light level</option><option value="avr-light-threshold">Digital light threshold</option><option value="avr-active-buzzer">Logical active buzzer</option><option value="avr-seven-segment">Seven-segment digits</option><option value="avr-rotary-encoder">Quadrature encoder</option></select>
+        <span id="starter-gallery" class="starter-launch"><button id="project-demo" type="button" aria-haspopup="dialog" aria-controls="example-picker-dialog">Choose example <span aria-hidden="true">· 15</span></button></span>
         <button id="walkthrough-open" type="button">First project guide</button>
         <button id="undo" type="button" disabled>Undo</button><button id="redo" type="button" disabled>Redo</button>
         <button id="project-save" type="button">Download copy</button><button id="project-open" type="button">Open project</button>
@@ -58,14 +58,6 @@
       <p id="project-file-connection" class="file-connection" role="status">Download copy and Open project work without a native file connection.</p>
       <p id="project-message" class="truth" role="status">No account or cloud project store. Save/Open uses a file on your computer; your browser or operating system chooses its location. Browser recovery is separate.</p>
       <details id="technical-error" class="technical-error" hidden><summary>Technical details</summary><pre id="technical-error-detail"></pre></details>
-    </section>
-
-    <section id="starter-gallery" class="starter-gallery panel" aria-labelledby="starter-title">
-      <div class="starter-heading">
-        <div><p class="eyebrow">START HERE · VALIDATED EXAMPLES</p><h2 id="starter-title">Start with a working circuit</h2></div>
-        <p>Choose a goal, then edit the wiring and firmware. Every card enters through the same project and electrical validation as a file you open yourself.</p>
-      </div>
-      <div id="starter-examples" class="starter-grid" aria-label="Working starter circuits"></div>
     </section>
 
     <nav id="quick-controls" class="quick-controls panel" aria-label="Persistent build and runtime controls">
@@ -827,6 +819,19 @@
     </article>
   </aside>
   <dialog id="walkthrough"><form method="dialog"><button class="dialog-close" aria-label="Close guide">×</button><p class="eyebrow">FIRST PROJECT · FOUR STEPS</p><h2>From circuit to evidence</h2><ol><li><strong>Open an example</strong><span>Choose an AVR starter here, or follow the exact <a href="/examples.html#narrow-controller-guides">Pico, ESP32-C3 or STM32 guide</a>.</span></li><li><strong>Inspect and wire</strong><span>Move parts, select named pins and check the electrical diagnostics. Missing narrow-profile parts return through Supported parts without inferred cables.</span></li><li><strong>Build, then run</strong><span>The isolated compiler creates the exact firmware executed by the selected bounded runtime.</span></li><li><strong>Save, reopen and read</strong><span>The local file keeps authored data but never executable authority. Open requires a fresh Build; then read the LED, UART and runtime evidence.</span></li></ol><button value="close">Start building</button></form></dialog>
+  <dialog id="example-picker-dialog" class="example-picker-dialog" aria-labelledby="example-picker-title" aria-describedby="example-picker-description example-picker-status">
+    <div class="example-picker-dialog-inner">
+      <button id="example-picker-close" class="dialog-close" type="button" aria-label="Close example chooser">×</button>
+      <p class="eyebrow">VALIDATED AVR STARTERS</p>
+      <h2 id="example-picker-title">Choose a working circuit</h2>
+      <p id="example-picker-description" class="example-picker-description">Select a goal, then edit its wiring and firmware. Every card uses the same project and electrical validation as a file you open yourself.</p>
+      <label class="example-picker-search" for="example-picker-search">Find an example
+        <input id="example-picker-search" type="search" autocomplete="off" placeholder="Search goal, part or lesson">
+      </label>
+      <p id="example-picker-status" class="example-picker-status" role="status">15 examples available</p>
+      <div id="starter-examples" class="starter-grid" aria-label="Working starter circuits"></div>
+    </div>
+  </dialog>
   <dialog id="unsaved-change-dialog" aria-labelledby="unsaved-change-title" aria-describedby="unsaved-change-description unsaved-change-status">
     <form method="dialog" class="unsaved-change-form">
       <p class="eyebrow">UNSAVED AUTHORED CHANGES</p>

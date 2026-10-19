@@ -28,7 +28,37 @@ let browser;
   await page.goto(base, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__M11_READY__ === true);
   const cards = page.locator('.starter-card');
-  assert(await cards.count() === 15, 'starter gallery does not expose all fifteen validated examples');
+  const dialog = page.locator('#example-picker-dialog');
+  assert(await cards.count() === 15, 'example picker does not expose all fifteen validated examples');
+  assert(!(await dialog.evaluate((node) => node.open)), 'example picker is open by default');
+  assert(await cards.filter({ visible: true }).count() === 0, 'inline starter gallery remains visible by default');
+  const initialProject = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
+  const initialWorkers = await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations);
+  await page.locator('#project-demo').focus();
+  await page.keyboard.press('Enter');
+  assert(await dialog.evaluate((node) => node.open), 'Choose example did not open the dialog');
+  assert(await page.locator('#example-picker-search').evaluate((node) => document.activeElement === node),
+    'example search did not receive initial focus');
+  await page.fill('#example-picker-search', 'rotary');
+  assert(await cards.filter({ visible: true }).count() === 1, 'example search did not filter to one card');
+  await page.fill('#example-picker-search', '');
+  await page.locator('#example-picker-close').focus();
+  await page.keyboard.press('Shift+Tab');
+  assert(await page.evaluate(() => document.activeElement?.dataset?.example === 'avr-rotary-encoder'),
+    'Shift+Tab did not wrap to the last example card');
+  await page.keyboard.press('Tab');
+  assert(await page.locator('#example-picker-close').evaluate((node) => document.activeElement === node),
+    'Tab did not wrap from the last card to the close control');
+  await page.locator('#example-picker-search').focus();
+  await page.keyboard.press('Escape');
+  assert(!(await dialog.evaluate((node) => node.open)), 'Escape did not close the example dialog');
+  assert(await page.locator('#project-demo').evaluate((node) => document.activeElement === node),
+    'Escape did not return focus to Choose example');
+  assert(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())) === initialProject,
+    'opening and cancelling the picker changed the project');
+  assert(await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations) === initialWorkers,
+    'opening and cancelling the picker created a runtime worker');
+  await page.click('#project-demo');
   assert((await cards.nth(0).innerText()).includes('Controller · resistor · LED'), 'starter card omits its parts');
   const examples = [
     ['blink', 'Blink demo'],
@@ -52,8 +82,19 @@ let browser;
     return value.schema === 'intent-mcu-project-contact-persistence@1'
       ? value.project.metadata.name : value.metadata.name;
   });
-  for (const [id, name] of examples) {
+  for (let index = 0; index < examples.length; index += 1) {
+    const [id, name] = examples[index];
+    if (!(await dialog.evaluate((node) => node.open))) await page.click('#project-demo');
     await page.click(`.starter-card[data-example="${id}"]`);
+    if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) {
+      if (index === 1) {
+        await page.click('#unsaved-keep');
+        assert(await dialog.evaluate((node) => node.open), 'Keep editing closed the example picker');
+        assert(await projectName() === examples[0][1], 'Keep editing replaced the current project');
+        await page.click(`.starter-card[data-example="${id}"]`);
+      }
+      await page.click('#unsaved-discard');
+    }
     await page.waitForFunction(([expectedId, expectedName]) => {
       const value = window.__M6_PROJECT__();
       const observed = value.schema === 'intent-mcu-project-contact-persistence@1'
@@ -67,20 +108,9 @@ let browser;
     'Temperature candidate did not generate a portable prompt from its validated runtime projection');
   assert((await page.textContent('#prompt-message')).includes('generated locally'),
     'Temperature candidate prompt generation did not report local completion');
-  // Re-enter every ordinary project from the validated candidate-v3 example,
-  // then return to candidate-v3, using the compact dropdown path as well.
-  for (const [id, name] of examples) {
-    await page.selectOption('#example-select', id);
-    await page.click('#project-demo');
-    await page.waitForFunction(([expectedId, expectedName]) => {
-      const value = window.__M6_PROJECT__();
-      const observed = value.schema === 'intent-mcu-project-contact-persistence@1'
-        ? value.project.metadata.name : value.metadata.name;
-      return document.querySelector('#example-select').value === expectedId && observed === expectedName;
-    }, [id, name]);
-  }
-  await page.selectOption('#example-select', 'button');
   await page.click('#project-demo');
+  await page.click('.starter-card[data-example="button"]');
+  if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
   await page.waitForFunction(() => document.querySelector('#project-message').textContent.includes('Button input loaded'));
   const loaded = await page.evaluate(() => ({
     name: window.__M6_PROJECT__().metadata.name,
@@ -95,22 +125,41 @@ let browser;
     { width: 390, height: 844 }, { width: 320, height: 720 },
   ]) {
     await page.setViewportSize(viewport);
+    if (!(await dialog.evaluate((node) => node.open))) await page.click('#project-demo');
     const layout = await page.evaluate(() => ({
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       visibleCards: [...document.querySelectorAll('.starter-card')].filter((card) => card.getClientRects().length).length,
+      dialogOverflow: document.querySelector('#starter-examples').scrollWidth
+        - document.querySelector('#starter-examples').clientWidth,
     }));
-    assert(layout.overflow <= 1, `starter gallery overflows at ${viewport.width}px`);
+    assert(layout.overflow <= 1, `example picker overflows the page at ${viewport.width}px`);
+    assert(layout.dialogOverflow <= 1, `example card grid overflows at ${viewport.width}px`);
     assert(layout.visibleCards === 15, `starter cards disappear at ${viewport.width}px`);
   }
+  await page.keyboard.press('Escape');
+  if (await page.getAttribute('#serial-tab', 'aria-expanded') !== 'true') await page.click('#serial-tab');
+  const serialLayout = await page.evaluate(() => ({
+    noOverlap: document.querySelector('main').getBoundingClientRect().right
+      <= document.querySelector('#serial-dock').getBoundingClientRect().left + 1,
+  }));
+  assert(serialLayout.noOverlap, 'example picker change caused Serial overlap');
+  const workersBeforeReload = await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__M11_READY__ === true);
+  assert(!(await page.locator('#example-picker-dialog').evaluate((node) => node.open)), 'reload restored an open picker');
+  assert(await page.locator('.starter-card').filter({ visible: true }).count() === 0, 'reload restored the inline gallery');
+  assert(await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations) === workersBeforeReload,
+    'reload created a runtime worker');
   assert(mutations.length === 0, `starter gallery made server mutation request: ${mutations.join(', ')}`);
   assert(errors.length === 0, `starter journeys raised browser errors: ${errors.join(' | ')}`);
   if (process.env.STARTER_SCREENSHOT) {
     await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.click('#project-demo');
     fs.mkdirSync(path.dirname(process.env.STARTER_SCREENSHOT), { recursive: true });
-    await page.screenshot({ path: process.env.STARTER_SCREENSHOT, fullPage: true });
+    await page.screenshot({ path: process.env.STARTER_SCREENSHOT, fullPage: false });
   }
   console.log(JSON.stringify({ browser: browserName, result: 'pass', cards: 15,
-    cardJourneys: examples.length, dropdownJourneys: examples.length + 1,
+    pickerJourneys: examples.length + 1, unsavedKeepAndDiscard: true,
     finalProject: await projectName(), serverProjectWrites: 0 }));
   await context.close();
 })().catch((error) => {

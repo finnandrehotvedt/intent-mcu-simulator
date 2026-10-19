@@ -338,7 +338,8 @@ const elements = Object.fromEntries([
   'prompt-mode', 'prompt-apply', 'prompt-message', 'component-controls',
   'editor-title', 'source-file', 'source-file-name', 'source-file-add', 'source-file-remove',
   'lifecycle-state', 'technical-error', 'technical-error-detail', 'delete-branch',
-  'example-select', 'walkthrough-open', 'walkthrough', 'recovery-export', 'quick-state', 'quick-build', 'quick-run', 'quick-pause', 'quick-reset',
+  'example-select', 'example-picker-dialog', 'example-picker-close', 'example-picker-search', 'example-picker-status',
+  'walkthrough-open', 'walkthrough', 'recovery-export', 'quick-state', 'quick-build', 'quick-run', 'quick-pause', 'quick-reset',
   'unsaved-change-dialog', 'unsaved-change-title', 'unsaved-change-description', 'unsaved-change-status',
   'unsaved-keep', 'unsaved-download', 'unsaved-discard',
   'toggle-catalog', 'toggle-inspector', 'catalog-resizer', 'inspector-resizer', 'show-pin-labels', 'focus-canvas', 'fullscreen-canvas',
@@ -10083,13 +10084,74 @@ function renderStarterExamples() {
       button.append(guide);
     }
     button.append(action);
-    button.addEventListener('click', () => loadExampleProject(example.id, 'project.starter'));
+    button.addEventListener('click', () => {
+      const install = () => {
+        const result = loadExampleProject(example.id, 'project.starter');
+        if (result?.ok) closeExamplePicker();
+      };
+      if (!requestUnsavedChangeGuard({
+        profile: AVR_PROFILE, actionLabel: `loading ${example.name}`, continueAction: install,
+      })) install();
+    });
     return button;
   });
   elements.starterexamples.replaceChildren(...cards);
 }
 
-elements.projectdemo.addEventListener('click', () => loadExampleProject(elements.exampleselect.value));
+let examplePickerReturnFocus = null;
+function examplePickerFocusable() {
+  return [...elements.examplepickerdialog.querySelectorAll('button:not([hidden]), input:not([hidden]), [href], [tabindex]:not([tabindex="-1"])')]
+    .filter((node) => !node.disabled && node.getClientRects().length > 0);
+}
+function filterStarterExamples() {
+  const query = elements.examplepickersearch.value.trim().toLocaleLowerCase();
+  let visible = 0;
+  for (const card of elements.starterexamples.querySelectorAll('.starter-card')) {
+    card.hidden = Boolean(query) && !card.textContent.toLocaleLowerCase().includes(query);
+    if (!card.hidden) visible += 1;
+  }
+  elements.examplepickerstatus.textContent = query
+    ? `${visible} of 15 examples match “${elements.examplepickersearch.value.trim()}”`
+    : '15 examples available';
+}
+function closeExamplePicker({ restoreFocus = true } = {}) {
+  const returnFocus = examplePickerReturnFocus;
+  examplePickerReturnFocus = null;
+  if (elements.examplepickerdialog.open) elements.examplepickerdialog.close('close');
+  if (restoreFocus) queueMicrotask(() => {
+    if (returnFocus?.isConnected) returnFocus.focus();
+    else if (elements.projectdemo.isConnected) elements.projectdemo.focus();
+  });
+}
+function openExamplePicker() {
+  if (elements.examplepickerdialog.open || elements.unsavedchangedialog.open) return;
+  examplePickerReturnFocus = document.activeElement;
+  elements.examplepickersearch.value = '';
+  filterStarterExamples();
+  elements.examplepickerdialog.showModal();
+  elements.examplepickersearch.focus();
+}
+elements.projectdemo.addEventListener('click', openExamplePicker);
+elements.examplepickerclose.addEventListener('click', () => closeExamplePicker());
+elements.examplepickersearch.addEventListener('input', filterStarterExamples);
+elements.examplepickerdialog.addEventListener('cancel', (event) => {
+  event.preventDefault();
+  closeExamplePicker();
+});
+elements.examplepickerdialog.addEventListener('click', (event) => {
+  if (event.target === elements.examplepickerdialog) closeExamplePicker();
+});
+elements.examplepickerdialog.addEventListener('keydown', (event) => {
+  if (event.key !== 'Tab' || elements.unsavedchangedialog.open) return;
+  const focusable = examplePickerFocusable();
+  if (!focusable.length) { event.preventDefault(); return; }
+  const first = focusable[0]; const last = focusable.at(-1);
+  if (event.shiftKey && (document.activeElement === first || !elements.examplepickerdialog.contains(document.activeElement))) {
+    event.preventDefault(); last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault(); first.focus();
+  }
+});
 function syncControllerSelectors(profile) {
   const adapter = sharedWorkbenchShell.adapter(profile);
   if (!adapter) return;

@@ -49,9 +49,9 @@ h2 { font-size: 1.22rem; margin: 0; }
 .project-name-field + #project-state { display: block; margin-top: 6px; }
 .toolbar, .build-controls, .inspector-actions, .canvas-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .toolbar select { width: auto; min-width: 150px; }
-.starter-gallery { margin-bottom: 12px; padding-block: 16px; }
-.starter-heading { display: grid; grid-template-columns: minmax(260px, .72fr) 1.28fr; gap: 22px; align-items: end; }
-.starter-heading > p { margin: 0; color: var(--muted); font-size: .82rem; line-height: 1.55; }
+.starter-launch { display: inline-flex; }
+.starter-launch button { color: #06111a; background: var(--lime); border-color: var(--lime); font-weight: 850; }
+.starter-launch button span { font-size: .7rem; }
 .starter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-top: 14px; }
 .starter-card { min-height: 176px; display: flex; flex-direction: column; align-items: flex-start; gap: 7px; padding: 14px; text-align: left; background: linear-gradient(145deg, #102d41, #091a28); }
 .starter-card strong { color: var(--text); font-size: 1rem; }
@@ -1035,6 +1035,15 @@ dialog form { position: relative; padding: 28px; }
 dialog ol { display: grid; gap: 12px; padding-left: 24px; }
 dialog li { color: var(--cyan); padding-left: 8px; }
 dialog li span { display: block; color: var(--muted); margin-top: 3px; line-height: 1.45; }
+.example-picker-dialog { width: min(1180px, calc(100% - 32px)); max-height: calc(100vh - 32px); }
+.example-picker-dialog-inner { position: relative; display: flex; flex-direction: column; max-height: calc(100vh - 34px); padding: 26px; overflow: hidden; }
+.example-picker-dialog h2, .example-picker-dialog p { margin-top: 0; }
+.example-picker-description { max-width: 820px; margin-bottom: 14px; color: var(--muted); line-height: 1.5; }
+.example-picker-search { display: grid; grid-template-columns: auto minmax(220px, 420px); align-items: center; justify-content: start; gap: 10px; color: var(--text); font-size: .78rem; font-weight: 800; }
+.example-picker-search input { min-width: 0; }
+.example-picker-status { margin: 10px 0 0; color: var(--cyan); font: 700 .72rem ui-monospace, monospace; }
+.example-picker-dialog .starter-grid { grid-template-columns: repeat(3, minmax(220px, 1fr)); min-height: 0; max-height: min(65vh, 720px); margin-top: 12px; padding: 2px 8px 10px 2px; overflow: auto; overscroll-behavior: contain; }
+.example-picker-dialog .starter-card { min-height: 190px; }
 .component-support-dialog { width: min(1120px, calc(100% - 32px)); }
 .component-support-dialog-inner { position: relative; padding: 28px; }
 .component-support-dialog select { min-width: min(320px, 100%); }
@@ -1102,7 +1111,8 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   main { width: min(100% - 18px, 680px); padding-top: 30px; }
   .app-header { align-items: start; flex-direction: column; gap: 8px; }
   .lede { text-align: left; }
-  .project-bar, .project-brief-grid, .controller-workbench, .workspace, .runtime, .instrument-grid, .prompt-grid, .about-intro, .answer-grid, .starter-heading, .thermostat-contract, .requirement-trace-row, .open-assumption-row, .feasibility-row, .scenario-event, .scenario-event.expect-pin-level { grid-template-columns: 1fr; }
+  .project-bar, .project-brief-grid, .controller-workbench, .workspace, .runtime, .instrument-grid, .prompt-grid, .about-intro, .answer-grid, .thermostat-contract, .requirement-trace-row, .open-assumption-row, .feasibility-row, .scenario-event, .scenario-event.expect-pin-level { grid-template-columns: 1fr; }
+  .example-picker-dialog .starter-grid { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
   .scenario-card-heading, .scenario-editor-heading { align-items: stretch; flex-direction: column; }
   .seeded-property-controls { grid-template-columns: 1fr; }
   .seeded-property-controls .truth { grid-column: 1; }
@@ -1163,7 +1173,8 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   .shared-profile-workbench.shared-canvas-focus .pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label { top: calc(100% - 5px); }
 }
 @media (max-width: 390px) {
-  .starter-grid { grid-template-columns: 1fr; }
+  .starter-grid, .example-picker-dialog .starter-grid { grid-template-columns: 1fr; }
+  .example-picker-search { grid-template-columns: 1fr; }
   .catalog-list { grid-template-columns: 1fr; }
   .toolbar > *, .build-controls > * { flex: 1 1 130px; }
   .circuit-component { scale: .82; }
