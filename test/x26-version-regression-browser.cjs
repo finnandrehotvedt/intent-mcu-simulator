@@ -21,6 +21,8 @@ const output = process.env.X26_VERSION_EVIDENCE_PATH;
     });
     assert.equal((await page.goto(base, { waitUntil: 'domcontentloaded' })).status(), 200);
     await page.waitForFunction(() => window.__X26_VERSION_REGRESSION__?.ready === true);
+    await page.click('#project-demo');
+    await page.waitForFunction(() => document.querySelector('#project-message').textContent.includes('loaded'));
     assert.equal(await page.evaluate(() => window.__X26_VERSION_REGRESSION__.report()), null);
     assert.equal(await page.locator('#version-regression-export').isDisabled(), true);
     assert.match(await page.locator('#version-regression').locator('xpath=..').textContent(), /same pinned model, toolchain and runtime set/iu);
@@ -57,14 +59,18 @@ const output = process.env.X26_VERSION_EVIDENCE_PATH;
     assert.equal(await page.evaluate(() => window.__X26_VERSION_REGRESSION__.report()), null);
 
     await page.evaluate(() => window.__X26_VERSION_REGRESSION__.loadReviewed());
-    await page.click('#reset');
-    assert.equal(await page.evaluate(() => window.__X26_VERSION_REGRESSION__.report()), null);
-
-    await page.evaluate(() => window.__X26_VERSION_REGRESSION__.loadReviewed());
+    const buildRequest = page.waitForRequest((request) => request.method() === 'POST'
+      && new URL(request.url()).pathname === '/api/build');
     await page.click('#build');
+    await buildRequest;
     await page.waitForFunction(() => window.__X26_VERSION_REGRESSION__.report() === null);
     await page.waitForFunction(() => !document.querySelector('#build').disabled, null, { timeout: 30_000 });
     assert.equal(buildRequests, 1);
+
+    await page.waitForFunction(() => !document.querySelector('#reset').disabled, null, { timeout: 30_000 });
+    await page.evaluate(() => window.__X26_VERSION_REGRESSION__.loadReviewed());
+    await page.click('#reset');
+    assert.equal(await page.evaluate(() => window.__X26_VERSION_REGRESSION__.report()), null);
 
     await page.evaluate(() => window.__X26_VERSION_REGRESSION__.loadReviewed());
     await page.setInputFiles('#project-open-input', projectPath);
