@@ -634,6 +634,19 @@
       <div class="regression-matrix-table-wrap time-invariance-table-wrap"><table class="regression-matrix-table time-invariance-table"><thead><tr><th>Execution</th><th>Virtual requirement</th><th>CPU / virtual observation</th><th>Outcome</th><th>Wall diagnostic</th><th>Full evidence</th></tr></thead><tbody id="time-invariance-results"><tr><td colspan="6">No current X29 report. Wall time never satisfies a virtual requirement.</td></tr></tbody></table></div>
       <p id="time-invariance-summary" class="truth" role="status">Pause must freeze producer cycles, instructions and virtual time. Maximum changes pacing only. A wall-time requirement is rejected before execution and creates no academic outcome.</p>
       <p class="regression-matrix-limit"><strong>Limit:</strong> one ATmega328P/avr8js 16 MHz worker contract only. CPU cycles and virtual nanoseconds are not physical elapsed time. C3 model epochs, STM32 instruction ordering, real-time throughput and cross-profile time equivalence remain unavailable.</p>
+      <div id="event-order" class="coverage-report-heading">
+        <div><p class="eyebrow">X30 · DETERMINISTIC EVENT ORDER</p><h3>Reset, apply, sample, execute</h3></div>
+        <span id="event-order-state" class="state">Not run</span>
+      </div>
+      <p class="regression-matrix-intro">Two fresh workers repeat one paused AVR epoch transaction from the same artifact: Reset retires an old pending input, cycle-zero controls apply by explicit ordinal, a read-only sample observes without advancing or draining, then firmware executes and is sampled again.</p>
+      <div class="regression-matrix-actions">
+        <button id="event-order-run" type="button">Run X30 private suite</button>
+        <button id="event-order-export" type="button" disabled>Export X30 JSON</button>
+      </div>
+      <p id="event-order-identity" class="regression-matrix-identity">Loading immutable X30 event-order identity…</p>
+      <div class="regression-matrix-table-wrap event-order-table-wrap"><table class="regression-matrix-table event-order-table"><thead><tr><th>Phase</th><th>Defined boundary</th><th>Producer observation</th><th>Result</th><th>Full evidence</th></tr></thead><tbody id="event-order-results"><tr><td colspan="5">No current X30 report. Host message arrival time is never event-order authority.</td></tr></tbody></table></div>
+      <p id="event-order-summary" class="truth" role="status">RESET BARRIER → INPUT ORDINAL ASC → PRE-EXECUTION SAMPLE → CPU EXECUTION → FINAL SAMPLE. Validation rejection and academic evidence failure remain distinct.</p>
+      <p class="regression-matrix-limit"><strong>Limit:</strong> one paused ATmega328P/avr8js epoch boundary only. No asynchronous running reset, interrupt/peripheral tie, physical sampling, other MCU ordering, X31 reset semantics or X40 common timeline is claimed.</p>
     </section>
 
     <section class="about panel" aria-labelledby="about-title">

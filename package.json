@@ -53,6 +53,8 @@
     "long-duration:x28": "node tools/long-duration-runner.mjs",
     "test:x29": "node --test --test-concurrency=1 test/time-invariance-contract.test.mjs",
     "test:x29:browser": "node test/x29-time-invariance-browser.cjs",
+    "test:x30": "node --test --test-concurrency=1 test/event-order-contract.test.mjs test/event-order-worker.test.mjs test/lifecycle.test.mjs test/scenario-timeline.test.mjs",
+    "test:x30:browser": "node test/x30-event-order-browser.cjs",
     "example:mcp": "node examples/mcp-reference-experiment.mjs",
     "experiment:headless": "node tools/headless-experiment-runner.mjs",
     "pretest": "node --test --test-concurrency=1 test/release-identity-copy.test.mjs test/control-persistence-policy.test.mjs test/control-runtime-evidence.test.mjs test/avr-reference-starters.test.mjs test/component-support-matrix.test.mjs test/controller-capability-diagnostics.test.mjs test/bounded-route-authoring.test.mjs test/supported-example-pack.test.mjs test/existing-graph-edit-safety.test.mjs test/candidate-branch-transactions.test.mjs test/candidate-placement-duplication.test.mjs test/w10-fault-validation.test.mjs test/i03-runtime-traces.test.mjs",

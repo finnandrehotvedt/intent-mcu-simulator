@@ -100,6 +100,12 @@ import {
   validateTimeReport, validateTimeRequirement, virtualNanoseconds,
 } from '../src/time-invariance-contract.mjs';
 import {
+  EVENT_ORDER_REPORT_SCHEMA, X30_EVENT_ORDER_SUITE, evaluateEventOrderPhases,
+  eventOrderExecutionProjection, eventOrderReportPassed, eventOrderSha256,
+  eventOrderSuiteIdentity, semanticEventOrderProjection, stableEventOrderStringify,
+  validateEventOrderPlan, validateEventOrderReport,
+} from '../src/event-order-contract.mjs';
+import {
   COUNTEREXAMPLE_REDUCTION_SEED, reduceThermostatCounterexample,
 } from '../src/counterexample-reduction.mjs';
 import {
@@ -305,6 +311,8 @@ const elements = Object.fromEntries([
   'long-duration-export', 'long-duration-results', 'long-duration-summary',
   'time-invariance', 'time-invariance-state', 'time-invariance-identity', 'time-invariance-run',
   'time-invariance-export', 'time-invariance-results', 'time-invariance-summary',
+  'event-order', 'event-order-state', 'event-order-identity', 'event-order-run',
+  'event-order-export', 'event-order-results', 'event-order-summary',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -1983,6 +1991,9 @@ let longDurationReady = false;
 let timeInvarianceReport = null;
 let timeInvarianceRunning = false;
 let timeInvarianceReady = false;
+let eventOrderReport = null;
+let eventOrderRunning = false;
+let eventOrderReady = false;
 
 const waitForMatrixState = async (read, accept, code, timeoutMilliseconds = 30_000) => {
   const deadline = performance.now() + timeoutMilliseconds;
@@ -2046,6 +2057,13 @@ function invalidateTimeInvarianceReport(message = 'Project state changed. Run X2
   elements.timeinvariancesummary.textContent = message;
 }
 
+function invalidateEventOrderReport(message = 'Project state changed. Run X30 again for current evidence.') {
+  if (eventOrderRunning || !eventOrderReport) return;
+  eventOrderReport = null;
+  renderEventOrderReport(null);
+  elements.eventordersummary.textContent = message;
+}
+
 function invalidateRegressionMatrixReport(message = 'Project state changed. Run the matrix again for current evidence.') {
   if (!regressionMatrixRunning && regressionMatrixReport) {
     regressionMatrixReport = null;
@@ -2058,6 +2076,7 @@ function invalidateRegressionMatrixReport(message = 'Project state changed. Run 
   }
   invalidateLongDurationReport(message);
   invalidateTimeInvarianceReport(message);
+  invalidateEventOrderReport(message);
 }
 
 function renderCoverageReport(report = coverageReport) {
@@ -2404,6 +2423,228 @@ function exportTimeInvarianceReport() {
   link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+function eventOrderProducer(message) {
+  const records = message.instruments?.serial?.records ?? [];
+  return {
+    cpuCycles: message.cycle,
+    instructions: message.instructions,
+    paused: message.paused,
+    pending: message.eventLog.pending.map((entry) => ({ sequence: entry.sequence,
+      targetCycle: entry.targetCycle, componentId: entry.componentId, key: entry.key, value: entry.value })),
+    inputLog: message.eventLog.log.filter((entry) => entry.type === 'control').map((entry) => ({
+      sequence: entry.sequence, targetCycle: entry.targetCycle, componentId: entry.componentId,
+      key: entry.key, value: entry.value,
+    })),
+    controls: {
+      potPosition: message.circuit.controls['pot-1'].position,
+      buttonPressed: message.circuit.controls['button-1'].pressed,
+    },
+    d13: message.pins.find((entry) => entry.pin === 'D13')?.level ?? null,
+    d13HighCycle: timeD13HighCycle(message),
+    uartMarkerCycle: timeMarkerCycle(records, X30_EVENT_ORDER_SUITE.plan.execution.uartMarker),
+  };
+}
+
+function eventOrderWorkerChannel(worker) {
+  const queued = []; const waiting = []; const received = [];
+  worker.addEventListener('message', ({ data }) => {
+    const record = { index: received.length + 1, kind: data.kind, cycle: data.cycle };
+    received.push(record);
+    const index = waiting.findIndex((entry) => entry.accept(data));
+    if (index >= 0) {
+      const [entry] = waiting.splice(index, 1); clearTimeout(entry.timer); entry.resolve({ data, record });
+    } else queued.push({ data, record });
+  });
+  worker.addEventListener('error', (event) => {
+    for (const entry of waiting.splice(0)) {
+      clearTimeout(entry.timer); entry.reject(Object.assign(new Error(event.message), { code: 'EVENT_ORDER_WORKER_ERROR' }));
+    }
+  });
+  const next = (accept, timeoutMilliseconds = 30_000) => {
+    const index = queued.findIndex((entry) => accept(entry.data));
+    if (index >= 0) return Promise.resolve(queued.splice(index, 1)[0]);
+    return new Promise((resolve, reject) => {
+      const entry = { accept, resolve, reject, timer: null };
+      entry.timer = setTimeout(() => {
+        const waitingIndex = waiting.indexOf(entry); if (waitingIndex >= 0) waiting.splice(waitingIndex, 1);
+        reject(Object.assign(new Error('EVENT_ORDER_WORKER_TIMEOUT'), { code: 'EVENT_ORDER_WORKER_TIMEOUT' }));
+      }, timeoutMilliseconds);
+      waiting.push(entry);
+    });
+  };
+  return { next, after: (index) => received.filter((entry) => entry.index > index) };
+}
+
+function eventOrderPhase(phase, phaseOrdinal, snapshotKind, message) {
+  return { epochId: X30_EVENT_ORDER_SUITE.plan.epochId, phase, phaseOrdinal, snapshotKind,
+    producer: eventOrderProducer(message) };
+}
+
+async function executeEventOrderRepeat(artifact, executionId) {
+  const worker = new Worker('./simulator.worker.js', { type: 'module' });
+  const channel = eventOrderWorkerChannel(worker);
+  const started = performance.now();
+  try {
+    worker.postMessage({ command: 'init', hex: artifact.hex, circuit: DEFAULT_CIRCUIT,
+      instruments: { logicChannels: ['D13', 'D2'], serialHistoryLimit: 512 } });
+    const { data: readyMessage } = await channel.next((message) => message.kind === 'ready');
+    const preResetSpec = X30_EVENT_ORDER_SUITE.plan.preReset;
+    worker.postMessage({ command: 'control', componentId: preResetSpec.componentId,
+      key: preResetSpec.key, value: preResetSpec.value, targetCycle: preResetSpec.targetCycle });
+    const { data: preResetQueued } = await channel.next((message) => message.kind === 'control'
+      && message.eventLog.pending.some((entry) => entry.targetCycle === preResetSpec.targetCycle));
+    worker.postMessage({ command: 'speed', speed: 0.1 });
+    await channel.next((message) => message.kind === 'speed' && message.speed === 0.1);
+    worker.postMessage({ command: 'run' });
+    const { data: runningBeforeReset } = await channel.next((message) => message.paused === false
+      && message.cycle > 0 && message.cycle < preResetSpec.targetCycle);
+    worker.postMessage({ command: 'reset' });
+    const { data: resetMessage, record: resetRecord } = await channel.next((message) => message.kind === 'reset');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const afterResetMessages = channel.after(resetRecord.index);
+
+    const controlMessages = [];
+    for (const input of X30_EVENT_ORDER_SUITE.plan.inputs) {
+      worker.postMessage({ command: 'control', componentId: input.componentId, key: input.key,
+        value: input.value, targetCycle: input.targetCycle });
+      const { data } = await channel.next((message) => message.kind === 'control'
+        && message.eventLog.log.length === input.ordinal);
+      controlMessages.push(data);
+    }
+    const inputBoundary = controlMessages.at(-1);
+    worker.postMessage({ command: 'sample' });
+    const { data: preExecutionSample } = await channel.next((message) => message.kind === 'sample');
+    worker.postMessage({ command: 'speed', speed: 'maximum' });
+    await channel.next((message) => message.kind === 'speed' && message.speed === 'maximum');
+    worker.postMessage({ command: 'run' });
+    const requirement = X30_EVENT_ORDER_SUITE.plan.execution;
+    await channel.next((message) => message.paused === false && message.cycle >= requirement.minimumFinalCycle
+      && timeRequirementVisible(message, { targetCycle: 0, uartMarker: requirement.uartMarker }));
+    worker.postMessage({ command: 'pause' });
+    const { data: executionMessage } = await channel.next((message) => message.kind === 'paused');
+    worker.postMessage({ command: 'sample' });
+    const { data: finalSample } = await channel.next((message) => message.kind === 'sample');
+    const phases = [
+      eventOrderPhase('RESET_BARRIER', 1, 'reset', resetMessage),
+      eventOrderPhase('INPUT_ORDINAL_ASC', 2, 'control-boundary', inputBoundary),
+      eventOrderPhase('PRE_EXECUTION_SAMPLE', 3, 'sample', preExecutionSample),
+      eventOrderPhase('CPU_EXECUTION', 4, 'paused', executionMessage),
+      eventOrderPhase('FINAL_SAMPLE', 5, 'sample', finalSample),
+    ];
+    return {
+      executionId, ready: { cpuCycles: readyMessage.cycle, instructions: readyMessage.instructions },
+      preReset: { targetCycle: preResetSpec.targetCycle,
+        queuedSequence: preResetQueued.eventLog.log[0]?.sequence ?? null,
+        pendingBeforeReset: preResetQueued.eventLog.pending.length,
+        runningCycleBeforeReset: runningBeforeReset.cycle,
+        resetCleared: resetMessage.eventLog.pending.length === 0 && resetMessage.eventLog.log.length === 0,
+        generationRetired: afterResetMessages.length === 0 },
+      phases, outcome: evaluateEventOrderPhases(phases),
+      diagnostics: { wallDurationMilliseconds: performance.now() - started },
+    };
+  } finally {
+    worker.postMessage({ command: 'dispose' }); worker.terminate();
+  }
+}
+
+function renderEventOrderReport(report = eventOrderReport) {
+  elements.eventorderresults.replaceChildren();
+  if (!report) {
+    const row = document.createElement('tr'); const cell = document.createElement('td'); cell.colSpan = 5;
+    cell.textContent = 'No current X30 report. Host message arrival time is never event-order authority.';
+    row.append(cell); elements.eventorderresults.append(row);
+    elements.eventorderstate.textContent = 'Not run'; elements.eventorderexport.disabled = true; return;
+  }
+  const phaseNames = {
+    RESET_BARRIER: 'Reset barrier', INPUT_ORDINAL_ASC: 'Inputs · ordinal 1 → 2',
+    PRE_EXECUTION_SAMPLE: 'Read-only sample', CPU_EXECUTION: 'CPU execution', FINAL_SAMPLE: 'Final read-only sample',
+  };
+  const boundaries = {
+    RESET_BARRIER: 'Old pending input and old worker generation retired',
+    INPUT_ORDINAL_ASC: 'Potentiometer then button · target cycle 0',
+    PRE_EXECUTION_SAMPLE: 'After controls · before any CPU instruction',
+    CPU_EXECUTION: 'Producer D13/UART within fixed virtual window',
+    FINAL_SAMPLE: 'After Pause · no state advance or queue drain',
+  };
+  for (const [index, phase] of report.executions[0].phases.entries()) {
+    const repeat = report.executions[1].phases[index];
+    const row = document.createElement('tr');
+    const identity = document.createElement('th'); identity.scope = 'row'; identity.className = 'event-order-cell';
+    const label = document.createElement('strong'); label.textContent = phaseNames[phase.phase];
+    const id = document.createElement('code'); id.textContent = `${phase.phaseOrdinal} · ${phase.phase}`;
+    identity.append(label, id);
+    const boundary = document.createElement('td'); boundary.textContent = boundaries[phase.phase];
+    const observed = document.createElement('td');
+    observed.textContent = `${phase.producer.cpuCycles.toLocaleString('en-US')} cycles · ${phase.producer.instructions.toLocaleString('en-US')} instructions · ${phase.producer.inputLog.length} applied · ${phase.producer.pending.length} pending · snapshot ${phase.snapshotKind}`;
+    const outcome = document.createElement('td'); outcome.className = 'regression-matrix-outcome'; outcome.dataset.status = 'passed';
+    const badges = document.createElement('div'); badges.className = 'long-duration-outcomes';
+    for (const value of ['verified', 'repeat equal']) {
+      const badge = document.createElement('span'); badge.className = 'long-duration-outcome-badge'; badge.textContent = value; badges.append(badge);
+    }
+    outcome.append(badges);
+    const evidence = document.createElement('td');
+    const details = document.createElement('details'); details.className = 'long-duration-raw event-order-raw';
+    const summary = document.createElement('summary'); summary.textContent = 'View both native records';
+    const raw = document.createElement('pre'); raw.textContent = JSON.stringify({ repeatA: phase, repeatB: repeat }, null, 2);
+    details.append(summary, raw); evidence.append(details);
+    row.append(identity, boundary, observed, outcome, evidence); elements.eventorderresults.append(row);
+  }
+  elements.eventorderstate.textContent = '2/2 repeats · semantic parity';
+  elements.eventorderexport.disabled = false;
+  elements.eventordersummary.textContent = `Semantic report ${report.semanticSha256}. Repeat identity ${report.repeatSemanticSha256}. ${report.validationProbe.code} rejected before execution; leaked producer evidence failed academically while its evaluator job completed.`;
+}
+
+async function runBrowserEventOrderSuite() {
+  if (eventOrderRunning) throw Object.assign(new Error('EVENT_ORDER_BUSY'), { code: 'EVENT_ORDER_BUSY' });
+  eventOrderRunning = true; eventOrderReport = null; renderEventOrderReport(null);
+  elements.eventorderrun.disabled = true; elements.eventorderstate.textContent = 'Compiling one fixture…';
+  try {
+    const artifact = await compileLongDurationSource(X29_FIXTURE_SOURCE);
+    const executions = [];
+    for (const executionId of X30_EVENT_ORDER_SUITE.repeats) {
+      elements.eventorderstate.textContent = `Running ${executionId}…`;
+      executions.push(await executeEventOrderRepeat(artifact, executionId));
+    }
+    let validationCode = null;
+    const invalidPlan = structuredClone(X30_EVENT_ORDER_SUITE.plan); invalidPlan.inputs[0].ordinal = 2;
+    try { validateEventOrderPlan(invalidPlan); } catch (error) { validationCode = error.code; }
+    const leaked = structuredClone(executions[0].phases);
+    leaked[0].producer.pending.push({ sequence: 1, targetCycle: X30_EVENT_ORDER_SUITE.plan.preReset.targetCycle,
+      componentId: 'pot-1', key: 'position', value: 0.9 });
+    const repeatSemanticSha256 = await eventOrderSha256(stableEventOrderStringify(
+      eventOrderExecutionProjection(executions[0]),
+    ));
+    const report = {
+      schema: EVENT_ORDER_REPORT_SCHEMA, suiteId: X30_EVENT_ORDER_SUITE.suiteId,
+      suiteSha256: await eventOrderSuiteIdentity(), profile: X30_EVENT_ORDER_SUITE.profile,
+      sourceSha256: X30_EVENT_ORDER_SUITE.fixture.sourceSha256,
+      artifactSha256: artifact.artifactSha256,
+      producer: 'existing browser simulator.worker/RuntimeKernel/avr8js 0.21.1',
+      executions, repeatSemanticSha256,
+      validationProbe: { status: 'rejected-before-execution', code: validationCode,
+        academicOutcomeCreated: false },
+      evidenceFailureProbe: { status: 'failed-as-expected', code: 'EVENT_ORDER_OLD_PENDING_LEAK',
+        outcome: evaluateEventOrderPhases(leaked) },
+      limits: structuredClone(X30_EVENT_ORDER_SUITE.limits),
+    };
+    report.semanticSha256 = await eventOrderSha256(stableEventOrderStringify(semanticEventOrderProjection(report)));
+    eventOrderReport = await validateEventOrderReport(report);
+    renderEventOrderReport(eventOrderReport);
+    return structuredClone(eventOrderReport);
+  } finally {
+    eventOrderRunning = false; elements.eventorderrun.disabled = false;
+  }
+}
+
+function exportEventOrderReport() {
+  if (!eventOrderReport) return;
+  const text = `${JSON.stringify(eventOrderReport, null, 2)}\n`;
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const link = document.createElement('a'); link.href = url;
+  link.download = `x30-event-order-${eventOrderReport.semanticSha256.slice(0, 12)}.intent-mcu-event-order.json`;
+  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 async function selectRegressionProfile(profile) {
   if (selectedCompilerProfile === profile) return;
   elements.boardselect.value = profile;
@@ -2602,6 +2843,8 @@ elements.longdurationrun.addEventListener('click', () => { void runBrowserLongDu
 elements.longdurationexport.addEventListener('click', exportLongDurationReport);
 elements.timeinvariancerun.addEventListener('click', () => { void runBrowserTimeInvarianceSuite(); });
 elements.timeinvarianceexport.addEventListener('click', exportTimeInvarianceReport);
+elements.eventorderrun.addEventListener('click', () => { void runBrowserEventOrderSuite(); });
+elements.eventorderexport.addEventListener('click', exportEventOrderReport);
 for (const input of [elements.source, elements.picosource, elements.c3source, elements.stm32source,
   elements.projectopeninput, elements.picoopeninput, elements.c3openinput, elements.stm32openinput,
   elements.boardselect]) {
@@ -2644,6 +2887,14 @@ window.__X29_TIME_INVARIANCE__ = Object.freeze({
   passed: () => timeInvarianceReport ? timeReportPassed(timeInvarianceReport) : false,
   clear: (reason = 'X29 report cleared. Run the suite again for current evidence.') => invalidateTimeInvarianceReport(reason),
 });
+window.__X30_EVENT_ORDER__ = Object.freeze({
+  get ready() { return eventOrderReady; },
+  suite: () => structuredClone(X30_EVENT_ORDER_SUITE),
+  report: () => eventOrderReport ? structuredClone(eventOrderReport) : null,
+  run: () => runBrowserEventOrderSuite(),
+  passed: () => eventOrderReport ? eventOrderReportPassed(eventOrderReport) : false,
+  clear: (reason = 'X30 report cleared. Run the suite again for current evidence.') => invalidateEventOrderReport(reason),
+});
 void regressionMatrixIdentity().then((identity) => {
   elements.regressionmatrixidentity.textContent = `Immutable matrix SHA-256 ${identity} · four exact fixture/source hashes · four distinct oracles`;
   regressionMatrixReady = true;
@@ -2655,6 +2906,10 @@ void longDurationSuiteIdentity().then((identity) => {
 void timeSuiteIdentity().then((identity) => {
   elements.timeinvarianceidentity.textContent = `Immutable X29 contract SHA-256 ${identity} · 16 MHz AVR producer time · wall diagnostics excluded`;
   timeInvarianceReady = true;
+});
+void eventOrderSuiteIdentity().then((identity) => {
+  elements.eventorderidentity.textContent = `Immutable X30 contract SHA-256 ${identity} · paused AVR epoch · producer order only`;
+  eventOrderReady = true;
 });
 
 function renderLifecycle() {
@@ -6967,6 +7222,7 @@ async function pollJob(job, inputAtSubmit, binding) {
 async function build() {
   invalidateLongDurationReport('A new build cleared the prior X28 report. Run the suite again for current evidence.');
   invalidateTimeInvarianceReport('A new build cleared the prior X29 report. Run the suite again for current evidence.');
+  invalidateEventOrderReport('A new build cleared the prior X30 report. Run the suite again for current evidence.');
   const target = currentCompilerTarget();
   if (!target.compileAvailable) {
     const missing = firstMissingTargetPrerequisite(target.profile);

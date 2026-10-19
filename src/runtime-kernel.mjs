@@ -224,6 +224,10 @@ export class RuntimeKernel {
     this.serialClearAbsolute = this.adapter.retentionDrops.serial + this.adapter.serial.length;
   }
 
+  sample() {
+    return this.snapshot();
+  }
+
   reset() {
     this.adapter.reset();
     this.circuit.applyControls(this.adapter);

@@ -121,6 +121,15 @@ async function handleMessage(data) {
       generation++;
       if (isRp2040()) rp2040.pause(); else kernel.pause();
       status('paused');
+    } else if (data.command === 'sample') {
+      if (isRp2040()) {
+        postMessage({ kind: 'sample-rejected', code: 'SAMPLE_PROFILE_UNSUPPORTED' });
+      } else if (running) {
+        postMessage({ kind: 'sample-rejected', code: 'SAMPLE_REQUIRES_PAUSED_RUNTIME' });
+      } else {
+        const snapshot = kernel.sample();
+        postMessage({ kind: 'sample', ...snapshot, led: snapshot.circuit.leds.some((item) => item.on) });
+      }
     } else if (data.command === 'step') {
       running = false;
       generation++;
