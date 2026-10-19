@@ -2,6 +2,20 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.71 — 2026-10-19
+
+- Published the independently reviewed X80 complete experiment manifest for
+  the bounded AVR thermostat package: source, executed runtime circuit,
+  scenario, test, artifact, component-model and tool identities plus aggregate.
+- Kept the authored ideal-temperature circuit under the full project binding
+  while circuit/model hashes bind the exact potentiometer-compatible executed
+  projection; the adapter makes no physical-sensor fidelity claim.
+- Kept package v1 as strict legacy review data and package v2 local-only with no
+  firmware bytes, runtime/executable/verdict authority, upload, account, cookie,
+  analytics, third-party request or new panel.
+- Added fail-closed generation/producer identity checks without changing the
+  established Build, Run, scenario or public infrastructure boundaries.
+
 ## 1.1.0-rc.70 — 2026-10-19
 
 - Published the independently reviewed X83 fair-access contract for every

@@ -1,4 +1,24 @@
-# Intent MCU Simulator 1.1.0-rc.70
+# Intent MCU Simulator 1.1.0-rc.71
+
+## Complete local experiment manifest
+
+This release publishes the independently reviewed X80 manifest for the bounded
+AVR thermostat package. Package v2 binds canonical source, executed runtime
+circuit, scenario, test, artifact, component-model and tool identities plus one
+aggregate manifest hash. Missing, stale, reordered or inconsistent identities
+fail closed. Package v1 remains strict legacy review data and cannot acquire
+runtime, executable or verdict authority.
+
+The authored ideal-temperature circuit remains inside the full project binding,
+while the circuit and model manifest members bind the exact executed
+potentiometer-compatible runtime projection. That adapter is a deterministic
+teaching projection, not evidence of physical sensor accuracy, calibration,
+lag, tolerance or noise. The package remains local-only, excludes firmware
+bytes and authority, and adds no upload, account, analytics, cookie or panel.
+
+---
+
+## 1.1.0-rc.70
 
 ## Bounded fair-access retry guidance
 
