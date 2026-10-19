@@ -2295,7 +2295,7 @@ function renderVersionRegressionReport(report = versionRegressionReport) {
   }
   elements.versionregressionstate.textContent = 'Reviewed evidence loaded · no producer executed';
   elements.versionregressionexport.disabled = false;
-  elements.versionregressionsummary.textContent = `Reviewed private reports: 8 passed / 8 completed across rc.49 and rc.60. Comparison ${report.semanticSha256}. Loading this report did not build or run firmware.`;
+  elements.versionregressionsummary.textContent = `Independently reviewed reports: 8 passed / 8 completed across rc.49 and rc.60. Comparison ${report.semanticSha256}. Loading this report did not build or run firmware.`;
 }
 
 function invalidateVersionRegressionReport(message = 'Project state changed. Load the reviewed comparison again.') {
