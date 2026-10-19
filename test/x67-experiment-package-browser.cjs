@@ -80,6 +80,7 @@ let browser;
   assert.equal(value.project.schema, 'intent-mcu-project-envelope@6');
   const authored = value.project.project.project ?? value.project.project;
   const circuit = value.project.project.candidateCircuit ?? authored.circuit;
+  const manifestCircuit = authored.circuit;
   assert.equal(authored.source.files.some((file) => file.name === 'main.ino'), true);
   assert(circuit.components.length >= 5);
   assert.equal(value.project.scenarioTimeline.scenarios.length, 4);
@@ -101,7 +102,7 @@ let browser;
     ['resistor.fixed-v1', 'model.resistor-fixed-v1'],
   ].map(([componentType, modelId]) => ({ componentType, componentVersion: 1, modelId, modelVersion: 1 }));
   assert.equal(value.manifest.sourceSha256, canonicalSha256(sourceMember));
-  assert.equal(value.manifest.circuitSha256, canonicalSha256(circuit));
+  assert.equal(value.manifest.circuitSha256, canonicalSha256(manifestCircuit));
   assert.equal(value.manifest.scenarioSha256, canonicalSha256(value.project.scenarioTimeline));
   assert.equal(value.manifest.testSha256, canonicalSha256(value.expectation));
   assert.equal(value.manifest.artifactSha256, value.report.artifactIdentitySha256);
