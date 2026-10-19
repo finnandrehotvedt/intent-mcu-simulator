@@ -205,3 +205,15 @@ export function x40TimelineRetainsForLifecycle(event) {
   return Boolean(event && exactKeys(event, ['type', 'relevance'])
     && event.type === 'project.edit' && event.relevance === 'visual');
 }
+
+export function x40TimelineRetainsForWorkerMessage(timeline, message) {
+  if (!timeline || !message || message.kind !== 'paused' || message.paused !== true
+      || message.cycle !== timeline.scenario?.observationCycle) return false;
+  const identity = message.runtimeIdentity;
+  return Boolean(identity
+    && identity.projectGeneration === timeline.identity?.projectGeneration
+    && identity.runtimeGeneration === timeline.identity?.runtimeGeneration
+    && identity.workerInitialization === timeline.identity?.workerInitialization
+    && identity.workerInstanceNonce === timeline.identity?.workerInstanceNonce
+    && identity.artifactIdentity === timeline.identity?.artifactIdentity);
+}

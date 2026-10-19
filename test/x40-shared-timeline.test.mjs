@@ -9,6 +9,7 @@ import { RUNTIME_BINDING_SCHEMA, WORKER_RUNTIME_IDENTITY_SCHEMA } from '../src/r
 import {
   X40_CLASS_ORDER, X40_SHARED_TIMELINE_SCHEMA, X40_TIE_ORDER_LABEL,
   createX40SharedTimeline, validateX40SharedTimeline, x40TimelineRetainsForLifecycle,
+  x40TimelineRetainsForWorkerMessage,
 } from '../src/x40-shared-timeline.mjs';
 
 if (!globalThis.crypto) Object.defineProperty(globalThis, 'crypto', { value: webcrypto });
@@ -29,8 +30,9 @@ function context() {
   const applied = requested.map((entry) => ({ ...entry, appliedCycle: 25 }));
   return {
     profile: 'board.atmega328p-16mhz-v1', projectGeneration: 2, runtimeBinding,
-    reset: { kind: 'reset', cycle: 0, paused: true, runtimeIdentity },
-    observation: { kind: 'paused', cycle: 3_200_000, paused: true, runtimeIdentity,
+    reset: { kind: 'reset', cycle: 0, paused: true, runtimeIdentity: structuredClone(runtimeIdentity) },
+    observation: { kind: 'paused', cycle: 3_200_000, paused: true,
+      runtimeIdentity: structuredClone(runtimeIdentity),
       eventLog: { pending: [], log: requested, applied, dropped: 0,
         retention: { limit: 10_000, requested: { retained: 2, dropped: 0 },
           applied: { retained: 2, dropped: 0 } } },
@@ -114,6 +116,24 @@ test('X40 lifecycle retains only pure visual project edits', () => {
   assert.equal(x40TimelineRetainsForLifecycle({ type: 'project.edit', relevance: 'visual', extra: true }), false);
 });
 
+test('X40 retains only a duplicate of its accepted paused worker snapshot', async () => {
+  const value = context();
+  const timeline = await createX40SharedTimeline(value);
+  const accepted = { kind: 'paused', paused: true, cycle: value.observation.cycle,
+    runtimeIdentity: structuredClone(runtimeIdentity) };
+  assert.equal(x40TimelineRetainsForWorkerMessage(timeline, accepted), true);
+  for (const mutate of [
+    (message) => { message.cycle += 1; },
+    (message) => { message.kind = 'status'; },
+    (message) => { message.paused = false; },
+    (message) => { message.runtimeIdentity.workerInstanceNonce = 'd'.repeat(32); },
+    (message) => { message.runtimeIdentity.runtimeGeneration += 1; },
+  ]) {
+    const changed = structuredClone(accepted); mutate(changed);
+    assert.equal(x40TimelineRetainsForWorkerMessage(timeline, changed), false);
+  }
+});
+
 test('X40 UI wiring creates only from isolated authored evidence and invalidates runtime authority', async () => {
   const source = await readFile(new URL('../staging/main.mjs', import.meta.url), 'utf8');
   assert.match(source, /run\.authored && scenarios\.length === 1/u);
@@ -122,6 +142,7 @@ test('X40 UI wiring creates only from isolated authored evidence and invalidates
   assert.match(source, /elements\.run\.addEventListener\('click',[\s\S]*?clearX40SharedTimeline/u);
   assert.match(source, /elements\.reset\.addEventListener\('click',[\s\S]*?clearX40SharedTimeline/u);
   assert.match(source, /x40TimelineRetainsForLifecycle\(\{ type: 'project\.edit', relevance \}\)/u);
+  assert.match(source, /x40TimelineRetainsForWorkerMessage\(x40SharedTimeline, data\)/u);
   assert.match(source, /validateX40SharedTimeline\(x40SharedTimeline, context\)/u);
   assert.doesNotMatch(source, /persistProject\([^)]*x40|localStorage[^\n]*x40/iu);
 });

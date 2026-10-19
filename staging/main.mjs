@@ -170,6 +170,7 @@ import {
 } from '../src/x39-failure-navigation.mjs';
 import {
   createX40SharedTimeline, validateX40SharedTimeline, x40TimelineRetainsForLifecycle,
+  x40TimelineRetainsForWorkerMessage,
 } from '../src/x40-shared-timeline.mjs';
 import {
   X23_USART_KNOWN_BAD_SOURCE, X23_USART_REPORT_SCHEMA, X23_USART_SOURCE,
@@ -9168,7 +9169,7 @@ function loadArtifact(hex, artifactIdentity, { x34Probe = null } = {}) {
     }
     const acceptedMessage = applyLifecycle({ type: 'runtime.message', binding: runtimeBinding, message: data });
     if (!acceptedMessage.accepted) return;
-    if (x40SharedTimeline) {
+    if (x40SharedTimeline && !x40TimelineRetainsForWorkerMessage(x40SharedTimeline, data)) {
       clearX40SharedTimeline('A later worker message invalidated the prior shared timeline.');
     }
     lastWorkerMessage = performance.now(); running = data.paused === false && data.kind !== 'error';
