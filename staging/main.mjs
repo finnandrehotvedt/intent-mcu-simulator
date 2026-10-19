@@ -11,6 +11,7 @@ import {
   filterCatalog,
 } from '../src/component-catalog.mjs';
 import { createAccessibleConnectionView } from '../src/accessible-connections.mjs';
+import { createProjectNavigationView, searchProjectNavigation } from '../src/project-navigation.mjs';
 import { CIRCUIT_SCHEMA, validateCircuit } from '../src/circuit-engine.mjs';
 import { DEFAULT_CIRCUIT } from '../src/default-circuit.mjs';
 import { RELEASE_VERSION } from '../src/release-metadata.mjs';
@@ -389,6 +390,7 @@ const elements = Object.fromEntries([
   'counterexample-reduce', 'counterexample-reduction-summary',
   'fault-suite-load', 'fault-suite-replay', 'fault-suite-summary',
   'starter-examples', 'starter-gallery', 'quick-controls', 'workbench-workspace', 'project-bar',
+  'project-navigation', 'project-navigation-query', 'project-navigation-status', 'project-navigation-results',
   'family-select', 'board-select', 'controller-status', 'toolchain-boundary',
   'controller-workbench', 'controller-workbench-eyebrow', 'controller-workbench-title', 'controller-workbench-badge',
   'controller-workbench-summary', 'controller-capability-project', 'controller-capability-source',
@@ -1138,6 +1140,102 @@ function renderAvrAccessibleConnections(validation) {
   });
 }
 
+let projectNavigationView = null;
+function navigationState() {
+  const profile = selectedCompilerProfile;
+  const brief = projectBriefForProfile(profile);
+  const scenarios = profile === AVR_PROFILE && scenarioTimelineEditor
+    ? scenarioTimelineEditor.timeline.scenarios.map((item) => ({ id: item.id, name: item.name,
+      events: item.events.map((event) => ({ id: event.id })) })) : [];
+  if (profile === AVR_PROFILE) {
+    const project = currentProject();
+    const validation = editor.kind === 'candidate-project-v3' ? editor.runnable
+      : validateCircuit(project.circuit, { modelLibraryLock: modelLibraryLockFor(AVR_PROFILE) });
+    return { profile, generation: lifecycle.projectGeneration, revision: editor.revision,
+      connections: accessibleView({ profile, revision: editor.revision,
+        graph: { ...project.circuit, layout: project.layout }, catalogue: uiComponentCatalog,
+        validation, limits: CIRCUIT_LIMITS }), sources: project.source.files,
+      criteria: brief.acceptanceCriteria, scenarios };
+  }
+  const state = profile === RP2040_PROFILE ? picoPublicWorkbench.snapshot()
+    : profile === ESP32C3_PROFILE ? c3PublicWorkbench.snapshot() : stm32PublicWorkbench.snapshot();
+  const sourceName = profile === ESP32C3_PROFILE ? 'sketch.ino' : 'main.c';
+  const source = state.source ?? state.project?.source;
+  return { profile, generation: 1, revision: state.revision,
+    connections: accessibleView({ profile, revision: state.circuitEditor.revision,
+      graph: state.circuitEditor.draft, catalogue: uiComponentCatalog,
+      validation: state.circuitEditor.validation, limits: { components: 4, nets: 4, endpoints: 8 } }),
+    sources: [{ name: sourceName, content: source }], criteria: brief.acceptanceCriteria, scenarios: [] };
+}
+function currentNavigationIdentity() {
+  const state = navigationState();
+  return `${state.profile}:${state.generation}:${state.revision}:${state.connections.semanticIdentity}`;
+}
+function focusSourceLine(textarea, content, line) {
+  const lines = content.split('\n');
+  const start = lines.slice(0, line - 1).reduce((count, item) => count + item.length + 1, 0);
+  textarea.focus(); textarea.setSelectionRange(start, start + (lines[line - 1]?.length ?? 0));
+  textarea.scrollTop = Math.max(0, (line - 4) * 21);
+}
+function navigateProjectResult(entry, expectedIdentity) {
+  if (currentNavigationIdentity() !== expectedIdentity) {
+    renderProjectNavigation(); elements.projectnavigationstatus.textContent = 'Project changed; search again.'; return;
+  }
+  const profile = selectedCompilerProfile;
+  if (entry.kind === 'component' || entry.kind === 'pin' || entry.kind === 'net') {
+    if (profile === AVR_PROFILE) {
+      if (entry.kind === 'net') { selectNet(entry.target.netId); drawCircuitWires(); }
+      else selectComponent(entry.target.componentId);
+      renderInspector();
+      if (entry.kind === 'pin') focusNamedEndpoint('#component-layer .pin-anchor', entry.target.pinKey);
+    } else {
+      const workbench = profile === RP2040_PROFILE ? picoPublicWorkbench
+        : profile === ESP32C3_PROFILE ? c3PublicWorkbench : stm32PublicWorkbench;
+      workbench.selectCircuit(entry.kind === 'net' ? { kind: 'net', id: entry.target.netId }
+        : { kind: 'component', id: entry.target.componentId });
+      if (entry.kind === 'pin') focusNamedEndpoint(profile === RP2040_PROFILE ? '#pico-editor-components .pin-anchor'
+        : profile === ESP32C3_PROFILE ? '#c3-editor-components .pin-anchor' : '#stm32-editor-components .pin-anchor', entry.target.pinKey);
+    }
+  } else if (entry.kind === 'file' || entry.kind === 'source') {
+    if (profile === AVR_PROFILE) {
+      selectedSourceFile = entry.target.file; renderProject();
+      if (entry.target.line) focusSourceLine(elements.source, currentProject().source.files.find((item) => item.name === entry.target.file).content, entry.target.line);
+      else elements.sourcefile.focus();
+    } else {
+      const textarea = profile === RP2040_PROFILE ? elements.picosource : profile === ESP32C3_PROFILE ? elements.c3source : elements.stm32source;
+      if (entry.target.line) focusSourceLine(textarea, textarea.value, entry.target.line); else textarea.focus();
+    }
+  } else if (entry.target.requirementId) {
+    const row = document.querySelector(`[data-requirement-id="${CSS.escape(entry.target.requirementId)}"]`);
+    row?.scrollIntoView({ block: 'center' }); const target = row?.querySelector('button') ?? row;
+    if (target) { if (target === row) target.tabIndex = -1; target.focus({ preventScroll: true }); }
+  } else if (entry.target.scenarioId) {
+    document.querySelector(`[data-scenario-id="${CSS.escape(entry.target.scenarioId)}"] input`)?.focus({ preventScroll: true });
+  }
+  elements.projectnavigationstatus.textContent = `Opened ${entry.kind} ${entry.id}. Project data was not changed.`;
+}
+function renderProjectNavigation() {
+  try {
+    projectNavigationView = createProjectNavigationView(navigationState());
+    const found = searchProjectNavigation(projectNavigationView, elements.projectnavigationquery.value, 100);
+    const identity = currentNavigationIdentity();
+    elements.projectnavigationstatus.textContent = found.query
+      ? `${found.total} results${found.truncated ? ' · first 100 shown; refine the query' : ''}.`
+      : 'Type to search the current authored project.';
+    elements.projectnavigationresults.replaceChildren(...found.results.map((entry) => {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'project-navigation-result';
+      button.dataset.navigationKind = entry.kind; button.dataset.navigationId = entry.id; button.setAttribute('role', 'listitem');
+      const kind = document.createElement('span'); kind.textContent = entry.kind;
+      const label = document.createElement('span'); label.textContent = entry.label;
+      button.append(kind, label); button.addEventListener('click', () => navigateProjectResult(entry, identity)); return button;
+    }));
+  } catch (error) {
+    projectNavigationView = null; elements.projectnavigationresults.replaceChildren();
+    elements.projectnavigationstatus.textContent = `Project search unavailable (${error.code ?? 'INVALID_PROJECT'}).`;
+  }
+}
+elements.projectnavigationquery.addEventListener('input', renderProjectNavigation);
+
 function renderProfileExampleCards(profile, container, workbench) {
   const cards = supportedProfileExamples(profile).map((example) => {
     const button = document.createElement('button');
@@ -1762,6 +1860,7 @@ const picoPublicWorkbench = new Rp2040PublicWorkbench({
     renderSharedInstrumentSummary(RP2040_PROFILE, state);
     renderPicoQuickControls(state);
     renderPicoCircuitEditor(state);
+    queueMicrotask(renderProjectNavigation);
   },
   onDiagnostics: (snapshot) => renderProfileDiagnostics(snapshot, {
     textarea: elements.picosource, summary: elements.picodiagnostics,
@@ -2028,6 +2127,7 @@ const c3PublicWorkbench = new Esp32C3PublicWorkbench({
     renderSharedInstrumentSummary(ESP32C3_PROFILE, state);
     renderC3QuickControls(state);
     renderC3CircuitEditor(state);
+    queueMicrotask(renderProjectNavigation);
   },
   onDiagnostics: (snapshot) => renderProfileDiagnostics(snapshot, {
     textarea: elements.c3source, summary: elements.c3diagnostics,
@@ -2302,6 +2402,7 @@ const stm32PublicWorkbench = new Stm32PublicWorkbench({
     renderSharedInstrumentSummary(STM32F429ZI_PROFILE, state);
     renderStm32QuickControls(state);
     renderStm32CircuitEditor(state);
+    queueMicrotask(renderProjectNavigation);
   },
   onDiagnostics: (snapshot) => renderProfileDiagnostics(snapshot, {
     textarea: elements.stm32source, summary: elements.stm32diagnostics,
@@ -6088,6 +6189,7 @@ function renderPublicControllerWorkbench() {
     compilerRequestBlocked: preview,
   });
   renderProfileMigrationExplanation();
+  renderProjectNavigation();
 }
 
 function profileProjectSnapshot(profile) {
@@ -9672,6 +9774,7 @@ function renderProject() {
   renderRuntimeControls(); renderPublicControllerWorkbench();
   renderThermostatExperimentPanel();
   renderExpectationReference();
+  renderProjectNavigation();
 }
 
 function svgNode(name, attributes = {}, text = null) {

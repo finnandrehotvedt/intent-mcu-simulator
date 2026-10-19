@@ -1234,6 +1234,14 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   .circuit-component { scale: .82; }
 }
 
+.project-navigation { margin-block: 10px; }
+.project-navigation > summary { cursor: pointer; color: var(--cyan); font-weight: 850; }
+.project-navigation > label { display: block; margin: 12px 0 6px; color: var(--muted); }
+.project-navigation > input { width: 100%; }
+.project-navigation-results { display: grid; gap: 6px; max-height: 320px; overflow: auto; }
+.project-navigation-result { display: grid; grid-template-columns: 90px minmax(0,1fr); gap: 8px; width: 100%; text-align: left; }
+.project-navigation-result span:first-child { color: var(--lime); text-transform: uppercase; font-size: .72rem; }
+.project-navigation-result span:last-child { overflow-wrap: anywhere; }
 .docs-main { width: min(960px, calc(100% - 32px)); }
 .docs-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
 .docs-nav a { display: inline-flex; min-height: 42px; align-items: center; padding: 0 12px; border: 1px solid #2a627f; border-radius: 8px; color: var(--text); text-decoration: none; font-weight: 740; }

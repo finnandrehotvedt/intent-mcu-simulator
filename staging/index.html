@@ -74,6 +74,14 @@
       <button id="quick-build" type="button">Build</button><button id="quick-run" type="button" disabled>Run</button><button id="quick-pause" type="button" disabled>Pause</button><button id="quick-reset" type="button" disabled>Reset</button>
     </nav>
 
+    <details id="project-navigation" class="project-navigation panel">
+      <summary>Find in this project</summary>
+      <label for="project-navigation-query">Component, named pin, net, file, source line or saved test</label>
+      <input id="project-navigation-query" type="search" maxlength="80" autocomplete="off" placeholder="D13, net-series, main.c, TEST-LED…">
+      <p id="project-navigation-status" class="truth" role="status" aria-live="polite">Type to search the current authored project.</p>
+      <div id="project-navigation-results" class="project-navigation-results" role="list"></div>
+    </details>
+
     <section id="controller-workbench" class="controller-workbench panel" aria-labelledby="controller-workbench-title" data-mode="avr-circuit">
       <div class="controller-workbench-copy">
         <p id="controller-workbench-eyebrow" class="eyebrow">PUBLICLY SUPPORTED</p>
