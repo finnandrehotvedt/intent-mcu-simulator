@@ -124,6 +124,13 @@ import {
   goodCompanionFromWorker, unsupportedAccessExecutionFromWorker,
 } from '../src/unsupported-access-runner.mjs';
 import {
+  DIGITAL_STATE_REPORT_SCHEMA, X33_DIGITAL_STATE_SUITE, digitalStateReportPassed,
+  digitalStateRepeatProjection, digitalStateSha256, digitalStateSuiteIdentity,
+  semanticDigitalStateProjection, stableDigitalStateStringify,
+  validateDigitalStateAnnotations, validateDigitalStateReport,
+} from '../src/digital-state-contract.mjs';
+import { runDigitalStateRepeat } from '../src/digital-state-runner.mjs';
+import {
   COUNTEREXAMPLE_REDUCTION_SEED, reduceThermostatCounterexample,
 } from '../src/counterexample-reduction.mjs';
 import {
@@ -336,6 +343,8 @@ const elements = Object.fromEntries([
   'unsupported-access', 'unsupported-access-state', 'unsupported-access-identity',
   'unsupported-access-run', 'unsupported-access-export', 'unsupported-access-results',
   'unsupported-access-summary',
+  'digital-state', 'digital-state-state', 'digital-state-identity', 'digital-state-run',
+  'digital-state-export', 'digital-state-results', 'digital-state-summary',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -2023,6 +2032,9 @@ let resetClassReady = false;
 let unsupportedAccessReport = null;
 let unsupportedAccessRunning = false;
 let unsupportedAccessReady = false;
+let digitalStateReport = null;
+let digitalStateRunning = false;
+let digitalStateReady = false;
 
 const waitForMatrixState = async (read, accept, code, timeoutMilliseconds = 30_000) => {
   const deadline = performance.now() + timeoutMilliseconds;
@@ -2107,6 +2119,13 @@ function invalidateUnsupportedAccessReport(message = 'Project state changed. Run
   elements.unsupportedaccesssummary.textContent = message;
 }
 
+function invalidateDigitalStateReport(message = 'Project state changed. Run X33 again for current evidence.') {
+  if (digitalStateRunning || !digitalStateReport) return;
+  digitalStateReport = null;
+  renderDigitalStateReport(null);
+  elements.digitalstatesummary.textContent = message;
+}
+
 function invalidateRegressionMatrixReport(message = 'Project state changed. Run the matrix again for current evidence.') {
   if (!regressionMatrixRunning && regressionMatrixReport) {
     regressionMatrixReport = null;
@@ -2122,6 +2141,7 @@ function invalidateRegressionMatrixReport(message = 'Project state changed. Run 
   invalidateEventOrderReport(message);
   invalidateResetClassReport(message);
   invalidateUnsupportedAccessReport(message);
+  invalidateDigitalStateReport(message);
 }
 
 function renderCoverageReport(report = coverageReport) {
@@ -2966,6 +2986,104 @@ function exportUnsupportedAccessReport() {
   link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+function renderDigitalStateReport(report = digitalStateReport) {
+  elements.digitalstateresults.replaceChildren();
+  if (!report) {
+    const row = document.createElement('tr'); const cell = document.createElement('td'); cell.colSpan = 5;
+    cell.textContent = 'No current X33 report. Unknown evidence and high impedance can never be treated as valid LOW.';
+    row.append(cell); elements.digitalstateresults.append(row);
+    elements.digitalstatestate.textContent = 'Not run'; elements.digitalstateexport.disabled = true; return;
+  }
+  const first = report.repeats[0];
+  for (const [index, item] of first.rows.entries()) {
+    const row = document.createElement('tr');
+    const identity = document.createElement('th'); identity.scope = 'row'; identity.className = 'reset-class-cell';
+    const strong = document.createElement('strong'); strong.textContent = item.caseId.replace('X33-', '').replaceAll('-', ' ');
+    const code = document.createElement('code'); code.textContent = `${item.netId} · ${item.requirementId}`;
+    identity.append(strong, code);
+    const producers = document.createElement('td');
+    const producerCode = document.createElement('code');
+    producerCode.textContent = item.producerAnnotations.length
+      ? item.producerAnnotations.map((entry) => `${entry.producerId}=${entry.level}`).join('\n')
+      : `missing: ${item.missingProducerIds.join(', ')}`;
+    producers.append(producerCode);
+    const resolution = document.createElement('td');
+    resolution.textContent = `${item.resolution.status} · ${item.resolution.state ?? 'no invented state'}\n${item.validation.status} · ${item.validation.code}`;
+    const outcome = document.createElement('td'); outcome.className = 'long-duration-outcomes';
+    for (const repeat of report.repeats) {
+      const repeated = repeat.rows[index]; const badge = document.createElement('span');
+      badge.className = 'long-duration-outcome-badge';
+      badge.dataset.status = repeated.outcome?.academicStatus ?? 'conflict';
+      badge.textContent = `${repeat.repeat} · ${repeated.outcome?.academicStatus ?? 'no academic verdict'}`;
+      outcome.append(badge);
+    }
+    const raw = document.createElement('td'); const details = document.createElement('details');
+    details.className = 'long-duration-raw digital-state-raw';
+    const summary = document.createElement('summary'); summary.textContent = 'Full static evidence';
+    const pre = document.createElement('pre'); pre.textContent = JSON.stringify({
+      repeats: report.repeats.map((repeat) => repeat.rows[index]),
+      pullupCompanion: first.pullupCompanion,
+    }, null, 2);
+    details.append(summary, pre); raw.append(details);
+    row.append(identity, producers, resolution, outcome, raw); elements.digitalstateresults.append(row);
+  }
+  elements.digitalstatestate.textContent = '4 states · 2/2 semantic repeats';
+  elements.digitalstateexport.disabled = false;
+  elements.digitalstatesummary.textContent = `Only known LOW passes. HIGH_Z and missing evidence are indeterminate; conflict is rejected before execution with no academic verdict. Pull-up companion: ${first.pullupCompanion.resolution}. Semantic report ${report.semanticSha256}.`;
+}
+
+async function runBrowserDigitalStateSuite() {
+  if (digitalStateRunning) throw Object.assign(new Error('DIGITAL_STATE_BUSY'), { code: 'DIGITAL_STATE_BUSY' });
+  digitalStateRunning = true; digitalStateReport = null; renderDigitalStateReport(null);
+  elements.digitalstaterun.disabled = true; elements.digitalstatestate.textContent = 'Checking strict static fixture…';
+  try {
+    const repeats = X33_DIGITAL_STATE_SUITE.repeats.map((repeat) => runDigitalStateRepeat(repeat));
+    const repeatSemanticSha256 = await digitalStateSha256(stableDigitalStateStringify(
+      digitalStateRepeatProjection(repeats[0])));
+    let parserCode = null; let resolverCalled = false;
+    try {
+      validateDigitalStateAnnotations([{ producerId: 'unknown-source', level: 'UNKNOWN' }]);
+      resolverCalled = true;
+    } catch (error) { parserCode = error.code; }
+    const equalLevels = validateDigitalStateAnnotations([
+      { producerId: 'distinct-a', level: 'HIGH_Z' },
+      { producerId: 'distinct-b', level: 'HIGH_Z' },
+    ]);
+    const report = {
+      schema: DIGITAL_STATE_REPORT_SCHEMA, suiteId: X33_DIGITAL_STATE_SUITE.suiteId,
+      suiteSha256: await digitalStateSuiteIdentity(), profile: X33_DIGITAL_STATE_SUITE.profile,
+      fixtureId: X33_DIGITAL_STATE_SUITE.fixtureId, label: X33_DIGITAL_STATE_SUITE.label,
+      repeats, repeatSemanticSha256,
+      strictParserProbe: { status: 'rejected-before-resolution', code: parserCode, resolverCalled,
+        equalLevelsDistinctProducersAccepted: equalLevels.length === 2 },
+      staleRecordProbe: { status: 'rejected-atomically',
+        code: 'DIGITAL_STATE_REPORT_STALE_OR_UNKNOWN', priorReportRetained: true },
+      limits: structuredClone(X33_DIGITAL_STATE_SUITE.limits), semanticSha256: '',
+    };
+    report.semanticSha256 = await digitalStateSha256(stableDigitalStateStringify(
+      semanticDigitalStateProjection(report)));
+    const accepted = await validateDigitalStateReport(report);
+    let staleCode = null;
+    try { await validateDigitalStateReport({ ...accepted, fixtureId: 'stale-fixture' }); }
+    catch (error) { staleCode = error.code; }
+    if (staleCode !== accepted.staleRecordProbe.code) {
+      throw Object.assign(new Error('DIGITAL_STATE_STALE_PROBE_NOT_REJECTED'),
+        { code: 'DIGITAL_STATE_STALE_PROBE_NOT_REJECTED' });
+    }
+    digitalStateReport = accepted; renderDigitalStateReport(digitalStateReport);
+    return structuredClone(digitalStateReport);
+  } finally { digitalStateRunning = false; elements.digitalstaterun.disabled = false; }
+}
+
+function exportDigitalStateReport() {
+  if (!digitalStateReport) return;
+  const text = `${JSON.stringify(digitalStateReport, null, 2)}\n`;
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const link = document.createElement('a'); link.href = url;
+  link.download = `x33-digital-state-${digitalStateReport.semanticSha256.slice(0, 12)}.intent-mcu-state.json`;
+  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 async function selectRegressionProfile(profile) {
   if (selectedCompilerProfile === profile) return;
   elements.boardselect.value = profile;
@@ -3170,6 +3288,8 @@ elements.resetclassrun.addEventListener('click', () => { void runBrowserResetCla
 elements.resetclassexport.addEventListener('click', exportResetClassReport);
 elements.unsupportedaccessrun.addEventListener('click', () => { void runBrowserUnsupportedAccessSuite(); });
 elements.unsupportedaccessexport.addEventListener('click', exportUnsupportedAccessReport);
+elements.digitalstaterun.addEventListener('click', () => { void runBrowserDigitalStateSuite(); });
+elements.digitalstateexport.addEventListener('click', exportDigitalStateReport);
 for (const input of [elements.source, elements.picosource, elements.c3source, elements.stm32source,
   elements.projectopeninput, elements.picoopeninput, elements.c3openinput, elements.stm32openinput,
   elements.boardselect]) {
@@ -3236,6 +3356,14 @@ window.__X32_UNSUPPORTED_ACCESS__ = Object.freeze({
   passed: () => unsupportedAccessReport ? unsupportedAccessReportPassed(unsupportedAccessReport) : false,
   clear: (reason = 'X32 report cleared. Run the suite again for current evidence.') => invalidateUnsupportedAccessReport(reason),
 });
+window.__X33_DIGITAL_STATE__ = Object.freeze({
+  get ready() { return digitalStateReady; },
+  suite: () => structuredClone(X33_DIGITAL_STATE_SUITE),
+  report: () => digitalStateReport ? structuredClone(digitalStateReport) : null,
+  run: () => runBrowserDigitalStateSuite(),
+  passed: () => digitalStateReport ? digitalStateReportPassed(digitalStateReport) : false,
+  clear: (reason = 'X33 report cleared. Run the static check again for current evidence.') => invalidateDigitalStateReport(reason),
+});
 void regressionMatrixIdentity().then((identity) => {
   elements.regressionmatrixidentity.textContent = `Immutable matrix SHA-256 ${identity} · four exact fixture/source hashes · four distinct oracles`;
   regressionMatrixReady = true;
@@ -3259,6 +3387,10 @@ void resetClassSuiteIdentity().then((identity) => {
 void unsupportedAccessSuiteIdentity().then((identity) => {
   elements.unsupportedaccessidentity.textContent = `Immutable X32 contract SHA-256 ${identity} · one compiled AVR SPI access · affected requirement cannot pass`;
   unsupportedAccessReady = true;
+});
+void digitalStateSuiteIdentity().then((identity) => {
+  elements.digitalstateidentity.textContent = `Immutable X33 contract SHA-256 ${identity} · strict static synthetic AVR fixture · no firmware or runtime execution`;
+  digitalStateReady = true;
 });
 
 function renderLifecycle() {
@@ -7574,6 +7706,7 @@ async function build() {
   invalidateEventOrderReport('A new build cleared the prior X30 report. Run the suite again for current evidence.');
   invalidateResetClassReport('A new build cleared the prior X31 report. Run the suite again for current evidence.');
   invalidateUnsupportedAccessReport('A new build cleared the prior X32 report. Run the suite again for current evidence.');
+  invalidateDigitalStateReport('A new build cleared the prior X33 report. Run the static check again for current evidence.');
   const target = currentCompilerTarget();
   if (!target.compileAvailable) {
     const missing = firstMissingTargetPrerequisite(target.profile);
@@ -7760,6 +7893,7 @@ elements.pause.addEventListener('click', () => {
 elements.step.addEventListener('click', () => worker?.postMessage({ command: 'step' }));
 elements.reset.addEventListener('click', () => {
   invalidateUnsupportedAccessReport('Reset cleared the prior X32 report. Run the suite again for current evidence.');
+  invalidateDigitalStateReport('Reset cleared the prior X33 report. Run the static check again for current evidence.');
   if (!worker) return;
   renderInstrumentEvidence(null);
   worker.postMessage({ command: 'reset' });

@@ -59,6 +59,8 @@
     "test:x31:browser": "node test/x31-reset-class-browser.cjs",
     "test:x32": "node --test --test-concurrency=1 test/unsupported-access-contract.test.mjs test/lifecycle.test.mjs",
     "test:x32:browser": "node test/x32-unsupported-access-browser.cjs",
+    "test:x33": "node --test --test-concurrency=1 test/digital-state-contract.test.mjs test/lifecycle.test.mjs",
+    "test:x33:browser": "node test/x33-digital-state-browser.cjs",
     "example:mcp": "node examples/mcp-reference-experiment.mjs",
     "experiment:headless": "node tools/headless-experiment-runner.mjs",
     "pretest": "node --test --test-concurrency=1 test/release-identity-copy.test.mjs test/control-persistence-policy.test.mjs test/control-runtime-evidence.test.mjs test/avr-reference-starters.test.mjs test/component-support-matrix.test.mjs test/controller-capability-diagnostics.test.mjs test/bounded-route-authoring.test.mjs test/supported-example-pack.test.mjs test/existing-graph-edit-safety.test.mjs test/candidate-branch-transactions.test.mjs test/candidate-placement-duplication.test.mjs test/w10-fault-validation.test.mjs test/i03-runtime-traces.test.mjs",
