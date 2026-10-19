@@ -53,6 +53,11 @@ import {
   measurementRequirementStatus, validateMeasurementReportEnvelope,
 } from '../src/measurement-completeness.mjs';
 import {
+  canonicalCheckableEvidenceText, checkableEvidenceDisclosure,
+  checkableEvidenceDownloadSha256, createCheckableEvidenceReport,
+  validateCheckableEvidenceReport,
+} from '../src/checkable-evidence-report.mjs';
+import {
   COMPONENT_SUPPORT_CELLS,
   COMPONENT_SUPPORT_MODELS,
   COMPONENT_SUPPORT_PROFILES,
@@ -405,6 +410,9 @@ const elements = Object.fromEntries([
   'regression-matrix', 'regression-matrix-state', 'regression-matrix-identity',
   'regression-matrix-selector', 'regression-matrix-run', 'regression-matrix-negative',
   'regression-matrix-export', 'regression-matrix-results', 'regression-matrix-summary',
+  'checkable-evidence', 'checkable-evidence-state', 'checkable-evidence-summary',
+  'checkable-evidence-identity', 'checkable-evidence-rows', 'checkable-evidence-limitations',
+  'checkable-evidence-download',
   'version-regression-state', 'version-regression-identity', 'version-regression-load',
   'version-regression-negative', 'version-regression-export', 'version-regression-results',
   'version-regression-summary',
@@ -2133,6 +2141,8 @@ function publish(update) { Object.assign(window.__M6_STATE__, update); }
 
 let regressionMatrixReport = null;
 let coverageReport = null;
+let checkableEvidenceReport = null;
+let checkableEvidenceGeneration = 0;
 let regressionPartitionEvidence = [];
 let regressionMatrixRunning = false;
 let regressionMatrixReady = false;
@@ -2190,7 +2200,72 @@ const waitForMatrixState = async (read, accept, code, timeoutMilliseconds = 30_0
   throw Object.assign(new Error(code), { code });
 };
 
+function taggedEvidenceText(tagged) {
+  return tagged.state === 'known' ? JSON.stringify(tagged.value) : `${tagged.state}: ${tagged.reason}`;
+}
+
+function renderCheckableEvidence(report = checkableEvidenceReport) {
+  elements.checkableevidencerows.replaceChildren();
+  elements.checkableevidencelimitations.replaceChildren();
+  if (!report) {
+    elements.checkableevidencestate.textContent = 'Unavailable';
+    elements.checkableevidencesummary.textContent = checkableEvidenceDisclosure(null);
+    elements.checkableevidenceidentity.textContent = 'No source envelope or report hash.';
+    elements.checkableevidencedownload.disabled = true;
+    for (const [root, text] of [[elements.checkableevidencerows, 'No current rows.'],
+      [elements.checkableevidencelimitations, 'No current source, profile, or model limits.']]) {
+      const item = document.createElement('li'); item.textContent = text; root.append(item);
+    }
+    return;
+  }
+  const knownRows = report.measurements.filter((row) => row.value.state === 'known').length;
+  elements.checkableevidencestate.textContent = `${knownRows}/${report.measurements.length} available`;
+  elements.checkableevidencesummary.textContent = checkableEvidenceDisclosure(report);
+  elements.checkableevidenceidentity.textContent = `${report.producer.producerId} · ${report.producer.adapterId} · source ${report.integrity.sourceReportSha256} · report ${report.integrity.reportSha256} · model ${report.modelContext.state}`;
+  for (const row of report.measurements) {
+    const item = document.createElement('li');
+    item.dataset.measurementState = row.value.state;
+    item.textContent = `${row.label}: ${taggedEvidenceText(row.value)} · unit ${taggedEvidenceText(row.unit)} · ${row.timeBasis} · ${row.provenance}`;
+    elements.checkableevidencerows.append(item);
+  }
+  for (const row of report.limitations) {
+    const item = document.createElement('li'); item.textContent = `${row.owner}: ${row.text}`;
+    elements.checkableevidencelimitations.append(item);
+  }
+  elements.checkableevidencedownload.disabled = false;
+}
+
+async function setCheckableEvidenceReport(sourceReport, modelLibraryLock = null) {
+  const generation = ++checkableEvidenceGeneration;
+  const report = await createCheckableEvidenceReport(sourceReport, { modelLibraryLock });
+  await validateCheckableEvidenceReport(report);
+  if (generation !== checkableEvidenceGeneration) return null;
+  checkableEvidenceReport = report;
+  renderCheckableEvidence(report);
+  return structuredClone(report);
+}
+
+function clearCheckableEvidenceReport(message = 'No current evidence report. Build and Run are never started by this disclosure.') {
+  checkableEvidenceGeneration += 1;
+  checkableEvidenceReport = null;
+  renderCheckableEvidence(null);
+  elements.checkableevidencesummary.textContent = message;
+}
+
+async function downloadCheckableEvidenceReport() {
+  if (!checkableEvidenceReport) return null;
+  const report = await validateCheckableEvidenceReport(checkableEvidenceReport);
+  const downloadSha256 = await checkableEvidenceDownloadSha256(report);
+  downloadText(`checkable-evidence-${report.integrity.reportSha256.slice(0, 16)}.json`,
+    canonicalCheckableEvidenceText(report), 'application/json');
+  elements.checkableevidenceidentity.textContent = `${elements.checkableevidenceidentity.textContent} · download ${downloadSha256}`;
+  return { report: structuredClone(report), downloadSha256 };
+}
+
 function applyMeasurementPresentation(report, root, state, summary, { historical = false } = {}) {
+  void setCheckableEvidenceReport(report).catch((error) => {
+    clearCheckableEvidenceReport(`Evidence report rejected (${error.code ?? error.message}). No source authority was retained.`);
+  });
   const completeness = measurementRequirementStatus(report);
   const effective = completenessAcademicStatus('passed', completeness);
   if (!completeness.completeForRequirements) {
@@ -2352,6 +2427,7 @@ function invalidateFailureReplayReport(message = 'Project state changed. Open th
 }
 
 function invalidateRegressionMatrixReport(message = 'Project state changed. Run the matrix again for current evidence.') {
+  clearCheckableEvidenceReport(message);
   invalidateVersionRegressionReport(message);
   if (!regressionMatrixRunning && regressionMatrixReport) {
     regressionMatrixReport = null;
@@ -4567,6 +4643,7 @@ elements.regressionmatrixrun.addEventListener('click', () => {
 });
 elements.regressionmatrixnegative.addEventListener('click', () => { void runWrongRegressionExpectation(); });
 elements.regressionmatrixexport.addEventListener('click', exportRegressionMatrixReport);
+elements.checkableevidencedownload.addEventListener('click', () => { void downloadCheckableEvidenceReport(); });
 elements.versionregressionload.addEventListener('click', () => { void loadReviewedVersionRegression(); });
 elements.versionregressionnegative.addEventListener('click', () => { void rejectSyntheticVersionMutation(); });
 elements.versionregressionexport.addEventListener('click', exportVersionRegressionReport);
@@ -10873,6 +10950,12 @@ window.__M3_BUILD__ = build;
 window.__M3_COMMAND__ = (command, value) => worker?.postMessage(command === 'speed' ? { command, speed: value } : { command });
 window.__M4_CONTROL__ = (componentId, key, value) => worker?.postMessage({ command: 'control', componentId, key, value });
 window.__M5_COMMAND__ = (command, value) => worker?.postMessage({ command, value });
+window.__CHECKABLE_EVIDENCE__ = Object.freeze({
+  set: (report, modelLibraryLock = null) => setCheckableEvidenceReport(report, modelLibraryLock),
+  clear: (message) => clearCheckableEvidenceReport(message),
+  current: () => checkableEvidenceReport ? structuredClone(checkableEvidenceReport) : null,
+  download: () => downloadCheckableEvidenceReport(),
+});
 window.addEventListener('pagehide', () => {
   retireFailureReplayWorkers(); failureReplayReport = null;
   invalidateUsartResponseReport('Page exit retired X23 USART0 workers.');
@@ -10931,6 +11014,7 @@ for (const [name, button] of [['catalog-collapsed', elements.togglecatalog], ['i
 }
 if (workspacePreference('pin-labels')) { elements.circuitcanvas.classList.add('show-pin-labels'); elements.showpinlabels.setAttribute('aria-pressed', 'true'); }
 renderCompilerTarget(); renderCatalog(); renderProject(); renderProjectBrief(); renderModelLibraryStatus(); setRuntimeEnabled(false);
+renderCheckableEvidence(null);
 clearRuntimePresentation(); renderLifecycle();
 setCanvasInteractionMode('select'); setSerialDock(false);
 elements.projectmessage.textContent = recoveryRestored?.ok
