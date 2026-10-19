@@ -9,13 +9,25 @@ import {
 import { prepareProjectEnvelope } from './project-envelope.mjs';
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
 import { THERMOSTAT_EXPERIMENT_ID } from './thermostat-experiment-contract.mjs';
+import {
+  createExperimentManifest,
+  normalizeExperimentManifest,
+} from './experiment-manifest.mjs';
 
-export const EXPERIMENT_PACKAGE_SCHEMA = 'intent-mcu-experiment-package@1';
+export const LEGACY_EXPERIMENT_PACKAGE_SCHEMA = 'intent-mcu-experiment-package@1';
+export const EXPERIMENT_PACKAGE_SCHEMA = 'intent-mcu-experiment-package@2';
 export const EXPERIMENT_REPORT_SCHEMA = 'intent-mcu-authored-scenario-report@1';
 export const EXPERIMENT_PACKAGE_PROFILE = 'board.atmega328p-16mhz-v1';
 export const EXPERIMENT_PACKAGE_LIMIT = 2 * 1024 * 1024;
 
 export const EXPERIMENT_PACKAGE_LIMITATIONS = Object.freeze([
+  'Automatic executable, runtime, capability, session, file-handle and credential fields are excluded; human-authored source and descriptions still require the user to review their own text for sensitive content.',
+  'This file is created as a local browser download. The package feature does not upload or store it on the server.',
+  'SHA-256 values bind member bytes for identity and integrity; they do not prove that a measurement or claim is true.',
+  'The report is review evidence only. It cannot restore firmware, a runtime, a green state or a requirement verdict.',
+  'Version 2 supports only the current AVR thermostat authored-scenario workflow and binds seven identity classes in its manifest.',
+]);
+const LEGACY_EXPERIMENT_PACKAGE_LIMITATIONS = Object.freeze([
   'Automatic executable, runtime, capability, session, file-handle and credential fields are excluded; human-authored source and descriptions still require the user to review their own text for sensitive content.',
   'This file is created as a local browser download. The package feature does not upload or store it on the server.',
   'SHA-256 values bind member bytes for identity and integrity; they do not prove that a measurement or claim is true.',
@@ -306,7 +318,7 @@ function packageLimitations(value) {
 }
 
 export async function createExperimentPackage({ projectText, adapters, activeProfile,
-  expectationText, artifactIdentitySha256, sourceVariant, results }) {
+  expectationText, artifactIdentitySha256, sourceVariant, results, producer }) {
   try {
     const prepared = prepareProjectEnvelope(projectText, adapters);
     if (!prepared.ok || prepared.profile !== activeProfile
@@ -328,6 +340,8 @@ export async function createExperimentPackage({ projectText, adapters, activePro
     const report = reportFromResults({ projectSha256, expectationSha256,
       artifactIdentitySha256, sourceVariant, timeline: prepared.scenarioTimeline, results });
     const reportSha256 = await experimentPackageSha256(report);
+    const { manifest } = await createExperimentManifest({ prepared, expectation,
+      artifactIdentitySha256, producer, sha256: experimentPackageSha256 });
     const value = {
       schema: EXPERIMENT_PACKAGE_SCHEMA,
       profile: prepared.profile,
@@ -335,7 +349,9 @@ export async function createExperimentPackage({ projectText, adapters, activePro
       project: parseStrictJson(prepared.canonical),
       expectation: clone(expectation.reference),
       report,
-      bindings: { projectSha256, expectationSha256, reportSha256 },
+      manifest,
+      bindings: { projectSha256, expectationSha256, reportSha256,
+        manifestSha256: manifest.manifestSha256 },
       limitations: [...EXPERIMENT_PACKAGE_LIMITATIONS],
     };
     const canonical = `${JSON.stringify(value, null, 2)}\n`;
@@ -353,12 +369,17 @@ export async function createExperimentPackage({ projectText, adapters, activePro
 export async function parseExperimentPackage(source, adapters) {
   try {
     const value = parseStrictJson(source, EXPERIMENT_PACKAGE_LIMIT);
-    if (!exactKeys(value, ['schema', 'profile', 'experimentId', 'project',
-      'expectation', 'report', 'bindings', 'limitations'])
-        || value.schema !== EXPERIMENT_PACKAGE_SCHEMA
+    const legacy = value?.schema === LEGACY_EXPERIMENT_PACKAGE_SCHEMA;
+    const expectedKeys = legacy
+      ? ['schema', 'profile', 'experimentId', 'project', 'expectation', 'report', 'bindings', 'limitations']
+      : ['schema', 'profile', 'experimentId', 'project', 'expectation', 'report', 'manifest', 'bindings', 'limitations'];
+    if (!exactKeys(value, expectedKeys)
+        || ![EXPERIMENT_PACKAGE_SCHEMA, LEGACY_EXPERIMENT_PACKAGE_SCHEMA].includes(value.schema)
         || value.profile !== EXPERIMENT_PACKAGE_PROFILE
         || value.experimentId !== THERMOSTAT_EXPERIMENT_ID
-        || !exactKeys(value.bindings, ['projectSha256', 'expectationSha256', 'reportSha256'])) {
+        || !exactKeys(value.bindings, legacy
+          ? ['projectSha256', 'expectationSha256', 'reportSha256']
+          : ['projectSha256', 'expectationSha256', 'reportSha256', 'manifestSha256'])) {
       return failure('EXPERIMENT_PACKAGE_SHAPE');
     }
     const projectText = `${JSON.stringify(value.project, null, 2)}\n`;
@@ -381,19 +402,38 @@ export async function parseExperimentPackage(source, adapters) {
       { projectSha256, expectationSha256 });
     const reportSha256 = await experimentPackageSha256(report);
     if (value.bindings.reportSha256 !== reportSha256) return failure('EXPERIMENT_PACKAGE_BINDING');
+    let manifest = null;
+    if (!legacy) {
+      manifest = await normalizeExperimentManifest(value.manifest, { prepared, expectation,
+        artifactIdentitySha256: report.artifactIdentitySha256,
+        sha256: experimentPackageSha256 });
+      if (value.bindings.manifestSha256 !== manifest.manifestSha256) {
+        return failure('EXPERIMENT_PACKAGE_BINDING');
+      }
+    }
     const normalized = {
-      schema: EXPERIMENT_PACKAGE_SCHEMA, profile: prepared.profile,
+      schema: legacy ? LEGACY_EXPERIMENT_PACKAGE_SCHEMA : EXPERIMENT_PACKAGE_SCHEMA,
+      profile: prepared.profile,
       experimentId: THERMOSTAT_EXPERIMENT_ID,
       project: parseStrictJson(prepared.canonical), expectation: clone(expectation.reference),
-      report, bindings: { projectSha256, expectationSha256, reportSha256 },
-      limitations: packageLimitations(value.limitations),
+      report,
+      ...(legacy ? {} : { manifest }),
+      bindings: legacy
+        ? { projectSha256, expectationSha256, reportSha256 }
+        : { projectSha256, expectationSha256, reportSha256,
+          manifestSha256: manifest.manifestSha256 },
+      limitations: legacy
+        ? (JSON.stringify(value.limitations) === JSON.stringify(LEGACY_EXPERIMENT_PACKAGE_LIMITATIONS)
+          ? [...LEGACY_EXPERIMENT_PACKAGE_LIMITATIONS]
+          : reject('EXPERIMENT_PACKAGE_LIMITATIONS'))
+        : packageLimitations(value.limitations),
     };
     const canonical = `${JSON.stringify(normalized, null, 2)}\n`;
     if (canonical !== source) return failure('EXPERIMENT_PACKAGE_NOT_CANONICAL');
     return { ok: true, code: 'EXPERIMENT_PACKAGE_ACCEPTED', value: normalized,
       canonical, sha256: await experimentPackageSha256(canonical),
       executableAuthority: false, runtimeAuthority: false, verdictAuthority: false,
-      serverStored: false };
+      serverStored: false, legacyReviewOnly: legacy, x80Complete: !legacy };
   } catch (error) {
     return failure(error.code ?? error.message ?? 'EXPERIMENT_PACKAGE_INVALID', error.details ?? []);
   }

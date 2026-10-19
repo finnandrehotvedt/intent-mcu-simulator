@@ -153,6 +153,7 @@ export class BuildCoordinator {
             text: worker.text ?? '',
             isolation: worker.isolation,
             toolchainImageId: worker.imageId,
+            toolchainIdentitySha256: target.toolchainIdentitySha256,
           };
           job.status = 'succeeded';
           job.phase = 'complete';
@@ -199,6 +200,7 @@ export class BuildCoordinator {
             text: worker.text ?? '',
             isolation: worker.isolation,
             toolchainImageId: worker.imageId,
+            toolchainIdentitySha256: target.toolchainIdentitySha256,
           };
           job.status = 'succeeded';
           job.phase = 'complete';

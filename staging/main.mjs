@@ -6738,6 +6738,17 @@ function experimentPackageBaseEligibility() {
   if (!thermostatRuntimeReady() || !lifecycle.artifact?.artifactIdentity) {
     return { ok: false, reason: 'Build this exact project before producing the report.' };
   }
+  const runtimeIdentity = window.__M6_STATE__.runtime?.runtimeIdentity;
+  const producerCurrent = latestBuildResult?.artifactIdentity === lifecycle.artifact.artifactIdentity
+    && latestBuildResult?.inputIdentity === lifecycle.artifact.inputIdentity
+    && latestBuildResult?.toolchainIdentitySha256 === currentCompilerTarget().toolchainIdentitySha256
+    && /^sha256:[a-f0-9]{64}$/u.test(latestBuildResult?.toolchainImageId ?? '')
+    && runtimeIdentity?.projectGeneration === lifecycle.artifact.projectGeneration
+    && runtimeIdentity?.runtimeGeneration === lifecycle.runtimeBinding?.runtimeGeneration
+    && runtimeIdentity?.artifactIdentity === lifecycle.artifact.artifactIdentity;
+  if (!producerCurrent) {
+    return { ok: false, reason: 'Current compiler and runtime identities are incomplete or stale. Build and run again.' };
+  }
   if (authoredScenarioResults.length !== timeline.scenarios.length) {
     return { ok: false, reason: `Run the authored scenarios (${authoredScenarioResults.length}/${timeline.scenarios.length} current).` };
   }
@@ -6749,7 +6760,17 @@ function experimentPackageBaseEligibility() {
       && result.retention?.inputEventsDropped === 0
   ));
   if (!complete) return { ok: false, reason: 'Current authored evidence is incomplete or has required input loss.' };
-  return { ok: true, reason: `${timeline.scenarios.length} current measured scenarios · checking exact binding…`, timeline };
+  return { ok: true, reason: `${timeline.scenarios.length} current measured scenarios · checking exact binding…`, timeline,
+    producer: {
+      artifactIdentitySha256: lifecycle.artifact.artifactIdentity,
+      inputIdentitySha256: lifecycle.artifact.inputIdentity,
+      toolchainImageId: latestBuildResult.toolchainImageId,
+      toolchainIdentitySha256: latestBuildResult.toolchainIdentitySha256,
+      projectGeneration: lifecycle.artifact.projectGeneration,
+      buildGeneration: lifecycle.artifact.buildGeneration,
+      runtimeGeneration: lifecycle.runtimeBinding.runtimeGeneration,
+      runtimeIdentity: structuredClone(runtimeIdentity),
+    } };
 }
 function showExperimentPackageState(ready, reason, sha256 = null) {
   experimentPackageUiState = { ready, reason, sha256 };
@@ -6780,8 +6801,8 @@ async function refreshExperimentPackageState() {
   }
   const failed = authoredScenarioResults.filter((result) => result.status === 'failed').length;
   showExperimentPackageState(true,
-    `${eligibility.timeline.scenarios.length} current measured scenarios · ${failed ? `${failed} failed result retained` : 'complete evidence'} · local download ready`);
-  return { ok: true, timeline: eligibility.timeline, currentText };
+    `${eligibility.timeline.scenarios.length} current measured scenarios · ${failed ? `${failed} failed result retained` : 'complete evidence'} · seven identities bound · local download ready`);
+  return { ok: true, timeline: eligibility.timeline, currentText, producer: eligibility.producer };
 }
 function experimentPackageFilename() {
   const stem = profileProjectName(AVR_PROFILE).normalize('NFKD')
@@ -6799,6 +6820,7 @@ async function createCurrentExperimentPackage() {
     artifactIdentitySha256: lifecycle.artifact.artifactIdentity,
     sourceVariant: thermostatFirmwareVariant(currentProject()),
     results: authoredScenarioResults,
+    producer: eligibility.producer,
   });
 }
 async function downloadCurrentExperimentPackage() {
@@ -7127,6 +7149,7 @@ window.__X67_EXPERIMENT_PACKAGE__ = Object.freeze({
   state: () => structuredClone(experimentPackageUiState),
   create: () => createCurrentExperimentPackage(),
 });
+window.__X80_EXPERIMENT_MANIFEST__ = window.__X67_EXPERIMENT_PACKAGE__;
 window.__DESIGN_COMPARISON__ = Object.freeze({
   schema: DESIGN_COMPARISON_SCHEMA,
   compare: () => compareReviewedProjectDesigns(),
