@@ -16,7 +16,7 @@ test('one release authority matches package capability and dynamic OCI projectio
   ]);
   assert.deepEqual(Object.keys(release).sort(), ['schema', 'version']);
   assert.equal(release.schema, 'intent-mcu-release@1');
-  assert.equal(release.version, '1.1.0-rc.59');
+  assert.equal(release.version, '1.1.0-rc.60');
   assert.equal(RELEASE_VERSION, release.version);
   assert.equal(PRODUCT_VERSION, release.version);
   assert.equal(packageValue.version, release.version);
@@ -46,4 +46,6 @@ test('footer, four-case helper and exact seed accessibility are coherent without
   assert.equal(suite.seededPropertySuite(305419896).seed, 305419896);
   assert.match(html, /separate bounded AVR USART0 response fixture covers one declared response fault/u);
   assert.match(html, /not a generic bus, named device, I2C\/TWI, SPI/u);
+  assert.match(html, /The reviewed X23 report is transient/u);
+  assert.doesNotMatch(html, /Transient private evidence only/u);
 });
