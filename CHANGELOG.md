@@ -2,6 +2,22 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.56 — 2026-10-19
+
+- Published the independently accepted bounded X33 static synthetic AVR
+  digital-state report. Known LOW, HIGH_Z, opposing-drive conflict and missing
+  evidence remain visibly and semantically distinct across two repeats.
+- Added strict pre-resolution annotation validation: unknown values and
+  duplicate producer identity reject, while equal levels from distinct
+  producers remain valid. Missing evidence never invents an UNKNOWN driver.
+- Added the separate PULLED_HIGH companion, keyboard-accessible full records
+  and transient JSON export. Reset, Open, reload and every new Build clear
+  report authority.
+- The presentation is explicitly a static synthetic circuit-model check. It
+  does not claim compiled firmware, runtime execution, physical voltage,
+  general dynamic/analogue net solving or cross-profile equivalence; X33
+  therefore remains partial.
+
 ## 1.1.0-rc.55 — 2026-10-19
 
 - Published the independently accepted bounded X32 unsupported-access report
