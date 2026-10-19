@@ -10,6 +10,7 @@ const moduleRoot = process.env.PLAYWRIGHT_NODE_MODULES || '/runner/node_modules'
 const { chromium } = require(path.join(moduleRoot, 'playwright'));
 const base = process.env.X56_RETAINED_URL || 'http://127.0.0.1:18845';
 const packageOutput = process.env.X56_RETAINED_PACKAGE_OUTPUT;
+const projectOutput = process.env.X56_RETAINED_PROJECT_OUTPUT;
 const evidenceOutput = process.env.X56_RETAINED_EVIDENCE_OUTPUT;
 
 const retainedLock = Object.freeze({
@@ -28,6 +29,14 @@ function durableCopy(source, destination) {
   assert(destination, 'X56_RETAINED_PACKAGE_OUTPUT is required');
   fs.mkdirSync(path.dirname(destination), { recursive: true });
   fs.copyFileSync(source, destination);
+  const descriptor = fs.openSync(destination, 'r');
+  try { fs.fsyncSync(descriptor); } finally { fs.closeSync(descriptor); }
+}
+
+function durableWrite(source, destination) {
+  assert(destination, 'X56_RETAINED_PROJECT_OUTPUT is required');
+  fs.mkdirSync(path.dirname(destination), { recursive: true });
+  fs.writeFileSync(destination, source, { mode: 0o600 });
   const descriptor = fs.openSync(destination, 'r');
   try { fs.fsyncSync(descriptor); } finally { fs.closeSync(descriptor); }
 }
@@ -78,15 +87,20 @@ let browser;
 
   // This is the fail-closed producer gate. No Build click occurs before all
   // visible, canonical-project and runtime-selection identities agree.
-  const preBuild = await page.evaluate(() => ({
-    summary: document.querySelector('#model-library-summary').textContent,
-    status: document.querySelector('#model-library-status').textContent,
-    project: JSON.parse(window.__COMMON_PROJECT_FILES__.current()),
-    selectedLock: window.__COMMON_PROJECT_FILES__.modelLibraryLock(),
-    buildState: window.__M6_STATE__.buildState,
-    artifactIdentity: window.__M6_STATE__.artifactIdentity,
-    runtime: window.__M6_STATE__.runtime,
-  }));
+  const preBuild = await page.evaluate(() => {
+    const projectText = window.__COMMON_PROJECT_FILES__.current();
+    return {
+      summary: document.querySelector('#model-library-summary').textContent,
+      status: document.querySelector('#model-library-status').textContent,
+      projectText,
+      project: JSON.parse(projectText),
+      selectedLock: window.__COMMON_PROJECT_FILES__.modelLibraryLock(),
+      buildState: window.__M6_STATE__.buildState,
+      artifactIdentity: window.__M6_STATE__.artifactIdentity,
+      runtime: window.__M6_STATE__.runtime,
+    };
+  });
+  durableWrite(preBuild.projectText, projectOutput);
   assert.match(preBuild.summary, /retained/u);
   assert.match(preBuild.status, /retained, immutable pre-X56/u);
   assert.equal(preBuild.project.schema, 'intent-mcu-project-envelope@8');
@@ -191,6 +205,11 @@ let browser;
       modelExecutionContextSha256: value.manifest.modelExecutionContextSha256,
       scenarios: value.report.results.length,
       aggregate: value.report.aggregate,
+    },
+    project: {
+      path: projectOutput,
+      sha256: sha256(preBuild.projectText),
+      bytes: Buffer.byteLength(preBuild.projectText),
     },
     requests: { buildPosts: 1, authoredScenarios: 4, outside: 0 },
     cookies: 0,
