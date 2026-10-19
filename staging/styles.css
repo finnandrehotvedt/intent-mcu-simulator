@@ -739,6 +739,26 @@ button:disabled, select:disabled { opacity: .42; }
 .wire-bends { display: grid; gap: 6px; margin: 8px 0; color: var(--muted); font-size: .72rem; }
 .wire-bends button { width: 100%; min-height: 34px; text-align: left; }
 .wire-bends button[aria-pressed="true"] { border-color: var(--lime); color: var(--lime); background: #173322; }
+.accessible-connections { margin-top: 10px; border: 1px solid var(--line); border-radius: 10px; background: #07141f; }
+.accessible-connections > summary { cursor: pointer; padding: 10px; color: #e9f5f8; font-weight: 700; }
+.accessible-connections-body { display: grid; gap: 10px; padding: 0 10px 10px; min-width: 0; }
+.accessible-connection-summary, .accessible-connection-help, .accessible-connection-status { margin: 0; color: var(--muted); font-size: .72rem; line-height: 1.45; }
+.accessible-connection-status { min-height: 2.1em; color: #d9f4ff; }
+.accessible-connection-components, .accessible-connection-nets { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.accessible-connection-component { display: grid; gap: 5px; padding-top: 7px; border-top: 1px solid rgba(92,130,151,.25); }
+.accessible-connection-component > strong { font-size: .76rem; overflow-wrap: anywhere; }
+.accessible-connection-pins { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.accessible-connection-pin { width: 100%; min-height: 32px; padding: 5px 7px; text-align: left; font: .68rem/1.35 ui-monospace, monospace; overflow-wrap: anywhere; }
+.accessible-connection-pin[data-connected="true"] { border-left: 3px solid var(--cyan); }
+.accessible-connection-net { display: grid; gap: 5px; padding: 8px; border: 1px solid rgba(92,130,151,.32); border-radius: 8px; }
+.accessible-connection-net p { margin: 0; font: .68rem/1.4 ui-monospace, monospace; overflow-wrap: anywhere; }
+.accessible-connection-net-actions { display: flex; flex-wrap: wrap; gap: 5px; }
+.accessible-connection-net-actions button { flex: 1 1 68px; min-height: 32px; }
+.accessible-connection-form { display: grid; gap: 7px; padding-top: 8px; border-top: 1px solid var(--line); }
+.accessible-connection-form label { display: grid; gap: 4px; font-size: .72rem; }
+.accessible-connection-form select { width: 100%; min-width: 0; }
+.accessible-connection-form button { min-height: 38px; }
+.accessible-connection-validation[data-valid="false"] { color: #ffbd72; }
 .bend-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 5px; }
 .bend-row input { min-width: 0; min-height: 34px; }
 .bend-row button { min-height: 34px; }

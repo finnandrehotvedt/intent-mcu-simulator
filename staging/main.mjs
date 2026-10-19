@@ -5,10 +5,12 @@ import {
   CATALOG_CATEGORIES,
   COMPONENT_CATALOG,
   SUPPORT_STATUS,
+  CIRCUIT_LIMITS,
   catalogEntries,
   defaultProperties,
   filterCatalog,
 } from '../src/component-catalog.mjs';
+import { createAccessibleConnectionView } from '../src/accessible-connections.mjs';
 import { CIRCUIT_SCHEMA, validateCircuit } from '../src/circuit-engine.mjs';
 import { DEFAULT_CIRCUIT } from '../src/default-circuit.mjs';
 import { RELEASE_VERSION } from '../src/release-metadata.mjs';
@@ -352,6 +354,7 @@ const elements = Object.fromEntries([
   'catalog-support-open', 'component-support-dialog', 'component-support-close',
   'component-support-profile', 'component-support-summary', 'component-support-mode', 'component-support-body',
   'catalog-list', 'catalog-prev', 'catalog-page', 'catalog-next', 'selection-name', 'property-editor', 'rotate-component', 'duplicate-component', 'delete-component',
+  'accessible-connections-root',
   'selected-net', 'net-members', 'wire-color', 'wire-bends', 'selection-support', 'reconnect-mode', 'add-bend', 'delete-wire', 'remove-junction', 'zoom-value',
   'zoom-in', 'zoom-out', 'pan-left', 'pan-right', 'pan-up', 'pan-down', 'view-reset', 'fit-project', 'project-state',
   'project-message', 'project-name', 'project-new', 'project-demo', 'project-save', 'project-open', 'project-open-input',
@@ -601,6 +604,7 @@ const publicPreviewRegions = [
 let picoPublicState = null;
 let c3PublicState = null;
 let stm32PublicState = null;
+const accessibleConnectionNotices = new Map();
 
 function renderProfileDiagnostics(snapshot, { textarea, summary, links, current }) {
   const diagnostics = snapshot?.diagnostics ?? [];
@@ -828,6 +832,310 @@ function renderBoundedComponentCatalog({ state, editCircuit, list, properties })
   }
   label.append(limit); input.id = `${selected.id}-${input.dataset.boundedProperty}`; label.htmlFor = input.id;
   row.append(label, input); properties.replaceChildren(row);
+}
+
+function accessibleValidation(result) {
+  const rawDiagnostics = result?.diagnostics ?? result?.details ?? [];
+  const diagnostics = (Array.isArray(rawDiagnostics) ? rawDiagnostics : [rawDiagnostics]).slice(0, 64)
+    .map((item) => typeof item === 'string' ? item : JSON.stringify(item))
+    .filter((item) => typeof item === 'string' && item.length > 0);
+  return {
+    checked: true,
+    ok: Boolean(result?.ok),
+    code: String(result?.code ?? (result?.ok ? 'OK' : 'CIRCUIT_INVALID')),
+    diagnostics,
+  };
+}
+
+function accessibleWireColors(layout) {
+  return Object.fromEntries(Object.entries(layout?.wireStyles ?? {}).map(([netId, style]) => [
+    netId, typeof style === 'string' ? style : style?.color,
+  ]));
+}
+
+function accessibleView({ profile, revision, graph, catalogue, validation, limits }) {
+  return createAccessibleConnectionView({
+    profile,
+    revision,
+    components: graph.components,
+    nets: graph.nets,
+    junctions: graph.junctions ?? [],
+    catalogue,
+    wireColors: accessibleWireColors(graph.layout),
+    limits,
+    validation: accessibleValidation(validation),
+  });
+}
+
+function announceAccessibleConnection(profile, message, preferredRoot = null) {
+  accessibleConnectionNotices.set(profile, message);
+  const root = preferredRoot ?? (profile === AVR_PROFILE ? elements.accessibleconnectionsroot
+    : document.querySelector(`[data-accessible-connections][data-connection-profile="${profile}"]`));
+  const status = root?.querySelector('[data-connection-status]');
+  if (status) status.textContent = message;
+}
+
+function accessibleConnectionRoot(profile) {
+  return profile === AVR_PROFILE ? elements.accessibleconnectionsroot
+    : document.querySelector(`[data-accessible-connections][data-connection-profile="${profile}"]`);
+}
+
+function focusNamedEndpoint(selector, key) {
+  requestAnimationFrame(() => {
+    const anchor = [...document.querySelectorAll(selector)].find((item) =>
+      (item.dataset.endpoint ?? item.dataset.editorEndpoint) === key);
+    anchor?.focus({ preventScroll: true });
+  });
+}
+
+function renderAccessibleConnections({ profile, label, view, adapter }) {
+  const root = accessibleConnectionRoot(profile);
+  if (!root) return;
+  const active = root.contains(document.activeElement) ? document.activeElement : null;
+  const focusKey = active?.dataset.connectionFocus ?? null;
+  const wasOpen = root.querySelector('details')?.open ?? false;
+  const priorFrom = root.querySelector('[data-connection-from]')?.value ?? '';
+  const priorTo = root.querySelector('[data-connection-to]')?.value ?? '';
+  const priorReconnectNet = root.dataset.reconnectNet ?? '';
+  const priorReconnectFrom = root.dataset.reconnectFrom ?? '';
+
+  const details = document.createElement('details');
+  details.className = 'accessible-connections'; details.open = wasOpen;
+  details.dataset.connectionSchema = view.schema;
+  details.dataset.semanticIdentity = view.semanticIdentity;
+  const summary = document.createElement('summary');
+  summary.textContent = `Connections · ${view.summary.nets} nets · ${view.summary.pins} named pins`;
+  summary.dataset.connectionFocus = 'summary';
+  const body = document.createElement('div'); body.className = 'accessible-connections-body';
+  const intro = document.createElement('p'); intro.className = 'accessible-connection-summary';
+  intro.textContent = `${label}. Every named pin and validated cable endpoint is listed in text; colour is optional layout metadata only.`;
+  const validation = document.createElement('p');
+  validation.className = 'accessible-connection-summary accessible-connection-validation';
+  validation.dataset.valid = String(view.validation.ok);
+  validation.textContent = view.validation.ok
+    ? `Current graph validation: accepted (${view.validation.code}).`
+    : `Current draft validation: ${view.validation.code}. Editing remains fail-closed.`;
+
+  const componentList = document.createElement('ul');
+  componentList.className = 'accessible-connection-components';
+  componentList.setAttribute('aria-label', `${label} components and named pins`);
+  for (const component of view.components) {
+    const row = document.createElement('li'); row.className = 'accessible-connection-component';
+    const heading = document.createElement('strong');
+    heading.textContent = `${component.label} · ${component.id}`;
+    const pins = document.createElement('ul'); pins.className = 'accessible-connection-pins';
+    for (const pin of component.pins) {
+      const item = document.createElement('li');
+      const button = document.createElement('button'); button.type = 'button';
+      button.className = 'accessible-connection-pin';
+      button.dataset.endpoint = pin.key; button.dataset.connected = String(pin.connected);
+      button.dataset.connectionFocus = `pin:${pin.key}`;
+      button.textContent = `${pin.label} · ${pin.key} · ${pin.netId ?? 'free'}`;
+      button.setAttribute('aria-label', `Select ${pin.accessibleLabel}`);
+      button.addEventListener('click', () => {
+        adapter.selectPin(pin);
+        announceAccessibleConnection(profile, `Selected named pin ${pin.key}${pin.netId ? ` on ${pin.netId}` : ', currently free'}.`, root);
+      });
+      item.append(button); pins.append(item);
+    }
+    row.append(heading, pins); componentList.append(row);
+  }
+
+  const netList = document.createElement('ul'); netList.className = 'accessible-connection-nets';
+  netList.setAttribute('aria-label', `${label} validated connection list`);
+  if (!view.nets.length) {
+    const empty = document.createElement('li'); empty.textContent = 'No connections in the current draft.'; netList.append(empty);
+  }
+  for (const net of view.nets) {
+    const row = document.createElement('li'); row.className = 'accessible-connection-net'; row.dataset.netId = net.id;
+    const description = document.createElement('p');
+    const junction = net.junctions.length ? ` · junctions ${net.junctions.join(', ')}` : ' · no junction';
+    description.textContent = `${net.accessibleLabel}${junction}`;
+    const actions = document.createElement('div'); actions.className = 'accessible-connection-net-actions';
+    const select = document.createElement('button'); select.type = 'button'; select.textContent = 'Select';
+    select.dataset.connectionFocus = `net:${net.id}:select`;
+    select.setAttribute('aria-label', `Select connection ${net.id}`);
+    select.addEventListener('click', () => {
+      adapter.selectNet(net.id);
+      announceAccessibleConnection(profile, `Selected connection ${net.id}.`, root);
+    });
+    const reconnect = document.createElement('button'); reconnect.type = 'button'; reconnect.textContent = 'Reconnect';
+    reconnect.dataset.connectionFocus = `net:${net.id}:reconnect`;
+    reconnect.setAttribute('aria-label', `Reconnect one endpoint of ${net.id}`);
+    reconnect.addEventListener('click', () => {
+      const currentFrom = root.querySelector('[data-connection-from]')?.value;
+      const reconnectEndpoint = net.endpoints.find((endpoint) => endpoint.key === currentFrom) ?? net.endpoints[0];
+      root.dataset.reconnectNet = net.id;
+      root.dataset.reconnectFrom = reconnectEndpoint.key;
+      const from = root.querySelector('[data-connection-from]');
+      const to = root.querySelector('[data-connection-to]');
+      from.value = reconnectEndpoint.key; to.value = '';
+      root.querySelector('[data-connection-focus="connect"]').textContent = 'Reconnect exact pins';
+      root.querySelector('[data-connection-cancel]').hidden = false;
+      announceAccessibleConnection(profile, `Reconnect ${reconnectEndpoint.key} on ${net.id}: choose an exact free To named pin.`, root);
+      to.focus();
+    });
+    const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Delete';
+    remove.dataset.connectionFocus = `net:${net.id}:delete`;
+    remove.setAttribute('aria-label', `Delete whole connection ${net.id}`);
+    remove.addEventListener('click', () => {
+      if (adapter.revision() !== view.revision) {
+        announceAccessibleConnection(profile, 'Delete rejected: the connection view is stale. Review the refreshed graph.', root); return;
+      }
+      announceAccessibleConnection(profile, `Deleting exact connection ${net.id}…`, root);
+      const result = adapter.deleteNet(net.id, view.revision);
+      queueMicrotask(() => announceAccessibleConnection(profile, result?.ok
+        ? `Deleted connection ${net.id}. Unrelated components and nets were preserved.`
+        : `Delete rejected (${result?.code ?? 'UNKNOWN'}). The graph is unchanged.`, accessibleConnectionRoot(profile)));
+    });
+    actions.append(select, reconnect, remove); row.append(description, actions); netList.append(row);
+  }
+
+  const form = document.createElement('form'); form.className = 'accessible-connection-form';
+  form.setAttribute('aria-label', `${label} named pin connection form`);
+  const endpointOptions = (selected) => {
+    const placeholder = new Option('Choose a named pin', ''); placeholder.selected = !selected;
+    return [placeholder, ...view.pins.map((pin) => new Option(
+      `${pin.componentLabel} — ${pin.label} (${pin.key}) · ${pin.netId ?? 'free'}`,
+      pin.key, false, pin.key === selected,
+    ))];
+  };
+  const fromLabel = document.createElement('label'); fromLabel.append('From named pin');
+  const from = document.createElement('select'); from.dataset.connectionFrom = '';
+  from.dataset.connectionFocus = 'from'; from.replaceChildren(...endpointOptions(priorReconnectFrom || priorFrom));
+  fromLabel.append(from);
+  const toLabel = document.createElement('label'); toLabel.append('To named pin');
+  const to = document.createElement('select'); to.dataset.connectionTo = '';
+  to.dataset.connectionFocus = 'to'; to.replaceChildren(...endpointOptions(priorTo)); toLabel.append(to);
+  const connect = document.createElement('button'); connect.type = 'submit';
+  connect.dataset.connectionFocus = 'connect';
+  connect.textContent = priorReconnectNet ? 'Reconnect exact pins' : 'Connect exact pins';
+  const cancelReconnect = document.createElement('button'); cancelReconnect.type = 'button';
+  cancelReconnect.dataset.connectionCancel = ''; cancelReconnect.dataset.connectionFocus = 'cancel-reconnect';
+  cancelReconnect.textContent = 'Cancel reconnect'; cancelReconnect.hidden = !priorReconnectNet;
+  cancelReconnect.addEventListener('click', () => {
+    delete root.dataset.reconnectNet; delete root.dataset.reconnectFrom;
+    from.value = ''; to.value = '';
+    connect.textContent = 'Connect exact pins'; cancelReconnect.hidden = true;
+    announceAccessibleConnection(profile, 'Reconnect cancelled. The graph is unchanged; ordinary Connect is ready.', root);
+    from.focus();
+  });
+  const help = document.createElement('p'); help.className = 'accessible-connection-help';
+  help.textContent = 'Both endpoints are explicit. Occupied, incompatible, ambiguous, stale or invalid choices are rejected atomically.';
+  const status = document.createElement('p'); status.className = 'accessible-connection-status';
+  status.dataset.connectionStatus = ''; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
+  status.textContent = accessibleConnectionNotices.get(profile) ?? 'Choose two named pins. No connection is inferred.';
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const expectedRevision = view.revision;
+    if (adapter.revision() !== expectedRevision) {
+      announceAccessibleConnection(profile, 'Connection rejected: this view is stale. Review the refreshed graph.', root); return;
+    }
+    if (!from.value || !to.value) {
+      announceAccessibleConnection(profile, 'Connection rejected: select both an exact From and To named pin.', root); return;
+    }
+    const fromPin = view.pins.find((pin) => pin.key === from.value);
+    const toPin = view.pins.find((pin) => pin.key === to.value);
+    if (!fromPin || !toPin) {
+      announceAccessibleConnection(profile, 'Connection rejected: one named pin is no longer present.', root); return;
+    }
+    const reconnectNet = root.dataset.reconnectNet || null;
+    announceAccessibleConnection(profile, reconnectNet
+      ? `Validating exact reconnect on ${reconnectNet}…` : 'Validating exact named-pin connection…', root);
+    const result = reconnectNet
+      ? adapter.reconnect(reconnectNet, fromPin, toPin, expectedRevision)
+      : adapter.connect(fromPin, toPin, expectedRevision);
+    if (result?.ok) {
+      delete root.dataset.reconnectNet; delete root.dataset.reconnectFrom;
+      const currentConnect = root.querySelector('[data-connection-focus="connect"]');
+      const currentCancel = root.querySelector('[data-connection-cancel]');
+      if (currentConnect) currentConnect.textContent = 'Connect exact pins';
+      if (currentCancel) currentCancel.hidden = true;
+      queueMicrotask(() => announceAccessibleConnection(profile, reconnectNet
+        ? `Reconnected ${fromPin.key} to ${toPin.key} on ${reconnectNet}.`
+        : `Connected ${fromPin.key} to ${toPin.key}.`, accessibleConnectionRoot(profile)));
+    } else {
+      queueMicrotask(() => announceAccessibleConnection(profile,
+        `Connection rejected (${result?.code ?? 'UNKNOWN'}). The graph is unchanged.`, accessibleConnectionRoot(profile)));
+    }
+  });
+  form.append(fromLabel, toLabel, connect, cancelReconnect, help);
+  body.append(intro, validation, componentList, netList, form, status);
+  details.append(summary, body); root.replaceChildren(details);
+  root.dataset.reconnectNet = priorReconnectNet;
+  root.dataset.reconnectFrom = priorReconnectFrom;
+  if (focusKey) {
+    const target = root.querySelector(`[data-connection-focus="${CSS.escape(focusKey)}"]`)
+      ?? root.querySelector('[data-connection-focus="from"]')
+      ?? root.querySelector('[data-connection-focus="summary"]');
+    target?.focus({ preventScroll: true });
+  }
+}
+
+function renderBoundedAccessibleConnections(profile, label, state, workbench, anchorSelector) {
+  const graph = state.circuitEditor.draft;
+  const view = accessibleView({
+    profile,
+    revision: state.circuitEditor.revision,
+    graph,
+    catalogue: uiComponentCatalog,
+    validation: state.circuitEditor.validation,
+    limits: { components: 4, nets: 4, endpoints: 8 },
+  });
+  const endpoint = (pin) => ({ component: pin.componentId, pin: pin.id });
+  renderAccessibleConnections({
+    profile, label, view,
+    adapter: {
+      revision: () => workbench.circuitEditor.revision,
+      selectPin: (pin) => {
+        workbench.selectCircuit({ kind: 'component', id: pin.componentId });
+        focusNamedEndpoint(anchorSelector, pin.key);
+      },
+      selectNet: (netId) => workbench.selectCircuit({ kind: 'net', id: netId }),
+      connect: (from, to) => workbench.editCircuit('connectEndpoints', endpoint(from), endpoint(to)),
+      reconnect: (netId, from, to) => workbench.editCircuit('reconnectEndpoint', netId, endpoint(from), endpoint(to)),
+      deleteNet: (netId) => {
+        workbench.selectCircuit({ kind: 'net', id: netId });
+        return workbench.editCircuit('deleteSelected');
+      },
+    },
+  });
+}
+
+function renderAvrAccessibleConnections(validation) {
+  const project = currentProject();
+  const view = accessibleView({
+    profile: AVR_PROFILE,
+    revision: editor.revision,
+    graph: { ...project.circuit, layout: project.layout },
+    catalogue: uiComponentCatalog,
+    validation,
+    limits: CIRCUIT_LIMITS,
+  });
+  const endpoint = (pin) => ({ component: pin.componentId, pin: pin.id });
+  renderAccessibleConnections({
+    profile: AVR_PROFILE, label: 'AVR', view,
+    adapter: {
+      revision: () => editor.revision,
+      selectPin: (pin) => {
+        selectComponent(pin.componentId); renderInspector();
+        focusNamedEndpoint('#component-layer .pin-anchor', pin.key);
+      },
+      selectNet: (netId) => { selectNet(netId); renderInspector(); drawCircuitWires(); },
+      connect: (from, to) => {
+        pendingEndpoint = endpoint(from); wireMode = 'connect';
+        return handlePin(endpoint(to));
+      },
+      reconnect: (_netId, from, to) => {
+        pendingEndpoint = endpoint(from); wireMode = 'reconnect';
+        return handlePin(endpoint(to), true);
+      },
+      deleteNet: (netId) => {
+        setSelection({ kind: 'none' });
+        return applyEditor({ type: 'wire.delete', netId }, `Deleted whole net ${netId}`);
+      },
+    },
+  });
 }
 
 function renderProfileExampleCards(profile, container, workbench) {
@@ -1420,6 +1728,9 @@ function renderPicoCircuitEditor(state) {
     return card;
   });
   elements.picoeditorcomponents.replaceChildren(...cards);
+  renderBoundedAccessibleConnections(
+    RP2040_PROFILE, 'RP2040 Pico', state, picoPublicWorkbench, '#pico-editor-components .pin-anchor',
+  );
   elements.picodiagram.dataset.connected = String(validation.ok);
   requestAnimationFrame(() => requestAnimationFrame(drawPicoEditorWires));
 }
@@ -1685,6 +1996,9 @@ function renderC3CircuitEditor(state) {
     return card;
   });
   elements.c3editorcomponents.replaceChildren(...cards);
+  renderBoundedAccessibleConnections(
+    ESP32C3_PROFILE, 'ESP32-C3', state, c3PublicWorkbench, '#c3-editor-components .pin-anchor',
+  );
   elements.c3diagram.dataset.connected = String(validation.ok);
   requestAnimationFrame(() => requestAnimationFrame(drawC3EditorWires));
 }
@@ -1955,6 +2269,9 @@ function renderStm32CircuitEditor(state) {
     return card;
   });
   elements.stm32editorcomponents.replaceChildren(...cards);
+  renderBoundedAccessibleConnections(
+    STM32F429ZI_PROFILE, 'STM32F429ZI', state, stm32PublicWorkbench, '#stm32-editor-components .pin-anchor',
+  );
   elements.stm32diagram.dataset.connected = String(validation.ok);
   requestAnimationFrame(() => requestAnimationFrame(drawStm32EditorWires));
 }
@@ -8551,19 +8868,19 @@ function handlePin(endpoint, reconnect = false) {
   if (!pendingEndpoint) {
     if (wireMode === 'reconnect' && !endpointConnection(currentProject().circuit, endpoint)) {
       elements.wirestate.textContent = 'Reconnect starts from a connected pin.';
-      return;
+      return { ok: false, code: 'EDITOR_RECONNECT_SOURCE_REQUIRED' };
     }
     pendingEndpoint = endpoint;
     elements.wirestate.textContent = `${wireMode === 'reconnect' ? 'Reconnect' : 'Wire'} from ${endpointKey(endpoint)} — choose destination.`;
     renderComponents();
-    return;
+    return { ok: true, code: 'EDITOR_WIRE_SOURCE_SELECTED' };
   }
   const from = pendingEndpoint;
   pendingEndpoint = null;
   if (endpointKey(from) === endpointKey(endpoint)) {
     elements.wirestate.textContent = 'Wire selection cancelled.';
     renderComponents();
-    return;
+    return { ok: false, code: 'EDITOR_SELF_CONNECTION' };
   }
   const graph = currentProject().circuit;
   const fromNet = endpointConnection(graph, from);
@@ -8572,7 +8889,7 @@ function handlePin(endpoint, reconnect = false) {
     if (!fromNet || toNet) {
       elements.wirestate.textContent = 'Reconnect requires one connected source pin and one free destination pin.';
       renderComponents();
-      return;
+      return { ok: false, code: 'EDITOR_RECONNECT_ENDPOINT_INVALID' };
     }
     const result = applyEditor({ type: 'wire.reconnect', netId: fromNet, from, to: endpoint }, `Reconnected ${fromNet}`);
     if (result.ok) {
@@ -8581,24 +8898,28 @@ function handlePin(endpoint, reconnect = false) {
       elements.reconnectmode.setAttribute('aria-pressed', 'false');
       elements.wirestate.textContent = `Reconnected one branch of ${fromNet}. Other endpoints were unchanged.`;
     }
-    return;
+    return result;
   }
   if (!fromNet && !toNet) {
     const netId = nextEntityId('net', graph.nets.map((net) => net.id));
     const result = applyEditor({ type: 'wire.create', net: { id: netId, endpoints: [from, endpoint] } }, `Created ${netId}`);
     if (result.ok) elements.wirestate.textContent = `Connected ${endpointKey(from)} to ${endpointKey(endpoint)} as ${netId}.`;
+    return result;
   } else if (Boolean(fromNet) !== Boolean(toNet)) {
     const netId = fromNet ?? toNet;
     const branchEndpoint = fromNet ? endpoint : from;
     const junctionId = nextEntityId('junction', graph.junctions.map((junction) => junction.id));
     const result = applyEditor({ type: 'wire.branch', netId, endpoint: branchEndpoint, junctionId }, `Branched ${netId}`);
     if (result.ok) elements.wirestate.textContent = `Added ${endpointKey(branchEndpoint)} to ${netId} through explicit junction ${junctionId}.`;
+    return result;
   } else if (fromNet === toNet) {
     elements.wirestate.textContent = `Both pins already belong to ${fromNet}.`;
     renderComponents();
+    return { ok: false, code: 'EDITOR_ENDPOINT_ALREADY_CONNECTED' };
   } else {
     elements.wirestate.textContent = 'Pins belong to different nets. Delete or reconnect one endpoint first.';
     renderComponents();
+    return { ok: false, code: 'EDITOR_NET_CONFLICT' };
   }
 }
 
@@ -9347,7 +9668,8 @@ function renderProject() {
     selection: structuredClone(selection),
   });
   renderLifecycle();
-  renderComponents(); renderInspector(); renderRuntimeControls(); renderPublicControllerWorkbench();
+  renderComponents(); renderInspector(); renderAvrAccessibleConnections(validation);
+  renderRuntimeControls(); renderPublicControllerWorkbench();
   renderThermostatExperimentPanel();
   renderExpectationReference();
 }

@@ -182,7 +182,10 @@ function mountNarrowProfile(document, adapter) {
   eyebrow.textContent = '3 · INSPECTOR';
   const heading = document.createElement('h2');
   heading.textContent = 'Selected part';
-  inspector.append(eyebrow, heading, properties);
+  const connections = document.createElement('div');
+  connections.dataset.accessibleConnections = '';
+  connections.dataset.connectionProfile = adapter.profile;
+  inspector.append(eyebrow, heading, properties, connections);
 
   const name = root.querySelector(`#${adapter.prefix}-project-name`);
   const nameLabel = root.querySelector(`label[for="${adapter.prefix}-project-name"]`);
