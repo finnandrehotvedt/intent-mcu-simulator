@@ -2235,14 +2235,23 @@ function renderCheckableEvidence(report = checkableEvidenceReport) {
   elements.checkableevidencedownload.disabled = false;
 }
 
-async function setCheckableEvidenceReport(sourceReport, modelLibraryLock = null) {
+async function setCheckableEvidenceReport(sourceReport, sourceProject = null) {
   const generation = ++checkableEvidenceGeneration;
-  const report = await createCheckableEvidenceReport(sourceReport, { modelLibraryLock });
+  const report = await createCheckableEvidenceReport(sourceReport, { sourceProject });
   await validateCheckableEvidenceReport(report);
   if (generation !== checkableEvidenceGeneration) return null;
   checkableEvidenceReport = report;
   renderCheckableEvidence(report);
   return structuredClone(report);
+}
+
+async function setCheckableEvidencePackage(source) {
+  const parsed = await parseExperimentPackage(source, commonProjectAdapters);
+  if (!parsed.ok || !parsed.x80Complete) {
+    throw Object.assign(new Error(parsed.code ?? 'CHECKABLE_EVIDENCE_PACKAGE_REQUIRED'),
+      { code: parsed.code ?? 'CHECKABLE_EVIDENCE_PACKAGE_REQUIRED' });
+  }
+  return setCheckableEvidenceReport(parsed.value.report, parsed.value.project);
 }
 
 function clearCheckableEvidenceReport(message = 'No current evidence report. Build and Run are never started by this disclosure.') {
@@ -10951,7 +10960,8 @@ window.__M3_COMMAND__ = (command, value) => worker?.postMessage(command === 'spe
 window.__M4_CONTROL__ = (componentId, key, value) => worker?.postMessage({ command: 'control', componentId, key, value });
 window.__M5_COMMAND__ = (command, value) => worker?.postMessage({ command, value });
 window.__CHECKABLE_EVIDENCE__ = Object.freeze({
-  set: (report, modelLibraryLock = null) => setCheckableEvidenceReport(report, modelLibraryLock),
+  set: (report) => setCheckableEvidenceReport(report),
+  setPackage: (source) => setCheckableEvidencePackage(source),
   clear: (message) => clearCheckableEvidenceReport(message),
   current: () => checkableEvidenceReport ? structuredClone(checkableEvidenceReport) : null,
   download: () => downloadCheckableEvidenceReport(),

@@ -16,7 +16,8 @@ const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex'
 let browser;
 (async () => {
   assert(packagePath, 'X82_PACKAGE is required');
-  const retained = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+  const retainedSource = fs.readFileSync(packagePath, 'utf8');
+  const retained = JSON.parse(retainedSource);
   browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true });
   const page = await context.newPage();
@@ -33,22 +34,21 @@ let browser;
   assert.equal(response?.status(), 200);
   await page.waitForFunction(() => window.__M11_READY__ === true && window.__CHECKABLE_EVIDENCE__);
   const workersBefore = await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations);
-  const report = await page.evaluate(async ({ source, lock }) =>
-    window.__CHECKABLE_EVIDENCE__.set(source, lock),
-  { source: retained.report, lock: retained.project.modelLibrary });
+  const report = await page.evaluate(async (source) =>
+    window.__CHECKABLE_EVIDENCE__.setPackage(source), retainedSource);
 
   assert.equal(report.schema, 'intent-mcu-checkable-evidence-report@1');
-  assert.equal(report.producer.adapterId, 'x82-authored-gpio-v1');
-  assert.equal(report.measurements.length, 4);
+  assert.equal(report.producer.adapterId, 'x82-authored-gpio-v2');
+  assert.equal(report.measurements.length, 8);
   assert.equal(report.measurements.every((row) => row.value.state === 'known'), true);
   assert.equal(report.modelContext.state, 'known');
   assert.equal(report.modelContext.lock.version, retained.project.modelLibrary.version);
   assert.equal(report.outcome.reportedAcademicStatus, retained.report.aggregate.academicStatus);
   assert.equal(report.truthBoundary.includes('do not prove measurement truth'), true);
-  assert.equal(await page.textContent('#checkable-evidence-state'), '4/4 available');
+  assert.equal(await page.textContent('#checkable-evidence-state'), '8/8 available');
   assert.match(await page.textContent('#checkable-evidence-summary'), /Hashes bind identity\/integrity, not truth/u);
   assert.match(await page.textContent('#checkable-evidence-identity'), /model known/u);
-  assert.equal(await page.locator('#checkable-evidence-rows li').count(), 4);
+  assert.equal(await page.locator('#checkable-evidence-rows li').count(), 8);
   assert((await page.locator('#checkable-evidence-limitations li').count()) >= 4);
   assert.equal(await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations), workersBefore,
     'rendering retained evidence created a runtime worker');
