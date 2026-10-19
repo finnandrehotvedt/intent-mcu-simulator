@@ -2,6 +2,20 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.72 — 2026-10-19
+
+- Published the independently reviewed X91 current-measurement completeness
+  contract across the existing report, UI, export, headless and local-client
+  surfaces without adding a panel or producer action.
+- Completeness now derives from native producer facts, owner-specific
+  identities and separate worker, reset and scenario intervals. Verdict text,
+  row counts, target cycles and recursive min/max scans cannot manufacture it.
+- Recompute canonical completeness when validating an experiment envelope;
+  self-consistent but forged derived projections reject while retained X29–X34
+  and X80 evidence stays compatible.
+- Preserved local-only evidence, existing Build/Run authority, public limits,
+  compiler/runtime images and infrastructure boundaries.
+
 ## 1.1.0-rc.71 — 2026-10-19
 
 - Published the independently reviewed X80 complete experiment manifest for

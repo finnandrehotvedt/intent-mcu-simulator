@@ -1,4 +1,25 @@
-# Intent MCU Simulator 1.1.0-rc.71
+# Intent MCU Simulator 1.1.0-rc.72
+
+## Current-measurement completeness
+
+This release publishes the independently reviewed X91 completeness contract.
+Current measurements derive only from native producer facts, owner-specific
+identities and separate worker, reset and scenario intervals. Verdict labels,
+row counts, target cycles and recursive min/max scans cannot create complete
+evidence. Missing counters, sampling facts, identities or required intervals
+fail closed across the existing interface, export, headless and local-client
+surfaces.
+
+Experiment-envelope validation recomputes canonical completeness from the
+enclosed report. A rehashed, self-consistent forged complete/pass projection
+over unchanged incomplete evidence is rejected. Derived projections remain
+explicit and cannot replace canonical envelope authority. Existing retained
+X29–X34 and X80 evidence stays compatible; no new panel, action, account,
+public endpoint or producer authority is added.
+
+---
+
+## 1.1.0-rc.71
 
 ## Complete local experiment manifest
 
