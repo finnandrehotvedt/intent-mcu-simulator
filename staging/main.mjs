@@ -138,6 +138,12 @@ import {
   validateDigitalStateAnnotations, validateDigitalStateReport,
 } from '../src/digital-state-contract.mjs';
 import { runDigitalStateRepeat } from '../src/digital-state-runner.mjs';
+import {
+  X33_RUNTIME_CIRCUIT, X33_RUNTIME_REPORT_SCHEMA, X33_RUNTIME_SOURCE, X33_RUNTIME_SUITE,
+  projectX33RuntimeRows, semanticX33RuntimeProjection, stableX33RuntimeStringify,
+  validateX33RuntimeReport, x33RuntimeRepeatProjection, x33RuntimeReportPassed,
+  x33RuntimeSha256, x33RuntimeSuiteIdentity, x33RuntimeTopologyIdentity,
+} from '../src/x33-runtime-state-contract.mjs';
 import { parseX34ProbeSymbol } from '../src/x34-avr-probe-symbol.mjs';
 import {
   X34_FIXTURE_ID, X34_INSTRUMENTED_SOURCE,
@@ -383,6 +389,9 @@ const elements = Object.fromEntries([
   'unsupported-access-summary',
   'digital-state', 'digital-state-state', 'digital-state-identity', 'digital-state-run',
   'digital-state-export', 'digital-state-results', 'digital-state-summary',
+  'digital-state-runtime', 'digital-state-runtime-state', 'digital-state-runtime-identity',
+  'digital-state-runtime-run', 'digital-state-runtime-export', 'digital-state-runtime-results',
+  'digital-state-runtime-summary',
   'precision-check', 'precision-check-state', 'precision-check-identity', 'precision-check-run',
   'precision-check-export', 'precision-check-results', 'precision-check-summary',
   'causal-chain', 'causal-chain-state', 'causal-chain-identity', 'causal-chain-run',
@@ -2084,6 +2093,9 @@ let unsupportedAccessReady = false;
 let digitalStateReport = null;
 let digitalStateRunning = false;
 let digitalStateReady = false;
+let digitalStateRuntimeReport = null;
+let digitalStateRuntimeRunning = false;
+let digitalStateRuntimeReady = false;
 let precisionCheckReport = null;
 let precisionCheckRunning = false;
 let precisionCheckReady = false;
@@ -2195,6 +2207,13 @@ function invalidateDigitalStateReport(message = 'Project state changed. Run X33 
   elements.digitalstatesummary.textContent = message;
 }
 
+function invalidateDigitalStateRuntimeReport(message = 'Project state changed. Run the X33 runtime producer check again.') {
+  if (digitalStateRuntimeRunning || !digitalStateRuntimeReport) return;
+  digitalStateRuntimeReport = null;
+  renderDigitalStateRuntimeReport(null);
+  elements.digitalstateruntimesummary.textContent = message;
+}
+
 function invalidatePrecisionCheckReport(message = 'Project state changed. Run X34 again for current evidence.') {
   if (precisionCheckRunning || !precisionCheckReport) return;
   precisionCheckReport = null;
@@ -2260,6 +2279,7 @@ function invalidateRegressionMatrixReport(message = 'Project state changed. Run 
   invalidateResetClassReport(message);
   invalidateUnsupportedAccessReport(message);
   invalidateDigitalStateReport(message);
+  invalidateDigitalStateRuntimeReport(message);
   invalidatePrecisionCheckReport(message);
   invalidateCausalChainReport(message);
   invalidateUsartResponseReport(message);
@@ -3269,6 +3289,194 @@ function exportDigitalStateReport() {
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
   const link = document.createElement('a'); link.href = url;
   link.download = `x33-digital-state-${digitalStateReport.semanticSha256.slice(0, 12)}.intent-mcu-state.json`;
+  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function renderDigitalStateRuntimeReport(report = digitalStateRuntimeReport) {
+  elements.digitalstateruntimeresults.replaceChildren();
+  if (!report) {
+    const row = document.createElement('tr'); const cell = document.createElement('td'); cell.colSpan = 5;
+    cell.textContent = 'No current runtime report. A raw false pin sample is never valid LOW authority.';
+    row.append(cell); elements.digitalstateruntimeresults.append(row);
+    elements.digitalstateruntimestate.textContent = 'Not run';
+    elements.digitalstateruntimeexport.disabled = true; return;
+  }
+  const first = report.repeats[0];
+  for (const item of first.rows) {
+    const row = document.createElement('tr');
+    const name = document.createElement('th'); name.scope = 'row'; name.textContent = item.rowId.replace('X33-RUNTIME-', '');
+    const producers = document.createElement('td'); const producer = document.createElement('code');
+    producer.textContent = item.producerPins.map((entry) => `${entry.pin}: ${entry.mode} · sampled ${entry.level ? 'HIGH' : 'LOW'} · external ${entry.externalDrive}`).join('\n');
+    producers.append(producer);
+    const classification = document.createElement('td');
+    classification.textContent = `${item.annotations.map((entry) => `${entry.producerId}=${entry.level}`).join(' + ')}\n→ ${item.resolution}`;
+    const outcome = document.createElement('td'); const badge = document.createElement('span');
+    badge.className = 'long-duration-outcome-badge';
+    badge.dataset.status = item.requirement.academicVerdict ?? item.requirement.status;
+    badge.textContent = item.requirement.academicVerdict ?? `${item.requirement.status} · ${item.requirement.reason}`;
+    outcome.append(badge);
+    const boundary = document.createElement('td');
+    boundary.textContent = item.rowId === 'X33-RUNTIME-CONFLICT'
+      ? 'Actual D3/D4 states + ideal fixed two-endpoint net; no electrical coupling claim.'
+      : item.rowId === 'X33-RUNTIME-HIGH-Z'
+        ? 'INPUT + RELEASED authorizes HIGH_Z; sampled false has no LOW authority.'
+        : 'INPUT + external LOW + sampled false are all required.';
+    row.append(name, producers, classification, outcome, boundary);
+    elements.digitalstateruntimeresults.append(row);
+  }
+  elements.digitalstateruntimestate.textContent = x33RuntimeReportPassed(report)
+    ? '3 classifications · 2/2 fresh workers passed' : 'Evidence failed';
+  elements.digitalstateruntimeexport.disabled = !x33RuntimeReportPassed(report);
+  elements.digitalstateruntimesummary.textContent = `Artifact ${report.artifactIdentity.slice(0, 12)}… · topology ${report.topologySha256.slice(0, 12)}… · semantic report ${report.semanticSha256}. Worker nonces differ; producer semantics match exactly.`;
+}
+
+async function compileX33RuntimeFixture() {
+  const response = await fetch('/api/build', { method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Teach-Lab-Build': '1' },
+    body: JSON.stringify({ schema: 'teach-lab-build-request@1', board: X33_RUNTIME_SUITE.profile,
+      files: [{ name: 'main.ino', content: X33_RUNTIME_SOURCE }] }) });
+  const submitted = await response.json();
+  if (!response.ok) throw Object.assign(new Error(submitted.code ?? 'X33_RUNTIME_BUILD_REJECTED'), { code: submitted.code });
+  while (true) {
+    const statusResponse = await fetch(`/api/build/${submitted.jobId}`, {
+      headers: { Authorization: `Bearer ${submitted.capability}` }, cache: 'no-store' });
+    const status = await statusResponse.json();
+    if (!statusResponse.ok) throw Object.assign(new Error(status.code ?? 'X33_RUNTIME_BUILD_STATUS'), { code: status.code });
+    if (status.status === 'building') { await new Promise((resolve) => setTimeout(resolve, 100)); continue; }
+    if (status.status !== 'succeeded') {
+      const code = status.error ?? status.result?.code ?? `X33_RUNTIME_BUILD_${status.status.toUpperCase()}`;
+      throw Object.assign(new Error(code), { code });
+    }
+    return status.result;
+  }
+}
+
+function serialTextFromWorker(message) {
+  const bytes = (message.instruments?.serial?.records ?? [])
+    .filter((entry) => entry.direction === 'tx' && Number.isInteger(entry.value))
+    .map((entry) => entry.value);
+  return new TextDecoder().decode(Uint8Array.from(bytes));
+}
+
+async function executeX33RuntimeRepeat({ artifact, repeat, runtimeBinding }) {
+  const worker = new Worker('./simulator.worker.js', { type: 'module' });
+  const next = precisionWorkerChannel(worker, runtimeBinding, 'X33_RUNTIME');
+  try {
+    worker.postMessage({ command: 'init', hex: artifact.hex, circuit: X33_RUNTIME_CIRCUIT,
+      runtimeBinding, digitalInputs: [{ pin: 5, level: false }],
+      instruments: { logicChannels: ['D2', 'D3', 'D4', 'D5'], serialHistoryLimit: 512 } });
+    await next((message) => message.kind === 'ready');
+    worker.postMessage({ command: 'speed', speed: 'maximum' });
+    await next((message) => message.kind === 'speed' && message.speed === 'maximum');
+    worker.postMessage({ command: 'run' });
+    const marked = await next((message) => serialTextFromWorker(message).includes(X33_RUNTIME_SUITE.readyMarker), 45_000);
+    worker.postMessage({ command: 'pause' });
+    const paused = await next((message) => message.kind === 'paused');
+    const selected = Object.fromEntries(paused.pins.filter((entry) => ['D2', 'D3', 'D4', 'D5'].includes(entry.pin))
+      .map((entry) => [entry.pin, structuredClone(entry)]));
+    const rows = projectX33RuntimeRows(selected);
+    return { repeat, runtimeBinding: structuredClone(runtimeBinding),
+      runtimeIdentity: structuredClone(paused.runtimeIdentity),
+      marker: { text: X33_RUNTIME_SUITE.readyMarker, observed: true, cycle: marked.cycle },
+      pins: selected, rows,
+      drops: structuredClone(paused.retentionDrops) };
+  } finally {
+    try { worker.postMessage({ command: 'dispose' }); } catch { /* already unavailable */ }
+    worker.terminate();
+  }
+}
+
+function x33RuntimeNegativeProducerProbes() {
+  const base = { D2: { pin: 'D2', mode: 'INPUT', level: false, externalDrive: 'RELEASED', pwm: null, diagnostic: 'OK' },
+    D3: { pin: 'D3', mode: 'OUTPUT', level: true, externalDrive: 'RELEASED', pwm: null, diagnostic: 'OK' },
+    D4: { pin: 'D4', mode: 'OUTPUT', level: false, externalDrive: 'RELEASED', pwm: null, diagnostic: 'OK' },
+    D5: { pin: 'D5', mode: 'INPUT', level: false, externalDrive: 'LOW', pwm: null, diagnostic: 'OK' } };
+  const rejects = (change, code, topology = X33_RUNTIME_SUITE.topology) => {
+    const candidate = structuredClone(base); change(candidate);
+    try { projectX33RuntimeRows(candidate, topology); return false; } catch (error) { return error.code === code; }
+  };
+  const third = structuredClone(X33_RUNTIME_SUITE.topology);
+  third.endpoints.push({ component: 'board-1', pin: 'D5' });
+  return {
+    rawFalseRejected: rejects((value) => { value.D2 = { pin: 'D2', level: false }; }, 'X33_RUNTIME_PIN_MALFORMED'),
+    releasedLowRejected: rejects((value) => { value.D5.externalDrive = 'RELEASED'; }, 'X33_RUNTIME_LOW_PRODUCER_INVALID'),
+    highLowRejected: rejects((value) => { value.D5.externalDrive = 'HIGH'; }, 'X33_RUNTIME_LOW_PRODUCER_INVALID'),
+    sameLevelConflictRejected: rejects((value) => { value.D3.level = false; }, 'X33_RUNTIME_CONFLICT_PRODUCERS_INVALID'),
+    thirdEndpointRejected: rejects(() => {}, 'X33_RUNTIME_TOPOLOGY_CHANGED', third),
+  };
+}
+
+async function x33RuntimeReportNegativeProbes(report) {
+  const rejects = async (change) => {
+    const candidate = structuredClone(report); change(candidate);
+    try { await validateX33RuntimeReport(candidate); return false; } catch { return true; }
+  };
+  return {
+    staleRecordRejected: await rejects((value) => { value.sourceSha256 = '0'.repeat(64); }),
+    crossWorkerRejected: await rejects((value) => { value.repeats[1].runtimeIdentity = structuredClone(value.repeats[0].runtimeIdentity); }),
+    extraRecordRejected: await rejects((value) => { value.repeats.push(structuredClone(value.repeats[1])); }),
+    malformedRecordRejected: await rejects((value) => { value.repeats[0].pins.D2.untrusted = true; }),
+  };
+}
+
+async function runBrowserDigitalStateRuntimeSuite() {
+  if (digitalStateRuntimeRunning) throw Object.assign(new Error('X33_RUNTIME_BUSY'), { code: 'X33_RUNTIME_BUSY' });
+  digitalStateRuntimeRunning = true; digitalStateRuntimeReport = null; renderDigitalStateRuntimeReport(null);
+  elements.digitalstateruntimerun.disabled = true;
+  elements.digitalstateruntimestate.textContent = 'Compiling one fixed AVR artifact…';
+  try {
+    const result = await compileX33RuntimeFixture();
+    const sourceSha256 = await x33RuntimeSha256(X33_RUNTIME_SOURCE);
+    if (sourceSha256 !== X33_RUNTIME_SUITE.sourceSha256) throw Object.assign(new Error('X33_RUNTIME_SOURCE_HASH_STALE'), { code: 'X33_RUNTIME_SOURCE_HASH_STALE' });
+    let privateLifecycle = createLifecycleState({ empty: false, projectGeneration: lifecycle.projectGeneration });
+    const started = transitionLifecycle(privateLifecycle, { type: 'build.start' });
+    privateLifecycle = transitionLifecycle(started.state, { type: 'build.succeeded', binding: started.binding,
+      artifactIdentity: result.artifactIdentity, inputIdentity: result.inputIdentity }).state;
+    const repeats = [];
+    for (const repeat of X33_RUNTIME_SUITE.repeats) {
+      const loaded = transitionLifecycle(privateLifecycle, { type: 'runtime.load' });
+      if (!loaded.accepted) throw Object.assign(new Error(loaded.code), { code: loaded.code });
+      privateLifecycle = loaded.state;
+      const runtimeBinding = { schema: RUNTIME_BINDING_SCHEMA, ...loaded.binding };
+      elements.digitalstateruntimestate.textContent = `Fresh worker ${repeat} · waiting for firmware marker…`;
+      repeats.push(await executeX33RuntimeRepeat({ artifact: result.artifact, repeat, runtimeBinding }));
+      privateLifecycle = transitionLifecycle(privateLifecycle, { type: 'runtime.stop', reason: `x33-runtime-${repeat}` }).state;
+    }
+    const producerProbes = x33RuntimeNegativeProducerProbes();
+    if (Object.values(producerProbes).some((value) => value !== true)) throw Object.assign(new Error('X33_RUNTIME_NEGATIVE_PROBE_FAILED'), { code: 'X33_RUNTIME_NEGATIVE_PROBE_FAILED' });
+    const report = { schema: X33_RUNTIME_REPORT_SCHEMA, suiteId: X33_RUNTIME_SUITE.suiteId,
+      suiteSha256: await x33RuntimeSuiteIdentity(), profile: X33_RUNTIME_SUITE.profile,
+      sourceSha256, artifactIdentity: result.artifactIdentity, inputIdentity: result.inputIdentity,
+      toolchainImageId: result.toolchainImageId,
+      toolchainIdentitySha256: X33_RUNTIME_SUITE.toolchainIdentitySha256,
+      runtime: structuredClone(X33_RUNTIME_SUITE.runtime),
+      topology: structuredClone(X33_RUNTIME_SUITE.topology),
+      topologySha256: await x33RuntimeTopologyIdentity(), repeats,
+      repeatSemanticSha256: await x33RuntimeSha256(stableX33RuntimeStringify(
+        x33RuntimeRepeatProjection(repeats[0]))),
+      validationProbes: { ...producerProbes, staleRecordRejected: true, crossWorkerRejected: true,
+        extraRecordRejected: true, malformedRecordRejected: true },
+      limits: structuredClone(X33_RUNTIME_SUITE.limits), semanticSha256: '' };
+    report.semanticSha256 = await x33RuntimeSha256(stableX33RuntimeStringify(
+      semanticX33RuntimeProjection(report)));
+    const accepted = await validateX33RuntimeReport(report);
+    const reportProbes = await x33RuntimeReportNegativeProbes(accepted);
+    if (Object.values(reportProbes).some((value) => value !== true)) throw Object.assign(new Error('X33_RUNTIME_REPORT_PROBE_FAILED'), { code: 'X33_RUNTIME_REPORT_PROBE_FAILED' });
+    digitalStateRuntimeReport = accepted; renderDigitalStateRuntimeReport(accepted);
+    return structuredClone(accepted);
+  } catch (error) {
+    elements.digitalstateruntimestate.textContent = `Stopped · ${error.code ?? error.message}`;
+    elements.digitalstateruntimesummary.textContent = 'No X33 runtime report or export was created. The existing static X33 report was not changed.';
+    throw error;
+  } finally { digitalStateRuntimeRunning = false; elements.digitalstateruntimerun.disabled = false; }
+}
+
+function exportDigitalStateRuntimeReport() {
+  if (!digitalStateRuntimeReport || !x33RuntimeReportPassed(digitalStateRuntimeReport)) return;
+  const text = `${JSON.stringify(digitalStateRuntimeReport, null, 2)}\n`;
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const link = document.createElement('a'); link.href = url;
+  link.download = `x33-runtime-digital-state-${digitalStateRuntimeReport.semanticSha256.slice(0, 12)}.json`;
   link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
@@ -4295,6 +4503,8 @@ elements.unsupportedaccessrun.addEventListener('click', () => { void runBrowserU
 elements.unsupportedaccessexport.addEventListener('click', exportUnsupportedAccessReport);
 elements.digitalstaterun.addEventListener('click', () => { void runBrowserDigitalStateSuite(); });
 elements.digitalstateexport.addEventListener('click', exportDigitalStateReport);
+elements.digitalstateruntimerun.addEventListener('click', () => { void runBrowserDigitalStateRuntimeSuite(); });
+elements.digitalstateruntimeexport.addEventListener('click', exportDigitalStateRuntimeReport);
 elements.precisioncheckrun.addEventListener('click', () => { void runBrowserPrecisionCheck(); });
 elements.precisioncheckexport.addEventListener('click', exportPrecisionCheckReport);
 elements.causalchainrun.addEventListener('click', () => { void runBrowserCausalChain(); });
@@ -4388,6 +4598,14 @@ window.__X33_DIGITAL_STATE__ = Object.freeze({
   passed: () => digitalStateReport ? digitalStateReportPassed(digitalStateReport) : false,
   clear: (reason = 'X33 report cleared. Run the static check again for current evidence.') => invalidateDigitalStateReport(reason),
 });
+window.__X33_RUNTIME_DIGITAL_STATE__ = Object.freeze({
+  get ready() { return digitalStateRuntimeReady; },
+  suite: () => structuredClone(X33_RUNTIME_SUITE),
+  report: () => digitalStateRuntimeReport ? structuredClone(digitalStateRuntimeReport) : null,
+  run: () => runBrowserDigitalStateRuntimeSuite(),
+  passed: () => digitalStateRuntimeReport ? x33RuntimeReportPassed(digitalStateRuntimeReport) : false,
+  clear: (reason = 'X33 runtime report cleared. Run the producer check again.') => invalidateDigitalStateRuntimeReport(reason),
+});
 window.__X34_PRECISION_CHECK__ = Object.freeze({
   get ready() { return precisionCheckReady; },
   suite: () => structuredClone(X34_PRECISION_SUITE),
@@ -4457,6 +4675,10 @@ void unsupportedAccessSuiteIdentity().then((identity) => {
 void digitalStateSuiteIdentity().then((identity) => {
   elements.digitalstateidentity.textContent = `Immutable X33 contract SHA-256 ${identity} · strict static synthetic AVR fixture · no firmware or runtime execution`;
   digitalStateReady = true;
+});
+void x33RuntimeSuiteIdentity().then((identity) => {
+  elements.digitalstateruntimeidentity.textContent = `Immutable X33 runtime contract SHA-256 ${identity} · one fixed compiled artifact · two fresh bound workers`;
+  digitalStateRuntimeReady = true;
 });
 void x34SuiteIdentity().then((identity) => {
   elements.precisioncheckidentity.textContent = `Immutable X34 contract SHA-256 ${identity} · private four-byte firmware mailbox · two fresh bound workers`;
@@ -6976,6 +7198,7 @@ function releaseCanvasButton(reason = 'canvas button') {
 }
 
 function stopRuntime(message = 'No current artifact loaded', { updateLifecycle = true, stale = false } = {}) {
+  invalidateDigitalStateRuntimeReport('Runtime worker retirement cleared the prior X33 runtime report. Run the producer check again.');
   cancelThermostatExperiment(
     thermostatProjectActive() ? `${message}. A fresh build is required before the experiment can run.` : null,
     { clearResults: true, render: false },
@@ -8810,6 +9033,7 @@ async function build() {
   invalidateResetClassReport('A new build cleared the prior X31 report. Run the suite again for current evidence.');
   invalidateUnsupportedAccessReport('A new build cleared the prior X32 report. Run the suite again for current evidence.');
   invalidateDigitalStateReport('A new build cleared the prior X33 report. Run the static check again for current evidence.');
+  invalidateDigitalStateRuntimeReport('A new build cleared the prior X33 runtime report. Run the producer check again.');
   invalidatePrecisionCheckReport('A new build cleared the prior X34 report. Run the instrumented check again for current evidence.');
   invalidateCausalChainReport('A new build cleared the prior X35 report. Run the causal check again for current evidence.');
   const target = currentCompilerTarget();
@@ -9002,6 +9226,7 @@ elements.reset.addEventListener('click', () => {
   invalidateUsartResponseReport('Reset retired the X23 USART0 workers and cleared export authority. Run the suite again.');
   invalidateUnsupportedAccessReport('Reset cleared the prior X32 report. Run the suite again for current evidence.');
   invalidateDigitalStateReport('Reset cleared the prior X33 report. Run the static check again for current evidence.');
+  invalidateDigitalStateRuntimeReport('Reset cleared the prior X33 runtime report. Run the producer check again.');
   invalidatePrecisionCheckReport('Reset cleared the prior X34 report. Run the instrumented check again for current evidence.');
   invalidateCausalChainReport('Reset cleared the prior X35 report. Run the causal check again for current evidence.');
   if (!worker) return;

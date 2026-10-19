@@ -63,6 +63,8 @@
     "test:x32:browser": "node test/x32-unsupported-access-browser.cjs",
     "test:x33": "node --test --test-concurrency=1 test/digital-state-contract.test.mjs test/lifecycle.test.mjs",
     "test:x33:browser": "node test/x33-digital-state-browser.cjs",
+    "test:x33:runtime": "node --test --test-concurrency=1 test/x33-runtime-state-contract.test.mjs test/runtime-identity.test.mjs test/digital-state-contract.test.mjs",
+    "test:x33:runtime:browser": "node test/x33-runtime-state-browser.cjs",
     "test:x34": "node --test --test-concurrency=1 test/x34-precision-fixture.test.mjs test/x34-elf-symbol.test.mjs test/x34-precision-observer.test.mjs test/runtime-identity.test.mjs test/runtime-worker-identity.test.mjs test/x34-precision-contract.test.mjs",
     "test:x34:browser": "node test/x34-precision-browser.cjs",
     "test:x35": "node --test --test-concurrency=1 test/x35-causal-chain.test.mjs test/runtime-identity.test.mjs test/runtime-worker-identity.test.mjs",
