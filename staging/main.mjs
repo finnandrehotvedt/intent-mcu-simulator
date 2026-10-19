@@ -156,6 +156,12 @@ import {
   x36RepeatProjection, x36ReplayReportPassed, x36Sha256, x36SuiteIdentity,
 } from '../src/x36-failure-replay-contract.mjs';
 import {
+  X23_USART_KNOWN_BAD_SOURCE, X23_USART_REPORT_SCHEMA, X23_USART_SOURCE,
+  X23_USART_SUITE, X23_USART_SUITE_ID, createX23UsartRecipe,
+  semanticX23UsartProjection, validateX23UsartReport, x23UsartReportPassed,
+  x23UsartRunProjection, x23UsartSha256, x23UsartSuiteIdentity,
+} from '../src/x23-usart-response-contract.mjs';
+import {
   COUNTEREXAMPLE_REDUCTION_SEED, reduceThermostatCounterexample,
 } from '../src/counterexample-reduction.mjs';
 import {
@@ -374,6 +380,8 @@ const elements = Object.fromEntries([
   'precision-check-export', 'precision-check-results', 'precision-check-summary',
   'causal-chain', 'causal-chain-state', 'causal-chain-identity', 'causal-chain-run',
   'causal-chain-export', 'causal-chain-results', 'causal-chain-summary',
+  'usart-response', 'usart-response-state', 'usart-response-identity', 'usart-response-run',
+  'usart-response-export', 'usart-response-results', 'usart-response-summary',
   'failure-replay', 'failure-replay-state', 'failure-replay-identity', 'failure-replay-open',
   'failure-replay-advance', 'failure-replay-export', 'failure-replay-results',
   'failure-replay-summary',
@@ -2081,6 +2089,12 @@ let failureReplayToken = 0;
 let failureReplayGeneration = 3600;
 let failureReplayRetirements = 0;
 let failureReplayArtifact = null;
+let usartResponseReport = null;
+let usartResponseRunning = false;
+let usartResponseReady = false;
+let usartResponseToken = 0;
+let usartResponseGeneration = 2300;
+let usartResponseWorkers = [];
 
 const waitForMatrixState = async (read, accept, code, timeoutMilliseconds = 30_000) => {
   const deadline = performance.now() + timeoutMilliseconds;
@@ -2186,6 +2200,19 @@ function invalidateCausalChainReport(message = 'Project state changed. Run X35 a
   elements.causalchainsummary.textContent = message;
 }
 
+function invalidateUsartResponseReport(message = 'Project state changed. Run the X23 USART0 check again for current evidence.') {
+  usartResponseToken += 1;
+  for (const entry of usartResponseWorkers.splice(0)) {
+    entry.channel.close('X23_USART_RETIRED');
+    try { entry.worker.postMessage({ command: 'dispose' }); } catch { /* already unavailable */ }
+    setTimeout(() => entry.worker.terminate(), 250);
+  }
+  usartResponseRunning = false;
+  usartResponseReport = null;
+  renderUsartResponseReport(null);
+  elements.usartresponsesummary.textContent = message;
+}
+
 function retireFailureReplayWorkers() {
   const session = failureReplaySession;
   failureReplaySession = null;
@@ -2225,6 +2252,7 @@ function invalidateRegressionMatrixReport(message = 'Project state changed. Run 
   invalidateDigitalStateReport(message);
   invalidatePrecisionCheckReport(message);
   invalidateCausalChainReport(message);
+  invalidateUsartResponseReport(message);
   invalidateFailureReplayReport(message);
 }
 
@@ -3504,6 +3532,215 @@ function exportCausalChainReport() {
   link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+function usartResponseWorkerChannel(worker, runtimeBinding, token) {
+  const queued = []; const waiting = []; let nonce = null; let fault = null;
+  const fail = (error) => {
+    fault = error;
+    for (const entry of waiting.splice(0)) { clearTimeout(entry.timer); entry.reject(error); }
+  };
+  const onMessage = ({ data }) => {
+    if (token !== usartResponseToken) return;
+    try {
+      const identity = validateWorkerRuntimeIdentity(data.runtimeIdentity, runtimeBinding, nonce);
+      nonce ??= identity.workerInstanceNonce;
+      const index = waiting.findIndex((entry) => entry.accept(data));
+      if (index >= 0) {
+        const [entry] = waiting.splice(index, 1); clearTimeout(entry.timer); entry.resolve(structuredClone(data));
+      } else queued.push(structuredClone(data));
+    } catch (error) { fail(error); }
+  };
+  worker.addEventListener('message', onMessage);
+  worker.addEventListener('error', (event) => fail(Object.assign(new Error(event.message), {
+    code: 'X23_USART_WORKER_UNAVAILABLE',
+  })));
+  return {
+    next(accept, timeoutMilliseconds = 30_000) {
+      if (fault) return Promise.reject(fault);
+      const index = queued.findIndex(accept);
+      if (index >= 0) return Promise.resolve(queued.splice(index, 1)[0]);
+      return new Promise((resolve, reject) => {
+        const entry = { accept, resolve, reject, timer: null };
+        entry.timer = setTimeout(() => {
+          const waitingIndex = waiting.indexOf(entry); if (waitingIndex >= 0) waiting.splice(waitingIndex, 1);
+          reject(Object.assign(new Error('X23_USART_WORKER_TIMEOUT'), { code: 'X23_USART_WORKER_TIMEOUT' }));
+        }, timeoutMilliseconds);
+        waiting.push(entry);
+      });
+    },
+    close(code) {
+      fail(Object.assign(new Error(code), { code }));
+      worker.removeEventListener('message', onMessage);
+    },
+  };
+}
+
+async function compileUsartResponseSource(source, expectedArtifactIdentity) {
+  const response = await fetch('/api/build', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Teach-Lab-Build': '1' },
+    body: JSON.stringify({ schema: 'teach-lab-build-request@1', board: AVR_PROFILE,
+      files: [{ name: 'main.ino', content: source }] }),
+  });
+  const submitted = await response.json();
+  if (!response.ok) throw Object.assign(new Error(submitted.code ?? 'X23_USART_BUILD_REJECTED'), { code: submitted.code });
+  while (true) {
+    const statusResponse = await fetch(`/api/build/${submitted.jobId}`, {
+      headers: { Authorization: `Bearer ${submitted.capability}` }, cache: 'no-store',
+    });
+    const status = await statusResponse.json();
+    if (!statusResponse.ok) throw Object.assign(new Error(status.code ?? 'X23_USART_BUILD_STATUS'), { code: status.code });
+    if (status.status === 'building') { await new Promise((resolve) => setTimeout(resolve, 100)); continue; }
+    if (status.status !== 'succeeded') {
+      const code = status.error ?? status.result?.code ?? `X23_USART_BUILD_${status.status.toUpperCase()}`;
+      throw Object.assign(new Error(code), { code });
+    }
+    if (status.result.artifactIdentity !== expectedArtifactIdentity) {
+      throw Object.assign(new Error('X23_USART_ARTIFACT_IDENTITY_MISMATCH'), { code: 'X23_USART_ARTIFACT_IDENTITY_MISMATCH' });
+    }
+    return status.result;
+  }
+}
+
+function x23Classification(mode) {
+  const academic = mode === 'expected'
+    ? { academicStatus: 'passed', code: 'EXPECTED_RESPONSE_ACCEPTED' }
+    : mode === 'incorrect'
+      ? { academicStatus: 'passed', code: 'INCORRECT_RESPONSE_DETECTED' }
+      : { academicStatus: 'failed', code: 'INCORRECT_RESPONSE_ACCEPTED' };
+  return { academic,
+    validation: { status: 'accepted', code: 'X23_USART_EVIDENCE_COMPLETE' },
+    infrastructure: { status: 'completed', code: 'X23_USART_WORKER_COMPLETED' } };
+}
+
+async function executeUsartResponseRun({ label, mode, firmware, artifact, responseByte, token }) {
+  const runtimeBinding = { schema: RUNTIME_BINDING_SCHEMA,
+    projectGeneration: Math.max(1, lifecycle.projectGeneration),
+    runtimeGeneration: ++usartResponseGeneration, artifactIdentity: artifact.artifactIdentity };
+  const worker = new Worker('./simulator.worker.js', { type: 'module' });
+  const channel = usartResponseWorkerChannel(worker, runtimeBinding, token);
+  const entry = { worker, channel }; usartResponseWorkers.push(entry);
+  try {
+    worker.postMessage({ command: 'init', hex: artifact.artifact.hex, circuit: DEFAULT_CIRCUIT,
+      runtimeBinding, instruments: { logicChannels: ['D13'], selectedPin: 'D13', serialHistoryLimit: 512 } });
+    const ready = await channel.next((message) => message.kind === 'ready');
+    worker.postMessage({ command: 'x23-usart-run-to-request' });
+    const requested = await channel.next((message) => message.kind === 'x23-usart-request');
+    const request = requested.instruments.serial.records.find(
+      (record) => record.direction === 'tx' && record.value === X23_USART_SUITE.requestByte,
+    );
+    if (!request) throw Object.assign(new Error('X23_USART_REQUEST_MISSING'), { code: 'X23_USART_REQUEST_MISSING' });
+    const scheduledFromCycle = requested.cycle;
+    worker.postMessage({ command: 'x23-usart-response', value: responseByte,
+      delayCycles: X23_USART_SUITE.responseDelayCycles });
+    const scheduled = await channel.next((message) => message.kind === 'x23-usart-response');
+    const pending = scheduled.eventLog.pending.find((event) => event.type === 'uart-rx');
+    if (!pending) throw Object.assign(new Error('X23_USART_SCHEDULE_MISSING'), { code: 'X23_USART_SCHEDULE_MISSING' });
+    worker.postMessage({ command: 'x23-usart-run-to-consumer' });
+    const consumed = await channel.next((message) => message.kind === 'x23-usart-consumer');
+    const records = consumed.instruments.serial.records;
+    const rxRequest = records.find((record) => record.direction === 'rx-request');
+    const rxComplete = records.find((record) => record.direction === 'rx-complete');
+    const serialText = records.filter((record) => record.direction === 'tx'
+      && record.value !== X23_USART_SUITE.requestByte).map((record) => String.fromCharCode(record.value)).join('');
+    const d13 = consumed.pins.find((pin) => pin.pin === 'D13');
+    return { label, mode, firmware, runtimeBinding, runtimeIdentity: structuredClone(ready.runtimeIdentity),
+      request: { value: request.value, producerCycle: request.cycle, baud: request.baud,
+        frameCycles: request.frameCycles },
+      fixture: { matchedRequest: true, responseByte,
+        responseDelayCycles: X23_USART_SUITE.responseDelayCycles, scheduledFromCycle,
+        targetCycle: pending.targetCycle },
+      rxRequest: { value: rxRequest?.value, cycle: rxRequest?.cycle,
+        targetCycle: rxRequest?.targetCycle, accepted: rxRequest?.accepted },
+      rxComplete: { cycle: rxComplete?.cycle },
+      consumer: { serialText, d13: d13?.level, instructions: consumed.instructions,
+        finalCycle: consumed.cycle },
+      retentionDrops: structuredClone(consumed.retentionDrops),
+      classifications: x23Classification(mode) };
+  } finally {
+    const index = usartResponseWorkers.indexOf(entry); if (index >= 0) usartResponseWorkers.splice(index, 1);
+    channel.close('X23_USART_RUN_COMPLETE');
+    try { worker.postMessage({ command: 'dispose' }); } catch { /* already unavailable */ }
+    setTimeout(() => worker.terminate(), 250);
+  }
+}
+
+function renderUsartResponseReport(report = usartResponseReport) {
+  elements.usartresponseresults.replaceChildren();
+  if (!report) {
+    const row = document.createElement('tr'); const cell = document.createElement('td'); cell.colSpan = 5;
+    cell.textContent = 'No current X23 USART0 report. Five fresh isolated workers are required.';
+    row.append(cell); elements.usartresponseresults.append(row);
+    elements.usartresponsestate.textContent = 'Not run'; elements.usartresponseexport.disabled = true; return;
+  }
+  for (const run of report.runs) {
+    const row = document.createElement('tr');
+    const cells = [run.label,
+      `TX 0x${run.request.value.toString(16)} @ ${run.request.producerCycle}\nfixture 0x${run.fixture.responseByte.toString(16)} +${run.fixture.responseDelayCycles}`,
+      `request ${run.rxRequest.accepted ? 'accepted' : 'rejected'} @ ${run.rxRequest.cycle}\ncomplete @ ${run.rxComplete.cycle}`,
+      `${JSON.stringify(run.consumer.serialText)} · D13 ${run.consumer.d13 ? 'HIGH' : 'LOW'}`,
+      `${run.classifications.academic.academicStatus} · ${run.classifications.infrastructure.status}`];
+    for (const [index, value] of cells.entries()) {
+      const cell = document.createElement(index === 0 ? 'th' : 'td'); cell.textContent = value;
+      if (index === 4) cell.dataset.status = run.classifications.academic.academicStatus;
+      row.append(cell);
+    }
+    elements.usartresponseresults.append(row);
+  }
+  elements.usartresponsestate.textContent = '4 passed · known-bad failed · 5 completed';
+  elements.usartresponseexport.disabled = !x23UsartReportPassed(report);
+}
+
+async function runUsartResponseSuite() {
+  invalidateUsartResponseReport('Starting fresh isolated X23 USART0 workers.');
+  const token = ++usartResponseToken; usartResponseRunning = true;
+  elements.usartresponserun.disabled = true; elements.usartresponsestate.textContent = 'Compiling locked fixtures…';
+  try {
+    const [correct, knownBad] = await Promise.all([
+      compileUsartResponseSource(X23_USART_SOURCE, X23_USART_SUITE.artifactIdentity),
+      compileUsartResponseSource(X23_USART_KNOWN_BAD_SOURCE, X23_USART_SUITE.knownBadArtifactIdentity),
+    ]);
+    const specs = [
+      ['expected-A', 'expected', 'correct', correct, X23_USART_SUITE.expectedResponseByte],
+      ['expected-B', 'expected', 'correct', correct, X23_USART_SUITE.expectedResponseByte],
+      ['incorrect-A', 'incorrect', 'correct', correct, X23_USART_SUITE.incorrectResponseByte],
+      ['incorrect-B', 'incorrect', 'correct', correct, X23_USART_SUITE.incorrectResponseByte],
+      ['known-bad-incorrect', 'known-bad-incorrect', 'known-bad', knownBad, X23_USART_SUITE.incorrectResponseByte],
+    ];
+    const runs = [];
+    for (const [label, mode, firmware, artifact, responseByte] of specs) {
+      if (token !== usartResponseToken) throw Object.assign(new Error('X23_USART_RETIRED'), { code: 'X23_USART_RETIRED' });
+      elements.usartresponsestate.textContent = `${label} · executing producer chain…`;
+      runs.push(await executeUsartResponseRun({ label, mode, firmware, artifact, responseByte, token }));
+    }
+    const report = { schema: X23_USART_REPORT_SCHEMA, suiteId: X23_USART_SUITE_ID,
+      recipe: await createX23UsartRecipe(), runs,
+      repeatHashes: { expected: await x23UsartSha256(x23UsartRunProjection(runs[0])),
+        incorrect: await x23UsartSha256(x23UsartRunProjection(runs[2])) },
+      limits: structuredClone(X23_USART_SUITE.limits), semanticSha256: '' };
+    report.semanticSha256 = await x23UsartSha256(semanticX23UsartProjection(report));
+    usartResponseReport = await validateX23UsartReport(report);
+    renderUsartResponseReport(usartResponseReport);
+    elements.usartresponsesummary.textContent = `Actual firmware TX → fixture match → scheduled RX → accepted request → RX complete → D13/Serial consumption passed in two fresh repeats per correct mode. Known-bad acceptance failed academically while its job completed. Report ${report.semanticSha256}.`;
+    return structuredClone(usartResponseReport);
+  } catch (error) {
+    if (token === usartResponseToken) {
+      usartResponseReport = null; renderUsartResponseReport(null);
+      elements.usartresponsestate.textContent = `Stopped · ${error.code ?? error.message}`;
+      elements.usartresponsesummary.textContent = 'Validation or infrastructure stopped the check. No academic pass or export was created.';
+    }
+    throw error;
+  } finally {
+    if (token === usartResponseToken) { usartResponseRunning = false; elements.usartresponserun.disabled = false; }
+  }
+}
+
+function exportUsartResponseReport() {
+  if (!usartResponseReport || !x23UsartReportPassed(usartResponseReport)) return;
+  const url = URL.createObjectURL(new Blob([`${JSON.stringify(usartResponseReport, null, 2)}\n`], { type: 'application/json' }));
+  const link = document.createElement('a'); link.href = url;
+  link.download = `x23-usart-response-${usartResponseReport.semanticSha256.slice(0, 12)}.intent-mcu-x23.json`;
+  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 function failureReplayWorkerChannel(worker, runtimeBinding, token) {
   const queued = []; const waiting = []; let nonce = null; let fault = null;
   const fail = (error) => {
@@ -3974,6 +4211,8 @@ elements.causalchainexport.addEventListener('click', exportCausalChainReport);
 elements.failurereplayopen.addEventListener('click', () => { void openFailureReplayPoint(); });
 elements.failurereplayadvance.addEventListener('click', () => { void advanceFailureReplayInstruction(); });
 elements.failurereplayexport.addEventListener('click', exportFailureReplayReport);
+elements.usartresponserun.addEventListener('click', () => { void runUsartResponseSuite(); });
+elements.usartresponseexport.addEventListener('click', exportUsartResponseReport);
 for (const input of [elements.source, elements.picosource, elements.c3source, elements.stm32source,
   elements.projectopeninput, elements.picoopeninput, elements.c3openinput, elements.stm32openinput,
   elements.boardselect]) {
@@ -4077,6 +4316,15 @@ window.__X36_FAILURE_REPLAY__ = Object.freeze({
   activeWorkers: () => failureReplaySession?.workers?.length ?? 0,
   clear: (reason = 'X36 replay cleared. Open the replay point again for current evidence.') => invalidateFailureReplayReport(reason),
 });
+window.__X23_USART_RESPONSE__ = Object.freeze({
+  get ready() { return usartResponseReady; },
+  suite: () => structuredClone(X23_USART_SUITE),
+  report: () => usartResponseReport ? structuredClone(usartResponseReport) : null,
+  run: () => runUsartResponseSuite(),
+  passed: () => usartResponseReport ? x23UsartReportPassed(usartResponseReport) : false,
+  activeWorkers: () => usartResponseWorkers.length,
+  clear: (reason = 'X23 USART0 report cleared. Run the suite again for current evidence.') => invalidateUsartResponseReport(reason),
+});
 void regressionMatrixIdentity().then((identity) => {
   elements.regressionmatrixidentity.textContent = `Immutable matrix SHA-256 ${identity} · four exact fixture/source hashes · four distinct oracles`;
   regressionMatrixReady = true;
@@ -4116,6 +4364,10 @@ void x35SuiteIdentity().then((identity) => {
 void x36SuiteIdentity().then((identity) => {
   elements.failurereplayidentity.textContent = `Immutable X36 recipe SHA-256 ${identity} · fixed X32 artifact · reset origin · empty inputs · two fresh bound workers`;
   failureReplayReady = true;
+});
+void x23UsartSuiteIdentity().then((identity) => {
+  elements.usartresponseidentity.textContent = `Immutable X23 USART0 recipe SHA-256 ${identity} · request 0x3f · expected 0x41 · incorrect 0x42 · 9600 8-N-1 · +20 cycles`;
+  usartResponseReady = true;
 });
 
 function renderLifecycle() {
@@ -8445,6 +8697,7 @@ async function pollJob(job, inputAtSubmit, binding) {
 
 async function build() {
   invalidateFailureReplayReport('A new build retired the X36 replay workers and cleared export authority. Open the replay point again.');
+  invalidateUsartResponseReport('A new build retired the X23 USART0 workers and cleared export authority. Run the suite again.');
   invalidateLongDurationReport('A new build cleared the prior X28 report. Run the suite again for current evidence.');
   invalidateTimeInvarianceReport('A new build cleared the prior X29 report. Run the suite again for current evidence.');
   invalidateEventOrderReport('A new build cleared the prior X30 report. Run the suite again for current evidence.');
@@ -8639,6 +8892,7 @@ elements.pause.addEventListener('click', () => {
 elements.step.addEventListener('click', () => worker?.postMessage({ command: 'step' }));
 elements.reset.addEventListener('click', () => {
   invalidateFailureReplayReport('Reset retired the X36 replay workers and cleared export authority. Open the replay point again.');
+  invalidateUsartResponseReport('Reset retired the X23 USART0 workers and cleared export authority. Run the suite again.');
   invalidateUnsupportedAccessReport('Reset cleared the prior X32 report. Run the suite again for current evidence.');
   invalidateDigitalStateReport('Reset cleared the prior X33 report. Run the static check again for current evidence.');
   invalidatePrecisionCheckReport('Reset cleared the prior X34 report. Run the instrumented check again for current evidence.');
@@ -9573,6 +9827,7 @@ window.__M4_CONTROL__ = (componentId, key, value) => worker?.postMessage({ comma
 window.__M5_COMMAND__ = (command, value) => worker?.postMessage({ command, value });
 window.addEventListener('pagehide', () => {
   retireFailureReplayWorkers(); failureReplayReport = null;
+  invalidateUsartResponseReport('Page exit retired X23 USART0 workers.');
   picoPublicWorkbench.deactivate();
   c3PublicWorkbench.disposeForPageExit();
 });

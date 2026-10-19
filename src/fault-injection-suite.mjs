@@ -20,7 +20,7 @@ export const SUPPORTED_FAULTS = Object.freeze([
   'fault.button-open-circuit-v1',
 ]);
 export const UNSUPPORTED_FAULTS = Object.freeze([
-  Object.freeze({ id: 'fault.bus-response-v1', reason: 'No supported response-producing bus model exists.' }),
+  Object.freeze({ id: 'fault.bus-response-v1', reason: 'This thermostat timeline has no bus endpoint; use the separate bounded AVR USART0 response fixture.' }),
 ]);
 
 const clone = (value) => structuredClone(value);

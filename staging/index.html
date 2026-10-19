@@ -535,7 +535,7 @@
           <div><p class="eyebrow">X23 · BOUNDED INPUT FAULTS</p><h4 id="fault-suite-title">Fault-injection cases</h4></div>
           <button id="fault-suite-load" type="button">Load 3 fault cases</button>
           <button id="fault-suite-replay" type="button" disabled>Replay stored faults</button>
-          <p id="fault-suite-summary" class="truth" role="status">Supports ideal D2 bounce, stuck A1 temperature and actual D2 external-drive release. Incorrect bus response is unsupported because no response-producing bus model exists.</p>
+          <p id="fault-suite-summary" class="truth" role="status">Supports ideal D2 bounce, stuck A1 temperature and actual D2 external-drive release. This thermostat timeline has no bus endpoint; the separate bounded AVR USART0 response fixture covers one declared response fault.</p>
         </div>
         <div class="counterexample-reduction-controls" aria-labelledby="counterexample-reduction-title">
           <div><p class="eyebrow">X24 · MINIMAL REPRODUCIBLE FAILURE</p><h4 id="counterexample-reduction-title">Reduce the failing sequence</h4></div>
@@ -712,6 +712,19 @@
       <div class="regression-matrix-table-wrap causal-chain-table-wrap"><table class="regression-matrix-table causal-chain-table"><thead><tr><th>Stage</th><th>Producer record</th><th>Causal identity</th><th>Evidence boundary</th><th>Repeat outcome</th></tr></thead><tbody id="causal-chain-results"><tr><td colspan="5">No current X35 report. A fresh compile and two fresh bound workers are required.</td></tr></tbody></table></div>
       <p id="causal-chain-summary" class="truth" role="status">The report is transient. Build, Reset, source/circuit change, Open, worker retirement and reload clear its authority.</p>
       <p class="regression-matrix-limit"><strong>Limits:</strong> one AVR D13 rising event and one ideal project-owned LED model only. PC/opcode and PORTB are emulator evidence, not source-line mapping, compiler correctness, silicon-bus proof, voltage/current timing or physical causality. No debugger, breakpoint, arbitrary register/memory API, other profile or generic causal graph is exposed.</p>
+      <div id="usart-response" class="coverage-report-heading usart-response-heading">
+        <div><p class="eyebrow">X23 · INCORRECT RESPONSE FAULT</p><h3>AVR USART0 response fixture</h3></div>
+        <span id="usart-response-state" class="state">Not run</span>
+      </div>
+      <p class="regression-matrix-intro">One local deterministic fixture responds only after compiler-generated AVR firmware actually transmits the locked request byte. Expected and incorrect bytes travel through the existing USART0 receive path; RX completion alone never passes without the firmware's D13 and Serial branch.</p>
+      <div class="regression-matrix-actions">
+        <button id="usart-response-run" type="button">Run X23 USART0 check</button>
+        <button id="usart-response-export" type="button" disabled>Export X23 JSON</button>
+      </div>
+      <p id="usart-response-identity" class="regression-matrix-identity">Loading immutable X23 USART0 recipe…</p>
+      <div class="regression-matrix-table-wrap"><table class="regression-matrix-table"><thead><tr><th>Run</th><th>Request → fixture</th><th>RX producer</th><th>Firmware consumption</th><th>Academic / job</th></tr></thead><tbody id="usart-response-results"><tr><td colspan="5">No current X23 USART0 report. Five fresh isolated workers are required.</td></tr></tbody></table></div>
+      <p id="usart-response-summary" class="truth" role="status">Transient private evidence only. Build, Reset, source/circuit change, Open, worker retirement and reload clear export authority.</p>
+      <p class="regression-matrix-limit"><strong>Limits:</strong> one request and one response byte over the tested AVR USART0 9600 8-N-1 path. This is a local fixture—not a generic bus, named device, I2C/TWI, SPI, line-level, timing-noise, multi-device, other-profile or physical-hardware model.</p>
       <div id="failure-replay" class="coverage-report-heading failure-replay-heading">
         <div><p class="eyebrow">X36 · BOUNDED FAILURE-TIME REPLAY</p><h3>Reset-to-point replay · one next instruction</h3></div>
         <span id="failure-replay-state" class="state">Not opened</span>

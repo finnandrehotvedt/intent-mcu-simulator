@@ -193,6 +193,33 @@ async function handleMessage(data) {
         kernel.queueUartRx(data.value);
         status('uart-rx');
       }
+    } else if (data.command === 'x23-usart-response') {
+      if (isRp2040()) throw new Error('X23_USART_PROFILE_UNSUPPORTED');
+      const serial = kernel.adapter.serial;
+      const requests = serial.filter((entry) => entry.direction === 'tx' && entry.value === 0x3f);
+      const priorRx = serial.some((entry) => entry.direction === 'rx-request');
+      if (requests.length !== 1 || priorRx || ![0x41, 0x42].includes(data.value)
+          || data.delayCycles !== 20) throw new Error('X23_USART_RESPONSE_REJECTED');
+      kernel.queueUartRxAfterCycles(data.value, data.delayCycles);
+      status('x23-usart-response');
+    } else if (data.command === 'x23-usart-run-to-request') {
+      if (isRp2040()) throw new Error('X23_USART_PROFILE_UNSUPPORTED');
+      let remaining = 400_000;
+      while (!kernel.adapter.serial.some((entry) => entry.direction === 'tx' && entry.value === 0x3f)
+          && remaining > 0) { kernel.step(); remaining -= 1; }
+      if (remaining === 0) throw new Error('X23_USART_REQUEST_MISSING');
+      status('x23-usart-request');
+    } else if (data.command === 'x23-usart-run-to-consumer') {
+      if (isRp2040()) throw new Error('X23_USART_PROFILE_UNSUPPORTED');
+      let remaining = 400_000;
+      const consumed = () => {
+        const text = kernel.adapter.serial.filter((entry) => entry.direction === 'tx' && entry.value !== 0x3f)
+          .map((entry) => String.fromCharCode(entry.value)).join('');
+        return text.includes('OK\n') || text.includes('ERR\n');
+      };
+      while (!consumed() && remaining > 0) { kernel.step(); remaining -= 1; }
+      if (remaining === 0) throw new Error('X23_USART_CONSUMER_MISSING');
+      status('x23-usart-consumer');
     } else if (data.command === 'adc-input') {
       if (!isRp2040()) throw new Error('ADC_INPUT_PROFILE_UNSUPPORTED');
       running = false;

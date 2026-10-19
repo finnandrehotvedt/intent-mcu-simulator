@@ -180,6 +180,18 @@ export class RuntimeKernel {
     return event;
   }
 
+  queueUartRxAfterCycles(value, delayCycles) {
+    if (!Number.isInteger(value) || value < 0 || value > 255) throw new TypeError('UART byte must be 0..255');
+    if (!Number.isSafeInteger(delayCycles) || delayCycles < 1 || delayCycles > 1_000_000) {
+      throw new TypeError('UART delay must be 1..1000000 cycles');
+    }
+    const event = this.inputs.enqueue(
+      { type: 'uart-rx', value }, this.adapter.cpu.cycles, this.adapter.cpu.cycles + delayCycles,
+    );
+    this.#flushInputs();
+    return event;
+  }
+
   queueDigitalSequence(events) {
     if (!Array.isArray(events) || events.length < 1 || events.length > DIGITAL_SEQUENCE_EVENT_MAX
         || this.inputs.log.length + events.length > this.inputs.limit) {

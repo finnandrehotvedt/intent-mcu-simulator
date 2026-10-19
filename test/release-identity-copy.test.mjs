@@ -44,5 +44,6 @@ test('footer, four-case helper and exact seed accessibility are coherent without
   assert.match(html, /value="305419896" aria-describedby="seeded-property-exact-value"/u);
   assert.match(html, /Exact seed value: 305419896/u);
   assert.equal(suite.seededPropertySuite(305419896).seed, 305419896);
-  assert.match(html, /Incorrect bus response is unsupported/u);
+  assert.match(html, /separate bounded AVR USART0 response fixture covers one declared response fault/u);
+  assert.match(html, /not a generic bus, named device, I2C\/TWI, SPI/u);
 });

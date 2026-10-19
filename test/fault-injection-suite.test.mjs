@@ -51,7 +51,7 @@ function snapshot(scenario, { actualFaults = null, d2Drive = 'RELEASED' } = {}) 
   };
 }
 
-test('X23 fault suite is exactly three bounded declared cases and bus response stays unsupported', () => {
+test('X23 thermostat fault suite stays at three cases and routes response faults to the separate fixture', () => {
   const timeline = faultInjectionThermostatTimeline();
   assert.equal(timeline.schema, 'intent-mcu-scenario-timeline@3');
   assert.deepEqual(timeline.faultSuite.supportedFaults, SUPPORTED_FAULTS);
