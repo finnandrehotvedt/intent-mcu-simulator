@@ -3,8 +3,11 @@
 
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { DEFAULT_CIRCUIT } from '../src/default-circuit.mjs';
 import {
   CircuitRuntime, MODEL_LIBRARY_TEST_AUTHORITY, validateCircuit,
@@ -13,6 +16,13 @@ import { RuntimeKernel } from '../src/runtime-kernel.mjs';
 import { createRp2040PicoCircuitDraft, validateRp2040PicoCircuit } from '../src/rp2040-pico-circuit.mjs';
 import { createEsp32C3CircuitDraft, validateEsp32C3Circuit } from '../src/esp32c3-public-circuit.mjs';
 import { createStm32CircuitDraft, validateStm32Circuit } from '../src/stm32-public-circuit.mjs';
+import { createContactPersistenceExample } from '../expansion-drafts/contact-persistence-fixture-v1.mjs';
+import {
+  CHARACTER_LCD_INITIALIZATION, CHARACTER_LCD_SIGNALS, CHARACTER_LCD_TIMING,
+} from '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs';
+import {
+  createTemperatureLcdThresholdExample,
+} from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, RETAINED_MODEL_LIBRARY_LOCK,
   compareModelLibraryEntries, modelLibraryMigrationPreview, normalizeModelLibraryLock,
@@ -30,6 +40,46 @@ const profiles = [
   'board.atmega328p-16mhz-v1', 'board.rp2040-pico-v1',
   'board.esp32-c3-devmodule-v1', 'board.stm32f429zi-nucleo144-v1',
 ];
+const repositoryRoot = fileURLToPath(new URL('..', import.meta.url));
+
+function lcdTrace(mapping, lines = ['TEMP 25 C', 'RETAINED RC72']) {
+  const levels = Object.fromEntries(CHARACTER_LCD_SIGNALS.map((signal) => [signal, false]));
+  const events = [];
+  const set = (signal, level, cycle) => {
+    if (levels[signal] === Boolean(level)) return;
+    levels[signal] = Boolean(level);
+    events.push({ cycle, pin: Number(mapping[signal].slice(1)), level: Boolean(level) });
+  };
+  const nibble = (value, rs, cycle) => {
+    set('RS', rs, cycle);
+    for (let bit = 0; bit < 4; bit += 1) set(`D${bit + 4}`, Boolean(value & (1 << bit)), cycle);
+    set('E', true, cycle + 1); set('E', false, cycle + 9);
+    return cycle + 9;
+  };
+  const byte = (value, rs, cycle) => {
+    const first = nibble(value >> 4, rs, cycle);
+    return nibble(value & 0x0f, rs, first + 16);
+  };
+  let cycle = CHARACTER_LCD_TIMING.powerOnMinimumCycles;
+  cycle = nibble(0x3, false, cycle);
+  cycle = nibble(0x3, false, cycle + CHARACTER_LCD_TIMING.firstRepeatedInitGapCycles);
+  cycle = nibble(0x3, false, cycle + CHARACTER_LCD_TIMING.laterInitGapCycles);
+  cycle = nibble(0x2, false, cycle + CHARACTER_LCD_TIMING.laterInitGapCycles);
+  for (const command of CHARACTER_LCD_INITIALIZATION.commands) {
+    cycle = byte(command, false, cycle + CHARACTER_LCD_TIMING.instructionMinimumCycles);
+    cycle += command === 0x01 ? CHARACTER_LCD_TIMING.clearHomeMinimumCycles
+      : CHARACTER_LCD_TIMING.instructionMinimumCycles;
+  }
+  for (const [index, line] of lines.entries()) {
+    cycle = byte(0x80 | (index === 0 ? 0x00 : 0x40), false, cycle);
+    cycle += CHARACTER_LCD_TIMING.instructionMinimumCycles;
+    for (const character of line.padEnd(16).slice(0, 16)) {
+      cycle = byte(character.charCodeAt(0), true, cycle);
+      cycle += CHARACTER_LCD_TIMING.instructionMinimumCycles;
+    }
+  }
+  return events;
+}
 
 test('trusted immutable snapshots have 25 exact cells and independently recomputable hashes', async () => {
   const manifests = trustedModelLibraryManifests();
@@ -275,6 +325,153 @@ test('hostile current orchestrator mutation changes live paths while retained pr
   }).code, 'MODEL_LIBRARY_TEST_OVERRIDE_FORBIDDEN');
   assert.equal(resolveModelLibrary({ ...CURRENT_MODEL_LIBRARY_LOCK,
     manifestSha256: 'f'.repeat(64) }).ok, false);
+});
+
+test('real retained candidate pipeline, controls, runtime inputs and nonempty LCD trace survive hostile current source mutation', async () => {
+  const temperatureExample = createTemperatureLcdThresholdExample();
+  const contactExample = createContactPersistenceExample();
+  assert.equal(contactExample.ok, true);
+  const unsafe = structuredClone(temperatureExample.project);
+  const ground = unsafe.candidateCircuit.nets.find((net) => net.id === 'net-example-ground');
+  const supply = unsafe.candidateCircuit.nets.find((net) => net.id === 'net-example-5v');
+  ground.endpoints = ground.endpoints.filter(
+    (endpoint) => !(endpoint.component === 'board-1' && endpoint.pin === 'GND1'),
+  );
+  supply.endpoints.push({ component: 'board-1', pin: 'GND1' });
+
+  const retainedJourney = (implementation) => {
+    const opened = implementation.openCandidateUiSession(temperatureExample.text, {
+      modelLibraryLock: RETAINED_MODEL_LIBRARY_LOCK,
+    });
+    assert.equal(opened.ok, true, `${opened.code}:${JSON.stringify(opened.details ?? [])}`);
+    assert.equal(opened.session.runnable.ok, true);
+    const lcdSupport = opened.session.runtimeSupport.find(
+      (item) => item.componentId === 'character-lcd-1',
+    );
+    const mapping = Object.fromEntries(Object.entries(lcdSupport.runtimeProjection.signals)
+      .map(([signal, record]) => [signal, record.sourcePin]));
+    const lcd = implementation.createCharacterLcdDecoder(mapping).consume(lcdTrace(mapping));
+    assert.equal(lcd.status, 'ready');
+    assert.deepEqual(lcd.lines, ['TEMP 25 C       ', 'RETAINED RC72   ']);
+
+    const temperatureControl = implementation.candidateContactControl(
+      opened.session, 'temperature-sensor-1', 'temperatureC', 100,
+    );
+    assert.equal(temperatureControl.ok, true);
+    assert.deepEqual(temperatureControl.worker,
+      { command: 'control', componentId: 'temperature-sensor-1', key: 'position', value: 0.75 });
+    const appliedTemperature = opened.session.apply({
+      ...temperatureControl.command, revision: opened.session.revision,
+    });
+    assert.equal(appliedTemperature.ok, true);
+    const temperatureProjection = opened.session.runtimeSupport.find(
+      (item) => item.componentId === 'temperature-sensor-1',
+    ).runtimeProjection;
+    assert.equal(temperatureProjection.temperatureC, 100);
+    assert.equal(temperatureProjection.voltage, 3.75);
+
+    const contacts = implementation.openCandidateUiSession(JSON.stringify(contactExample.project), {
+      modelLibraryLock: RETAINED_MODEL_LIBRARY_LOCK,
+    });
+    assert.equal(contacts.ok, true);
+    const inputsBefore = implementation.candidateRuntimeInputs(contacts.session);
+    const selectorBefore = inputsBefore.find((item) => item.componentId === 'selector-1');
+    assert.deepEqual({ pinLabel: selectorBefore.pinLabel, level: selectorBefore.level,
+      selectedThrow: selectorBefore.selectedThrow }, { pinLabel: 'D4', level: false, selectedThrow: 'A' });
+    const selectorControl = implementation.candidateContactControl(
+      contacts.session, 'selector-1', 'selectedThrow', 'B',
+    );
+    assert.equal(selectorControl.ok, true);
+    assert.deepEqual(selectorControl.transition.frames.map((frame) => frame.state), ['A', 'BREAK', 'B']);
+    assert.equal(contacts.session.apply({
+      ...selectorControl.command, revision: contacts.session.revision,
+    }).ok, true);
+    const selectorAfter = implementation.candidateRuntimeInputs(contacts.session)
+      .find((item) => item.componentId === 'selector-1');
+    assert.deepEqual({ pinLabel: selectorAfter.pinLabel, level: selectorAfter.level,
+      selectedThrow: selectorAfter.selectedThrow }, { pinLabel: 'D4', level: true, selectedThrow: 'B' });
+
+    const unsafeResult = implementation.openCandidateUiSession(JSON.stringify(unsafe), {
+      modelLibraryLock: RETAINED_MODEL_LIBRARY_LOCK,
+    });
+    assert.equal(unsafeResult.ok, false);
+    assert.equal(unsafeResult.code, 'PROJECT_CONTACT_POWER_SHORT');
+    return stable({
+      initialProject: opened.session.saveText(),
+      runtimeProject: opened.session.runtimeProject,
+      runtimeSupport: opened.session.runtimeSupport,
+      temperatureWorker: temperatureControl.worker,
+      lcd: { status: lcd.status, lines: lcd.lines, latchedBytes: lcd.latchedBytes },
+      selectorBefore,
+      selectorTransition: selectorControl.transition,
+      selectorAfter,
+      unsafeCode: unsafeResult.code,
+    });
+  };
+
+  const retainedBefore = retainedJourney(resolveModelLibrary(RETAINED_MODEL_LIBRARY_LOCK).implementation);
+  const temporaryRoot = await mkdtemp(join(tmpdir(), 'x56-hostile-current-'));
+  try {
+    await symlink(join(repositoryRoot, 'node_modules'), join(temporaryRoot, 'node_modules'), 'dir');
+    for (const directory of ['src', 'expansion-drafts', 'c3', 'compiler', 'stm32']) {
+      await cp(join(repositoryRoot, directory), join(temporaryRoot, directory), { recursive: true });
+    }
+    const resolverPath = join(temporaryRoot, 'src/model-library-current-resolver.mjs');
+    const original = await readFile(resolverPath, 'utf8');
+    const hostile = original.replace(
+        'createCharacterLcdDecoder(mapping) { return createCharacterLcd4BitDecoder(mapping); },',
+        `createCharacterLcdDecoder() { return {
+          consume: () => ({ status: 'hostile-current', initialized: true, displayOn: true,
+            lines: ['MUTATED', 'CURRENT'], latchedBytes: 0, error: null }),
+          snapshot: () => ({ status: 'hostile-current', initialized: true, displayOn: true,
+            lines: ['MUTATED', 'CURRENT'], latchedBytes: 0, error: null }),
+        }; },`,
+      );
+    assert.notEqual(hostile, original);
+    assert.match(hostile, /status: 'hostile-current'/u);
+    await writeFile(resolverPath, hostile);
+    const temperaturePath = join(temporaryRoot,
+      'expansion-drafts/temperature-analogue-sensor-v1.mjs');
+    const temperatureSource = await readFile(temperaturePath, 'utf8');
+    const hostileTemperature = temperatureSource.replace(
+      'return (temperatureC - TEMPERATURE_ZERO_VOLT_C) / TEMPERATURE_C_PER_VOLT;',
+      'return 4.999;',
+    );
+    assert.notEqual(hostileTemperature, temperatureSource);
+    await writeFile(temperaturePath, hostileTemperature);
+    const hostileLibrary = await import(`${pathToFileURL(join(temporaryRoot,
+      'src/model-library.mjs')).href}?hostile=${Date.now()}`);
+    const hostileCurrent = hostileLibrary.resolveModelLibrary(
+      hostileLibrary.CURRENT_MODEL_LIBRARY_LOCK,
+    ).implementation;
+    const hostileTemperatureModule = await import(`${pathToFileURL(temperaturePath).href}?hostile=${Date.now()}`);
+    assert.equal(hostileTemperatureModule.temperatureCToVoltage(25), 4.999);
+    assert.equal(hostileCurrent.evaluateProduction('sensor.temperature-analogue-v1', {
+      temperatureC: 25,
+    }).result.outputVolts, 1.875);
+    const hostileDraft = hostileCurrent.validateCandidateDraft(JSON.parse(temperatureExample.text), {
+      modelLibraryLock: hostileLibrary.CURRENT_MODEL_LIBRARY_LOCK,
+    });
+    assert.equal(hostileDraft.ok, true);
+    assert.equal(hostileDraft.code, 'PROJECT_CONTACT_DRAFT');
+    assert.equal(hostileDraft.reconstruction.runnable.ok, false);
+    assert.equal(hostileDraft.reconstruction.runnable.code, 'MODEL_LIBRARY_PRODUCTION_MISMATCH');
+    const hostileOpen = hostileCurrent.openCandidateUiSession(temperatureExample.text, {
+      modelLibraryLock: hostileLibrary.CURRENT_MODEL_LIBRARY_LOCK,
+    });
+    assert.equal(hostileOpen.ok, true);
+    assert.equal(hostileOpen.session.runnable.ok, false);
+    assert.equal(hostileOpen.session.runnable.code, 'MODEL_LIBRARY_PRODUCTION_MISMATCH');
+    const hostileLcd = hostileCurrent.createCharacterLcdDecoder({}).consume([]);
+    assert.deepEqual(hostileLcd.lines, ['MUTATED', 'CURRENT']);
+
+    const retainedAfter = retainedJourney(hostileLibrary.resolveModelLibrary(
+      hostileLibrary.RETAINED_MODEL_LIBRARY_LOCK,
+    ).implementation);
+    assert.deepEqual(retainedAfter, retainedBefore);
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
 });
 
 test('approved AVR candidate envelope validates its authored candidate graph without nested-object guessing', () => {
