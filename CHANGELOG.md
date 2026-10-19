@@ -2,6 +2,26 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.58 — 2026-10-19
+
+- Published the independently accepted bounded X35 causal-chain report for one
+  unmodified ATmega328P thermostat artifact. One selected instruction records
+  the complete PORTB transition and raw D13 callback before joining the exact
+  validated net/resistor path and project-owned ideal heater-LED projection at
+  the same instruction boundary.
+- Added strict event identity, artifact/source/graph binding and two-fresh-
+  worker semantic equality. Opcode-caused output is kept distinct from later
+  tick/peripheral changes; full PORTB values are retained while only bit 5 is
+  selected.
+- Added a concise five-stage presentation and transient JSON export. Build,
+  Reset, source or circuit change, Open, worker retirement and reload clear
+  report authority; saved projects contain no X35 runtime authority.
+- The page explicitly separates emulator evidence and synchronous project-
+  owned model consequence from physical causality. It does not claim source-
+  line mapping, compiler correctness, silicon-bus proof, physical timing,
+  generic register/debug access or other-profile equivalence; X35 therefore
+  remains partial.
+
 ## 1.1.0-rc.57 — 2026-10-19
 
 - Published the independently accepted bounded X34 units/precision report for
