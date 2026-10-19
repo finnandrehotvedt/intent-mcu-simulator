@@ -13,8 +13,13 @@ let browser;
   const page = await context.newPage();
   let syntheticRequests = 0;
   const errors = [];
+  const expected429Console = [];
   page.on('pageerror', (error) => errors.push(error.stack || String(error)));
-  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('console', (message) => {
+    if (message.type() !== 'error') return;
+    if (/status of 429 \(Too Many Requests\)/u.test(message.text())) expected429Console.push(message.text());
+    else errors.push(message.text());
+  });
   await page.route('**/api/build', async (route) => {
     syntheticRequests += 1;
     await route.fulfill({ status: 429, contentType: 'application/json', headers: { 'Retry-After': '7' },
@@ -36,6 +41,7 @@ let browser;
   assert.equal(syntheticRequests, 1);
   assert.equal(await page.locator('[data-x83-panel]').count(), 0);
   assert.deepEqual(errors, []);
+  assert.equal(expected429Console.length, 1);
   assert.equal((await context.cookies()).length, 0);
   fs.mkdirSync(path.dirname(screenshot), { recursive: true });
   await page.locator('.workspace').screenshot({ path: screenshot });
