@@ -426,6 +426,12 @@ export function evaluateScenarioTimelineObservation(scenario, snapshot) {
       actualInputs: { d2: clone(d2), a1: clone(a1) } },
     checks: { timeInWindow, inputsComplete, pinObserved, primaryExecutedPin,
       faultRequestsComplete, faultProducerEvidenceComplete, faultBehaviorMatched },
+    retention: {
+      inputEventsDropped: Number.isSafeInteger(snapshot?.eventLog?.dropped)
+        && snapshot.eventLog.dropped >= 0 ? snapshot.eventLog.dropped : 0,
+      serialEventsDropped: Number.isSafeInteger(snapshot?.instruments?.serial?.dropped)
+        && snapshot.instruments.serial.dropped >= 0 ? snapshot.instruments.serial.dropped : 0,
+    },
   };
 }
 

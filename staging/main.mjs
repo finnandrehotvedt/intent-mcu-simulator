@@ -251,6 +251,10 @@ import {
   expectationReferenceMatchesPrepared,
   parseExpectationReference,
 } from '../src/expectation-reference.mjs';
+import {
+  createExperimentPackage,
+  parseExperimentPackage,
+} from '../src/experiment-package.mjs';
 import { compareDesignAlternatives, DESIGN_COMPARISON_SCHEMA } from '../src/design-comparison.mjs';
 import {
   DOMAIN_REQUEST_SCHEMA,
@@ -379,6 +383,7 @@ const elements = Object.fromEntries([
   'project-patch-changes', 'project-patch-summary', 'project-patch-implementation-changes',
   'project-patch-expectation-changes', 'expectation-reference-lock', 'expectation-reference-open',
   'expectation-reference-input', 'expectation-reference-status', 'expectation-reference-identity',
+  'experiment-package-download', 'experiment-package-state', 'experiment-package-detail',
   'design-comparison-create', 'design-comparison-summary', 'design-comparison-status',
   'design-comparison-alternatives', 'design-comparison-differences',
   'shared-domain-engine-inspect', 'shared-domain-engine-summary', 'shared-domain-engine-status',
@@ -5227,6 +5232,7 @@ function renderThermostatExperimentPanel() {
     renderScenarioTimelineEditor();
     renderX40SharedTimeline();
     publish({ thermostatExperiment: thermostatPublishedState() });
+    void refreshExperimentPackageState();
     return;
   }
   const variant = thermostatFirmwareVariant(currentProject());
@@ -5292,6 +5298,7 @@ function renderThermostatExperimentPanel() {
   renderX39FailureLocation();
   renderX40SharedTimeline();
   publish({ thermostatExperiment: thermostatPublishedState() });
+  void refreshExperimentPackageState();
 }
 function cancelThermostatExperiment(message, { clearResults = true, render = true } = {}) {
   thermostatExperimentRun = null;
@@ -6699,6 +6706,8 @@ window.__PROJECT_FEASIBILITY__ = Object.freeze({
 let pendingProjectPatch = null;
 let pendingDesignComparison = null;
 let loadedExpectationReference = null;
+let experimentPackageRefreshToken = 0;
+let experimentPackageUiState = { ready: false, reason: 'AVR thermostat project required', sha256: null };
 function expectationReferenceFilename() {
   const stem = profileProjectName(AVR_PROFILE).normalize('NFKD')
     .replace(/[^A-Za-z0-9 _.-]/gu, '').trim().replace(/\s+/gu, '-').slice(0, 64);
@@ -6708,6 +6717,105 @@ function currentExpectationReferenceMatch() {
   if (!loadedExpectationReference?.ok) return false;
   const prepared = prepareProjectEnvelope(commonProjectText(AVR_PROFILE), commonProjectAdapters);
   return prepared.ok && expectationReferenceMatchesPrepared(loadedExpectationReference.reference, prepared);
+}
+function experimentPackageBaseEligibility() {
+  if (selectedCompilerProfile !== AVR_PROFILE) {
+    return { ok: false, reason: 'Available only for the AVR thermostat experiment.' };
+  }
+  if (!thermostatProjectActive()) {
+    return { ok: false, reason: 'Open the AVR thermostat example first.' };
+  }
+  const timeline = scenarioTimelineEditor?.timeline ?? null;
+  if (!timeline) return { ok: false, reason: 'An authored scenario timeline is required.' };
+  if (!loadedExpectationReference?.ok) {
+    return { ok: false, reason: 'Lock or open the matching expectation reference.' };
+  }
+  if (!currentExpectationReferenceMatch()) {
+    return { ok: false, reason: 'The expectation reference does not match the current authored tests.' };
+  }
+  if (thermostatExperimentRun) return { ok: false, reason: 'Wait for the active experiment to finish.' };
+  if (!thermostatRuntimeReady() || !lifecycle.artifact?.artifactIdentity) {
+    return { ok: false, reason: 'Build this exact project before producing the report.' };
+  }
+  if (authoredScenarioResults.length !== timeline.scenarios.length) {
+    return { ok: false, reason: `Run the authored scenarios (${authoredScenarioResults.length}/${timeline.scenarios.length} current).` };
+  }
+  const complete = authoredScenarioResults.every((result, index) => (
+    result.scenarioId === timeline.scenarios[index].id
+      && ['passed', 'failed'].includes(result.status)
+      && result.outcome?.jobStatus === 'completed'
+      && result.outcome?.evidenceStatus === 'complete'
+      && result.retention?.inputEventsDropped === 0
+  ));
+  if (!complete) return { ok: false, reason: 'Current authored evidence is incomplete or has required input loss.' };
+  return { ok: true, reason: `${timeline.scenarios.length} current measured scenarios · checking exact binding…`, timeline };
+}
+function showExperimentPackageState(ready, reason, sha256 = null) {
+  experimentPackageUiState = { ready, reason, sha256 };
+  elements.experimentpackagedownload.disabled = !ready;
+  elements.experimentpackagestate.dataset.ready = String(ready);
+  elements.experimentpackagestate.textContent = reason;
+}
+async function refreshExperimentPackageState() {
+  const token = ++experimentPackageRefreshToken;
+  const eligibility = experimentPackageBaseEligibility();
+  if (!eligibility.ok) {
+    showExperimentPackageState(false, eligibility.reason);
+    return eligibility;
+  }
+  showExperimentPackageState(false, eligibility.reason);
+  let currentText;
+  try { currentText = commonProjectText(AVR_PROFILE); }
+  catch (error) {
+    if (token === experimentPackageRefreshToken) showExperimentPackageState(false,
+      `Current project is not packageable (${error.code ?? error.message}).`);
+    return { ok: false, reason: 'project-invalid' };
+  }
+  const currentSha256 = await projectTextSha256(currentText);
+  if (token !== experimentPackageRefreshToken) return { ok: false, reason: 'superseded' };
+  if (loadedExpectationReference.reference.originProjectSha256 !== currentSha256) {
+    showExperimentPackageState(false, 'The locked reference belongs to an older project revision. Lock it again after review.');
+    return { ok: false, reason: 'expectation-stale' };
+  }
+  const failed = authoredScenarioResults.filter((result) => result.status === 'failed').length;
+  showExperimentPackageState(true,
+    `${eligibility.timeline.scenarios.length} current measured scenarios · ${failed ? `${failed} failed result retained` : 'complete evidence'} · local download ready`);
+  return { ok: true, timeline: eligibility.timeline, currentText };
+}
+function experimentPackageFilename() {
+  const stem = profileProjectName(AVR_PROFILE).normalize('NFKD')
+    .replace(/[^A-Za-z0-9 _.-]/gu, '').trim().replace(/\s+/gu, '-').slice(0, 64);
+  return `${stem || 'avr-thermostat'}.intent-mcu-experiment.json`;
+}
+async function createCurrentExperimentPackage() {
+  const eligibility = await refreshExperimentPackageState();
+  if (!eligibility.ok) return { ok: false, code: 'EXPERIMENT_PACKAGE_NOT_READY' };
+  return createExperimentPackage({
+    projectText: eligibility.currentText,
+    adapters: commonProjectAdapters,
+    activeProfile: selectedCompilerProfile,
+    expectationText: loadedExpectationReference.canonical,
+    artifactIdentitySha256: lifecycle.artifact.artifactIdentity,
+    sourceVariant: thermostatFirmwareVariant(currentProject()),
+    results: authoredScenarioResults,
+  });
+}
+async function downloadCurrentExperimentPackage() {
+  showExperimentPackageState(false, 'Validating the exact local package…');
+  const created = await createCurrentExperimentPackage();
+  if (!created.ok) {
+    showExperimentPackageState(false, `Package rejected (${created.code}). Nothing was downloaded.`);
+    return created;
+  }
+  const reparsed = await parseExperimentPackage(created.canonical, commonProjectAdapters);
+  if (!reparsed.ok || reparsed.sha256 !== created.sha256) {
+    showExperimentPackageState(false, `Package self-check failed (${reparsed.code ?? 'HASH_MISMATCH'}). Nothing was downloaded.`);
+    return { ok: false, code: reparsed.code ?? 'EXPERIMENT_PACKAGE_HASH_MISMATCH' };
+  }
+  downloadText(experimentPackageFilename(), created.canonical, 'application/json');
+  showExperimentPackageState(true,
+    `Local package downloaded · SHA-256 ${created.sha256.slice(0, 12)}… · review your authored text before sharing.`, created.sha256);
+  return created;
 }
 function renderExpectationReference() {
   const supported = selectedCompilerProfile === AVR_PROFILE && thermostatProjectActive()
@@ -6719,6 +6827,7 @@ function renderExpectationReference() {
       ? 'No independent expectation reference loaded. Lock this authored thermostat timeline before requesting a firmware change.'
       : 'Expectation locking is available only for the supported AVR thermostat project.';
     elements.expectationreferenceidentity.textContent = 'Unlocked';
+    void refreshExperimentPackageState();
     return;
   }
   const matches = currentExpectationReferenceMatch();
@@ -6727,6 +6836,7 @@ function renderExpectationReference() {
     ? 'Locked local reference matches the current authored tests. Firmware may change without changing this baseline.'
     : 'Loaded reference is valid, but current authored tests differ. Generate a new lock only after reviewing that test change.';
   elements.expectationreferenceidentity.textContent = `SHA-256 ${loadedExpectationReference.sha256}`;
+  void refreshExperimentPackageState();
 }
 async function lockCurrentExpectationReference() {
   const result = await createExpectationReference(
@@ -6963,6 +7073,7 @@ elements.projectpatchreview.addEventListener('click', () => { void reviewCurrent
 elements.designcomparisoncreate.addEventListener('click', () => { void compareReviewedProjectDesigns(); });
 elements.projectpatchapply.addEventListener('click', () => { void applyReviewedProjectPatch(); });
 elements.expectationreferencelock.addEventListener('click', () => { void lockCurrentExpectationReference(); });
+elements.experimentpackagedownload.addEventListener('click', () => { void downloadCurrentExperimentPackage(); });
 elements.expectationreferenceopen.addEventListener('click', () => elements.expectationreferenceinput.click());
 elements.expectationreferenceinput.addEventListener('change', async () => {
   const file = elements.expectationreferenceinput.files[0];
@@ -7010,6 +7121,10 @@ window.__EXPECTATION_REFERENCE__ = Object.freeze({
     executableAuthority: false,
     verdictAuthority: false,
   } : null,
+});
+window.__X67_EXPERIMENT_PACKAGE__ = Object.freeze({
+  state: () => structuredClone(experimentPackageUiState),
+  create: () => createCurrentExperimentPackage(),
 });
 window.__DESIGN_COMPARISON__ = Object.freeze({
   schema: DESIGN_COMPARISON_SCHEMA,
@@ -9500,9 +9615,11 @@ elements.cancel.addEventListener('click', () => {
   publish({ buildState: 'cancelled', artifactIdentity: null, inputIdentity: null, cacheHit: false });
 });
 elements.run.addEventListener('click', () => {
+  authoredScenarioResults = [];
   clearX40SharedTimeline('Run invalidated the prior shared timeline.');
   const result = applyLifecycle({ type: 'runtime.run' });
   if (result.accepted) worker?.postMessage({ command: 'run' });
+  renderThermostatExperimentPanel();
 });
 elements.pause.addEventListener('click', () => {
   const result = applyLifecycle({ type: 'runtime.pause' });
@@ -9510,6 +9627,7 @@ elements.pause.addEventListener('click', () => {
 });
 elements.step.addEventListener('click', () => worker?.postMessage({ command: 'step' }));
 elements.reset.addEventListener('click', () => {
+  authoredScenarioResults = [];
   clearX40SharedTimeline('Reset invalidated the prior shared timeline.');
   invalidateVersionRegressionReport('Reset cleared active comparison review authority.');
   invalidateFailureReplayReport('Reset retired the X36 replay workers and cleared export authority. Open the replay point again.');
@@ -9523,6 +9641,7 @@ elements.reset.addEventListener('click', () => {
   if (!worker) return;
   renderInstrumentEvidence(null);
   worker.postMessage({ command: 'reset' });
+  renderThermostatExperimentPanel();
 });
 elements.thermostatruntests.addEventListener('click', startThermostatExperiment);
 elements.thermostatloadbad.addEventListener('click', () => loadThermostatFirmwareVariant('known-bad-equality'));

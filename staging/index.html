@@ -147,6 +147,8 @@
           <input id="expectation-reference-input" class="sr-only" type="file" accept="application/json,.json,.intent-mcu-expectations.json" aria-label="Open locked expectation reference file">
           <p id="expectation-reference-status" role="status">No independent expectation reference loaded.</p>
           <code id="expectation-reference-identity">Unlocked</code>
+          <div class="experiment-package-actions"><button id="experiment-package-download" type="button" disabled>Download experiment package</button><span id="experiment-package-state" role="status">AVR thermostat project required</span></div>
+          <details id="experiment-package-detail" class="experiment-package-detail"><summary>What the package contains</summary><p>One local JSON file combines the authored source, circuit, scenario, matching expectation reference and current measured report. It excludes compiled firmware and cannot restore a runtime, green state or verdict.</p><p>Automatic credential and authority fields are excluded. The Lab cannot recognize every secret a person may type into source or descriptions, so review your authored text before sharing the file. Nothing is uploaded or stored by this action.</p></details>
         </section>
         <label>Requested change<textarea id="project-patch-description" rows="3" maxlength="2000" placeholder="Move the LED, route its cable clearly, and update main.c to drive the reviewed pin."></textarea></label>
         <div class="project-patch-actions"><button id="project-patch-generate" type="button">Generate patch prompt</button><button id="project-patch-copy" type="button" disabled>Copy prompt</button></div>
