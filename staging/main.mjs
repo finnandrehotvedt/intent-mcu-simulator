@@ -353,7 +353,7 @@ const elements = Object.fromEntries([
   'x39-failure-location', 'x39-failure-location-summary', 'x39-failure-source',
   'x39-failure-pin', 'x39-failure-net', 'x39-failure-time', 'x39-failure-export',
   'x40-shared-timeline', 'x40-shared-timeline-summary', 'x40-shared-timeline-body',
-  'x40-shared-timeline-export',
+  'x40-shared-timeline-compact', 'x40-shared-timeline-export',
   'scenario-editor', 'scenario-add', 'scenario-undo', 'scenario-redo', 'scenario-run',
   'scenario-list', 'scenario-editor-message',
   'seeded-property-seed', 'seeded-property-exact-value', 'seeded-property-generate', 'seeded-property-replay', 'seeded-property-summary',
@@ -5132,6 +5132,7 @@ function clearX40SharedTimeline(reason = 'Run one isolated authored AVR thermost
   x40TimelineReset = null;
   x40TimelineResult = null;
   x40TimelineNotice = reason;
+  elements.x40sharedtimeline.removeAttribute('open');
   elements.x40sharedtimeline.hidden = true;
   elements.x40sharedtimelinebody.replaceChildren();
   publish({ x40SharedTimeline: null });
@@ -5161,6 +5162,9 @@ function x40RowValue(row) {
 function renderX40SharedTimeline() {
   const timeline = x40SharedTimeline;
   elements.x40sharedtimeline.hidden = !timeline;
+  elements.x40sharedtimelinecompact.textContent = timeline
+    ? `${timeline.rows.length} rows · cycles ${timeline.firstCycle.toLocaleString('en-US')}–${timeline.lastCycle.toLocaleString('en-US')}`
+    : 'No current evidence';
   elements.x40sharedtimelinesummary.textContent = timeline
     ? `${timeline.rows.length} current rows · cycles ${timeline.firstCycle.toLocaleString('en-US')}–${timeline.lastCycle.toLocaleString('en-US')} · worker ${timeline.identity.workerInstanceNonce.slice(0, 12)}… · zero relevant drops.`
     : x40TimelineNotice;

@@ -816,7 +816,10 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .failure-location-facts dd { margin: 4px 0 0; overflow-wrap: anywhere; }
 @media (max-width: 760px) { .failure-location-facts { grid-template-columns: 1fr; } }
 .shared-event-timeline { margin-top: 16px; padding: 16px; border: 1px solid #285b70; border-radius: 12px; background: #071923; }
-.shared-event-timeline:focus-visible, .shared-event-timeline-wrap:focus-visible { outline: 3px solid #56d6ff; outline-offset: 3px; }
+.shared-event-timeline > summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; list-style-position: inside; }
+.shared-event-timeline > summary strong { display: block; margin-top: 3px; font-size: 1.05rem; }
+.shared-event-timeline-content { margin-top: 14px; }
+.shared-event-timeline > summary:focus-visible, .shared-event-timeline-wrap:focus-visible { outline: 3px solid #56d6ff; outline-offset: 3px; }
 .timeline-order-note { color: #a9c4d2; max-width: 90ch; }
 .shared-event-timeline-wrap { max-height: 360px; overflow: auto; border: 1px solid #173d52; border-radius: 8px; background: #06141f; }
 .shared-event-timeline-table { width: 100%; min-width: 780px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
