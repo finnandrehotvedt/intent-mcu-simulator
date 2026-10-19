@@ -113,6 +113,17 @@ import {
 } from '../src/reset-class-contract.mjs';
 import { executeResetClass } from '../src/reset-class-runner.mjs';
 import {
+  UNSUPPORTED_ACCESS_REPORT_SCHEMA, X32_FAULT_SOURCE, X32_GOOD_SOURCE,
+  X32_UNSUPPORTED_ACCESS_SUITE, evaluateUnsupportedAccessExecution,
+  semanticUnsupportedAccessProjection, stableUnsupportedAccessStringify,
+  unsupportedAccessExecutionProjection, unsupportedAccessReportPassed,
+  unsupportedAccessSha256, unsupportedAccessSuiteIdentity,
+  validateUnsupportedAccessDetector, validateUnsupportedAccessReport,
+} from '../src/unsupported-access-contract.mjs';
+import {
+  goodCompanionFromWorker, unsupportedAccessExecutionFromWorker,
+} from '../src/unsupported-access-runner.mjs';
+import {
   COUNTEREXAMPLE_REDUCTION_SEED, reduceThermostatCounterexample,
 } from '../src/counterexample-reduction.mjs';
 import {
@@ -322,6 +333,9 @@ const elements = Object.fromEntries([
   'event-order-export', 'event-order-results', 'event-order-summary',
   'reset-class', 'reset-class-state', 'reset-class-identity', 'reset-class-run',
   'reset-class-export', 'reset-class-results', 'reset-class-summary',
+  'unsupported-access', 'unsupported-access-state', 'unsupported-access-identity',
+  'unsupported-access-run', 'unsupported-access-export', 'unsupported-access-results',
+  'unsupported-access-summary',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -2006,6 +2020,9 @@ let eventOrderReady = false;
 let resetClassReport = null;
 let resetClassRunning = false;
 let resetClassReady = false;
+let unsupportedAccessReport = null;
+let unsupportedAccessRunning = false;
+let unsupportedAccessReady = false;
 
 const waitForMatrixState = async (read, accept, code, timeoutMilliseconds = 30_000) => {
   const deadline = performance.now() + timeoutMilliseconds;
@@ -2083,6 +2100,13 @@ function invalidateResetClassReport(message = 'Project state changed. Run X31 ag
   elements.resetclasssummary.textContent = message;
 }
 
+function invalidateUnsupportedAccessReport(message = 'Project state changed. Run X32 again for current evidence.') {
+  if (unsupportedAccessRunning || !unsupportedAccessReport) return;
+  unsupportedAccessReport = null;
+  renderUnsupportedAccessReport(null);
+  elements.unsupportedaccesssummary.textContent = message;
+}
+
 function invalidateRegressionMatrixReport(message = 'Project state changed. Run the matrix again for current evidence.') {
   if (!regressionMatrixRunning && regressionMatrixReport) {
     regressionMatrixReport = null;
@@ -2097,6 +2121,7 @@ function invalidateRegressionMatrixReport(message = 'Project state changed. Run 
   invalidateTimeInvarianceReport(message);
   invalidateEventOrderReport(message);
   invalidateResetClassReport(message);
+  invalidateUnsupportedAccessReport(message);
 }
 
 function renderCoverageReport(report = coverageReport) {
@@ -2786,6 +2811,161 @@ function exportResetClassReport() {
   link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+function renderUnsupportedAccessReport(report = unsupportedAccessReport) {
+  elements.unsupportedaccessresults.replaceChildren();
+  if (!report) {
+    const row = document.createElement('tr'); const cell = document.createElement('td'); cell.colSpan = 5;
+    cell.textContent = 'No current X32 report. Unsupported access can never create a green requirement.';
+    row.append(cell); elements.unsupportedaccessresults.append(row);
+    elements.unsupportedaccessstate.textContent = 'Not run';
+    elements.unsupportedaccessexport.disabled = true; return;
+  }
+  const first = report.executions[0];
+  const row = document.createElement('tr');
+  const identity = document.createElement('th'); identity.scope = 'row'; identity.className = 'reset-class-cell';
+  const strong = document.createElement('strong'); strong.textContent = 'SPI enable write';
+  const code = document.createElement('code'); code.textContent = 'SPCR/SPE · 0x4C ← 0x40';
+  identity.append(strong, code);
+  const observed = document.createElement('td');
+  const facts = document.createElement('ul'); facts.className = 'long-duration-facts';
+  for (const fact of [
+    `D13 HIGH at cycle ${first.lastSupportedObservation.cycle}`,
+    `SPI write at cycle ${first.access.cycle}, instruction ${first.access.instructionOrdinal}`,
+    `Artifact ${report.artifactSha256.slice(0, 12)}… · two fresh workers`,
+  ]) { const item = document.createElement('li'); item.textContent = fact; facts.append(item); }
+  observed.append(facts);
+  const disposition = document.createElement('td');
+  disposition.textContent = `${first.stop.status} · ${first.stop.code} · no accepted post-fault records`;
+  const result = document.createElement('td'); result.className = 'long-duration-outcomes';
+  for (const execution of report.executions) {
+    const badge = document.createElement('span'); badge.className = 'long-duration-outcome-badge';
+    badge.dataset.status = execution.outcome.academicStatus;
+    badge.textContent = `${execution.repeat} · ${execution.outcome.academicStatus} · evaluator ${execution.outcome.jobStatus}`;
+    result.append(badge);
+  }
+  const raw = document.createElement('td'); const details = document.createElement('details');
+  details.className = 'long-duration-raw unsupported-access-raw';
+  const summary = document.createElement('summary'); summary.textContent = 'Full producer evidence';
+  const pre = document.createElement('pre'); pre.textContent = JSON.stringify({ executions: report.executions,
+    classifications: report.classifications, goodCompanion: report.goodCompanion }, null, 2);
+  details.append(summary, pre); raw.append(details);
+  row.append(identity, observed, disposition, result, raw); elements.unsupportedaccessresults.append(row);
+  elements.unsupportedaccessstate.textContent = 'SPI stopped · 2/2 semantic repeats';
+  elements.unsupportedaccessexport.disabled = false;
+  elements.unsupportedaccesssummary.textContent = `Affected requirement ${report.affectedRequirement.id}: unsupported, never passed. Semantic report ${report.semanticSha256}. Compiler, validation, capability, infrastructure and academic states remain distinct.`;
+}
+
+async function executeUnsupportedAccessWorkerRepeat(artifact, repeat) {
+  const worker = new Worker('./simulator.worker.js', { type: 'module' });
+  const channel = eventOrderWorkerChannel(worker);
+  try {
+    worker.postMessage({ command: 'init', hex: artifact.hex, circuit: DEFAULT_CIRCUIT,
+      instruments: { logicChannels: ['D13', 'D2'], serialHistoryLimit: 512 } });
+    await channel.next((message) => message.kind === 'ready');
+    worker.postMessage({ command: 'run' });
+    const first = await channel.next((message) => message.kind === 'stopped-error');
+    worker.postMessage({ command: 'run' });
+    const second = await channel.next((message) => message.kind === 'stopped-error');
+    const noAdvance = first.data.cycle === second.data.cycle
+      && first.data.instructions === second.data.instructions
+      && stableUnsupportedAccessStringify(first.data.unsupported)
+        === stableUnsupportedAccessStringify(second.data.unsupported);
+    const postFaultAcceptedRecords = channel.after(first.record.index).filter(
+      (entry) => entry.kind === 'status' && entry.cycle > first.data.cycle,
+    ).length;
+    return unsupportedAccessExecutionFromWorker({ message: first.data,
+      artifactSha256: artifact.artifactSha256, repeat,
+      blockedReplayNoAdvance: noAdvance, postFaultAcceptedRecords });
+  } finally { worker.postMessage({ command: 'dispose' }); worker.terminate(); }
+}
+
+async function executeUnsupportedAccessGoodCompanion(artifact) {
+  const worker = new Worker('./simulator.worker.js', { type: 'module' });
+  const channel = eventOrderWorkerChannel(worker);
+  try {
+    worker.postMessage({ command: 'init', hex: artifact.hex, circuit: DEFAULT_CIRCUIT,
+      instruments: { logicChannels: ['D13', 'D2'], serialHistoryLimit: 512 } });
+    await channel.next((message) => message.kind === 'ready');
+    worker.postMessage({ command: 'run' });
+    const { data } = await channel.next((message) => message.kind === 'status' && message.cycle > 0);
+    return goodCompanionFromWorker({ message: data, artifactSha256: artifact.artifactSha256 });
+  } finally { worker.postMessage({ command: 'dispose' }); worker.terminate(); }
+}
+
+async function runBrowserUnsupportedAccessSuite() {
+  if (unsupportedAccessRunning) throw Object.assign(new Error('UNSUPPORTED_ACCESS_BUSY'), { code: 'UNSUPPORTED_ACCESS_BUSY' });
+  unsupportedAccessRunning = true; unsupportedAccessReport = null; renderUnsupportedAccessReport(null);
+  elements.unsupportedaccessrun.disabled = true; elements.unsupportedaccessstate.textContent = 'Compiling fixed fixtures…';
+  try {
+    const [artifact, goodArtifact] = await Promise.all([
+      compileLongDurationSource(X32_FAULT_SOURCE), compileLongDurationSource(X32_GOOD_SOURCE),
+    ]);
+    const executions = [];
+    for (const repeat of X32_UNSUPPORTED_ACCESS_SUITE.repeats) {
+      elements.unsupportedaccessstate.textContent = `Fresh worker ${repeat} · waiting for SPI stop…`;
+      executions.push(await executeUnsupportedAccessWorkerRepeat(artifact, repeat));
+    }
+    const goodCompanion = await executeUnsupportedAccessGoodCompanion(goodArtifact);
+    const repeatSemanticSha256 = await unsupportedAccessSha256(stableUnsupportedAccessStringify(
+      unsupportedAccessExecutionProjection(executions[0])));
+    let compilerCode = null;
+    try { await compileLongDurationSource('void setup( {\nvoid loop() {}\n'); }
+    catch (error) { compilerCode = error.code; }
+    let validationCode = null;
+    try { validateUnsupportedAccessDetector('avr-unknown'); }
+    catch (error) { validationCode = error.code; }
+    const missing = structuredClone(executions[0]); missing.access = null;
+    const report = {
+      schema: UNSUPPORTED_ACCESS_REPORT_SCHEMA, suiteId: X32_UNSUPPORTED_ACCESS_SUITE.suiteId,
+      suiteSha256: await unsupportedAccessSuiteIdentity(), profile: X32_UNSUPPORTED_ACCESS_SUITE.profile,
+      sourceSha256: X32_UNSUPPORTED_ACCESS_SUITE.fixture.sourceSha256,
+      artifactSha256: artifact.artifactSha256,
+      projectSha256: X32_UNSUPPORTED_ACCESS_SUITE.fixture.projectSha256,
+      producer: 'actual simulator.worker/RuntimeKernel/avr8js unsupported-register monitor',
+      detector: structuredClone(X32_UNSUPPORTED_ACCESS_SUITE.detector),
+      affectedRequirement: structuredClone(X32_UNSUPPORTED_ACCESS_SUITE.affectedRequirement),
+      executions, repeatSemanticSha256, goodCompanion,
+      classifications: {
+        compiler: { status: 'rejected-before-runtime', code: compilerCode,
+          artifactCreated: false, academicOutcomeCreated: false },
+        validation: { status: 'rejected-before-execution', code: validationCode,
+          academicOutcomeCreated: false },
+        runtimeCapability: { status: 'stopped-unsupported', code: 'RUNTIME_CAPABILITY_UNSUPPORTED',
+          academicStatus: 'unsupported' },
+        infrastructure: { status: 'classified-without-execution',
+          code: 'UNSUPPORTED_ACCESS_WORKER_UNAVAILABLE', academicOutcomeCreated: false },
+        academic: { status: 'indeterminate-as-expected', code: 'UNSUPPORTED_ACCESS_EVIDENCE_MISSING',
+          outcome: evaluateUnsupportedAccessExecution(missing) },
+      },
+      staleRecordProbe: { status: 'rejected-atomically',
+        code: 'UNSUPPORTED_ACCESS_REPORT_STALE_OR_UNKNOWN', priorReportRetained: true },
+      limits: structuredClone(X32_UNSUPPORTED_ACCESS_SUITE.limits),
+    };
+    report.semanticSha256 = await unsupportedAccessSha256(stableUnsupportedAccessStringify(
+      semanticUnsupportedAccessProjection(report)));
+    const accepted = await validateUnsupportedAccessReport(report);
+    let staleCode = null;
+    try { await validateUnsupportedAccessReport({ ...accepted, sourceSha256: '0'.repeat(64) }); }
+    catch (error) { staleCode = error.code; }
+    if (staleCode !== accepted.staleRecordProbe.code) {
+      throw Object.assign(new Error('UNSUPPORTED_ACCESS_STALE_PROBE_NOT_REJECTED'),
+        { code: 'UNSUPPORTED_ACCESS_STALE_PROBE_NOT_REJECTED' });
+    }
+    unsupportedAccessReport = accepted;
+    renderUnsupportedAccessReport(unsupportedAccessReport);
+    return structuredClone(unsupportedAccessReport);
+  } finally { unsupportedAccessRunning = false; elements.unsupportedaccessrun.disabled = false; }
+}
+
+function exportUnsupportedAccessReport() {
+  if (!unsupportedAccessReport) return;
+  const text = `${JSON.stringify(unsupportedAccessReport, null, 2)}\n`;
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const link = document.createElement('a'); link.href = url;
+  link.download = `x32-unsupported-access-${unsupportedAccessReport.semanticSha256.slice(0, 12)}.intent-mcu-unsupported.json`;
+  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 async function selectRegressionProfile(profile) {
   if (selectedCompilerProfile === profile) return;
   elements.boardselect.value = profile;
@@ -2988,6 +3168,8 @@ elements.eventorderrun.addEventListener('click', () => { void runBrowserEventOrd
 elements.eventorderexport.addEventListener('click', exportEventOrderReport);
 elements.resetclassrun.addEventListener('click', () => { void runBrowserResetClassSuite(); });
 elements.resetclassexport.addEventListener('click', exportResetClassReport);
+elements.unsupportedaccessrun.addEventListener('click', () => { void runBrowserUnsupportedAccessSuite(); });
+elements.unsupportedaccessexport.addEventListener('click', exportUnsupportedAccessReport);
 for (const input of [elements.source, elements.picosource, elements.c3source, elements.stm32source,
   elements.projectopeninput, elements.picoopeninput, elements.c3openinput, elements.stm32openinput,
   elements.boardselect]) {
@@ -3046,6 +3228,14 @@ window.__X31_RESET_CLASSES__ = Object.freeze({
   passed: () => resetClassReport ? resetClassReportPassed(resetClassReport) : false,
   clear: (reason = 'X31 report cleared. Run the suite again for current evidence.') => invalidateResetClassReport(reason),
 });
+window.__X32_UNSUPPORTED_ACCESS__ = Object.freeze({
+  get ready() { return unsupportedAccessReady; },
+  suite: () => structuredClone(X32_UNSUPPORTED_ACCESS_SUITE),
+  report: () => unsupportedAccessReport ? structuredClone(unsupportedAccessReport) : null,
+  run: () => runBrowserUnsupportedAccessSuite(),
+  passed: () => unsupportedAccessReport ? unsupportedAccessReportPassed(unsupportedAccessReport) : false,
+  clear: (reason = 'X32 report cleared. Run the suite again for current evidence.') => invalidateUnsupportedAccessReport(reason),
+});
 void regressionMatrixIdentity().then((identity) => {
   elements.regressionmatrixidentity.textContent = `Immutable matrix SHA-256 ${identity} · four exact fixture/source hashes · four distinct oracles`;
   regressionMatrixReady = true;
@@ -3065,6 +3255,10 @@ void eventOrderSuiteIdentity().then((identity) => {
 void resetClassSuiteIdentity().then((identity) => {
   elements.resetclassidentity.textContent = `Immutable X31 contract SHA-256 ${identity} · three explicit AVR reset classes · fixed fixture memory diagnostic`;
   resetClassReady = true;
+});
+void unsupportedAccessSuiteIdentity().then((identity) => {
+  elements.unsupportedaccessidentity.textContent = `Immutable X32 contract SHA-256 ${identity} · one compiled AVR SPI access · affected requirement cannot pass`;
+  unsupportedAccessReady = true;
 });
 
 function renderLifecycle() {
@@ -7379,6 +7573,7 @@ async function build() {
   invalidateTimeInvarianceReport('A new build cleared the prior X29 report. Run the suite again for current evidence.');
   invalidateEventOrderReport('A new build cleared the prior X30 report. Run the suite again for current evidence.');
   invalidateResetClassReport('A new build cleared the prior X31 report. Run the suite again for current evidence.');
+  invalidateUnsupportedAccessReport('A new build cleared the prior X32 report. Run the suite again for current evidence.');
   const target = currentCompilerTarget();
   if (!target.compileAvailable) {
     const missing = firstMissingTargetPrerequisite(target.profile);
@@ -7564,6 +7759,7 @@ elements.pause.addEventListener('click', () => {
 });
 elements.step.addEventListener('click', () => worker?.postMessage({ command: 'step' }));
 elements.reset.addEventListener('click', () => {
+  invalidateUnsupportedAccessReport('Reset cleared the prior X32 report. Run the suite again for current evidence.');
   if (!worker) return;
   renderInstrumentEvidence(null);
   worker.postMessage({ command: 'reset' });
