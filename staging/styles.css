@@ -846,6 +846,19 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .long-duration-raw summary { color: var(--cyan); cursor: pointer; font-weight: 800; }
 .long-duration-raw summary:focus-visible { outline: 3px solid var(--lime); outline-offset: 3px; }
 .long-duration-raw pre { max-height: 320px; margin: 8px 0 0; padding: 9px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: #030b12; color: #c7dae3; font: .64rem/1.45 ui-monospace, monospace; white-space: pre; }
+.time-invariance-table-wrap { max-width: 100%; }
+.time-invariance-table { min-width: 980px; table-layout: fixed; }
+.time-invariance-table th:nth-child(1) { width: 15%; }
+.time-invariance-table th:nth-child(2) { width: 20%; }
+.time-invariance-table th:nth-child(3) { width: 23%; }
+.time-invariance-table th:nth-child(4) { width: 13%; }
+.time-invariance-table th:nth-child(5) { width: 14%; }
+.time-invariance-table th:nth-child(6) { width: 15%; }
+.time-invariance-cell strong, .time-invariance-cell code { display: block; }
+.time-invariance-cell strong { color: var(--text); font-size: .78rem; line-height: 1.35; }
+.time-invariance-cell code { margin-top: 7px; color: var(--cyan); font-size: .62rem; line-height: 1.45; overflow-wrap: anywhere; }
+.time-invariance-table td { overflow-wrap: anywhere; }
+.time-wall-diagnostic { color: var(--muted); }
 .instrument-grid { display: grid; grid-template-columns: 1.5fr .72fr; gap: 16px; margin-top: 16px; }
 .instrument-evidence { grid-column: 1 / -1; overflow: hidden; background: linear-gradient(135deg, #0a1b29 0%, #0b2531 58%, #10271f 100%); border-color: #2a627f; }
 .instrument-evidence::before { content: ''; display: block; height: 3px; margin: -18px -18px 16px; background: linear-gradient(90deg, var(--cyan), var(--lime)); }

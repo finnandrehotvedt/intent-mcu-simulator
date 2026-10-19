@@ -10,6 +10,7 @@ import {
   filterCatalog,
 } from '../src/component-catalog.mjs';
 import { CIRCUIT_SCHEMA, validateCircuit } from '../src/circuit-engine.mjs';
+import { DEFAULT_CIRCUIT } from '../src/default-circuit.mjs';
 import { RELEASE_VERSION } from '../src/release-metadata.mjs';
 import {
   commandBuildRelevance,
@@ -75,7 +76,7 @@ import {
   ScenarioTimelineEditor, defaultThermostatScenarioTimeline, faultInjectionThermostatTimeline,
   generateSeededThermostatTimeline, scenarioTimelineRuntimeEvents,
 } from '../src/scenario-timeline.mjs';
-import { aggregateExperimentOutcomes } from '../src/experiment-outcomes.mjs';
+import { aggregateExperimentOutcomes, completedExperimentOutcome } from '../src/experiment-outcomes.mjs';
 import {
   X26_REGRESSION_MATRIX, createExpectationOverride, regressionFixture,
   regressionMatrixIdentity, sha256Text,
@@ -93,6 +94,11 @@ import {
   executeLongDurationSuite, longDurationReportPassed,
 } from '../src/long-duration-runner.mjs';
 import { longDurationPresentation } from '../src/long-duration-presentation.mjs';
+import {
+  TIME_REPORT_SCHEMA, X29_FIXTURE_SOURCE, X29_TIME_SUITE, semanticTimeProjection,
+  stableTimeStringify, timeReportPassed, timeSha256, timeSuiteIdentity,
+  validateTimeReport, validateTimeRequirement, virtualNanoseconds,
+} from '../src/time-invariance-contract.mjs';
 import {
   COUNTEREXAMPLE_REDUCTION_SEED, reduceThermostatCounterexample,
 } from '../src/counterexample-reduction.mjs';
@@ -297,6 +303,8 @@ const elements = Object.fromEntries([
   'coverage-report-state', 'coverage-report-export', 'coverage-report-results', 'coverage-report-summary',
   'long-duration', 'long-duration-state', 'long-duration-identity', 'long-duration-run',
   'long-duration-export', 'long-duration-results', 'long-duration-summary',
+  'time-invariance', 'time-invariance-state', 'time-invariance-identity', 'time-invariance-run',
+  'time-invariance-export', 'time-invariance-results', 'time-invariance-summary',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -1972,6 +1980,9 @@ let regressionMatrixReady = false;
 let longDurationReport = null;
 let longDurationRunning = false;
 let longDurationReady = false;
+let timeInvarianceReport = null;
+let timeInvarianceRunning = false;
+let timeInvarianceReady = false;
 
 const waitForMatrixState = async (read, accept, code, timeoutMilliseconds = 30_000) => {
   const deadline = performance.now() + timeoutMilliseconds;
@@ -2028,6 +2039,13 @@ function invalidateLongDurationReport(message = 'Project state changed. Run X28 
   elements.longdurationsummary.textContent = message;
 }
 
+function invalidateTimeInvarianceReport(message = 'Project state changed. Run X29 again for current evidence.') {
+  if (timeInvarianceRunning || !timeInvarianceReport) return;
+  timeInvarianceReport = null;
+  renderTimeInvarianceReport(null);
+  elements.timeinvariancesummary.textContent = message;
+}
+
 function invalidateRegressionMatrixReport(message = 'Project state changed. Run the matrix again for current evidence.') {
   if (!regressionMatrixRunning && regressionMatrixReport) {
     regressionMatrixReport = null;
@@ -2039,6 +2057,7 @@ function invalidateRegressionMatrixReport(message = 'Project state changed. Run 
     elements.coveragereportsummary.textContent = message;
   }
   invalidateLongDurationReport(message);
+  invalidateTimeInvarianceReport(message);
 }
 
 function renderCoverageReport(report = coverageReport) {
@@ -2174,6 +2193,214 @@ function exportLongDurationReport() {
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
   const link = document.createElement('a'); link.href = url;
   link.download = `x28-long-duration-${longDurationReport.semanticSha256.slice(0, 12)}.intent-mcu-long-duration.json`;
+  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function timeMarkerCycle(records, marker) {
+  const text = records.map((entry) => String.fromCharCode(entry.value)).join('');
+  const index = text.indexOf(marker);
+  return index < 0 ? null : records[index]?.cycle ?? null;
+}
+
+function timeD13HighCycle(message) {
+  return message.instruments?.logic?.transitions?.find(
+    (entry) => entry.pin === 'D13' && entry.level === true,
+  )?.cycle ?? null;
+}
+
+function timeSnapshot(message, requirement) {
+  return {
+    cpuCycles: message.cycle,
+    instructions: message.instructions,
+    virtualNanoseconds: virtualNanoseconds(message.cycle),
+    pendingTarget: message.eventLog.pending.find((entry) => entry.targetCycle === requirement.targetCycle)?.targetCycle ?? null,
+  };
+}
+
+function timeRequirementVisible(message, requirement) {
+  const records = message.instruments?.serial?.records ?? [];
+  const d13 = timeD13HighCycle(message);
+  const uart = timeMarkerCycle(records, requirement.uartMarker);
+  return message.eventLog.pending.length === 0 && d13 !== null && uart !== null;
+}
+
+function timeWorkerQueue(worker) {
+  const queued = []; const waiting = [];
+  worker.addEventListener('message', ({ data }) => {
+    const index = waiting.findIndex((entry) => entry.accept(data));
+    if (index >= 0) {
+      const [entry] = waiting.splice(index, 1); clearTimeout(entry.timer); entry.resolve(data);
+    } else queued.push(data);
+  });
+  worker.addEventListener('error', (event) => {
+    for (const entry of waiting.splice(0)) { clearTimeout(entry.timer); entry.reject(Object.assign(new Error(event.message), { code: 'TIME_WORKER_ERROR' })); }
+  });
+  return (accept, timeoutMilliseconds = 30_000) => {
+    const index = queued.findIndex(accept);
+    if (index >= 0) return Promise.resolve(queued.splice(index, 1)[0]);
+    return new Promise((resolve, reject) => {
+      const entry = { accept, resolve, reject, timer: null };
+      entry.timer = setTimeout(() => {
+        const waitingIndex = waiting.indexOf(entry); if (waitingIndex >= 0) waiting.splice(waitingIndex, 1);
+        reject(Object.assign(new Error('TIME_WORKER_TIMEOUT'), { code: 'TIME_WORKER_TIMEOUT' }));
+      }, timeoutMilliseconds);
+      waiting.push(entry);
+    });
+  };
+}
+
+async function executeTimeInvarianceCell(artifact, spec) {
+  const requirement = structuredClone(X29_TIME_SUITE.requirement);
+  const worker = new Worker('./simulator.worker.js', { type: 'module' });
+  const next = timeWorkerQueue(worker);
+  const started = performance.now();
+  try {
+    worker.postMessage({ command: 'init', hex: artifact.hex, circuit: DEFAULT_CIRCUIT,
+      instruments: { logicChannels: ['D13', 'D2'], serialHistoryLimit: 512 } });
+    const readyMessage = await next((message) => message.kind === 'ready');
+    const ready = { cpuCycles: readyMessage.cycle, instructions: readyMessage.instructions,
+      virtualNanoseconds: virtualNanoseconds(readyMessage.cycle) };
+    worker.postMessage({ command: 'control', componentId: 'button-1', key: 'pressed', value: true,
+      targetCycle: requirement.targetCycle });
+    await next((message) => message.kind === 'control'
+      && message.eventLog.pending.some((entry) => entry.targetCycle === requirement.targetCycle));
+    worker.postMessage({ command: 'speed', speed: spec.pacing });
+    await next((message) => message.kind === 'speed' && message.speed === spec.pacing);
+    let pauseProbe = null;
+    worker.postMessage({ command: 'run' });
+    if (spec.pause) {
+      await next((message) => message.paused === false
+        && message.cycle >= spec.pause.minimumCycle && message.cycle <= spec.pause.maximumCycle);
+      worker.postMessage({ command: 'pause' });
+      const beforeMessage = await next((message) => message.kind === 'paused');
+      const before = timeSnapshot(beforeMessage, requirement);
+      const wallStarted = performance.now();
+      await new Promise((resolve) => setTimeout(resolve, spec.pause.minimumWallMilliseconds + 25));
+      worker.postMessage({ command: 'logic-channels', channels: ['D13', 'D2'] });
+      const afterMessage = await next((message) => message.kind === 'logic-channels');
+      const after = timeSnapshot(afterMessage, requirement);
+      pauseProbe = { before, after, wallWaitMilliseconds: performance.now() - wallStarted,
+        requirementSatisfiedBeforeWait: timeRequirementVisible(beforeMessage, requirement),
+        requirementSatisfiedAfterWait: timeRequirementVisible(afterMessage, requirement) };
+      worker.postMessage({ command: 'run' });
+    }
+    const observed = await next((message) => message.paused === false
+      && message.cycle >= requirement.targetCycle && timeRequirementVisible(message, requirement));
+    worker.postMessage({ command: 'pause' });
+    const final = await next((message) => message.kind === 'paused');
+    const records = final.instruments.serial.records;
+    const actual = {
+      eventLoggedTarget: final.eventLog.log.find((entry) => entry.targetCycle === requirement.targetCycle)?.targetCycle ?? null,
+      d13HighCycle: timeD13HighCycle(final),
+      uartMarkerCycle: timeMarkerCycle(records, requirement.uartMarker),
+      finalD13: final.pins.find((entry) => entry.pin === 'D13')?.level ?? null,
+      finalCpuCycles: final.cycle,
+      finalInstructions: final.instructions,
+      finalVirtualNanoseconds: virtualNanoseconds(final.cycle),
+      pauseProbe,
+    };
+    const passed = actual.eventLoggedTarget === requirement.targetCycle
+      && actual.d13HighCycle >= requirement.observationStartCycle
+      && actual.d13HighCycle <= requirement.observationEndCycle
+      && actual.uartMarkerCycle >= requirement.observationStartCycle
+      && actual.uartMarkerCycle <= requirement.observationEndCycle
+      && actual.finalD13 === requirement.expectedD13
+      && (!pauseProbe || (stableTimeStringify(pauseProbe.before) === stableTimeStringify(pauseProbe.after)
+        && pauseProbe.requirementSatisfiedBeforeWait === false
+        && pauseProbe.requirementSatisfiedAfterWait === false));
+    const wallDurationMilliseconds = performance.now() - started;
+    return {
+      executionId: spec.executionId, pacing: spec.pacing, ready, requirement, actual,
+      outcome: completedExperimentOutcome({ evidence: [
+        { code: 'TIME_D13_UART_PRODUCER_EVIDENCE', complete: actual.d13HighCycle !== null && actual.uartMarkerCycle !== null },
+      ], assertions: [
+        { code: 'TIME_VIRTUAL_REQUIREMENT_SATISFIED', passed },
+      ] }),
+      diagnostics: { wallDurationMilliseconds,
+        measuredCyclesPerSecond: wallDurationMilliseconds > 0 ? final.cycle / (wallDurationMilliseconds / 1000) : 0 },
+    };
+  } finally {
+    worker.postMessage({ command: 'dispose' }); worker.terminate();
+  }
+}
+
+function renderTimeInvarianceReport(report = timeInvarianceReport) {
+  elements.timeinvarianceresults.replaceChildren();
+  if (!report) {
+    const row = document.createElement('tr'); const cell = document.createElement('td'); cell.colSpan = 6;
+    cell.textContent = 'No current X29 report. Wall time never satisfies a virtual requirement.';
+    row.append(cell); elements.timeinvarianceresults.append(row);
+    elements.timeinvariancestate.textContent = 'Not run'; elements.timeinvarianceexport.disabled = true; return;
+  }
+  for (const execution of report.executions) {
+    const row = document.createElement('tr');
+    const identity = document.createElement('th'); identity.scope = 'row'; identity.className = 'time-invariance-cell';
+    const name = document.createElement('strong');
+    name.textContent = execution.executionId === 'X29-REFERENCE-1X' ? 'Reference · 1×'
+      : execution.executionId === 'X29-MAXIMUM' ? 'Maximum pacing' : 'Pause and resume';
+    const id = document.createElement('code'); id.textContent = execution.executionId; identity.append(name, id);
+    const requirement = document.createElement('td'); requirement.textContent = `D2 at ${execution.requirement.targetCycle.toLocaleString('en-US')} cycles · D13/UART within ${(execution.requirement.observationStartCycle / 16000).toFixed(0)}–${(execution.requirement.observationEndCycle / 16000).toFixed(0)} ms virtual`;
+    const observed = document.createElement('td');
+    observed.textContent = `${execution.actual.finalCpuCycles.toLocaleString('en-US')} CPU cycles · ${execution.actual.finalInstructions.toLocaleString('en-US')} instructions · ${execution.actual.finalVirtualNanoseconds.toLocaleString('en-US')} ns virtual${execution.actual.pauseProbe ? ` · Pause froze at ${execution.actual.pauseProbe.before.cpuCycles.toLocaleString('en-US')} cycles` : ''}`;
+    const outcome = document.createElement('td'); outcome.className = 'regression-matrix-outcome';
+    outcome.dataset.status = execution.outcome.academicStatus;
+    const badges = document.createElement('div'); badges.className = 'long-duration-outcomes';
+    for (const value of [execution.outcome.academicStatus, `job ${execution.outcome.jobStatus}`]) {
+      const badge = document.createElement('span'); badge.className = 'long-duration-outcome-badge'; badge.textContent = value; badges.append(badge);
+    }
+    outcome.append(badges);
+    const diagnostic = document.createElement('td'); diagnostic.className = 'time-wall-diagnostic';
+    diagnostic.textContent = `${execution.diagnostics.wallDurationMilliseconds.toFixed(1)} ms wall · diagnostic only`;
+    const evidence = document.createElement('td');
+    const details = document.createElement('details'); details.className = 'long-duration-raw time-invariance-raw';
+    const summary = document.createElement('summary'); summary.textContent = 'View complete native record';
+    const raw = document.createElement('pre'); raw.textContent = JSON.stringify(execution, null, 2);
+    details.append(summary, raw); evidence.append(details);
+    row.append(identity, requirement, observed, outcome, diagnostic, evidence);
+    elements.timeinvarianceresults.append(row);
+  }
+  elements.timeinvariancestate.textContent = `${report.executions.filter((entry) => entry.outcome.academicStatus === 'passed').length}/3 passed · wall requirement rejected`;
+  elements.timeinvarianceexport.disabled = false;
+  elements.timeinvariancesummary.textContent = `Semantic report ${report.semanticSha256}. Wall diagnostics are excluded. ${report.validationProbe.code} rejected before execution; no academic outcome was created.`;
+}
+
+async function runBrowserTimeInvarianceSuite() {
+  if (timeInvarianceRunning) throw Object.assign(new Error('TIME_INVARIANCE_BUSY'), { code: 'TIME_INVARIANCE_BUSY' });
+  timeInvarianceRunning = true; timeInvarianceReport = null; renderTimeInvarianceReport(null);
+  elements.timeinvariancerun.disabled = true; elements.timeinvariancestate.textContent = 'Compiling one fixture…';
+  try {
+    const artifact = await compileLongDurationSource(X29_FIXTURE_SOURCE);
+    const executions = [];
+    for (const spec of X29_TIME_SUITE.executions) {
+      elements.timeinvariancestate.textContent = `Running ${spec.executionId}…`;
+      executions.push(await executeTimeInvarianceCell(artifact, spec));
+    }
+    let validationCode = null;
+    try { validateTimeRequirement({ ...X29_TIME_SUITE.requirement, wallMilliseconds: 150 }); }
+    catch (error) { validationCode = error.code; }
+    const report = {
+      schema: TIME_REPORT_SCHEMA, suiteId: X29_TIME_SUITE.suiteId,
+      suiteSha256: await timeSuiteIdentity(), profile: X29_TIME_SUITE.profile,
+      sourceSha256: X29_TIME_SUITE.fixture.sourceSha256, artifactSha256: artifact.artifactSha256,
+      producer: 'existing browser simulator.worker/RuntimeKernel/avr8js 0.21.1', executions,
+      validationProbe: { status: 'rejected-before-execution', code: validationCode,
+        academicOutcomeCreated: false }, limits: structuredClone(X29_TIME_SUITE.limits),
+    };
+    report.semanticSha256 = await timeSha256(stableTimeStringify(semanticTimeProjection(report)));
+    timeInvarianceReport = await validateTimeReport(report);
+    renderTimeInvarianceReport(timeInvarianceReport);
+    return structuredClone(timeInvarianceReport);
+  } finally {
+    timeInvarianceRunning = false; elements.timeinvariancerun.disabled = false;
+  }
+}
+
+function exportTimeInvarianceReport() {
+  if (!timeInvarianceReport) return;
+  const text = `${JSON.stringify(timeInvarianceReport, null, 2)}\n`;
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const link = document.createElement('a'); link.href = url;
+  link.download = `x29-time-invariance-${timeInvarianceReport.semanticSha256.slice(0, 12)}.intent-mcu-time.json`;
   link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
@@ -2373,6 +2600,8 @@ elements.regressionmatrixexport.addEventListener('click', exportRegressionMatrix
 elements.coveragereportexport.addEventListener('click', exportCoverageReport);
 elements.longdurationrun.addEventListener('click', () => { void runBrowserLongDurationSuite(); });
 elements.longdurationexport.addEventListener('click', exportLongDurationReport);
+elements.timeinvariancerun.addEventListener('click', () => { void runBrowserTimeInvarianceSuite(); });
+elements.timeinvarianceexport.addEventListener('click', exportTimeInvarianceReport);
 for (const input of [elements.source, elements.picosource, elements.c3source, elements.stm32source,
   elements.projectopeninput, elements.picoopeninput, elements.c3openinput, elements.stm32openinput,
   elements.boardselect]) {
@@ -2407,6 +2636,14 @@ window.__X28_LONG_DURATION__ = Object.freeze({
   passed: () => longDurationReport ? longDurationReportPassed(longDurationReport) : false,
   clear: (reason = 'X28 report cleared. Run the suite again for current evidence.') => invalidateLongDurationReport(reason),
 });
+window.__X29_TIME_INVARIANCE__ = Object.freeze({
+  get ready() { return timeInvarianceReady; },
+  suite: () => structuredClone(X29_TIME_SUITE),
+  report: () => timeInvarianceReport ? structuredClone(timeInvarianceReport) : null,
+  run: () => runBrowserTimeInvarianceSuite(),
+  passed: () => timeInvarianceReport ? timeReportPassed(timeInvarianceReport) : false,
+  clear: (reason = 'X29 report cleared. Run the suite again for current evidence.') => invalidateTimeInvarianceReport(reason),
+});
 void regressionMatrixIdentity().then((identity) => {
   elements.regressionmatrixidentity.textContent = `Immutable matrix SHA-256 ${identity} · four exact fixture/source hashes · four distinct oracles`;
   regressionMatrixReady = true;
@@ -2414,6 +2651,10 @@ void regressionMatrixIdentity().then((identity) => {
 void longDurationSuiteIdentity().then((identity) => {
   elements.longdurationidentity.textContent = `Immutable X28 suite SHA-256 ${identity} · exact source hashes · fixture-only timer0_millis seam`;
   longDurationReady = true;
+});
+void timeSuiteIdentity().then((identity) => {
+  elements.timeinvarianceidentity.textContent = `Immutable X29 contract SHA-256 ${identity} · 16 MHz AVR producer time · wall diagnostics excluded`;
+  timeInvarianceReady = true;
 });
 
 function renderLifecycle() {
@@ -6725,6 +6966,7 @@ async function pollJob(job, inputAtSubmit, binding) {
 
 async function build() {
   invalidateLongDurationReport('A new build cleared the prior X28 report. Run the suite again for current evidence.');
+  invalidateTimeInvarianceReport('A new build cleared the prior X29 report. Run the suite again for current evidence.');
   const target = currentCompilerTarget();
   if (!target.compileAvailable) {
     const missing = firstMissingTargetPrerequisite(target.profile);
