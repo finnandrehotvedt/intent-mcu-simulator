@@ -4,7 +4,7 @@ const path = require('node:path');
 const { chromium } = require('/runner/node_modules/playwright');
 
 const base = process.env.X83_URL || 'http://host.docker.internal:18844';
-const screenshot = process.env.X83_SCREENSHOT || '/evidence/x83-private-retry.png';
+const screenshot = process.env.X83_SCREENSHOT || '/evidence/x83-private-retry-visible.png';
 
 let browser;
 (async () => {
@@ -43,9 +43,15 @@ let browser;
   assert.deepEqual(errors, []);
   assert.equal(expected429Console.length, 1);
   assert.equal((await context.cookies()).length, 0);
+  const projectMessage = page.locator('#project-message');
+  await projectMessage.scrollIntoViewIfNeeded();
+  assert.equal(await projectMessage.isVisible(), true);
+  const messageBox = await projectMessage.boundingBox();
+  assert.ok(messageBox && messageBox.y >= 0 && messageBox.y + messageBox.height <= 1000);
   fs.mkdirSync(path.dirname(screenshot), { recursive: true });
-  await page.locator('.workspace').screenshot({ path: screenshot });
+  await page.screenshot({ path: screenshot, fullPage: false });
   console.log(JSON.stringify({ result: 'pass', synthetic429: true, firmwareBuilds: 0,
-    runtimeRuns: 0, automaticRetries: syntheticRequests - 1, message: message.trim(), screenshot }));
+    runtimeRuns: 0, automaticRetries: syntheticRequests - 1, message: message.trim(),
+    messageVisibleInViewport: true, messageBox, screenshot }));
 })().catch((error) => { console.error(error.stack || String(error)); process.exitCode = 1; })
   .finally(async () => { if (browser) await browser.close(); });
