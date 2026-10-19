@@ -2,6 +2,24 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.54 — 2026-10-19
+
+- Published the independently accepted bounded X31 reset-class report for one
+  fixed AVR fixture. CPU reset, experiment restart and power-on now have a
+  closed, visible retention table instead of being treated as equivalent fresh
+  runs.
+- Kept producer observations explicit: the fixed SRAM diagnostic changes from
+  `0xA5` to zero; CPU reset retains the changed `.75`/`true` component controls,
+  experiment restart applies declared `.25`/`false` cycle-zero inputs, and
+  power-on restores `.5`/`false` with empty queue, log, trace, Serial and faults.
+- Kept validation rejection, infrastructure failure and evidence-backed
+  academic failure distinct. Missing or stale evidence cannot pass.
+- Added concise class rows, keyboard-accessible full evidence and transient
+  JSON export. Open and reload clear the report and export authority.
+- This remains a fixture-only AVR simulator contract. It does not claim
+  physical reset behavior, EEPROM retention, watchdog/brownout semantics or
+  equivalence for other processor profiles; X31 therefore remains partial.
+
 ## 1.1.0-rc.53 — 2026-10-19
 
 - Published the independently accepted bounded X30 AVR event-order report.
