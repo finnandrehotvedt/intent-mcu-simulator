@@ -151,6 +151,11 @@ import {
   x35SuiteIdentity,
 } from '../src/x35-causal-chain-contract.mjs';
 import {
+  X36_REPLAY_REPORT_SCHEMA, X36_REPLAY_SUITE, X36_SUITE_ID,
+  createX36ReplayRecipe, semanticX36Projection, validateX36ReplayReport,
+  x36RepeatProjection, x36ReplayReportPassed, x36Sha256, x36SuiteIdentity,
+} from '../src/x36-failure-replay-contract.mjs';
+import {
   COUNTEREXAMPLE_REDUCTION_SEED, reduceThermostatCounterexample,
 } from '../src/counterexample-reduction.mjs';
 import {
@@ -369,6 +374,9 @@ const elements = Object.fromEntries([
   'precision-check-export', 'precision-check-results', 'precision-check-summary',
   'causal-chain', 'causal-chain-state', 'causal-chain-identity', 'causal-chain-run',
   'causal-chain-export', 'causal-chain-results', 'causal-chain-summary',
+  'failure-replay', 'failure-replay-state', 'failure-replay-identity', 'failure-replay-open',
+  'failure-replay-advance', 'failure-replay-export', 'failure-replay-results',
+  'failure-replay-summary',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -2065,6 +2073,14 @@ let precisionCheckReady = false;
 let causalChainReport = null;
 let causalChainRunning = false;
 let causalChainReady = false;
+let failureReplayReport = null;
+let failureReplaySession = null;
+let failureReplayRunning = false;
+let failureReplayReady = false;
+let failureReplayToken = 0;
+let failureReplayGeneration = 3600;
+let failureReplayRetirements = 0;
+let failureReplayArtifact = null;
 
 const waitForMatrixState = async (read, accept, code, timeoutMilliseconds = 30_000) => {
   const deadline = performance.now() + timeoutMilliseconds;
@@ -2170,6 +2186,27 @@ function invalidateCausalChainReport(message = 'Project state changed. Run X35 a
   elements.causalchainsummary.textContent = message;
 }
 
+function retireFailureReplayWorkers() {
+  const session = failureReplaySession;
+  failureReplaySession = null;
+  failureReplayToken += 1;
+  if (!session) return;
+  for (const entry of session.workers) {
+    entry.channel.close('X36_REPLAY_RETIRED');
+    try { entry.worker.postMessage({ command: 'dispose' }); } catch { /* already unavailable */ }
+    setTimeout(() => entry.worker.terminate(), 250);
+  }
+  failureReplayRetirements += session.workers.length;
+}
+
+function invalidateFailureReplayReport(message = 'Project state changed. Open the replay point again for current evidence.') {
+  retireFailureReplayWorkers();
+  failureReplayRunning = false;
+  failureReplayReport = null;
+  renderFailureReplay(null);
+  elements.failurereplaysummary.textContent = message;
+}
+
 function invalidateRegressionMatrixReport(message = 'Project state changed. Run the matrix again for current evidence.') {
   if (!regressionMatrixRunning && regressionMatrixReport) {
     regressionMatrixReport = null;
@@ -2188,6 +2225,7 @@ function invalidateRegressionMatrixReport(message = 'Project state changed. Run 
   invalidateDigitalStateReport(message);
   invalidatePrecisionCheckReport(message);
   invalidateCausalChainReport(message);
+  invalidateFailureReplayReport(message);
 }
 
 function renderCoverageReport(report = coverageReport) {
@@ -3466,6 +3504,263 @@ function exportCausalChainReport() {
   link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+function failureReplayWorkerChannel(worker, runtimeBinding, token) {
+  const queued = []; const waiting = []; let nonce = null; let fault = null;
+  const fail = (error) => {
+    fault = error;
+    for (const entry of waiting.splice(0)) { clearTimeout(entry.timer); entry.reject(error); }
+  };
+  const onMessage = ({ data }) => {
+    if (token !== failureReplayToken) return;
+    try {
+      const identity = validateWorkerRuntimeIdentity(data.runtimeIdentity, runtimeBinding, nonce);
+      nonce ??= identity.workerInstanceNonce;
+      const index = waiting.findIndex((entry) => entry.accept(data));
+      if (index >= 0) {
+        const [entry] = waiting.splice(index, 1); clearTimeout(entry.timer); entry.resolve(structuredClone(data));
+      } else queued.push(structuredClone(data));
+    } catch (error) { fail(error); }
+  };
+  worker.addEventListener('message', onMessage);
+  worker.addEventListener('error', (event) => fail(Object.assign(new Error(event.message), {
+    code: 'X36_REPLAY_WORKER_UNAVAILABLE',
+  })));
+  return {
+    get nonce() { return nonce; },
+    next(accept, timeoutMilliseconds = 30_000) {
+      if (fault) return Promise.reject(fault);
+      const index = queued.findIndex(accept);
+      if (index >= 0) return Promise.resolve(queued.splice(index, 1)[0]);
+      return new Promise((resolve, reject) => {
+        const entry = { accept, resolve, reject, timer: null };
+        entry.timer = setTimeout(() => {
+          const waitingIndex = waiting.indexOf(entry); if (waitingIndex >= 0) waiting.splice(waitingIndex, 1);
+          reject(Object.assign(new Error('X36_REPLAY_WORKER_TIMEOUT'), { code: 'X36_REPLAY_WORKER_TIMEOUT' }));
+        }, timeoutMilliseconds);
+        waiting.push(entry);
+      });
+    },
+    close(code) {
+      fail(Object.assign(new Error(code), { code }));
+      worker.removeEventListener('message', onMessage);
+    },
+  };
+}
+
+function x36AnchorFromMessage(message) {
+  const d13 = message.pins?.find((pin) => pin.pin === 'D13');
+  return { instructionOrdinal: message.instructions, cycle: message.cycle, pc: message.pc,
+    paused: message.paused, d13: { mode: d13?.mode, level: d13?.level },
+    retentionDrops: structuredClone(message.retentionDrops),
+    pendingInputs: message.eventLog?.pending?.length ?? -1 };
+}
+
+function exactX36Anchor(anchor) {
+  return JSON.stringify(anchor) === JSON.stringify(X36_REPLAY_SUITE.anchor);
+}
+
+async function compileFailureReplayFixture() {
+  const response = await fetch('/api/build', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Teach-Lab-Build': '1' },
+    body: JSON.stringify({ schema: 'teach-lab-build-request@1', board: AVR_PROFILE,
+      files: [{ name: 'main.ino', content: X32_FAULT_SOURCE }] }),
+  });
+  const submitted = await response.json();
+  if (!response.ok) throw Object.assign(new Error(submitted.code ?? 'X36_BUILD_REJECTED'), { code: submitted.code });
+  while (true) {
+    const statusResponse = await fetch(`/api/build/${submitted.jobId}`, {
+      headers: { Authorization: `Bearer ${submitted.capability}` }, cache: 'no-store',
+    });
+    const status = await statusResponse.json();
+    if (!statusResponse.ok) throw Object.assign(new Error(status.code ?? 'X36_BUILD_STATUS'), { code: status.code });
+    if (status.status === 'building') { await new Promise((resolve) => setTimeout(resolve, 100)); continue; }
+    if (status.status !== 'succeeded') {
+      const code = status.error ?? status.result?.code ?? `X36_BUILD_${status.status.toUpperCase()}`;
+      throw Object.assign(new Error(code), { code });
+    }
+    return status.result;
+  }
+}
+
+async function openFailureReplayWorker({ artifact, repeat, token }) {
+  const runtimeBinding = { schema: RUNTIME_BINDING_SCHEMA,
+    projectGeneration: Math.max(1, lifecycle.projectGeneration),
+    runtimeGeneration: ++failureReplayGeneration, artifactIdentity: artifact.artifactIdentity };
+  const worker = new Worker('./simulator.worker.js', { type: 'module' });
+  const channel = failureReplayWorkerChannel(worker, runtimeBinding, token);
+  const entry = { repeat, worker, channel, runtimeBinding, runtimeIdentity: null, anchor: null };
+  failureReplaySession.workers.push(entry);
+  worker.postMessage({ command: 'init', hex: artifact.artifact.hex, circuit: DEFAULT_CIRCUIT,
+    runtimeBinding, instruments: { logicChannels: ['D13', 'D2'], selectedPin: 'D13', serialHistoryLimit: 512 } });
+  const ready = await channel.next((message) => message.kind === 'ready');
+  entry.runtimeIdentity = structuredClone(ready.runtimeIdentity);
+  worker.postMessage({ command: 'reset' });
+  await channel.next((message) => message.kind === 'reset');
+  let anchorMessage = null;
+  for (let ordinal = 1; ordinal <= X36_REPLAY_SUITE.anchor.instructionOrdinal; ordinal += 1) {
+    worker.postMessage({ command: 'step' });
+    const message = await channel.next((candidate) => candidate.kind === 'stepped' || candidate.kind === 'error');
+    if (message.kind !== 'stepped') throw Object.assign(new Error('X36_REPLAY_EARLY_FAULT'), { code: 'X36_REPLAY_EARLY_FAULT' });
+    anchorMessage = message;
+  }
+  worker.postMessage({ command: 'sample' });
+  const sample = await channel.next((message) => message.kind === 'sample');
+  const anchor = x36AnchorFromMessage(sample);
+  if (!anchorMessage || anchorMessage.cycle !== sample.cycle || anchorMessage.pc !== sample.pc
+      || !exactX36Anchor(anchor)) {
+    throw Object.assign(new Error('X36_REPLAY_ANCHOR_AMBIGUOUS'), { code: 'X36_REPLAY_ANCHOR_AMBIGUOUS' });
+  }
+  entry.anchor = anchor;
+  return entry;
+}
+
+function appendFailureReplayCard(title, phase, facts) {
+  const card = document.createElement('section'); card.className = 'failure-replay-card'; card.dataset.phase = phase;
+  const heading = document.createElement('h4'); heading.textContent = title;
+  const list = document.createElement('dl');
+  for (const [label, value] of facts) {
+    const term = document.createElement('dt'); term.textContent = label;
+    const detail = document.createElement('dd'); detail.textContent = value;
+    list.append(term, detail);
+  }
+  card.append(heading, list); elements.failurereplayresults.append(card);
+}
+
+function renderFailureReplay(report = failureReplayReport) {
+  elements.failurereplayresults.replaceChildren();
+  const session = failureReplaySession;
+  if (!report && session?.workers?.length === 2 && session.workers.every((entry) => entry.anchor)) {
+    for (const entry of session.workers) appendFailureReplayCard(`Worker ${entry.repeat} · pre-failure`, 'anchor', [
+      ['Execution', 'fresh reset replay'], ['Instruction', String(entry.anchor.instructionOrdinal)],
+      ['Cycle / PC', `${entry.anchor.cycle} / ${entry.anchor.pc}`], ['D13', `${entry.anchor.d13.mode} · HIGH`],
+      ['Worker nonce', entry.runtimeIdentity.workerInstanceNonce],
+    ]);
+    appendFailureReplayCard('Snapshot capability', 'snapshot', [
+      ['Full snapshot', 'unavailable'], ['Omitted classes', String(X36_REPLAY_SUITE.snapshot.omittedStateClasses.length)],
+      ['Next action', 'executes exactly one instruction'],
+    ]);
+    elements.failurereplaystate.textContent = 'Pre-failure open · paused 2/2';
+    elements.failurereplayadvance.disabled = false; elements.failurereplayexport.disabled = true;
+    return;
+  }
+  if (!report) {
+    const text = document.createElement('p'); text.textContent = 'No replay point is open. Full snapshot unavailable.';
+    elements.failurereplayresults.append(text); elements.failurereplaystate.textContent = 'Not opened';
+    elements.failurereplayadvance.disabled = true; elements.failurereplayexport.disabled = true; return;
+  }
+  const first = report.repeats[0];
+  appendFailureReplayCard('Pre-failure observation', 'anchor', [
+    ['Replay', 'fresh reset → paused'], ['Instruction', String(first.anchor.instructionOrdinal)],
+    ['Cycle / PC', `${first.anchor.cycle} / ${first.anchor.pc}`], ['D13', 'OUTPUT · HIGH'],
+  ]);
+  appendFailureReplayCard('One-step fault', 'fault', [
+    ['Executed', 'one instruction'], ['SPI write', `0x${first.fault.address.toString(16)} ← 0x${first.fault.value.toString(16)}`],
+    ['Producer / stop', `${first.fault.producerCycle} / ${first.fault.stoppedCycle}`],
+    ['Disposition', `${report.classifications.execution.status} · academic unsupported`],
+  ]);
+  appendFailureReplayCard('Snapshot capability', 'snapshot', [
+    ['Full snapshot', 'unavailable'], ['Replay type', 'deterministic reset re-execution'],
+    ['Omitted classes', String(report.snapshot.omittedStateClasses.length)], ['Post-fault records', '0 accepted'],
+  ]);
+  elements.failurereplaystate.textContent = 'Exact fault reproduced · 2/2';
+  elements.failurereplayadvance.disabled = true;
+  elements.failurereplayexport.disabled = !x36ReplayReportPassed(report);
+}
+
+async function openFailureReplayPoint() {
+  invalidateFailureReplayReport('Opening a fresh isolated replay; prior workers and export authority were retired.');
+  const token = ++failureReplayToken;
+  failureReplayRunning = true; elements.failurereplayopen.disabled = true;
+  elements.failurereplaystate.textContent = failureReplayArtifact
+    ? 'Binding verified fixed X32 artifact…' : 'Compiling fixed X32 fixture…';
+  try {
+    const artifact = failureReplayArtifact ?? await compileFailureReplayFixture();
+    failureReplayArtifact ??= structuredClone(artifact);
+    if (token !== failureReplayToken) throw Object.assign(new Error('X36_REPLAY_RETIRED'), { code: 'X36_REPLAY_RETIRED' });
+    const recipe = await createX36ReplayRecipe(artifact.artifactIdentity);
+    failureReplaySession = { token, artifact, recipe, workers: [], phase: 'opening' };
+    for (const repeat of ['A', 'B']) {
+      elements.failurereplaystate.textContent = `Worker ${repeat} · executing reset-to-anchor…`;
+      await openFailureReplayWorker({ artifact, repeat, token });
+    }
+    if (token !== failureReplayToken) throw Object.assign(new Error('X36_REPLAY_RETIRED'), { code: 'X36_REPLAY_RETIRED' });
+    const hashes = await Promise.all(failureReplaySession.workers.map((entry) => x36Sha256(entry.anchor)));
+    if (hashes[0] !== hashes[1]) throw Object.assign(new Error('X36_REPLAY_ANCHOR_MISMATCH'), { code: 'X36_REPLAY_ANCHOR_MISMATCH' });
+    failureReplaySession.phase = 'anchor-open'; renderFailureReplay(null);
+    elements.failurereplaysummary.textContent = 'Two fresh isolated workers are paused at the exact pre-failure point. Full snapshot unavailable; Advance executes one instruction in both.';
+    return failureReplaySession.workers.map((entry) => ({ repeat: entry.repeat,
+      runtimeBinding: structuredClone(entry.runtimeBinding), runtimeIdentity: structuredClone(entry.runtimeIdentity),
+      anchor: structuredClone(entry.anchor) }));
+  } catch (error) {
+    if (token === failureReplayToken) {
+      retireFailureReplayWorkers(); renderFailureReplay(null);
+      elements.failurereplaystate.textContent = `Stopped · ${error.code ?? error.message}`;
+      elements.failurereplaysummary.textContent = 'Infrastructure or validation stopped the replay before any academic disposition or export was created.';
+    }
+    throw error;
+  } finally {
+    if (token === failureReplayToken) { failureReplayRunning = false; elements.failurereplayopen.disabled = false; }
+  }
+}
+
+async function advanceFailureReplayInstruction() {
+  const session = failureReplaySession;
+  if (!session || session.phase !== 'anchor-open' || session.token !== failureReplayToken) {
+    throw Object.assign(new Error('X36_REPLAY_ANCHOR_NOT_OPEN'), { code: 'X36_REPLAY_ANCHOR_NOT_OPEN' });
+  }
+  const token = session.token; failureReplayRunning = true;
+  elements.failurereplayadvance.disabled = true; elements.failurereplayopen.disabled = true;
+  elements.failurereplaystate.textContent = 'Executing exactly one instruction in 2 workers…';
+  try {
+    const repeats = [];
+    for (const entry of session.workers) {
+      entry.worker.postMessage({ command: 'step' });
+      const message = await entry.channel.next((candidate) => candidate.kind === 'error');
+      if (token !== failureReplayToken) throw Object.assign(new Error('X36_REPLAY_RETIRED'), { code: 'X36_REPLAY_RETIRED' });
+      const access = message.unsupported?.at(-1);
+      repeats.push({ repeat: entry.repeat, runtimeBinding: structuredClone(entry.runtimeBinding),
+        runtimeIdentity: structuredClone(entry.runtimeIdentity), anchor: structuredClone(entry.anchor),
+        fault: { operation: 'write', peripheral: access?.peripheral, address: access?.address,
+          value: access?.value, producerCycle: access?.cycle, instructionOrdinal: message.instructions,
+          stoppedCycle: message.cycle, paused: message.paused, code: 'RUNTIME_CAPABILITY_UNSUPPORTED',
+          postFaultAcceptedRecords: 0 } });
+    }
+    const report = { schema: X36_REPLAY_REPORT_SCHEMA, suiteId: X36_SUITE_ID,
+      recipe: structuredClone(session.recipe), repeats,
+      repeatSemanticSha256: await x36Sha256(x36RepeatProjection(repeats[0])),
+      classifications: {
+        execution: { status: 'stopped-unsupported', academicStatus: 'unsupported', code: 'RUNTIME_CAPABILITY_UNSUPPORTED' },
+        validation: { status: 'accepted', code: 'X36_REPLAY_EXACT' },
+        infrastructure: { status: 'available', code: 'X36_TWO_WORKERS_RESPONDED' },
+      }, snapshot: structuredClone(X36_REPLAY_SUITE.snapshot), limits: structuredClone(X36_REPLAY_SUITE.limits),
+      semanticSha256: '' };
+    report.semanticSha256 = await x36Sha256(semanticX36Projection(report));
+    failureReplayReport = await validateX36ReplayReport(report);
+    retireFailureReplayWorkers(); renderFailureReplay(failureReplayReport);
+    failureReplayRunning = false; elements.failurereplayopen.disabled = false;
+    elements.failurereplaysummary.textContent = `Exact one-step SPI capability stop reproduced in two fresh workers. Academic disposition is unsupported; infrastructure and validation are separately accepted. Report ${failureReplayReport.semanticSha256}.`;
+    return structuredClone(failureReplayReport);
+  } catch (error) {
+    if (token === failureReplayToken) {
+      failureReplayReport = null; retireFailureReplayWorkers(); renderFailureReplay(null);
+      failureReplayRunning = false; elements.failurereplayopen.disabled = false;
+      elements.failurereplaystate.textContent = `Stopped · ${error.code ?? error.message}`;
+      elements.failurereplaysummary.textContent = 'Infrastructure or validation failed. No academic replay report or export was created.';
+    }
+    throw error;
+  } finally {
+    if (token === failureReplayToken) { failureReplayRunning = false; elements.failurereplayopen.disabled = false; }
+  }
+}
+
+function exportFailureReplayReport() {
+  if (!failureReplayReport || !x36ReplayReportPassed(failureReplayReport)) return;
+  const url = URL.createObjectURL(new Blob([`${JSON.stringify(failureReplayReport, null, 2)}\n`], { type: 'application/json' }));
+  const link = document.createElement('a'); link.href = url;
+  link.download = `x36-failure-replay-${failureReplayReport.semanticSha256.slice(0, 12)}.intent-mcu-x36.json`;
+  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 async function selectRegressionProfile(profile) {
   if (selectedCompilerProfile === profile) return;
   elements.boardselect.value = profile;
@@ -3676,6 +3971,9 @@ elements.precisioncheckrun.addEventListener('click', () => { void runBrowserPrec
 elements.precisioncheckexport.addEventListener('click', exportPrecisionCheckReport);
 elements.causalchainrun.addEventListener('click', () => { void runBrowserCausalChain(); });
 elements.causalchainexport.addEventListener('click', exportCausalChainReport);
+elements.failurereplayopen.addEventListener('click', () => { void openFailureReplayPoint(); });
+elements.failurereplayadvance.addEventListener('click', () => { void advanceFailureReplayInstruction(); });
+elements.failurereplayexport.addEventListener('click', exportFailureReplayReport);
 for (const input of [elements.source, elements.picosource, elements.c3source, elements.stm32source,
   elements.projectopeninput, elements.picoopeninput, elements.c3openinput, elements.stm32openinput,
   elements.boardselect]) {
@@ -3766,6 +4064,19 @@ window.__X35_CAUSAL_CHAIN__ = Object.freeze({
   passed: () => causalChainReport ? x35ReportPassed(causalChainReport) : false,
   clear: (reason = 'X35 report cleared. Run the causal check again for current evidence.') => invalidateCausalChainReport(reason),
 });
+window.__X36_FAILURE_REPLAY__ = Object.freeze({
+  get ready() { return failureReplayReady; },
+  suite: () => structuredClone(X36_REPLAY_SUITE),
+  phase: () => failureReplaySession?.phase ?? (failureReplayReport ? 'fault-open' : 'empty'),
+  anchors: () => failureReplaySession?.workers?.map((entry) => structuredClone(entry.anchor)) ?? [],
+  report: () => failureReplayReport ? structuredClone(failureReplayReport) : null,
+  open: () => openFailureReplayPoint(),
+  advance: () => advanceFailureReplayInstruction(),
+  passed: () => failureReplayReport ? x36ReplayReportPassed(failureReplayReport) : false,
+  retirements: () => failureReplayRetirements,
+  activeWorkers: () => failureReplaySession?.workers?.length ?? 0,
+  clear: (reason = 'X36 replay cleared. Open the replay point again for current evidence.') => invalidateFailureReplayReport(reason),
+});
 void regressionMatrixIdentity().then((identity) => {
   elements.regressionmatrixidentity.textContent = `Immutable matrix SHA-256 ${identity} · four exact fixture/source hashes · four distinct oracles`;
   regressionMatrixReady = true;
@@ -3801,6 +4112,10 @@ void x34SuiteIdentity().then((identity) => {
 void x35SuiteIdentity().then((identity) => {
   elements.causalchainidentity.textContent = `Immutable X35 contract SHA-256 ${identity} · unmodified AVR artifact · one selected PORTB→D13 event`;
   causalChainReady = true;
+});
+void x36SuiteIdentity().then((identity) => {
+  elements.failurereplayidentity.textContent = `Immutable X36 recipe SHA-256 ${identity} · fixed X32 artifact · reset origin · empty inputs · two fresh bound workers`;
+  failureReplayReady = true;
 });
 
 function renderLifecycle() {
@@ -8129,6 +8444,7 @@ async function pollJob(job, inputAtSubmit, binding) {
 }
 
 async function build() {
+  invalidateFailureReplayReport('A new build retired the X36 replay workers and cleared export authority. Open the replay point again.');
   invalidateLongDurationReport('A new build cleared the prior X28 report. Run the suite again for current evidence.');
   invalidateTimeInvarianceReport('A new build cleared the prior X29 report. Run the suite again for current evidence.');
   invalidateEventOrderReport('A new build cleared the prior X30 report. Run the suite again for current evidence.');
@@ -8322,6 +8638,7 @@ elements.pause.addEventListener('click', () => {
 });
 elements.step.addEventListener('click', () => worker?.postMessage({ command: 'step' }));
 elements.reset.addEventListener('click', () => {
+  invalidateFailureReplayReport('Reset retired the X36 replay workers and cleared export authority. Open the replay point again.');
   invalidateUnsupportedAccessReport('Reset cleared the prior X32 report. Run the suite again for current evidence.');
   invalidateDigitalStateReport('Reset cleared the prior X33 report. Run the static check again for current evidence.');
   invalidatePrecisionCheckReport('Reset cleared the prior X34 report. Run the instrumented check again for current evidence.');
@@ -9255,6 +9572,7 @@ window.__M3_COMMAND__ = (command, value) => worker?.postMessage(command === 'spe
 window.__M4_CONTROL__ = (componentId, key, value) => worker?.postMessage({ command: 'control', componentId, key, value });
 window.__M5_COMMAND__ = (command, value) => worker?.postMessage({ command, value });
 window.addEventListener('pagehide', () => {
+  retireFailureReplayWorkers(); failureReplayReport = null;
   picoPublicWorkbench.deactivate();
   c3PublicWorkbench.disposeForPageExit();
 });

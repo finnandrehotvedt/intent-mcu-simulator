@@ -712,6 +712,20 @@
       <div class="regression-matrix-table-wrap causal-chain-table-wrap"><table class="regression-matrix-table causal-chain-table"><thead><tr><th>Stage</th><th>Producer record</th><th>Causal identity</th><th>Evidence boundary</th><th>Repeat outcome</th></tr></thead><tbody id="causal-chain-results"><tr><td colspan="5">No current X35 report. A fresh compile and two fresh bound workers are required.</td></tr></tbody></table></div>
       <p id="causal-chain-summary" class="truth" role="status">The report is transient. Build, Reset, source/circuit change, Open, worker retirement and reload clear its authority.</p>
       <p class="regression-matrix-limit"><strong>Limits:</strong> one AVR D13 rising event and one ideal project-owned LED model only. PC/opcode and PORTB are emulator evidence, not source-line mapping, compiler correctness, silicon-bus proof, voltage/current timing or physical causality. No debugger, breakpoint, arbitrary register/memory API, other profile or generic causal graph is exposed.</p>
+      <div id="failure-replay" class="coverage-report-heading failure-replay-heading">
+        <div><p class="eyebrow">X36 · BOUNDED FAILURE-TIME REPLAY</p><h3>Reset-to-point replay · one next instruction</h3></div>
+        <span id="failure-replay-state" class="state">Not opened</span>
+      </div>
+      <p class="regression-matrix-intro"><strong>This operation executes an isolated fixed fixture.</strong> Open starts two fresh workers, re-executes the compiler-generated X32 firmware from reset, and pauses both exactly one instruction before the SPI capability stop. Advance executes that single next instruction in each worker; it is not a read-only or execution-free action.</p>
+      <div class="regression-matrix-actions failure-replay-actions">
+        <button id="failure-replay-open" type="button">Open pre-failure replay point</button>
+        <button id="failure-replay-advance" type="button" disabled>Advance one instruction</button>
+        <button id="failure-replay-export" type="button" disabled>Export X36 JSON</button>
+      </div>
+      <p id="failure-replay-identity" class="regression-matrix-identity">Loading immutable X36 replay recipe…</p>
+      <div id="failure-replay-results" class="failure-replay-results" aria-live="polite"><p>No replay point is open. Full snapshot unavailable.</p></div>
+      <p id="failure-replay-summary" class="truth" role="status">No memory snapshot is restored. Build, Reset, source/circuit change, Open, worker retirement and reload clear the transient recipe, workers and export authority.</p>
+      <p class="regression-matrix-limit"><strong>Full snapshot unavailable:</strong> complete CPU registers/data, stack/status, pending CPU clock events, timer/ADC/UART internals and complete scheduler/peripheral object state are omitted. This is deterministic reset replay for one fixed AVR SPI fault—not restore, arbitrary seek, time travel, source stepping, compiler correctness, silicon or physical-hardware proof.</p>
     </section>
 
     <section class="about panel" aria-labelledby="about-title">

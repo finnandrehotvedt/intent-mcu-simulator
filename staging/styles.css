@@ -842,6 +842,16 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .causal-chain-table th:nth-child(5) { width: 15%; }
 .causal-chain-table td { overflow-wrap: anywhere; }
 .causal-chain-table code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.failure-replay-heading { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
+.failure-replay-heading h3 { color: var(--amber); letter-spacing: .035em; }
+.failure-replay-actions { flex-wrap: wrap; }
+.failure-replay-results { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+.failure-replay-card { min-width: 0; padding: 14px; border: 1px solid #315066; border-radius: 12px; background: #07141f; }
+.failure-replay-card[data-phase="fault"] { border-color: #7b5b26; background: #181208; }
+.failure-replay-card h4 { margin: 0 0 8px; color: #e8f7ff; }
+.failure-replay-card dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 5px 10px; margin: 0; }
+.failure-replay-card dt { color: var(--muted); }
+.failure-replay-card dd { margin: 0; overflow-wrap: anywhere; font-family: var(--mono); }
 .long-duration-table-wrap { max-width: 100%; }
 .long-duration-table { min-width: 860px; table-layout: fixed; }
 .long-duration-table th:nth-child(1) { width: 18%; }
@@ -957,7 +967,9 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .shared-trace-view ol { min-height: 92px; max-height: 180px; overflow: auto; margin: 8px 0; padding: 8px 8px 8px 30px; border: 1px solid #17364a; border-radius: 8px; background: #02070b; color: #baf9cb; font: .68rem/1.5 ui-monospace, monospace; }
 .shared-trace-view li { padding-left: 4px; overflow-wrap: anywhere; }
 .shared-trace-view [data-shared-trace-classification="project-model"] { color: var(--amber); }
-@media (max-width: 760px) { .shared-instrument-tools { grid-template-columns: 1fr; } }
+@media (max-width: 760px) {
+  .shared-instrument-tools, .failure-replay-results { grid-template-columns: 1fr; }
+}
 .control-runtime-evidence { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
 .control-runtime-evidence summary { cursor: pointer; color: var(--cyan); font: 800 .72rem ui-monospace, monospace; }
 .control-runtime-evidence > p { color: var(--muted); font-size: .72rem; line-height: 1.5; }
