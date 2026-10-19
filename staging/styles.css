@@ -524,6 +524,16 @@ body.shared-canvas-focus-open { overflow: hidden; }
 .controller-capabilities div { display: block; padding: 11px 12px; border: 1px solid #1c4157; border-radius: 10px; background: #07141f; }
 .controller-capabilities dt { margin-bottom: 5px; color: var(--cyan); font: 800 .65rem ui-monospace, monospace; letter-spacing: .09em; text-transform: uppercase; }
 .controller-capabilities dd { margin: 0; color: #c7dae3; font: 600 .75rem/1.45 ui-monospace, monospace; text-align: left; }
+.profile-migration-explanation { grid-column: 1 / -1; min-width: 0; border: 1px solid #31536c; border-radius: 10px; background: #07141f; }
+.profile-migration-explanation[hidden] { display: none; }
+.profile-migration-explanation summary { padding: 10px 12px; color: var(--cyan); cursor: pointer; font: 800 .72rem/1.4 ui-monospace, monospace; }
+.profile-migration-explanation[open] summary { border-bottom: 1px solid #26475b; }
+.profile-migration-explanation > .truth, .profile-migration-warning { margin: 10px 12px; font-size: .72rem; line-height: 1.5; }
+.profile-migration-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; padding: 0 12px 10px; }
+.profile-migration-grid section { min-width: 0; padding: 9px 10px; border: 1px solid #1c4157; border-radius: 8px; background: #06111a; }
+.profile-migration-grid h3 { margin: 0 0 6px; color: var(--text); font-size: .75rem; }
+.profile-migration-grid ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: .69rem; line-height: 1.5; overflow-wrap: anywhere; }
+.profile-migration-warning { color: var(--amber); }
 .controller-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .controller-actions #controller-primary-action { color: #06111a; background: var(--lime); border-color: var(--lime); }
 .controller-actions #controller-return-avr { border-color: var(--cyan); color: var(--cyan); }
@@ -1130,6 +1140,7 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   .instrument-evidence-facts, .instrument-boundary-list, .instrument-summary-list { grid-template-columns: 1fr; }
   .unsaved-change-actions { display: grid; grid-template-columns: 1fr; }
   .controller-capabilities { grid-template-columns: 1fr; }
+  .profile-migration-grid { grid-template-columns: 1fr; }
   .panel-resizer { display: none; }
   .workspace > .catalog, .workspace > .board-card, .workspace > .inspector, .logic-card { grid-column: 1; }
   body.serial-dock-open .workspace { grid-template-columns: 1fr; }

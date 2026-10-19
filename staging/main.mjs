@@ -195,6 +195,7 @@ import {
   publicControllerView,
   publicControllerViews,
 } from '../src/public-controller-workbench-view.mjs';
+import { explainProfileMigration } from '../src/profile-migration-explanation.mjs';
 import {
   CAPABILITY_DISCOVERY_REQUEST_SCHEMA,
   CAPABILITY_DISCOVERY_SCHEMA,
@@ -367,6 +368,8 @@ const elements = Object.fromEntries([
   'controller-workbench-summary', 'controller-capability-project', 'controller-capability-source',
   'controller-capability-runtime', 'controller-capability-circuit', 'controller-primary-action', 'controller-return-avr',
   'controller-workbench-limitation', 'controller-public-boundary', 'parked-circuit-notice',
+  'profile-migration-explanation', 'profile-migration-summary', 'profile-migration-intro',
+  'profile-migration-source', 'profile-migration-pins', 'profile-migration-parts', 'profile-migration-requirements',
   'project-brief', 'project-brief-profile', 'project-brief-purpose', 'project-brief-inputs',
   'project-brief-outputs', 'project-brief-boundaries', 'project-brief-acceptance',
   'project-brief-assumptions', 'project-brief-capabilities', 'project-brief-evaluation', 'project-brief-status', 'requirement-trace-list', 'requirement-trace-summary',
@@ -478,6 +481,7 @@ let runtimeRenderTimer = null;
 let pendingRuntimeRender = null;
 let runtimeWorkerCreations = 0;
 let selectedCompilerProfile = AVR_PROFILE;
+let lastProfileMigrationReport = null;
 const projectBriefDrafts = new Map();
 const requirementResultLinks = new Map();
 const sharedInstrumentSummaries = new Map();
@@ -5584,6 +5588,58 @@ function renderPublicControllerWorkbench() {
     publicExecutionEnabled: view.publicExecution,
     compilerRequestBlocked: preview,
   });
+  renderProfileMigrationExplanation();
+}
+
+function profileProjectSnapshot(profile) {
+  if (profile === AVR_PROFILE) return structuredClone(currentProject());
+  if (profile === RP2040_PROFILE) {
+    const state = picoPublicWorkbench.snapshot();
+    return { profile, source: state.source, circuit: state.circuit };
+  }
+  if (profile === ESP32C3_PROFILE) return structuredClone(c3PublicWorkbench.snapshot().project);
+  if (profile === STM32F429ZI_PROFILE) return structuredClone(stm32PublicWorkbench.snapshot().project);
+  return null;
+}
+
+function migrationList(target, values, empty) {
+  const rows = values.length ? values : [empty];
+  target.replaceChildren(...rows.map((value) => {
+    const item = document.createElement('li');
+    item.textContent = value;
+    return item;
+  }));
+}
+
+function renderProfileMigrationExplanation() {
+  const report = lastProfileMigrationReport;
+  elements.profilemigrationexplanation.hidden = !report;
+  if (!report) {
+    elements.profilemigrationsummary.textContent = 'What must change for this controller?';
+    window.__PROFILE_MIGRATION_EXPLANATION__ = null;
+    return;
+  }
+  elements.profilemigrationsummary.textContent = `${report.from.label} → ${report.to.label}: what must change`;
+  elements.profilemigrationintro.textContent = 'Read-only comparison. Nothing was rewired, translated or copied; both controller drafts remain separate.';
+  migrationList(elements.profilemigrationsource, [
+    `${report.from.sourceFile} → ${report.to.sourceFile}. ${report.source.action}`,
+    report.source.state === 'recognized'
+      ? `Recognized current APIs: ${report.source.currentApis.join(', ')}.`
+      : `Source semantics: unknown. ${report.source.reason}`,
+    `Target source boundary: ${report.source.targetContract}`,
+  ], 'No source comparison is available.');
+  migrationList(elements.profilemigrationpins, [
+    `Connected source pins: ${report.pins.used.length ? report.pins.used.join(', ') : 'none found'}.`,
+    `Target named pins: ${report.pins.targetAvailable.map((pin) => pin.label).join(', ')}.`,
+    report.pins.action,
+  ], 'No pin comparison is available.');
+  migrationList(elements.profilemigrationparts,
+    report.parts.map((part) => `${part.label}: ${part.state}. ${part.reason}`),
+    'No non-controller parts were found in the source circuit.');
+  migrationList(elements.profilemigrationrequirements,
+    report.requirements.items.map((item) => `${item.id}: ${item.state}. ${item.reason}`),
+    'No exact project requirement targets were saved; target suitability beyond the visible circuit remains unknown.');
+  window.__PROFILE_MIGRATION_EXPLANATION__ = structuredClone(report);
 }
 function renderCompilerTarget() {
   const target = currentCompilerTarget();
@@ -10168,8 +10224,16 @@ elements.familyselect.addEventListener('change', () => {
 });
 elements.boardselect.addEventListener('change', () => {
   const previousProfile = selectedCompilerProfile;
+  const previousProject = profileProjectSnapshot(previousProfile);
+  const previousRequirements = projectBriefForProfile(previousProfile).requiredCapabilities;
   const selected = candidateCompilerTarget(elements.boardselect.value);
   selectedCompilerProfile = selected ? selected.profile : AVR_PROFILE;
+  lastProfileMigrationReport = previousProfile === selectedCompilerProfile ? null : explainProfileMigration({
+    fromProfile: previousProfile,
+    toProfile: selectedCompilerProfile,
+    project: previousProject,
+    requiredCapabilities: previousRequirements,
+  });
   if (previousProfile !== selectedCompilerProfile) invalidateRegressionMatrixReport('Controller profile changed. Run the matrix again for current evidence.');
   if (previousProfile !== selectedCompilerProfile) clearRequirementResultLinks(previousProfile);
   if (previousProfile !== selectedCompilerProfile) clearProjectPatchReview('Profile changed. Review a patch for the active project.');

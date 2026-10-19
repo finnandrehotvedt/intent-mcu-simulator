@@ -75,6 +75,8 @@
     "test:x39:browser": "node test/x39-failure-navigation-browser.cjs && node test/x39-failure-navigation-new-browser.cjs",
     "test:x72": "node --test --test-concurrency=1 test/x72-example-progression.test.mjs",
     "test:x72:browser": "node test/x72-example-progression-browser.cjs",
+    "test:x65": "node --test --test-concurrency=1 test/x65-profile-migration.test.mjs",
+    "test:x65:browser": "node test/x65-profile-migration-browser.cjs",
     "test:docs-release": "node --test --test-concurrency=1 test/docs-x72-release.test.mjs test/x72-example-progression.test.mjs test/release-identity-copy.test.mjs test/public-release-projection.test.mjs",
     "example:mcp": "node examples/mcp-reference-experiment.mjs",
     "experiment:headless": "node tools/headless-experiment-runner.mjs",

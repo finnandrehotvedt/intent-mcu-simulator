@@ -87,6 +87,17 @@
         <div><dt>Runtime</dt><dd id="controller-capability-runtime">Deterministic browser worker · documented AVR subset</dd></div>
         <div><dt>Circuit</dt><dd id="controller-capability-circuit">Active circuit canvas, instruments and Prompt Bridge</dd></div>
       </dl>
+      <details id="profile-migration-explanation" class="profile-migration-explanation" hidden>
+        <summary id="profile-migration-summary">What must change for this controller?</summary>
+        <p id="profile-migration-intro" class="truth"></p>
+        <div class="profile-migration-grid">
+          <section><h3>Source and APIs</h3><ul id="profile-migration-source"></ul></section>
+          <section><h3>Named pins</h3><ul id="profile-migration-pins"></ul></section>
+          <section><h3>Parts</h3><ul id="profile-migration-parts"></ul></section>
+          <section><h3>Saved requirements</h3><ul id="profile-migration-requirements"></ul></section>
+        </div>
+        <p class="profile-migration-warning">No automatic remap: D13, GP0, GPIO2 and PB0 are different pins. Rebuild fresh only after manual source and circuit work.</p>
+      </details>
       <div class="controller-actions">
         <button id="controller-primary-action" type="button">Build AVR project</button>
         <button id="controller-return-avr" type="button" hidden>Return to supported AVR workbench</button>

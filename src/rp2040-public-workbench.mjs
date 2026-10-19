@@ -29,6 +29,15 @@ const SOURCE_LINE_PATTERNS = Object.freeze([
   /^int main\(void\)$/u, /^\{$/u, /^  intent_gpio0_output\([01]u\);$/u,
   /^  intent_uart0_text\("[A-Z0-9 _-]{1,24}"\);$/u, /^  intent_halt\(\);$/u, /^\}$/u, /^$/u,
 ]);
+
+export function describeRp2040PublicSource(source) {
+  const match = typeof source === 'string' ? SOURCE_PATTERN.exec(source) : null;
+  return match ? Object.freeze({
+    recognized: true,
+    pins: Object.freeze(['GP0']),
+    apis: Object.freeze(['intent_gpio0_output', 'intent_uart0_text', 'intent_halt']),
+  }) : Object.freeze({ recognized: false, pins: Object.freeze([]), apis: Object.freeze([]) });
+}
 const exactKeys = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
 const clone = (value) => structuredClone(value);
