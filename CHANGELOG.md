@@ -2,6 +2,18 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.69 — 2026-10-19
+
+- Published the independently reviewed X85 boundary: successful user firmware
+  artifacts are no longer retained in or reused from a process-wide cache.
+- Repeating identical source now creates a distinct private job and compiles
+  again. The compatibility field `cacheHit` remains present and always false.
+- Preserved five-minute per-job delivery/expiry, origin/capability isolation,
+  queue, rate, cancel and timeout controls, pinned compiler/runtime images and
+  curated public examples.
+- Updated the public privacy wording without adding a panel or changing the
+  established Build, Run, wiring, file or controller workflows.
+
 ## 1.1.0-rc.68 — 2026-10-19
 
 - Published the independently reviewed X67 local experiment package for the

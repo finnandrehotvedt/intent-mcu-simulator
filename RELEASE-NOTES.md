@@ -1,4 +1,21 @@
-# Intent MCU Simulator 1.1.0-rc.68
+# Intent MCU Simulator 1.1.0-rc.69
+
+## No shared user-artifact cache
+
+This release publishes the independently reviewed X85 privacy boundary. A
+successful Build is retained only as the temporary, capability-protected result
+of that same-origin private job. Repeating identical source creates a new job
+and compiles again; the broker no longer keeps or reuses a process-wide cache of
+successful user artifacts.
+
+The existing five-minute per-job delivery/expiry window, origin and capability
+checks, queue and rate limits, cancellation and timeout behavior remain in
+place. Pinned tool images and curated public examples are unchanged. The
+compatibility field `cacheHit` remains present and is always false.
+
+---
+
+## 1.1.0-rc.68
 
 ## Local experiment package
 
