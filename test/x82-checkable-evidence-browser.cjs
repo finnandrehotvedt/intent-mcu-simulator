@@ -59,6 +59,16 @@ let browser;
   assert.match(await page.textContent('#checkable-evidence-identity'), /historical\/imported review/u);
   assert.match(await page.textContent('#checkable-evidence-identity'), /model known/u);
   assert.equal(await page.locator('#checkable-evidence-rows li').count(), 8);
+  const renderedRows = await page.locator('#checkable-evidence-rows li').evaluateAll((items) =>
+    items.map((item) => ({ id: item.dataset.measurementId, text: item.textContent })));
+  assert.equal(new Set(renderedRows.map((row) => row.id)).size, report.measurements.length);
+  for (const [index, row] of report.measurements.entries()) {
+    assert.equal(renderedRows[index].id, row.id);
+    assert.match(renderedRows[index].text, new RegExp(`scenario/row ${row.id}`, 'u'));
+    assert.match(renderedRows[index].text, new RegExp(`observation ${row.observation.value} ${row.timeBasis}`, 'u'));
+    assert.match(renderedRows[index].text, new RegExp(`unit ${JSON.stringify(row.unit.value)}`, 'u'));
+    assert.match(renderedRows[index].text, new RegExp(`source ${row.sourcePath.replaceAll('[', '\\[').replaceAll(']', '\\]')}`, 'u'));
+  }
   assert((await page.locator('#checkable-evidence-limitations li').count()) >= 4);
   assert.equal(await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations), workersBefore,
     'rendering retained evidence created a runtime worker');
@@ -122,6 +132,7 @@ let browser;
     reportSha256: report.integrity.reportSha256, downloadSha256,
     downloadedBytes: Buffer.byteLength(downloaded), modelLibraryVersion: report.modelContext.lock.version,
     visibleFileOpen: true, rejectedPreserved: true, cancelledPreserved: true,
+    stableRowIdentityVisible: true, observationCoordinateVisible: true,
     lifecycleInvalidated: true, externalRequests: 0, mutationRequests: 0, cookies: 0,
     screenshot: screenshotPath, reportOutput: outputPath })}\n`);
   await context.close();

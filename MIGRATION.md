@@ -1,8 +1,14 @@
-# Migration to 1.1.0-rc.73
+# Migration to 1.1.0-rc.74
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.74 changes no project schema or stored project semantics. A retained
+experiment package may be opened through the separate checkable-evidence file
+action for historical, read-only review. That action does not install a project
+or restore firmware, runtime state, outcomes, executable authority or verdict
+authority. Existing local project files require no conversion.
 
 Rc.73 publishes two immutable project-owned model-library bundles. Recognized
 older files bind to the retained pre-X56 bundle only after strict validation.

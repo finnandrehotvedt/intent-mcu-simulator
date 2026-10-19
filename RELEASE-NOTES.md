@@ -1,4 +1,25 @@
-# Intent MCU Simulator 1.1.0-rc.73
+# Intent MCU Simulator 1.1.0-rc.74
+
+## Checkable evidence reports
+
+This release publishes the independently reviewed X82 checkable-evidence
+boundary on the existing compact disclosure. One visible local file action
+strictly validates a retained experiment package and renders a canonical report
+without starting firmware. Imported evidence is labelled historical and
+read-only and restores no project, runtime, outcome or executable authority.
+
+Every visible native measurement includes a stable scenario/row ID, its source
+observation coordinate, unit and native time basis. The report covers all
+registered report and surface owners through finite source-specific adapters;
+missing accepted scalar fields remain typed unavailable. Hashes bind identity
+and integrity only, not truth, physical equivalence or correctness. Retained
+canonical reports, native wrapper/raw evidence and source-contract-only paths
+remain separately classified; this release does not claim blanket platform or
+physical-hardware completeness.
+
+---
+
+## 1.1.0-rc.73
 
 ## Version-locked project model libraries
 

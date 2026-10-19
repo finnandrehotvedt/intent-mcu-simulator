@@ -1,13 +1,13 @@
-# Rollback basis for 1.1.0-rc.32
+# Rollback basis for 1.1.0-rc.74
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain exact accepted source commit
-`0dd1add86ce18bc4d990d7867870f1dd1e5254b3` and VM103 image
-`sha256:37346438c80c94ff6c002fec5ba7ddc0eb9861f5103a574d86d75ab523077554`
-as the pre-rc.32 app-only recovery basis.
+Retain exact accepted rc.73 source commit
+`2bd43ec7ad41f86806c7df01e66adfa02c900c47` and VM103 image
+`sha256:96e28180cf43792608fc2bb32fbd6292d7ff43777c4b90910a5e6e26f703d40e`
+as the pre-rc.74 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
@@ -65,6 +65,11 @@ Build fresh.
 Rc.30 adds only source-bound runtime trace projection and visible viewer state.
 Rolling back removes the shared viewer without converting learner files. Trace
 records and selection are transient and are not restored after rollback.
+
+Rc.74 adds a separate local evidence-package review action and visible
+measurement identity/coordinate metadata without changing project files,
+compiler/runtime producers or stored authority. Rolling back removes that
+report surface only. Learner-owned project and evidence files remain unchanged.
 
 Browser recovery and learner-owned files are never deleted by deployment or
 rollback. Do not change DNS, shared Caddy configuration, compiler/runtime

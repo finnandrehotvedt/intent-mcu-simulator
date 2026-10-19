@@ -2233,7 +2233,8 @@ function renderCheckableEvidence(report = checkableEvidenceReport) {
   for (const row of report.measurements) {
     const item = document.createElement('li');
     item.dataset.measurementState = row.value.state;
-    item.textContent = `${row.label}: ${taggedEvidenceText(row.value)} · unit ${taggedEvidenceText(row.unit)} · ${row.timeBasis} · ${row.provenance}`;
+    item.dataset.measurementId = row.id;
+    item.textContent = `${row.label} · scenario/row ${row.id}: ${taggedEvidenceText(row.value)} · observation ${taggedEvidenceText(row.observation)} ${row.timeBasis} · unit ${taggedEvidenceText(row.unit)} · source ${row.sourcePath} · ${row.provenance}`;
     elements.checkableevidencerows.append(item);
   }
   for (const row of report.limitations) {

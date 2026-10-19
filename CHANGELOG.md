@@ -2,6 +2,20 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.74 — 2026-10-20
+
+- Published the independently reviewed X82 checkable-evidence report on the
+  existing compact disclosure, covering every registered report and surface
+  owner through finite source-specific adapters.
+- Added a visible local file action for strict retained-package review. Imported
+  evidence is labelled historical and read-only, grants no project, runtime,
+  outcome or executable authority, and never starts firmware.
+- Each visible native measurement now exposes its stable scenario/row ID,
+  source observation coordinate, measurement unit and native time basis.
+- Hashes bind identity and integrity rather than truth. Missing accepted source
+  values remain typed unavailable, and source-contract-only retention gaps stay
+  explicit rather than being promoted as retained canonical evidence.
+
 ## 1.1.0-rc.73 — 2026-10-19
 
 - Published the independently reviewed X56 version-locked model-library

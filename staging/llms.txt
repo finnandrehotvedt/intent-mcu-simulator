@@ -5,7 +5,7 @@
 Canonical application: https://lab.teachthecompany.com/
 Source and setup: https://github.com/finnandrehotvedt/intent-mcu-simulator
 Licence: Apache-2.0 for project-owned source; third-party components keep their own terms.
-Current public version: 1.1.0-rc.73
+Current public version: 1.1.0-rc.74
 
 Local files: Download copy and ordinary Open are the reliable all-browser
 actions. Supported secure desktop browsers may additionally offer explicit
