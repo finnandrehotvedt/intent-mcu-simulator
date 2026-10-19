@@ -5,7 +5,7 @@ USER root
 WORKDIR /workspace
 COPY . ./
 RUN npm run build \
-    && npm run test:x28 \
+    && npm run test:x28:readability \
     && chmod -R a+rX /workspace
 
 ENV HOME=/tmp NO_UPDATE_NOTIFIER=1 \

@@ -92,6 +92,7 @@ import {
 import {
   executeLongDurationSuite, longDurationReportPassed,
 } from '../src/long-duration-runner.mjs';
+import { longDurationPresentation } from '../src/long-duration-presentation.mjs';
 import {
   COUNTEREXAMPLE_REDUCTION_SEED, reduceThermostatCounterexample,
 } from '../src/counterexample-reduction.mjs';
@@ -2087,17 +2088,38 @@ function renderLongDurationReport(report = longDurationReport) {
   const rows = [...report.results, { cellId: 'X28-KNOWN-BAD-DIRECT-DEADLINE',
     expected: { academicStatus: 'failed', jobStatus: 'completed' }, actual: report.knownBad.actual,
     outcome: report.knownBad.outcome, rawVirtualTime: report.knownBad.rawVirtualTime }];
+  const appendFacts = (cell, values) => {
+    const list = document.createElement('ul'); list.className = 'long-duration-facts';
+    for (const value of values) { const item = document.createElement('li'); item.textContent = value; list.append(item); }
+    cell.append(list);
+  };
   for (const result of rows) {
     const row = document.createElement('tr');
-    const values = [result.cellId, JSON.stringify(result.expected), JSON.stringify(result.actual),
-      `${result.outcome.academicStatus} · job ${result.outcome.jobStatus}`,
-      JSON.stringify(result.rawVirtualTime)];
-    for (const [index, value] of values.entries()) {
-      const cell = document.createElement(index === 0 ? 'th' : 'td');
-      const code = document.createElement('code'); code.textContent = value; cell.append(code);
-      if (index === 3) { cell.className = 'regression-matrix-outcome'; cell.dataset.status = result.outcome.academicStatus; }
-      row.append(cell);
+    const presentation = longDurationPresentation(result);
+    const identity = document.createElement('th'); identity.scope = 'row'; identity.className = 'long-duration-cell';
+    const label = document.createElement('strong'); label.textContent = presentation.label;
+    const id = document.createElement('code'); id.textContent = result.cellId;
+    identity.append(label, id);
+    const expected = document.createElement('td'); appendFacts(expected, presentation.expected);
+    const actual = document.createElement('td'); appendFacts(actual, presentation.actual);
+    const outcome = document.createElement('td'); outcome.className = 'regression-matrix-outcome';
+    outcome.dataset.status = result.outcome.academicStatus;
+    const badges = document.createElement('div'); badges.className = 'long-duration-outcomes';
+    for (const value of [result.outcome.academicStatus, `job ${result.outcome.jobStatus}`]) {
+      const badge = document.createElement('span'); badge.className = 'long-duration-outcome-badge'; badge.textContent = value; badges.append(badge);
     }
+    outcome.append(badges);
+    const evidence = document.createElement('td');
+    const details = document.createElement('details'); details.className = 'long-duration-raw';
+    const summary = document.createElement('summary'); summary.textContent = 'View complete raw records';
+    const raw = document.createElement('pre'); raw.textContent = JSON.stringify({
+      expected: result.expected,
+      actual: result.actual,
+      outcome: result.outcome,
+      rawVirtualTime: result.rawVirtualTime,
+    }, null, 2);
+    details.append(summary, raw); evidence.append(details);
+    row.append(identity, expected, actual, outcome, evidence);
     elements.longdurationresults.append(row);
   }
   const passed = report.results.filter((result) => result.outcome.academicStatus === 'passed').length;
