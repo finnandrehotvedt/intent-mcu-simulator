@@ -12,10 +12,12 @@ import { THERMOSTAT_EXPERIMENT_ID } from './thermostat-experiment-contract.mjs';
 import {
   createExperimentManifest,
   normalizeExperimentManifest,
+  normalizeLegacyExperimentManifest,
 } from './experiment-manifest.mjs';
 
 export const LEGACY_EXPERIMENT_PACKAGE_SCHEMA = 'intent-mcu-experiment-package@1';
-export const EXPERIMENT_PACKAGE_SCHEMA = 'intent-mcu-experiment-package@2';
+export const HISTORICAL_EXPERIMENT_PACKAGE_SCHEMA = 'intent-mcu-experiment-package@2';
+export const EXPERIMENT_PACKAGE_SCHEMA = 'intent-mcu-experiment-package@3';
 export const EXPERIMENT_REPORT_SCHEMA = 'intent-mcu-authored-scenario-report@1';
 export const EXPERIMENT_PACKAGE_PROFILE = 'board.atmega328p-16mhz-v1';
 export const EXPERIMENT_PACKAGE_LIMIT = 2 * 1024 * 1024;
@@ -370,11 +372,13 @@ export async function parseExperimentPackage(source, adapters) {
   try {
     const value = parseStrictJson(source, EXPERIMENT_PACKAGE_LIMIT);
     const legacy = value?.schema === LEGACY_EXPERIMENT_PACKAGE_SCHEMA;
+    const historical = value?.schema === HISTORICAL_EXPERIMENT_PACKAGE_SCHEMA;
     const expectedKeys = legacy
       ? ['schema', 'profile', 'experimentId', 'project', 'expectation', 'report', 'bindings', 'limitations']
       : ['schema', 'profile', 'experimentId', 'project', 'expectation', 'report', 'manifest', 'bindings', 'limitations'];
     if (!exactKeys(value, expectedKeys)
-        || ![EXPERIMENT_PACKAGE_SCHEMA, LEGACY_EXPERIMENT_PACKAGE_SCHEMA].includes(value.schema)
+        || ![EXPERIMENT_PACKAGE_SCHEMA, HISTORICAL_EXPERIMENT_PACKAGE_SCHEMA,
+          LEGACY_EXPERIMENT_PACKAGE_SCHEMA].includes(value.schema)
         || value.profile !== EXPERIMENT_PACKAGE_PROFILE
         || value.experimentId !== THERMOSTAT_EXPERIMENT_ID
         || !exactKeys(value.bindings, legacy
@@ -404,7 +408,8 @@ export async function parseExperimentPackage(source, adapters) {
     if (value.bindings.reportSha256 !== reportSha256) return failure('EXPERIMENT_PACKAGE_BINDING');
     let manifest = null;
     if (!legacy) {
-      manifest = await normalizeExperimentManifest(value.manifest, { prepared, expectation,
+      manifest = await (historical ? normalizeLegacyExperimentManifest : normalizeExperimentManifest)(
+        value.manifest, { prepared, expectation,
         artifactIdentitySha256: report.artifactIdentitySha256,
         sha256: experimentPackageSha256 });
       if (value.bindings.manifestSha256 !== manifest.manifestSha256) {
@@ -412,7 +417,8 @@ export async function parseExperimentPackage(source, adapters) {
       }
     }
     const normalized = {
-      schema: legacy ? LEGACY_EXPERIMENT_PACKAGE_SCHEMA : EXPERIMENT_PACKAGE_SCHEMA,
+      schema: legacy ? LEGACY_EXPERIMENT_PACKAGE_SCHEMA
+        : historical ? HISTORICAL_EXPERIMENT_PACKAGE_SCHEMA : EXPERIMENT_PACKAGE_SCHEMA,
       profile: prepared.profile,
       experimentId: THERMOSTAT_EXPERIMENT_ID,
       project: parseStrictJson(prepared.canonical), expectation: clone(expectation.reference),
@@ -433,7 +439,8 @@ export async function parseExperimentPackage(source, adapters) {
     return { ok: true, code: 'EXPERIMENT_PACKAGE_ACCEPTED', value: normalized,
       canonical, sha256: await experimentPackageSha256(canonical),
       executableAuthority: false, runtimeAuthority: false, verdictAuthority: false,
-      serverStored: false, legacyReviewOnly: legacy, x80Complete: !legacy };
+      serverStored: false, legacyReviewOnly: legacy || historical,
+      x80Complete: !legacy && !historical };
   } catch (error) {
     return failure(error.code ?? error.message ?? 'EXPERIMENT_PACKAGE_INVALID', error.details ?? []);
   }

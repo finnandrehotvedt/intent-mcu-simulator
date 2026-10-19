@@ -6,12 +6,14 @@ import {
   Rp2040PicoCircuitEditor,
   createRp2040PicoCircuitDraft,
   normalizeRp2040PicoCircuitDraft,
-  observeRp2040PicoCircuit,
-  validateRp2040PicoCircuit,
 } from './rp2040-pico-circuit.mjs';
 import { parseStrictJson } from './strict-json.mjs';
 import { boundedPolicyDiagnostic, normalizeSourceDiagnostics } from './source-diagnostics.mjs';
 import { isRetryableCapacityCode, retryGuidanceFromResponse, retryMessage, retryResultFields } from './retry-guidance.mjs';
+import {
+  CURRENT_MODEL_LIBRARY_LOCK, modelLibraryExecutionIdentity, normalizeModelLibraryLock,
+  resolveModelLibrary,
+} from './model-library.mjs';
 
 export const RP2040_PUBLIC_PROJECT_SCHEMA = 'intent-mcu-rp2040-public-project@1';
 export const RP2040_PUBLIC_BUILD_SCHEMA = 'intent-mcu-rp2040-source-build-request@1';
@@ -107,6 +109,8 @@ export class Rp2040PublicWorkbench {
     this.onSave = onSave;
     this.onOpen = onOpen;
     this.project = defaultProject();
+    this.modelLibraryLock = clone(CURRENT_MODEL_LIBRARY_LOCK);
+    this.modelLibraryImplementation = resolveModelLibrary(this.modelLibraryLock).implementation;
     this.circuitEditor = new Rp2040PicoCircuitEditor(this.project.circuit);
     this.revision = 1;
     this.phase = 'editing';
@@ -151,7 +155,10 @@ export class Rp2040PublicWorkbench {
   }
 
   snapshot() {
-    const circuit = validateRp2040PicoCircuit(this.project.circuit);
+    const circuit = this.modelLibraryImplementation.validateProfile(
+      RP2040_PICO_PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
+    );
+    const modelLibrary = modelLibraryExecutionIdentity(this.modelLibraryLock);
     const wiringReady = this.circuitEditor.snapshot().wireDraft.mode === 'none';
     return {
       profile: RP2040_PICO_PROFILE,
@@ -164,11 +171,14 @@ export class Rp2040PublicWorkbench {
       circuitEditor: this.circuitEditor.snapshot(),
       circuitValid: circuit.ok && wiringReady,
       circuitCode: wiringReady ? circuit.code : 'RP2040_WIRING_IN_PROGRESS',
-      circuitObservation: observeRp2040PicoCircuit(this.project.circuit, this.lastRuntime),
+      circuitObservation: this.modelLibraryImplementation.observeRp2040(
+        this.project.circuit, this.lastRuntime, { modelLibraryLock: this.modelLibraryLock },
+      ),
       artifact: this.artifact ? clone(this.artifact) : null,
       runnable: Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok && wiringReady),
       runtime: this.lastRuntime ? clone(this.lastRuntime) : null,
       diagnostics: clone(this.diagnostics),
+      modelLibrary: modelLibrary.ok ? clone(modelLibrary.identity) : { code: modelLibrary.code },
       durableServerProject: false,
       transientExecutableMemoryOnly: true,
     };
@@ -178,6 +188,13 @@ export class Rp2040PublicWorkbench {
     const state = this.snapshot();
     this.onState(state);
     return state;
+  }
+
+  setModelLibraryLock(lock) {
+    const normalized = normalizeModelLibraryLock(lock);
+    if (!normalized.ok) throw Object.assign(new Error(normalized.code), normalized);
+    this.modelLibraryLock = clone(normalized.lock);
+    this.modelLibraryImplementation = resolveModelLibrary(this.modelLibraryLock).implementation;
   }
 
   activate() {
@@ -271,6 +288,7 @@ export class Rp2040PublicWorkbench {
         bytes: bytes.byteLength,
         artifactIdentity: result.artifactIdentity,
         compiler: clone(artifact.compiler),
+        modelLibrary: modelLibraryExecutionIdentity(this.modelLibraryLock).identity,
       };
       this.phase = 'built';
       this.diagnostics = [];
@@ -290,7 +308,9 @@ export class Rp2040PublicWorkbench {
       this.render();
       return { ok: false, code: 'RP2040_WIRING_IN_PROGRESS' };
     }
-    const circuit = validateRp2040PicoCircuit(this.project.circuit);
+    const circuit = this.modelLibraryImplementation.validateProfile(
+      RP2040_PICO_PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
+    );
     if (!circuit.ok) {
       this.phase = 'blocked';
       this.message = `Circuit blocked (${circuit.code}). Reconnect the exact GP0 → resistor → LED → GND path.`;
@@ -346,7 +366,9 @@ export class Rp2040PublicWorkbench {
   }
 
   async run() {
-    const circuit = validateRp2040PicoCircuit(this.project.circuit);
+    const circuit = this.modelLibraryImplementation.validateProfile(
+      RP2040_PICO_PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
+    );
     if (!this.active || !this.artifact || this.artifactRevision !== this.revision
         || !(this.artifactBytes instanceof Uint8Array) || !circuit.ok) {
       this.message = 'Run blocked. Reconnect the validated circuit and build this exact source again.';
@@ -505,9 +527,13 @@ export class Rp2040PublicWorkbench {
   }
 
   render() {
-    const circuit = validateRp2040PicoCircuit(this.project.circuit);
+    const circuit = this.modelLibraryImplementation.validateProfile(
+      RP2040_PICO_PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
+    );
     const wiringReady = this.circuitEditor.snapshot().wireDraft.mode === 'none';
-    const runtimeCircuit = observeRp2040PicoCircuit(this.project.circuit, this.lastRuntime);
+    const runtimeCircuit = this.modelLibraryImplementation.observeRp2040(
+      this.project.circuit, this.lastRuntime, { modelLibraryLock: this.modelLibraryLock },
+    );
     const runnable = Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok && wiringReady);
     const building = this.phase === 'building';
     this.elements.source.value = this.project.source;

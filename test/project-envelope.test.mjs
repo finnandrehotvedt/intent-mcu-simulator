@@ -118,6 +118,15 @@ test('pre-X56 v6 maps unambiguously to the retained finite snapshot and preserve
   assert.equal(opened.scenarioTimeline, scenarioTimeline);
 });
 
+test('rejected private X56 envelope and lock revisions never silently migrate', () => {
+  const rejected = { schema: 'intent-mcu-project-envelope@7', profile,
+    modelLibrary: { schema: 'intent-mcu-model-library-lock@1', libraryId: 'intent-mcu-public-models',
+      version: 'rejected-private', manifestSha256: 'a'.repeat(64) },
+    brief: emptyProjectBrief(), scenarioTimeline: null, project };
+  assert.equal(prepareProjectEnvelope(JSON.stringify(rejected), adapters).code,
+    'MODEL_LIBRARY_REJECTED_PRIVATE_REVISION');
+});
+
 test('model-library migration creates a deterministic current copy without changing original bytes or authority', () => {
   const previous = JSON.stringify({ schema: PREVIOUS_PROJECT_ENVELOPE_SCHEMA, profile,
     brief: emptyProjectBrief(), scenarioTimeline: null, project });

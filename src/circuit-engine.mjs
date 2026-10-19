@@ -11,8 +11,14 @@ import {
   defaultProperties,
 } from './component-catalog.mjs';
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
+import {
+  CURRENT_MODEL_LIBRARY_LOCK,
+  resolveModelLibrary,
+  validateProjectModelLibrary,
+} from './model-library.mjs';
 
 export const CIRCUIT_SCHEMA = 'teach-lab-circuit@2';
+export const MODEL_LIBRARY_TEST_AUTHORITY = Symbol('MODEL_LIBRARY_TEST_AUTHORITY');
 const ID = /^[a-z][a-z0-9-]{0,47}$/;
 const LABEL = /^[\p{L}\p{N} ._#()°Ω×+\-]{1,64}$/u;
 const ACCEPTED_BAUD = new Set([9_600, 19_200, 38_400, 57_600, 115_200]);
@@ -175,6 +181,7 @@ export function resolveDigitalDrivers(levels) {
 }
 
 function analyzeElectrical(graph, options = {}) {
+  const modelLibrary = options.modelLibrary;
   const drivers = options.drivers ?? {};
   const indexes = endpointIndexes(graph);
   const diagnostics = [];
@@ -239,8 +246,14 @@ function analyzeElectrical(graph, options = {}) {
       continue;
     }
     const candidate = candidates[0];
-    const forwardVolts = LED_FORWARD_VOLTS[led.properties.color];
-    const currentAmps = (5 - forwardVolts) / candidate.resistor.properties.ohms;
+    const ledReference = modelLibrary.evaluateReference('led.basic-v1', {
+      volts: 5, color: led.properties.color,
+    });
+    const forwardVolts = ledReference.result?.forwardVolts;
+    const resistorReference = modelLibrary.evaluateReference('resistor.fixed-v1', {
+      volts: 5 - forwardVolts, ohms: candidate.resistor.properties.ohms,
+    });
+    const currentAmps = resistorReference.result?.amps;
     if (!Number.isFinite(currentAmps) || currentAmps <= 0 || currentAmps > 0.02) {
       diagnostics.push(diagnostic('LED_OVERCURRENT', { componentId: led.id, netId: anodeNet }));
       continue;
@@ -268,7 +281,15 @@ function analyzeElectrical(graph, options = {}) {
       continue;
     }
     const source = boardEndpoint(indexes, accepted[0], (pin) => /^D\d+$/.test(pin));
-    models.buttons.push({ componentId: button.id, boardPin: source.pin, pressed: button.controls.pressed });
+    const reference = modelLibrary.evaluateReference('button.momentary-v1', {
+      pressed: button.controls.pressed,
+    });
+    if (!reference.ok) {
+      diagnostics.push(diagnostic(reference.code, { componentId: button.id, netId: accepted[0] }));
+      continue;
+    }
+    models.buttons.push({ componentId: button.id, boardPin: source.pin,
+      pressed: button.controls.pressed, connected: reference.result.connected });
   }
 
   for (const pot of graph.components.filter((component) => component.type === 'potentiometer.linear-v1')) {
@@ -283,11 +304,18 @@ function analyzeElectrical(graph, options = {}) {
       diagnostics.push(diagnostic('UNSUPPORTED_ANALOG_TOPOLOGY', { componentId: pot.id, netId: wiperNet ?? highNet ?? lowNet }));
       continue;
     }
+    const reference = modelLibrary.evaluateReference('potentiometer.linear-v1', {
+      supplyVolts: 5, position: pot.controls.position,
+    });
+    if (!reference.ok) {
+      diagnostics.push(diagnostic(reference.code, { componentId: pot.id, netId: wiperNet }));
+      continue;
+    }
     models.potentiometers.push({
       componentId: pot.id,
       boardPin: input.pin,
       position: pot.controls.position,
-      voltage: pot.controls.position * 5,
+      voltage: reference.result.outputVolts,
     });
   }
 
@@ -302,15 +330,31 @@ function analyzeElectrical(graph, options = {}) {
 
 export function validateCircuit(value, options = {}) {
   try {
+    const modelLibraryLock = options.modelLibraryLock ?? CURRENT_MODEL_LIBRARY_LOCK;
     const graph = normalizeCircuitStructure(value, { allowDraft: options.allowDraft === true });
+    const admission = validateProjectModelLibrary(
+      modelLibraryLock, 'board.atmega328p-16mhz-v1', { circuit: graph },
+    );
+    if (!admission.ok) return { ...admission, diagnostics: [diagnostic(admission.code)] };
+    const resolved = resolveModelLibrary(modelLibraryLock);
+    if (!resolved.ok) return { ...resolved, diagnostics: [diagnostic(resolved.code)] };
+    const modelLibrary = options.modelLibraryImplementation ?? resolved.implementation;
+    if (options.modelLibraryImplementation && options.testAuthority !== MODEL_LIBRARY_TEST_AUTHORITY) {
+      return { ok: false, code: 'MODEL_LIBRARY_TEST_OVERRIDE_FORBIDDEN',
+        diagnostics: [diagnostic('MODEL_LIBRARY_TEST_OVERRIDE_FORBIDDEN')] };
+    }
     const boards = graph.components.filter((component) => component.type === 'board.atmega328p-16mhz-v1');
     if (boards.length !== 1) {
       const diagnostics = [diagnostic('BOARD_COUNT')];
       return { ok: false, code: 'BOARD_COUNT', graph, diagnostics, models: null };
     }
-    const { diagnostics, models } = analyzeElectrical(graph, options);
+    const { diagnostics, models } = analyzeElectrical(graph, {
+      ...options, modelLibrary,
+    });
     if (diagnostics.length) return { ok: false, code: diagnostics[0].code, diagnostics };
-    return { ok: true, code: 'OK', graph, diagnostics: [], models };
+    return { ok: true, code: 'OK', graph, diagnostics: [], models,
+      modelLibrary: { lock: clone(resolved.lock), retained: resolved.retained,
+        implementationId: modelLibrary.id } };
   } catch (error) {
     if (error instanceof CircuitError) return { ok: false, code: error.code, diagnostics: error.diagnostics };
     throw error;
@@ -343,8 +387,9 @@ export function createComponent(id, type, overrides = {}) {
 }
 
 export class CircuitStore {
-  constructor(initialGraph) {
-    const result = validateCircuit(initialGraph);
+  constructor(initialGraph, options = {}) {
+    this.modelLibraryLock = clone(options.modelLibraryLock ?? CURRENT_MODEL_LIBRARY_LOCK);
+    const result = validateCircuit(initialGraph, { modelLibraryLock: this.modelLibraryLock });
     if (!result.ok) throw new CircuitError(result.code, result.diagnostics[0]);
     this.graph = result.graph;
     this.models = result.models;
@@ -354,7 +399,7 @@ export class CircuitStore {
   }
 
   replace(nextGraph, { running = false } = {}) {
-    const result = validateCircuit(nextGraph);
+    const result = validateCircuit(nextGraph, { modelLibraryLock: this.modelLibraryLock });
     if (!result.ok) return { ...result, stopped: false };
     this.graph = result.graph;
     this.models = result.models;
@@ -370,7 +415,7 @@ export class CircuitStore {
       return { ok: false, code: 'UNKNOWN_CONTROL', diagnostics: [diagnostic('UNKNOWN_CONTROL', { componentId })] };
     }
     component.controls[key] = value;
-    const result = validateCircuit(next);
+    const result = validateCircuit(next, { modelLibraryLock: this.modelLibraryLock });
     if (!result.ok) return result;
     this.graph = result.graph;
     this.models = result.models;
@@ -380,8 +425,9 @@ export class CircuitStore {
 }
 
 export class CircuitRuntime {
-  constructor(graph) {
-    const result = validateCircuit(graph);
+  constructor(graph, options = {}) {
+    this.modelLibraryLock = clone(options.modelLibraryLock ?? CURRENT_MODEL_LIBRARY_LOCK);
+    const result = validateCircuit(graph, { modelLibraryLock: this.modelLibraryLock });
     if (!result.ok) throw new CircuitError(result.code, result.diagnostics[0]);
     this.graph = result.graph;
     this.models = result.models;
@@ -391,16 +437,20 @@ export class CircuitRuntime {
   applyControls(adapter) {
     for (const button of this.models.buttons) {
       const pressed = this.controls[button.componentId].pressed;
-      adapter.setDigitalPin(Number(button.boardPin.slice(1)), !pressed);
+      const reference = resolveModelLibrary(this.modelLibraryLock).implementation
+        .evaluateReference('button.momentary-v1', { pressed });
+      adapter.setDigitalPin(Number(button.boardPin.slice(1)), !reference.result.connected);
     }
     for (const pot of this.models.potentiometers) {
       const position = this.controls[pot.componentId].position;
-      adapter.setAnalogChannel(Number(pot.boardPin.slice(1)), position * 5);
+      const reference = resolveModelLibrary(this.modelLibraryLock).implementation
+        .evaluateReference('potentiometer.linear-v1', { supplyVolts: 5, position });
+      adapter.setAnalogChannel(Number(pot.boardPin.slice(1)), reference.result.outputVolts);
     }
   }
 
   setControl(componentId, key, value, adapter) {
-    const store = new CircuitStore(this.graph);
+    const store = new CircuitStore(this.graph, { modelLibraryLock: this.modelLibraryLock });
     const result = store.setControl(componentId, key, value);
     if (!result.ok) throw new CircuitError(result.code, result.diagnostics[0]);
     this.graph = store.graph;
@@ -426,9 +476,16 @@ export class CircuitRuntime {
       analogue: this.models.potentiometers.map((model) => ({
         componentId: model.componentId,
         boardPin: model.boardPin,
-        voltage: this.controls[model.componentId].position * 5,
+        voltage: resolveModelLibrary(this.modelLibraryLock).implementation
+          .evaluateReference('potentiometer.linear-v1', {
+            supplyVolts: 5, position: this.controls[model.componentId].position,
+          }).result.outputVolts,
       })),
       resolvedNets: clone(this.models.resolvedNets),
+      modelLibrary: {
+        lock: clone(this.modelLibraryLock),
+        implementationId: resolveModelLibrary(this.modelLibraryLock).implementation.id,
+      },
     };
   }
 }

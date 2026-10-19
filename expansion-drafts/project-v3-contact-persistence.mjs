@@ -7,6 +7,9 @@ import { defaultWireColor } from '../src/project-v2.mjs';
 import { normalizeStoredRoute } from '../src/route-model.mjs';
 import { exactKeys, parseStrictJson } from '../src/strict-json.mjs';
 import {
+  CURRENT_MODEL_LIBRARY_LOCK, modelLibraryExecutionIdentity, validateProjectModelLibrary,
+} from '../src/model-library.mjs';
+import {
   GROUND_REFERENCE_DEFINITION,
   GROUND_REFERENCE_TYPE,
   validateGroundReferenceCircuit,
@@ -425,18 +428,27 @@ function projectSpstComponents(graph) {
   return projected;
 }
 
-function reconstructCandidate(graph) {
+function production(implementation, componentType, input, details = []) {
+  const evaluated = implementation.evaluateProduction(componentType, input);
+  if (!evaluated.ok) fail(evaluated.code, [componentType, ...details]);
+  return evaluated.result;
+}
+
+function reconstructCandidate(graph, implementation, modelLibraryLock) {
   const netClasses = deriveNetClasses(graph);
   const contacts = [];
   for (const component of graph.components) {
     if (component.type === GROUND_REFERENCE_TYPE) {
+      production(implementation, component.type, component.controls, [component.id]);
       contacts.push({ componentId: component.id, type: component.type, state: { potentialVolts: 0 } });
     }
     if (component.type === TOGGLE_SWITCH_TYPE) {
+      production(implementation, component.type, { closed: component.controls.closed }, [component.id]);
       contacts.push({ componentId: component.id, type: component.type, state: { closed: component.controls.closed } });
     }
     if (component.type === SPDT_CONTACT_TYPE) {
       const selectedThrow = component.controls.selectedThrow;
+      production(implementation, component.type, { selectedThrow }, [component.id]);
       const terminalNets = terminalNetMap(graph, component.id);
       const safety = analyzeSwitchContactSafety({ terminalNets, netClasses, drivers: {} }, selectedThrow);
       if (!safety.ok) fail(`PROJECT_CONTACT_${safety.code}`, [component.id, ...safety.mergedNets]);
@@ -465,6 +477,11 @@ function reconstructCandidate(graph) {
     state: { lightLevel: sensor.lightLevel },
     runtimeProjection: clone(sensor),
   })));
+  for (const sensor of lightProjection.sensors) {
+    const expected = production(implementation, LIGHT_ANALOGUE_SENSOR_TYPE,
+      { lightLevel: sensor.lightLevel }, [sensor.componentId]);
+    if (expected.outputVolts !== sensor.voltage) fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+  }
   const temperatureProjection = projectTemperatureAnalogueSensors(lightProjection.runtimeGraph);
   if (!temperatureProjection.ok) {
     fail(`PROJECT_CONTACT_${temperatureProjection.code}`, temperatureProjection.details);
@@ -475,6 +492,11 @@ function reconstructCandidate(graph) {
     state: { temperatureC: sensor.temperatureC },
     runtimeProjection: clone(sensor),
   })));
+  for (const sensor of temperatureProjection.sensors) {
+    const expected = production(implementation, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
+      { temperatureC: sensor.temperatureC }, [sensor.componentId]);
+    if (expected.outputVolts !== sensor.voltage) fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+  }
   const thresholdProjection = projectDigitalLightThresholdModules(temperatureProjection.runtimeGraph);
   if (!thresholdProjection.ok) {
     fail(`PROJECT_CONTACT_${thresholdProjection.code}`, thresholdProjection.details);
@@ -490,6 +512,15 @@ function reconstructCandidate(graph) {
     },
     runtimeProjection: clone(module),
   })));
+  for (const module of thresholdProjection.modules) {
+    const expected = production(implementation, DIGITAL_LIGHT_THRESHOLD_TYPE, {
+      lightLevelPercent: module.lightLevelPercent,
+      thresholdPercent: module.thresholdPercent,
+      hysteresisPercentagePoints: module.hysteresisPercentagePoints,
+      currentActive: module.outputActive,
+    }, [module.componentId]);
+    if (expected.outputActive !== module.outputActive) fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [module.componentId]);
+  }
   const rgbProjection = projectCommonCathodeRgbLeds(thresholdProjection.runtimeGraph);
   if (!rgbProjection.ok) {
     fail(`PROJECT_CONTACT_${rgbProjection.code}`, rgbProjection.details);
@@ -500,6 +531,8 @@ function reconstructCandidate(graph) {
     state: { commonPolarity: led.commonPolarity },
     runtimeProjection: clone(led),
   })));
+  for (const led of rgbProjection.leds) production(implementation, COMMON_CATHODE_RGB_LED_TYPE,
+    { duties: { R: 0, G: 0, B: 0 } }, [led.componentId]);
   const buzzerProjection = projectActiveBuzzerModules(rgbProjection.runtimeGraph);
   if (!buzzerProjection.ok) {
     fail(`PROJECT_CONTACT_${buzzerProjection.code}`, buzzerProjection.details);
@@ -510,6 +543,8 @@ function reconstructCandidate(graph) {
     state: { activeLevel: buzzer.activeLevel, enabled: false },
     runtimeProjection: clone(buzzer),
   })));
+  for (const buzzer of buzzerProjection.buzzers) production(implementation, ACTIVE_BUZZER_TYPE,
+    { level: false }, [buzzer.componentId]);
   const sevenSegmentProjection = projectSevenSegmentDisplays(buzzerProjection.runtimeGraph);
   if (!sevenSegmentProjection.ok) {
     fail(`PROJECT_CONTACT_${sevenSegmentProjection.code}`, sevenSegmentProjection.details);
@@ -520,6 +555,8 @@ function reconstructCandidate(graph) {
     state: { commonPolarity: display.commonPolarity },
     runtimeProjection: clone(display),
   })));
+  for (const display of sevenSegmentProjection.displays) production(implementation, SEVEN_SEGMENT_TYPE,
+    { digit: 0 }, [display.componentId]);
   const characterLcdProjection = projectCharacterLcdDisplays(sevenSegmentProjection.runtimeGraph);
   if (!characterLcdProjection.ok) {
     fail(`PROJECT_CONTACT_${characterLcdProjection.code}`, characterLcdProjection.details);
@@ -530,6 +567,8 @@ function reconstructCandidate(graph) {
     state: { geometry: '16x2', busMode: display.busMode },
     runtimeProjection: clone(display),
   })));
+  for (const display of characterLcdProjection.displays) production(implementation, CHARACTER_LCD_TYPE,
+    { lines: ['', ''] }, [display.componentId]);
   const rotaryEncoderProjection = projectRotaryEncoders(characterLcdProjection.runtimeGraph);
   if (!rotaryEncoderProjection.ok) {
     fail(`PROJECT_CONTACT_${rotaryEncoderProjection.code}`, rotaryEncoderProjection.details);
@@ -540,16 +579,19 @@ function reconstructCandidate(graph) {
     state: { detent: encoder.detent, restState: encoder.restState },
     runtimeProjection: clone(encoder),
   })));
+  for (const encoder of rotaryEncoderProjection.encoders) production(implementation, ROTARY_ENCODER_TYPE,
+    { direction: 'cw' }, [encoder.componentId]);
   const hasGround = rotaryEncoderProjection.runtimeGraph.components.some(
     (component) => component.type === GROUND_REFERENCE_TYPE,
   );
   const projected = hasGround
-    ? validateGroundReferenceCircuit(rotaryEncoderProjection.runtimeGraph)
-    : validateCircuit(rotaryEncoderProjection.runtimeGraph);
+    ? validateGroundReferenceCircuit(rotaryEncoderProjection.runtimeGraph, { modelLibraryLock })
+    : validateCircuit(rotaryEncoderProjection.runtimeGraph, { modelLibraryLock });
   if (!projected.ok) fail(`PROJECT_CONTACT_${projected.code}`, projected.diagnostics ?? []);
   const runtimeGraph = projected.runtimeGraph ?? projected.graph;
   return {
     graph: clone(graph), runtimeProjection: clone(runtimeGraph), contacts,
+    modelLibraryImplementationId: implementation.id,
     runtimePositionSources: clone({
       ...rgbProjection.runtimePositionSources,
       ...sevenSegmentProjection.runtimePositionSources,
@@ -665,7 +707,7 @@ const UNSAFE_DRAFT_CODES = new Set([
   'PROJECT_CONTACT_OUTPUT_CONTENTION',
 ]);
 
-export function validateContactPersistenceDraft(value) {
+export function validateContactPersistenceDraft(value, options = {}) {
   try {
     if (!exactKeys(value, ['schema', 'project', 'candidateCircuit', 'candidateLayout', 'compiledFixture'])) {
       return failResult('PROJECT_CONTACT_SHAPE');
@@ -680,6 +722,12 @@ export function validateContactPersistenceDraft(value) {
       return failResult('PROJECT_CONTACT_FIXTURE');
     }
     const candidateCircuit = normalizeCandidateCircuit(value.candidateCircuit, { requireCandidate: false });
+    const modelLibraryLock = options.modelLibraryLock ?? CURRENT_MODEL_LIBRARY_LOCK;
+    const admission = validateProjectModelLibrary(modelLibraryLock, BOARD_TYPE,
+      { candidateCircuit });
+    if (!admission.ok) return admission;
+    const modelLibrary = modelLibraryExecutionIdentity(modelLibraryLock);
+    if (!modelLibrary.ok) return modelLibrary;
     validateDraftElectricalSafety(candidateCircuit);
     const { layout: candidateLayout, pinAnchors } = normalizeCandidateLayout(value.candidateLayout, candidateCircuit);
     const project = {
@@ -692,7 +740,7 @@ export function validateContactPersistenceDraft(value) {
     let projection = null;
     let runnable = null;
     try {
-      projection = reconstructCandidate(candidateCircuit);
+      projection = reconstructCandidate(candidateCircuit, modelLibrary.implementation, modelLibraryLock);
       const baseMatches = JSON.stringify(projection.runtimeProjection) === JSON.stringify(project.project.circuit);
       runnable = {
         ok: baseMatches,
@@ -720,6 +768,7 @@ export function validateContactPersistenceDraft(value) {
         pinAnchors: clone(pinAnchors),
         controllerProfile: project.project.controller.profile,
         compiledFixture: clone(project.compiledFixture),
+        modelLibrary: clone(modelLibrary.identity),
       },
     };
   } catch (error) {
@@ -728,8 +777,8 @@ export function validateContactPersistenceDraft(value) {
   }
 }
 
-export function validateContactPersistenceProject(value) {
-  const draft = validateContactPersistenceDraft(value);
+export function validateContactPersistenceProject(value, options = {}) {
+  const draft = validateContactPersistenceDraft(value, options);
   if (!draft.ok) return draft;
   if (!draft.reconstruction.graph.components.some(
     (component) => [
@@ -746,24 +795,24 @@ export function validateContactPersistenceProject(value) {
   return { ...draft, code: 'OK' };
 }
 
-export function parseContactPersistenceProject(source) {
-  try { return validateContactPersistenceProject(parseStrictJson(source, CONTACT_PERSISTENCE_LIMIT)); }
+export function parseContactPersistenceProject(source, options = {}) {
+  try { return validateContactPersistenceProject(parseStrictJson(source, CONTACT_PERSISTENCE_LIMIT), options); }
   catch (error) { return failResult(error.code ?? 'MALFORMED_JSON'); }
 }
 
-export function parseContactPersistenceDraft(source) {
-  try { return validateContactPersistenceDraft(parseStrictJson(source, CONTACT_PERSISTENCE_LIMIT)); }
+export function parseContactPersistenceDraft(source, options = {}) {
+  try { return validateContactPersistenceDraft(parseStrictJson(source, CONTACT_PERSISTENCE_LIMIT), options); }
   catch (error) { return failResult(error.code ?? 'MALFORMED_JSON'); }
 }
 
-export function canonicalContactPersistenceProjectJson(value) {
-  const result = validateContactPersistenceProject(value);
+export function canonicalContactPersistenceProjectJson(value, options = {}) {
+  const result = validateContactPersistenceProject(value, options);
   if (!result.ok) throw new Error(result.code);
   return JSON.stringify(result.project);
 }
 
-export function canonicalContactPersistenceDraftJson(value) {
-  const result = validateContactPersistenceDraft(value);
+export function canonicalContactPersistenceDraftJson(value, options = {}) {
+  const result = validateContactPersistenceDraft(value, options);
   if (!result.ok) throw new Error(result.code);
   return JSON.stringify(result.project);
 }
@@ -788,8 +837,8 @@ export function createContactPersistenceDraft(project, candidateCircuit, candida
   });
 }
 
-export function synchronizeContactPersistenceRuntime(value) {
-  const draft = validateContactPersistenceDraft(value);
+export function synchronizeContactPersistenceRuntime(value, options = {}) {
+  const draft = validateContactPersistenceDraft(value, options);
   if (!draft.ok) return draft;
   if (!draft.reconstruction.projectionReady) {
     return failResult(draft.reconstruction.runnable.code, draft.reconstruction.runnable.details);
@@ -801,7 +850,7 @@ export function synchronizeContactPersistenceRuntime(value) {
     draft.reconstruction.runtimeProjection,
     draft.reconstruction.runtimePositionSources,
   );
-  return validateContactPersistenceDraft(synchronized);
+  return validateContactPersistenceDraft(synchronized, options);
 }
 
 export function transitionReconstructedSpdt(value, componentId, to) {

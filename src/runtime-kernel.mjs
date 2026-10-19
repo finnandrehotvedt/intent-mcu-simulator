@@ -98,7 +98,11 @@ export class RuntimeKernel {
       ...(options.x35Probe ? { x35Probe: options.x35Probe } : {}),
     });
     this.x35Probe = options.x35Probe ?? null;
-    this.circuit = new CircuitRuntime(circuit);
+    this.modelLibraryLock = options.modelLibraryLock ?? null;
+    this.modelExecutionContextSha256 = options.modelExecutionContextSha256 ?? null;
+    this.circuit = new CircuitRuntime(circuit, {
+      ...(this.modelLibraryLock ? { modelLibraryLock: this.modelLibraryLock } : {}),
+    });
     this.circuit.applyControls(this.adapter);
     this.inputs = new OrderedInputQueue(options.inputEventLimit ?? INPUT_EVENT_LIMIT);
     this.logicChannels = this.#logicChannels(options.logicChannels ?? ['D13', 'D2']);
@@ -150,7 +154,9 @@ export class RuntimeKernel {
   }
 
   queueControlAtCycle(componentId, key, value, targetCycle) {
-    const probe = new CircuitRuntime(this.circuit.graph);
+    const probe = new CircuitRuntime(this.circuit.graph, {
+      ...(this.modelLibraryLock ? { modelLibraryLock: this.modelLibraryLock } : {}),
+    });
     probe.controls = clone(this.circuit.controls);
     probe.setControl(componentId, key, value, { setDigitalPin() {}, setAnalogChannel() {} });
     const event = this.inputs.enqueue(
@@ -314,6 +320,9 @@ export class RuntimeKernel {
     const pin = machine.pins.find((entry) => entry.pin === this.selectedPin) ?? null;
     return {
       ...machine,
+      ...(this.modelExecutionContextSha256 ? {
+        modelExecutionContextSha256: this.modelExecutionContextSha256,
+      } : {}),
       circuit: this.circuit.observe(machine),
       eventLog: this.inputs.snapshot(),
       instruments: {

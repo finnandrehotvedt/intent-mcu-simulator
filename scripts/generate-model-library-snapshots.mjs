@@ -2,13 +2,15 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import { createHash } from 'node:crypto';
-import { writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { COMPONENT_CATALOG } from '../src/component-catalog.mjs';
 import { CANDIDATE_UI_COMPONENTS } from '../src/candidate-existing-ui-adapter.mjs';
 import { COMPONENT_SUPPORT_CELLS } from '../src/component-support-matrix.mjs';
 import { RP2040_PICO_COMPONENT_CATALOG } from '../src/rp2040-pico-circuit.mjs';
 import { ESP32C3_PUBLIC_COMPONENT_CATALOG } from '../src/esp32c3-public-circuit.mjs';
 import { STM32_PUBLIC_COMPONENT_CATALOG } from '../src/stm32-public-circuit.mjs';
+import { controlContractsFor } from '../src/model-control-contracts.mjs';
+import { RETAINED_MODEL_LIBRARY_MANIFEST } from '../src/model-library-snapshots.mjs';
 
 const stable = (value) => {
   if (Array.isArray(value)) return value.map(stable);
@@ -29,7 +31,7 @@ function semanticContract(definition) {
       signals: [...(pin.signals ?? pin.capabilities ?? [])], constraints: { ...(pin.constraints ?? {}) } })),
     properties: Object.fromEntries(definition.propertyKeys.map((key) =>
       [key, { ...definition.propertySchema[key] }])),
-    controls: [...definition.controlKeys],
+    controls: controlContractsFor(definition.type, definition.controlKeys),
     internalTerminalGroups: definition.internalTerminalGroups.map((group) =>
       ({ pin: group.pin, terminals: [...group.terminals] })),
     support: { status: definition.support.status, limitations: [...definition.support.limitations] },
@@ -51,18 +53,77 @@ const entries = COMPONENT_SUPPORT_CELLS.filter((cell) => cell.available)
     return stable({ profile: cell.profile, componentType: cell.model,
       componentVersion: definition.version, modelId: definition.modelRef,
       modelVersion: definition.version, supportStatus: cell.status,
-      behaviorContractSha256: sha256(semantic), rendererContractSha256: sha256(renderer),
+      semanticSha256: sha256(semantic), rendererContractSha256: sha256(renderer),
       semantic, renderer });
   }).sort((left, right) => `${left.profile}/${left.componentType}`.localeCompare(`${right.profile}/${right.componentType}`));
 
-function manifest(version, implementationId) {
-  const value = { schema: 'intent-mcu-model-library-manifest@1',
-    libraryId: 'intent-mcu-public-models', version, implementationId, entries };
+const CURRENT_CLOSURE = Object.freeze([
+  '../src/component-catalog.mjs', '../src/circuit-engine.mjs', '../src/runtime-kernel.mjs',
+  '../src/model-control-contracts.mjs', '../src/simulator.worker.mjs', '../staging/main.mjs',
+  '../src/candidate-project-session.mjs', '../src/candidate-spdt-runtime.mjs',
+  '../src/candidate-existing-ui-adapter.mjs', '../src/rp2040-pico-circuit.mjs',
+  '../src/esp32c3-public-circuit.mjs', '../src/stm32-public-circuit.mjs',
+  '../src/rp2040-public-workbench.mjs', '../src/esp32c3-public-workbench.mjs',
+  '../src/stm32-public-workbench.mjs',
+  '../expansion-drafts/project-v3-contact-persistence.mjs',
+  '../expansion-drafts/ground-reference-integration-v1.mjs',
+  '../expansion-drafts/toggle-switch-integration-v1.mjs',
+  '../expansion-drafts/switch-contact-graph-v1.mjs',
+  '../expansion-drafts/ideal-three-pin-analogue-module-v1.mjs',
+  '../expansion-drafts/light-analogue-sensor-v1.mjs',
+  '../expansion-drafts/temperature-analogue-sensor-v1.mjs',
+  '../expansion-drafts/digital-light-threshold-module-v1.mjs',
+  '../expansion-drafts/common-cathode-rgb-led-v1.mjs',
+  '../expansion-drafts/active-buzzer-module-v1.mjs',
+  '../expansion-drafts/seven-segment-common-cathode-v1.mjs',
+  '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs',
+  '../expansion-drafts/rotary-encoder-quadrature-v1.mjs',
+]);
+
+async function implementationClosure(paths) {
+  const members = [];
+  for (const path of paths) {
+    const bytes = await readFile(new URL(path, import.meta.url));
+    members.push({ path: path.replace(/^\.\.\//u, ''), sha256: createHash('sha256').update(bytes).digest('hex') });
+  }
+  return stable({ members, sha256: sha256(members) });
+}
+
+function manifest(version, implementationId, implementation) {
+  const ownedEntries = entries.map((entry) => {
+    const pipelineId = entry.profile === 'board.atmega328p-16mhz-v1'
+      ? (entry.componentType.startsWith('board.') || ['resistor.fixed-v1', 'led.basic-v1',
+        'button.momentary-v1', 'potentiometer.linear-v1'].includes(entry.componentType)
+        ? 'avr-base-circuit-runtime-v1' : 'avr-candidate-reconstruction-ordered-v1')
+      : `${entry.profile}-validation-observation-v1`;
+    const observerId = entry.componentType.startsWith('output.')
+      ? `${entry.componentType}-observer-v1` : `${entry.componentType}-state-v1`;
+    const owner = { implementationId, pipelineId, observerId };
+    return stable({ ...entry, owner,
+      behaviorContractSha256: sha256({ semanticSha256: entry.semanticSha256, owner }) });
+  });
+  const value = { schema: 'intent-mcu-model-library-manifest@2',
+    libraryId: 'intent-mcu-public-models', version, implementationId,
+    implementationSha256: implementation.sha256, implementationMembers: implementation.members,
+    runtimeContracts: ['avr8js@0.21.1', 'rp2040js@1.4.0', 'esp32c3-qemu@project-pinned',
+      'renode@1.17.0'], entries: ownedEntries };
   return stable({ ...value, manifestSha256: sha256(value) });
 }
 
-const retained = manifest('1.1.0-rc.72.pre-x56', 'intent-mcu-model-resolver-retained-rc72@1');
-const current = manifest('1.1.0-rc.72+x56', 'intent-mcu-model-resolver-current-x56@1');
+const retainedSourceClosure = JSON.parse(await readFile(new URL(
+  '../src/model-bundles/retained-rc72/source/closure.json', import.meta.url), 'utf8'));
+const retainedImplementation = await implementationClosure([
+  '../src/model-library-retained-resolver.mjs',
+  '../src/model-bundles/retained-rc72/source/closure.json',
+  ...retainedSourceClosure.members.map((member) =>
+    `../src/model-bundles/retained-rc72/source/${member.path}`),
+]);
+const currentImplementation = await implementationClosure([...CURRENT_CLOSURE,
+  '../src/model-library-current-resolver.mjs']);
+const retained = process.argv.includes('--refresh-retained')
+  ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
+  : RETAINED_MODEL_LIBRARY_MANIFEST;
+const current = manifest('2.0.0-x56-current', 'intent-mcu-model-bundle-current-x56@2', currentImplementation);
 const output = `// SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 // Generated immutable snapshots. Regenerate only through an explicitly reviewed library release.

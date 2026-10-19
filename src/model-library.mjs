@@ -5,10 +5,11 @@ import { exactKeys } from './strict-json.mjs';
 import {
   CURRENT_MODEL_LIBRARY_MANIFEST, RETAINED_MODEL_LIBRARY_MANIFEST,
 } from './model-library-snapshots.mjs';
+import { productionModelBundle } from './model-bundle-registry.mjs';
 
-export const MODEL_LIBRARY_LOCK_SCHEMA = 'intent-mcu-model-library-lock@1';
-export const MODEL_LIBRARY_MANIFEST_SCHEMA = 'intent-mcu-model-library-manifest@1';
-const LOCK_KEYS = ['schema', 'libraryId', 'version', 'manifestSha256'];
+export const MODEL_LIBRARY_LOCK_SCHEMA = 'intent-mcu-model-library-lock@2';
+export const MODEL_LIBRARY_MANIFEST_SCHEMA = 'intent-mcu-model-library-manifest@2';
+const LOCK_KEYS = ['schema', 'libraryId', 'version', 'manifestSha256', 'implementationSha256'];
 const clone = (value) => structuredClone(value);
 const deepFreeze = (value) => {
   if (value && typeof value === 'object' && !Object.isFrozen(value)) {
@@ -25,6 +26,7 @@ const lockFor = (manifest) => deepFreeze({
   libraryId: manifest.libraryId,
   version: manifest.version,
   manifestSha256: manifest.manifestSha256,
+  implementationSha256: manifest.implementationSha256,
 });
 
 export const CURRENT_MODEL_LIBRARY_LOCK = lockFor(CURRENT_MODEL_LIBRARY_MANIFEST);
@@ -43,12 +45,17 @@ export function normalizeModelLibraryLock(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)
       || !exactKeys(value, LOCK_KEYS) || value.schema !== MODEL_LIBRARY_LOCK_SCHEMA
       || typeof value.libraryId !== 'string' || typeof value.version !== 'string'
-      || !/^[a-f0-9]{64}$/u.test(value.manifestSha256)) {
+      || !/^[a-f0-9]{64}$/u.test(value.manifestSha256)
+      || !/^[a-f0-9]{64}$/u.test(value.implementationSha256)) {
+    if (value?.schema === 'intent-mcu-model-library-lock@1') {
+      return failure('MODEL_LIBRARY_REJECTED_PRIVATE_REVISION');
+    }
     return failure('MODEL_LIBRARY_LOCK_SHAPE');
   }
   const manifest = trustedByHash.get(value.manifestSha256);
   if (!manifest || manifest.schema !== MODEL_LIBRARY_MANIFEST_SCHEMA
-      || manifest.libraryId !== value.libraryId || manifest.version !== value.version) {
+      || manifest.libraryId !== value.libraryId || manifest.version !== value.version
+      || manifest.implementationSha256 !== value.implementationSha256) {
     return failure('MODEL_LIBRARY_LOCK_UNTRUSTED', [value.libraryId, value.version, value.manifestSha256]);
   }
   return { ok: true, code: 'OK', lock: clone(value), manifest };
@@ -117,14 +124,18 @@ function semanticFieldChanges(prior, next) {
     const otherNew = Object.fromEntries(Object.entries(newContract).filter(([key]) => !known.has(key)));
     if (!same(otherOld, otherNew)) add('property-contract', `properties.${name}`, otherOld, otherNew);
   }
-  const oldControls = new Set(prior.semantic.controls ?? []); const newControls = new Set(next.semantic.controls ?? []);
-  for (const control of oldControls) if (!newControls.has(control)) add('control-removed', `controls.${control}`, control, null);
-  for (const control of newControls) if (!oldControls.has(control)) add('control-added', `controls.${control}`, null, control);
+  const oldControls = prior.semantic.controls ?? {}; const newControls = next.semantic.controls ?? {};
+  for (const control of Object.keys(oldControls)) {
+    if (!(control in newControls)) add('control-removed', `controls.${control}`, oldControls[control], null);
+  }
+  for (const control of Object.keys(newControls)) {
+    if (!(control in oldControls)) add('control-added', `controls.${control}`, null, newControls[control]);
+    else if (!same(oldControls[control], newControls[control])) {
+      add('control-contract', `controls.${control}`, oldControls[control], newControls[control]);
+    }
+  }
   if (!same(prior.semantic.internalTerminalGroups, next.semantic.internalTerminalGroups)) {
     add('internal-connectivity', 'internalTerminalGroups', prior.semantic.internalTerminalGroups, next.semantic.internalTerminalGroups);
-  }
-  if (!changes.length && prior.behaviorContractSha256 !== next.behaviorContractSha256) {
-    add('behavior-contract', 'behaviorContractSha256', prior.behaviorContractSha256, next.behaviorContractSha256);
   }
   return changes;
 }
@@ -175,8 +186,14 @@ function validateProjectWithEntries(entries, manifest, profile, project) {
         return failure('MODEL_LIBRARY_PROPERTY_VALUE', [component.id, component.type, key]);
       }
     }
-    if (!exactKeys(controls, entry.semantic.controls)) {
+    const controlKeys = Object.keys(entry.semantic.controls);
+    if (!exactKeys(controls, controlKeys)) {
       return failure('MODEL_LIBRARY_CONTROL_KEYS', [component.id, component.type]);
+    }
+    for (const key of controlKeys) {
+      if (!valueMatchesContract(controls[key], entry.semantic.controls[key])) {
+        return failure('MODEL_LIBRARY_CONTROL_VALUE', [component.id, component.type, key]);
+      }
     }
     const pins = new Set(entry.semantic.pins.map((pin) => pin.id));
     for (const net of graph.nets ?? []) {
@@ -191,72 +208,33 @@ function validateProjectWithEntries(entries, manifest, profile, project) {
     implementationId: manifest.implementationId, components: components.length };
 }
 
-function createImplementation({ id, entries, manifest, ledForwardVolts }) {
-  const frozenVolts = Object.freeze({ ...ledForwardVolts });
-  return Object.freeze({
-    id,
-    manifestVersion: manifest.version,
-    definition(profile, componentType) {
-      const entry = entries.get(entryKey(profile, componentType));
-      return entry ? clone(entry) : null;
-    },
-    validateProject(profile, project) {
-      return validateProjectWithEntries(entries, manifest, profile, project);
-    },
-    evaluateReference(componentType, input) {
-      if (componentType === 'resistor.fixed-v1') {
-        if (!Number.isFinite(input?.volts) || !Number.isFinite(input?.ohms) || input.ohms <= 0) {
-          return failure('MODEL_LIBRARY_REFERENCE_INPUT');
-        }
-        return { ok: true, code: 'OK', result: { amps: input.volts / input.ohms } };
-      }
-      if (componentType === 'led.basic-v1') {
-        const threshold = frozenVolts[input?.color];
-        if (!Number.isFinite(threshold) || !Number.isFinite(input?.volts)) {
-          return failure('MODEL_LIBRARY_REFERENCE_INPUT');
-        }
-        return { ok: true, code: 'OK', result: { forwardVolts: threshold, lit: input.volts >= threshold } };
-      }
-      if (componentType === 'button.momentary-v1') {
-        if (typeof input?.pressed !== 'boolean') return failure('MODEL_LIBRARY_REFERENCE_INPUT');
-        return { ok: true, code: 'OK', result: { connected: input.pressed } };
-      }
-      if (componentType === 'potentiometer.linear-v1') {
-        if (!Number.isFinite(input?.supplyVolts) || !Number.isFinite(input?.position)
-            || input.position < 0 || input.position > 1) return failure('MODEL_LIBRARY_REFERENCE_INPUT');
-        return { ok: true, code: 'OK', result: { outputVolts: input.supplyVolts * input.position } };
-      }
-      return failure('MODEL_LIBRARY_REFERENCE_UNAVAILABLE', [componentType]);
-    },
-  });
-}
-
-// Separate immutable constants and implementation instances intentionally keep
-// retained compatibility behavior independent from the current resolver.
-const retainedImplementation = createImplementation({
-  id: 'intent-mcu-model-resolver-retained-rc72@1', entries: retainedEntries,
-  manifest: RETAINED_MODEL_LIBRARY_MANIFEST,
-  ledForwardVolts: { red: 2, yellow: 2.1, green: 2.2, blue: 3 },
-});
-const currentImplementation = createImplementation({
-  id: 'intent-mcu-model-resolver-current-x56@1', entries: currentEntries,
-  manifest: CURRENT_MODEL_LIBRARY_MANIFEST,
-  ledForwardVolts: { red: 2, yellow: 2.1, green: 2.2, blue: 3 },
-});
-
 export function resolveModelLibrary(value) {
   const normalized = normalizeModelLibraryLock(value);
   if (!normalized.ok) return normalized;
   const retained = normalized.lock.manifestSha256 === RETAINED_MODEL_LIBRARY_LOCK.manifestSha256;
   return { ...normalized, retained,
-    implementation: retained ? retainedImplementation : currentImplementation };
+    implementation: productionModelBundle(retained) };
 }
 
 export function validateProjectModelLibrary(lock, profile, project) {
   const resolved = resolveModelLibrary(lock);
   if (!resolved.ok) return resolved;
-  const result = resolved.implementation.validateProject(profile, project);
+  const entries = resolved.retained ? retainedEntries : currentEntries;
+  const result = validateProjectWithEntries(entries, resolved.manifest, profile, project);
   return result.ok ? { ...result, lock: clone(resolved.lock), retained: resolved.retained } : result;
+}
+
+export function modelLibraryExecutionIdentity(lock) {
+  const resolved = resolveModelLibrary(lock);
+  if (!resolved.ok) return resolved;
+  return { ok: true, code: 'OK', identity: {
+    libraryId: resolved.lock.libraryId,
+    version: resolved.lock.version,
+    manifestSha256: resolved.lock.manifestSha256,
+    implementationSha256: resolved.lock.implementationSha256,
+    implementationId: resolved.implementation.id,
+    retained: resolved.retained,
+  }, implementation: resolved.implementation, manifest: resolved.manifest };
 }
 
 export function compareModelLibraryEntries(fromEntries, toEntries) {
@@ -271,9 +249,14 @@ export function compareModelLibraryEntries(fromEntries, toEntries) {
       semanticChanges.push({ profile, componentType, kind: prior ? 'removed' : 'added',
         from: prior?.behaviorContractSha256 ?? null, to: next?.behaviorContractSha256 ?? null });
     } else if (prior.behaviorContractSha256 !== next.behaviorContractSha256) {
-      semanticChanges.push({ profile, componentType, kind: 'behavior-contract',
-        from: prior.behaviorContractSha256, to: next.behaviorContractSha256,
-        changes: semanticFieldChanges(prior, next) });
+      const changes = semanticFieldChanges(prior, next);
+      if (changes.length) {
+        semanticChanges.push({ profile, componentType, kind: 'behavior-contract',
+          from: prior.behaviorContractSha256, to: next.behaviorContractSha256, changes });
+      } else if (prior.rendererContractSha256 !== next.rendererContractSha256) {
+        rendererChanges.push({ profile, componentType, kind: 'renderer-only',
+          from: prior.rendererContractSha256, to: next.rendererContractSha256 });
+      } else unchanged.push({ profile, componentType });
     } else if (prior.rendererContractSha256 !== next.rendererContractSha256) {
       rendererChanges.push({ profile, componentType, kind: 'renderer-only',
         from: prior.rendererContractSha256, to: next.rendererContractSha256 });
@@ -307,7 +290,8 @@ export function runModelLibraryConformance(lock) {
       passed: evaluated.ok && JSON.stringify(evaluated.result) === JSON.stringify(expected) };
   });
   return { ok: rows.every((row) => row.passed), code: rows.every((row) => row.passed) ? 'OK' : 'MODEL_LIBRARY_CONFORMANCE',
-    implementationId: resolved.implementation.id, manifestSha256: resolved.lock.manifestSha256, rows };
+    implementationId: resolved.implementation.id, manifestSha256: resolved.lock.manifestSha256,
+    implementationSha256: resolved.lock.implementationSha256, rows };
 }
 
 export function trustedModelLibraryManifests() {

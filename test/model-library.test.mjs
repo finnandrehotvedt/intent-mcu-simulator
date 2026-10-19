@@ -3,7 +3,16 @@
 
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { DEFAULT_CIRCUIT } from '../src/default-circuit.mjs';
+import {
+  CircuitRuntime, MODEL_LIBRARY_TEST_AUTHORITY, validateCircuit,
+} from '../src/circuit-engine.mjs';
+import { RuntimeKernel } from '../src/runtime-kernel.mjs';
+import { createRp2040PicoCircuitDraft, validateRp2040PicoCircuit } from '../src/rp2040-pico-circuit.mjs';
+import { createEsp32C3CircuitDraft, validateEsp32C3Circuit } from '../src/esp32c3-public-circuit.mjs';
+import { createStm32CircuitDraft, validateStm32Circuit } from '../src/stm32-public-circuit.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, RETAINED_MODEL_LIBRARY_LOCK,
   compareModelLibraryEntries, modelLibraryMigrationPreview, normalizeModelLibraryLock,
@@ -22,7 +31,7 @@ const profiles = [
   'board.esp32-c3-devmodule-v1', 'board.stm32f429zi-nucleo144-v1',
 ];
 
-test('trusted immutable snapshots have 25 exact cells and independently recomputable hashes', () => {
+test('trusted immutable snapshots have 25 exact cells and independently recomputable hashes', async () => {
   const manifests = trustedModelLibraryManifests();
   assert.equal(manifests.length, 2);
   for (const manifest of manifests) {
@@ -30,9 +39,16 @@ test('trusted immutable snapshots have 25 exact cells and independently recomput
     const aggregate = structuredClone(manifest); delete aggregate.manifestSha256;
     assert.equal(sha256(aggregate), manifest.manifestSha256);
     for (const entry of manifest.entries) {
-      assert.equal(sha256(entry.semantic), entry.behaviorContractSha256);
+      assert.equal(sha256(entry.semantic), entry.semanticSha256);
+      assert.equal(sha256({ semanticSha256: entry.semanticSha256, owner: entry.owner }),
+        entry.behaviorContractSha256);
       assert.equal(sha256(entry.renderer), entry.rendererContractSha256);
     }
+    for (const member of manifest.implementationMembers) {
+      const bytes = await readFile(new URL(`../${member.path}`, import.meta.url));
+      assert.equal(createHash('sha256').update(bytes).digest('hex'), member.sha256, member.path);
+    }
+    assert.equal(sha256(manifest.implementationMembers), manifest.implementationSha256);
   }
 });
 
@@ -63,7 +79,8 @@ test('self-rehashed mutations of every manifest identity class remain untrusted'
     const forged = structuredClone(current); mutate(forged); delete forged.manifestSha256;
     forged.manifestSha256 = sha256(forged);
     const lock = { schema: CURRENT_MODEL_LIBRARY_LOCK.schema, libraryId: forged.libraryId,
-      version: forged.version, manifestSha256: forged.manifestSha256 };
+      version: forged.version, manifestSha256: forged.manifestSha256,
+      implementationSha256: forged.implementationSha256 };
     assert.equal(normalizeModelLibraryLock(lock).code, 'MODEL_LIBRARY_LOCK_UNTRUSTED');
   }
 });
@@ -78,6 +95,62 @@ test('retained and current locks use distinct real resolver instances with match
   const currentRows = runModelLibraryConformance(CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(retainedRows.ok, true); assert.equal(currentRows.ok, true);
   assert.deepEqual(retainedRows.rows.map((row) => row.actual), currentRows.rows.map((row) => row.actual));
+});
+
+test('production electrical and runtime paths dispatch through the exact selected implementation', () => {
+  for (const [lock, expected] of [
+    [RETAINED_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-retained-rc72@2'],
+    [CURRENT_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-current-x56@2'],
+  ]) {
+    const avr = validateCircuit(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
+    assert.equal(avr.ok, true);
+    assert.equal(avr.modelLibrary.implementationId, expected);
+    assert.equal(avr.models.leds[0].currentAmps, (5 - 2) / 220);
+    const runtime = new CircuitRuntime(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
+    const observed = runtime.observe({ digitalPins: { D13: true } });
+    assert.equal(observed.modelLibrary.implementationId, expected);
+    assert.equal(observed.leds[0].currentAmps, (5 - 2) / 220);
+    const kernel = new RuntimeKernel(':00000001FF', DEFAULT_CIRCUIT, { modelLibraryLock: lock });
+    assert.equal(kernel.snapshot().circuit.modelLibrary.implementationId, expected);
+
+    const pico = validateRp2040PicoCircuit(createRp2040PicoCircuitDraft(), { modelLibraryLock: lock });
+    const c3 = validateEsp32C3Circuit(createEsp32C3CircuitDraft(), { modelLibraryLock: lock });
+    const stm32 = validateStm32Circuit(createStm32CircuitDraft(), { modelLibraryLock: lock });
+    for (const result of [pico, c3, stm32]) {
+      assert.equal(result.ok, true);
+      assert.equal(result.model.modelLibraryImplementationId, expected);
+    }
+  }
+});
+
+test('retained behavior is a dependency-closed historical source graph with no current imports', async () => {
+  const retainedSource = await readFile(new URL('../src/model-library-retained-resolver.mjs', import.meta.url), 'utf8');
+  const currentSource = await readFile(new URL('../src/model-library-current-resolver.mjs', import.meta.url), 'utf8');
+  assert.doesNotMatch(retainedSource, /model-library-current-resolver|CURRENT_MODEL_LIBRARY/gu);
+  assert.doesNotMatch(currentSource, /model-library-retained-resolver|RETAINED_MODEL_LIBRARY/gu);
+  const retained = resolveModelLibrary(RETAINED_MODEL_LIBRARY_LOCK).implementation;
+  const current = resolveModelLibrary(CURRENT_MODEL_LIBRARY_LOCK).implementation;
+  assert.notEqual(retained.evaluateReference, current.evaluateReference);
+  const before = retained.evaluateReference('led.basic-v1', { volts: 2, color: 'red' });
+  assert.equal(Object.isFrozen(current), true);
+  assert.throws(() => { current.evaluateReference = () => ({ ok: true, result: { forwardVolts: 4 } }); }, TypeError);
+  assert.deepEqual(retained.evaluateReference('led.basic-v1', { volts: 2, color: 'red' }), before);
+  const [retainedManifest, currentManifest] = trustedModelLibraryManifests();
+  assert.equal(retainedManifest.implementationMembers.length, 59);
+  assert(retainedManifest.implementationMembers.some((item) =>
+    item.path === 'src/model-bundles/retained-rc72/source/closure.json'));
+  const historicalMembers = retainedManifest.implementationMembers.filter((item) =>
+    item.path.startsWith('src/model-bundles/retained-rc72/source/') && !item.path.endsWith('/closure.json'));
+  assert.equal(historicalMembers.length, 57);
+  for (const member of historicalMembers) {
+    const source = await readFile(new URL(`../${member.path}`, import.meta.url), 'utf8');
+    assert.doesNotMatch(source, /model-library-(?:current-)?resolver|src\/model-library/u, member.path);
+  }
+  for (const required of ['src/circuit-engine.mjs', 'src/simulator.worker.mjs',
+    'src/candidate-project-session.mjs', 'staging/main.mjs']) {
+    assert(currentManifest.implementationMembers.some((item) => item.path === required), required);
+  }
+  assert.doesNotMatch(retainedSource, /https?:|dynamic import|\beval\b|WebAssembly|child_process|package:/u);
 });
 
 test('all four profiles are admitted by their exact lock and invalid properties or pins fail closed', () => {
@@ -97,6 +170,111 @@ test('all four profiles are admitted by their exact lock and invalid properties 
     assert.equal(validateProjectModelLibrary(CURRENT_MODEL_LIBRARY_LOCK, profile, badPin).code,
       'MODEL_LIBRARY_PIN_UNKNOWN');
   }
+});
+
+test('all 25 cells admit exact defaults and all 19 model types execute through each bundle', () => {
+  const manifests = trustedModelLibraryManifests();
+  const inputs = {
+    'board.atmega328p-16mhz-v1': {}, 'board.rp2040-pico-v1': {},
+    'board.esp32-c3-devmodule-v1': {}, 'board.stm32f429zi-nucleo144-v1': {},
+    'resistor.fixed-v1': { volts: 3, ohms: 220 },
+    'led.basic-v1': { volts: 3, color: 'red' },
+    'button.momentary-v1': { pressed: true },
+    'potentiometer.linear-v1': { supplyVolts: 5, position: 0.5 },
+    'reference.ground-v1': {}, 'switch.toggle-spst-v1': { closed: true },
+    'switch.changeover-spdt-v1': { selectedThrow: 'A' },
+    'sensor.light-analogue-v1': { lightLevel: 0.5 },
+    'sensor.temperature-analogue-v1': { temperatureC: 25 },
+    'sensor.light-threshold-digital-v1': { lightLevelPercent: 60,
+      thresholdPercent: 50, hysteresisPercentagePoints: 5, currentActive: false },
+    'output.rgb-led-common-cathode-v1': { duties: { R: 1, G: 0.5, B: 0 } },
+    'output.active-buzzer-module-v1': { level: true },
+    'output.seven-segment-common-cathode-v1': { digit: 8 },
+    'output.character-lcd-16x2-4bit-v1': { lines: ['READY', '25 C'] },
+    'input.rotary-encoder-quadrature-v1': { direction: 'cw' },
+  };
+  assert.equal(Object.keys(inputs).length, 19);
+  for (const [manifest, lock] of [[manifests[0], RETAINED_MODEL_LIBRARY_LOCK],
+    [manifests[1], CURRENT_MODEL_LIBRARY_LOCK]]) {
+    assert.equal(manifest.entries.length, 25);
+    for (const entry of manifest.entries) {
+      const properties = Object.fromEntries(Object.entries(entry.semantic.properties)
+        .map(([key, contract]) => [key, structuredClone(contract.default)]));
+      const controls = Object.fromEntries(Object.entries(entry.semantic.controls)
+        .map(([key, contract]) => [key, structuredClone(contract.default)]));
+      const component = { id: 'fixture-1', type: entry.componentType, properties, controls };
+      assert.equal(validateProjectModelLibrary(lock, entry.profile,
+        { circuit: { components: [component], nets: [] } }).ok, true,
+      `${entry.profile}/${entry.componentType}`);
+      component.controls.unapproved = true;
+      assert.equal(validateProjectModelLibrary(lock, entry.profile,
+        { circuit: { components: [component], nets: [] } }).ok, false);
+    }
+    const implementation = resolveModelLibrary(lock).implementation;
+    for (const [type, input] of Object.entries(inputs)) {
+      assert.equal(implementation.evaluateProduction(type, input).ok, true, type);
+      assert.equal(implementation.evaluateProduction(type, { invalid: true }).ok, false, `${type}:invalid`);
+    }
+  }
+});
+
+test('hostile current orchestrator mutation changes live paths while retained production closure stays invariant', () => {
+  const retained = resolveModelLibrary(RETAINED_MODEL_LIBRARY_LOCK).implementation;
+  const retainedBefore = {
+    electrical: retained.validateAvrCircuit(DEFAULT_CIRCUIT),
+    rgb: retained.observeRgb({ R: 1.2, G: 0.5, B: -1 }),
+    encoder: retained.rotaryEncoderSequence({ phaseCycles: 16_000,
+      phases: { A: { boardPinNumber: 2 }, B: { boardPinNumber: 3 } } }, 'cw'),
+    lcd: retained.createCharacterLcdDecoder(
+      { RS: 'D3', E: 'D4', D4: 'D5', D5: 'D6', D6: 'D7', D7: 'D8' },
+    ).snapshot(),
+    pico: retained.validateProfile('board.rp2040-pico-v1', createRp2040PicoCircuitDraft()),
+  };
+  const current = resolveModelLibrary(CURRENT_MODEL_LIBRARY_LOCK).implementation;
+  const hostile = Object.freeze({
+    ...current,
+    id: 'test-only-hostile-current-bundle',
+    definition: current.definition.bind(current),
+    evaluateProduction: current.evaluateProduction.bind(current),
+    evaluateReference(type, input) {
+      if (type === 'led.basic-v1') {
+        return { ok: true, code: 'OK', result: { forwardVolts: 4, lit: input.volts >= 4 } };
+      }
+      return current.evaluateReference(type, input);
+    },
+    observeRgb() { return { R: 0, G: 0, B: 1 }; },
+    createCharacterLcdDecoder() {
+      return { snapshot: () => ({ status: 'hostile-current-decoder', lines: ['MUTATED', 'CURRENT'] }) };
+    },
+    validateProfile() { return { ok: false, code: 'HOSTILE_CURRENT_PROFILE' }; },
+  });
+  const changed = validateCircuit(DEFAULT_CIRCUIT, {
+    modelLibraryLock: CURRENT_MODEL_LIBRARY_LOCK,
+    modelLibraryImplementation: hostile,
+    testAuthority: MODEL_LIBRARY_TEST_AUTHORITY,
+  });
+  assert.equal(changed.ok, true);
+  assert.equal(changed.modelLibrary.implementationId, hostile.id);
+  assert.equal(changed.models.leds[0].currentAmps, (5 - 4) / 220);
+  assert.deepEqual(hostile.observeRgb({ R: 1, G: 0, B: 0 }), { R: 0, G: 0, B: 1 });
+  assert.equal(hostile.createCharacterLcdDecoder({}).snapshot().status, 'hostile-current-decoder');
+  assert.equal(hostile.validateProfile('board.rp2040-pico-v1', {}).code, 'HOSTILE_CURRENT_PROFILE');
+  const retainedAfter = {
+    electrical: retained.validateAvrCircuit(DEFAULT_CIRCUIT),
+    rgb: retained.observeRgb({ R: 1.2, G: 0.5, B: -1 }),
+    encoder: retained.rotaryEncoderSequence({ phaseCycles: 16_000,
+      phases: { A: { boardPinNumber: 2 }, B: { boardPinNumber: 3 } } }, 'cw'),
+    lcd: retained.createCharacterLcdDecoder(
+      { RS: 'D3', E: 'D4', D4: 'D5', D5: 'D6', D6: 'D7', D7: 'D8' },
+    ).snapshot(),
+    pico: retained.validateProfile('board.rp2040-pico-v1', createRp2040PicoCircuitDraft()),
+  };
+  assert.deepEqual(retainedAfter, retainedBefore);
+  assert.equal(validateCircuit(DEFAULT_CIRCUIT, {
+    modelLibraryLock: CURRENT_MODEL_LIBRARY_LOCK, modelLibraryImplementation: hostile,
+  }).code, 'MODEL_LIBRARY_TEST_OVERRIDE_FORBIDDEN');
+  assert.equal(resolveModelLibrary({ ...CURRENT_MODEL_LIBRARY_LOCK,
+    manifestSha256: 'f'.repeat(64) }).ok, false);
 });
 
 test('approved AVR candidate envelope validates its authored candidate graph without nested-object guessing', () => {

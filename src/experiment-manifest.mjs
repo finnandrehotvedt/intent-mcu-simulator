@@ -4,10 +4,12 @@
 import { COMPONENT_CATALOG } from './component-catalog.mjs';
 import { candidateCompilerTarget } from './compile-targets.mjs';
 import { exactKeys } from './strict-json.mjs';
-import { WORKER_RUNTIME_IDENTITY_SCHEMA } from './runtime-identity.mjs';
+import { MODEL_WORKER_RUNTIME_IDENTITY_SCHEMA, WORKER_RUNTIME_IDENTITY_SCHEMA } from './runtime-identity.mjs';
+import { normalizeModelLibraryLock, resolveModelLibrary } from './model-library.mjs';
 import { TEMPERATURE_ANALOGUE_SENSOR_DEFINITION } from '../expansion-drafts/temperature-analogue-sensor-v1.mjs';
 
-export const EXPERIMENT_MANIFEST_SCHEMA = 'intent-mcu-experiment-manifest@1';
+export const EXPERIMENT_MANIFEST_SCHEMA = 'intent-mcu-experiment-manifest@2';
+export const LEGACY_EXPERIMENT_MANIFEST_SCHEMA = 'intent-mcu-experiment-manifest@1';
 export const AVR_TOOLCHAIN_MANIFEST_SHA256 = '098e57cc2da7f46f0abea657a33473ef7c2a3c2f556152640fb4862ad4de53d2';
 export const AVR_EXPERIMENT_TOOL_VERSIONS = Object.freeze([
   Object.freeze({ id: 'arduino-cli', version: '1.5.1', role: 'compiler-driver',
@@ -19,6 +21,10 @@ export const AVR_EXPERIMENT_TOOL_VERSIONS = Object.freeze([
 ]);
 export const AVR_EXPERIMENT_RUNTIME = Object.freeze({
   id: 'avr8js', version: '0.21.1', role: 'runtime',
+  identitySchema: MODEL_WORKER_RUNTIME_IDENTITY_SCHEMA,
+});
+const LEGACY_AVR_EXPERIMENT_RUNTIME = Object.freeze({
+  id: 'avr8js', version: '0.21.1', role: 'runtime',
   identitySchema: WORKER_RUNTIME_IDENTITY_SCHEMA,
 });
 
@@ -27,6 +33,9 @@ const IMAGE = /^sha256:[a-f0-9]{64}$/u;
 const MODEL_KEYS = ['componentType', 'componentVersion', 'modelId', 'modelVersion'];
 const TOOL_KEYS = ['id', 'version', 'role', 'sourceSha256'];
 const MANIFEST_KEYS = ['schema', 'sourceSha256', 'circuitSha256', 'scenarioSha256',
+  'testSha256', 'artifactSha256', 'models', 'modelsSha256', 'tools', 'toolsSha256',
+  'modelLibrary', 'modelExecutionContextSha256', 'manifestSha256'];
+const LEGACY_MANIFEST_KEYS = ['schema', 'sourceSha256', 'circuitSha256', 'scenarioSha256',
   'testSha256', 'artifactSha256', 'models', 'modelsSha256', 'tools', 'toolsSha256',
   'manifestSha256'];
 const clone = (value) => structuredClone(value);
@@ -56,7 +65,7 @@ function projectMembers(prepared) {
   return { source: { schema: 'intent-mcu-authored-source-set@1', files }, circuit: clone(circuit) };
 }
 
-function modelOwnersFor(circuit) {
+function legacyModelOwnersFor(circuit) {
   if (!Array.isArray(circuit.components)) reject('EXPERIMENT_MANIFEST_CIRCUIT');
   const owners = { ...COMPONENT_CATALOG,
     [TEMPERATURE_ANALOGUE_SENSOR_DEFINITION.type]: TEMPERATURE_ANALOGUE_SENSOR_DEFINITION };
@@ -73,10 +82,26 @@ function modelOwnersFor(circuit) {
   });
 }
 
+function modelOwnersFor(circuit, lock) {
+  if (!Array.isArray(circuit.components)) reject('EXPERIMENT_MANIFEST_CIRCUIT');
+  const resolved = resolveModelLibrary(lock);
+  if (!resolved.ok) reject(resolved.code, resolved.details);
+  const byType = new Map(resolved.manifest.entries
+    .filter((entry) => entry.profile === 'board.atmega328p-16mhz-v1')
+    .map((entry) => [entry.componentType, entry]));
+  return [...new Set(circuit.components.map((component) => component?.type))].sort().map((type) => {
+    const owner = byType.get(type);
+    if (!owner) reject('EXPERIMENT_MANIFEST_MODEL_OWNER', [type ?? null]);
+    return { componentType: type, componentVersion: owner.componentVersion,
+      modelId: owner.modelId, modelVersion: owner.modelVersion };
+  });
+}
+
 function validateProducer(producer, artifactIdentitySha256) {
   if (!exactKeys(producer, ['artifactIdentitySha256', 'inputIdentitySha256',
     'toolchainImageId', 'toolchainIdentitySha256', 'projectGeneration',
-    'buildGeneration', 'runtimeGeneration', 'runtimeIdentity'])
+    'buildGeneration', 'runtimeGeneration', 'runtimeIdentity',
+    'modelImplementationSha256', 'modelExecutionContextSha256'])
       || producer.artifactIdentitySha256 !== artifactIdentitySha256
       || !HASH.test(producer.inputIdentitySha256 ?? '')
       || !IMAGE.test(producer.toolchainImageId ?? '')
@@ -89,12 +114,17 @@ function validateProducer(producer, artifactIdentitySha256) {
     reject('EXPERIMENT_MANIFEST_PRODUCER');
   }
   const identity = producer.runtimeIdentity;
-  if (!exactKeys(identity, ['schema', 'projectGeneration', 'runtimeGeneration',
-    'artifactIdentity', 'workerInitialization', 'workerInstanceNonce'])
-      || identity.schema !== WORKER_RUNTIME_IDENTITY_SCHEMA
+  if (!HASH.test(producer.modelImplementationSha256 ?? '')
+      || !HASH.test(producer.modelExecutionContextSha256 ?? '')
+      || !exactKeys(identity, ['schema', 'projectGeneration', 'runtimeGeneration',
+        'artifactIdentity', 'modelImplementationSha256', 'modelExecutionContextSha256',
+        'workerInitialization', 'workerInstanceNonce'])
+      || identity.schema !== MODEL_WORKER_RUNTIME_IDENTITY_SCHEMA
       || identity.projectGeneration !== producer.projectGeneration
       || identity.runtimeGeneration !== producer.runtimeGeneration
       || identity.artifactIdentity !== artifactIdentitySha256
+      || identity.modelImplementationSha256 !== producer.modelImplementationSha256
+      || identity.modelExecutionContextSha256 !== producer.modelExecutionContextSha256
       || !Number.isSafeInteger(identity.workerInitialization) || identity.workerInitialization < 1
       || !/^[a-f0-9]{32}$/u.test(identity.workerInstanceNonce ?? '')) {
     reject('EXPERIMENT_MANIFEST_RUNTIME_IDENTITY');
@@ -131,7 +161,8 @@ function normalizeModels(value) {
   });
 }
 
-function normalizeTools(value) {
+function normalizeTools(value, legacy = false) {
+  const runtime = legacy ? LEGACY_AVR_EXPERIMENT_RUNTIME : AVR_EXPERIMENT_RUNTIME;
   if (!exactKeys(value, ['compiler', 'runtime'])
       || !exactKeys(value.compiler, ['profile', 'imageId', 'manifestSha256', 'versions'])
       || value.compiler.profile !== 'board.atmega328p-16mhz-v1'
@@ -141,7 +172,7 @@ function normalizeTools(value) {
       || JSON.stringify(value.compiler.versions) !== JSON.stringify(AVR_EXPERIMENT_TOOL_VERSIONS)
       || value.compiler.versions.some((tool) => !exactKeys(tool, TOOL_KEYS) || !HASH.test(tool.sourceSha256 ?? ''))
       || !exactKeys(value.runtime, ['id', 'version', 'role', 'identitySchema'])
-      || JSON.stringify(value.runtime) !== JSON.stringify(AVR_EXPERIMENT_RUNTIME)) {
+      || JSON.stringify(value.runtime) !== JSON.stringify(runtime)) {
     reject('EXPERIMENT_MANIFEST_TOOLS');
   }
   return clone(value);
@@ -152,7 +183,12 @@ export async function createExperimentManifest({ prepared, expectation, artifact
   hash(artifactIdentitySha256, '$artifactIdentitySha256');
   const acceptedProducer = validateProducer(producer, artifactIdentitySha256);
   const members = projectMembers(prepared);
-  const models = modelOwnersFor(members.circuit);
+  const modelLibrary = normalizeModelLibraryLock(prepared.modelLibrary);
+  if (!modelLibrary.ok) reject(modelLibrary.code, modelLibrary.details);
+  if (modelLibrary.lock.implementationSha256 !== acceptedProducer.modelImplementationSha256) {
+    reject('EXPERIMENT_MANIFEST_MODEL_IMPLEMENTATION');
+  }
+  const models = modelOwnersFor(members.circuit, modelLibrary.lock);
   const tools = toolsFromProducer(acceptedProducer);
   const manifest = {
     schema: EXPERIMENT_MANIFEST_SCHEMA,
@@ -165,6 +201,8 @@ export async function createExperimentManifest({ prepared, expectation, artifact
     modelsSha256: await sha256(models),
     tools,
     toolsSha256: await sha256(tools),
+    modelLibrary: modelLibrary.lock,
+    modelExecutionContextSha256: acceptedProducer.modelExecutionContextSha256,
     manifestSha256: '',
   };
   manifest.manifestSha256 = await sha256(Object.fromEntries(
@@ -180,9 +218,53 @@ export async function normalizeExperimentManifest(value, { prepared, expectation
   }
   const members = projectMembers(prepared);
   const models = normalizeModels(value.models);
-  const expectedModels = modelOwnersFor(members.circuit);
+  const modelLibrary = normalizeModelLibraryLock(value.modelLibrary);
+  if (!modelLibrary.ok || JSON.stringify(modelLibrary.lock) !== JSON.stringify(prepared.modelLibrary)) {
+    reject('EXPERIMENT_MANIFEST_MODEL_LIBRARY');
+  }
+  const expectedModels = modelOwnersFor(members.circuit, modelLibrary.lock);
   if (JSON.stringify(models) !== JSON.stringify(expectedModels)) reject('EXPERIMENT_MANIFEST_MODEL_OWNER');
   const tools = normalizeTools(value.tools);
+  const expected = {
+    sourceSha256: await sha256(members.source),
+    circuitSha256: await sha256(members.circuit),
+    scenarioSha256: await sha256(prepared.scenarioTimeline),
+    testSha256: await sha256(expectation.reference),
+    artifactSha256: artifactIdentitySha256,
+    modelsSha256: await sha256(models),
+    toolsSha256: await sha256(tools),
+    modelExecutionContextSha256: value.modelExecutionContextSha256,
+  };
+  for (const [key, expectedValue] of Object.entries(expected)) {
+    hash(value[key], `$manifest.${key}`);
+    if (value[key] !== expectedValue) reject('EXPERIMENT_MANIFEST_BINDING', [key]);
+  }
+  const normalized = { schema: EXPERIMENT_MANIFEST_SCHEMA,
+    sourceSha256: value.sourceSha256, circuitSha256: value.circuitSha256,
+    scenarioSha256: value.scenarioSha256, testSha256: value.testSha256,
+    artifactSha256: value.artifactSha256, models, modelsSha256: value.modelsSha256,
+    tools, toolsSha256: value.toolsSha256, modelLibrary: modelLibrary.lock,
+    modelExecutionContextSha256: value.modelExecutionContextSha256,
+    manifestSha256: value.manifestSha256 };
+  hash(normalized.manifestSha256, '$manifest.manifestSha256');
+  const aggregate = await sha256(Object.fromEntries(
+    Object.entries(normalized).filter(([key]) => key !== 'manifestSha256'),
+  ));
+  if (normalized.manifestSha256 !== aggregate) reject('EXPERIMENT_MANIFEST_AGGREGATE');
+  return normalized;
+}
+
+export async function normalizeLegacyExperimentManifest(value, { prepared, expectation,
+  artifactIdentitySha256, sha256 }) {
+  if (!exactKeys(value, LEGACY_MANIFEST_KEYS) || value.schema !== LEGACY_EXPERIMENT_MANIFEST_SCHEMA) {
+    reject('EXPERIMENT_MANIFEST_SHAPE');
+  }
+  const members = projectMembers(prepared);
+  const models = normalizeModels(value.models);
+  if (JSON.stringify(models) !== JSON.stringify(legacyModelOwnersFor(members.circuit))) {
+    reject('EXPERIMENT_MANIFEST_MODEL_OWNER');
+  }
+  const tools = normalizeTools(value.tools, true);
   const expected = {
     sourceSha256: await sha256(members.source),
     circuitSha256: await sha256(members.circuit),
@@ -196,7 +278,7 @@ export async function normalizeExperimentManifest(value, { prepared, expectation
     hash(value[key], `$manifest.${key}`);
     if (value[key] !== expectedValue) reject('EXPERIMENT_MANIFEST_BINDING', [key]);
   }
-  const normalized = { schema: EXPERIMENT_MANIFEST_SCHEMA,
+  const normalized = { schema: LEGACY_EXPERIMENT_MANIFEST_SCHEMA,
     sourceSha256: value.sourceSha256, circuitSha256: value.circuitSha256,
     scenarioSha256: value.scenarioSha256, testSha256: value.testSha256,
     artifactSha256: value.artifactSha256, models, modelsSha256: value.modelsSha256,

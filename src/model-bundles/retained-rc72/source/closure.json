@@ -1,0 +1,262 @@
+{
+  "schema": "intent-mcu-retained-model-source-closure@1",
+  "commit": "00f4c58e4a99f594743df7aa56221d73ec74cdb8",
+  "seeds": [
+    "src/component-catalog.mjs",
+    "src/circuit-engine.mjs",
+    "src/runtime-kernel.mjs",
+    "src/candidate-project-session.mjs",
+    "src/candidate-spdt-runtime.mjs",
+    "src/candidate-existing-ui-adapter.mjs",
+    "src/rp2040-pico-circuit.mjs",
+    "src/rp2040-public-workbench.mjs",
+    "src/esp32c3-public-circuit.mjs",
+    "src/esp32c3-public-workbench.mjs",
+    "src/stm32-public-circuit.mjs",
+    "src/stm32-public-workbench.mjs",
+    "expansion-drafts/project-v3-contact-persistence.mjs",
+    "expansion-drafts/ground-reference-integration-v1.mjs",
+    "expansion-drafts/toggle-switch-integration-v1.mjs",
+    "expansion-drafts/switch-contact-graph-v1.mjs",
+    "expansion-drafts/ideal-three-pin-analogue-module-v1.mjs",
+    "expansion-drafts/light-analogue-sensor-v1.mjs",
+    "expansion-drafts/temperature-analogue-sensor-v1.mjs",
+    "expansion-drafts/digital-light-threshold-module-v1.mjs",
+    "expansion-drafts/common-cathode-rgb-led-v1.mjs",
+    "expansion-drafts/active-buzzer-module-v1.mjs",
+    "expansion-drafts/seven-segment-common-cathode-v1.mjs",
+    "expansion-drafts/character-lcd-16x2-4bit-v1.mjs",
+    "expansion-drafts/rotary-encoder-quadrature-v1.mjs"
+  ],
+  "members": [
+    {
+      "path": "c3/gpio2-adapter.mjs",
+      "sha256": "84d6e7393ebd18de8717364d73a9bfaee7f5820fac19be774262dab5c1c2f555"
+    },
+    {
+      "path": "c3/protocol.mjs",
+      "sha256": "deb1168dbb7d7092b7792df35592b5c9171832ad58b34998f2dd194a38460c46"
+    },
+    {
+      "path": "expansion-drafts/active-buzzer-artwork-v1.mjs",
+      "sha256": "6f28b5a3bbea9ded2f3d992b6ea17c997d2d62a0e254b6c213a4891f2493f862"
+    },
+    {
+      "path": "expansion-drafts/active-buzzer-module-v1.mjs",
+      "sha256": "aa8bd1dc352a689ebcf0443cc2595426cdcf46396b1bc47b742c3731b2dafe94"
+    },
+    {
+      "path": "expansion-drafts/character-lcd-16x2-4bit-artwork-v1.mjs",
+      "sha256": "d7f8b4852ebaee692c7f32b29b47e76095229f2dfce8fbaa7518af052d95269a"
+    },
+    {
+      "path": "expansion-drafts/character-lcd-16x2-4bit-v1.mjs",
+      "sha256": "463871c751ee4e7857d46ceb75500f417c59a59af331535e8e3b2c87d17b27ee"
+    },
+    {
+      "path": "expansion-drafts/common-cathode-rgb-led-artwork-v1.mjs",
+      "sha256": "093a57033118bc9faaf6d4e57b05d4bf04dbfdfb61c84b067e6f853b40b53997"
+    },
+    {
+      "path": "expansion-drafts/common-cathode-rgb-led-v1.mjs",
+      "sha256": "42d045d2882ed745c4f2895d21bc0683582ce185c03b1dce9b854f98389f69d1"
+    },
+    {
+      "path": "expansion-drafts/controller-adapter-contract-v1.mjs",
+      "sha256": "45b298703056fad88f8de876910daae5f734caee92f282828991628ceed8b49f"
+    },
+    {
+      "path": "expansion-drafts/digital-light-threshold-artwork-v1.mjs",
+      "sha256": "ed3f3a8f1f71b9221155fc512238acb66671d7a558e69146c87df19dc21a38f1"
+    },
+    {
+      "path": "expansion-drafts/digital-light-threshold-module-v1.mjs",
+      "sha256": "f3a203a7c92e412a615599e6b0dbca9a84af3c15843c47e7bedc3a8f4d48d2bd"
+    },
+    {
+      "path": "expansion-drafts/ground-reference-artwork-v1.mjs",
+      "sha256": "362db53c8eb00bdd181f2de994bc0392bf6c5434403c6be8712f38ee7521af18"
+    },
+    {
+      "path": "expansion-drafts/ground-reference-integration-v1.mjs",
+      "sha256": "59dc3833915afbec325b2d06e815c3250ad858ad1769da03c509ae7e3cd38958"
+    },
+    {
+      "path": "expansion-drafts/ideal-three-pin-analogue-module-v1.mjs",
+      "sha256": "383caf45e17281997b5b6e6f8a63bde660e19a1e48e1d0be1c137a8d36c187d3"
+    },
+    {
+      "path": "expansion-drafts/light-analogue-sensor-artwork-v1.mjs",
+      "sha256": "b4ae5113b88cdf4daaa19472857603afa47b67906b86db3ad0358930469aa6fe"
+    },
+    {
+      "path": "expansion-drafts/light-analogue-sensor-v1.mjs",
+      "sha256": "1a6efe15ec9b955f2824b711d32ea5d310d7966a223f8366031158514db24fbc"
+    },
+    {
+      "path": "expansion-drafts/project-v3-contact-persistence.mjs",
+      "sha256": "25f9c0e5dccb05ebea9e685775b02699311ce18cf22f83ec3680750b37e14993"
+    },
+    {
+      "path": "expansion-drafts/project-v3-envelope.mjs",
+      "sha256": "8003a23a61de0da32e90d73863b8953ba3298d442d3fd0122473de22720b5b91"
+    },
+    {
+      "path": "expansion-drafts/rotary-encoder-quadrature-artwork-v1.mjs",
+      "sha256": "edc527f6d9d6ff9273b7a0af29752334fb05f93feed432a823f2220ebbefc6f4"
+    },
+    {
+      "path": "expansion-drafts/rotary-encoder-quadrature-v1.mjs",
+      "sha256": "0671974cb26e5447db07266f2e6a85a1f4fdd2fb8463453aa274987177167ac8"
+    },
+    {
+      "path": "expansion-drafts/seven-segment-common-cathode-artwork-v1.mjs",
+      "sha256": "258a54dd9bbc823084eb9c0da7b7b4c069913479327807e794ac00ddeefedaa8"
+    },
+    {
+      "path": "expansion-drafts/seven-segment-common-cathode-v1.mjs",
+      "sha256": "5d2b30cdfcfd48ad8dfc6e767ac9c9ee2825018e94980cf8915d5550b7d69905"
+    },
+    {
+      "path": "expansion-drafts/switch-contact-artwork-v1.mjs",
+      "sha256": "e7c8dc110bfa6cf29e5e9e1cc3017410cf25fa2775ae5b75a15cca51a2a8b41f"
+    },
+    {
+      "path": "expansion-drafts/switch-contact-graph-v1.mjs",
+      "sha256": "073a5079335b222c53410971dcab42324cfa3ad639cc4b57a879fbe6efa476d2"
+    },
+    {
+      "path": "expansion-drafts/temperature-analogue-sensor-artwork-v1.mjs",
+      "sha256": "dab6d0fc1125a729dfa47ff9742007f91e151f760ac95dfe1ec5185da326e86a"
+    },
+    {
+      "path": "expansion-drafts/temperature-analogue-sensor-v1.mjs",
+      "sha256": "5f3290f865e79ecf7362ea6b6ea667d9e01670a5daabb1b1cf70e977a6307817"
+    },
+    {
+      "path": "expansion-drafts/toggle-switch-artwork-v1.mjs",
+      "sha256": "144f796fd6884d20ce9f6a6f79bac294242db4b9221791ca94aa42471d6c96ec"
+    },
+    {
+      "path": "expansion-drafts/toggle-switch-integration-v1.mjs",
+      "sha256": "90fcaad32074957021ffe5bde973c81c08a3dd0f345495ab169218416dc0e389"
+    },
+    {
+      "path": "src/atmega328p-adapter.mjs",
+      "sha256": "e1734acdade9d5a0b5cadcfa0dd08ed35daced195c921d9a3f79eea5aac9d618"
+    },
+    {
+      "path": "src/candidate-existing-ui-adapter.mjs",
+      "sha256": "a431e44385ff6958303a37b4b5376d120b494b22381ebc50bb0f9933bfd12842"
+    },
+    {
+      "path": "src/candidate-project-session.mjs",
+      "sha256": "fa0c8fcd4ff2fdb6a17424292c92c3e1116fbe4afc96902936cd453c6888f015"
+    },
+    {
+      "path": "src/candidate-spdt-runtime.mjs",
+      "sha256": "cac63a72f4e0a8b67468d638d5ae9cf8bf49a76420e62d648bb4745bf9d8de31"
+    },
+    {
+      "path": "src/circuit-engine.mjs",
+      "sha256": "455f3aa0923d3dd2f36109a0f36af6e003e9f64c868277b49577520be6ba3ab5"
+    },
+    {
+      "path": "src/component-catalog.mjs",
+      "sha256": "d461c7f52e591f2937518dd7cc30f9fdfd915cd9c6104624364d2236ecf1d236"
+    },
+    {
+      "path": "src/esp32c3-public-circuit.mjs",
+      "sha256": "1cf9d40aa6440fc55eb23462b99adcaa840c0431701c96020a986d05bed38775"
+    },
+    {
+      "path": "src/esp32c3-public-workbench.mjs",
+      "sha256": "30642531684a3a19d1a0e2ebc5551120af48782108e21149983c082c49c6cf6d"
+    },
+    {
+      "path": "src/hex.mjs",
+      "sha256": "eb6cf7c39e2829d103be21a1888c3d7fd87092f0e45575071129485deb0b97a2"
+    },
+    {
+      "path": "src/lifecycle.mjs",
+      "sha256": "26b41827a943dce61c35edf406e4cdb7e2f9d41458c6be2e3ebc83513da573f9"
+    },
+    {
+      "path": "src/named-series-led-circuit-editor.mjs",
+      "sha256": "82ee0dfac0444242c982f78f0e127d5fd6db69dd91ec9bb9b04288d3690b46f4"
+    },
+    {
+      "path": "src/project-editor.mjs",
+      "sha256": "7943fc2541a4dc4148f939d2cb7e229840db92c9d55d5d8cefdf16ed5f75fa90"
+    },
+    {
+      "path": "src/project-v2.mjs",
+      "sha256": "7d4004e1c34ba58978593eb3577d2f7e49152ee5c652ef5c578871d84f982339"
+    },
+    {
+      "path": "src/retry-guidance.mjs",
+      "sha256": "399de02c649e34f61851ba0d81e9198e023bfe6fc1875b375813e41558fc1eb3"
+    },
+    {
+      "path": "src/route-model.mjs",
+      "sha256": "06d6241ef008f2a92faefab66a421b1ec4cc1ab4f5e75fc4ca56038101d07ade"
+    },
+    {
+      "path": "src/rp2040-pico-circuit.mjs",
+      "sha256": "5899e2bfaa388233a9adefcf31ef116a2aa9d74d342c3f01d179da20daf4b310"
+    },
+    {
+      "path": "src/rp2040-public-workbench.mjs",
+      "sha256": "896930d3c1723eee98d6ef81fb3896ef4fa09920785a0b313aa44f18b10bdfe1"
+    },
+    {
+      "path": "src/runtime-identity.mjs",
+      "sha256": "032f36eee266b5342a2cb63dd0c8cc92ce25472e8777022e8aba57c408a97866"
+    },
+    {
+      "path": "src/runtime-kernel.mjs",
+      "sha256": "b8d96f570ca01cd70ef8003c69f424037322a807ece95bc43929fa20659acd2b"
+    },
+    {
+      "path": "src/source-diagnostics.mjs",
+      "sha256": "31cd97ce19441b38209f50c84dc1a62919a5066e7aa95c7712fc4c950cace04c"
+    },
+    {
+      "path": "src/stm32-public-circuit.mjs",
+      "sha256": "e7ca482ab2937193fd962ba75b521c051f48982523e78975789cc8178d6c49e3"
+    },
+    {
+      "path": "src/stm32-public-workbench.mjs",
+      "sha256": "f6fdd2743aa9011ffaa1cf7acef5cc6ddca897d2a9f8e9ceb48532c7e786a1dd"
+    },
+    {
+      "path": "src/strict-json.mjs",
+      "sha256": "2a8bcfeed40b56f44d771ddbd2bad77b7ce17698e7f9f608afae8e828d8cb5e5"
+    },
+    {
+      "path": "src/thermostat-source.mjs",
+      "sha256": "358433c9ba1b5cbbb923642b743c2e724879d21012a3ea62d2e2f956287db1f7"
+    },
+    {
+      "path": "src/x34-precision-fixture.mjs",
+      "sha256": "53b6769e739c960100662fbf995c59c0a0a5ca7ba3b91774e6f627fbb822f14b"
+    },
+    {
+      "path": "src/x34-precision-observer.mjs",
+      "sha256": "4974ec58812bf896f8078f3caf657b51610e089c20f3a0ead7cff8e526822197"
+    },
+    {
+      "path": "src/x35-causal-chain-contract.mjs",
+      "sha256": "728b95727e658dcd01933f8619de47bbe052ef9153de0b29cda89852757d8e0e"
+    },
+    {
+      "path": "src/x35-causal-observer.mjs",
+      "sha256": "57f33986fea1e23dc3b50b92e12a9e356b91f877fc65e19eb32ae2d12c408959"
+    },
+    {
+      "path": "stm32/protocol.mjs",
+      "sha256": "08d876cafb2f0500c3e70622f6aca165068479b0d368d9f5bedb0626363cb2bd"
+    }
+  ],
+  "closureSha256": "c38e9bae65bba34d36078d95fa90e12f6743450ffab86c70144a4a14e80c90c2"
+}

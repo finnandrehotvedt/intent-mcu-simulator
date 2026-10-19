@@ -42,7 +42,7 @@ import {
 } from '../src/source-diagnostics.mjs';
 import { createLifecycleState, transitionLifecycle } from '../src/lifecycle.mjs';
 import {
-  RUNTIME_BINDING_SCHEMA, validateWorkerRuntimeIdentity,
+  MODEL_RUNTIME_BINDING_SCHEMA, RUNTIME_BINDING_SCHEMA, validateWorkerRuntimeIdentity,
 } from '../src/runtime-identity.mjs';
 import { mountSharedWorkbenchShell } from '../src/shared-workbench-shell.mjs';
 import {
@@ -240,7 +240,9 @@ import {
 } from '../src/project-envelope.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK,
+  RETAINED_MODEL_LIBRARY_LOCK,
   modelLibraryMigrationPreview,
+  resolveModelLibrary,
 } from '../src/model-library.mjs';
 import {
   createRequirementResultLink,
@@ -532,6 +534,21 @@ const projectModelLibraryLocks = new Map([
   [ESP32C3_PROFILE, structuredClone(CURRENT_MODEL_LIBRARY_LOCK)],
   [STM32F429ZI_PROFILE, structuredClone(CURRENT_MODEL_LIBRARY_LOCK)],
 ]);
+const modelLibraryLockFor = (profile) => {
+  const lock = projectModelLibraryLocks.get(profile);
+  if (!lock) throw new Error('MODEL_LIBRARY_LOCK_MISSING');
+  return structuredClone(lock);
+};
+const modelLibraryImplementationFor = (profile) => {
+  const resolved = resolveModelLibrary(modelLibraryLockFor(profile));
+  if (!resolved.ok) throw Object.assign(new Error(resolved.code), resolved);
+  return resolved.implementation;
+};
+const modelLibraryImplementationForResult = (result) => {
+  const resolved = resolveModelLibrary(result?.modelLibrary);
+  if (!resolved.ok) throw Object.assign(new Error(resolved.code), resolved);
+  return resolved.implementation;
+};
 let nativeFileOperation = null;
 let buildAbortController = null;
 let serialViewMode = 'text';
@@ -4850,7 +4867,12 @@ function currentProjectText() {
   return editor.kind === 'candidate-project-v3' ? editor.saveText() : exportCanonicalProject(editor.project);
 }
 function currentCandidateInputs() {
-  return editor.kind === 'candidate-project-v3' ? candidateRuntimeInputs(editor) : [];
+  return editor.kind === 'candidate-project-v3'
+    ? modelLibraryImplementationFor(AVR_PROFILE).candidateRuntimeInputs(editor) : [];
+}
+function selectedCandidateContactControl(componentId, key, value) {
+  return modelLibraryImplementationFor(AVR_PROFILE)
+    .candidateContactControl(editor, componentId, key, value);
 }
 function thermostatProjectActive() {
   return selectedCompilerProfile === AVR_PROFILE && isThermostatExperimentProject(currentProject());
@@ -5719,8 +5741,9 @@ function renderCompilerTarget() {
   });
   renderPublicControllerWorkbench();
 }
-function parseEditorSource(source) {
-  const candidate = openCandidateUiSession(source);
+function parseEditorSource(source, { modelLibraryLock, bundle } = {}) {
+  if (!modelLibraryLock || !bundle) throw new Error('MODEL_LIBRARY_EXECUTION_CONTEXT_MISSING');
+  const candidate = bundle.openCandidateUiSession(source, { modelLibraryLock });
   if (candidate.ok) return { ok: true, code: candidate.code, session: candidate.session, report: candidate.schema };
   if (candidate.code !== 'CANDIDATE_UI_PROJECT_VERSION') return candidate;
   const parsed = parseProjectV2(source);
@@ -6021,8 +6044,11 @@ for (const [button, profile] of [[elements.reset, AVR_PROFILE], [elements.picore
 const commonProjectAdapters = Object.freeze({
   [AVR_PROFILE]: Object.freeze({
     schemas: Object.freeze([PROJECT_SCHEMA, CONTACT_PERSISTENCE_SCHEMA]),
-    prepare(value) {
-      const parsed = parseEditorSource(JSON.stringify(value));
+    prepare(value, context) {
+      const parsed = parseEditorSource(JSON.stringify(value), {
+        modelLibraryLock: context.modelLibrary,
+        bundle: context.bundle,
+      });
       if (!parsed.ok) throw Object.assign(new Error(parsed.code), { code: parsed.code, details: parsed.details ?? [] });
       const project = typeof parsed.session.saveText === 'function'
         ? JSON.parse(parsed.session.saveText()) : JSON.parse(exportCanonicalProject(parsed.session.project));
@@ -6032,19 +6058,25 @@ const commonProjectAdapters = Object.freeze({
         fieldsDropped: ['build.inputIdentity', 'build.artifactIdentity', 'runtime results'],
       };
     },
-    electrical: (result) => result.prepared?.runnable ?? validateCircuit(result.project.circuit),
+    electrical: (result) => result.prepared?.runnable
+      ?? modelLibraryImplementationForResult(result).validateAvrCircuit(result.project.circuit,
+        { modelLibraryLock: result.modelLibrary }),
   }),
   [RP2040_PROFILE]: Object.freeze({
     schemas: Object.freeze([RP2040_PUBLIC_PROJECT_SCHEMA]),
     prepare: (value) => ({ project: normalizeRp2040PublicProject(value),
       preserved: ['name', 'source', 'components', 'pins', 'nets', 'properties', 'layout', 'rotation', 'wires'] }),
-    electrical: (result) => validateRp2040PicoCircuit(result.project.circuit),
+    electrical: (result) => modelLibraryImplementationForResult(result)
+      .validateProfile(RP2040_PROFILE, result.project.circuit,
+        { modelLibraryLock: result.modelLibrary }),
   }),
   [ESP32C3_PROFILE]: Object.freeze({
     schemas: Object.freeze([C3_PUBLIC_PROJECT_SCHEMA]),
     prepare: (value) => ({ project: normalizeEsp32C3PublicProject(value),
       preserved: ['name', 'source', 'components', 'pins', 'nets', 'properties', 'layout', 'rotation', 'wires'] }),
-    electrical: (result) => validateEsp32C3Circuit(result.project.circuit),
+    electrical: (result) => modelLibraryImplementationForResult(result)
+      .validateProfile(ESP32C3_PROFILE, result.project.circuit,
+        { modelLibraryLock: result.modelLibrary }),
   }),
   [STM32F429ZI_PROFILE]: Object.freeze({
     schemas: Object.freeze([STM32_EDITABLE_PROJECT_SCHEMA, 'intent-mcu-stm32-public-project@1']),
@@ -6054,7 +6086,9 @@ const commonProjectAdapters = Object.freeze({
         preserved: ['name', 'source', ...(legacy ? [] : ['components', 'pins', 'nets', 'properties', 'layout', 'rotation', 'wires'])],
         defaultsAdded: legacy ? ['default validated STM32 teaching circuit'] : [] };
     },
-    electrical: (result) => validateStm32Circuit(result.project.circuit),
+    electrical: (result) => modelLibraryImplementationForResult(result)
+      .validateProfile(STM32F429ZI_PROFILE, result.project.circuit,
+        { modelLibraryLock: result.modelLibrary }),
   }),
 });
 function parseAvrRecoverySource(source) {
@@ -6063,8 +6097,14 @@ function parseAvrRecoverySource(source) {
     return { ok: true, code: common.code, session: common.prepared,
       scenarioTimeline: common.scenarioTimeline, modelLibrary: common.modelLibrary, report: common.report };
   }
-  const legacy = parseEditorSource(source);
-  return legacy.ok ? { ...legacy, scenarioTimeline: null } : common;
+  const retained = resolveModelLibrary(RETAINED_MODEL_LIBRARY_LOCK);
+  if (!retained.ok) return retained;
+  const legacy = parseEditorSource(source, {
+    modelLibraryLock: RETAINED_MODEL_LIBRARY_LOCK,
+    bundle: retained.implementation,
+  });
+  return legacy.ok ? { ...legacy, scenarioTimeline: null,
+    modelLibrary: structuredClone(RETAINED_MODEL_LIBRARY_LOCK) } : common;
 }
 function profileProjectDocument(profile) {
   if (profile === AVR_PROFILE) return JSON.parse(currentProjectText());
@@ -6085,7 +6125,7 @@ function commonProjectFilename(profile) {
 function commonProjectText(profile) {
   return canonicalProjectEnvelope(profile, profileProjectDocument(profile), commonProjectAdapters,
     projectBriefForProfile(profile), profile === AVR_PROFILE ? scenarioTimelineEditor?.timeline ?? null : null,
-    projectModelLibraryLocks.get(profile) ?? CURRENT_MODEL_LIBRARY_LOCK);
+    modelLibraryLockFor(profile));
 }
 function legacyProjectText(profile) {
   return `${JSON.stringify(profileProjectDocument(profile), null, 2)}\n`;
@@ -6097,7 +6137,7 @@ function profileMessage(profile, message) {
   target.textContent = message;
 }
 function renderModelLibraryStatus() {
-  const lock = projectModelLibraryLocks.get(selectedCompilerProfile) ?? CURRENT_MODEL_LIBRARY_LOCK;
+  const lock = modelLibraryLockFor(selectedCompilerProfile);
   const preview = modelLibraryMigrationPreview(lock, CURRENT_MODEL_LIBRARY_LOCK);
   if (!preview.ok) {
     elements.modellibrarysummary.textContent = 'Model library · invalid lock';
@@ -6126,6 +6166,9 @@ function renderModelLibraryStatus() {
 }
 function resetProjectModelLibrary(profile) {
   projectModelLibraryLocks.set(profile, structuredClone(CURRENT_MODEL_LIBRARY_LOCK));
+  if (profile === RP2040_PROFILE) picoPublicWorkbench.setModelLibraryLock(CURRENT_MODEL_LIBRARY_LOCK);
+  else if (profile === ESP32C3_PROFILE) c3PublicWorkbench.setModelLibraryLock(CURRENT_MODEL_LIBRARY_LOCK);
+  else if (profile === STM32F429ZI_PROFILE) stm32PublicWorkbench.setModelLibraryLock(CURRENT_MODEL_LIBRARY_LOCK);
   if (profile === selectedCompilerProfile) renderModelLibraryStatus();
 }
 function downloadMigratedModelLibraryCopy() {
@@ -6297,6 +6340,10 @@ function installPreparedProjectEnvelope(result, handle = null, { preserveExpecta
     elements.boardselect.value = result.profile;
     elements.boardselect.dispatchEvent(new Event('change', { bubbles: true }));
   }
+  projectModelLibraryLocks.set(result.profile, structuredClone(result.modelLibrary));
+  if (result.profile === RP2040_PROFILE) picoPublicWorkbench.setModelLibraryLock(result.modelLibrary);
+  else if (result.profile === ESP32C3_PROFILE) c3PublicWorkbench.setModelLibraryLock(result.modelLibrary);
+  else if (result.profile === STM32F429ZI_PROFILE) stm32PublicWorkbench.setModelLibraryLock(result.modelLibrary);
   if (result.profile === AVR_PROFILE) {
     editor = result.prepared;
     scenarioTimelineEditor = result.scenarioTimeline
@@ -6312,7 +6359,6 @@ function installPreparedProjectEnvelope(result, handle = null, { preserveExpecta
   else if (result.profile === ESP32C3_PROFILE) c3PublicWorkbench.installPreparedProject(result.project);
   else if (result.profile === STM32F429ZI_PROFILE) stm32PublicWorkbench.installPreparedProject(result.project);
   projectBriefDrafts.set(result.profile, briefDraftFromBrief(result.brief));
-  projectModelLibraryLocks.set(result.profile, structuredClone(result.modelLibrary));
   clearRequirementResultLinks(result.profile);
   renderProjectBrief();
   if (handle && !result.report.legacy) projectFileConnections.set(result.profile, {
@@ -6469,9 +6515,9 @@ window.__COMMON_PROJECT_FILES__ = Object.freeze({
   legacy: (profile = selectedCompilerProfile) => legacyProjectText(profile),
   prepare: (source) => prepareProjectEnvelope(source, commonProjectAdapters),
   modelLibraryLock: (profile = selectedCompilerProfile) => structuredClone(
-    projectModelLibraryLocks.get(profile) ?? CURRENT_MODEL_LIBRARY_LOCK),
+    modelLibraryLockFor(profile)),
   modelLibraryPreview: (profile = selectedCompilerProfile) => modelLibraryMigrationPreview(
-    projectModelLibraryLocks.get(profile) ?? CURRENT_MODEL_LIBRARY_LOCK, CURRENT_MODEL_LIBRARY_LOCK),
+    modelLibraryLockFor(profile), CURRENT_MODEL_LIBRARY_LOCK),
   migrateModelLibraryCopy: (source = commonProjectText(selectedCompilerProfile)) =>
     migrateProjectModelLibrary(source, commonProjectAdapters),
 });
@@ -6827,13 +6873,19 @@ function experimentPackageBaseEligibility() {
     return { ok: false, reason: 'Build this exact project before producing the report.' };
   }
   const runtimeIdentity = window.__M6_STATE__.runtime?.runtimeIdentity;
+  const activeModelLock = modelLibraryLockFor(AVR_PROFILE);
   const producerCurrent = latestBuildResult?.artifactIdentity === lifecycle.artifact.artifactIdentity
     && latestBuildResult?.inputIdentity === lifecycle.artifact.inputIdentity
     && latestBuildResult?.toolchainIdentitySha256 === currentCompilerTarget().toolchainIdentitySha256
     && /^sha256:[a-f0-9]{64}$/u.test(latestBuildResult?.toolchainImageId ?? '')
     && runtimeIdentity?.projectGeneration === lifecycle.artifact.projectGeneration
     && runtimeIdentity?.runtimeGeneration === lifecycle.runtimeBinding?.runtimeGeneration
-    && runtimeIdentity?.artifactIdentity === lifecycle.artifact.artifactIdentity;
+    && runtimeIdentity?.artifactIdentity === lifecycle.artifact.artifactIdentity
+    && latestBuildResult?.modelImplementationSha256 === activeModelLock.implementationSha256
+    && runtimeIdentity?.modelImplementationSha256 === activeModelLock.implementationSha256
+    && runtimeIdentity?.modelExecutionContextSha256 === latestBuildResult?.modelExecutionContextSha256
+    && window.__M6_STATE__.runtime?.modelExecutionContextSha256
+      === latestBuildResult?.modelExecutionContextSha256;
   if (!producerCurrent) {
     return { ok: false, reason: 'Current compiler and runtime identities are incomplete or stale. Build and run again.' };
   }
@@ -6858,6 +6910,8 @@ function experimentPackageBaseEligibility() {
       buildGeneration: lifecycle.artifact.buildGeneration,
       runtimeGeneration: lifecycle.runtimeBinding.runtimeGeneration,
       runtimeIdentity: structuredClone(runtimeIdentity),
+      modelImplementationSha256: latestBuildResult.modelImplementationSha256,
+      modelExecutionContextSha256: latestBuildResult.modelExecutionContextSha256,
     } };
 }
 function showExperimentPackageState(ready, reason, sha256 = null) {
@@ -6889,7 +6943,7 @@ async function refreshExperimentPackageState() {
   }
   const failed = authoredScenarioResults.filter((result) => result.status === 'failed').length;
   showExperimentPackageState(true,
-    `${eligibility.timeline.scenarios.length} current measured scenarios · ${failed ? `${failed} failed result retained` : 'complete evidence'} · seven identities bound · local download ready`);
+    `${eligibility.timeline.scenarios.length} current measured scenarios · ${failed ? `${failed} failed result retained` : 'complete evidence'} · model-bound identities complete · local download ready`);
   return { ok: true, timeline: eligibility.timeline, currentText, producer: eligibility.producer };
 }
 function experimentPackageFilename() {
@@ -7359,6 +7413,15 @@ async function openProjectFile() {
 function buildInputIdentity() {
   const target = currentCompilerTarget();
   const runtimeProject = currentRuntimeProject();
+  const modelLibraryLock = modelLibraryLockFor(target.profile);
+  const resolvedModels = resolveModelLibrary(modelLibraryLock);
+  if (!resolvedModels.ok) throw Object.assign(new Error(resolvedModels.code), resolvedModels);
+  const runtimePrefix = { [AVR_PROFILE]: 'avr8js@', [RP2040_PROFILE]: 'rp2040js@',
+    [ESP32C3_PROFILE]: 'esp32c3-qemu@', [STM32F429ZI_PROFILE]: 'renode@' }[target.profile];
+  const modelRuntimeContract = resolvedModels.manifest.runtimeContracts.find(
+    (contract) => contract.startsWith(runtimePrefix),
+  );
+  if (!modelRuntimeContract) throw new Error('MODEL_LIBRARY_RUNTIME_CONTRACT_UNAVAILABLE');
   return JSON.stringify({
     compilerTarget: {
       profile: target.profile,
@@ -7367,6 +7430,9 @@ function buildInputIdentity() {
     },
     source: currentProject().source,
     circuit: runtimeProject?.circuit ?? null,
+    modelLibraryLock,
+    modelImplementationSha256: resolvedModels.lock.implementationSha256,
+    modelRuntimeContract,
   });
 }
 
@@ -7689,12 +7755,12 @@ function rotateCandidateEncoder(componentId, direction, action = 'encoder contro
   );
   if (!component || editor.kind !== 'candidate-project-v3') return { ok: false, code: 'ROTARY_ENCODER_MISSING' };
   let detent;
-  try { detent = nextRotaryEncoderDetent(component, direction); }
+  try { detent = modelLibraryImplementationFor(AVR_PROFILE).nextEncoderDetent(component, direction); }
   catch (error) {
     showActionableError(elements.projectmessage, error.message, `${action}: ${componentId}`);
     return { ok: false, code: error.message };
   }
-  const prepared = candidateContactControl(editor, componentId, 'detent', detent);
+  const prepared = selectedCandidateContactControl(componentId, 'detent', detent);
   if (!prepared.ok) {
     showActionableError(elements.projectmessage, prepared.code, `${action}: ${componentId}`);
     return prepared;
@@ -8980,7 +9046,7 @@ function renderRuntimeControls() {
         : `${component.label}: COM connected to ${value}. Activate to select ${value === 'A' ? 'B' : 'A'}.`);
       button.addEventListener('click', () => {
         const next = isSpst ? !component.controls.closed : component.controls.selectedThrow === 'A' ? 'B' : 'A';
-        const prepared = candidateContactControl(editor, component.id, key, next);
+        const prepared = selectedCandidateContactControl(component.id, key, next);
         if (!prepared.ok) { showActionableError(elements.projectmessage, prepared.code, 'Candidate control rejected.'); return; }
         const changed = editor.apply({ ...prepared.command, revision: editor.revision });
         if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Candidate control rejected.'); return; }
@@ -9024,7 +9090,7 @@ function renderRuntimeControls() {
       input.setAttribute('aria-label', `${component.label} idealized light level, 0 to 100 percent`);
       input.addEventListener('input', () => {
         const lightLevel = Number(input.value) / 100;
-        const prepared = candidateContactControl(editor, component.id, 'lightLevel', lightLevel);
+        const prepared = selectedCandidateContactControl(component.id, 'lightLevel', lightLevel);
         if (!prepared.ok) {
           showActionableError(elements.projectmessage, prepared.code, 'Light sensor control rejected.');
           return;
@@ -9048,7 +9114,7 @@ function renderRuntimeControls() {
       input.setAttribute('aria-label', `${component.label} idealized temperature, ${TEMPERATURE_MIN_C} to ${TEMPERATURE_MAX_C} degrees Celsius`);
       input.addEventListener('input', () => {
         const nextTemperatureC = Number(input.value);
-        const prepared = candidateContactControl(editor, component.id, 'temperatureC', nextTemperatureC);
+        const prepared = selectedCandidateContactControl(component.id, 'temperatureC', nextTemperatureC);
         if (!prepared.ok) {
           showActionableError(elements.projectmessage, prepared.code, 'Temperature module control rejected.');
           return;
@@ -9088,7 +9154,7 @@ function renderRuntimeControls() {
         input.setAttribute('aria-label', control.aria);
         input.addEventListener('input', () => {
           const value = Number(input.value);
-          const prepared = candidateContactControl(editor, component.id, control.key, value);
+          const prepared = selectedCandidateContactControl(component.id, control.key, value);
           if (!prepared.ok) {
             showActionableError(elements.projectmessage, prepared.code, 'Digital threshold control rejected.');
             return;
@@ -9121,7 +9187,7 @@ function renderProject() {
   const project = currentProject();
   const validation = editor.kind === 'candidate-project-v3'
     ? editor.runnable
-    : validateCircuit(project.circuit);
+    : validateCircuit(project.circuit, { modelLibraryLock: modelLibraryLockFor(AVR_PROFILE) });
   const endpointCount = project.circuit.nets.reduce((count, net) => count + net.endpoints.length, 0);
   elements.graphstate.textContent = `${project.circuit.components.length} components · ${project.circuit.nets.length} nets · ${endpointCount} endpoints`;
   if (validation.ok) {
@@ -9243,6 +9309,7 @@ function renderRgbLedRuntime(message) {
     const duties = Object.fromEntries(['R', 'G', 'B'].map((channel) => [
       channel, dutyForPin(support.runtimeProjection.channels[channel].sourcePin),
     ]));
+    Object.assign(duties, modelLibraryImplementationFor(AVR_PROFILE).observeRgb(duties));
     artwork.dataset.rDuty = duties.R.toFixed(3);
     artwork.dataset.gDuty = duties.G.toFixed(3);
     artwork.dataset.bDuty = duties.B.toFixed(3);
@@ -9273,7 +9340,8 @@ function renderActiveBuzzerRuntime(message) {
     if (!artwork) continue;
     const pin = pins.get(support.runtimeProjection.sourcePin);
     const driven = pin?.mode === 'OUTPUT';
-    const enabled = driven && Boolean(pin.level);
+    const enabled = modelLibraryImplementationFor(AVR_PROFILE)
+      .observeBuzzer(driven && Boolean(pin.level)).enabled;
     const driveState = driven ? (enabled ? 'enabled' : 'disabled') : 'not-driven';
     artwork.dataset.enabled = String(enabled);
     artwork.dataset.driveState = driveState;
@@ -9296,13 +9364,14 @@ function renderSevenSegmentRuntime(message) {
       `[data-component-id="${support.componentId}"] [data-artwork-key="output-seven-segment-common-cathode"]`,
     );
     if (!artwork) continue;
-    const active = Object.entries(support.runtimeProjection.segments)
+    const drivenSegments = Object.entries(support.runtimeProjection.segments)
       .filter(([, segment]) => {
         const pin = pins.get(segment.sourcePin);
         return pin?.mode === 'OUTPUT' && Boolean(pin.level);
       })
       .map(([segment]) => segment)
       .sort();
+    const active = modelLibraryImplementationFor(AVR_PROFILE).observeSevenSegment(drivenSegments);
     artwork.dataset.activeSegments = active.join('');
     for (const segment of ['a', 'b', 'c', 'd', 'e', 'f', 'g']) {
       artwork.querySelector(`[data-seven-segment="${segment}"]`)?.classList.toggle(
@@ -9333,7 +9402,11 @@ function renderCharacterLcdRuntime(message) {
     ));
     let record = characterLcdRuntime.get(support.componentId);
     if (!record || message.cycle < record.cycle || trace.length < record.traceLength) {
-      record = { decoder: createCharacterLcd4BitDecoder(mapping), cycle: 0, traceLength: 0 };
+      record = {
+        decoder: modelLibraryImplementationFor(AVR_PROFILE).createCharacterLcdDecoder(mapping),
+        cycle: 0,
+        traceLength: 0,
+      };
       characterLcdRuntime.set(support.componentId, record);
     }
     const driven = Object.values(mapping).every((pinName) => pins.get(pinName)?.mode === 'OUTPUT');
@@ -9345,7 +9418,11 @@ function renderCharacterLcdRuntime(message) {
     record.traceLength = trace.length;
     record.cycle = message.cycle;
     const state = driven ? snapshot.status : 'not-driven';
-    const lines = driven && snapshot.displayOn ? snapshot.lines : ['', ''];
+    const decodedLines = driven && snapshot.displayOn ? snapshot.lines : ['', ''];
+    const observed = modelLibraryImplementationFor(AVR_PROFILE)
+      .evaluateProduction(CHARACTER_LCD_TYPE, { lines: decodedLines });
+    if (!observed.ok) throw Object.assign(new Error(observed.code), observed);
+    const lines = observed.result.lines;
     artwork.dataset.protocolState = state;
     artwork.dataset.line1 = lines[0]; artwork.dataset.line2 = lines[1];
     const line1 = artwork.querySelector('[data-lcd-line="1"]');
@@ -9435,7 +9512,13 @@ function scheduleWorkerRuntimeRender(message) {
   }, 100);
 }
 
-function loadArtifact(hex, artifactIdentity, { x34Probe = null } = {}) {
+function loadArtifact(hex, artifactIdentity, {
+  x34Probe = null, modelExecutionContextSha256, modelImplementationSha256,
+} = {}) {
+  if (!/^[a-f0-9]{64}$/u.test(modelExecutionContextSha256 ?? '')
+      || !/^[a-f0-9]{64}$/u.test(modelImplementationSha256 ?? '')) {
+    throw new Error('MODEL_LIBRARY_EXECUTION_CONTEXT_MISSING');
+  }
   stopRuntime('Loading verified artifact…');
   const loaded = applyLifecycle({ type: 'runtime.load' });
   if (!loaded.accepted) {
@@ -9444,10 +9527,12 @@ function loadArtifact(hex, artifactIdentity, { x34Probe = null } = {}) {
   }
   const runtimeBinding = loaded.binding;
   const workerRuntimeBinding = {
-    schema: RUNTIME_BINDING_SCHEMA,
+    schema: MODEL_RUNTIME_BINDING_SCHEMA,
     projectGeneration: runtimeBinding.projectGeneration,
     runtimeGeneration: runtimeBinding.runtimeGeneration,
     artifactIdentity: runtimeBinding.artifactIdentity,
+    modelImplementationSha256,
+    modelExecutionContextSha256,
   };
   let workerInstanceNonce = null;
   const token = ++workerToken;
@@ -9486,6 +9571,9 @@ function loadArtifact(hex, artifactIdentity, { x34Probe = null } = {}) {
   elements.artifact.textContent = artifactIdentity.slice(0, 12);
   worker.postMessage({
     command: 'init', hex, circuit: structuredClone(currentRuntimeProject().circuit),
+    modelLibraryLock: modelLibraryLockFor(AVR_PROFILE),
+    modelImplementationSha256,
+    modelExecutionContextSha256,
     runtimeBinding: workerRuntimeBinding,
     ...(x34Probe ? { x34Probe: structuredClone(x34Probe) } : {}),
     digitalInputs: currentCandidateInputs(),
@@ -9508,7 +9596,7 @@ function currentBuildBinding(binding) {
     && active.buildGeneration === binding.buildGeneration && active.requestId === binding.requestId;
 }
 
-async function pollJob(job, inputAtSubmit, binding) {
+async function pollJob(job, inputAtSubmit, modelExecutionContextSha256, modelImplementationSha256, binding) {
   while (activeJob === job && currentBuildBinding(binding)) {
     const response = await fetch(`/api/build/${job.jobId}`, {
       headers: { Authorization: `Bearer ${job.capability}` }, cache: 'no-store',
@@ -9521,7 +9609,7 @@ async function pollJob(job, inputAtSubmit, binding) {
     activeJob = null; elements.build.disabled = false; elements.quickbuild.disabled = false; elements.cancel.disabled = true;
     if (status.status === 'succeeded') {
       if (buildInputIdentity() !== inputAtSubmit) return;
-      const result = status.result;
+      const result = { ...status.result, modelExecutionContextSha256, modelImplementationSha256 };
       const acceptedBuild = applyLifecycle({
         type: 'build.succeeded', binding,
         artifactIdentity: result.artifactIdentity, inputIdentity: result.inputIdentity,
@@ -9534,7 +9622,9 @@ async function pollJob(job, inputAtSubmit, binding) {
       elements.buildstate.textContent = 'Build succeeded'; renderBuildDiagnostics(result, 'No compiler diagnostics.');
       publish({ buildState: 'succeeded', artifactIdentity: result.artifactIdentity, inputIdentity: result.inputIdentity, cacheHit: status.cacheHit });
       clearTechnicalError();
-      loadArtifact(result.artifact.hex, result.artifactIdentity); return;
+      loadArtifact(result.artifact.hex, result.artifactIdentity, {
+        modelExecutionContextSha256, modelImplementationSha256,
+      }); return;
     }
     const errorCode = status.status === 'timeout' ? 'BUILD_TIMEOUT' : 'BUILD_FAILED';
     const acceptedFailure = applyLifecycle({
@@ -9593,7 +9683,9 @@ async function build() {
     }
   }
   const runtimeProject = currentRuntimeProject();
-  const circuit = validateCircuit(runtimeProject.circuit);
+  const circuit = validateCircuit(runtimeProject.circuit, {
+    modelLibraryLock: modelLibraryLockFor(AVR_PROFILE),
+  });
   if (!circuit.ok) {
     elements.buildstate.textContent = 'Circuit validation failed';
     renderBuildDiagnostics({ diagnostics: circuit.diagnostics.map((item) => ({ ...item, severity: 'error', message: explainError(item.code).action, file: 'circuit', line: 1 })) }, 'Circuit validation failed.');
@@ -9609,6 +9701,8 @@ async function build() {
   }
   const binding = started.binding;
   const inputAtSubmit = buildInputIdentity();
+  const modelExecutionContextSha256 = await projectTextSha256(inputAtSubmit);
+  const modelImplementationSha256 = modelLibraryLockFor(target.profile).implementationSha256;
   currentProject().build = { status: 'dirty', inputIdentity: null, artifactIdentity: null };
   persistProject();
   elements.build.disabled = true; elements.quickbuild.disabled = true; elements.cancel.disabled = false; elements.buildstate.textContent = 'Building in isolated compiler…'; renderBuildDiagnostics(null, 'Build running…');
@@ -9636,7 +9730,9 @@ async function build() {
         guidance ? retryResultFields(submitted) : {});
     }
     if (!currentBuildBinding(binding)) return;
-    activeJob = submitted; await pollJob(submitted, inputAtSubmit, binding);
+    activeJob = submitted;
+    await pollJob(submitted, inputAtSubmit, modelExecutionContextSha256,
+      modelImplementationSha256, binding);
   } catch (error) {
     if (!currentBuildBinding(binding)) return;
     activeJob = null; elements.build.disabled = false; elements.cancel.disabled = true;
@@ -10275,7 +10371,9 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
       showActionableError(elements.projectmessage, error?.message ?? 'EXAMPLE_INVALID', 'AVR reference starter could not be constructed.');
       return { ok: false, code: error?.message ?? 'EXAMPLE_INVALID' };
     }
-    const parsed = openCandidateUiSession(example.text);
+    const parsed = modelLibraryImplementationFor(AVR_PROFILE).openCandidateUiSession(example.text, {
+      modelLibraryLock: modelLibraryLockFor(AVR_PROFILE),
+    });
     if (!parsed.ok) {
       showActionableError(elements.projectmessage, parsed.code, 'AVR reference starter was rejected atomically; project unchanged.');
       if (currentProjectText() !== before) throw new Error('Atomic AVR reference starter boundary violated');

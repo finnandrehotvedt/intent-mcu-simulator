@@ -7,6 +7,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   EXPERIMENT_PACKAGE_LIMITATIONS,
+  HISTORICAL_EXPERIMENT_PACKAGE_SCHEMA,
   LEGACY_EXPERIMENT_PACKAGE_SCHEMA,
   createExperimentPackage,
   experimentPackageSha256,
@@ -18,6 +19,7 @@ import {
   AVR_TOOLCHAIN_MANIFEST_SHA256,
 } from '../src/experiment-manifest.mjs';
 import { completedExperimentOutcome } from '../src/experiment-outcomes.mjs';
+import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
 import { createExpectationReference } from '../src/expectation-reference.mjs';
 import { canonicalProjectEnvelope, emptyProjectBrief } from '../src/project-envelope.mjs';
 import { defaultThermostatScenarioTimeline } from '../src/scenario-timeline.mjs';
@@ -38,9 +40,13 @@ const PRODUCER = Object.freeze({
   projectGeneration: 1,
   buildGeneration: 1,
   runtimeGeneration: 1,
+  modelImplementationSha256: CURRENT_MODEL_LIBRARY_LOCK.implementationSha256,
+  modelExecutionContextSha256: 'e'.repeat(64),
   runtimeIdentity: Object.freeze({
-    schema: 'intent-mcu-worker-runtime-identity@1', projectGeneration: 1,
+    schema: 'intent-mcu-worker-runtime-identity@2', projectGeneration: 1,
     runtimeGeneration: 1, artifactIdentity: HASH, workerInitialization: 1,
+    modelImplementationSha256: CURRENT_MODEL_LIBRARY_LOCK.implementationSha256,
+    modelExecutionContextSha256: 'e'.repeat(64),
     workerInstanceNonce: 'd'.repeat(32),
   }),
 });
@@ -123,7 +129,7 @@ test('X67 creates deterministic canonical local package with all five concepts',
   assert.equal(parsed.value.report.results.length, 4);
   assert.deepEqual(parsed.value.limitations, [...EXPERIMENT_PACKAGE_LIMITATIONS]);
   assert.deepEqual(parsed.value.report.authority, { executable: false, runtime: false, verdict: false });
-  assert.equal(parsed.value.schema, 'intent-mcu-experiment-package@2');
+  assert.equal(parsed.value.schema, 'intent-mcu-experiment-package@3');
   assert.equal(parsed.value.manifest.artifactSha256, HASH);
   assert.equal(parsed.value.manifest.models.length, 2);
   assert.equal(parsed.x80Complete, true);
@@ -250,6 +256,22 @@ test('X80 accepts canonical v1 only as incomplete legacy review data', async () 
   assert.equal(parsed.x80Complete, false);
   assert.equal('manifest' in parsed.value, false);
   assert.deepEqual([parsed.executableAuthority, parsed.runtimeAuthority, parsed.verdictAuthority], [false, false, false]);
+});
+
+test('pre-correction X80 v2 packages remain canonical historical review artifacts', async () => {
+  const { created } = await fixture();
+  const historical = structuredClone(created.value);
+  historical.schema = HISTORICAL_EXPERIMENT_PACKAGE_SCHEMA;
+  historical.manifest.schema = 'intent-mcu-experiment-manifest@1';
+  delete historical.manifest.modelLibrary;
+  delete historical.manifest.modelExecutionContextSha256;
+  historical.manifest.tools.runtime.identitySchema = 'intent-mcu-worker-runtime-identity@1';
+  historical.manifest.toolsSha256 = await experimentPackageSha256(historical.manifest.tools);
+  await rebindManifest(historical);
+  const parsed = await parseExperimentPackage(`${JSON.stringify(historical, null, 2)}\n`, adapters);
+  assert.equal(parsed.ok, true, parsed.code);
+  assert.equal(parsed.legacyReviewOnly, true);
+  assert.equal(parsed.x80Complete, false);
 });
 
 test('X67 permits legitimate requirement capability terminology and inert human-authored text', async () => {

@@ -187,8 +187,8 @@ export function createCandidateUiComponent(type, id) {
   throw new TypeError('CANDIDATE_UI_COMPONENT_TYPE');
 }
 
-export function openCandidateUiSession(source) {
-  const opened = openPortableEditorSession(source);
+export function openCandidateUiSession(source, options = {}) {
+  const opened = openPortableEditorSession(source, options);
   if (!opened.ok) return opened;
   if (opened.kind !== 'candidate-project-v3') return failure('CANDIDATE_UI_PROJECT_VERSION');
   return { ...opened, schema: CANDIDATE_EXISTING_UI_ADAPTER_SCHEMA };
@@ -265,6 +265,15 @@ export function candidateContactControl(session, componentId, key, value) {
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
     try {
       const updated = updateDigitalLightThresholdControl(component, key, value);
+      const evaluated = session.evaluateModel(component.type, {
+        lightLevelPercent: updated.controls.lightLevelPercent,
+        thresholdPercent: updated.controls.thresholdPercent,
+        hysteresisPercentagePoints: updated.controls.hysteresisPercentagePoints,
+        currentActive: component.controls.outputActive,
+      });
+      if (!evaluated.ok || evaluated.result.outputActive !== updated.controls.outputActive) {
+        return failure('MODEL_LIBRARY_PRODUCTION_MISMATCH', [componentId]);
+      }
       return {
         ok: true,
         command: { type: 'component.control.set', componentId, key, value },
@@ -279,12 +288,26 @@ export function candidateContactControl(session, componentId, key, value) {
       && Number.isInteger(value) && Math.abs(value - component.controls.detent) === 1) {
     const direction = value > component.controls.detent ? 'cw' : 'ccw';
     const support = session.runtimeSupport.find((item) => item.componentId === componentId);
+    const evaluated = session.evaluateModel(component.type, { direction });
+    if (!evaluated.ok) return failure(evaluated.code, [componentId]);
+    const events = support?.runtimeProjection
+      ? rotaryEncoderDigitalSequence(support.runtimeProjection, direction) : null;
+    if (events) {
+      const states = ['11', ...events.reduce((rows, event, index) => {
+        const prior = rows[index - 1] ?? '11';
+        const next = prior.split('');
+        next[event.pin === support.runtimeProjection.phases.A.boardPinNumber ? 0 : 1] = event.level ? '1' : '0';
+        return [...rows, next.join('')];
+      }, [])];
+      if (JSON.stringify(states) !== JSON.stringify(evaluated.result.states)
+          || events.some((event) => event.offsetCycles % evaluated.result.phaseCycles !== 0)) {
+        return failure('MODEL_LIBRARY_PRODUCTION_MISMATCH', [componentId]);
+      }
+    }
     return {
       ok: true,
       command: { type: 'component.control.set', componentId, key, value },
-      worker: support?.runtimeProjection
-        ? { command: 'digital-sequence', events: rotaryEncoderDigitalSequence(support.runtimeProjection, direction) }
-        : null,
+      worker: events ? { command: 'digital-sequence', events } : null,
       direction,
     };
   }

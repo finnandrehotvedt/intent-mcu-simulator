@@ -5,11 +5,16 @@
 export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
   "entries": [
     {
-      "behaviorContractSha256": "d2713bd7e809efff13563094bd5f7251923eb0fef481251c4aaf4f85c2c37a0b",
+      "behaviorContractSha256": "21b3bbcd3ad346342ea5f389e9d11324215d34e4ef12b164bfbea8f83753d390",
       "componentType": "board.atmega328p-16mhz-v1",
       "componentVersion": 1,
       "modelId": "model.atmega328p-board-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "board.atmega328p-16mhz-v1-state-v1",
+        "pipelineId": "avr-base-circuit-runtime-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 150,
@@ -26,7 +31,7 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "a3529e81b49ea07434d583dc701a609044326b0f716ba2ef665d87a2f52a018a",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.atmega328p-board-v1",
         "modelVersion": 1,
@@ -322,14 +327,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "fc24be479f5217bd7f07e42dad258520ec1f58fda3da9e8086e775e38e431f29",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "d4c8417d04446ad2a8aee62f6e868ea573dcd7d8305a7b359335c7b40c09fdfb",
+      "behaviorContractSha256": "376a4630fc89e8cca878be338e23e344817b0b024727368528e424372e988150",
       "componentType": "button.momentary-v1",
       "componentVersion": 1,
       "modelId": "model.button-momentary-no-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "button.momentary-v1-state-v1",
+        "pipelineId": "avr-base-circuit-runtime-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 78,
@@ -346,9 +357,13 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "200542372ea2b0cef1bcf3187978e26955341815222422b2feebd0ee97eb6265",
       "semantic": {
         "componentVersion": 1,
-        "controls": [
-          "pressed"
-        ],
+        "controls": {
+          "pressed": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          }
+        },
         "internalTerminalGroups": [
           {
             "pin": "A",
@@ -410,14 +425,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "67034c86f1f01dbec2a7a87b40b650899edfaa9d5e26b18e27545e2067bab7d3",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "6a689cb265bd281c7da3c43267507c09c2d647b4724b8f62c1492a87f6ecda8c",
+      "behaviorContractSha256": "2e99e2aebbe9316b6059fe18e5fcdcd421883ae348546c274f4bc3ae5478e395",
       "componentType": "input.rotary-encoder-quadrature-v1",
       "componentVersion": 1,
       "modelId": "model.rotary-encoder-quadrature-ideal-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "input.rotary-encoder-quadrature-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 110,
@@ -434,9 +455,16 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "70233214cea0c0d3af791f0d13e7a53d069c826a722b657235090fa2647809eb",
       "semantic": {
         "componentVersion": 1,
-        "controls": [
-          "detent"
-        ],
+        "controls": {
+          "detent": {
+            "default": 0,
+            "kind": "integer",
+            "maximum": 999,
+            "minimum": -999,
+            "mutability": "transition-only",
+            "unit": "detent"
+          }
+        },
         "internalTerminalGroups": [],
         "modelId": "model.rotary-encoder-quadrature-ideal-v1",
         "modelVersion": 1,
@@ -502,14 +530,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "64a10bc430af43a501afcd5a5e9b8cbf82ab39c5a0f575014940a26c1c5fb771",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "3bb36349853c97360a9c747373aff00c8393d1876403c465fb90030f4abb01bf",
+      "behaviorContractSha256": "2307ef113c08025b1d2a8b283c8452fd1dd303e3c7aaa59902bfd09c14403e32",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "led.basic-v1-state-v1",
+        "pipelineId": "avr-base-circuit-runtime-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 100,
@@ -526,7 +560,7 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.led-current-v1",
         "modelVersion": 1,
@@ -571,14 +605,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "b5ba6d089df61f7517566b61fa4749e9e6941e93f43f81aac61d34918237c3d6",
+      "behaviorContractSha256": "c4745e25843d66f152137ab487e66c348f11372c8392177999f2c1d220fa127a",
       "componentType": "output.active-buzzer-module-v1",
       "componentVersion": 1,
       "modelId": "model.active-buzzer-logical-enable-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "output.active-buzzer-module-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 100,
@@ -595,7 +635,7 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "b1da623cd44588659ca208b9c9e6c06b40a5506cbfe8ec1b1d2ad93ac0e5fdf1",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.active-buzzer-logical-enable-v1",
         "modelVersion": 1,
@@ -643,14 +683,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "partial"
         }
       },
+      "semanticSha256": "a2165819e146e0ed027e50c802ef5ca7f3e5c3c460868b94d68ee9a925e3d44e",
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "b65dcd13cebee968ca775cc7f8127d88fedccadcda46e522ed74d5318f14f9a2",
+      "behaviorContractSha256": "284783dbbd742f603b4d51a7c00d85bcefa49e04aaa60609fb78e0eb20a0591b",
       "componentType": "output.character-lcd-16x2-4bit-v1",
       "componentVersion": 1,
       "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "output.character-lcd-16x2-4bit-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 130,
@@ -667,7 +713,7 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "19637bb2f2c867f15a8beacf073e019373e97e82b045d4f9c62658df9d12f3f9",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
         "modelVersion": 1,
@@ -785,14 +831,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "partial"
         }
       },
+      "semanticSha256": "7b5ae575ea2513ecc0452e086a6c321db93bd1299d2d1a2c8bc1b7def5e2b132",
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "8876ba4165e07c4b0c2a6f65d4a95068d58bb59c4fa0b070c0ab4a810aa56324",
+      "behaviorContractSha256": "61ae71c384b9c49320c387fa36acf0d033d0b01eae58f4e4763eaeb6c735ea91",
       "componentType": "output.rgb-led-common-cathode-v1",
       "componentVersion": 1,
       "modelId": "model.rgb-led-common-cathode-ideal-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "output.rgb-led-common-cathode-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 100,
@@ -809,7 +861,7 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "604f4f8f4fa53fe6e2bbfb9dd6e11886d92c5079ec4e44ba5f1ebcc93a4a3a3a",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.rgb-led-common-cathode-ideal-v1",
         "modelVersion": 1,
@@ -872,14 +924,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "6302f0b958d0b9d30326cc61cc50073eec36aa9ff60ca07e103afa5a107d7ed2",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "62e562a011c6a5a7a603d8bc1159073debbe9759fef936d9112d08c25888d351",
+      "behaviorContractSha256": "916a4390862c98988eec9f5ec35771c916eef2b6aab0ae12776d25709aab7de8",
       "componentType": "output.seven-segment-common-cathode-v1",
       "componentVersion": 1,
       "modelId": "model.seven-segment-common-cathode-ideal-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "output.seven-segment-common-cathode-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 120,
@@ -896,7 +954,7 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "e8a6732efecaadfeafa61e941e596e7707552879d71eeba9fed1dc42e95a9ba2",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.seven-segment-common-cathode-ideal-v1",
         "modelVersion": 1,
@@ -1007,14 +1065,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "11e0e7c4cf2ffd2a74ee9a13133aed906c24894a9be78a3e37a316d84695a668",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "1f7e3572e102386a04c8e8dc8205f997d32969a50aac9edff7cea52fc7b01850",
+      "behaviorContractSha256": "16f16942869b138eeb3f1c79467c637355726768e7c1d34c6a87627db708b8e4",
       "componentType": "potentiometer.linear-v1",
       "componentVersion": 1,
       "modelId": "model.pot-divider-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "potentiometer.linear-v1-state-v1",
+        "pipelineId": "avr-base-circuit-runtime-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 100,
@@ -1031,9 +1095,16 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "7b1688b9b69b5de9bd7079abb2617d13dd9844132d5e26564d3d5497cb314f21",
       "semantic": {
         "componentVersion": 1,
-        "controls": [
-          "position"
-        ],
+        "controls": {
+          "position": {
+            "default": 0.5,
+            "kind": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "ratio"
+          }
+        },
         "internalTerminalGroups": [],
         "modelId": "model.pot-divider-v1",
         "modelVersion": 1,
@@ -1086,14 +1157,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "b1707fc143253ab9a0af55d379e6d9c155b31030c1e1fed48924ef1cf326ec03",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "43772dd3e85ebe27faa7ed0c6de8e09057bc0015efd2d6d3ae7cef419d47f3af",
+      "behaviorContractSha256": "8fdcfe43faf67c23df32d1778e3c0bd9cf86f191950fdd76d305c41bdeacf534",
       "componentType": "reference.ground-v1",
       "componentVersion": 1,
       "modelId": "model.ground-reference-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "reference.ground-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 72,
@@ -1110,7 +1187,7 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "6068255d29e2e1dabe95c75167d28efdc19694a376c532b6ebab6caa0b19cee2",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.ground-reference-v1",
         "modelVersion": 1,
@@ -1144,14 +1221,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "a8b939586b60a0b5269e9cf262aba2fa4af9e27a9aae6c789883ca22737f61fc",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "7495fd18122d246d22e4ef7ab10e12a83f5bb3a7dc7982e8bd497943334fa9bb",
+      "behaviorContractSha256": "c9b67af9aba07ce7a393754bfda7abbb251872e84f7df678ab883b02312f25b4",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "resistor.fixed-v1-state-v1",
+        "pipelineId": "avr-base-circuit-runtime-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 48,
@@ -1168,7 +1251,7 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.resistor-fixed-v1",
         "modelVersion": 1,
@@ -1206,14 +1289,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "ee8b26749d79266df4e0956d2fd15e14879f59ae1b7501ae85f047ab5019eb17",
+      "behaviorContractSha256": "77f0faee0908c942c9aaf4279c526fe4cc4a6bb4393e50a3ad9d18bee2a5f887",
       "componentType": "sensor.light-analogue-v1",
       "componentVersion": 1,
       "modelId": "model.light-analogue-ideal-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "sensor.light-analogue-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 100,
@@ -1230,9 +1319,16 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "e99a821f74da1c8a615eeb2f8b4cc14e6fc3c3a1503c1493f81b7b844d3c06d1",
       "semantic": {
         "componentVersion": 1,
-        "controls": [
-          "lightLevel"
-        ],
+        "controls": {
+          "lightLevel": {
+            "default": 0.5,
+            "kind": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "ratio"
+          }
+        },
         "internalTerminalGroups": [],
         "modelId": "model.light-analogue-ideal-v1",
         "modelVersion": 1,
@@ -1279,14 +1375,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "32d8032d88d3eb95ebf781d53fbecbceef5a2bcd03a36d76f0987ac78082ed85",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "36eaca846a296b8068fecb1bdddedb0105c8ea73c0ade8846d0187d0aebde29b",
+      "behaviorContractSha256": "07940b7ea8ae9767c549fa9f9a20cd277b903cec0c03d99eceaf4eb6a923c18b",
       "componentType": "sensor.light-threshold-digital-v1",
       "componentVersion": 1,
       "modelId": "model.light-threshold-digital-ideal-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "sensor.light-threshold-digital-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 100,
@@ -1303,12 +1405,37 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "fe677e716d3f419d2848da150cad49ae9ab7db1e82abec49cb117728de114a5a",
       "semantic": {
         "componentVersion": 1,
-        "controls": [
-          "lightLevelPercent",
-          "thresholdPercent",
-          "hysteresisPercentagePoints",
-          "outputActive"
-        ],
+        "controls": {
+          "hysteresisPercentagePoints": {
+            "default": 5,
+            "kind": "number",
+            "maximum": 10,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "percentage-point"
+          },
+          "lightLevelPercent": {
+            "default": 40,
+            "kind": "number",
+            "maximum": 100,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "%"
+          },
+          "outputActive": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "derived"
+          },
+          "thresholdPercent": {
+            "default": 50,
+            "kind": "number",
+            "maximum": 100,
+            "minimum": 10,
+            "mutability": "authored",
+            "unit": "%"
+          }
+        },
         "internalTerminalGroups": [],
         "modelId": "model.light-threshold-digital-ideal-v1",
         "modelVersion": 1,
@@ -1356,14 +1483,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "af209039275b9cecebaee139b829e911fb3d0d6eb2f8dd15edd40bcde1baa992",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "465c84c571df9df43eaa05f1f8d451a50a5bb5d60d4933d2ab0e8f8406c44027",
+      "behaviorContractSha256": "2e3c159eccf5829a5b7779ce151ae2680aa210342a2b78d3ba2cd515e17af513",
       "componentType": "sensor.temperature-analogue-v1",
       "componentVersion": 1,
       "modelId": "model.temperature-analogue-ideal-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "sensor.temperature-analogue-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 100,
@@ -1380,9 +1513,16 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "56771edd9c32a5600ea97fdd7871bbb5575b8640f24838a2a575c3abffac3310",
       "semantic": {
         "componentVersion": 1,
-        "controls": [
-          "temperatureC"
-        ],
+        "controls": {
+          "temperatureC": {
+            "default": 25,
+            "kind": "number",
+            "maximum": 150,
+            "minimum": -50,
+            "mutability": "authored",
+            "unit": "°C"
+          }
+        },
         "internalTerminalGroups": [],
         "modelId": "model.temperature-analogue-ideal-v1",
         "modelVersion": 1,
@@ -1429,14 +1569,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "83428743da39b176d458a323047645d234dcdebfac4a2622fb53cea123e2ee99",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "52d831b3efaee9f38baccf9e80d71740bfa48f99e1942689c152e395d917ae2a",
+      "behaviorContractSha256": "1f85825428456620ef10ac489823cea4e28af463dcf02c8ce7a2b3c980d0a418",
       "componentType": "switch.changeover-spdt-v1",
       "componentVersion": 1,
       "modelId": "model.switch-changeover-spdt-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "switch.changeover-spdt-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 120,
@@ -1453,9 +1599,17 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "66c9bcef1d82302791e8f4d5f84a7c97e1f3ffdda220b1119630ece57c457113",
       "semantic": {
         "componentVersion": 1,
-        "controls": [
-          "selectedThrow"
-        ],
+        "controls": {
+          "selectedThrow": {
+            "default": "A",
+            "kind": "enum",
+            "mutability": "authored",
+            "values": [
+              "A",
+              "B"
+            ]
+          }
+        },
         "internalTerminalGroups": [],
         "modelId": "model.switch-changeover-spdt-v1",
         "modelVersion": 1,
@@ -1497,14 +1651,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "partial"
         }
       },
+      "semanticSha256": "3b1af60efa5006c701d4e21d15e0660319075641918b95595f320281cdb9ad44",
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "a917712451463626bea93a1cb34055a25e665aaaee0d6adae679652853d0800e",
+      "behaviorContractSha256": "016ddd7ce7929d944ee8206aa5b9b251ac04952799ff0df2635cdeb5ee47f657",
       "componentType": "switch.toggle-spst-v1",
       "componentVersion": 1,
       "modelId": "model.switch-toggle-spst-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "switch.toggle-spst-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 82,
@@ -1521,9 +1681,13 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "9cd549733a3df4fa1a9f1e9a20035150c9474ca697ed396ef05161f398f5abde",
       "semantic": {
         "componentVersion": 1,
-        "controls": [
-          "closed"
-        ],
+        "controls": {
+          "closed": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          }
+        },
         "internalTerminalGroups": [],
         "modelId": "model.switch-toggle-spst-v1",
         "modelVersion": 1,
@@ -1560,14 +1724,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "9173550bff2f8d5b71cfdbaaef97b9a20e734a7f05678c1a029ee5d6d6e02a0f",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "dc26e3b0c6691e3894f4650b774206c433a9d63c2307ff3597d4dd6997a4cf64",
+      "behaviorContractSha256": "692ec372d781f46e7f216f3e60015e88e5edd782c443ad368502e6a42473b158",
       "componentType": "board.esp32-c3-devmodule-v1",
       "componentVersion": 1,
       "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "board.esp32-c3-devmodule-v1-state-v1",
+        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
+      },
       "profile": "board.esp32-c3-devmodule-v1",
       "renderer": {
         "cssHeight": 220,
@@ -1584,7 +1754,7 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "95b58544ffb4f3a11a9eb2514ed269bc0464d7b2bd3e1e7f50dda1839c841974",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
         "modelVersion": 1,
@@ -1624,14 +1794,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "partial"
         }
       },
+      "semanticSha256": "47f21637431be47217854b63ded12bc182b93af75d0f25cd8a36c05d7ee0a74d",
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "3bb36349853c97360a9c747373aff00c8393d1876403c465fb90030f4abb01bf",
+      "behaviorContractSha256": "3b60cd8e38eba7acd250ee506ea99b373a617004ffd48d4704d03a7e30b8d630",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "led.basic-v1-state-v1",
+        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
+      },
       "profile": "board.esp32-c3-devmodule-v1",
       "renderer": {
         "cssHeight": 100,
@@ -1648,7 +1824,7 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.led-current-v1",
         "modelVersion": 1,
@@ -1693,14 +1869,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "7495fd18122d246d22e4ef7ab10e12a83f5bb3a7dc7982e8bd497943334fa9bb",
+      "behaviorContractSha256": "acf875b3b9fe11257384c88759af9f757e8233105711475c2204b1b62a4e8468",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "resistor.fixed-v1-state-v1",
+        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
+      },
       "profile": "board.esp32-c3-devmodule-v1",
       "renderer": {
         "cssHeight": 48,
@@ -1717,7 +1899,7 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.resistor-fixed-v1",
         "modelVersion": 1,
@@ -1755,14 +1937,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "e88b4a758f3d2489d70f1bd05d059523c78b4563a990e60b70e7d69cf777c449",
+      "behaviorContractSha256": "93321248f038dcba52cc54af0f007d2c7f5150f097ebc9d3b06936861e2d388f",
       "componentType": "board.rp2040-pico-v1",
       "componentVersion": 1,
       "modelId": "model.rp2040-pico-gpio0-public-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "board.rp2040-pico-v1-state-v1",
+        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
+      },
       "profile": "board.rp2040-pico-v1",
       "renderer": {
         "cssHeight": 300,
@@ -1779,7 +1967,7 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "52d6e473d0ddb6e77f4299987759cf671fcc9d7025d827651d9220935605250c",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.rp2040-pico-gpio0-public-v1",
         "modelVersion": 1,
@@ -1817,14 +2005,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "partial"
         }
       },
+      "semanticSha256": "981d93d732c94ee648051dab6505f97712f18d7ecd26544102ee58239f72c265",
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "3bb36349853c97360a9c747373aff00c8393d1876403c465fb90030f4abb01bf",
+      "behaviorContractSha256": "cc69a8e898d59b2567ca46a412e18eddb7424c4b83d02c643f8759fa0965b6ae",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "led.basic-v1-state-v1",
+        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
+      },
       "profile": "board.rp2040-pico-v1",
       "renderer": {
         "cssHeight": 100,
@@ -1841,7 +2035,7 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.led-current-v1",
         "modelVersion": 1,
@@ -1886,14 +2080,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "7495fd18122d246d22e4ef7ab10e12a83f5bb3a7dc7982e8bd497943334fa9bb",
+      "behaviorContractSha256": "b458e517c9057c341cd4dc8d94cf8677b38326c2c4f1fea4379a9ae89b7b4c1e",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "resistor.fixed-v1-state-v1",
+        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
+      },
       "profile": "board.rp2040-pico-v1",
       "renderer": {
         "cssHeight": 48,
@@ -1910,7 +2110,7 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.resistor-fixed-v1",
         "modelVersion": 1,
@@ -1948,14 +2148,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "3a34b087455d64906418d9e2e5f986f94b0466900b6091a6f6a6d07367883f57",
+      "behaviorContractSha256": "3adfa389fedabc48b1f71f9e5862b01dbafbd4be08b66cce435df6b1a5f76f79",
       "componentType": "board.stm32f429zi-nucleo144-v1",
       "componentVersion": 1,
       "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "board.stm32f429zi-nucleo144-v1-state-v1",
+        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
+      },
       "profile": "board.stm32f429zi-nucleo144-v1",
       "renderer": {
         "cssHeight": 230,
@@ -1972,7 +2178,7 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "5d3909f79e7ac00abfde9bc6d67044203ca6f262f7c17d28781331c6aec46de3",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
         "modelVersion": 1,
@@ -2011,14 +2217,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "partial"
         }
       },
+      "semanticSha256": "4f2061383d5c2011fae731719a9e8a50883d1c37bcf8e607c56a6d2550310a76",
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "3bb36349853c97360a9c747373aff00c8393d1876403c465fb90030f4abb01bf",
+      "behaviorContractSha256": "88d840e40d80a79556a2d0f447c0d73b437913f29f6d844056f17e645b51ee8c",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "led.basic-v1-state-v1",
+        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
+      },
       "profile": "board.stm32f429zi-nucleo144-v1",
       "renderer": {
         "cssHeight": 100,
@@ -2035,7 +2247,7 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.led-current-v1",
         "modelVersion": 1,
@@ -2080,14 +2292,20 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "7495fd18122d246d22e4ef7ab10e12a83f5bb3a7dc7982e8bd497943334fa9bb",
+      "behaviorContractSha256": "934f1c639f7f3c0db0f4e828302f8bc4aa369985b30937092f6d070efc483c59",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+        "observerId": "resistor.fixed-v1-state-v1",
+        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
+      },
       "profile": "board.stm32f429zi-nucleo144-v1",
       "renderer": {
         "cssHeight": 48,
@@ -2104,7 +2322,7 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.resistor-fixed-v1",
         "modelVersion": 1,
@@ -2142,23 +2360,274 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
       "supportStatus": "simulated"
     }
   ],
-  "implementationId": "intent-mcu-model-resolver-retained-rc72@1",
+  "implementationId": "intent-mcu-model-bundle-retained-rc72@2",
+  "implementationMembers": [
+    {
+      "path": "src/model-library-retained-resolver.mjs",
+      "sha256": "dd5071c94beebe9c629b2a85445ef3c7fcf2d3f4544b0b09afd477ab5dbcf4ae"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/closure.json",
+      "sha256": "cd994808dad8694112615c20cd571e5e39041db18b3729ff1fffdf3c6769951c"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/c3/gpio2-adapter.mjs",
+      "sha256": "84d6e7393ebd18de8717364d73a9bfaee7f5820fac19be774262dab5c1c2f555"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/c3/protocol.mjs",
+      "sha256": "deb1168dbb7d7092b7792df35592b5c9171832ad58b34998f2dd194a38460c46"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/active-buzzer-artwork-v1.mjs",
+      "sha256": "6f28b5a3bbea9ded2f3d992b6ea17c997d2d62a0e254b6c213a4891f2493f862"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/active-buzzer-module-v1.mjs",
+      "sha256": "aa8bd1dc352a689ebcf0443cc2595426cdcf46396b1bc47b742c3731b2dafe94"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/character-lcd-16x2-4bit-artwork-v1.mjs",
+      "sha256": "d7f8b4852ebaee692c7f32b29b47e76095229f2dfce8fbaa7518af052d95269a"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/character-lcd-16x2-4bit-v1.mjs",
+      "sha256": "463871c751ee4e7857d46ceb75500f417c59a59af331535e8e3b2c87d17b27ee"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/common-cathode-rgb-led-artwork-v1.mjs",
+      "sha256": "093a57033118bc9faaf6d4e57b05d4bf04dbfdfb61c84b067e6f853b40b53997"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/common-cathode-rgb-led-v1.mjs",
+      "sha256": "42d045d2882ed745c4f2895d21bc0683582ce185c03b1dce9b854f98389f69d1"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/controller-adapter-contract-v1.mjs",
+      "sha256": "45b298703056fad88f8de876910daae5f734caee92f282828991628ceed8b49f"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/digital-light-threshold-artwork-v1.mjs",
+      "sha256": "ed3f3a8f1f71b9221155fc512238acb66671d7a558e69146c87df19dc21a38f1"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/digital-light-threshold-module-v1.mjs",
+      "sha256": "f3a203a7c92e412a615599e6b0dbca9a84af3c15843c47e7bedc3a8f4d48d2bd"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/ground-reference-artwork-v1.mjs",
+      "sha256": "362db53c8eb00bdd181f2de994bc0392bf6c5434403c6be8712f38ee7521af18"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/ground-reference-integration-v1.mjs",
+      "sha256": "59dc3833915afbec325b2d06e815c3250ad858ad1769da03c509ae7e3cd38958"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/ideal-three-pin-analogue-module-v1.mjs",
+      "sha256": "383caf45e17281997b5b6e6f8a63bde660e19a1e48e1d0be1c137a8d36c187d3"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/light-analogue-sensor-artwork-v1.mjs",
+      "sha256": "b4ae5113b88cdf4daaa19472857603afa47b67906b86db3ad0358930469aa6fe"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/light-analogue-sensor-v1.mjs",
+      "sha256": "1a6efe15ec9b955f2824b711d32ea5d310d7966a223f8366031158514db24fbc"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/project-v3-contact-persistence.mjs",
+      "sha256": "25f9c0e5dccb05ebea9e685775b02699311ce18cf22f83ec3680750b37e14993"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/project-v3-envelope.mjs",
+      "sha256": "8003a23a61de0da32e90d73863b8953ba3298d442d3fd0122473de22720b5b91"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/rotary-encoder-quadrature-artwork-v1.mjs",
+      "sha256": "edc527f6d9d6ff9273b7a0af29752334fb05f93feed432a823f2220ebbefc6f4"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/rotary-encoder-quadrature-v1.mjs",
+      "sha256": "0671974cb26e5447db07266f2e6a85a1f4fdd2fb8463453aa274987177167ac8"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/seven-segment-common-cathode-artwork-v1.mjs",
+      "sha256": "258a54dd9bbc823084eb9c0da7b7b4c069913479327807e794ac00ddeefedaa8"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/seven-segment-common-cathode-v1.mjs",
+      "sha256": "5d2b30cdfcfd48ad8dfc6e767ac9c9ee2825018e94980cf8915d5550b7d69905"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/switch-contact-artwork-v1.mjs",
+      "sha256": "e7c8dc110bfa6cf29e5e9e1cc3017410cf25fa2775ae5b75a15cca51a2a8b41f"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/switch-contact-graph-v1.mjs",
+      "sha256": "073a5079335b222c53410971dcab42324cfa3ad639cc4b57a879fbe6efa476d2"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/temperature-analogue-sensor-artwork-v1.mjs",
+      "sha256": "dab6d0fc1125a729dfa47ff9742007f91e151f760ac95dfe1ec5185da326e86a"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/temperature-analogue-sensor-v1.mjs",
+      "sha256": "5f3290f865e79ecf7362ea6b6ea667d9e01670a5daabb1b1cf70e977a6307817"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/toggle-switch-artwork-v1.mjs",
+      "sha256": "144f796fd6884d20ce9f6a6f79bac294242db4b9221791ca94aa42471d6c96ec"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/expansion-drafts/toggle-switch-integration-v1.mjs",
+      "sha256": "90fcaad32074957021ffe5bde973c81c08a3dd0f345495ab169218416dc0e389"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/atmega328p-adapter.mjs",
+      "sha256": "e1734acdade9d5a0b5cadcfa0dd08ed35daced195c921d9a3f79eea5aac9d618"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/candidate-existing-ui-adapter.mjs",
+      "sha256": "a431e44385ff6958303a37b4b5376d120b494b22381ebc50bb0f9933bfd12842"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/candidate-project-session.mjs",
+      "sha256": "fa0c8fcd4ff2fdb6a17424292c92c3e1116fbe4afc96902936cd453c6888f015"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/candidate-spdt-runtime.mjs",
+      "sha256": "cac63a72f4e0a8b67468d638d5ae9cf8bf49a76420e62d648bb4745bf9d8de31"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/circuit-engine.mjs",
+      "sha256": "455f3aa0923d3dd2f36109a0f36af6e003e9f64c868277b49577520be6ba3ab5"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/component-catalog.mjs",
+      "sha256": "d461c7f52e591f2937518dd7cc30f9fdfd915cd9c6104624364d2236ecf1d236"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/esp32c3-public-circuit.mjs",
+      "sha256": "1cf9d40aa6440fc55eb23462b99adcaa840c0431701c96020a986d05bed38775"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/esp32c3-public-workbench.mjs",
+      "sha256": "30642531684a3a19d1a0e2ebc5551120af48782108e21149983c082c49c6cf6d"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/hex.mjs",
+      "sha256": "eb6cf7c39e2829d103be21a1888c3d7fd87092f0e45575071129485deb0b97a2"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/lifecycle.mjs",
+      "sha256": "26b41827a943dce61c35edf406e4cdb7e2f9d41458c6be2e3ebc83513da573f9"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/named-series-led-circuit-editor.mjs",
+      "sha256": "82ee0dfac0444242c982f78f0e127d5fd6db69dd91ec9bb9b04288d3690b46f4"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/project-editor.mjs",
+      "sha256": "7943fc2541a4dc4148f939d2cb7e229840db92c9d55d5d8cefdf16ed5f75fa90"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/project-v2.mjs",
+      "sha256": "7d4004e1c34ba58978593eb3577d2f7e49152ee5c652ef5c578871d84f982339"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/retry-guidance.mjs",
+      "sha256": "399de02c649e34f61851ba0d81e9198e023bfe6fc1875b375813e41558fc1eb3"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/route-model.mjs",
+      "sha256": "06d6241ef008f2a92faefab66a421b1ec4cc1ab4f5e75fc4ca56038101d07ade"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/rp2040-pico-circuit.mjs",
+      "sha256": "5899e2bfaa388233a9adefcf31ef116a2aa9d74d342c3f01d179da20daf4b310"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/rp2040-public-workbench.mjs",
+      "sha256": "896930d3c1723eee98d6ef81fb3896ef4fa09920785a0b313aa44f18b10bdfe1"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/runtime-identity.mjs",
+      "sha256": "032f36eee266b5342a2cb63dd0c8cc92ce25472e8777022e8aba57c408a97866"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/runtime-kernel.mjs",
+      "sha256": "b8d96f570ca01cd70ef8003c69f424037322a807ece95bc43929fa20659acd2b"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/source-diagnostics.mjs",
+      "sha256": "31cd97ce19441b38209f50c84dc1a62919a5066e7aa95c7712fc4c950cace04c"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/stm32-public-circuit.mjs",
+      "sha256": "e7ca482ab2937193fd962ba75b521c051f48982523e78975789cc8178d6c49e3"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/stm32-public-workbench.mjs",
+      "sha256": "f6fdd2743aa9011ffaa1cf7acef5cc6ddca897d2a9f8e9ceb48532c7e786a1dd"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/strict-json.mjs",
+      "sha256": "2a8bcfeed40b56f44d771ddbd2bad77b7ce17698e7f9f608afae8e828d8cb5e5"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/thermostat-source.mjs",
+      "sha256": "358433c9ba1b5cbbb923642b743c2e724879d21012a3ea62d2e2f956287db1f7"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/x34-precision-fixture.mjs",
+      "sha256": "53b6769e739c960100662fbf995c59c0a0a5ca7ba3b91774e6f627fbb822f14b"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/x34-precision-observer.mjs",
+      "sha256": "4974ec58812bf896f8078f3caf657b51610e089c20f3a0ead7cff8e526822197"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/x35-causal-chain-contract.mjs",
+      "sha256": "728b95727e658dcd01933f8619de47bbe052ef9153de0b29cda89852757d8e0e"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/src/x35-causal-observer.mjs",
+      "sha256": "57f33986fea1e23dc3b50b92e12a9e356b91f877fc65e19eb32ae2d12c408959"
+    },
+    {
+      "path": "src/model-bundles/retained-rc72/source/stm32/protocol.mjs",
+      "sha256": "08d876cafb2f0500c3e70622f6aca165068479b0d368d9f5bedb0626363cb2bd"
+    }
+  ],
+  "implementationSha256": "75122b1ac20815fd848243270da601a219b668de1ab73207366b1effbbe1be58",
   "libraryId": "intent-mcu-public-models",
-  "manifestSha256": "3fe4cb2af5d13d47c91705364ba745e575fbee16b36dcf08abb28ed1d3194caf",
-  "schema": "intent-mcu-model-library-manifest@1",
-  "version": "1.1.0-rc.72.pre-x56"
+  "manifestSha256": "ad29ff5b33379481e0a367bb0f51381682acee8a23ae58f39f3b409fb406ce47",
+  "runtimeContracts": [
+    "avr8js@0.21.1",
+    "rp2040js@1.4.0",
+    "esp32c3-qemu@project-pinned",
+    "renode@1.17.0"
+  ],
+  "schema": "intent-mcu-model-library-manifest@2",
+  "version": "2.0.0-rc.72-retained"
 });
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
   "entries": [
     {
-      "behaviorContractSha256": "d2713bd7e809efff13563094bd5f7251923eb0fef481251c4aaf4f85c2c37a0b",
+      "behaviorContractSha256": "931039339c785ef9742bc8d87e40b0c19e5a09b1eb5131478632dae8afd6156a",
       "componentType": "board.atmega328p-16mhz-v1",
       "componentVersion": 1,
       "modelId": "model.atmega328p-board-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "board.atmega328p-16mhz-v1-state-v1",
+        "pipelineId": "avr-base-circuit-runtime-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 150,
@@ -2175,7 +2644,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "a3529e81b49ea07434d583dc701a609044326b0f716ba2ef665d87a2f52a018a",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.atmega328p-board-v1",
         "modelVersion": 1,
@@ -2471,14 +2940,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "fc24be479f5217bd7f07e42dad258520ec1f58fda3da9e8086e775e38e431f29",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "d4c8417d04446ad2a8aee62f6e868ea573dcd7d8305a7b359335c7b40c09fdfb",
+      "behaviorContractSha256": "ee2e3d59a3569fb22fc6b686a465aaf0c09f759ba8bca5961f46d84d241e1aeb",
       "componentType": "button.momentary-v1",
       "componentVersion": 1,
       "modelId": "model.button-momentary-no-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "button.momentary-v1-state-v1",
+        "pipelineId": "avr-base-circuit-runtime-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 78,
@@ -2495,9 +2970,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "200542372ea2b0cef1bcf3187978e26955341815222422b2feebd0ee97eb6265",
       "semantic": {
         "componentVersion": 1,
-        "controls": [
-          "pressed"
-        ],
+        "controls": {
+          "pressed": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          }
+        },
         "internalTerminalGroups": [
           {
             "pin": "A",
@@ -2559,14 +3038,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "67034c86f1f01dbec2a7a87b40b650899edfaa9d5e26b18e27545e2067bab7d3",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "6a689cb265bd281c7da3c43267507c09c2d647b4724b8f62c1492a87f6ecda8c",
+      "behaviorContractSha256": "991eba076551fb6eb863e83240205947a8f4a37a79a9c8b59f6e338f030fed21",
       "componentType": "input.rotary-encoder-quadrature-v1",
       "componentVersion": 1,
       "modelId": "model.rotary-encoder-quadrature-ideal-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "input.rotary-encoder-quadrature-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 110,
@@ -2583,9 +3068,16 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "70233214cea0c0d3af791f0d13e7a53d069c826a722b657235090fa2647809eb",
       "semantic": {
         "componentVersion": 1,
-        "controls": [
-          "detent"
-        ],
+        "controls": {
+          "detent": {
+            "default": 0,
+            "kind": "integer",
+            "maximum": 999,
+            "minimum": -999,
+            "mutability": "transition-only",
+            "unit": "detent"
+          }
+        },
         "internalTerminalGroups": [],
         "modelId": "model.rotary-encoder-quadrature-ideal-v1",
         "modelVersion": 1,
@@ -2651,14 +3143,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "64a10bc430af43a501afcd5a5e9b8cbf82ab39c5a0f575014940a26c1c5fb771",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "3bb36349853c97360a9c747373aff00c8393d1876403c465fb90030f4abb01bf",
+      "behaviorContractSha256": "ad0f75e288cced6db9093824ed4bab12c7269152f487473fe39cb1b4185f83be",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "led.basic-v1-state-v1",
+        "pipelineId": "avr-base-circuit-runtime-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 100,
@@ -2675,7 +3173,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.led-current-v1",
         "modelVersion": 1,
@@ -2720,14 +3218,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "b5ba6d089df61f7517566b61fa4749e9e6941e93f43f81aac61d34918237c3d6",
+      "behaviorContractSha256": "6e7e4fb7c959584b4928bb198c5c0b1f6ee07c8516091491835930735406e4e8",
       "componentType": "output.active-buzzer-module-v1",
       "componentVersion": 1,
       "modelId": "model.active-buzzer-logical-enable-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "output.active-buzzer-module-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 100,
@@ -2744,7 +3248,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "b1da623cd44588659ca208b9c9e6c06b40a5506cbfe8ec1b1d2ad93ac0e5fdf1",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.active-buzzer-logical-enable-v1",
         "modelVersion": 1,
@@ -2792,14 +3296,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "partial"
         }
       },
+      "semanticSha256": "a2165819e146e0ed027e50c802ef5ca7f3e5c3c460868b94d68ee9a925e3d44e",
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "b65dcd13cebee968ca775cc7f8127d88fedccadcda46e522ed74d5318f14f9a2",
+      "behaviorContractSha256": "fb3b5e181ee653647e9ce349be69eb5fe15d8e307395aebcbe90ab4aaffbaa50",
       "componentType": "output.character-lcd-16x2-4bit-v1",
       "componentVersion": 1,
       "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "output.character-lcd-16x2-4bit-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 130,
@@ -2816,7 +3326,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "19637bb2f2c867f15a8beacf073e019373e97e82b045d4f9c62658df9d12f3f9",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
         "modelVersion": 1,
@@ -2934,14 +3444,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "partial"
         }
       },
+      "semanticSha256": "7b5ae575ea2513ecc0452e086a6c321db93bd1299d2d1a2c8bc1b7def5e2b132",
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "8876ba4165e07c4b0c2a6f65d4a95068d58bb59c4fa0b070c0ab4a810aa56324",
+      "behaviorContractSha256": "d4cfb7018695a49c543c4acfc0df8488408b462516c78e5519d43493af741393",
       "componentType": "output.rgb-led-common-cathode-v1",
       "componentVersion": 1,
       "modelId": "model.rgb-led-common-cathode-ideal-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "output.rgb-led-common-cathode-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 100,
@@ -2958,7 +3474,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "604f4f8f4fa53fe6e2bbfb9dd6e11886d92c5079ec4e44ba5f1ebcc93a4a3a3a",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.rgb-led-common-cathode-ideal-v1",
         "modelVersion": 1,
@@ -3021,14 +3537,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "6302f0b958d0b9d30326cc61cc50073eec36aa9ff60ca07e103afa5a107d7ed2",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "62e562a011c6a5a7a603d8bc1159073debbe9759fef936d9112d08c25888d351",
+      "behaviorContractSha256": "518d104d34b4b7a03c41f90b7ef5675ec45c00a804bb5ed576c52775b8f119a3",
       "componentType": "output.seven-segment-common-cathode-v1",
       "componentVersion": 1,
       "modelId": "model.seven-segment-common-cathode-ideal-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "output.seven-segment-common-cathode-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 120,
@@ -3045,7 +3567,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "e8a6732efecaadfeafa61e941e596e7707552879d71eeba9fed1dc42e95a9ba2",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.seven-segment-common-cathode-ideal-v1",
         "modelVersion": 1,
@@ -3156,14 +3678,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "11e0e7c4cf2ffd2a74ee9a13133aed906c24894a9be78a3e37a316d84695a668",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "1f7e3572e102386a04c8e8dc8205f997d32969a50aac9edff7cea52fc7b01850",
+      "behaviorContractSha256": "70a4e4cdf98201f2b96d9386c474d40518e0b25e2b5311497bf60a9ea05c7f90",
       "componentType": "potentiometer.linear-v1",
       "componentVersion": 1,
       "modelId": "model.pot-divider-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "potentiometer.linear-v1-state-v1",
+        "pipelineId": "avr-base-circuit-runtime-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 100,
@@ -3180,9 +3708,16 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "7b1688b9b69b5de9bd7079abb2617d13dd9844132d5e26564d3d5497cb314f21",
       "semantic": {
         "componentVersion": 1,
-        "controls": [
-          "position"
-        ],
+        "controls": {
+          "position": {
+            "default": 0.5,
+            "kind": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "ratio"
+          }
+        },
         "internalTerminalGroups": [],
         "modelId": "model.pot-divider-v1",
         "modelVersion": 1,
@@ -3235,14 +3770,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "b1707fc143253ab9a0af55d379e6d9c155b31030c1e1fed48924ef1cf326ec03",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "43772dd3e85ebe27faa7ed0c6de8e09057bc0015efd2d6d3ae7cef419d47f3af",
+      "behaviorContractSha256": "aee8bcc03511c0707b13940077a66f5cd149f220fceadd7ee4146f877e686081",
       "componentType": "reference.ground-v1",
       "componentVersion": 1,
       "modelId": "model.ground-reference-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "reference.ground-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 72,
@@ -3259,7 +3800,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "6068255d29e2e1dabe95c75167d28efdc19694a376c532b6ebab6caa0b19cee2",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.ground-reference-v1",
         "modelVersion": 1,
@@ -3293,14 +3834,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "a8b939586b60a0b5269e9cf262aba2fa4af9e27a9aae6c789883ca22737f61fc",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "7495fd18122d246d22e4ef7ab10e12a83f5bb3a7dc7982e8bd497943334fa9bb",
+      "behaviorContractSha256": "e2fc8580f6e2280021cecc2208f07d0d322def06a9cf2612c8c5714757136685",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "resistor.fixed-v1-state-v1",
+        "pipelineId": "avr-base-circuit-runtime-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 48,
@@ -3317,7 +3864,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.resistor-fixed-v1",
         "modelVersion": 1,
@@ -3355,14 +3902,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "ee8b26749d79266df4e0956d2fd15e14879f59ae1b7501ae85f047ab5019eb17",
+      "behaviorContractSha256": "fe5347de7414d04c89c2babc474506d6b85dfc91468a86da2a8d91996d43276b",
       "componentType": "sensor.light-analogue-v1",
       "componentVersion": 1,
       "modelId": "model.light-analogue-ideal-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "sensor.light-analogue-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 100,
@@ -3379,9 +3932,16 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "e99a821f74da1c8a615eeb2f8b4cc14e6fc3c3a1503c1493f81b7b844d3c06d1",
       "semantic": {
         "componentVersion": 1,
-        "controls": [
-          "lightLevel"
-        ],
+        "controls": {
+          "lightLevel": {
+            "default": 0.5,
+            "kind": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "ratio"
+          }
+        },
         "internalTerminalGroups": [],
         "modelId": "model.light-analogue-ideal-v1",
         "modelVersion": 1,
@@ -3428,14 +3988,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "32d8032d88d3eb95ebf781d53fbecbceef5a2bcd03a36d76f0987ac78082ed85",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "36eaca846a296b8068fecb1bdddedb0105c8ea73c0ade8846d0187d0aebde29b",
+      "behaviorContractSha256": "14cbf2383934ebc12432172229a54a2539b28777cdcecc5f88d3733d9155e112",
       "componentType": "sensor.light-threshold-digital-v1",
       "componentVersion": 1,
       "modelId": "model.light-threshold-digital-ideal-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "sensor.light-threshold-digital-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 100,
@@ -3452,12 +4018,37 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "fe677e716d3f419d2848da150cad49ae9ab7db1e82abec49cb117728de114a5a",
       "semantic": {
         "componentVersion": 1,
-        "controls": [
-          "lightLevelPercent",
-          "thresholdPercent",
-          "hysteresisPercentagePoints",
-          "outputActive"
-        ],
+        "controls": {
+          "hysteresisPercentagePoints": {
+            "default": 5,
+            "kind": "number",
+            "maximum": 10,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "percentage-point"
+          },
+          "lightLevelPercent": {
+            "default": 40,
+            "kind": "number",
+            "maximum": 100,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "%"
+          },
+          "outputActive": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "derived"
+          },
+          "thresholdPercent": {
+            "default": 50,
+            "kind": "number",
+            "maximum": 100,
+            "minimum": 10,
+            "mutability": "authored",
+            "unit": "%"
+          }
+        },
         "internalTerminalGroups": [],
         "modelId": "model.light-threshold-digital-ideal-v1",
         "modelVersion": 1,
@@ -3505,14 +4096,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "af209039275b9cecebaee139b829e911fb3d0d6eb2f8dd15edd40bcde1baa992",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "465c84c571df9df43eaa05f1f8d451a50a5bb5d60d4933d2ab0e8f8406c44027",
+      "behaviorContractSha256": "cf8aa3b997d247bad0515335b76dea329c3e7dbdc08f77724b2ad6a1b1f82a2b",
       "componentType": "sensor.temperature-analogue-v1",
       "componentVersion": 1,
       "modelId": "model.temperature-analogue-ideal-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "sensor.temperature-analogue-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 100,
@@ -3529,9 +4126,16 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "56771edd9c32a5600ea97fdd7871bbb5575b8640f24838a2a575c3abffac3310",
       "semantic": {
         "componentVersion": 1,
-        "controls": [
-          "temperatureC"
-        ],
+        "controls": {
+          "temperatureC": {
+            "default": 25,
+            "kind": "number",
+            "maximum": 150,
+            "minimum": -50,
+            "mutability": "authored",
+            "unit": "°C"
+          }
+        },
         "internalTerminalGroups": [],
         "modelId": "model.temperature-analogue-ideal-v1",
         "modelVersion": 1,
@@ -3578,14 +4182,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "83428743da39b176d458a323047645d234dcdebfac4a2622fb53cea123e2ee99",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "52d831b3efaee9f38baccf9e80d71740bfa48f99e1942689c152e395d917ae2a",
+      "behaviorContractSha256": "a52f1b08a42bebeed1b7860649f70624f91b935a9097c673d41945aff48f9e90",
       "componentType": "switch.changeover-spdt-v1",
       "componentVersion": 1,
       "modelId": "model.switch-changeover-spdt-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "switch.changeover-spdt-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 120,
@@ -3602,9 +4212,17 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "66c9bcef1d82302791e8f4d5f84a7c97e1f3ffdda220b1119630ece57c457113",
       "semantic": {
         "componentVersion": 1,
-        "controls": [
-          "selectedThrow"
-        ],
+        "controls": {
+          "selectedThrow": {
+            "default": "A",
+            "kind": "enum",
+            "mutability": "authored",
+            "values": [
+              "A",
+              "B"
+            ]
+          }
+        },
         "internalTerminalGroups": [],
         "modelId": "model.switch-changeover-spdt-v1",
         "modelVersion": 1,
@@ -3646,14 +4264,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "partial"
         }
       },
+      "semanticSha256": "3b1af60efa5006c701d4e21d15e0660319075641918b95595f320281cdb9ad44",
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "a917712451463626bea93a1cb34055a25e665aaaee0d6adae679652853d0800e",
+      "behaviorContractSha256": "41811d2eeba948f8bf794cd4317c9bcfd528f444e8160bde11303926dca22010",
       "componentType": "switch.toggle-spst-v1",
       "componentVersion": 1,
       "modelId": "model.switch-toggle-spst-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "switch.toggle-spst-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
       "profile": "board.atmega328p-16mhz-v1",
       "renderer": {
         "cssHeight": 82,
@@ -3670,9 +4294,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "9cd549733a3df4fa1a9f1e9a20035150c9474ca697ed396ef05161f398f5abde",
       "semantic": {
         "componentVersion": 1,
-        "controls": [
-          "closed"
-        ],
+        "controls": {
+          "closed": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          }
+        },
         "internalTerminalGroups": [],
         "modelId": "model.switch-toggle-spst-v1",
         "modelVersion": 1,
@@ -3709,14 +4337,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "9173550bff2f8d5b71cfdbaaef97b9a20e734a7f05678c1a029ee5d6d6e02a0f",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "dc26e3b0c6691e3894f4650b774206c433a9d63c2307ff3597d4dd6997a4cf64",
+      "behaviorContractSha256": "a9c9facf7eeb3baa12147fa1a964e343e151460efa87d741a0bf6d32d0c84fc0",
       "componentType": "board.esp32-c3-devmodule-v1",
       "componentVersion": 1,
       "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "board.esp32-c3-devmodule-v1-state-v1",
+        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
+      },
       "profile": "board.esp32-c3-devmodule-v1",
       "renderer": {
         "cssHeight": 220,
@@ -3733,7 +4367,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "95b58544ffb4f3a11a9eb2514ed269bc0464d7b2bd3e1e7f50dda1839c841974",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
         "modelVersion": 1,
@@ -3773,14 +4407,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "partial"
         }
       },
+      "semanticSha256": "47f21637431be47217854b63ded12bc182b93af75d0f25cd8a36c05d7ee0a74d",
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "3bb36349853c97360a9c747373aff00c8393d1876403c465fb90030f4abb01bf",
+      "behaviorContractSha256": "a9bd150173f05ef2fead708b2897feb70a3db37c6c454c858d164ab8986cbe44",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "led.basic-v1-state-v1",
+        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
+      },
       "profile": "board.esp32-c3-devmodule-v1",
       "renderer": {
         "cssHeight": 100,
@@ -3797,7 +4437,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.led-current-v1",
         "modelVersion": 1,
@@ -3842,14 +4482,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "7495fd18122d246d22e4ef7ab10e12a83f5bb3a7dc7982e8bd497943334fa9bb",
+      "behaviorContractSha256": "fd8cfb4641a6e27e6127d5081389eaee61a86e3d69a5b47da8bff08d9947238c",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "resistor.fixed-v1-state-v1",
+        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
+      },
       "profile": "board.esp32-c3-devmodule-v1",
       "renderer": {
         "cssHeight": 48,
@@ -3866,7 +4512,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.resistor-fixed-v1",
         "modelVersion": 1,
@@ -3904,14 +4550,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "e88b4a758f3d2489d70f1bd05d059523c78b4563a990e60b70e7d69cf777c449",
+      "behaviorContractSha256": "6f0a6026ca9d2f6688fe58fa1e53e1a875126a3c7df7757cba8b00e97b1cb0b4",
       "componentType": "board.rp2040-pico-v1",
       "componentVersion": 1,
       "modelId": "model.rp2040-pico-gpio0-public-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "board.rp2040-pico-v1-state-v1",
+        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
+      },
       "profile": "board.rp2040-pico-v1",
       "renderer": {
         "cssHeight": 300,
@@ -3928,7 +4580,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "52d6e473d0ddb6e77f4299987759cf671fcc9d7025d827651d9220935605250c",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.rp2040-pico-gpio0-public-v1",
         "modelVersion": 1,
@@ -3966,14 +4618,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "partial"
         }
       },
+      "semanticSha256": "981d93d732c94ee648051dab6505f97712f18d7ecd26544102ee58239f72c265",
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "3bb36349853c97360a9c747373aff00c8393d1876403c465fb90030f4abb01bf",
+      "behaviorContractSha256": "850b228d5ba22a3ecbee321b25642b8b57137baf54cee68aab5a932b582fcaf9",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "led.basic-v1-state-v1",
+        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
+      },
       "profile": "board.rp2040-pico-v1",
       "renderer": {
         "cssHeight": 100,
@@ -3990,7 +4648,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.led-current-v1",
         "modelVersion": 1,
@@ -4035,14 +4693,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "7495fd18122d246d22e4ef7ab10e12a83f5bb3a7dc7982e8bd497943334fa9bb",
+      "behaviorContractSha256": "1e3ccadcbe55f60c944e6cd6990e42946ea3bd0cdb1cdc13a052bb4c21c93854",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "resistor.fixed-v1-state-v1",
+        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
+      },
       "profile": "board.rp2040-pico-v1",
       "renderer": {
         "cssHeight": 48,
@@ -4059,7 +4723,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.resistor-fixed-v1",
         "modelVersion": 1,
@@ -4097,14 +4761,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "3a34b087455d64906418d9e2e5f986f94b0466900b6091a6f6a6d07367883f57",
+      "behaviorContractSha256": "78c4f22d02a6356cc760238231aac9d5b43834f8c9a6d70ee34ff0ba57d902fb",
       "componentType": "board.stm32f429zi-nucleo144-v1",
       "componentVersion": 1,
       "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "board.stm32f429zi-nucleo144-v1-state-v1",
+        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
+      },
       "profile": "board.stm32f429zi-nucleo144-v1",
       "renderer": {
         "cssHeight": 230,
@@ -4121,7 +4791,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "5d3909f79e7ac00abfde9bc6d67044203ca6f262f7c17d28781331c6aec46de3",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
         "modelVersion": 1,
@@ -4160,14 +4830,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "partial"
         }
       },
+      "semanticSha256": "4f2061383d5c2011fae731719a9e8a50883d1c37bcf8e607c56a6d2550310a76",
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "3bb36349853c97360a9c747373aff00c8393d1876403c465fb90030f4abb01bf",
+      "behaviorContractSha256": "de02377fe1f91d1b9bd6ad4f4725779b91f4b976010d88ac8dba75da92151d1f",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "led.basic-v1-state-v1",
+        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
+      },
       "profile": "board.stm32f429zi-nucleo144-v1",
       "renderer": {
         "cssHeight": 100,
@@ -4184,7 +4860,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.led-current-v1",
         "modelVersion": 1,
@@ -4229,14 +4905,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "7495fd18122d246d22e4ef7ab10e12a83f5bb3a7dc7982e8bd497943334fa9bb",
+      "behaviorContractSha256": "650f8981594a05a907a39621703c2e211a5a11a83ebcb6c45d04179b201a2f1d",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x56@2",
+        "observerId": "resistor.fixed-v1-state-v1",
+        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
+      },
       "profile": "board.stm32f429zi-nucleo144-v1",
       "renderer": {
         "cssHeight": 48,
@@ -4253,7 +4935,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
       "semantic": {
         "componentVersion": 1,
-        "controls": [],
+        "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.resistor-fixed-v1",
         "modelVersion": 1,
@@ -4291,12 +4973,138 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "simulated"
         }
       },
+      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
       "supportStatus": "simulated"
     }
   ],
-  "implementationId": "intent-mcu-model-resolver-current-x56@1",
+  "implementationId": "intent-mcu-model-bundle-current-x56@2",
+  "implementationMembers": [
+    {
+      "path": "src/component-catalog.mjs",
+      "sha256": "d461c7f52e591f2937518dd7cc30f9fdfd915cd9c6104624364d2236ecf1d236"
+    },
+    {
+      "path": "src/circuit-engine.mjs",
+      "sha256": "87ebd90e9ebb32c8fd7dbc8d7b3c9e8108bf834278b6592729334a0301f48166"
+    },
+    {
+      "path": "src/runtime-kernel.mjs",
+      "sha256": "7318005e57dfb0fc1fd3fd9e7c391442378076b14ed4015634a5f09011bcce11"
+    },
+    {
+      "path": "src/model-control-contracts.mjs",
+      "sha256": "138d6f0b76abc3b1a509b741e581030192d91923864c8f804f42c32ef82abaa4"
+    },
+    {
+      "path": "src/simulator.worker.mjs",
+      "sha256": "c7ef450fe9243d53912eaa16bc3c464feda5211f94ed1db709d193036ce77cb1"
+    },
+    {
+      "path": "staging/main.mjs",
+      "sha256": "189517d6f73b417b3e069f40292addb0357b564db4002ce768b71f5a90866831"
+    },
+    {
+      "path": "src/candidate-project-session.mjs",
+      "sha256": "1f5d57e1742ebbab0ba57c8a3be0a7765b9ddd3c9dc0a30eed9b46f8ad6efcb5"
+    },
+    {
+      "path": "src/candidate-spdt-runtime.mjs",
+      "sha256": "cac63a72f4e0a8b67468d638d5ae9cf8bf49a76420e62d648bb4745bf9d8de31"
+    },
+    {
+      "path": "src/candidate-existing-ui-adapter.mjs",
+      "sha256": "5d60089e6da394f332410b54e270d8620cde812ea3d48d0005622348838426bf"
+    },
+    {
+      "path": "src/rp2040-pico-circuit.mjs",
+      "sha256": "9ba0ac0a14f5c33c16d43f6a7eb7313a657b36bf10cfe13ea24cd893625524f0"
+    },
+    {
+      "path": "src/esp32c3-public-circuit.mjs",
+      "sha256": "47fad0c2e060118a986cf08b6a83a24e8e0d955fa15fe4a3f399a51e51179b66"
+    },
+    {
+      "path": "src/stm32-public-circuit.mjs",
+      "sha256": "12873127b49d7c9c65f79b52228fee0d0419f2f7a8856aac0c7b0dc528001988"
+    },
+    {
+      "path": "src/rp2040-public-workbench.mjs",
+      "sha256": "5d2df9462c1c8fd6e392d33e8ba5901bf8938dfa69becc0aea5ffec32cecd36a"
+    },
+    {
+      "path": "src/esp32c3-public-workbench.mjs",
+      "sha256": "f3a21835f0125df0948397aa32f276c66f5601d08064cd12cc584b65b001e76a"
+    },
+    {
+      "path": "src/stm32-public-workbench.mjs",
+      "sha256": "cd52cbfa009e847080f27bbc401eac344d9795e08ef9177efdd43d4042a99672"
+    },
+    {
+      "path": "expansion-drafts/project-v3-contact-persistence.mjs",
+      "sha256": "a9cec924c8d968fa80ee8fa3101f644895519ff172908979104344eabbf6f39d"
+    },
+    {
+      "path": "expansion-drafts/ground-reference-integration-v1.mjs",
+      "sha256": "59dc3833915afbec325b2d06e815c3250ad858ad1769da03c509ae7e3cd38958"
+    },
+    {
+      "path": "expansion-drafts/toggle-switch-integration-v1.mjs",
+      "sha256": "90fcaad32074957021ffe5bde973c81c08a3dd0f345495ab169218416dc0e389"
+    },
+    {
+      "path": "expansion-drafts/switch-contact-graph-v1.mjs",
+      "sha256": "073a5079335b222c53410971dcab42324cfa3ad639cc4b57a879fbe6efa476d2"
+    },
+    {
+      "path": "expansion-drafts/ideal-three-pin-analogue-module-v1.mjs",
+      "sha256": "383caf45e17281997b5b6e6f8a63bde660e19a1e48e1d0be1c137a8d36c187d3"
+    },
+    {
+      "path": "expansion-drafts/light-analogue-sensor-v1.mjs",
+      "sha256": "1a6efe15ec9b955f2824b711d32ea5d310d7966a223f8366031158514db24fbc"
+    },
+    {
+      "path": "expansion-drafts/temperature-analogue-sensor-v1.mjs",
+      "sha256": "5f3290f865e79ecf7362ea6b6ea667d9e01670a5daabb1b1cf70e977a6307817"
+    },
+    {
+      "path": "expansion-drafts/digital-light-threshold-module-v1.mjs",
+      "sha256": "f3a203a7c92e412a615599e6b0dbca9a84af3c15843c47e7bedc3a8f4d48d2bd"
+    },
+    {
+      "path": "expansion-drafts/common-cathode-rgb-led-v1.mjs",
+      "sha256": "42d045d2882ed745c4f2895d21bc0683582ce185c03b1dce9b854f98389f69d1"
+    },
+    {
+      "path": "expansion-drafts/active-buzzer-module-v1.mjs",
+      "sha256": "aa8bd1dc352a689ebcf0443cc2595426cdcf46396b1bc47b742c3731b2dafe94"
+    },
+    {
+      "path": "expansion-drafts/seven-segment-common-cathode-v1.mjs",
+      "sha256": "5d2b30cdfcfd48ad8dfc6e767ac9c9ee2825018e94980cf8915d5550b7d69905"
+    },
+    {
+      "path": "expansion-drafts/character-lcd-16x2-4bit-v1.mjs",
+      "sha256": "463871c751ee4e7857d46ceb75500f417c59a59af331535e8e3b2c87d17b27ee"
+    },
+    {
+      "path": "expansion-drafts/rotary-encoder-quadrature-v1.mjs",
+      "sha256": "0671974cb26e5447db07266f2e6a85a1f4fdd2fb8463453aa274987177167ac8"
+    },
+    {
+      "path": "src/model-library-current-resolver.mjs",
+      "sha256": "f0c5342f11b63ecc595eb23449c3cdea162175f9a7d7cb8fd48f9a644f17949a"
+    }
+  ],
+  "implementationSha256": "5e26b3ae3140e073d96521a728f7805f28d9d0d53b6095910965a44f884f26f5",
   "libraryId": "intent-mcu-public-models",
-  "manifestSha256": "311f37bc5961aab9fc1a86be36d702c8c3f4c6f906cf038032f3a63d861fd3a6",
-  "schema": "intent-mcu-model-library-manifest@1",
-  "version": "1.1.0-rc.72+x56"
+  "manifestSha256": "ab40f9a5c319919e31f7834d5537a6505b1888c18a5efce40a4f4f8ef6e2f4fa",
+  "runtimeContracts": [
+    "avr8js@0.21.1",
+    "rp2040js@1.4.0",
+    "esp32c3-qemu@project-pinned",
+    "renode@1.17.0"
+  ],
+  "schema": "intent-mcu-model-library-manifest@2",
+  "version": "2.0.0-x56-current"
 });

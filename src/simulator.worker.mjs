@@ -4,8 +4,9 @@ import {
   Rp2040ExperimentalRuntime,
 } from './rp2040-experimental-runtime.mjs';
 import {
-  createWorkerRuntimeIdentity, runtimeInitBinding,
+  MODEL_RUNTIME_BINDING_SCHEMA, createWorkerRuntimeIdentity, runtimeInitBinding,
 } from './runtime-identity.mjs';
+import { modelLibraryExecutionIdentity } from './model-library.mjs';
 
 let kernel = null;
 let rp2040 = null;
@@ -107,11 +108,34 @@ async function handleMessage(data) {
       if (data.runtimeProfile && data.runtimeProfile !== 'board.atmega328p-16mhz-v1') {
         throw new Error('RUNTIME_PROFILE_UNSUPPORTED');
       }
-      kernel = new RuntimeKernel(data.hex, data.circuit, {
-        ...(data.instruments ?? {}),
-        ...(data.x34Probe ? { x34Probe: data.x34Probe } : {}),
-        ...(data.x35Probe ? { x35Probe: data.x35Probe } : {}),
-      });
+      if (binding?.schema === MODEL_RUNTIME_BINDING_SCHEMA) {
+        if (!data.modelLibraryLock) throw new Error('MODEL_LIBRARY_EXECUTION_CONTEXT_MISSING');
+        const modelLibrary = modelLibraryExecutionIdentity(data.modelLibraryLock);
+        if (!modelLibrary.ok) throw new Error(modelLibrary.code);
+        if (modelLibrary.identity.implementationSha256 !== binding.modelImplementationSha256
+            || data.modelImplementationSha256 !== binding.modelImplementationSha256
+            || data.modelExecutionContextSha256 !== binding.modelExecutionContextSha256) {
+          throw new Error('MODEL_LIBRARY_EXECUTION_CONTEXT_MISMATCH');
+        }
+        if (!modelLibrary.manifest.runtimeContracts.includes('avr8js@0.21.1')) {
+          throw new Error('MODEL_LIBRARY_RUNTIME_CONTRACT_UNAVAILABLE');
+        }
+        kernel = modelLibrary.implementation.createAvrRuntimeKernel(data.hex, data.circuit, {
+          ...(data.instruments ?? {}),
+          modelLibraryLock: data.modelLibraryLock,
+          modelExecutionContextSha256: data.modelExecutionContextSha256,
+          ...(data.x34Probe ? { x34Probe: data.x34Probe } : {}),
+          ...(data.x35Probe ? { x35Probe: data.x35Probe } : {}),
+        });
+      } else {
+        // Legacy diagnostic workers predate the production model-binding
+        // contract. New production runs always take the branch above.
+        kernel = new RuntimeKernel(data.hex, data.circuit, {
+          ...(data.instruments ?? {}),
+          ...(data.x34Probe ? { x34Probe: data.x34Probe } : {}),
+          ...(data.x35Probe ? { x35Probe: data.x35Probe } : {}),
+        });
+      }
       for (const input of data.digitalInputs ?? []) applyDigitalInput(input);
       status('ready');
       return;

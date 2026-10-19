@@ -38,6 +38,7 @@ const profiles = [
     }, profile);
     assert.deepEqual(profileLocks[profile].lock, profileLocks[profile].api);
     assert.match(profileLocks[profile].lock.manifestSha256, /^[a-f0-9]{64}$/);
+    assert.match(profileLocks[profile].lock.implementationSha256, /^[a-f0-9]{64}$/);
   }
 
   const avr = profiles[0];
@@ -74,7 +75,7 @@ const profiles = [
   ]);
   const downloadedPath = await download.path();
   const migrated = JSON.parse(fs.readFileSync(downloadedPath, 'utf8'));
-  assert.equal(migrated.schema, 'intent-mcu-project-envelope@7');
+  assert.equal(migrated.schema, 'intent-mcu-project-envelope@8');
   assert.equal(migrated.modelLibrary.version, profileLocks[avr].lock.version);
   assert.equal(await page.evaluate(() => window.__COMMON_PROJECT_FILES__.current()), retainedState.bytes,
     'opt-in migration overwrote the open retained project');

@@ -35,7 +35,7 @@ test('X17 default timeline is editable data and round-trips in the current envel
   assert.equal(opened.ok, true);
   assert.deepEqual(opened.scenarioTimeline, timeline);
   assert.equal(opened.canonical, text);
-  assert.equal(JSON.parse(text).schema, 'intent-mcu-project-envelope@7');
+  assert.equal(JSON.parse(text).schema, 'intent-mcu-project-envelope@8');
   assert.doesNotMatch(text, /firmwareHex|runtimeState|experimentResults|"verdict"/u);
 });
 

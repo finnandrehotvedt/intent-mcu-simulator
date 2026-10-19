@@ -6,13 +6,15 @@ import {
 import {
   Esp32C3CircuitEditor,
   createEsp32C3CircuitDraft,
-  esp32C3RuntimeCircuit,
   normalizeEsp32C3CircuitDraft,
-  validateEsp32C3Circuit,
 } from './esp32c3-public-circuit.mjs';
 import { parseStrictJson } from './strict-json.mjs';
 import { boundedPolicyDiagnostic, normalizeSourceDiagnostics } from './source-diagnostics.mjs';
 import { isRetryableCapacityCode, retryGuidanceFromResponse, retryMessage, retryResultFields } from './retry-guidance.mjs';
+import {
+  CURRENT_MODEL_LIBRARY_LOCK, modelLibraryExecutionIdentity, normalizeModelLibraryLock,
+  resolveModelLibrary,
+} from './model-library.mjs';
 
 export const C3_PUBLIC_PROJECT_SCHEMA = 'intent-mcu-esp32c3-public-project@1';
 export const C3_PUBLIC_SOURCE = sourceForGpio2('C3_PUBLIC', 'OUTPUT', 'HIGH');
@@ -67,6 +69,8 @@ export class Esp32C3PublicWorkbench {
     this.onSave = onSave;
     this.onOpen = onOpen;
     this.project = defaultProject();
+    this.modelLibraryLock = clone(CURRENT_MODEL_LIBRARY_LOCK);
+    this.modelLibraryImplementation = resolveModelLibrary(this.modelLibraryLock).implementation;
     this.circuitEditor = new Esp32C3CircuitEditor(this.project.circuit);
     this.revision = 1;
     this.phase = 'editing';
@@ -125,7 +129,10 @@ export class Esp32C3PublicWorkbench {
     });
   }
   snapshot() {
-    const circuit = validateEsp32C3Circuit(this.project.circuit);
+    const circuit = this.modelLibraryImplementation.validateProfile(
+      PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
+    );
+    const modelLibrary = modelLibraryExecutionIdentity(this.modelLibraryLock);
     const wiringReady = this.circuitEditor.snapshot().wireDraft.mode === 'none';
     return {
       profile: PROFILE, phase: this.phase, active: this.active, revision: this.revision,
@@ -140,9 +147,16 @@ export class Esp32C3PublicWorkbench {
       gpioPeripheralModel: 'IntentForce project-owned GPIO2 register adapter',
       durableServerProject: false, transientExecutableMemoryOnly: true,
       diagnostics: clone(this.diagnostics),
+      modelLibrary: modelLibrary.ok ? clone(modelLibrary.identity) : { code: modelLibrary.code },
     };
   }
   publish() { const state = this.snapshot(); this.onState(state); return state; }
+  setModelLibraryLock(lock) {
+    const normalized = normalizeModelLibraryLock(lock);
+    if (!normalized.ok) throw Object.assign(new Error(normalized.code), normalized);
+    this.modelLibraryLock = clone(normalized.lock);
+    this.modelLibraryImplementation = resolveModelLibrary(this.modelLibraryLock).implementation;
+  }
   async ensureSession() {
     if (this.sessionId) return true;
     const value = await this.response(await this.fetch(`${this.endpoint}/session`, {
@@ -159,7 +173,9 @@ export class Esp32C3PublicWorkbench {
       profile: PROFILE, fqbn: FQBN,
       sourceSha256: this.artifact?.sourceSha256 ?? null,
       artifactSha256: this.artifact?.flashSha256 ?? null,
-      circuit: esp32C3RuntimeCircuit(this.project.circuit),
+      circuit: this.modelLibraryImplementation.profileRuntimeCircuit(
+        PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
+      ),
     };
   }
   async command(command) {
@@ -208,7 +224,9 @@ export class Esp32C3PublicWorkbench {
       this.render();
       return { ok: false, code: 'C3_WIRING_IN_PROGRESS' };
     }
-    const circuit = validateEsp32C3Circuit(this.project.circuit);
+    const circuit = this.modelLibraryImplementation.validateProfile(
+      PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
+    );
     if (!circuit.ok) {
       this.phase = 'blocked';
       this.message = `Circuit blocked (${circuit.code}). Complete the exact GPIO2 J1 pin 4 → resistor → LED → GND J1 pin 6 path.`;
@@ -264,7 +282,8 @@ export class Esp32C3PublicWorkbench {
         return { ok: false, code: 'C3_BUILD_STALE' };
       }
       this.serverGeneration = value.generation;
-      this.artifact = clone(value.artifact);
+      this.artifact = { ...clone(value.artifact),
+        modelLibrary: modelLibraryExecutionIdentity(this.modelLibraryLock).identity };
       this.artifactRevision = revision;
       this.phase = 'built';
       this.diagnostics = normalizeSourceDiagnostics(value.diagnostics ?? [], {
@@ -289,7 +308,9 @@ export class Esp32C3PublicWorkbench {
     }
   }
   async run() {
-    const circuit = validateEsp32C3Circuit(this.project.circuit);
+    const circuit = this.modelLibraryImplementation.validateProfile(
+      PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
+    );
     if (!this.active || !this.artifact || this.artifactRevision !== this.revision || !circuit.ok) {
       this.message = 'Run blocked. Restore the validated named-pin circuit and build this exact source again.';
       this.render();
@@ -442,7 +463,9 @@ export class Esp32C3PublicWorkbench {
     }
   }
   render() {
-    const circuit = validateEsp32C3Circuit(this.project.circuit);
+    const circuit = this.modelLibraryImplementation.validateProfile(
+      PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
+    );
     const wiringReady = this.circuitEditor.snapshot().wireDraft.mode === 'none';
     const modeled = this.lastRuntime?.modeledCircuit;
     const led = modeled?.epochs?.at(-1)?.led;

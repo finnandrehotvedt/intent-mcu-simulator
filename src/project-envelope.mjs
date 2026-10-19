@@ -5,10 +5,12 @@ import { exactKeys, parseStrictJson } from './strict-json.mjs';
 import { normalizeScenarioTimeline } from './scenario-timeline.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, RETAINED_MODEL_LIBRARY_LOCK,
-  modelLibraryMigrationPreview, modelLibrarySupportsProfile, normalizeModelLibraryLock, validateProjectModelLibrary,
+  modelLibraryExecutionIdentity, modelLibraryMigrationPreview, modelLibrarySupportsProfile,
+  normalizeModelLibraryLock, validateProjectModelLibrary,
 } from './model-library.mjs';
 
-export const PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@7';
+export const PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@8';
+export const REJECTED_MODEL_LIBRARY_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@7';
 export const PREVIOUS_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@6';
 export const SCENARIOLESS_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@5';
 export const CAPABILITY_PROJECT_ENVELOPE_SCHEMA = 'intent-mcu-project-envelope@4';
@@ -276,9 +278,14 @@ function adapterForSchema(adapters, schema) {
   return { profile: matches[0][0], adapter: matches[0][1] };
 }
 
-function prepare(adapter, value) {
+function prepare(adapter, value, context) {
   if (!adapter || typeof adapter.prepare !== 'function') throw new Error('PROJECT_ENVELOPE_ADAPTER');
-  const result = adapter.prepare(clone(value));
+  const result = adapter.prepare(clone(value), {
+    profile: context.profile,
+    modelLibrary: clone(context.modelLibrary),
+    modelLibraryIdentity: clone(context.modelLibraryIdentity),
+    bundle: context.bundle,
+  });
   if (!result?.project || typeof result.project !== 'object' || Array.isArray(result.project)) {
     throw new Error('PROJECT_ENVELOPE_PROJECT_INVALID');
   }
@@ -290,13 +297,18 @@ export function canonicalProjectEnvelope(profile, project, adapters, brief = emp
   modelLibrary = CURRENT_MODEL_LIBRARY_LOCK) {
   const adapter = adapterForProfile(adapters, profile);
   if (!adapter) throw new Error('PROJECT_ENVELOPE_PROFILE');
-  const prepared = prepare(adapter, project);
+  const library = normalizeModelLibraryLock(modelLibrary);
+  if (!library.ok) throw Object.assign(new Error(library.code), { code: library.code, details: library.details });
+  const execution = modelLibraryExecutionIdentity(library.lock);
+  if (!execution.ok) throw Object.assign(new Error(execution.code), execution);
+  const prepared = prepare(adapter, project, { profile, modelLibrary: library.lock,
+    bundle: execution.implementation, modelLibraryIdentity: execution.identity });
   if (prepared.project.profile && prepared.project.profile !== profile) {
     throw new Error('PROJECT_ENVELOPE_PROFILE_MISMATCH');
   }
-  const library = normalizeModelLibraryLock(modelLibrary);
-  if (!library.ok) throw Object.assign(new Error(library.code), { code: library.code, details: library.details });
-  const admitted = modelLibrarySupportsProfile(profile)
+  const hasModelGraph = Array.isArray(prepared.project?.circuit?.components)
+    || Array.isArray(prepared.project?.candidateCircuit?.components);
+  const admitted = modelLibrarySupportsProfile(profile) && hasModelGraph
     ? validateProjectModelLibrary(library.lock, profile, prepared.project)
     : { ok: true };
   if (!admitted.ok) throw Object.assign(new Error(admitted.code), { code: admitted.code, details: admitted.details });
@@ -331,6 +343,8 @@ export function prepareProjectEnvelope(source, adapters) {
       if (nested?.profile && nested.profile !== profile) {
         return failure('PROJECT_ENVELOPE_PROFILE_MISMATCH', [profile, nested.profile]);
       }
+    } else if (value?.schema === REJECTED_MODEL_LIBRARY_ENVELOPE_SCHEMA) {
+      return failure('MODEL_LIBRARY_REJECTED_PRIVATE_REVISION', [REJECTED_MODEL_LIBRARY_ENVELOPE_SCHEMA]);
     } else if (value?.schema === PREVIOUS_PROJECT_ENVELOPE_SCHEMA) {
       if (!exactKeys(value, ['schema', 'profile', 'brief', 'scenarioTimeline', 'project']) || typeof value.profile !== 'string') {
         return failure('PROJECT_ENVELOPE_SHAPE');
@@ -440,11 +454,19 @@ export function prepareProjectEnvelope(source, adapters) {
       migrationDefaults = ['empty project brief', 'empty requirement code/test references', 'empty unresolved assumption list', 'empty required capability list'];
     }
     rejectAuthority(nested);
-    const prepared = prepare(adapter, nested);
+    const resolvedLibrary = normalizeModelLibraryLock(modelLibrary);
+    if (!resolvedLibrary.ok) return resolvedLibrary;
+    modelLibrary = resolvedLibrary.lock;
+    const execution = modelLibraryExecutionIdentity(modelLibrary);
+    if (!execution.ok) return execution;
+    const prepared = prepare(adapter, nested, { profile, modelLibrary,
+      bundle: execution.implementation, modelLibraryIdentity: execution.identity });
     if (prepared.project.profile && prepared.project.profile !== profile) {
       return failure('PROJECT_ENVELOPE_PROFILE_MISMATCH', [profile, prepared.project.profile]);
     }
-    const libraryAdmission = modelLibrarySupportsProfile(profile)
+    const hasModelGraph = Array.isArray(prepared.project?.circuit?.components)
+      || Array.isArray(prepared.project?.candidateCircuit?.components);
+    const libraryAdmission = modelLibrarySupportsProfile(profile) && hasModelGraph
       ? validateProjectModelLibrary(modelLibrary, profile, prepared.project)
       : { ok: true, retained: modelLibrary.manifestSha256 === RETAINED_MODEL_LIBRARY_LOCK.manifestSha256 };
     if (!libraryAdmission.ok) return libraryAdmission;

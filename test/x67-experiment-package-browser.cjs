@@ -65,7 +65,7 @@ let browser;
   }, null, { timeout: 40_000 });
   await page.waitForFunction(() => !document.querySelector('#experiment-package-download').disabled);
   assert.match(await page.textContent('#experiment-package-state'), /local download ready/u);
-  assert.match(await page.textContent('#experiment-package-state'), /seven identities bound/u);
+  assert.match(await page.textContent('#experiment-package-state'), /model-bound identities complete/u);
 
   const [packageDownload] = await Promise.all([
     page.waitForEvent('download'),
@@ -73,11 +73,15 @@ let browser;
   ]);
   const downloadPath = await packageDownload.path();
   const source = fs.readFileSync(downloadPath, 'utf8');
+  if (process.env.X67_PACKAGE_OUTPUT) {
+    fs.mkdirSync(path.dirname(process.env.X67_PACKAGE_OUTPUT), { recursive: true });
+    fs.writeFileSync(process.env.X67_PACKAGE_OUTPUT, source, { mode: 0o600 });
+  }
   const value = JSON.parse(source);
   assert.match(packageDownload.suggestedFilename(), /\.intent-mcu-experiment\.json$/u);
-  assert.equal(value.schema, 'intent-mcu-experiment-package@2');
+  assert.equal(value.schema, 'intent-mcu-experiment-package@3');
   assert.equal(value.profile, 'board.atmega328p-16mhz-v1');
-  assert.equal(value.project.schema, 'intent-mcu-project-envelope@7');
+  assert.equal(value.project.schema, 'intent-mcu-project-envelope@8');
   const authored = value.project.project.project ?? value.project.project;
   const circuit = value.project.project.candidateCircuit ?? authored.circuit;
   const manifestCircuit = authored.circuit;
@@ -108,6 +112,8 @@ let browser;
   assert.equal(value.manifest.artifactSha256, value.report.artifactIdentitySha256);
   assert.deepEqual(value.manifest.models, expectedModels);
   assert.equal(value.manifest.modelsSha256, canonicalSha256(expectedModels));
+  assert.deepEqual(value.manifest.modelLibrary, value.project.modelLibrary);
+  assert.match(value.manifest.modelExecutionContextSha256, /^[a-f0-9]{64}$/u);
   assert.equal(value.manifest.toolsSha256, canonicalSha256(value.manifest.tools));
   const manifestProjection = Object.fromEntries(Object.entries(value.manifest)
     .filter(([key]) => key !== 'manifestSha256'));
@@ -119,7 +125,7 @@ let browser;
     { id: 'avr-gcc', version: '7.3.0-atmel3.6.1-arduino7' },
   ]);
   assert.deepEqual(value.manifest.tools.runtime, { id: 'avr8js', version: '0.21.1', role: 'runtime',
-    identitySchema: 'intent-mcu-worker-runtime-identity@1' });
+    identitySchema: 'intent-mcu-worker-runtime-identity@2' });
   assert.equal(/firmwareHex|elfBase64|uf2|runtimeState|sessionId|"capability"\s*:|"token"\s*:/u.test(source), false);
   const stateAfterDownload = await page.evaluate(() => window.__X67_EXPERIMENT_PACKAGE__.state());
   assert.equal(stateAfterDownload.ready, true);
@@ -142,10 +148,10 @@ let browser;
   await page.click('#project-demo');
   await page.waitForFunction(() => document.querySelector('#example-picker-dialog').open === true);
   await page.click('.starter-card[data-example="blink"]');
-  await page.waitForFunction(() => document.querySelector('#experiment-package-state').textContent.includes('AVR thermostat'));
+  await page.waitForFunction(() => document.querySelector('#experiment-package-download').disabled);
   assert.equal(await page.isDisabled('#experiment-package-download'), true);
   await page.selectOption('#board-select', 'board.rp2040-pico-v1');
-  await page.waitForFunction(() => document.querySelector('#experiment-package-state').textContent.includes('AVR thermostat'));
+  await page.waitForFunction(() => document.querySelector('#experiment-package-download').disabled);
   assert.equal(await page.isDisabled('#experiment-package-download'), true);
 
   assert.equal(errors.length, 0, `browser errors: ${JSON.stringify(errors)}`);

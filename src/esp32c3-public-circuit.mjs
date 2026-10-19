@@ -3,6 +3,7 @@
 
 import { VALIDATED_LED_CIRCUIT } from '../c3/gpio2-adapter.mjs';
 import { LED_FORWARD_VOLTS, defaultProperties } from './component-catalog.mjs';
+import { CURRENT_MODEL_LIBRARY_LOCK, resolveModelLibrary, validateProjectModelLibrary } from './model-library.mjs';
 import {
   NamedSeriesLedCircuitEditor, createSeriesLedComponentPolicy, createSeriesLedConnectionPolicy,
 } from './named-series-led-circuit-editor.mjs';
@@ -216,10 +217,15 @@ function hasPair(net, left, right) {
   return keys.has(left) && keys.has(right);
 }
 
-export function validateEsp32C3Circuit(value) {
+export function validateEsp32C3Circuit(value, options = {}) {
   let draft;
   try { draft = normalizeEsp32C3CircuitDraft(value); }
   catch (error) { return failure(error.code ?? 'C3_CIRCUIT_INVALID', { pin: error.pin ?? null }); }
+  const modelLibraryLock = options.modelLibraryLock ?? CURRENT_MODEL_LIBRARY_LOCK;
+  const admission = validateProjectModelLibrary(modelLibraryLock, ESP32C3_PUBLIC_PROFILE, { circuit: draft });
+  if (!admission.ok) return failure(admission.code, { details: admission.details });
+  const resolved = resolveModelLibrary(modelLibraryLock);
+  if (!resolved.ok) return failure(resolved.code, { details: resolved.details });
   const boards = draft.components.filter((item) => item.type === BOARD);
   if (boards.length !== 1) return failure('C3_BOARD_COUNT');
   const board = boards[0];
@@ -245,8 +251,14 @@ export function validateEsp32C3Circuit(value) {
     && draft.nets.some((net) => hasPair(net, `${resistor.id}.${ledLead}`, ledAnode))
     && draft.nets.some((net) => hasPair(net, ledCathode, ground)));
   if (!accepted || draft.nets.length !== 3) return failure('C3_PATH_OPEN');
-  const forwardVolts = LED_FORWARD_VOLTS[led.properties.color];
-  const peakCurrentAmps = (ESP32C3_NOMINAL_VOLTS - forwardVolts) / resistor.properties.ohms;
+  const ledReference = resolved.implementation.evaluateReference('led.basic-v1', {
+    volts: ESP32C3_NOMINAL_VOLTS, color: led.properties.color,
+  });
+  const forwardVolts = ledReference.result?.forwardVolts;
+  const resistorReference = resolved.implementation.evaluateReference('resistor.fixed-v1', {
+    volts: ESP32C3_NOMINAL_VOLTS - forwardVolts, ohms: resistor.properties.ohms,
+  });
+  const peakCurrentAmps = resistorReference.result?.amps;
   if (!Number.isFinite(peakCurrentAmps) || peakCurrentAmps <= 0
       || peakCurrentAmps > ESP32C3_LED_CURRENT_LIMIT_AMPS) {
     return failure('C3_LED_OVERCURRENT', { peakCurrentAmps, limitAmps: ESP32C3_LED_CURRENT_LIMIT_AMPS });
@@ -258,11 +270,12 @@ export function validateEsp32C3Circuit(value) {
     resistorId: resistor.id, resistorOhms: resistor.properties.ohms,
     ledId: led.id, ledColor: led.properties.color, forwardVolts, peakCurrentAmps,
     qemuPinStateObserved: false,
+    modelLibraryImplementationId: resolved.implementation.id,
   } };
 }
 
-export function esp32C3RuntimeCircuit(value) {
-  const validation = validateEsp32C3Circuit(value);
+export function esp32C3RuntimeCircuit(value, options = {}) {
+  const validation = validateEsp32C3Circuit(value, options);
   if (!validation.ok) return { ...clone(VALIDATED_LED_CIRCUIT), connections: [] };
   return {
     ...clone(VALIDATED_LED_CIRCUIT),

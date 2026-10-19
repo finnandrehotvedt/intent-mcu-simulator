@@ -1,6 +1,7 @@
 // Copyright 2026 IntentForce
 // SPDX-License-Identifier: Apache-2.0
 import { COMPONENT_CATALOG, LED_FORWARD_VOLTS, defaultProperties } from './component-catalog.mjs';
+import { CURRENT_MODEL_LIBRARY_LOCK, resolveModelLibrary, validateProjectModelLibrary } from './model-library.mjs';
 import {
   NamedSeriesLedCircuitEditor, createSeriesLedComponentPolicy, createSeriesLedConnectionPolicy,
 } from './named-series-led-circuit-editor.mjs';
@@ -217,10 +218,15 @@ function hasPair(net, left, right) {
   return keys.has(left) && keys.has(right);
 }
 
-export function validateRp2040PicoCircuit(value) {
+export function validateRp2040PicoCircuit(value, options = {}) {
   let draft;
   try { draft = normalizeRp2040PicoCircuitDraft(value); }
   catch (error) { return failure(error.code ?? 'RP2040_CIRCUIT_INVALID', { pin: error.pin ?? null }); }
+  const modelLibraryLock = options.modelLibraryLock ?? CURRENT_MODEL_LIBRARY_LOCK;
+  const admission = validateProjectModelLibrary(modelLibraryLock, RP2040_PICO_PROFILE, { circuit: draft });
+  if (!admission.ok) return failure(admission.code, { details: admission.details });
+  const resolved = resolveModelLibrary(modelLibraryLock);
+  if (!resolved.ok) return failure(resolved.code, { details: resolved.details });
   const boards = draft.components.filter((item) => item.type === BOARD);
   if (boards.length !== 1) return failure('RP2040_BOARD_COUNT');
   const board = boards[0];
@@ -246,8 +252,14 @@ export function validateRp2040PicoCircuit(value) {
     && draft.nets.some((net) => hasPair(net, `${resistor.id}.${ledLead}`, ledAnode))
     && draft.nets.some((net) => hasPair(net, ledCathode, boardGround)));
   if (!accepted || draft.nets.length !== 3) return failure('RP2040_PATH_OPEN');
-  const forwardVolts = LED_FORWARD_VOLTS[led.properties.color];
-  const peakCurrentAmps = (RP2040_PICO_NOMINAL_VOLTS - forwardVolts) / resistor.properties.ohms;
+  const ledReference = resolved.implementation.evaluateReference('led.basic-v1', {
+    volts: RP2040_PICO_NOMINAL_VOLTS, color: led.properties.color,
+  });
+  const forwardVolts = ledReference.result?.forwardVolts;
+  const resistorReference = resolved.implementation.evaluateReference('resistor.fixed-v1', {
+    volts: RP2040_PICO_NOMINAL_VOLTS - forwardVolts, ohms: resistor.properties.ohms,
+  });
+  const peakCurrentAmps = resistorReference.result?.amps;
   if (!Number.isFinite(peakCurrentAmps) || peakCurrentAmps <= 0
       || peakCurrentAmps > RP2040_PICO_LED_CURRENT_LIMIT_AMPS) {
     return failure('RP2040_LED_OVERCURRENT', { peakCurrentAmps, limitAmps: RP2040_PICO_LED_CURRENT_LIMIT_AMPS });
@@ -262,12 +274,13 @@ export function validateRp2040PicoCircuit(value) {
       nominalVolts: RP2040_PICO_NOMINAL_VOLTS,
       resistorId: resistor.id, resistorOhms: resistor.properties.ohms,
       ledId: led.id, ledColor: led.properties.color, forwardVolts, peakCurrentAmps,
+      modelLibraryImplementationId: resolved.implementation.id,
     },
   };
 }
 
-export function observeRp2040PicoCircuit(value, runtime) {
-  const validation = validateRp2040PicoCircuit(value);
+export function observeRp2040PicoCircuit(value, runtime, options = {}) {
+  const validation = validateRp2040PicoCircuit(value, options);
   if (!validation.ok || !runtime || runtime.profile !== RP2040_PICO_PROFILE
       || ['error', 'stopped-error', 'disposed', 'reset', 'ready'].includes(runtime.kind)) {
     return { active: false, on: false, instantaneousOn: false, brightness: 0, averageCurrentAmps: 0,

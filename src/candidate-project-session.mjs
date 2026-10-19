@@ -11,6 +11,9 @@ import {
 } from './project-v2.mjs';
 import { parseStrictJson } from './strict-json.mjs';
 import {
+  CURRENT_MODEL_LIBRARY_LOCK, normalizeModelLibraryLock, resolveModelLibrary,
+} from './model-library.mjs';
+import {
   CONTACT_PERSISTENCE_LIMIT,
   CONTACT_PERSISTENCE_SCHEMA,
   canonicalContactPersistenceDraftJson,
@@ -226,14 +229,21 @@ export class V2EditorSession {
 }
 
 export class CandidateEditorSession {
-  constructor(value, historyLimit = CANDIDATE_EDITOR_HISTORY_LIMIT) {
+  constructor(value, { historyLimit = CANDIDATE_EDITOR_HISTORY_LIMIT,
+    modelLibraryLock = CURRENT_MODEL_LIBRARY_LOCK } = {}) {
     if (!Number.isInteger(historyLimit) || historyLimit < 1 || historyLimit > CANDIDATE_EDITOR_HISTORY_LIMIT) {
       throw new TypeError('CANDIDATE_EDITOR_HISTORY_LIMIT');
     }
-    const accepted = validateContactPersistenceDraft(value);
+    const normalizedLock = normalizeModelLibraryLock(modelLibraryLock);
+    if (!normalizedLock.ok) throw Object.assign(new Error(normalizedLock.code), normalizedLock);
+    this.modelLibraryLock = normalizedLock.lock;
+    const resolvedLibrary = resolveModelLibrary(this.modelLibraryLock);
+    if (!resolvedLibrary.ok) throw Object.assign(new Error(resolvedLibrary.code), resolvedLibrary);
+    this.modelLibraryImplementation = resolvedLibrary.implementation;
+    const accepted = validateContactPersistenceDraft(value, { modelLibraryLock: this.modelLibraryLock });
     if (!accepted.ok) throw Object.assign(new Error(accepted.code), { code: accepted.code, details: accepted.details });
     const normalized = accepted.reconstruction.projectionReady && !accepted.reconstruction.baseMatches
-      ? synchronizeContactPersistenceRuntime(accepted.project)
+      ? synchronizeContactPersistenceRuntime(accepted.project, { modelLibraryLock: this.modelLibraryLock })
       : accepted;
     if (!normalized.ok) throw Object.assign(new Error(normalized.code), { code: normalized.code, details: normalized.details });
     this.kind = 'candidate-project-v3';
@@ -268,19 +278,34 @@ export class CandidateEditorSession {
   get runtimeSupport() { return clone(contactSupport(this.accepted)); }
   get compiledFixture() { return clone(this.accepted.reconstruction.compiledFixture); }
   get pinAnchors() { return clone(this.accepted.reconstruction.pinAnchors); }
-  saveText() { return canonicalContactPersistenceDraftJson(this.accepted.project); }
+  get modelExecutionIdentity() {
+    return { lock: clone(this.modelLibraryLock), implementationId: this.modelLibraryImplementation.id };
+  }
+  evaluateModel(componentType, input) {
+    return clone(this.modelLibraryImplementation.evaluateProduction(componentType, input));
+  }
+  saveText() { return canonicalContactPersistenceDraftJson(this.accepted.project,
+    { modelLibraryLock: this.modelLibraryLock }); }
   evaluateSpdtRuntime(componentId, options = {}) {
-    return clone(evaluateSpdtDigitalInput(this.accepted, componentId, options));
+    const result = evaluateSpdtDigitalInput(this.accepted, componentId, options);
+    if (!result.ok) return clone(result);
+    const expected = this.evaluateModel(SPDT_CONTACT_TYPE,
+      { selectedThrow: result.projection.selectedThrow });
+    if (!expected.ok || JSON.stringify(expected.result.activeContact)
+        !== JSON.stringify(result.projection.activeContact)) {
+      return failure('MODEL_LIBRARY_PRODUCTION_MISMATCH', this.revision, [componentId]);
+    }
+    return clone(result);
   }
   createSpdtRuntimeTransition(componentId, to, options = {}) {
     return clone(createSpdtDigitalTransition(this.accepted, componentId, to, options));
   }
 
   #accept(project, code, { runtimeDirty = false, changeRelevance = null } = {}) {
-    let next = validateContactPersistenceDraft(project);
+    let next = validateContactPersistenceDraft(project, { modelLibraryLock: this.modelLibraryLock });
     if (!next.ok) return failure(next.code, this.revision, next.details);
     if (next.reconstruction.projectionReady && !next.reconstruction.baseMatches) {
-      next = synchronizeContactPersistenceRuntime(next.project);
+      next = synchronizeContactPersistenceRuntime(next.project, { modelLibraryLock: this.modelLibraryLock });
       if (!next.ok) return failure(next.code, this.revision, next.details);
     }
     this.undoStack.push(clone(this.accepted.project));
@@ -311,10 +336,10 @@ export class CandidateEditorSession {
       this.accepted.reconstruction.contacts.map((contact) => contact.state),
     );
     const previous = clone(this.accepted.project);
-    let next = validateContactPersistenceDraft(source.pop());
+    let next = validateContactPersistenceDraft(source.pop(), { modelLibraryLock: this.modelLibraryLock });
     if (!next.ok) throw new Error(`CANDIDATE_EDITOR_HISTORY:${next.code}`);
     if (next.reconstruction.projectionReady && !next.reconstruction.baseMatches) {
-      next = synchronizeContactPersistenceRuntime(next.project);
+      next = synchronizeContactPersistenceRuntime(next.project, { modelLibraryLock: this.modelLibraryLock });
     }
     if (!next.ok) throw new Error(`CANDIDATE_EDITOR_HISTORY:${next.code}`);
     target.push(previous);
@@ -580,6 +605,8 @@ export class CandidateEditorSession {
                 || command.value < 0 || command.value > 1) {
               return failure('PROJECT_CONTACT_LIGHT_SENSOR_STATE', this.revision);
             }
+            const evaluated = this.evaluateModel(component.type, { lightLevel: command.value });
+            if (!evaluated.ok) return failure(evaluated.code, this.revision, [component.id]);
             component.controls.lightLevel = command.value;
             runtimeDirty = true;
             break;
@@ -589,6 +616,8 @@ export class CandidateEditorSession {
                 || command.value < TEMPERATURE_MIN_C || command.value > TEMPERATURE_MAX_C) {
               return failure('PROJECT_CONTACT_TEMPERATURE_SENSOR_STATE', this.revision);
             }
+            const evaluated = this.evaluateModel(component.type, { temperatureC: command.value });
+            if (!evaluated.ok) return failure(evaluated.code, this.revision, [component.id]);
             component.controls.temperatureC = command.value;
             runtimeDirty = true;
             break;
@@ -596,6 +625,15 @@ export class CandidateEditorSession {
           if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
             try {
               const updated = updateDigitalLightThresholdControl(component, command.key, command.value);
+              const evaluated = this.evaluateModel(component.type, {
+                lightLevelPercent: updated.controls.lightLevelPercent,
+                thresholdPercent: updated.controls.thresholdPercent,
+                hysteresisPercentagePoints: updated.controls.hysteresisPercentagePoints,
+                currentActive: component.controls.outputActive,
+              });
+              if (!evaluated.ok || evaluated.result.outputActive !== updated.controls.outputActive) {
+                return failure('MODEL_LIBRARY_PRODUCTION_MISMATCH', this.revision, [component.id]);
+              }
               component.controls = updated.controls;
             } catch {
               return failure('PROJECT_CONTACT_DIGITAL_LIGHT_THRESHOLD_STATE', this.revision);
@@ -607,6 +645,11 @@ export class CandidateEditorSession {
             if (command.key !== 'detent' || !Number.isInteger(command.value)
                 || command.value < ROTARY_ENCODER_DETENT_MIN
                 || command.value > ROTARY_ENCODER_DETENT_MAX) {
+              return failure('PROJECT_CONTACT_ROTARY_ENCODER_STATE', this.revision);
+            }
+            const direction = command.value > component.controls.detent ? 'cw' : 'ccw';
+            if (Math.abs(command.value - component.controls.detent) !== 1
+                || !this.evaluateModel(component.type, { direction }).ok) {
               return failure('PROJECT_CONTACT_ROTARY_ENCODER_STATE', this.revision);
             }
             component.controls.detent = command.value;
@@ -628,7 +671,7 @@ export class CandidateEditorSession {
   }
 }
 
-export function openPortableEditorSession(source) {
+export function openPortableEditorSession(source, { modelLibraryLock = CURRENT_MODEL_LIBRARY_LOCK } = {}) {
   let value;
   try { value = parseStrictJson(source, CONTACT_PERSISTENCE_LIMIT); }
   catch (error) { return { ok: false, code: error.code ?? 'MALFORMED_JSON', details: [] }; }
@@ -639,13 +682,13 @@ export function openPortableEditorSession(source) {
       return { ok: true, code: 'OK', kind: 'project-v2', session: new V2EditorSession(validated.project) };
     }
     if (value?.schema === CONTACT_PERSISTENCE_SCHEMA) {
-      const validated = validateContactPersistenceDraft(value);
+      const validated = validateContactPersistenceDraft(value, { modelLibraryLock });
       if (!validated.ok) return validated;
       return {
         ok: true,
         code: 'OK',
         kind: 'candidate-project-v3',
-        session: new CandidateEditorSession(validated.project),
+        session: new CandidateEditorSession(validated.project, { modelLibraryLock }),
       };
     }
     return { ok: false, code: 'PROJECT_VERSION', details: [value?.schema ?? null] };

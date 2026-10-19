@@ -122,7 +122,7 @@ let browser;
   const savedText = fs.readFileSync(savedDownloadPath, 'utf8');
   await page.evaluate((text) => { window.__THERMOSTAT_FILE_TEXT__ = text; }, savedText);
   const saved = JSON.parse(savedText);
-  assert(saved.schema === 'intent-mcu-project-envelope@7'
+  assert(saved.schema === 'intent-mcu-project-envelope@8'
     && saved.profile === 'board.atmega328p-16mhz-v1'
     && saved.project.schema === 'intent-mcu-project-contact-persistence@1', 'save was not the canonical data-only common envelope');
   assert(saved.project.project.artifact.status === 'dirty'

@@ -7,10 +7,14 @@ import {
   STM32_RUN_RESPONSE_SCHEMA, STM32_RUN_SCHEMA, exactKeys, sourceForStm32, validateStm32Source,
 } from '../stm32/protocol.mjs';
 import {
-  Stm32CircuitEditor, createStm32CircuitDraft, normalizeStm32CircuitDraft, validateStm32Circuit,
+  Stm32CircuitEditor, createStm32CircuitDraft, normalizeStm32CircuitDraft,
 } from './stm32-public-circuit.mjs';
 import { boundedPolicyDiagnostic, normalizeSourceDiagnostics } from './source-diagnostics.mjs';
 import { isRetryableCapacityCode, retryGuidanceFromResponse, retryMessage, retryResultFields } from './retry-guidance.mjs';
+import {
+  CURRENT_MODEL_LIBRARY_LOCK, modelLibraryExecutionIdentity, normalizeModelLibraryLock,
+  resolveModelLibrary,
+} from './model-library.mjs';
 
 export const STM32_PUBLIC_SOURCE = sourceForStm32('STM32 PUBLIC', true);
 const SOURCE_LINE_PATTERNS = Object.freeze([
@@ -81,6 +85,8 @@ export class Stm32PublicWorkbench {
     this.onSave = onSave;
     this.onOpen = onOpen;
     this.project = defaultProject();
+    this.modelLibraryLock = clone(CURRENT_MODEL_LIBRARY_LOCK);
+    this.modelLibraryImplementation = resolveModelLibrary(this.modelLibraryLock).implementation;
     this.circuitEditor = new Stm32CircuitEditor(this.project.circuit);
     this.revision = 1;
     this.phase = 'editing';
@@ -142,7 +148,10 @@ export class Stm32PublicWorkbench {
     this.terminal = 'No Renode execution yet.';
   }
   snapshot() {
-    const circuit = validateStm32Circuit(this.project.circuit);
+    const circuit = this.modelLibraryImplementation.validateProfile(
+      STM32_PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
+    );
+    const modelLibrary = modelLibraryExecutionIdentity(this.modelLibraryLock);
     const wiringReady = this.circuitEditor.snapshot().wireDraft.mode === 'none';
     return {
       profile: STM32_PROFILE, phase: this.phase, active: this.active, revision: this.revision,
@@ -155,9 +164,16 @@ export class Stm32PublicWorkbench {
       circuitModel: 'Ideal teaching LED path driven by Renode-observed PB0',
       transientExecutableMemoryOnly: true, durableServerProject: false,
       diagnostics: clone(this.diagnostics),
+      modelLibrary: modelLibrary.ok ? clone(modelLibrary.identity) : { code: modelLibrary.code },
     };
   }
   publish() { const state = this.snapshot(); this.onState(state); return state; }
+  setModelLibraryLock(lock) {
+    const normalized = normalizeModelLibraryLock(lock);
+    if (!normalized.ok) throw Object.assign(new Error(normalized.code), normalized);
+    this.modelLibraryLock = clone(normalized.lock);
+    this.modelLibraryImplementation = resolveModelLibrary(this.modelLibraryLock).implementation;
+  }
   activate() {
     this.active = true;
     this.phase = 'editing';
@@ -190,7 +206,9 @@ export class Stm32PublicWorkbench {
       this.render();
       return { ok: false, code: 'STM32_WIRING_IN_PROGRESS' };
     }
-    const circuit = validateStm32Circuit(this.project.circuit);
+    const circuit = this.modelLibraryImplementation.validateProfile(
+      STM32_PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
+    );
     if (!circuit.ok) {
       this.wipeArtifact();
       this.phase = 'blocked';
@@ -247,7 +265,8 @@ export class Stm32PublicWorkbench {
       this.artifactRevision = revision;
       this.artifact = { format: 'elf32', bytes: bytes.byteLength, sha256: elfSha256,
         sourceSha256: value.sourceSha256, behavior: clone(value.behavior),
-        compiler: clone(value.compiler) };
+        compiler: clone(value.compiler),
+        modelLibrary: modelLibraryExecutionIdentity(this.modelLibraryLock).identity };
       this.phase = 'built';
       this.diagnostics = normalizeSourceDiagnostics(value.diagnostics ?? [], {
         profile: STM32_PROFILE, revision, source: parsed.source,
@@ -271,7 +290,9 @@ export class Stm32PublicWorkbench {
     } finally { if (this.operation === operation) this.operation = null; }
   }
   async run(reset = false) {
-    const circuit = validateStm32Circuit(this.project.circuit);
+    const circuit = this.modelLibraryImplementation.validateProfile(
+      STM32_PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
+    );
     if (!this.active || !this.artifact || !this.artifactBytes
       || this.artifactRevision !== this.revision || !circuit.ok || ['building', 'running'].includes(this.phase)) {
       return { ok: false, code: 'STM32_RUN_UNAVAILABLE' };
@@ -437,7 +458,9 @@ export class Stm32PublicWorkbench {
     }
   }
   render() {
-    const circuit = validateStm32Circuit(this.project.circuit);
+    const circuit = this.modelLibraryImplementation.validateProfile(
+      STM32_PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
+    );
     const wiringReady = this.circuitEditor.snapshot().wireDraft.mode === 'none';
     const runnable = Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok && wiringReady);
     this.elements.name.value = this.project.name;

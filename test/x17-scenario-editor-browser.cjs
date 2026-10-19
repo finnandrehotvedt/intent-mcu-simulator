@@ -192,7 +192,7 @@ let browser;
   await download.saveAs(savedPath);
   const savedText = fs.readFileSync(savedPath, 'utf8');
   const saved = JSON.parse(savedText);
-  assert.equal(saved.schema, 'intent-mcu-project-envelope@7');
+  assert.equal(saved.schema, 'intent-mcu-project-envelope@8');
   assert.equal(saved.scenarioTimeline.scenarios.length, 5);
   assert.doesNotMatch(savedText, /authoredResults|runtimeBinding|firmwareHex|"verdict"/u);
   const sourceHash = crypto.createHash('sha256').update(firmwareBefore.source).digest('hex');

@@ -132,7 +132,7 @@ let browser;
   await correctDownload.saveAs(savedPath);
   const savedText = fs.readFileSync(savedPath, 'utf8');
   const saved = JSON.parse(savedText);
-  assert.equal(saved.schema, 'intent-mcu-project-envelope@7');
+  assert.equal(saved.schema, 'intent-mcu-project-envelope@8');
   assert.equal(saved.scenarioTimeline.schema, 'intent-mcu-scenario-timeline@2');
   assert.equal(saved.scenarioTimeline.propertySuite.seed, seedA);
   assert.deepEqual(saved.scenarioTimeline.scenarios, firstSequence.scenarios);
