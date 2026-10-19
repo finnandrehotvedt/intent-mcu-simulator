@@ -2,6 +2,24 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.53 — 2026-10-19
+
+- Published the independently accepted bounded X30 AVR event-order report.
+  Each fresh epoch crosses one reset barrier, applies the fixed cycle-zero
+  inputs in ordinal order, takes a read-only sample, executes CPU work and
+  finishes with a second read-only sample.
+- Kept producer evidence explicit: the first sample remains at zero cycles and
+  zero instructions without draining input, while the final sample records
+  1,652,710 cycles and 1,100,000 instructions for the accepted fixture.
+- Kept invalid ordinal plans separate from evidence-backed academic failure.
+  Validation rejects before execution and creates no academic outcome; a
+  completed producer run can independently fail its declared evidence rule.
+- Added concise phase rows, keyboard-accessible full-evidence disclosures and
+  transient JSON export. Open and reload clear report and export authority.
+- This remains one bounded ATmega328P event-order fixture. It does not claim
+  arbitrary scheduling, interrupt ordering, concurrency, physical timing or
+  cross-profile equivalence.
+
 ## 1.1.0-rc.52 — 2026-10-19
 
 - Published the independently accepted bounded X29 AVR time-invariance report.
