@@ -2,6 +2,22 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.55 — 2026-10-19
+
+- Published the independently accepted bounded X32 unsupported-access report
+  for one compiler-generated AVR SPI activation fixture. The report joins the
+  exact producer access, fail-closed worker stop and affected requirement.
+- Kept outcomes honest: the affected requirement is `unsupported`, never
+  passed or evidence-backed firmware failure. Missing evidence remains
+  `indeterminate`, and compiler, validation, runtime capability and
+  infrastructure classifications stay separate.
+- Added two-repeat semantic evidence, a supported companion, concise visible
+  cause/outcome wording, keyboard-accessible full evidence and transient JSON
+  export. Reset, new Build, Open and reload clear report authority.
+- This remains one closed AVR SPI-write detector. It does not claim exhaustive
+  register/peripheral coverage, read detection, other-profile normalization or
+  physical-hardware equivalence; X32 therefore remains partial.
+
 ## 1.1.0-rc.54 — 2026-10-19
 
 - Published the independently accepted bounded X31 reset-class report for one
