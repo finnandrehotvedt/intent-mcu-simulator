@@ -3593,7 +3593,10 @@ async function compileUsartResponseSource(source, expectedArtifactIdentity) {
       const code = status.error ?? status.result?.code ?? `X23_USART_BUILD_${status.status.toUpperCase()}`;
       throw Object.assign(new Error(code), { code });
     }
-    if (status.result.artifactIdentity !== expectedArtifactIdentity) {
+    const expectedHex = source === X23_USART_SOURCE
+      ? X23_USART_SUITE.hexSha256 : X23_USART_SUITE.knownBadHexSha256;
+    if (status.result.artifactIdentity !== expectedArtifactIdentity
+        || status.result.artifact?.hexSha256 !== expectedHex) {
       throw Object.assign(new Error('X23_USART_ARTIFACT_IDENTITY_MISMATCH'), { code: 'X23_USART_ARTIFACT_IDENTITY_MISMATCH' });
     }
     return status.result;
