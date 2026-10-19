@@ -2,6 +2,21 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.51 — 2026-10-19
+
+- Published the independently accepted bounded X28 AVR long-duration report:
+  unsigned `millis()` wrap, five fresh reset epochs, 128 ordered D2 controls
+  over actual virtual time, and a deliberately bad direct-deadline variant
+  that fails academically while its runtime job completes.
+- Replaced giant inline evidence JSON with concise labels and readable expected
+  and observed facts. Academic and job outcomes remain separate, unbroken
+  badges; complete expected, actual, outcome and raw-time records remain
+  available in native keyboard-accessible disclosures.
+- Kept canonical report/export/runtime behavior and authority clearing
+  unchanged. The fixture-only timer seam does not claim physical time,
+  arbitrary timers or MCUs, watchdog/brownout/EEPROM behavior, exhaustive
+  state space or durability.
+
 ## 1.1.0-rc.44 — 2026-10-18
 
 - Completed X18 for the existing AVR thermostat paths with one shared academic
