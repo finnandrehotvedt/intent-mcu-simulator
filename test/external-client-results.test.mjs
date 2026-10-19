@@ -56,7 +56,9 @@ test('X11 preserves authoritative results while assigning stable disjoint catego
     assert.equal(result.request.profile, association.profile);
     assert.equal(result.generation.expected, association.expectedGeneration);
     assert.deepEqual(result.source.identity, identity);
-    assert.equal(result.retry.recommended, category === 'temporarily-busy');
+    assert.equal(result.retry.recommended, false);
+    assert.equal(result.retry.requiresNewRequestId,
+      ['temporarily-busy', 'timeout'].includes(category));
   }
   assert.deepEqual(new Set(cases.map(([, category]) => category)),
     new Set(EXTERNAL_CLIENT_RESULT_CATEGORIES.filter((category) => category !== 'test-failure')));

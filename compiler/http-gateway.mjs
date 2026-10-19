@@ -4,6 +4,7 @@
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { BuildProtocolError, BUILD_LIMITS } from './build-protocol.mjs';
+import { retryFields, retryHeaders } from '../src/retry-guidance.mjs';
 
 const TYPES = new Map([
   ['.html', 'text/html; charset=utf-8'], ['.css', 'text/css; charset=utf-8'],
@@ -34,8 +35,8 @@ function responseHeaders(pathname = null) {
   };
 }
 
-function json(response, status, value) {
-  response.writeHead(status, { ...responseHeaders(), 'Content-Type': 'application/json; charset=utf-8' });
+function json(response, status, value, headers = {}) {
+  response.writeHead(status, { ...responseHeaders(), ...headers, 'Content-Type': 'application/json; charset=utf-8' });
   response.end(`${JSON.stringify(value)}\n`);
 }
 
@@ -153,7 +154,8 @@ export function createRequestHandler({
     } catch (error) {
       const status = error instanceof BuildProtocolError ? error.httpStatus : 404;
       const code = error instanceof BuildProtocolError ? error.code : 'NOT_FOUND';
-      json(response, status, { code });
+      json(response, status, { code, ...retryFields(code, error?.retryAfterSeconds) },
+        retryHeaders(code, error?.retryAfterSeconds));
     }
   };
 }

@@ -16,6 +16,7 @@ import {
 import {
   VALIDATED_LED_CIRCUIT, resolveLed, validateGpio2LedCircuit,
 } from './gpio2-adapter.mjs';
+import { retryAfterForCode, retryFields, retryHeaders } from '../src/retry-guidance.mjs';
 
 const execFileAsync = promisify(execFile);
 const SHA256 = /^[0-9a-f]{64}$/u;
@@ -52,10 +53,11 @@ function bearer(request) {
   const match = /^Bearer ([A-Za-z0-9_-]{32})$/u.exec(request.headers.authorization ?? '');
   return match?.[1] ?? null;
 }
-function responseJson(response, status, value) {
+function responseJson(response, status, value, headers = {}) {
   const bytes = Buffer.from(`${JSON.stringify(value)}\n`);
   response.writeHead(status, {
     ...SECURITY_HEADERS,
+    ...headers,
     'Content-Type': 'application/json; charset=utf-8',
     'Content-Length': String(bytes.length),
   });
@@ -318,7 +320,8 @@ export function createC3PublicService({
       || !Number.isSafeInteger(request.sourceRevision) || request.sourceRevision < 1) {
       throw fault('BUILD_REQUEST_INVALID');
     }
-    if (metrics.buildInFlight >= limits.concurrentBuilds) throw fault('BUILD_CONCURRENCY_LIMIT', 429);
+    if (metrics.buildInFlight >= limits.concurrentBuilds) throw fault('BUILD_CONCURRENCY_LIMIT', 429,
+      retryAfterForCode('BUILD_CONCURRENCY_LIMIT'));
     abortOperation(session);
     wipeArtifact(session);
     session.generation += 1;
@@ -401,7 +404,8 @@ export function createC3PublicService({
     return structuredClone(result);
   }
   async function run(session, request) {
-    if (metrics.runtimeInFlight >= limits.concurrentRuntimes) throw fault('RUNTIME_CONCURRENCY_LIMIT', 429);
+    if (metrics.runtimeInFlight >= limits.concurrentRuntimes) throw fault('RUNTIME_CONCURRENCY_LIMIT', 429,
+      retryAfterForCode('RUNTIME_CONCURRENCY_LIMIT'));
     if (!session.flash || !session.descriptor) throw fault('RUN_REQUIRES_CURRENT_BUILD', 409);
     if (request.profile !== PROFILE || request.fqbn !== FQBN
       || request.sourceSha256 !== session.sourceSha256
@@ -456,7 +460,7 @@ export function createC3PublicService({
         const origin = requestOrigin(request, trustProxy);
         if (sessions.size >= limits.sessions
           || [...sessions.values()].filter((session) => session.origin === origin).length >= limits.sessionsPerOrigin) {
-          throw fault('SESSION_LIMIT', 429);
+          throw fault('SESSION_LIMIT', 429, retryAfterForCode('SESSION_LIMIT'));
         }
         const session = { id: token(12), capability: token(), origin, generation: 0,
           state: 'editing', flash: null, descriptor: null, sourceSha256: null,
@@ -469,6 +473,9 @@ export function createC3PublicService({
       if (buildMatch && request.method === 'POST') {
         requireMutationContext(request, publicOrigin);
         const session = authorized(request, buildMatch[1]);
+        if (metrics.buildInFlight >= limits.concurrentBuilds) {
+          throw fault('BUILD_CONCURRENCY_LIMIT', 429, retryAfterForCode('BUILD_CONCURRENCY_LIMIT'));
+        }
         const buildRequest = await bodyJson(request, limits.requestBytes);
         const job = { id: token(8), status: 'pending', value: null, error: null };
         session.buildJob = job;
@@ -534,7 +541,8 @@ export function createC3PublicService({
     } catch (error) {
       const code = typeof error?.code === 'string' ? error.code : 'C3_SERVICE_ERROR';
       responseJson(response, Number.isInteger(error?.status) ? error.status : 500,
-        { code, ...(error?.details ?? {}) });
+        { code, ...(error?.details ?? {}), ...retryFields(code, error?.retryAfterSeconds) },
+        retryHeaders(code, error?.retryAfterSeconds));
       return true;
     }
   }

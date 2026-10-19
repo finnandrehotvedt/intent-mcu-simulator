@@ -17,6 +17,7 @@ import {
   candidateCompilerTarget,
   validateCandidateCompileArtifact,
 } from './candidate-target-contract.mjs';
+import { retryAfterForCode } from '../src/retry-guidance.mjs';
 
 const TERMINAL = new Set(['succeeded', 'failed', 'cancelled', 'timeout']);
 const SHA256 = /^[0-9a-f]{64}$/u;
@@ -52,7 +53,7 @@ async function validatedRp2040Artifact(artifact, request) {
 }
 
 export class BuildCoordinator {
-  constructor({ broker, imageLock, identityLockFor = null, globalLimit = 1, perOriginLimit = 1, queueLimit = 3, rateLimit = 12, jobLimit = 16, jobTtlMs = 5 * 60_000 }) {
+  constructor({ broker, imageLock, identityLockFor = null, globalLimit = 1, perOriginLimit = 1, queueLimit = 3, rateLimit = 12, jobLimit = 16, jobTtlMs = 5 * 60_000, now = () => Date.now() }) {
     this.broker = broker;
     this.imageLock = imageLock;
     this.identityLockFor = identityLockFor ?? (() => this.imageLock);
@@ -62,6 +63,8 @@ export class BuildCoordinator {
     this.rateLimit = rateLimit;
     this.jobLimit = jobLimit;
     this.jobTtlMs = jobTtlMs;
+    this.rateWindowMs = 60_000;
+    this.now = now;
     this.jobs = new Map();
     this.queue = [];
     this.active = new Map();
@@ -69,9 +72,12 @@ export class BuildCoordinator {
   }
 
   enforceRate(origin) {
-    const now = Date.now();
-    const events = (this.rate.get(origin) ?? []).filter((at) => now - at < 60_000);
-    if (events.length >= this.rateLimit) throw new BuildProtocolError('ORIGIN_RATE_LIMIT', 'Build rate limit reached', 429);
+    const now = this.now();
+    const events = (this.rate.get(origin) ?? []).filter((at) => now - at < this.rateWindowMs);
+    if (events.length >= this.rateLimit) {
+      const retryAfterSeconds = Math.max(1, Math.ceil((events[0] + this.rateWindowMs - now) / 1000));
+      throw new BuildProtocolError('ORIGIN_RATE_LIMIT', 'Build rate limit reached', 429, retryAfterSeconds);
+    }
     events.push(now);
     this.rate.set(origin, events);
   }
@@ -79,9 +85,9 @@ export class BuildCoordinator {
   submit(raw, origin) {
     this.prune();
     this.enforceRate(origin);
-    if (this.jobs.size >= this.jobLimit) throw new BuildProtocolError('JOB_CAPACITY', 'Build job capacity reached', 429);
+    if (this.jobs.size >= this.jobLimit) throw new BuildProtocolError('JOB_CAPACITY', 'Build job capacity reached', 429, retryAfterForCode('JOB_CAPACITY'));
     const request = parseAndNormalizeBuildRequest(raw);
-    if (this.queue.length >= this.queueLimit) throw new BuildProtocolError('BUILD_QUEUE_FULL', 'Build queue is full', 429);
+    if (this.queue.length >= this.queueLimit) throw new BuildProtocolError('BUILD_QUEUE_FULL', 'Build queue is full', 429, retryAfterForCode('BUILD_QUEUE_FULL'));
     const jobId = randomBytes(12).toString('hex');
     const capability = randomBytes(32).toString('base64url');
     const identityLock = this.identityLockFor(request.board);
@@ -89,7 +95,7 @@ export class BuildCoordinator {
     const inputIdentity = buildInputIdentity(request, identityLock);
     const job = {
       jobId, capability, origin, request, inputIdentity,
-      status: 'building', phase: 'queued', submittedAt: Date.now(), completedAt: null,
+      status: 'building', phase: 'queued', submittedAt: this.now(), completedAt: null,
       cacheHit: false, result: null, error: null, controller: null,
     };
     this.jobs.set(jobId, job);
@@ -214,7 +220,7 @@ export class BuildCoordinator {
       }
       job.phase = 'complete';
     } finally {
-      job.completedAt = Date.now();
+      job.completedAt = this.now();
       job.request = null;
       job.controller = null;
       this.active.delete(job.jobId);
@@ -249,13 +255,13 @@ export class BuildCoordinator {
     job.status = 'cancelled';
     job.phase = 'complete';
     job.error = 'BUILD_CANCELLED';
-    job.completedAt = Date.now();
+    job.completedAt = this.now();
     job.request = null;
     job.controller?.abort();
     return this.status(jobId, capability, origin);
   }
 
-  prune(now = Date.now()) {
+  prune(now = this.now()) {
     for (const [jobId, job] of this.jobs) {
       if (job.completedAt && now - job.completedAt > this.jobTtlMs) this.jobs.delete(jobId);
     }

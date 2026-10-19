@@ -13,6 +13,7 @@ import {
   STM32_RUN_RESPONSE_SCHEMA, STM32_RUN_SCHEMA, exactKeys, fault, validateStm32Source,
 } from './protocol.mjs';
 import { parseStm32RuntimeResult } from './runtime-result.mjs';
+import { retryAfterForCode, retryFields, retryHeaders } from '../src/retry-guidance.mjs';
 
 const execFileAsync = promisify(execFile);
 const SHA256 = /^[0-9a-f]{64}$/u;
@@ -41,9 +42,9 @@ const SECURITY_HEADERS = Object.freeze({
 
 function sha256(value) { return createHash('sha256').update(value).digest('hex'); }
 function token() { return randomBytes(8).toString('hex'); }
-function responseJson(response, status, value) {
+function responseJson(response, status, value, headers = {}) {
   const bytes = Buffer.from(`${JSON.stringify(value)}\n`);
-  response.writeHead(status, { ...SECURITY_HEADERS,
+  response.writeHead(status, { ...SECURITY_HEADERS, ...headers,
     'Content-Type': 'application/json; charset=utf-8', 'Content-Length': String(bytes.length) });
   response.end(bytes);
 }
@@ -172,7 +173,11 @@ export function createStm32PublicService({
   function rate(origin) {
     const cutoff = now() - limits.rateWindowMs;
     const recent = (rates.get(origin) ?? []).filter((time) => time > cutoff);
-    if (recent.length >= limits.rateLimit) throw fault('RATE_LIMIT', 429);
+    if (recent.length >= limits.rateLimit) {
+      const retryAfterSeconds = Math.max(1,
+        Math.ceil((recent[0] + limits.rateWindowMs - now()) / 1000));
+      throw fault('RATE_LIMIT', 429, '', retryAfterSeconds);
+    }
     recent.push(now());
     rates.set(origin, recent);
   }
@@ -248,7 +253,8 @@ export function createStm32PublicService({
       throw fault('BUILD_REQUEST_INVALID');
     }
     const source = validateStm32Source(body.source);
-    if (buildInFlight >= limits.concurrentBuilds) throw fault('BUILD_CONCURRENCY_LIMIT', 429);
+    if (buildInFlight >= limits.concurrentBuilds) throw fault('BUILD_CONCURRENCY_LIMIT', 429, '',
+      retryAfterForCode('BUILD_CONCURRENCY_LIMIT'));
     const sourceSha256 = sha256(Buffer.from(source.source, 'utf8'));
     const operation = abortFor(request);
     buildInFlight += 1;
@@ -275,7 +281,8 @@ export function createStm32PublicService({
     if (sha256(Buffer.from(source.source, 'utf8')) !== body.sourceSha256) {
       throw fault('RUN_SOURCE_IDENTITY_MISMATCH', 409);
     }
-    if (runtimeInFlight >= limits.concurrentRuntimes) throw fault('RUNTIME_CONCURRENCY_LIMIT', 429);
+    if (runtimeInFlight >= limits.concurrentRuntimes) throw fault('RUNTIME_CONCURRENCY_LIMIT', 429, '',
+      retryAfterForCode('RUNTIME_CONCURRENCY_LIMIT'));
     const elf = decodeElf(body.artifact);
     try {
       loadStm32F429FirmwareArtifact({ profile: STM32_PROFILE, format: 'elf32', bytes: elf,
@@ -319,8 +326,10 @@ export function createStm32PublicService({
       metrics.failures += 1;
       if (error?.code === 'OPERATION_CANCELLED') metrics.cancelled += 1;
       if (!response.headersSent && !response.destroyed) {
-        responseJson(response, error.httpStatus ?? 400, { ok: false,
-          code: error.code ?? 'STM32_REQUEST_FAILED' });
+        const code = error.code ?? 'STM32_REQUEST_FAILED';
+        responseJson(response, error.httpStatus ?? 400, { ok: false, code,
+          ...retryFields(code, error?.retryAfterSeconds) },
+        retryHeaders(code, error?.retryAfterSeconds));
       }
     }
     return true;

@@ -11,6 +11,7 @@ import {
 } from './rp2040-pico-circuit.mjs';
 import { parseStrictJson } from './strict-json.mjs';
 import { boundedPolicyDiagnostic, normalizeSourceDiagnostics } from './source-diagnostics.mjs';
+import { isRetryableCapacityCode, retryGuidanceFromResponse, retryMessage, retryResultFields } from './retry-guidance.mjs';
 
 export const RP2040_PUBLIC_PROJECT_SCHEMA = 'intent-mcu-rp2040-public-project@1';
 export const RP2040_PUBLIC_BUILD_SCHEMA = 'intent-mcu-rp2040-source-build-request@1';
@@ -226,7 +227,12 @@ export class Rp2040PublicWorkbench {
   async response(response) {
     let value;
     try { value = await response.json(); } catch { throw new Error('RP2040_BUILD_RESPONSE_INVALID'); }
-    if (!response.ok) throw Object.assign(new Error(value.code ?? 'RP2040_BUILD_FAILED'), value);
+    if (!response.ok) {
+      const code = value.code ?? 'RP2040_BUILD_FAILED';
+      const guidance = retryGuidanceFromResponse(response.headers.get('retry-after'), value);
+      throw Object.assign(new Error(isRetryableCapacityCode(code) ? retryMessage(code, guidance) : code), value,
+        guidance ? retryResultFields(value) : {});
+    }
     return value;
   }
 
@@ -333,9 +339,9 @@ export class Rp2040PublicWorkbench {
       this.diagnostics = normalizeSourceDiagnostics(error.diagnostics ?? [{
         code: error.code ?? 'RP2040_BUILD_FAILED', severity: 'error', message: error.message,
       }], { profile: RP2040_PICO_PROFILE, revision, source, files: [{ name: 'main.c', content: source }] });
-      this.message = `Build failed (${error.code ?? error.message}). No older artifact remains runnable.`;
+      this.message = `${error.message}. No older artifact remains runnable.`;
       this.render();
-      return { ok: false, code: error.code ?? error.message };
+      return { ok: false, code: error.code ?? error.message, ...retryResultFields(error) };
     }
   }
 

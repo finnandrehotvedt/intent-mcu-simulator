@@ -36,11 +36,12 @@ const AVR_SYSTEM_HEADERS = new Set([
 ]);
 
 export class BuildProtocolError extends Error {
-  constructor(code, message = code, httpStatus = 400) {
+  constructor(code, message = code, httpStatus = 400, retryAfterSeconds = null) {
     super(message);
     this.name = 'BuildProtocolError';
     this.code = code;
     this.httpStatus = httpStatus;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 

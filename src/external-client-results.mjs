@@ -5,6 +5,7 @@ import { BOUNDED_ACTION_RESULT_LIMIT } from './bounded-action-contracts.mjs';
 import {
   ACADEMIC_OUTCOMES, EXPERIMENT_OUTCOME_SCHEMA, unsupportedExperimentOutcome,
 } from './experiment-outcomes.mjs';
+import { RETRYABLE_CAPACITY_CODES, retryResultFields } from './retry-guidance.mjs';
 
 export const EXTERNAL_CLIENT_RESULT_SCHEMA = 'intent-mcu-external-client-result@1';
 export const EXTERNAL_CLIENT_RESULT_LIMIT = BOUNDED_ACTION_RESULT_LIMIT;
@@ -40,6 +41,7 @@ const VALIDATION_MARKERS = Object.freeze([
 const clone = (value) => structuredClone(value);
 const safeString = (value) => typeof value === 'string' && value.length <= 160 ? value : null;
 const safeGeneration = (value) => Number.isSafeInteger(value) && value >= 1 ? value : null;
+const retryableCodes = new Set(RETRYABLE_CAPACITY_CODES);
 
 function testVerdictFrom(result) {
   const evidence = result?.result?.testEvidence;
@@ -80,7 +82,7 @@ export function classifyExternalClientResult(result) {
   if (verdict?.status === 'failed') return 'test-failure';
   if (result?.ok === true) return 'success';
   const code = String(result?.code ?? 'EXTERNAL_CLIENT_ACTION_FAILED').toUpperCase();
-  if (code === 'ACTION_BUSY' || code.endsWith('_BUSY')) return 'temporarily-busy';
+  if (code === 'ACTION_BUSY' || code.endsWith('_BUSY') || retryableCodes.has(code)) return 'temporarily-busy';
   if (code === 'ACTION_TIMEOUT' || code.endsWith('_TIMEOUT')) return 'timeout';
   if (code === 'ACTION_CANCELLED' || code.endsWith('_CANCELLED')) return 'cancelled';
   if (code.includes('UNSUPPORTED') || code.includes('UNAVAILABLE')) return 'unsupported';
@@ -127,6 +129,8 @@ export function externalClientResult(result, association = {}, sourceIdentity = 
   const verdict = testVerdictFrom(authoritativeResult)
     ?? unsupportedTestVerdict(authoritativeResult, request);
   const jobStatus = jobStatusForCategory(category);
+  const authoritativeRetry = retryResultFields(authoritativeResult);
+  const retryAfterSeconds = authoritativeRetry.retryAfterSeconds ?? null;
   const envelope = {
     schema: EXTERNAL_CLIENT_RESULT_SCHEMA,
     ok: category === 'success',
@@ -147,9 +151,11 @@ export function externalClientResult(result, association = {}, sourceIdentity = 
       code: safeString(authoritativeResult.code) ?? 'EXTERNAL_CLIENT_ACTION_FAILED',
       executed: authoritativeResult.executed === true,
     },
-    retry: category === 'temporarily-busy'
-      ? { recommended: true, afterMs: 250, requiresNewRequestId: true }
-      : { recommended: false, afterMs: null, requiresNewRequestId: category === 'timeout' },
+    retry: category === 'temporarily-busy' && retryAfterSeconds !== null
+      ? { recommended: true, afterMs: retryAfterSeconds * 1000, afterSeconds: retryAfterSeconds,
+        advisory: true, reservesCapacity: false, requiresNewRequestId: true }
+      : { recommended: false, afterMs: null, afterSeconds: null, advisory: category === 'temporarily-busy',
+        reservesCapacity: false, requiresNewRequestId: ['temporarily-busy', 'timeout'].includes(category) },
     testVerdict: verdict,
     authoritativeResult,
   };

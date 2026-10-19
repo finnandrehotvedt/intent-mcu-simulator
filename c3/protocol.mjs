@@ -39,9 +39,10 @@ export function exactKeys(value, keys) {
     && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
 }
 
-export function fault(code, status = 400) {
+export function fault(code, status = 400, retryAfterSeconds = null) {
   const error = new Error(code);
   error.code = code;
   error.status = status;
+  error.retryAfterSeconds = retryAfterSeconds;
   return error;
 }

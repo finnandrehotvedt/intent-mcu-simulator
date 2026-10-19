@@ -12,6 +12,7 @@ import {
 import { CIRCUIT_SCHEMA, validateCircuit } from '../src/circuit-engine.mjs';
 import { DEFAULT_CIRCUIT } from '../src/default-circuit.mjs';
 import { RELEASE_VERSION } from '../src/release-metadata.mjs';
+import { isRetryableCapacityCode, retryGuidanceFromResponse, retryMessage, retryResultFields } from '../src/retry-guidance.mjs';
 import {
   commandBuildRelevance,
   ProjectEditorReducer,
@@ -9504,7 +9505,12 @@ async function build() {
       signal: buildAbortController.signal,
     });
     const submitted = await response.json();
-    if (!response.ok) throw new Error(submitted.code || 'Build request rejected');
+    if (!response.ok) {
+      const code = submitted.code || 'BUILD_REQUEST_REJECTED';
+      const guidance = retryGuidanceFromResponse(response.headers.get('retry-after'), submitted);
+      throw Object.assign(new Error(isRetryableCapacityCode(code) ? retryMessage(code, guidance) : code), submitted,
+        guidance ? retryResultFields(submitted) : {});
+    }
     if (!currentBuildBinding(binding)) return;
     activeJob = submitted; await pollJob(submitted, inputAtSubmit, binding);
   } catch (error) {

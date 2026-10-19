@@ -12,6 +12,7 @@ import {
 } from './esp32c3-public-circuit.mjs';
 import { parseStrictJson } from './strict-json.mjs';
 import { boundedPolicyDiagnostic, normalizeSourceDiagnostics } from './source-diagnostics.mjs';
+import { isRetryableCapacityCode, retryGuidanceFromResponse, retryMessage, retryResultFields } from './retry-guidance.mjs';
 
 export const C3_PUBLIC_PROJECT_SCHEMA = 'intent-mcu-esp32c3-public-project@1';
 export const C3_PUBLIC_SOURCE = sourceForGpio2('C3_PUBLIC', 'OUTPUT', 'HIGH');
@@ -92,7 +93,12 @@ export class Esp32C3PublicWorkbench {
   async response(response) {
     let value;
     try { value = await response.json(); } catch { throw new Error('C3_RESPONSE_INVALID'); }
-    if (!response.ok) throw Object.assign(new Error(value.code ?? 'C3_REQUEST_FAILED'), value);
+    if (!response.ok) {
+      const code = value.code ?? 'C3_REQUEST_FAILED';
+      const guidance = retryGuidanceFromResponse(response.headers.get('retry-after'), value);
+      throw Object.assign(new Error(isRetryableCapacityCode(code) ? retryMessage(code, guidance) : code), value,
+        guidance ? retryResultFields(value) : {});
+    }
     return value;
   }
   bind() {
@@ -277,9 +283,9 @@ export class Esp32C3PublicWorkbench {
         code: error.code ?? 'C3_BUILD_FAILED', severity: 'error', message: error.message,
       }], { profile: PROFILE, revision, source: this.project.source,
         files: [{ name: 'sketch.ino', content: this.project.source }] });
-      this.message = `Build failed (${error.code ?? error.message}). No older flash remains runnable.`;
+      this.message = `${error.message}. No older flash remains runnable.`;
       this.render();
-      return { ok: false, code: error.code ?? error.message };
+      return { ok: false, code: error.code ?? error.message, ...retryResultFields(error) };
     }
   }
   async run() {
@@ -310,9 +316,9 @@ export class Esp32C3PublicWorkbench {
     } catch (error) {
       if (token !== this.requestToken) return { ok: false, code: 'C3_RUNTIME_STALE' };
       this.phase = 'failed';
-      this.message = `Run stopped (${error.code ?? error.message}).`;
+      this.message = `Run stopped. ${error.message}`;
       this.render();
-      return { ok: false, code: error.code ?? error.message };
+      return { ok: false, code: error.code ?? error.message, ...retryResultFields(error) };
     }
   }
   async dispose(message = 'C3 session discarded.') {

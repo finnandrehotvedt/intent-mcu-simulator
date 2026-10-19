@@ -10,6 +10,7 @@ import {
   Stm32CircuitEditor, createStm32CircuitDraft, normalizeStm32CircuitDraft, validateStm32Circuit,
 } from './stm32-public-circuit.mjs';
 import { boundedPolicyDiagnostic, normalizeSourceDiagnostics } from './source-diagnostics.mjs';
+import { isRetryableCapacityCode, retryGuidanceFromResponse, retryMessage, retryResultFields } from './retry-guidance.mjs';
 
 export const STM32_PUBLIC_SOURCE = sourceForStm32('STM32 PUBLIC', true);
 const SOURCE_LINE_PATTERNS = Object.freeze([
@@ -100,7 +101,12 @@ export class Stm32PublicWorkbench {
   async response(response) {
     let value;
     try { value = await response.json(); } catch { throw new Error('STM32_RESPONSE_INVALID'); }
-    if (!response.ok) throw Object.assign(new Error(value.code ?? 'STM32_REQUEST_FAILED'), value);
+    if (!response.ok) {
+      const code = value.code ?? 'STM32_REQUEST_FAILED';
+      const guidance = retryGuidanceFromResponse(response.headers.get('retry-after'), value);
+      throw Object.assign(new Error(isRetryableCapacityCode(code) ? retryMessage(code, guidance) : code), value,
+        guidance ? retryResultFields(value) : {});
+    }
     return value;
   }
   bind() {
@@ -259,9 +265,9 @@ export class Stm32PublicWorkbench {
       }], { profile: STM32_PROFILE, revision, source: this.project.source,
         files: [{ name: 'main.c', content: this.project.source }] });
       this.message = error.name === 'AbortError' ? 'Build cancelled; no executable retained.'
-        : `Build rejected: ${error.code ?? error.message}. No stale executable remains.`;
+        : `Build rejected: ${error.message}. No stale executable remains.`;
       this.render();
-      return { ok: false, code: error.code ?? error.message };
+      return { ok: false, code: error.code ?? error.message, ...retryResultFields(error) };
     } finally { if (this.operation === operation) this.operation = null; }
   }
   async run(reset = false) {
@@ -325,10 +331,10 @@ export class Stm32PublicWorkbench {
       this.result = null;
       this.phase = error.name === 'AbortError' ? 'built' : 'blocked';
       this.message = error.name === 'AbortError' ? 'Run stopped. Accepted ELF remains available until discarded.'
-        : `Run failed: ${error.code ?? error.message}.`;
+        : `Run failed: ${error.message}.`;
       this.terminal = 'No accepted Renode result.';
       this.render();
-      return { ok: false, code: error.code ?? error.message };
+      return { ok: false, code: error.code ?? error.message, ...retryResultFields(error) };
     } finally { if (this.operation === operation) this.operation = null; }
   }
   stop(message = 'STM32 executable discarded.') {

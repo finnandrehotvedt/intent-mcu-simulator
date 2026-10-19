@@ -17,10 +17,11 @@ export function exactKeys(value, keys) {
     && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
 }
 
-export function fault(code, httpStatus = 400, detail = '') {
+export function fault(code, httpStatus = 400, detail = '', retryAfterSeconds = null) {
   const error = new Error(detail ? `${code}: ${detail}` : code);
   error.code = code;
   error.httpStatus = httpStatus;
+  error.retryAfterSeconds = retryAfterSeconds;
   return error;
 }
 

@@ -34,6 +34,7 @@ board or parts as interchangeable with another profile.
 - Inspect GPIO, LEDs, buttons, potentiometers, serial bytes, logic traces, and pin state.
 - Save and reopen a project file on the learner's computer; browser recovery is separate.
 - Build submits only the active profile's bounded source to this Lab's same-origin isolated compiler for one temporary job. Successful user firmware is returned only through that short-lived private job and is not retained in a shared artifact cache; an identical later Build compiles again. Pinned tool images and curated public examples remain reusable and separate. This is not cloud project storage: there is no account or durable server project, and temporary source/output follows the bounded cleanup lifecycle.
+- Existing AVR/Pico, ESP32-C3 and STM32 queue, rate, job, session and concurrency limits return a positive bounded whole-second Retry-After value. It is advisory, reserves no capacity, requires a fresh request and never causes automatic browser retry.
 - Optionally generate a portable Prompt Bridge request and validate returned structured circuit data.
 - Select RP2040 Pico, create or reconnect its bounded GP0/resistor/LED/GND cables from named pins, edit the two bounded source values, compile in the fixed isolated Arm toolchain, and run the source-bound UF2 in the browser worker.
 - Select ESP32-C3, create or reconnect its bounded GPIO2/resistor/LED/GND cables from named pins, edit only GPIO2 mode/level and an uppercase UART marker, compile a fixed DIO flash image, and run actual Espressif QEMU CPU/UART.
