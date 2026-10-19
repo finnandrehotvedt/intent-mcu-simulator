@@ -120,6 +120,7 @@ export class RuntimeKernel {
       this.adapter.scheduleUartRx(event.targetCycle, event.value);
       return;
     }
+    if (event.type === 'uart-rx-scheduled') return;
     if (event.type === 'digital-scheduled') return;
     if (event.type === 'fault-request') return;
     throw new Error(`Unsupported input event: ${event.type}`);
@@ -186,9 +187,10 @@ export class RuntimeKernel {
       throw new TypeError('UART delay must be 1..1000000 cycles');
     }
     const event = this.inputs.enqueue(
-      { type: 'uart-rx', value }, this.adapter.cpu.cycles, this.adapter.cpu.cycles + delayCycles,
+      { type: 'uart-rx-scheduled', value }, this.adapter.cpu.cycles,
+      this.adapter.cpu.cycles + delayCycles,
     );
-    this.#flushInputs();
+    this.adapter.scheduleUartRx(event.targetCycle, value);
     return event;
   }
 

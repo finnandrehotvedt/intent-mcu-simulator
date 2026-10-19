@@ -11,6 +11,8 @@ import {
   x23UsartReportPassed, x23UsartRunProjection, x23UsartSha256,
 } from '../src/x23-usart-response-contract.mjs';
 import { RUNTIME_BINDING_SCHEMA, WORKER_RUNTIME_IDENTITY_SCHEMA } from '../src/runtime-identity.mjs';
+import { RuntimeKernel } from '../src/runtime-kernel.mjs';
+import { DEFAULT_CIRCUIT } from '../src/default-circuit.mjs';
 
 if (!globalThis.crypto) Object.defineProperty(globalThis, 'crypto', { value: webcrypto });
 
@@ -101,4 +103,12 @@ test('X23 USART incomplete evidence is indeterminate, never an infrastructure or
     validationStatus: 'rejected', evidenceStatus: 'incomplete', academicStatus: 'indeterminate',
     jobStatus: 'completed', code: 'X23_USART_EVIDENCE_INVALID',
   });
+});
+
+test('X23 delayed USART response is scheduled immediately and retained as provenance until its target', () => {
+  const kernel = new RuntimeKernel(':00000001FF', DEFAULT_CIRCUIT);
+  const event = kernel.queueUartRxAfterCycles(0x41, 20);
+  assert.deepEqual(event, { sequence: 1, targetCycle: 20, type: 'uart-rx-scheduled', value: 0x41 });
+  assert.deepEqual(kernel.snapshot().eventLog.pending, [event]);
+  assert.throws(() => kernel.queueUartRxAfterCycles(0x41, 0), /UART delay/u);
 });

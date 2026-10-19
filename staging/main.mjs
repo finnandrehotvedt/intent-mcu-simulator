@@ -3543,6 +3543,12 @@ function usartResponseWorkerChannel(worker, runtimeBinding, token) {
     try {
       const identity = validateWorkerRuntimeIdentity(data.runtimeIdentity, runtimeBinding, nonce);
       nonce ??= identity.workerInstanceNonce;
+      if (data.kind === 'stopped-error') {
+        fail(Object.assign(new Error(data.message ?? 'X23_USART_WORKER_STOPPED'), {
+          code: data.message ?? 'X23_USART_WORKER_STOPPED',
+        }));
+        return;
+      }
       const index = waiting.findIndex((entry) => entry.accept(data));
       if (index >= 0) {
         const [entry] = waiting.splice(index, 1); clearTimeout(entry.timer); entry.resolve(structuredClone(data));
@@ -3625,8 +3631,10 @@ async function executeUsartResponseRun({ label, mode, firmware, artifact, respon
     worker.postMessage({ command: 'init', hex: artifact.artifact.hex, circuit: DEFAULT_CIRCUIT,
       runtimeBinding, instruments: { logicChannels: ['D13'], selectedPin: 'D13', serialHistoryLimit: 512 } });
     const ready = await channel.next((message) => message.kind === 'ready');
+    elements.usartresponsestate.textContent = `${label} · worker ready · awaiting request TX…`;
     worker.postMessage({ command: 'x23-usart-run-to-request' });
     const requested = await channel.next((message) => message.kind === 'x23-usart-request');
+    elements.usartresponsestate.textContent = `${label} · request observed · scheduling response…`;
     const request = requested.instruments.serial.records.find(
       (record) => record.direction === 'tx' && record.value === X23_USART_SUITE.requestByte,
     );
@@ -3635,7 +3643,8 @@ async function executeUsartResponseRun({ label, mode, firmware, artifact, respon
     worker.postMessage({ command: 'x23-usart-response', value: responseByte,
       delayCycles: X23_USART_SUITE.responseDelayCycles });
     const scheduled = await channel.next((message) => message.kind === 'x23-usart-response');
-    const pending = scheduled.eventLog.pending.find((event) => event.type === 'uart-rx');
+    elements.usartresponsestate.textContent = `${label} · response scheduled · awaiting firmware branch…`;
+    const pending = scheduled.eventLog.pending.find((event) => event.type === 'uart-rx-scheduled');
     if (!pending) throw Object.assign(new Error('X23_USART_SCHEDULE_MISSING'), { code: 'X23_USART_SCHEDULE_MISSING' });
     worker.postMessage({ command: 'x23-usart-run-to-consumer' });
     const consumed = await channel.next((message) => message.kind === 'x23-usart-consumer');
