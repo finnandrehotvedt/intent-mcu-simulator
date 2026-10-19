@@ -5,7 +5,7 @@
 Canonical application: https://lab.teachthecompany.com/
 Source and setup: https://github.com/finnandrehotvedt/intent-mcu-simulator
 Licence: Apache-2.0 for project-owned source; third-party components keep their own terms.
-Current public version: 1.1.0-rc.41
+Current public version: 1.1.0-rc.66
 
 Local files: Download copy and ordinary Open are the reliable all-browser
 actions. Supported secure desktop browsers may additionally offer explicit
@@ -25,14 +25,15 @@ board or parts as interchangeable with another profile.
 
 ## Supported public workflow
 
-- Start with an empty project, one of seven validated AVR starters, or either paired UART/LED example on each bounded Pico, ESP32-C3 and STM32 profile.
-- The thermostat starter compiles the visible source and runs three reset-isolated virtual-time scenarios. Pass requires executed D13, matching UART and complete ordered input evidence; its known-bad equality variant must fail exactly at 30 C.
+- Start with an empty project, one of fifteen validated AVR starters, or either paired UART/LED example on each bounded Pico, ESP32-C3 and STM32 profile.
+- The thermostat starter compiles the visible source and runs four reset-isolated virtual-time scenarios: below, equal, above and disabled. Pass requires executed D13, matching UART and complete ordered input evidence; its known-bad equality variant must fail exactly at 30 C.
 - In AVR, add any of 16 selectable supported components and connect named pin anchors manually.
 - Representable named-rail shorts, known output contention, supply-role mismatch, ground, polarity, resistance and bounded ideal-current faults fail closed with corrective actions. Arbitrary circuit solving and physical-safety claims are excluded.
 - Edit source and compile it through the isolated, fixed AVR toolchain.
 - Load and run the accepted artifact in the deterministic virtual MCU worker.
 - Inspect GPIO, LEDs, buttons, potentiometers, serial bytes, logic traces, and pin state.
 - Save and reopen a project file on the learner's computer; browser recovery is separate.
+- Build submits only the active profile's bounded source to this Lab's same-origin isolated compiler for one temporary job. This is not cloud project storage: there is no account or durable server project, and temporary source/output follows the bounded cleanup lifecycle.
 - Optionally generate a portable Prompt Bridge request and validate returned structured circuit data.
 - Select RP2040 Pico, create or reconnect its bounded GP0/resistor/LED/GND cables from named pins, edit the two bounded source values, compile in the fixed isolated Arm toolchain, and run the source-bound UF2 in the browser worker.
 - Select ESP32-C3, create or reconnect its bounded GPIO2/resistor/LED/GND cables from named pins, edit only GPIO2 mode/level and an uppercase UART marker, compile a fixed DIO flash image, and run actual Espressif QEMU CPU/UART.

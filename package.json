@@ -1,6 +1,6 @@
 {
   "name": "intent-mcu-simulator",
-  "version": "1.1.0-rc.65",
+  "version": "1.1.0-rc.66",
   "private": true,
   "description": "Original browser-based microcontroller learning environment source",
   "license": "Apache-2.0",
@@ -75,6 +75,7 @@
     "test:x39:browser": "node test/x39-failure-navigation-browser.cjs && node test/x39-failure-navigation-new-browser.cjs",
     "test:x72": "node --test --test-concurrency=1 test/x72-example-progression.test.mjs",
     "test:x72:browser": "node test/x72-example-progression-browser.cjs",
+    "test:docs-release": "node --test --test-concurrency=1 test/docs-x72-release.test.mjs test/x72-example-progression.test.mjs test/release-identity-copy.test.mjs test/public-release-projection.test.mjs",
     "example:mcp": "node examples/mcp-reference-experiment.mjs",
     "experiment:headless": "node tools/headless-experiment-runner.mjs",
     "pretest": "node --test --test-concurrency=1 test/release-identity-copy.test.mjs test/control-persistence-policy.test.mjs test/control-runtime-evidence.test.mjs test/avr-reference-starters.test.mjs test/component-support-matrix.test.mjs test/controller-capability-diagnostics.test.mjs test/bounded-route-authoring.test.mjs test/supported-example-pack.test.mjs test/existing-graph-edit-safety.test.mjs test/candidate-branch-transactions.test.mjs test/candidate-placement-duplication.test.mjs test/w10-fault-validation.test.mjs test/i03-runtime-traces.test.mjs",

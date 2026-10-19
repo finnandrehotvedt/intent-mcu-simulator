@@ -1,4 +1,19 @@
-# Intent MCU Simulator 1.1.0-rc.44
+# Intent MCU Simulator 1.1.0-rc.66
+
+## Current documentation and guided examples
+
+This release publishes the independently reviewed X72 example progression in
+the existing concise desktop chooser and narrow-profile cards. Every one of the
+21 existing examples now exposes Learn, Try, Observe, Limits and Next guidance,
+while all generated project payloads remain byte-identical.
+
+The public documentation now identifies rc.66, fifteen AVR cards and the four
+reset-isolated thermostat cases. It also explains the precise privacy boundary:
+saved projects remain local, while Build sends only the active profile's
+bounded source to the same-origin isolated compiler for one temporary job.
+Controller/runtime claims are unchanged, including QEMU CPU/UART versus the
+separate GPIO2 project model and actual Renode PB0/USART3 versus the ideal LED
+teaching path.
 
 ## X18 honest outcomes and separate job state
 

@@ -22,7 +22,7 @@
       <article class="docs-card"><h2>PWM fade</h2><p>Drive a current-limited LED from D3 and relate duty cycle, relative brightness, and the logic analyser waveform.</p></article>
       <article class="docs-card"><h2>PWM pulse</h2><p>Compare fixed 25% and 75% duty cycles on the same validated D3, resistor, LED and ground path. Executed firmware prints each phase over Serial.</p></article>
       <article class="docs-card"><h2>Temperature display</h2><p>Read the ideal temperature module on A1, write whole Celsius to a 16×2 LCD, and select a current-limited RGB status colour.</p></article>
-      <article id="thermostat-boundary-test" class="docs-card"><h2>Thermostat boundary test</h2><p>Build the exact A1 temperature, D2 active-low enable and current-limited D13 indicator circuit. Run three virtual-time scenarios and then load the known-bad <code>&lt;=</code> firmware to prove the equality defect is caught from executed D13 and matching UART evidence.</p></article>
+      <article id="thermostat-boundary-test" class="docs-card"><h2>Thermostat boundary test</h2><p>Build the exact A1 temperature, D2 active-low enable and current-limited D13 indicator circuit. Run four reset-isolated virtual-time scenarios—below, equal, above and disabled—then load the known-bad <code>&lt;=</code> firmware to prove the equality defect is caught from executed D13 and matching UART evidence.</p></article>
       <article class="docs-card"><h2>Ground reference input</h2><p><strong>Learn:</strong> why a declared 0 V reference makes input levels meaningful. <strong>Try:</strong> build, run and press the button. <strong>Observe:</strong> D2, D13 and Serial. <strong>Limits:</strong> the symbol is topology authority, not an executable peripheral.</p></article>
       <article class="docs-card"><h2>SPST toggle input</h2><p><strong>Learn:</strong> maintained Open/Closed state. <strong>Try:</strong> toggle the D3 pull-up input. <strong>Observe:</strong> compiled D13 and Serial state. <strong>Limits:</strong> ideal contact with no bounce or contact resistance.</p></article>
       <article class="docs-card"><h2>SPDT input selector</h2><p><strong>Learn:</strong> COM selects one isolated throw. <strong>Try:</strong> choose GND or 5 V on D8. <strong>Observe:</strong> the explicit BREAK transition and compiled input result. <strong>Limits:</strong> Partial, direct digital-input model only.</p></article>
@@ -74,7 +74,7 @@
       <ol><li>Save the incomplete project and Open it again if you want to prove history-free recovery.</li><li>In <strong>Supported parts</strong>, add the one missing resistor or LED. The fixed stable ID returns, with no cable.</li><li>Activate two compatible free named pins for each missing connection. Unsafe resistance/colour pairs reject without changing the accepted draft.</li><li>When the circuit state says accepted, Build fresh and Run. Old executable authority never returns from the file.</li></ol>
       <nav class="docs-nav" aria-label="Recovery help"><a href="/components.html#narrow-profile-parts">Part and property limits</a><a href="/support.html#routing-help">Cable routing help</a><a href="/support.html#repair-after-open">Detailed Save/Open recovery</a><a href="/">Open the workbench</a></nav>
     </section>
-    <footer>Fifteen validated AVR starters and paired bounded Pico, ESP32-C3 and STM32 examples in Intent MCU Simulator 1.1.0-rc.41</footer>
+    <footer>Fifteen validated AVR starters and paired bounded Pico, ESP32-C3 and STM32 examples in Intent MCU Simulator 1.1.0-rc.66</footer>
   </main>
 </body>
 </html>

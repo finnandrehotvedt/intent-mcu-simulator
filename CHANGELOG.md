@@ -2,6 +2,24 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.66 — 2026-10-19
+
+- Published the independently reviewed X72 learning progression: all fifteen
+  AVR cards and six narrow-profile cards retain concise Learn, Try, Observe,
+  Limits and Next guidance without changing any of the 21 project payloads.
+- Updated Controllers, Components, Examples, Support and llms.txt to the
+  current release identity, fifteen AVR cards and four reset-isolated M1
+  scenarios. Added a focused test that validates these facts against the
+  versioned release, canonical card catalogs, scenario contract and controller
+  capability owners.
+- Clarified that saved projects remain local while Build submits only bounded
+  active-profile source to the Lab's same-origin isolated compiler for one
+  temporary job. No account, durable cloud project, arbitrary command,
+  package, hook or network-download authority was added.
+- Preserved the exact AVR, RP2040, ESP32-C3 and STM32 runtime/model boundaries,
+  data-only files, named wiring, stale-authority guards and desktop-only
+  concise chooser layout.
+
 ## 1.1.0-rc.58 — 2026-10-19
 
 - Published the independently accepted bounded X35 causal-chain report for one
