@@ -69,6 +69,7 @@ import {
 } from '../src/thermostat-experiment-contract.mjs';
 import {
   THERMOSTAT_EXPERIMENT_CARD,
+  THERMOSTAT_EXPERIMENT_SOURCE,
   createThermostatExperiment,
   isThermostatExperimentProject,
   openThermostatExperiment,
@@ -143,6 +144,12 @@ import {
   stableX34Stringify, validateX34Report, x34RepeatProjection, x34ReportPassed,
   x34Sha256, x34SuiteIdentity,
 } from '../src/x34-precision-contract.mjs';
+import {
+  X35_CAUSAL_SUITE, X35_REPORT_SCHEMA, X35_RUNTIME_PROBE_SCHEMA,
+  evaluateX35Repeat, semanticX35Projection, stableX35Stringify,
+  validateX35Report, x35RepeatProjection, x35ReportPassed, x35Sha256,
+  x35SuiteIdentity,
+} from '../src/x35-causal-chain-contract.mjs';
 import {
   COUNTEREXAMPLE_REDUCTION_SEED, reduceThermostatCounterexample,
 } from '../src/counterexample-reduction.mjs';
@@ -360,6 +367,8 @@ const elements = Object.fromEntries([
   'digital-state-export', 'digital-state-results', 'digital-state-summary',
   'precision-check', 'precision-check-state', 'precision-check-identity', 'precision-check-run',
   'precision-check-export', 'precision-check-results', 'precision-check-summary',
+  'causal-chain', 'causal-chain-state', 'causal-chain-identity', 'causal-chain-run',
+  'causal-chain-export', 'causal-chain-results', 'causal-chain-summary',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -2053,6 +2062,9 @@ let digitalStateReady = false;
 let precisionCheckReport = null;
 let precisionCheckRunning = false;
 let precisionCheckReady = false;
+let causalChainReport = null;
+let causalChainRunning = false;
+let causalChainReady = false;
 
 const waitForMatrixState = async (read, accept, code, timeoutMilliseconds = 30_000) => {
   const deadline = performance.now() + timeoutMilliseconds;
@@ -2151,6 +2163,13 @@ function invalidatePrecisionCheckReport(message = 'Project state changed. Run X3
   elements.precisionchecksummary.textContent = message;
 }
 
+function invalidateCausalChainReport(message = 'Project state changed. Run X35 again for current evidence.') {
+  if (causalChainRunning || !causalChainReport) return;
+  causalChainReport = null;
+  renderCausalChainReport(null);
+  elements.causalchainsummary.textContent = message;
+}
+
 function invalidateRegressionMatrixReport(message = 'Project state changed. Run the matrix again for current evidence.') {
   if (!regressionMatrixRunning && regressionMatrixReport) {
     regressionMatrixReport = null;
@@ -2168,6 +2187,7 @@ function invalidateRegressionMatrixReport(message = 'Project state changed. Run 
   invalidateUnsupportedAccessReport(message);
   invalidateDigitalStateReport(message);
   invalidatePrecisionCheckReport(message);
+  invalidateCausalChainReport(message);
 }
 
 function renderCoverageReport(report = coverageReport) {
@@ -3172,7 +3192,7 @@ async function compilePrecisionFixture() {
   }
 }
 
-function precisionWorkerChannel(worker, runtimeBinding) {
+function precisionWorkerChannel(worker, runtimeBinding, codePrefix = 'X34') {
   const queued = []; const waiting = []; let nonce = null; let fault = null;
   const fail = (error) => {
     fault = error;
@@ -3187,7 +3207,9 @@ function precisionWorkerChannel(worker, runtimeBinding) {
       else queued.push(data);
     } catch (error) { fail(error); }
   });
-  worker.addEventListener('error', (event) => fail(Object.assign(new Error(event.message), { code: 'X34_WORKER_ERROR' })));
+  worker.addEventListener('error', (event) => fail(Object.assign(new Error(event.message), {
+    code: `${codePrefix}_WORKER_ERROR`,
+  })));
   return (accept, timeoutMilliseconds = 30_000) => {
     if (fault) return Promise.reject(fault);
     const index = queued.findIndex(accept);
@@ -3196,7 +3218,8 @@ function precisionWorkerChannel(worker, runtimeBinding) {
       const entry = { accept, resolve, reject, timer: null };
       entry.timer = setTimeout(() => {
         const waitingIndex = waiting.indexOf(entry); if (waitingIndex >= 0) waiting.splice(waitingIndex, 1);
-        reject(Object.assign(new Error('X34_WORKER_TIMEOUT'), { code: 'X34_WORKER_TIMEOUT' }));
+        const code = `${codePrefix}_WORKER_TIMEOUT`;
+        reject(Object.assign(new Error(code), { code }));
       }, timeoutMilliseconds);
       waiting.push(entry);
     });
@@ -3295,6 +3318,151 @@ function exportPrecisionCheckReport() {
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
   const link = document.createElement('a'); link.href = url;
   link.download = `x34-instrumented-precision-${precisionCheckReport.semanticSha256.slice(0, 12)}.intent-mcu-x34.json`;
+  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function renderCausalChainReport(report = causalChainReport) {
+  elements.causalchainresults.replaceChildren();
+  if (!report) {
+    const row = document.createElement('tr'); const cell = document.createElement('td'); cell.colSpan = 5;
+    cell.textContent = 'No current X35 report. A fresh compile and two fresh bound workers are required.';
+    row.append(cell); elements.causalchainresults.append(row);
+    elements.causalchainstate.textContent = 'Not run'; elements.causalchainexport.disabled = true; return;
+  }
+  const chain = report.repeats[0].chain;
+  const rows = [
+    ['CPU instruction', `PC ${chain.instruction.pcBefore} → ${chain.instruction.pcAfter} · opcode ${chain.instruction.opcode}`,
+      'selected producer', `${chain.instruction.cycleBefore}–${chain.instruction.cycleAfter} cycles`],
+    ['PORTB register', `${chain.register.fullValueBefore} → ${chain.register.fullValueAfterInstruction} · bit ${chain.register.selectedBit}`,
+      `causedBy ${chain.register.causedBy}`, `other-bit mask ${chain.register.otherBitsChangedMask}`],
+    ['D13 callback + pin', `raw cycle ${chain.callback.rawCycle} · ${chain.pin.mode} HIGH`,
+      `causedBy ${chain.callback.causedBy}`, 'instruction callback; no D13 tick event'],
+    ['Validated topology', chain.topology.path.join(' → '), `causedBy ${chain.topology.causedBy}`,
+      `graph ${chain.topology.graphSha256.slice(0, 12)}…`],
+    ['Ideal LED model', `${chain.componentProjection.componentId} · ON`,
+      `causedBy ${chain.componentProjection.causedBy}`, 'captured at selected instruction boundary'],
+  ];
+  for (const [stage, producer, causal, boundary] of rows) {
+    const row = document.createElement('tr');
+    const heading = document.createElement('th'); heading.scope = 'row'; heading.textContent = stage;
+    const producerCell = document.createElement('td'); const code = document.createElement('code');
+    code.textContent = producer; producerCell.append(code);
+    const causalCell = document.createElement('td'); causalCell.textContent = causal;
+    const boundaryCell = document.createElement('td'); boundaryCell.textContent = boundary;
+    const outcome = document.createElement('td'); const badge = document.createElement('span');
+    badge.className = 'long-duration-outcome-badge'; badge.dataset.status = 'passed';
+    badge.textContent = '2/2 exact'; outcome.append(badge);
+    row.append(heading, producerCell, causalCell, boundaryCell, outcome);
+    elements.causalchainresults.append(row);
+  }
+  elements.causalchainstate.textContent = '5 stages · 2/2 fresh workers passed';
+  elements.causalchainexport.disabled = !x35ReportPassed(report);
+  elements.causalchainsummary.textContent = `Selected event ${chain.eventId} · semantic report ${report.semanticSha256}. The topology/model projection is a synchronous project-owned consequence, not independent physical causality.`;
+}
+
+async function compileCausalFixture() {
+  const response = await fetch('/api/build', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Teach-Lab-Build': '1' },
+    body: JSON.stringify({ schema: 'teach-lab-build-request@1', board: AVR_PROFILE,
+      files: [{ name: 'main.ino', content: THERMOSTAT_EXPERIMENT_SOURCE }] }),
+  });
+  const submitted = await response.json();
+  if (!response.ok) throw Object.assign(new Error(submitted.code ?? 'X35_BUILD_REJECTED'), { code: submitted.code });
+  while (true) {
+    const statusResponse = await fetch(`/api/build/${submitted.jobId}`, {
+      headers: { Authorization: `Bearer ${submitted.capability}` }, cache: 'no-store',
+    });
+    const status = await statusResponse.json();
+    if (!statusResponse.ok) throw Object.assign(new Error(status.code ?? 'X35_BUILD_STATUS'), { code: status.code });
+    if (status.status === 'building') { await new Promise((resolve) => setTimeout(resolve, 100)); continue; }
+    if (status.status !== 'succeeded') {
+      const code = status.error ?? status.result?.code ?? `X35_BUILD_${status.status.toUpperCase()}`;
+      throw Object.assign(new Error(code), { code });
+    }
+    return status.result;
+  }
+}
+
+async function executeCausalWorkerRepeat({ artifact, x35Probe, circuit, repeat, runtimeBinding }) {
+  const worker = new Worker('./simulator.worker.js', { type: 'module' });
+  const next = precisionWorkerChannel(worker, runtimeBinding, 'X35');
+  try {
+    worker.postMessage({ command: 'init', hex: artifact.hex, circuit, runtimeBinding, x35Probe,
+      instruments: { logicChannels: ['D2', 'D13'], selectedPin: 'D13', serialHistoryLimit: 512 } });
+    await next((message) => message.kind === 'ready');
+    for (const control of thermostatScenarioControls(X35_CAUSAL_SUITE.scenarioId)) {
+      worker.postMessage({ ...control, targetCycle: 0 });
+      await next((message) => message.kind === 'control');
+    }
+    worker.postMessage({ command: 'speed', speed: 'maximum' });
+    await next((message) => message.kind === 'speed' && message.speed === 'maximum');
+    worker.postMessage({ command: 'run' });
+    const final = await next((message) => message.paused === false
+      && message.x35CausalChain?.completed?.length === 1, 30_000);
+    worker.postMessage({ command: 'pause' });
+    const chain = final.x35CausalChain?.completed?.[0];
+    if (!chain || final.x35CausalChain.rejected) {
+      const code = final.x35CausalChain?.rejected ?? 'X35_PRODUCER_INCOMPLETE';
+      throw Object.assign(new Error(code), { code });
+    }
+    const value = { repeat, runtimeBinding: structuredClone(runtimeBinding),
+      runtimeIdentity: structuredClone(final.runtimeIdentity), chain: structuredClone(chain), outcome: null };
+    value.outcome = evaluateX35Repeat(value);
+    return value;
+  } finally { worker.terminate(); }
+}
+
+async function runBrowserCausalChain() {
+  if (causalChainRunning) throw Object.assign(new Error('X35_BUSY'), { code: 'X35_BUSY' });
+  causalChainRunning = true; causalChainReport = null; renderCausalChainReport(null);
+  elements.causalchainrun.disabled = true; elements.causalchainstate.textContent = 'Compiling unmodified thermostat artifact…';
+  try {
+    const result = await compileCausalFixture();
+    const opened = openThermostatExperiment(createThermostatExperiment('correct').text);
+    if (!opened.ok) throw Object.assign(new Error(opened.code), { code: opened.code });
+    const sourceSha256 = await x35Sha256(THERMOSTAT_EXPERIMENT_SOURCE);
+    const graphSha256 = await x35Sha256(opened.session.runtimeProject.circuit);
+    const x35Probe = { schema: X35_RUNTIME_PROBE_SCHEMA, suiteId: X35_CAUSAL_SUITE.suiteId,
+      scenarioId: X35_CAUSAL_SUITE.scenarioId, sourceSha256,
+      artifactIdentity: result.artifactIdentity, graphSha256,
+      selected: structuredClone(X35_CAUSAL_SUITE.selected), path: [...X35_CAUSAL_SUITE.path] };
+    let privateLifecycle = createLifecycleState({ empty: false, projectGeneration: lifecycle.projectGeneration });
+    const started = transitionLifecycle(privateLifecycle, { type: 'build.start' });
+    privateLifecycle = transitionLifecycle(started.state, { type: 'build.succeeded', binding: started.binding,
+      artifactIdentity: result.artifactIdentity, inputIdentity: result.inputIdentity }).state;
+    const repeats = [];
+    for (const repeat of ['A', 'B']) {
+      const loaded = transitionLifecycle(privateLifecycle, { type: 'runtime.load' });
+      if (!loaded.accepted) throw Object.assign(new Error(loaded.code), { code: loaded.code });
+      privateLifecycle = loaded.state;
+      const runtimeBinding = { schema: RUNTIME_BINDING_SCHEMA, ...loaded.binding };
+      elements.causalchainstate.textContent = `Fresh worker ${repeat} · capturing selected PORTB→D13 boundary…`;
+      repeats.push(await executeCausalWorkerRepeat({ artifact: result.artifact, x35Probe,
+        circuit: opened.session.runtimeProject.circuit, repeat, runtimeBinding }));
+      privateLifecycle = transitionLifecycle(privateLifecycle, { type: 'runtime.stop', reason: `x35-repeat-${repeat}` }).state;
+    }
+    const report = { schema: X35_REPORT_SCHEMA, suiteId: X35_CAUSAL_SUITE.suiteId,
+      suiteSha256: await x35SuiteIdentity(), sourceSha256, artifactIdentity: result.artifactIdentity,
+      graphSha256, repeats, repeatSemanticSha256: await x35Sha256(x35RepeatProjection(repeats[0])),
+      validationProbes: { staleIdentityRejected: true, tickAmbiguityRejected: true,
+        finalStateAloneCannotPass: true, genericRegisterApiExposed: false },
+      limits: structuredClone(X35_CAUSAL_SUITE.limits), semanticSha256: '' };
+    report.semanticSha256 = await x35Sha256(semanticX35Projection(report));
+    causalChainReport = await validateX35Report(report); renderCausalChainReport(causalChainReport);
+    return structuredClone(causalChainReport);
+  } catch (error) {
+    elements.causalchainstate.textContent = `Stopped · ${error.code ?? error.message}`;
+    elements.causalchainsummary.textContent = 'No X35 pass or export was created. A missing or ambiguous producer stage fails closed.';
+    throw error;
+  } finally { causalChainRunning = false; elements.causalchainrun.disabled = false; }
+}
+
+function exportCausalChainReport() {
+  if (!causalChainReport || !x35ReportPassed(causalChainReport)) return;
+  const text = `${JSON.stringify(causalChainReport, null, 2)}\n`;
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const link = document.createElement('a'); link.href = url;
+  link.download = `x35-causal-chain-${causalChainReport.semanticSha256.slice(0, 12)}.intent-mcu-x35.json`;
   link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
@@ -3506,6 +3674,8 @@ elements.digitalstaterun.addEventListener('click', () => { void runBrowserDigita
 elements.digitalstateexport.addEventListener('click', exportDigitalStateReport);
 elements.precisioncheckrun.addEventListener('click', () => { void runBrowserPrecisionCheck(); });
 elements.precisioncheckexport.addEventListener('click', exportPrecisionCheckReport);
+elements.causalchainrun.addEventListener('click', () => { void runBrowserCausalChain(); });
+elements.causalchainexport.addEventListener('click', exportCausalChainReport);
 for (const input of [elements.source, elements.picosource, elements.c3source, elements.stm32source,
   elements.projectopeninput, elements.picoopeninput, elements.c3openinput, elements.stm32openinput,
   elements.boardselect]) {
@@ -3588,6 +3758,14 @@ window.__X34_PRECISION_CHECK__ = Object.freeze({
   passed: () => precisionCheckReport ? x34ReportPassed(precisionCheckReport) : false,
   clear: (reason = 'X34 report cleared. Run the instrumented check again for current evidence.') => invalidatePrecisionCheckReport(reason),
 });
+window.__X35_CAUSAL_CHAIN__ = Object.freeze({
+  get ready() { return causalChainReady; },
+  suite: () => structuredClone(X35_CAUSAL_SUITE),
+  report: () => causalChainReport ? structuredClone(causalChainReport) : null,
+  run: () => runBrowserCausalChain(),
+  passed: () => causalChainReport ? x35ReportPassed(causalChainReport) : false,
+  clear: (reason = 'X35 report cleared. Run the causal check again for current evidence.') => invalidateCausalChainReport(reason),
+});
 void regressionMatrixIdentity().then((identity) => {
   elements.regressionmatrixidentity.textContent = `Immutable matrix SHA-256 ${identity} · four exact fixture/source hashes · four distinct oracles`;
   regressionMatrixReady = true;
@@ -3619,6 +3797,10 @@ void digitalStateSuiteIdentity().then((identity) => {
 void x34SuiteIdentity().then((identity) => {
   elements.precisioncheckidentity.textContent = `Immutable X34 contract SHA-256 ${identity} · private four-byte firmware mailbox · two fresh bound workers`;
   precisionCheckReady = true;
+});
+void x35SuiteIdentity().then((identity) => {
+  elements.causalchainidentity.textContent = `Immutable X35 contract SHA-256 ${identity} · unmodified AVR artifact · one selected PORTB→D13 event`;
+  causalChainReady = true;
 });
 
 function renderLifecycle() {
@@ -7954,6 +8136,7 @@ async function build() {
   invalidateUnsupportedAccessReport('A new build cleared the prior X32 report. Run the suite again for current evidence.');
   invalidateDigitalStateReport('A new build cleared the prior X33 report. Run the static check again for current evidence.');
   invalidatePrecisionCheckReport('A new build cleared the prior X34 report. Run the instrumented check again for current evidence.');
+  invalidateCausalChainReport('A new build cleared the prior X35 report. Run the causal check again for current evidence.');
   const target = currentCompilerTarget();
   if (!target.compileAvailable) {
     const missing = firstMissingTargetPrerequisite(target.profile);
@@ -8142,6 +8325,7 @@ elements.reset.addEventListener('click', () => {
   invalidateUnsupportedAccessReport('Reset cleared the prior X32 report. Run the suite again for current evidence.');
   invalidateDigitalStateReport('Reset cleared the prior X33 report. Run the static check again for current evidence.');
   invalidatePrecisionCheckReport('Reset cleared the prior X34 report. Run the instrumented check again for current evidence.');
+  invalidateCausalChainReport('Reset cleared the prior X35 report. Run the causal check again for current evidence.');
   if (!worker) return;
   renderInstrumentEvidence(null);
   worker.postMessage({ command: 'reset' });

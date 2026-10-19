@@ -7,6 +7,7 @@ import {
   TRACE_LIMIT,
 } from './atmega328p-adapter.mjs';
 import { CircuitRuntime } from './circuit-engine.mjs';
+import { x35TopologyProjection } from './x35-causal-chain-contract.mjs';
 
 export const INPUT_EVENT_LIMIT = 10_000;
 export const LOGIC_TRANSITION_LIMIT = TRACE_LIMIT;
@@ -79,7 +80,9 @@ export class RuntimeKernel {
     this.adapter = new Atmega328PAdapter(hex, {
       speed: options.speed ?? 1,
       ...(options.x34Probe ? { x34Probe: options.x34Probe } : {}),
+      ...(options.x35Probe ? { x35Probe: options.x35Probe } : {}),
     });
+    this.x35Probe = options.x35Probe ?? null;
     this.circuit = new CircuitRuntime(circuit);
     this.circuit.applyControls(this.adapter);
     this.inputs = new OrderedInputQueue(options.inputEventLimit ?? INPUT_EVENT_LIMIT);
@@ -206,17 +209,44 @@ export class RuntimeKernel {
 
   runInstructions(count) {
     this.#flushInputs();
+    if (this.adapter.x35Enabled) {
+      if (!Number.isInteger(count) || count < 0) throw new Error('Instruction count must be a non-negative integer');
+      for (let index = 0; index < count; index += 1) this.#stepAndProjectX35();
+      return this.snapshot();
+    }
     return this.adapter.runInstructions(count);
   }
 
   runUntilCycle(targetCycle, maxInstructions) {
     this.#flushInputs();
+    if (this.adapter.x35Enabled) {
+      if (!Number.isSafeInteger(targetCycle) || targetCycle < this.adapter.cpu.cycles) {
+        throw new Error('Target cycle is invalid');
+      }
+      let count = 0;
+      while (this.adapter.cpu.cycles < targetCycle) {
+        this.#stepAndProjectX35(); count += 1;
+        if (count >= (maxInstructions ?? 100_000_000)) throw new Error('Instruction slice limit reached');
+      }
+      return this.snapshot();
+    }
     return this.adapter.runUntilCycle(targetCycle, maxInstructions);
   }
 
   step() {
     this.#flushInputs();
-    return this.adapter.step();
+    return this.#stepAndProjectX35();
+  }
+
+  #stepAndProjectX35() {
+    const result = this.adapter.step();
+    if (this.adapter.x35ProjectionPending) {
+      const machine = this.adapter.snapshot();
+      this.adapter.projectX35(x35TopologyProjection(
+        this.circuit.graph, this.circuit.observe(machine), this.x35Probe,
+      ));
+    }
+    return result;
   }
 
   run() { this.adapter.run(); }

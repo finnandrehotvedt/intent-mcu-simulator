@@ -91,6 +91,9 @@ async function handleMessage(data) {
       if (data.x34Probe && (!binding || data.x34Probe.artifactIdentity !== binding.artifactIdentity)) {
         throw new Error('X34_RUNTIME_ARTIFACT_BINDING_MISMATCH');
       }
+      if (data.x35Probe && (!binding || data.x35Probe.artifactIdentity !== binding.artifactIdentity)) {
+        throw new Error('X35_RUNTIME_ARTIFACT_BINDING_MISMATCH');
+      }
       if (data.runtimeProfile === RP2040_EXPERIMENTAL_PROFILE) {
         const candidate = await Rp2040ExperimentalRuntime.create(data.firmware ?? null);
         if (currentInitialization !== initialization) {
@@ -107,6 +110,7 @@ async function handleMessage(data) {
       kernel = new RuntimeKernel(data.hex, data.circuit, {
         ...(data.instruments ?? {}),
         ...(data.x34Probe ? { x34Probe: data.x34Probe } : {}),
+        ...(data.x35Probe ? { x35Probe: data.x35Probe } : {}),
       });
       for (const input of data.digitalInputs ?? []) applyDigitalInput(input);
       status('ready');

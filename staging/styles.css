@@ -832,6 +832,16 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .precision-check-heading h3 { color: #ffcf66; letter-spacing: .035em; }
 .precision-check-table { min-width: 1120px; }
 .precision-check-table code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.causal-chain-heading { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
+.causal-chain-heading h3 { color: var(--cyan); letter-spacing: .035em; }
+.causal-chain-table { min-width: 1160px; table-layout: fixed; }
+.causal-chain-table th:nth-child(1) { width: 14%; }
+.causal-chain-table th:nth-child(2) { width: 28%; }
+.causal-chain-table th:nth-child(3) { width: 21%; }
+.causal-chain-table th:nth-child(4) { width: 22%; }
+.causal-chain-table th:nth-child(5) { width: 15%; }
+.causal-chain-table td { overflow-wrap: anywhere; }
+.causal-chain-table code { white-space: pre-wrap; overflow-wrap: anywhere; }
 .long-duration-table-wrap { max-width: 100%; }
 .long-duration-table { min-width: 860px; table-layout: fixed; }
 .long-duration-table th:nth-child(1) { width: 18%; }

@@ -19,6 +19,7 @@ import {
   usart0Config,
 } from 'avr8js';
 import { X34PrecisionObserver } from './x34-precision-observer.mjs';
+import { X35CausalObserver } from './x35-causal-observer.mjs';
 import { parseIntelHex } from './hex.mjs';
 
 export const CLOCK_HZ = 16_000_000;
@@ -80,6 +81,7 @@ export class Atmega328PAdapter {
     this.scheduledEvents = [];
     this.paused = true;
     this.x34Observer = options.x34Probe ? new X34PrecisionObserver(options.x34Probe) : null;
+    this.x35Observer = options.x35Probe ? new X35CausalObserver(options.x35Probe) : null;
     this.#createMachine();
   }
 
@@ -108,6 +110,7 @@ export class Atmega328PAdapter {
     this.blocked = false;
     this.instructions = 0;
     this.x34Observer?.reset();
+    this.x35Observer?.reset();
     this.lastPortValues = { B: 0, C: 0, D: 0 };
     this.#attachPortTrace('B');
     this.#attachPortTrace('C');
@@ -402,12 +405,20 @@ export class Atmega328PAdapter {
     if (this.blocked) throw new Error(`Unsupported peripheral activation: ${this.unsupported.at(-1).peripheral}`);
     const before = this.cpu.cycles;
     const pcBefore = this.cpu.pc;
+    const opcode = this.cpu.progMem[pcBefore];
+    const portBefore = this.cpu.data[portBConfig.PORT];
+    const traceBefore = this.trace.length;
     const x34Before = this.x34Observer?.read(this.cpu.data) ?? null;
     avrInstruction(this.cpu);
+    const portAfterInstruction = this.cpu.data[portBConfig.PORT];
+    const traceAfterInstruction = this.trace.length;
     this.cpu.tick();
+    const portAfterTick = this.cpu.data[portBConfig.PORT];
+    const traceAfterTick = this.trace.length;
     this.instructions++;
+    const d13 = (this.x34Observer || this.x35Observer)
+      ? this.pinSnapshot().find((pin) => pin.pin === 'D13') ?? null : null;
     if (this.x34Observer) {
-      const d13 = this.pinSnapshot().find((pin) => pin.pin === 'D13') ?? null;
       this.x34Observer.observe({
         before: x34Before,
         after: this.x34Observer.read(this.cpu.data),
@@ -418,9 +429,22 @@ export class Atmega328PAdapter {
         d13,
       });
     }
+    this.x35Observer?.observeStep({
+      pcBefore, pcAfter: this.cpu.pc, opcode, cycleBefore: before, cycleAfter: this.cpu.cycles,
+      portBefore, portAfterInstruction, portAfterTick,
+      instructionRecords: this.trace.slice(traceBefore, traceAfterInstruction),
+      tickRecords: this.trace.slice(traceAfterInstruction, traceAfterTick),
+      pin: d13, retentionDrops: { ...this.retentionDrops },
+    });
     if (this.blocked) throw new Error(`Unsupported peripheral activation: ${this.unsupported.at(-1).peripheral}`);
     return { pcBefore, pcAfter: this.cpu.pc, cycles: this.cpu.cycles - before };
   }
+
+  projectX35(projection) { this.x35Observer?.project(projection); }
+
+  get x35Enabled() { return this.x35Observer !== null; }
+
+  get x35ProjectionPending() { return this.x35Observer?.pending != null; }
 
   runInstructions(count) {
     if (!Number.isInteger(count) || count < 0) throw new Error('Instruction count must be a non-negative integer');
@@ -540,6 +564,7 @@ export class Atmega328PAdapter {
       pins: this.pinSnapshot(),
       retentionDrops: { ...this.retentionDrops },
       ...(this.x34Observer ? { x34Precision: this.x34Observer.snapshot() } : {}),
+      ...(this.x35Observer ? { x35CausalChain: this.x35Observer.snapshot() } : {}),
     };
   }
 }
