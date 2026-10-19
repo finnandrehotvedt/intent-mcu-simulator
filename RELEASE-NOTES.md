@@ -1,4 +1,22 @@
-# Intent MCU Simulator 1.1.0-rc.74
+# Intent MCU Simulator 1.1.0-rc.75
+
+## Accessible connection editing
+
+This release publishes the independently reviewed X60 connection workflow in
+the existing Inspector. Every supported profile projects its complete current
+net graph as text with stable net, endpoint and named-pin labels. Keyboard-only
+users can select, delete, explicitly reconnect and create compatible
+connections without operating the visual canvas.
+
+The text workflow uses the same project revisions, graph transactions and
+electrical validators as pointer editing. Stale or rejected actions change
+nothing; accepted edits retain a useful focus target, and Escape or Cancel
+leaves connection mode. Save/Open retains only the authored topology and never
+serializes accessibility state or restores executable authority.
+
+---
+
+## 1.1.0-rc.74
 
 ## Checkable evidence reports
 

@@ -1,13 +1,13 @@
-# Rollback basis for 1.1.0-rc.74
+# Rollback basis for 1.1.0-rc.75
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain exact accepted rc.73 source commit
-`2bd43ec7ad41f86806c7df01e66adfa02c900c47` and VM103 image
-`sha256:96e28180cf43792608fc2bb32fbd6292d7ff43777c4b90910a5e6e26f703d40e`
-as the pre-rc.74 app-only recovery basis.
+Retain exact accepted rc.74 source commit
+`7d417845d19fe88d344dd490d0983fd873d4c96c` and VM103 image
+`sha256:d9da9190f6ba349982d6e6b56de28c604a038bbc505f14e745aee543842df2a1`
+as the pre-rc.75 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
@@ -70,6 +70,10 @@ Rc.74 adds a separate local evidence-package review action and visible
 measurement identity/coordinate metadata without changing project files,
 compiler/runtime producers or stored authority. Rolling back removes that
 report surface only. Learner-owned project and evidence files remain unchanged.
+
+Rc.75 adds the Connections text projection and keyboard operations without
+changing project files or graph authority. Rolling back removes that alternate
+editing surface only; the authored named-pin topology remains unchanged.
 
 Browser recovery and learner-owned files are never deleted by deployment or
 rollback. Do not change DNS, shared Caddy configuration, compiler/runtime

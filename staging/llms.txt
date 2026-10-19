@@ -5,7 +5,7 @@
 Canonical application: https://lab.teachthecompany.com/
 Source and setup: https://github.com/finnandrehotvedt/intent-mcu-simulator
 Licence: Apache-2.0 for project-owned source; third-party components keep their own terms.
-Current public version: 1.1.0-rc.74
+Current public version: 1.1.0-rc.75
 
 Local files: Download copy and ordinary Open are the reliable all-browser
 actions. Supported secure desktop browsers may additionally offer explicit
@@ -42,6 +42,7 @@ board or parts as interchangeable with another profile.
 - In any narrow controller profile, restore one deleted resistor or LED from Supported parts after Save/Open, then explicitly reconnect its named pins. Add never infers a cable, and Open never restores executable authority.
 - In the general AVR editor, click-add or drag a selectable part to a bounded canvas position. Duplicate makes one disconnected copy with a fresh stable ID; move/rotate/delete and complete Undo/Redo preserve existing IDs and named-pin references.
 - In any narrow controller profile, select a cable to add an orthogonal bend, move an eligible snapped section, or choose one of six fixed colours. Crossings remain electrically separate unless a declared junction dot says otherwise.
+- In every controller profile, open Connections in Inspector to inspect every net and named pin as text, then select, delete, reconnect, or create compatible connections with the keyboard under the same strict revision and electrical checks as the canvas.
 
 ## Important limits
 

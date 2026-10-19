@@ -2,6 +2,17 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.75 — 2026-10-20
+
+- Published the independently reviewed X60 Connections disclosure in the
+  existing Inspector for AVR, Pico, ESP32-C3 and STM32.
+- Exposed every current net, endpoint and named pin as text, with keyboard-only
+  select, delete, explicit reconnect, From/To creation and cancellation.
+- Reused the existing strict graph transactions, revision checks and electrical
+  validation, including atomic stale/rejected behavior and focus retention.
+- Preserved project schemas, compiler/runtime producers, public services and
+  local-file authority; accessibility UI state is never serialized.
+
 ## 1.1.0-rc.74 — 2026-10-20
 
 - Published the independently reviewed X82 checkable-evidence report on the
