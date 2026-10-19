@@ -166,6 +166,9 @@ import {
   x36RepeatProjection, x36ReplayReportPassed, x36Sha256, x36SuiteIdentity,
 } from '../src/x36-failure-replay-contract.mjs';
 import {
+  createX39FailureLocator, validateX39FailureLocator,
+} from '../src/x39-failure-navigation.mjs';
+import {
   X23_USART_KNOWN_BAD_SOURCE, X23_USART_REPORT_SCHEMA, X23_USART_SOURCE,
   X23_USART_SUITE, X23_USART_SUITE_ID, createX23UsartRecipe,
   semanticX23UsartProjection, validateX23UsartReport, x23UsartReportPassed,
@@ -344,6 +347,8 @@ const elements = Object.fromEntries([
   'canvas-select-mode', 'canvas-interact-mode',
   'thermostat-experiment', 'thermostat-experiment-state', 'thermostat-run-tests',
   'thermostat-load-bad', 'thermostat-restore', 'thermostat-results', 'thermostat-experiment-message',
+  'x39-failure-location', 'x39-failure-location-summary', 'x39-failure-source',
+  'x39-failure-pin', 'x39-failure-net', 'x39-failure-time', 'x39-failure-export',
   'scenario-editor', 'scenario-add', 'scenario-undo', 'scenario-redo', 'scenario-run',
   'scenario-list', 'scenario-editor-message',
   'seeded-property-seed', 'seeded-property-exact-value', 'seeded-property-generate', 'seeded-property-replay', 'seeded-property-summary',
@@ -511,6 +516,9 @@ let canvasInteractionMode = 'select';
 let activeCanvasButton = null;
 let thermostatExperimentRun = null;
 let thermostatExperimentResults = [];
+let thermostatFailureLocator = null;
+let pendingThermostatFailureLocator = null;
+let x39FailureLocationOpened = false;
 let authoredScenarioResults = [];
 let scenarioTimelineEditor = null;
 let authoredExperimentWaiter = null;
@@ -5035,6 +5043,81 @@ function thermostatKnownBadCaught() {
       : result.status === 'passed'
   ));
 }
+function clearX39FailureLocator() {
+  thermostatFailureLocator = null;
+  pendingThermostatFailureLocator = null;
+  x39FailureLocationOpened = false;
+  elements.x39failurelocation.hidden = true;
+  elements.thermostatresults.querySelectorAll('[data-x39-failure-action]').forEach((button) => button.remove());
+  publish({ x39FailureLocator: null, x39FailureNavigation: null });
+}
+function currentX39Context(locator = thermostatFailureLocator, result = null, runtime = window.__M6_STATE__.runtime) {
+  const source = currentProject().source.files.find((file) => file.name === 'main.ino');
+  const binding = lifecycle.runtimeBinding;
+  if (!locator || !source || !binding || !runtime?.runtimeIdentity || !lifecycle.artifact) return null;
+  return {
+    profile: selectedCompilerProfile,
+    projectGeneration: lifecycle.projectGeneration,
+    runtimeBinding: { schema: RUNTIME_BINDING_SCHEMA, projectGeneration: binding.projectGeneration,
+      runtimeGeneration: binding.runtimeGeneration, artifactIdentity: binding.artifactIdentity },
+    runtimeIdentity: structuredClone(runtime.runtimeIdentity),
+    inputIdentity: lifecycle.artifact.inputIdentity,
+    artifactIdentity: lifecycle.artifact.artifactIdentity,
+    source: { file: 'main.ino', text: source.content },
+    graph: structuredClone(currentProject().circuit),
+    result: structuredClone(result ?? thermostatExperimentResults.find(
+      (item) => item.scenarioId === 'THERM-SCENARIO-EQUALITY-ENABLED')),
+    timeline: scenarioTimelineEditor?.timeline ?? null,
+    retention: { inputDrops: locator.completeness.inputDrops, serialDrops: locator.completeness.serialDrops },
+  };
+}
+function renderX39FailureLocation() {
+  const locator = thermostatFailureLocator;
+  elements.x39failurelocation.hidden = !locator || !x39FailureLocationOpened;
+  publish({ x39FailureLocator: locator ? structuredClone(locator) : null });
+  if (!locator) return;
+  elements.x39failuresource.textContent = `${locator.source.file}:${locator.source.startLine} · reviewed fixture reference`;
+  elements.x39failurepin.textContent = `${locator.pin.id} · historical ${locator.pin.mode} ${locator.pin.actualLevel ? 'HIGH' : 'LOW'}`;
+  elements.x39failurenet.textContent = `${locator.net.id} · ${locator.net.endpoints.join(' ↔ ')}`;
+  elements.x39failuretime.textContent = `${locator.observation.actualMilliseconds.toFixed(3)} ms inside ${locator.observation.windowStartMilliseconds}–${locator.observation.windowEndMilliseconds} ms`;
+  elements.x39failurelocationsummary.textContent = `Failed/completed producer evidence · source ${locator.source.sha256.slice(0, 12)}… · artifact ${locator.artifactIdentity.slice(0, 12)}… · worker generation ${locator.runtimeBinding.runtimeGeneration}.`;
+}
+async function openX39FailureLocation() {
+  const locator = thermostatFailureLocator;
+  const context = currentX39Context(locator);
+  if (!locator || !context) { clearX39FailureLocator(); renderThermostatExperimentPanel(); return; }
+  try { await validateX39FailureLocator(locator, context); }
+  catch {
+    clearX39FailureLocator();
+    thermostatExperimentNotice = 'The failure location became stale. Run the exact known-bad experiment again.';
+    renderThermostatExperimentPanel(); return;
+  }
+  x39FailureLocationOpened = true;
+  selectedSourceFile = locator.source.file;
+  selectNet(locator.net.id);
+  currentProject().instruments.selectedPin = locator.pin.id;
+  elements.pinselect.value = locator.pin.id;
+  persistProject();
+  elements.firmwaredrawer.open = true;
+  renderProject();
+  const range = sourceSelection(elements.source.value, locator.source.startLine);
+  if (!range) { clearX39FailureLocator(); renderThermostatExperimentPanel(); return; }
+  elements.source.focus();
+  elements.source.setSelectionRange(range.start, range.end);
+  elements.source.scrollTop = Math.max(0, (locator.source.startLine - 4) * 21);
+  renderSourceEditor();
+  publish({ x39FailureNavigation: { source: `${locator.source.file}:${locator.source.startLine}`,
+    pin: locator.pin.id, net: locator.net.id, actualMilliseconds: locator.observation.actualMilliseconds } });
+}
+async function exportX39FailureLocation() {
+  const locator = thermostatFailureLocator;
+  const context = currentX39Context(locator);
+  if (!locator || !context) return;
+  try { await validateX39FailureLocator(locator, context); }
+  catch { clearX39FailureLocator(); renderThermostatExperimentPanel(); return; }
+  downloadText(`x39-failure-location-${locator.semanticSha256.slice(0, 12)}.intent-mcu-x39.json`,
+    `${JSON.stringify(locator, null, 2)}\n`, 'application/json');
+}
 function thermostatPublishedState() {
   return {
     experimentId: THERMOSTAT_EXPERIMENT_ID,
@@ -5071,6 +5154,9 @@ function renderThermostatExperimentPanel() {
     elements.quickrun.disabled = true;
     elements.quickpause.disabled = true;
     elements.quickreset.disabled = true;
+  } else if (worker && lifecycle.runtimeBinding) {
+    elements.reset.disabled = false;
+    elements.quickreset.disabled = false;
   }
   renderScenarioTimelineEditor();
 
@@ -5084,10 +5170,20 @@ function renderThermostatExperimentPanel() {
     verdict.className = result?.status === 'passed'
       ? 'experiment-pass'
       : result?.status === 'failed' ? 'experiment-fail' : current ? 'experiment-running' : 'experiment-pending';
-    verdict.textContent = result?.status === 'passed' ? 'Pass'
+    const verdictText = result?.status === 'passed' ? 'Pass'
       : result?.status === 'failed' ? 'Fail'
         : result?.status === 'indeterminate' ? 'Indeterminate'
           : result?.status === 'unsupported' ? 'Unsupported' : current ? 'Running' : 'Pending';
+    verdict.textContent = verdictText;
+    if (scenario.id === 'THERM-SCENARIO-EQUALITY-ENABLED' && result?.status === 'failed'
+        && thermostatFailureLocator) {
+      const action = document.createElement('button'); action.type = 'button';
+      action.dataset.x39FailureAction = 'true';
+      action.textContent = 'Open failure location';
+      action.setAttribute('aria-label', 'Open failure location in main.ino line 18, D13, heater-drive net and observation window');
+      action.addEventListener('click', () => { void openX39FailureLocation(); });
+      verdict.append(action);
+    }
     evidence.textContent = result
       ? `${result.virtualMilliseconds?.toFixed(3) ?? '—'} ms · D13 ${result.observed.d13 === null ? 'missing' : result.observed.d13 ? 'HIGH' : 'LOW'} · ${result.checks.corroboratingSerial ? 'UART matched' : 'UART mismatch'} · ${result.checks.inputsComplete ? 'inputs logged' : 'input evidence missing'}`
       : current ? 'Resetting, applying inputs and executing firmware…' : 'Not run';
@@ -5107,10 +5203,12 @@ function renderThermostatExperimentPanel() {
     elements.thermostatexperimentstate.textContent = freshBuildReady ? 'Ready to test' : 'Fresh build required';
   }
   elements.thermostatexperimentmessage.textContent = thermostatExperimentNotice;
+  renderX39FailureLocation();
   publish({ thermostatExperiment: thermostatPublishedState() });
 }
 function cancelThermostatExperiment(message, { clearResults = true, render = true } = {}) {
   thermostatExperimentRun = null;
+  clearX39FailureLocator();
   const waiter = authoredExperimentWaiter;
   authoredExperimentWaiter = null;
   if (waiter) waiter.reject(Object.assign(new Error('COUNTEREXAMPLE_REPLAY_INTERRUPTED'), {
@@ -5136,6 +5234,7 @@ function startAuthoredScenarioExperiment() {
     return { ok: false, code: 'THERMOSTAT_SOURCE_MODIFIED' };
   }
   authoredScenarioResults = [];
+  clearX39FailureLocator();
   thermostatExperimentRun = { phase: 'await-reset', scenarioIndex: 0, variant, authored: true };
   thermostatExperimentNotice = 'Running the authored data-only timeline from fresh reset. Expected events are compared with executed D13 evidence.';
   worker.postMessage({ command: 'reset' });
@@ -5155,6 +5254,7 @@ function startThermostatExperiment() {
     return { ok: false, code: 'THERMOSTAT_SOURCE_MODIFIED' };
   }
   thermostatExperimentResults = [];
+  clearX39FailureLocator();
   thermostatExperimentRun = { phase: 'await-reset', scenarioIndex: 0, variant, authored: false };
   thermostatExperimentNotice = `Running ${THERMOSTAT_SCENARIOS.scenarios.length} isolated scenarios from virtual cycle 0. Wall-clock speed does not affect the verdict.`;
   worker.postMessage({ command: 'reset' });
@@ -5235,6 +5335,26 @@ async function advanceThermostatExperiment(message) {
     return;
   }
   const result = domainResult.observation;
+  if (!run.authored && scenario.id === 'THERM-SCENARIO-EQUALITY-ENABLED') {
+    const binding = lifecycle.runtimeBinding;
+    const source = currentProject().source.files.find((file) => file.name === 'main.ino');
+    try {
+      pendingThermostatFailureLocator = await createX39FailureLocator({
+        profile: selectedCompilerProfile,
+        projectGeneration: lifecycle.projectGeneration,
+        runtimeBinding: { schema: RUNTIME_BINDING_SCHEMA, projectGeneration: binding.projectGeneration,
+          runtimeGeneration: binding.runtimeGeneration, artifactIdentity: binding.artifactIdentity },
+        runtimeIdentity: structuredClone(message.runtimeIdentity),
+        inputIdentity: lifecycle.artifact.inputIdentity,
+        artifactIdentity: lifecycle.artifact.artifactIdentity,
+        source: { file: 'main.ino', text: source.content },
+        graph: structuredClone(currentProject().circuit), result: structuredClone(result),
+        timeline: scenarioTimelineEditor?.timeline ?? null,
+        retention: { inputDrops: observationSnapshot.eventLog?.dropped,
+          serialDrops: observationSnapshot.instruments.serial?.dropped },
+      });
+    } catch { pendingThermostatFailureLocator = null; }
+  }
   if (run.authored) authoredScenarioResults.push(result); else thermostatExperimentResults.push(result);
   if (run.scenarioIndex + 1 < scenarios.length) {
     run.scenarioIndex += 1;
@@ -5247,6 +5367,9 @@ async function advanceThermostatExperiment(message) {
   const completedResults = run.authored ? authoredScenarioResults : thermostatExperimentResults;
   const passed = completedResults.filter((item) => item.status === 'passed').length;
   const aggregate = aggregateExperimentOutcomes(completedResults);
+  if (!run.authored) thermostatFailureLocator = thermostatKnownBadCaught()
+    ? pendingThermostatFailureLocator : null;
+  pendingThermostatFailureLocator = null;
   thermostatExperimentNotice = run.authored
     ? `${passed}/${scenarios.length} authored scenarios passed · academic ${aggregate.academicStatus} · job ${aggregate.jobStatus}. Only complete in-window producer evidence can pass or fail.`
     : run.variant === 'known-bad-equality' && thermostatKnownBadCaught()
@@ -9229,6 +9352,7 @@ elements.reset.addEventListener('click', () => {
   invalidateDigitalStateRuntimeReport('Reset cleared the prior X33 runtime report. Run the producer check again.');
   invalidatePrecisionCheckReport('Reset cleared the prior X34 report. Run the instrumented check again for current evidence.');
   invalidateCausalChainReport('Reset cleared the prior X35 report. Run the causal check again for current evidence.');
+  clearX39FailureLocator();
   if (!worker) return;
   renderInstrumentEvidence(null);
   worker.postMessage({ command: 'reset' });
@@ -9236,6 +9360,7 @@ elements.reset.addEventListener('click', () => {
 elements.thermostatruntests.addEventListener('click', startThermostatExperiment);
 elements.thermostatloadbad.addEventListener('click', () => loadThermostatFirmwareVariant('known-bad-equality'));
 elements.thermostatrestore.addEventListener('click', () => loadThermostatFirmwareVariant('correct'));
+elements.x39failureexport.addEventListener('click', () => { void exportX39FailureLocation(); });
 function installSeededPropertyTimeline(seed, action) {
   try {
     const timeline = generateSeededThermostatTimeline(seed);

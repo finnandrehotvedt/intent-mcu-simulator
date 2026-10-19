@@ -807,6 +807,14 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .experiment-fail { color: var(--danger); font-weight: 850; }
 .experiment-running, .experiment-pending { color: var(--amber); font-weight: 800; }
 .thermostat-limit { margin: 10px 0 0; color: #d7c38f; font-size: .75rem; line-height: 1.5; }
+.experiment-fail button { display: block; margin-top: 8px; width: 100%; }
+.failure-location { margin-top: 16px; padding: 16px; border: 1px solid #23546d; border-radius: 12px; background: #081b28; }
+.failure-location:focus-visible { outline: 3px solid #56d6ff; outline-offset: 3px; }
+.failure-location-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
+.failure-location-facts div { min-width: 0; padding: 10px; border: 1px solid #173d52; border-radius: 8px; background: #06141f; }
+.failure-location-facts dt { color: #7fa4b8; font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; }
+.failure-location-facts dd { margin: 4px 0 0; overflow-wrap: anywhere; }
+@media (max-width: 760px) { .failure-location-facts { grid-template-columns: 1fr; } }
 .regression-matrix { margin: 16px 0; border-color: #34758f; background: linear-gradient(145deg, #0d2534, #081720 70%); }
 .regression-matrix-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .regression-matrix-intro, .regression-matrix-limit { color: var(--muted); font-size: .78rem; line-height: 1.55; }
