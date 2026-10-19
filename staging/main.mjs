@@ -89,6 +89,10 @@ import {
   executeRegressionMatrix, regressionReportPassed,
 } from '../src/regression-matrix-runner.mjs';
 import {
+  acceptedX26VersionReport, validateX26VersionReport,
+  x26SyntheticExpectationMutation, x26VersionReportPassed,
+} from '../src/x26-version-regression-contract.mjs';
+import {
   createPartitionEvidence, projectCoverageReport,
 } from '../src/coverage-report.mjs';
 import {
@@ -362,6 +366,9 @@ const elements = Object.fromEntries([
   'regression-matrix', 'regression-matrix-state', 'regression-matrix-identity',
   'regression-matrix-selector', 'regression-matrix-run', 'regression-matrix-negative',
   'regression-matrix-export', 'regression-matrix-results', 'regression-matrix-summary',
+  'version-regression-state', 'version-regression-identity', 'version-regression-load',
+  'version-regression-negative', 'version-regression-export', 'version-regression-results',
+  'version-regression-summary',
   'coverage-report-state', 'coverage-report-export', 'coverage-report-results', 'coverage-report-summary',
   'long-duration', 'long-duration-state', 'long-duration-identity', 'long-duration-run',
   'long-duration-export', 'long-duration-results', 'long-duration-summary',
@@ -2057,6 +2064,8 @@ let coverageReport = null;
 let regressionPartitionEvidence = [];
 let regressionMatrixRunning = false;
 let regressionMatrixReady = false;
+let versionRegressionReport = null;
+let versionRegressionReady = false;
 let longDurationReport = null;
 let longDurationRunning = false;
 let longDurationReady = false;
@@ -2235,6 +2244,7 @@ function invalidateFailureReplayReport(message = 'Project state changed. Open th
 }
 
 function invalidateRegressionMatrixReport(message = 'Project state changed. Run the matrix again for current evidence.') {
+  invalidateVersionRegressionReport(message);
   if (!regressionMatrixRunning && regressionMatrixReport) {
     regressionMatrixReport = null;
     coverageReport = null;
@@ -2254,6 +2264,72 @@ function invalidateRegressionMatrixReport(message = 'Project state changed. Run 
   invalidateCausalChainReport(message);
   invalidateUsartResponseReport(message);
   invalidateFailureReplayReport(message);
+}
+
+function renderVersionRegressionReport(report = versionRegressionReport) {
+  elements.versionregressionresults.replaceChildren();
+  if (!report) {
+    const row = document.createElement('tr'); const cell = document.createElement('td'); cell.colSpan = 4;
+    cell.textContent = 'No active comparison review. The accepted historical evidence is not restored as a fresh execution.';
+    row.append(cell); elements.versionregressionresults.append(row);
+    elements.versionregressionstate.textContent = 'Not loaded';
+    elements.versionregressionexport.disabled = true;
+    return;
+  }
+  for (const result of report.results) {
+    const row = document.createElement('tr');
+    const releases = result.releases.map((release) =>
+      `${release.version}\n${release.outcome.academicStatus} · job ${release.outcome.jobStatus}\nartifact ${release.artifactSha256}`);
+    const values = [
+      `${result.caseId}\n${result.profile}\n${result.scenarioId}`,
+      releases[0], releases[1],
+      `${result.sameRequirementIdentity ? 'same requirement' : 'identity mismatch'}\n${result.outcomeStableAcrossReleases ? 'stable outcome' : 'outcome changed'}`,
+    ];
+    for (const [index, value] of values.entries()) {
+      const cell = document.createElement(index === 0 ? 'th' : 'td');
+      const code = document.createElement('code'); code.textContent = value; cell.append(code);
+      if (index === 3) { cell.className = 'regression-matrix-outcome'; cell.dataset.status = 'passed'; }
+      row.append(cell);
+    }
+    elements.versionregressionresults.append(row);
+  }
+  elements.versionregressionstate.textContent = 'Reviewed evidence loaded · no producer executed';
+  elements.versionregressionexport.disabled = false;
+  elements.versionregressionsummary.textContent = `Reviewed private reports: 8 passed / 8 completed across rc.49 and rc.60. Comparison ${report.semanticSha256}. Loading this report did not build or run firmware.`;
+}
+
+function invalidateVersionRegressionReport(message = 'Project state changed. Load the reviewed comparison again.') {
+  if (!versionRegressionReport) return;
+  versionRegressionReport = null; renderVersionRegressionReport(null);
+  elements.versionregressionsummary.textContent = `${message} Historical acceptance remains documented, but no active report or export authority was restored.`;
+}
+
+async function loadReviewedVersionRegression() {
+  const reviewed = await acceptedX26VersionReport();
+  versionRegressionReport = await validateX26VersionReport(reviewed);
+  renderVersionRegressionReport(versionRegressionReport);
+  return structuredClone(versionRegressionReport);
+}
+
+async function rejectSyntheticVersionMutation() {
+  versionRegressionReport = null; renderVersionRegressionReport(null);
+  try {
+    await validateX26VersionReport(await x26SyntheticExpectationMutation());
+    throw new Error('X26_SYNTHETIC_MUTATION_ACCEPTED');
+  } catch (error) {
+    if (error.message === 'X26_SYNTHETIC_MUTATION_ACCEPTED') throw error;
+    elements.versionregressionstate.textContent = 'Synthetic mismatch rejected';
+    elements.versionregressionsummary.textContent = `Separate data-only negative rejected (${error.code ?? error.message}). No old or current release producer ran, and no report/export authority was created.`;
+    return { accepted: false, code: error.code ?? error.message, synthetic: true, producerRuns: 0 };
+  }
+}
+
+function exportVersionRegressionReport() {
+  if (!versionRegressionReport || !x26VersionReportPassed(versionRegressionReport)) return;
+  const url = URL.createObjectURL(new Blob([`${JSON.stringify(versionRegressionReport, null, 2)}\n`], { type: 'application/json' }));
+  const link = document.createElement('a'); link.href = url;
+  link.download = `x26-version-regression-${versionRegressionReport.semanticSha256.slice(0, 12)}.intent-mcu-x26-version.json`;
+  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 function renderCoverageReport(report = coverageReport) {
@@ -4203,6 +4279,9 @@ elements.regressionmatrixrun.addEventListener('click', () => {
 });
 elements.regressionmatrixnegative.addEventListener('click', () => { void runWrongRegressionExpectation(); });
 elements.regressionmatrixexport.addEventListener('click', exportRegressionMatrixReport);
+elements.versionregressionload.addEventListener('click', () => { void loadReviewedVersionRegression(); });
+elements.versionregressionnegative.addEventListener('click', () => { void rejectSyntheticVersionMutation(); });
+elements.versionregressionexport.addEventListener('click', exportVersionRegressionReport);
 elements.coveragereportexport.addEventListener('click', exportCoverageReport);
 elements.longdurationrun.addEventListener('click', () => { void runBrowserLongDurationSuite(); });
 elements.longdurationexport.addEventListener('click', exportLongDurationReport);
@@ -4243,6 +4322,16 @@ window.__X26_REGRESSION_MATRIX__ = Object.freeze({
   run: (selector = 'all') => runBrowserRegressionMatrix(selector),
   runWrongExpectation: (selector = 'X26-RP2040-GPIO0-UART0') => runWrongRegressionExpectation(selector),
   passed: () => regressionMatrixReport ? regressionReportPassed(regressionMatrixReport) : false,
+});
+window.__X26_VERSION_REGRESSION__ = Object.freeze({
+  get ready() { return versionRegressionReady; },
+  report: () => versionRegressionReport ? structuredClone(versionRegressionReport) : null,
+  loadReviewed: () => loadReviewedVersionRegression(),
+  syntheticNegative: () => rejectSyntheticVersionMutation(),
+  passed: () => versionRegressionReport ? x26VersionReportPassed(versionRegressionReport) : false,
+  activeWorkers: () => 0,
+  retire: () => invalidateVersionRegressionReport('Worker retirement cleared active comparison review authority.'),
+  clear: (reason = 'Comparison review authority cleared.') => invalidateVersionRegressionReport(reason),
 });
 window.__X27_COVERAGE_REPORT__ = Object.freeze({
   get ready() { return regressionMatrixReady; },
@@ -4340,6 +4429,10 @@ window.__X23_USART_RESPONSE__ = Object.freeze({
 void regressionMatrixIdentity().then((identity) => {
   elements.regressionmatrixidentity.textContent = `Immutable matrix SHA-256 ${identity} · four exact fixture/source hashes · four distinct oracles`;
   regressionMatrixReady = true;
+});
+void acceptedX26VersionReport().then((report) => {
+  elements.versionregressionidentity.textContent = `Reviewed comparison ${report.semanticSha256} · rc.49 + rc.60 · matrix ${report.matrixSha256} · same pinned model/toolchain/runtime set`;
+  versionRegressionReady = true;
 });
 void longDurationSuiteIdentity().then((identity) => {
   elements.longdurationidentity.textContent = `Immutable X28 suite SHA-256 ${identity} · exact source hashes · fixture-only timer0_millis seam`;
@@ -8708,6 +8801,7 @@ async function pollJob(job, inputAtSubmit, binding) {
 }
 
 async function build() {
+  invalidateVersionRegressionReport('A new build cleared active comparison review authority.');
   invalidateFailureReplayReport('A new build retired the X36 replay workers and cleared export authority. Open the replay point again.');
   invalidateUsartResponseReport('A new build retired the X23 USART0 workers and cleared export authority. Run the suite again.');
   invalidateLongDurationReport('A new build cleared the prior X28 report. Run the suite again for current evidence.');
@@ -8903,6 +8997,7 @@ elements.pause.addEventListener('click', () => {
 });
 elements.step.addEventListener('click', () => worker?.postMessage({ command: 'step' }));
 elements.reset.addEventListener('click', () => {
+  invalidateVersionRegressionReport('Reset cleared active comparison review authority.');
   invalidateFailureReplayReport('Reset retired the X36 replay workers and cleared export authority. Open the replay point again.');
   invalidateUsartResponseReport('Reset retired the X23 USART0 workers and cleared export authority. Run the suite again.');
   invalidateUnsupportedAccessReport('Reset cleared the prior X32 report. Run the suite again for current evidence.');
