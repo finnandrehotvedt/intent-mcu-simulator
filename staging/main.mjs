@@ -792,7 +792,8 @@ function renderProfileExampleCards(profile, container, workbench) {
     const tryIt = line('Try', example.try);
     const outcome = line('Observe', example.outcome);
     const limits = line('Limits', example.limits);
-    button.append(name, learn, tryIt, outcome, limits);
+    const next = line('Next', example.next);
+    button.append(name, learn, tryIt, outcome, limits, next);
     button.addEventListener('click', () => {
       const install = () => workbench.installPreparedProject(
         createSupportedProfileExample(profile, example.id),
@@ -10077,7 +10078,7 @@ function renderStarterExamples() {
     button.append(focus, name, description, parts, outcome);
     if (example.learn) {
       const guide = document.createElement('span'); guide.className = 'starter-learning-grid';
-      for (const [label, value] of [['Learn', example.learn], ['Try', example.try], ['Observe', example.observe], ['Limits', example.limits]]) {
+      for (const [label, value] of [['Learn', example.learn], ['Try', example.try], ['Observe', example.observe], ['Limits', example.limits], ['Next', example.next]]) {
         const row = document.createElement('span'); const title = document.createElement('b'); title.textContent = label;
         row.append(title, document.createTextNode(value)); guide.append(row);
       }

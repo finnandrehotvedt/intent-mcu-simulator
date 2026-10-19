@@ -23,6 +23,7 @@ const CARDS = Object.freeze([
     try: 'Build, Run, then press the input button.',
     observe: 'D2 and D13 change while Serial reports GROUNDED or OPEN.',
     limits: 'The symbol is topology authority, not an executable peripheral.',
+    next: 'Load SPST toggle input to keep an input state without holding a button.',
   },
   {
     id: 'avr-toggle-input', name: 'SPST toggle input', model: 'switch.toggle-spst-v1',
@@ -32,6 +33,7 @@ const CARDS = Object.freeze([
     try: 'Build, Run, then toggle Open and Closed.',
     observe: 'Compiled D3 input changes D13 and prints TOGGLE OPEN/CLOSED.',
     limits: 'Ideal contact only; no bounce or physical resistance model.',
+    next: 'Load SPDT input selector to choose between two explicit sources.',
   },
   {
     id: 'avr-spdt-selector', name: 'SPDT input selector', model: 'switch.changeover-spdt-v1',
@@ -41,6 +43,7 @@ const CARDS = Object.freeze([
     try: 'Build, Run, then switch between Throw A and Throw B.',
     observe: 'Compiled D8 changes after the explicit BREAK transition.',
     limits: 'Partial: direct GND/5 V digital input only; no analogue or load switching.',
+    next: 'Load Quadrature encoder to observe ordered changes across two inputs.',
   },
   {
     id: 'avr-light-analogue', name: 'Analogue light level', model: 'sensor.light-analogue-v1',
@@ -50,6 +53,7 @@ const CARDS = Object.freeze([
     try: 'Build, Run, then move the Light level control.',
     observe: 'A1 voltage, Serial ADC counts and D13 threshold state change.',
     limits: 'Idealized signal only; no lux calibration or physical sensor response.',
+    next: 'Load Digital light threshold to compare continuous and thresholded sensing.',
   },
   {
     id: 'avr-light-threshold', name: 'Digital light threshold', model: 'sensor.light-threshold-digital-v1',
@@ -59,6 +63,7 @@ const CARDS = Object.freeze([
     try: 'Build, Run, then cross the threshold in both directions.',
     observe: 'Compiled D7 drives D13 and reports LIGHT/DARK on Serial.',
     limits: 'Ideal percentage input only; no lux calibration or comparator noise.',
+    next: 'Load Thermostat boundary test to express a threshold as an executable requirement.',
   },
   {
     id: 'avr-active-buzzer', name: 'Logical active buzzer', model: 'output.active-buzzer-module-v1',
@@ -68,6 +73,7 @@ const CARDS = Object.freeze([
     try: 'Build and Run the alternating enabled/disabled sequence.',
     observe: 'D8 and the silent visual indicator change with Serial BUZZER ON/OFF.',
     limits: 'Partial: silent logical indicator; no sound, current or acoustic accuracy.',
+    next: 'Load Seven-segment digits to coordinate several digital outputs.',
   },
   {
     id: 'avr-seven-segment', name: 'Seven-segment digits', model: 'output.seven-segment-common-cathode-v1',
@@ -77,15 +83,17 @@ const CARDS = Object.freeze([
     try: 'Build and Run the 0, 1, 2, 8 sequence.',
     observe: 'Compiled D3–D9 patterns and Serial digit labels agree.',
     limits: 'One ideal digit only; no decimal point, multiplexing or physical brightness.',
+    next: 'Load PWM pulse to compare switched outputs with duty-cycle output.',
   },
   {
     id: 'avr-rotary-encoder', name: 'Quadrature encoder', model: 'input.rotary-encoder-quadrature-v1',
     focus: 'Ordered phases · D2/D3', partsLabel: 'Controller · quadrature encoder · LED',
-    description: 'Read deterministic Gray-code phases on the two interrupt pins.',
+    description: 'Read deterministic rotary Gray-code phases on the two interrupt pins.',
     learn: 'How phase order distinguishes clockwise from counter-clockwise motion.',
     try: 'Build, Run, then turn one detent CW and one detent CCW.',
     observe: 'Serial receives the ordered 01→00→10→11 sequence and its reverse.',
     limits: 'Ideal 1 ms phases only; no bounce, acceleration or physical detents.',
+    next: 'Load Thermostat boundary test, then open Scenario timeline to author inputs within the supported thermostat subset.',
   },
 ]);
 

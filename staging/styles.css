@@ -60,6 +60,7 @@ h2 { font-size: 1.22rem; margin: 0; }
 .starter-parts { color: var(--cyan); font: 650 .69rem ui-monospace, monospace; }
 .starter-learning-grid { display: grid; gap: 5px; width: 100%; margin: 3px 0 2px; padding-top: 8px; border-top: 1px solid #2a4659; }
 .starter-learning-grid > span { display: grid; grid-template-columns: 52px 1fr; gap: 7px; color: var(--muted); font-size: .68rem; line-height: 1.35; }
+.starter-learning-grid > span:last-child { margin-top: 2px; padding-top: 6px; border-top: 1px dashed #31536c; color: #cde6f4; }
 .starter-learning-grid b { color: var(--text); font-size: .65rem; letter-spacing: .04em; text-transform: uppercase; }
 .starter-action { margin-top: auto; color: var(--text); font-size: .75rem; font-weight: 800; }
 .starter-card:hover .starter-action, .starter-card:focus-visible .starter-action { color: var(--lime); }
@@ -1185,6 +1186,13 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
 .docs-nav a { display: inline-flex; min-height: 42px; align-items: center; padding: 0 12px; border: 1px solid #2a627f; border-radius: 8px; color: var(--text); text-decoration: none; font-weight: 740; }
 .docs-nav a:hover, .docs-nav a:focus-visible { border-color: var(--cyan); color: var(--lime); }
 .docs-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+.progression-map { margin-top: 16px; }
+.progression-map > summary { cursor: pointer; color: var(--cyan); font-size: 1rem; font-weight: 850; }
+.progression-map > summary:focus-visible { outline: 3px solid var(--lime); outline-offset: 4px; }
+.progression-map ol { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 0; }
+.progression-map li { min-width: 0; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; background: #081722; }
+.progression-map li strong { color: var(--text); }
+.progression-map li span { color: var(--muted); }
 .docs-card { padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: #07141f; }
 .docs-card h2, .docs-card h3 { margin-top: 0; color: var(--cyan); }
 .docs-card p, .docs-card li, .docs-intro { color: var(--muted); line-height: 1.6; }
@@ -1200,5 +1208,6 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
 .status-limited { color: var(--amber); font-weight: 800; }
 @media (max-width: 640px) {
   .docs-grid { grid-template-columns: 1fr; }
+  .progression-map ol { grid-template-columns: 1fr; }
   .support-table { display: block; overflow-x: auto; }
 }

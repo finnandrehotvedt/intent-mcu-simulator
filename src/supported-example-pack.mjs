@@ -27,16 +27,16 @@ int main(void)
 
 const profiles = Object.freeze({
   [RP2040_PROFILE]: Object.freeze([
-    Object.freeze({ id: 'pico-led-on', name: 'GPIO0 on + UART', learn: 'Connect source level with two observed outputs.', try: 'Build, Run, then compare LED and UART0.', outcome: 'LED on · UART0: PICO LED ON', limits: 'Fixed GP0/UART0 grammar; no button, ADC or PWM.', level: true, marker: 'PICO LED ON' }),
-    Object.freeze({ id: 'pico-led-off', name: 'GPIO0 off + UART', learn: 'Test the opposite output boundary.', try: 'Build, Run, then compare LED and UART0.', outcome: 'LED off · UART0: PICO LED OFF', limits: 'Fixed GP0/UART0 grammar; no button, ADC or PWM.', level: false, marker: 'PICO LED OFF' }),
+    Object.freeze({ id: 'pico-led-on', name: 'GPIO0 on + UART', learn: 'Connect source level with two observed outputs.', try: 'Build, Run, then compare LED and UART0.', outcome: 'LED on · UART0: PICO LED ON', limits: 'Fixed GP0/UART0 grammar; no button, ADC or PWM.', next: 'Load GPIO0 off + UART to test the opposite output boundary.', level: true, marker: 'PICO LED ON' }),
+    Object.freeze({ id: 'pico-led-off', name: 'GPIO0 off + UART', learn: 'Test the opposite output boundary.', try: 'Build, Run, then compare LED and UART0.', outcome: 'LED off · UART0: PICO LED OFF', limits: 'Fixed GP0/UART0 grammar; no button, ADC or PWM.', next: 'Use Download copy and Open local project to verify data-only recovery before changing source.', level: false, marker: 'PICO LED OFF' }),
   ]),
   [ESP32C3_PROFILE]: Object.freeze([
-    Object.freeze({ id: 'c3-led-on', name: 'GPIO2 on + Serial', learn: 'Compare actual QEMU UART with the separate GPIO model.', try: 'Build flash, Run QEMU, then compare both panels.', outcome: 'Model LED on · QEMU UART: C3_LED_ON', limits: 'GPIO2 LED is a project model; QEMU pin state is not claimed.', level: true, marker: 'C3_LED_ON' }),
-    Object.freeze({ id: 'c3-led-off', name: 'GPIO2 off + Serial', learn: 'Test the opposite model-output boundary.', try: 'Build flash, Run QEMU, then compare both panels.', outcome: 'Model LED off · QEMU UART: C3_LED_OFF', limits: 'No button, ADC or PWM; QEMU supplies CPU/UART evidence.', level: false, marker: 'C3_LED_OFF' }),
+    Object.freeze({ id: 'c3-led-on', name: 'GPIO2 on + Serial', learn: 'Compare actual QEMU UART with the separate GPIO model.', try: 'Build flash, Run QEMU, then compare both panels.', outcome: 'Model LED on · QEMU UART: C3_LED_ON', limits: 'GPIO2 LED is a project model; QEMU pin state is not claimed.', next: 'Load GPIO2 off + Serial to test the opposite model-output boundary.', level: true, marker: 'C3_LED_ON' }),
+    Object.freeze({ id: 'c3-led-off', name: 'GPIO2 off + Serial', learn: 'Test the opposite model-output boundary.', try: 'Build flash, Run QEMU, then compare both panels.', outcome: 'Model LED off · QEMU UART: C3_LED_OFF', limits: 'No button, ADC or PWM; QEMU supplies CPU/UART evidence.', next: 'Use Download copy and Open local project to verify data-only recovery before changing source.', level: false, marker: 'C3_LED_OFF' }),
   ]),
   [STM32F429ZI_PROFILE]: Object.freeze([
-    Object.freeze({ id: 'stm32-led-on', name: 'PB0 on + USART3', learn: 'Relate Renode-observed PB0 to USART3 output.', try: 'Build ELF, Run, then compare LED and terminal.', outcome: 'LED on · USART3: STM32 LED ON', limits: 'Fixed PB0/USART3 grammar; ideal teaching LED path.', level: true, marker: 'STM32 LED ON' }),
-    Object.freeze({ id: 'stm32-led-off', name: 'PB0 off + USART3', learn: 'Test the opposite observed PB0 boundary.', try: 'Build ELF, Run, then compare LED and terminal.', outcome: 'LED off · USART3: STM32 LED OFF', limits: 'No button, ADC or PWM; no broad STM32 SDK.', level: false, marker: 'STM32 LED OFF' }),
+    Object.freeze({ id: 'stm32-led-on', name: 'PB0 on + USART3', learn: 'Relate Renode-observed PB0 to USART3 output.', try: 'Build ELF, Run, then compare LED and terminal.', outcome: 'LED on · USART3: STM32 LED ON', limits: 'Fixed PB0/USART3 grammar; ideal teaching LED path.', next: 'Load PB0 off + USART3 to test the opposite observed-output boundary.', level: true, marker: 'STM32 LED ON' }),
+    Object.freeze({ id: 'stm32-led-off', name: 'PB0 off + USART3', learn: 'Test the opposite observed PB0 boundary.', try: 'Build ELF, Run, then compare LED and terminal.', outcome: 'LED off · USART3: STM32 LED OFF', limits: 'No button, ADC or PWM; no broad STM32 SDK.', next: 'Use Download copy and Open local project to verify data-only recovery before changing source.', level: false, marker: 'STM32 LED OFF' }),
   ]),
 });
 

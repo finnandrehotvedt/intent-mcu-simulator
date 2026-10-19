@@ -42,6 +42,11 @@ export const TEMPERATURE_LCD_THRESHOLD_CARD = Object.freeze({
   focus: 'Compiled sensor → LCD + RGB',
   partsLabel: 'Controller · temperature module · LCD · RGB LED · 3 resistors',
   outcome: 'Move the temperature control and watch compiled firmware update both outputs.',
+  learn: 'How one analogue input can drive text and thresholded colour outputs.',
+  try: 'Build, Run, then move the temperature across 30 °C.',
+  observe: 'LCD text, RGB colour and Serial agree at the threshold.',
+  limits: 'Ideal sensor, display and RGB subset; no physical timing or current model.',
+  next: 'Load Thermostat boundary test to turn the threshold into saved scenarios and requirements.',
   componentTypes: Object.freeze([
     'board.atmega328p-16mhz-v1', TEMPERATURE_ANALOGUE_SENSOR_TYPE,
     CHARACTER_LCD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,

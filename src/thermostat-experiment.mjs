@@ -42,6 +42,11 @@ export const THERMOSTAT_EXPERIMENT_CARD = Object.freeze({
   focus: 'M1 · Executed requirements',
   partsLabel: 'ATmega328P · temperature module · button · 220 Ω · LED',
   outcome: 'Run four reset-isolated boundary scenarios, then prove that a known-bad equality rule is caught.',
+  learn: 'How executable requirements expose an exact threshold defect.',
+  try: 'Build, run the boundary set, then load the known-bad equality rule.',
+  observe: 'D13, UART, input values and requirement verdicts agree.',
+  limits: 'Exact supported AVR subset; no physical room, heater or thermal model.',
+  next: 'Open Scenario timeline to change one timed input and rerun its requirement after a fresh Build.',
   componentTypes: Object.freeze([
     'board.atmega328p-16mhz-v1',
     'sensor.temperature-analogue-v1',
