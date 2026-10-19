@@ -2,6 +2,22 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.68 — 2026-10-19
+
+- Published the independently reviewed X67 local experiment package for the
+  bounded AVR thermostat journey. One compact action downloads authored source,
+  circuit, timeline, exact independent expectation and current measured report
+  only after all identities and completeness checks match.
+- Kept source as inert package text and excluded compiled bytes plus executable,
+  runtime and verdict authority. Strict canonical member hashes reject stale,
+  relabelled, oversized, incomplete, duplicate and added-field packages.
+- Reset, source/project change, stale expectation, missing result and unsupported
+  profiles disable export. The browser performs no package upload, account,
+  analytics, cookie or third-party request.
+- Clarified that exact automatic-field exclusion cannot discover every secret a
+  person may type into source or descriptions; authored text must be reviewed
+  before sharing.
+
 ## 1.1.0-rc.67 — 2026-10-19
 
 - Published the independently reviewed X65 controller-migration explanation as

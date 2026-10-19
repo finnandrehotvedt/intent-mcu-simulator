@@ -1,19 +1,32 @@
-# Intent MCU Simulator 1.1.0-rc.67
+# Intent MCU Simulator 1.1.0-rc.68
 
-## Honest controller-migration explanation
+## Local experiment package
 
-This release publishes the independently reviewed X65 migration explanation in
-one compact, closed-by-default disclosure inside the existing controller panel.
-For every directed pair among the exact AVR, RP2040 Pico, ESP32-C3 and
-STM32F429ZI profiles, it explains which current source file and bounded APIs,
-named connected pins, parts and saved requirements need manual review.
+This release publishes the independently reviewed X67 local experiment package
+for the bounded AVR thermostat journey. One compact action beside the existing
+expectation controls becomes available only when the current project, authored
+timeline, exact independent expectation, fresh compiled artifact and all current
+measured results match. It downloads canonical JSON containing authored source,
+circuit, scenario, expectation and measured report with exact member hashes.
 
-The explanation is read-only. It never treats D13, GP0, GPIO2 or PB0 as aliases,
-never rewires a circuit, translates source, changes a parked draft or restores
-runtime/build authority. Exact narrow-profile grammars report only the APIs they
-can prove; arbitrary AVR sketch semantics and unresolved requirements remain
-explicitly unknown. All 21 existing examples, compiler/runtime boundaries,
-saved-file guards and rc.66 documentation remain otherwise unchanged.
+The package carries no compiled bytes and grants no executable, runtime or
+verdict authority. Reset, source or project change, stale or mismatched
+expectations, incomplete evidence and unsupported profiles disable export.
+Nothing is uploaded or stored by a server, and the export makes no third-party
+request or cookie. Exact schemas exclude known automatic credential and
+authority fields, while the interface honestly warns that arbitrary
+human-written source or descriptions still need review before sharing.
+
+---
+
+## 1.1.0-rc.67
+
+The independently reviewed X65 migration explanation remains available as one
+compact, closed-by-default disclosure. It covers all directed pairs among the
+exact AVR, RP2040 Pico, ESP32-C3 and STM32F429ZI profiles without treating pins
+as aliases, rewiring a circuit, translating source, changing parked drafts or
+restoring runtime/build authority. Arbitrary AVR semantics and unresolved
+requirements remain explicitly unknown.
 
 ## X18 honest outcomes and separate job state
 
