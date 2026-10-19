@@ -596,6 +596,12 @@ export async function validateMeasurementReportEnvelope(value) {
     throw Object.assign(new Error('MEASUREMENT_REPORT_ENVELOPE_STALE_IDENTITY'),
       { code: 'MEASUREMENT_REPORT_ENVELOPE_STALE_IDENTITY' });
   }
+  const canonicalCompleteness = await createMeasurementCompleteness(value.report);
+  if (stableMeasurementStringify(completeness)
+      !== stableMeasurementStringify(canonicalCompleteness)) {
+    throw Object.assign(new Error('MEASUREMENT_REPORT_ENVELOPE_NONCANONICAL_COMPLETENESS'),
+      { code: 'MEASUREMENT_REPORT_ENVELOPE_NONCANONICAL_COMPLETENESS' });
+  }
   const reported = reportedAcademicStatus(value.report);
   if (value.reportedAcademicStatus !== reported
       || value.effectiveAcademicStatus !== completenessAcademicStatus(reported, completeness)) {

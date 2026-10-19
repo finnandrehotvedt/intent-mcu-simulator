@@ -127,6 +127,32 @@ test('legacy reports are wrapped without mutation and reported pass cannot escap
   await validateMeasurementReportEnvelope(envelope);
 });
 
+test('self-consistent forged completeness cannot upgrade an unchanged retained report', async () => {
+  const report = longReport();
+  const envelope = clone(await createMeasurementReportEnvelope(report));
+  const forged = envelope.measurementCompleteness;
+  forged.channels = forged.channels.map((channel) => ({
+    ...channel,
+    retained: known(2), dropped: known(0), sampled: known(false), truncated: known(false),
+  }));
+  forged.observedFrom = known(10);
+  forged.observedThrough = known(20);
+  forged.intervals = [{ id: 'forged-complete-window', mode: 'contains-required',
+    observedFrom: known(10), observedThrough: known(20),
+    requiredFrom: known(10), requiredThrough: known(20) }];
+  forged.missingEvidence = [];
+  forged.completeForRequirements = true;
+  delete forged.projectionSha256;
+  forged.projectionSha256 = await measurementSha256(forged);
+  envelope.effectiveAcademicStatus = 'passed';
+
+  assert.equal((await validateMeasurementCompleteness(forged, report.schema)).completeForRequirements, true);
+  assert.equal(envelope.reportSha256, await measurementSha256(report));
+  assert.equal(envelope.reportedAcademicStatus, 'passed');
+  await assert.rejects(validateMeasurementReportEnvelope(envelope),
+    { code: 'MEASUREMENT_REPORT_ENVELOPE_NONCANONICAL_COMPLETENESS' });
+});
+
 test('strict validation rejects hash mutation, stale identity and channel drift', async () => {
   const envelope = await createMeasurementReportEnvelope(longReport());
   const hashMutation = clone(envelope);
