@@ -9521,6 +9521,7 @@ async function build() {
     persistProject();
     elements.buildstate.textContent = 'Build request failed'; renderBuildDiagnostics(null, error.message); publish({ buildState: 'failed' });
     showActionableError(elements.projectmessage, 'BUILD_REQUEST_FAILED', error.message);
+    if (isRetryableCapacityCode(error.code)) elements.projectmessage.textContent = error.message;
   } finally {
     if (!activeJob) buildAbortController = null;
   }

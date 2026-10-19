@@ -24,6 +24,10 @@ let browser;
   const response = await page.goto(base, { waitUntil: 'domcontentloaded' });
   assert.equal(response?.status(), 200);
   await page.waitForFunction(() => window.__M11_READY__ === true);
+  await page.click('#project-demo');
+  await page.waitForFunction(() => document.querySelector('#example-picker-dialog').open === true);
+  await page.click('.starter-card[data-example="avr-thermostat-boundary-v1"]');
+  await page.waitForFunction(() => window.__M6_STATE__.thermostatExperiment?.active === true);
   await page.click('#build');
   await page.waitForFunction(() => document.querySelector('#build-state')?.textContent === 'Build request failed');
   const message = await page.locator('#project-message').textContent();
@@ -39,4 +43,3 @@ let browser;
     runtimeRuns: 0, automaticRetries: syntheticRequests - 1, message: message.trim(), screenshot }));
 })().catch((error) => { console.error(error.stack || String(error)); process.exitCode = 1; })
   .finally(async () => { if (browser) await browser.close(); });
-
