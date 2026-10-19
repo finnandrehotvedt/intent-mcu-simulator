@@ -269,6 +269,7 @@ import {
   parseExpectationReference,
 } from '../src/expectation-reference.mjs';
 import {
+  EXPERIMENT_PACKAGE_LIMIT,
   createExperimentPackage,
   parseExperimentPackage,
 } from '../src/experiment-package.mjs';
@@ -411,6 +412,7 @@ const elements = Object.fromEntries([
   'regression-matrix-selector', 'regression-matrix-run', 'regression-matrix-negative',
   'regression-matrix-export', 'regression-matrix-results', 'regression-matrix-summary',
   'checkable-evidence', 'checkable-evidence-state', 'checkable-evidence-summary',
+  'checkable-evidence-message', 'checkable-evidence-open', 'checkable-evidence-open-input',
   'checkable-evidence-identity', 'checkable-evidence-rows', 'checkable-evidence-limitations',
   'checkable-evidence-download',
   'version-regression-state', 'version-regression-identity', 'version-regression-load',
@@ -2143,6 +2145,7 @@ let regressionMatrixReport = null;
 let coverageReport = null;
 let checkableEvidenceReport = null;
 let checkableEvidenceGeneration = 0;
+let checkableEvidenceOrigin = 'none';
 let regressionPartitionEvidence = [];
 let regressionMatrixRunning = false;
 let regressionMatrixReady = false;
@@ -2210,6 +2213,7 @@ function renderCheckableEvidence(report = checkableEvidenceReport) {
   if (!report) {
     elements.checkableevidencestate.textContent = 'Unavailable';
     elements.checkableevidencesummary.textContent = checkableEvidenceDisclosure(null);
+    elements.checkableevidencemessage.textContent = 'Open a local accepted evidence package to review it without running firmware.';
     elements.checkableevidenceidentity.textContent = 'No source envelope or report hash.';
     elements.checkableevidencedownload.disabled = true;
     for (const [root, text] of [[elements.checkableevidencerows, 'No current rows.'],
@@ -2219,9 +2223,13 @@ function renderCheckableEvidence(report = checkableEvidenceReport) {
     return;
   }
   const knownRows = report.measurements.filter((row) => row.value.state === 'known').length;
-  elements.checkableevidencestate.textContent = `${knownRows}/${report.measurements.length} available`;
-  elements.checkableevidencesummary.textContent = checkableEvidenceDisclosure(report);
-  elements.checkableevidenceidentity.textContent = `${report.producer.producerId} · ${report.producer.adapterId} · source ${report.integrity.sourceReportSha256} · report ${report.integrity.reportSha256} · model ${report.modelContext.state}`;
+  const imported = checkableEvidenceOrigin === 'imported-retained-package';
+  elements.checkableevidencestate.textContent = `${imported ? 'Imported · ' : ''}${knownRows}/${report.measurements.length} available`;
+  elements.checkableevidencesummary.textContent = `${imported ? 'Imported retained source evidence · not a fresh execution. ' : 'Current in-browser source evidence. '}${checkableEvidenceDisclosure(report)}`;
+  elements.checkableevidencemessage.textContent = imported
+    ? 'Read-only local review. Opening this package restored no project, runtime, outcome authority or executable state.'
+    : 'This report follows the current in-browser source lifecycle and becomes stale with its source.';
+  elements.checkableevidenceidentity.textContent = `${report.producer.producerId} · source class ${report.producer.evidenceClass} · ${imported ? 'historical/imported review' : 'current source'} · ${report.producer.adapterId} · source ${report.integrity.sourceReportSha256} · report ${report.integrity.reportSha256} · model ${report.modelContext.state}`;
   for (const row of report.measurements) {
     const item = document.createElement('li');
     item.dataset.measurementState = row.value.state;
@@ -2235,12 +2243,13 @@ function renderCheckableEvidence(report = checkableEvidenceReport) {
   elements.checkableevidencedownload.disabled = false;
 }
 
-async function setCheckableEvidenceReport(sourceReport, sourceProject = null) {
+async function setCheckableEvidenceReport(sourceReport, sourceProject = null, origin = 'current-source') {
   const generation = ++checkableEvidenceGeneration;
   const report = await createCheckableEvidenceReport(sourceReport, { sourceProject });
   await validateCheckableEvidenceReport(report);
   if (generation !== checkableEvidenceGeneration) return null;
   checkableEvidenceReport = report;
+  checkableEvidenceOrigin = origin;
   renderCheckableEvidence(report);
   return structuredClone(report);
 }
@@ -2251,12 +2260,27 @@ async function setCheckableEvidencePackage(source) {
     throw Object.assign(new Error(parsed.code ?? 'CHECKABLE_EVIDENCE_PACKAGE_REQUIRED'),
       { code: parsed.code ?? 'CHECKABLE_EVIDENCE_PACKAGE_REQUIRED' });
   }
-  return setCheckableEvidenceReport(parsed.value.report, parsed.value.project);
+  return setCheckableEvidenceReport(parsed.value.report, parsed.value.project, 'imported-retained-package');
+}
+
+async function openCheckableEvidencePackage(file) {
+  if (!file) return null;
+  if (file.size > EXPERIMENT_PACKAGE_LIMIT) {
+    elements.checkableevidencemessage.textContent = 'Package rejected (INPUT_LIMIT). The previous evidence report is unchanged.';
+    return null;
+  }
+  try {
+    return await setCheckableEvidencePackage(await file.text());
+  } catch (error) {
+    elements.checkableevidencemessage.textContent = `Package rejected (${error.code ?? error.message}). The previous evidence report is unchanged.`;
+    return null;
+  }
 }
 
 function clearCheckableEvidenceReport(message = 'No current evidence report. Build and Run are never started by this disclosure.') {
   checkableEvidenceGeneration += 1;
   checkableEvidenceReport = null;
+  checkableEvidenceOrigin = 'none';
   renderCheckableEvidence(null);
   elements.checkableevidencesummary.textContent = message;
 }
@@ -4652,6 +4676,14 @@ elements.regressionmatrixrun.addEventListener('click', () => {
 });
 elements.regressionmatrixnegative.addEventListener('click', () => { void runWrongRegressionExpectation(); });
 elements.regressionmatrixexport.addEventListener('click', exportRegressionMatrixReport);
+elements.checkableevidenceopen.addEventListener('click', () => {
+  elements.checkableevidenceopeninput.value = '';
+  elements.checkableevidenceopeninput.click();
+});
+elements.checkableevidenceopeninput.addEventListener('change', () => {
+  const [file] = elements.checkableevidenceopeninput.files;
+  if (file) void openCheckableEvidencePackage(file);
+});
 elements.checkableevidencedownload.addEventListener('click', () => { void downloadCheckableEvidenceReport(); });
 elements.versionregressionload.addEventListener('click', () => { void loadReviewedVersionRegression(); });
 elements.versionregressionnegative.addEventListener('click', () => { void rejectSyntheticVersionMutation(); });

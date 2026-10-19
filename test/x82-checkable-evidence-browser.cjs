@@ -34,8 +34,15 @@ let browser;
   assert.equal(response?.status(), 200);
   await page.waitForFunction(() => window.__M11_READY__ === true && window.__CHECKABLE_EVIDENCE__);
   const workersBefore = await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations);
-  const report = await page.evaluate(async (source) =>
-    window.__CHECKABLE_EVIDENCE__.setPackage(source), retainedSource);
+  assert.equal(await page.textContent('#checkable-evidence-state'), 'Unavailable');
+  await page.locator('#checkable-evidence > summary').click();
+  const chooserPromise = page.waitForEvent('filechooser');
+  await page.click('#checkable-evidence-open');
+  const chooser = await chooserPromise;
+  await chooser.setFiles(packagePath);
+  await page.waitForFunction(() => document.querySelector('#checkable-evidence-state')?.textContent
+    === 'Imported · 8/8 available');
+  const report = await page.evaluate(() => window.__CHECKABLE_EVIDENCE__.current());
 
   assert.equal(report.schema, 'intent-mcu-checkable-evidence-report@1');
   assert.equal(report.producer.adapterId, 'x82-authored-gpio-v2');
@@ -45,15 +52,17 @@ let browser;
   assert.equal(report.modelContext.lock.version, retained.project.modelLibrary.version);
   assert.equal(report.outcome.reportedAcademicStatus, retained.report.aggregate.academicStatus);
   assert.equal(report.truthBoundary.includes('do not prove measurement truth'), true);
-  assert.equal(await page.textContent('#checkable-evidence-state'), '8/8 available');
+  assert.equal(await page.textContent('#checkable-evidence-state'), 'Imported · 8/8 available');
+  assert.match(await page.textContent('#checkable-evidence-summary'), /Imported retained source evidence · not a fresh execution/u);
+  assert.match(await page.textContent('#checkable-evidence-message'), /restored no project, runtime, outcome authority or executable state/u);
   assert.match(await page.textContent('#checkable-evidence-summary'), /Hashes bind identity\/integrity, not truth/u);
+  assert.match(await page.textContent('#checkable-evidence-identity'), /historical\/imported review/u);
   assert.match(await page.textContent('#checkable-evidence-identity'), /model known/u);
   assert.equal(await page.locator('#checkable-evidence-rows li').count(), 8);
   assert((await page.locator('#checkable-evidence-limitations li').count()) >= 4);
   assert.equal(await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations), workersBefore,
     'rendering retained evidence created a runtime worker');
 
-  await page.locator('#checkable-evidence > summary').click();
   await page.locator('#checkable-evidence').scrollIntoViewIfNeeded();
   const [download] = await Promise.all([
     page.waitForEvent('download'),
@@ -76,6 +85,23 @@ let browser;
     await page.locator('#checkable-evidence').screenshot({ path: screenshotPath });
   }
 
+  const acceptedBeforeReject = JSON.stringify(await page.evaluate(() => window.__CHECKABLE_EVIDENCE__.current()));
+  const rejectChooserPromise = page.waitForEvent('filechooser');
+  await page.click('#checkable-evidence-open');
+  const rejectChooser = await rejectChooserPromise;
+  await rejectChooser.setFiles({ name: 'invalid-evidence-package.json', mimeType: 'application/json',
+    buffer: Buffer.from('{"schema":"not-accepted"}\n') });
+  await page.waitForFunction(() => document.querySelector('#checkable-evidence-message')?.textContent
+    .includes('previous evidence report is unchanged'));
+  assert.equal(JSON.stringify(await page.evaluate(() => window.__CHECKABLE_EVIDENCE__.current())), acceptedBeforeReject);
+  assert.equal(await page.isDisabled('#checkable-evidence-download'), false);
+
+  const cancelChooserPromise = page.waitForEvent('filechooser');
+  await page.click('#checkable-evidence-open');
+  const cancelChooser = await cancelChooserPromise;
+  await cancelChooser.setFiles([]);
+  assert.equal(JSON.stringify(await page.evaluate(() => window.__CHECKABLE_EVIDENCE__.current())), acceptedBeforeReject);
+
   await page.setViewportSize({ width: 390, height: 844 });
   assert((await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 1,
     'checkable evidence disclosure caused horizontal overflow');
@@ -95,6 +121,7 @@ let browser;
     sourceReportSha256: report.integrity.sourceReportSha256,
     reportSha256: report.integrity.reportSha256, downloadSha256,
     downloadedBytes: Buffer.byteLength(downloaded), modelLibraryVersion: report.modelContext.lock.version,
+    visibleFileOpen: true, rejectedPreserved: true, cancelledPreserved: true,
     lifecycleInvalidated: true, externalRequests: 0, mutationRequests: 0, cookies: 0,
     screenshot: screenshotPath, reportOutput: outputPath })}\n`);
   await context.close();

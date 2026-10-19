@@ -642,12 +642,17 @@
       <details id="checkable-evidence" class="checkable-evidence">
         <summary><span><strong>Checkable evidence report</strong><small>Strict source-owned measurements · local JSON only</small></span><span id="checkable-evidence-state" class="state">Unavailable</span></summary>
         <p id="checkable-evidence-summary" class="regression-matrix-intro">No current evidence report. Build and Run are never started by this disclosure.</p>
+        <p id="checkable-evidence-message" class="regression-matrix-intro" role="status">Open a local accepted evidence package to review it without running firmware.</p>
         <p id="checkable-evidence-identity" class="regression-matrix-identity">No source envelope or report hash.</p>
         <div class="checkable-evidence-grid">
           <section><h4>Native measurements</h4><ol id="checkable-evidence-rows"><li>No current rows.</li></ol></section>
           <section><h4>Limits retained</h4><ul id="checkable-evidence-limitations"><li>No current source, profile, or model limits.</li></ul></section>
         </div>
-        <div class="regression-matrix-actions"><button id="checkable-evidence-download" type="button" disabled>Download evidence report JSON</button></div>
+        <div class="regression-matrix-actions">
+          <button id="checkable-evidence-open" type="button">Open evidence package</button>
+          <input id="checkable-evidence-open-input" type="file" accept="application/json,.json" hidden>
+          <button id="checkable-evidence-download" type="button" disabled>Download evidence report JSON</button>
+        </div>
         <p class="regression-matrix-limit"><strong>Truth boundary:</strong> Hashes bind identity and integrity only. They do not prove measurement truth, correctness, or physical equivalence. Missing source fields remain unavailable; an absent validated model lock remains unknown.</p>
       </details>
       <div id="version-regression" class="coverage-report-heading">
