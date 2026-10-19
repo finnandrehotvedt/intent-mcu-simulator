@@ -2,6 +2,25 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.52 — 2026-10-19
+
+- Published the independently accepted bounded X29 AVR time-invariance report.
+  One compiled artifact runs the same immutable D2 target and D13/UART virtual
+  requirement in fresh cycle-zero workers at 1x, maximum and Pause/resume.
+- Kept CPU cycles, instruction count and derived 16 MHz virtual nanoseconds as
+  separately typed producer observations. Host wall duration and measured
+  throughput remain diagnostics excluded from requirement semantics.
+- Proved that Pause freezes producer cycles, instructions, virtual time and the
+  pending target while host wall time advances. A wall-based requirement is
+  rejected before execution as a separate validation result and creates no
+  academic outcome.
+- Added concise human-readable comparison rows, keyboard-accessible native raw
+  details and transient JSON export. Open, reload, source/circuit/profile
+  changes and every new build clear the report and export authority.
+- This remains one ATmega328P/avr8js 16 MHz contract. It does not claim
+  physical time, real-time throughput, C3/STM32 producer time, cross-profile
+  equivalence or X30 event-ordering support.
+
 ## 1.1.0-rc.51 — 2026-10-19
 
 - Published the independently accepted bounded X28 AVR long-duration report:
