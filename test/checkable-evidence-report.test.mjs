@@ -128,6 +128,48 @@ test('X82 retained X29-X32 and X34 shapes expose only explicit primitive native 
   }
 });
 
+test('X82 exercises every one of the 27 owner maps against its current native shape', async () => {
+  const profile = 'board.atmega328p-16mhz-v1';
+  const cases = [
+    ['intent-mcu-regression-report@1', { results: [{ caseId: 'avr', actual: { scenariosPassed: 4 }, rawVirtualTime: { timebase: 'virtual-millisecond' } }] }, 1],
+    ['intent-mcu-x26-version-regression@1', { results: [{ caseId: 'a', sameRequirementIdentity: true, outcomeStableAcrossReleases: false }] }, 2],
+    ['intent-mcu-coverage-report@1', { counts: { executed: 7, failed: 0 } }, 2],
+    ['intent-mcu-long-duration-report@1', { results: [{ cellId: 'a', rawVirtualTime: { timebase: 'avr8js-cycles', cycle: 12, finalCycle: 12, virtualMilliseconds: 1 } }] }, 2],
+    ['intent-mcu-time-invariance-report@1', { executions: [{ executionId: 'a', actual: { finalCpuCycles: 12, finalVirtualNanoseconds: 750 } }] }, 2],
+    ['intent-mcu-event-order-report@1', { executions: [{ executionId: 'a', phases: [{}, {}, {}, { phaseOrdinal: 4, producer: { cpuCycles: 12 } }] }] }, 2],
+    ['intent-mcu-reset-class-report@1', { executions: [{ executionId: 'a', after: { cpuCycles: 0, volatileByte: 0 } }] }, 2],
+    ['intent-mcu-unsupported-access-report@1', { executions: [{ executionId: 'a', access: { address: 78, cycle: 12 }, stop: { cycle: 12 } }] }, 2],
+    ['intent-mcu-digital-state-report@1', { repeats: [{ rows: [{ caseId: 'a', resolution: 'HIGH_Z' }] }] }, 1],
+    ['intent-mcu-x33-runtime-digital-state-report@1', { repeats: [{ rows: [{ rowId: 'a', resolution: 'LOW' }] }] }, 1],
+    ['intent-mcu-x34-instrumented-precision-report@1', { repeats: [{ repeat: 'A', adc: { value: 414, completionCycle: 12 }, voltage: { value: 2.025 } }] }, 2],
+    ['intent-mcu-x35-causal-chain-report@1', { repeats: [{ repeat: 'A', chain: { callback: { rawCycle: 12 }, pin: { level: true }, componentProjection: { on: true } } }] }, 2],
+    ['intent-mcu-x36-failure-replay-report@1', { repeats: [{ repeat: 'A', fault: { instructionOrdinal: 9, address: 78 } }] }, 2],
+    ['intent-mcu-x23-usart-response-report@1', { runs: [{ label: 'A', rxRequest: { value: 75 }, rxComplete: { cycle: 12 }, consumer: { d13: true, finalCycle: 20 } }] }, 2],
+    ['intent-mcu-authored-scenario-report@1', { results: [{ scenarioId: 'a', virtualMilliseconds: 200, observed: { level: false, mode: 'OUTPUT' } }] }, 2],
+    ['intent-mcu-thermostat-observation-result@1', { virtualMilliseconds: 200, observed: { d13: false, d13Mode: 'OUTPUT' } }, 2],
+    ['intent-mcu-scenario-observation-result@1', { virtualMilliseconds: 200, observed: { level: false, mode: 'OUTPUT' } }, 2],
+    ['intent-mcu-x39-failure-location@1', { pin: { actualLevel: true }, observation: { actualMilliseconds: 200 } }, 1],
+    ['intent-mcu-x40-avr-shared-timeline@1', { rows: [{ sameCycleSequence: 1, cycle: 12 }] }, 1],
+    ['intent-mcu-instrument-evidence@1', { cycle: 12, virtualMilliseconds: 0.00075 }, 2],
+    ['intent-mcu-shared-instrument-summary@1', { channels: { serial: { retention: { retained: 2 }, time: { cycle: 12, basis: 'virtual-cycle' } }, gpio: { retention: { retained: 1 }, time: { cycle: 12, basis: 'virtual-cycle' } } } }, 2],
+    ['intent-mcu-shared-instrument-view@1', { pin: { fields: { level: { value: false } } }, serial: { retainedTextLength: 4, time: { cycle: 12, basis: 'virtual-cycle' } } }, 2],
+    ['intent-mcu-runtime-trace@1', { records: [{ sequence: 1, cycle: 12, level: false }] }, 1],
+    ['intent-mcu-headless-experiment-result@1', { observations: [{ scenarioId: 'a', virtualMilliseconds: 200, observed: { level: false } }] }, 1],
+    ['intent-mcu-headless-counterexample-reduction-result@1', { reduction: { reduced: { scenarioCount: 1, eventCount: 3 } } }, 2],
+    ['intent-mcu-external-client-result@1', { authoritativeResult: { result: { observation: { virtualMilliseconds: 200, observed: { d13: false } } } } }, 1],
+    ['intent-mcu-control-runtime-evidence@1', { models: 8, fields: 11 }, 0],
+  ];
+  assert.equal(cases.length, 27);
+  for (const [schema, shape, expectedKnown] of cases) {
+    const report = await createCheckableEvidenceReport({ schema, profile, ...shape });
+    const knownRows = report.measurements.filter((item) => item.value.state === 'known');
+    assert.equal(knownRows.length, expectedKnown, schema);
+    assert.ok(knownRows.every((item) => ['string', 'number', 'boolean'].includes(typeof item.value.value)), schema);
+    if (expectedKnown === 0) assert.ok(report.measurements.every((item) => item.value.state === 'unavailable'), schema);
+    await validateCheckableEvidenceReport(report);
+  }
+});
+
 test('X82 report is deterministic and the compact surface remains local, transient and producer-free', async () => {
   const source = await retainedReport();
   const first = await createCheckableEvidenceReport(source);
