@@ -76,7 +76,10 @@ function byteText(value) {
 
 export class RuntimeKernel {
   constructor(hex, circuit, options = {}) {
-    this.adapter = new Atmega328PAdapter(hex, { speed: options.speed ?? 1 });
+    this.adapter = new Atmega328PAdapter(hex, {
+      speed: options.speed ?? 1,
+      ...(options.x34Probe ? { x34Probe: options.x34Probe } : {}),
+    });
     this.circuit = new CircuitRuntime(circuit);
     this.circuit.applyControls(this.adapter);
     this.inputs = new OrderedInputQueue(options.inputEventLimit ?? INPUT_EVENT_LIMIT);

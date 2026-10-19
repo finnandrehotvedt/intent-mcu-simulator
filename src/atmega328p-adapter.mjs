@@ -18,6 +18,7 @@ import {
   timer2Config,
   usart0Config,
 } from 'avr8js';
+import { X34PrecisionObserver } from './x34-precision-observer.mjs';
 import { parseIntelHex } from './hex.mjs';
 
 export const CLOCK_HZ = 16_000_000;
@@ -78,6 +79,7 @@ export class Atmega328PAdapter {
     this.faultEvents = [];
     this.scheduledEvents = [];
     this.paused = true;
+    this.x34Observer = options.x34Probe ? new X34PrecisionObserver(options.x34Probe) : null;
     this.#createMachine();
   }
 
@@ -105,6 +107,7 @@ export class Atmega328PAdapter {
     this.retentionDrops = { logic: 0, serial: 0, adc: 0, unsupported: 0 };
     this.blocked = false;
     this.instructions = 0;
+    this.x34Observer?.reset();
     this.lastPortValues = { B: 0, C: 0, D: 0 };
     this.#attachPortTrace('B');
     this.#attachPortTrace('C');
@@ -399,9 +402,22 @@ export class Atmega328PAdapter {
     if (this.blocked) throw new Error(`Unsupported peripheral activation: ${this.unsupported.at(-1).peripheral}`);
     const before = this.cpu.cycles;
     const pcBefore = this.cpu.pc;
+    const x34Before = this.x34Observer?.read(this.cpu.data) ?? null;
     avrInstruction(this.cpu);
     this.cpu.tick();
     this.instructions++;
+    if (this.x34Observer) {
+      const d13 = this.pinSnapshot().find((pin) => pin.pin === 'D13') ?? null;
+      this.x34Observer.observe({
+        before: x34Before,
+        after: this.x34Observer.read(this.cpu.data),
+        pcBefore,
+        pcAfter: this.cpu.pc,
+        cycle: this.cpu.cycles,
+        latestAdc: this.adcReads.findLast((entry) => entry.channel === 1) ?? null,
+        d13,
+      });
+    }
     if (this.blocked) throw new Error(`Unsupported peripheral activation: ${this.unsupported.at(-1).peripheral}`);
     return { pcBefore, pcAfter: this.cpu.pc, cycles: this.cpu.cycles - before };
   }
@@ -523,6 +539,7 @@ export class Atmega328PAdapter {
       faultEvents: this.faultEvents.map((entry) => ({ ...entry })),
       pins: this.pinSnapshot(),
       retentionDrops: { ...this.retentionDrops },
+      ...(this.x34Observer ? { x34Precision: this.x34Observer.snapshot() } : {}),
     };
   }
 }

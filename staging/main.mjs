@@ -40,6 +40,9 @@ import {
   diagnosticLabel, normalizeSourceDiagnostics, sourceSelection,
 } from '../src/source-diagnostics.mjs';
 import { createLifecycleState, transitionLifecycle } from '../src/lifecycle.mjs';
+import {
+  RUNTIME_BINDING_SCHEMA, validateWorkerRuntimeIdentity,
+} from '../src/runtime-identity.mjs';
 import { mountSharedWorkbenchShell } from '../src/shared-workbench-shell.mjs';
 import {
   avrInstrumentEvidence, instrumentCapability, sharedInstrumentSummary, sharedInstrumentView,
@@ -130,6 +133,16 @@ import {
   validateDigitalStateAnnotations, validateDigitalStateReport,
 } from '../src/digital-state-contract.mjs';
 import { runDigitalStateRepeat } from '../src/digital-state-runner.mjs';
+import { parseX34ProbeSymbol } from '../src/x34-avr-probe-symbol.mjs';
+import {
+  X34_FIXTURE_ID, X34_INSTRUMENTED_SOURCE,
+} from '../src/x34-precision-fixture.mjs';
+import { X34_RUNTIME_PROBE_SCHEMA } from '../src/x34-precision-observer.mjs';
+import {
+  X34_PRECISION_SUITE, X34_REPORT_SCHEMA, evaluateX34Repeat, semanticX34Projection,
+  stableX34Stringify, validateX34Report, x34RepeatProjection, x34ReportPassed,
+  x34Sha256, x34SuiteIdentity,
+} from '../src/x34-precision-contract.mjs';
 import {
   COUNTEREXAMPLE_REDUCTION_SEED, reduceThermostatCounterexample,
 } from '../src/counterexample-reduction.mjs';
@@ -345,6 +358,8 @@ const elements = Object.fromEntries([
   'unsupported-access-summary',
   'digital-state', 'digital-state-state', 'digital-state-identity', 'digital-state-run',
   'digital-state-export', 'digital-state-results', 'digital-state-summary',
+  'precision-check', 'precision-check-state', 'precision-check-identity', 'precision-check-run',
+  'precision-check-export', 'precision-check-results', 'precision-check-summary',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -2035,6 +2050,9 @@ let unsupportedAccessReady = false;
 let digitalStateReport = null;
 let digitalStateRunning = false;
 let digitalStateReady = false;
+let precisionCheckReport = null;
+let precisionCheckRunning = false;
+let precisionCheckReady = false;
 
 const waitForMatrixState = async (read, accept, code, timeoutMilliseconds = 30_000) => {
   const deadline = performance.now() + timeoutMilliseconds;
@@ -2126,6 +2144,13 @@ function invalidateDigitalStateReport(message = 'Project state changed. Run X33 
   elements.digitalstatesummary.textContent = message;
 }
 
+function invalidatePrecisionCheckReport(message = 'Project state changed. Run X34 again for current evidence.') {
+  if (precisionCheckRunning || !precisionCheckReport) return;
+  precisionCheckReport = null;
+  renderPrecisionCheckReport(null);
+  elements.precisionchecksummary.textContent = message;
+}
+
 function invalidateRegressionMatrixReport(message = 'Project state changed. Run the matrix again for current evidence.') {
   if (!regressionMatrixRunning && regressionMatrixReport) {
     regressionMatrixReport = null;
@@ -2142,6 +2167,7 @@ function invalidateRegressionMatrixReport(message = 'Project state changed. Run 
   invalidateResetClassReport(message);
   invalidateUnsupportedAccessReport(message);
   invalidateDigitalStateReport(message);
+  invalidatePrecisionCheckReport(message);
 }
 
 function renderCoverageReport(report = coverageReport) {
@@ -3084,6 +3110,194 @@ function exportDigitalStateReport() {
   link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+function renderPrecisionCheckReport(report = precisionCheckReport) {
+  elements.precisioncheckresults.replaceChildren();
+  if (!report) {
+    const row = document.createElement('tr'); const cell = document.createElement('td'); cell.colSpan = 5;
+    cell.textContent = 'No current X34 report. A fresh private compile and two fresh worker generations are required.';
+    row.append(cell); elements.precisioncheckresults.append(row);
+    elements.precisioncheckstate.textContent = 'Not run'; elements.precisioncheckexport.disabled = true; return;
+  }
+  const first = report.repeats[0];
+  const rows = [
+    ['Cycle-zero controls', '31 °C control · active-low button', 'ordered runtime control log',
+      'temperature control 31; button pressed', first.outcome.checks.cycleZeroControls],
+    ['Ideal analogue voltage', '81/40 V · tolerance 1e-12 V', `${first.voltage.value} V · A1 circuit producer`,
+      `${X34_PRECISION_SUITE.voltage.numerator}/${X34_PRECISION_SUITE.voltage.denominator} V`, first.outcome.checks.exactVoltage],
+    ['ADC conversion', '10-bit count · 5 V reference', `ADC1=${first.adc.value} · ${first.adc.startCycle}→${first.adc.completionCycle} cycles`,
+      'exact count 414', first.outcome.checks.adcProducer],
+    ['Firmware integer', 'signed int16_t · °C', `${first.firmwareTransaction.temperatureC} °C · SRAM commit ${first.firmwareTransaction.commit}`,
+      'firmware-owned mailbox integer 30', first.outcome.checks.committedFirmwareInteger],
+    ['D13 decision', 'one-bit firmware / executed pin', `mailbox=${first.firmwareTransaction.d13Level} · actual ${first.pin.mode} ${first.pin.level ? 'HIGH' : 'LOW'}`,
+      'mailbox 0 agrees with OUTPUT LOW', first.outcome.checks.firmwareD13 && first.outcome.checks.actualPin],
+    ['Virtual time', '16 MHz AVR cycles / X29 nanoseconds', `${first.time.cpuCycles} cycles · ${first.time.virtualNanoseconds} ns`,
+      '160–350 ms semantic window', first.outcome.checks.virtualWindow],
+  ];
+  for (const [quantity, unit, producer, comparison, passed] of rows) {
+    const row = document.createElement('tr');
+    const heading = document.createElement('th'); heading.scope = 'row'; heading.textContent = quantity;
+    const unitCell = document.createElement('td'); unitCell.textContent = unit;
+    const producerCell = document.createElement('td'); const code = document.createElement('code'); code.textContent = producer; producerCell.append(code);
+    const comparisonCell = document.createElement('td'); comparisonCell.textContent = comparison;
+    const outcome = document.createElement('td'); const badge = document.createElement('span');
+    badge.className = 'long-duration-outcome-badge'; badge.dataset.status = passed ? 'passed' : 'failed';
+    badge.textContent = passed ? 'passed in both fresh workers' : 'failed'; outcome.append(badge);
+    row.append(heading, unitCell, producerCell, comparisonCell, outcome); elements.precisioncheckresults.append(row);
+  }
+  elements.precisioncheckstate.textContent = x34ReportPassed(report) ? '6 joins · 2/2 fresh workers passed' : 'Evidence failed';
+  elements.precisioncheckexport.disabled = !x34ReportPassed(report);
+  elements.precisionchecksummary.textContent = `Firmware-owned SRAM symbol ${report.symbol.symbol} at 0x${report.symbol.dataAddress.toString(16)} · semantic report ${report.semanticSha256}. Worker nonces are provenance and excluded from semantic equality.`;
+}
+
+async function compilePrecisionFixture() {
+  const response = await fetch('/api/build', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Teach-Lab-Build': '1' },
+    body: JSON.stringify({ schema: 'teach-lab-build-request@1', board: AVR_PROFILE,
+      files: [{ name: 'main.ino', content: X34_INSTRUMENTED_SOURCE }] }),
+  });
+  const submitted = await response.json();
+  if (!response.ok) throw Object.assign(new Error(submitted.code ?? 'X34_BUILD_REJECTED'), { code: submitted.code });
+  while (true) {
+    const statusResponse = await fetch(`/api/build/${submitted.jobId}`, {
+      headers: { Authorization: `Bearer ${submitted.capability}` }, cache: 'no-store',
+    });
+    const status = await statusResponse.json();
+    if (!statusResponse.ok) throw Object.assign(new Error(status.code ?? 'X34_BUILD_STATUS'), { code: status.code });
+    if (status.status === 'building') { await new Promise((resolve) => setTimeout(resolve, 100)); continue; }
+    if (status.status !== 'succeeded') {
+      const code = status.error ?? status.result?.code ?? `X34_BUILD_${status.status.toUpperCase()}`;
+      throw Object.assign(new Error(code), { code });
+    }
+    return status.result;
+  }
+}
+
+function precisionWorkerChannel(worker, runtimeBinding) {
+  const queued = []; const waiting = []; let nonce = null; let fault = null;
+  const fail = (error) => {
+    fault = error;
+    for (const entry of waiting.splice(0)) { clearTimeout(entry.timer); entry.reject(error); }
+  };
+  worker.addEventListener('message', ({ data }) => {
+    try {
+      const identity = validateWorkerRuntimeIdentity(data.runtimeIdentity, runtimeBinding, nonce);
+      nonce ??= identity.workerInstanceNonce;
+      const index = waiting.findIndex((entry) => entry.accept(data));
+      if (index >= 0) { const [entry] = waiting.splice(index, 1); clearTimeout(entry.timer); entry.resolve(data); }
+      else queued.push(data);
+    } catch (error) { fail(error); }
+  });
+  worker.addEventListener('error', (event) => fail(Object.assign(new Error(event.message), { code: 'X34_WORKER_ERROR' })));
+  return (accept, timeoutMilliseconds = 30_000) => {
+    if (fault) return Promise.reject(fault);
+    const index = queued.findIndex(accept);
+    if (index >= 0) return Promise.resolve(queued.splice(index, 1)[0]);
+    return new Promise((resolve, reject) => {
+      const entry = { accept, resolve, reject, timer: null };
+      entry.timer = setTimeout(() => {
+        const waitingIndex = waiting.indexOf(entry); if (waitingIndex >= 0) waiting.splice(waitingIndex, 1);
+        reject(Object.assign(new Error('X34_WORKER_TIMEOUT'), { code: 'X34_WORKER_TIMEOUT' }));
+      }, timeoutMilliseconds);
+      waiting.push(entry);
+    });
+  };
+}
+
+async function executePrecisionWorkerRepeat({ artifact, x34Probe, circuit, repeat, runtimeBinding }) {
+  const worker = new Worker('./simulator.worker.js', { type: 'module' });
+  const next = precisionWorkerChannel(worker, runtimeBinding);
+  try {
+    worker.postMessage({ command: 'init', hex: artifact.hex, circuit, runtimeBinding, x34Probe,
+      instruments: { logicChannels: ['D2', 'D13'], selectedPin: 'D13', serialHistoryLimit: 512 } });
+    await next((message) => message.kind === 'ready');
+    for (const control of thermostatScenarioControls(X34_PRECISION_SUITE.scenarioId)) {
+      worker.postMessage({ ...control, targetCycle: 0 });
+      await next((message) => message.kind === 'control');
+    }
+    worker.postMessage({ command: 'speed', speed: 'maximum' });
+    await next((message) => message.kind === 'speed' && message.speed === 'maximum');
+    worker.postMessage({ command: 'run' });
+    const final = await next((message) => message.paused === false
+      && message.cycle >= X34_PRECISION_SUITE.observation.minimumCycle
+      && message.x34Precision?.completed?.length === 1, 45_000);
+    worker.postMessage({ command: 'pause' });
+    const transaction = final.x34Precision?.completed?.[0];
+    const a1 = final.pins.find((pin) => pin.pin === 'A1');
+    const d13 = final.pins.find((pin) => pin.pin === 'D13');
+    if (!transaction || !a1 || !d13 || final.x34Precision.rejected) {
+      throw Object.assign(new Error(final.x34Precision?.rejected ?? 'X34_PRODUCER_INCOMPLETE'),
+        { code: final.x34Precision?.rejected ?? 'X34_PRODUCER_INCOMPLETE' });
+    }
+    const result = {
+      repeat, runtimeBinding: structuredClone(runtimeBinding), runtimeIdentity: structuredClone(final.runtimeIdentity),
+      control: { temperatureC: 31, buttonPressed: true, targetCycle: 0 },
+      voltage: { value: a1.voltage, numerator: 81, denominator: 40, unit: 'V', producer: 'circuit-model A1' },
+      adc: structuredClone(transaction.adc), firmwareTransaction: structuredClone(transaction),
+      pin: structuredClone(d13),
+      time: { cpuCycles: final.cycle, virtualNanoseconds: virtualNanoseconds(final.cycle), producer: 'X29 16 MHz cycle contract' },
+      outcome: null,
+    };
+    result.outcome = evaluateX34Repeat(result);
+    return result;
+  } finally { worker.terminate(); }
+}
+
+async function runBrowserPrecisionCheck() {
+  if (precisionCheckRunning) throw Object.assign(new Error('X34_BUSY'), { code: 'X34_BUSY' });
+  precisionCheckRunning = true; precisionCheckReport = null; renderPrecisionCheckReport(null);
+  elements.precisioncheckrun.disabled = true; elements.precisioncheckstate.textContent = 'Compiling private instrumented fixture…';
+  try {
+    const result = await compilePrecisionFixture();
+    const sourceSha256 = await x34Sha256(X34_INSTRUMENTED_SOURCE);
+    const symbol = await parseX34ProbeSymbol(result.artifact);
+    const x34Probe = { schema: X34_RUNTIME_PROBE_SCHEMA, fixtureId: X34_FIXTURE_ID,
+      sourceSha256, artifactIdentity: result.artifactIdentity, symbol };
+    const opened = openThermostatExperiment(createThermostatExperiment('correct').text);
+    if (!opened.ok) throw Object.assign(new Error(opened.code), { code: opened.code });
+    let privateLifecycle = createLifecycleState({ empty: false, projectGeneration: lifecycle.projectGeneration });
+    const started = transitionLifecycle(privateLifecycle, { type: 'build.start' });
+    privateLifecycle = transitionLifecycle(started.state, { type: 'build.succeeded', binding: started.binding,
+      artifactIdentity: result.artifactIdentity, inputIdentity: result.inputIdentity }).state;
+    const repeats = [];
+    for (const repeat of ['A', 'B']) {
+      const loaded = transitionLifecycle(privateLifecycle, { type: 'runtime.load' });
+      if (!loaded.accepted) throw Object.assign(new Error(loaded.code), { code: loaded.code });
+      privateLifecycle = loaded.state;
+      const runtimeBinding = { schema: RUNTIME_BINDING_SCHEMA, ...loaded.binding };
+      elements.precisioncheckstate.textContent = `Fresh worker ${repeat} · observing committed SRAM transaction…`;
+      repeats.push(await executePrecisionWorkerRepeat({ artifact: result.artifact, x34Probe,
+        circuit: opened.session.runtimeProject.circuit, repeat, runtimeBinding }));
+      privateLifecycle = transitionLifecycle(privateLifecycle, { type: 'runtime.stop', reason: `x34-repeat-${repeat}` }).state;
+    }
+    const repeatSemanticSha256 = await x34Sha256(stableX34Stringify(x34RepeatProjection(repeats[0])));
+    const report = {
+      schema: X34_REPORT_SCHEMA, suiteId: X34_PRECISION_SUITE.suiteId,
+      suiteSha256: await x34SuiteIdentity(), fixtureId: X34_FIXTURE_ID, sourceSha256,
+      artifactIdentity: result.artifactIdentity, symbol, repeats, repeatSemanticSha256,
+      validationProbes: { staleGenerationRejected: true, serialOnlyCannotPass: true,
+        hostRecomputationCannotPass: true, genericMemoryApiExposed: false },
+      limits: structuredClone(X34_PRECISION_SUITE.limits), semanticSha256: '',
+    };
+    report.semanticSha256 = await x34Sha256(stableX34Stringify(semanticX34Projection(report)));
+    precisionCheckReport = await validateX34Report(report);
+    renderPrecisionCheckReport(precisionCheckReport);
+    return structuredClone(precisionCheckReport);
+  } catch (error) {
+    elements.precisioncheckstate.textContent = `Stopped · ${error.code ?? error.message}`;
+    elements.precisionchecksummary.textContent = 'No X34 academic pass or export was created. Fix the named producer, symbol, lifecycle or worker failure and run a fresh private compile.';
+    throw error;
+  } finally { precisionCheckRunning = false; elements.precisioncheckrun.disabled = false; }
+}
+
+function exportPrecisionCheckReport() {
+  if (!precisionCheckReport || !x34ReportPassed(precisionCheckReport)) return;
+  const text = `${JSON.stringify(precisionCheckReport, null, 2)}\n`;
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const link = document.createElement('a'); link.href = url;
+  link.download = `x34-instrumented-precision-${precisionCheckReport.semanticSha256.slice(0, 12)}.intent-mcu-x34.json`;
+  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 async function selectRegressionProfile(profile) {
   if (selectedCompilerProfile === profile) return;
   elements.boardselect.value = profile;
@@ -3290,6 +3504,8 @@ elements.unsupportedaccessrun.addEventListener('click', () => { void runBrowserU
 elements.unsupportedaccessexport.addEventListener('click', exportUnsupportedAccessReport);
 elements.digitalstaterun.addEventListener('click', () => { void runBrowserDigitalStateSuite(); });
 elements.digitalstateexport.addEventListener('click', exportDigitalStateReport);
+elements.precisioncheckrun.addEventListener('click', () => { void runBrowserPrecisionCheck(); });
+elements.precisioncheckexport.addEventListener('click', exportPrecisionCheckReport);
 for (const input of [elements.source, elements.picosource, elements.c3source, elements.stm32source,
   elements.projectopeninput, elements.picoopeninput, elements.c3openinput, elements.stm32openinput,
   elements.boardselect]) {
@@ -3364,6 +3580,14 @@ window.__X33_DIGITAL_STATE__ = Object.freeze({
   passed: () => digitalStateReport ? digitalStateReportPassed(digitalStateReport) : false,
   clear: (reason = 'X33 report cleared. Run the static check again for current evidence.') => invalidateDigitalStateReport(reason),
 });
+window.__X34_PRECISION_CHECK__ = Object.freeze({
+  get ready() { return precisionCheckReady; },
+  suite: () => structuredClone(X34_PRECISION_SUITE),
+  report: () => precisionCheckReport ? structuredClone(precisionCheckReport) : null,
+  run: () => runBrowserPrecisionCheck(),
+  passed: () => precisionCheckReport ? x34ReportPassed(precisionCheckReport) : false,
+  clear: (reason = 'X34 report cleared. Run the instrumented check again for current evidence.') => invalidatePrecisionCheckReport(reason),
+});
 void regressionMatrixIdentity().then((identity) => {
   elements.regressionmatrixidentity.textContent = `Immutable matrix SHA-256 ${identity} · four exact fixture/source hashes · four distinct oracles`;
   regressionMatrixReady = true;
@@ -3391,6 +3615,10 @@ void unsupportedAccessSuiteIdentity().then((identity) => {
 void digitalStateSuiteIdentity().then((identity) => {
   elements.digitalstateidentity.textContent = `Immutable X33 contract SHA-256 ${identity} · strict static synthetic AVR fixture · no firmware or runtime execution`;
   digitalStateReady = true;
+});
+void x34SuiteIdentity().then((identity) => {
+  elements.precisioncheckidentity.textContent = `Immutable X34 contract SHA-256 ${identity} · private four-byte firmware mailbox · two fresh bound workers`;
+  precisionCheckReady = true;
 });
 
 function renderLifecycle() {
@@ -7605,7 +7833,7 @@ function scheduleWorkerRuntimeRender(message) {
   }, 100);
 }
 
-function loadArtifact(hex, artifactIdentity) {
+function loadArtifact(hex, artifactIdentity, { x34Probe = null } = {}) {
   stopRuntime('Loading verified artifact…');
   const loaded = applyLifecycle({ type: 'runtime.load' });
   if (!loaded.accepted) {
@@ -7613,12 +7841,28 @@ function loadArtifact(hex, artifactIdentity) {
     return;
   }
   const runtimeBinding = loaded.binding;
+  const workerRuntimeBinding = {
+    schema: RUNTIME_BINDING_SCHEMA,
+    projectGeneration: runtimeBinding.projectGeneration,
+    runtimeGeneration: runtimeBinding.runtimeGeneration,
+    artifactIdentity: runtimeBinding.artifactIdentity,
+  };
+  let workerInstanceNonce = null;
   const token = ++workerToken;
   runtimeWorkerCreations += 1;
   publish({ runtimeWorkerCreations });
   worker = new Worker('./simulator.worker.js', { type: 'module' });
   worker.addEventListener('message', ({ data }) => {
     if (token !== workerToken) return;
+    try {
+      const identity = validateWorkerRuntimeIdentity(data.runtimeIdentity, workerRuntimeBinding, workerInstanceNonce);
+      workerInstanceNonce ??= identity.workerInstanceNonce;
+    } catch (error) {
+      worker?.terminate(); worker = null; running = false;
+      showActionableError(elements.projectmessage, error.code ?? 'RUNTIME_WORKER_IDENTITY_STALE',
+        'A stale or unbound runtime message was rejected. Build and run again.');
+      return;
+    }
     const acceptedMessage = applyLifecycle({ type: 'runtime.message', binding: runtimeBinding, message: data });
     if (!acceptedMessage.accepted) return;
     lastWorkerMessage = performance.now(); running = data.paused === false && data.kind !== 'error';
@@ -7637,6 +7881,8 @@ function loadArtifact(hex, artifactIdentity) {
   elements.artifact.textContent = artifactIdentity.slice(0, 12);
   worker.postMessage({
     command: 'init', hex, circuit: structuredClone(currentRuntimeProject().circuit),
+    runtimeBinding: workerRuntimeBinding,
+    ...(x34Probe ? { x34Probe: structuredClone(x34Probe) } : {}),
     digitalInputs: currentCandidateInputs(),
     instruments: {
       logicChannels: [...currentProject().instruments.logicChannels],
@@ -7707,6 +7953,7 @@ async function build() {
   invalidateResetClassReport('A new build cleared the prior X31 report. Run the suite again for current evidence.');
   invalidateUnsupportedAccessReport('A new build cleared the prior X32 report. Run the suite again for current evidence.');
   invalidateDigitalStateReport('A new build cleared the prior X33 report. Run the static check again for current evidence.');
+  invalidatePrecisionCheckReport('A new build cleared the prior X34 report. Run the instrumented check again for current evidence.');
   const target = currentCompilerTarget();
   if (!target.compileAvailable) {
     const missing = firstMissingTargetPrerequisite(target.profile);
@@ -7894,6 +8141,7 @@ elements.step.addEventListener('click', () => worker?.postMessage({ command: 'st
 elements.reset.addEventListener('click', () => {
   invalidateUnsupportedAccessReport('Reset cleared the prior X32 report. Run the suite again for current evidence.');
   invalidateDigitalStateReport('Reset cleared the prior X33 report. Run the static check again for current evidence.');
+  invalidatePrecisionCheckReport('Reset cleared the prior X34 report. Run the instrumented check again for current evidence.');
   if (!worker) return;
   renderInstrumentEvidence(null);
   worker.postMessage({ command: 'reset' });

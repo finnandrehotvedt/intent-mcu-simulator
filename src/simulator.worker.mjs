@@ -3,32 +3,39 @@ import {
   RP2040_EXPERIMENTAL_PROFILE,
   Rp2040ExperimentalRuntime,
 } from './rp2040-experimental-runtime.mjs';
+import {
+  createWorkerRuntimeIdentity, runtimeInitBinding,
+} from './runtime-identity.mjs';
 
 let kernel = null;
 let rp2040 = null;
 let running = false;
 let generation = 0;
 let initialization = 0;
+let runtimeIdentity = null;
+
+const identityFields = () => runtimeIdentity ? { runtimeIdentity: structuredClone(runtimeIdentity) } : {};
+const emit = (message) => postMessage({ ...message, ...identityFields() });
 
 function isRp2040() { return rp2040 !== null; }
 
 function status(kind = 'status') {
   if (isRp2040()) {
-    postMessage(rp2040.snapshot(kind));
+    emit(rp2040.snapshot(kind));
     return;
   }
   const snapshot = kernel.snapshot();
-  postMessage({ kind, ...snapshot, led: snapshot.circuit.leds.some((item) => item.on) });
+  emit({ kind, ...snapshot, led: snapshot.circuit.leds.some((item) => item.on) });
 }
 
 function stopped(kind, error) {
   if (isRp2040()) {
     const snapshot = rp2040.snapshot(kind);
-    postMessage({ ...snapshot, paused: true, message: error instanceof Error ? error.message : String(error) });
+    emit({ ...snapshot, paused: true, message: error instanceof Error ? error.message : String(error) });
     return;
   }
   const snapshot = kernel?.snapshot() ?? { cycle: 0, instructions: 0, paused: true, circuit: { leds: [] } };
-  postMessage({
+  emit({
     kind,
     ...snapshot,
     paused: true,
@@ -55,12 +62,13 @@ function disposeRuntime() {
   rp2040?.dispose();
   rp2040 = null;
   kernel = null;
+  runtimeIdentity = null;
 }
 
 function pump(activeGeneration) {
   if (!running || activeGeneration !== generation) return;
   try {
-    if (isRp2040()) postMessage(rp2040.runSlice());
+    if (isRp2040()) emit(rp2040.runSlice());
     else {
       kernel.runInstructions(instructionBudget());
       status();
@@ -78,6 +86,11 @@ async function handleMessage(data) {
     if (data.command === 'init') {
       disposeRuntime();
       const currentInitialization = ++initialization;
+      const binding = data.runtimeBinding ? runtimeInitBinding(data.runtimeBinding) : null;
+      runtimeIdentity = binding ? createWorkerRuntimeIdentity(binding, currentInitialization) : null;
+      if (data.x34Probe && (!binding || data.x34Probe.artifactIdentity !== binding.artifactIdentity)) {
+        throw new Error('X34_RUNTIME_ARTIFACT_BINDING_MISMATCH');
+      }
       if (data.runtimeProfile === RP2040_EXPERIMENTAL_PROFILE) {
         const candidate = await Rp2040ExperimentalRuntime.create(data.firmware ?? null);
         if (currentInitialization !== initialization) {
@@ -91,15 +104,20 @@ async function handleMessage(data) {
       if (data.runtimeProfile && data.runtimeProfile !== 'board.atmega328p-16mhz-v1') {
         throw new Error('RUNTIME_PROFILE_UNSUPPORTED');
       }
-      kernel = new RuntimeKernel(data.hex, data.circuit, data.instruments ?? {});
+      kernel = new RuntimeKernel(data.hex, data.circuit, {
+        ...(data.instruments ?? {}),
+        ...(data.x34Probe ? { x34Probe: data.x34Probe } : {}),
+      });
       for (const input of data.digitalInputs ?? []) applyDigitalInput(input);
       status('ready');
       return;
     }
     if (data.command === 'dispose') {
       const profile = isRp2040() ? RP2040_EXPERIMENTAL_PROFILE : 'board.atmega328p-16mhz-v1';
+      const disposedIdentity = runtimeIdentity ? structuredClone(runtimeIdentity) : null;
       disposeRuntime();
-      postMessage({ kind: 'disposed', profile, paused: true, cycle: 0, instructions: 0 });
+      postMessage({ kind: 'disposed', profile, paused: true, cycle: 0, instructions: 0,
+        ...(disposedIdentity ? { runtimeIdentity: disposedIdentity } : {}) });
       close();
       return;
     }
@@ -123,27 +141,27 @@ async function handleMessage(data) {
       status('paused');
     } else if (data.command === 'sample') {
       if (isRp2040()) {
-        postMessage({ kind: 'sample-rejected', code: 'SAMPLE_PROFILE_UNSUPPORTED' });
+        emit({ kind: 'sample-rejected', code: 'SAMPLE_PROFILE_UNSUPPORTED' });
       } else if (running) {
-        postMessage({ kind: 'sample-rejected', code: 'SAMPLE_REQUIRES_PAUSED_RUNTIME' });
+        emit({ kind: 'sample-rejected', code: 'SAMPLE_REQUIRES_PAUSED_RUNTIME' });
       } else {
         const snapshot = kernel.sample();
-        postMessage({ kind: 'sample', ...snapshot, led: snapshot.circuit.leds.some((item) => item.on) });
+        emit({ kind: 'sample', ...snapshot, led: snapshot.circuit.leds.some((item) => item.on) });
       }
     } else if (data.command === 'step') {
       running = false;
       generation++;
-      if (isRp2040()) postMessage(rp2040.step());
+      if (isRp2040()) emit(rp2040.step());
       else {
         kernel.pause();
         const step = kernel.step();
         const snapshot = kernel.snapshot();
-        postMessage({ kind: 'stepped', step, ...snapshot, led: snapshot.circuit.leds.some((item) => item.on) });
+        emit({ kind: 'stepped', step, ...snapshot, led: snapshot.circuit.leds.some((item) => item.on) });
       }
     } else if (data.command === 'reset') {
       running = false;
       generation++;
-      if (isRp2040()) postMessage(rp2040.reset());
+      if (isRp2040()) emit(rp2040.reset());
       else {
         kernel.reset();
         status('reset');
@@ -166,7 +184,7 @@ async function handleMessage(data) {
       kernel.queueDigitalSequence(data.events);
       status('digital-sequence');
     } else if (data.command === 'uart-rx') {
-      if (isRp2040()) postMessage(rp2040.queueUartRx(data.value));
+      if (isRp2040()) emit(rp2040.queueUartRx(data.value));
       else {
         kernel.queueUartRx(data.value);
         status('uart-rx');
@@ -175,15 +193,15 @@ async function handleMessage(data) {
       if (!isRp2040()) throw new Error('ADC_INPUT_PROFILE_UNSUPPORTED');
       running = false;
       generation++;
-      postMessage(rp2040.sampleAdc0(data.rawCode));
+      emit(rp2040.sampleAdc0(data.rawCode));
     } else if (data.command === 'serial-clear') {
-      if (isRp2040()) postMessage(rp2040.clearSerialView());
+      if (isRp2040()) emit(rp2040.clearSerialView());
       else {
         kernel.clearSerialView();
         status('serial-clear');
       }
     } else if (data.command === 'logic-channels') {
-      if (isRp2040()) postMessage(rp2040.setLogicChannels(data.channels));
+      if (isRp2040()) emit(rp2040.setLogicChannels(data.channels));
       else {
         kernel.setLogicChannels(data.channels);
         status('logic-channels');
