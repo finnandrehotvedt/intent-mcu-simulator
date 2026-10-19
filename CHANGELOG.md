@@ -2,6 +2,18 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.70 — 2026-10-19
+
+- Published the independently reviewed X83 fair-access contract for every
+  existing public HTTP 429 response across AVR/Pico, ESP32-C3 and STM32.
+- Added one positive bounded integer `Retry-After` that exactly matches strict
+  JSON retry metadata; rate windows derive from the oldest retained event.
+- Capacity guidance is advisory, reserves no capacity and requires a fresh
+  request ID. Missing, malformed or mismatched guidance never invents a delay,
+  and neither the browser nor local external client retries automatically.
+- Reused the existing project-message/status and Support surfaces without a
+  new panel, scheduler, numerical limit change or firmware/runtime expansion.
+
 ## 1.1.0-rc.69 — 2026-10-19
 
 - Published the independently reviewed X85 boundary: successful user firmware

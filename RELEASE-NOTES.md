@@ -1,4 +1,22 @@
-# Intent MCU Simulator 1.1.0-rc.69
+# Intent MCU Simulator 1.1.0-rc.70
+
+## Bounded fair-access retry guidance
+
+This release publishes the independently reviewed X83 backpressure contract.
+Every existing public HTTP 429 response now carries a positive bounded integer
+`Retry-After` header that exactly matches strict JSON metadata. Rate-limit
+timing derives from the oldest retained event; capacity timing is advisory,
+does not reserve capacity and requires a fresh request ID.
+
+The existing browser status surface and optional local external-client result
+preserve an accepted authoritative delay. Missing, malformed or mismatched
+guidance falls back safely without inventing a time, and no automatic retry is
+performed. Existing stable codes, numerical limits, origin/capability checks,
+cancellation, cleanup and the no-shared-user-artifact-cache boundary remain.
+
+---
+
+## 1.1.0-rc.69
 
 ## No shared user-artifact cache
 
