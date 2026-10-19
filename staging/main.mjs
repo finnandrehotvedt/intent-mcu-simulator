@@ -106,6 +106,13 @@ import {
   validateEventOrderPlan, validateEventOrderReport,
 } from '../src/event-order-contract.mjs';
 import {
+  RESET_CLASS_REPORT_SCHEMA, RESET_CLASSES, X31_RESET_CLASS_SUITE,
+  evaluateResetClassExecution, resetClassReportPassed, resetClassSha256,
+  resetClassSuiteIdentity, resetExecutionProjection, semanticResetClassProjection,
+  stableResetStringify, validateResetClass, validateResetClassReport,
+} from '../src/reset-class-contract.mjs';
+import { executeResetClass } from '../src/reset-class-runner.mjs';
+import {
   COUNTEREXAMPLE_REDUCTION_SEED, reduceThermostatCounterexample,
 } from '../src/counterexample-reduction.mjs';
 import {
@@ -313,6 +320,8 @@ const elements = Object.fromEntries([
   'time-invariance-export', 'time-invariance-results', 'time-invariance-summary',
   'event-order', 'event-order-state', 'event-order-identity', 'event-order-run',
   'event-order-export', 'event-order-results', 'event-order-summary',
+  'reset-class', 'reset-class-state', 'reset-class-identity', 'reset-class-run',
+  'reset-class-export', 'reset-class-results', 'reset-class-summary',
   'firmware-drawer', 'prompt-drawer', 'runtime-drawer',
   'pico-public-workbench', 'pico-state', 'pico-project-name', 'pico-save', 'pico-open', 'pico-open-input',
   'pico-native-open', 'pico-native-save', 'pico-native-save-copy', 'pico-file-connection', 'pico-legacy-copy',
@@ -1994,6 +2003,9 @@ let timeInvarianceReady = false;
 let eventOrderReport = null;
 let eventOrderRunning = false;
 let eventOrderReady = false;
+let resetClassReport = null;
+let resetClassRunning = false;
+let resetClassReady = false;
 
 const waitForMatrixState = async (read, accept, code, timeoutMilliseconds = 30_000) => {
   const deadline = performance.now() + timeoutMilliseconds;
@@ -2064,6 +2076,13 @@ function invalidateEventOrderReport(message = 'Project state changed. Run X30 ag
   elements.eventordersummary.textContent = message;
 }
 
+function invalidateResetClassReport(message = 'Project state changed. Run X31 again for current evidence.') {
+  if (resetClassRunning || !resetClassReport) return;
+  resetClassReport = null;
+  renderResetClassReport(null);
+  elements.resetclasssummary.textContent = message;
+}
+
 function invalidateRegressionMatrixReport(message = 'Project state changed. Run the matrix again for current evidence.') {
   if (!regressionMatrixRunning && regressionMatrixReport) {
     regressionMatrixReport = null;
@@ -2077,6 +2096,7 @@ function invalidateRegressionMatrixReport(message = 'Project state changed. Run 
   invalidateLongDurationReport(message);
   invalidateTimeInvarianceReport(message);
   invalidateEventOrderReport(message);
+  invalidateResetClassReport(message);
 }
 
 function renderCoverageReport(report = coverageReport) {
@@ -2645,6 +2665,127 @@ function exportEventOrderReport() {
   link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+const resetClassLabels = Object.freeze({
+  'cpu-reset': 'CPU reset',
+  'experiment-restart': 'Experiment restart',
+  'power-on': 'Power-on · fresh worker',
+});
+
+function renderResetClassReport(report = resetClassReport) {
+  elements.resetclassresults.replaceChildren();
+  if (!report) {
+    const row = document.createElement('tr'); const cell = document.createElement('td'); cell.colSpan = 5;
+    cell.textContent = 'No current X31 report. Browser reload and Open are lifecycle actions, not hardware reset classes.';
+    row.append(cell); elements.resetclassresults.append(row);
+    elements.resetclassstate.textContent = 'Not run'; elements.resetclassexport.disabled = true; return;
+  }
+  for (const resetClass of RESET_CLASSES) {
+    const executions = report.executions.filter((item) => item.resetClass === resetClass);
+    const first = executions[0];
+    const row = document.createElement('tr');
+    const identity = document.createElement('th'); identity.scope = 'row'; identity.className = 'reset-class-cell';
+    const strong = document.createElement('strong'); strong.textContent = resetClassLabels[resetClass];
+    const code = document.createElement('code'); code.textContent = resetClass; identity.append(strong, code);
+    const boundary = document.createElement('td');
+    const retention = report.retention[resetClass];
+    boundary.textContent = `Artifact ${retention.artifact}; memory ${retention.volatileMemory}; model ${retention.modelControls}; inputs ${retention.inputs}; worker ${retention.worker}.`;
+    const observed = document.createElement('td');
+    const list = document.createElement('ul'); list.className = 'long-duration-facts';
+    const facts = [
+      `Fixed SRAM 0x100: 0x${first.before.volatileByte.toString(16).toUpperCase()} → 0x${first.after.volatileByte.toString(16).toUpperCase()}`,
+      `CPU: ${first.before.cpuCycles}/${first.before.instructions} → ${first.after.cpuCycles}/${first.after.instructions} cycles/instructions`,
+      `Controls: pot ${first.before.controls.potPosition}, button ${first.before.controls.buttonPressed} → pot ${first.after.controls.potPosition}, button ${first.after.controls.buttonPressed}`,
+      `After: pending ${first.after.pending}, input log ${first.after.inputLog}, trace ${first.after.trace}, Serial ${first.after.serial}, faults ${first.after.faults}`,
+    ];
+    for (const fact of facts) { const item = document.createElement('li'); item.textContent = fact; list.append(item); }
+    observed.append(list);
+    const result = document.createElement('td'); result.className = 'long-duration-outcomes';
+    for (const execution of executions) {
+      const badge = document.createElement('span'); badge.className = 'long-duration-outcome-badge';
+      badge.dataset.status = execution.outcome.academicStatus;
+      badge.textContent = `${execution.repeat} · ${execution.outcome.academicStatus} · job ${execution.outcome.jobStatus}`;
+      result.append(badge);
+    }
+    const raw = document.createElement('td'); const details = document.createElement('details');
+    details.className = 'long-duration-raw reset-class-raw'; const summary = document.createElement('summary');
+    summary.textContent = 'Full producer evidence'; const pre = document.createElement('pre');
+    pre.textContent = JSON.stringify(executions, null, 2); details.append(summary, pre); raw.append(details);
+    row.append(identity, boundary, observed, result, raw); elements.resetclassresults.append(row);
+  }
+  elements.resetclassstate.textContent = '3 classes · 2/2 repeats each';
+  elements.resetclassexport.disabled = false;
+  elements.resetclasssummary.textContent = `Semantic report ${report.semanticSha256}. Validation, infrastructure and academic evidence failure remain distinct.`;
+}
+
+async function proveFreshPowerWorker(hex) {
+  const worker = new Worker('./simulator.worker.js', { type: 'module' });
+  const channel = eventOrderWorkerChannel(worker);
+  try {
+    worker.postMessage({ command: 'init', hex, circuit: DEFAULT_CIRCUIT,
+      instruments: { logicChannels: ['D13', 'D2'], serialHistoryLimit: 512 } });
+    await channel.next((message) => message.kind === 'ready');
+    worker.postMessage({ command: 'run' });
+    await channel.next((message) => message.kind === 'status' && message.cycle > 0);
+    worker.postMessage({ command: 'init', hex, circuit: DEFAULT_CIRCUIT,
+      instruments: { logicChannels: ['D13', 'D2'], serialHistoryLimit: 512 } });
+    const { data: ready, record } = await channel.next((message) => message.kind === 'ready' && message.cycle === 0);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const stale = channel.after(record.index).filter((message) => message.kind === 'status' && message.cycle > 0);
+    return ready.instructions === 0 && stale.length === 0;
+  } finally { worker.postMessage({ command: 'dispose' }); worker.terminate(); }
+}
+
+async function runBrowserResetClassSuite() {
+  if (resetClassRunning) throw Object.assign(new Error('RESET_CLASS_BUSY'), { code: 'RESET_CLASS_BUSY' });
+  resetClassRunning = true; resetClassReport = null; renderResetClassReport(null);
+  elements.resetclassrun.disabled = true; elements.resetclassstate.textContent = 'Compiling one fixture…';
+  try {
+    const artifact = await compileLongDurationSource(X29_FIXTURE_SOURCE);
+    const executions = [];
+    for (const resetClass of RESET_CLASSES) for (const repeat of X31_RESET_CLASS_SUITE.repeats) {
+      elements.resetclassstate.textContent = `${resetClass} · repeat ${repeat}…`;
+      const workerGenerationRetired = resetClass === 'power-on'
+        ? await proveFreshPowerWorker(artifact.hex) : false;
+      executions.push(executeResetClass({ hex: artifact.hex, artifactSha256: artifact.artifactSha256,
+        resetClass, repeat, workerGenerationRetired }));
+    }
+    const classSemanticSha256 = {};
+    for (const resetClass of RESET_CLASSES) {
+      classSemanticSha256[resetClass] = await resetClassSha256(stableResetStringify(resetExecutionProjection(
+        executions.find((item) => item.resetClass === resetClass))));
+    }
+    let validationCode = null;
+    try { validateResetClass('browser-reload'); } catch (error) { validationCode = error.code; }
+    const leaked = structuredClone(executions[0]); leaked.after.volatileByte = X31_RESET_CLASS_SUITE.fixture.dirtyValue;
+    const report = { schema: RESET_CLASS_REPORT_SCHEMA, suiteId: X31_RESET_CLASS_SUITE.suiteId,
+      suiteSha256: await resetClassSuiteIdentity(), profile: X31_RESET_CLASS_SUITE.profile,
+      sourceSha256: X31_RESET_CLASS_SUITE.fixture.sourceSha256,
+      artifactSha256: artifact.artifactSha256,
+      producer: 'bounded RuntimeKernel/avr8js fixture plus actual simulator.worker generation barrier',
+      retention: structuredClone(X31_RESET_CLASS_SUITE.retention), executions, classSemanticSha256,
+      validationProbe: { status: 'rejected-before-execution', code: validationCode,
+        academicOutcomeCreated: false },
+      infrastructureProbe: { status: 'classified-without-execution', code: 'RESET_WORKER_UNAVAILABLE',
+        academicOutcomeCreated: false },
+      evidenceFailureProbe: { status: 'failed-as-expected', code: 'RESET_MEMORY_LEAK',
+        outcome: evaluateResetClassExecution(leaked) },
+      limits: structuredClone(X31_RESET_CLASS_SUITE.limits) };
+    report.semanticSha256 = await resetClassSha256(stableResetStringify(semanticResetClassProjection(report)));
+    resetClassReport = await validateResetClassReport(report);
+    renderResetClassReport(resetClassReport);
+    return structuredClone(resetClassReport);
+  } finally { resetClassRunning = false; elements.resetclassrun.disabled = false; }
+}
+
+function exportResetClassReport() {
+  if (!resetClassReport) return;
+  const text = `${JSON.stringify(resetClassReport, null, 2)}\n`;
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const link = document.createElement('a'); link.href = url;
+  link.download = `x31-reset-classes-${resetClassReport.semanticSha256.slice(0, 12)}.intent-mcu-reset.json`;
+  link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 async function selectRegressionProfile(profile) {
   if (selectedCompilerProfile === profile) return;
   elements.boardselect.value = profile;
@@ -2845,6 +2986,8 @@ elements.timeinvariancerun.addEventListener('click', () => { void runBrowserTime
 elements.timeinvarianceexport.addEventListener('click', exportTimeInvarianceReport);
 elements.eventorderrun.addEventListener('click', () => { void runBrowserEventOrderSuite(); });
 elements.eventorderexport.addEventListener('click', exportEventOrderReport);
+elements.resetclassrun.addEventListener('click', () => { void runBrowserResetClassSuite(); });
+elements.resetclassexport.addEventListener('click', exportResetClassReport);
 for (const input of [elements.source, elements.picosource, elements.c3source, elements.stm32source,
   elements.projectopeninput, elements.picoopeninput, elements.c3openinput, elements.stm32openinput,
   elements.boardselect]) {
@@ -2895,6 +3038,14 @@ window.__X30_EVENT_ORDER__ = Object.freeze({
   passed: () => eventOrderReport ? eventOrderReportPassed(eventOrderReport) : false,
   clear: (reason = 'X30 report cleared. Run the suite again for current evidence.') => invalidateEventOrderReport(reason),
 });
+window.__X31_RESET_CLASSES__ = Object.freeze({
+  get ready() { return resetClassReady; },
+  suite: () => structuredClone(X31_RESET_CLASS_SUITE),
+  report: () => resetClassReport ? structuredClone(resetClassReport) : null,
+  run: () => runBrowserResetClassSuite(),
+  passed: () => resetClassReport ? resetClassReportPassed(resetClassReport) : false,
+  clear: (reason = 'X31 report cleared. Run the suite again for current evidence.') => invalidateResetClassReport(reason),
+});
 void regressionMatrixIdentity().then((identity) => {
   elements.regressionmatrixidentity.textContent = `Immutable matrix SHA-256 ${identity} · four exact fixture/source hashes · four distinct oracles`;
   regressionMatrixReady = true;
@@ -2910,6 +3061,10 @@ void timeSuiteIdentity().then((identity) => {
 void eventOrderSuiteIdentity().then((identity) => {
   elements.eventorderidentity.textContent = `Immutable X30 contract SHA-256 ${identity} · paused AVR epoch · producer order only`;
   eventOrderReady = true;
+});
+void resetClassSuiteIdentity().then((identity) => {
+  elements.resetclassidentity.textContent = `Immutable X31 contract SHA-256 ${identity} · three explicit AVR reset classes · fixed fixture memory diagnostic`;
+  resetClassReady = true;
 });
 
 function renderLifecycle() {
@@ -7223,6 +7378,7 @@ async function build() {
   invalidateLongDurationReport('A new build cleared the prior X28 report. Run the suite again for current evidence.');
   invalidateTimeInvarianceReport('A new build cleared the prior X29 report. Run the suite again for current evidence.');
   invalidateEventOrderReport('A new build cleared the prior X30 report. Run the suite again for current evidence.');
+  invalidateResetClassReport('A new build cleared the prior X31 report. Run the suite again for current evidence.');
   const target = currentCompilerTarget();
   if (!target.compileAvailable) {
     const missing = firstMissingTargetPrerequisite(target.profile);

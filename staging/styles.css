@@ -870,6 +870,18 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .event-order-cell strong { color: var(--text); font-size: .78rem; line-height: 1.35; }
 .event-order-cell code { margin-top: 7px; color: var(--cyan); font-size: .62rem; line-height: 1.45; overflow-wrap: anywhere; }
 .event-order-table td { overflow-wrap: anywhere; }
+.reset-class-table-wrap { max-width: 100%; }
+.reset-class-table { min-width: 980px; table-layout: fixed; }
+.reset-class-table th:nth-child(1) { width: 15%; }
+.reset-class-table th:nth-child(2) { width: 25%; }
+.reset-class-table th:nth-child(3) { width: 29%; }
+.reset-class-table th:nth-child(4) { width: 14%; }
+.reset-class-table th:nth-child(5) { width: 17%; }
+.reset-class-cell strong, .reset-class-cell code { display: block; }
+.reset-class-cell strong { color: var(--text); font-size: .78rem; line-height: 1.35; }
+.reset-class-cell code { margin-top: 7px; color: var(--cyan); font-size: .62rem; line-height: 1.45; overflow-wrap: anywhere; }
+.reset-class-table td { overflow-wrap: anywhere; }
+.reset-class-table .long-duration-outcome-badge[data-status="passed"] { color: var(--lime); }
 .instrument-grid { display: grid; grid-template-columns: 1.5fr .72fr; gap: 16px; margin-top: 16px; }
 .instrument-evidence { grid-column: 1 / -1; overflow: hidden; background: linear-gradient(135deg, #0a1b29 0%, #0b2531 58%, #10271f 100%); border-color: #2a627f; }
 .instrument-evidence::before { content: ''; display: block; height: 3px; margin: -18px -18px 16px; background: linear-gradient(90deg, var(--cyan), var(--lime)); }
