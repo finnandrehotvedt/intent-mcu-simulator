@@ -14,6 +14,12 @@ const profiles = [
   'board.esp32-c3-devmodule-v1',
   'board.stm32f429zi-nucleo144-v1',
 ];
+const fullscreenControls = {
+  'board.atmega328p-16mhz-v1': '#fullscreen-canvas',
+  'board.rp2040-pico-v1': '#pico-fullscreen',
+  'board.esp32-c3-devmodule-v1': '#c3-fullscreen',
+  'board.stm32f429zi-nucleo144-v1': '#stm32-fullscreen',
+};
 
 async function selectProfile(page, id) {
   await page.selectOption('#board-select', id);
@@ -86,7 +92,13 @@ async function metrics(page) {
         assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('#help-limits-open')), true);
         assert(Math.abs((await page.evaluate(() => scrollY)) - scrollBefore) <= 1);
 
-        report.cases.push({ viewport, profile, initial, stages, after, dialogFocusAndScrollPreserved:true });
+        await page.click(fullscreenControls[profile]);
+        await page.waitForFunction(() => document.fullscreenElement !== null);
+        assert.equal(await page.evaluate(() => document.fullscreenElement.contains(document.querySelector('#top-workbench-sticky-controls'))), false);
+        await page.evaluate(() => document.exitFullscreen());
+        await page.waitForFunction(() => document.fullscreenElement === null);
+
+        report.cases.push({ viewport, profile, initial, stages, after, dialogFocusAndScrollPreserved:true, fullscreenCanvasUnobscured:true });
       }
       await page.screenshot({ path:path.join(output, `${viewport.width}x${viewport.height}.png`), fullPage:false });
       await context.close();
