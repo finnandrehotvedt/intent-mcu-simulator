@@ -23,13 +23,17 @@ const failureHoldPath = path.join(evidenceDir, 'failure-hold.json');
 const onlyProfiles = new Set((process.env.X70_ONLY || '').split(',').map((value) => value.trim()).filter(Boolean));
 const profiles = [
   { id: 'board.atmega328p-16mhz-v1', slug: 'avr', build: '#quick-build', run: '#quick-run',
-    pause: '#quick-pause', state: '__M6_STATE__', built: 'succeeded', complete: 'paused', timeout: 45_000 },
+    pause: '#quick-pause', save: '#project-save', open: '#project-open-input',
+    state: '__M6_STATE__', built: 'succeeded', complete: 'paused', timeout: 45_000 },
   { id: 'board.rp2040-pico-v1', slug: 'pico', build: '#quick-build', run: '#quick-run',
-    pause: '#quick-pause', state: '__RP2040_PUBLIC_STATE__', built: 'built', complete: 'paused', timeout: 45_000 },
+    pause: '#quick-pause', save: '#pico-save', open: '#pico-open-input',
+    state: '__RP2040_PUBLIC_STATE__', built: 'built', complete: 'paused', timeout: 45_000 },
   { id: 'board.esp32-c3-devmodule-v1', slug: 'c3', build: '#quick-build', run: '#quick-run',
-    state: '__ESP32C3_PUBLIC_STATE__', built: 'built', complete: 'complete', timeout: 190_000 },
+    save: '#c3-save', open: '#c3-open-input', state: '__ESP32C3_PUBLIC_STATE__',
+    built: 'built', complete: 'complete', timeout: 190_000 },
   { id: 'board.stm32f429zi-nucleo144-v1', slug: 'stm32', build: '#quick-build', run: '#quick-run',
-    state: '__STM32_PUBLIC_STATE__', built: 'built', complete: 'completed', timeout: 190_000 },
+    save: '#stm32-save', open: '#stm32-open-input', state: '__STM32_PUBLIC_STATE__',
+    built: 'built', complete: 'completed', timeout: 190_000 },
 ];
 const journeyProfiles = onlyProfiles.size
   ? profiles.filter(({ slug }) => onlyProfiles.has(slug))
@@ -231,9 +235,13 @@ async function assertActiveRejected(page, profile) {
 async function downloadAndValidate(page, context, profile, setStage = () => {}) {
   setStage('export-click-download');
   const beforeStorage = await page.evaluate(storage);
-  const downloadEvent = page.waitForEvent('download', { timeout: 20_000 });
-  await page.click('#accessible-svg-export');
-  const download = await downloadEvent;
+  const exportButton = page.locator('#accessible-svg-export');
+  assert.equal(await exportButton.isVisible(), true, `${profile.slug}: positive export hidden`);
+  assert.equal(await exportButton.isDisabled(), false, `${profile.slug}: positive export disabled`);
+  const [download] = await Promise.all([
+    page.waitForEvent('download', { timeout: 20_000 }),
+    exportButton.click({ noWaitAfter: true }),
+  ]);
   const target = path.join(evidenceDir, `${profile.slug}.current-runtime.accessible-demonstration.svg`);
   await download.saveAs(target);
   setStage('export-status');
@@ -267,10 +275,26 @@ async function downloadAndValidate(page, context, profile, setStage = () => {}) 
   return { source, report: result.report, native, sha256: sha256(source), bytes: Buffer.byteLength(source) };
 }
 
-async function reopenAuthoredProject(page, profile) {
-  const source = await page.evaluate((id) => window.__COMMON_PROJECT_FILES__.current(id), profile.id);
-  await page.setInputFiles('#project-open-input', {
-    name: `${profile.slug}.intent-mcu.json`, mimeType: 'application/json', buffer: Buffer.from(source),
+async function reopenAuthoredProject(page, profile, setStage = () => {}) {
+  setStage('project-save-download');
+  if (!await page.locator('#workbench-project-dialog').evaluate((node) => node.open)) {
+    await page.locator('#project-files-open').click();
+    await page.waitForSelector('#workbench-project-dialog[open]');
+  }
+  const saveButton = page.locator(profile.save);
+  assert.equal(await saveButton.isVisible(), true, `${profile.slug}: project Save hidden`);
+  assert.equal(await saveButton.isDisabled(), false, `${profile.slug}: project Save disabled`);
+  const [download] = await Promise.all([
+    page.waitForEvent('download', { timeout: 20_000 }),
+    saveButton.click({ noWaitAfter: true }),
+  ]);
+  const target = path.join(evidenceDir, `${profile.slug}.saved-project.intent-mcu.json`);
+  await download.saveAs(target);
+  const source = fs.readFileSync(target, 'utf8');
+  assert(source.length > 100, `${profile.slug}: saved project empty`);
+  setStage('project-open');
+  await page.setInputFiles(profile.open, {
+    name: download.suggestedFilename(), mimeType: 'application/json', buffer: Buffer.from(source),
   });
   if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
   await page.waitForFunction(() => window.__SHARED_INSTRUMENT_SUMMARY__?.state === 'no-current-runtime');
@@ -385,7 +409,8 @@ async function reopenAuthoredProject(page, profile) {
         await page.screenshot({ path: path.join(evidenceDir, 'avr-current-runtime-control.png'), fullPage: false });
       }
       stage = `${profile.slug}:save-open-invalidation`;
-      await reopenAuthoredProject(page, profile);
+      await reopenAuthoredProject(page, profile,
+        (substage) => { stage = `${profile.slug}:save-open-invalidation:${substage}`; });
     }
 
     assert.equal(builds, journeyProfiles.length); assert.equal(runs, journeyProfiles.length);
