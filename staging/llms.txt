@@ -8,6 +8,9 @@ Licence: Apache-2.0 for project-owned source; third-party components keep their 
 Current public version: 1.1.0-rc.80
 Machine-readable release changes: /release-changes.json (strict static
 intent-mcu-release-changes@1 metadata; no Apply, Build, Run, replay or verdict authority).
+Manual physical verification checklist: /physical-checklist.html (23 finite
+profile-owned items; current-tab records are unverified user statements, not
+device measurements, automatic verdicts, safety evidence or certification).
 
 Local files: Download copy and ordinary Open are the reliable all-browser
 actions. Supported secure desktop browsers may additionally offer explicit
@@ -76,6 +79,7 @@ board or parts as interchangeable with another profile.
 - STM32 first project: https://lab.teachthecompany.com/examples.html#stm32-first-project
 - Thermostat boundary experiment: https://lab.teachthecompany.com/examples.html#thermostat-boundary-test
 - Help and limitations: https://lab.teachthecompany.com/support.html
+- Physical verification checklist: https://lab.teachthecompany.com/physical-checklist.html
 - Contribution guide: https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/CONTRIBUTING.md
 - Security policy: https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/SECURITY.md
 - Project story: https://finnandre.no/2026/10/06/intent-mcu-simulator-apen-kildekode/

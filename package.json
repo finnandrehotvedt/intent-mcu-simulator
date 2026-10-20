@@ -94,6 +94,8 @@
     "test:x41:browser": "node test/x41-experiment-package-comparison-browser.cjs",
     "test:x88": "node --test --test-concurrency=1 test/x88-release-changes.test.mjs test/release-identity-copy.test.mjs test/capability-discovery.test.mjs",
     "test:x88:browser": "node test/x88-release-changes-browser.cjs",
+    "test:x76": "node --test --test-concurrency=1 test/x76-physical-checklist.test.mjs",
+    "test:x76:browser": "node test/x76-physical-checklist-browser.cjs",
     "test:docs-release": "node --test --test-concurrency=1 test/docs-x72-release.test.mjs test/x72-example-progression.test.mjs test/release-identity-copy.test.mjs test/public-release-projection.test.mjs",
     "example:mcp": "node examples/mcp-reference-experiment.mjs",
     "experiment:headless": "node tools/headless-experiment-runner.mjs",

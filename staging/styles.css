@@ -1322,6 +1322,49 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
 .component-doc-matrix td:not(.status-supported):not(.status-limited) { color: var(--muted); }
 .status-supported { color: var(--lime); font-weight: 800; }
 .status-limited { color: var(--amber); font-weight: 800; }
+.physical-checklist-main { display: grid; gap: 14px; }
+.physical-boundary { display: grid; gap: 4px; padding: 14px 16px; border: 2px solid var(--amber); border-radius: 12px; background: #201b0c; color: var(--muted); }
+.physical-boundary strong { color: var(--amber); font-size: 1rem; }
+.physical-boundary[data-present="true"] { border-color: var(--cyan); background: #08212a; }
+.physical-boundary[data-present="true"] strong { color: var(--cyan); }
+.physical-checklist-controls { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(260px, 1fr); gap: 10px 18px; align-items: end; }
+.physical-checklist-controls > div:first-child, .physical-checklist-controls #physical-status { grid-column: 1 / -1; }
+.physical-checklist-controls label, .physical-checklist-item > label { display: grid; gap: 6px; color: var(--muted); font-size: .78rem; font-weight: 800; }
+.physical-checklist-controls select, .physical-checklist-item select, .physical-observation input { min-height: 42px; padding: 8px 10px; border: 1px solid #31536c; border-radius: 8px; color: var(--text); background: #06131e; }
+.physical-checklist-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.physical-checklist-identity dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.physical-checklist-identity dl div { min-width: 0; padding: 9px; border: 1px solid var(--line); border-radius: 8px; background: #06131e; }
+.physical-checklist-identity dt { color: var(--muted); font-size: .7rem; }
+.physical-checklist-identity dd { margin: 4px 0 0; overflow-wrap: anywhere; }
+.physical-checklist-list { display: grid; gap: 12px; }
+.physical-checklist-item { display: grid; gap: 12px; break-inside: avoid; }
+.physical-item-heading { display: flex; justify-content: space-between; gap: 16px; align-items: start; }
+.physical-item-heading .eyebrow { display: inline-block; margin: 0 0 5px 8px; }
+.physical-item-number { display: inline-grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; background: var(--cyan); color: #04111b; font-weight: 900; }
+.physical-item-heading h2 { margin-top: 4px; }
+.physical-basis { padding: 5px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--lime); font: 800 .68rem ui-monospace, monospace; white-space: nowrap; }
+.physical-basis[data-basis="project-model"] { color: var(--amber); }
+.physical-basis[data-basis="unavailable"] { color: var(--danger); }
+.physical-observation { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 12px; border: 1px solid #31536c; border-radius: 9px; }
+.physical-observation legend { color: var(--amber); font-weight: 800; }
+.physical-observation label { display: grid; gap: 4px; color: var(--muted); font-size: .72rem; }
+#physical-status[data-valid="false"] { color: var(--danger); }
+.physical-certification-boundary { border-color: var(--amber); }
+@media (max-width: 640px) {
+  .physical-checklist-controls, .physical-checklist-identity dl, .physical-observation { grid-template-columns: 1fr; }
+}
+@media print {
+  :root { color-scheme: light; }
+  body { background: #fff; color: #111; }
+  .no-print { display: none !important; }
+  .docs-main { width: 100%; padding: 0; }
+  .panel, .physical-boundary { color: #111; background: #fff; border-color: #555; box-shadow: none; }
+  .physical-boundary strong, .physical-item-heading h2, .physical-checklist-identity h2, .physical-certification-boundary h2 { color: #111; }
+  .physical-checklist-item { page-break-inside: avoid; }
+  .physical-observation input, .physical-checklist-item select { color: #111; background: #fff; border-color: #777; }
+  .physical-basis { color: #111 !important; border-color: #777; }
+  .docs-intro, .truth, footer { color: #222 !important; }
+}
 @media (max-width: 640px) {
   .checkable-evidence-grid { grid-template-columns: 1fr; }
   .docs-grid { grid-template-columns: 1fr; }

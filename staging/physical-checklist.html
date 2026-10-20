@@ -1,0 +1,46 @@
+<!-- SPDX-License-Identifier: Apache-2.0; Copyright 2026 Finn Andre Hotvedt and IntentForce -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Manual physical-verification checklist for the four exact Intent MCU Simulator controller profiles.">
+  <meta name="robots" content="index,follow,max-snippet:-1">
+  <title>Physical verification checklist | Intent MCU Simulator</title>
+  <link rel="canonical" href="https://lab.teachthecompany.com/physical-checklist.html">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="docs-main physical-checklist-main">
+    <header class="app-header"><div><p class="eyebrow">X76 · MANUAL PHYSICAL BOUNDARY</p><h1>Physical verification checklist</h1></div><p class="lede">Record what still needs a real bench measurement without turning a simulation or a typed note into physical proof.</p></header>
+    <nav class="docs-nav no-print" aria-label="Lab documentation"><a href="/">Open workbench</a><a href="/controllers.html">Controllers</a><a href="/components.html">Components</a><a href="/examples.html">Examples</a><a href="/support.html">Support</a></nav>
+    <aside class="physical-boundary" id="physical-boundary" role="status" aria-live="polite"><strong>Physical evidence absent</strong><span>Manual check not measured. Simulator evidence is not physical-board evidence.</span></aside>
+    <section class="panel physical-checklist-controls no-print" aria-labelledby="checklist-controls-title">
+      <div><p class="eyebrow">CURRENT TAB ONLY</p><h2 id="checklist-controls-title">Choose an exact controller profile</h2></div>
+      <label for="physical-profile">Controller profile</label>
+      <select id="physical-profile"></select>
+      <div class="physical-checklist-actions">
+        <button type="button" id="physical-open">Open checklist file</button>
+        <input type="file" id="physical-file" accept="application/json,.json" hidden>
+        <button type="button" id="physical-download">Download JSON</button>
+        <button type="button" id="physical-print">Print checklist</button>
+        <button type="button" id="physical-clear">Clear current tab</button>
+      </div>
+      <p id="physical-status" class="truth" role="status" aria-live="polite">Ready. Nothing is uploaded or retained after reload.</p>
+    </section>
+    <section class="panel physical-checklist-identity" aria-labelledby="checklist-identity-title">
+      <h2 id="checklist-identity-title">Inert checklist identity</h2>
+      <dl id="physical-identity"></dl>
+      <p class="truth">The source commit below is the immutable rc.80 definition baseline, not a claim that it is this page's eventual implementation commit. Opening this file cannot change a project, profile, source, graph, history, artifact, runtime, result or worker.</p>
+    </section>
+    <section class="physical-checklist-list" id="physical-items" aria-label="Manual physical verification items"></section>
+    <section class="panel physical-certification-boundary">
+      <h2>Manual record, not certification</h2>
+      <p class="docs-intro">This page does not access USB, Serial, WebUSB, WebSerial, HID, Bluetooth or any physical device. It supplies no automatic pass, safe, compliant or certification verdict. A user-entered observation is not independently verified. Use the exact board documentation and suitable current-limited bench equipment under competent supervision.</p>
+    </section>
+    <footer>Intent MCU Simulator 1.1.0-rc.80 · physical evidence is absent until manually recorded · no device access, firmware action, automatic verdict or certification</footer>
+  </main>
+  <script type="module" src="/physical-checklist.js"></script>
+</body>
+</html>
