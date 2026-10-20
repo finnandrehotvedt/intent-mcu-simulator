@@ -45,7 +45,32 @@ Stop or identity/continuity change invalidates it. Nothing is stored in the
 project, browser storage, a service worker or a server. A captured window is an
 observation, not a failure diagnosis, test verdict or causal claim.
 
-Private tests may replay successive prefixes of the checksum-pinned preserved
-AVR runtime fixture. That fixture's owning X70 recovery journey was not
-accepted, and fixture replay is not a live X42 arm-before-edge observation.
-X42 remains planned until separately authorized live acceptance.
+The native core evidence accepted for private review was produced from product
+source `e1eb513ab99ed24f93581398b73eaadd09f60e99` with the visibly edited,
+111-byte 20 ms acceptance fixture whose source SHA-256 is
+`5611d06a4e15ab110c0ddde5692723c36999baa8ddd104901396430bcb0b532f`.
+Its actual compiled-artifact identity is
+`c6998b25e46fa70fbe47f36513c26294a6f5c0f0f8f361b14828c41f0689db5c`.
+The avr8js worker capture bound project generation 2, runtime generation 8 and
+revision 5; Arm at cycle 6,085,550 preceded the rising trigger at cycle
+6,403,174. The 33 rows cover relative positions -16 through +16, preserve
+source ordinals 4 through 36 and report zero source and retention drops.
+
+Private presentation and lifecycle tests replay successive prefixes from the
+checksum-pinned native failure envelope SHA-256
+`dc09bb77de76cee6bb5787c767a8198d009a57523555681a47b6fa0cef52dcd1`.
+Replay proves current rendering, keyboard operation and authority invalidation;
+it is not a new compiler, worker or native run. Rejected and cancelled visible
+Open preserve an exact capture. Accepted visible Open and an actual graph edit
+clear replayed rows through current authority signals, but that replay is not a
+claim that those Open actions followed the original native run.
+
+The X42 panel keeps row text and meaningful labels at or above 12 px on the
+tested desktop viewports. Its 33-row list scrolls vertically inside the panel,
+long identities wrap, and the trigger row uses both color and a border/background
+highlight. These are presentation constraints only; they do not change the
+observer, runtime, model or evidence authority.
+
+The native core capture is accepted as private evidence. X42 as a whole remains
+planned until the readability diff, targeted screenshots and replay evidence
+receive separate Desktop review and public-release authorization.

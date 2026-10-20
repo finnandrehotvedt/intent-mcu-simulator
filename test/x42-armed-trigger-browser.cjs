@@ -9,8 +9,8 @@ const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/
 
 const base = process.env.X42_URL || 'http://127.0.0.1:18789';
 const fixturePath = process.env.X42_AVR_FIXTURE
-  || '/srv/codex-workspaces/intentforce-station/handoffs/desktop-etvt6l5-ct109-lab-x70-avr-pico-acceptance-recovery-20261020-001/browser/avr-recovery/failure-state.json';
-const expectedFixtureHash = '5989993916aa2a07eb2be6ae31546801565e71a7f32484a8715f83f4f2d64946';
+  || '/srv/codex-workspaces/intentforce-station/handoffs/desktop-etvt6l5-ct109-lab-x42-virtual-budget-native-20261020-001/evidence/x42-native-failure.json';
+const expectedFixtureHash = 'dc09bb77de76cee6bb5787c767a8198d009a57523555681a47b6fa0cef52dcd1';
 const X42_OBSERVER_INTERVAL_MS = 50;
 const evidenceDir = process.env.X42_EVIDENCE_DIR || '';
 const viewports = [{ width: 1366, height: 768 }, { width: 1440, height: 900 }];
@@ -37,7 +37,16 @@ async function inject(page, actual, length, lifecycle = actual.avrState.lifecycl
 (async () => {
   const bytes = await readFile(fixturePath);
   assert.equal(createHash('sha256').update(bytes).digest('hex'), expectedFixtureHash);
-  const actual = JSON.parse(bytes);
+  const envelope = JSON.parse(bytes);
+  assert.equal(envelope.schema, 'x42-native-failure@1');
+  assert.equal(envelope.phase, 'native-capture-validation');
+  assert.equal(envelope.browser.capture.state, 'captured');
+  assert.equal(envelope.browser.capture.binding.artifactIdentity,
+    'c6998b25e46fa70fbe47f36513c26294a6f5c0f0f8f361b14828c41f0689db5c');
+  const actual = {
+    sharedSummary: envelope.browser.summary,
+    avrState: { lifecycle: envelope.browser.lifecycle },
+  };
   if (evidenceDir) await mkdir(evidenceDir, { recursive: true });
   const browser = await chromium.launch({ headless: true });
   const reports = [];
@@ -108,16 +117,44 @@ async function inject(page, actual, length, lifecycle = actual.avrState.lifecycl
       assert.equal(await page.evaluate(() => window.__X42_TRIGGER_CAPTURE__.observerActive()), false);
       assert.equal(await panel.locator('[data-x42-rows] li').count(), 33);
 
-      if (evidenceDir) await page.locator('#workbench-instruments-dialog').screenshot({
-        path: path.join(evidenceDir, `x42-advanced-${viewport.width}x${viewport.height}.png`),
+      await panel.scrollIntoViewIfNeeded();
+      const readability = await panel.evaluate((root) => {
+        const px = (selector) => [...root.querySelectorAll(selector)].map((node) => parseFloat(getComputedStyle(node).fontSize));
+        const rows = root.querySelector('[data-x42-rows]');
+        const trigger = root.querySelector('[data-relative-position="0"]');
+        const rect = root.getBoundingClientRect();
+        return {
+          fonts: {
+            heading: px('.shared-instrument-tool-heading'), boundary: px('.x42-trigger-boundary'),
+            limits: px('[data-x42-limits]'), labels: px('.x42-trigger-controls label'),
+            factLabels: px('.x42-trigger-facts dt'), facts: px('.x42-trigger-facts dd'), rows: px('[data-x42-rows]'),
+          },
+          rows: { overflowY: getComputedStyle(rows).overflowY, scrollHeight: rows.scrollHeight, clientHeight: rows.clientHeight },
+          trigger: { color: getComputedStyle(trigger).color, background: getComputedStyle(trigger).backgroundColor,
+            borderLeftWidth: parseFloat(getComputedStyle(trigger).borderLeftWidth) },
+          panel: { width: rect.width, height: rect.height },
+        };
+      });
+      for (const [name, values] of Object.entries(readability.fonts)) {
+        assert(values.length > 0, `${name} readability target missing`);
+        assert(values.every((value) => value >= 12), `${name} below 12px: ${JSON.stringify(values)}`);
+      }
+      assert.match(readability.rows.overflowY, /auto|scroll/u);
+      assert(readability.rows.scrollHeight > readability.rows.clientHeight, '33 rows must scroll inside the X42 panel');
+      assert.notEqual(readability.trigger.background, 'rgba(0, 0, 0, 0)');
+      assert(readability.trigger.borderLeftWidth >= 3);
+
+      if (evidenceDir) await panel.screenshot({
+        path: path.join(evidenceDir, `x42-native-replay-panel-advanced-${viewport.width}x${viewport.height}.png`),
       });
       await page.click('#workbench-instruments-dialog .workbench-popup-close');
       await page.click('#workbench-view-simple');
       await page.click('#instruments-open');
       assert.equal(await page.evaluate(() => window.__X42_TRIGGER_CAPTURE__.snapshot().state), 'captured');
       assert.equal(await panel.locator('[data-x42-rows] li').count(), 33);
-      if (evidenceDir) await page.locator('#workbench-instruments-dialog').screenshot({
-        path: path.join(evidenceDir, `x42-simple-${viewport.width}x${viewport.height}.png`),
+      await panel.scrollIntoViewIfNeeded();
+      if (evidenceDir) await panel.screenshot({
+        path: path.join(evidenceDir, `x42-native-replay-panel-simple-${viewport.width}x${viewport.height}.png`),
       });
 
       const recapture = async () => {
@@ -139,28 +176,56 @@ async function inject(page, actual, length, lifecycle = actual.avrState.lifecycl
         }
       };
 
-      // Rejected Open is atomic and does not discard a still-valid capture.
-      await page.setInputFiles('#project-open-input', {
+      // The historical native fixture is presentation/lifecycle replay only.
+      // Rejected and cancelled visible Open preserve its still-valid binding.
+      await closeInstruments();
+      await page.click('#project-files-open');
+      await page.waitForSelector('#workbench-project-dialog[open]');
+      const projectDialog = page.locator('#workbench-project-dialog');
+      const openButton = projectDialog.locator('#project-open');
+      assert.equal(await openButton.count(), 1);
+      assert.equal(await openButton.isVisible(), true);
+      let chooserPromise = page.waitForEvent('filechooser');
+      await openButton.click();
+      let chooser = await chooserPromise;
+      await chooser.setFiles({
         name: 'rejected.intent-mcu.json', mimeType: 'application/json', buffer: Buffer.from('{"schema":'),
       });
       await page.waitForFunction(() => document.querySelector('#project-message').textContent.includes('Open rejected'));
       assert.equal(await page.evaluate(() => window.__X42_TRIGGER_CAPTURE__.snapshot().state), 'captured');
-      assert.equal(await panel.locator('[data-x42-rows] li').count(), 33);
 
-      // An accepted actual file Open advances the authoritative project
-      // generation. The old rows are cleared before the instrument view can
-      // present them as current.
+      chooserPromise = page.waitForEvent('filechooser');
+      await openButton.click();
+      chooser = await chooserPromise;
+      await chooser.setFiles([]);
+      await page.waitForTimeout(100);
+      assert.equal(await page.evaluate(() => window.__X42_TRIGGER_CAPTURE__.snapshot().state), 'captured');
+      await page.click('#workbench-project-dialog .workbench-popup-close');
+      await page.click('#instruments-open');
+      assert.equal(await panel.locator('[data-x42-rows] li').count(), 33);
+      await closeInstruments();
+      await page.click('#project-files-open');
+      await page.waitForSelector('#workbench-project-dialog[open]');
+
+      // Accepted visible Open advances authority and clears the replayed rows.
       const currentProject = await page.evaluate(() => window.__COMMON_PROJECT_FILES__.current());
-      await page.setInputFiles('#project-open-input', {
+      chooserPromise = page.waitForEvent('filechooser');
+      await openButton.click();
+      chooser = await chooserPromise;
+      await chooser.setFiles({
         name: 'accepted.intent-mcu.json', mimeType: 'application/json', buffer: Buffer.from(currentProject),
       });
+      await page.waitForFunction(() => document.querySelector('#unsaved-change-dialog').open
+        || /Common project opened|migrated in memory/u.test(document.querySelector('#project-message').textContent));
+      if (await page.locator('#unsaved-change-dialog').isVisible()) await page.click('#unsaved-discard');
       await page.waitForFunction(() => /Common project opened|migrated in memory/u.test(
         document.querySelector('#project-message').textContent,
       ));
       await page.waitForFunction(() => window.__X42_TRIGGER_CAPTURE__.snapshot().state === 'invalidated');
-      if (!(await page.locator('#workbench-instruments-dialog').evaluate((node) => node.open))) {
-        await page.click('#instruments-open');
+      if (await page.locator('#workbench-project-dialog').evaluate((node) => node.open)) {
+        await page.click('#workbench-project-dialog .workbench-popup-close');
       }
+      await page.click('#instruments-open');
       assert.equal(await panel.locator('[data-x42-rows] li').count(), 1);
       assert.equal(await panel.locator('[data-x42-rows] li').textContent(), 'No captured rows.');
       await inject(page, actual, 37);
@@ -278,11 +343,11 @@ async function inject(page, actual, length, lifecycle = actual.avrState.lifecycl
       assert(activityAfter.width <= 1, `horizontal overflow ${activityAfter.width}px`);
       reports.push({ viewport, capturedRows: captured.capture.rows.length,
         triggerCycle: captured.capture.triggerCycle, finalState: invalidated.state,
-        outsideRequests: outside.length, producerRequests: producerRequests.length, activity: activityAfter });
+        readability, outsideRequests: outside.length, producerRequests: producerRequests.length, activity: activityAfter });
       await page.close();
     }
     process.stdout.write(`${JSON.stringify({ status: 'pass', fixtureSha256: expectedFixtureHash,
-      fixtureAuthority: 'preserved actual-runtime rows; owning X70 journey not accepted; not live X42 evidence',
+      fixtureAuthority: 'checksum-pinned replay of accepted native core evidence; presentation/lifecycle only; not new compiled evidence',
       producers: { builds: 0, runs: 0, scenarios: 0 }, reports }, null, 2)}\n`);
   } finally { await browser.close(); }
 })().catch((error) => { console.error(error); process.exitCode = 1; });
