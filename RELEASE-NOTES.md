@@ -1,4 +1,25 @@
-# Intent MCU Simulator 1.1.0-rc.81
+# Intent MCU Simulator 1.1.0-rc.82
+
+## Honest offline-support matrix
+
+This release publishes the independently reviewed X86 support matrix for the
+exact AVR, RP2040 Pico, ESP32-C3 and STM32F429ZI profiles. One canonical owner
+generates both strict static JSON and the semantic Support table, which remains
+readable without JavaScript.
+
+The matrix distinguishes a fresh offline page from a document already loaded
+before disconnect. Local Download/Open remains available in that loaded tab,
+but Open restores data only, clears executable and runtime authority and still
+requires a fresh same-origin server Build. Fresh offline navigation/reload,
+offline compilation and offline Run remain unsupported or unavailable.
+
+This is documentation of the current boundary, not an offline engine. It adds
+no service worker, app-shell cache, browser toolchain, executable persistence,
+account, storage, Build, Run, replay or verdict authority.
+
+---
+
+## 1.1.0-rc.81
 
 ## Manual physical-verification checklist
 

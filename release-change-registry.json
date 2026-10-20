@@ -31,6 +31,15 @@
       ]
     },
     {
+      "id": "X86",
+      "capabilities": [
+        "intent-mcu-offline-support-matrix@1"
+      ],
+      "contracts": [
+        "x86-honest-offline-support-matrix-v1"
+      ]
+    },
+    {
       "id": "X88",
       "capabilities": [
         "intent-mcu-release-changes@1"

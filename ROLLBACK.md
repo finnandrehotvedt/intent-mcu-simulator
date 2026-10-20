@@ -1,13 +1,13 @@
-# Rollback basis for 1.1.0-rc.81
+# Rollback basis for 1.1.0-rc.82
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain exact accepted rc.80 source commit
-`9baecd8f110dd1dc666e0a3525a83bc65e619071` and VM103 image
-`sha256:0fc49bda9d3e3ae293a4c41bead398e5c7a8c7cb15edb75ba59a840687e47982`
-as the pre-rc.81 app-only recovery basis.
+Retain exact accepted rc.81 source commit
+`028733d4b502628637af5355c5f8414470d6ac16` and VM103 image
+`sha256:22ebae30da42d5b68cce1435a8f33576a03c7257223954b3c4ed388c66cc2304`
+as the pre-rc.82 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.

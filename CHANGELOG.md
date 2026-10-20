@@ -2,6 +2,17 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.82 — 2026-10-20
+
+- Published X86 as one strict static four-profile offline-support matrix on
+  Support and at `/offline-support-matrix.json`, generated from one owner.
+- Separates fresh offline navigation, loaded-document behavior, offline reload,
+  local Download/Open, compiler ownership, runtime ownership and offline Run.
+- Documents the verified loaded-tab local-file boundary while keeping fresh
+  offline navigation/reload, compilation and execution explicitly unavailable.
+- Adds no service worker, cache/offline engine, toolchain, executable
+  persistence, account, storage, firmware action or runtime authority.
+
 ## 1.1.0-rc.81 — 2026-10-20
 
 - Published X76 as a strict local physical-verification checklist for the four

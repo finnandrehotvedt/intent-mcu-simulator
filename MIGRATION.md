@@ -1,8 +1,15 @@
-# Migration to 1.1.0-rc.81
+# Migration to 1.1.0-rc.82
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.82 changes no project, package, runtime, cache or browser-storage schema.
+The X86 matrix is static read-only documentation and grants no offline or
+executable authority. Existing learner files require no conversion. As with
+the prior release-bound manual checklist, an rc.81 checklist record is not
+silently rewritten; create a new rc.82 record if a current-release checklist
+is required.
 
 Rc.81 changes no project, package, runtime or browser-storage schema. Physical
 checklist files are deliberately release-bound manual records: an rc.80 private

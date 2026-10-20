@@ -28,18 +28,18 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc80 to rc81 X76 bytes, longlist and immutable implementation source', async () => {
+test('X88 owner binds canonical rc81 to rc82 X86 bytes, longlist and immutable implementation source', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.81');
+  assert.equal(release.version, '1.1.0-rc.82');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
-  assert(registry.ids.includes('X76'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.80', current: '1.1.0-rc.81' });
+  assert(registry.ids.includes('X86'));
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.81', current: '1.1.0-rc.82' });
   assert.deepEqual(value.changes, [{
-    id: 'X76', classification: 'additive', capabilities: ['intent-mcu-physical-verification-checklist@1'],
-    contracts: ['x76-profile-owned-physical-verification-checklist-v1'],
-    summary: 'Adds a strict local four-profile manual physical-verification checklist without device or verdict authority.',
+    id: 'X86', classification: 'additive', capabilities: ['intent-mcu-offline-support-matrix@1'],
+    contracts: ['x86-honest-offline-support-matrix-v1'],
+    summary: 'Adds a strict static four-profile matrix that documents current offline boundaries without adding offline execution authority.',
   }]);
   assert.equal(value.migrationRequired, false);
   assert.equal(value.breakingChangesPresent, false);
@@ -50,7 +50,7 @@ test('X88 owner binds canonical rc80 to rc81 X76 bytes, longlist and immutable i
   assert(new TextEncoder().encode(source).length < RELEASE_CHANGES_LIMIT);
 });
 
-test('strict parser accepts the historical rc79 to rc80 X88 fixture without presenting it as rc81', async () => {
+test('strict parser accepts the historical rc79 to rc80 X88 fixture without presenting it as rc82', async () => {
   const { value, registry, options } = await owner();
   const historical = clone(value);
   historical.release = { previous: '1.1.0-rc.79', current: '1.1.0-rc.80' };
@@ -63,7 +63,7 @@ test('strict parser accepts the historical rc79 to rc80 X88 fixture without pres
   const parsed = parseReleaseChangesText(text, historicalOptions);
   assert.deepEqual(parsed.release, { previous: '1.1.0-rc.79', current: '1.1.0-rc.80' });
   assert.deepEqual(parsed.changes.map(({ id }) => id), ['X88']);
-  assert.equal(text.includes('X76'), false);
+  assert.equal(text.includes('X86'), false);
 });
 
 test('strict parser atomically rejects unknown, duplicate, reordered, stale, oversized and authority-bearing input', async () => {
@@ -101,15 +101,15 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.81');
+  assert.equal(discovery.identity.version, '1.1.0-rc.82');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);
   assert.equal(discovery.actions.applyAuthority, false);
   assert.equal('releaseChanges' in discovery, false);
   const baselineProjection = clone(discovery);
-  baselineProjection.identity.version = '1.1.0-rc.80';
-  assert.equal(sha256(JSON.stringify(baselineProjection)), 'e550054713defcf670dc9394278233c84db1d3a57e6e05186927847c231d6398');
+  baselineProjection.identity.version = '1.1.0-rc.81';
+  assert.equal(sha256(JSON.stringify(baselineProjection)), 'a5034ca1d445b66d58feccb8fa0eeda9529334b5b4c1d3e361c8b9663ae232fd');
 });
 
 test('HTML, llms and Support discover the same static file without adding a public API', async () => {
