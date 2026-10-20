@@ -18,11 +18,35 @@ import { exactKeys, parseStrictJson } from './strict-json.mjs';
 import { STM32_PUBLIC_COMPONENT_CATALOG } from './stm32-public-circuit.mjs';
 
 export const ACCESSIBLE_DEMONSTRATION_SCHEMA = 'intent-mcu-accessible-demonstration@2';
+export const ACCESSIBLE_DEMONSTRATION_HISTORICAL_VALIDATION_SCHEMA =
+  'intent-mcu-accessible-demonstration-historical-validation@1';
 export const ACCESSIBLE_DEMONSTRATION_REPORT_LIMIT = 512 * 1024;
 export const ACCESSIBLE_DEMONSTRATION_SVG_LIMIT = 1024 * 1024;
 export const ACCESSIBLE_DEMONSTRATION_PROFILES = Object.freeze([
   AVR_PROFILE, RP2040_PROFILE, ESP32C3_PROFILE, STM32F429ZI_PROFILE,
 ]);
+const RC86_X56_MODEL_LIBRARY_LOCK = Object.freeze({
+  schema: 'intent-mcu-model-library-lock@2',
+  libraryId: 'intent-mcu-public-models',
+  version: '2.0.0-x56-current',
+  manifestSha256: '5c94ce070526d2e7e417fed0cb152fc28bdea24ee9beb52c65488328d41eac0b',
+  implementationSha256: '4e0fc926236de5edda6b3e85c3770b709a4ae3643d47b8cd9b3138c4c1b61633',
+});
+const RC86_PICO_MODEL_LIBRARY_LOCK = Object.freeze({
+  schema: 'intent-mcu-model-library-lock@2',
+  libraryId: 'intent-mcu-public-models',
+  version: '2.0.0-pico-presentation.1-current',
+  manifestSha256: '567aebbbf1885d31f9401fa3cf1ae98b7263d1b32f22a6b7886ec686b3c0dac3',
+  implementationSha256: '02df48f026feddb9e9af5630d162a76be8660f618d31388b5df53839184125f1',
+});
+const HISTORICAL_REPORT_IDENTITIES = Object.freeze({
+  '1.1.0-rc.86': Object.freeze({
+    [AVR_PROFILE]: RC86_X56_MODEL_LIBRARY_LOCK,
+    [RP2040_PROFILE]: RC86_PICO_MODEL_LIBRARY_LOCK,
+    [ESP32C3_PROFILE]: RC86_X56_MODEL_LIBRARY_LOCK,
+    [STM32F429ZI_PROFILE]: RC86_X56_MODEL_LIBRARY_LOCK,
+  }),
+});
 
 const HASH = /^[a-f0-9]{64}$/u;
 const SHARED_INSTRUMENT_SUMMARY_SCHEMA = 'intent-mcu-shared-instrument-summary@1';
@@ -132,6 +156,15 @@ function canonical(value) {
 
 export function stableAccessibleDemonstrationStringify(value) {
   return JSON.stringify(canonical(value));
+}
+
+function historicalReportIdentity(value) {
+  const expected = HISTORICAL_REPORT_IDENTITIES[value?.productRelease]?.[value?.profile];
+  return expected
+    && stableAccessibleDemonstrationStringify(value.modelLibrary)
+      === stableAccessibleDemonstrationStringify(expected)
+    ? { productRelease: value.productRelease, profile: value.profile, modelLibrary: clone(expected) }
+    : null;
 }
 
 export function avrAccessibleRuntimeBindingMatches(value) {
@@ -801,11 +834,14 @@ function validPoint(value) {
     && value.x >= -1 && value.x <= 2 && value.y >= -1 && value.y <= 2;
 }
 
-export async function validateAccessibleDemonstrationReport(value, { sha256 = defaultSha256 } = {}) {
+async function validateAccessibleDemonstrationReportInternal(value, {
+  sha256 = defaultSha256,
+  identityPolicy = (candidate) => candidate.productRelease === RELEASE_VERSION,
+  identityError = 'ACCESSIBLE_DEMONSTRATION_REPORT',
+} = {}) {
   if (!exactKeys(value, ['schema', 'productRelease', 'profile', 'project', 'modelLibrary', 'measurements',
     'counts', 'components', 'nets', 'junctions', 'limitations', 'integrity'])
       || value.schema !== ACCESSIBLE_DEMONSTRATION_SCHEMA
-      || value.productRelease !== RELEASE_VERSION
       || !ACCESSIBLE_DEMONSTRATION_PROFILES.includes(value.profile)
       || !exactKeys(value.project, ['name', 'circuitSha256', 'generation', 'revision'])
       || !HASH.test(value.project.circuitSha256 ?? '') || typeof value.project.name !== 'string'
@@ -822,6 +858,8 @@ export async function validateAccessibleDemonstrationReport(value, { sha256 = de
       || !exactKeys(value.integrity, ['reportSha256']) || !HASH.test(value.integrity.reportSha256 ?? '')) {
     reject('ACCESSIBLE_DEMONSTRATION_REPORT');
   }
+  const acceptedIdentity = identityPolicy(value);
+  if (!acceptedIdentity) reject(identityError);
   text(value.project.name, 80);
   const measurements = inputMeasurements(value.measurements);
   if (measurements.status === 'current-runtime-measurements'
@@ -956,9 +994,56 @@ export async function validateAccessibleDemonstrationReport(value, { sha256 = de
   return clone(value);
 }
 
+export async function validateAccessibleDemonstrationReport(value, { sha256 = defaultSha256 } = {}) {
+  return validateAccessibleDemonstrationReportInternal(value, { sha256 });
+}
+
+function historicalValidationResult(report) {
+  const identity = historicalReportIdentity(report);
+  return {
+    schema: ACCESSIBLE_DEMONSTRATION_HISTORICAL_VALIDATION_SCHEMA,
+    historical: true,
+    dataOnly: true,
+    executableAuthority: false,
+    currentRuntimeAuthority: false,
+    verdictAuthority: false,
+    validatedSurface: 'canonical-exported-projected-facts-only',
+    nativeSourcePayloadRetained: 'not-proven',
+    originalIdentity: {
+      schema: report.schema,
+      productRelease: identity.productRelease,
+      profile: identity.profile,
+      modelLibrary: clone(identity.modelLibrary),
+      artifactIdentity: report.measurements.status === 'current-runtime-measurements'
+        ? report.measurements.artifactIdentity : null,
+      reportSha256: report.integrity.reportSha256,
+    },
+    limitations: [
+      'Historical validation does not make this report current or executable.',
+      'Projected measurements are validated data, not proof that native source payload bytes were retained.',
+      'Integrity and model checks do not create a verdict, calibrated physical truth or device equivalence.',
+    ],
+    report: clone(report),
+  };
+}
+
+export async function validateHistoricalAccessibleDemonstrationReport(value, { sha256 = defaultSha256 } = {}) {
+  const report = await validateAccessibleDemonstrationReportInternal(value, {
+    sha256,
+    identityPolicy: historicalReportIdentity,
+    identityError: 'ACCESSIBLE_DEMONSTRATION_HISTORICAL_IDENTITY',
+  });
+  return historicalValidationResult(report);
+}
+
 export async function parseAccessibleDemonstrationReport(source, options = {}) {
   const value = parseStrictJson(source, ACCESSIBLE_DEMONSTRATION_REPORT_LIMIT);
   return validateAccessibleDemonstrationReport(value, options);
+}
+
+export async function parseHistoricalAccessibleDemonstrationReport(source, options = {}) {
+  const value = parseStrictJson(source, ACCESSIBLE_DEMONSTRATION_REPORT_LIMIT);
+  return validateHistoricalAccessibleDemonstrationReport(value, options);
 }
 
 function xml(value) {
@@ -1139,7 +1224,11 @@ export function renderAccessibleDemonstrationSvg(report) {
   return `${rows.join('\n')}\n`;
 }
 
-export async function validateAccessibleDemonstrationSvg(source, { sha256 = defaultSha256, domParser = globalThis.DOMParser } = {}) {
+async function validateAccessibleDemonstrationSvgInternal(source, {
+  sha256 = defaultSha256,
+  domParser = globalThis.DOMParser,
+  parseReport = parseAccessibleDemonstrationReport,
+} = {}) {
   if (typeof source !== 'string' || new TextEncoder().encode(source).length > ACCESSIBLE_DEMONSTRATION_SVG_LIMIT
       || /<!DOCTYPE|<!ENTITY|<\s*(?:script|style|foreignObject|image|use|a)\b|\b(?:href|src|on[a-z]+)\s*=|javascript:/iu.test(source)
       || typeof domParser !== 'function') reject('ACCESSIBLE_DEMONSTRATION_SVG');
@@ -1162,7 +1251,8 @@ export async function validateAccessibleDemonstrationSvg(source, { sha256 = defa
   }
   const metadata = document.querySelector('metadata#x70-report');
   if (!metadata) reject('ACCESSIBLE_DEMONSTRATION_SVG_METADATA');
-  const report = await parseAccessibleDemonstrationReport(metadata.textContent, { sha256 });
+  const validation = await parseReport(metadata.textContent, { sha256 });
+  const report = validation?.report ?? validation;
   if (root.getAttribute('data-report-sha') !== report.integrity.reportSha256) {
     reject('ACCESSIBLE_DEMONSTRATION_SVG_HASH');
   }
@@ -1199,5 +1289,18 @@ export async function validateAccessibleDemonstrationSvg(source, { sha256 = defa
       if (!has('measurement-channel', channel.id)) reject('ACCESSIBLE_DEMONSTRATION_SVG_REFERENCE');
     }
   }
+  return { report, document, validation };
+}
+
+export async function validateAccessibleDemonstrationSvg(source, options = {}) {
+  const { report, document } = await validateAccessibleDemonstrationSvgInternal(source, options);
   return { report, document };
+}
+
+export async function validateHistoricalAccessibleDemonstrationSvg(source, options = {}) {
+  const { document, validation } = await validateAccessibleDemonstrationSvgInternal(source, {
+    ...options,
+    parseReport: parseHistoricalAccessibleDemonstrationReport,
+  });
+  return { ...validation, document };
 }
