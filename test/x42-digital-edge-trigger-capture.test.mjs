@@ -98,6 +98,61 @@ test('drop, overlap, stale identity and lifecycle changes fail closed without re
   assert.equal(graphOwner.observe(graphRevision, lifecycle).reason, 'X42_BINDING_CHANGED');
 });
 
+test('captured rows revalidate against lifecycle, source contract and retained ordinals', async () => {
+  const actual = await fixture(AVR_FIXTURE, AVR_SHA256);
+  const capture = () => {
+    const owner = createX42DigitalEdgeTriggerCapture();
+    owner.arm(prefix(actual, 20), actual.avrState.lifecycle, { channel: 'D3', edge: 'rising' });
+    owner.observe(prefix(actual, 21), actual.avrState.lifecycle);
+    assert.equal(owner.observe(prefix(actual, 37), actual.avrState.lifecycle).state, 'captured');
+    return owner;
+  };
+  const current = prefix(actual, 37);
+  assert.equal(capture().revalidate(current, actual.avrState.lifecycle).state, 'captured');
+
+  const lifecycle = structuredClone(actual.avrState.lifecycle);
+  lifecycle.projectGeneration += 1;
+  lifecycle.runtimeBinding.projectGeneration += 1;
+  const replaced = capture().revalidate(current, lifecycle);
+  assert.equal(replaced.state, 'invalidated');
+  assert.equal(replaced.reason, 'X42_BINDING_CHANGED');
+  assert.equal(replaced.capture, null);
+
+  const provenance = structuredClone(current);
+  provenance.channels.logic.provenance = 'different-authoritative-producer';
+  assert.equal(capture().revalidate(provenance, actual.avrState.lifecycle).reason,
+    'X42_SOURCE_CONTRACT_CHANGED');
+
+  const channels = structuredClone(current);
+  channels.channels.logic.value.channels.push('D2');
+  assert.equal(capture().revalidate(channels, actual.avrState.lifecycle).reason,
+    'X42_SOURCE_CONTRACT_CHANGED');
+
+  const dropped = structuredClone(current);
+  dropped.channels.logic.retention.dropped = X42_SOURCE_ROW_LIMIT;
+  assert.equal(capture().revalidate(dropped, actual.avrState.lifecycle).reason,
+    'X42_SOURCE_DISCONTINUITY');
+
+  const changedRow = structuredClone(current);
+  changedRow.channels.logic.value.transitions[20].level =
+    !changedRow.channels.logic.value.transitions[20].level;
+  assert.equal(capture().revalidate(changedRow, actual.avrState.lifecycle).reason,
+    'X42_CAPTURE_SOURCE_CHANGED');
+});
+
+test('armed revalidation closes the pre-observer binding-change window', async () => {
+  const actual = await fixture(AVR_FIXTURE, AVR_SHA256);
+  const owner = createX42DigitalEdgeTriggerCapture();
+  owner.arm(prefix(actual, 20), actual.avrState.lifecycle, { channel: 'D3', edge: 'rising' });
+  const changed = structuredClone(actual.avrState.lifecycle);
+  changed.runtimeGeneration += 1;
+  changed.runtimeBinding.runtimeGeneration += 1;
+  const invalidated = owner.revalidate(prefix(actual, 20), changed);
+  assert.equal(invalidated.state, 'invalidated');
+  assert.equal(invalidated.capture, null);
+  assert.equal(owner.observe(prefix(actual, 37), actual.avrState.lifecycle).state, 'invalidated');
+});
+
 test('same-cycle duplicate values retain source ordinal and no-edge updates remain valid', async () => {
   const actual = await fixture(AVR_FIXTURE, AVR_SHA256);
   const lifecycle = actual.avrState.lifecycle;
@@ -188,6 +243,8 @@ test('shared shell keeps X42 transient, finite and outside the model closure', a
     readFile(new URL('../scripts/generate-model-library-snapshots.mjs', import.meta.url), 'utf8'),
   ]);
   assert.match(shell, /setInterval\(observeNow, X42_OBSERVER_INTERVAL_MS\)/u);
+  assert.match(shell, /owner\.revalidate\(summary, lifecycle\)/u);
+  assert.match(shell, /MutationObserver/u);
   assert.match(shell, /if \(!\['armed', 'triggered'\]\.includes\(snapshot\.state\)\) stopObserver\(\)/u);
   for (const code of ['X42_PROFILE_CHANGED', 'X42_SOURCE_EDITED', 'X42_BUILD_STARTED',
     'X42_RESET', 'X42_STOP', 'X42_NEW_PROJECT', 'X42_EXAMPLE_LOADED']) assert.match(shell, new RegExp(code, 'u'));

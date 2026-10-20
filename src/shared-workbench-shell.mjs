@@ -408,16 +408,33 @@ function installX42TriggerCapture(document, activeProfileReader) {
   let owner = createX42DigitalEdgeTriggerCapture();
   let timer = null;
 
-  const current = () => ({
-    summary: document.defaultView?.__SHARED_INSTRUMENT_SUMMARY__ ?? null,
-    lifecycle: document.defaultView?.__M6_STATE__?.lifecycle ?? null,
-  });
+  const current = () => {
+    const state = document.defaultView?.__M6_STATE__ ?? null;
+    return {
+      summary: document.defaultView?.__SHARED_INSTRUMENT_SUMMARY__ ?? null,
+      lifecycle: state?.lifecycle ?? null,
+      revision: state?.revision ?? null,
+      artifactIdentity: state?.artifactIdentity ?? null,
+    };
+  };
   const stopObserver = () => {
     if (timer !== null) document.defaultView?.clearInterval(timer);
     timer = null;
   };
+  const revalidateCurrent = () => {
+    const { summary, lifecycle, revision, artifactIdentity } = current();
+    const before = owner.snapshot();
+    if (['armed', 'triggered', 'captured'].includes(before.state)
+        && (revision !== before.binding.revision
+          || artifactIdentity !== before.binding.artifactIdentity)) {
+      owner.invalidate('X42_AUTHORITATIVE_BINDING_CHANGED');
+    }
+    const snapshot = owner.revalidate(summary, lifecycle);
+    if (!['armed', 'triggered'].includes(snapshot.state)) stopObserver();
+    return snapshot;
+  };
   const render = () => {
-    const snapshot = owner.snapshot();
+    const snapshot = revalidateCurrent();
     const { summary, lifecycle } = current();
     const availability = activeProfileReader() === summary?.profile
       ? x42TriggerAvailability(summary, lifecycle)
@@ -480,10 +497,11 @@ function installX42TriggerCapture(document, activeProfileReader) {
     timer = document.defaultView?.setInterval(observeNow, X42_OBSERVER_INTERVAL_MS) ?? null;
   };
   const refresh = () => {
-    const snapshot = owner.snapshot();
+    let snapshot = revalidateCurrent();
     if (['unavailable', 'ready'].includes(snapshot.state)) {
       const { summary, lifecycle } = current();
       owner.prepare(summary, lifecycle);
+      snapshot = owner.snapshot();
     }
     return render();
   };
@@ -523,11 +541,23 @@ function installX42TriggerCapture(document, activeProfileReader) {
     const reason = invalidateEvents.get(event.target?.id);
     if (reason && event.target?.id !== 'source' && event.target?.id !== 'board-select') invalidate(reason);
   }, true);
+  const BindingObserver = document.defaultView?.MutationObserver;
+  const bindingObserver = BindingObserver ? new BindingObserver(() => render()) : null;
+  if (bindingObserver) {
+    for (const selector of ['#project-message', '#build-state', '#quick-state', '#wire-state']) {
+      const node = document.querySelector(selector);
+      if (node) bindingObserver.observe(node, { childList: true, characterData: true, subtree: true });
+    }
+  }
   const api = Object.freeze({
     refresh,
     observeNow,
     invalidate,
-    snapshot: () => owner.snapshot(),
+    snapshot: () => {
+      const snapshot = revalidateCurrent();
+      render();
+      return snapshot;
+    },
     observerActive: () => timer !== null,
   });
   document.defaultView.__X42_TRIGGER_CAPTURE__ = api;

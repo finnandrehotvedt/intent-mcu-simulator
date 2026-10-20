@@ -52,6 +52,8 @@ const rowEqual = (left, right) => left?.cycle === right?.cycle
   && left?.pin === right?.pin && left?.level === right?.level;
 const rowsEqual = (left, right) => left.length === right.length
   && left.every((row, index) => rowEqual(row, right[index]));
+const valuesEqual = (left, right) => left.length === right.length
+  && left.every((value, index) => value === right[index]);
 const unavailableReason = (profile) => {
   if (profile === RP2040_PROFILE) return 'deferred-retention-boundary';
   if (profile === ESP32C3_PROFILE) return 'unavailable-project-model-not-native-waveform';
@@ -169,6 +171,7 @@ export function createX42DigitalEdgeTriggerCapture() {
   let channelHistory = [];
   let priorLevel = null;
   let captureRows = [];
+  let sourceContract = null;
 
   const publicView = () => clone(view);
   const stop = (state, reason) => {
@@ -184,6 +187,7 @@ export function createX42DigitalEdgeTriggerCapture() {
     channelHistory = [];
     priorLevel = null;
     captureRows = [];
+    sourceContract = null;
     return publicView();
   };
   const invalidate = (reason = 'X42_INVALIDATED') => {
@@ -210,6 +214,10 @@ export function createX42DigitalEdgeTriggerCapture() {
     captureRows = [];
     const anchor = observation.rows.slice(-Math.min(17, observation.rows.length));
     prior = { retained: observation.retained, sourceCycle: observation.sourceCycle, anchor };
+    sourceContract = {
+      provenance: observation.provenance,
+      channels: [...observation.channels],
+    };
     view = blank('armed', null);
     view.config = { channel: config.channel, edge: config.edge };
     view.binding = {
@@ -232,15 +240,45 @@ export function createX42DigitalEdgeTriggerCapture() {
     };
     return publicView();
   };
-  const observe = (summary, lifecycle) => {
-    if (!['armed', 'triggered'].includes(view.state)) return publicView();
+  const revalidate = (summary, lifecycle) => {
+    if (!['armed', 'triggered', 'captured'].includes(view.state)) return publicView();
     let observation;
-    try { observation = normalizeObservation(summary, lifecycle); } catch (error) { return invalidate(error.code ?? 'X42_OBSERVATION'); }
+    try { observation = normalizeObservation(summary, lifecycle); } catch (error) {
+      return invalidate(error.code ?? 'X42_OBSERVATION');
+    }
     const binding = view.binding;
     if (observation.profile !== binding.profile || observation.revision !== binding.revision
         || observation.projectGeneration !== binding.projectGeneration
         || observation.runtimeGeneration !== binding.runtimeGeneration
-        || observation.artifactIdentity !== binding.artifactIdentity) return invalidate('X42_BINDING_CHANGED');
+        || observation.artifactIdentity !== binding.artifactIdentity) {
+      return invalidate('X42_BINDING_CHANGED');
+    }
+    if (!sourceContract || observation.provenance !== sourceContract.provenance
+        || !valuesEqual(observation.channels, sourceContract.channels)) {
+      return invalidate('X42_SOURCE_CONTRACT_CHANGED');
+    }
+    if (observation.dropped !== 0) return invalidate('X42_SOURCE_DISCONTINUITY');
+    if (view.state === 'captured') {
+      const intact = view.capture.rows.every((row) => row.sourceOrdinal < observation.rows.length
+        && rowEqual(row, observation.rows[row.sourceOrdinal]));
+      return intact ? publicView() : invalidate('X42_CAPTURE_SOURCE_CHANGED');
+    }
+    if (!prior || observation.retained < prior.retained
+        || observation.sourceCycle < prior.sourceCycle) {
+      return invalidate('X42_SOURCE_DISCONTINUITY');
+    }
+    const overlapStart = prior.retained - prior.anchor.length;
+    if (!rowsEqual(observation.rows.slice(overlapStart, prior.retained), prior.anchor)) {
+      return invalidate('X42_OVERLAP_AMBIGUOUS');
+    }
+    return publicView();
+  };
+  const observe = (summary, lifecycle) => {
+    if (!['armed', 'triggered'].includes(view.state)) return publicView();
+    const revalidated = revalidate(summary, lifecycle);
+    if (!['armed', 'triggered'].includes(revalidated.state)) return revalidated;
+    let observation;
+    try { observation = normalizeObservation(summary, lifecycle); } catch (error) { return invalidate(error.code ?? 'X42_OBSERVATION'); }
     if (observation.dropped !== 0 || observation.retained < prior.retained
         || observation.sourceCycle < prior.sourceCycle) return invalidate('X42_SOURCE_DISCONTINUITY');
     if (observation.retained === prior.retained && observation.sourceCycle === prior.sourceCycle) {
@@ -305,5 +343,5 @@ export function createX42DigitalEdgeTriggerCapture() {
     }
     return publicView();
   };
-  return Object.freeze({ snapshot: publicView, prepare, arm, observe, invalidate });
+  return Object.freeze({ snapshot: publicView, prepare, arm, observe, revalidate, invalidate });
 }

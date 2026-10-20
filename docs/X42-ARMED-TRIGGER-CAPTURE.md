@@ -20,6 +20,15 @@ ordinal. Identical snapshots are idempotent. Any drop, regression, malformed
 row, excessive update, stale identity or project/runtime generation change
 fails closed and stops observation.
 
+The frozen window remains bound to that authority after capture. Before any
+snapshot, refresh or render exposes it, the owner revalidates the current
+artifact, project/runtime generations, graph revision, producer provenance,
+complete channel contract and every captured source ordinal. Accepted project
+Open or graph edits therefore clear old rows before presentation; rejected or
+cancelled Open preserves a capture whose binding is still exact. The same
+authoritative signals close the armed observer's 50 ms interval window without
+adding a terminal-state timer.
+
 The four-profile boundary is explicit:
 
 - ATmega328P: supported using actual avr8js worker transitions and native
