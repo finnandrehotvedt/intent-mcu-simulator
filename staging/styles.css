@@ -1213,8 +1213,27 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .shared-trace-view ol { min-height: 92px; max-height: 180px; overflow: auto; margin: 8px 0; padding: 8px 8px 8px 30px; border: 1px solid #17364a; border-radius: 8px; background: #02070b; color: #baf9cb; font: .68rem/1.5 ui-monospace, monospace; }
 .shared-trace-view li { padding-left: 4px; overflow-wrap: anywhere; }
 .shared-trace-view [data-shared-trace-classification="project-model"] { color: var(--amber); }
+.x42-trigger-capture { grid-column: 1 / -1; border-color: #2a627f !important; background: linear-gradient(135deg, #06121c, #0a202c) !important; }
+.x42-trigger-capture[data-state="armed"] { border-color: var(--amber) !important; }
+.x42-trigger-capture[data-state="triggered"] { border-color: var(--cyan) !important; }
+.x42-trigger-capture[data-state="captured"] { border-color: var(--lime) !important; }
+.x42-trigger-capture .shared-instrument-tool-heading span { padding: 3px 7px; border: 1px solid currentColor; border-radius: 999px; }
+.x42-trigger-boundary, .x42-trigger-capture [data-x42-limits] { margin: 8px 0; color: var(--muted); font: .68rem/1.45 ui-monospace, monospace; }
+.x42-trigger-controls { display: grid; grid-template-columns: minmax(130px, 1fr) minmax(120px, .7fr) auto; gap: 8px; align-items: end; }
+.x42-trigger-controls label { display: grid; gap: 5px; color: var(--muted); font: 700 .66rem ui-monospace, monospace; text-transform: uppercase; }
+.x42-trigger-controls select, .x42-trigger-controls button { width: 100%; min-width: 0; min-height: 38px; }
+.x42-trigger-controls button { color: #07121d; border-color: var(--lime); background: var(--lime); font-weight: 850; }
+.x42-trigger-controls button:disabled { color: var(--muted); border-color: var(--line); background: #0b1b29; }
+.x42-trigger-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin: 10px 0; }
+.x42-trigger-facts div { display: block; min-width: 0; padding: 8px; border: 1px solid var(--line); border-radius: 7px; background: #040d15; }
+.x42-trigger-facts dt { font: 750 .6rem ui-monospace, monospace; text-transform: uppercase; }
+.x42-trigger-facts dd { margin-top: 4px; color: var(--text); text-align: left; font: .66rem/1.4 ui-monospace, monospace; }
+.x42-trigger-capture [data-x42-rows] { max-height: 220px; overflow: auto; margin: 8px 0 0; padding: 8px 8px 8px 34px; border: 1px solid #17364a; border-radius: 8px; background: #02070b; color: #baf9cb; font: .67rem/1.5 ui-monospace, monospace; }
+.x42-trigger-capture [data-x42-rows] li { padding-left: 4px; overflow-wrap: anywhere; }
+.x42-trigger-capture [data-relative-position="0"] { color: var(--amber); font-weight: 850; }
 @media (max-width: 760px) {
   .shared-instrument-tools, .failure-replay-results { grid-template-columns: 1fr; }
+  .x42-trigger-controls, .x42-trigger-facts { grid-template-columns: 1fr; }
 }
 .control-runtime-evidence { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
 .control-runtime-evidence summary { cursor: pointer; color: var(--cyan); font: 800 .72rem ui-monospace, monospace; }

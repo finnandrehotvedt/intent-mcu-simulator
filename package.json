@@ -94,6 +94,8 @@
     "test:x91": "node --test --test-concurrency=1 test/measurement-completeness.test.mjs test/headless-experiment-runner.test.mjs test/external-client-results.test.mjs test/scenario-timeline.test.mjs test/x67-experiment-package.test.mjs",
     "test:x41": "node --test --test-concurrency=1 test/x41-experiment-package-comparison.test.mjs test/x67-experiment-package.test.mjs test/checkable-evidence-report.test.mjs test/x64-authored-change-review.test.mjs test/project-patch.test.mjs",
     "test:x41:browser": "node test/x41-experiment-package-comparison-browser.cjs",
+    "test:x42": "node --test --test-concurrency=1 test/x42-digital-edge-trigger-capture.test.mjs",
+    "test:x42:browser": "node test/x42-armed-trigger-browser.cjs",
     "test:x88": "node --test --test-concurrency=1 test/x88-release-changes.test.mjs test/release-identity-copy.test.mjs test/capability-discovery.test.mjs",
     "test:x88:browser": "node test/x88-release-changes-browser.cjs",
     "test:x76": "node --test --test-concurrency=1 test/x76-physical-checklist.test.mjs",

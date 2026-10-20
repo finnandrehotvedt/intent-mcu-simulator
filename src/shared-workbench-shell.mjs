@@ -8,6 +8,15 @@ import {
   STM32F429ZI_PROFILE,
 } from './compile-targets.mjs';
 import { instrumentCapability } from './instrument-capabilities.mjs';
+import {
+  createX42DigitalEdgeTriggerCapture,
+  X42_CAPTURE_ROW_LIMIT,
+  X42_OBSERVED_AFTER_ARM_LIMIT,
+  X42_OBSERVER_INTERVAL_MS,
+  X42_POST_EDGE_COUNT,
+  X42_PRE_EDGE_COUNT,
+  x42TriggerAvailability,
+} from './x42-digital-edge-trigger-capture.mjs';
 
 export const SHARED_WORKBENCH_SCHEMA = 'intent-mcu-shared-workbench@1';
 export const SHARED_WORKBENCH_SURFACES = Object.freeze([
@@ -364,6 +373,168 @@ function mountLegacySharedWorkbenchShell(document) {
   });
 }
 
+function createX42Panel(document, ordinal) {
+  const panel = document.createElement('section');
+  panel.className = 'x42-trigger-capture';
+  panel.dataset.x42TriggerCapture = '';
+  panel.setAttribute('aria-labelledby', `x42-trigger-title-${ordinal}`);
+  panel.innerHTML = `
+    <div class="shared-instrument-tool-heading">
+      <strong id="x42-trigger-title-${ordinal}">Trigger capture</strong>
+      <span data-x42-state>Unavailable</span>
+    </div>
+    <p class="x42-trigger-boundary">Actual armed observation · AVR native cycles only. This does not diagnose a failure or run firmware.</p>
+    <div class="x42-trigger-controls">
+      <label>Named channel <select data-x42-channel disabled><option value="">Unavailable</option></select></label>
+      <label>Edge <select data-x42-edge><option value="rising">Rising</option><option value="falling">Falling</option></select></label>
+      <button type="button" data-x42-arm disabled>Arm next edge</button>
+    </div>
+    <p data-x42-limits>${X42_PRE_EDGE_COUNT} before + trigger + ${X42_POST_EDGE_COUNT} after · maximum ${X42_CAPTURE_ROW_LIMIT} rows · ${X42_OBSERVED_AFTER_ARM_LIMIT.toLocaleString('en-US')} candidate edges</p>
+    <dl class="x42-trigger-facts">
+      <div><dt>Binding</dt><dd data-x42-binding>No current AVR runtime.</dd></div>
+      <div><dt>Source</dt><dd data-x42-source>Unavailable.</dd></div>
+      <div><dt>Window</dt><dd data-x42-window>No capture.</dd></div>
+    </dl>
+    <ol data-x42-rows aria-label="Captured trigger rows"><li>No captured rows.</li></ol>`;
+  return panel;
+}
+
+function installX42TriggerCapture(document, activeProfileReader) {
+  const panels = [...document.querySelectorAll('[data-shared-instrument-tools]')].map((tools, index) => {
+    const panel = createX42Panel(document, index + 1);
+    tools.append(panel);
+    return panel;
+  });
+  let owner = createX42DigitalEdgeTriggerCapture();
+  let timer = null;
+
+  const current = () => ({
+    summary: document.defaultView?.__SHARED_INSTRUMENT_SUMMARY__ ?? null,
+    lifecycle: document.defaultView?.__M6_STATE__?.lifecycle ?? null,
+  });
+  const stopObserver = () => {
+    if (timer !== null) document.defaultView?.clearInterval(timer);
+    timer = null;
+  };
+  const render = () => {
+    const snapshot = owner.snapshot();
+    const { summary, lifecycle } = current();
+    const availability = activeProfileReader() === summary?.profile
+      ? x42TriggerAvailability(summary, lifecycle)
+      : { state: 'unavailable', reason: 'unavailable-profile-not-active', channels: [] };
+    for (const panel of panels) {
+      panel.dataset.state = snapshot.state;
+      panel.querySelector('[data-x42-state]').textContent = snapshot.state.replace('-', ' ');
+      const channel = panel.querySelector('[data-x42-channel]');
+      const selected = channel.value;
+      channel.replaceChildren();
+      const choices = availability.channels;
+      if (!choices.length) {
+        const option = document.createElement('option'); option.value = ''; option.textContent = 'Unavailable';
+        channel.append(option);
+      } else for (const name of choices) {
+        const option = document.createElement('option'); option.value = name; option.textContent = name;
+        channel.append(option);
+      }
+      if (choices.includes(snapshot.config?.channel)) channel.value = snapshot.config.channel;
+      else if (choices.includes(selected)) channel.value = selected;
+      channel.disabled = availability.state !== 'ready' || ['armed', 'triggered'].includes(snapshot.state);
+      panel.querySelector('[data-x42-edge]').disabled = ['armed', 'triggered'].includes(snapshot.state);
+      const arm = panel.querySelector('[data-x42-arm]');
+      arm.disabled = availability.state !== 'ready' || ['armed', 'triggered'].includes(snapshot.state);
+      arm.textContent = ['captured', 'not-triggered', 'incomplete', 'invalidated'].includes(snapshot.state)
+        ? 'Arm new capture' : 'Arm next edge';
+      panel.querySelector('[data-x42-binding]').textContent = snapshot.binding
+        ? `${snapshot.binding.artifactIdentity.slice(0, 12)}… · project ${snapshot.binding.projectGeneration} · runtime ${snapshot.binding.runtimeGeneration}`
+        : availability.reason ?? 'No current AVR runtime.';
+      panel.querySelector('[data-x42-source]').textContent = snapshot.source
+        ? `${snapshot.source.classification} · ${snapshot.source.timeBasis} · ${snapshot.source.retained}/${snapshot.source.limit} rows · ${snapshot.source.dropped} dropped`
+        : availability.reason ?? 'Unavailable.';
+      panel.querySelector('[data-x42-window]').textContent = snapshot.capture
+        ? `${snapshot.capture.startCycle} → ${snapshot.capture.triggerCycle} → ${snapshot.capture.endCycle} cycles · ${snapshot.capture.rows.length} rows`
+        : snapshot.state === 'triggered' ? `Triggered · collecting ${X42_POST_EDGE_COUNT} later rows.`
+          : snapshot.state === 'armed' ? `Armed before a future ${snapshot.config.edge} edge · ${snapshot.observedCandidateEdges}/${X42_OBSERVED_AFTER_ARM_LIMIT} candidates.`
+            : snapshot.reason ?? 'No capture.';
+      const rows = panel.querySelector('[data-x42-rows]');
+      rows.replaceChildren();
+      if (!snapshot.capture) {
+        const item = document.createElement('li'); item.textContent = 'No captured rows.'; rows.append(item);
+      } else for (const row of snapshot.capture.rows) {
+        const item = document.createElement('li');
+        item.dataset.relativePosition = String(row.relativePosition);
+        item.textContent = `${row.relativePosition > 0 ? '+' : ''}${row.relativePosition} · ${row.pin} ${row.level ? 'HIGH' : 'LOW'} · cycle ${row.cycle} · source row ${row.sourceOrdinal}`;
+        rows.append(item);
+      }
+    }
+    return snapshot;
+  };
+  const observeNow = () => {
+    const { summary, lifecycle } = current();
+    const snapshot = owner.observe(summary, lifecycle);
+    render();
+    if (!['armed', 'triggered'].includes(snapshot.state)) stopObserver();
+    return snapshot;
+  };
+  const startObserver = () => {
+    stopObserver();
+    timer = document.defaultView?.setInterval(observeNow, X42_OBSERVER_INTERVAL_MS) ?? null;
+  };
+  const refresh = () => {
+    const snapshot = owner.snapshot();
+    if (['unavailable', 'ready'].includes(snapshot.state)) {
+      const { summary, lifecycle } = current();
+      owner.prepare(summary, lifecycle);
+    }
+    return render();
+  };
+  for (const panel of panels) {
+    panel.querySelector('[data-x42-arm]').addEventListener('click', () => {
+      const { summary, lifecycle } = current();
+      try {
+        owner.arm(summary, lifecycle, {
+          channel: panel.querySelector('[data-x42-channel]').value,
+          edge: panel.querySelector('[data-x42-edge]').value,
+        });
+        for (const peer of panels) peer.querySelector('[data-x42-edge]').value = panel.querySelector('[data-x42-edge]').value;
+        startObserver();
+      } catch (error) {
+        owner.invalidate(error.code ?? 'X42_ARM_REJECTED');
+        stopObserver();
+      }
+      render();
+    });
+  }
+  const invalidate = (reason) => {
+    const snapshot = owner.invalidate(reason);
+    stopObserver(); render(); return snapshot;
+  };
+  const invalidateEvents = new Map([
+    ['board-select', 'X42_PROFILE_CHANGED'], ['source', 'X42_SOURCE_EDITED'],
+    ['build', 'X42_BUILD_STARTED'], ['reset', 'X42_RESET'], ['stop', 'X42_STOP'],
+    ['project-new', 'X42_NEW_PROJECT'], ['project-demo', 'X42_EXAMPLE_LOADED'],
+  ]);
+  document.addEventListener('input', (event) => {
+    if (event.target?.id === 'source') invalidate('X42_SOURCE_EDITED');
+  }, true);
+  document.addEventListener('change', (event) => {
+    if (event.target?.id === 'board-select') invalidate('X42_PROFILE_CHANGED');
+  }, true);
+  document.addEventListener('click', (event) => {
+    const reason = invalidateEvents.get(event.target?.id);
+    if (reason && event.target?.id !== 'source' && event.target?.id !== 'board-select') invalidate(reason);
+  }, true);
+  const api = Object.freeze({
+    refresh,
+    observeNow,
+    invalidate,
+    snapshot: () => owner.snapshot(),
+    observerActive: () => timer !== null,
+  });
+  document.defaultView.__X42_TRIGGER_CAPTURE__ = api;
+  render();
+  return api;
+}
+
 export function mountSharedWorkbenchShell(document) {
   const legacy = mountLegacySharedWorkbenchShell(document);
   const adapterMap = new Map(sharedWorkbenchAdapters().map((adapter) => [adapter.profile, adapter]));
@@ -471,6 +642,7 @@ export function mountSharedWorkbenchShell(document) {
   let activePopup = null;
   let returnFocus = null;
   let viewMode = 'advanced';
+  const x42 = installX42TriggerCapture(document, () => activeProfile);
 
   const viewButtons = Object.freeze({
     simple: document.querySelector('#workbench-view-simple'),
@@ -521,6 +693,7 @@ export function mountSharedWorkbenchShell(document) {
     returnFocus = requestedOpener ?? document.activeElement ?? popup.opener;
     popup.opener.setAttribute('aria-expanded', 'true');
     popup.dialog.showModal();
+    if (name === 'instruments') x42.refresh();
     if (initialFocus) {
       const heading = popup.dialog.querySelector('h2');
       queueMicrotask(() => (heading ?? popupFocusable(popup.dialog)[0])?.focus({ preventScroll: true }));
@@ -621,6 +794,7 @@ export function mountSharedWorkbenchShell(document) {
   const api = Object.freeze({
     activate(profile) {
       if (!roots.has(profile)) throw new Error('SHARED_WORKBENCH_PROFILE_UNKNOWN');
+      if (profile !== activeProfile) x42.invalidate('X42_PROFILE_CHANGED');
       closePopup();
       if (activeCanvas) parking.append(activeCanvas);
       activeProfile = profile;
