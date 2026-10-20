@@ -2,6 +2,17 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.83 — 2026-10-20
+
+- Moved the selected profile's real circuit canvas to the first useful desktop
+  workbench surface and retained one authoritative canvas owner.
+- Moved seven existing secondary owners into named accessible popup dialogs
+  with focus trap, Escape handling, exact opener return and nested decisions.
+- Preserved project/source state, named-pin wiring, file guards, local history,
+  Inspector/Undo and pending drafts across popup and profile transitions.
+- Added no firmware action, project schema, storage, model, compiler, runtime,
+  service worker, endpoint or new functional-longlist completion.
+
 ## 1.1.0-rc.82 — 2026-10-20
 
 - Published X86 as one strict static four-profile offline-support matrix on

@@ -1,16 +1,20 @@
-# Rollback basis for 1.1.0-rc.82
+# Rollback basis for 1.1.0-rc.83
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain exact accepted rc.81 source commit
-`028733d4b502628637af5355c5f8414470d6ac16` and VM103 image
-`sha256:22ebae30da42d5b68cce1435a8f33576a03c7257223954b3c4ed388c66cc2304`
-as the pre-rc.82 app-only recovery basis.
+Retain exact accepted rc.82 source commit
+`e9211b86989cf416ed366408d47f891077f958bf` and VM103 image
+`sha256:292c339b9e20f171d5e525cee7108ebaddd04081fcb667f0355e342ba42c77f6`
+as the pre-rc.83 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
+
+Rc.83 changes only presentation and accessible popup ownership. Rolling back
+restores the long document layout while preserving learner-owned project files,
+named-pin topology, source, local-history records and compiler/runtime images.
 
 Rc.32 writes common envelope v3. Before an app rollback, retain the learner's
 v3 file unchanged; rc.31 cannot open its added criterion reference fields.

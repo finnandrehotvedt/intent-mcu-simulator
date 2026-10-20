@@ -1,8 +1,15 @@
-# Migration to 1.1.0-rc.82
+# Migration to 1.1.0-rc.83
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.83 changes no project, package, runtime, cache or browser-storage schema.
+The top-workbench and seven-popup layout moves the existing authoritative DOM
+owners without cloning or converting their data. Existing project files,
+browser-local history and learner-owned downloads require no conversion. An
+rc.82 release-bound physical checklist remains historical and is not silently
+presented as an rc.83 record; create a new current-release checklist if needed.
 
 Rc.82 changes no project, package, runtime, cache or browser-storage schema.
 The X86 matrix is static read-only documentation and grants no offline or

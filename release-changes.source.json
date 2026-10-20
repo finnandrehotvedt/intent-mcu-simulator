@@ -11,20 +11,20 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.81",
-    "current": "1.1.0-rc.82"
+    "previous": "1.1.0-rc.82",
+    "current": "1.1.0-rc.83"
   },
   "changes": [
     {
-      "id": "X86",
-      "classification": "additive",
+      "id": "X88",
+      "classification": "changed",
       "capabilities": [
-        "intent-mcu-offline-support-matrix@1"
+        "intent-mcu-release-changes@1"
       ],
       "contracts": [
-        "x86-honest-offline-support-matrix-v1"
+        "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Adds a strict static four-profile matrix that documents current offline boundaries without adding offline execution authority."
+      "summary": "Records the reviewed four-profile top-workbench and seven-popup layout release without claiming a new functional longlist completion."
     }
   ],
   "migrationRequired": false,

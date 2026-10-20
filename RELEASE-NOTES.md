@@ -1,4 +1,25 @@
-# Intent MCU Simulator 1.1.0-rc.82
+# Intent MCU Simulator 1.1.0-rc.83
+
+## Top workbench and named popup surfaces
+
+This release publishes the independently reviewed four-profile desktop layout.
+The selected controller's existing circuit canvas is now the first useful
+workbench surface below the compact shared controls. Seven named modal buttons
+move—not clone—the existing Project & files, Parts, Inspector, Firmware, Brief
+& tests, Instruments, and Help & limits owners into accessible popup surfaces.
+
+The layout preserves exact project/source state, named-pin wiring, Undo/Redo,
+pending wire drafts, guarded Download/Open, opt-in local history and stale
+artifact boundaries. Focus is trapped and restored predictably; project search
+opens the visible owner and retains exact file, source-line and pin focus.
+
+This is a presentation and accessibility release. It adds no project format,
+storage, model, compiler, runtime, firmware action, account, endpoint or
+functional-longlist completion.
+
+---
+
+## 1.1.0-rc.82
 
 ## Honest offline-support matrix
 

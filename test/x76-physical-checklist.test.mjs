@@ -27,7 +27,7 @@ test('X76 has exactly four owner-derived profiles and 23 finite canonical items'
   for (const definition of PHYSICAL_CHECKLIST_DEFINITIONS) {
     assert.equal(definition.label, CONTROLLER_CAPABILITIES.profiles[definition.profile].label);
     const checklist = createPhysicalChecklist(definition.profile);
-    assert.equal(checklist.productRelease, '1.1.0-rc.82');
+    assert.equal(checklist.productRelease, '1.1.0-rc.83');
     assert.equal(checklist.profile, definition.profile);
     assert.equal(checklist.controllerModel, definition.profile);
     assert.equal(checklist.evidenceBoundary.physicalEvidencePresent, false);
@@ -41,14 +41,14 @@ test('X76 has exactly four owner-derived profiles and 23 finite canonical items'
   }
 });
 
-test('an rc80 private checklist is rejected without silent migration', () => {
+test('an rc82 checklist is rejected without silent migration', () => {
   const current = createPhysicalChecklist('board.atmega328p-16mhz-v1');
   const prior = clone(current);
-  prior.productRelease = '1.1.0-rc.80';
+  prior.productRelease = '1.1.0-rc.82';
   const priorText = JSON.stringify(prior);
   assert.throws(() => parsePhysicalChecklistText(priorText), /PHYSICAL_CHECKLIST_IDENTITY/u);
   assert.equal(JSON.stringify(prior), priorText);
-  assert.equal(current.productRelease, '1.1.0-rc.82');
+  assert.equal(current.productRelease, '1.1.0-rc.83');
 });
 
 test('manual observation is bounded self-attested data and never grants verdict or certification', () => {

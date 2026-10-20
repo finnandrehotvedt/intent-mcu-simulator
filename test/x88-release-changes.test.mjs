@@ -28,18 +28,18 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc81 to rc82 X86 bytes, longlist and immutable implementation source', async () => {
+test('X88 owner binds canonical rc82 to rc83 layout release bytes without inventing a completion', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.82');
+  assert.equal(release.version, '1.1.0-rc.83');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
   assert(registry.ids.includes('X86'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.81', current: '1.1.0-rc.82' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.82', current: '1.1.0-rc.83' });
   assert.deepEqual(value.changes, [{
-    id: 'X86', classification: 'additive', capabilities: ['intent-mcu-offline-support-matrix@1'],
-    contracts: ['x86-honest-offline-support-matrix-v1'],
-    summary: 'Adds a strict static four-profile matrix that documents current offline boundaries without adding offline execution authority.',
+    id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
+    contracts: ['x88-machine-readable-release-delta-v1'],
+    summary: 'Records the reviewed four-profile top-workbench and seven-popup layout release without claiming a new functional longlist completion.',
   }]);
   assert.equal(value.migrationRequired, false);
   assert.equal(value.breakingChangesPresent, false);
@@ -50,7 +50,7 @@ test('X88 owner binds canonical rc81 to rc82 X86 bytes, longlist and immutable i
   assert(new TextEncoder().encode(source).length < RELEASE_CHANGES_LIMIT);
 });
 
-test('strict parser accepts the historical rc79 to rc80 X88 fixture without presenting it as rc82', async () => {
+test('strict parser accepts the historical rc79 to rc80 X88 fixture without presenting it as rc83', async () => {
   const { value, registry, options } = await owner();
   const historical = clone(value);
   historical.release = { previous: '1.1.0-rc.79', current: '1.1.0-rc.80' };
@@ -101,7 +101,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.82');
+  assert.equal(discovery.identity.version, '1.1.0-rc.83');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);
