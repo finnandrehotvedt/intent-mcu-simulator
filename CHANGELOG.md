@@ -2,6 +2,18 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.84 — 2026-10-20
+
+- Published X75 as one strict deterministic local build-list/named-net export
+  for AVR, RP2040 Pico, ESP32-C3 and STM32F429ZI.
+- Includes authored electrical values, exact named endpoints, retained
+  junction identity, version-locked model identity and only owner-declared
+  physical connector/pin metadata.
+- Keeps procurement fixed `not-provided` and excludes layout, source,
+  firmware, runtime, results and physical-equivalence claims.
+- Commits Inspector property edits on change or blur before export and cancels
+  stale async exports before download; no producer, storage or service added.
+
 ## 1.1.0-rc.83 — 2026-10-20
 
 - Moved the selected profile's real circuit canvas to the first useful desktop

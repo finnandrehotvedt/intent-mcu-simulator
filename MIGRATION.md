@@ -1,8 +1,16 @@
-# Migration to 1.1.0-rc.83
+# Migration to 1.1.0-rc.84
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.84 changes no project, package, runtime, cache or browser-storage schema.
+X75 reads the current validated authored graph and downloads a separate local
+data-only build-list/netlist document. Existing project files and rc.83 browser
+data require no conversion. The export grants no procurement, firmware,
+runtime, result or physical-equivalence authority. An rc.83 release-bound
+physical checklist remains historical and is not silently presented as an
+rc.84 record; create a new current-release checklist if needed.
 
 Rc.83 changes no project, package, runtime, cache or browser-storage schema.
 The top-workbench and seven-popup layout moves the existing authoritative DOM

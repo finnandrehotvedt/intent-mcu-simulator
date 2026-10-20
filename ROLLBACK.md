@@ -1,16 +1,21 @@
-# Rollback basis for 1.1.0-rc.83
+# Rollback basis for 1.1.0-rc.84
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain exact accepted rc.82 source commit
-`e9211b86989cf416ed366408d47f891077f958bf` and VM103 image
-`sha256:292c339b9e20f171d5e525cee7108ebaddd04081fcb667f0355e342ba42c77f6`
-as the pre-rc.83 app-only recovery basis.
+Retain exact accepted rc.83 source commit
+`652f97365af606bf4618209f68205b6567447b8d` and VM103 image
+`sha256:4e5c6b4a3749369400a0bf65cf0abcf9c0957811865721d39c6873326d9e5939`
+as the pre-rc.84 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
+
+Rc.84 adds only the local X75 build-list/netlist export and its Inspector blur
+commit correction. Rolling back removes that export action and restores the
+rc.83 Inspector event behavior without migrating, rewriting or deleting any
+learner-owned project or downloaded export.
 
 Rc.83 changes only presentation and accessible popup ownership. Rolling back
 restores the long document layout while preserving learner-owned project files,

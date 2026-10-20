@@ -28,19 +28,26 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc82 to rc83 layout release bytes without inventing a completion', async () => {
+test('X88 owner binds canonical rc83 to rc84 X75 release bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.83');
+  assert.equal(release.version, '1.1.0-rc.84');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
   assert(registry.ids.includes('X86'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.82', current: '1.1.0-rc.83' });
-  assert.deepEqual(value.changes, [{
-    id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
-    contracts: ['x88-machine-readable-release-delta-v1'],
-    summary: 'Records the reviewed four-profile top-workbench and seven-popup layout release without claiming a new functional longlist completion.',
-  }]);
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.83', current: '1.1.0-rc.84' });
+  assert.deepEqual(value.changes, [
+    {
+      id: 'X75', classification: 'additive', capabilities: ['intent-mcu-bom-netlist@1'],
+      contracts: ['x75-finite-bom-netlist-export-v1'],
+      summary: 'Adds the reviewed strict local four-profile build-list and named-net export with explicit non-procurement and non-runtime boundaries.',
+    },
+    {
+      id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
+      contracts: ['x88-machine-readable-release-delta-v1'],
+      summary: 'Records the reviewed rc.83 to rc.84 X75 release without adding action, runtime or verdict authority.',
+    },
+  ]);
   assert.equal(value.migrationRequired, false);
   assert.equal(value.breakingChangesPresent, false);
   assert.deepEqual(value.authority, { apply: false, build: false, run: false, replay: false, verdict: false });
@@ -101,7 +108,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.83');
+  assert.equal(discovery.identity.version, '1.1.0-rc.84');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

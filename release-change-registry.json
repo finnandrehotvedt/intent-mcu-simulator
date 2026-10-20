@@ -22,6 +22,15 @@
       ]
     },
     {
+      "id": "X75",
+      "capabilities": [
+        "intent-mcu-bom-netlist@1"
+      ],
+      "contracts": [
+        "x75-finite-bom-netlist-export-v1"
+      ]
+    },
+    {
       "id": "X76",
       "capabilities": [
         "intent-mcu-physical-verification-checklist@1"

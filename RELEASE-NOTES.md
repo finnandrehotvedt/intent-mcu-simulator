@@ -1,4 +1,25 @@
-# Intent MCU Simulator 1.1.0-rc.83
+# Intent MCU Simulator 1.1.0-rc.84
+
+## Finite local build-list and named-net export
+
+This release publishes the independently reviewed X75 export for all four
+supported controller profiles. One strict `intent-mcu-bom-netlist@1` owner
+creates deterministic local JSON containing authored component values, exact
+named net endpoints, retained junction identity, version-locked project model
+identity and only explicitly owned physical connector/pin metadata.
+
+The export is not a purchasing list. Procurement remains `not-provided`, and
+the file excludes visual layout, source, firmware, runtime state, results and
+physical-equivalence claims. Inspector edits commit on change or blur before
+export. Async preparation is rechecked after strict parsing so a project or
+profile change cannot produce a stale download.
+
+This release adds no account, upload, server project store, firmware producer,
+runtime action, verdict, analytics, third-party request or infrastructure.
+
+---
+
+## 1.1.0-rc.83
 
 ## Top workbench and named popup surfaces
 
