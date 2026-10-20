@@ -13,6 +13,9 @@ export const SHARED_WORKBENCH_SCHEMA = 'intent-mcu-shared-workbench@1';
 export const SHARED_WORKBENCH_SURFACES = Object.freeze([
   'project', 'parts', 'canvas', 'inspector', 'source', 'runtime', 'serial',
 ]);
+export const SHARED_WORKBENCH_DIALOGS = Object.freeze([
+  'project', 'parts', 'inspector', 'firmware', 'brief', 'instruments', 'help',
+]);
 
 const adapters = Object.freeze({
   [AVR_PROFILE]: Object.freeze({
@@ -321,7 +324,7 @@ function mountNarrowProfile(document, adapter) {
   return root;
 }
 
-export function mountSharedWorkbenchShell(document) {
+function mountLegacySharedWorkbenchShell(document) {
   for (const adapter of sharedWorkbenchAdapters().filter((item) => item.profile !== AVR_PROFILE)) {
     mountNarrowProfile(document, adapter);
   }
@@ -358,4 +361,251 @@ export function mountSharedWorkbenchShell(document) {
     },
     adapter(profile = activeProfile) { return sharedWorkbenchAdapter(profile); },
   });
+}
+
+export function mountSharedWorkbenchShell(document) {
+  const legacy = mountLegacySharedWorkbenchShell(document);
+  const adapterMap = new Map(sharedWorkbenchAdapters().map((adapter) => [adapter.profile, adapter]));
+  const roots = new Map([...adapterMap].map(([profile, adapter]) => [profile, document.querySelector(adapter.root)]));
+  const parking = document.createElement('div');
+  parking.id = 'workbench-surface-parking';
+  parking.hidden = true;
+  document.body.append(parking);
+
+  const canvasMount = document.querySelector('#active-canvas-mount');
+  const controllerMount = document.querySelector('#top-controller-controls');
+  const primaryMount = document.querySelector('#top-primary-controls');
+  const profilePicker = document.querySelector('.controller-profile-picker');
+  const quickControls = document.querySelector('#quick-controls');
+  if (!canvasMount || !controllerMount || !primaryMount || !profilePicker || !quickControls) {
+    throw new Error('SHARED_WORKBENCH_TOP_SHELL_MISSING');
+  }
+  controllerMount.append(profilePicker);
+  primaryMount.append(quickControls);
+
+  const openerSelectors = {
+    project: '#project-files-open',
+    parts: '#toggle-catalog',
+    inspector: '#toggle-inspector',
+    firmware: '#firmware-open',
+    brief: '#brief-tests-open',
+    instruments: '#instruments-open',
+    help: '#help-limits-open',
+  };
+  const popupByName = new Map(SHARED_WORKBENCH_DIALOGS.map((name) => {
+    const dialog = document.querySelector('#workbench-' + name + '-dialog');
+    const mount = dialog?.querySelector('[data-workbench-popup-mount="' + name + '"]');
+    const opener = document.querySelector(openerSelectors[name]);
+    if (!dialog || !mount || !opener) throw new Error('SHARED_WORKBENCH_DIALOG_MISSING:' + name);
+    return [name, { dialog, mount, opener }];
+  }));
+  const common = {
+    history: document.querySelector('#local-history'),
+    navigation: document.querySelector('#project-navigation'),
+    brief: document.querySelector('#project-brief'),
+    prompt: document.querySelector('#prompt-drawer'),
+    controller: document.querySelector('#controller-workbench'),
+    desktop: document.querySelector('.desktop-required'),
+  };
+  if (Object.values(common).some((node) => !node)) throw new Error('SHARED_WORKBENCH_COMMON_SURFACE_MISSING');
+
+  const resolveProfileNodes = (profile) => {
+    const adapter = adapterMap.get(profile);
+    const root = roots.get(profile);
+    if (!adapter || !root) throw new Error('SHARED_WORKBENCH_PROFILE_UNKNOWN');
+    const shared = (surface) => root.querySelector('[data-shared-surface="' + surface + '"]');
+    if (profile === AVR_PROFILE) {
+      return {
+        canvas: root.querySelector(adapter.canvas),
+        project: [document.querySelector('#project-bar'), common.history],
+        parts: [root.querySelector(adapter.parts)],
+        inspector: [root.querySelector(adapter.inspector)],
+        firmware: [document.querySelector('#firmware-drawer')],
+        brief: [common.navigation, common.brief, common.prompt],
+        instruments: [document.querySelector('#runtime-drawer'), document.querySelector('#serial-dock')],
+        help: [common.desktop, common.controller],
+      };
+    }
+    return {
+      canvas: shared('canvas'),
+      project: [root.querySelector('.shared-project-bar'), common.history],
+      parts: [shared('parts')],
+      inspector: [shared('inspector')],
+      firmware: [shared('source')],
+      brief: [common.navigation, common.brief],
+      instruments: [shared('runtime')],
+      help: [common.desktop, common.controller],
+    };
+  };
+
+  // Resolve every real surface exactly once while it still lives below its
+  // profile root. The shell subsequently moves those nodes between parking,
+  // the active canvas stage and dialogs; querying the old roots after that
+  // move would lose the authoritative node and invite accidental cloning.
+  const resolvedProfileNodes = new Map(
+    [...adapterMap.keys()].map((profile) => [profile, resolveProfileNodes(profile)]),
+  );
+  const profileNodes = (profile) => {
+    const nodes = resolvedProfileNodes.get(profile);
+    if (!nodes) throw new Error('SHARED_WORKBENCH_PROFILE_UNKNOWN');
+    return nodes;
+  };
+
+  const everySurface = new Set();
+  for (const profile of adapterMap.keys()) {
+    const nodes = profileNodes(profile);
+    everySurface.add(nodes.canvas);
+    for (const name of SHARED_WORKBENCH_DIALOGS) {
+      for (const node of nodes[name]) everySurface.add(node);
+    }
+  }
+  for (const node of everySurface) {
+    if (!node) throw new Error('SHARED_WORKBENCH_SURFACE_MISSING');
+    parking.append(node);
+  }
+  for (const root of roots.values()) root?.classList.add('shared-parking-root');
+
+  let activeProfile = AVR_PROFILE;
+  let activeCanvas = null;
+  let activePopup = null;
+  let returnFocus = null;
+
+  const popupFocusable = (dialog) => [...dialog.querySelectorAll(
+    'button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+  )].filter((node) => !node.hidden && node.getClientRects().length > 0);
+
+  const restorePopupNodes = () => {
+    if (!activePopup) return;
+    const { mount } = popupByName.get(activePopup);
+    for (const node of [...mount.children]) parking.append(node);
+  };
+  const closePopup = ({ restoreFocus = true } = {}) => {
+    if (!activePopup) return false;
+    const { dialog, opener } = popupByName.get(activePopup);
+    const focus = returnFocus;
+    opener.setAttribute('aria-expanded', 'false');
+    if (dialog.open) dialog.close('close');
+    restorePopupNodes();
+    activePopup = null;
+    returnFocus = null;
+    if (restoreFocus) queueMicrotask(() => {
+      const target = focus?.isConnected && !focus.hidden ? focus : opener;
+      if (target?.isConnected) target.focus({ preventScroll: true });
+    });
+    return true;
+  };
+  const openPopup = (name, requestedOpener = null) => {
+    if (!SHARED_WORKBENCH_DIALOGS.includes(name)) throw new Error('SHARED_WORKBENCH_DIALOG_UNKNOWN');
+    if (activePopup) closePopup({ restoreFocus: false });
+    const popup = popupByName.get(name);
+    for (const node of profileNodes(activeProfile)[name]) popup.mount.append(node);
+    activePopup = name;
+    returnFocus = requestedOpener ?? document.activeElement ?? popup.opener;
+    popup.opener.setAttribute('aria-expanded', 'true');
+    popup.dialog.showModal();
+    const heading = popup.dialog.querySelector('h2');
+    queueMicrotask(() => (heading ?? popupFocusable(popup.dialog)[0])?.focus({ preventScroll: true }));
+    return true;
+  };
+
+  for (const [name, popup] of popupByName) {
+    popup.opener.setAttribute('aria-expanded', 'false');
+    popup.opener.addEventListener('click', () => openPopup(name, popup.opener));
+    popup.dialog.querySelector('.workbench-popup-close').addEventListener('click', () => closePopup());
+    popup.dialog.addEventListener('cancel', (event) => {
+      event.preventDefault();
+      closePopup();
+    });
+    popup.dialog.addEventListener('keydown', (event) => {
+      // Escape belongs to the top workbench popup. Handle it before the
+      // document-level canvas shortcuts so closing a popup never cancels an
+      // in-progress named-wire or reconnect draft behind it.
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        closePopup();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusable = popupFocusable(popup.dialog);
+      if (!focusable.length) { event.preventDefault(); return; }
+      const first = focusable[0];
+      const last = focusable.at(-1);
+      if (event.shiftKey && (document.activeElement === first || !popup.dialog.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
+  }
+
+  const stageProfile = document.querySelector('#top-stage-profile');
+  const stageState = document.querySelector('#top-stage-state');
+  const stageDetail = document.querySelector('#top-stage-detail');
+  const statusSelectors = {
+    [AVR_PROFILE]: ['#quick-state', '#wire-state'],
+    [RP2040_PROFILE]: ['#quick-state', '#pico-wire-state'],
+    [ESP32C3_PROFILE]: ['#quick-state', '#c3-wire-state'],
+    [STM32F429ZI_PROFILE]: ['#quick-state', '#stm32-wire-state'],
+  };
+  const syncStageStatus = () => {
+    const adapter = adapterMap.get(activeProfile);
+    const [stateSelector, detailSelector] = statusSelectors[activeProfile];
+    stageProfile.textContent = document.querySelector('#board-select')?.selectedOptions?.[0]?.textContent
+      ?? adapter.groupLabel;
+    stageState.textContent = document.querySelector(stateSelector)?.textContent ?? 'Current project';
+    stageDetail.textContent = document.querySelector(detailSelector)?.textContent ?? 'Use named pins and validated connections.';
+  };
+  const Observer = document.defaultView?.MutationObserver;
+  const observer = Observer ? new Observer(syncStageStatus) : null;
+  if (observer) {
+    for (const selectors of Object.values(statusSelectors)) {
+      for (const selector of selectors) {
+        const node = document.querySelector(selector);
+        if (node) observer.observe(node, { childList: true, characterData: true, subtree: true });
+      }
+    }
+  }
+
+  const api = Object.freeze({
+    activate(profile) {
+      if (!roots.has(profile)) throw new Error('SHARED_WORKBENCH_PROFILE_UNKNOWN');
+      closePopup();
+      if (activeCanvas) parking.append(activeCanvas);
+      activeProfile = profile;
+      legacy.activate(profile);
+      activeCanvas = profileNodes(profile).canvas;
+      canvasMount.append(activeCanvas);
+      activeCanvas.removeAttribute('aria-hidden');
+      syncStageStatus();
+      document.defaultView?.requestAnimationFrame(() => {
+        document.defaultView?.dispatchEvent(new document.defaultView.Event('resize'));
+      });
+    },
+    toggle(surface) {
+      if (!['parts', 'inspector'].includes(surface)) throw new Error('SHARED_WORKBENCH_TOGGLE_UNKNOWN');
+      openPopup(surface, popupByName.get(surface).opener);
+      return false;
+    },
+    openDialog(name, opener = null) { return openPopup(name, opener); },
+    closeDialog() { return closePopup(); },
+    openSerial() {
+      openPopup('instruments', document.activeElement ?? popupByName.get('instruments').opener);
+      const serial = activeProfile === AVR_PROFILE
+        ? document.querySelector('#serial-dock')
+        : profileNodes(activeProfile).instruments[0]?.querySelector('[data-shared-surface="serial"]');
+      if (!serial) return false;
+      const drawer = serial.closest('details');
+      if (drawer) drawer.open = true;
+      serial.setAttribute('tabindex', '-1');
+      serial.focus({ preventScroll: true });
+      return true;
+    },
+    activeDialog() { return activePopup; },
+    adapter(profile = activeProfile) { return sharedWorkbenchAdapter(profile); },
+  });
+  api.activate(AVR_PROFILE);
+  return api;
 }

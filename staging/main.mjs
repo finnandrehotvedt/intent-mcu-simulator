@@ -384,7 +384,7 @@ const elements = Object.fromEntries([
   'editor-title', 'source-file', 'source-file-name', 'source-file-add', 'source-file-remove',
   'lifecycle-state', 'technical-error', 'technical-error-detail', 'delete-branch',
   'example-select', 'example-picker-dialog', 'example-picker-close', 'example-picker-search', 'example-picker-status',
-  'walkthrough-open', 'walkthrough', 'recovery-export', 'quick-state', 'quick-build', 'quick-run', 'quick-pause', 'quick-reset',
+  'walkthrough-open', 'walkthrough', 'recovery-export', 'quick-state', 'quick-build', 'quick-run', 'quick-pause', 'quick-reset', 'quick-stop',
   'unsaved-change-dialog', 'unsaved-change-title', 'unsaved-change-description', 'unsaved-change-status',
   'unsaved-keep', 'unsaved-download', 'unsaved-discard',
   'toggle-catalog', 'toggle-inspector', 'catalog-resizer', 'inspector-resizer', 'show-pin-labels', 'focus-canvas', 'fullscreen-canvas',
@@ -682,12 +682,15 @@ function renderPicoQuickControls(state = picoPublicState) {
   elements.quickrun.textContent = 'Run Pico';
   elements.quickpause.textContent = 'Pause';
   elements.quickreset.textContent = 'Reset';
+  elements.quickstop.textContent = 'Stop';
   elements.quickbuild.disabled = state.phase === 'building';
   elements.quickrun.disabled = !state.runnable || ['running', 'starting'].includes(state.phase);
   elements.quickpause.disabled = !['running', 'paused'].includes(state.phase);
   elements.quickreset.disabled = !['running', 'paused'].includes(state.phase);
+  elements.quickstop.disabled = elements.picostop.disabled;
   elements.quickpause.title = '';
   elements.quickreset.title = '';
+  elements.quickstop.title = 'Stop the browser worker and discard the current Pico artifact.';
 }
 
 function renderC3QuickControls(state = c3PublicState) {
@@ -697,12 +700,15 @@ function renderC3QuickControls(state = c3PublicState) {
   elements.quickrun.textContent = 'Run actual QEMU';
   elements.quickpause.textContent = 'Pause unavailable';
   elements.quickreset.textContent = 'Reset replay is part of Run';
+  elements.quickstop.textContent = 'Stop';
   elements.quickbuild.disabled = state.phase === 'building' || state.phase === 'running';
   elements.quickrun.disabled = !state.runnable || state.phase === 'running';
   elements.quickpause.disabled = true;
   elements.quickreset.disabled = true;
+  elements.quickstop.disabled = elements.c3stop.disabled;
   elements.quickpause.title = 'Pause is unavailable for the bounded QEMU run.';
   elements.quickreset.title = 'Reset replay is already verified inside each QEMU Run.';
+  elements.quickstop.title = 'Stop QEMU and discard the transient C3 session.';
 }
 
 function renderStm32QuickControls(state = stm32PublicState) {
@@ -712,12 +718,15 @@ function renderStm32QuickControls(state = stm32PublicState) {
   elements.quickrun.textContent = 'Run actual Renode';
   elements.quickpause.textContent = 'Pause unavailable';
   elements.quickreset.textContent = 'Reset in fresh Renode';
+  elements.quickstop.textContent = 'Stop';
   elements.quickbuild.disabled = ['building', 'running'].includes(state.phase);
   elements.quickrun.disabled = !state.runnable || ['building', 'running'].includes(state.phase);
   elements.quickpause.disabled = true;
   elements.quickreset.disabled = !state.runnable || ['building', 'running'].includes(state.phase);
+  elements.quickstop.disabled = elements.stm32stop.disabled;
   elements.quickpause.title = 'Pause is unavailable for the isolated Renode run.';
   elements.quickreset.title = '';
+  elements.quickstop.title = 'Stop Renode and discard the transient STM32 executable.';
 }
 
 let picoEditorZoom = 1;
@@ -6200,6 +6209,9 @@ function renderPublicControllerWorkbench() {
     elements.quickrun.disabled = true;
     elements.quickpause.disabled = true;
     elements.quickreset.disabled = true;
+    elements.quickstop.disabled = true;
+    elements.quickstop.textContent = 'Stop unavailable';
+    elements.quickstop.title = 'Stop is unavailable for this preview.';
   }
   setPublicPreviewControls(!avr);
   if (pico) renderPicoQuickControls();
@@ -6208,6 +6220,9 @@ function renderPublicControllerWorkbench() {
   if (avr) {
     elements.quickpause.title = '';
     elements.quickreset.title = '';
+    elements.quickstop.disabled = true;
+    elements.quickstop.textContent = 'Stop unavailable';
+    elements.quickstop.title = 'Stop is unavailable for the AVR browser runtime; use Pause or Reset.';
   }
   window.__PUBLIC_CONTROLLER_PROJECTION__.selectedProfile = view.profile;
   window.__PUBLIC_CONTROLLER_PROJECTION__.selected = view;
@@ -11424,14 +11439,6 @@ function workspacePreference(name, value = null) {
   try { localStorage.setItem(key, String(Boolean(value))); } catch { /* preference is non-critical */ }
   return Boolean(value);
 }
-function toggleWorkspacePanel(kind) {
-  const className = `${kind}-collapsed`; const button = kind === 'catalog' ? elements.togglecatalog : elements.toggleinspector;
-  const collapsed = selectedCompilerProfile === AVR_PROFILE
-    ? document.querySelector('.workspace').classList.toggle(className)
-    : sharedWorkbenchShell.toggle(kind === 'catalog' ? 'parts' : 'inspector');
-  button.setAttribute('aria-pressed', String(collapsed)); workspacePreference(className, collapsed);
-  requestAnimationFrame(() => requestAnimationFrame(drawCircuitWires));
-}
 function installPanelResizer(handle, cssVariable, direction) {
   let drag = null;
   handle.addEventListener('pointerdown', (event) => {
@@ -11455,8 +11462,6 @@ function installPanelResizer(handle, cssVariable, direction) {
   });
 }
 
-elements.togglecatalog.addEventListener('click', () => toggleWorkspacePanel('catalog'));
-elements.toggleinspector.addEventListener('click', () => toggleWorkspacePanel('inspector'));
 installPanelResizer(elements.catalogresizer, '--catalog-width', 1);
 installPanelResizer(elements.inspectorresizer, '--inspector-width', -1);
 elements.showpinlabels.addEventListener('click', () => {
@@ -11935,6 +11940,11 @@ elements.quickreset.addEventListener('click', () => {
   if (selectedCompilerProfile === RP2040_PROFILE) picoPublicWorkbench.reset();
   else if (selectedCompilerProfile === STM32F429ZI_PROFILE) void stm32PublicWorkbench.run(true);
   else elements.reset.click();
+});
+elements.quickstop.addEventListener('click', () => {
+  if (selectedCompilerProfile === ESP32C3_PROFILE) void c3PublicWorkbench.dispose('C3 session discarded.');
+  else if (selectedCompilerProfile === RP2040_PROFILE) picoPublicWorkbench.stop();
+  else if (selectedCompilerProfile === STM32F429ZI_PROFILE) stm32PublicWorkbench.stop();
 });
 elements.projectimport.addEventListener('change', async () => {
   const file = elements.projectimport.files[0]; if (!file) return;

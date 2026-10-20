@@ -12,6 +12,7 @@ import {
 } from '../src/compile-targets.mjs';
 import {
   SHARED_WORKBENCH_SCHEMA,
+  SHARED_WORKBENCH_DIALOGS,
   SHARED_WORKBENCH_SURFACES,
   sharedWorkbenchAdapters,
 } from '../src/shared-workbench-shell.mjs';
@@ -29,6 +30,32 @@ test('four real profiles declare the same shared workbench surfaces', () => {
     assert.match(adapter.groupLabel, /^(?:AVR|RP2040|ESP32|STM32)$/u);
   }
   assert.equal(new Set(adapters.map(({ groupId }) => groupId)).size, 4);
+});
+
+test('top workbench exposes exactly seven accessible popup surfaces around one real active canvas', async () => {
+  assert.deepEqual(SHARED_WORKBENCH_DIALOGS, [
+    'project', 'parts', 'inspector', 'firmware', 'brief', 'instruments', 'help',
+  ]);
+  const [html, shell, css] = await Promise.all([
+    readFile(new URL('../staging/index.html', import.meta.url), 'utf8'),
+    readFile(new URL('../src/shared-workbench-shell.mjs', import.meta.url), 'utf8'),
+    readFile(new URL('../staging/styles.css', import.meta.url), 'utf8'),
+  ]);
+  assert.match(html, /id="top-workbench-shell"/);
+  assert.match(html, /id="active-canvas-mount"/);
+  for (const name of SHARED_WORKBENCH_DIALOGS) {
+    assert.match(html, new RegExp(`id="workbench-${name}-dialog"`));
+    assert.match(html, new RegExp(`aria-controls="workbench-${name}-dialog"`));
+    assert.match(html, new RegExp(`data-workbench-popup-mount="${name}"`));
+  }
+  assert.match(shell, /showModal\(\)/);
+  assert.match(shell, /event\.key !== 'Tab'/);
+  assert.match(shell, /addEventListener\('cancel'/);
+  assert.match(shell, /target\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(shell, /resolvedProfileNodes/);
+  assert.doesNotMatch(shell, /cloneNode/);
+  assert.match(css, /height:\s*max\(560px,\s*calc\(100vh - 200px\)\)/);
+  assert.match(css, /max-height:\s*88vh/);
 });
 
 test('unsupported common controls carry profile-specific truthful reasons', () => {
@@ -53,7 +80,7 @@ test('browser entry point mounts the shared shell without replacing profile impl
   }
   assert.match(browser, /mountSharedWorkbenchShell/);
   assert.match(browser, /sharedWorkbenchShell\.activate/);
-  assert.match(browser, /sharedWorkbenchShell\.toggle/);
+  assert.match(shell, /openDialog\(name/);
   for (const prefix of ['pico', 'c3', 'stm32']) assert.match(html, new RegExp(`id="${prefix}-fullscreen"`));
   assert.match(shell, /requestFullscreen/);
   assert.match(shell, /FULLSCREEN_API_UNAVAILABLE/);

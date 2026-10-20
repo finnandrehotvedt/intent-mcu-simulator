@@ -14,6 +14,8 @@
     "release:check": "node scripts/sync-release-version.mjs --check",
     "prebuild": "npm run release:check",
     "test:release-identity": "node --test --test-concurrency=1 test/release-identity-copy.test.mjs test/capability-discovery.test.mjs",
+    "test:top-layout": "node --test --test-concurrency=1 test/shared-workbench-shell.test.mjs test/named-pin-wire-authoring.test.mjs test/rp2040-pico-circuit.test.mjs test/esp32c3-public.test.mjs test/stm32-public.test.mjs",
+    "test:top-layout:browser": "node test/top-workbench-popup-layout-browser.cjs",
     "test:w06-w07": "node --test --test-concurrency=1 test/candidate-branch-transactions.test.mjs test/existing-graph-edit-safety.test.mjs",
     "test:w08": "node --test --test-concurrency=1 test/candidate-placement-duplication.test.mjs test/existing-graph-edit-safety.test.mjs test/circuit-model.test.mjs",
     "test:w10": "node --test --test-concurrency=1 test/w10-fault-validation.test.mjs test/existing-graph-edit-safety.test.mjs test/circuit-model.test.mjs",

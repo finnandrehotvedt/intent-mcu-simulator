@@ -35,6 +35,30 @@
       <div><p class="eyebrow">PUBLIC RELEASE · AVR + BOUNDED PICO + ESP32-C3 + STM32F429ZI</p><h1>Intent MCU Simulator</h1></div>
       <p class="lede">Build and run four bounded controller paths. C3 uses actual QEMU CPU/UART with a separate GPIO2 model; STM32 uses actual Renode PB0/USART3 with an ideal external LED teaching path.</p>
     </header>
+    <section id="top-workbench-shell" class="top-workbench-shell" aria-labelledby="top-workbench-title">
+      <header class="top-workbench-toolbar">
+        <div class="top-workbench-identity"><p class="eyebrow">ACTIVE BUILD SURFACE</p><h2 id="top-workbench-title">Build the circuit</h2></div>
+        <div id="top-controller-controls" class="top-controller-controls"></div>
+        <div id="top-primary-controls" class="top-primary-controls"></div>
+      </header>
+      <nav id="workbench-popup-controls" class="workbench-popup-controls" aria-label="Open secondary workbench tools">
+        <button id="project-files-open" type="button" aria-haspopup="dialog" aria-controls="workbench-project-dialog">Project &amp; files</button>
+        <button id="toggle-catalog" type="button" aria-haspopup="dialog" aria-controls="workbench-parts-dialog">Parts</button>
+        <button id="toggle-inspector" type="button" aria-haspopup="dialog" aria-controls="workbench-inspector-dialog">Inspector</button>
+        <button id="firmware-open" type="button" aria-haspopup="dialog" aria-controls="workbench-firmware-dialog">Firmware</button>
+        <button id="brief-tests-open" type="button" aria-haspopup="dialog" aria-controls="workbench-brief-dialog">Brief &amp; tests</button>
+        <button id="instruments-open" type="button" aria-haspopup="dialog" aria-controls="workbench-instruments-dialog">Instruments</button>
+        <button id="help-limits-open" type="button" aria-haspopup="dialog" aria-controls="workbench-help-dialog">Help &amp; limits</button>
+      </nav>
+      <section id="active-canvas-stage" class="active-canvas-stage" aria-label="Active controller circuit build surface">
+        <div id="active-canvas-mount"></div>
+        <div class="top-workbench-status" aria-label="Current workbench status">
+          <strong id="top-stage-profile">ATmega328P</strong>
+          <span id="top-stage-state" role="status">Empty project</span>
+          <span id="top-stage-detail">Select two named pins to create a wire.</span>
+        </div>
+      </section>
+    </section>
     <aside class="desktop-required" aria-label="Desktop requirement"><strong>Desktop browser required for the interactive workbench.</strong> Keyboard, file and canvas workflows are verified for desktop use. On a phone or tablet, use the <a href="/controllers.html">controller overview</a>, <a href="/components.html">component guide</a>, <a href="/examples.html">examples</a> and <a href="/support.html">support notes</a>, then return on a desktop to build.</aside>
 
     <section id="project-bar" class="project-bar panel" aria-label="Project controls" data-shared-surface="project">
@@ -98,9 +122,8 @@
 
     <nav id="quick-controls" class="quick-controls panel" aria-label="Persistent build and runtime controls">
       <span><strong>Workbench</strong><small id="quick-state">Empty project</small></span>
-      <button id="toggle-catalog" type="button" aria-pressed="false">Parts</button>
-      <button id="toggle-inspector" type="button" aria-pressed="false">Inspector</button>
       <button id="quick-build" type="button">Build</button><button id="quick-run" type="button" disabled>Run</button><button id="quick-pause" type="button" disabled>Pause</button><button id="quick-reset" type="button" disabled>Reset</button>
+      <button id="quick-stop" type="button" disabled title="Stop is unavailable for the AVR browser runtime; use Pause or Reset.">Stop unavailable</button>
     </nav>
 
     <details id="project-navigation" class="project-navigation panel">
@@ -927,6 +950,13 @@
       <div class="serial-controls"><label class="sr-only" for="serial-input">Text to schedule on USART0 RX</label><input id="serial-input" type="text" maxlength="64" autocomplete="off" placeholder="Type text for RX"><label class="sr-only" for="serial-newline">Line ending</label><select id="serial-newline" aria-label="Send line ending"><option value="none">No ending</option><option value="lf">LF</option><option value="crlf">CRLF</option></select><button id="serial-send" type="button" disabled>Send</button><button id="serial-clear" type="button" disabled>Clear view</button></div>
     </article>
   </aside>
+  <dialog id="workbench-project-dialog" class="workbench-popup-dialog" aria-labelledby="workbench-project-dialog-title"><header><div><p class="eyebrow">LOCAL PROJECT</p><h2 id="workbench-project-dialog-title" tabindex="-1">Project &amp; files</h2></div><button type="button" class="workbench-popup-close" aria-label="Close Project and files">Close</button></header><div class="workbench-popup-mount" data-workbench-popup-mount="project"></div></dialog>
+  <dialog id="workbench-parts-dialog" class="workbench-popup-dialog" aria-labelledby="workbench-parts-dialog-title"><header><div><p class="eyebrow">SUPPORTED COMPONENTS</p><h2 id="workbench-parts-dialog-title" tabindex="-1">Parts</h2></div><button type="button" class="workbench-popup-close" aria-label="Close Parts">Close</button></header><div class="workbench-popup-mount" data-workbench-popup-mount="parts"></div></dialog>
+  <dialog id="workbench-inspector-dialog" class="workbench-popup-dialog" aria-labelledby="workbench-inspector-dialog-title"><header><div><p class="eyebrow">CURRENT SELECTION</p><h2 id="workbench-inspector-dialog-title" tabindex="-1">Inspector</h2></div><button type="button" class="workbench-popup-close" aria-label="Close Inspector">Close</button></header><div class="workbench-popup-mount" data-workbench-popup-mount="inspector"></div></dialog>
+  <dialog id="workbench-firmware-dialog" class="workbench-popup-dialog workbench-popup-wide" aria-labelledby="workbench-firmware-dialog-title"><header><div><p class="eyebrow">SOURCE &amp; DIAGNOSTICS</p><h2 id="workbench-firmware-dialog-title" tabindex="-1">Firmware</h2></div><button type="button" class="workbench-popup-close" aria-label="Close Firmware">Close</button></header><div class="workbench-popup-mount" data-workbench-popup-mount="firmware"></div></dialog>
+  <dialog id="workbench-brief-dialog" class="workbench-popup-dialog workbench-popup-wide" aria-labelledby="workbench-brief-dialog-title"><header><div><p class="eyebrow">PROJECT INTENT &amp; REVIEW</p><h2 id="workbench-brief-dialog-title" tabindex="-1">Brief &amp; tests</h2></div><button type="button" class="workbench-popup-close" aria-label="Close Brief and tests">Close</button></header><div class="workbench-popup-mount" data-workbench-popup-mount="brief"></div></dialog>
+  <dialog id="workbench-instruments-dialog" class="workbench-popup-dialog workbench-popup-wide" aria-labelledby="workbench-instruments-dialog-title"><header><div><p class="eyebrow">CURRENT RUNTIME EVIDENCE</p><h2 id="workbench-instruments-dialog-title" tabindex="-1">Instruments</h2></div><button type="button" class="workbench-popup-close" aria-label="Close Instruments">Close</button></header><div class="workbench-popup-mount" data-workbench-popup-mount="instruments"></div></dialog>
+  <dialog id="workbench-help-dialog" class="workbench-popup-dialog" aria-labelledby="workbench-help-dialog-title"><header><div><p class="eyebrow">TESTED PROFILE BOUNDARY</p><h2 id="workbench-help-dialog-title" tabindex="-1">Help &amp; limits</h2></div><button type="button" class="workbench-popup-close" aria-label="Close Help and limits">Close</button></header><div class="workbench-popup-mount" data-workbench-popup-mount="help"></div></dialog>
   <dialog id="walkthrough"><form method="dialog"><button class="dialog-close" aria-label="Close guide">×</button><p class="eyebrow">FIRST PROJECT · FOUR STEPS</p><h2>From circuit to evidence</h2><ol><li><strong>Open an example</strong><span>Choose an AVR starter here, or follow the exact <a href="/examples.html#narrow-controller-guides">Pico, ESP32-C3 or STM32 guide</a>.</span></li><li><strong>Inspect and wire</strong><span>Move parts, select named pins and check the electrical diagnostics. Missing narrow-profile parts return through Supported parts without inferred cables.</span></li><li><strong>Build, then run</strong><span>The isolated compiler creates the exact firmware executed by the selected bounded runtime.</span></li><li><strong>Save, reopen and read</strong><span>The local file keeps authored data but never executable authority. Open requires a fresh Build; then read the LED, UART and runtime evidence.</span></li></ol><button value="close">Start building</button></form></dialog>
   <dialog id="example-picker-dialog" class="example-picker-dialog" aria-labelledby="example-picker-title" aria-describedby="example-picker-description example-picker-status">
     <div class="example-picker-dialog-inner">
