@@ -2,9 +2,29 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import { build } from 'esbuild';
-import { chmod, cp, mkdir, readdir, rm } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { chmod, cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import {
+  canonicalReleaseChangesText,
+  parseReleaseChangeRegistryText,
+  parseReleaseChangesText,
+} from '../src/release-changes.mjs';
+import { RELEASE_VERSION } from '../src/release-metadata.mjs';
 
 const dist = new URL('../dist/', import.meta.url);
+const [releaseChangesSource, releaseChangeRegistrySource, releaseChangesModuleSource] = await Promise.all([
+  readFile(new URL('../release-changes.source.json', import.meta.url), 'utf8'),
+  readFile(new URL('../release-change-registry.json', import.meta.url), 'utf8'),
+  readFile(new URL('../src/release-changes.mjs', import.meta.url), 'utf8'),
+]);
+const registry = parseReleaseChangeRegistryText(releaseChangeRegistrySource);
+const implementationSha256 = createHash('sha256').update(releaseChangesModuleSource).digest('hex');
+const releaseChanges = parseReleaseChangesText(releaseChangesSource, {
+  currentVersion: RELEASE_VERSION, implementationSha256, registry,
+});
+const releaseChangesText = canonicalReleaseChangesText(releaseChanges, {
+  currentVersion: RELEASE_VERSION, implementationSha256, registry,
+});
 await mkdir(dist, { recursive: true });
 for (const entry of await readdir(dist)) await rm(new URL(entry, dist), { recursive: true, force: true });
 await Promise.all([
@@ -19,6 +39,7 @@ await Promise.all([
   cp(new URL('../staging/components.html', import.meta.url), new URL('components.html', dist)),
   cp(new URL('../staging/examples.html', import.meta.url), new URL('examples.html', dist)),
   cp(new URL('../staging/support.html', import.meta.url), new URL('support.html', dist)),
+  writeFile(new URL('release-changes.json', dist), releaseChangesText),
   build({ entryPoints: [new URL('../staging/main.mjs', import.meta.url).pathname], outfile: new URL('main.js', dist).pathname, bundle: true, format: 'esm', platform: 'browser', minifyWhitespace: true, legalComments: 'eof' }),
   build({ entryPoints: [new URL('../src/simulator.worker.mjs', import.meta.url).pathname], outfile: new URL('simulator.worker.js', dist).pathname, bundle: true, format: 'esm', platform: 'browser', minifyWhitespace: true, legalComments: 'eof' }),
 ]);

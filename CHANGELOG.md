@@ -2,6 +2,17 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.80 — 2026-10-20
+
+- Added X88 as one deterministic static `/release-changes.json` document with
+  strict `intent-mcu-release-changes@1` parsing and canonical projection.
+- Bound rc.79→rc.80 to exactly additive X88, the checked-in X01–X96 longlist,
+  explicit migration/breaking flags and the exact implementation-source hash.
+- Rejects unknown, duplicate, reordered, stale, oversized or authority-bearing
+  input and keeps Apply, Build, Run, replay and verdict authority fixed false.
+- Added an HTML alternate link plus concise `llms.txt` and Support discovery;
+  no API, storage, producer, action or project/package schema was added.
+
 ## 1.1.0-rc.79 — 2026-10-20
 
 - Published the independently reviewed X41 local comparison for two compatible

@@ -1,8 +1,13 @@
-# Migration to 1.1.0-rc.79
+# Migration to 1.1.0-rc.80
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.80 changes no project, package, capability-discovery or stored-browser
+schema. The static release-delta document is read-only reviewed metadata and
+has every action/verdict authority flag fixed false. Existing learner files,
+projects and retained experiment packages require no conversion.
 
 Rc.79 changes no project, experiment-package or stored browser schema. The X41
 Before/After comparison holds the two selected canonical package texts and its

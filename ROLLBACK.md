@@ -1,13 +1,13 @@
-# Rollback basis for 1.1.0-rc.79
+# Rollback basis for 1.1.0-rc.80
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain exact accepted rc.78 source commit
-`b500f8c36de6f250f4c88735e03aa2bd4fced22f` and VM103 image
-`sha256:841e013322c6ef44c906dbb19db6a02a00464d0e2cfc6b3ca2414715cfe10c3e`
-as the pre-rc.79 app-only recovery basis.
+Retain exact accepted rc.79 source commit
+`158b41cfe82e892dc7b03fdb02a2b0e825736c34` and VM103 image
+`sha256:5aa2e55d6ce075173474d3b97b5eb3e3a512cd620d13e1d0f3e8fa930fa2be96`
+as the pre-rc.80 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
@@ -89,6 +89,11 @@ removes its controls and access but does not delete or migrate learner-owned
 downloaded files. Browser-managed IndexedDB records may remain inaccessible to
 the older app; preserve needed work as a downloaded canonical project before a
 manual rollback. No server-side project store exists.
+
+Rc.80 adds only a strict static machine-readable release-delta document and
+its discovery links. Rolling back removes that metadata file and copy. It does
+not migrate, rewrite or delete learner projects, packages, browser history,
+firmware or runtime evidence, and no new server state exists.
 
 Rc.79 adds only transient local comparison of two retained strict-v3 experiment
 packages. Rolling back removes the comparison disclosure and its in-tab state;

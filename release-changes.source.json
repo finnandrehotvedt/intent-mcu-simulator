@@ -1,0 +1,39 @@
+{
+  "schema": "intent-mcu-release-changes@1",
+  "product": {
+    "id": "intent-mcu-simulator",
+    "source": {
+      "repository": "https://github.com/finnandrehotvedt/intent-mcu-simulator",
+      "implementation": {
+        "path": "src/release-changes.mjs",
+        "sha256": "a25d3bf3b42a650d6bfa080bdd37d16e7fa0dccc50ecdb6aa510b424d027b77d"
+      }
+    }
+  },
+  "release": {
+    "previous": "1.1.0-rc.79",
+    "current": "1.1.0-rc.80"
+  },
+  "changes": [
+    {
+      "id": "X88",
+      "classification": "additive",
+      "capabilities": [
+        "intent-mcu-release-changes@1"
+      ],
+      "contracts": [
+        "x88-machine-readable-release-delta-v1"
+      ],
+      "summary": "Adds a strict static machine-readable release delta for read-only discovery."
+    }
+  ],
+  "migrationRequired": false,
+  "breakingChangesPresent": false,
+  "authority": {
+    "apply": false,
+    "build": false,
+    "run": false,
+    "replay": false,
+    "verdict": false
+  }
+}

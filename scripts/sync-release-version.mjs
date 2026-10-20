@@ -1,13 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
+import { createHash } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
+import {
+  canonicalReleaseChangesText,
+  parseReleaseChangeRegistryText,
+  parseReleaseChangesText,
+} from '../src/release-changes.mjs';
 
 const root = new URL('../', import.meta.url);
 const releaseUrl = new URL('release.json', root);
 const packageUrl = new URL('package.json', root);
 const lockUrl = new URL('package-lock.json', root);
 const moduleUrl = new URL('src/release-metadata.mjs', root);
+const releaseChangesUrl = new URL('release-changes.source.json', root);
+const releaseChangeRegistryUrl = new URL('release-change-registry.json', root);
+const releaseChangesModuleUrl = new URL('src/release-changes.mjs', root);
 const release = JSON.parse(await readFile(releaseUrl, 'utf8'));
 const exactKeys = Object.keys(release).sort().join('|') === 'schema|version';
 if (!exactKeys || release.schema !== 'intent-mcu-release@1'
@@ -21,6 +30,18 @@ export const RELEASE_VERSION = '${release.version}';
 `;
 const packageValue = JSON.parse(await readFile(packageUrl, 'utf8'));
 const lockValue = JSON.parse(await readFile(lockUrl, 'utf8'));
+const [releaseChangesSource, releaseChangeRegistrySource, releaseChangesModuleSource] = await Promise.all([
+  readFile(releaseChangesUrl, 'utf8'), readFile(releaseChangeRegistryUrl, 'utf8'),
+  readFile(releaseChangesModuleUrl, 'utf8'),
+]);
+const registry = parseReleaseChangeRegistryText(releaseChangeRegistrySource);
+const implementationSha256 = createHash('sha256').update(releaseChangesModuleSource).digest('hex');
+const releaseChanges = parseReleaseChangesText(releaseChangesSource, {
+  currentVersion: release.version, implementationSha256, registry,
+});
+if (releaseChangesSource !== canonicalReleaseChangesText(releaseChanges, {
+  currentVersion: release.version, implementationSha256, registry,
+})) throw new Error('RELEASE_CHANGES_SOURCE_NOT_CANONICAL');
 
 if (process.argv[2] === '--write') {
   packageValue.version = release.version;
