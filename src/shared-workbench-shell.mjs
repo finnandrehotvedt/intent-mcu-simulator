@@ -494,7 +494,7 @@ export function mountSharedWorkbenchShell(document) {
     });
     return true;
   };
-  const openPopup = (name, requestedOpener = null) => {
+  const openPopup = (name, requestedOpener = null, { initialFocus = true } = {}) => {
     if (!SHARED_WORKBENCH_DIALOGS.includes(name)) throw new Error('SHARED_WORKBENCH_DIALOG_UNKNOWN');
     if (activePopup) closePopup({ restoreFocus: false });
     const popup = popupByName.get(name);
@@ -503,8 +503,10 @@ export function mountSharedWorkbenchShell(document) {
     returnFocus = requestedOpener ?? document.activeElement ?? popup.opener;
     popup.opener.setAttribute('aria-expanded', 'true');
     popup.dialog.showModal();
-    const heading = popup.dialog.querySelector('h2');
-    queueMicrotask(() => (heading ?? popupFocusable(popup.dialog)[0])?.focus({ preventScroll: true }));
+    if (initialFocus) {
+      const heading = popup.dialog.querySelector('h2');
+      queueMicrotask(() => (heading ?? popupFocusable(popup.dialog)[0])?.focus({ preventScroll: true }));
+    }
     return true;
   };
 
@@ -589,7 +591,7 @@ export function mountSharedWorkbenchShell(document) {
       openPopup(surface, popupByName.get(surface).opener);
       return false;
     },
-    openDialog(name, opener = null) { return openPopup(name, opener); },
+    openDialog(name, opener = null, options = {}) { return openPopup(name, opener, options); },
     closeDialog(options = {}) { return closePopup(options); },
     openSerial() {
       openPopup('instruments', document.activeElement ?? popupByName.get('instruments').opener);

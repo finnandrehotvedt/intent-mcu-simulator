@@ -1242,11 +1242,11 @@ function navigateProjectResult(entry, expectedIdentity) {
     // node would report success while leaving the user on a hidden surface.
     if (profile === AVR_PROFILE) {
       selectedSourceFile = entry.target.file; renderProject();
-      sharedWorkbenchShell.openDialog('firmware', document.querySelector('#firmware-open'));
+      sharedWorkbenchShell.openDialog('firmware', document.querySelector('#firmware-open'), { initialFocus: false });
       if (entry.target.line) focusSourceLine(elements.source, currentProject().source.files.find((item) => item.name === entry.target.file).content, entry.target.line);
       else elements.sourcefile.focus();
     } else {
-      sharedWorkbenchShell.openDialog('firmware', document.querySelector('#firmware-open'));
+      sharedWorkbenchShell.openDialog('firmware', document.querySelector('#firmware-open'), { initialFocus: false });
       const textarea = profile === RP2040_PROFILE ? elements.picosource : profile === ESP32C3_PROFILE ? elements.c3source : elements.stm32source;
       if (entry.target.line) focusSourceLine(textarea, textarea.value, entry.target.line); else textarea.focus();
     }

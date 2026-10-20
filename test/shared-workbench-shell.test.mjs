@@ -81,6 +81,10 @@ test('browser entry point mounts the shared shell without replacing profile impl
   assert.match(browser, /mountSharedWorkbenchShell/);
   assert.match(browser, /sharedWorkbenchShell\.activate/);
   assert.match(shell, /openDialog\(name/);
+  assert.match(shell, /openDialog\(name, opener = null, options = \{\}\)/);
+  assert.match(shell, /\{ initialFocus = true \}/);
+  assert.match(browser, /openDialog\('firmware',[^{]+\{ initialFocus: false \}\)/);
+  assert.match(browser, /closeDialog\(\{ restoreFocus: false \}\)/);
   for (const prefix of ['pico', 'c3', 'stm32']) assert.match(html, new RegExp(`id="${prefix}-fullscreen"`));
   assert.match(shell, /requestFullscreen/);
   assert.match(shell, /FULLSCREEN_API_UNAVAILABLE/);

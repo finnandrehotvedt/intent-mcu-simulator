@@ -328,7 +328,8 @@ async function verifyDialog(page, name, openerSelector, profile) {
     await sourceResult.waitFor();
     await sourceResult.click();
     await filePage.waitForSelector('#workbench-firmware-dialog[open]');
-    assert.equal(await filePage.evaluate(() => document.querySelector('#workbench-firmware-dialog').contains(document.activeElement)), true);
+    await filePage.evaluate(() => new Promise((resolve) => queueMicrotask(() => requestAnimationFrame(() => queueMicrotask(resolve)))));
+    assert.equal(await filePage.evaluate(() => document.activeElement === document.querySelector('#source-file')), true);
     report.sourceNavigationOpenedFirmware = true;
     await filePage.keyboard.press('Escape');
 
