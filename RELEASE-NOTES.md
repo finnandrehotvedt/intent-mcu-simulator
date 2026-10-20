@@ -1,4 +1,30 @@
-# Intent MCU Simulator 1.1.0-rc.87
+# Intent MCU Simulator 1.1.0-rc.88
+
+## X70 accessible-demonstration closure
+
+This release completes the original X70 requirement: readable pins, circuit,
+measurements, versions and model limits accompany the demonstration. The
+closure composes four preserved genuine SVGs under their exact original rc.86
+release/model/artifact identities with the unchanged canonical exporter,
+current lifecycle checks and a new strict finite historical validator.
+
+Historical validation is deliberately data-only. It validates canonical
+exported projected facts but does not make an old report current or executable,
+prove retained native payload bytes, create calibrated physical truth, claim
+device equivalence, or grant a verdict. Only AVR retains the exact native
+summary payload for a direct projector comparison; Pico, ESP32-C3 and STM32
+remain honestly labelled without reconstructed payloads.
+
+The current parser remains bound to rc.88 and rejects the rc.86 originals.
+Ordinary exports still state **No current measurements** unless a genuine
+current source-bound Run exists. This release performs no firmware Build, Run
+or scenario and adds no endpoint, storage, service worker, account,
+third-party request, DNS, Caddy or infrastructure change. Counts are X
+**69/1/26**, P1 **59/0/0**.
+
+---
+
+## 1.1.0-rc.87
 
 ## Reviewed Pico pacing and current-measurement SVG
 

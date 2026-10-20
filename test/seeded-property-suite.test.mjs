@@ -104,8 +104,16 @@ test('X22 headless path executes the saved generated sequence and retains produc
   const pass = completedExperimentOutcome();
   const observations = timeline.scenarios.map((scenario) => ({
     schema: 'intent-mcu-scenario-observation-result@1', scenarioId: scenario.id,
+    profile: AVR, sourceSha256: 'a'.repeat(64), artifactIdentity: 'b'.repeat(64),
     status: 'passed', outcome: pass, virtualMilliseconds: 160,
     expected: { observationWindow: { startMilliseconds: 160, endMilliseconds: 350 } },
+    observed: {
+      captureWindow: { minimumMilliseconds: 160, maximumMilliseconds: 350 },
+      inputControls: scenario.events.filter(({ kind }) => kind.startsWith('input.')),
+      level: scenario.events.at(-1).level,
+    },
+    checks: { pinObserved: true },
+    retention: { inputEventsDropped: 0 },
   }));
   const result = await runSavedHeadlessExperiment(savedSeeded(), {
     compile: async () => ({ inputIdentity: 'a'.repeat(64), artifactIdentity: 'b'.repeat(64),
@@ -120,4 +128,32 @@ test('X22 headless path executes the saved generated sequence and retains produc
   assert.equal(result.status, 'passed');
   assert.equal(result.observations.length, 8);
   assert.match(result.association.scenarioTimelineSha256, /^[a-f0-9]{64}$/u);
+});
+
+test('X22 headless seeded fixture remains indeterminate when native completeness is missing', async () => {
+  const timeline = generateSeededThermostatTimeline(seedA);
+  const pass = completedExperimentOutcome();
+  const observations = timeline.scenarios.map((scenario) => ({
+    schema: 'intent-mcu-scenario-observation-result@1', scenarioId: scenario.id,
+    profile: AVR, sourceSha256: 'a'.repeat(64), artifactIdentity: 'b'.repeat(64),
+    status: 'passed', outcome: pass, virtualMilliseconds: 160,
+    expected: { observationWindow: { startMilliseconds: 160, endMilliseconds: 350 } },
+    observed: {
+      captureWindow: { minimumMilliseconds: 160, maximumMilliseconds: 350 },
+      inputControls: scenario.events.filter(({ kind }) => kind.startsWith('input.')),
+      level: scenario.events.at(-1).level,
+    },
+    checks: { pinObserved: true },
+    retention: { inputEventsDropped: 0 },
+  }));
+  delete observations[0].retention;
+  const result = await runSavedHeadlessExperiment(savedSeeded(), {
+    compile: async () => ({ inputIdentity: 'a'.repeat(64), artifactIdentity: 'b'.repeat(64),
+      artifact: { hex: ':00000001FF' } }),
+    execute: async () => observations,
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.status, 'indeterminate');
+  assert.equal(result.observations[0].outcome.academicStatus, 'indeterminate');
+  assert.ok(result.observations[0].outcome.reasons.includes('MEASUREMENT_COMPLETENESS_REQUIRED'));
 });

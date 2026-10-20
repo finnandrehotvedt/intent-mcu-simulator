@@ -94,7 +94,7 @@ function avrSummary() {
 }
 
 test('X70 historical validator accepts only the finite rc86 profile/model combinations without rewriting identity', async () => {
-  assert.equal(RELEASE_VERSION, '1.1.0-rc.87');
+  assert.equal(RELEASE_VERSION, '1.1.0-rc.88');
   for (const [profile, graph, layout] of fixtures()) {
     const report = await syntheticHistorical(profile, graph, layout);
     const before = stableAccessibleDemonstrationStringify(report);
@@ -167,4 +167,3 @@ test('X70 historical validator rejects recomputed-hash measurement and authored-
       undefined, name);
   }
 });
-

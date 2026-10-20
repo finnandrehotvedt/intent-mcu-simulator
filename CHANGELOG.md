@@ -2,6 +2,20 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.88 — 2026-10-20
+
+- Completes X70 against its original criterion using four preserved genuine
+  original-identity demonstrations and a separate strict finite historical
+  SVG/report validation path.
+- Keeps every rc.86 release, profile, model-lock, artifact and report identity
+  unchanged; historical validation is data-only and grants no executable,
+  current-runtime, physical-truth or verdict authority.
+- Retains the current rc.88 parser's exact release binding, explicit no-current
+  exports, Pico pacing and all existing lifecycle authority clearing.
+- Advances counts to X **69/1/26**, P1 **59/0/0**, with no firmware Build, Run,
+  scenario, endpoint, storage, service worker, DNS, Caddy or infrastructure
+  change.
+
 ## 1.1.0-rc.87 — 2026-10-20
 
 - Publishes the independently reviewed Pico current-runtime measurement path

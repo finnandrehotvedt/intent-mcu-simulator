@@ -44,7 +44,8 @@ test('public guides cover every narrow controller and the exact recovery boundar
     && support.includes('between 160 and 350 virtual milliseconds'));
   assert(llms.includes('/examples.html#thermostat-boundary-test')
     && llms.includes('known-bad equality variant'));
-  assert.equal((sitemap.match(/<lastmod>2026-10-17<\/lastmod>/gu) ?? []).length, 5);
+  assert.equal((sitemap.match(/<lastmod>2026-10-20<\/lastmod>/gu) ?? []).length, 6);
+  assert.doesNotMatch(sitemap, /<lastmod>2026-10-17<\/lastmod>/u);
   assert(llms.includes('Open never restores executable authority')
     && llms.includes('/examples.html#stm32-first-project'));
 });

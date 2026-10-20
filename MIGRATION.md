@@ -1,8 +1,14 @@
-# Migration to 1.1.0-rc.87
+# Migration to 1.1.0-rc.88
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.88 changes no project, package, compiler-artifact, model-library, cache or
+browser-storage schema. Its historical demonstration validator is a separate
+read-only data path for four exact rc.86 release/profile/model-lock identities;
+it never rewrites an original, restores runtime authority or installs a
+project. Existing learner-owned files require no conversion.
 
 Rc.87 changes no project, package, compiler-artifact, cache or browser-storage
 schema. Recognized older X56 model-library files still require the existing

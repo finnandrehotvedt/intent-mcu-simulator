@@ -11,8 +11,8 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.86",
-    "current": "1.1.0-rc.87"
+    "previous": "1.1.0-rc.87",
+    "current": "1.1.0-rc.88"
   },
   "changes": [
     {
@@ -24,7 +24,7 @@
       "contracts": [
         "x70-canonical-authored-graph-svg-v1"
       ],
-      "summary": "Publishes the reviewed Pico current-measurement SVG path with bounded presentation pacing while preserving explicit no-current exports for every profile."
+      "summary": "Completes X70 from four original-identity genuine demonstrations plus strict finite historical validation without granting runtime, verdict or physical-truth authority."
     },
     {
       "id": "X88",
@@ -35,7 +35,7 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records the reviewed rc.86 to rc.87 partial X70 measurement-export release without adding firmware action, replay or verdict authority."
+      "summary": "Records the reviewed rc.87 to rc.88 X70 closure release without adding firmware action, replay, physical-truth or verdict authority."
     }
   ],
   "migrationRequired": false,
