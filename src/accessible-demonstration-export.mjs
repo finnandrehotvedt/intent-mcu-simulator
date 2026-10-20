@@ -50,15 +50,68 @@ const TIME_BASES = new Set([
   'unavailable', 'virtual-cycle', 'virtual-cycle-and-nanoseconds',
   'reset-epoch-sequence', 'adapter-epoch-sequence', 'instruction-order-only',
 ]);
-const PROFILE_CLASSIFICATIONS = Object.freeze({
-  [AVR_PROFILE]: Object.freeze({ serial: ['recorded-runtime'], gpio: ['recorded-runtime'],
-    logic: ['recorded-runtime'], input: ['recorded-runtime'] }),
-  [RP2040_PROFILE]: Object.freeze({ serial: ['recorded-runtime', 'unavailable'],
-    gpio: ['recorded-runtime', 'unavailable'], logic: ['recorded-runtime', 'unavailable'], input: ['unavailable'] }),
-  [ESP32C3_PROFILE]: Object.freeze({ serial: ['recorded-runtime', 'unavailable'],
-    gpio: ['project-model', 'unavailable'], logic: ['project-model', 'unavailable'], input: ['unavailable'] }),
-  [STM32F429ZI_PROFILE]: Object.freeze({ serial: ['recorded-runtime', 'unavailable'],
-    gpio: ['recorded-runtime', 'unavailable'], logic: ['recorded-runtime', 'unavailable'], input: ['unavailable'] }),
+const MEASUREMENT_CONTRACTS = Object.freeze({
+  [AVR_PROFILE]: Object.freeze({
+    provenance: 'Compiled artifact → avr8js worker → project-owned circuit model',
+    channels: Object.freeze({
+      serial: Object.freeze({ classification: 'recorded-runtime', basis: 'virtual-cycle',
+        provenance: 'USART0 TX/RX records from the current avr8js worker snapshot' }),
+      gpio: Object.freeze({ classification: 'recorded-runtime', basis: 'virtual-cycle',
+        provenance: 'D0–D13/A0–A5 pin state from the current avr8js worker snapshot' }),
+      logic: Object.freeze({ classification: 'recorded-runtime', basis: 'virtual-cycle',
+        provenance: 'Digital transitions from the current avr8js worker snapshot' }),
+      input: Object.freeze({ classification: 'recorded-runtime', basis: 'virtual-cycle',
+        provenance: 'Ordered controls and USART0 RX from the current avr8js worker snapshot' }),
+    }),
+  }),
+  [RP2040_PROFILE]: Object.freeze({
+    provenance: 'Compiled UF2 → rp2040js worker',
+    channels: Object.freeze({
+      serial: Object.freeze({ classification: 'recorded-runtime', basis: 'virtual-cycle',
+        provenance: 'UART0 output from the current rp2040js worker snapshot',
+        unavailable: 'No current source-bound UART0 worker snapshot.' }),
+      gpio: Object.freeze({ classification: 'recorded-runtime', basis: 'virtual-cycle',
+        provenance: 'GPIO0 state from the current rp2040js worker snapshot',
+        unavailable: 'No current source-bound GPIO0 worker snapshot.' }),
+      logic: Object.freeze({ classification: 'recorded-runtime', basis: 'virtual-cycle-and-nanoseconds',
+        provenance: 'GPIO0 transitions from the current rp2040js worker snapshot',
+        unavailable: 'No current source-bound rp2040js GPIO0 transition snapshot.' }),
+      input: Object.freeze({ classification: null, basis: 'unavailable',
+        unavailable: 'No public RP2040 runtime input evidence is approved.' }),
+    }),
+  }),
+  [ESP32C3_PROFILE]: Object.freeze({
+    provenance: 'Compiled flash → Espressif QEMU CPU/UART',
+    channels: Object.freeze({
+      serial: Object.freeze({ classification: 'recorded-runtime', basis: 'reset-epoch-sequence',
+        provenance: 'Actual Espressif QEMU UART output from the current flash execution',
+        unavailable: 'No current source-bound QEMU UART execution.' }),
+      gpio: Object.freeze({ classification: 'project-model', basis: 'adapter-epoch-sequence',
+        provenance: 'Project-owned GPIO2 register adapter; not QEMU pin state',
+        unavailable: 'No current source-bound GPIO2 project-model result.' }),
+      logic: Object.freeze({ classification: 'project-model', basis: 'adapter-epoch-sequence',
+        provenance: 'Project-owned GPIO2 adapter epoch sequence; not QEMU CPU GPIO or pin timing',
+        unavailable: 'QEMU pin-level logic transitions are unavailable; no current GPIO2 model epochs exist.' }),
+      input: Object.freeze({ classification: null, basis: 'unavailable',
+        unavailable: 'No public ESP32-C3 runtime input evidence is available.' }),
+    }),
+  }),
+  [STM32F429ZI_PROFILE]: Object.freeze({
+    provenance: 'Compiled ELF → Renode 1.17.0',
+    channels: Object.freeze({
+      serial: Object.freeze({ classification: 'recorded-runtime', basis: 'reset-epoch-sequence',
+        provenance: 'Actual Renode USART3 output from the current ELF execution',
+        unavailable: 'No current source-bound Renode USART3 execution.' }),
+      gpio: Object.freeze({ classification: 'recorded-runtime', basis: 'instruction-order-only',
+        provenance: 'PB0 level observed by Renode in the current ELF execution',
+        unavailable: 'No current source-bound Renode PB0 observation.' }),
+      logic: Object.freeze({ classification: 'recorded-runtime', basis: 'instruction-order-only',
+        provenance: 'Actual Renode PB0 final observation; no timed transition waveform is produced',
+        unavailable: 'No current source-bound Renode PB0 observation.' }),
+      input: Object.freeze({ classification: null, basis: 'unavailable',
+        unavailable: 'No public STM32 runtime input evidence is available.' }),
+    }),
+  }),
 });
 const ALLOWED_ELEMENTS = new Set(['svg', 'title', 'desc', 'metadata', 'g', 'rect', 'line', 'path', 'circle', 'text', 'tspan']);
 const ALLOWED_ATTRIBUTES = new Set([
@@ -240,22 +293,48 @@ function boundedString(value, maximum = 16_384, allowEmpty = true) {
   return normalized;
 }
 
-function finiteScalar(value, name) {
-  if (typeof value === 'boolean' || value === null) return value;
-  if (typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= Number.MAX_SAFE_INTEGER) return value;
-  if (typeof value === 'string') return boundedString(value, 512);
-  reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_VALUE', [name]);
+function nonNegativeInteger(value, maximum = Number.MAX_SAFE_INTEGER) {
+  return Number.isSafeInteger(value) && value >= 0 && value <= maximum;
 }
 
-function exactAllowedKeys(value, allowed, code) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)
-      || Object.keys(value).some((key) => !allowed.includes(key))) reject(code);
+function finiteNumber(value, minimum = 0, maximum = Number.MAX_SAFE_INTEGER) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= minimum && value <= maximum;
 }
 
-function compactRecord(value, allowed, code) {
-  exactAllowedKeys(value, allowed, code);
-  return Object.fromEntries(Object.keys(value).sort(compare)
-    .map((key) => [key, finiteScalar(value[key], key)]));
+function serialRecord(profile, value) {
+  const common = nonNegativeInteger(value?.cycle) && finiteNumber(value?.virtualMilliseconds)
+    && typeof value?.direction === 'string' && typeof value?.text === 'string';
+  if (!common) reject('ACCESSIBLE_DEMONSTRATION_SERIAL_RECORD');
+  if (profile === RP2040_PROFILE) {
+    if (!exactKeys(value, ['cycle', 'direction', 'value', 'text', 'virtualMilliseconds'])
+        || value.direction !== 'tx' || !nonNegativeInteger(value.value, 255)) {
+      reject('ACCESSIBLE_DEMONSTRATION_SERIAL_RECORD');
+    }
+  } else if (profile === AVR_PROFILE) {
+    const shape = value.direction === 'tx'
+      ? ['direction', 'cycle', 'value', 'baud', 'frameCycles', 'virtualMilliseconds', 'text']
+      : value.direction === 'rx-complete'
+        ? ['direction', 'cycle', 'virtualMilliseconds', 'text']
+        : value.direction === 'rx-request'
+          ? ['direction', 'cycle', 'targetCycle', 'value', 'accepted', 'virtualMilliseconds', 'text'] : [];
+    if (!shape.length || !exactKeys(value, shape)
+        || (value.value !== undefined && !nonNegativeInteger(value.value, 255))
+        || (value.targetCycle !== undefined && !nonNegativeInteger(value.targetCycle))
+        || (value.accepted !== undefined && typeof value.accepted !== 'boolean')
+        || (value.baud !== undefined && !finiteNumber(value.baud, 1))
+        || (value.frameCycles !== undefined && !nonNegativeInteger(value.frameCycles))) {
+      reject('ACCESSIBLE_DEMONSTRATION_SERIAL_RECORD');
+    }
+  } else reject('ACCESSIBLE_DEMONSTRATION_SERIAL_RECORD');
+  boundedString(value.text, 8);
+  return clone(value);
+}
+
+function c3BootEpoch(value, marker) {
+  if (!exactKeys(value, ['version', 'reset', 'boot', 'mode', 'entry', 'marker'])
+      || value.marker !== marker || value.mode !== 'DIO') reject('ACCESSIBLE_DEMONSTRATION_C3_BOOT_EPOCH');
+  for (const name of ['version', 'reset', 'boot', 'entry', 'marker']) boundedString(value[name], 160, false);
+  return clone(value);
 }
 
 function serialValue(profile, value) {
@@ -265,65 +344,169 @@ function serialValue(profile, value) {
     [ESP32C3_PROFILE]: ['text', 'bootEpochs'],
     [STM32F429ZI_PROFILE]: ['text'],
   };
-  exactAllowedKeys(value, shapes[profile], 'ACCESSIBLE_DEMONSTRATION_SERIAL_VALUE');
+  if (!exactKeys(value, shapes[profile])) reject('ACCESSIBLE_DEMONSTRATION_SERIAL_VALUE');
   const records = Array.isArray(value.records) ? value.records : [];
-  const recordKeys = ['accepted', 'baud', 'cycle', 'direction', 'frameCycles', 'targetCycle',
-    'text', 'value', 'virtualMilliseconds'];
-  for (const record of records) compactRecord(record, recordKeys, 'ACCESSIBLE_DEMONSTRATION_SERIAL_RECORD');
-  if (value.bootEpochs !== undefined && !Array.isArray(value.bootEpochs)) {
+  if (records.length > 4_096) reject('ACCESSIBLE_DEMONSTRATION_SERIAL_VALUE');
+  const checkedRecords = records.map((record) => serialRecord(profile, record));
+  if (profile === ESP32C3_PROFILE && (!Array.isArray(value.bootEpochs)
+      || value.bootEpochs.length < 1 || value.bootEpochs.length > 2)) {
     reject('ACCESSIBLE_DEMONSTRATION_SERIAL_VALUE');
   }
-  const output = typeof value.text === 'string' ? value.text : records
+  const output = typeof value.text === 'string' ? boundedString(value.text) : checkedRecords
     .filter((record) => record.direction === 'tx')
-    .map((record) => typeof record.text === 'string' ? record.text
-      : Number.isInteger(record.value) && record.value >= 0 && record.value <= 255
-        ? String.fromCodePoint(record.value) : '').join('');
-  const selected = records.slice(-128).map((record) => compactRecord(record, recordKeys,
-    'ACCESSIBLE_DEMONSTRATION_SERIAL_RECORD'));
-  return { text: boundedString(output), records: selected, displayed: selected.length };
+    .map((record) => record.text).join('');
+  const selected = checkedRecords.slice(-128);
+  return profile === ESP32C3_PROFILE
+    ? { text: output, records: selected, displayed: selected.length,
+      bootEpochs: value.bootEpochs.map((epoch) => c3BootEpoch(epoch, output)) }
+    : { text: output, records: selected, displayed: selected.length };
 }
 
-function pinValue(value) {
-  exactAllowedKeys(value, ['pins', 'selectedPin', 'source'], 'ACCESSIBLE_DEMONSTRATION_GPIO_VALUE');
-  if (!Array.isArray(value.pins) || value.pins.length > 32
-      || (value.selectedPin !== null && typeof value.selectedPin !== 'string')
-      || (value.source !== undefined && typeof value.source !== 'string')) {
+function pwmValue(profile, value) {
+  if (value === null) return null;
+  if (profile === AVR_PROFILE) {
+    if (!exactKeys(value, ['periodCycles', 'highCycles', 'duty'])
+        || !nonNegativeInteger(value.periodCycles) || value.periodCycles < 1
+        || !nonNegativeInteger(value.highCycles) || value.highCycles > value.periodCycles
+        || !finiteNumber(value.duty, 0, 1)) reject('ACCESSIBLE_DEMONSTRATION_GPIO_PWM');
+  } else if (profile === RP2040_PROFILE) {
+    if (!exactKeys(value, ['duty', 'frequencyHz', 'periodNanos'])
+        || !finiteNumber(value.duty, 0, 1) || !finiteNumber(value.frequencyHz, 0)
+        || !finiteNumber(value.periodNanos, 0)) reject('ACCESSIBLE_DEMONSTRATION_GPIO_PWM');
+  } else reject('ACCESSIBLE_DEMONSTRATION_GPIO_PWM');
+  return clone(value);
+}
+
+function avrPin(value) {
+  const digital = /^D(?:[0-9]|1[0-3])$/u.test(value?.pin ?? '');
+  const analogue = /^A[0-5]$/u.test(value?.pin ?? '');
+  const expected = digital
+    ? ['pin', 'mode', 'level', 'externalDrive', 'pwm', 'diagnostic']
+    : analogue ? ['pin', 'mode', 'level', 'voltage', 'faultState', 'adc', 'sampleCycle', 'diagnostic'] : [];
+  if (!expected.length || !exactKeys(value, expected) || typeof value.level !== 'boolean'
+      || !['INPUT', 'INPUT_PULLUP', 'OUTPUT', 'DIGITAL_PWM', 'ANALOG_INPUT'].includes(value.mode)
+      || !['OK', 'UNSUPPORTED_PERIPHERAL'].includes(value.diagnostic)) {
+    reject('ACCESSIBLE_DEMONSTRATION_GPIO_PIN');
+  }
+  if (digital) {
+    if (!['RELEASED', 'HIGH', 'LOW'].includes(value.externalDrive)) reject('ACCESSIBLE_DEMONSTRATION_GPIO_PIN');
+    pwmValue(AVR_PROFILE, value.pwm);
+  } else if (!finiteNumber(value.voltage, 0, 5) || !['NONE', 'STUCK'].includes(value.faultState)
+      || (value.adc !== null && !nonNegativeInteger(value.adc, 1023))
+      || (value.sampleCycle !== null && !nonNegativeInteger(value.sampleCycle))) {
+    reject('ACCESSIBLE_DEMONSTRATION_GPIO_PIN');
+  }
+  return clone(value);
+}
+
+function picoPin(value) {
+  const full = exactKeys(value, ['pin', 'mode', 'level', 'voltage', 'pwm', 'adc', 'diagnostic']);
+  const fallback = exactKeys(value, ['pin', 'mode', 'level', 'lastCycle']);
+  if (value?.pin !== 'GPIO0' || typeof value.level !== 'boolean' || (!full && !fallback)) {
+    reject('ACCESSIBLE_DEMONSTRATION_GPIO_PIN');
+  }
+  if (full) {
+    if (!['INPUT', 'OUTPUT', 'PWM'].includes(value.mode) || !finiteNumber(value.voltage, 0, 3.3)
+        || value.adc !== null || typeof value.diagnostic !== 'string') reject('ACCESSIBLE_DEMONSTRATION_GPIO_PIN');
+    boundedString(value.diagnostic, 200, false); pwmValue(RP2040_PROFILE, value.pwm);
+  } else if (!['input', 'output'].includes(value.mode) || !nonNegativeInteger(value.lastCycle)) {
+    reject('ACCESSIBLE_DEMONSTRATION_GPIO_PIN');
+  }
+  return clone(value);
+}
+
+function c3Pin(value) {
+  const keys = ['pin', 'schema', 'generation', 'epoch', 'writes', 'outputLatchHigh', 'outputEnabled',
+    'outputMatrixSignal', 'outputEnableFromGpioRegister', 'ioMuxFunction', 'muxConfigured', 'drive',
+    'volts', 'provenance'];
+  if (!exactKeys(value, keys) || value.pin !== 'GPIO2'
+      || value.schema !== 'intent-mcu-project-c3-gpio2-state@1'
+      || !nonNegativeInteger(value.generation) || value.generation < 1
+      || !nonNegativeInteger(value.epoch) || value.epoch < 1 || !nonNegativeInteger(value.writes)
+      || !nonNegativeInteger(value.outputMatrixSignal) || !nonNegativeInteger(value.ioMuxFunction)
+      || !['high', 'low', 'high-impedance'].includes(value.drive)
+      || (value.volts !== null && !finiteNumber(value.volts, 0, 3.3))
+      || !['outputLatchHigh', 'outputEnabled', 'outputEnableFromGpioRegister', 'muxConfigured']
+        .every((name) => typeof value[name] === 'boolean')
+      || !exactKeys(value.provenance, ['cpuExecution', 'peripheralModel', 'qemuPinStateObserved'])
+      || value.provenance.cpuExecution !== 'Espressif QEMU esp32c3 actual executed stores'
+      || value.provenance.peripheralModel !== 'IntentForce project-owned register adapter'
+      || value.provenance.qemuPinStateObserved !== false) reject('ACCESSIBLE_DEMONSTRATION_GPIO_PIN');
+  return clone(value);
+}
+
+function pinValue(profile, value) {
+  const expectedKeys = profile === ESP32C3_PROFILE ? ['pins', 'selectedPin', 'source'] : ['pins', 'selectedPin'];
+  if (!exactKeys(value, expectedKeys) || !Array.isArray(value.pins) || value.pins.length < 1
+      || value.pins.length > 32 || typeof value.selectedPin !== 'string') {
     reject('ACCESSIBLE_DEMONSTRATION_GPIO_VALUE');
   }
-  const pinKeys = ['adc', 'diagnostic', 'drive', 'externalDrive', 'faultState', 'lastCycle', 'level',
-    'mode', 'pin', 'pwm', 'sampleCycle', 'voltage', 'volts'];
-  const pins = value.pins.map((pin) => {
-    exactAllowedKeys(pin, pinKeys, 'ACCESSIBLE_DEMONSTRATION_GPIO_PIN');
-    const result = {};
-    for (const key of Object.keys(pin).sort(compare)) {
-      if (key === 'pwm') {
-        if (pin.pwm === null) result.pwm = null;
-        else {
-          exactAllowedKeys(pin.pwm, ['duty', 'dutyCycle', 'frequencyHz', 'highCycles', 'periodCycles', 'periodNanos'],
-            'ACCESSIBLE_DEMONSTRATION_GPIO_PWM');
-          result.pwm = Object.fromEntries(Object.keys(pin.pwm).sort(compare)
-            .map((name) => [name, finiteScalar(pin.pwm[name], name)]));
-        }
-      } else result[key] = finiteScalar(pin[key], key);
+  let pins;
+  if (profile === AVR_PROFILE) pins = value.pins.map(avrPin);
+  else if (profile === RP2040_PROFILE) pins = value.pins.map(picoPin);
+  else if (profile === ESP32C3_PROFILE) pins = value.pins.map(c3Pin);
+  else {
+    if (value.pins.length !== 1 || !exactKeys(value.pins[0], ['pin', 'level'])
+        || value.pins[0].pin !== 'PB0' || typeof value.pins[0].level !== 'boolean') {
+      reject('ACCESSIBLE_DEMONSTRATION_GPIO_PIN');
     }
-    if (typeof result.pin !== 'string') reject('ACCESSIBLE_DEMONSTRATION_GPIO_PIN');
-    return result;
-  });
-  return { pins, selectedPin: value.selectedPin === null ? null : boundedString(value.selectedPin, 64, false),
-    source: value.source === undefined ? null : boundedString(value.source, 160, false) };
+    pins = clone(value.pins);
+  }
+  if (new Set(pins.map(({ pin }) => pin)).size !== pins.length
+      || !pins.some(({ pin }) => pin === value.selectedPin)) reject('ACCESSIBLE_DEMONSTRATION_GPIO_VALUE');
+  let source = null;
+  if (profile === ESP32C3_PROFILE) {
+    if (!exactKeys(value.source, ['pin', 'mode', 'level']) || value.source.pin !== 2
+        || value.source.mode !== 'OUTPUT' || !['HIGH', 'LOW'].includes(value.source.level)) {
+      reject('ACCESSIBLE_DEMONSTRATION_GPIO_VALUE');
+    }
+    source = clone(value.source);
+  }
+  return { pins, selectedPin: value.selectedPin, source };
 }
 
-function logicValue(value) {
+function logicRecord(profile, value) {
+  if (profile === AVR_PROFILE) {
+    if (!exactKeys(value, ['cycle', 'pin', 'level']) || !/^D(?:[0-9]|1[0-3])$/u.test(value.pin)
+        || !nonNegativeInteger(value.cycle) || typeof value.level !== 'boolean') reject('ACCESSIBLE_DEMONSTRATION_LOGIC_RECORD');
+  } else if (profile === RP2040_PROFILE) {
+    if (!exactKeys(value, ['cycle', 'pin', 'level', 'virtualNanos']) || value.pin !== 'GPIO0'
+        || !nonNegativeInteger(value.cycle) || !nonNegativeInteger(value.virtualNanos)
+        || typeof value.level !== 'boolean') reject('ACCESSIBLE_DEMONSTRATION_LOGIC_RECORD');
+  } else if (profile === ESP32C3_PROFILE) {
+    if (!exactKeys(value, ['channel', 'sequence', 'level', 'state']) || value.channel !== 'GPIO2 model'
+        || !nonNegativeInteger(value.sequence) || value.sequence < 1
+        || !['high', 'low', 'high-impedance'].includes(value.state)
+        || (value.level !== null && typeof value.level !== 'boolean')
+        || (value.state === 'high' && value.level !== true)
+        || (value.state === 'low' && value.level !== false)
+        || (value.state === 'high-impedance' && value.level !== null)) reject('ACCESSIBLE_DEMONSTRATION_LOGIC_RECORD');
+  } else if (!exactKeys(value, ['channel', 'sequence', 'level', 'state']) || value.channel !== 'PB0'
+      || value.sequence !== 1 || typeof value.level !== 'boolean' || value.state !== 'final-observation') {
+    reject('ACCESSIBLE_DEMONSTRATION_LOGIC_RECORD');
+  }
+  return clone(value);
+}
+
+function logicValue(profile, value) {
   if (!exactKeys(value, ['channels', 'transitions']) || !Array.isArray(value.channels)
-      || value.channels.length > 8 || !Array.isArray(value.transitions)) {
+      || value.channels.length > 8 || !Array.isArray(value.transitions) || value.transitions.length > 100_000) {
     reject('ACCESSIBLE_DEMONSTRATION_LOGIC_VALUE');
   }
   const channels = value.channels.map((channel) => boundedString(channel, 64, false));
-  const recordKeys = ['channel', 'cycle', 'level', 'pin', 'sequence', 'state', 'virtualNanos'];
-  for (const record of value.transitions) compactRecord(record, recordKeys,
-    'ACCESSIBLE_DEMONSTRATION_LOGIC_RECORD');
-  const transitions = value.transitions.slice(-128).map((record) => compactRecord(record, recordKeys,
-    'ACCESSIBLE_DEMONSTRATION_LOGIC_RECORD'));
+  if (new Set(channels).size !== channels.length
+      || (profile === RP2040_PROFILE && (channels.length !== 1 || channels[0] !== 'GPIO0'))
+      || (profile === ESP32C3_PROFILE && (channels.length !== 1 || channels[0] !== 'GPIO2 model'))
+      || (profile === STM32F429ZI_PROFILE && (channels.length !== 1 || channels[0] !== 'PB0'))
+      || (profile === AVR_PROFILE && channels.some((pin) => !/^D(?:[0-9]|1[0-3])$/u.test(pin)))) {
+    reject('ACCESSIBLE_DEMONSTRATION_LOGIC_VALUE');
+  }
+  const checked = value.transitions.map((record) => logicRecord(profile, record));
+  if (profile === STM32F429ZI_PROFILE && checked.length !== 1) reject('ACCESSIBLE_DEMONSTRATION_LOGIC_VALUE');
+  if (profile === ESP32C3_PROFILE && checked.some((record, index) => record.sequence !== index + 1)) {
+    reject('ACCESSIBLE_DEMONSTRATION_LOGIC_VALUE');
+  }
+  const transitions = checked.slice(-128);
   return { channels, transitions, displayed: transitions.length };
 }
 
@@ -333,72 +516,78 @@ function inputValue(value) {
   return { records: value.records };
 }
 
-function timeValue(value) {
+function timeValue(value, expectedBasis) {
+  const virtual = ['virtual-cycle', 'virtual-cycle-and-nanoseconds'].includes(expectedBasis);
   if (!exactKeys(value, ['basis', 'cycle', 'virtualMilliseconds']) || !TIME_BASES.has(value.basis)
-      || (value.cycle !== null && (!Number.isSafeInteger(value.cycle) || value.cycle < 0))
-      || (value.virtualMilliseconds !== null
-        && (!Number.isFinite(value.virtualMilliseconds) || value.virtualMilliseconds < 0))) {
+      || value.basis !== expectedBasis
+      || (virtual && (!nonNegativeInteger(value.cycle) || !finiteNumber(value.virtualMilliseconds)))
+      || (!virtual && (value.cycle !== null || value.virtualMilliseconds !== null))) {
     reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_TIME');
   }
   return clone(value);
 }
 
-function retentionValue(value) {
+function retentionValue(value, available) {
   if (!exactKeys(value, ['retained', 'dropped', 'limit'])) {
     reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_RETENTION');
   }
-  for (const name of ['retained', 'dropped', 'limit']) {
-    if (value[name] !== null && (!Number.isSafeInteger(value[name]) || value[name] < 0)) {
-      reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_RETENTION');
-    }
+  if (!available) {
+    if (Object.values(value).some((item) => item !== null)) reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_RETENTION');
+  } else if (!nonNegativeInteger(value.retained) || !nonNegativeInteger(value.dropped)
+      || (value.limit !== null && (!nonNegativeInteger(value.limit) || value.retained > value.limit))) {
+    reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_RETENTION');
   }
   return clone(value);
 }
 
-function validateProjectedValue(id, value) {
+function measurementChannelContract(profile, id, classification, provenance) {
+  const contract = MEASUREMENT_CONTRACTS[profile]?.channels[id];
+  if (!contract) reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_CHANNEL');
+  if (classification === 'unavailable') {
+    if (!contract.unavailable || provenance !== contract.unavailable) reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_CHANNEL');
+    return { ...contract, basis: 'unavailable', available: false };
+  }
+  if (classification !== contract.classification || provenance !== contract.provenance) {
+    reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_CHANNEL');
+  }
+  return { ...contract, available: true };
+}
+
+function validateProjectedValue(profile, id, value) {
   if (id === 'serial') {
-    if (!exactKeys(value, ['text', 'records', 'displayed']) || !Array.isArray(value.records)
+    const keys = profile === ESP32C3_PROFILE
+      ? ['text', 'records', 'displayed', 'bootEpochs'] : ['text', 'records', 'displayed'];
+    if (!exactKeys(value, keys) || !Array.isArray(value.records)
         || value.records.length > 128 || value.displayed !== value.records.length) {
       reject('ACCESSIBLE_DEMONSTRATION_SERIAL_VALUE');
     }
     boundedString(value.text);
-    const recordKeys = ['accepted', 'baud', 'cycle', 'direction', 'frameCycles', 'targetCycle',
-      'text', 'value', 'virtualMilliseconds'];
-    value.records.forEach((record) => compactRecord(record, recordKeys,
-      'ACCESSIBLE_DEMONSTRATION_SERIAL_RECORD'));
+    if ([AVR_PROFILE, RP2040_PROFILE].includes(profile)) value.records.forEach((record) => serialRecord(profile, record));
+    else if (value.records.length) reject('ACCESSIBLE_DEMONSTRATION_SERIAL_VALUE');
+    if (profile === ESP32C3_PROFILE) {
+      if (!Array.isArray(value.bootEpochs) || value.bootEpochs.length < 1 || value.bootEpochs.length > 2) {
+        reject('ACCESSIBLE_DEMONSTRATION_SERIAL_VALUE');
+      }
+      value.bootEpochs.forEach((epoch) => c3BootEpoch(epoch, value.text));
+    }
     return;
   }
   if (id === 'gpio') {
     if (!exactKeys(value, ['pins', 'selectedPin', 'source']) || !Array.isArray(value.pins)
-        || value.pins.length > 32 || (value.selectedPin !== null && typeof value.selectedPin !== 'string')
-        || (value.source !== null && typeof value.source !== 'string')) {
+        || value.pins.length > 32 || typeof value.selectedPin !== 'string') {
       reject('ACCESSIBLE_DEMONSTRATION_GPIO_VALUE');
     }
-    const pinKeys = ['adc', 'diagnostic', 'drive', 'externalDrive', 'faultState', 'lastCycle', 'level',
-      'mode', 'pin', 'pwm', 'sampleCycle', 'voltage', 'volts'];
-    value.pins.forEach((pin) => {
-      exactAllowedKeys(pin, pinKeys, 'ACCESSIBLE_DEMONSTRATION_GPIO_PIN');
-      if (typeof pin.pin !== 'string') reject('ACCESSIBLE_DEMONSTRATION_GPIO_PIN');
-      for (const [name, item] of Object.entries(pin)) {
-        if (name === 'pwm' && item !== null) {
-          exactAllowedKeys(item, ['duty', 'dutyCycle', 'frequencyHz', 'highCycles', 'periodCycles', 'periodNanos'],
-            'ACCESSIBLE_DEMONSTRATION_GPIO_PWM');
-          Object.entries(item).forEach(([key, nested]) => finiteScalar(nested, key));
-        } else finiteScalar(item, name);
-      }
-    });
-    if (value.selectedPin !== null) boundedString(value.selectedPin, 64, false);
-    if (value.source !== null) boundedString(value.source, 160, false);
+    pinValue(profile, profile === ESP32C3_PROFILE ? value
+      : { pins: value.pins, selectedPin: value.selectedPin });
+    if (profile !== ESP32C3_PROFILE && value.source !== null) reject('ACCESSIBLE_DEMONSTRATION_GPIO_VALUE');
     return;
   }
   if (id === 'logic') {
     if (!exactKeys(value, ['channels', 'transitions', 'displayed']) || !Array.isArray(value.channels)
         || value.channels.length > 8 || !Array.isArray(value.transitions) || value.transitions.length > 128
         || value.displayed !== value.transitions.length) reject('ACCESSIBLE_DEMONSTRATION_LOGIC_VALUE');
-    value.channels.forEach((channel) => boundedString(channel, 64, false));
-    const recordKeys = ['channel', 'cycle', 'level', 'pin', 'sequence', 'state', 'virtualNanos'];
-    value.transitions.forEach((record) => compactRecord(record, recordKeys,
-      'ACCESSIBLE_DEMONSTRATION_LOGIC_RECORD'));
+    const checked = logicValue(profile, { channels: value.channels, transitions: value.transitions });
+    if (checked.displayed !== value.displayed) reject('ACCESSIBLE_DEMONSTRATION_LOGIC_VALUE');
     return;
   }
   inputValue(value);
@@ -412,39 +601,38 @@ function currentMeasurements(value) {
       || !Number.isSafeInteger(value.revision) || value.revision < 0
       || value.authority !== 'observation-only' || !Array.isArray(value.channels)
       || value.channels.length !== CHANNEL_IDS.length) reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENTS');
-  boundedString(value.provenance, 320, false);
+  const profileContract = MEASUREMENT_CONTRACTS[value.profile];
+  if (value.provenance !== profileContract.provenance) reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENTS');
   for (let index = 0; index < CHANNEL_IDS.length; index += 1) {
     const channel = value.channels[index]; const id = CHANNEL_IDS[index];
     if (!exactKeys(channel, ['id', 'classification', 'provenance', 'time', 'retention', 'value'])
-        || channel.id !== id || !PROFILE_CLASSIFICATIONS[value.profile][id].includes(channel.classification)) {
+        || channel.id !== id) {
       reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_CHANNEL');
     }
-    boundedString(channel.provenance, 320, false); timeValue(channel.time); retentionValue(channel.retention);
-    if (channel.classification === 'unavailable') {
-      if (channel.value !== null || channel.time.basis !== 'unavailable'
-          || Object.values(channel.retention).some((item) => item !== null)) {
-        reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_UNAVAILABLE');
-      }
+    const contract = measurementChannelContract(value.profile, id, channel.classification, channel.provenance);
+    timeValue(channel.time, contract.basis); retentionValue(channel.retention, contract.available);
+    if (!contract.available) {
+      if (channel.value !== null) reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_UNAVAILABLE');
     } else if (channel.value === null) reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_VALUE');
-    else validateProjectedValue(id, channel.value);
-  }
-  if (value.profile === ESP32C3_PROFILE) {
-    const gpio = value.channels.find(({ id }) => id === 'gpio');
-    const logic = value.channels.find(({ id }) => id === 'logic');
-    if (gpio.classification !== 'unavailable'
-        && (!/project-owned|not QEMU pin state/iu.test(gpio.provenance)
-          || gpio.time.basis !== 'adapter-epoch-sequence')) reject('ACCESSIBLE_DEMONSTRATION_C3_BOUNDARY');
-    if (logic.classification !== 'unavailable'
-        && (!/not QEMU CPU GPIO|project-owned/iu.test(logic.provenance)
-          || logic.time.basis !== 'adapter-epoch-sequence')) reject('ACCESSIBLE_DEMONSTRATION_C3_BOUNDARY');
-  }
-  if (value.profile === STM32F429ZI_PROFILE) {
-    for (const id of ['gpio', 'logic']) {
-      const channel = value.channels.find((item) => item.id === id);
-      if (channel.classification !== 'unavailable' && channel.time.basis !== 'instruction-order-only') {
-        reject('ACCESSIBLE_DEMONSTRATION_STM32_BOUNDARY');
+    else {
+      validateProjectedValue(value.profile, id, channel.value);
+      const retained = channel.retention.retained;
+      if ((id === 'serial' && [AVR_PROFILE, RP2040_PROFILE].includes(value.profile)
+            && channel.value.displayed !== Math.min(retained, 128))
+          || (id === 'serial' && value.profile === ESP32C3_PROFILE
+            && channel.value.bootEpochs.length !== retained)
+          || (id === 'serial' && value.profile === STM32F429ZI_PROFILE && channel.value.displayed !== 0)
+          || (id === 'gpio' && value.profile !== ESP32C3_PROFILE && channel.value.pins.length !== retained)
+          || (id === 'logic' && channel.value.displayed !== Math.min(retained, 128))
+          || (id === 'input' && channel.value.records !== retained)) {
+        reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_RETENTION');
       }
     }
+  }
+  if (value.profile === ESP32C3_PROFILE) {
+    const gpio = value.channels[1]; const logic = value.channels[2];
+    if (gpio.classification !== 'unavailable' && logic.classification !== 'unavailable'
+        && gpio.retention.retained !== logic.retention.retained) reject('ACCESSIBLE_DEMONSTRATION_C3_BOUNDARY');
   }
   return clone(value);
 }
@@ -456,27 +644,30 @@ export function accessibleMeasurementsFromSharedSummary(summary) {
       || summary.state !== 'current-runtime' || !HASH.test(summary.artifactIdentity ?? '')
       || !Number.isSafeInteger(summary.revision) || summary.revision < 0
       || !exactKeys(summary.channels, CHANNEL_IDS)) reject('ACCESSIBLE_DEMONSTRATION_SHARED_SUMMARY');
+  if (summary.provenance !== MEASUREMENT_CONTRACTS[summary.profile].provenance) {
+    reject('ACCESSIBLE_DEMONSTRATION_SHARED_SUMMARY');
+  }
   const channels = CHANNEL_IDS.map((id) => {
     const channel = summary.channels[id];
-    if (!exactKeys(channel, ['classification', 'provenance', 'time', 'retention', 'value'])
-        || !PROFILE_CLASSIFICATIONS[summary.profile][id].includes(channel.classification)) {
+    if (!exactKeys(channel, ['classification', 'provenance', 'time', 'retention', 'value'])) {
       reject('ACCESSIBLE_DEMONSTRATION_SHARED_SUMMARY_CHANNEL');
     }
+    const contract = measurementChannelContract(summary.profile, id, channel.classification, channel.provenance);
     const base = { id, classification: channel.classification,
-      provenance: boundedString(channel.provenance, 320, false), time: timeValue(channel.time),
-      retention: retentionValue(channel.retention), value: null };
-    if (channel.classification === 'unavailable') {
+      provenance: channel.provenance, time: timeValue(channel.time, contract.basis),
+      retention: retentionValue(channel.retention, contract.available), value: null };
+    if (!contract.available) {
       if (channel.value !== null) reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_UNAVAILABLE');
       return base;
     }
     base.value = id === 'serial' ? serialValue(summary.profile, channel.value)
-      : id === 'gpio' ? pinValue(channel.value)
-        : id === 'logic' ? logicValue(channel.value) : inputValue(channel.value);
+      : id === 'gpio' ? pinValue(summary.profile, channel.value)
+        : id === 'logic' ? logicValue(summary.profile, channel.value) : inputValue(channel.value);
     return base;
   });
   return currentMeasurements({ status: 'current-runtime-measurements', profile: summary.profile,
     artifactIdentity: summary.artifactIdentity, revision: summary.revision,
-    provenance: boundedString(summary.provenance, 320, false), channels, authority: 'observation-only' });
+    provenance: summary.provenance, channels, authority: 'observation-only' });
 }
 
 function inputMeasurements(value) {
@@ -862,7 +1053,12 @@ function reportRows(report) {
         { kind: 'measurement-channel', id: channel.id, strong: true });
       add(channel.provenance, { indent: true });
       if (channel.value === null) add('Unavailable', { indent: true });
-      else if (channel.id === 'serial') add(`Text: ${channel.value.text || '(empty)'} · ${channel.value.displayed} records shown`, { indent: true });
+      else if (channel.id === 'serial') {
+        add(`Text: ${channel.value.text || '(empty)'} · ${channel.value.displayed} records shown`, { indent: true });
+        for (const [index, epoch] of (channel.value.bootEpochs ?? []).entries()) {
+          add(`Boot epoch ${index + 1}: ${stableAccessibleDemonstrationStringify(epoch)}`, { indent: true });
+        }
+      }
       else if (channel.id === 'gpio') {
         for (const pin of channel.value.pins) add(`Pin ${pin.pin}: ${stableAccessibleDemonstrationStringify(pin)}`, { indent: true });
       } else if (channel.id === 'logic') {

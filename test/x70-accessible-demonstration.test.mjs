@@ -70,11 +70,20 @@ function currentSummaries() {
       artifactIdentity: hash('c'), state: 'current-runtime', provenance: 'Compiled flash → Espressif QEMU CPU/UART',
       channels: {
         serial: observed('recorded-runtime', 'Actual Espressif QEMU UART output from the current flash execution', 'reset-epoch-sequence',
-          { text: 'C3', bootEpochs: [{ marker: 'C3' }] }, 1),
+          { text: 'C3', bootEpochs: [{ version: 'ESP-ROM:esp32c3-api1-20210207', reset: '0x1 (POWERON)',
+            boot: '0x8 (SPI_FAST_FLASH_BOOT)', mode: 'DIO', entry: '0x403cbf10', marker: 'C3' }] }, 1),
         gpio: observed('project-model', 'Project-owned GPIO2 register adapter; not QEMU pin state', 'adapter-epoch-sequence',
-          { pins: [{ pin: 'GPIO2', drive: 'high', volts: 3.3 }], selectedPin: 'GPIO2', source: 'executed-register-writes' }, 2),
+          { pins: [{ pin: 'GPIO2', schema: 'intent-mcu-project-c3-gpio2-state@1', generation: 1,
+            epoch: 2, writes: 4, outputLatchHigh: true, outputEnabled: true, outputMatrixSignal: 128,
+            outputEnableFromGpioRegister: true, ioMuxFunction: 1, muxConfigured: true,
+            drive: 'high', volts: 3.3, provenance: { cpuExecution: 'Espressif QEMU esp32c3 actual executed stores',
+              peripheralModel: 'IntentForce project-owned register adapter', qemuPinStateObserved: false } }],
+          selectedPin: 'GPIO2', source: { pin: 2, mode: 'OUTPUT', level: 'HIGH' } }, 2),
         logic: observed('project-model', 'Project-owned GPIO2 adapter epoch sequence; not QEMU CPU GPIO or pin timing', 'adapter-epoch-sequence',
-          { channels: ['GPIO2 model'], transitions: [{ channel: 'GPIO2 model', sequence: 1, level: true, state: 'high' }] }, 2, 2),
+          { channels: ['GPIO2 model'], transitions: [
+            { channel: 'GPIO2 model', sequence: 1, level: true, state: 'high' },
+            { channel: 'GPIO2 model', sequence: 2, level: true, state: 'high' },
+          ] }, 2, 2),
         input: unavailable('No public ESP32-C3 runtime input evidence is available.'),
       } },
     { schema: 'intent-mcu-shared-instrument-summary@1', profile: STM32F429ZI_PROFILE, revision: 7,
@@ -204,6 +213,39 @@ test('X70 v2 rejects extra, stale, relabelled and invented measurement facts', a
     const measurements = clone(accepted); mutate(measurements);
     await assert.rejects(() => createAccessibleDemonstration({ ...input(profile, graph, layout), measurements }),
       undefined, name);
+  }
+});
+
+test('X70 v2 rejects semantic measurement forgeries even after report rehash', async () => {
+  const reports = [];
+  for (const [index, [profile, graph, layout]] of fixtures().entries()) {
+    const measurements = accessibleMeasurementsFromSharedSummary(currentSummaries()[index]);
+    reports.push((await createAccessibleDemonstration({ ...input(profile, graph, layout), measurements })).report);
+  }
+  const cases = [
+    ['AVR wrong known-time basis', 0, (report) => {
+      const channel = report.measurements.channels[0];
+      channel.time = { basis: 'instruction-order-only', cycle: null, virtualMilliseconds: null };
+    }],
+    ['C3 wrong pin identity', 2, (report) => {
+      const channel = report.measurements.channels[1];
+      channel.value.pins[0].pin = 'GPIO3'; channel.value.selectedPin = 'GPIO3';
+    }],
+    ['STM32 invented waveform', 3, (report) => {
+      const channel = report.measurements.channels[2];
+      channel.value.transitions.push({ channel: 'PB0', sequence: 2, level: false, state: 'final-observation' });
+      channel.value.displayed = 2; channel.retention.retained = 2; channel.retention.limit = 2;
+    }],
+    ['unavailable channel with a known cycle', 1, (report) => {
+      report.measurements.channels[3].time.cycle = 1;
+    }],
+    ['retention does not match projected records', 0, (report) => {
+      report.measurements.channels[0].retention.retained += 1;
+    }],
+  ];
+  for (const [name, index, mutate] of cases) {
+    const forged = clone(reports[index]); mutate(forged);
+    await assert.rejects(() => validateAccessibleDemonstrationReport(rehash(forged)), undefined, name);
   }
 });
 

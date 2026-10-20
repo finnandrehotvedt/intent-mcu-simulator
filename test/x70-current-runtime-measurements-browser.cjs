@@ -28,7 +28,7 @@ const storage = () => ({
 });
 const sha256 = (source) => crypto.createHash('sha256').update(source).digest('hex');
 
-function expectedSerial(channel) {
+function expectedSerial(channel, profile) {
   const allRecords = Array.isArray(channel.value?.records) ? channel.value.records : [];
   const records = allRecords.slice(-128);
   const text = typeof channel.value?.text === 'string' ? channel.value.text : allRecords
@@ -36,7 +36,9 @@ function expectedSerial(channel) {
     .map((record) => typeof record.text === 'string' ? record.text
       : Number.isInteger(record.value) && record.value >= 0 && record.value <= 255
         ? String.fromCodePoint(record.value) : '').join('');
-  return { text, records, displayed: records.length };
+  return profile.slug === 'c3'
+    ? { text, records, displayed: records.length, bootEpochs: channel.value.bootEpochs }
+    : { text, records, displayed: records.length };
 }
 
 function assertProjection(report, native, profile) {
@@ -57,11 +59,11 @@ function assertProjection(report, native, profile) {
     if (channel.classification === 'unavailable') {
       assert.equal(projected.value, null);
     } else if (projected.id === 'serial') {
-      assert.deepEqual(projected.value, expectedSerial(channel));
+      assert.deepEqual(projected.value, expectedSerial(channel, profile));
     } else if (projected.id === 'gpio') {
       assert.deepEqual(projected.value.pins, channel.value.pins);
       assert.equal(projected.value.selectedPin, channel.value.selectedPin);
-      assert.equal(projected.value.source, channel.value.source ?? null);
+      assert.deepEqual(projected.value.source, channel.value.source ?? null);
     } else if (projected.id === 'logic') {
       assert.deepEqual(projected.value.channels, channel.value.channels);
       assert.deepEqual(projected.value.transitions, channel.value.transitions.slice(-128));
