@@ -7,6 +7,19 @@ const ACTIVE_EXPORT_REJECTION_STATUS =
   'Pause the current AVR/Pico runtime or wait for C3/STM32 completion before exporting a stable measurement snapshot.';
 const POSITIVE_EXPORT_STATUS =
   'Accessible SVG downloaded locally · authored graph, named pins and current observation-only runtime measurements included.';
+const EXPECTED_PICO_NATIVE_IDENTITY = Object.freeze({
+  profile: 'board.rp2040-pico-v1',
+  modelLibrary: Object.freeze({
+    version: '2.0.0-pico-presentation.1-current',
+    manifestSha256: '567aebbbf1885d31f9401fa3cf1ae98b7263d1b32f22a6b7886ec686b3c0dac3',
+    implementationSha256: '02df48f026feddb9e9af5630d162a76be8660f618d31388b5df53839184125f1',
+    implementationId: 'intent-mcu-model-bundle-current-pico-presentation-1@3',
+  }),
+  runtimeEngine: Object.freeze({
+    id: 'rp2040js', version: '1.4.0',
+    sha256: 'ac5cb5a2cac7c759ce26c83b92b85f33510b10b4dd7825b02b23b6aed7fdbbbd',
+  }),
+});
 
 class DriverDeadlineError extends Error {
   constructor(label, timeoutMs) {
@@ -146,6 +159,36 @@ async function picoMetrics(page, timeoutMs) {
   )), timeoutMs, 'read Pico driver metrics');
 }
 
+function assertPicoNativeIdentity(state) {
+  const expected = EXPECTED_PICO_NATIVE_IDENTITY;
+  const artifactIdentity = state?.artifact?.artifactIdentity;
+  if (state?.profile !== expected.profile || !/^[0-9a-f]{64}$/u.test(artifactIdentity ?? '')
+      || state?.runtime?.artifactIdentity !== artifactIdentity) {
+    throw new Error('X70_PICO_NATIVE_ARTIFACT_IDENTITY');
+  }
+  for (const [key, value] of Object.entries(expected.modelLibrary)) {
+    if (state.modelLibrary?.[key] !== value) throw new Error(`X70_PICO_MODEL_IDENTITY_${key}`);
+  }
+  for (const [key, value] of Object.entries(expected.runtimeEngine)) {
+    if (state.runtime?.runtimeEngine?.[key] !== value) throw new Error(`X70_PICO_RUNTIME_IDENTITY_${key}`);
+  }
+  const presentation = state.runtime?.presentation;
+  if (presentation?.schema !== 'intent-mcu-rp2040-presentation@1'
+      || presentation.artifactIdentity !== artifactIdentity
+      || !Number.isSafeInteger(presentation.generation) || presentation.generation < 1
+      || !Number.isSafeInteger(presentation.sequence) || presentation.sequence < 1) {
+    throw new Error('X70_PICO_PRESENTATION_IDENTITY');
+  }
+  if (!Number.isSafeInteger(state.runtime.cycle) || state.runtime.cycle < 0
+      || !Number.isSafeInteger(state.runtime.instructions) || state.runtime.instructions < 0) {
+    throw new Error('X70_PICO_RUNTIME_COUNTERS');
+  }
+  return { artifactIdentity, modelLibrary: structuredClone(state.modelLibrary),
+    runtimeEngine: structuredClone(state.runtime.runtimeEngine),
+    presentation: structuredClone(presentation), cycle: state.runtime.cycle,
+    instructions: state.runtime.instructions };
+}
+
 async function observeSustainedPico(page, {
   durationMs = 10_000,
   heartbeatIntervalMs = 100,
@@ -156,14 +199,37 @@ async function observeSustainedPico(page, {
   const baseline = await picoMetrics(page, heartbeatDeadlineMs);
   const started = Date.now();
   const heartbeats = [];
+  let identity = null;
+  let prior = null;
   while (Date.now() - started < durationMs) {
     const heartbeatStarted = Date.now();
     const value = await hardDeadline(() => page.evaluate(() => ({
       ready: document.readyState,
       state: document.querySelector('#pico-state')?.textContent?.trim() ?? null,
-      presentation: window.__RP2040_PUBLIC_STATE__?.runtime?.presentation ?? null,
+      native: structuredClone(window.__RP2040_PUBLIC_STATE__ ?? null),
     })), heartbeatDeadlineMs, 'Pico page heartbeat');
-    heartbeats.push({ elapsedMs: Date.now() - heartbeatStarted, ...value });
+    let native = null;
+    if (requireRuntime) {
+      native = assertPicoNativeIdentity(value.native);
+      if (value.state !== 'running' || value.native?.phase !== 'running'
+          || value.native?.runtime?.paused !== false || native.presentation.final !== false) {
+        throw new Error('X70_PICO_SUSTAINED_NOT_RUNNING');
+      }
+      if (!identity) identity = native;
+      if (native.artifactIdentity !== identity.artifactIdentity
+          || native.presentation.generation !== identity.presentation.generation) {
+        throw new Error('X70_PICO_SUSTAINED_IDENTITY_DRIFT');
+      }
+      if (prior && (native.presentation.sequence < prior.presentation.sequence
+          || native.cycle < prior.cycle || native.instructions < prior.instructions)) {
+        throw new Error('X70_PICO_SUSTAINED_COUNTER_REGRESSION');
+      }
+      prior = native;
+    }
+    heartbeats.push({ elapsedMs: Date.now() - heartbeatStarted, ready: value.ready,
+      state: value.state, cycle: native?.cycle ?? null, instructions: native?.instructions ?? null,
+      generation: native?.presentation.generation ?? null,
+      sequence: native?.presentation.sequence ?? null });
     const remaining = durationMs - (Date.now() - started);
     if (remaining > 0) await new Promise((resolve) => setTimeout(resolve,
       Math.min(heartbeatIntervalMs, remaining)));
@@ -172,31 +238,55 @@ async function observeSustainedPico(page, {
   const observedMs = Date.now() - started;
   const messages = final.workerPresentationMessages - baseline.workerPresentationMessages;
   const publications = final.picoStatePublications - baseline.picoStatePublications;
-  const ceiling = Math.ceil(observedMs / presentationIntervalMs) + 10;
+  const messageCeiling = Math.ceil(observedMs / presentationIntervalMs) + 10;
+  const publicationCeiling = Math.ceil(observedMs / presentationIntervalMs) + 20;
   if (heartbeats.some(({ elapsedMs }) => elapsedMs > heartbeatDeadlineMs)) {
     throw new Error('X70_PICO_HEARTBEAT_BUDGET');
   }
-  if (messages > ceiling || publications > ceiling) throw new Error('X70_PICO_PRESENTATION_CADENCE');
+  if (messages > messageCeiling || publications > publicationCeiling) {
+    throw new Error('X70_PICO_PRESENTATION_CADENCE');
+  }
   if (requireRuntime && (messages < 1 || publications < 1)) throw new Error('X70_PICO_PRESENTATION_MISSING');
+  if (requireRuntime && (!identity || !prior || prior.cycle <= identity.cycle
+      || prior.instructions <= identity.instructions
+      || prior.presentation.sequence <= identity.presentation.sequence)) {
+    throw new Error('X70_PICO_SUSTAINED_NO_PROGRESS');
+  }
   return { durationMs: observedMs, heartbeatDeadlineMs, heartbeats: heartbeats.length,
     maximumHeartbeatMs: Math.max(0, ...heartbeats.map(({ elapsedMs }) => elapsedMs)),
-    presentationIntervalMs, messageCeiling: ceiling, presentationMessages: messages,
-    statePublications: publications, lastPresentation: final.lastPresentation };
+    presentationIntervalMs, messageCeiling, publicationCeiling, presentationMessages: messages,
+    statePublications: publications, first: identity, last: prior,
+    lastPresentation: final.lastPresentation };
 }
 
-async function pausePicoWithObservation(page, click, { timeoutMs = 2_000 } = {}) {
+async function pausePicoWithObservation(page, click, {
+  timeoutMs = 2_000, stabilityMs = 300, priorObservation = null,
+} = {}) {
   const observed = await clickAndWaitExact({
     page, selector: '#pico-state', expected: 'paused', click, timeoutMs,
   });
-  const state = await hardDeadline(() => page.evaluate(() => ({
-    phase: window.__RP2040_PUBLIC_STATE__?.phase ?? null,
-    paused: window.__RP2040_PUBLIC_STATE__?.runtime?.paused ?? null,
-    presentation: window.__RP2040_PUBLIC_STATE__?.runtime?.presentation ?? null,
-  })), Math.min(timeoutMs, 500), 'read paused Pico state');
-  if (state.phase !== 'paused' || state.paused !== true || state.presentation?.final !== true) {
+  const state = await hardDeadline(() => page.evaluate(() => structuredClone(
+    window.__RP2040_PUBLIC_STATE__ ?? null)), Math.min(timeoutMs, 500), 'read paused Pico state');
+  const identity = assertPicoNativeIdentity(state);
+  if (state.phase !== 'paused' || state.runtime?.paused !== true || identity.presentation.final !== true) {
     throw new Error('X70_PICO_FINAL_PAUSE_INVALID');
   }
-  return { ...observed, state };
+  if (priorObservation && (identity.artifactIdentity !== priorObservation.artifactIdentity
+      || identity.presentation.generation <= priorObservation.presentation.generation)) {
+    throw new Error('X70_PICO_FINAL_GENERATION_INVALID');
+  }
+  await new Promise((resolve) => setTimeout(resolve, stabilityMs));
+  const stableState = await hardDeadline(() => page.evaluate(() => structuredClone(
+    window.__RP2040_PUBLIC_STATE__ ?? null)), Math.min(timeoutMs, 500), 'read stable paused Pico state');
+  const stable = assertPicoNativeIdentity(stableState);
+  for (const key of ['artifactIdentity', 'cycle', 'instructions']) {
+    if (stable[key] !== identity[key]) throw new Error(`X70_PICO_PAUSE_STABILITY_${key}`);
+  }
+  if (JSON.stringify(stable.presentation) !== JSON.stringify(identity.presentation)
+      || stableState.phase !== 'paused' || stableState.runtime?.paused !== true) {
+    throw new Error('X70_PICO_PAUSE_STALE_OVERWRITE');
+  }
+  return { ...observed, state: identity, stableAfterMs: stabilityMs, stable };
 }
 
 async function emergencyPauseStop(page, {
@@ -315,9 +405,11 @@ async function boundedBrowserCleanup({ pages = [], contexts = [], browser = null
 
 module.exports = {
   ACTIVE_EXPORT_REJECTION_STATUS,
+  EXPECTED_PICO_NATIVE_IDENTITY,
   POSITIVE_EXPORT_STATUS,
   DriverDeadlineError,
   armExactText,
+  assertPicoNativeIdentity,
   boundedBrowserCleanup,
   boundedPageCapture,
   clickAndWaitExact,

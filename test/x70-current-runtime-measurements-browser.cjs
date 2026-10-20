@@ -412,7 +412,8 @@ async function reopenAuthoredProject(page, profile, setStage = () => {}) {
         stage = `${profile.slug}:pause`;
         if (profile.slug === 'pico') {
           driver.pause = await pausePicoWithObservation(page,
-            () => page.click(profile.pause), { timeoutMs: 2_000 });
+            () => page.click(profile.pause), { timeoutMs: 2_000,
+              priorObservation: driver.sustained.last });
         } else {
           await page.click(profile.pause);
           await page.waitForFunction(({ name }) => name === '__M6_STATE__'

@@ -8,7 +8,9 @@ import test from 'node:test';
 const require = createRequire(import.meta.url);
 const {
   ACTIVE_EXPORT_REJECTION_STATUS,
+  EXPECTED_PICO_NATIVE_IDENTITY,
   DriverDeadlineError,
+  assertPicoNativeIdentity,
   hardDeadline,
 } = require('./x70-native-driver-safeguards.cjs');
 
@@ -32,4 +34,21 @@ test('active rejection contract is one exact stable status, not a regex alternat
     ACTIVE_EXPORT_REJECTION_STATUS,
     'Pause the current AVR/Pico runtime or wait for C3/STM32 completion before exporting a stable measurement snapshot.',
   );
+});
+
+test('native Pico identity requires the new manifest, implementation, runtime and presentation tuple', () => {
+  const artifactIdentity = 'a'.repeat(64);
+  const state = {
+    profile: EXPECTED_PICO_NATIVE_IDENTITY.profile,
+    artifact: { artifactIdentity },
+    modelLibrary: structuredClone(EXPECTED_PICO_NATIVE_IDENTITY.modelLibrary),
+    runtime: { artifactIdentity,
+      runtimeEngine: structuredClone(EXPECTED_PICO_NATIVE_IDENTITY.runtimeEngine),
+      cycle: 500, instructions: 1, paused: false,
+      presentation: { schema: 'intent-mcu-rp2040-presentation@1', artifactIdentity,
+        generation: 2, sequence: 1, final: false } },
+  };
+  assert.equal(assertPicoNativeIdentity(state).artifactIdentity, artifactIdentity);
+  state.modelLibrary.version = '2.0.0-x56-current';
+  assert.throws(() => assertPicoNativeIdentity(state), /X70_PICO_MODEL_IDENTITY_version/u);
 });

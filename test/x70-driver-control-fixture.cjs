@@ -7,9 +7,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/runner/node_modules', 'playwright'));
 const {
-  ACTIVE_EXPORT_REJECTION_STATUS, armExactText, boundedBrowserCleanup,
+  ACTIVE_EXPORT_REJECTION_STATUS, EXPECTED_PICO_NATIVE_IDENTITY, armExactText, boundedBrowserCleanup,
   clickAndWaitExact, emergencyPauseStop, installPicoDriverInstrumentation,
-  observeDownloads, observeSustainedPico,
+  observeDownloads, observeSustainedPico, pausePicoWithObservation,
 } = require('./x70-native-driver-safeguards.cjs');
 
 const base = process.env.X70_CURRENT_URL || 'http://127.0.0.1:18881';
@@ -45,11 +45,27 @@ const sha256 = (source) => crypto.createHash('sha256').update(source).digest('he
         });
         document.querySelector('#pico-pause').addEventListener('click', () => {
           document.querySelector('#pico-state').textContent = 'paused';
+          const prior = window.__RP2040_PUBLIC_STATE__;
+          window.__RP2040_PUBLIC_STATE__ = { ...prior, phase: 'paused', runtime: {
+            ...prior.runtime, paused: true, presentation: { ...prior.runtime.presentation,
+              generation: prior.runtime.presentation.generation + 1, sequence: 1, final: true },
+          } };
         });
         document.querySelector('#pico-stop').addEventListener('click', () => {
           document.querySelector('#pico-state').textContent = 'editing';
         });
       </script>`);
+    await rejectionPage.evaluate((expected) => {
+      const artifactIdentity = 'a'.repeat(64);
+      window.__RP2040_PUBLIC_STATE__ = {
+        profile: expected.profile, phase: 'running',
+        artifact: { artifactIdentity }, modelLibrary: expected.modelLibrary,
+        runtime: { artifactIdentity, runtimeEngine: expected.runtimeEngine,
+          cycle: 1000, instructions: 10, paused: false,
+          presentation: { schema: 'intent-mcu-rp2040-presentation@1', artifactIdentity,
+            generation: 3, sequence: 2, final: false } },
+      };
+    }, EXPECTED_PICO_NATIVE_IDENTITY);
     const button = rejectionPage.locator('#accessible-svg-export');
     assert.equal(await button.isVisible(), true);
     assert.equal(await button.isDisabled(), false);
@@ -59,9 +75,13 @@ const sha256 = (source) => crypto.createHash('sha256').update(source).digest('he
     assert.equal(rejected.matchedInitially, false);
     await rejectionPage.waitForTimeout(100);
     assert.equal(rejectionDownloads.count(), 0);
-    const paused = await clickAndWaitExact({ page: rejectionPage, selector: '#pico-state',
-      expected: 'paused', click: () => rejectionPage.click('#pico-pause') });
+    const paused = await pausePicoWithObservation(rejectionPage,
+      () => rejectionPage.click('#pico-pause'), { timeoutMs: 1_000, stabilityMs: 20,
+        priorObservation: { artifactIdentity: 'a'.repeat(64),
+          presentation: { generation: 3 } } });
     assert.equal(paused.matchedInitially, false);
+    assert.equal(paused.state.presentation.generation, 4);
+    assert.equal(paused.stable.cycle, 1000);
     const [afterPauseDownload] = await Promise.all([
       rejectionPage.waitForEvent('download', { timeout: 2_000 }),
       button.click({ noWaitAfter: true }),
