@@ -14,6 +14,10 @@ import { createAccessibleConnectionView } from '../src/accessible-connections.mj
 import {
   bomNetlistInputGuard, createBomNetlistExport, parseBomNetlistText,
 } from '../src/bom-netlist-export.mjs';
+import {
+  accessibleDemonstrationInputGuard, createAccessibleDemonstration,
+  validateAccessibleDemonstrationSvg,
+} from '../src/accessible-demonstration-export.mjs';
 import { createProjectNavigationView, searchProjectNavigation } from '../src/project-navigation.mjs';
 import { CIRCUIT_SCHEMA, validateCircuit } from '../src/circuit-engine.mjs';
 import { DEFAULT_CIRCUIT } from '../src/default-circuit.mjs';
@@ -410,7 +414,7 @@ const elements = Object.fromEntries([
   'counterexample-reduce', 'counterexample-reduction-summary',
   'fault-suite-load', 'fault-suite-replay', 'fault-suite-summary',
   'starter-examples', 'starter-gallery', 'quick-controls', 'workbench-workspace', 'project-bar',
-  'build-list-export', 'build-list-status',
+  'build-list-export', 'build-list-status', 'accessible-svg-export', 'accessible-svg-status',
   'project-navigation', 'project-navigation-query', 'project-navigation-status', 'project-navigation-results',
   'family-select', 'board-select', 'controller-status', 'toolchain-boundary',
   'controller-workbench', 'controller-workbench-eyebrow', 'controller-workbench-title', 'controller-workbench-badge',
@@ -6730,6 +6734,35 @@ function bomNetlistExportInput(profile = selectedCompilerProfile) {
     modelLibraryLock: modelLibraryLockFor(profile),
   };
 }
+const noCurrentDemonstrationMeasurements = Object.freeze({
+  status: 'no-current-measurements', artifactIdentity: null, revision: null,
+  reason: 'No current source-bound runtime measurements were present when this local snapshot was created.',
+  authority: 'none',
+});
+function accessibleDemonstrationExportInput(profile = selectedCompilerProfile) {
+  const projectDocument = profileProjectDocument(profile);
+  const active = profile === AVR_PROFILE ? currentProject() : projectDocument;
+  const graph = profile === AVR_PROFILE
+    ? active.candidateCircuit ?? active.project?.circuit ?? active.circuit
+    : projectDocument.circuit;
+  const layout = profile === AVR_PROFILE
+    ? active.candidateCircuit ? active.candidateLayout : active.layout
+    : graph?.layout;
+  const state = profile === AVR_PROFILE ? null
+    : profile === RP2040_PROFILE ? picoPublicWorkbench.snapshot()
+      : profile === ESP32C3_PROFILE ? c3PublicWorkbench.snapshot()
+        : profile === STM32F429ZI_PROFILE ? stm32PublicWorkbench.snapshot() : null;
+  if (!graph || !layout) throw Object.assign(new Error('ACCESSIBLE_DEMONSTRATION_INPUT'),
+    { code: 'ACCESSIBLE_DEMONSTRATION_INPUT' });
+  return {
+    productRelease: RELEASE_VERSION, profile, projectName: profileProjectName(profile),
+    graph: structuredClone(graph), layout: structuredClone(layout),
+    modelLibraryLock: modelLibraryLockFor(profile),
+    measurements: structuredClone(noCurrentDemonstrationMeasurements),
+    generation: profile === AVR_PROFILE ? Math.max(1, lifecycle.projectGeneration) : 1,
+    revision: profile === AVR_PROFILE ? editor.revision : state.revision,
+  };
+}
 let bomNetlistExportSequence = 0;
 async function exportCurrentBomNetlist() {
   const sequence = ++bomNetlistExportSequence;
@@ -6758,6 +6791,40 @@ async function exportCurrentBomNetlist() {
     elements.buildliststatus.textContent = code === 'BOM_NETLIST_STALE_EXPORT'
       ? 'Build list cancelled because the project or controller changed while it was being prepared. Try again.'
       : `Build list rejected (${code}). The current project was not changed.`;
+    return { ok: false, code };
+  }
+}
+let accessibleDemonstrationExportSequence = 0;
+let accessibleDemonstrationRuntimeEpoch = 0;
+async function exportCurrentAccessibleDemonstration() {
+  const sequence = ++accessibleDemonstrationExportSequence;
+  const runtimeEpoch = accessibleDemonstrationRuntimeEpoch;
+  try {
+    const input = accessibleDemonstrationExportInput();
+    const guard = accessibleDemonstrationInputGuard(input);
+    const remainsCurrent = () => sequence === accessibleDemonstrationExportSequence
+      && runtimeEpoch === accessibleDemonstrationRuntimeEpoch
+      && selectedCompilerProfile === input.profile
+      && accessibleDemonstrationInputGuard(accessibleDemonstrationExportInput(input.profile)) === guard;
+    elements.accessiblesvgstatus.textContent = 'Preparing a sanitized accessible circuit SVG from the current authored graph…';
+    const result = await createAccessibleDemonstration(input);
+    if (!remainsCurrent()) throw Object.assign(new Error('ACCESSIBLE_DEMONSTRATION_STALE_EXPORT'),
+      { code: 'ACCESSIBLE_DEMONSTRATION_STALE_EXPORT' });
+    const validated = await validateAccessibleDemonstrationSvg(result.svg);
+    if (!remainsCurrent() || validated.report.integrity.reportSha256 !== result.report.integrity.reportSha256) {
+      throw Object.assign(new Error('ACCESSIBLE_DEMONSTRATION_STALE_EXPORT'),
+        { code: 'ACCESSIBLE_DEMONSTRATION_STALE_EXPORT' });
+    }
+    const stem = input.projectName.normalize('NFKD').replace(/[^A-Za-z0-9 _.-]/gu, '')
+      .trim().replace(/\s+/gu, '-').slice(0, 64) || 'intent-mcu-project';
+    downloadText(`${stem}.accessible-demonstration.svg`, result.svg, 'image/svg+xml');
+    elements.accessiblesvgstatus.textContent = 'Accessible SVG downloaded locally · authored graph and named pins included · no current measurements.';
+    return { ok: true, code: 'OK', ...result };
+  } catch (error) {
+    const code = error.code ?? error.message ?? 'ACCESSIBLE_DEMONSTRATION_EXPORT_FAILED';
+    elements.accessiblesvgstatus.textContent = code === 'ACCESSIBLE_DEMONSTRATION_STALE_EXPORT'
+      ? 'Accessible SVG cancelled because the project, profile or runtime action changed. Try again.'
+      : `Accessible SVG rejected (${code}). The current project was not changed.`;
     return { ok: false, code };
   }
 }
@@ -12079,6 +12146,12 @@ elements.promptapply.addEventListener('click', () => {
   elements.promptmessage.textContent = `Proposal ${elements.promptmode.value === 'merge' ? 'merged with' : 'replaced'} the circuit after passing the same safety checks as manual wiring.`;
 });
 elements.buildlistexport.addEventListener('click', () => { void exportCurrentBomNetlist(); });
+elements.accessiblesvgexport.addEventListener('click', () => { void exportCurrentAccessibleDemonstration(); });
+document.addEventListener('click', (event) => {
+  if (event.target instanceof Element && event.target.closest('#build, #run, #pause, #reset, #cancel, #quick-build, #quick-run, #quick-pause, #quick-reset')) {
+    accessibleDemonstrationRuntimeEpoch += 1;
+  }
+}, { capture: true });
 
 document.addEventListener('pointerup', finishComponentDrag);
 document.addEventListener('mousemove', (event) => { if (componentDrag) moveComponentDrag(event); });
@@ -12157,6 +12230,14 @@ window.__X75_BOM_NETLIST__ = Object.freeze({
   parse: (source) => parseBomNetlistText(source),
   download: () => exportCurrentBomNetlist(),
   guard: (profile = selectedCompilerProfile) => bomNetlistInputGuard(bomNetlistExportInput(profile)),
+});
+window.__X70_ACCESSIBLE_DEMONSTRATION__ = Object.freeze({
+  current: async (profile = selectedCompilerProfile) => createAccessibleDemonstration(
+    accessibleDemonstrationExportInput(profile)),
+  validate: (source) => validateAccessibleDemonstrationSvg(source),
+  download: () => exportCurrentAccessibleDemonstration(),
+  guard: (profile = selectedCompilerProfile) => accessibleDemonstrationInputGuard(
+    accessibleDemonstrationExportInput(profile)),
 });
 window.__M6_CONNECT__ = (from, to) => { pendingEndpoint = parseEndpoint(from); handlePin(parseEndpoint(to)); };
 window.__M6_PROJECT__ = () => JSON.parse(currentProjectText());

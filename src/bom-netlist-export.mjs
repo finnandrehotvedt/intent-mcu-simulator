@@ -251,7 +251,7 @@ export async function createBomNetlistExport({
   return { value, text };
 }
 
-function valueMatchesContract(value, contract) {
+export function bomNetlistValueMatchesContract(value, contract) {
   if (contract.kind === 'boolean') return typeof value === 'boolean';
   if (contract.kind === 'string') return typeof value === 'string';
   if (contract.kind === 'enum') return contract.values.includes(value);
@@ -340,7 +340,7 @@ export async function parseBomNetlistText(source) {
       }
       const contract = model.semantic.properties[property.name];
       const expectedUnit = contract?.unit ?? definition.propertySchema?.[property.name]?.unit ?? null;
-      if (!contract || !valueMatchesContract(property.value, contract) || property.unit !== expectedUnit) {
+      if (!contract || !bomNetlistValueMatchesContract(property.value, contract) || property.unit !== expectedUnit) {
         reject('BOM_NETLIST_DOCUMENT_PROPERTY', [component.id, property.name]);
       }
       priorProperty = property.name;
