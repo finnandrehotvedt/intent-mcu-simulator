@@ -11,10 +11,21 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.84",
-    "current": "1.1.0-rc.85"
+    "previous": "1.1.0-rc.85",
+    "current": "1.1.0-rc.86"
   },
   "changes": [
+    {
+      "id": "X70",
+      "classification": "additive",
+      "capabilities": [
+        "intent-mcu-accessible-demonstration@1"
+      ],
+      "contracts": [
+        "x70-canonical-authored-graph-svg-v1"
+      ],
+      "summary": "Adds the reviewed deterministic local four-profile accessible SVG of the authored graph with explicit no-current-measurement status."
+    },
     {
       "id": "X88",
       "classification": "changed",
@@ -24,7 +35,7 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records the reviewed rc.84 to rc.85 section-bounded sticky workbench layout without adding action, runtime or verdict authority."
+      "summary": "Records the reviewed rc.85 to rc.86 partial X70 no-current SVG release without adding action, runtime or verdict authority."
     }
   ],
   "migrationRequired": false,

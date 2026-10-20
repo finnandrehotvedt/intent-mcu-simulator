@@ -2,6 +2,17 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.86 — 2026-10-20
+
+- Adds X70's reviewed deterministic local accessible SVG export for AVR,
+  RP2040 Pico, ESP32-C3 and STM32F429ZI authored graphs.
+- Includes every connected named pin/net, authored component geometry and
+  values, exact release/model identity and visible model support limits.
+- Labels measurement state explicitly as `No current measurements`; X70 is
+  partial and no runtime evidence, result or verdict is inferred.
+- Keeps the corrected nine-tool desktop workbench geometry and adds no Build,
+  Run, scenario, worker, storage, endpoint, third-party or infrastructure.
+
 ## 1.1.0-rc.85 — 2026-10-20
 
 - Keeps the existing controller selectors, Build/Run controls and named tool

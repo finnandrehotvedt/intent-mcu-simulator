@@ -1,16 +1,20 @@
-# Rollback basis for 1.1.0-rc.85
+# Rollback basis for 1.1.0-rc.86
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain exact accepted rc.84 source commit
-`5c56eee09a72257d55ceb8139251cc73788d942c` and VM103 image
-`sha256:883ed1554fd9ebc5a1494a4a5b2d73676b12a5c7a9fa7ff1ffee18bc3fbb4ad6`
-as the pre-rc.85 app-only recovery basis.
+Retain exact accepted rc.85 source commit
+`da5c2779af8455b983bbcd96f7ea4f475ff58545` and VM103 image
+`sha256:1df84b5a4b3d473a0b5e8f5104b8292718ddb3f33d46333460fa8ae965f40071`
+as the pre-rc.86 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
+
+Rc.86 adds only the local X70 no-current accessible SVG export and compact
+nine-tool/status layout correction. Rolling back removes that export and
+restores rc.85 without migrating, rewriting or deleting learner-owned data.
 
 Rc.85 changes only the section-bounded sticky presentation of existing
 workbench controls. Rolling back restores the rc.84 non-following top controls

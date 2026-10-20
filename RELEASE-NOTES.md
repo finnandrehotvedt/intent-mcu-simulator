@@ -1,4 +1,25 @@
-# Intent MCU Simulator 1.1.0-rc.85
+# Intent MCU Simulator 1.1.0-rc.86
+
+## Accessible authored-graph SVG — no-current slice
+
+This release publishes the independently reviewed first X70 slice for all four
+supported controller profiles. **Export accessible SVG** creates one local,
+deterministic standalone drawing from the validated authored graph and
+source-owned component positions, rotations, pin anchors and route geometry.
+
+The drawing and readable report include every connected named pin and net,
+authored component values, product/profile/model-library identity, component
+model support and limitations. Strict inert metadata is revalidated before
+download. The measurement section says **No current measurements** and cannot
+borrow old or synthetic runtime evidence.
+
+X70 remains partial until a separately authorized genuine current-runtime
+measurement export is accepted. This release adds no Build, Run, scenario,
+worker, storage, endpoint, account, third-party request or infrastructure.
+
+---
+
+## 1.1.0-rc.85
 
 ## Section-bounded workbench controls
 

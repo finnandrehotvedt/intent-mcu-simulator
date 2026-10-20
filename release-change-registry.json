@@ -22,6 +22,15 @@
       ]
     },
     {
+      "id": "X70",
+      "capabilities": [
+        "intent-mcu-accessible-demonstration@1"
+      ],
+      "contracts": [
+        "x70-canonical-authored-graph-svg-v1"
+      ]
+    },
+    {
       "id": "X75",
       "capabilities": [
         "intent-mcu-bom-netlist@1"

@@ -1,8 +1,14 @@
-# Migration to 1.1.0-rc.85
+# Migration to 1.1.0-rc.86
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.86 changes no project, package, runtime, cache or browser-storage schema.
+The X70 no-current slice reads the current validated authored graph and
+downloads a separate standalone SVG without saving or installing authority.
+Existing projects, browser recovery, history and learner-owned files require
+no migration. The file contains no firmware or current-runtime evidence.
 
 Rc.85 changes no project, package, runtime, cache or browser-storage schema.
 The section-bounded sticky workbench reuses the existing authoritative control
