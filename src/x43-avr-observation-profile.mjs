@@ -237,6 +237,29 @@ export function createX43AvrObservationProfile() {
     lastAccepted = { cycle: current.cycle, instructions: current.instructions };
     return publicView();
   };
+  const transition = (status) => {
+    if (view.state === 'invalidated') return publicView();
+    try {
+      exactKeys(status, ['state', 'reason', 'observation', 'binding', 'counters'], 'X43_TRANSITION_KEYS');
+      if (status.state !== 'transition' || status.reason !== 'X43_PAUSE_STATE_TRANSITION'
+          || status.observation !== null) reject('X43_TRANSITION_STATUS');
+      exactKeys(status.binding, BINDING_KEYS, 'X43_TRANSITION_BINDING');
+      exactKeys(status.counters, ['cycle', 'instructions'], 'X43_TRANSITION_COUNTERS');
+      safeCounter(status.counters.cycle, 'X43_CYCLE');
+      safeCounter(status.counters.instructions, 'X43_INSTRUCTIONS');
+    } catch (error) {
+      return invalidate(error.code ?? 'X43_TRANSITION_INVALID');
+    }
+    if (['observing', 'captured'].includes(view.state)) {
+      if (!bindingMatches(view.binding, status.binding)) return invalidate('X43_BINDING_CHANGED');
+      if (!lastAccepted || status.counters.cycle < lastAccepted.cycle
+          || status.counters.instructions < lastAccepted.instructions) {
+        return invalidate('X43_COUNTER_REGRESSION');
+      }
+      lastAccepted = clone(status.counters);
+    }
+    return blank('transitioning', 'X43_PAUSE_STATE_TRANSITION');
+  };
   const start = (observation, wallMilliseconds) => {
     const current = validateX43AvrObservation(observation);
     const wall = finiteWall(wallMilliseconds, 'X43_WALL_TIME');
@@ -279,5 +302,5 @@ export function createX43AvrObservationProfile() {
     return publicView();
   };
 
-  return Object.freeze({ prepare, start, capture, revalidate, invalidate, snapshot, peek: publicView });
+  return Object.freeze({ prepare, start, capture, revalidate, transition, invalidate, snapshot, peek: publicView });
 }

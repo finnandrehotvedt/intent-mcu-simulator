@@ -55,6 +55,15 @@ function observation(cycle = 200, instructions = 120) {
   return value;
 }
 
+function transitionStatus(cycle = 200, instructions = 120, mutate = () => {}) {
+  const value = state();
+  value.lifecycle.phase = 'running';
+  value.runtime.cycle = cycle;
+  value.runtime.instructions = instructions;
+  mutate(value);
+  return projectX43AvrObservationStatus(AVR_PROFILE, value);
+}
+
 test('projection binds exact source, artifact, generations, model and worker identity', () => {
   const value = projectX43AvrObservation(AVR_PROFILE, state());
   assert.equal(value.schema, X43_OBSERVATION_SCHEMA);
@@ -99,6 +108,64 @@ test('pause/run ordering is explicit only after full projection and binding vali
   mixed.lifecycle.runtimeBinding.artifactIdentity = hash('e');
   assert.throws(() => projectX43AvrObservationStatus(AVR_PROFILE, mixed),
     { code: 'X43_BINDING_MISMATCH' }, 'a pause mismatch may not hide a stale binding');
+});
+
+test('transition snapshots are sanitized while exact counters advance the accepted floor', () => {
+  const owner = createX43AvrObservationProfile();
+  owner.start(observation(), 100);
+  const duplicate = owner.transition(transitionStatus());
+  assert.equal(duplicate.state, 'transitioning');
+  assert.equal(duplicate.reason, 'X43_PAUSE_STATE_TRANSITION');
+  assert.equal(duplicate.binding, null);
+  assert.equal(duplicate.interval, null);
+  assert.equal(owner.transition(transitionStatus(400, 250)).state, 'transitioning');
+  assert.equal(owner.snapshot(observation(399, 260)).reason, 'X43_COUNTER_REGRESSION',
+    'a coherent projection may not fall below the transition sample');
+  assert.equal(owner.snapshot(observation(500, 300)).state, 'invalidated', 'no resurrection');
+});
+
+test('either transition counter falling invalidates and duplicate transition samples are idempotent', () => {
+  for (const [cycle, instructions, mutate] of [
+    [399, 260, () => {}],
+    [410, 249, (value) => { value.lifecycle.phase = 'paused'; value.runtime.paused = false; }],
+  ]) {
+    const owner = createX43AvrObservationProfile();
+    owner.start(observation(), 100);
+    owner.snapshot(observation(400, 250));
+    assert.equal(owner.transition(transitionStatus(400, 250)).state, 'transitioning');
+    assert.equal(owner.transition(transitionStatus(400, 250)).state, 'transitioning');
+    assert.equal(owner.transition(transitionStatus(cycle, instructions, mutate)).reason, 'X43_COUNTER_REGRESSION');
+    assert.equal(owner.transition(transitionStatus(500, 300)).state, 'invalidated');
+  }
+});
+
+test('transition nonce or model change invalidates before any interval can be retained', () => {
+  for (const mutate of [
+    (value) => { value.runtime.runtimeIdentity.workerInstanceNonce = 'cd'.repeat(16); },
+    (value) => { value.runtime.runtimeIdentity.modelImplementationSha256 = hash('e'); },
+    (value) => {
+      value.runtime.runtimeIdentity.modelExecutionContextSha256 = hash('e');
+      value.runtime.modelExecutionContextSha256 = hash('e');
+    },
+  ]) {
+    const owner = createX43AvrObservationProfile();
+    owner.start(observation(), 100);
+    assert.equal(owner.transition(transitionStatus(220, 130, mutate)).reason, 'X43_BINDING_CHANGED');
+    assert.equal(owner.snapshot(observation(300, 180)).state, 'invalidated');
+  }
+});
+
+test('captured interval survives a valid transition internally but no transition API exposes it', () => {
+  const owner = createX43AvrObservationProfile();
+  owner.start(observation(), 100);
+  const captured = owner.capture(observation(300, 180), 110);
+  const hidden = owner.transition(transitionStatus(400, 250));
+  assert.equal(hidden.state, 'transitioning');
+  assert.equal(hidden.binding, null);
+  assert.equal(hidden.interval, null);
+  const resumed = owner.snapshot(observation(500, 300));
+  assert.equal(resumed.state, 'captured');
+  assert.deepEqual(resumed.interval, captured.interval);
 });
 
 test('overflow-safe rational conversion preserves exact 16 MHz virtual time', () => {
@@ -233,6 +300,7 @@ test('shared shell integration is transient, read-only and outside model closure
     'X43_NEW_PROJECT', 'X43_EXAMPLE_LOADED', 'X43_PROFILE_CHANGED']) assert.match(shell, new RegExp(code, 'u'));
   assert.match(shell, /projectX43AvrObservationStatus/u);
   assert.match(shell, /owner\.snapshot\(observation\)/u);
+  assert.match(shell, /owner\.transition\(status\)/u);
   assert.match(shell, /Awaiting one coherent AVR worker status/u);
   assert.doesNotMatch(`${owner}\n${shell}`, /localStorage|sessionStorage|indexedDB|serviceWorker|postMessage\(/u);
   assert.doesNotMatch(modelClosure, /x43-avr-observation-profile|shared-workbench-shell/u);

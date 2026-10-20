@@ -33,7 +33,14 @@ is not consulted here.
 ## Lifecycle
 
 Observing and captured intervals are revalidated before every API snapshot and
-presentation. Each successfully validated sample advances an internal floor
+presentation. A fully shape- and binding-validated pause/run transition is
+also a sampled projection: its two counters independently advance the internal
+floor, and a fall in either counter invalidates immediately. During that short
+transition every public API snapshot and the panel expose only a sanitized
+`transitioning` state with null binding and interval; Start and Capture are
+disabled. The prior interval may remain internal only on the exact unchanged
+binding and reappears only after a coherent projection passes the same counter
+floor. Each successfully validated coherent sample advances the internal floor
 for cycles and instructions independently; duplicate samples are idempotent,
 while either counter falling below the latest accepted sample clears the
 interval. This authority covers only projections actually presented to the

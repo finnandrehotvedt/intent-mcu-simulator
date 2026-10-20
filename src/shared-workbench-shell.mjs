@@ -616,18 +616,13 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
         reason: error.code ?? 'unavailable-no-current-avr-worker' };
     }
   };
-  const sameBinding = (left, right) => left && right
-    && Object.keys(left).length === Object.keys(right).length
-    && Object.entries(left).every(([key, value]) => right[key] === value);
   const paint = () => {
     const status = current();
     const { observation, reason } = status;
-    let transitioning = status.state === 'transition';
-    let snapshot = owner.peek();
-    if (transitioning && snapshot.binding && !sameBinding(snapshot.binding, status.binding)) {
-      transitioning = false;
-      snapshot = owner.invalidate('X43_BINDING_CHANGED');
-    } else if (!transitioning) {
+    let snapshot;
+    if (status.state === 'transition') snapshot = owner.transition(status);
+    else {
+      snapshot = owner.peek();
       if (observation) snapshot = owner.snapshot(observation);
       else if (['observing', 'captured'].includes(snapshot.state)) snapshot = owner.invalidate(reason);
       if (snapshot.state === 'unavailable') {
@@ -635,9 +630,10 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
         snapshot = owner.peek();
       }
     }
+    const transitioning = snapshot.state === 'transitioning';
     for (const panel of panels) {
-      panel.dataset.state = transitioning ? 'transitioning' : snapshot.state;
-      panel.querySelector('[data-x43-state]').textContent = transitioning ? 'transitioning' : snapshot.state;
+      panel.dataset.state = snapshot.state;
+      panel.querySelector('[data-x43-state]').textContent = snapshot.state;
       const start = panel.querySelector('[data-x43-start]');
       const capture = panel.querySelector('[data-x43-capture]');
       start.disabled = transitioning || !observation || snapshot.state === 'observing';
@@ -649,7 +645,7 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
         : snapshot.binding
         ? `source ${snapshot.binding.sourceIdentity.slice(0, 12)}… · revision ${snapshot.binding.revision} · artifact ${snapshot.binding.artifactIdentity.slice(0, 12)}… · project/build/runtime ${snapshot.binding.projectGeneration}/${snapshot.binding.buildGeneration}/${snapshot.binding.runtimeGeneration} · model ${snapshot.binding.modelImplementationSha256.slice(0, 8)}…/${snapshot.binding.modelExecutionContextSha256.slice(0, 8)}… · worker ${snapshot.binding.workerInitialization}/${snapshot.binding.workerInstanceNonce.slice(0, 8)}…`
         : reason ?? snapshot.reason ?? 'No current AVR worker.';
-      const interval = transitioning ? null : snapshot.interval;
+      const interval = snapshot.interval;
       panel.querySelector('[data-x43-counters]').textContent = interval?.delta
         ? `${interval.start.cycle.toLocaleString('en-US')} cycles / ${interval.start.instructions.toLocaleString('en-US')} instructions → ${interval.end.cycle.toLocaleString('en-US')} cycles / ${interval.end.instructions.toLocaleString('en-US')} instructions · Δ ${interval.delta.cycles.toLocaleString('en-US')} / ${interval.delta.instructions.toLocaleString('en-US')}`
         : interval?.start

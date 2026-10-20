@@ -103,6 +103,10 @@ async function stopControl(page, id) {
         document.querySelector('#quick-state').textContent = 'fixture · running';
       });
       await page.waitForFunction(() => window.__X43_AVR_PROFILE__.transitionState() === 'transitioning');
+      const transitionView = await page.evaluate(() => window.__X43_AVR_PROFILE__.snapshot());
+      assert.equal(transitionView.state, 'transitioning');
+      assert.equal(transitionView.binding, null);
+      assert.equal(transitionView.interval, null);
       assert.equal(await panel.locator('[data-x43-capture]').isEnabled(), false);
       assert.equal(await panel.locator('[data-x43-counters]').textContent(), 'No captured interval.');
       assert.match(await panel.locator('[data-x43-binding]').textContent(), /Awaiting one coherent AVR worker status/u);
@@ -119,7 +123,28 @@ async function stopControl(page, id) {
       assert.deepEqual(retainedTransition.interval.start, transitionStart);
       assert.equal(await panel.locator('[data-x43-capture]').isEnabled(), true);
       await panel.locator('[data-x43-capture]').click();
-      assert.equal((await page.evaluate(() => window.__X43_AVR_PROFILE__.snapshot())).state, 'captured');
+      const capturedBeforePause = await page.evaluate(() => window.__X43_AVR_PROFILE__.snapshot());
+      assert.equal(capturedBeforePause.state, 'captured');
+
+      // Captured -> Pause transition is also sanitized publicly, then resumes
+      // the same frozen interval only after a coherent same-binding sample.
+      await page.evaluate(() => {
+        window.__M6_STATE__.lifecycle.phase = 'paused';
+        document.querySelector('#quick-state').textContent = 'fixture · pausing';
+      });
+      await page.waitForFunction(() => window.__X43_AVR_PROFILE__.transitionState() === 'transitioning');
+      const pauseTransition = await page.evaluate(() => window.__X43_AVR_PROFILE__.snapshot());
+      assert.equal(pauseTransition.state, 'transitioning');
+      assert.equal(pauseTransition.binding, null);
+      assert.equal(pauseTransition.interval, null);
+      assert.equal(await panel.locator('[data-x43-capture]').isEnabled(), false);
+      await inject(page, fixture, {
+        cycle: transitionStart.cycle + 250, instructions: transitionStart.instructions + 160,
+      });
+      await page.evaluate(() => { document.querySelector('#quick-state').textContent = 'fixture · paused current'; });
+      await page.waitForFunction(() => window.__X43_AVR_PROFILE__.transitionState() === 'captured');
+      const resumedCapture = await page.evaluate(() => window.__X43_AVR_PROFILE__.snapshot());
+      assert.deepEqual(resumedCapture.interval, capturedBeforePause.interval);
 
       // Keyboard-only Start followed by deterministic counter replay and Capture.
       await panel.locator('[data-x43-start]').focus();
