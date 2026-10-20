@@ -2,6 +2,21 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.89 — 2026-10-20
+
+- Completes X86 against its original requirement: one exact four-profile matrix
+  shows cold navigation/reload, loaded-tab file use, compiler ownership,
+  runtime ownership and offline-Run limits without inferring capabilities.
+- Repairs the X86 browser harness for the current Project & files and Firmware
+  dialogs while retaining real Download → visible edit → actual-file Open
+  restoration across AVR, Pico, ESP32-C3 and STM32 after disconnect.
+- Keeps fresh offline navigation/reload unavailable, all compilation online,
+  AVR/Pico offline Run unsupported/unverified and C3/STM32 server runtimes
+  unavailable offline.
+- Advances counts to X **70/0/26**, P1 **59/0/0**, with no firmware Build, Run,
+  scenario, service worker, cache, storage, account, endpoint or infrastructure
+  change.
+
 ## 1.1.0-rc.88 — 2026-10-20
 
 - Completes X70 against its original criterion using four preserved genuine

@@ -18,7 +18,7 @@ const clone = (value) => structuredClone(value);
 test('X86 canonical owner has four exact profiles and honest finite states', () => {
   assert.equal(OFFLINE_SUPPORT_MATRIX.schema, 'intent-mcu-offline-support-matrix@1');
   assert.equal(OFFLINE_SUPPORT_MATRIX.contract, 'x86-honest-offline-support-matrix-v1');
-  assert.equal(OFFLINE_SUPPORT_MATRIX.release, '1.1.0-rc.88');
+  assert.equal(OFFLINE_SUPPORT_MATRIX.release, '1.1.0-rc.89');
   assert.deepEqual(OFFLINE_SUPPORT_MATRIX.profiles.map(({ id }) => id), [
     'board.atmega328p-16mhz-v1', 'board.rp2040-pico-v1',
     'board.esp32-c3-devmodule-v1', 'board.stm32f429zi-nucleo144-v1',
@@ -81,6 +81,7 @@ test('build output and no-JS accessible Support projection derive from the canon
   assert.match(support, /<th scope="row">ATmega328P<\/th>/u);
   assert.match(support, /data-offline-field="offlineNavigationReload"/u);
   assert.match(support, /Browser-worker runtime ownership does not imply an offline compiler/u);
+  assert.match(support, /exact per-profile matrix fulfills X86/iu);
   assert.doesNotMatch(support, /offline-support\.js|Loading the exact four-profile support matrix/u);
   assert.match(llms, /intent-mcu-offline-support-matrix@1/u);
   assert.match(llms, /no service worker|service worker/iu);

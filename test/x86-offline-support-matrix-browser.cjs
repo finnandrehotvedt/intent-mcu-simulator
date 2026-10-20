@@ -37,6 +37,40 @@ async function authority(page, profile) {
   }, { global: profile.global, run: profile.run });
 }
 
+async function openProjectFiles(page) {
+  const dialog = page.locator('#workbench-project-dialog');
+  if (!await dialog.evaluate((node) => node.open)) {
+    await page.click('#project-files-open');
+    await page.waitForSelector('#workbench-project-dialog[open]');
+  }
+  assert.equal(await dialog.evaluate((node) => node.open), true);
+}
+
+async function closeProjectFiles(page) {
+  const dialog = page.locator('#workbench-project-dialog');
+  if (await dialog.evaluate((node) => node.open)) {
+    await page.click('#workbench-project-dialog .workbench-popup-close');
+    await page.waitForFunction(() => !document.querySelector('#workbench-project-dialog').open);
+  }
+}
+
+async function openFirmware(page) {
+  const dialog = page.locator('#workbench-firmware-dialog');
+  if (!await dialog.evaluate((node) => node.open)) {
+    await page.click('#firmware-open');
+    await page.waitForSelector('#workbench-firmware-dialog[open]');
+  }
+  assert.equal(await dialog.evaluate((node) => node.open), true);
+}
+
+async function closeFirmware(page) {
+  const dialog = page.locator('#workbench-firmware-dialog');
+  if (await dialog.evaluate((node) => node.open)) {
+    await page.click('#workbench-firmware-dialog .workbench-popup-close');
+    await page.waitForFunction(() => !document.querySelector('#workbench-firmware-dialog').open);
+  }
+}
+
 (async () => {
   const browser = await chromium.launch({ headless: true });
   const report = { base, observedProducerRequests: [], observedRequestsDuringLocalWorkflow: [] };
@@ -92,6 +126,9 @@ async function authority(page, profile) {
       await workbench.selectOption('#board-select', profile.id);
       await workbench.waitForFunction((id) => document.querySelector('#board-select').value === id, profile.id);
       if (profile.global) await workbench.waitForFunction((name) => window[name].state().active === true, profile.global);
+      await openProjectFiles(workbench);
+      await workbench.locator(profile.save).waitFor({ state: 'visible' });
+      await workbench.locator(profile.name).waitFor({ state: 'visible' });
       const original = { name: await workbench.inputValue(profile.name), source: await workbench.inputValue(profile.source) };
       const downloadPromise = workbench.waitForEvent('download');
       await workbench.click(profile.save);
@@ -101,17 +138,23 @@ async function authority(page, profile) {
       const downloadedText = fs.readFileSync(filePath, 'utf8');
       assert(downloadBytes > 0);
 
+      await openProjectFiles(workbench);
       const changedName = `${original.name} · offline draft`;
       const changedSource = profile.sourceEdit(original.source);
       assert.notEqual(changedSource, original.source, `${profile.label}: source fixture did not change`);
       await workbench.fill(profile.name, changedName);
       await workbench.locator(profile.name).press('Tab');
-      await workbench.fill(profile.source, changedSource);
       assert.equal(await workbench.inputValue(profile.name), changedName);
+      await closeProjectFiles(workbench);
+      await openFirmware(workbench);
+      await workbench.locator(profile.source).waitFor({ state: 'visible' });
+      await workbench.fill(profile.source, changedSource);
       assert.equal(await workbench.inputValue(profile.source), changedSource);
+      await closeFirmware(workbench);
       assert.notEqual(await workbench.evaluate((id) => window.__COMMON_PROJECT_FILES__.current(id), profile.id),
         downloadedText, `${profile.label}: visible edits did not change canonical project data`);
 
+      await openProjectFiles(workbench);
       await workbench.setInputFiles(profile.open, filePath);
       await workbench.waitForTimeout(250);
       if (await workbench.locator('#unsaved-change-dialog').isVisible()) await workbench.click('#unsaved-discard');
@@ -120,6 +163,13 @@ async function authority(page, profile) {
           && document.querySelector(source).value === originalSource,
       { name: profile.name, source: profile.source, originalName: original.name, originalSource: original.source });
       await workbench.waitForFunction((selector) => /opened/iu.test(document.querySelector(selector).textContent), profile.message);
+      await openProjectFiles(workbench);
+      await workbench.locator(profile.name).waitFor({ state: 'visible' });
+      assert.equal(await workbench.inputValue(profile.name), original.name);
+      await closeProjectFiles(workbench);
+      await openFirmware(workbench);
+      await workbench.locator(profile.source).waitFor({ state: 'visible' });
+      assert.equal(await workbench.inputValue(profile.source), original.source);
       const after = await authority(workbench, profile);
       assert.equal(after.artifact, null, `${profile.label}: executable authority restored`);
       assert.equal(after.runtime, null, `${profile.label}: runtime authority restored`);
@@ -129,6 +179,7 @@ async function authority(page, profile) {
       report.profiles.push({ id: profile.id, downloadBytes, changedNameVisible: true,
         changedSourceVisible: true, restoredName: await workbench.inputValue(profile.name),
         restoredSource: await workbench.inputValue(profile.source), authority: after });
+      await closeFirmware(workbench);
     }
     assert.equal(report.observedProducerRequests.length, 0);
     assert.equal(report.observedRequestsDuringLocalWorkflow.length, 0);

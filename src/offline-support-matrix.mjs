@@ -124,7 +124,7 @@ export function offlineSupportMatrixHtml(value, options) {
     return `<td data-offline-field="${escapeHtml(key)}" data-offline-state="${escapeHtml(state)}">${escapeHtml(PROJECTION_LABELS[state])}</td>`;
   }).join('')}</tr>`).join('');
   const boundaries = matrix.boundaries.map((boundary) => `<li>${escapeHtml(boundary)}</li>`).join('');
-  return `<p class="docs-intro">This matrix reports current behavior; it does not add offline execution.</p>
+  return `<p class="docs-intro">This exact per-profile matrix fulfills X86 by reporting current offline behavior; it does not add a cold offline application, compiler or Run.</p>
       <p><a href="/offline-support-matrix.json">Strict offline support matrix JSON</a></p>
       <div id="offline-support-table" class="offline-support-table-wrap" tabindex="0" aria-label="Scrollable current offline support matrix"><table class="offline-support-table"><caption>Current network-disconnect behavior for the four exact controller profiles</caption><thead><tr>${headings}</tr></thead><tbody>${rows}</tbody></table></div>
       <ul class="offline-support-boundaries">${boundaries}</ul>

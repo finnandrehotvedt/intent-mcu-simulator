@@ -1,8 +1,15 @@
-# Migration to 1.1.0-rc.88
+# Migration to 1.1.0-rc.89
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.89 changes no project, package, compiler-artifact, model-library, cache or
+browser-storage schema. It corrects the release-bound X86 acceptance navigation
+for existing dialogs and records the original criterion closure without adding
+offline execution or storage. Existing learner-owned files require no
+conversion; Open remains data-only and requires a fresh online Build before
+Run.
 
 Rc.88 changes no project, package, compiler-artifact, model-library, cache or
 browser-storage schema. Its historical demonstration validator is a separate

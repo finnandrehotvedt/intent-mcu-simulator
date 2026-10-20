@@ -28,24 +28,24 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc87 to rc88 X70 closure release bytes', async () => {
+test('X88 owner binds canonical rc88 to rc89 X86 closure release bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.88');
+  assert.equal(release.version, '1.1.0-rc.89');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
   assert(registry.ids.includes('X86'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.87', current: '1.1.0-rc.88' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.88', current: '1.1.0-rc.89' });
   assert.deepEqual(value.changes, [
     {
-      id: 'X70', classification: 'changed', capabilities: ['intent-mcu-accessible-demonstration@1'],
-      contracts: ['x70-canonical-authored-graph-svg-v1'],
-      summary: 'Completes X70 from four original-identity genuine demonstrations plus strict finite historical validation without granting runtime, verdict or physical-truth authority.',
+      id: 'X86', classification: 'changed', capabilities: ['intent-mcu-offline-support-matrix@1'],
+      contracts: ['x86-honest-offline-support-matrix-v1'],
+      summary: 'Completes the original X86 criterion from the exact four-profile offline matrix and corrected actual-file browser acceptance without claiming a cold offline app, compiler or Run.',
     },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records the reviewed rc.87 to rc.88 X70 closure release without adding firmware action, replay, physical-truth or verdict authority.',
+      summary: 'Records the reviewed rc.88 to rc.89 X86 criterion closure without adding offline execution, firmware action, replay, physical-truth or verdict authority.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -108,7 +108,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.88');
+  assert.equal(discovery.identity.version, '1.1.0-rc.89');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

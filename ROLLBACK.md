@@ -1,16 +1,21 @@
-# Rollback basis for 1.1.0-rc.88
+# Rollback basis for 1.1.0-rc.89
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain exact accepted rc.87 source commit
-`1bf58a08e1c2b3d03574bfc8c2efa2f79f8980ab` and VM103 image
-`sha256:46d0dc1615340c01c81931687e5b84a2aab054d2fb76daf030764d27a63321a4`
-as the pre-rc.88 app-only recovery basis.
+Retain exact accepted rc.88 source commit
+`6a8eecdaca99dedfa9d84b1ad023f698776648d7` and VM103 image
+`sha256:570026adc60a17a2a0296f9beaaaf6b9754b302afed3a15e895264244c607d98`
+as the pre-rc.89 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
+
+Rc.89 corrects the X86 acceptance path for the current dialogs and records the
+original offline-matrix criterion closure. Rolling back restores rc.88
+application bytes and partial status. It does not add, migrate or delete a
+service worker, cache, learner project, browser history or downloaded file.
 
 Rc.88 adds the finite historical demonstration validator and records the
 reviewed X70 criterion closure. Rolling back restores rc.87 application bytes

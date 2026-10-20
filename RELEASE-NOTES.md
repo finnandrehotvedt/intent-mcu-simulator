@@ -1,4 +1,29 @@
-# Intent MCU Simulator 1.1.0-rc.88
+# Intent MCU Simulator 1.1.0-rc.89
+
+## X86 exact offline-matrix closure
+
+This release completes the original X86 requirement by retaining one strict,
+accurate matrix for the four exact controller profiles. It distinguishes a
+loaded in-memory page and local data-only Download/Open from fresh offline
+navigation, reload, compilation and Run. Browser-worker runtime ownership for
+AVR/Pico is not presented as an offline compiler; their offline Run remains
+unsupported or unverified. ESP32-C3 QEMU and STM32 Renode remain server
+runtimes and unavailable offline.
+
+The only functional correction is to the acceptance path: the browser harness
+now opens the current Project & files and Firmware dialogs before exercising
+real Download → visible name/source edit → actual-file Open restoration for all
+four profiles after disconnect. Open still clears artifact/runtime authority,
+keeps Run disabled and creates no worker or network request.
+
+This release does not add a cold offline application, service worker,
+CacheStorage, offline compiler, executable persistence, account, server project
+storage or external service. It performs no firmware Build, Run or scenario.
+Counts are X **70/0/26**, P1 **59/0/0**.
+
+---
+
+## 1.1.0-rc.88
 
 ## X70 accessible-demonstration closure
 
