@@ -11,6 +11,7 @@ import {
   inspectHistoryRecord,
   normalizeHistoryRecord,
   normalizeHistorySettings,
+  rawHistoryRecordToken,
   sortHistoryRecords,
 } from '../src/local-version-history.mjs';
 
@@ -21,6 +22,20 @@ const MODEL = Object.freeze({
   version: '2.0.0-x56-current',
   manifestSha256: 'a'.repeat(64),
   implementationSha256: 'b'.repeat(64),
+});
+
+test('X63 corrupt-record confirmation tokens are typed, cyclic-safe and bounded', () => {
+  assert.notEqual(rawHistoryRecordToken({ value: Number.NaN }), rawHistoryRecordToken({ value: null }));
+  assert.notEqual(rawHistoryRecordToken({ value: -0 }), rawHistoryRecordToken({ value: 0 }));
+  const first = { id: 'corrupt' };
+  first.self = first;
+  const same = { id: 'corrupt' };
+  same.self = same;
+  const changed = { id: 'changed' };
+  changed.self = changed;
+  assert.equal(rawHistoryRecordToken(first), rawHistoryRecordToken(same));
+  assert.notEqual(rawHistoryRecordToken(first), rawHistoryRecordToken(changed));
+  assert.equal(rawHistoryRecordToken({ oversized: 'x'.repeat(LOCAL_HISTORY_RECORD_LIMIT * 5) }), null);
 });
 const hash = async (value) => createHash('sha256').update(value).digest('hex');
 const envelope = `${JSON.stringify({ schema: 'intent-mcu-project-envelope@8', profile: PROFILE,

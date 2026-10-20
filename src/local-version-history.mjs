@@ -137,8 +137,41 @@ function databaseKeyToken(value) {
   return `unknown:${String(value)}`;
 }
 
-function rawRecordToken(value) {
-  try { return JSON.stringify(value); } catch { return 'unserializable'; }
+export function rawHistoryRecordToken(value) {
+  const seen = new Map();
+  let nodes = 0;
+  let characters = 0;
+  const encode = (item, depth = 0) => {
+    nodes += 1;
+    if (nodes > 10000 || depth > 64) throw new Error('LOCAL_HISTORY_RECORD_TOKEN_LIMIT');
+    let token;
+    if (item === null) token = 'null';
+    else if (typeof item === 'string') token = `string:${item.length}:${item}`;
+    else if (typeof item === 'boolean') token = `boolean:${item}`;
+    else if (typeof item === 'undefined') token = 'undefined';
+    else if (typeof item === 'number') token = `number:${Number.isNaN(item) ? 'NaN'
+      : Object.is(item, -0) ? '-0' : item === Infinity ? '+Infinity' : item === -Infinity ? '-Infinity' : item}`;
+    else if (typeof item === 'bigint') token = `bigint:${item}`;
+    else if (typeof item !== 'object') throw new Error('LOCAL_HISTORY_RECORD_TOKEN_TYPE');
+    else if (seen.has(item)) token = `reference:${seen.get(item)}`;
+    else {
+      const reference = seen.size;
+      seen.set(item, reference);
+      if (item instanceof Date) token = `date:${item.toISOString()}`;
+      else if (item instanceof ArrayBuffer) token = `array-buffer:${[...new Uint8Array(item)]
+        .map((byte) => byte.toString(16).padStart(2, '0')).join('')}`;
+      else if (ArrayBuffer.isView(item)) token = `view:${item.constructor.name}:${encode(item.buffer, depth + 1)}`;
+      else if (Array.isArray(item)) token = `array:${reference}:[${item.map((child) => encode(child, depth + 1)).join(',')}]`;
+      else if (Object.getPrototypeOf(item) === Object.prototype || Object.getPrototypeOf(item) === null) {
+        token = `object:${reference}:{${Object.keys(item).sort().map((key) =>
+          `${encode(key, depth + 1)}=${encode(item[key], depth + 1)}`).join(',')}}`;
+      } else throw new Error('LOCAL_HISTORY_RECORD_TOKEN_TYPE');
+    }
+    characters += token.length;
+    if (characters > LOCAL_HISTORY_RECORD_LIMIT * 4) throw new Error('LOCAL_HISTORY_RECORD_TOKEN_LIMIT');
+    return token;
+  };
+  try { return encode(value); } catch { return null; }
 }
 
 function historyEntries(keys, records) {
@@ -147,7 +180,7 @@ function historyEntries(keys, records) {
     storageToken: databaseKeyToken(keys[index]),
     record: clone(record),
     valid: Boolean(normalizeHistoryRecord(record)),
-    recordToken: rawRecordToken(record),
+    recordToken: rawHistoryRecordToken(record),
   })).sort((left, right) => {
     if (left.valid && right.valid) return left.record.createdAt.localeCompare(right.record.createdAt)
       || left.record.id.localeCompare(right.record.id);
@@ -165,6 +198,7 @@ async function readEntries(versions) {
 }
 
 function entryTokens(entries) {
+  if (entries.some(({ recordToken }) => recordToken === null)) return null;
   return entries.map(({ storageToken, recordToken }) => `${storageToken}\n${recordToken}`);
 }
 
@@ -183,7 +217,8 @@ function transactionDone(transaction) {
   });
 }
 
-async function drainTransactionFailure(done, error) {
+async function abortTransactionAfterWriteError(transaction, done, error) {
+  try { transaction.abort(); } catch { /* an already-aborted transaction still settles through done */ }
   try { await done; } catch { /* the original synchronous write error is more specific */ }
   throw error;
 }
@@ -243,7 +278,7 @@ export class IndexedDbLocalVersionVault {
     } : normalizeHistorySettings(rawSettings);
     if (!current) { await done; return failure('LOCAL_HISTORY_SETTINGS_CORRUPT'); }
     try { settingsStore.put({ ...current, enabled }, 'current'); }
-    catch (error) { return drainTransactionFailure(done, error); }
+    catch (error) { return abortTransactionAfterWriteError(transaction, done, error); }
     await done;
     return { ok: true, code: enabled ? 'LOCAL_HISTORY_ENABLED' : 'LOCAL_HISTORY_DISABLED',
       settings: { ...current, enabled } };
@@ -300,7 +335,7 @@ export class IndexedDbLocalVersionVault {
         return failure('LOCAL_HISTORY_STALE_CONFIRMATION');
       }
       try { versions.delete(oldest.id); }
-      catch (error) { return drainTransactionFailure(done, error); }
+      catch (error) { return abortTransactionAfterWriteError(transaction, done, error); }
     } else if (ordered.length >= settings.retentionCount) {
       const expectedIds = ids(ordered);
       const oldest = ordered[0];
@@ -310,7 +345,7 @@ export class IndexedDbLocalVersionVault {
           retentionCount: settings.retentionCount } };
     }
     try { versions.add(clone(record)); }
-    catch (error) { return drainTransactionFailure(done, error); }
+    catch (error) { return abortTransactionAfterWriteError(transaction, done, error); }
     await done;
     return { ok: true, code: 'LOCAL_HISTORY_SAVED', record: clone(record) };
   }
@@ -345,7 +380,7 @@ export class IndexedDbLocalVersionVault {
     try {
       for (const id of removeIds) versions.delete(id);
       settingsStore.put({ ...settings, retentionCount }, 'current');
-    } catch (error) { return drainTransactionFailure(done, error); }
+    } catch (error) { return abortTransactionAfterWriteError(transaction, done, error); }
     await done;
     return { ok: true, code: 'LOCAL_HISTORY_RETENTION_UPDATED', removed: removeIds };
   }
@@ -357,14 +392,15 @@ export class IndexedDbLocalVersionVault {
     const record = await requestResult(versions.get(id));
     if (!record) { await done; return failure('LOCAL_HISTORY_STALE_SELECTION'); }
     const storageToken = databaseKeyToken(id);
-    const recordToken = rawRecordToken(record);
+    const recordToken = rawHistoryRecordToken(record);
+    if (recordToken === null) { await done; return failure('LOCAL_HISTORY_RECORD_TOKEN_LIMIT'); }
     if (confirmation?.storageToken !== storageToken || confirmation?.recordToken !== recordToken) {
       await done;
       return { ok: false, code: 'LOCAL_HISTORY_DELETE_CONFIRMATION_REQUIRED',
         record: clone(record), confirmation: { storageToken, recordToken } };
     }
     try { versions.delete(id); }
-    catch (error) { return drainTransactionFailure(done, error); }
+    catch (error) { return abortTransactionAfterWriteError(transaction, done, error); }
     await done;
     return { ok: true, code: 'LOCAL_HISTORY_DELETED', id };
   }
@@ -375,6 +411,7 @@ export class IndexedDbLocalVersionVault {
     const versions = transaction.objectStore('versions');
     const entries = await readEntries(versions);
     const expectedEntries = entryTokens(entries);
+    if (expectedEntries === null) { await done; return failure('LOCAL_HISTORY_RECORD_TOKEN_LIMIT'); }
     if (!confirmation || !sameIds(confirmation.expectedEntries, expectedEntries)) {
       await done;
       return { ok: false, code: confirmation ? 'LOCAL_HISTORY_STALE_CONFIRMATION'
@@ -382,7 +419,7 @@ export class IndexedDbLocalVersionVault {
       confirmation: { expectedEntries } };
     }
     try { versions.clear(); }
-    catch (error) { return drainTransactionFailure(done, error); }
+    catch (error) { return abortTransactionAfterWriteError(transaction, done, error); }
     await done;
     return { ok: true, code: 'LOCAL_HISTORY_CLEARED', removed: expectedEntries.length };
   }
