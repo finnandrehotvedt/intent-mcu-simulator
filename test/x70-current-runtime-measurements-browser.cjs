@@ -123,9 +123,13 @@ async function assertActiveRejected(page, profile) {
   let downloads = 0;
   const count = () => { downloads += 1; };
   page.on('download', count);
+  const before = await page.locator('#accessible-svg-status').textContent();
   await page.click('#accessible-svg-export');
-  await page.waitForFunction(() => /Pause the current/u.test(
-    document.querySelector('#accessible-svg-status')?.textContent ?? ''), null, { timeout: 10_000 });
+  await page.waitForFunction((prior) => {
+    const current = document.querySelector('#accessible-svg-status')?.textContent ?? '';
+    return current !== prior && /Pause the current|downloaded|rejected|cancelled/u.test(current);
+  }, before, { timeout: 10_000 });
+  assert.match(await page.locator('#accessible-svg-status').textContent(), /Pause the current/u);
   await page.waitForTimeout(250);
   page.off('download', count);
   assert.equal(downloads, 0, `${profile.slug}: active runtime created an export`);

@@ -150,7 +150,6 @@ export function avrAccessibleRuntimeBindingMatches(value) {
     && runtimeIdentity.projectGeneration === artifact.projectGeneration
     && runtimeIdentity.runtimeGeneration === binding.runtimeGeneration
     && value.loadedSourceIdentity === value.currentSourceIdentity
-    && value.loadedSourceIdentity === artifact.inputIdentity
     && build.modelImplementationSha256 === value.modelImplementationSha256
     && runtimeIdentity.modelImplementationSha256 === value.modelImplementationSha256
     && runtimeIdentity.modelExecutionContextSha256 === build.modelExecutionContextSha256

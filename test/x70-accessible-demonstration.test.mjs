@@ -260,8 +260,8 @@ test('X70 AVR binding rejects a valid old runtime joined to a new artifact ident
     build: { artifactIdentity: hash('a'), inputIdentity: hash('b'), modelImplementationSha256: hash('c'),
       modelExecutionContextSha256: hash('d'), toolchainIdentitySha256: hash('e'),
       toolchainImageId: `sha256:${hash('f')}` },
-    runtimeModelExecutionContextSha256: hash('d'), loadedSourceIdentity: hash('b'),
-    currentSourceIdentity: hash('b'), modelImplementationSha256: hash('c'),
+    runtimeModelExecutionContextSha256: hash('d'), loadedSourceIdentity: '{"source":"current"}',
+    currentSourceIdentity: '{"source":"current"}', modelImplementationSha256: hash('c'),
     expectedToolchainIdentitySha256: hash('e'),
   };
   assert.equal(avrAccessibleRuntimeBindingMatches(base), true);
@@ -270,6 +270,8 @@ test('X70 AVR binding rejects a valid old runtime joined to a new artifact ident
   rebound.artifact.artifactIdentity = hash('9'); rebound.binding.artifactIdentity = hash('9');
   rebound.build.artifactIdentity = hash('9');
   assert.equal(avrAccessibleRuntimeBindingMatches(rebound), false);
+  const staleSource = clone(base); staleSource.currentSourceIdentity = '{"source":"edited"}';
+  assert.equal(avrAccessibleRuntimeBindingMatches(staleSource), false);
 });
 
 test('X70 rechecks live guard after every asynchronous boundary', async () => {
