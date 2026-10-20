@@ -6,6 +6,12 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/runner/node_modules', 'playwright'));
+const {
+  ACTIVE_EXPORT_REJECTION_STATUS, POSITIVE_EXPORT_STATUS, armExactText,
+  boundedBrowserCleanup, boundedPageCapture, clickAndWaitExact, emergencyPauseStop,
+  hardDeadline, installPicoDriverInstrumentation, observeDownloads,
+  observeSustainedPico, pausePicoWithObservation,
+} = require('./x70-native-driver-safeguards.cjs');
 
 const base = process.env.X70_CURRENT_URL || 'http://127.0.0.1:18872';
 const evidenceDir = process.env.X70_CURRENT_EVIDENCE || '/evidence';
@@ -211,42 +217,44 @@ async function assertGeometry(page, profile) {
   return cases;
 }
 
-async function assertActiveRejected(page, profile) {
-  let downloads = 0;
-  const count = () => { downloads += 1; };
-  page.on('download', count);
-  const before = await page.locator('#accessible-svg-status').textContent();
+async function assertActiveRejected(page, profile, downloads) {
+  const before = downloads.count();
   const button = page.locator('#accessible-svg-export');
   assert.equal(await button.isVisible(), true, `${profile.slug}: export hidden`);
   assert.equal(await button.isDisabled(), false, `${profile.slug}: export disabled`);
-  await button.click({ noWaitAfter: true });
-  await page.waitForFunction((prior) => {
-    const current = document.querySelector('#accessible-svg-status')?.textContent ?? '';
-    return current !== prior && /Pause the current|downloaded|rejected|cancelled/u.test(current);
-  }, before, { timeout: 10_000 });
-  const status = await page.locator('#accessible-svg-status').textContent();
-  assert.match(status, /Pause the current/u);
-  assert.doesNotMatch(status, /downloaded/u);
+  const observed = await clickAndWaitExact({
+    page, selector: '#accessible-svg-status', expected: ACTIVE_EXPORT_REJECTION_STATUS,
+    click: () => button.click({ noWaitAfter: true }), timeoutMs: 10_000,
+  });
   await page.waitForTimeout(250);
-  page.off('download', count);
-  assert.equal(downloads, 0, `${profile.slug}: active runtime created an export`);
+  assert.equal(downloads.count(), before, `${profile.slug}: active runtime created an export`);
+  return { ...observed, downloadsBefore: before, downloadsAfter: downloads.count() };
 }
 
-async function downloadAndValidate(page, context, profile, setStage = () => {}) {
+async function downloadAndValidate(page, context, profile, downloads, setStage = () => {}) {
   setStage('export-click-download');
   const beforeStorage = await page.evaluate(storage);
   const exportButton = page.locator('#accessible-svg-export');
   assert.equal(await exportButton.isVisible(), true, `${profile.slug}: positive export hidden`);
   assert.equal(await exportButton.isDisabled(), false, `${profile.slug}: positive export disabled`);
-  const [download] = await Promise.all([
-    page.waitForEvent('download', { timeout: 20_000 }),
-    exportButton.click({ noWaitAfter: true }),
-  ]);
+  const beforeDownloads = downloads.count();
+  const statusObserver = await armExactText(page, '#accessible-svg-status', POSITIVE_EXPORT_STATUS,
+    { timeoutMs: 20_000 });
+  let download;
+  try {
+    [download] = await Promise.all([
+      page.waitForEvent('download', { timeout: 20_000 }),
+      exportButton.click({ noWaitAfter: true }),
+      statusObserver.wait(),
+    ]);
+  } finally {
+    await statusObserver.dispose();
+  }
+  assert.equal(downloads.count(), beforeDownloads + 1,
+    `${profile.slug}: positive export download accounting`);
   const target = path.join(evidenceDir, `${profile.slug}.current-runtime.accessible-demonstration.svg`);
   await download.saveAs(target);
   setStage('export-status');
-  await page.waitForFunction(() => /current observation-only runtime measurements included/u.test(
-    document.querySelector('#accessible-svg-status')?.textContent ?? ''), null, { timeout: 20_000 });
   const source = fs.readFileSync(target, 'utf8');
   setStage('app-validate');
   const result = await page.evaluate(async (svg) => window.__X70_ACCESSIBLE_DEMONSTRATION__.validate(svg), source);
@@ -312,6 +320,7 @@ async function reopenAuthoredProject(page, profile, setStage = () => {}) {
   const browser = await chromium.launch({ headless: true, args: failureCdpPort
     ? [`--remote-debugging-address=127.0.0.1`, `--remote-debugging-port=${failureCdpPort}`] : [] });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
+  await installPicoDriverInstrumentation(context);
   const page = await context.newPage();
   const errors = []; const outside = []; const mutations = []; const workers = [];
   page.on('pageerror', (error) => errors.push(error.stack || String(error)));
@@ -344,7 +353,10 @@ async function reopenAuthoredProject(page, profile, setStage = () => {}) {
 
     const evidence = {};
     const geometry = {};
+    const driverObservations = {};
     for (const profile of journeyProfiles) {
+      const downloads = observeDownloads(page);
+      const driver = { downloads: downloads.records };
       stage = `${profile.slug}:select`;
       await page.selectOption('#board-select', profile.id);
       await page.waitForFunction((id) => window.__SHARED_INSTRUMENT_SUMMARY__?.profile === id, profile.id);
@@ -390,21 +402,32 @@ async function reopenAuthoredProject(page, profile, setStage = () => {}) {
           document.querySelector('#worker-state')?.textContent ?? '')
           && !document.querySelector('#quick-pause')?.disabled, null, { timeout: 20_000 });
       }
+      if (profile.slug === 'pico') {
+        stage = `${profile.slug}:sustained-responsiveness`;
+        driver.sustained = await observeSustainedPico(page);
+      }
       if (profile.pause) {
         stage = `${profile.slug}:active-export-rejection`;
-        await assertActiveRejected(page, profile);
-        await page.click(profile.pause);
+        driver.activeExportRejection = await assertActiveRejected(page, profile, downloads);
         stage = `${profile.slug}:pause`;
-        await page.waitForFunction(({ name }) => name === '__M6_STATE__'
-          ? window[name]?.runtime?.paused === true && window[name]?.lifecycle?.phase === 'paused'
-          : window[name]?.phase === 'paused' && window[name]?.runtime?.paused === true,
-        { name: profile.state }, { timeout: 20_000 });
+        if (profile.slug === 'pico') {
+          driver.pause = await pausePicoWithObservation(page,
+            () => page.click(profile.pause), { timeoutMs: 2_000 });
+        } else {
+          await page.click(profile.pause);
+          await page.waitForFunction(({ name }) => name === '__M6_STATE__'
+            ? window[name]?.runtime?.paused === true && window[name]?.lifecycle?.phase === 'paused'
+            : window[name]?.phase === 'paused' && window[name]?.runtime?.paused === true,
+          { name: profile.state }, { timeout: 20_000 });
+        }
       }
       stage = `${profile.slug}:geometry`;
       geometry[profile.slug] = await assertGeometry(page, profile);
       stage = `${profile.slug}:download-and-validate`;
-      evidence[profile.slug] = await downloadAndValidate(page, context, profile,
+      evidence[profile.slug] = await downloadAndValidate(page, context, profile, downloads,
         (substage) => { stage = `${profile.slug}:download-and-validate:${substage}`; });
+      downloads.stop();
+      driverObservations[profile.slug] = driver;
       if (profile.slug === 'avr') {
         await page.screenshot({ path: path.join(evidenceDir, 'avr-current-runtime-control.png'), fullPage: false });
       }
@@ -425,37 +448,30 @@ async function reopenAuthoredProject(page, profile, setStage = () => {}) {
         evidence[slug].report.measurements.channels.map(({ classification }) => classification)])),
       timeBases: Object.fromEntries(journeyProfiles.map(({ slug }) => [slug,
         evidence[slug].report.measurements.channels.map(({ time }) => time.basis)])),
-      geometry, activeRuntimeRejected: journeyProfiles.filter(({ pause }) => pause).map(({ slug }) => slug),
+      geometry, driverObservations,
+      activeRuntimeRejected: journeyProfiles.filter(({ pause }) => pause).map(({ slug }) => slug),
       saveOpenClearedRuntime: journeyProfiles.map(({ slug }) => slug),
       workersObserved: workers.length, serviceWorkers: 0, outsideRequests: 0,
       mutations, cookies: 0, browserErrors: 0 };
     fs.writeFileSync(path.join(evidenceDir, 'result.json'), `${JSON.stringify(result, null, 2)}\n`);
     process.stdout.write(`${JSON.stringify(result)}\n`);
   } catch (error) {
-    const failure = await page.evaluate(({ stage, message, stack, builds, runs }) => ({
-      stage, error: { message, stack },
-      url: location.href,
-      profile: document.querySelector('#board-select')?.value ?? null,
-      quickState: document.querySelector('#quick-state')?.textContent ?? null,
-      controllerStatus: document.querySelector('#controller-status')?.textContent ?? null,
-      picoMessage: document.querySelector('#pico-message')?.textContent ?? null,
-      workerState: document.querySelector('#worker-state')?.textContent ?? null,
-      accessibleSvgStatus: document.querySelector('#accessible-svg-status')?.textContent ?? null,
-      sharedSummary: window.__SHARED_INSTRUMENT_SUMMARY__ ?? null,
-      avrState: window.__M6_STATE__ ?? null,
-      picoState: window.__RP2040_PUBLIC_STATE__ ?? null,
-      producerActivity: { builds, runs, scenarios: 0 },
-    }), { stage, message: error.message, stack: error.stack, builds, runs }).catch((captureError) => ({
-      stage, error: { message: error.message, stack: error.stack }, captureError: String(captureError),
-    }));
+    const emergency = await emergencyPauseStop(page);
+    const captured = await boundedPageCapture(page, {
+      stage, error: { message: error.message, stack: error.stack },
+      producerActivity: { builds, runs, scenarios: 0 }, emergency,
+    });
+    const failure = captured.value;
     fs.writeFileSync(path.join(evidenceDir, 'failure-state.json'), `${JSON.stringify(failure, null, 2)}\n`);
-    await page.screenshot({ path: path.join(evidenceDir, 'failure-page.png'), fullPage: true,
-      timeout: 10_000 }).catch(() => {});
+    await hardDeadline(() => page.screenshot({ path: path.join(evidenceDir, 'failure-page.png'),
+      fullPage: true, timeout: 1_000 }), 1_100, 'failure screenshot').catch(() => {});
     const hold = await holdFailedPage(stage, error);
     if (!(zeroProducerFailureFixture && error.message === 'X70_ZERO_PRODUCER_FAILURE_FIXTURE')) throw error;
     process.stdout.write(`${JSON.stringify({ result: 'expected-zero-producer-failure',
       producerActivity: { builds, runs, scenarios: 0 }, holdStatus: hold.status })}\n`);
   } finally {
-    await browser.close();
+    const finalSafety = await emergencyPauseStop(page);
+    const cleanup = await boundedBrowserCleanup({ pages: [page], contexts: [context], browser });
+    writeJson(path.join(evidenceDir, 'driver-cleanup.json'), { finalSafety, cleanup });
   }
 })().catch((error) => { console.error(error.stack || String(error)); process.exitCode = 1; });

@@ -6,71 +6,97 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/runner/node_modules', 'playwright'));
+const {
+  ACTIVE_EXPORT_REJECTION_STATUS, armExactText, boundedBrowserCleanup,
+  clickAndWaitExact, emergencyPauseStop, installPicoDriverInstrumentation,
+  observeDownloads, observeSustainedPico,
+} = require('./x70-native-driver-safeguards.cjs');
 
 const base = process.env.X70_CURRENT_URL || 'http://127.0.0.1:18881';
 const evidenceDir = process.env.X70_CURRENT_EVIDENCE || '/evidence';
 const sha256 = (source) => crypto.createHash('sha256').update(source).digest('hex');
 
-async function waitForExactStatus(page, selector, expected, timeout = 5_000) {
-  await page.waitForFunction(({ target, text }) =>
-    document.querySelector(target)?.textContent?.trim() === text,
-  { target: selector, text: expected }, { timeout });
-}
-
-function observeDownloads(page) {
-  const records = [];
-  page.on('download', (download) => records.push(download.suggestedFilename()));
-  return records;
-}
-
-async function emergencyPauseAndHold(page) {
-  if (!page || page.isClosed()) return { requested: false, held: true };
-  const requested = await page.evaluate(() => {
-    const state = document.querySelector('#pico-state')?.textContent?.trim();
-    if (!['running', 'starting', 'pausing'].includes(state)) return false;
-    const pause = document.querySelector('#pico-pause');
-    if (!(pause instanceof HTMLButtonElement) || pause.disabled) return false;
-    pause.click();
-    return true;
-  });
-  if (!requested) return { requested: false, held: true };
-  try {
-    await waitForExactStatus(page, '#pico-state', 'paused', 2_000);
-    return { requested: true, held: true };
-  } catch {
-    await page.locator('#pico-stop').click({ timeout: 2_000 }).catch(() => {});
-    return { requested: true, held: false };
-  }
-}
-
 (async () => {
   fs.mkdirSync(evidenceDir, { recursive: true });
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ acceptDownloads: true, viewport: { width: 1440, height: 900 } });
+  await installPicoDriverInstrumentation(context);
   const rejectionPage = await context.newPage();
   const rejectionDownloads = observeDownloads(rejectionPage);
   let page = null;
   let projectPage = null;
+  let stalledContext = null;
+  let stalledPage = null;
+  let stalledEmergency = null;
   try {
-    await rejectionPage.setContent(`<!doctype html><button id="export">Export</button><button id="pause">Pause</button><p id="status">running</p>
+    await rejectionPage.setContent(`<!doctype html><button id="accessible-svg-export">Export</button>
+      <button id="pico-pause">Pause</button><button id="pico-stop">Stop</button>
+      <p id="accessible-svg-status">Ready</p><p id="pico-state">running</p>
       <script>
-        document.querySelector('#export').addEventListener('click', () => {
-          document.querySelector('#status').textContent = 'Pause the current runtime before exporting.';
+        document.querySelector('#accessible-svg-export').addEventListener('click', () => {
+          if (document.querySelector('#pico-state').textContent === 'paused') {
+            const link = document.createElement('a');
+            link.download = 'fixture-after-pause.txt';
+            link.href = URL.createObjectURL(new Blob(['stable'], { type: 'text/plain' }));
+            link.click();
+            return;
+          }
+          document.querySelector('#accessible-svg-status').textContent = ${JSON.stringify(ACTIVE_EXPORT_REJECTION_STATUS)};
         });
-        document.querySelector('#pause').addEventListener('click', () => {
-          document.querySelector('#status').textContent = 'paused';
+        document.querySelector('#pico-pause').addEventListener('click', () => {
+          document.querySelector('#pico-state').textContent = 'paused';
+        });
+        document.querySelector('#pico-stop').addEventListener('click', () => {
+          document.querySelector('#pico-state').textContent = 'editing';
         });
       </script>`);
-    const button = rejectionPage.locator('#export');
+    const button = rejectionPage.locator('#accessible-svg-export');
     assert.equal(await button.isVisible(), true);
     assert.equal(await button.isDisabled(), false);
-    await button.click({ noWaitAfter: true });
-    await waitForExactStatus(rejectionPage, '#status', 'Pause the current runtime before exporting.');
+    const rejected = await clickAndWaitExact({ page: rejectionPage,
+      selector: '#accessible-svg-status', expected: ACTIVE_EXPORT_REJECTION_STATUS,
+      click: () => button.click({ noWaitAfter: true }) });
+    assert.equal(rejected.matchedInitially, false);
     await rejectionPage.waitForTimeout(100);
-    assert.equal(rejectionDownloads.length, 0);
-    await rejectionPage.click('#pause');
-    await waitForExactStatus(rejectionPage, '#status', 'paused');
+    assert.equal(rejectionDownloads.count(), 0);
+    const paused = await clickAndWaitExact({ page: rejectionPage, selector: '#pico-state',
+      expected: 'paused', click: () => rejectionPage.click('#pico-pause') });
+    assert.equal(paused.matchedInitially, false);
+    const [afterPauseDownload] = await Promise.all([
+      rejectionPage.waitForEvent('download', { timeout: 2_000 }),
+      button.click({ noWaitAfter: true }),
+    ]);
+    assert.equal(afterPauseDownload.suggestedFilename(), 'fixture-after-pause.txt');
+    assert.equal(rejectionDownloads.count(), 1);
+    const alreadyCorrect = await armExactText(rejectionPage, '#pico-state', 'paused');
+    const sameText = await alreadyCorrect.wait();
+    await alreadyCorrect.dispose();
+    assert.deepEqual(sameText, { matchedInitially: true, mutations: 0 });
+    const sustained = await observeSustainedPico(rejectionPage, {
+      durationMs: 60, heartbeatIntervalMs: 10, requireRuntime: false,
+    });
+    assert.equal(sustained.presentationMessages, 0);
+    assert.equal(rejectionDownloads.count(), 1);
+    await rejectionPage.evaluate(() => { document.querySelector('#pico-state').textContent = 'running'; });
+    const successfulEmergency = await emergencyPauseStop(rejectionPage, { actionTimeoutMs: 250 });
+    assert.equal(successfulEmergency.status, 'paused');
     await rejectionPage.close();
+
+    stalledContext = await browser.newContext();
+    stalledPage = await stalledContext.newPage();
+    await stalledPage.setContent(`<!doctype html><button id="pico-pause">Pause</button>
+      <button id="pico-stop">Stop</button><p id="pico-state">running</p>`);
+    await stalledPage.evaluate(() => { setTimeout(() => { while (true) { /* deliberate renderer stall */ } }, 0); });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const stalledStarted = Date.now();
+    stalledEmergency = await emergencyPauseStop(stalledPage, { actionTimeoutMs: 100 });
+    assert.equal(stalledEmergency.status, 'failed-bounded');
+    assert(Date.now() - stalledStarted < 1_500, 'stalled emergency exceeded hard wall bound');
+    const stalledCleanup = await boundedBrowserCleanup({ pages: [stalledPage],
+      contexts: [stalledContext], timeoutMs: 500 });
+    assert.equal(stalledCleanup.bounded, true);
+    stalledPage = null;
+    stalledContext = null;
 
     page = await context.newPage();
     const pageDownloads = observeDownloads(page);
@@ -91,7 +117,7 @@ async function emergencyPauseAndHold(page) {
       page.waitForEvent('download', { timeout: 20_000 }),
       svgButton.click({ noWaitAfter: true }),
     ]);
-    assert.equal(pageDownloads.length, 1);
+    assert.equal(pageDownloads.count(), 1);
     const svgPath = path.join(evidenceDir, 'zero-producer-no-current.accessible-demonstration.svg');
     await svgDownload.saveAs(svgPath);
     const svg = fs.readFileSync(svgPath, 'utf8');
@@ -123,7 +149,7 @@ async function emergencyPauseAndHold(page) {
       projectPage.waitForEvent('download', { timeout: 20_000 }),
       projectButton.click({ noWaitAfter: true }),
     ]);
-    assert.equal(projectDownloads.length, 1);
+    assert.equal(projectDownloads.count(), 1);
     const projectPath = path.join(evidenceDir, 'zero-producer-project.intent-mcu.json');
     await projectDownload.saveAs(projectPath);
     const project = fs.readFileSync(projectPath, 'utf8');
@@ -134,15 +160,19 @@ async function emergencyPauseAndHold(page) {
 
     process.stdout.write(`${JSON.stringify({ result: 'pass', action: 'locator.click',
       noWaitAfter: true, visible: true, enabled: true,
-      rejection: { status: 'rejected-while-running-before-pause', downloads: 0 },
+      rejection: { status: 'rejected-while-running-before-pause', downloads: 0,
+        continuousLedgerAfterPause: rejectionDownloads.count() },
+      safeguards: { prearmedMutation: true, alreadyCorrectNoMutation: true,
+        sustainedHeartbeat: sustained, emergencyBounded: true, stalledEmergency },
       positiveBlobDownload: { suggestedFilename: svgDownload.suggestedFilename(),
         saved: true, bytes: Buffer.byteLength(svg), sha256: sha256(svg), readback: true },
       projectSaveBlobDownload: { suggestedFilename: projectDownload.suggestedFilename(),
         saved: true, bytes: Buffer.byteLength(project), sha256: sha256(project), readback: true },
       producerActivity: { builds: 0, runs: 0, scenarios: 0 } })}\n`);
   } finally {
-    await emergencyPauseAndHold(projectPage);
-    await emergencyPauseAndHold(page);
-    await browser.close();
+    await emergencyPauseStop(projectPage);
+    await emergencyPauseStop(page);
+    await boundedBrowserCleanup({ pages: [stalledPage, projectPage, page, rejectionPage],
+      contexts: [stalledContext, context], browser });
   }
 })().catch((error) => { console.error(error.stack || String(error)); process.exitCode = 1; });

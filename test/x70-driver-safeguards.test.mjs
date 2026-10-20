@@ -2,19 +2,34 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import test from 'node:test';
 
-test('native acceptance driver uses exact status, download observation and emergency Pause hold', async () => {
-  const source = await readFile(new URL('./x70-driver-control-fixture.cjs', import.meta.url), 'utf8');
-  assert.match(source, /function waitForExactStatus/u);
-  assert.match(source, /textContent\?\.trim\(\) === text/u);
-  assert.match(source, /function observeDownloads/u);
-  assert.match(source, /page\.on\('download'/u);
-  assert.match(source, /function emergencyPauseAndHold/u);
-  assert.match(source, /\['running', 'starting', 'pausing'\]/u);
-  assert.match(source, /waitForExactStatus\(page, '#pico-state', 'paused', 2_000\)/u);
-  assert.match(source, /rejected-while-running-before-pause/u);
-  assert.match(source, /await emergencyPauseAndHold\(page\)/u);
+const require = createRequire(import.meta.url);
+const {
+  ACTIVE_EXPORT_REJECTION_STATUS,
+  DriverDeadlineError,
+  hardDeadline,
+} = require('./x70-native-driver-safeguards.cjs');
+
+test('hard driver deadline resolves normal work and rejects a never-settling operation', async () => {
+  assert.equal(await hardDeadline(() => Promise.resolve('ready'), 100, 'normal work'), 'ready');
+  const started = Date.now();
+  await assert.rejects(
+    hardDeadline(() => new Promise(() => {}), 40, 'stalled work'),
+    (error) => {
+      assert(error instanceof DriverDeadlineError);
+      assert.equal(error.code, 'X70_DRIVER_DEADLINE');
+      assert.equal(error.timeoutMs, 40);
+      return true;
+    },
+  );
+  assert(Date.now() - started < 500, 'deadline did not enforce a short wall bound');
 });
 
+test('active rejection contract is one exact stable status, not a regex alternative', () => {
+  assert.equal(
+    ACTIVE_EXPORT_REJECTION_STATUS,
+    'Pause the current AVR/Pico runtime or wait for C3/STM32 completion before exporting a stable measurement snapshot.',
+  );
+});
