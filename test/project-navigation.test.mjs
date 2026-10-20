@@ -2,6 +2,7 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { createAccessibleConnectionView } from '../src/accessible-connections.mjs';
 import { createProjectNavigationView, searchProjectNavigation } from '../src/project-navigation.mjs';
 
 const connections = Object.freeze({ schema: 'intent-mcu-accessible-connection-view@1',
@@ -46,6 +47,31 @@ test('indexes zero-ref criteria, shared test IDs by owner, and full accepted lon
   assert.equal(searchProjectNavigation(view, 'No linked').results[0].target.requirementId, 'REQ-A');
   assert.equal(searchProjectNavigation(view, 'TEST-SHARED').total, 2);
   assert.equal(searchProjectNavigation(view, 'NEEDLE').results[0].target.line, 1);
+});
+
+test('keeps maximum valid owner text searchable while bounding display labels', () => {
+  const owner = (marker) => `${'Owner'.repeat(30)}${marker.padStart(10, 'x')}`;
+  const pin = (marker) => `${'Terminal'.repeat(18)}${marker.padStart(16, 'y')}`;
+  const typeLabel = `${'Controller'.repeat(16)}`;
+  assert.equal(owner('ALPHA-TAIL').length, 160); assert.equal(pin('PIN-TAIL').length, 160);
+  assert.equal(typeLabel.length, 160);
+  const components = ['ALPHA-TAIL', 'BRAVO-TAIL', 'CHARLIEEND'].map((marker, index) => ({
+    id: `part-${index + 1}`, type: `type-${index + 1}`, label: owner(marker),
+  }));
+  const catalogue = Object.fromEntries(components.map((component, index) => [component.type, {
+    displayName: typeLabel, pins: [{ id: `P${index + 1}`, label: pin(index === 2 ? 'PIN-TAIL' : `PIN-${index + 1}`) }],
+  }]));
+  const expanded = createAccessibleConnectionView({ profile: 'board.atmega328p-16mhz-v1', revision: 7,
+    components, catalogue, nets: [{ id: 'net-junction', endpoints: components.map((component, index) => ({ component: component.id, pin: `P${index + 1}` })) }],
+    junctions: [{ id: 'junction-1', net: 'net-junction' }], wireColors: {},
+    limits: { components: 4, nets: 4, endpoints: 8 },
+    validation: { checked: true, ok: true, code: 'OK', diagnostics: [] } });
+  const view = make({ connections: expanded });
+  assert(view.entries.every((entry) => [...entry.label].length <= 320));
+  assert(view.entries.some((entry) => entry.label.endsWith('…')));
+  assert.equal(searchProjectNavigation(view, 'CHARLIEEND').results.some((entry) => entry.kind === 'net'), true);
+  assert.equal(searchProjectNavigation(view, 'PIN-TAIL').results.some((entry) => entry.kind === 'net'), true);
+  assert.equal(searchProjectNavigation(view, 'ALPHA-TAIL').results.some((entry) => entry.kind === 'component'), true);
 });
 
 test('rejects unchecked, profile-mismatched and per-profile source violations', () => {

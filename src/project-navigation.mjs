@@ -6,6 +6,10 @@ const ORDER = new Map(KINDS.map((kind, index) => [kind, index]));
 const valid = (value, maximum = 320) => typeof value === 'string' && value.length <= maximum && !/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u.test(value);
 const fail = (code) => { throw Object.assign(new Error(code), { code }); };
 const fold = (value) => value.normalize('NFKC').toLocaleLowerCase('en');
+const displayLabel = (value) => {
+  const points = [...value];
+  return points.length <= 320 ? value : `${points.slice(0, 319).join('')}…`;
+};
 const SOURCE_POLICY = Object.freeze({
   'board.atmega328p-16mhz-v1': { files: 8, bytes: 131072, names: null },
   'board.rp2040-pico-v1': { files: 1, bytes: 4096, names: ['main.c'] },
@@ -26,8 +30,9 @@ export function createProjectNavigationView(input) {
       || input.criteria.length > 24 || !Array.isArray(input.scenarios) || input.scenarios.length > 64) fail('PROJECT_NAVIGATION_INPUT_INVALID');
   const entries = [];
   const add = (kind, id, label, terms, target) => {
-    if (!KINDS.includes(kind) || !valid(id, 160) || !valid(label) || terms.some((item) => !valid(item, 131072))) fail('PROJECT_NAVIGATION_ENTRY_INVALID');
-    entries.push({ kind, id, label, terms: [...new Set([id, label, ...terms])], target: structuredClone(target) });
+    if (!KINDS.includes(kind) || !valid(id, 160) || !valid(label, 131072)
+        || terms.some((item) => !valid(item, 131072))) fail('PROJECT_NAVIGATION_ENTRY_INVALID');
+    entries.push({ kind, id, label: displayLabel(label), terms: [...new Set([id, label, ...terms])], target: structuredClone(target) });
   };
   for (const item of input.connections.components) add('component', item.id, `${item.label} · ${item.typeLabel}`, [item.type], { componentId: item.id });
   for (const item of input.connections.pins) add('pin', item.key, item.accessibleLabel, [item.id, item.label, item.componentId, item.componentLabel], { pinKey: item.key, componentId: item.componentId });
