@@ -1,8 +1,15 @@
-# Migration to 1.1.0-rc.80
+# Migration to 1.1.0-rc.81
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.81 changes no project, package, runtime or browser-storage schema. Physical
+checklist files are deliberately release-bound manual records: an rc.80 private
+candidate file rejects under rc.81 and is never silently rewritten. Re-enter
+or explicitly download a new rc.81 checklist if needed. This changes no
+learner project and grants no hardware, firmware, verdict or certification
+authority.
 
 Rc.80 changes no project, package, capability-discovery or stored-browser
 schema. The static release-delta document is read-only reviewed metadata and

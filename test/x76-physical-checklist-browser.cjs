@@ -114,6 +114,7 @@ const workbenchState = () => ({
     await download.saveAs(downloadedPath);
     const downloadedText = fs.readFileSync(downloadedPath, 'utf8');
     const downloaded = JSON.parse(downloadedText);
+    assert.equal(downloaded.productRelease, '1.1.0-rc.81');
     assert.equal(downloaded.evidenceBoundary.physicalEvidencePresent, true);
     assert.equal(downloaded.evidenceBoundary.independentlyVerified, false);
     assert(Object.values(downloaded.authority).every((value) => value === false));
@@ -147,8 +148,20 @@ const workbenchState = () => ({
     const badChooser = page.waitForEvent('filechooser');
     await page.locator('#physical-open').click();
     await (await badChooser).setFiles(malformedPath);
-    await page.waitForFunction(() => document.querySelector('#physical-status')?.textContent.includes('Rejected checklist atomically'));
+    await page.waitForFunction(() => document.querySelector('#physical-status')?.textContent.includes('PHYSICAL_CHECKLIST_PROFILE_UNKNOWN'));
     assert.match(await page.locator('#physical-status').textContent(), /Rejected checklist atomically/u);
+    assert.equal(await page.locator('#physical-identity').textContent(), acceptedIdentity);
+    assert.equal(await first.locator('[data-item-status]').inputValue(), acceptedStatus);
+
+    const priorRelease = structuredClone(downloaded);
+    priorRelease.productRelease = '1.1.0-rc.80';
+    const priorReleasePath = path.join('/tmp', 'x76-private-rc80.json');
+    fs.writeFileSync(priorReleasePath, JSON.stringify(priorRelease));
+    const priorChooser = page.waitForEvent('filechooser');
+    await page.locator('#physical-open').click();
+    await (await priorChooser).setFiles(priorReleasePath);
+    await page.waitForFunction(() => document.querySelector('#physical-status')?.textContent.includes('PHYSICAL_CHECKLIST_IDENTITY'));
+    assert.match(await page.locator('#physical-status').textContent(), /PHYSICAL_CHECKLIST_IDENTITY/u);
     assert.equal(await page.locator('#physical-identity').textContent(), acceptedIdentity);
     assert.equal(await first.locator('[data-item-status]').inputValue(), acceptedStatus);
 
@@ -323,6 +336,7 @@ const workbenchState = () => ({
     assert.equal(context.serviceWorkers().length, 0);
     console.log(JSON.stringify({ result: 'pass', profiles: 4, items: 23, keyboard: true,
       actualDownloadOpen: true, malformedIdentityAtomic: true, cancelNoLoss: true,
+      priorReleaseRejectedNoMigration: true,
       delayedReadGuard: true, latestOpenWins: true, oversizeRejectedBeforeRead: true,
       unicodeScalarBoundary: true,
       printProjection: true, printFullManualRecord: true, printInteractiveControls: 0,

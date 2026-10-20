@@ -22,6 +22,15 @@
       ]
     },
     {
+      "id": "X76",
+      "capabilities": [
+        "intent-mcu-physical-verification-checklist@1"
+      ],
+      "contracts": [
+        "x76-profile-owned-physical-verification-checklist-v1"
+      ]
+    },
+    {
       "id": "X88",
       "capabilities": [
         "intent-mcu-release-changes@1"

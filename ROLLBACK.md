@@ -1,13 +1,13 @@
-# Rollback basis for 1.1.0-rc.80
+# Rollback basis for 1.1.0-rc.81
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain exact accepted rc.79 source commit
-`158b41cfe82e892dc7b03fdb02a2b0e825736c34` and VM103 image
-`sha256:5aa2e55d6ce075173474d3b97b5eb3e3a512cd620d13e1d0f3e8fa930fa2be96`
-as the pre-rc.80 app-only recovery basis.
+Retain exact accepted rc.80 source commit
+`9baecd8f110dd1dc666e0a3525a83bc65e619071` and VM103 image
+`sha256:0fc49bda9d3eae293a4c41bead398e5c7a8c7cb15edb75ba59a840687e47982`
+as the pre-rc.81 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
@@ -94,6 +94,12 @@ Rc.80 adds only a strict static machine-readable release-delta document and
 its discovery links. Rolling back removes that metadata file and copy. It does
 not migrate, rewrite or delete learner projects, packages, browser history,
 firmware or runtime evidence, and no new server state exists.
+
+Rc.81 adds only the strict current-tab manual physical-verification checklist,
+its local file/print workflow and discovery links. Rolling back removes that
+surface without deleting projects or files. Rc.81 checklist files are
+release-bound and rc.80 does not accept them; retain the learner-owned file
+unchanged rather than rewriting or presenting it as physical proof.
 
 Rc.79 adds only transient local comparison of two retained strict-v3 experiment
 packages. Rolling back removes the comparison disclosure and its in-tab state;

@@ -2,6 +2,18 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.81 — 2026-10-20
+
+- Published X76 as a strict local physical-verification checklist for the four
+  exact controller profiles and 23 finite profile-owned checks.
+- Keeps physical evidence absent until manual entry and labels every entry
+  unverified and non-certifying, with no pass, safety or compliance verdict.
+- Adds bounded local Download/Open and complete current-state print projection;
+  Ctrl+P regenerates from current data and incomplete drafts cannot reuse stale
+  accepted content.
+- Adds no hardware access, USB/device permission, firmware action, account,
+  upload, analytics or server/browser persistence.
+
 ## 1.1.0-rc.80 — 2026-10-20
 
 - Added X88 as one deterministic static `/release-changes.json` document with

@@ -1,4 +1,23 @@
-# Intent MCU Simulator 1.1.0-rc.80
+# Intent MCU Simulator 1.1.0-rc.81
+
+## Manual physical-verification checklist
+
+This release publishes the independently reviewed X76 checklist for the exact
+AVR, RP2040 Pico, ESP32-C3 and STM32F429ZI profiles. Its 23 finite checks keep
+simulator basis separate from physical evidence. Every observation is a manual
+user record, not independently verified evidence, and no pass, safety,
+compliance or certification verdict exists.
+
+Files are strict, bounded, release-bound local JSON. Rc.80 private checklist
+files reject honestly rather than being silently migrated. Download/Open,
+Clear and print remain current-tab-only; standard browser printing regenerates
+from current state and marks incomplete drafts without substituting stale data.
+No USB, device API, firmware action, account, upload, analytics or persistence
+is added.
+
+---
+
+## 1.1.0-rc.80
 
 ## Strict machine-readable release changes
 

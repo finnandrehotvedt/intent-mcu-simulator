@@ -28,18 +28,18 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc79 to rc80 bytes, longlist and immutable implementation source', async () => {
+test('X88 owner binds canonical rc80 to rc81 X76 bytes, longlist and immutable implementation source', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.80');
+  assert.equal(release.version, '1.1.0-rc.81');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
-  assert(registry.ids.includes('X88'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.79', current: '1.1.0-rc.80' });
+  assert(registry.ids.includes('X76'));
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.80', current: '1.1.0-rc.81' });
   assert.deepEqual(value.changes, [{
-    id: 'X88', classification: 'additive', capabilities: ['intent-mcu-release-changes@1'],
-    contracts: ['x88-machine-readable-release-delta-v1'],
-    summary: 'Adds a strict static machine-readable release delta for read-only discovery.',
+    id: 'X76', classification: 'additive', capabilities: ['intent-mcu-physical-verification-checklist@1'],
+    contracts: ['x76-profile-owned-physical-verification-checklist-v1'],
+    summary: 'Adds a strict local four-profile manual physical-verification checklist without device or verdict authority.',
   }]);
   assert.equal(value.migrationRequired, false);
   assert.equal(value.breakingChangesPresent, false);
@@ -50,20 +50,20 @@ test('X88 owner binds canonical rc79 to rc80 bytes, longlist and immutable imple
   assert(new TextEncoder().encode(source).length < RELEASE_CHANGES_LIMIT);
 });
 
-test('strict parser accepts the historical rc78 to rc79 X41 fixture without presenting it as rc80', async () => {
+test('strict parser accepts the historical rc79 to rc80 X88 fixture without presenting it as rc81', async () => {
   const { value, registry, options } = await owner();
   const historical = clone(value);
-  historical.release = { previous: '1.1.0-rc.78', current: '1.1.0-rc.79' };
-  historical.changes = [{ id: 'X41', classification: 'additive',
-    capabilities: ['intent-mcu-experiment-package-comparison@1'],
-    contracts: ['x41-experiment-package-comparison-v1'],
-    summary: 'Adds strict local comparison of two compatible retained experiment packages.' }];
-  const historicalOptions = { ...options, currentVersion: '1.1.0-rc.79', registry };
+  historical.release = { previous: '1.1.0-rc.79', current: '1.1.0-rc.80' };
+  historical.changes = [{ id: 'X88', classification: 'additive',
+    capabilities: ['intent-mcu-release-changes@1'],
+    contracts: ['x88-machine-readable-release-delta-v1'],
+    summary: 'Adds a strict static machine-readable release delta for read-only discovery.' }];
+  const historicalOptions = { ...options, currentVersion: '1.1.0-rc.80', registry };
   const text = canonicalReleaseChangesText(historical, historicalOptions);
   const parsed = parseReleaseChangesText(text, historicalOptions);
-  assert.deepEqual(parsed.release, { previous: '1.1.0-rc.78', current: '1.1.0-rc.79' });
-  assert.deepEqual(parsed.changes.map(({ id }) => id), ['X41']);
-  assert.equal(text.includes('X88'), false);
+  assert.deepEqual(parsed.release, { previous: '1.1.0-rc.79', current: '1.1.0-rc.80' });
+  assert.deepEqual(parsed.changes.map(({ id }) => id), ['X88']);
+  assert.equal(text.includes('X76'), false);
 });
 
 test('strict parser atomically rejects unknown, duplicate, reordered, stale, oversized and authority-bearing input', async () => {
@@ -71,7 +71,7 @@ test('strict parser atomically rejects unknown, duplicate, reordered, stale, ove
   const rejects = [
     ['extra field', () => parseReleaseChangesText(JSON.stringify({ ...value, extra: true }), options), /RELEASE_CHANGES_SHAPE/u],
     ['duplicate key', () => parseReleaseChangesText(source.replace('  "schema":', '  "schema": "duplicate",\n  "schema":'), options), /DUPLICATE_KEY/u],
-    ['stale current', () => parseReleaseChangesText(source, { ...options, currentVersion: '1.1.0-rc.81' }), /CURRENT_STALE/u],
+    ['stale current', () => parseReleaseChangesText(source, { ...options, currentVersion: '1.1.0-rc.80' }), /CURRENT_STALE/u],
     ['stale implementation', () => parseReleaseChangesText(source, { ...options, implementationSha256: '0'.repeat(64) }), /IMPLEMENTATION_STALE/u],
     ['unknown id', () => { const x = clone(value); x.changes[0].id = 'X97'; return canonicalReleaseChangesText(x, options); }, /ID_UNKNOWN/u],
     ['unknown classification', () => { const x = clone(value); x.changes[0].classification = 'marketing'; return canonicalReleaseChangesText(x, options); }, /CLASSIFICATION/u],
@@ -87,7 +87,7 @@ test('strict parser atomically rejects unknown, duplicate, reordered, stale, ove
   assert.throws(() => canonicalReleaseChangesText(duplicated, options), /ID_DUPLICATE/u);
   const reordered = clone(value);
   reordered.changes = [
-    { ...clone(value.changes[0]), id: 'X88' },
+    { ...clone(value.changes[0]), id: 'X88', capabilities: ['intent-mcu-release-changes@1'], contracts: ['x88-machine-readable-release-delta-v1'] },
     { ...clone(value.changes[0]), id: 'X41', contracts: ['x41-experiment-package-comparison-v1'] },
   ];
   assert.throws(() => canonicalReleaseChangesText(reordered, options), /ID_ORDER/u);
@@ -101,15 +101,15 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.80');
+  assert.equal(discovery.identity.version, '1.1.0-rc.81');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);
   assert.equal(discovery.actions.applyAuthority, false);
   assert.equal('releaseChanges' in discovery, false);
   const baselineProjection = clone(discovery);
-  baselineProjection.identity.version = '1.1.0-rc.79';
-  assert.equal(sha256(JSON.stringify(baselineProjection)), '98865b399936863aa9db1f9d73733cb29980debbdcea1724527d459dcfe2caa3');
+  baselineProjection.identity.version = '1.1.0-rc.80';
+  assert.equal(sha256(JSON.stringify(baselineProjection)), 'e550054713defcf670dc9394278233c84db1d3a57e6e05186927847c231d6398');
 });
 
 test('HTML, llms and Support discover the same static file without adding a public API', async () => {
