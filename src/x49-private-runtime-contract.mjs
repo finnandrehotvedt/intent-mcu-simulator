@@ -18,7 +18,10 @@ export const X49_PRIVATE_IMPLEMENTATION_ID = 'intent-mcu-x49-private-avr-runtime
 export const X49_PRIVATE_IMPLEMENTATION_VERSION = '1.0.0-x49-private.1';
 export const X49_PRIVATE_PROTOCOL = 'intent-mcu-x49-private-worker@1';
 export const X49_PRIVATE_TERMINAL_SCHEMA = 'intent-mcu-x49-private-terminal@1';
+export const X49_PRIVATE_TRUST_ANCHOR = 'src/x49-private-runtime-manifest.json';
 export const X49_PRIVATE_WRITE_LIMIT = 8;
+export const X49_PRIVATE_STARTUP_WRITE_LIMIT = 16;
+export const X49_PRIVATE_STARTUP_CYCLE_LIMIT = 1_000_000;
 export const X49_PRIVATE_SLICE_INSTRUCTIONS = 10_000;
 export const X49_PRIVATE_RUNTIME_MEMBERS = Object.freeze([
   'src/x49-private.worker.mjs',
@@ -57,7 +60,8 @@ function validateMembers(value, expected) {
   return clone(value);
 }
 
-export async function validateX49PrivateManifest(value, cryptoImpl = globalThis.crypto) {
+export async function validateX49PrivateManifest(value, cryptoImpl = globalThis.crypto,
+  trustedManifest = null) {
   if (!exactKeys(value, ['schema', 'implementationId', 'version', 'runtimeMembers',
     'evidenceToolMembers', 'externalContracts', 'implementationSha256',
     'evidenceToolSha256', 'semanticSha256']) || value.schema !== X49_PRIVATE_MANIFEST_SCHEMA
@@ -79,6 +83,9 @@ export async function validateX49PrivateManifest(value, cryptoImpl = globalThis.
   if (value.implementationSha256 !== implementationSha256
       || value.evidenceToolSha256 !== evidenceToolSha256
       || value.semanticSha256 !== semanticSha256) reject('X49_PRIVATE_MANIFEST_HASH_INVALID');
+  if (!trustedManifest || stableX49Stringify(value) !== stableX49Stringify(trustedManifest)) {
+    reject('X49_PRIVATE_MANIFEST_TRUST_INVALID');
+  }
   return clone(value);
 }
 
@@ -100,25 +107,29 @@ function validateExperiment(value, probe) {
 }
 
 export async function x49PrivateExecutionContext({ manifest, probe, experimentBinding,
-  caseId }, cryptoImpl = globalThis.crypto) {
-  const expected = X49_CASES.find((item) => item.caseId === caseId);
-  if (!expected) reject('X49_PRIVATE_CASE_INVALID');
+  hexSha256 }, cryptoImpl = globalThis.crypto) {
+  if (!HASH.test(hexSha256 ?? '')) reject('X49_PRIVATE_HEX_HASH_INVALID');
   return x49Sha256(stableX49Stringify({ protocol: X49_PRIVATE_PROTOCOL,
     implementationSha256: manifest.implementationSha256,
     sourceSha256: probe.sourceSha256, artifactIdentity: probe.artifactIdentity,
-    elfSha256: probe.symbol.elfSha256, symbol: probe.symbol,
+    elfSha256: probe.symbol.elfSha256, hexSha256, symbol: probe.symbol,
     projectGeneration: experimentBinding.projectGeneration,
-    graphIdentity: experimentBinding.graphIdentity, inputIdentity: expected.inputIdentity,
-    caseId,
+    graphIdentity: experimentBinding.graphIdentity, profile: X49_PROFILE,
+    fixtureClass: X49_FIXTURE_CLASS,
+    canonicalInputs: X49_CASES.map(({ caseId, inputIdentity, authored }) =>
+      ({ caseId, inputIdentity, authored })),
   }), cryptoImpl);
 }
 
-export async function validateX49PrivateInit(value, cryptoImpl = globalThis.crypto) {
-  if (!exactKeys(value, ['command', 'manifest', 'hex', 'probe', 'caseId',
+export async function validateX49PrivateInit(value, cryptoImpl = globalThis.crypto,
+  trustedManifest = null) {
+  if (!exactKeys(value, ['command', 'manifest', 'hex', 'hexSha256', 'probe', 'caseId',
     'experimentBinding', 'runtimeBinding', 'receiptNonce']) || value.command !== 'init'
       || typeof value.hex !== 'string' || value.hex.length < 1 || value.hex.length > 2_000_000
+      || !HASH.test(value.hexSha256 ?? '')
       || !NONCE.test(value.receiptNonce ?? '')) reject('X49_PRIVATE_INIT_INVALID');
-  const manifest = await validateX49PrivateManifest(value.manifest, cryptoImpl);
+  const manifest = await validateX49PrivateManifest(value.manifest, cryptoImpl, trustedManifest);
+  if (await x49Sha256(value.hex, cryptoImpl) !== value.hexSha256) reject('X49_PRIVATE_HEX_HASH_INVALID');
   const probe = validateX49RuntimeProbe(value.probe);
   const expected = X49_CASES.find((item) => item.caseId === value.caseId);
   if (!expected) reject('X49_PRIVATE_CASE_INVALID');
@@ -127,7 +138,7 @@ export async function validateX49PrivateInit(value, cryptoImpl = globalThis.cryp
   if (runtimeBinding.schema !== MODEL_RUNTIME_BINDING_SCHEMA) reject('X49_PRIVATE_RUNTIME_BINDING_INVALID');
   const experimentBinding = validateExperiment(value.experimentBinding, probe);
   const context = await x49PrivateExecutionContext({ manifest, probe, experimentBinding,
-    caseId: value.caseId }, cryptoImpl);
+    hexSha256: value.hexSha256 }, cryptoImpl);
   if (runtimeBinding.projectGeneration !== experimentBinding.projectGeneration
       || runtimeBinding.artifactIdentity !== probe.artifactIdentity
       || runtimeBinding.modelImplementationSha256 !== manifest.implementationSha256
@@ -136,7 +147,8 @@ export async function validateX49PrivateInit(value, cryptoImpl = globalThis.cryp
       || experimentBinding.modelExecutionContextSha256 !== context) {
     reject('X49_PRIVATE_BINDING_MISMATCH');
   }
-  return { command: 'init', manifest, hex: value.hex, probe, caseId: value.caseId,
+  return { command: 'init', manifest, hex: value.hex, hexSha256: value.hexSha256,
+    probe, caseId: value.caseId,
     expected: clone(expected), experimentBinding, runtimeBinding,
     receiptNonce: value.receiptNonce };
 }

@@ -6,7 +6,10 @@ import {
   X49InstrumentedObserverCore, X49_WRITE_WITNESS_SCHEMA,
 } from './x49-instrumented-observer-core.mjs';
 import { X49_VIRTUAL_WINDOW } from './x49-sensor-offset.mjs';
-import { X49_PRIVATE_WRITE_LIMIT } from './x49-private-runtime-contract.mjs';
+import {
+  X49_PRIVATE_STARTUP_CYCLE_LIMIT, X49_PRIVATE_STARTUP_WRITE_LIMIT,
+  X49_PRIVATE_WRITE_LIMIT,
+} from './x49-private-runtime-contract.mjs';
 
 const clone = (value) => structuredClone(value);
 const reject = (code) => { throw Object.assign(new Error(code), { code }); };
@@ -37,16 +40,18 @@ export class X49PrivateInstrumentedRuntime {
     this.observer = new X49InstrumentedObserverCore({ probe, caseId, requireWriteWitnesses: true });
     this.probe = clone(probe);
     this.expected = clone(this.observer.expected);
-    if (JSON.stringify(this.observer.read(this.adapter.cpu.data)) !== JSON.stringify([0, 0, 128, 255])) {
-      reject('X49_PRIVATE_MAILBOX_SENTINEL_INVALID');
-    }
     this.inputAppliedCycle = this.adapter.cpu.cycles;
     if (this.inputAppliedCycle !== 0) reject('X49_PRIVATE_INPUT_CYCLE_INVALID');
     this.adapter.setAnalogChannel(1, this.expected.calculated.modelVoltage);
     this.adapter.setDigitalPin(2, false);
     this.priorHooks = [];
     this.stepWrites = [];
+    this.startupWrites = [];
+    this.startupOffsets = new Set();
     this.retainedWrites = [];
+    this.startupArmed = false;
+    this.startupOverflow = false;
+    this.writeOverflow = false;
     this.hooksInstalled = false;
     this.transactionCaptured = false;
     this.terminal = null;
@@ -61,14 +66,27 @@ export class X49PrivateInstrumentedRuntime {
       const prior = this.adapter.cpu.writeHooks[address] ?? null;
       this.priorHooks.push({ address, prior });
       this.adapter.cpu.writeHooks[address] = (value, oldValue, writtenAddress, mask) => {
-        if (this.retainedWrites.length >= X49_PRIVATE_WRITE_LIMIT) {
-          this.#finish('incomplete', 'dropped-evidence', null);
-        } else if (!this.terminal) {
+        const truthful = writtenAddress === address && mask === 255
+          && this.adapter.cpu.data[address] === oldValue
+          && [value, oldValue].every((item) => Number.isInteger(item) && item >= 0 && item <= 255);
+        const intercepted = prior ? prior(value, oldValue, writtenAddress, mask) : false;
+        if (!intercepted && !this.terminal) {
+          if (!truthful) reject('X49_WRITE_WITNESS_INVALID');
           const witness = { schema: X49_WRITE_WITNESS_SCHEMA, offset, oldValue, value, mask,
             pc: this.adapter.cpu.pc, cycle: this.adapter.cpu.cycles };
-          this.stepWrites.push(witness); this.retainedWrites.push(witness);
+          if (!this.startupArmed) {
+            if (this.startupWrites.length >= X49_PRIVATE_STARTUP_WRITE_LIMIT) {
+              this.startupOverflow = true;
+            } else {
+              this.startupWrites.push(witness); this.startupOffsets.add(offset);
+            }
+          } else if (this.retainedWrites.length >= X49_PRIVATE_WRITE_LIMIT) {
+            this.writeOverflow = true;
+          } else {
+            this.stepWrites.push(witness); this.retainedWrites.push(witness);
+          }
         }
-        return prior ? prior(value, oldValue, writtenAddress, mask) : false;
+        return intercepted;
       };
     }
     this.hooksInstalled = true;
@@ -121,6 +139,21 @@ export class X49PrivateInstrumentedRuntime {
     const result = this.adapter.step();
     if (this.terminal) return { terminal: clone(this.terminal), newlyTerminal: true };
     const after = this.observer.read(this.adapter.cpu.data);
+    if (this.startupOverflow || this.writeOverflow) {
+      return this.#finish('incomplete', 'dropped-evidence', this.#evidence(null));
+    }
+    if (!this.startupArmed) {
+      if (this.adapter.cpu.cycles > X49_PRIVATE_STARTUP_CYCLE_LIMIT) {
+        return this.#finish('incomplete', 'missing-evidence', this.#evidence(null));
+      }
+      if (JSON.stringify(after) === JSON.stringify([0, 0, 128, 255])) {
+        if (this.startupOffsets.size !== this.probe.symbol.size) {
+          return this.#finish('incomplete', 'missing-evidence', this.#evidence(null));
+        }
+        this.startupArmed = true;
+      }
+      return { terminal: null, newlyTerminal: false };
+    }
     const latest = [...(this.adapter.adcReads ?? [])].reverse()
       .find((item) => item.channel === 1 && item.completionCycle !== null);
     const latestAdc = adcObservation(latest);
@@ -175,6 +208,7 @@ export class X49PrivateInstrumentedRuntime {
   snapshot() {
     return { caseId: this.expected.caseId, inputIdentity: this.expected.inputIdentity,
       cycle: this.adapter?.cpu?.cycles ?? null, transactionCaptured: this.transactionCaptured,
+      startupArmed: this.startupArmed, startupWrites: this.startupWrites.length,
       retainedMailboxWrites: this.retainedWrites.length, hooksInstalled: this.hooksInstalled,
       disposed: this.disposed, terminal: this.terminal ? clone(this.terminal) : null };
   }

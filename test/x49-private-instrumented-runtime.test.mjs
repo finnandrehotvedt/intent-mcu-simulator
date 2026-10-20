@@ -17,7 +17,7 @@ const probe = () => ({ schema: X49_RUNTIME_PROBE_SCHEMA,
 class FakeAdapter {
   constructor(events, priorHook = null) {
     this.cpu = { data: new Uint8Array(0x900), writeHooks: [], cycles: 0, pc: 0 };
-    this.cpu.data.set([0, 0, 128, 255], 0x100); this.adcReads = [];
+    this.adcReads = [];
     this.retentionDrops = { logic: 0, serial: 0, adc: 0, unsupported: 0 };
     this.events = events.map((item) => structuredClone(item)); this.d13 = false;
     if (priorHook) this.cpu.writeHooks[0x101] = priorHook;
@@ -43,6 +43,10 @@ class FakeAdapter {
 function events({ temperature = 29, d13 = true, lowUnchanged = false, adcValue = 409 } = {}) {
   const low = lowUnchanged ? 0 : temperature & 0xff;
   return [
+    { cycle: 10, writes: [{ offset: 0, value: 0 }] },
+    { cycle: 20, writes: [{ offset: 1, value: 0 }] },
+    { cycle: 30, writes: [{ offset: 2, value: 128 }] },
+    { cycle: 40, writes: [{ offset: 3, value: 255 }] },
     { cycle: 100, adc: { channel: 1, value: adcValue, startCycle: 80,
       completionCycle: 90 }, writes: [{ offset: 0, value: 1 }] },
     { cycle: 110, writes: [{ offset: 1, value: low }] },
@@ -60,9 +64,25 @@ function runtime({ sequence = events(), priorHook = null, caseId = 'baseline-off
   return { value, adapter };
 }
 
+test('zeroed SRAM arms only after four genuine ordered CRT sentinel stores', () => {
+  const { value, adapter } = runtime();
+  assert.equal(adapter.cpu.cycles, 0);
+  assert.deepEqual(adapter.analogue, { channel: 1, voltage: 2 });
+  assert.deepEqual(adapter.digital, { pin: 2, level: false });
+  assert.deepEqual([...adapter.cpu.data.slice(0x100, 0x104)], [0, 0, 0, 0]);
+  for (let index = 0; index < 3; index += 1) {
+    assert.equal(value.step().terminal, null); assert.equal(value.snapshot().startupArmed, false);
+  }
+  assert.equal(value.step().terminal, null);
+  assert.equal(value.snapshot().startupArmed, true);
+  assert.equal(value.snapshot().startupWrites, 4);
+  assert.equal(value.snapshot().retainedMailboxWrites, 0);
+  assert.deepEqual([...adapter.cpu.data.slice(0x100, 0x104)], [0, 0, 128, 255]);
+});
+
 test('early first transaction is retained but cannot qualify before an actual 160ms sample', () => {
   const { value } = runtime();
-  for (let index = 0; index < 5; index += 1) assert.equal(value.step().terminal, null);
+  for (let index = 0; index < 9; index += 1) assert.equal(value.step().terminal, null);
   assert.equal(value.snapshot().transactionCaptured, true);
   assert.equal(value.snapshot().cycle, 140);
   const result = value.step();
@@ -76,7 +96,7 @@ test('early first transaction is retained but cannot qualify before an actual 16
 test('fresh +1 case joins ADC414, mailbox 30 and D13 low at the qualifying sample', () => {
   const { value } = runtime({ caseId: 'offset-plus-1',
     sequence: events({ temperature: 30, d13: false, adcValue: 414 }) });
-  for (let index = 0; index < 6; index += 1) value.step();
+  for (let index = 0; index < 10; index += 1) value.step();
   const evidence = value.snapshot().terminal.evidence;
   assert.equal(evidence.adc.value, 414);
   assert.equal(evidence.firmwareTransaction.temperatureC, 30);
@@ -88,9 +108,9 @@ test('exact hooks witness unchanged stores, preserve prior hook and dispose rest
   let priorCalls = 0; const prior = () => { priorCalls += 1; return false; }; const { value, adapter } = runtime({
     sequence: events({ temperature: 0, lowUnchanged: true }), priorHook: prior,
   });
-  for (let index = 0; index < 6; index += 1) value.step();
+  for (let index = 0; index < 10; index += 1) value.step();
   assert.equal(value.snapshot().terminal.state, 'complete');
-  assert.equal(priorCalls, 1);
+  assert.equal(priorCalls, 2);
   const terminal = value.dispose();
   assert.equal(terminal.newlyTerminal, false);
   assert.equal(adapter.cpu.writeHooks[0x101], prior);
@@ -99,14 +119,34 @@ test('exact hooks witness unchanged stores, preserve prior hook and dispose rest
 
 test('an intercepting prior hook cannot forge a mailbox write witness', () => {
   const { value } = runtime({ priorHook: () => true });
-  value.step();
-  assert.throws(() => value.step(), { code: 'X49_WRITE_WITNESS_INVALID' });
+  for (let index = 0; index < 4; index += 1) value.step();
+  assert.equal(value.snapshot().terminal.reason, 'missing-evidence');
+  assert.equal(value.snapshot().startupArmed, false);
+});
+
+test('a prior hook may observe startup but an intercepted transaction store is never witnessed', () => {
+  let calls = 0; const prior = () => { calls += 1; return calls > 1; };
+  const { value } = runtime({ priorHook: prior });
+  for (let index = 0; index < 9; index += 1) value.step();
+  assert.equal(value.snapshot().terminal.reason, 'truncated-evidence');
+  assert.equal(calls, 2);
+});
+
+test('startup witness retention is finite before the sentinel can arm', () => {
+  const sequence = Array.from({ length: 17 }, (_, index) =>
+    ({ cycle: index + 1, writes: [{ offset: index % 4, value: 0 }] }));
+  const { value } = runtime({ sequence });
+  while (!value.snapshot().terminal) value.step();
+  assert.equal(value.snapshot().terminal.reason, 'dropped-evidence');
+  assert.equal(value.snapshot().startupArmed, false);
 });
 
 test('missing commit, hook overflow, cancellation and post-terminal cancellation never double-terminal', () => {
-  const missing = runtime({ sequence: [{ cycle: 5_600_001 }] }).value;
+  const missing = runtime({ sequence: [...events().slice(0, 4), { cycle: 5_600_001 }] }).value;
+  for (let index = 0; index < 4; index += 1) missing.step();
   assert.equal(missing.step().terminal.reason, 'window-expired');
-  const overflowEvents = [{ cycle: 100, adc: { channel: 1, value: 409, startCycle: 80,
+  const overflowEvents = [...events().slice(0, 4), { cycle: 100,
+    adc: { channel: 1, value: 409, startCycle: 80,
     completionCycle: 90 }, writes: [{ offset: 0, value: 1 }] }];
   for (let index = 0; index < 9; index += 1) overflowEvents.push({ cycle: 110 + index,
     writes: [{ offset: 1, value: index }] });
@@ -116,6 +156,6 @@ test('missing commit, hook overflow, cancellation and post-terminal cancellation
   const cancelled = runtime().value;
   assert.equal(cancelled.cancel().newlyTerminal, true);
   assert.equal(cancelled.cancel().newlyTerminal, false);
-  const completed = runtime().value; for (let index = 0; index < 6; index += 1) completed.step();
+  const completed = runtime().value; for (let index = 0; index < 10; index += 1) completed.step();
   assert.equal(completed.cancel().newlyTerminal, false);
 });

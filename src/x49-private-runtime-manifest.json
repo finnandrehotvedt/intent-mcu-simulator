@@ -5,15 +5,15 @@
   "runtimeMembers": [
     {
       "path": "src/x49-private.worker.mjs",
-      "sha256": "72139d41970f9076ab9c66c7405ab5a9625a45494982244fee1743777847024e"
+      "sha256": "9c6b762aaec00eac3523c7608dc49edc622d65ca57617948275a1cea359445e7"
     },
     {
       "path": "src/x49-private-instrumented-runtime.mjs",
-      "sha256": "85b94c6ecc28fa5bf1ddc3de43e8193e73523058981a2a2a0ab620e80e8d4297"
+      "sha256": "26e3d9e25e545171a0c433d16396ecae1f2e1dc54cd65a67d18145d89ef2055d"
     },
     {
       "path": "src/x49-private-runtime-contract.mjs",
-      "sha256": "a3b5721c5fe9d1990175a66be70d7b5303ba7c02f0db271deb1a616fe206ad13"
+      "sha256": "1df4a9fb04ffd0a378aa856f9beda7369422b317990e1584ea591ca2a0081544"
     },
     {
       "path": "src/atmega328p-adapter.mjs",
@@ -71,13 +71,13 @@
     },
     {
       "path": "scripts/generate-x49-private-runtime-manifest.mjs",
-      "sha256": "6eb19543f26b601fd33f14a536870ad7208554c52f668a040828e13bb052c088"
+      "sha256": "aa78a3121f32f1fc2db00368599e29bd4310c65a470e4c631085ee17e88ea8f2"
     }
   ],
   "externalContracts": [
     "avr8js@0.21.1"
   ],
-  "implementationSha256": "c687902b0700eb1f98bd5766493814e29e868f5ffb0115149f9aa9d58f11c11d",
-  "evidenceToolSha256": "8d5f4327108419b8a80065f6320119f249247b8a6db263f645e35d0538364a1d",
-  "semanticSha256": "b3fda7198a62299afc0f409b1d0922efedde6e9ffb098208bd3bc61a05b2e03e"
+  "implementationSha256": "29ba15295fa536220d78b0aa17416816851f6c53b9d337f562666d231c5594e0",
+  "evidenceToolSha256": "8fc7a44096b92aab6362c70367aad905274153f9da34dd236f9c187c03917306",
+  "semanticSha256": "9108c539742a40a28785dcd8e13e784305055be3d08926b8468de0b49ec3b16e"
 }

@@ -22,6 +22,7 @@ test('generated private runtime and evidence-tool closures are exact and fresh',
     ['scripts/generate-x49-private-runtime-manifest.mjs'], { cwd: repository });
   const result = JSON.parse(stdout); assert.equal(result.runtimeMembers, 15);
   assert.equal(result.evidenceToolMembers, 2);
+  assert.equal(result.trustAnchors, 1);
   const manifest = JSON.parse(await readFile(new URL('../src/x49-private-runtime-manifest.json', import.meta.url)));
   assert.deepEqual(manifest.runtimeMembers.map((item) => item.path), [...X49_PRIVATE_RUNTIME_MEMBERS]);
   assert.deepEqual(manifest.evidenceToolMembers.map((item) => item.path), [...X49_PRIVATE_TOOL_MEMBERS]);

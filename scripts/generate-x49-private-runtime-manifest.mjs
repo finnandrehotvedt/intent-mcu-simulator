@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import {
   X49_PRIVATE_EXTERNAL_CONTRACTS, X49_PRIVATE_IMPLEMENTATION_ID,
   X49_PRIVATE_IMPLEMENTATION_VERSION, X49_PRIVATE_MANIFEST_SCHEMA,
-  X49_PRIVATE_RUNTIME_MEMBERS, X49_PRIVATE_TOOL_MEMBERS,
+  X49_PRIVATE_RUNTIME_MEMBERS, X49_PRIVATE_TOOL_MEMBERS, X49_PRIVATE_TRUST_ANCHOR,
 } from '../src/x49-private-runtime-contract.mjs';
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -44,7 +44,8 @@ async function closure() {
     seen.add(path);
     pending.push(...await importsFor(path));
   }
-  const actual = [...seen].sort(); const expected = [...X49_PRIVATE_RUNTIME_MEMBERS].sort();
+  const actual = [...seen].sort(); const expected = [...X49_PRIVATE_RUNTIME_MEMBERS,
+    X49_PRIVATE_TRUST_ANCHOR].sort();
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
     throw new Error(`X49_PRIVATE_CLOSURE_MISMATCH:${JSON.stringify({ actual, expected })}`);
   }
@@ -72,4 +73,4 @@ else {
 }
 console.log(JSON.stringify({ implementationSha256, evidenceToolSha256,
   semanticSha256: manifest.semanticSha256, runtimeMembers: runtimeMembers.length,
-  evidenceToolMembers: evidenceToolMembers.length }));
+  evidenceToolMembers: evidenceToolMembers.length, trustAnchors: 1 }));
