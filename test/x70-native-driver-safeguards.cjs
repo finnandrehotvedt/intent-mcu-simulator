@@ -161,8 +161,11 @@ async function picoMetrics(page, timeoutMs) {
 
 function assertPicoNativeIdentity(state) {
   const expected = EXPECTED_PICO_NATIVE_IDENTITY;
-  const artifactIdentity = state?.artifact?.artifactIdentity;
-  if (state?.profile !== expected.profile || !/^[0-9a-f]{64}$/u.test(artifactIdentity ?? '')
+  const compileArtifactIdentity = state?.artifact?.artifactIdentity;
+  const artifactIdentity = state?.artifact?.uf2Sha256;
+  if (state?.profile !== expected.profile
+      || !/^[0-9a-f]{64}$/u.test(compileArtifactIdentity ?? '')
+      || !/^[0-9a-f]{64}$/u.test(artifactIdentity ?? '')
       || state?.runtime?.artifactIdentity !== artifactIdentity) {
     throw new Error('X70_PICO_NATIVE_ARTIFACT_IDENTITY');
   }
@@ -183,7 +186,9 @@ function assertPicoNativeIdentity(state) {
       || !Number.isSafeInteger(state.runtime.instructions) || state.runtime.instructions < 0) {
     throw new Error('X70_PICO_RUNTIME_COUNTERS');
   }
-  return { artifactIdentity, modelLibrary: structuredClone(state.modelLibrary),
+  return { artifactIdentity, compileArtifactIdentity,
+    sourceSha256: state.artifact.sourceSha256,
+    modelLibrary: structuredClone(state.modelLibrary),
     runtimeEngine: structuredClone(state.runtime.runtimeEngine),
     presentation: structuredClone(presentation), cycle: state.runtime.cycle,
     instructions: state.runtime.instructions };
@@ -288,6 +293,12 @@ async function pausePicoWithObservation(page, click, {
   }
   return { ...observed, state: identity, stableAfterMs: stabilityMs, stable };
 }
+
+const PICO_QUICK_EMERGENCY_OPTIONS = Object.freeze({
+  pauseSelector: '#quick-pause',
+  stopSelector: '#quick-stop',
+  stateSelector: '#pico-state',
+});
 
 async function emergencyPauseStop(page, {
   pauseSelector = '#pico-pause',
@@ -407,6 +418,7 @@ module.exports = {
   ACTIVE_EXPORT_REJECTION_STATUS,
   EXPECTED_PICO_NATIVE_IDENTITY,
   POSITIVE_EXPORT_STATUS,
+  PICO_QUICK_EMERGENCY_OPTIONS,
   DriverDeadlineError,
   armExactText,
   assertPicoNativeIdentity,

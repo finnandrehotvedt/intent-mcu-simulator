@@ -40,7 +40,8 @@ test('native Pico identity requires the new manifest, implementation, runtime an
   const artifactIdentity = 'a'.repeat(64);
   const state = {
     profile: EXPECTED_PICO_NATIVE_IDENTITY.profile,
-    artifact: { artifactIdentity },
+    artifact: { artifactIdentity: 'b'.repeat(64), uf2Sha256: artifactIdentity,
+      sourceSha256: 'c'.repeat(64) },
     modelLibrary: structuredClone(EXPECTED_PICO_NATIVE_IDENTITY.modelLibrary),
     runtime: { artifactIdentity,
       runtimeEngine: structuredClone(EXPECTED_PICO_NATIVE_IDENTITY.runtimeEngine),
@@ -49,6 +50,7 @@ test('native Pico identity requires the new manifest, implementation, runtime an
         generation: 2, sequence: 1, final: false } },
   };
   assert.equal(assertPicoNativeIdentity(state).artifactIdentity, artifactIdentity);
+  assert.equal(assertPicoNativeIdentity(state).compileArtifactIdentity, 'b'.repeat(64));
   state.modelLibrary.version = '2.0.0-x56-current';
   assert.throws(() => assertPicoNativeIdentity(state), /X70_PICO_MODEL_IDENTITY_version/u);
 });

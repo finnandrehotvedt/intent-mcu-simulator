@@ -7,7 +7,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/runner/node_modules', 'playwright'));
 const {
-  ACTIVE_EXPORT_REJECTION_STATUS, EXPECTED_PICO_NATIVE_IDENTITY, armExactText, boundedBrowserCleanup,
+  ACTIVE_EXPORT_REJECTION_STATUS, EXPECTED_PICO_NATIVE_IDENTITY, PICO_QUICK_EMERGENCY_OPTIONS,
+  armExactText, boundedBrowserCleanup,
   clickAndWaitExact, emergencyPauseStop, installPicoDriverInstrumentation,
   observeDownloads, observeSustainedPico, pausePicoWithObservation,
 } = require('./x70-native-driver-safeguards.cjs');
@@ -30,7 +31,7 @@ const sha256 = (source) => crypto.createHash('sha256').update(source).digest('he
   let stalledEmergency = null;
   try {
     await rejectionPage.setContent(`<!doctype html><button id="accessible-svg-export">Export</button>
-      <button id="pico-pause">Pause</button><button id="pico-stop">Stop</button>
+      <button id="quick-pause">Pause</button><button id="quick-stop">Stop</button>
       <p id="accessible-svg-status">Ready</p><p id="pico-state">running</p>
       <script>
         document.querySelector('#accessible-svg-export').addEventListener('click', () => {
@@ -43,7 +44,7 @@ const sha256 = (source) => crypto.createHash('sha256').update(source).digest('he
           }
           document.querySelector('#accessible-svg-status').textContent = ${JSON.stringify(ACTIVE_EXPORT_REJECTION_STATUS)};
         });
-        document.querySelector('#pico-pause').addEventListener('click', () => {
+        document.querySelector('#quick-pause').addEventListener('click', () => {
           document.querySelector('#pico-state').textContent = 'paused';
           const prior = window.__RP2040_PUBLIC_STATE__;
           window.__RP2040_PUBLIC_STATE__ = { ...prior, phase: 'paused', runtime: {
@@ -51,7 +52,7 @@ const sha256 = (source) => crypto.createHash('sha256').update(source).digest('he
               generation: prior.runtime.presentation.generation + 1, sequence: 1, final: true },
           } };
         });
-        document.querySelector('#pico-stop').addEventListener('click', () => {
+        document.querySelector('#quick-stop').addEventListener('click', () => {
           document.querySelector('#pico-state').textContent = 'editing';
         });
       </script>`);
@@ -59,7 +60,8 @@ const sha256 = (source) => crypto.createHash('sha256').update(source).digest('he
       const artifactIdentity = 'a'.repeat(64);
       window.__RP2040_PUBLIC_STATE__ = {
         profile: expected.profile, phase: 'running',
-        artifact: { artifactIdentity }, modelLibrary: expected.modelLibrary,
+        artifact: { artifactIdentity: 'b'.repeat(64), uf2Sha256: artifactIdentity,
+          sourceSha256: 'c'.repeat(64) }, modelLibrary: expected.modelLibrary,
         runtime: { artifactIdentity, runtimeEngine: expected.runtimeEngine,
           cycle: 1000, instructions: 10, paused: false,
           presentation: { schema: 'intent-mcu-rp2040-presentation@1', artifactIdentity,
@@ -76,7 +78,7 @@ const sha256 = (source) => crypto.createHash('sha256').update(source).digest('he
     await rejectionPage.waitForTimeout(100);
     assert.equal(rejectionDownloads.count(), 0);
     const paused = await pausePicoWithObservation(rejectionPage,
-      () => rejectionPage.click('#pico-pause'), { timeoutMs: 1_000, stabilityMs: 20,
+      () => rejectionPage.click('#quick-pause'), { timeoutMs: 1_000, stabilityMs: 20,
         priorObservation: { artifactIdentity: 'a'.repeat(64),
           presentation: { generation: 3 } } });
     assert.equal(paused.matchedInitially, false);
@@ -98,7 +100,8 @@ const sha256 = (source) => crypto.createHash('sha256').update(source).digest('he
     assert.equal(sustained.presentationMessages, 0);
     assert.equal(rejectionDownloads.count(), 1);
     await rejectionPage.evaluate(() => { document.querySelector('#pico-state').textContent = 'running'; });
-    const successfulEmergency = await emergencyPauseStop(rejectionPage, { actionTimeoutMs: 250 });
+    const successfulEmergency = await emergencyPauseStop(rejectionPage,
+      { ...PICO_QUICK_EMERGENCY_OPTIONS, actionTimeoutMs: 250 });
     assert.equal(successfulEmergency.status, 'paused');
     await rejectionPage.close();
 

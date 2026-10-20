@@ -7,7 +7,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/runner/node_modules', 'playwright'));
 const {
-  ACTIVE_EXPORT_REJECTION_STATUS, POSITIVE_EXPORT_STATUS, armExactText,
+  ACTIVE_EXPORT_REJECTION_STATUS, POSITIVE_EXPORT_STATUS, PICO_QUICK_EMERGENCY_OPTIONS, armExactText,
   boundedBrowserCleanup, boundedPageCapture, clickAndWaitExact, emergencyPauseStop,
   hardDeadline, installPicoDriverInstrumentation, observeDownloads,
   observeSustainedPico, pausePicoWithObservation,
@@ -457,7 +457,8 @@ async function reopenAuthoredProject(page, profile, setStage = () => {}) {
     fs.writeFileSync(path.join(evidenceDir, 'result.json'), `${JSON.stringify(result, null, 2)}\n`);
     process.stdout.write(`${JSON.stringify(result)}\n`);
   } catch (error) {
-    const emergency = await emergencyPauseStop(page);
+    const emergency = await emergencyPauseStop(page,
+      stage.startsWith('pico:') ? PICO_QUICK_EMERGENCY_OPTIONS : undefined);
     const captured = await boundedPageCapture(page, {
       stage, error: { message: error.message, stack: error.stack },
       producerActivity: { builds, runs, scenarios: 0 }, emergency,
@@ -471,7 +472,8 @@ async function reopenAuthoredProject(page, profile, setStage = () => {}) {
     process.stdout.write(`${JSON.stringify({ result: 'expected-zero-producer-failure',
       producerActivity: { builds, runs, scenarios: 0 }, holdStatus: hold.status })}\n`);
   } finally {
-    const finalSafety = await emergencyPauseStop(page);
+    const finalSafety = await emergencyPauseStop(page,
+      stage.startsWith('pico:') ? PICO_QUICK_EMERGENCY_OPTIONS : undefined);
     const cleanup = await boundedBrowserCleanup({ pages: [page], contexts: [context], browser });
     writeJson(path.join(evidenceDir, 'driver-cleanup.json'), { finalSafety, cleanup });
   }
