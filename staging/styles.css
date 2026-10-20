@@ -107,6 +107,10 @@ h2 { font-size: 1.22rem; margin: 0; }
 .top-workbench-toolbar { display: grid; grid-template-columns: auto minmax(520px,1fr) auto; gap: 12px; align-items: center; min-height: 48px; padding: 6px 10px; border: 1px solid #315c72; border-radius: 12px; background: linear-gradient(145deg,#0c2637,#081722); box-shadow: 0 12px 32px #0005; }
 .top-workbench-identity .eyebrow { margin-bottom: 2px; font-size: .58rem; }
 .top-workbench-identity h2 { font-size: 1rem; white-space: nowrap; }
+.workbench-view-switch { display: inline-grid; grid-template-columns: repeat(2,1fr); gap: 2px; margin-top: 5px; padding: 2px; border: 1px solid #315c72; border-radius: 8px; background: #06131e; }
+.workbench-view-switch button { min-height: 25px; padding: 2px 8px; border: 0; border-radius: 5px; color: var(--muted); background: transparent; font-size: .62rem; }
+.workbench-view-switch button[aria-pressed="true"] { color: #06111a; background: var(--lime); }
+.workbench-view-switch button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
 .top-controller-controls { min-width: 0; }
 .top-controller-controls .controller-profile-picker { display: grid; grid-template-columns: auto minmax(110px,150px) auto minmax(210px,1fr); gap: 4px 7px; align-items: center; }
 .top-controller-controls .controller-profile-picker label { margin: 0; color: var(--muted); font-size: .62rem; font-weight: 800; }
@@ -120,6 +124,17 @@ h2 { font-size: 1.22rem; margin: 0; }
 .workbench-popup-controls button { min-height: 32px; padding: 4px 7px; overflow: hidden; font-size: .7rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .workbench-popup-controls button[aria-expanded="true"] { color: #06111a; background: var(--cyan); border-color: var(--cyan); }
 .build-list-status { min-width: 0; margin: 0; padding: 2px 10px; overflow: hidden; border: 1px solid #29495b; border-radius: 8px; color: var(--muted); background: #071620; font-size: .66rem; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+body[data-workbench-view="simple"] #brief-tests-open,
+body[data-workbench-view="simple"] #build-list-export,
+body[data-workbench-view="simple"] #accessible-svg-export,
+body[data-workbench-view="simple"] #build-list-status,
+body[data-workbench-view="simple"] #accessible-svg-status,
+body[data-workbench-view="simple"] #local-history,
+body[data-workbench-view="simple"] #project-navigation,
+body[data-workbench-view="simple"] #project-brief,
+body[data-workbench-view="simple"] #prompt-drawer,
+body[data-workbench-view="simple"] #thermostat-experiment,
+body[data-workbench-view="simple"] #regression-matrix { display: none !important; }
 .active-canvas-stage { min-width: 0; border: 1px solid #315c72; border-radius: 14px; background: #07141f; box-shadow: 0 18px 50px #0006; overflow: hidden; }
 #active-canvas-mount { min-width: 0; }
 #active-canvas-mount > [data-shared-surface="canvas"],

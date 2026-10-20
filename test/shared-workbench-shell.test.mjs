@@ -14,6 +14,7 @@ import {
   SHARED_WORKBENCH_SCHEMA,
   SHARED_WORKBENCH_DIALOGS,
   SHARED_WORKBENCH_SURFACES,
+  SHARED_WORKBENCH_VIEW_MODES,
   sharedWorkbenchAdapters,
 } from '../src/shared-workbench-shell.mjs';
 
@@ -56,6 +57,26 @@ test('top workbench exposes exactly seven accessible popup surfaces around one r
   assert.doesNotMatch(shell, /cloneNode/);
   assert.match(css, /height:\s*max\(560px,\s*calc\(100vh - 200px\)\)/);
   assert.match(css, /max-height:\s*88vh/);
+});
+
+test('X59 declares a finite presentation-only Simple and Advanced switch outside model data', async () => {
+  assert.deepEqual(SHARED_WORKBENCH_VIEW_MODES, ['simple', 'advanced']);
+  const [html, shell, css, modelGenerator] = await Promise.all([
+    readFile(new URL('../staging/index.html', import.meta.url), 'utf8'),
+    readFile(new URL('../src/shared-workbench-shell.mjs', import.meta.url), 'utf8'),
+    readFile(new URL('../staging/styles.css', import.meta.url), 'utf8'),
+    readFile(new URL('../scripts/generate-model-library-snapshots.mjs', import.meta.url), 'utf8'),
+  ]);
+  assert.match(html, /body data-workbench-view="advanced"/);
+  assert.match(html, /id="workbench-view-simple"[^>]+aria-pressed="false"/);
+  assert.match(html, /id="workbench-view-advanced"[^>]+aria-pressed="true"/);
+  assert.match(shell, /SHARED_WORKBENCH_VIEW_MODE_UNKNOWN/);
+  assert.match(shell, /viewMode\(\) \{ return viewMode; \}/);
+  assert.match(shell, /activePopup === 'brief'/);
+  assert.doesNotMatch(shell, /localStorage|sessionStorage|indexedDB/u);
+  assert.match(css, /body\[data-workbench-view="simple"\][^}]+#regression-matrix/s);
+  assert.doesNotMatch(css, /data-workbench-view="simple"[^}]+#firmware-open/s);
+  assert.doesNotMatch(modelGenerator, /shared-workbench-shell\.mjs/u);
 });
 
 test('unsupported common controls carry profile-specific truthful reasons', () => {

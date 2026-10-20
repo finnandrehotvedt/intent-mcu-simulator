@@ -16,6 +16,7 @@ export const SHARED_WORKBENCH_SURFACES = Object.freeze([
 export const SHARED_WORKBENCH_DIALOGS = Object.freeze([
   'project', 'parts', 'inspector', 'firmware', 'brief', 'instruments', 'help',
 ]);
+export const SHARED_WORKBENCH_VIEW_MODES = Object.freeze(['simple', 'advanced']);
 
 const adapters = Object.freeze({
   [AVR_PROFILE]: Object.freeze({
@@ -469,6 +470,22 @@ export function mountSharedWorkbenchShell(document) {
   let activeCanvas = null;
   let activePopup = null;
   let returnFocus = null;
+  let viewMode = 'advanced';
+
+  const viewButtons = Object.freeze({
+    simple: document.querySelector('#workbench-view-simple'),
+    advanced: document.querySelector('#workbench-view-advanced'),
+  });
+  const viewStatus = document.querySelector('#workbench-view-status');
+  if (Object.values(viewButtons).some((node) => !node) || !viewStatus) {
+    throw new Error('SHARED_WORKBENCH_VIEW_SWITCH_MISSING');
+  }
+  const advancedOnlySelector = [
+    '#brief-tests-open', '#build-list-export', '#accessible-svg-export',
+    '#build-list-status', '#accessible-svg-status', '#local-history',
+    '#project-navigation', '#project-brief', '#prompt-drawer',
+    '#thermostat-experiment', '#regression-matrix',
+  ].join(',');
 
   const popupFocusable = (dialog) => [...dialog.querySelectorAll(
     'button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
@@ -496,6 +513,7 @@ export function mountSharedWorkbenchShell(document) {
   };
   const openPopup = (name, requestedOpener = null, { initialFocus = true } = {}) => {
     if (!SHARED_WORKBENCH_DIALOGS.includes(name)) throw new Error('SHARED_WORKBENCH_DIALOG_UNKNOWN');
+    if (viewMode === 'simple' && name === 'brief') return false;
     if (activePopup) closePopup({ restoreFocus: false });
     const popup = popupByName.get(name);
     for (const node of profileNodes(activeProfile)[name]) popup.mount.append(node);
@@ -509,6 +527,34 @@ export function mountSharedWorkbenchShell(document) {
     }
     return true;
   };
+
+  const setViewMode = (nextMode, { focus = false } = {}) => {
+    if (!SHARED_WORKBENCH_VIEW_MODES.includes(nextMode)) {
+      throw new Error('SHARED_WORKBENCH_VIEW_MODE_UNKNOWN');
+    }
+    const focusedAdvancedOnly = document.activeElement?.closest?.(advancedOnlySelector);
+    if (nextMode === 'simple' && activePopup === 'brief') closePopup({ restoreFocus: false });
+    viewMode = nextMode;
+    document.body.dataset.workbenchView = viewMode;
+    for (const [mode, button] of Object.entries(viewButtons)) {
+      button.setAttribute('aria-pressed', String(mode === viewMode));
+    }
+    viewStatus.textContent = viewMode === 'simple'
+      ? 'Simple view keeps the active project, circuit, source, runtime status, instruments, files, limits and diagnostics; advanced review tools are hidden.'
+      : 'Advanced view shows all review and evidence tools.';
+    if (focusedAdvancedOnly || focus) {
+      const dialogClose = activePopup
+        ? popupByName.get(activePopup)?.dialog.querySelector('.workbench-popup-close') : null;
+      queueMicrotask(() => (dialogClose ?? viewButtons[viewMode]).focus({ preventScroll: true }));
+    }
+    document.defaultView?.requestAnimationFrame(() => {
+      document.defaultView?.dispatchEvent(new document.defaultView.Event('resize'));
+    });
+    return viewMode;
+  };
+  for (const [mode, button] of Object.entries(viewButtons)) {
+    button.addEventListener('click', () => setViewMode(mode));
+  }
 
   for (const [name, popup] of popupByName) {
     popup.opener.setAttribute('aria-expanded', 'false');
@@ -606,8 +652,11 @@ export function mountSharedWorkbenchShell(document) {
       return true;
     },
     activeDialog() { return activePopup; },
+    viewMode() { return viewMode; },
+    setViewMode(mode, options = {}) { return setViewMode(mode, options); },
     adapter(profile = activeProfile) { return sharedWorkbenchAdapter(profile); },
   });
+  setViewMode('advanced');
   api.activate(AVR_PROFILE);
   return api;
 }
