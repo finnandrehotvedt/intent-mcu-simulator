@@ -1,4 +1,27 @@
-# Intent MCU Simulator 1.1.0-rc.78
+# Intent MCU Simulator 1.1.0-rc.79
+
+## Local comparison of retained experiment packages
+
+This release publishes the independently reviewed X41 local Before/After
+comparison for canonical strict-v3 experiment packages. Each original file is
+strictly reparsed at Compare time. Both sides must have compatible profile,
+experiment, normalized requirements, scenarios, model library and owners,
+tools, producer context and complete checkable evidence-row identities.
+
+The four compact groups show package/project/source/circuit/artifact/report
+identity, complete literal source differences, validated authored component or
+wire facts and retained measured observations. Reported academic status stays
+labelled as retained package data. The comparison does not infer causality,
+correctness or a winner and creates no verdict.
+
+Package bytes remain transient in the current browser tab. Replacing,
+cancelling or clearing either slot synchronously removes the accepted view;
+reload starts empty. The workflow cannot Apply, Build, Run, replay firmware,
+upload a file, open a server store or restore project/runtime authority.
+
+---
+
+## 1.1.0-rc.78
 
 ## Explicit local version history
 

@@ -5,7 +5,7 @@
 Canonical application: https://lab.teachthecompany.com/
 Source and setup: https://github.com/finnandrehotvedt/intent-mcu-simulator
 Licence: Apache-2.0 for project-owned source; third-party components keep their own terms.
-Current public version: 1.1.0-rc.78
+Current public version: 1.1.0-rc.79
 
 Local files: Download copy and ordinary Open are the reliable all-browser
 actions. Supported secure desktop browsers may additionally offer explicit
@@ -46,6 +46,7 @@ board or parts as interchangeable with another profile.
 - In every controller profile, open Connections in Inspector to inspect every net and named pin as text, then select, delete, reconnect, or create compatible connections with the keyboard under the same strict revision and electrical checks as the canvas.
 - Open Search current project to find and activate current components, named pins, nets, files, source lines, saved requirement/test owners and AVR scenario owners. Search is transient local presentation, makes no search-service request, saves no query/result state and rejects stale project identities.
 - A valid X05 proposal review also shows deterministic typed authored facts for component, property, position, net and saved-test changes plus a complete literal source-file difference. Typed facts come only from the validated project schema and catalogue units. Source remains literal text: the review does not infer what source code means or what firmware will do. This detail view adds no Apply, Build, Run or verdict authority.
+- Compare experiment packages opens one local Before file and one local After file, strictly reparses both canonical v3 packages and shows compatible identity, literal source, authored circuit and retained measured-result facts. Package bytes stay in the tab only. Comparison does not Build, Run, upload, infer causality, choose a winner or create a verdict.
 
 ## Important limits
 

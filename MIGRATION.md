@@ -1,8 +1,15 @@
-# Migration to 1.1.0-rc.78
+# Migration to 1.1.0-rc.79
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.79 changes no project, experiment-package or stored browser schema. The X41
+Before/After comparison holds the two selected canonical package texts and its
+accepted projection only in the current tab. It does not install either
+project, rewrite a package, save comparison state or restore executable,
+runtime, result or verdict authority. Existing learner files require no
+conversion, and reload starts with empty comparison slots.
 
 Rc.78 changes no project schema or stored project semantics. Optional local
 version history is off by default and writes only after explicit opt-in plus an

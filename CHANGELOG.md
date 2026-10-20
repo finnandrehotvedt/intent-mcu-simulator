@@ -2,6 +2,17 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.79 — 2026-10-20
+
+- Published the independently reviewed X41 local comparison for two compatible
+  canonical strict-v3 experiment packages.
+- Added four deterministic Identity, Source, Circuit and Results groups using
+  existing strict package, evidence, literal-diff and authored-change owners.
+- Rejects model/tool/expectation/scenario/evidence drift, tampering, stale
+  slots, incomplete evidence, no-op pairs and bounded-input overflow.
+- Keeps original package bytes in the current tab only and adds no Apply,
+  Build, Run, replay, upload, persistence, causal inference, score or verdict.
+
 ## 1.1.0-rc.78 — 2026-10-20
 
 - Published the independently reviewed X63 optional browser-local version
