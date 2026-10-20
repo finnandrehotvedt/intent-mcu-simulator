@@ -79,6 +79,8 @@ test('X05 review lists source component and wire changes without mutating the cu
   ]);
   assert.equal(reviewed.evaluated, false);
   assert.equal(reviewed.buildAuthority, false);
+  assert.equal(reviewed.authoredChangeReview, null);
+  assert.equal(reviewed.authoredChangeReviewUnavailable, null);
   assert.equal(current, before);
 });
 

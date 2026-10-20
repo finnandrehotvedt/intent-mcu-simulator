@@ -160,6 +160,21 @@ h2 { font-size: 1.22rem; margin: 0; }
 .project-patch-change [data-action="added"] { color: var(--lime); }
 .project-patch-change [data-action="removed"] { color: var(--danger); }
 .project-patch-change [data-action="changed"] { color: var(--amber); }
+.authored-change-review { display: grid; gap: 10px; padding: 12px; border: 1px solid #34809a; border-radius: 12px; background: #05141e; }
+.authored-change-review[hidden] { display: none; }
+.authored-change-review h4, .authored-change-review h5 { margin: 0; color: var(--text); }
+#authored-change-review-summary { color: var(--cyan); font: 700 .72rem ui-monospace, monospace; }
+#authored-change-review-status { margin: 0; color: var(--lime); font-size: .72rem; line-height: 1.5; }
+.authored-change-review-identities { display: grid; grid-template-columns: minmax(110px,.35fr) minmax(0,1fr); gap: 6px 10px; padding: 9px; border: 1px solid #26475b; border-radius: 9px; background: #03101a; }
+.authored-change-review-identities strong { color: var(--cyan); font-size: .66rem; text-transform: uppercase; }
+.authored-change-review-identities code { min-width: 0; color: var(--muted); font-size: .64rem; overflow-wrap: anywhere; }
+.authored-change-review-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.authored-change-review-source { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid #26475b; }
+.authored-change-review-source > p { margin: 0; color: var(--muted); font-size: .7rem; line-height: 1.5; }
+#authored-change-review-diffs { display: grid; gap: 8px; }
+.authored-source-diff { min-width: 0; border: 1px solid #28566d; border-radius: 9px; background: #020a10; }
+.authored-source-diff summary { cursor: pointer; padding: 9px 10px; color: var(--cyan); font: 800 .7rem/1.4 ui-monospace, monospace; overflow-wrap: anywhere; }
+.authored-source-diff pre { max-height: 420px; margin: 0; padding: 11px; overflow: auto; white-space: pre; color: #d8e8ef; background: #010609; font: .68rem/1.5 ui-monospace, monospace; tab-size: 2; }
 @media (max-width: 760px) {
   .project-patch-diff-groups { grid-template-columns: 1fr; }
 }

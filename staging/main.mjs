@@ -264,6 +264,7 @@ import {
   projectTextSha256,
   reviewProjectPatch,
 } from '../src/project-patch.mjs';
+import { AUTHORED_CHANGE_REVIEW_SCHEMA } from '../src/authored-change-review.mjs';
 import {
   EXPECTATION_REFERENCE_LIMIT,
   EXPECTATION_REFERENCE_SCHEMA,
@@ -406,6 +407,10 @@ const elements = Object.fromEntries([
   'project-patch-input', 'project-patch-review', 'project-patch-apply', 'project-patch-status',
   'project-patch-changes', 'project-patch-summary', 'project-patch-implementation-changes',
   'project-patch-expectation-changes', 'expectation-reference-lock', 'expectation-reference-open',
+  'authored-change-review', 'authored-change-review-title', 'authored-change-review-summary',
+  'authored-change-review-status', 'authored-change-review-identities', 'authored-change-review-show-source',
+  'authored-change-review-rows', 'authored-change-review-source', 'authored-change-review-diffs',
+  'authored-change-review-back',
   'expectation-reference-input', 'expectation-reference-status', 'expectation-reference-identity',
   'experiment-package-download', 'experiment-package-state', 'experiment-package-detail',
   'design-comparison-create', 'design-comparison-summary', 'design-comparison-status',
@@ -7378,6 +7383,7 @@ window.__PROJECT_FEASIBILITY__ = Object.freeze({
 });
 let pendingProjectPatch = null;
 let pendingDesignComparison = null;
+let pendingAuthoredChangeReview = null;
 let loadedExpectationReference = null;
 let experimentPackageRefreshToken = 0;
 let experimentPackageUiState = { ready: false, reason: 'AVR thermostat project required', sha256: null };
@@ -7603,8 +7609,19 @@ function clearDesignComparison(message = 'Review a proposal above, then compare 
   elements.designcomparisonalternatives.replaceChildren(empty);
   elements.designcomparisondifferences.replaceChildren();
 }
+function clearAuthoredChangeReview() {
+  pendingAuthoredChangeReview = null;
+  elements.authoredchangereview.hidden = true;
+  elements.authoredchangereviewsummary.textContent = 'No detailed review';
+  elements.authoredchangereviewstatus.textContent = 'Review a valid proposal to inspect exact authored differences.';
+  elements.authoredchangereviewidentities.replaceChildren();
+  elements.authoredchangereviewrows.replaceChildren();
+  elements.authoredchangereviewdiffs.replaceChildren();
+  elements.authoredchangereviewshowsource.disabled = true;
+}
 function clearProjectPatchReview(message = 'No project mutation has been proposed.') {
   pendingProjectPatch = null;
+  clearAuthoredChangeReview();
   elements.projectpatchapply.disabled = true;
   elements.designcomparisoncreate.disabled = true;
   clearDesignComparison();
@@ -7630,6 +7647,51 @@ function patchChangeRows(changes, emptyText) {
     row.append(kind, action, summary); return row;
   });
 }
+function renderAuthoredChangeReview(value, unavailable = null) {
+  if (!value || value.schema !== AUTHORED_CHANGE_REVIEW_SCHEMA) {
+    clearAuthoredChangeReview();
+    if (unavailable?.code) {
+      elements.authoredchangereview.hidden = false;
+      elements.authoredchangereviewsummary.textContent = 'Detailed review unavailable';
+      elements.authoredchangereviewstatus.textContent = `${unavailable.code}. The existing validated X05 review and Apply boundary are unchanged.`;
+    }
+    return;
+  }
+  pendingAuthoredChangeReview = structuredClone(value);
+  elements.authoredchangereview.hidden = false;
+  elements.authoredchangereviewsummary.textContent = `${value.summaryRows.length} authored change${value.summaryRows.length === 1 ? '' : 's'} · ${value.sourceDiffs.length} source file${value.sourceDiffs.length === 1 ? '' : 's'}`;
+  elements.authoredchangereviewstatus.textContent = 'Compared exact reviewed project identities without mutation, execution or inferred source meaning.';
+  const identityRows = [
+    ['Profile', value.profile],
+    ['Current project', value.baseProjectSha256],
+    ['Proposed project', value.candidateProjectSha256],
+  ].flatMap(([label, identity]) => {
+    const heading = document.createElement('strong'); heading.textContent = label;
+    const code = document.createElement('code'); code.textContent = identity;
+    return [heading, code];
+  });
+  elements.authoredchangereviewidentities.replaceChildren(...identityRows);
+  elements.authoredchangereviewrows.replaceChildren(...patchChangeRows(
+    value.summaryRows, 'No authored source, component, wire, test or expectation differences.',
+  ));
+  const diffs = value.sourceDiffs.map((diff) => {
+    const details = document.createElement('details'); details.className = 'authored-source-diff';
+    details.dataset.sourceFile = diff.name; details.dataset.algorithm = diff.algorithm;
+    const summary = document.createElement('summary');
+    summary.textContent = `${diff.name} · ${diff.status} · +${diff.addedLines} / −${diff.removedLines}${diff.minimal ? '' : ' · complete non-minimal replacement'}`;
+    const source = document.createElement('pre'); source.tabIndex = 0;
+    source.setAttribute('aria-label', `Literal source difference for ${diff.name}`);
+    source.textContent = diff.text;
+    details.append(summary, source); return details;
+  });
+  if (!diffs.length) {
+    const empty = document.createElement('p'); empty.className = 'requirement-trace-empty';
+    empty.textContent = 'No authored source file changed. Typed project differences remain visible above.';
+    diffs.push(empty);
+  }
+  elements.authoredchangereviewdiffs.replaceChildren(...diffs);
+  elements.authoredchangereviewshowsource.disabled = value.sourceDiffs.length === 0;
+}
 function renderProjectPatchReview(reviewed) {
   pendingProjectPatch = reviewed;
   elements.projectpatchapply.disabled = reviewed.result.applyBlocked;
@@ -7648,6 +7710,7 @@ function renderProjectPatchReview(reviewed) {
   elements.projectpatchexpectationchanges.replaceChildren(...patchChangeRows(
     reviewed.result.testExpectationChanges, 'No test or expectation changes.',
   ));
+  renderAuthoredChangeReview(reviewed.result.authoredChangeReview, reviewed.result.authoredChangeReviewUnavailable);
 }
 function renderDesignComparison(result) {
   pendingDesignComparison = structuredClone(result);
@@ -7782,6 +7845,13 @@ elements.projectpatchinput.addEventListener('input', () => clearProjectPatchRevi
 elements.projectpatchreview.addEventListener('click', () => { void reviewCurrentProjectPatch(); });
 elements.designcomparisoncreate.addEventListener('click', () => { void compareReviewedProjectDesigns(); });
 elements.projectpatchapply.addEventListener('click', () => { void applyReviewedProjectPatch(); });
+elements.authoredchangereviewshowsource.addEventListener('click', () => {
+  const first = elements.authoredchangereviewdiffs.querySelector('details');
+  if (!first) return;
+  first.open = true;
+  first.querySelector('summary')?.focus();
+});
+elements.authoredchangereviewback.addEventListener('click', () => elements.authoredchangereviewtitle.focus());
 elements.expectationreferencelock.addEventListener('click', () => { void lockCurrentExpectationReference(); });
 elements.experimentpackagedownload.addEventListener('click', () => { void downloadCurrentExperimentPackage(); });
 elements.expectationreferenceopen.addEventListener('click', () => elements.expectationreferenceinput.click());
@@ -7811,6 +7881,10 @@ window.__PROJECT_PATCH__ = Object.freeze({
     evaluated: false,
     buildAuthority: false,
   } : null,
+});
+window.__AUTHORED_CHANGE_REVIEW__ = Object.freeze({
+  schema: AUTHORED_CHANGE_REVIEW_SCHEMA,
+  state: () => pendingAuthoredChangeReview ? structuredClone(pendingAuthoredChangeReview) : null,
 });
 window.__EXPECTATION_REFERENCE__ = Object.freeze({
   schema: EXPECTATION_REFERENCE_SCHEMA,

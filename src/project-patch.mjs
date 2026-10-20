@@ -10,6 +10,10 @@ import {
 import {
   expectationReferenceMatchesPrepared,
 } from './expectation-reference.mjs';
+import {
+  AUTHORED_CHANGE_REVIEW_PROFILES,
+  createAuthoredChangeReview,
+} from './authored-change-review.mjs';
 
 export const PROJECT_PATCH_SCHEMA = 'intent-mcu-project-patch@1';
 export const REFERENCED_PROJECT_PATCH_SCHEMA = 'intent-mcu-project-patch@2';
@@ -228,6 +232,29 @@ export async function reviewProjectPatch(source, currentProjectText, adapters, a
     const changes = [...implementationChanges, ...testExpectationChanges];
     if (!changes.length) return failure('PROJECT_PATCH_NO_CHANGES');
     const applyBlocked = referenced && testExpectationChanges.length > 0;
+    const candidateProjectSha256 = await projectTextSha256(proposed.canonical);
+    let authoredChangeReview = null;
+    let authoredChangeReviewUnavailable = null;
+    if (AUTHORED_CHANGE_REVIEW_PROFILES.includes(activeProfile)) {
+      try {
+        authoredChangeReview = createAuthoredChangeReview({
+          profile: activeProfile,
+          baseProjectSha256: actualBase,
+          candidateProjectSha256,
+          before: current.project,
+          after: proposed.project,
+          testExpectationChanges,
+        });
+      } catch (error) {
+        authoredChangeReviewUnavailable = Object.freeze({
+          code: /^X64_[A-Z0-9_]+$/u.test(error?.code ?? error?.message ?? '')
+            ? (error.code ?? error.message) : 'X64_UNAVAILABLE',
+          details: Array.isArray(error?.details)
+            ? error.details.filter((item) => ['string', 'number', 'boolean'].includes(typeof item)).slice(0, 8)
+            : [],
+        });
+      }
+    }
     return {
       ok: true,
       code: 'PROJECT_PATCH_REVIEWED',
@@ -235,7 +262,7 @@ export async function reviewProjectPatch(source, currentProjectText, adapters, a
       profile: activeProfile,
       description: patch.description,
       baseProjectSha256: actualBase,
-      candidateProjectSha256: await projectTextSha256(proposed.canonical),
+      candidateProjectSha256,
       changes: clone(changes),
       implementationChanges: clone(implementationChanges),
       testExpectationChanges: clone(testExpectationChanges),
@@ -243,6 +270,8 @@ export async function reviewProjectPatch(source, currentProjectText, adapters, a
       expectationReferenceState: referenced ? 'locked' : 'unlocked-v1',
       applyBlocked,
       applyBlockCode: applyBlocked ? 'PROJECT_PATCH_EXPECTATIONS_CHANGED' : null,
+      authoredChangeReview,
+      authoredChangeReviewUnavailable,
       proposed,
       evaluated: false,
       buildAuthority: false,
