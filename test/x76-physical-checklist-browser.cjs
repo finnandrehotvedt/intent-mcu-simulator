@@ -59,6 +59,17 @@ const workbenchState = () => ({
     await page.waitForFunction(() => window.__X76_READY__ === true);
     assert.match(await page.locator('#physical-boundary').textContent(), /Physical evidence absent/u);
 
+    await page.emulateMedia({ media: 'print' });
+    assert.notEqual(await page.locator('.physical-checklist-list').evaluate((element) => getComputedStyle(element).display), 'none');
+    assert.equal(await page.locator('#physical-print-projection').evaluate((element) => getComputedStyle(element).display), 'none');
+    await page.emulateMedia({ media: 'screen' });
+    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+    assert.equal(await page.locator('html').getAttribute('data-physical-print-state'), 'ready');
+    assert.equal(await page.locator('[data-print-item-id]').count(), 6);
+    assert.match(await page.locator('#physical-print-projection').textContent(), /board\.atmega328p-16mhz-v1/u);
+    assert.deepEqual(await page.locator('[data-print-status]').evaluateAll((nodes) => nodes.map((node) => node.dataset.printStatus)),
+      Array(6).fill('manual-not-measured'));
+
     let total = 0;
     for (const [profile, expected] of profiles) {
       await page.locator('#physical-profile').focus();
@@ -252,6 +263,47 @@ const workbenchState = () => ({
     assert.match(await page.locator('footer').textContent(), /no device access, firmware action, automatic verdict or certification/iu);
     await page.screenshot({ path: path.join(evidenceDir, 'x76-private-checklist.png'), fullPage: true });
 
+    await page.emulateMedia({ media: 'screen' });
+    const postButtonValue = 'updated after Print button';
+    await printFirst.locator('[data-observation="value"]').fill(postButtonValue);
+    assert.equal(await page.locator('html').getAttribute('data-physical-print-state'), null);
+    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+    let directPrintText = await page.locator('#physical-print-projection').textContent();
+    assert(directPrintText.includes(postButtonValue));
+    assert(!directPrintText.includes(longValue));
+
+    await page.locator('#physical-profile').selectOption('board.rp2040-pico-v1');
+    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+    directPrintText = await page.locator('#physical-print-projection').textContent();
+    assert(directPrintText.includes('board.rp2040-pico-v1'));
+    assert(!directPrintText.includes(postButtonValue));
+    assert.equal(await page.locator('[data-print-item-id]').count(), 5);
+    assert.deepEqual(await page.locator('[data-print-status]').evaluateAll((nodes) => nodes.map((node) => node.dataset.printStatus)),
+      ['manual-not-measured', 'manual-not-measured', 'manual-not-measured', 'manual-not-measured', 'profile-unavailable']);
+
+    const picoFirst = page.locator('[data-item-id]').first();
+    await picoFirst.locator('[data-item-status]').selectOption('manual-recorded');
+    await picoFirst.locator('[data-observation="value"]').fill('temporary record before Clear');
+    await picoFirst.locator('[data-observation="unit"]').fill('V');
+    await picoFirst.locator('[data-observation="method"]').fill('manual');
+    await page.locator('#physical-clear').click();
+    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+    directPrintText = await page.locator('#physical-print-projection').textContent();
+    assert.match(directPrintText, /Physical evidence absent/u);
+    assert(!directPrintText.includes('temporary record before Clear'));
+
+    await page.locator('#physical-profile').selectOption('board.atmega328p-16mhz-v1');
+    const incompleteFirst = page.locator('[data-item-id="avr-supply-under-load"]');
+    await incompleteFirst.locator('[data-item-status]').selectOption('manual-recorded');
+    await incompleteFirst.locator('[data-observation="value"]').fill('CURRENT INCOMPLETE DRAFT');
+    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+    assert.equal(await page.locator('html').getAttribute('data-physical-print-state'), 'incomplete');
+    directPrintText = await page.locator('#physical-print-projection').textContent();
+    assert.match(directPrintText, /Incomplete manual observation.*current draft.*No earlier accepted record is substituted/isu);
+    assert(directPrintText.includes('CURRENT INCOMPLETE DRAFT'));
+    assert(!directPrintText.includes(postButtonValue));
+    assert.equal(await page.locator('[data-print-item-id]').count(), 6);
+
     await page.reload({ waitUntil: 'networkidle' });
     await page.waitForFunction(() => window.__X76_READY__ === true);
     assert.match(await page.locator('#physical-boundary').textContent(), /Physical evidence absent/u);
@@ -274,6 +326,8 @@ const workbenchState = () => ({
       delayedReadGuard: true, latestOpenWins: true, oversizeRejectedBeforeRead: true,
       unicodeScalarBoundary: true,
       printProjection: true, printFullManualRecord: true, printInteractiveControls: 0,
+      unpreparedPrintKeepsItems: true, freshDirectBeforePrint: true,
+      stalePrintInvalidation: true, incompleteDirectPrintHonest: true,
       disabledUnavailableReadableNotFocusable: true, reloadClears: true, projectIdentityUnchanged: true,
       deviceApiCalls: 0, workers: 0, networkWrites: 0, outsideRequests: 0, storage: 0, cookies: 0 }));
   } finally { await browser.close(); }

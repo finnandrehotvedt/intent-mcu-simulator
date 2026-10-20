@@ -56,6 +56,7 @@ function statusOptions(item) {
 }
 
 function render() {
+  invalidatePrintProjection();
   renderIdentity();
   itemsRoot.innerHTML = current.items.map((item, index) => `<article class="panel physical-checklist-item" data-item-id="${item.id}">
     <div class="physical-item-heading"><div><span class="physical-item-number">${index + 1}</span><p class="eyebrow">${item.category}</p><h2>${item.subject}</h2></div><span class="physical-basis" data-basis="${item.simulatorBasis}">${item.simulatorBasis}</span></div>
@@ -66,7 +67,7 @@ function render() {
   updateBoundary(current);
 }
 
-function candidateFromDom() {
+function draftFromDom() {
   const candidate = clone(current);
   for (const [index, row] of [...itemsRoot.querySelectorAll('[data-item-id]')].entries()) {
     const selected = row.querySelector('[data-item-status]').value;
@@ -76,7 +77,11 @@ function candidateFromDom() {
       : null;
   }
   candidate.evidenceBoundary.physicalEvidencePresent = candidate.items.some((item) => item.status === 'manual-recorded');
-  return normalizePhysicalChecklist(candidate);
+  return candidate;
+}
+
+function candidateFromDom() {
+  return normalizePhysicalChecklist(draftFromDom());
 }
 
 function updateBoundary(value = null) {
@@ -102,13 +107,23 @@ function appendText(parent, tag, text, className = '') {
   return element;
 }
 
-function renderPrintProjection(value) {
+function invalidatePrintProjection() {
+  delete document.documentElement.dataset.physicalPrintState;
   printProjection.replaceChildren();
+}
+
+function renderPrintProjection(value, { incomplete = false } = {}) {
+  printProjection.replaceChildren();
+  document.documentElement.dataset.physicalPrintState = incomplete ? 'incomplete' : 'ready';
   appendText(printProjection, 'p', 'X76 · MANUAL PHYSICAL BOUNDARY', 'eyebrow');
-  appendText(printProjection, 'h2', 'Printable physical verification record');
-  appendText(printProjection, 'p', value.evidenceBoundary.physicalEvidencePresent
-    ? 'Manual user record present — not independently verified. No measurement, pass, safety or certification verdict is supplied by the Lab.'
-    : 'Physical evidence absent — manual check not measured. Simulator evidence is not physical-board evidence.',
+  appendText(printProjection, 'h2', incomplete
+    ? 'Incomplete physical verification draft'
+    : 'Printable physical verification record');
+  appendText(printProjection, 'p', incomplete
+    ? 'Incomplete manual observation — this is the current draft, not a valid checklist record. Complete value, unit and method before export. No earlier accepted record is substituted.'
+    : value.evidenceBoundary.physicalEvidencePresent
+      ? 'Manual user record present — not independently verified. No measurement, pass, safety or certification verdict is supplied by the Lab.'
+      : 'Physical evidence absent — manual check not measured. Simulator evidence is not physical-board evidence.',
   'physical-print-boundary');
   const identity = document.createElement('dl');
   identity.className = 'physical-print-identity';
@@ -148,7 +163,22 @@ function renderPrintProjection(value) {
     list.append(article);
   }
   printProjection.append(list);
-  appendText(printProjection, 'p', 'Manual user record only · not independently verified · no device access, automatic verdict, safety claim or certification.', 'physical-print-footer');
+  appendText(printProjection, 'p', incomplete
+    ? 'Incomplete current-tab draft only · not a valid record · not independently verified · no device access, automatic verdict, safety claim or certification.'
+    : 'Manual user record only · not independently verified · no device access, automatic verdict, safety claim or certification.',
+  'physical-print-footer');
+}
+
+function preparePrintProjection() {
+  const draft = draftFromDom();
+  try {
+    current = normalizePhysicalChecklist(draft);
+    renderPrintProjection(current);
+    return true;
+  } catch {
+    renderPrintProjection(draft, { incomplete: true });
+    return false;
+  }
 }
 
 function syncDraft() {
@@ -183,9 +213,10 @@ itemsRoot.addEventListener('change', (event) => {
     row.querySelector('[data-observation-fields]').hidden = event.target.value !== 'manual-recorded';
   }
   generation += 1;
+  invalidatePrintProjection();
   syncDraft();
 });
-itemsRoot.addEventListener('input', () => { generation += 1; syncDraft(); });
+itemsRoot.addEventListener('input', () => { generation += 1; invalidatePrintProjection(); syncDraft(); });
 
 document.querySelector('#physical-open').addEventListener('click', () => {
   generation += 1;
@@ -238,15 +269,16 @@ document.querySelector('#physical-download').addEventListener('click', () => {
 });
 
 document.querySelector('#physical-print').addEventListener('click', () => {
-  try {
-    current = candidateFromDom();
-    renderPrintProjection(current);
-    document.documentElement.dataset.printRequested = 'true';
+  if (preparePrintProjection()) {
     setStatus('Print requested. The Lab cannot confirm an operating-system print or PDF save.');
     window.print();
-  } catch {
+  } else {
     setStatus('Print blocked: complete the manual observation or clear it.', false);
   }
+});
+
+window.addEventListener('beforeprint', () => {
+  preparePrintProjection();
 });
 
 document.querySelector('#physical-clear').addEventListener('click', () => {

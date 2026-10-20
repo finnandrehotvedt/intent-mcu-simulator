@@ -1358,8 +1358,9 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   :root { color-scheme: light; }
   body { background: #fff; color: #111; }
   .no-print { display: none !important; }
-  .physical-checklist-identity, .physical-checklist-list { display: none !important; }
-  .physical-print-projection { display: block; }
+  html[data-physical-print-state] .physical-checklist-identity,
+  html[data-physical-print-state] .physical-checklist-list { display: none !important; }
+  html[data-physical-print-state] .physical-print-projection { display: block; }
   .physical-print-projection h2 { margin: 0 0 10px; }
   .physical-print-boundary, .physical-print-footer { padding: 10px; border: 2px solid #333; font-weight: 700; }
   .physical-print-identity { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
