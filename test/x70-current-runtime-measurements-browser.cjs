@@ -129,7 +129,7 @@ async function assertActiveRejected(page, profile) {
   const count = () => { downloads += 1; };
   page.on('download', count);
   const before = await page.locator('#accessible-svg-status').textContent();
-  await page.click('#accessible-svg-export');
+  await page.locator('#accessible-svg-export').evaluate((button) => button.click());
   await page.waitForFunction((prior) => {
     const current = document.querySelector('#accessible-svg-status')?.textContent ?? '';
     return current !== prior && /Pause the current|downloaded|rejected|cancelled/u.test(current);
@@ -200,6 +200,7 @@ async function reopenAuthoredProject(page, profile) {
     if (!['blob:', 'file:'].includes(url.protocol) && url.origin !== new URL(base).origin) outside.push(request.url());
     if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method())) mutations.push(`${request.method()} ${url.pathname}`);
   });
+  let stage = 'page-open';
   try {
     assert.equal((await page.goto(base, { waitUntil: 'networkidle' }))?.status(), 200);
     await page.waitForFunction(() => window.__M11_READY__ === true && window.__X70_ACCESSIBLE_DEMONSTRATION__);
@@ -216,10 +217,12 @@ async function reopenAuthoredProject(page, profile) {
     const geometry = {};
     let builds = 0; let runs = 0;
     for (const profile of journeyProfiles) {
+      stage = `${profile.slug}:select`;
       await page.selectOption('#board-select', profile.id);
       await page.waitForFunction((id) => window.__SHARED_INSTRUMENT_SUMMARY__?.profile === id, profile.id);
       assert.equal(await page.locator(profile.build).isDisabled(), false, `${profile.slug}: Build disabled`);
       await page.click(profile.build); builds += 1;
+      stage = `${profile.slug}:build`;
       await page.waitForFunction(({ name, phase }) => {
         const state = name === '__M6_STATE__' ? window[name]?.buildState : window[name]?.phase;
         return state === phase || ['failed', 'blocked', 'cancelled', 'timeout'].includes(state);
@@ -231,25 +234,52 @@ async function reopenAuthoredProject(page, profile) {
         profile.run, { timeout: 20_000 });
       assert.equal(await page.locator(profile.run).isDisabled(), false, `${profile.slug}: Run disabled after Build`);
       await page.click(profile.run); runs += 1;
-      await page.waitForFunction(({ name, phase }) => {
-        const state = name === '__M6_STATE__' ? (window[name]?.runtime?.paused ? 'paused' : 'running') : window[name]?.phase;
-        return state === phase || window.__SHARED_INSTRUMENT_SUMMARY__?.state === 'current-runtime';
-      }, { name: profile.state, phase: profile.complete }, { timeout: profile.slug === 'stm32' ? 120_000 : 70_000 });
+      stage = `${profile.slug}:run`;
+      await page.waitForFunction(({ name, phase, slug }) => {
+        const source = window[name];
+        const state = name === '__M6_STATE__' ? (source?.runtime?.paused ? 'paused' : 'running') : source?.phase;
+        if (['failed', 'blocked', 'cancelled', 'timeout'].includes(state)) return true;
+        if (slug === 'avr') return state === 'running' && source?.runtime?.paused === false
+          && window.__SHARED_INSTRUMENT_SUMMARY__?.state === 'current-runtime';
+        if (slug === 'pico') return state === 'running' && source?.runtime?.paused === false
+          && window.__SHARED_INSTRUMENT_SUMMARY__?.state === 'current-runtime';
+        return state === phase;
+      }, { name: profile.state, phase: profile.complete, slug: profile.slug },
+      { timeout: profile.slug === 'stm32' ? 120_000 : 70_000 });
+      const runtimePhase = await page.evaluate(({ name }) => name === '__M6_STATE__'
+        ? (window[name]?.runtime?.paused ? 'paused' : 'running') : window[name]?.phase, { name: profile.state });
+      assert(!['failed', 'blocked', 'cancelled', 'timeout'].includes(runtimePhase),
+        `${profile.slug}: runtime ended ${runtimePhase}`);
       await page.waitForFunction(() => window.__SHARED_INSTRUMENT_SUMMARY__?.state === 'current-runtime', null,
         { timeout: profile.slug === 'stm32' ? 120_000 : 30_000 });
+      if (profile.slug === 'pico') {
+        await page.waitForFunction(() => /Pico runtime started/u.test(
+          document.querySelector('#pico-message')?.textContent ?? '')
+          && !document.querySelector('#quick-pause')?.disabled, null, { timeout: 20_000 });
+      }
+      if (profile.slug === 'avr') {
+        await page.waitForFunction(() => /Running/u.test(
+          document.querySelector('#worker-state')?.textContent ?? '')
+          && !document.querySelector('#quick-pause')?.disabled, null, { timeout: 20_000 });
+      }
       if (profile.pause) {
+        stage = `${profile.slug}:active-export-rejection`;
         await assertActiveRejected(page, profile);
         await page.click(profile.pause);
+        stage = `${profile.slug}:pause`;
         await page.waitForFunction(({ name }) => name === '__M6_STATE__'
           ? window[name]?.runtime?.paused === true && window[name]?.lifecycle?.phase === 'paused'
           : window[name]?.phase === 'paused' && window[name]?.runtime?.paused === true,
         { name: profile.state }, { timeout: 20_000 });
       }
+      stage = `${profile.slug}:geometry`;
       geometry[profile.slug] = await assertGeometry(page, profile);
+      stage = `${profile.slug}:download-and-validate`;
       evidence[profile.slug] = await downloadAndValidate(page, context, profile);
       if (profile.slug === 'avr') {
         await page.screenshot({ path: path.join(evidenceDir, 'avr-current-runtime-control.png'), fullPage: false });
       }
+      stage = `${profile.slug}:save-open-invalidation`;
       await reopenAuthoredProject(page, profile);
     }
 
@@ -271,6 +301,26 @@ async function reopenAuthoredProject(page, profile) {
       mutations, cookies: 0, browserErrors: 0 };
     fs.writeFileSync(path.join(evidenceDir, 'result.json'), `${JSON.stringify(result, null, 2)}\n`);
     process.stdout.write(`${JSON.stringify(result)}\n`);
+  } catch (error) {
+    const failure = await page.evaluate(({ stage, message, stack }) => ({
+      stage, error: { message, stack },
+      url: location.href,
+      profile: document.querySelector('#board-select')?.value ?? null,
+      quickState: document.querySelector('#quick-state')?.textContent ?? null,
+      controllerStatus: document.querySelector('#controller-status')?.textContent ?? null,
+      picoMessage: document.querySelector('#pico-message')?.textContent ?? null,
+      workerState: document.querySelector('#worker-state')?.textContent ?? null,
+      accessibleSvgStatus: document.querySelector('#accessible-svg-status')?.textContent ?? null,
+      sharedSummary: window.__SHARED_INSTRUMENT_SUMMARY__ ?? null,
+      avrState: window.__M6_STATE__ ?? null,
+      picoState: window.__RP2040_PUBLIC_STATE__ ?? null,
+    }), { stage, message: error.message, stack: error.stack }).catch((captureError) => ({
+      stage, error: { message: error.message, stack: error.stack }, captureError: String(captureError),
+    }));
+    fs.writeFileSync(path.join(evidenceDir, 'failure-state.json'), `${JSON.stringify(failure, null, 2)}\n`);
+    await page.screenshot({ path: path.join(evidenceDir, 'failure-page.png'), fullPage: true,
+      timeout: 10_000 }).catch(() => {});
+    throw error;
   } finally {
     await browser.close();
   }
