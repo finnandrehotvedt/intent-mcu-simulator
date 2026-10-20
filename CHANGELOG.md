@@ -2,6 +2,18 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.90 — 2026-10-20
+
+- Completes X59 with one accessible session-only Simple/Advanced presentation
+  switch shared by AVR, RP2040 Pico, ESP32-C3 and STM32F429ZI.
+- Keeps Advanced as the initial mode. Simple retains the real controller,
+  named-pin circuit, source, files, runtime controls/status, instruments,
+  diagnostics and exact Help/limits while hiding dense review/export surfaces.
+- Preserves canonical project, runtime and storage data across view/profile
+  changes; it creates no alternate editor, persistence or new authority.
+- Advances counts to X **71/0/25**, P1 **59/0/0**, with no firmware Build, Run,
+  scenario, service worker, account, storage, mobile or infrastructure change.
+
 ## 1.1.0-rc.89 — 2026-10-20
 
 - Completes X86 against its original requirement: one exact four-profile matrix

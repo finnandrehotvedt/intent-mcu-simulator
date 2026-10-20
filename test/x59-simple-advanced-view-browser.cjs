@@ -94,10 +94,20 @@ async function assertCoreVisible(page) {
 
       if (viewport.width === 1440) {
         await setMode(page, 'advanced');
-        await page.focus('#brief-tests-open');
+        await page.click('#brief-tests-open');
+        await page.waitForSelector('#workbench-brief-dialog[open]');
+        assert.equal(await page.locator('#workbench-brief-dialog #project-brief').isVisible(), true);
         await page.evaluate(() => document.querySelector('#workbench-view-simple').click());
         await page.waitForFunction(() => document.body.dataset.workbenchView === 'simple');
+        await page.waitForFunction(() => !document.querySelector('#workbench-brief-dialog').open);
         await page.waitForFunction(() => document.activeElement === document.querySelector('#workbench-view-simple'));
+        await setMode(page, 'advanced');
+        await page.click('#brief-tests-open');
+        await page.waitForSelector('#workbench-brief-dialog[open]');
+        assert.equal(await page.locator('#workbench-brief-dialog #project-navigation').isVisible(), true);
+        await page.keyboard.press('Escape');
+        await page.waitForFunction(() => document.activeElement === document.querySelector('#brief-tests-open'));
+        await setMode(page, 'simple');
 
         await selectProfile(page, profiles[2]);
         await page.click('#help-limits-open');

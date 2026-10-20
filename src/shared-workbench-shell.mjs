@@ -533,7 +533,8 @@ export function mountSharedWorkbenchShell(document) {
       throw new Error('SHARED_WORKBENCH_VIEW_MODE_UNKNOWN');
     }
     const focusedAdvancedOnly = document.activeElement?.closest?.(advancedOnlySelector);
-    if (nextMode === 'simple' && activePopup === 'brief') closePopup({ restoreFocus: false });
+    const closedBrief = nextMode === 'simple' && activePopup === 'brief';
+    if (closedBrief) closePopup({ restoreFocus: false });
     viewMode = nextMode;
     document.body.dataset.workbenchView = viewMode;
     for (const [mode, button] of Object.entries(viewButtons)) {
@@ -542,7 +543,7 @@ export function mountSharedWorkbenchShell(document) {
     viewStatus.textContent = viewMode === 'simple'
       ? 'Simple view keeps the active project, circuit, source, runtime status, instruments, files, limits and diagnostics; advanced review tools are hidden.'
       : 'Advanced view shows all review and evidence tools.';
-    if (focusedAdvancedOnly || focus) {
+    if (focusedAdvancedOnly || closedBrief || focus) {
       const dialogClose = activePopup
         ? popupByName.get(activePopup)?.dialog.querySelector('.workbench-popup-close') : null;
       queueMicrotask(() => (dialogClose ?? viewButtons[viewMode]).focus({ preventScroll: true }));

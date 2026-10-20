@@ -1,4 +1,27 @@
-# Intent MCU Simulator 1.1.0-rc.89
+# Intent MCU Simulator 1.1.0-rc.90
+
+## X59 shared Simple and Advanced view
+
+This release completes X59 with one accessible presentation switch shared by
+the four existing controller workbenches. Advanced remains the initial mode.
+Simple keeps the actual controller choice, circuit and named-pin wiring,
+source access, local files, Build/Run controls and state, primary status,
+instruments, diagnostics and exact Help/limits while hiding dense review,
+history and export surfaces.
+
+The switch is session-only. It does not write a preference, create a second
+editor, change canonical project or runtime data, retire workers, transfer data
+between profiles or weaken C3's explicit QEMU-versus-GPIO2-model boundary.
+Existing project files require no migration.
+
+Desktop independently reviewed the complete diff and actual owner-Chrome
+Advanced/Simple renders before release. This release performs no firmware
+Build, Run or scenario and adds no service worker, account, storage, mobile
+workbench behavior or infrastructure. Counts are X **71/0/25**, P1 **59/0/0**.
+
+---
+
+## 1.1.0-rc.89
 
 ## X86 exact offline-matrix closure
 

@@ -11,20 +11,20 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.88",
-    "current": "1.1.0-rc.89"
+    "previous": "1.1.0-rc.89",
+    "current": "1.1.0-rc.90"
   },
   "changes": [
     {
-      "id": "X86",
+      "id": "X59",
       "classification": "changed",
       "capabilities": [
-        "intent-mcu-offline-support-matrix@1"
+        "intent-mcu-shared-workbench-view@1"
       ],
       "contracts": [
-        "x86-honest-offline-support-matrix-v1"
+        "x59-four-profile-simple-advanced-view-v1"
       ],
-      "summary": "Completes the original X86 criterion from the exact four-profile offline matrix and corrected actual-file browser acceptance without claiming a cold offline app, compiler or Run."
+      "summary": "Completes X59 with one shared session-only Simple and Advanced presentation across all four profiles without changing canonical project, runtime or storage data."
     },
     {
       "id": "X88",
@@ -35,7 +35,7 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records the reviewed rc.88 to rc.89 X86 criterion closure without adding offline execution, firmware action, replay, physical-truth or verdict authority."
+      "summary": "Records the reviewed rc.89 to rc.90 X59 presentation release without adding firmware action, runtime authority, storage, replay or verdict authority."
     }
   ],
   "migrationRequired": false,

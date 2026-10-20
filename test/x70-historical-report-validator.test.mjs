@@ -94,7 +94,7 @@ function avrSummary() {
 }
 
 test('X70 historical validator accepts only the finite rc86 profile/model combinations without rewriting identity', async () => {
-  assert.equal(RELEASE_VERSION, '1.1.0-rc.89');
+  assert.equal(RELEASE_VERSION, '1.1.0-rc.90');
   for (const [profile, graph, layout] of fixtures()) {
     const report = await syntheticHistorical(profile, graph, layout);
     const before = stableAccessibleDemonstrationStringify(report);
@@ -134,7 +134,7 @@ test('X70 historical validator rejects future, unknown, relabelled and mixed rel
     for (const [name, mutate] of [
       ['current release', (value) => { value.productRelease = RELEASE_VERSION; }],
       ['older release', (value) => { value.productRelease = '1.1.0-rc.85'; }],
-      ['future release', (value) => { value.productRelease = '1.1.0-rc.89'; }],
+      ['future release', (value) => { value.productRelease = '1.1.0-rc.90'; }],
       ['mixed lock', (value) => { value.modelLibrary = clone(profile === RP2040_PROFILE
         ? PRIOR_CURRENT_MODEL_LIBRARY_LOCK : CURRENT_MODEL_LIBRARY_LOCK); }],
       ['forged schema', (value) => { value.schema = 'intent-mcu-accessible-demonstration@3'; }],

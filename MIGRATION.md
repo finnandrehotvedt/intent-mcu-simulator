@@ -1,8 +1,13 @@
-# Migration to 1.1.0-rc.89
+# Migration to 1.1.0-rc.90
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.90 changes no project, package, compiler-artifact, model-library, cache or
+browser-storage schema. Simple/Advanced is session-only presentation state and
+is not written to learner files or browser storage. Existing files require no
+conversion; Open retains its strict data-only and fresh-Build boundary.
 
 Rc.89 changes no project, package, compiler-artifact, model-library, cache or
 browser-storage schema. It corrects the release-bound X86 acceptance navigation

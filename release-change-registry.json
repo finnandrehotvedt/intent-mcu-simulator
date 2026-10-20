@@ -22,6 +22,15 @@
       ]
     },
     {
+      "id": "X59",
+      "capabilities": [
+        "intent-mcu-shared-workbench-view@1"
+      ],
+      "contracts": [
+        "x59-four-profile-simple-advanced-view-v1"
+      ]
+    },
+    {
       "id": "X70",
       "capabilities": [
         "intent-mcu-accessible-demonstration@1"
