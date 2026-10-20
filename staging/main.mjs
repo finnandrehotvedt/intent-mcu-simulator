@@ -1207,7 +1207,7 @@ function navigateProjectResult(entry, expectedIdentity) {
     }
   } else if (entry.target.requirementId) {
     const row = document.querySelector(`[data-requirement-id="${CSS.escape(entry.target.requirementId)}"]`);
-    row?.scrollIntoView({ block: 'center' }); const target = row?.querySelector('button') ?? row;
+    row?.scrollIntoView({ block: 'center' }); const target = row?.querySelector('button:not(:disabled)') ?? row;
     if (target) { if (target === row) target.tabIndex = -1; target.focus({ preventScroll: true }); }
   } else if (entry.target.scenarioId) {
     document.querySelector(`[data-scenario-id="${CSS.escape(entry.target.scenarioId)}"] input`)?.focus({ preventScroll: true });
