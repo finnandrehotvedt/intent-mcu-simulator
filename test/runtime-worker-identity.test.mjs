@@ -40,7 +40,10 @@ test('bound worker emits one stable identity on ready, sample, step, reset and d
     const response = await send({ command }, (message) => message.kind === kind);
     assert.deepEqual(validateWorkerRuntimeIdentity(response.runtimeIdentity, binding, nonce), ready.runtimeIdentity);
   }
-  const disposed = await send({ command: 'dispose' }, (message) => message.kind === 'disposed');
+  const disposeToken = 'x47-dispose-token-one';
+  const disposed = await send({ command: 'dispose', disposeToken },
+    (message) => message.kind === 'disposed');
+  assert.equal(disposed.disposeToken, disposeToken);
   assert.deepEqual(validateWorkerRuntimeIdentity(disposed.runtimeIdentity, binding, nonce), ready.runtimeIdentity);
   assert.equal(Object.hasOwn(disposed, 'x47CancellationReceipts'), false);
 });
@@ -194,11 +197,15 @@ test('private X47 worker contract binds acceptance and cancellation to one curre
   const secondRequest = applyRequest(secondReady.runtimeIdentity, 'x47-worker-second');
   await send({ command: 'x47-apply', request: secondRequest },
     (message) => message.kind === 'x47-accepted');
-  const disposed = await send({ command: 'dispose' }, (message) => message.kind === 'disposed');
+  const disposeToken = 'x47-dispose-token-private';
+  const disposed = await send({ command: 'dispose', disposeToken },
+    (message) => message.kind === 'disposed');
+  assert.equal(disposed.disposeToken, disposeToken);
   assert.equal(disposed.x47CancellationReceipts.length, 1);
   assert.equal(disposed.x47CancellationReceipts[0].reason, 'DISPOSE');
   const disposedIndex = messages.lastIndexOf(disposed);
   assert.equal(messages[disposedIndex - 1].kind, 'x47-cancelled');
   assert.equal(messages[disposedIndex - 1].reason, 'DISPOSE');
+  assert.equal(messages[disposedIndex - 1].disposeToken, disposeToken);
   assert.deepEqual(disposed.runtimeIdentity, secondReady.runtimeIdentity);
 });

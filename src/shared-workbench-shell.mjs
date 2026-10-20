@@ -736,7 +736,7 @@ function createX47Panel(document, ordinal) {
       <strong id="x47-pulse-title-${ordinal}">D2 active-low pulse</strong>
       <span data-x47-state>Checking</span>
     </div>
-    <p class="x47-pulse-boundary"><strong>Preview only</strong> · transient · not saved · creates no worker. Apply, Build and Run are unavailable in this private slice.</p>
+    <p class="x47-pulse-boundary"><strong>Private integration</strong> · transient · not saved · synthetic browser evidence is not native hardware evidence.</p>
     <div class="x47-pulse-controls">
       <label>Start offset <span><input data-x47-start type="number" inputmode="numeric" min="1" max="1599999" step="1" value="16000"> cycles</span></label>
       <label>Pulse width <span><input data-x47-width type="number" inputmode="numeric" min="1" max="1599999" step="1" value="32000"> cycles</span></label>
@@ -747,7 +747,19 @@ function createX47Panel(document, ordinal) {
       <ol data-x47-events aria-label="Expanded D2 events"></ol>
       <details><summary>Canonical transient record</summary><pre data-x47-canonical></pre></details>
     </div>
-    <p class="x47-pulse-gap">Apply is intentionally absent: the current sequence API does not yet prove full graph/revision/runtime binding and reset/cancel semantics.</p>`;
+    <div class="x47-runtime-actions" data-x47-runtime-actions>
+      <button type="button" data-x47-apply disabled>Apply to paused D2</button>
+      <button type="button" data-x47-resume disabled>Resume explicitly</button>
+      <button type="button" data-x47-stop disabled>Stop safely</button>
+    </div>
+    <p data-x47-runtime-state>Build, Run, then explicitly Pause before Apply.</p>
+    <dl class="x47-runtime-facts" data-x47-runtime-facts>
+      <div><dt>Target</dt><dd data-x47-fact="target">—</dd></div>
+      <div><dt>Queue drain</dt><dd data-x47-fact="drain">—</dd></div>
+      <div><dt>Adapter apply</dt><dd data-x47-fact="adapter">—</dd></div>
+      <div><dt>Electrical transition</dt><dd data-x47-fact="transition">—</dd></div>
+      <div><dt>Cancellation</dt><dd data-x47-fact="cancel">—</dd></div>
+    </dl>`;
   return panel;
 }
 
@@ -764,6 +776,8 @@ function installX47PulsePreview(document, activeProfileReader) {
   let pending = false;
   let draftChanged = false;
   let notice = null;
+  let integration = { phase: 'unavailable', reason: 'Build, Run, then explicitly Pause before Apply.',
+    request: null, queueReceipt: null, executionReceipt: null, cancelReceipt: null, cancelTimeout: null };
 
   const state = () => document.defaultView?.__M6_STATE__ ?? null;
   const captureSource = () => {
@@ -829,7 +843,42 @@ function installX47PulsePreview(document, activeProfileReader) {
       });
       panel.querySelector('[data-x47-events]').replaceChildren(...rows);
       panel.querySelector('[data-x47-canonical]').textContent = snapshot.canonicalText ?? '';
+      paintIntegration(panel, snapshot);
     }
+  };
+  const factText = (events, field, missing) => events?.length
+    ? events.map((event) => `event ${event.eventIndex + 1}: ${event[field] === null
+      ? missing : Number(event[field]).toLocaleString('en-US')}`).join(' · ') : missing;
+  const paintIntegration = (panel, previewSnapshot = owner.snapshot()) => {
+    const apply = panel.querySelector('[data-x47-apply]');
+    const resume = panel.querySelector('[data-x47-resume]');
+    const stop = panel.querySelector('[data-x47-stop]');
+    apply.disabled = previewSnapshot.state !== 'preview' || integration.phase !== 'ready';
+    resume.disabled = integration.phase !== 'resume-required';
+    stop.disabled = !['resume-required', 'running', 'ready'].includes(integration.phase)
+      || !integration.queueReceipt;
+    panel.querySelector('[data-x47-runtime-state]').textContent = integration.reason;
+    const execution = integration.executionReceipt;
+    const events = execution?.events ?? integration.queueReceipt?.events ?? [];
+    panel.querySelector('[data-x47-fact="target"]').textContent = events.length
+      ? events.map((event) => `event ${event.eventIndex + 1}: ${event.targetCycle.toLocaleString('en-US')}`).join(' · ')
+      : 'Not requested';
+    panel.querySelector('[data-x47-fact="drain"]').textContent = factText(execution?.events,
+      'drainAppliedCycle', 'Not observed');
+    panel.querySelector('[data-x47-fact="adapter"]').textContent = factText(execution?.events,
+      'adapterAppliedCycle', 'Not observed');
+    panel.querySelector('[data-x47-fact="transition"]').textContent = execution?.events?.length
+      ? execution.events.map((event) => event.transitioned === null
+        ? `event ${event.eventIndex + 1}: unknown`
+        : event.transitioned
+          ? `event ${event.eventIndex + 1}: cycle ${event.transitionCycle.toLocaleString('en-US')}`
+          : `event ${event.eventIndex + 1}: applied, no electrical transition`).join(' · ')
+      : 'Not observed';
+    panel.querySelector('[data-x47-fact="cancel"]').textContent = integration.cancelTimeout
+      ? 'Not completed: acknowledgement timeout'
+      : integration.cancelReceipt
+        ? integration.cancelReceipt.evidenceComplete ? 'Complete evidence' : 'Acknowledged · evidence incomplete'
+        : 'Not requested';
   };
   const refresh = async () => {
     const ticket = ++operation;
@@ -895,6 +944,7 @@ function installX47PulsePreview(document, activeProfileReader) {
         lastContext = resolved.context;
         draftChanged = false;
         paintSnapshot(snapshot, resolved.context);
+        document.dispatchEvent(new CustomEvent('x47-preview-ready'));
       } catch (error) {
         if (ticket !== operation) return;
         pending = false;
@@ -902,6 +952,15 @@ function installX47PulsePreview(document, activeProfileReader) {
         const snapshot = currentSnapshot();
         paintSnapshot(snapshot, lastContext);
       }
+    });
+    panel.querySelector('[data-x47-apply]').addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('x47-apply-request'));
+    });
+    panel.querySelector('[data-x47-resume]').addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('x47-resume-request'));
+    });
+    panel.querySelector('[data-x47-stop]').addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('x47-stop-request'));
     });
   }
   const invalidationEvents = new Map([
@@ -951,6 +1010,16 @@ function installX47PulsePreview(document, activeProfileReader) {
       return snapshot.record ? expandX47PulseRecord(snapshot.record, lastContext) : [];
     },
     inspectTarget: () => inspectX47AvrD2Target(state()?.graph),
+    bindingContext: () => lastContext ? structuredClone(lastContext) : null,
+    record: () => {
+      const snapshot = currentSnapshot();
+      return snapshot.record ? structuredClone(snapshot.record) : null;
+    },
+    integration(value) {
+      integration = structuredClone(value);
+      for (const panel of panels) paintIntegration(panel);
+      return structuredClone(integration);
+    },
   });
   document.defaultView.__X47_PULSE_PREVIEW__ = api;
   paintSnapshot(currentSnapshot(), null);

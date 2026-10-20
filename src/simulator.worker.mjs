@@ -65,9 +65,10 @@ function applyDigitalInput(value) {
   kernel.adapter.setDigitalPin(value.pin, value.level);
 }
 
-function acknowledgeX47Cancellation(reason) {
+function acknowledgeX47Cancellation(reason, disposeToken = null) {
   const receipts = kernel?.cancelX47Transactions?.(reason) ?? [];
-  if (receipts.length) emit({ kind: 'x47-cancelled', reason, receipts });
+  if (receipts.length) emit({ kind: 'x47-cancelled', reason, receipts,
+    ...(disposeToken ? { disposeToken } : {}) });
   return receipts;
 }
 
@@ -188,10 +189,16 @@ async function handleMessage(data) {
       return;
     }
     if (data.command === 'dispose') {
+      if (!exactKeys(data, data.disposeToken === undefined ? ['command'] : ['command', 'disposeToken'])
+          || (data.disposeToken !== undefined
+            && !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(data.disposeToken))) {
+        throw new Error('X47_DISPOSE_COMMAND_INVALID');
+      }
       const profile = isRp2040() ? RP2040_EXPERIMENTAL_PROFILE : 'board.atmega328p-16mhz-v1';
-      const x47CancellationReceipts = acknowledgeX47Cancellation('DISPOSE');
+      const x47CancellationReceipts = acknowledgeX47Cancellation('DISPOSE', data.disposeToken ?? null);
       const { disposedIdentity } = disposeRuntime(x47CancellationReceipts);
       postMessage({ kind: 'disposed', profile, paused: true, cycle: 0, instructions: 0,
+        ...(data.disposeToken ? { disposeToken: data.disposeToken } : {}),
         ...(x47CancellationReceipts.length ? { x47CancellationReceipts } : {}),
         ...(disposedIdentity ? { runtimeIdentity: disposedIdentity } : {}) });
       close();

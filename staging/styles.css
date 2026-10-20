@@ -1266,10 +1266,21 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .x47-pulse-output details { padding: 10px; }
 .x47-pulse-output summary { cursor: pointer; color: var(--cyan); font-weight: 800; }
 .x47-pulse-output pre { max-height: 180px; overflow: auto; margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #c6fbd4; font: inherit; }
+.x47-runtime-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.x47-runtime-actions button { min-height: 38px; border-color: #37d4ff; background: #0c2633; color: #d9f8ff; font: 850 .76rem/1.35 ui-monospace, monospace; }
+.x47-runtime-actions button[data-x47-apply]:not(:disabled) { border-color: var(--lime); background: var(--lime); color: #07121d; }
+.x47-runtime-actions button:disabled { opacity: .56; }
+.x47-pulse-preview [data-x47-runtime-state] { margin: 8px 0; color: #d9f8ff; font: 800 .76rem/1.5 ui-monospace, monospace; }
+.x47-runtime-facts { display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr)); margin: 0; border: 1px solid #315d4b; border-radius: 8px; overflow: hidden; }
+.x47-runtime-facts div { min-width: 0; padding: 8px; border-inline-end: 1px solid #315d4b; }
+.x47-runtime-facts div:last-child { border-inline-end: 0; }
+.x47-runtime-facts dt { color: #86a9b8; font: 750 .67rem/1.35 ui-monospace, monospace; text-transform: uppercase; }
+.x47-runtime-facts dd { margin: 4px 0 0; color: #e8f3f7; font: .72rem/1.45 ui-monospace, monospace; overflow-wrap: anywhere; }
 @media (max-width: 760px) {
   .shared-instrument-tools, .failure-replay-results { grid-template-columns: 1fr; }
   .x42-trigger-controls, .x42-trigger-facts, .x43-profile-facts, .x43-profile-unsupported,
-  .x47-pulse-controls, .x47-pulse-output { grid-template-columns: 1fr; }
+  .x47-pulse-controls, .x47-pulse-output, .x47-runtime-facts { grid-template-columns: 1fr; }
+  .x47-runtime-facts div { border-inline-end: 0; border-block-end: 1px solid #315d4b; }
 }
 .control-runtime-evidence { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
 .control-runtime-evidence summary { cursor: pointer; color: var(--cyan); font: 800 .72rem ui-monospace, monospace; }

@@ -433,6 +433,8 @@ export class RuntimeKernel {
       },
       evidenceComplete: eventLog.dropped === 0 && eventLog.retention.applied.dropped === 0
         && adapter.dropped === 0
+        && transaction.queueReceipt.events.every((event) => applied.has(event.queueSequence))
+        && adapter.scheduled.filter((event) => event.transactionId === id).length === 0
         && adapter.scheduled.filter((event) => event.transactionId === id).length
           + adapter.records.filter((event) => event.transactionId === id).length === 2,
     }, { authority: this.x47Authority, runtimeIdentity: this.x47RuntimeIdentity,

@@ -216,7 +216,9 @@ export function validateX47QueueReceipt(value, options) {
   const { request } = receiptContext(options);
   assertReceiptIdentity(value, request);
   assertQueuedEvents(value.events, value.baseCycle, request);
-  if (value.retention.afterRequestedRetained !== value.retention.beforeRequestedRetained + 2
+  if (value.retention.beforeRequestedRetained > value.retention.limit
+      || value.retention.afterRequestedRetained > value.retention.limit
+      || value.retention.afterRequestedRetained !== value.retention.beforeRequestedRetained + 2
       || value.retention.afterRequestedDropped !== value.retention.beforeRequestedDropped) {
     reject('X47_QUEUE_RETENTION_INVALID');
   }
@@ -318,7 +320,7 @@ export function validateX47CancelReceipt(value, options) {
     }
   }
   for (const event of value.adapterApplied) {
-    if (event.appliedCycle < event.targetCycle
+    if (event.appliedCycle < event.targetCycle || event.appliedCycle > value.cancelCycle
         || ((event.transitioned === true) !== (event.transitionCycle !== null))
         || (event.transitionCycle !== null && event.transitionCycle !== event.appliedCycle)) {
       reject('X47_CANCEL_EVENT_MISMATCH');
@@ -326,7 +328,12 @@ export function validateX47CancelReceipt(value, options) {
   }
   const adapterKnown = new Set([...value.adapterScheduled, ...value.adapterApplied]
     .map((event) => event.eventIndex));
+  const scheduled = new Set(value.adapterScheduled.map((event) => event.eventIndex));
+  if (value.adapterApplied.some((event) => scheduled.has(event.eventIndex))) {
+    reject('X47_CANCEL_EVENT_MISMATCH');
+  }
   const expectedComplete = adapterKnown.size === queueReceipt.events.length
+    && value.queuePending.length === 0 && value.adapterScheduled.length === 0
     && value.retention.discontinuities === 0
     && [value.retention.requested, value.retention.adapter]
       .every((item) => item.retained === item.expected && item.dropped === 0);

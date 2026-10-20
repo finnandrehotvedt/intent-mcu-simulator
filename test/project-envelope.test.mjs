@@ -14,6 +14,7 @@ import {
 import {
   CURRENT_MODEL_LIBRARY_LOCK, PRE_X47_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_X47_UI_CURRENT_MODEL_LIBRARY_LOCK,
   PRIOR_CURRENT_MODEL_LIBRARY_LOCK, RETAINED_MODEL_LIBRARY_LOCK,
 } from '../src/model-library.mjs';
 
@@ -187,6 +188,22 @@ test('pre-validation X47 project data migrates while its old runtime authority i
   assert.equal(opened.ok, true);
   assert.deepEqual(opened.project, project);
   assert.deepEqual(opened.modelLibrary, PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(opened.report.executableAuthorityCleared, true);
+  const migrated = migrateProjectModelLibrary(oldEnvelope, adapters);
+  assert.equal(migrated.ok, true);
+  assert.equal(migrated.originalUnchanged, oldEnvelope);
+  assert.equal(migrated.executableAuthorityCleared, true);
+  assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
+});
+
+test('pre-UI X47 project data migrates while its old runtime authority is cleared', () => {
+  const oldEnvelope = canonicalProjectEnvelope(
+    profile, project, adapters, emptyProjectBrief(), null, PRE_X47_UI_CURRENT_MODEL_LIBRARY_LOCK,
+  );
+  const opened = prepareProjectEnvelope(oldEnvelope, adapters);
+  assert.equal(opened.ok, true);
+  assert.deepEqual(opened.project, project);
+  assert.deepEqual(opened.modelLibrary, PRE_X47_UI_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(opened.report.executableAuthorityCleared, true);
   const migrated = migrateProjectModelLibrary(oldEnvelope, adapters);
   assert.equal(migrated.ok, true);

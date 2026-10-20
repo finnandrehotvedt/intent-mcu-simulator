@@ -55,6 +55,13 @@ import { createLifecycleState, transitionLifecycle } from '../src/lifecycle.mjs'
 import {
   MODEL_RUNTIME_BINDING_SCHEMA, RUNTIME_BINDING_SCHEMA, validateWorkerRuntimeIdentity,
 } from '../src/runtime-identity.mjs';
+import {
+  X47_RUNTIME_AUTHORITY_SCHEMA,
+} from '../src/x47-runtime-transaction.mjs';
+import { createX47UiOwner } from '../src/x47-ui-integration.mjs';
+import {
+  captureX47PulseSource, createX47PulseContextFromSource,
+} from '../src/x47-avr-d2-pulse.mjs';
 import { mountSharedWorkbenchShell } from '../src/shared-workbench-shell.mjs';
 import {
   avrInstrumentEvidence, instrumentCapability, sharedInstrumentSummary, sharedInstrumentView,
@@ -643,7 +650,87 @@ const publicPreviewRegions = [
 let picoPublicState = null;
 let c3PublicState = null;
 let stm32PublicState = null;
+const x47UiOwner = createX47UiOwner();
+const X47_STOP_TIMEOUT_MS = 750;
+let x47RuntimeAuthority = null;
+let x47WorkerIdentity = null;
+let x47ExplicitPauseRequested = false;
+let x47StopTimer = null;
+let x47TerminalProjection = null;
 const accessibleConnectionNotices = new Map();
+
+function renderX47Integration(snapshot = x47TerminalProjection ?? x47UiOwner.snapshot()) {
+  window.__X47_PULSE_PREVIEW__?.integration?.(snapshot);
+  publish({ x47Integration: structuredClone(snapshot) });
+  return snapshot;
+}
+
+function retireX47Integration(reason, { preserveTerminal = false } = {}) {
+  if (x47StopTimer !== null) clearTimeout(x47StopTimer);
+  x47StopTimer = null;
+  x47RuntimeAuthority = null;
+  x47WorkerIdentity = null;
+  x47ExplicitPauseRequested = false;
+  if (!preserveTerminal) {
+    x47TerminalProjection = null;
+    const retired = x47UiOwner.retire(reason);
+    renderX47Integration({ ...retired,
+      reason: `${reason} · Build, Run, then explicitly Pause before Apply.` });
+  }
+}
+
+async function x47AuthorityForRuntime(runtimeBinding, modelImplementationSha256,
+  modelExecutionContextSha256) {
+  if (selectedCompilerProfile !== AVR_PROFILE || !lifecycle.artifact
+      || lifecycle.artifact.artifactIdentity !== runtimeBinding.artifactIdentity
+      || modelLibraryLockFor(AVR_PROFILE).manifestSha256 !== CURRENT_MODEL_LIBRARY_LOCK.manifestSha256) return null;
+  try {
+    const source = captureX47PulseSource(AVR_PROFILE, lifecycle.projectGeneration,
+      editor.revision, currentProject().circuit);
+    const context = await createX47PulseContextFromSource(source);
+    const sourceFiles = [...currentProject().source.files]
+      .map((file) => ({ name: file.name, content: file.content }))
+      .sort((left, right) => left.name.localeCompare(right.name));
+    return {
+      schema: X47_RUNTIME_AUTHORITY_SCHEMA,
+      profile: AVR_PROFILE,
+      projectGeneration: lifecycle.projectGeneration,
+      buildGeneration: lifecycle.artifact.buildGeneration,
+      sourceProjectRevision: editor.revision,
+      sourceSha256: await projectTextSha256(JSON.stringify(sourceFiles)),
+      graphIdentity: context.graphIdentity,
+      inputIdentitySha256: lifecycle.artifact.inputIdentity,
+      artifactIdentity: lifecycle.artifact.artifactIdentity,
+      runtimeGeneration: runtimeBinding.runtimeGeneration,
+      modelImplementationSha256,
+      modelExecutionContextSha256,
+    };
+  } catch { return null; }
+}
+
+async function bindPausedX47Preview(token, identity, cycle) {
+  const api = window.__X47_PULSE_PREVIEW__;
+  const canonicalText = api?.canonicalText?.();
+  const context = api?.bindingContext?.();
+  const events = api?.expandedEvents?.();
+  if (!x47RuntimeAuthority || !canonicalText || !context || !Array.isArray(events)
+      || context.graphIdentity !== x47RuntimeAuthority.graphIdentity
+      || context.sourceProjectRevision !== x47RuntimeAuthority.sourceProjectRevision) {
+    renderX47Integration({ ...x47UiOwner.snapshot(), reason: 'Create a current D2 preview while explicitly paused.' });
+    return false;
+  }
+  const preview = {
+    canonicalPulseSha256: await projectTextSha256(canonicalText),
+    events: events.map((event) => ({ pin: 2, offsetCycles: event.offsetCycles, level: event.level })),
+  };
+  if (token !== workerToken || !x47WorkerIdentity || !sameRuntimeIdentity(identity, x47WorkerIdentity)
+      || lifecycle.phase !== 'paused') return false;
+  renderX47Integration(x47UiOwner.noteExplicitPause({ workerToken: token,
+    runtimeIdentity: identity, cycle, preview }));
+  return true;
+}
+
+function sameRuntimeIdentity(left, right) { return JSON.stringify(left) === JSON.stringify(right); }
 
 function renderProfileDiagnostics(snapshot, { textarea, summary, links, current }) {
   const diagnostics = snapshot?.diagnostics ?? [];
@@ -9155,7 +9242,10 @@ function releaseCanvasButton(reason = 'canvas button') {
   return true;
 }
 
-function stopRuntime(message = 'No current artifact loaded', { updateLifecycle = true, stale = false } = {}) {
+function stopRuntime(message = 'No current artifact loaded', {
+  updateLifecycle = true, stale = false, preserveX47Terminal = false,
+} = {}) {
+  retireX47Integration('X47_RUNTIME_RETIRED', { preserveTerminal: preserveX47Terminal });
   invalidateDigitalStateRuntimeReport('Runtime worker retirement cleared the prior X33 runtime report. Run the producer check again.');
   clearX40SharedTimeline(`${message}. The prior shared timeline was invalidated.`);
   cancelThermostatExperiment(
@@ -9192,6 +9282,7 @@ function detachOutstandingBuild() {
 }
 
 function installProjectGeneration({ empty, reason, runtimeMessage }) {
+  retireX47Integration('X47_PROJECT_REPLACED');
   detachOutstandingBuild();
   stopRuntime(runtimeMessage, { updateLifecycle: false });
   counterexampleReductionResult = null;
@@ -9219,6 +9310,7 @@ function installProjectGeneration({ empty, reason, runtimeMessage }) {
 }
 
 function applyEditor(command, message = command.type) {
+  if (commandBuildRelevance(command.type) === 'build') retireX47Integration('X47_AUTHORED_INPUT_CHANGED');
   const result = editor.apply({ ...command, revision: editor.revision }, { running });
   if (!result.ok) {
     showActionableError(elements.projectmessage, result.code, `${message}\n${JSON.stringify(result.details ?? [])}`);
@@ -10889,7 +10981,7 @@ function scheduleWorkerRuntimeRender(message) {
   }, 100);
 }
 
-function loadArtifact(hex, artifactIdentity, {
+async function loadArtifact(hex, artifactIdentity, {
   x34Probe = null, modelExecutionContextSha256, modelImplementationSha256,
 } = {}) {
   if (!/^[a-f0-9]{64}$/u.test(modelExecutionContextSha256 ?? '')
@@ -10911,20 +11003,51 @@ function loadArtifact(hex, artifactIdentity, {
     modelImplementationSha256,
     modelExecutionContextSha256,
   };
+  x47RuntimeAuthority = await x47AuthorityForRuntime(runtimeBinding,
+    modelImplementationSha256, modelExecutionContextSha256);
   let workerInstanceNonce = null;
   const token = ++workerToken;
   runtimeWorkerCreations += 1;
   publish({ runtimeWorkerCreations });
   worker = new Worker('./simulator.worker.js', { type: 'module' });
-  worker.addEventListener('message', ({ data }) => {
+  worker.addEventListener('message', async ({ data }) => {
     if (token !== workerToken) return;
+    let identity;
     try {
-      const identity = validateWorkerRuntimeIdentity(data.runtimeIdentity, workerRuntimeBinding, workerInstanceNonce);
+      identity = validateWorkerRuntimeIdentity(data.runtimeIdentity, workerRuntimeBinding, workerInstanceNonce);
       workerInstanceNonce ??= identity.workerInstanceNonce;
     } catch (error) {
       worker?.terminate(); worker = null; running = false;
       showActionableError(elements.projectmessage, error.code ?? 'RUNTIME_WORKER_IDENTITY_STALE',
         'A stale or unbound runtime message was rejected. Build and run again.');
+      return;
+    }
+    try {
+      if (data.kind === 'x47-accepted') {
+        renderX47Integration(x47UiOwner.accept({ workerToken: token, runtimeIdentity: identity,
+          receipt: data.receipt, executionReceipt: data.executionReceipt }));
+        return;
+      }
+      if (data.kind === 'x47-cancelled') {
+        if (!data.disposeToken || data.receipts?.length !== 1) throw new Error('X47_UI_CANCEL_ACK_INVALID');
+        renderX47Integration(x47UiOwner.acceptCancellation({ workerToken: token,
+          runtimeIdentity: identity, disposeToken: data.disposeToken, receipt: data.receipts[0] }));
+        return;
+      }
+      if (data.kind === 'disposed' && data.disposeToken) {
+        const stopped = x47UiOwner.acceptDisposed({ workerToken: token, runtimeIdentity: identity,
+          disposeToken: data.disposeToken });
+        if (x47StopTimer !== null) clearTimeout(x47StopTimer);
+        x47StopTimer = null;
+        x47TerminalProjection = stopped;
+        renderX47Integration(stopped);
+        stopRuntime(stopped.reason, { preserveX47Terminal: true });
+        return;
+      }
+    } catch (error) {
+      retireX47Integration(error.code ?? error.message ?? 'X47_UI_MESSAGE_REJECTED');
+      worker?.terminate(); worker = null; running = false;
+      showActionableError(elements.projectmessage, error.code ?? 'X47_UI_MESSAGE_REJECTED', error.message);
       return;
     }
     const acceptedMessage = applyLifecycle({ type: 'runtime.message', binding: runtimeBinding, message: data });
@@ -10933,7 +11056,30 @@ function loadArtifact(hex, artifactIdentity, {
       clearX40SharedTimeline('A later worker message invalidated the prior shared timeline.');
     }
     lastWorkerMessage = performance.now(); running = data.paused === false && data.kind !== 'error';
-    if (data.kind === 'ready') setRuntimeEnabled(true);
+    if (data.kind === 'ready') {
+      setRuntimeEnabled(true);
+      if (x47RuntimeAuthority) {
+        x47WorkerIdentity = structuredClone(identity);
+        renderX47Integration(x47UiOwner.bind({ authority: x47RuntimeAuthority,
+          runtimeIdentity: identity, workerToken: token }));
+      }
+    }
+    const ownerState = x47UiOwner.snapshot();
+    const transaction = data.x47?.transactions?.find((item) =>
+      item.queueReceipt?.transactionId === ownerState.request?.transactionId);
+    if (transaction?.executionReceipt && ownerState.queueReceipt) {
+      try {
+        renderX47Integration(x47UiOwner.observeExecution({ workerToken: token,
+          runtimeIdentity: identity, executionReceipt: transaction.executionReceipt }));
+      } catch (error) {
+        retireX47Integration(error.code ?? error.message ?? 'X47_UI_EXECUTION_REJECTED');
+      }
+    }
+    if (x47ExplicitPauseRequested && data.paused === true && data.kind === 'paused'
+        && x47UiOwner.snapshot().phase === 'await-pause') {
+      x47ExplicitPauseRequested = false;
+      await bindPausedX47Preview(token, identity, data.cycle);
+    }
     scheduleWorkerRuntimeRender(data);
   });
   worker.addEventListener('error', (event) => {
@@ -10952,6 +11098,7 @@ function loadArtifact(hex, artifactIdentity, {
     modelImplementationSha256,
     modelExecutionContextSha256,
     runtimeBinding: workerRuntimeBinding,
+    ...(x47RuntimeAuthority ? { x47RuntimeAuthority: structuredClone(x47RuntimeAuthority) } : {}),
     ...(x34Probe ? { x34Probe: structuredClone(x34Probe) } : {}),
     digitalInputs: currentCandidateInputs(),
     instruments: {
@@ -10999,7 +11146,7 @@ async function pollJob(job, inputAtSubmit, modelExecutionContextSha256, modelImp
       elements.buildstate.textContent = 'Build succeeded'; renderBuildDiagnostics(result, 'No compiler diagnostics.');
       publish({ buildState: 'succeeded', artifactIdentity: result.artifactIdentity, inputIdentity: result.inputIdentity, cacheHit: status.cacheHit });
       clearTechnicalError();
-      loadArtifact(result.artifact.hex, result.artifactIdentity, {
+      await loadArtifact(result.artifact.hex, result.artifactIdentity, {
         modelExecutionContextSha256, modelImplementationSha256,
       }); return;
     }
@@ -11019,6 +11166,7 @@ async function pollJob(job, inputAtSubmit, modelExecutionContextSha256, modelImp
 }
 
 async function build() {
+  retireX47Integration('X47_BUILD_STARTED');
   invalidateVersionRegressionReport('A new build cleared active comparison review authority.');
   invalidateFailureReplayReport('A new build retired the X36 replay workers and cleared export authority. Open the replay point again.');
   invalidateUsartResponseReport('A new build retired the X23 USART0 workers and cleared export authority. Run the suite again.');
@@ -11219,18 +11367,33 @@ elements.cancel.addEventListener('click', () => {
   publish({ buildState: 'cancelled', artifactIdentity: null, inputIdentity: null, cacheHit: false });
 });
 elements.run.addEventListener('click', () => {
+  if (x47UiOwner.snapshot().phase === 'resume-required') {
+    elements.projectmessage.textContent = 'Use Resume explicitly in the D2 pulse panel after Apply.';
+    return;
+  }
   authoredScenarioResults = [];
   clearX40SharedTimeline('Run invalidated the prior shared timeline.');
   const result = applyLifecycle({ type: 'runtime.run' });
-  if (result.accepted) worker?.postMessage({ command: 'run' });
+  if (result.accepted) {
+    if (x47WorkerIdentity && ['await-run', 'ready'].includes(x47UiOwner.snapshot().phase)) {
+      try { renderX47Integration(x47UiOwner.noteRun({ workerToken,
+        runtimeIdentity: x47WorkerIdentity })); } catch { retireX47Integration('X47_RUN_BINDING_REJECTED'); }
+    }
+    x47ExplicitPauseRequested = false;
+    worker?.postMessage({ command: 'run' });
+  }
   renderThermostatExperimentPanel();
 });
 elements.pause.addEventListener('click', () => {
   const result = applyLifecycle({ type: 'runtime.pause' });
-  if (result.accepted) worker?.postMessage({ command: 'pause' });
+  if (result.accepted) {
+    x47ExplicitPauseRequested = x47UiOwner.snapshot().phase === 'await-pause';
+    worker?.postMessage({ command: 'pause' });
+  }
 });
 elements.step.addEventListener('click', () => worker?.postMessage({ command: 'step' }));
 elements.reset.addEventListener('click', () => {
+  retireX47Integration('X47_RESET');
   authoredScenarioResults = [];
   clearX40SharedTimeline('Reset invalidated the prior shared timeline.');
   invalidateVersionRegressionReport('Reset cleared active comparison review authority.');
@@ -11246,6 +11409,75 @@ elements.reset.addEventListener('click', () => {
   renderInstrumentEvidence(null);
   worker.postMessage({ command: 'reset' });
   renderThermostatExperimentPanel();
+});
+
+document.addEventListener('x47-preview-ready', () => {
+  if (lifecycle.phase === 'paused' && x47WorkerIdentity
+      && x47UiOwner.snapshot().phase === 'await-pause') {
+    void bindPausedX47Preview(workerToken, x47WorkerIdentity,
+      window.__M6_STATE__.runtime?.cycle ?? -1);
+  }
+});
+
+document.addEventListener('x47-apply-request', async () => {
+  try {
+    const state = x47UiOwner.snapshot();
+    const api = window.__X47_PULSE_PREVIEW__;
+    const canonicalText = api?.canonicalText?.();
+    const context = api?.bindingContext?.();
+    const events = api?.expandedEvents?.();
+    if (state.phase !== 'ready' || lifecycle.phase !== 'paused' || !worker || !canonicalText
+        || !context || context.graphIdentity !== x47RuntimeAuthority?.graphIdentity
+        || context.sourceProjectRevision !== x47RuntimeAuthority?.sourceProjectRevision) {
+      throw Object.assign(new Error('X47_UI_APPLY_NOT_READY'), { code: 'X47_UI_APPLY_NOT_READY' });
+    }
+    const currentPreview = {
+      canonicalPulseSha256: await projectTextSha256(canonicalText),
+      events: events.map((event) => ({ pin: 2, offsetCycles: event.offsetCycles, level: event.level })),
+    };
+    if (!sameRuntimeIdentity(currentPreview, state.preview)) {
+      throw Object.assign(new Error('X47_UI_PREVIEW_STALE'), { code: 'X47_UI_PREVIEW_STALE' });
+    }
+    const request = x47UiOwner.beginApply(`x47-ui-${crypto.randomUUID()}`);
+    renderX47Integration(x47UiOwner.snapshot());
+    worker.postMessage({ command: 'x47-apply', request });
+  } catch (error) {
+    renderX47Integration({ ...x47UiOwner.snapshot(), reason: error.code ?? error.message });
+  }
+});
+
+document.addEventListener('x47-resume-request', () => {
+  try {
+    if (!worker || !x47WorkerIdentity) throw new Error('X47_UI_WORKER_STALE');
+    const result = applyLifecycle({ type: 'runtime.run' });
+    if (!result.accepted) throw new Error(result.code);
+    renderX47Integration(x47UiOwner.resume({ workerToken,
+      runtimeIdentity: x47WorkerIdentity }));
+    worker.postMessage({ command: 'run' });
+  } catch (error) {
+    renderX47Integration({ ...x47UiOwner.snapshot(), reason: error.code ?? error.message });
+  }
+});
+
+document.addEventListener('x47-stop-request', () => {
+  try {
+    if (!worker || !x47WorkerIdentity || x47StopTimer !== null) throw new Error('X47_UI_STOP_INVALID');
+    const disposeToken = `x47-stop-${crypto.randomUUID()}`;
+    renderX47Integration(x47UiOwner.beginStop(disposeToken));
+    worker.postMessage({ command: 'dispose', disposeToken });
+    x47StopTimer = setTimeout(() => {
+      try {
+        const timedOut = x47UiOwner.timeout(X47_STOP_TIMEOUT_MS);
+        x47TerminalProjection = timedOut;
+        renderX47Integration(timedOut);
+      } finally {
+        x47StopTimer = null;
+        stopRuntime('Stop acknowledgement not completed', { preserveX47Terminal: true });
+      }
+    }, X47_STOP_TIMEOUT_MS);
+  } catch (error) {
+    renderX47Integration({ ...x47UiOwner.snapshot(), reason: error.code ?? error.message });
+  }
 });
 elements.thermostatruntests.addEventListener('click', startThermostatExperiment);
 elements.thermostatloadbad.addEventListener('click', () => loadThermostatFirmwareVariant('known-bad-equality'));

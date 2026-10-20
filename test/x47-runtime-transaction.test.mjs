@@ -143,6 +143,7 @@ test('X47 cancellation receipts precede explicit removal and reset ledger erasur
   assert.deepEqual(receipt.queuePending.map((event) => event.queueSequence), [1, 2]);
   assert.deepEqual(receipt.adapterScheduled.map((event) => event.eventIndex), [0, 1]);
   assert.deepEqual(receipt.adapterApplied, []);
+  assert.equal(receipt.evidenceComplete, false);
   assert.equal(explicit.inputs.snapshot().pending.length, 0);
   assert.throws(() => explicit.queueX47Transaction(request()), /X47_TRANSACTION_CANCELLED/u);
 
@@ -179,6 +180,8 @@ test('X47 queue, execution and cancellation receipts reject mutation or inferred
   const wrongTarget = structuredClone(queue); wrongTarget.events[0].targetCycle += 1;
   assert.throws(() => validateX47QueueReceipt(wrongTarget, context),
     /X47_QUEUE_TARGET_INVALID/u);
+  const overLimit = structuredClone(queue); overLimit.retention.limit = 1;
+  assert.throws(() => validateX47QueueReceipt(overLimit, context), /X47_QUEUE_RETENTION_INVALID/u);
   for (let index = 0; index < 5; index += 1) kernel.step();
   const execution = kernel.x47ExecutionReceipt(queue.transactionId);
   assert.deepEqual(validateX47ExecutionReceipt(execution, context), execution);
@@ -259,6 +262,15 @@ test('X47 cancellation separates queue pending from already adapter-applied even
   assert.deepEqual(receipt.adapterScheduled.map((event) => event.eventIndex), [1]);
   assert.deepEqual(receipt.adapterApplied.map((event) => event.eventIndex), [0]);
   assert.deepEqual(receipt.adapterApplied.map((event) => event.appliedCycle), [2]);
+  assert.equal(receipt.evidenceComplete, false);
+  const context = { authority: authority(), runtimeIdentity, request: pulse, queueReceipt: queue };
+  const overlap = structuredClone(receipt);
+  overlap.adapterScheduled.push({ eventIndex: 0, targetCycle: queue.events[0].targetCycle });
+  assert.throws(() => validateX47CancelReceipt(overlap, context), /X47_CANCEL_EVENT_MISMATCH/u);
+  const afterCancel = structuredClone(receipt);
+  afterCancel.adapterApplied[0].appliedCycle = receipt.cancelCycle + 1;
+  afterCancel.adapterApplied[0].transitionCycle = receipt.cancelCycle + 1;
+  assert.throws(() => validateX47CancelReceipt(afterCancel, context), /X47_CANCEL_EVENT_MISMATCH/u);
 });
 
 test('X47 queue admission rolls back atomically when adapter scheduling fails', () => {

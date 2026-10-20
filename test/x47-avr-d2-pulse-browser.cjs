@@ -145,9 +145,12 @@ async function releaseDigest(page) {
       const windowRevision = await page.evaluate(() => window.__M6_STATE__.revision);
       assert.equal(parsed.sourceProjectRevision, windowRevision);
       assert.equal(await panel.locator('[data-x47-events] li').count(), 2);
-      assert.match(await panel.textContent(), /Preview only.*transient.*not saved.*creates no worker/su);
-      assert.match(await panel.textContent(), /Apply is intentionally absent/u);
-      assert.equal(await panel.locator('button').count(), 1, 'preview panel must expose no Apply control');
+      assert.match(await panel.textContent(), /Private integration.*transient.*not saved.*not native hardware evidence/su);
+      assert.match(await panel.textContent(), /Build, Run, then explicitly Pause before Apply/u);
+      assert.equal(await panel.locator('button').count(), 4);
+      assert.equal(await panel.locator('[data-x47-apply]').isDisabled(), true);
+      assert.equal(await panel.locator('[data-x47-resume]').isDisabled(), true);
+      assert.equal(await panel.locator('[data-x47-stop]').isDisabled(), true);
 
       // A rejected replacement is atomic: while hashing, public reads expose
       // no old bytes; after strict rejection the prior accepted preview returns.

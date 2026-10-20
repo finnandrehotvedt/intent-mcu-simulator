@@ -5,6 +5,7 @@ import {
   CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
   PRE_X47_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
+  PRE_X47_UI_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   PRIOR_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
 } from './model-library-current-resolver.mjs';
 import { RETAINED_MODEL_LIBRARY_IMPLEMENTATION } from './model-library-retained-resolver.mjs';
@@ -18,6 +19,9 @@ export function productionModelBundle(role) {
   if (role === 'pre-x47-current-migration') return PRE_X47_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION;
   if (role === 'pre-x47-validation-current-migration') {
     return PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION;
+  }
+  if (role === 'pre-x47-ui-current-migration') {
+    return PRE_X47_UI_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION;
   }
   if (role === 'current') return CURRENT_MODEL_LIBRARY_IMPLEMENTATION;
   throw new TypeError('MODEL_LIBRARY_REGISTRY_SELECTION');

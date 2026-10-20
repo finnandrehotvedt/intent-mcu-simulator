@@ -161,7 +161,7 @@ test('preview owner preserves accepted bytes on rejection and clears atomically 
   assert.equal(owner.invalidate('X47_RESET').reason, 'X47_RESET');
 });
 
-test('shared shell is preview-only, transient and outside model closure', async () => {
+test('shared shell keeps preview transient while private Apply is model-identity bound', async () => {
   const [shell, owner, modelClosure] = await Promise.all([
     readFile(new URL('../src/shared-workbench-shell.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../src/x47-avr-d2-pulse.mjs', import.meta.url), 'utf8'),
@@ -170,13 +170,15 @@ test('shared shell is preview-only, transient and outside model closure', async 
   for (const code of ['X47_SOURCE_EDITED', 'X47_BUILD_STARTED', 'X47_RUN_STARTED', 'X47_RESET',
     'X47_RUNTIME_RETIRED', 'X47_NEW_PROJECT', 'X47_EXAMPLE_OPENED', 'X47_OPEN_STARTED',
     'X47_PROJECT_OPENED', 'X47_PROFILE_CHANGED']) assert.match(shell, new RegExp(code, 'u'));
-  assert.match(shell, /Preview only/u);
-  assert.match(shell, /Apply is intentionally absent/u);
+  assert.match(shell, /Private integration/u);
+  assert.match(shell, /Apply to paused D2/u);
+  assert.match(shell, /synthetic browser evidence is not native hardware evidence/u);
   assert.match(shell, /X47_SOURCE_CHANGED_DURING_HASH/u);
   assert.match(shell, /state: 'pending'.*record: null.*canonicalText: null.*events: \[\]/su);
   assert.match(shell, /snapshot: currentSnapshot/u);
   assert.match(shell, /x47PulseSourceMatches/u);
   assert.doesNotMatch(`${owner}\n${shell}`, /localStorage|sessionStorage|indexedDB|serviceWorker|postMessage\(/u);
   assert.doesNotMatch(`${owner}\n${shell}`, /queueDigitalSequence|digital-sequence/u);
+  assert.match(modelClosure, /x47-ui-integration/u);
   assert.doesNotMatch(modelClosure, /x47-avr-d2-pulse|shared-workbench-shell/u);
 });
