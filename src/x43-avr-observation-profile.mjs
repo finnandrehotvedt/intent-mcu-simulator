@@ -58,7 +58,7 @@ function unavailableReason(profile) {
   return 'unavailable-no-current-avr-worker';
 }
 
-export function validateX43AvrObservation(value) {
+function validateX43AvrObservationValue(value, { allowPauseTransition = false } = {}) {
   exactKeys(value, OBSERVATION_KEYS, 'X43_OBSERVATION_KEYS');
   if (value.schema !== X43_OBSERVATION_SCHEMA) reject('X43_OBSERVATION_SCHEMA');
   if (value.profile !== AVR_PROFILE) reject(unavailableReason(value.profile));
@@ -75,13 +75,18 @@ export function validateX43AvrObservation(value) {
   if (!HASH.test(value.modelExecutionContextSha256)) reject('X43_MODEL_CONTEXT');
   if (!NONCE.test(value.workerInstanceNonce)) reject('X43_WORKER_NONCE');
   if (!CURRENT_PHASES.has(value.phase)) reject('X43_RUNTIME_NOT_CURRENT');
-  if (typeof value.paused !== 'boolean'
-      || (value.phase === 'paused' && value.paused !== true)
-      || (value.phase === 'running' && value.paused !== false)) reject('X43_PAUSE_STATE_MISMATCH');
+  if (typeof value.paused !== 'boolean') reject('X43_PAUSE_STATE_MISMATCH');
+  const pauseTransition = (value.phase === 'paused' && value.paused !== true)
+    || (value.phase === 'running' && value.paused !== false);
+  if (pauseTransition && !allowPauseTransition) reject('X43_PAUSE_STATE_MISMATCH');
   return clone(value);
 }
 
-export function projectX43AvrObservation(profile, state) {
+export function validateX43AvrObservation(value) {
+  return validateX43AvrObservationValue(value);
+}
+
+export function projectX43AvrObservationStatus(profile, state) {
   if (profile !== AVR_PROFILE) reject(unavailableReason(profile));
   const lifecycle = state?.lifecycle;
   const artifact = lifecycle?.artifact;
@@ -110,7 +115,7 @@ export function projectX43AvrObservation(profile, state) {
     instructions: runtime?.instructions,
     paused: runtime?.paused,
   };
-  const observation = validateX43AvrObservation(value);
+  const observation = validateX43AvrObservationValue(value, { allowPauseTransition: true });
   if (!artifact || !runtimeBinding
       || artifact.projectGeneration !== observation.projectGeneration
       || artifact.buildGeneration !== observation.buildGeneration
@@ -125,7 +130,21 @@ export function projectX43AvrObservation(profile, state) {
       || runtime?.modelExecutionContextSha256 !== observation.modelExecutionContextSha256) {
     reject('X43_BINDING_MISMATCH');
   }
-  return observation;
+  const transition = (observation.phase === 'paused' && observation.paused !== true)
+    || (observation.phase === 'running' && observation.paused !== false);
+  return Object.freeze({
+    state: transition ? 'transition' : 'current',
+    reason: transition ? 'X43_PAUSE_STATE_TRANSITION' : null,
+    observation: transition ? null : observation,
+    binding: bindingFrom(observation),
+    counters: Object.freeze({ cycle: observation.cycle, instructions: observation.instructions }),
+  });
+}
+
+export function projectX43AvrObservation(profile, state) {
+  const status = projectX43AvrObservationStatus(profile, state);
+  if (status.state !== 'current') reject('X43_PAUSE_STATE_MISMATCH');
+  return status.observation;
 }
 
 export function x43VirtualNanoseconds(deltaCycles) {
@@ -260,5 +279,5 @@ export function createX43AvrObservationProfile() {
     return publicView();
   };
 
-  return Object.freeze({ prepare, start, capture, revalidate, invalidate, snapshot });
+  return Object.freeze({ prepare, start, capture, revalidate, invalidate, snapshot, peek: publicView });
 }

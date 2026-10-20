@@ -93,6 +93,34 @@ async function stopControl(page, id) {
       await page.waitForFunction(() => !document.querySelector('#workbench-instruments-dialog [data-x43-start]').disabled);
       const activityBefore = await page.evaluate(() => structuredClone(window.__X43_TEST_ACTIVITY__));
 
+      // The control lifecycle changes before the worker acknowledgement. Keep
+      // the exact Start binding internally, but expose no interval or Capture
+      // authority until the first coherent worker projection arrives.
+      await panel.locator('[data-x43-start]').click();
+      const transitionStart = await page.evaluate(() => window.__X43_AVR_PROFILE__.snapshot().interval.start);
+      await page.evaluate(() => {
+        window.__M6_STATE__.lifecycle.phase = 'running';
+        document.querySelector('#quick-state').textContent = 'fixture · running';
+      });
+      await page.waitForFunction(() => window.__X43_AVR_PROFILE__.transitionState() === 'transitioning');
+      assert.equal(await panel.locator('[data-x43-capture]').isEnabled(), false);
+      assert.equal(await panel.locator('[data-x43-counters]').textContent(), 'No captured interval.');
+      assert.match(await panel.locator('[data-x43-binding]').textContent(), /Awaiting one coherent AVR worker status/u);
+      if (evidenceDir) await panel.screenshot({
+        path: path.join(evidenceDir, `x43-run-transition-unavailable-${viewport.width}x${viewport.height}.png`),
+      });
+      await inject(page, { ...fixture, lifecycle: { ...fixture.lifecycle, phase: 'running' },
+        runtime: { ...fixture.runtime, paused: false } }, {
+        cycle: transitionStart.cycle + 200, instructions: transitionStart.instructions + 130,
+      });
+      await page.evaluate(() => { document.querySelector('#quick-state').textContent = 'fixture · running current'; });
+      await page.waitForFunction(() => window.__X43_AVR_PROFILE__.transitionState() === 'observing');
+      const retainedTransition = await page.evaluate(() => window.__X43_AVR_PROFILE__.snapshot());
+      assert.deepEqual(retainedTransition.interval.start, transitionStart);
+      assert.equal(await panel.locator('[data-x43-capture]').isEnabled(), true);
+      await panel.locator('[data-x43-capture]').click();
+      assert.equal((await page.evaluate(() => window.__X43_AVR_PROFILE__.snapshot())).state, 'captured');
+
       // Keyboard-only Start followed by deterministic counter replay and Capture.
       await panel.locator('[data-x43-start]').focus();
       await page.keyboard.press('Enter');

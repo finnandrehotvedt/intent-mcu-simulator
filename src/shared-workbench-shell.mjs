@@ -19,7 +19,7 @@ import {
 } from './x42-digital-edge-trigger-capture.mjs';
 import {
   createX43AvrObservationProfile,
-  projectX43AvrObservation,
+  projectX43AvrObservationStatus,
   x43VirtualNanosecondsText,
 } from './x43-avr-observation-profile.mjs';
 
@@ -610,45 +610,60 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
   const current = () => {
     const profile = activeProfileReader();
     try {
-      return { observation: projectX43AvrObservation(profile, document.defaultView?.__M6_STATE__ ?? null), reason: null };
+      return projectX43AvrObservationStatus(profile, document.defaultView?.__M6_STATE__ ?? null);
     } catch (error) {
-      return { observation: null, reason: error.code ?? 'unavailable-no-current-avr-worker' };
+      return { state: 'unavailable', observation: null, binding: null,
+        reason: error.code ?? 'unavailable-no-current-avr-worker' };
     }
   };
-  const revalidateCurrent = () => {
-    const { observation } = current();
-    return owner.snapshot(observation);
-  };
+  const sameBinding = (left, right) => left && right
+    && Object.keys(left).length === Object.keys(right).length
+    && Object.entries(left).every(([key, value]) => right[key] === value);
   const paint = () => {
-    let snapshot = revalidateCurrent();
-    const { observation, reason } = current();
-    if (snapshot.state === 'unavailable') {
-      owner.prepare(observation);
-      snapshot = owner.snapshot(observation);
+    const status = current();
+    const { observation, reason } = status;
+    let transitioning = status.state === 'transition';
+    let snapshot = owner.peek();
+    if (transitioning && snapshot.binding && !sameBinding(snapshot.binding, status.binding)) {
+      transitioning = false;
+      snapshot = owner.invalidate('X43_BINDING_CHANGED');
+    } else if (!transitioning) {
+      if (observation) snapshot = owner.snapshot(observation);
+      else if (['observing', 'captured'].includes(snapshot.state)) snapshot = owner.invalidate(reason);
+      if (snapshot.state === 'unavailable') {
+        owner.prepare(observation);
+        snapshot = owner.peek();
+      }
     }
     for (const panel of panels) {
-      panel.dataset.state = snapshot.state;
-      panel.querySelector('[data-x43-state]').textContent = snapshot.state;
+      panel.dataset.state = transitioning ? 'transitioning' : snapshot.state;
+      panel.querySelector('[data-x43-state]').textContent = transitioning ? 'transitioning' : snapshot.state;
       const start = panel.querySelector('[data-x43-start]');
       const capture = panel.querySelector('[data-x43-capture]');
-      start.disabled = !observation || snapshot.state === 'observing';
+      start.disabled = transitioning || !observation || snapshot.state === 'observing';
       start.textContent = ['captured', 'invalidated'].includes(snapshot.state)
         ? 'Start new observation' : 'Start observation';
-      capture.disabled = !observation || snapshot.state !== 'observing';
-      panel.querySelector('[data-x43-binding]').textContent = snapshot.binding
+      capture.disabled = transitioning || !observation || snapshot.state !== 'observing';
+      panel.querySelector('[data-x43-binding]').textContent = transitioning
+        ? 'Awaiting one coherent AVR worker status; controls and values are unavailable during the atomic transition.'
+        : snapshot.binding
         ? `source ${snapshot.binding.sourceIdentity.slice(0, 12)}… · revision ${snapshot.binding.revision} · artifact ${snapshot.binding.artifactIdentity.slice(0, 12)}… · project/build/runtime ${snapshot.binding.projectGeneration}/${snapshot.binding.buildGeneration}/${snapshot.binding.runtimeGeneration} · model ${snapshot.binding.modelImplementationSha256.slice(0, 8)}…/${snapshot.binding.modelExecutionContextSha256.slice(0, 8)}… · worker ${snapshot.binding.workerInitialization}/${snapshot.binding.workerInstanceNonce.slice(0, 8)}…`
         : reason ?? snapshot.reason ?? 'No current AVR worker.';
-      const interval = snapshot.interval;
+      const interval = transitioning ? null : snapshot.interval;
       panel.querySelector('[data-x43-counters]').textContent = interval?.delta
         ? `${interval.start.cycle.toLocaleString('en-US')} cycles / ${interval.start.instructions.toLocaleString('en-US')} instructions → ${interval.end.cycle.toLocaleString('en-US')} cycles / ${interval.end.instructions.toLocaleString('en-US')} instructions · Δ ${interval.delta.cycles.toLocaleString('en-US')} / ${interval.delta.instructions.toLocaleString('en-US')}`
         : interval?.start
           ? `Started at ${interval.start.cycle.toLocaleString('en-US')} cycles / ${interval.start.instructions.toLocaleString('en-US')} instructions.`
           : 'No captured interval.';
-      panel.querySelector('[data-x43-virtual]').textContent = interval?.virtualTime
+      panel.querySelector('[data-x43-virtual]').textContent = transitioning
+        ? 'Unavailable during runtime state transition.'
+        : interval?.virtualTime
         ? `${x43VirtualNanosecondsText(interval.virtualTime)} · exact 16 MHz AVR cycle basis`
         : 'Unavailable until capture.';
       const wall = interval?.wallDiagnostic;
-      panel.querySelector('[data-x43-wall]').textContent = wall
+      panel.querySelector('[data-x43-wall]').textContent = transitioning
+        ? 'Unavailable during runtime state transition.'
+        : wall
         ? `${wall.milliseconds.toFixed(3)} ms browser wall · ${wall.cyclesPerSecond === null ? 'throughput unavailable' : `${Math.round(wall.cyclesPerSecond).toLocaleString('en-US')} cycles/s · ${Math.round(wall.instructionsPerSecond).toLocaleString('en-US')} instructions/s`} · diagnostic only`
         : 'Not a semantic or hardware time.';
     }
@@ -698,6 +713,7 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
     refresh: paint,
     invalidate,
     snapshot: paint,
+    transitionState: () => panels[0]?.dataset.state ?? 'unavailable',
   });
   document.defaultView.__X43_AVR_PROFILE__ = api;
   paint();

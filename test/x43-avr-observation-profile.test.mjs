@@ -8,6 +8,7 @@ import { AVR_PROFILE, ESP32C3_PROFILE, RP2040_PROFILE, STM32F429ZI_PROFILE } fro
 import {
   createX43AvrObservationProfile,
   projectX43AvrObservation,
+  projectX43AvrObservationStatus,
   validateX43AvrObservation,
   X43_CLOCK_HERTZ,
   X43_OBSERVATION_SCHEMA,
@@ -79,6 +80,25 @@ test('strict observation rejects unknown keys, unsafe counters and mixed binding
   mixedModel.runtime.modelExecutionContextSha256 = hash('e');
   assert.throws(() => projectX43AvrObservation(AVR_PROFILE, mixedModel),
     { code: 'X43_BINDING_MISMATCH' });
+});
+
+test('pause/run ordering is explicit only after full projection and binding validation', () => {
+  const transition = state();
+  transition.lifecycle.phase = 'running';
+  assert.throws(() => projectX43AvrObservation(AVR_PROFILE, transition),
+    { code: 'X43_PAUSE_STATE_MISMATCH' });
+  const status = projectX43AvrObservationStatus(AVR_PROFILE, transition);
+  assert.equal(status.state, 'transition');
+  assert.equal(status.reason, 'X43_PAUSE_STATE_TRANSITION');
+  assert.equal(status.observation, null);
+  assert.equal(status.binding.artifactIdentity, hash('a'));
+  assert.deepEqual(status.counters, { cycle: 200, instructions: 120 });
+
+  const mixed = state();
+  mixed.lifecycle.phase = 'running';
+  mixed.lifecycle.runtimeBinding.artifactIdentity = hash('e');
+  assert.throws(() => projectX43AvrObservationStatus(AVR_PROFILE, mixed),
+    { code: 'X43_BINDING_MISMATCH' }, 'a pause mismatch may not hide a stale binding');
 });
 
 test('overflow-safe rational conversion preserves exact 16 MHz virtual time', () => {
@@ -211,8 +231,9 @@ test('shared shell integration is transient, read-only and outside model closure
   ]);
   for (const code of ['X43_SOURCE_EDITED', 'X43_BUILD_STARTED', 'X43_RESET', 'X43_STOP',
     'X43_NEW_PROJECT', 'X43_EXAMPLE_LOADED', 'X43_PROFILE_CHANGED']) assert.match(shell, new RegExp(code, 'u'));
-  assert.match(shell, /projectX43AvrObservation/u);
+  assert.match(shell, /projectX43AvrObservationStatus/u);
   assert.match(shell, /owner\.snapshot\(observation\)/u);
+  assert.match(shell, /Awaiting one coherent AVR worker status/u);
   assert.doesNotMatch(`${owner}\n${shell}`, /localStorage|sessionStorage|indexedDB|serviceWorker|postMessage\(/u);
   assert.doesNotMatch(modelClosure, /x43-avr-observation-profile|shared-workbench-shell/u);
 });
