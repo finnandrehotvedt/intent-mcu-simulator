@@ -85,8 +85,8 @@ export function stableX49Stringify(value) {
   return JSON.stringify(value);
 }
 
-export async function x49Sha256(value) {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+export async function x49Sha256(value, cryptoImpl = globalThis.crypto) {
+  const digest = await cryptoImpl.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return [...new Uint8Array(digest)].map((part) => part.toString(16).padStart(2, '0')).join('');
 }
 
@@ -95,9 +95,11 @@ export function semanticX49Projection(value) {
   return clone(semantic);
 }
 
-export async function sealX49Report(value) {
+export async function sealX49Report(value, cryptoImpl = globalThis.crypto) {
   const sealed = clone(value);
-  sealed.semanticSha256 = await x49Sha256(stableX49Stringify(semanticX49Projection(sealed)));
+  sealed.semanticSha256 = await x49Sha256(
+    stableX49Stringify(semanticX49Projection(sealed)), cryptoImpl,
+  );
   return sealed;
 }
 
@@ -335,12 +337,14 @@ function evaluateNativeCase(observation, expected, experiment, freshWorkers) {
   };
 }
 
-export async function projectX49Report(value) {
+export async function projectX49Report(value, cryptoImpl = globalThis.crypto) {
   if (!exactKeys(value, ['schema', 'contractId', 'experimentBinding', 'cases', 'semanticSha256'])
       || value.schema !== X49_REPORT_SCHEMA || value.contractId !== X49_CONTRACT_ID
       || !HASH.test(value.semanticSha256 ?? '') || !Array.isArray(value.cases)
       || value.cases.length !== X49_CASES.length) reject('X49_REPORT_INVALID');
-  const expectedHash = await x49Sha256(stableX49Stringify(semanticX49Projection(value)));
+  const expectedHash = await x49Sha256(
+    stableX49Stringify(semanticX49Projection(value)), cryptoImpl,
+  );
   if (value.semanticSha256 !== expectedHash) reject('X49_REPORT_HASH_INVALID');
   const experiment = validateExperimentBinding(value.experimentBinding);
   const observations = value.cases.map(validateObservationShape);
@@ -373,24 +377,29 @@ export async function validateX49AcceptedNativeReport(value) {
   return projection;
 }
 
-export function createX49ProjectionOwner() {
+export function createX49ProjectionOwner({ cryptoImpl = globalThis.crypto } = {}) {
   let state = { state: 'ready', reason: null, classification: 'calculated-only',
     cases: projectX49ExpectedCases(), academicStatus: 'unavailable', physicalStatus: 'absent' };
+  let generation = 0;
   const snapshot = () => clone(state);
   return Object.freeze({
     preview() {
+      generation += 1;
       state = { state: 'preview', reason: null, classification: 'calculated-only',
         cases: projectX49ExpectedCases(), academicStatus: 'unavailable', physicalStatus: 'absent' };
       return snapshot();
     },
     async acceptSyntheticReplay(report) {
-      const projection = await projectX49Report(report);
+      const acceptedGeneration = ++generation;
+      const projection = await projectX49Report(report, cryptoImpl);
+      if (acceptedGeneration !== generation) reject('X49_REPLAY_RETIRED');
       state = { state: 'synthetic-replay', reason: null,
         classification: 'synthetic-browser-replay-not-native-evidence', cases: projection.cases,
         academicStatus: 'unavailable', physicalStatus: 'absent' };
       return snapshot();
     },
     invalidate(reason = 'X49_CLEARED') {
+      generation += 1;
       state = { state: 'invalidated', reason, classification: 'calculated-only', cases: [],
         academicStatus: 'unavailable', physicalStatus: 'absent' };
       return snapshot();

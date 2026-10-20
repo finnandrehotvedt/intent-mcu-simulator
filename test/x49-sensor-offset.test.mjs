@@ -246,6 +246,29 @@ test('UI owner labels replay synthetic, never upgrades academic status, and clea
   assert.equal(cleared.reason, 'X49_SOURCE_EDITED');
 });
 
+test('late digest completion cannot resurrect replay retired by invalidation', async () => {
+  const value = await report();
+  let releaseDigest;
+  let digestEntered;
+  const held = new Promise((resolve) => { releaseDigest = resolve; });
+  const entered = new Promise((resolve) => { digestEntered = resolve; });
+  const cryptoImpl = { subtle: { async digest(...args) {
+    digestEntered();
+    await held;
+    return globalThis.crypto.subtle.digest(...args);
+  } } };
+  const owner = createX49ProjectionOwner({ cryptoImpl });
+  const pending = owner.acceptSyntheticReplay(value);
+  await entered;
+  owner.invalidate('X49_PROFILE_CHANGED');
+  releaseDigest();
+  await assert.rejects(pending, { code: 'X49_REPLAY_RETIRED' });
+  assert.deepEqual(owner.snapshot(), {
+    state: 'invalidated', reason: 'X49_PROFILE_CHANGED', classification: 'calculated-only',
+    cases: [], academicStatus: 'unavailable', physicalStatus: 'absent',
+  });
+});
+
 test('shared UI remains outside locked model closure and has zero producer or persistence authority', async () => {
   const [shell, owner, modelClosure] = await Promise.all([
     readFile(new URL('../src/shared-workbench-shell.mjs', import.meta.url), 'utf8'),
