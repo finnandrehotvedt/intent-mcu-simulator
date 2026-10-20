@@ -17,6 +17,11 @@ import {
   X42_PRE_EDGE_COUNT,
   x42TriggerAvailability,
 } from './x42-digital-edge-trigger-capture.mjs';
+import {
+  createX43AvrObservationProfile,
+  projectX43AvrObservation,
+  x43VirtualNanosecondsText,
+} from './x43-avr-observation-profile.mjs';
 
 export const SHARED_WORKBENCH_SCHEMA = 'intent-mcu-shared-workbench@1';
 export const SHARED_WORKBENCH_SURFACES = Object.freeze([
@@ -565,6 +570,140 @@ function installX42TriggerCapture(document, activeProfileReader) {
   return api;
 }
 
+function createX43Panel(document, ordinal) {
+  const panel = document.createElement('section');
+  panel.className = 'x43-runtime-profile';
+  panel.dataset.x43RuntimeProfile = '';
+  panel.setAttribute('aria-labelledby', `x43-profile-title-${ordinal}`);
+  panel.innerHTML = `
+    <div class="shared-instrument-tool-heading">
+      <strong id="x43-profile-title-${ordinal}">Runtime profile interval</strong>
+      <span data-x43-state>Unavailable</span>
+    </div>
+    <p class="x43-profile-boundary">Read-only observation · current AVR worker counters only · no runtime command, verdict or hardware benchmark.</p>
+    <div class="x43-profile-controls">
+      <button type="button" data-x43-start disabled>Start observation</button>
+      <button type="button" data-x43-capture disabled>Capture now</button>
+    </div>
+    <dl class="x43-profile-facts">
+      <div><dt>Binding</dt><dd data-x43-binding>No current AVR worker.</dd></div>
+      <div><dt>CPU interval</dt><dd data-x43-counters>No captured interval.</dd></div>
+      <div><dt>Simulated time</dt><dd data-x43-virtual>Unavailable until capture.</dd></div>
+      <div><dt>Wall diagnostic</dt><dd data-x43-wall>Not a semantic or hardware time.</dd></div>
+    </dl>
+    <dl class="x43-profile-unsupported" aria-label="Unavailable runtime profile fields">
+      <div><dt>Dynamic SRAM</dt><dd data-status="unavailable">Unavailable · runtime does not expose use.</dd></div>
+      <div><dt>Heap</dt><dd data-status="unavailable">Unavailable · runtime does not expose use.</dd></div>
+      <div><dt>Current stack</dt><dd data-status="unavailable">Unavailable · runtime does not expose depth.</dd></div>
+      <div><dt>Peak stack</dt><dd data-status="unavailable">Unavailable · runtime does not expose a high-water mark.</dd></div>
+    </dl>`;
+  return panel;
+}
+
+function installX43AvrObservationProfile(document, activeProfileReader) {
+  const panels = [...document.querySelectorAll('[data-shared-instrument-tools]')].map((tools, index) => {
+    const panel = createX43Panel(document, index + 1);
+    tools.append(panel);
+    return panel;
+  });
+  const owner = createX43AvrObservationProfile();
+  const current = () => {
+    const profile = activeProfileReader();
+    try {
+      return { observation: projectX43AvrObservation(profile, document.defaultView?.__M6_STATE__ ?? null), reason: null };
+    } catch (error) {
+      return { observation: null, reason: error.code ?? 'unavailable-no-current-avr-worker' };
+    }
+  };
+  const revalidateCurrent = () => {
+    const { observation } = current();
+    return owner.snapshot(observation);
+  };
+  const paint = () => {
+    let snapshot = revalidateCurrent();
+    const { observation, reason } = current();
+    if (snapshot.state === 'unavailable') {
+      owner.prepare(observation);
+      snapshot = owner.snapshot(observation);
+    }
+    for (const panel of panels) {
+      panel.dataset.state = snapshot.state;
+      panel.querySelector('[data-x43-state]').textContent = snapshot.state;
+      const start = panel.querySelector('[data-x43-start]');
+      const capture = panel.querySelector('[data-x43-capture]');
+      start.disabled = !observation || snapshot.state === 'observing';
+      start.textContent = ['captured', 'invalidated'].includes(snapshot.state)
+        ? 'Start new observation' : 'Start observation';
+      capture.disabled = !observation || snapshot.state !== 'observing';
+      panel.querySelector('[data-x43-binding]').textContent = snapshot.binding
+        ? `source ${snapshot.binding.sourceIdentity.slice(0, 12)}… · revision ${snapshot.binding.revision} · artifact ${snapshot.binding.artifactIdentity.slice(0, 12)}… · project/build/runtime ${snapshot.binding.projectGeneration}/${snapshot.binding.buildGeneration}/${snapshot.binding.runtimeGeneration} · model ${snapshot.binding.modelImplementationSha256.slice(0, 8)}…/${snapshot.binding.modelExecutionContextSha256.slice(0, 8)}… · worker ${snapshot.binding.workerInitialization}/${snapshot.binding.workerInstanceNonce.slice(0, 8)}…`
+        : reason ?? snapshot.reason ?? 'No current AVR worker.';
+      const interval = snapshot.interval;
+      panel.querySelector('[data-x43-counters]').textContent = interval?.delta
+        ? `${interval.start.cycle.toLocaleString('en-US')} cycles / ${interval.start.instructions.toLocaleString('en-US')} instructions → ${interval.end.cycle.toLocaleString('en-US')} cycles / ${interval.end.instructions.toLocaleString('en-US')} instructions · Δ ${interval.delta.cycles.toLocaleString('en-US')} / ${interval.delta.instructions.toLocaleString('en-US')}`
+        : interval?.start
+          ? `Started at ${interval.start.cycle.toLocaleString('en-US')} cycles / ${interval.start.instructions.toLocaleString('en-US')} instructions.`
+          : 'No captured interval.';
+      panel.querySelector('[data-x43-virtual]').textContent = interval?.virtualTime
+        ? `${x43VirtualNanosecondsText(interval.virtualTime)} · exact 16 MHz AVR cycle basis`
+        : 'Unavailable until capture.';
+      const wall = interval?.wallDiagnostic;
+      panel.querySelector('[data-x43-wall]').textContent = wall
+        ? `${wall.milliseconds.toFixed(3)} ms browser wall · ${wall.cyclesPerSecond === null ? 'throughput unavailable' : `${Math.round(wall.cyclesPerSecond).toLocaleString('en-US')} cycles/s · ${Math.round(wall.instructionsPerSecond).toLocaleString('en-US')} instructions/s`} · diagnostic only`
+        : 'Not a semantic or hardware time.';
+    }
+    return snapshot;
+  };
+  for (const panel of panels) {
+    panel.querySelector('[data-x43-start]').addEventListener('click', () => {
+      const { observation, reason } = current();
+      if (!observation) owner.invalidate(reason ?? 'X43_START_UNAVAILABLE');
+      else {
+        try { owner.start(observation, document.defaultView.performance.now()); }
+        catch (error) { owner.invalidate(error.code ?? 'X43_START_REJECTED'); }
+      }
+      paint();
+    });
+    panel.querySelector('[data-x43-capture]').addEventListener('click', () => {
+      const { observation, reason } = current();
+      if (!observation) owner.invalidate(reason ?? 'X43_CAPTURE_UNAVAILABLE');
+      else {
+        try { owner.capture(observation, document.defaultView.performance.now()); }
+        catch (error) { owner.invalidate(error.code ?? 'X43_CAPTURE_REJECTED'); }
+      }
+      paint();
+    });
+  }
+  const invalidate = (reason) => { const snapshot = owner.invalidate(reason); paint(); return snapshot; };
+  const invalidateEvents = new Map([
+    ['build', 'X43_BUILD_STARTED'], ['reset', 'X43_RESET'], ['stop', 'X43_STOP'],
+    ['project-new', 'X43_NEW_PROJECT'], ['project-demo', 'X43_EXAMPLE_LOADED'],
+  ]);
+  document.addEventListener('input', (event) => {
+    if (event.target?.id === 'source') invalidate('X43_SOURCE_EDITED');
+  }, true);
+  document.addEventListener('click', (event) => {
+    const reason = invalidateEvents.get(event.target?.id);
+    if (reason) invalidate(reason);
+  }, true);
+  const BindingObserver = document.defaultView?.MutationObserver;
+  const bindingObserver = BindingObserver ? new BindingObserver(() => paint()) : null;
+  if (bindingObserver) {
+    for (const selector of ['#project-message', '#build-state', '#quick-state', '#wire-state']) {
+      const node = document.querySelector(selector);
+      if (node) bindingObserver.observe(node, { childList: true, characterData: true, subtree: true });
+    }
+  }
+  const api = Object.freeze({
+    refresh: paint,
+    invalidate,
+    snapshot: paint,
+  });
+  document.defaultView.__X43_AVR_PROFILE__ = api;
+  paint();
+  return api;
+}
+
 export function mountSharedWorkbenchShell(document) {
   const legacy = mountLegacySharedWorkbenchShell(document);
   const adapterMap = new Map(sharedWorkbenchAdapters().map((adapter) => [adapter.profile, adapter]));
@@ -673,6 +812,7 @@ export function mountSharedWorkbenchShell(document) {
   let returnFocus = null;
   let viewMode = 'advanced';
   const x42 = installX42TriggerCapture(document, () => activeProfile);
+  const x43 = installX43AvrObservationProfile(document, () => activeProfile);
 
   const viewButtons = Object.freeze({
     simple: document.querySelector('#workbench-view-simple'),
@@ -723,7 +863,7 @@ export function mountSharedWorkbenchShell(document) {
     returnFocus = requestedOpener ?? document.activeElement ?? popup.opener;
     popup.opener.setAttribute('aria-expanded', 'true');
     popup.dialog.showModal();
-    if (name === 'instruments') x42.refresh();
+    if (name === 'instruments') { x42.refresh(); x43.refresh(); }
     if (initialFocus) {
       const heading = popup.dialog.querySelector('h2');
       queueMicrotask(() => (heading ?? popupFocusable(popup.dialog)[0])?.focus({ preventScroll: true }));
@@ -824,7 +964,10 @@ export function mountSharedWorkbenchShell(document) {
   const api = Object.freeze({
     activate(profile) {
       if (!roots.has(profile)) throw new Error('SHARED_WORKBENCH_PROFILE_UNKNOWN');
-      if (profile !== activeProfile) x42.invalidate('X42_PROFILE_CHANGED');
+      if (profile !== activeProfile) {
+        x42.invalidate('X42_PROFILE_CHANGED');
+        x43.invalidate('X43_PROFILE_CHANGED');
+      }
       closePopup();
       if (activeCanvas) parking.append(activeCanvas);
       activeProfile = profile;

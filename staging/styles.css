@@ -1232,9 +1232,24 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .x42-trigger-capture [data-x42-rows] { max-height: min(260px, 38vh); overflow-x: hidden; overflow-y: auto; scrollbar-gutter: stable; margin: 8px 0 0; padding: 8px 8px 8px 34px; border: 1px solid #24516a; border-radius: 8px; background: #02070b; color: #c6fbd4; font: .76rem/1.55 ui-monospace, monospace; }
 .x42-trigger-capture [data-x42-rows] li { padding: 2px 5px 2px 4px; overflow-wrap: anywhere; }
 .x42-trigger-capture [data-relative-position="0"] { margin-block: 2px; border-left: 3px solid var(--amber); border-radius: 3px; color: #ffe3a3; background: #3b2b0d; font-weight: 850; }
+.x43-runtime-profile { grid-column: 1 / -1; border-color: #375f78 !important; background: linear-gradient(135deg, #06121c, #0b1d29) !important; }
+.x43-runtime-profile[data-state="observing"] { border-color: var(--amber) !important; }
+.x43-runtime-profile[data-state="captured"] { border-color: var(--lime) !important; }
+.x43-runtime-profile[data-state="invalidated"] { border-color: #98637a !important; }
+.x43-runtime-profile .shared-instrument-tool-heading { align-items: center; font: 800 .78rem/1.4 ui-monospace, monospace; }
+.x43-runtime-profile .shared-instrument-tool-heading span { padding: 4px 8px; border: 1px solid currentColor; border-radius: 999px; }
+.x43-profile-boundary { margin: 8px 0; color: #b9ceda; font: .76rem/1.55 ui-monospace, monospace; overflow-wrap: anywhere; }
+.x43-profile-controls { display: flex; flex-wrap: wrap; gap: 8px; }
+.x43-profile-controls button { min-width: 180px; min-height: 38px; color: #07121d; border-color: var(--lime); background: var(--lime); font: 850 .76rem/1.35 ui-monospace, monospace; }
+.x43-profile-controls button:disabled { color: var(--muted); border-color: var(--line); background: #0b1b29; }
+.x43-profile-facts, .x43-profile-unsupported { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin: 10px 0 0; }
+.x43-profile-facts div, .x43-profile-unsupported div { min-width: 0; padding: 8px; border: 1px solid var(--line); border-radius: 7px; background: #040d15; }
+.x43-profile-facts dt, .x43-profile-unsupported dt { color: #b9ceda; font: 750 .75rem/1.4 ui-monospace, monospace; text-transform: uppercase; }
+.x43-profile-facts dd, .x43-profile-unsupported dd { margin-top: 4px; color: var(--text); text-align: left; font: .76rem/1.5 ui-monospace, monospace; overflow-wrap: anywhere; }
+.x43-profile-unsupported dd[data-status="unavailable"] { color: #d7c38f; }
 @media (max-width: 760px) {
   .shared-instrument-tools, .failure-replay-results { grid-template-columns: 1fr; }
-  .x42-trigger-controls, .x42-trigger-facts { grid-template-columns: 1fr; }
+  .x42-trigger-controls, .x42-trigger-facts, .x43-profile-facts, .x43-profile-unsupported { grid-template-columns: 1fr; }
 }
 .control-runtime-evidence { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
 .control-runtime-evidence summary { cursor: pointer; color: var(--cyan); font: 800 .72rem ui-monospace, monospace; }
