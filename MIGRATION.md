@@ -1,8 +1,13 @@
-# Migration to 1.1.0-rc.91
+# Migration to 1.1.0-rc.92
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.92 changes no project, package, compiler-artifact, model-library, cache or
+browser-storage schema. X43 interval observations are transient current-tab
+views bound to a current AVR worker. They are never saved or restored, so
+existing files require no conversion and Open grants no profiling authority.
 
 Rc.91 changes no project, package, compiler-artifact, model-library, cache or
 browser-storage schema. X42 capture is transient current-tab observation bound

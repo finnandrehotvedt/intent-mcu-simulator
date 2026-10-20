@@ -28,24 +28,24 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc90 to rc91 X42 closure release bytes', async () => {
+test('X88 owner binds canonical rc91 to rc92 partial X43 release bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.91');
+  assert.equal(release.version, '1.1.0-rc.92');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
-  assert(registry.ids.includes('X42'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.90', current: '1.1.0-rc.91' });
+  assert(registry.ids.includes('X43'));
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.91', current: '1.1.0-rc.92' });
   assert.deepEqual(value.changes, [
     {
-      id: 'X42', classification: 'changed', capabilities: ['intent-mcu-x42-digital-edge-capture@1'],
-      contracts: ['x42-avr-armed-digital-edge-capture-v1'],
-      summary: 'Completes X42 for AVR with an armed future-edge capture over authoritative worker transitions, fixed 16+1+16 rows, bounded observation and fail-closed lifecycle binding.',
+      id: 'X43', classification: 'changed', capabilities: ['intent-mcu-x43-avr-observation-interval@1'],
+      contracts: ['x43-avr-observation-interval-v1'],
+      summary: 'Publishes the partial X43 AVR-only cycle and executed-instruction observation interval with exact lifecycle binding, fail-closed counter ordering and explicit unavailable memory and stack fields.',
     },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records the reviewed rc.90 to rc.91 X42 release without adding firmware action, stored runtime authority, project persistence, automatic replay or verdict authority.',
+      summary: 'Records the reviewed rc.91 to rc.92 partial X43 release without adding firmware action, stored runtime authority, project persistence, automatic replay or verdict authority.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -108,7 +108,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.91');
+  assert.equal(discovery.identity.version, '1.1.0-rc.92');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

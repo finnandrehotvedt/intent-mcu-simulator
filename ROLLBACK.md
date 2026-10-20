@@ -1,16 +1,21 @@
-# Rollback basis for 1.1.0-rc.91
+# Rollback basis for 1.1.0-rc.92
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain exact accepted rc.90 source commit
-`62ad20a1a4d42878b1ff53f75af39d464bc880b5` and VM103 image
-`sha256:4f181f9f89e1046f22df555a77f6e971d39e106fd6b07cacae9ed68f4fa99565`
-as the pre-rc.91 app-only recovery basis.
+Retain exact accepted rc.91 source commit
+`559638b830905df47b218bafd08866e730424557` and VM103 image
+`sha256:bc6063b288bf91ef31c8247b6a8cf2a2d71ca24ff6b8aa989e4486103378e888`
+as the pre-rc.92 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
+
+Rc.92 publishes only the reviewed partial AVR-only X43 interval profile and
+release documentation. Rolling back restores rc.91 without converting,
+rewriting or deleting learner data or native evidence and without changing
+another service.
 
 Rc.91 publishes the reviewed transient AVR-only X42 observer and release
 documentation. Rolling back restores rc.90 without converting, rewriting or

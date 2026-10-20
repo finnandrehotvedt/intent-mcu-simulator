@@ -31,6 +31,15 @@
       ]
     },
     {
+      "id": "X43",
+      "capabilities": [
+        "intent-mcu-x43-avr-observation-interval@1"
+      ],
+      "contracts": [
+        "x43-avr-observation-interval-v1"
+      ]
+    },
+    {
       "id": "X59",
       "capabilities": [
         "intent-mcu-shared-workbench-view@1"

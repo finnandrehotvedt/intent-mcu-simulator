@@ -2,6 +2,20 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.92 — 2026-10-20
+
+- Publishes the reviewed partial X43 AVR-only Runtime profile interval: an
+  explicit Start/Capture journey reports native emulator cycle and executed-
+  instruction deltas on one unchanged current-worker binding.
+- Derives exact 16 MHz virtual time from the cycle delta and keeps browser wall
+  throughput visibly diagnostic rather than a semantic time or hardware
+  benchmark.
+- Keeps dynamic SRAM, heap, current stack and peak stack explicitly unavailable;
+  RP2040, ESP32-C3 and STM32 profiling remain unavailable for this contract.
+- Preserves native evidence as the sole producer proof and browser replay as
+  presentation/lifecycle proof. This release adds no Build, Run or scenario.
+- X43 is partial, not complete. Counts are X **72/1/23**, P1 **59/0/0**.
+
 ## 1.1.0-rc.91 — 2026-10-20
 
 - Completes X42 for AVR with an explicit armed future rising/falling edge over

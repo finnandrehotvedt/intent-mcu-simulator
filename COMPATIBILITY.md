@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.91 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.92 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -90,6 +90,14 @@ retention bound for this contract, ESP32-C3 exposes project-model GPIO rather
 than QEMU pin timing, and STM32 exposes a final observation rather than a
 waveform, so X42 is unavailable for those profiles. Open never restores a
 capture or runtime authority.
+
+The partial X43 Runtime profile interval is supported only for an already-
+current AVR worker. It binds native emulator cycle and executed-instruction
+deltas to one exact source, artifact, model and worker lifecycle and derives
+exact 16 MHz virtual time. Browser wall throughput is diagnostic only. Dynamic
+SRAM, heap, current stack and peak stack are unavailable; RP2040, ESP32-C3 and
+STM32 profiling are unavailable for this contract. No result is a physical-
+hardware benchmark.
 
 One bounded thermostat experiment uses that same AVR compiler/runtime path.
 Its exact graph is an ideal analogue temperature module on A1, an active-low

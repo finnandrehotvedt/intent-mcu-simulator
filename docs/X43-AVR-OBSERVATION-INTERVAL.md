@@ -1,6 +1,7 @@
-# X43 private AVR observation interval
+# X43 partial AVR observation interval
 
-Status: private implementation slice; not an X43 completion or public release.
+Status: public AVR-only implementation slice in 1.1.0-rc.92; X43 remains
+partial, not complete.
 
 The Runtime profile interval panel observes an already-current AVR worker. An
 explicit **Start observation** stores its exact source, artifact, editor
@@ -57,10 +58,14 @@ retention contract. ESP32-C3 has no accepted CPU profile producer. STM32 event
 instruction ordinals are explicitly not physical cycles. No zeros or inferred
 values substitute for unavailable facts.
 
-## Private acceptance boundary
+## Reviewed acceptance boundary
 
-The deterministic browser fixture is presentation/lifecycle replay only. It
-does not compile or execute firmware and cannot serve as new native evidence.
-After independent diff review, a separate receipt may authorize at most one
-fresh AVR Build and one Run to prove Start-before-progress and Capture on one
-unchanged worker binding. No public release is authorized by this slice.
+The accepted native browser check is the sole producer proof: Start preceded
+later worker progress and Capture read the same unchanged binding. The
+deterministic browser fixture is presentation/lifecycle replay only; it does
+not compile or execute firmware and is not represented as another native run.
+The rc.92 release itself performs no Build, Run or scenario.
+
+This bounded proof does not supply dynamic SRAM, heap or stack measurements,
+does not profile the other three public controller profiles and is not a
+physical-hardware benchmark. Those missing portions keep X43 partial.

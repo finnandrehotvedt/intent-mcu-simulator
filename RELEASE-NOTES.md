@@ -1,4 +1,25 @@
-# Intent MCU Simulator 1.1.0-rc.91
+# Intent MCU Simulator 1.1.0-rc.92
+
+## X43 partial AVR runtime profile interval
+
+This release publishes the reviewed AVR-only slice of X43. A learner opens
+Instruments, explicitly starts an observation on an already-current AVR worker,
+then captures an interval on that same source/artifact/model/worker binding. The
+panel reports native emulator cycle and executed-instruction deltas plus exact
+16 MHz virtual time. Browser wall throughput is diagnostic only and is not a
+semantic time, result or hardware benchmark.
+
+Dynamic SRAM, heap, current stack and peak stack remain explicitly unavailable.
+RP2040 has no approved profiling semantics for this contract, ESP32-C3 has no
+accepted CPU-profile producer and STM32 instruction ordinals are not physical
+cycles. X43 therefore moves only to partial. The accepted native check remains
+the producer proof; deterministic replay remains presentation and lifecycle
+proof. This release adds no Build, Run or scenario. Counts are X **72/1/23**,
+P1 **59/0/0**.
+
+---
+
+## 1.1.0-rc.91
 
 ## X42 armed digital-edge trigger capture
 
