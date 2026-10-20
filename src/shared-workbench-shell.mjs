@@ -32,6 +32,12 @@ import {
   inspectX47AvrD2Target,
   x47PulseSourceMatches,
 } from './x47-avr-d2-pulse.mjs';
+import {
+  createX49ProjectionOwner,
+  X49_CASES,
+  X49_OFFSET_LIMITS,
+  X49_VIRTUAL_WINDOW,
+} from './x49-sensor-offset.mjs';
 
 export const SHARED_WORKBENCH_SCHEMA = 'intent-mcu-shared-workbench@1';
 export const SHARED_WORKBENCH_SURFACES = Object.freeze([
@@ -1033,6 +1039,108 @@ function installX47PulsePreview(document, activeProfileReader) {
   return api;
 }
 
+function createX49Panel(document, ordinal) {
+  const panel = document.createElement('section');
+  panel.className = 'x49-offset-comparison';
+  panel.dataset.x49OffsetComparison = '';
+  panel.setAttribute('aria-labelledby', `x49-offset-title-${ordinal}`);
+  panel.innerHTML = `
+    <div class="shared-instrument-tool-heading">
+      <strong id="x49-offset-title-${ordinal}">Temperature sensor offset comparison</strong>
+      <span data-x49-state>Ready</span>
+    </div>
+    <p class="x49-offset-boundary"><strong>Ideal model composition</strong> · transient · not saved · integer offset ${X49_OFFSET_LIMITS.minimum}…+${X49_OFFSET_LIMITS.maximum} °C. No firmware is started here.</p>
+    <div class="x49-offset-actions">
+      <button type="button" data-x49-preview>Preview the two fixed cases</button>
+      <span data-x49-window>${X49_VIRTUAL_WINDOW.minimumMilliseconds}–${X49_VIRTUAL_WINDOW.maximumMilliseconds} ms virtual acceptance window · cycle-zero inputs</span>
+    </div>
+    <p data-x49-message>Authored inputs and calculated expectations are available. Native observations require a later instrumented-mailbox run.</p>
+    <div class="x49-offset-table-wrap" data-x49-output hidden>
+      <table>
+        <caption>Authored, calculated and observed evidence remain separate</caption>
+        <thead><tr><th>Case</th><th>Authored input</th><th>Calculated expectation</th><th>Native emulator observation</th><th>Physical observation</th></tr></thead>
+        <tbody data-x49-rows></tbody>
+      </table>
+    </div>
+    <p class="x49-offset-producer"><strong>Firmware integer producer:</strong> private X34-style instrumented four-byte mailbox fixture only; ordinary thermostat snapshots and UART text are not authoritative.</p>`;
+  return panel;
+}
+
+function installX49OffsetComparison(document, activeProfileReader) {
+  const panels = [...document.querySelectorAll('[data-shared-instrument-tools]')].map((tools, index) => {
+    const panel = createX49Panel(document, index + 1);
+    tools.append(panel);
+    return panel;
+  });
+  const owner = createX49ProjectionOwner();
+  const paint = (snapshot = owner.snapshot()) => {
+    const available = activeProfileReader() === AVR_PROFILE;
+    for (const panel of panels) {
+      panel.dataset.state = available ? snapshot.state : 'unavailable';
+      panel.querySelector('[data-x49-state]').textContent = !available ? 'Unavailable for this profile'
+        : snapshot.state === 'synthetic-replay' ? 'Synthetic replay · not native'
+          : snapshot.state === 'invalidated' ? 'Cleared' : snapshot.state === 'preview' ? 'Calculated preview' : 'Ready';
+      panel.querySelector('[data-x49-preview]').disabled = !available;
+      const output = panel.querySelector('[data-x49-output]');
+      output.hidden = !available || !snapshot.cases.length || snapshot.state === 'ready';
+      const rows = snapshot.cases.map((entry) => {
+        const row = document.createElement('tr');
+        const native = entry.native;
+        const nativeText = snapshot.classification === 'synthetic-browser-replay-not-native-evidence' && native
+          ? `Synthetic replay only · ADC ${native.adc.value} completed at cycle ${native.adc.completionCycle.toLocaleString('en-US')} · mailbox ${native.firmwareTransaction.temperatureC} °C · D13 ${native.pin.level ? 'HIGH' : 'LOW'} · cannot pass native acceptance`
+          : 'Unavailable · requires a fresh source/artifact/model/worker/time/input-bound instrumented mailbox observation.';
+        const cells = [
+          entry.caseId,
+          `Reference ${entry.authored.referenceTemperatureC} °C · offset ${entry.authored.offsetC >= 0 ? '+' : ''}${entry.authored.offsetC} °C · effective ${entry.authored.effectiveTemperatureC} °C`,
+          `${entry.calculated.modelVoltage.toFixed(3)} V ideal model · ADC ${entry.calculated.adcCount} · firmware integer ${entry.calculated.firmwareIntegerC} °C · D13 ${entry.calculated.d13Level ? 'HIGH' : 'LOW'}`,
+          nativeText,
+          'Absent · no hardware, tolerance, probability or factory guarantee.',
+        ];
+        for (const text of cells) { const cell = document.createElement('td'); cell.textContent = text; row.append(cell); }
+        return row;
+      });
+      panel.querySelector('[data-x49-rows]').replaceChildren(...rows);
+      panel.querySelector('[data-x49-message]').textContent = !available
+        ? 'The fixed comparison is available only for the AVR thermostat teaching case.'
+        : snapshot.state === 'invalidated'
+          ? `${snapshot.reason}. The transient comparison and any replay were cleared.`
+          : snapshot.classification === 'synthetic-browser-replay-not-native-evidence'
+            ? 'Synthetic browser replay is visible for UI verification only. Academic/native status remains unavailable.'
+            : 'Authored inputs and calculated expectations are separate from unavailable native and physical observations.';
+    }
+    return snapshot;
+  };
+  for (const panel of panels) panel.querySelector('[data-x49-preview]').addEventListener('click', () => paint(owner.preview()));
+  const invalidate = (reason) => paint(owner.invalidate(reason));
+  const invalidationEvents = new Map([
+    ['build', 'X49_BUILD_STARTED'], ['run', 'X49_RUN_STARTED'], ['reset', 'X49_RESET'],
+    ['stop', 'X49_RUNTIME_RETIRED'], ['project-new', 'X49_NEW_PROJECT'],
+    ['project-demo', 'X49_EXAMPLE_OPENED'], ['project-open', 'X49_OPEN_STARTED'],
+  ]);
+  document.addEventListener('input', (event) => {
+    if (event.target?.id === 'source') invalidate('X49_SOURCE_EDITED');
+  }, true);
+  document.addEventListener('change', (event) => {
+    if (event.target?.id === 'board-select') invalidate('X49_PROFILE_CHANGED');
+    else if (event.target?.id === 'project-open-input') invalidate('X49_PROJECT_OPENED');
+  }, true);
+  document.addEventListener('click', (event) => {
+    const reason = invalidationEvents.get(event.target?.id);
+    if (reason) invalidate(reason);
+  }, true);
+  const api = Object.freeze({
+    refresh: () => paint(owner.snapshot()),
+    preview: () => paint(owner.preview()),
+    invalidate,
+    snapshot: () => owner.snapshot(),
+    fixedCases: () => structuredClone(X49_CASES),
+    acceptSyntheticReplay: (report) => paint(owner.acceptSyntheticReplay(report)),
+  });
+  document.defaultView.__X49_OFFSET_COMPARISON__ = api;
+  paint();
+  return api;
+}
+
 export function mountSharedWorkbenchShell(document) {
   const legacy = mountLegacySharedWorkbenchShell(document);
   const adapterMap = new Map(sharedWorkbenchAdapters().map((adapter) => [adapter.profile, adapter]));
@@ -1143,6 +1251,7 @@ export function mountSharedWorkbenchShell(document) {
   const x42 = installX42TriggerCapture(document, () => activeProfile);
   const x43 = installX43AvrObservationProfile(document, () => activeProfile);
   const x47 = installX47PulsePreview(document, () => activeProfile);
+  const x49 = installX49OffsetComparison(document, () => activeProfile);
 
   const viewButtons = Object.freeze({
     simple: document.querySelector('#workbench-view-simple'),
@@ -1193,7 +1302,7 @@ export function mountSharedWorkbenchShell(document) {
     returnFocus = requestedOpener ?? document.activeElement ?? popup.opener;
     popup.opener.setAttribute('aria-expanded', 'true');
     popup.dialog.showModal();
-    if (name === 'instruments') { x42.refresh(); x43.refresh(); void x47.refresh(); }
+    if (name === 'instruments') { x42.refresh(); x43.refresh(); void x47.refresh(); x49.refresh(); }
     if (initialFocus) {
       const heading = popup.dialog.querySelector('h2');
       queueMicrotask(() => (heading ?? popupFocusable(popup.dialog)[0])?.focus({ preventScroll: true }));
@@ -1298,6 +1407,7 @@ export function mountSharedWorkbenchShell(document) {
         x42.invalidate('X42_PROFILE_CHANGED');
         x43.invalidate('X43_PROFILE_CHANGED');
         x47.invalidate('X47_PROFILE_CHANGED');
+        x49.invalidate('X49_PROFILE_CHANGED');
       }
       closePopup();
       if (activeCanvas) parking.append(activeCanvas);
