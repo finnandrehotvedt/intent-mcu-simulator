@@ -8,6 +8,18 @@ import {
 } from './atmega328p-adapter.mjs';
 import { CircuitRuntime } from './circuit-engine.mjs';
 import { x35TopologyProjection } from './x35-causal-chain-contract.mjs';
+import {
+  X47_CANCEL_RECEIPT_SCHEMA,
+  X47_EXECUTION_RECEIPT_SCHEMA,
+  X47_QUEUE_RECEIPT_SCHEMA,
+  canonicalX47ApplyRequest,
+  validateX47ApplyRequest,
+  validateX47CancelReceipt,
+  validateX47ExecutionReceipt,
+  validateX47QueueReceipt,
+  validateX47RuntimeAuthority,
+  validateX47WorkerBinding,
+} from './x47-runtime-transaction.mjs';
 
 export const INPUT_EVENT_LIMIT = 10_000;
 export const LOGIC_TRANSITION_LIMIT = TRACE_LIMIT;
@@ -68,6 +80,13 @@ export class OrderedInputQueue {
     this.dropped = 0;
   }
 
+  removePending(predicate) {
+    if (typeof predicate !== 'function') throw new TypeError('Invalid input queue removal');
+    const removed = this.pending.filter(predicate).map(clone);
+    this.pending = this.pending.filter((event) => !predicate(event));
+    return removed;
+  }
+
   snapshot() {
     return {
       pending: clone(this.pending),
@@ -110,6 +129,10 @@ export class RuntimeKernel {
     this.serialHistoryLimit = this.#serialLimit(options.serialHistoryLimit ?? 512);
     this.serialClearAbsolute = 0;
     this.digitalSequenceTailCycle = 0;
+    this.x47RuntimeIdentity = options.runtimeIdentity ? clone(options.runtimeIdentity) : null;
+    this.x47Authority = options.x47RuntimeAuthority
+      ? validateX47RuntimeAuthority(options.x47RuntimeAuthority, this.x47RuntimeIdentity) : null;
+    this.x47Transactions = new Map();
   }
 
   #serialLimit(value) {
@@ -242,6 +265,149 @@ export class RuntimeKernel {
     return clone(queued);
   }
 
+  queueX47Transaction(value) {
+    if (!this.x47Authority || !this.x47RuntimeIdentity) throw new Error('X47_RUNTIME_AUTHORITY_UNAVAILABLE');
+    const existing = typeof value?.transactionId === 'string'
+      ? this.x47Transactions.get(value.transactionId) : null;
+    if (existing) {
+      validateX47WorkerBinding(value.binding, this.x47Authority, this.x47RuntimeIdentity);
+      if (existing.canonical !== canonicalX47ApplyRequest(value)) {
+        throw new Error('X47_TRANSACTION_ID_CONFLICT');
+      }
+      if (existing.cancelReceipt) throw new Error('X47_TRANSACTION_CANCELLED');
+      return clone(existing.queueReceipt);
+    }
+    const request = validateX47ApplyRequest(value, {
+      authority: this.x47Authority,
+      runtimeIdentity: this.x47RuntimeIdentity,
+      profile: 'board.atmega328p-16mhz-v1',
+      paused: this.adapter.paused,
+      currentCycle: this.adapter.cpu.cycles,
+      pendingDigitalTailCycle: this.digitalSequenceTailCycle,
+    });
+    const canonical = canonicalX47ApplyRequest(request);
+    const before = this.inputs.snapshot();
+    if (before.log.length + request.events.length > before.retention.limit
+        || this.x47Transactions.size >= 32) throw new Error('X47_TRANSACTION_RETENTION_LIMIT');
+    const queued = request.events.map((event, eventIndex) => this.inputs.enqueue(
+      { type: 'digital-scheduled', pin: event.pin, level: event.level,
+        transactionId: request.transactionId, eventIndex },
+      this.adapter.cpu.cycles,
+      request.expectedBaseCycle + event.offsetCycles,
+    ));
+    for (const [eventIndex, event] of queued.entries()) {
+      this.adapter.scheduleDigital(event.targetCycle, event.pin, event.level,
+        { transactionId: request.transactionId, eventIndex });
+    }
+    this.digitalSequenceTailCycle = queued.at(-1).targetCycle;
+    const after = this.inputs.snapshot();
+    const receipt = validateX47QueueReceipt({
+      schema: X47_QUEUE_RECEIPT_SCHEMA,
+      transactionId: request.transactionId,
+      canonicalPulseSha256: request.canonicalPulseSha256,
+      binding: clone(request.binding),
+      baseCycle: request.expectedBaseCycle,
+      events: queued.map((event, eventIndex) => ({
+        eventIndex, pin: event.pin, level: event.level,
+        offsetCycles: request.events[eventIndex].offsetCycles,
+        targetCycle: event.targetCycle, queueSequence: event.sequence,
+      })),
+      retention: {
+        limit: after.retention.limit,
+        beforeRequestedRetained: before.retention.requested.retained,
+        beforeRequestedDropped: before.retention.requested.dropped,
+        afterRequestedRetained: after.retention.requested.retained,
+        afterRequestedDropped: after.retention.requested.dropped,
+      },
+    }, this.x47Authority, this.x47RuntimeIdentity);
+    this.x47Transactions.set(request.transactionId,
+      { canonical, request: clone(request), queueReceipt: clone(receipt), cancelReceipt: null });
+    return clone(receipt);
+  }
+
+  x47ExecutionReceipt(transactionId) {
+    const transaction = this.x47Transactions.get(transactionId);
+    if (!transaction) throw new Error('X47_TRANSACTION_UNKNOWN');
+    const eventLog = this.inputs.snapshot();
+    const adapter = this.adapter.x47DigitalTransitionSnapshot();
+    const requested = eventLog.log.filter((event) => event.transactionId === transactionId);
+    const drained = eventLog.applied.filter((event) => event.transactionId === transactionId);
+    const transitions = adapter.records.filter((event) => event.transactionId === transactionId);
+    let discontinuities = adapter.dropped;
+    const events = transaction.queueReceipt.events.map((event) => {
+      const appliedMatches = drained.filter((item) => item.sequence === event.queueSequence);
+      const adapterMatches = transitions.filter((item) => item.eventIndex === event.eventIndex);
+      if (appliedMatches.length > 1 || adapterMatches.length > 1) discontinuities += 1;
+      const applied = appliedMatches[0] ?? null;
+      const observed = adapterMatches[0] ?? null;
+      if (observed && (observed.targetCycle !== event.targetCycle || observed.pin !== event.pin
+          || observed.level !== event.level)) discontinuities += 1;
+      return { ...clone(event), drainAppliedCycle: applied?.appliedCycle ?? null,
+        adapterAppliedCycle: observed?.appliedCycle ?? null,
+        transitionCycle: observed?.transitionCycle ?? null,
+        transitioned: observed?.transitioned ?? null };
+    });
+    if (requested.length !== 2) discontinuities += Math.abs(2 - requested.length);
+    const complete = events.every((event) => event.drainAppliedCycle !== null
+      && event.adapterAppliedCycle !== null) && discontinuities === 0;
+    return validateX47ExecutionReceipt({
+      schema: X47_EXECUTION_RECEIPT_SCHEMA,
+      transactionId,
+      binding: clone(transaction.request.binding),
+      baseCycle: transaction.request.expectedBaseCycle,
+      complete,
+      events,
+      retention: {
+        requested: { expected: 2, retained: requested.length, dropped: eventLog.dropped },
+        drained: { expected: 2, retained: drained.length, dropped: eventLog.retention.applied.dropped },
+        adapter: { expected: 2, retained: transitions.length, dropped: adapter.dropped },
+        discontinuities,
+      },
+    }, this.x47Authority, this.x47RuntimeIdentity);
+  }
+
+  cancelX47Transactions(reason, transactionId = null, binding = null) {
+    if (!this.x47Authority || !this.x47RuntimeIdentity) return [];
+    if (binding !== null) validateX47WorkerBinding(binding, this.x47Authority, this.x47RuntimeIdentity);
+    const selected = [...this.x47Transactions.entries()].filter(([id, value]) =>
+      (transactionId === null || id === transactionId) && !value.cancelReceipt);
+    if (transactionId !== null && selected.length === 0) throw new Error('X47_TRANSACTION_UNKNOWN');
+    const cycle = this.adapter.cpu.cycles;
+    const applied = new Set(this.inputs.applied.map((event) => event.sequence));
+    const receipts = selected.map(([id, transaction]) => validateX47CancelReceipt({
+      schema: X47_CANCEL_RECEIPT_SCHEMA,
+      transactionId: id,
+      binding: clone(transaction.request.binding),
+      reason,
+      cancelCycle: cycle,
+      state: 'cancelled',
+      unapplied: transaction.queueReceipt.events
+        .filter((event) => !applied.has(event.queueSequence))
+        .map((event) => ({ queueSequence: event.queueSequence, targetCycle: event.targetCycle })),
+    }, this.x47Authority, this.x47RuntimeIdentity));
+    const ids = receipts.map((receipt) => receipt.transactionId);
+    const selectedIds = new Set(ids);
+    this.inputs.removePending((event) => selectedIds.has(event.transactionId));
+    this.adapter.cancelX47Transactions(ids);
+    this.digitalSequenceTailCycle = Math.max(this.adapter.cpu.cycles,
+      ...this.inputs.pending.filter((event) => event.type === 'digital-scheduled')
+        .map((event) => event.targetCycle));
+    for (const receipt of receipts) this.x47Transactions.get(receipt.transactionId).cancelReceipt = clone(receipt);
+    return clone(receipts);
+  }
+
+  x47Snapshot() {
+    if (!this.x47Authority) return null;
+    return {
+      authority: clone(this.x47Authority),
+      transactions: [...this.x47Transactions.values()].map((transaction) => ({
+        queueReceipt: clone(transaction.queueReceipt),
+        executionReceipt: this.x47ExecutionReceipt(transaction.request.transactionId),
+        cancelReceipt: transaction.cancelReceipt ? clone(transaction.cancelReceipt) : null,
+      })),
+    };
+  }
+
   runInstructions(count) {
     this.#flushInputs();
     if (this.adapter.x35Enabled) {
@@ -297,12 +463,16 @@ export class RuntimeKernel {
   }
 
   reset() {
+    const hadX47Authority = Boolean(this.x47Authority);
+    const x47CancellationReceipts = this.cancelX47Transactions('RESET');
     this.adapter.reset();
     this.circuit.applyControls(this.adapter);
     this.inputs.reset();
     this.serialClearAbsolute = 0;
     this.digitalSequenceTailCycle = 0;
-    return this.snapshot();
+    this.x47Transactions = new Map();
+    this.x47Authority = null;
+    return { ...this.snapshot(), ...(hadX47Authority ? { x47CancellationReceipts } : {}) };
   }
 
   snapshot() {
@@ -325,6 +495,7 @@ export class RuntimeKernel {
       } : {}),
       circuit: this.circuit.observe(machine),
       eventLog: this.inputs.snapshot(),
+      ...(this.x47Authority ? { x47: this.x47Snapshot() } : {}),
       instruments: {
         serial: {
           records: serialRecords.map((entry) => ({

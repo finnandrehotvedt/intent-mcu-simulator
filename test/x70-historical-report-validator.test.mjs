@@ -17,7 +17,9 @@ import {
 } from '../src/compile-targets.mjs';
 import { createEsp32C3CircuitDraft } from '../src/esp32c3-public-circuit.mjs';
 import { createExampleProject } from '../src/example-projects.mjs';
-import { CURRENT_MODEL_LIBRARY_LOCK, PRIOR_CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
+import {
+  CURRENT_MODEL_LIBRARY_LOCK, PRE_X47_CURRENT_MODEL_LIBRARY_LOCK, PRIOR_CURRENT_MODEL_LIBRARY_LOCK,
+} from '../src/model-library.mjs';
 import { RELEASE_VERSION } from '../src/release-metadata.mjs';
 import { createRp2040PicoCircuitDraft } from '../src/rp2040-pico-circuit.mjs';
 import { createStm32CircuitDraft } from '../src/stm32-public-circuit.mjs';
@@ -42,7 +44,7 @@ const fixtures = () => {
   ];
 };
 const lockFor = (profile) => profile === RP2040_PROFILE
-  ? CURRENT_MODEL_LIBRARY_LOCK : PRIOR_CURRENT_MODEL_LIBRARY_LOCK;
+  ? PRE_X47_CURRENT_MODEL_LIBRARY_LOCK : PRIOR_CURRENT_MODEL_LIBRARY_LOCK;
 
 function rehash(report) {
   const { integrity: _integrity, ...projection } = report;

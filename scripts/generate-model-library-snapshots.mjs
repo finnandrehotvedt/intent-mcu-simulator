@@ -15,6 +15,8 @@ import * as existingSnapshots from '../src/model-library-snapshots.mjs';
 const { RETAINED_MODEL_LIBRARY_MANIFEST } = existingSnapshots;
 const PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST = existingSnapshots.PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_X47_CURRENT_MODEL_LIBRARY_MANIFEST = existingSnapshots.PRE_X47_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 
 const stable = (value) => {
   if (Array.isArray(value)) return value.map(stable);
@@ -63,6 +65,7 @@ const entries = COMPONENT_SUPPORT_CELLS.filter((cell) => cell.available)
 
 const CURRENT_CLOSURE = Object.freeze([
   '../src/component-catalog.mjs', '../src/circuit-engine.mjs', '../src/runtime-kernel.mjs',
+  '../src/atmega328p-adapter.mjs', '../src/x47-runtime-transaction.mjs', '../src/strict-json.mjs',
   '../src/model-library.mjs', '../src/model-bundle-registry.mjs', '../src/project-envelope.mjs',
   '../src/model-control-contracts.mjs', '../src/simulator.worker.mjs', '../staging/main.mjs',
   '../src/rp2040-snapshot-pacer.mjs', '../src/rp2040-experimental-runtime.mjs',
@@ -136,16 +139,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-pico-presentation.1-current',
-  'intent-mcu-model-bundle-current-pico-presentation-1@3',
+  '2.0.0-x47-runtime-contract.1-current',
+  'intent-mcu-model-bundle-current-x47-runtime-contract-1@4',
   currentImplementation,
   {
-    priorVersion: PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X47_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X47_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'explicit-data-only-migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component, compiler, toolchain and emulator semantics unchanged',
-    presentationDisposition: 'bounded Pico cadence, exact ACK backpressure and final-Pause bypass',
-    baselineClosureDisposition: 'staging/main.mjs drifted after d40731a853b085e57c419bd277a253257b3dce28; current closure now hashes the reviewed current bytes',
+    semanticDisposition: 'component semantics unchanged; private AVR X47 transaction, transition-correlation and cancellation contract added',
+    presentationDisposition: 'no shell, public UI or presentation change',
+    baselineClosureDisposition: 'current closure adds the AVR adapter, strict validator and X47 runtime contract; pre-X47 current remains migration-only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -154,6 +157,7 @@ const output = `// SPDX-License-Identifier: Apache-2.0
 
 export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(retained, null, 2)});
 export const PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X47_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

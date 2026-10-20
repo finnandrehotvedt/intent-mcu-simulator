@@ -8,6 +8,7 @@ import {
   MODEL_RUNTIME_BINDING_SCHEMA, createWorkerRuntimeIdentity, runtimeInitBinding,
 } from './runtime-identity.mjs';
 import { modelLibraryExecutionIdentity } from './model-library.mjs';
+import { exactKeys } from './strict-json.mjs';
 
 let kernel = null;
 let rp2040 = null;
@@ -64,7 +65,14 @@ function applyDigitalInput(value) {
   kernel.adapter.setDigitalPin(value.pin, value.level);
 }
 
-function disposeRuntime() {
+function acknowledgeX47Cancellation(reason) {
+  const receipts = kernel?.cancelX47Transactions?.(reason) ?? [];
+  if (receipts.length) emit({ kind: 'x47-cancelled', reason, receipts });
+  return receipts;
+}
+
+function disposeRuntime(x47CancellationReceipts = []) {
+  const disposedIdentity = runtimeIdentity ? structuredClone(runtimeIdentity) : null;
   running = false;
   generation++;
   initialization++;
@@ -75,6 +83,7 @@ function disposeRuntime() {
   kernel = null;
   runtimeIdentity = null;
   validatedModelExecutionContextSha256 = null;
+  return { disposedIdentity, x47CancellationReceipts };
 }
 
 function pump(activeGeneration) {
@@ -115,7 +124,7 @@ function createRp2040Pacer(runtime) {
 async function handleMessage(data) {
   try {
     if (data.command === 'init') {
-      disposeRuntime();
+      disposeRuntime(acknowledgeX47Cancellation('DISPOSE'));
       const currentInitialization = ++initialization;
       const binding = data.runtimeBinding ? runtimeInitBinding(data.runtimeBinding) : null;
       runtimeIdentity = binding ? createWorkerRuntimeIdentity(binding, currentInitialization) : null;
@@ -151,12 +160,17 @@ async function handleMessage(data) {
         if (!modelLibrary.manifest.runtimeContracts.includes('avr8js@0.21.1')) {
           throw new Error('MODEL_LIBRARY_RUNTIME_CONTRACT_UNAVAILABLE');
         }
+        if (data.x47RuntimeAuthority && modelLibrary.identity.retained) {
+          throw new Error('X47_CURRENT_MODEL_REQUIRED');
+        }
         const candidate = modelLibrary.implementation.createAvrRuntimeKernel(data.hex, data.circuit, {
           ...(data.instruments ?? {}),
           modelLibraryLock: data.modelLibraryLock,
           modelExecutionContextSha256: data.modelExecutionContextSha256,
           ...(data.x34Probe ? { x34Probe: data.x34Probe } : {}),
           ...(data.x35Probe ? { x35Probe: data.x35Probe } : {}),
+          ...(data.x47RuntimeAuthority ? { x47RuntimeAuthority: data.x47RuntimeAuthority,
+            runtimeIdentity } : {}),
         });
         kernel = candidate;
         validatedModelExecutionContextSha256 = binding.modelExecutionContextSha256;
@@ -175,9 +189,10 @@ async function handleMessage(data) {
     }
     if (data.command === 'dispose') {
       const profile = isRp2040() ? RP2040_EXPERIMENTAL_PROFILE : 'board.atmega328p-16mhz-v1';
-      const disposedIdentity = runtimeIdentity ? structuredClone(runtimeIdentity) : null;
-      disposeRuntime();
+      const x47CancellationReceipts = acknowledgeX47Cancellation('DISPOSE');
+      const { disposedIdentity } = disposeRuntime(x47CancellationReceipts);
       postMessage({ kind: 'disposed', profile, paused: true, cycle: 0, instructions: 0,
+        ...(x47CancellationReceipts.length ? { x47CancellationReceipts } : {}),
         ...(disposedIdentity ? { runtimeIdentity: disposedIdentity } : {}) });
       close();
       return;
@@ -243,8 +258,11 @@ async function handleMessage(data) {
         rp2040Pacer.publishFinal(presentationGeneration(data), 'reset', reset);
       }
       else {
-        kernel.reset();
-        status('reset');
+        const x47CancellationReceipts = acknowledgeX47Cancellation('RESET');
+        const snapshot = kernel.reset();
+        emit({ kind: 'reset', ...snapshot,
+          ...(x47CancellationReceipts.length ? { x47CancellationReceipts } : {}),
+          led: snapshot.circuit.leds.some((item) => item.on) });
       }
     } else if (data.command === 'control') {
       if (isRp2040()) throw new Error('RP2040_CONTROL_UNSUPPORTED');
@@ -263,6 +281,21 @@ async function handleMessage(data) {
       if (isRp2040()) throw new Error('RP2040_DIGITAL_INPUT_UNSUPPORTED');
       kernel.queueDigitalSequence(data.events);
       status('digital-sequence');
+    } else if (data.command === 'x47-apply') {
+      if (isRp2040()) throw new Error('X47_PROFILE_UNAVAILABLE');
+      if (!exactKeys(data, ['command', 'request'])) throw new Error('X47_APPLY_COMMAND_INVALID');
+      const receipt = kernel.queueX47Transaction(data.request);
+      emit({ kind: 'x47-accepted', receipt, executionReceipt:
+        kernel.x47ExecutionReceipt(receipt.transactionId) });
+    } else if (data.command === 'x47-cancel') {
+      if (isRp2040()) throw new Error('X47_PROFILE_UNAVAILABLE');
+      if (!exactKeys(data, ['command', 'transactionId', 'binding'])) {
+        throw new Error('X47_CANCEL_COMMAND_INVALID');
+      }
+      const receipts = kernel.cancelX47Transactions(
+        'EXPLICIT_CANCEL', data.transactionId, data.binding,
+      );
+      emit({ kind: 'x47-cancelled', reason: 'EXPLICIT_CANCEL', receipts });
     } else if (data.command === 'uart-rx') {
       if (isRp2040()) emit(rp2040.queueUartRx(data.value));
       else {

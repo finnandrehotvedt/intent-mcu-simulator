@@ -12,7 +12,8 @@ import {
   canonicalProjectEnvelope, emptyProjectBrief, migrateProjectModelLibrary, prepareProjectEnvelope,
 } from '../src/project-envelope.mjs';
 import {
-  CURRENT_MODEL_LIBRARY_LOCK, PRIOR_CURRENT_MODEL_LIBRARY_LOCK, RETAINED_MODEL_LIBRARY_LOCK,
+  CURRENT_MODEL_LIBRARY_LOCK, PRE_X47_CURRENT_MODEL_LIBRARY_LOCK,
+  PRIOR_CURRENT_MODEL_LIBRARY_LOCK, RETAINED_MODEL_LIBRARY_LOCK,
 } from '../src/model-library.mjs';
 
 const profile = 'board.example-v1';
@@ -156,6 +157,24 @@ test('prior X56 saved envelope reopens only for explicit data migration with run
   assert.equal(migrated.ok, true);
   assert.equal(migrated.originalUnchanged, oldEnvelope);
   assert.equal(migrated.executableAuthorityCleared, true);
+  assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
+});
+
+test('pre-X47 saved project data migrates unchanged while old runtime authority is cleared', () => {
+  const oldEnvelope = canonicalProjectEnvelope(
+    profile, project, adapters, emptyProjectBrief(), null, PRE_X47_CURRENT_MODEL_LIBRARY_LOCK,
+  );
+  const opened = prepareProjectEnvelope(oldEnvelope, adapters);
+  assert.equal(opened.ok, true);
+  assert.deepEqual(opened.project, project);
+  assert.deepEqual(opened.modelLibrary, PRE_X47_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(opened.report.executableAuthorityCleared, true);
+  assert.equal(opened.report.modelLibrary.migrationAvailable, true);
+  const migrated = migrateProjectModelLibrary(oldEnvelope, adapters);
+  assert.equal(migrated.ok, true);
+  assert.equal(migrated.originalUnchanged, oldEnvelope);
+  assert.equal(migrated.executableAuthorityCleared, true);
+  assert.deepEqual(JSON.parse(migrated.canonical).project, project);
   assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
 });
 

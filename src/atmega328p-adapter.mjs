@@ -27,6 +27,7 @@ export const TRACE_LIMIT = 100_000;
 export const SERIAL_LIMIT = 4_096;
 const SAMPLE_LIMIT = 4_096;
 const UNSUPPORTED_LIMIT = 256;
+const X47_TRANSITION_LIMIT = 64;
 const PIN_MAP = Object.freeze({
   0: ['D', 0], 1: ['D', 1], 2: ['D', 2], 3: ['D', 3],
   4: ['D', 4], 5: ['D', 5], 6: ['D', 6], 7: ['D', 7],
@@ -104,6 +105,8 @@ export class Atmega328PAdapter {
     this.serial = [];
     this.adcReads = [];
     this.unsupported = [];
+    this.x47DigitalTransitions = [];
+    this.x47DigitalTransitionDrops = 0;
     this.stuckAnalogChannels = new Map();
     this.faultEvents = [];
     this.retentionDrops = { logic: 0, serial: 0, adc: 0, unsupported: 0 };
@@ -272,7 +275,23 @@ export class Atmega328PAdapter {
   #applyDueEvents() {
     while (this.scheduledEvents.length && this.scheduledEvents[0].cycle <= this.cpu.cycles) {
       const event = this.scheduledEvents.shift();
-      if (event.type === 'digital') this.#setDigitalPinNow(event.pin, event.level);
+      if (event.type === 'digital') {
+        const observed = this.#setDigitalPinNow(event.pin, event.level);
+        if (event.x47) {
+          this.x47DigitalTransitionDrops += boundedPush(this.x47DigitalTransitions, {
+            transactionId: event.x47.transactionId,
+            eventIndex: event.x47.eventIndex,
+            targetCycle: event.cycle,
+            appliedCycle: this.cpu.cycles,
+            pin: event.pin,
+            level: Boolean(event.level),
+            beforeLevel: observed.before,
+            afterLevel: observed.after,
+            transitioned: observed.transitioned,
+            transitionCycle: observed.transitioned ? this.cpu.cycles : null,
+          }, X47_TRANSITION_LIMIT);
+        }
+      }
       if (event.type === 'analogue') this.setAnalogChannel(event.channel, event.voltage);
       if (event.type === 'fault-digital-drive') {
         this.inputLevels.set(event.pin, event.level);
@@ -318,6 +337,7 @@ export class Atmega328PAdapter {
         this.trace, { cycle: this.cpu.cycles, pin: normalizedPin, level: after }, TRACE_LIMIT,
       );
     }
+    return { before, after, transitioned: before !== after };
   }
 
   setDigitalPin(pin, level) {
@@ -377,8 +397,34 @@ export class Atmega328PAdapter {
     this.#schedule({ type: 'fault-analogue-stuck', cycle, channel, stuckValueC, eventId });
   }
 
-  scheduleDigital(cycle, pin, level) {
-    this.#schedule({ type: 'digital', cycle, pin, level: Boolean(level) });
+  scheduleDigital(cycle, pin, level, x47 = null) {
+    if (x47 !== null && (!x47 || typeof x47 !== 'object' || Array.isArray(x47)
+        || Object.keys(x47).sort().join('|') !== 'eventIndex|transactionId'
+        || typeof x47.transactionId !== 'string' || ![0, 1].includes(x47.eventIndex))) {
+      throw new Error('X47_ADAPTER_CORRELATION_INVALID');
+    }
+    this.#schedule({ type: 'digital', cycle, pin, level: Boolean(level),
+      ...(x47 ? { x47: { ...x47 } } : {}) });
+  }
+
+  cancelX47Transactions(transactionIds) {
+    if (!Array.isArray(transactionIds) || transactionIds.some((id) => typeof id !== 'string')) {
+      throw new Error('X47_ADAPTER_CANCEL_INVALID');
+    }
+    const selected = new Set(transactionIds);
+    const before = this.scheduledEvents.length;
+    this.scheduledEvents = this.scheduledEvents.filter((event) =>
+      !event.x47 || !selected.has(event.x47.transactionId));
+    return before - this.scheduledEvents.length;
+  }
+
+  x47DigitalTransitionSnapshot() {
+    return {
+      records: this.x47DigitalTransitions.map((entry) => ({ ...entry })),
+      dropped: this.x47DigitalTransitionDrops,
+      retention: { limit: X47_TRANSITION_LIMIT, retained: this.x47DigitalTransitions.length,
+        dropped: this.x47DigitalTransitionDrops },
+    };
   }
 
   scheduleUartRx(cycle, value, immediate = false) {

@@ -24,7 +24,8 @@ import {
   createTemperatureLcdThresholdExample,
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
-  CURRENT_MODEL_LIBRARY_LOCK, PRIOR_CURRENT_MODEL_LIBRARY_LOCK, RETAINED_MODEL_LIBRARY_LOCK,
+  CURRENT_MODEL_LIBRARY_LOCK, PRE_X47_CURRENT_MODEL_LIBRARY_LOCK,
+  PRIOR_CURRENT_MODEL_LIBRARY_LOCK, RETAINED_MODEL_LIBRARY_LOCK,
   compareModelLibraryEntries, modelLibraryMigrationPreview, normalizeModelLibraryLock,
   historicalModelLibraryManifests, modelLibraryExecutionIdentity, resolveModelLibrary,
   runModelLibraryConformance, trustedModelLibraryManifests,
@@ -151,7 +152,7 @@ test('retained and current locks use distinct real resolver instances with match
 test('production electrical and runtime paths dispatch through the exact selected implementation', () => {
   for (const [lock, expected] of [
     [RETAINED_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-retained-rc72@2'],
-    [CURRENT_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-current-pico-presentation-1@3'],
+    [CURRENT_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-current-x47-runtime-contract-1@4'],
   ]) {
     const avr = validateCircuit(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
     assert.equal(avr.ok, true);
@@ -174,9 +175,9 @@ test('production electrical and runtime paths dispatch through the exact selecte
   }
 });
 
-test('prior X56 lock remains exact and data-migratable but cannot authorize execution', () => {
+test('prior X56 and pre-X47 locks remain exact and data-migratable but cannot authorize execution', () => {
   const historical = historicalModelLibraryManifests();
-  assert.equal(historical.length, 2);
+  assert.equal(historical.length, 3);
   const prior = historical[1];
   assert.equal(prior.version, '2.0.0-x56-current');
   assert.equal(prior.manifestSha256, '5c94ce070526d2e7e417fed0cb152fc28bdea24ee9beb52c65488328d41eac0b');
@@ -190,6 +191,22 @@ test('prior X56 lock remains exact and data-migratable but cannot authorize exec
   assert.equal(migration.semanticChanges.length, 0);
   assert.equal(migration.rendererChanges.length, 0);
   assert.equal(migration.unchanged.length, 25);
+
+  const preX47 = historical[2];
+  assert.equal(preX47.version, '2.0.0-pico-presentation.1-current');
+  assert.equal(preX47.manifestSha256,
+    '567aebbbf1885d31f9401fa3cf1ae98b7263d1b32f22a6b7886ec686b3c0dac3');
+  assert.equal(preX47.implementationSha256,
+    '02df48f026feddb9e9af5630d162a76be8660f618d31388b5df53839184125f1');
+  assert.equal(normalizeModelLibraryLock(PRE_X47_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
+  assert.equal(modelLibraryExecutionIdentity(PRE_X47_CURRENT_MODEL_LIBRARY_LOCK).code,
+    'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const x47Migration = modelLibraryMigrationPreview(PRE_X47_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(x47Migration.ok, true);
+  assert.equal(x47Migration.migrationRequired, true);
+  assert.equal(x47Migration.semanticChanges.length, 0);
+  assert.equal(x47Migration.rendererChanges.length, 0);
+  assert.equal(x47Migration.unchanged.length, 25);
 });
 
 test('retained behavior is a dependency-closed historical source graph with no current imports', async () => {
@@ -216,7 +233,8 @@ test('retained behavior is a dependency-closed historical source graph with no c
     assert.doesNotMatch(source, /model-library-(?:current-)?resolver|src\/model-library/u, member.path);
   }
   for (const required of ['src/circuit-engine.mjs', 'src/simulator.worker.mjs',
-    'src/candidate-project-session.mjs', 'staging/main.mjs']) {
+    'src/candidate-project-session.mjs', 'src/atmega328p-adapter.mjs',
+    'src/x47-runtime-transaction.mjs', 'src/strict-json.mjs', 'staging/main.mjs']) {
     assert(currentManifest.implementationMembers.some((item) => item.path === required), required);
   }
   assert.doesNotMatch(retainedSource, /https?:|dynamic import|\beval\b|WebAssembly|child_process|package:/u);
