@@ -1,0 +1,83 @@
+{
+  "schema": "intent-mcu-x49-private-runtime-manifest@1",
+  "implementationId": "intent-mcu-x49-private-avr-runtime@1",
+  "version": "1.0.0-x49-private.1",
+  "runtimeMembers": [
+    {
+      "path": "src/x49-private.worker.mjs",
+      "sha256": "72139d41970f9076ab9c66c7405ab5a9625a45494982244fee1743777847024e"
+    },
+    {
+      "path": "src/x49-private-instrumented-runtime.mjs",
+      "sha256": "85b94c6ecc28fa5bf1ddc3de43e8193e73523058981a2a2a0ab620e80e8d4297"
+    },
+    {
+      "path": "src/x49-private-runtime-contract.mjs",
+      "sha256": "a3b5721c5fe9d1990175a66be70d7b5303ba7c02f0db271deb1a616fe206ad13"
+    },
+    {
+      "path": "src/atmega328p-adapter.mjs",
+      "sha256": "65136d0b607336db992ba7dab81447813331b103136ec7c5348e6fc1ca9300de"
+    },
+    {
+      "path": "src/hex.mjs",
+      "sha256": "eb6cf7c39e2829d103be21a1888c3d7fd87092f0e45575071129485deb0b97a2"
+    },
+    {
+      "path": "src/x34-precision-observer.mjs",
+      "sha256": "4974ec58812bf896f8078f3caf657b51610e089c20f3a0ead7cff8e526822197"
+    },
+    {
+      "path": "src/x34-precision-fixture.mjs",
+      "sha256": "53b6769e739c960100662fbf995c59c0a0a5ca7ba3b91774e6f627fbb822f14b"
+    },
+    {
+      "path": "src/x35-causal-observer.mjs",
+      "sha256": "57f33986fea1e23dc3b50b92e12a9e356b91f877fc65e19eb32ae2d12c408959"
+    },
+    {
+      "path": "src/x35-causal-chain-contract.mjs",
+      "sha256": "728b95727e658dcd01933f8619de47bbe052ef9153de0b29cda89852757d8e0e"
+    },
+    {
+      "path": "src/x49-instrumented-observer-core.mjs",
+      "sha256": "4c823ea9e35bf730eb97c0f80e6c9a92196b72031fea79dc9cee843f6b5bbb62"
+    },
+    {
+      "path": "src/x49-instrumented-fixture-contract.mjs",
+      "sha256": "8acb726736e6048f2b78c8d3ef1ed6a40b8ce1d9f36a46d31dc8f136c604c046"
+    },
+    {
+      "path": "src/x49-sensor-offset.mjs",
+      "sha256": "ef0e8a7ddd5e9acbc052d4b522ea56b317f8cbc1a59ef53a0b7471bfd7e8cbba"
+    },
+    {
+      "path": "src/runtime-identity.mjs",
+      "sha256": "dcd4e0df743d6310a6661cc3a2cf6b2d2879e33a3b82a3dd8620570c689231e8"
+    },
+    {
+      "path": "src/strict-json.mjs",
+      "sha256": "2a8bcfeed40b56f44d771ddbd2bad77b7ce17698e7f9f608afae8e828d8cb5e5"
+    },
+    {
+      "path": "src/thermostat-source.mjs",
+      "sha256": "358433c9ba1b5cbbb923642b743c2e724879d21012a3ea62d2e2f956287db1f7"
+    }
+  ],
+  "evidenceToolMembers": [
+    {
+      "path": "src/x49-avr-probe-symbol.mjs",
+      "sha256": "71e133d500b1c823f5ba9eb317d4868571e09b2a37af7c29b96c7a156f2587c9"
+    },
+    {
+      "path": "scripts/generate-x49-private-runtime-manifest.mjs",
+      "sha256": "6eb19543f26b601fd33f14a536870ad7208554c52f668a040828e13bb052c088"
+    }
+  ],
+  "externalContracts": [
+    "avr8js@0.21.1"
+  ],
+  "implementationSha256": "c687902b0700eb1f98bd5766493814e29e868f5ffb0115149f9aa9d58f11c11d",
+  "evidenceToolSha256": "8d5f4327108419b8a80065f6320119f249247b8a6db263f645e35d0538364a1d",
+  "semanticSha256": "b3fda7198a62299afc0f409b1d0922efedde6e9ffb098208bd3bc61a05b2e03e"
+}

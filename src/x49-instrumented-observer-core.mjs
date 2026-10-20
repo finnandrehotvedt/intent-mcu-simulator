@@ -13,6 +13,7 @@ import {
 } from './x49-instrumented-fixture-contract.mjs';
 
 export const X49_OBSERVER_STATE_SCHEMA = 'intent-mcu-x49-observer-state@1';
+export const X49_WRITE_WITNESS_SCHEMA = 'intent-mcu-x49-mailbox-write@1';
 const clone = (value) => structuredClone(value);
 const reject = (code) => { throw Object.assign(new Error(code), { code }); };
 const safeCycle = (value) => Number.isSafeInteger(value) && value >= 0;
@@ -35,12 +36,22 @@ function validPin(value, cycle) {
     && typeof value.level === 'boolean' && value.observedCycle === cycle;
 }
 
+function validWriteWitness(value) {
+  return exactKeys(value, ['schema', 'offset', 'oldValue', 'value', 'mask', 'pc', 'cycle'])
+    && value.schema === X49_WRITE_WITNESS_SCHEMA
+    && Number.isSafeInteger(value.offset) && value.offset >= 0 && value.offset < X49_PROBE_BYTES
+    && [value.oldValue, value.value, value.mask].every((item) =>
+      Number.isInteger(item) && item >= 0 && item <= 255)
+    && safeCycle(value.pc) && safeCycle(value.cycle);
+}
+
 export class X49InstrumentedObserverCore {
-  constructor({ probe, caseId }) {
+  constructor({ probe, caseId, requireWriteWitnesses = false }) {
     const expected = X49_CASES.find((entry) => entry.caseId === caseId);
-    if (!expected) reject('X49_OBSERVER_CASE_INVALID');
+    if (!expected || typeof requireWriteWitnesses !== 'boolean') reject('X49_OBSERVER_CASE_INVALID');
     this.probe = validateX49RuntimeProbe(probe);
     this.expected = clone(expected);
+    this.requireWriteWitnesses = requireWriteWitnesses;
     this.reset();
   }
 
@@ -65,19 +76,34 @@ export class X49InstrumentedObserverCore {
     this.sealed = true;
   }
 
-  observe({ before, after, pcBefore, pcAfter, cycle, latestAdc, d13 }) {
+  observe({ before, after, pcBefore, pcAfter, cycle, latestAdc, d13,
+    writeWitnesses = null }) {
     if (this.sealed) return;
     if (!Array.isArray(before) || !Array.isArray(after)
         || before.length !== X49_PROBE_BYTES || after.length !== X49_PROBE_BYTES
         || !before.every((item) => Number.isInteger(item) && item >= 0 && item <= 255)
         || !after.every((item) => Number.isInteger(item) && item >= 0 && item <= 255)
-        || !safeCycle(pcBefore) || !safeCycle(pcAfter) || !safeCycle(cycle)) {
+        || !safeCycle(pcBefore) || !safeCycle(pcAfter) || !safeCycle(cycle)
+        || (writeWitnesses !== null && (!Array.isArray(writeWitnesses)
+          || writeWitnesses.some((item) => !validWriteWitness(item))))) {
       reject('X49_OBSERVER_INPUT_INVALID');
     }
     const changed = before.flatMap((value, offset) => value === after[offset] ? [] : [offset]);
-    if (!changed.length) return;
+    const witnessed = writeWitnesses?.map((item) => item.offset) ?? [];
+    if (writeWitnesses?.some((item) => item.mask !== 255 || item.pc !== pcBefore
+        || item.cycle > cycle || item.oldValue !== before[item.offset]
+        || item.value !== after[item.offset]) || new Set(witnessed).size !== witnessed.length) {
+      reject('X49_WRITE_WITNESS_INVALID');
+    }
+    if (this.requireWriteWitnesses && writeWitnesses === null) {
+      return this.#incomplete('missing-evidence');
+    }
+    if (!changed.length && !witnessed.length) return;
     const commitChanged = before[0] !== after[0];
     if (commitChanged) {
+      if (this.requireWriteWitnesses && !witnessed.includes(0)) {
+        return this.#incomplete('missing-evidence');
+      }
       const increment = (after[0] - before[0] + 256) % 256;
       if (increment !== 1 || (before[0] === 255 && after[0] === 0)) {
         return this.#incomplete('truncated-evidence');
@@ -113,7 +139,19 @@ export class X49InstrumentedObserverCore {
       this.sealed = true;
       return;
     }
-    if (this.active) for (const offset of changed) if (offset > 0) this.active.changed.add(offset);
+    if (this.active) {
+      const offsets = this.requireWriteWitnesses ? witnessed : changed;
+      for (const offset of offsets) if (offset > 0) this.active.changed.add(offset);
+    }
+  }
+
+  retainSample(pin) {
+    if (!this.transaction || !this.sealed || !validPin(pin, pin?.observedCycle)) {
+      reject('X49_OBSERVER_SAMPLE_INVALID');
+    }
+    if (pin.observedCycle < this.transaction.commitCycle) reject('X49_OBSERVER_SAMPLE_INVALID');
+    this.pin = clone(pin);
+    return clone(this.pin);
   }
 
   observation({ input, modelOutput, runtimeBinding, runtimeIdentity, time, retention,
@@ -139,7 +177,8 @@ export class X49InstrumentedObserverCore {
       inputIdentity: this.expected.inputIdentity, expectedAdcValue: this.expected.calculated.adcCount,
       witnessedOdd: Boolean(this.active) || Boolean(this.transaction),
       completed: Boolean(this.transaction), incompleteReason: this.incompleteReason,
-      sealed: this.sealed, nativeEvidence: false,
+      sealed: this.sealed, requireWriteWitnesses: this.requireWriteWitnesses,
+      nativeEvidence: false,
     };
   }
 }
