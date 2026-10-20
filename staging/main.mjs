@@ -6728,17 +6728,21 @@ function bomNetlistExportInput(profile = selectedCompilerProfile) {
 let bomNetlistExportSequence = 0;
 async function exportCurrentBomNetlist() {
   const sequence = ++bomNetlistExportSequence;
-  const input = bomNetlistExportInput();
-  const guard = bomNetlistInputGuard(input);
-  elements.buildliststatus.textContent = 'Preparing a local build list from the current validated authored graph…';
   try {
+    const input = bomNetlistExportInput();
+    const guard = bomNetlistInputGuard(input);
+    const remainsCurrent = () => sequence === bomNetlistExportSequence
+      && selectedCompilerProfile === input.profile
+      && bomNetlistInputGuard(bomNetlistExportInput(input.profile)) === guard;
+    elements.buildliststatus.textContent = 'Preparing a local build list from the current validated authored graph…';
     const result = await createBomNetlistExport(input);
-    if (sequence !== bomNetlistExportSequence
-        || selectedCompilerProfile !== input.profile
-        || bomNetlistInputGuard(bomNetlistExportInput(input.profile)) !== guard) {
+    if (!remainsCurrent()) {
       throw Object.assign(new Error('BOM_NETLIST_STALE_EXPORT'), { code: 'BOM_NETLIST_STALE_EXPORT' });
     }
     await parseBomNetlistText(result.text);
+    if (!remainsCurrent()) {
+      throw Object.assign(new Error('BOM_NETLIST_STALE_EXPORT'), { code: 'BOM_NETLIST_STALE_EXPORT' });
+    }
     const stem = input.projectName.normalize('NFKD').replace(/[^A-Za-z0-9 _.-]/gu, '')
       .trim().replace(/\s+/gu, '-').slice(0, 64) || 'intent-mcu-project';
     downloadText(`${stem}.build-list.json`, result.text, 'application/json');

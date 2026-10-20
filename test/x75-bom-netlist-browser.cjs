@@ -14,6 +14,12 @@ const profiles = [
   'board.esp32-c3-devmodule-v1',
   'board.stm32f429zi-nucleo144-v1',
 ];
+const profileVisuals = {
+  'board.atmega328p-16mhz-v1': '#circuit-canvas',
+  'board.rp2040-pico-v1': '#pico-diagram',
+  'board.esp32-c3-devmodule-v1': '#c3-diagram',
+  'board.stm32f429zi-nucleo144-v1': '#stm32-diagram',
+};
 const storage = () => ({
   local: Object.fromEntries(Object.keys(localStorage).sort().map((key) => [key, localStorage.getItem(key)])),
   session: Object.fromEntries(Object.keys(sessionStorage).sort().map((key) => [key, sessionStorage.getItem(key)])),
@@ -36,6 +42,35 @@ const storage = () => ({
     });
     assert.equal((await page.goto(base, { waitUntil: 'networkidle' }))?.status(), 200);
     await page.waitForFunction(() => window.__M11_READY__ === true && window.__X75_BOM_NETLIST__);
+
+    const geometryCases = [];
+    for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }]) {
+      await page.setViewportSize(viewport);
+      for (const profile of profiles) {
+        await page.selectOption('#board-select', profile);
+        await page.waitForFunction((id) => document.querySelector('#board-select').value === id, profile);
+        const measured = await page.evaluate(({ id, visualSelector }) => {
+          const stage = document.querySelector('#active-canvas-stage').getBoundingClientRect();
+          const visual = document.querySelector(visualSelector).getBoundingClientRect();
+          return {
+            profile: id,
+            stageTop: stage.top,
+            stageVisibleHeight: Math.min(innerHeight, stage.bottom) - Math.max(0, stage.top),
+            visibleWidth: Math.max(0, Math.min(innerWidth, visual.right) - Math.max(0, visual.left)),
+            visibleHeight: Math.max(0, Math.min(innerHeight, visual.bottom) - Math.max(0, visual.top)),
+            overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          };
+        }, { id: profile, visualSelector: profileVisuals[profile] });
+        assert(measured.stageTop <= 210, `${profile} stage starts at ${measured.stageTop}`);
+        assert(measured.stageVisibleHeight >= (viewport.height <= 768 ? 430 : 540));
+        assert(measured.visibleWidth >= 700);
+        assert(measured.visibleHeight > 0);
+        assert(measured.overflow <= 1);
+        geometryCases.push({ viewport: `${viewport.width}x${viewport.height}`, ...measured });
+      }
+    }
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.selectOption('#board-select', profiles[0]);
 
     await page.click('#project-files-open');
     await page.waitForSelector('#workbench-project-dialog[open]');
@@ -112,16 +147,27 @@ const storage = () => ({
     assert.deepEqual(physical['board.stm32f429zi-nucleo144-v1'].find(([id]) => id === 'PB0')[1],
       { connector: 'CN11', pin: 34 });
 
+    let staleDownloads = 0;
+    const countStaleDownload = () => { staleDownloads += 1; };
+    page.on('download', countStaleDownload);
     await page.evaluate(() => {
       const original = crypto.subtle.digest.bind(crypto.subtle);
+      window.__X75_DIGEST_CALLS__ = 0;
       crypto.subtle.digest = async (...args) => {
-        await new Promise((resolve) => setTimeout(resolve, 120));
+        window.__X75_DIGEST_CALLS__ += 1;
+        if (window.__X75_DIGEST_CALLS__ === 2) {
+          await new Promise((resolve) => setTimeout(resolve, 180));
+        }
         return original(...args);
       };
     });
     await page.click('#build-list-export');
+    await page.waitForFunction(() => window.__X75_DIGEST_CALLS__ >= 2);
     await page.selectOption('#board-select', 'board.esp32-c3-devmodule-v1');
     await page.waitForFunction(() => document.querySelector('#build-list-status').textContent.includes('cancelled'));
+    await page.waitForTimeout(250);
+    page.off('download', countStaleDownload);
+    assert.equal(staleDownloads, 0);
     assert.match(await page.locator('#build-list-status').textContent(), /project or controller changed/u);
 
     assert.deepEqual(errors, []);
@@ -135,6 +181,7 @@ const storage = () => ({
     await page.screenshot({ path: path.join(evidenceDir, 'x75-private-build-list.png'), fullPage: false });
     console.log(JSON.stringify({
       result: 'pass', browser: 'chromium', profiles: profiles.length, actualDownloads: 5,
+      geometryCases: geometryCases.length,
       deterministicRepeat: true, valueOnlyChange: true, movementExcluded: true, undoRestored: true,
       staleCancelled: true, outsideRequests: 0, mutations: 0, workers: 0, serviceWorkers: 0,
     }));
