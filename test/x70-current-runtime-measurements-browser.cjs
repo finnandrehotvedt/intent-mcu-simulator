@@ -158,7 +158,7 @@ async function downloadAndValidate(page, context, profile) {
   const standalone = await context.newPage();
   await standalone.goto(`file://${target}`);
   assert.match(await standalone.locator('title').textContent(), /accessible circuit demonstration/iu);
-  assert.match(await standalone.locator('desc').textContent(), /current runtime measurements/iu);
+  assert.match(await standalone.locator('desc').textContent(), /current (?:observation-only )?runtime measurements/iu);
   assert.equal(await standalone.locator('[data-kind="measurement-status"][data-id="current-runtime-measurements"]').count(), 1);
   assert.deepEqual(await standalone.locator('[data-kind="measurement-channel"]').evaluateAll((nodes) =>
     nodes.map((node) => node.getAttribute('data-id'))), ['serial', 'gpio', 'logic', 'input']);
