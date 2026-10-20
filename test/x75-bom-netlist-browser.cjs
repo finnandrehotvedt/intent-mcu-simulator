@@ -129,13 +129,25 @@ const storage = () => ({
     const movedValue = await page.evaluate(() => window.__X75_BOM_NETLIST__.current());
     assert.equal(movedValue.text, downloads.get('board.rp2040-pico-v1'));
 
-    const property = await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__
-      .setComponentProperty('resistor-1', 'ohms', 330));
-    assert.equal(property.ok, true);
-    const changed = await page.evaluate(() => window.__X75_BOM_NETLIST__.current());
-    assert.notEqual(changed.text, movedValue.text);
-    assert.deepEqual(changed.value.nets, movedValue.value.nets);
-    assert.deepEqual(changed.value.components.find(({ id }) => id === 'resistor-1').properties,
+    await page.click('#active-canvas-mount [data-component-id="resistor-1"]');
+    await page.click('#toggle-inspector');
+    await page.fill('#resistor-1-ohms', '330');
+    await page.locator('#resistor-1-ohms').evaluate((control) => control.addEventListener('change',
+      (event) => event.stopImmediatePropagation(), { capture: true, once: true }));
+    await page.keyboard.press('Tab');
+    await page.waitForFunction(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuit
+      .components.find(({ id }) => id === 'resistor-1').properties.ohms === 330);
+    await page.keyboard.press('Escape');
+    const editedDownloadPromise = page.waitForEvent('download');
+    await page.click('#build-list-export');
+    const editedDownload = await editedDownloadPromise;
+    const editedPath = path.join(evidenceDir, 'pico-inspector-330.json');
+    await editedDownload.saveAs(editedPath);
+    const editedText = fs.readFileSync(editedPath, 'utf8');
+    const changed = await page.evaluate((source) => window.__X75_BOM_NETLIST__.parse(source), editedText);
+    assert.notEqual(editedText, movedValue.text);
+    assert.deepEqual(changed.nets, movedValue.value.nets);
+    assert.deepEqual(changed.components.find(({ id }) => id === 'resistor-1').properties,
       [{ name: 'ohms', value: 330, unit: 'Ω' }]);
     assert.equal((await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.undoCircuit())).ok, true);
     const undone = await page.evaluate(() => window.__X75_BOM_NETLIST__.current());
@@ -186,9 +198,10 @@ const storage = () => ({
     assert.match(await page.locator('#build-list-status').textContent(), /cancelled/u);
     await page.screenshot({ path: path.join(evidenceDir, 'x75-private-build-list.png'), fullPage: false });
     console.log(JSON.stringify({
-      result: 'pass', browser: 'chromium', profiles: profiles.length, actualDownloads: 5,
+      result: 'pass', browser: 'chromium', profiles: profiles.length, actualDownloads: 6,
       geometryCaseCount: geometryCases.length, geometryCases,
-      deterministicRepeat: true, valueOnlyChange: true, movementExcluded: true, undoRestored: true,
+      deterministicRepeat: true, literalInspectorEdit: true, valueOnlyChange: true,
+      movementExcluded: true, undoRestored: true,
       staleCancelled: true, outsideRequests: 0, mutations: 0, workers: 0, serviceWorkers: 0,
     }));
   } finally {

@@ -845,7 +845,7 @@ function renderBoundedComponentCatalog({ state, editCircuit, list, properties })
   const limit = document.createElement('small');
   const commitOnChange = (control, value) => {
     let committing = false;
-    control.addEventListener('change', () => {
+    const commit = () => {
       if (committing) return;
       committing = true;
       const next = value();
@@ -854,7 +854,12 @@ function renderBoundedComponentCatalog({ state, editCircuit, list, properties })
       // not replace a focused node and trigger a re-entrant blur/change.
       if (document.activeElement === control) control.blur();
       editCircuit('setComponentProperty', selected.id, control.dataset.boundedProperty, next);
-    });
+    };
+    // Native change is the normal commit path. Blur is an explicit fallback
+    // for accessibility/browser automation paths that settle the edited field
+    // without delivering change to the application before the popup closes.
+    control.addEventListener('change', commit);
+    control.addEventListener('blur', commit);
   };
   let input;
   if (selected.type === 'resistor.fixed-v1') {
