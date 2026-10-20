@@ -1,4 +1,26 @@
-# Intent MCU Simulator 1.1.0-rc.77
+# Intent MCU Simulator 1.1.0-rc.78
+
+## Explicit local version history
+
+This release publishes the independently reviewed X63 browser-local version
+history for all four exact controller profiles. History is off by default,
+opens no database while off and captures nothing automatically. After explicit
+opt-in, only the separate **Save local version** action writes one strictly
+validated canonical project file. The learner chooses a limit of 3 or 10
+versions shared across the four profiles.
+
+Opening a retained version reuses the ordinary strict Open boundary, asks the
+normal unsaved-change question and restores no file-handle, Build, runtime,
+result or verdict authority. Replacement, retention reduction and deletion
+are explicit and atomic. Invalid local records cannot be opened; a recoverable
+original byte sequence can only be downloaded as an inert raw copy. This
+first-party browser storage is convenience, not encrypted storage or backup;
+browser clearing, eviction, private mode or device loss may remove it. No
+version is uploaded or stored by the Lab server.
+
+---
+
+## 1.1.0-rc.77
 
 ## Typed authored changes and literal source differences
 

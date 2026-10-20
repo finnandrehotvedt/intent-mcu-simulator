@@ -1,8 +1,17 @@
-# Migration to 1.1.0-rc.77
+# Migration to 1.1.0-rc.78
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.78 changes no project schema or stored project semantics. Optional local
+version history is off by default and writes only after explicit opt-in plus an
+explicit Save local version action. A retained version contains the same
+strict canonical data-only project envelope as a downloaded file. Opening it
+uses the normal Open validation and unsaved-change boundary, clears executable
+authority and requires a fresh Build. Turning history off preserves retained
+versions but stops database access; browser storage is local convenience, not
+server storage, encrypted storage or backup.
 
 Rc.77 changes no project schema or stored project semantics. The X64 summary
 and literal source-file difference are transient projections of an already

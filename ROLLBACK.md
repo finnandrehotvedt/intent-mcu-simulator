@@ -1,13 +1,13 @@
-# Rollback basis for 1.1.0-rc.77
+# Rollback basis for 1.1.0-rc.78
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain exact accepted rc.76 source commit
-`6dff50cdfddd8c7ab19b193688e2855d9afa5df2` and VM103 image
-`sha256:fe97390b3528ae3ed60da64522898773efab9941a5ba39895fcca8a138f0944a`
-as the pre-rc.77 app-only recovery basis.
+Retain exact accepted rc.77 source commit
+`4fc8c1ecb5df59106c8af6f780943673fd70f052` and VM103 image
+`sha256:717a78a786cd4fc628091d0ea17234f0e1acf82c873f13c5b6b59460706a8cb3`
+as the pre-rc.78 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
@@ -83,6 +83,12 @@ Rc.77 adds a typed authored-fact summary and complete literal source-file
 difference to the existing X05 proposal review. Rolling back removes only that
 additional transient detail. It does not migrate learner files, change the X05
 parser or Apply lifecycle, or alter compiler/runtime authority.
+
+Rc.78 adds only opt-in first-party browser-local version history. Rolling back
+removes its controls and access but does not delete or migrate learner-owned
+downloaded files. Browser-managed IndexedDB records may remain inaccessible to
+the older app; preserve needed work as a downloaded canonical project before a
+manual rollback. No server-side project store exists.
 
 Browser recovery and learner-owned files are never deleted by deployment or
 rollback. Do not change DNS, shared Caddy configuration, compiler/runtime

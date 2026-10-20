@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.78 — 2026-10-20
+
+- Published the independently reviewed X63 optional browser-local version
+  history for all four exact controller profiles.
+- Kept history off by default with no database open or automatic capture;
+  saving requires explicit opt-in and an explicit Save local version action.
+- Added strict canonical identity validation, 3/10 shared retention, confirmed
+  replacement/deletion, inert raw recovery for eligible corrupt records and
+  atomic rollback on storage failures.
+- Preserved ordinary Open validation and unsaved-change handling while never
+  restoring file, Build, runtime, result or verdict authority. Versions stay
+  in first-party browser storage and are not server storage or backup.
+
 ## 1.1.0-rc.77 — 2026-10-20
 
 - Published the independently reviewed X64 detail inside the existing X05
