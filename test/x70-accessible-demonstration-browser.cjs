@@ -134,7 +134,7 @@ async function delayedRace(page, action, expectedDownloads = 0) {
         const value = await window.__X70_ACCESSIBLE_DEMONSTRATION__.validate(source);
         return value.report;
       }, result.source);
-      assert.equal(validated.schema, 'intent-mcu-accessible-demonstration@1');
+      assert.equal(validated.schema, 'intent-mcu-accessible-demonstration@2');
       assert.equal(validated.profile, profile);
       assert.equal(validated.measurements.status, 'no-current-measurements');
       assert.equal(validated.measurements.artifactIdentity, null);

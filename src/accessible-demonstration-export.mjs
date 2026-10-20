@@ -17,7 +17,7 @@ import { materializeRouteFamily, routeFamilyPaths } from './route-model.mjs';
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
 import { STM32_PUBLIC_COMPONENT_CATALOG } from './stm32-public-circuit.mjs';
 
-export const ACCESSIBLE_DEMONSTRATION_SCHEMA = 'intent-mcu-accessible-demonstration@1';
+export const ACCESSIBLE_DEMONSTRATION_SCHEMA = 'intent-mcu-accessible-demonstration@2';
 export const ACCESSIBLE_DEMONSTRATION_REPORT_LIMIT = 512 * 1024;
 export const ACCESSIBLE_DEMONSTRATION_SVG_LIMIT = 1024 * 1024;
 export const ACCESSIBLE_DEMONSTRATION_PROFILES = Object.freeze([
@@ -25,6 +25,7 @@ export const ACCESSIBLE_DEMONSTRATION_PROFILES = Object.freeze([
 ]);
 
 const HASH = /^[a-f0-9]{64}$/u;
+const SHARED_INSTRUMENT_SUMMARY_SCHEMA = 'intent-mcu-shared-instrument-summary@1';
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u;
 const COLOR = /^#[0-9a-f]{6}$/u;
 const FORBIDDEN_TEXT = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u;
@@ -41,9 +42,24 @@ const catalogue = Object.freeze({
 });
 const LIMITATIONS = Object.freeze([
   'Connectivity comes only from the validated authored graph; route geometry is presentation, not electrical authority.',
-  'No current measurements means no runtime, artifact, result or verdict was inferred for this export.',
+  'Measurements are observation-only current-runtime facts when present; unavailable channels stay unavailable and no result or verdict is inferred.',
   'Project-owned models are bounded teaching models, not calibrated physical or purchasing equivalence.',
 ]);
+const CHANNEL_IDS = Object.freeze(['serial', 'gpio', 'logic', 'input']);
+const TIME_BASES = new Set([
+  'unavailable', 'virtual-cycle', 'virtual-cycle-and-nanoseconds',
+  'reset-epoch-sequence', 'adapter-epoch-sequence', 'instruction-order-only',
+]);
+const PROFILE_CLASSIFICATIONS = Object.freeze({
+  [AVR_PROFILE]: Object.freeze({ serial: ['recorded-runtime'], gpio: ['recorded-runtime'],
+    logic: ['recorded-runtime'], input: ['recorded-runtime'] }),
+  [RP2040_PROFILE]: Object.freeze({ serial: ['recorded-runtime', 'unavailable'],
+    gpio: ['recorded-runtime', 'unavailable'], logic: ['recorded-runtime', 'unavailable'], input: ['unavailable'] }),
+  [ESP32C3_PROFILE]: Object.freeze({ serial: ['recorded-runtime', 'unavailable'],
+    gpio: ['project-model', 'unavailable'], logic: ['project-model', 'unavailable'], input: ['unavailable'] }),
+  [STM32F429ZI_PROFILE]: Object.freeze({ serial: ['recorded-runtime', 'unavailable'],
+    gpio: ['recorded-runtime', 'unavailable'], logic: ['recorded-runtime', 'unavailable'], input: ['unavailable'] }),
+});
 const ALLOWED_ELEMENTS = new Set(['svg', 'title', 'desc', 'metadata', 'g', 'rect', 'line', 'path', 'circle', 'text', 'tspan']);
 const ALLOWED_ATTRIBUTES = new Set([
   'xmlns', 'viewBox', 'role', 'aria-labelledby', 'aria-label', 'id',
@@ -63,6 +79,31 @@ function canonical(value) {
 
 export function stableAccessibleDemonstrationStringify(value) {
   return JSON.stringify(canonical(value));
+}
+
+export function avrAccessibleRuntimeBindingMatches(value) {
+  if (!value || !exactKeys(value, ['projectArtifactIdentity', 'stateArtifactIdentity', 'artifact', 'binding',
+    'runtimeIdentity', 'build', 'runtimeModelExecutionContextSha256', 'loadedSourceIdentity',
+    'currentSourceIdentity', 'modelImplementationSha256', 'expectedToolchainIdentitySha256'])) return false;
+  const { artifact, binding, runtimeIdentity, build } = value;
+  if (![artifact, binding, runtimeIdentity, build].every((item) => item && typeof item === 'object')) return false;
+  const identity = artifact.artifactIdentity;
+  return HASH.test(identity ?? '') && HASH.test(artifact.inputIdentity ?? '')
+    && Number.isSafeInteger(artifact.projectGeneration) && artifact.projectGeneration >= 1
+    && value.projectArtifactIdentity === identity && value.stateArtifactIdentity === identity
+    && build.artifactIdentity === identity && build.inputIdentity === artifact.inputIdentity
+    && binding.artifactIdentity === identity && binding.projectGeneration === artifact.projectGeneration
+    && runtimeIdentity.artifactIdentity === identity
+    && runtimeIdentity.projectGeneration === artifact.projectGeneration
+    && runtimeIdentity.runtimeGeneration === binding.runtimeGeneration
+    && value.loadedSourceIdentity === value.currentSourceIdentity
+    && value.loadedSourceIdentity === artifact.inputIdentity
+    && build.modelImplementationSha256 === value.modelImplementationSha256
+    && runtimeIdentity.modelImplementationSha256 === value.modelImplementationSha256
+    && runtimeIdentity.modelExecutionContextSha256 === build.modelExecutionContextSha256
+    && value.runtimeModelExecutionContextSha256 === build.modelExecutionContextSha256
+    && build.toolchainIdentitySha256 === value.expectedToolchainIdentitySha256
+    && /^sha256:[a-f0-9]{64}$/u.test(build.toolchainImageId ?? '');
 }
 
 async function defaultSha256(text) {
@@ -191,15 +232,261 @@ function noCurrentMeasurements(value) {
   return clone(value);
 }
 
+function boundedString(value, maximum = 16_384, allowEmpty = true) {
+  if (typeof value !== 'string') reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_TEXT');
+  const normalized = value.normalize('NFC');
+  if ((!allowEmpty && !normalized) || normalized.length > maximum || FORBIDDEN_TEXT.test(normalized)
+      || UNPAIRED_SURROGATE.test(normalized)) reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_TEXT');
+  return normalized;
+}
+
+function finiteScalar(value, name) {
+  if (typeof value === 'boolean' || value === null) return value;
+  if (typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= Number.MAX_SAFE_INTEGER) return value;
+  if (typeof value === 'string') return boundedString(value, 512);
+  reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_VALUE', [name]);
+}
+
+function exactAllowedKeys(value, allowed, code) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+      || Object.keys(value).some((key) => !allowed.includes(key))) reject(code);
+}
+
+function compactRecord(value, allowed, code) {
+  exactAllowedKeys(value, allowed, code);
+  return Object.fromEntries(Object.keys(value).sort(compare)
+    .map((key) => [key, finiteScalar(value[key], key)]));
+}
+
+function serialValue(profile, value) {
+  const shapes = {
+    [AVR_PROFILE]: ['records'],
+    [RP2040_PROFILE]: ['records', 'text'],
+    [ESP32C3_PROFILE]: ['text', 'bootEpochs'],
+    [STM32F429ZI_PROFILE]: ['text'],
+  };
+  exactAllowedKeys(value, shapes[profile], 'ACCESSIBLE_DEMONSTRATION_SERIAL_VALUE');
+  const records = Array.isArray(value.records) ? value.records : [];
+  const recordKeys = ['accepted', 'baud', 'cycle', 'direction', 'frameCycles', 'targetCycle',
+    'text', 'value', 'virtualMilliseconds'];
+  for (const record of records) compactRecord(record, recordKeys, 'ACCESSIBLE_DEMONSTRATION_SERIAL_RECORD');
+  if (value.bootEpochs !== undefined && !Array.isArray(value.bootEpochs)) {
+    reject('ACCESSIBLE_DEMONSTRATION_SERIAL_VALUE');
+  }
+  const output = typeof value.text === 'string' ? value.text : records
+    .filter((record) => record.direction === 'tx')
+    .map((record) => typeof record.text === 'string' ? record.text
+      : Number.isInteger(record.value) && record.value >= 0 && record.value <= 255
+        ? String.fromCodePoint(record.value) : '').join('');
+  const selected = records.slice(-128).map((record) => compactRecord(record, recordKeys,
+    'ACCESSIBLE_DEMONSTRATION_SERIAL_RECORD'));
+  return { text: boundedString(output), records: selected, displayed: selected.length };
+}
+
+function pinValue(value) {
+  exactAllowedKeys(value, ['pins', 'selectedPin', 'source'], 'ACCESSIBLE_DEMONSTRATION_GPIO_VALUE');
+  if (!Array.isArray(value.pins) || value.pins.length > 32
+      || (value.selectedPin !== null && typeof value.selectedPin !== 'string')
+      || (value.source !== undefined && typeof value.source !== 'string')) {
+    reject('ACCESSIBLE_DEMONSTRATION_GPIO_VALUE');
+  }
+  const pinKeys = ['adc', 'diagnostic', 'drive', 'externalDrive', 'faultState', 'lastCycle', 'level',
+    'mode', 'pin', 'pwm', 'sampleCycle', 'voltage', 'volts'];
+  const pins = value.pins.map((pin) => {
+    exactAllowedKeys(pin, pinKeys, 'ACCESSIBLE_DEMONSTRATION_GPIO_PIN');
+    const result = {};
+    for (const key of Object.keys(pin).sort(compare)) {
+      if (key === 'pwm') {
+        if (pin.pwm === null) result.pwm = null;
+        else {
+          exactAllowedKeys(pin.pwm, ['duty', 'dutyCycle', 'frequencyHz', 'highCycles', 'periodCycles', 'periodNanos'],
+            'ACCESSIBLE_DEMONSTRATION_GPIO_PWM');
+          result.pwm = Object.fromEntries(Object.keys(pin.pwm).sort(compare)
+            .map((name) => [name, finiteScalar(pin.pwm[name], name)]));
+        }
+      } else result[key] = finiteScalar(pin[key], key);
+    }
+    if (typeof result.pin !== 'string') reject('ACCESSIBLE_DEMONSTRATION_GPIO_PIN');
+    return result;
+  });
+  return { pins, selectedPin: value.selectedPin === null ? null : boundedString(value.selectedPin, 64, false),
+    source: value.source === undefined ? null : boundedString(value.source, 160, false) };
+}
+
+function logicValue(value) {
+  if (!exactKeys(value, ['channels', 'transitions']) || !Array.isArray(value.channels)
+      || value.channels.length > 8 || !Array.isArray(value.transitions)) {
+    reject('ACCESSIBLE_DEMONSTRATION_LOGIC_VALUE');
+  }
+  const channels = value.channels.map((channel) => boundedString(channel, 64, false));
+  const recordKeys = ['channel', 'cycle', 'level', 'pin', 'sequence', 'state', 'virtualNanos'];
+  for (const record of value.transitions) compactRecord(record, recordKeys,
+    'ACCESSIBLE_DEMONSTRATION_LOGIC_RECORD');
+  const transitions = value.transitions.slice(-128).map((record) => compactRecord(record, recordKeys,
+    'ACCESSIBLE_DEMONSTRATION_LOGIC_RECORD'));
+  return { channels, transitions, displayed: transitions.length };
+}
+
+function inputValue(value) {
+  if (!exactKeys(value, ['records']) || !Number.isSafeInteger(value.records) || value.records < 0
+      || value.records > 10_000) reject('ACCESSIBLE_DEMONSTRATION_INPUT_VALUE');
+  return { records: value.records };
+}
+
+function timeValue(value) {
+  if (!exactKeys(value, ['basis', 'cycle', 'virtualMilliseconds']) || !TIME_BASES.has(value.basis)
+      || (value.cycle !== null && (!Number.isSafeInteger(value.cycle) || value.cycle < 0))
+      || (value.virtualMilliseconds !== null
+        && (!Number.isFinite(value.virtualMilliseconds) || value.virtualMilliseconds < 0))) {
+    reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_TIME');
+  }
+  return clone(value);
+}
+
+function retentionValue(value) {
+  if (!exactKeys(value, ['retained', 'dropped', 'limit'])) {
+    reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_RETENTION');
+  }
+  for (const name of ['retained', 'dropped', 'limit']) {
+    if (value[name] !== null && (!Number.isSafeInteger(value[name]) || value[name] < 0)) {
+      reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_RETENTION');
+    }
+  }
+  return clone(value);
+}
+
+function validateProjectedValue(id, value) {
+  if (id === 'serial') {
+    if (!exactKeys(value, ['text', 'records', 'displayed']) || !Array.isArray(value.records)
+        || value.records.length > 128 || value.displayed !== value.records.length) {
+      reject('ACCESSIBLE_DEMONSTRATION_SERIAL_VALUE');
+    }
+    boundedString(value.text);
+    const recordKeys = ['accepted', 'baud', 'cycle', 'direction', 'frameCycles', 'targetCycle',
+      'text', 'value', 'virtualMilliseconds'];
+    value.records.forEach((record) => compactRecord(record, recordKeys,
+      'ACCESSIBLE_DEMONSTRATION_SERIAL_RECORD'));
+    return;
+  }
+  if (id === 'gpio') {
+    if (!exactKeys(value, ['pins', 'selectedPin', 'source']) || !Array.isArray(value.pins)
+        || value.pins.length > 32 || (value.selectedPin !== null && typeof value.selectedPin !== 'string')
+        || (value.source !== null && typeof value.source !== 'string')) {
+      reject('ACCESSIBLE_DEMONSTRATION_GPIO_VALUE');
+    }
+    const pinKeys = ['adc', 'diagnostic', 'drive', 'externalDrive', 'faultState', 'lastCycle', 'level',
+      'mode', 'pin', 'pwm', 'sampleCycle', 'voltage', 'volts'];
+    value.pins.forEach((pin) => {
+      exactAllowedKeys(pin, pinKeys, 'ACCESSIBLE_DEMONSTRATION_GPIO_PIN');
+      if (typeof pin.pin !== 'string') reject('ACCESSIBLE_DEMONSTRATION_GPIO_PIN');
+      for (const [name, item] of Object.entries(pin)) {
+        if (name === 'pwm' && item !== null) {
+          exactAllowedKeys(item, ['duty', 'dutyCycle', 'frequencyHz', 'highCycles', 'periodCycles', 'periodNanos'],
+            'ACCESSIBLE_DEMONSTRATION_GPIO_PWM');
+          Object.entries(item).forEach(([key, nested]) => finiteScalar(nested, key));
+        } else finiteScalar(item, name);
+      }
+    });
+    if (value.selectedPin !== null) boundedString(value.selectedPin, 64, false);
+    if (value.source !== null) boundedString(value.source, 160, false);
+    return;
+  }
+  if (id === 'logic') {
+    if (!exactKeys(value, ['channels', 'transitions', 'displayed']) || !Array.isArray(value.channels)
+        || value.channels.length > 8 || !Array.isArray(value.transitions) || value.transitions.length > 128
+        || value.displayed !== value.transitions.length) reject('ACCESSIBLE_DEMONSTRATION_LOGIC_VALUE');
+    value.channels.forEach((channel) => boundedString(channel, 64, false));
+    const recordKeys = ['channel', 'cycle', 'level', 'pin', 'sequence', 'state', 'virtualNanos'];
+    value.transitions.forEach((record) => compactRecord(record, recordKeys,
+      'ACCESSIBLE_DEMONSTRATION_LOGIC_RECORD'));
+    return;
+  }
+  inputValue(value);
+}
+
+function currentMeasurements(value) {
+  if (!exactKeys(value, ['status', 'profile', 'artifactIdentity', 'revision', 'provenance', 'channels', 'authority'])
+      || value.status !== 'current-runtime-measurements'
+      || !ACCESSIBLE_DEMONSTRATION_PROFILES.includes(value.profile)
+      || !HASH.test(value.artifactIdentity ?? '')
+      || !Number.isSafeInteger(value.revision) || value.revision < 0
+      || value.authority !== 'observation-only' || !Array.isArray(value.channels)
+      || value.channels.length !== CHANNEL_IDS.length) reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENTS');
+  boundedString(value.provenance, 320, false);
+  for (let index = 0; index < CHANNEL_IDS.length; index += 1) {
+    const channel = value.channels[index]; const id = CHANNEL_IDS[index];
+    if (!exactKeys(channel, ['id', 'classification', 'provenance', 'time', 'retention', 'value'])
+        || channel.id !== id || !PROFILE_CLASSIFICATIONS[value.profile][id].includes(channel.classification)) {
+      reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_CHANNEL');
+    }
+    boundedString(channel.provenance, 320, false); timeValue(channel.time); retentionValue(channel.retention);
+    if (channel.classification === 'unavailable') {
+      if (channel.value !== null || channel.time.basis !== 'unavailable'
+          || Object.values(channel.retention).some((item) => item !== null)) {
+        reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_UNAVAILABLE');
+      }
+    } else if (channel.value === null) reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_VALUE');
+    else validateProjectedValue(id, channel.value);
+  }
+  if (value.profile === ESP32C3_PROFILE) {
+    const gpio = value.channels.find(({ id }) => id === 'gpio');
+    const logic = value.channels.find(({ id }) => id === 'logic');
+    if (gpio.classification !== 'unavailable'
+        && (!/project-owned|not QEMU pin state/iu.test(gpio.provenance)
+          || gpio.time.basis !== 'adapter-epoch-sequence')) reject('ACCESSIBLE_DEMONSTRATION_C3_BOUNDARY');
+    if (logic.classification !== 'unavailable'
+        && (!/not QEMU CPU GPIO|project-owned/iu.test(logic.provenance)
+          || logic.time.basis !== 'adapter-epoch-sequence')) reject('ACCESSIBLE_DEMONSTRATION_C3_BOUNDARY');
+  }
+  if (value.profile === STM32F429ZI_PROFILE) {
+    for (const id of ['gpio', 'logic']) {
+      const channel = value.channels.find((item) => item.id === id);
+      if (channel.classification !== 'unavailable' && channel.time.basis !== 'instruction-order-only') {
+        reject('ACCESSIBLE_DEMONSTRATION_STM32_BOUNDARY');
+      }
+    }
+  }
+  return clone(value);
+}
+
+export function accessibleMeasurementsFromSharedSummary(summary) {
+  if (!exactKeys(summary, ['schema', 'profile', 'revision', 'artifactIdentity', 'state', 'provenance', 'channels'])
+      || summary.schema !== SHARED_INSTRUMENT_SUMMARY_SCHEMA
+      || !ACCESSIBLE_DEMONSTRATION_PROFILES.includes(summary.profile)
+      || summary.state !== 'current-runtime' || !HASH.test(summary.artifactIdentity ?? '')
+      || !Number.isSafeInteger(summary.revision) || summary.revision < 0
+      || !exactKeys(summary.channels, CHANNEL_IDS)) reject('ACCESSIBLE_DEMONSTRATION_SHARED_SUMMARY');
+  const channels = CHANNEL_IDS.map((id) => {
+    const channel = summary.channels[id];
+    if (!exactKeys(channel, ['classification', 'provenance', 'time', 'retention', 'value'])
+        || !PROFILE_CLASSIFICATIONS[summary.profile][id].includes(channel.classification)) {
+      reject('ACCESSIBLE_DEMONSTRATION_SHARED_SUMMARY_CHANNEL');
+    }
+    const base = { id, classification: channel.classification,
+      provenance: boundedString(channel.provenance, 320, false), time: timeValue(channel.time),
+      retention: retentionValue(channel.retention), value: null };
+    if (channel.classification === 'unavailable') {
+      if (channel.value !== null) reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_UNAVAILABLE');
+      return base;
+    }
+    base.value = id === 'serial' ? serialValue(summary.profile, channel.value)
+      : id === 'gpio' ? pinValue(channel.value)
+        : id === 'logic' ? logicValue(channel.value) : inputValue(channel.value);
+    return base;
+  });
+  return currentMeasurements({ status: 'current-runtime-measurements', profile: summary.profile,
+    artifactIdentity: summary.artifactIdentity, revision: summary.revision,
+    provenance: boundedString(summary.provenance, 320, false), channels, authority: 'observation-only' });
+}
+
 function inputMeasurements(value) {
   if (value === null || value === undefined) return noCurrentMeasurements({
     status: 'no-current-measurements', artifactIdentity: null, revision: null,
     reason: 'No current source-bound runtime measurements were present when this local snapshot was created.',
     authority: 'none',
   });
-  // This zero-producer increment deliberately admits no positive runtime
-  // adapter. A synthetic fixture therefore cannot create product authority.
-  return noCurrentMeasurements(value);
+  return value.status === 'current-runtime-measurements'
+    ? currentMeasurements(value) : noCurrentMeasurements(value);
 }
 
 function projectGeometry(graph, layout, bom) {
@@ -260,11 +547,14 @@ export function accessibleDemonstrationInputGuard(input) {
   });
 }
 
-export async function createAccessibleDemonstration(input, { sha256 = defaultSha256 } = {}) {
+export async function createAccessibleDemonstration(input, { sha256 = defaultSha256, isCurrent = null } = {}) {
   // Capture every field before the first asynchronous boundary. Callers still
   // compare their live guard afterward, but external mutation cannot mix a new
   // generation, layout or measurement identity into this one snapshot.
   const captured = clone(input);
+  const requireCurrent = () => {
+    if (isCurrent && !isCurrent()) reject('ACCESSIBLE_DEMONSTRATION_STALE_EXPORT');
+  };
   if (!exactKeys(captured, ['productRelease', 'profile', 'projectName', 'graph', 'layout',
     'modelLibraryLock', 'measurements', 'generation', 'revision'])
       || !ACCESSIBLE_DEMONSTRATION_PROFILES.includes(captured.profile)
@@ -274,11 +564,14 @@ export async function createAccessibleDemonstration(input, { sha256 = defaultSha
   }
   const graph = captured.graph;
   const layout = normalizedLayout(graph, captured.layout);
+  requireCurrent();
   const bomResult = await createBomNetlistExport({
     productRelease: captured.productRelease, profile: captured.profile,
     projectName: text(captured.projectName, 80), graph, modelLibraryLock: captured.modelLibraryLock, sha256,
   });
+  requireCurrent();
   const bom = await parseBomNetlistText(bomResult.text);
+  requireCurrent();
   const geometry = projectGeometry(graph, layout, bom);
   const report = {
     schema: ACCESSIBLE_DEMONSTRATION_SCHEMA,
@@ -302,8 +595,10 @@ export async function createAccessibleDemonstration(input, { sha256 = defaultSha
     reject('ACCESSIBLE_DEMONSTRATION_REPORT_LIMIT');
   }
   report.integrity.reportSha256 = await sha256(projectionText);
+  requireCurrent();
   if (!HASH.test(report.integrity.reportSha256 ?? '')) reject('ACCESSIBLE_DEMONSTRATION_HASH');
   const accepted = await validateAccessibleDemonstrationReport(report, { sha256 });
+  requireCurrent();
   const svg = renderAccessibleDemonstrationSvg(accepted);
   if (new TextEncoder().encode(svg).length > ACCESSIBLE_DEMONSTRATION_SVG_LIMIT) {
     reject('ACCESSIBLE_DEMONSTRATION_SVG_LIMIT');
@@ -337,7 +632,12 @@ export async function validateAccessibleDemonstrationReport(value, { sha256 = de
       || !exactKeys(value.integrity, ['reportSha256']) || !HASH.test(value.integrity.reportSha256 ?? '')) {
     reject('ACCESSIBLE_DEMONSTRATION_REPORT');
   }
-  text(value.project.name, 80); noCurrentMeasurements(value.measurements);
+  text(value.project.name, 80);
+  const measurements = inputMeasurements(value.measurements);
+  if (measurements.status === 'current-runtime-measurements'
+      && (measurements.profile !== value.profile || measurements.revision !== value.project.revision)) {
+    reject('ACCESSIBLE_DEMONSTRATION_MEASUREMENT_BINDING');
+  }
   const resolvedModels = resolveModelLibrary(value.modelLibrary);
   if (!resolvedModels.ok) reject(resolvedModels.code, resolvedModels.details);
   const modelEntries = new Map(resolvedModels.manifest.entries
@@ -545,8 +845,32 @@ function reportRows(report) {
   add(`Product release ${report.productRelease} · profile ${report.profile}`);
   add(`Model library ${report.modelLibrary.version} · manifest ${report.modelLibrary.manifestSha256}`);
   add(`Model implementation ${report.modelLibrary.implementationSha256}`);
-  add('No current measurements', { kind: 'measurement-status', id: 'no-current-measurements', strong: true });
-  add(report.measurements.reason, { indent: true });
+  if (report.measurements.status === 'no-current-measurements') {
+    add('No current measurements', { kind: 'measurement-status', id: 'no-current-measurements', strong: true });
+    add(report.measurements.reason, { indent: true });
+  } else {
+    add(`Current runtime measurements · artifact ${report.measurements.artifactIdentity}`,
+      { kind: 'measurement-status', id: 'current-runtime-measurements', strong: true });
+    add(`Observation-only · revision ${report.measurements.revision} · ${report.measurements.provenance}`,
+      { indent: true });
+    for (const channel of report.measurements.channels) {
+      const time = channel.time.cycle === null ? channel.time.basis
+        : `${channel.time.basis} · cycle ${channel.time.cycle} · ${channel.time.virtualMilliseconds} ms`;
+      const retention = channel.retention.retained === null ? 'retention unavailable'
+        : `${channel.retention.retained} retained · ${channel.retention.dropped} dropped${channel.retention.limit === null ? '' : ` · limit ${channel.retention.limit}`}`;
+      add(`${channel.id} · ${channel.classification} · ${time} · ${retention}`,
+        { kind: 'measurement-channel', id: channel.id, strong: true });
+      add(channel.provenance, { indent: true });
+      if (channel.value === null) add('Unavailable', { indent: true });
+      else if (channel.id === 'serial') add(`Text: ${channel.value.text || '(empty)'} · ${channel.value.displayed} records shown`, { indent: true });
+      else if (channel.id === 'gpio') {
+        for (const pin of channel.value.pins) add(`Pin ${pin.pin}: ${stableAccessibleDemonstrationStringify(pin)}`, { indent: true });
+      } else if (channel.id === 'logic') {
+        add(`Channels: ${channel.value.channels.join(', ') || '(none)'} · ${channel.value.displayed} transitions shown`, { indent: true });
+        for (const transition of channel.value.transitions) add(stableAccessibleDemonstrationStringify(transition), { indent: true });
+      } else add(`Records: ${channel.value.records}`, { indent: true });
+    }
+  }
   for (const limitation of report.limitations) add(`Boundary: ${limitation}`);
   return rows;
 }
@@ -555,7 +879,10 @@ export function renderAccessibleDemonstrationSvg(report) {
   const fit = bounds(report);
   const metadata = xml(stableAccessibleDemonstrationStringify(report));
   const title = `${report.project.name} — accessible circuit demonstration`;
-  const description = `${report.profile}; ${report.counts.components} components, ${report.counts.nets} nets and ${report.counts.endpoints} connected named pins. No current measurements.`;
+  const measurementDescription = report.measurements.status === 'no-current-measurements'
+    ? 'No current measurements.'
+    : `Current observation-only runtime measurements for artifact ${report.measurements.artifactIdentity}.`;
+  const description = `${report.profile}; ${report.counts.components} components, ${report.counts.nets} nets and ${report.counts.endpoints} connected named pins. ${measurementDescription}`;
   const titleLines = wrapSvgText(report.project.name, 62);
   const circuitY = 104 + titleLines.length * 29;
   const rowsForReport = reportRows(report);
@@ -669,8 +996,13 @@ export async function validateAccessibleDemonstrationSvg(source, { sha256 = defa
       }
     }
   }
-  if (!has('measurement-status', 'no-current-measurements')) {
+  if (!has('measurement-status', report.measurements.status)) {
     reject('ACCESSIBLE_DEMONSTRATION_SVG_REFERENCE');
+  }
+  if (report.measurements.status === 'current-runtime-measurements') {
+    for (const channel of report.measurements.channels) {
+      if (!has('measurement-channel', channel.id)) reject('ACCESSIBLE_DEMONSTRATION_SVG_REFERENCE');
+    }
   }
   return { report, document };
 }

@@ -102,6 +102,7 @@
     "test:x75:browser": "node test/x75-bom-netlist-browser.cjs",
     "test:x70": "node --test --test-concurrency=1 test/x70-accessible-demonstration.test.mjs",
     "test:x70:browser": "node test/x70-accessible-demonstration-browser.cjs",
+    "test:x70:current:browser": "node test/x70-current-runtime-measurements-browser.cjs",
     "test:x86": "node --test --test-concurrency=1 test/x86-offline-support-matrix.test.mjs",
     "test:x86:browser": "node test/x86-offline-support-matrix-browser.cjs",
     "test:docs-release": "node --test --test-concurrency=1 test/docs-x72-release.test.mjs test/x72-example-progression.test.mjs test/release-identity-copy.test.mjs test/public-release-projection.test.mjs",

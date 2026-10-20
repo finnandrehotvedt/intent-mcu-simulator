@@ -15,7 +15,8 @@ import {
   bomNetlistInputGuard, createBomNetlistExport, parseBomNetlistText,
 } from '../src/bom-netlist-export.mjs';
 import {
-  accessibleDemonstrationInputGuard, createAccessibleDemonstration,
+  accessibleDemonstrationInputGuard, accessibleMeasurementsFromSharedSummary,
+  avrAccessibleRuntimeBindingMatches, createAccessibleDemonstration,
   validateAccessibleDemonstrationSvg,
 } from '../src/accessible-demonstration-export.mjs';
 import { createProjectNavigationView, searchProjectNavigation } from '../src/project-navigation.mjs';
@@ -6739,6 +6740,37 @@ const noCurrentDemonstrationMeasurements = Object.freeze({
   reason: 'No current source-bound runtime measurements were present when this local snapshot was created.',
   authority: 'none',
 });
+function currentAvrAccessibleMeasurementState() {
+  const project = currentProject(); const runtime = window.__M6_STATE__.runtime;
+  const artifact = lifecycle.artifact; const binding = lifecycle.runtimeBinding;
+  const identity = runtime?.runtimeIdentity; const activeModelLock = modelLibraryLockFor(AVR_PROFILE);
+  const exact = runtime && artifact && binding && identity && latestBuildResult
+    && avrAccessibleRuntimeBindingMatches({
+      projectArtifactIdentity: project.build?.artifactIdentity ?? null,
+      stateArtifactIdentity: window.__M6_STATE__.artifactIdentity,
+      artifact, binding, runtimeIdentity: identity, build: latestBuildResult,
+      runtimeModelExecutionContextSha256: runtime.modelExecutionContextSha256,
+      loadedSourceIdentity, currentSourceIdentity: buildInputIdentity(),
+      modelImplementationSha256: activeModelLock.implementationSha256,
+      expectedToolchainIdentitySha256: currentCompilerTarget().toolchainIdentitySha256,
+    });
+  return exact ? { ...window.__M6_STATE__, revision: editor.revision, artifactIdentity: artifact.artifactIdentity,
+    runtime, project } : null;
+}
+function accessibleMeasurementState(profile) {
+  if (profile === AVR_PROFILE) return currentAvrAccessibleMeasurementState();
+  if (profile === RP2040_PROFILE) return picoPublicWorkbench.snapshot();
+  if (profile === ESP32C3_PROFILE) return c3PublicWorkbench.snapshot();
+  if (profile === STM32F429ZI_PROFILE) return stm32PublicWorkbench.snapshot();
+  return null;
+}
+function stableAccessibleMeasurementSnapshot(profile, state, summary) {
+  if (summary?.state !== 'current-runtime') return true;
+  if (profile === AVR_PROFILE) return state?.runtime?.paused === true && lifecycle.phase === 'paused';
+  if (profile === RP2040_PROFILE) return state?.runtime?.paused === true && state.phase === 'paused';
+  if (profile === ESP32C3_PROFILE) return state.phase === 'complete';
+  return profile === STM32F429ZI_PROFILE && state.phase === 'completed';
+}
 function accessibleDemonstrationExportInput(profile = selectedCompilerProfile) {
   const projectDocument = profileProjectDocument(profile);
   const active = profile === AVR_PROFILE ? currentProject() : projectDocument;
@@ -6748,17 +6780,22 @@ function accessibleDemonstrationExportInput(profile = selectedCompilerProfile) {
   const layout = profile === AVR_PROFILE
     ? active.candidateCircuit ? active.candidateLayout : active.layout
     : graph?.layout;
-  const state = profile === AVR_PROFILE ? null
-    : profile === RP2040_PROFILE ? picoPublicWorkbench.snapshot()
-      : profile === ESP32C3_PROFILE ? c3PublicWorkbench.snapshot()
-        : profile === STM32F429ZI_PROFILE ? stm32PublicWorkbench.snapshot() : null;
+  const state = accessibleMeasurementState(profile);
   if (!graph || !layout) throw Object.assign(new Error('ACCESSIBLE_DEMONSTRATION_INPUT'),
     { code: 'ACCESSIBLE_DEMONSTRATION_INPUT' });
+  const summary = state ? sharedInstrumentSummary(profile, state) : null;
+  if (!stableAccessibleMeasurementSnapshot(profile, state, summary)) {
+    throw Object.assign(new Error('ACCESSIBLE_DEMONSTRATION_RUNTIME_ACTIVE'),
+      { code: 'ACCESSIBLE_DEMONSTRATION_RUNTIME_ACTIVE' });
+  }
+  const measurements = summary?.state === 'current-runtime'
+    ? accessibleMeasurementsFromSharedSummary(summary)
+    : structuredClone(noCurrentDemonstrationMeasurements);
   return {
     productRelease: RELEASE_VERSION, profile, projectName: profileProjectName(profile),
     graph: structuredClone(graph), layout: structuredClone(layout),
     modelLibraryLock: modelLibraryLockFor(profile),
-    measurements: structuredClone(noCurrentDemonstrationMeasurements),
+    measurements,
     generation: profile === AVR_PROFILE ? Math.max(1, lifecycle.projectGeneration) : 1,
     revision: profile === AVR_PROFILE ? editor.revision : state.revision,
   };
@@ -6807,7 +6844,7 @@ async function exportCurrentAccessibleDemonstration() {
       && selectedCompilerProfile === input.profile
       && accessibleDemonstrationInputGuard(accessibleDemonstrationExportInput(input.profile)) === guard;
     elements.accessiblesvgstatus.textContent = 'Preparing a sanitized accessible circuit SVG from the current authored graph…';
-    const result = await createAccessibleDemonstration(input);
+    const result = await createAccessibleDemonstration(input, { isCurrent: remainsCurrent });
     if (!remainsCurrent()) throw Object.assign(new Error('ACCESSIBLE_DEMONSTRATION_STALE_EXPORT'),
       { code: 'ACCESSIBLE_DEMONSTRATION_STALE_EXPORT' });
     const validated = await validateAccessibleDemonstrationSvg(result.svg);
@@ -6818,11 +6855,15 @@ async function exportCurrentAccessibleDemonstration() {
     const stem = input.projectName.normalize('NFKD').replace(/[^A-Za-z0-9 _.-]/gu, '')
       .trim().replace(/\s+/gu, '-').slice(0, 64) || 'intent-mcu-project';
     downloadText(`${stem}.accessible-demonstration.svg`, result.svg, 'image/svg+xml');
-    elements.accessiblesvgstatus.textContent = 'Accessible SVG downloaded locally · authored graph and named pins included · no current measurements.';
+    elements.accessiblesvgstatus.textContent = validated.report.measurements.status === 'current-runtime-measurements'
+      ? 'Accessible SVG downloaded locally · authored graph, named pins and current observation-only runtime measurements included.'
+      : 'Accessible SVG downloaded locally · authored graph and named pins included · no current measurements.';
     return { ok: true, code: 'OK', ...result };
   } catch (error) {
     const code = error.code ?? error.message ?? 'ACCESSIBLE_DEMONSTRATION_EXPORT_FAILED';
-    elements.accessiblesvgstatus.textContent = code === 'ACCESSIBLE_DEMONSTRATION_STALE_EXPORT'
+    elements.accessiblesvgstatus.textContent = code === 'ACCESSIBLE_DEMONSTRATION_RUNTIME_ACTIVE'
+      ? 'Pause the current AVR/Pico runtime or wait for C3/STM32 completion before exporting a stable measurement snapshot.'
+      : code === 'ACCESSIBLE_DEMONSTRATION_STALE_EXPORT'
       ? 'Accessible SVG cancelled because the project, profile or runtime action changed. Try again.'
       : `Accessible SVG rejected (${code}). The current project was not changed.`;
     return { ok: false, code };
