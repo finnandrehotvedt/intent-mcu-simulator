@@ -102,7 +102,8 @@ h2 { font-size: 1.22rem; margin: 0; }
 .quick-controls button { min-height: 34px; padding-inline: 10px; }
 .quick-controls #quick-build { color: #06111a; background: var(--lime); border-color: var(--lime); }
 .top-workbench-shell { position: relative; display: grid; gap: 6px; margin-bottom: 12px; }
-.top-workbench-sticky-controls { position: sticky; z-index: 40; top: 8px; display: grid; gap: 6px; padding-bottom: 2px; background: #050d15; }
+.top-workbench-sticky-controls { position: sticky; z-index: 40; top: 8px; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; padding-bottom: 2px; background: #050d15; }
+.top-workbench-toolbar, .workbench-popup-controls { grid-column: 1 / -1; }
 .top-workbench-toolbar { display: grid; grid-template-columns: auto minmax(520px,1fr) auto; gap: 12px; align-items: center; min-height: 48px; padding: 6px 10px; border: 1px solid #315c72; border-radius: 12px; background: linear-gradient(145deg,#0c2637,#081722); box-shadow: 0 12px 32px #0005; }
 .top-workbench-identity .eyebrow { margin-bottom: 2px; font-size: .58rem; }
 .top-workbench-identity h2 { font-size: 1rem; white-space: nowrap; }
@@ -115,10 +116,10 @@ h2 { font-size: 1.22rem; margin: 0; }
 .top-primary-controls .quick-controls { position: static; display: flex; width: auto; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; pointer-events: auto; }
 .top-primary-controls .quick-controls > span { display: none; }
 .top-primary-controls .quick-controls button { min-height: 32px; padding: 4px 8px; font-size: .7rem; white-space: nowrap; }
-.workbench-popup-controls { display: grid; grid-template-columns: repeat(8,minmax(0,1fr)); gap: 6px; }
+.workbench-popup-controls { display: grid; grid-template-columns: repeat(9,minmax(0,1fr)); gap: 6px; }
 .workbench-popup-controls button { min-height: 32px; padding: 4px 7px; overflow: hidden; font-size: .7rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .workbench-popup-controls button[aria-expanded="true"] { color: #06111a; background: var(--cyan); border-color: var(--cyan); }
-.build-list-status { margin: 0; padding: 2px 10px; border: 1px solid #29495b; border-radius: 8px; color: var(--muted); background: #071620; font-size: .66rem; line-height: 1.2; }
+.build-list-status { min-width: 0; margin: 0; padding: 2px 10px; overflow: hidden; border: 1px solid #29495b; border-radius: 8px; color: var(--muted); background: #071620; font-size: .66rem; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
 .active-canvas-stage { min-width: 0; border: 1px solid #315c72; border-radius: 14px; background: #07141f; box-shadow: 0 18px 50px #0006; overflow: hidden; }
 #active-canvas-mount { min-width: 0; }
 #active-canvas-mount > [data-shared-surface="canvas"],

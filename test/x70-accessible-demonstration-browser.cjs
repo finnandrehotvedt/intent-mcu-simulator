@@ -14,6 +14,12 @@ const profiles = [
   'board.esp32-c3-devmodule-v1',
   'board.stm32f429zi-nucleo144-v1',
 ];
+const profileVisuals = Object.freeze({
+  'board.atmega328p-16mhz-v1': '#circuit-canvas',
+  'board.rp2040-pico-v1': '#pico-diagram',
+  'board.esp32-c3-devmodule-v1': '#c3-diagram',
+  'board.stm32f429zi-nucleo144-v1': '#stm32-diagram',
+});
 const storage = () => ({
   local: Object.fromEntries(Object.keys(localStorage).sort().map((key) => [key, localStorage.getItem(key)])),
   session: Object.fromEntries(Object.keys(sessionStorage).sort().map((key) => [key, sessionStorage.getItem(key)])),
@@ -77,14 +83,34 @@ async function delayedRace(page, action, expectedDownloads = 0) {
     const viewportCases = [];
     for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }]) {
       await page.setViewportSize(viewport);
-      const geometry = await page.evaluate(() => {
-        const button = document.querySelector('#accessible-svg-export').getBoundingClientRect();
-        return { visible: button.top >= 0 && button.bottom <= innerHeight && button.left >= 0 && button.right <= innerWidth,
-          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth };
-      });
-      assert.equal(geometry.visible, true);
-      assert(geometry.overflow <= 1);
-      viewportCases.push({ viewport: `${viewport.width}x${viewport.height}`, ...geometry });
+      for (const profile of profiles) {
+        await page.selectOption('#board-select', profile);
+        await page.waitForSelector(profileVisuals[profile], { state: 'visible' });
+        await page.evaluate(() => scrollTo(0, 0));
+        const geometry = await page.evaluate((visualSelector) => {
+          const button = document.querySelector('#accessible-svg-export').getBoundingClientRect();
+          const stage = document.querySelector('#active-canvas-stage').getBoundingClientRect();
+          const visual = document.querySelector(visualSelector).getBoundingClientRect();
+          const intersection = (rect) => ({
+            width: Math.max(0, Math.min(innerWidth, rect.right) - Math.max(0, rect.left)),
+            height: Math.max(0, Math.min(innerHeight, rect.bottom) - Math.max(0, rect.top)),
+          });
+          return { exportVisible: button.top >= 0 && button.bottom <= innerHeight
+              && button.left >= 0 && button.right <= innerWidth,
+            stageTop: stage.top, stageVisible: intersection(stage), visual: intersection(visual),
+            overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+        }, profileVisuals[profile]);
+        const requiredHeight = viewport.height <= 768 ? 430 : 540;
+        assert.equal(geometry.exportVisible, true);
+        assert(geometry.stageTop <= 210, `${profile}: stage top ${geometry.stageTop}`);
+        assert(geometry.stageVisible.height >= requiredHeight,
+          `${profile}: stage visible height ${geometry.stageVisible.height}`);
+        assert(geometry.visual.width >= 700, `${profile}: visual width ${geometry.visual.width}`);
+        assert(geometry.visual.height >= requiredHeight,
+          `${profile}: visual visible height ${geometry.visual.height}`);
+        assert(geometry.overflow <= 1);
+        viewportCases.push({ viewport: `${viewport.width}x${viewport.height}`, profile, ...geometry });
+      }
     }
     await page.setViewportSize({ width: 1440, height: 900 });
 
