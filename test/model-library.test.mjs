@@ -24,9 +24,10 @@ import {
   createTemperatureLcdThresholdExample,
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
-  CURRENT_MODEL_LIBRARY_LOCK, RETAINED_MODEL_LIBRARY_LOCK,
+  CURRENT_MODEL_LIBRARY_LOCK, PRIOR_CURRENT_MODEL_LIBRARY_LOCK, RETAINED_MODEL_LIBRARY_LOCK,
   compareModelLibraryEntries, modelLibraryMigrationPreview, normalizeModelLibraryLock,
-  resolveModelLibrary, runModelLibraryConformance, trustedModelLibraryManifests,
+  historicalModelLibraryManifests, modelLibraryExecutionIdentity, resolveModelLibrary,
+  runModelLibraryConformance, trustedModelLibraryManifests,
   validateProjectModelLibrary,
 } from '../src/model-library.mjs';
 
@@ -150,7 +151,7 @@ test('retained and current locks use distinct real resolver instances with match
 test('production electrical and runtime paths dispatch through the exact selected implementation', () => {
   for (const [lock, expected] of [
     [RETAINED_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-retained-rc72@2'],
-    [CURRENT_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-current-x56@2'],
+    [CURRENT_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-current-pico-presentation-1@3'],
   ]) {
     const avr = validateCircuit(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
     assert.equal(avr.ok, true);
@@ -171,6 +172,24 @@ test('production electrical and runtime paths dispatch through the exact selecte
       assert.equal(result.model.modelLibraryImplementationId, expected);
     }
   }
+});
+
+test('prior X56 lock remains exact and data-migratable but cannot authorize execution', () => {
+  const historical = historicalModelLibraryManifests();
+  assert.equal(historical.length, 2);
+  const prior = historical[1];
+  assert.equal(prior.version, '2.0.0-x56-current');
+  assert.equal(prior.manifestSha256, '5c94ce070526d2e7e417fed0cb152fc28bdea24ee9beb52c65488328d41eac0b');
+  assert.equal(prior.implementationSha256, '4e0fc926236de5edda6b3e85c3770b709a4ae3643d47b8cd9b3138c4c1b61633');
+  assert.equal(normalizeModelLibraryLock(PRIOR_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
+  assert.equal(modelLibraryExecutionIdentity(PRIOR_CURRENT_MODEL_LIBRARY_LOCK).code,
+    'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const migration = modelLibraryMigrationPreview(PRIOR_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(migration.ok, true);
+  assert.equal(migration.migrationRequired, true);
+  assert.equal(migration.semanticChanges.length, 0);
+  assert.equal(migration.rendererChanges.length, 0);
+  assert.equal(migration.unchanged.length, 25);
 });
 
 test('retained behavior is a dependency-closed historical source graph with no current imports', async () => {

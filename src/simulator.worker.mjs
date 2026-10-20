@@ -3,6 +3,7 @@ import {
   RP2040_EXPERIMENTAL_PROFILE,
   Rp2040ExperimentalRuntime,
 } from './rp2040-experimental-runtime.mjs';
+import { Rp2040SnapshotPacer } from './rp2040-snapshot-pacer.mjs';
 import {
   MODEL_RUNTIME_BINDING_SCHEMA, createWorkerRuntimeIdentity, runtimeInitBinding,
 } from './runtime-identity.mjs';
@@ -10,6 +11,7 @@ import { modelLibraryExecutionIdentity } from './model-library.mjs';
 
 let kernel = null;
 let rp2040 = null;
+let rp2040Pacer = null;
 let running = false;
 let generation = 0;
 let initialization = 0;
@@ -66,6 +68,8 @@ function disposeRuntime() {
   running = false;
   generation++;
   initialization++;
+  rp2040Pacer?.cancel();
+  rp2040Pacer = null;
   rp2040?.dispose();
   rp2040 = null;
   kernel = null;
@@ -76,17 +80,36 @@ function disposeRuntime() {
 function pump(activeGeneration) {
   if (!running || activeGeneration !== generation) return;
   try {
-    if (isRp2040()) emit(rp2040.runSlice());
-    else {
-      kernel.runInstructions(instructionBudget());
-      status();
-    }
+    kernel.runInstructions(instructionBudget());
+    status();
     setTimeout(() => pump(activeGeneration), 0);
   } catch (error) {
     running = false;
     generation++;
     stopped('stopped-error', error);
   }
+}
+
+function presentationGeneration(data) {
+  if (!Number.isSafeInteger(data.presentationGeneration) || data.presentationGeneration < 1) {
+    throw new Error('RP2040_PRESENTATION_GENERATION_INVALID');
+  }
+  return data.presentationGeneration;
+}
+
+function createRp2040Pacer(runtime) {
+  return new Rp2040SnapshotPacer({
+    artifactIdentity: runtime.artifactIdentity,
+    advance: () => runtime.advanceSlice(),
+    snapshot: (kind) => runtime.snapshot(kind),
+    emit,
+    onError(error) {
+      running = false;
+      generation++;
+      runtime.pause();
+      stopped('stopped-error', error);
+    },
+  });
 }
 
 async function handleMessage(data) {
@@ -109,6 +132,7 @@ async function handleMessage(data) {
           return;
         }
         rp2040 = candidate;
+        rp2040Pacer = createRp2040Pacer(candidate);
         status('ready');
         return;
       }
@@ -159,23 +183,36 @@ async function handleMessage(data) {
       return;
     }
     if (!kernel && !rp2040) throw new Error('Worker is not initialized');
+    if (data.command === 'snapshot-ack') {
+      if (isRp2040()) rp2040Pacer.acknowledge(data);
+      return;
+    }
     if (data.command === 'test-stall') {
       running = false;
       generation++;
+      rp2040Pacer?.cancel();
       return;
     }
     if (data.command === 'run') {
       if (!running) {
         running = true;
-        if (isRp2040()) rp2040.run(); else kernel.run();
+        if (isRp2040()) {
+          rp2040.run();
+          rp2040Pacer.start(presentationGeneration(data));
+        } else kernel.run();
         generation++;
-        pump(generation);
+        if (!isRp2040()) pump(generation);
       }
     } else if (data.command === 'pause') {
       running = false;
       generation++;
-      if (isRp2040()) rp2040.pause(); else kernel.pause();
-      status('paused');
+      if (isRp2040()) {
+        rp2040.pause();
+        rp2040Pacer.publishFinal(presentationGeneration(data), 'paused');
+      } else {
+        kernel.pause();
+        status('paused');
+      }
     } else if (data.command === 'sample') {
       if (isRp2040()) {
         emit({ kind: 'sample-rejected', code: 'SAMPLE_PROFILE_UNSUPPORTED' });
@@ -188,7 +225,10 @@ async function handleMessage(data) {
     } else if (data.command === 'step') {
       running = false;
       generation++;
-      if (isRp2040()) emit(rp2040.step());
+      if (isRp2040()) {
+        rp2040Pacer.cancel();
+        emit(rp2040.step());
+      }
       else {
         kernel.pause();
         const step = kernel.step();
@@ -198,7 +238,10 @@ async function handleMessage(data) {
     } else if (data.command === 'reset') {
       running = false;
       generation++;
-      if (isRp2040()) emit(rp2040.reset());
+      if (isRp2040()) {
+        const reset = rp2040.reset();
+        rp2040Pacer.publishFinal(presentationGeneration(data), 'reset', reset);
+      }
       else {
         kernel.reset();
         status('reset');
@@ -257,6 +300,7 @@ async function handleMessage(data) {
       if (!isRp2040()) throw new Error('ADC_INPUT_PROFILE_UNSUPPORTED');
       running = false;
       generation++;
+      rp2040Pacer.cancel();
       emit(rp2040.sampleAdc0(data.rawCode));
     } else if (data.command === 'serial-clear') {
       if (isRp2040()) emit(rp2040.clearSerialView());

@@ -11,7 +11,9 @@ import {
   TRACE_PROJECT_BRIEF_SCHEMA, TRACE_PROJECT_ENVELOPE_SCHEMA,
   canonicalProjectEnvelope, emptyProjectBrief, migrateProjectModelLibrary, prepareProjectEnvelope,
 } from '../src/project-envelope.mjs';
-import { CURRENT_MODEL_LIBRARY_LOCK, RETAINED_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
+import {
+  CURRENT_MODEL_LIBRARY_LOCK, PRIOR_CURRENT_MODEL_LIBRARY_LOCK, RETAINED_MODEL_LIBRARY_LOCK,
+} from '../src/model-library.mjs';
 
 const profile = 'board.example-v1';
 const adapters = {
@@ -140,6 +142,21 @@ test('model-library migration creates a deterministic current copy without chang
   assert.equal(migrated.preview.rendererChanges.length, 0);
   assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(migrateProjectModelLibrary(migrated.canonical, adapters).code, 'MODEL_LIBRARY_ALREADY_CURRENT');
+});
+
+test('prior X56 saved envelope reopens only for explicit data migration with runtime authority cleared', () => {
+  const oldEnvelope = canonicalProjectEnvelope(
+    profile, project, adapters, emptyProjectBrief(), null, PRIOR_CURRENT_MODEL_LIBRARY_LOCK,
+  );
+  const opened = prepareProjectEnvelope(oldEnvelope, adapters);
+  assert.equal(opened.ok, true);
+  assert.deepEqual(opened.modelLibrary, PRIOR_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(opened.report.modelLibrary.migrationAvailable, true);
+  const migrated = migrateProjectModelLibrary(oldEnvelope, adapters);
+  assert.equal(migrated.ok, true);
+  assert.equal(migrated.originalUnchanged, oldEnvelope);
+  assert.equal(migrated.executableAuthorityCleared, true);
+  assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
 });
 
 test('current envelope rejects a rehashed or unknown model-library lock atomically', () => {

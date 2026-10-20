@@ -10,7 +10,11 @@ import { RP2040_PICO_COMPONENT_CATALOG } from '../src/rp2040-pico-circuit.mjs';
 import { ESP32C3_PUBLIC_COMPONENT_CATALOG } from '../src/esp32c3-public-circuit.mjs';
 import { STM32_PUBLIC_COMPONENT_CATALOG } from '../src/stm32-public-circuit.mjs';
 import { controlContractsFor } from '../src/model-control-contracts.mjs';
-import { RETAINED_MODEL_LIBRARY_MANIFEST } from '../src/model-library-snapshots.mjs';
+import * as existingSnapshots from '../src/model-library-snapshots.mjs';
+
+const { RETAINED_MODEL_LIBRARY_MANIFEST } = existingSnapshots;
+const PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST = existingSnapshots.PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 
 const stable = (value) => {
   if (Array.isArray(value)) return value.map(stable);
@@ -59,12 +63,19 @@ const entries = COMPONENT_SUPPORT_CELLS.filter((cell) => cell.available)
 
 const CURRENT_CLOSURE = Object.freeze([
   '../src/component-catalog.mjs', '../src/circuit-engine.mjs', '../src/runtime-kernel.mjs',
+  '../src/model-library.mjs', '../src/model-bundle-registry.mjs', '../src/project-envelope.mjs',
   '../src/model-control-contracts.mjs', '../src/simulator.worker.mjs', '../staging/main.mjs',
+  '../src/rp2040-snapshot-pacer.mjs', '../src/rp2040-experimental-runtime.mjs',
+  '../src/runtime-identity.mjs',
   '../src/candidate-project-session.mjs', '../src/candidate-spdt-runtime.mjs',
   '../src/candidate-existing-ui-adapter.mjs', '../src/rp2040-pico-circuit.mjs',
   '../src/esp32c3-public-circuit.mjs', '../src/stm32-public-circuit.mjs',
   '../src/rp2040-public-workbench.mjs', '../src/esp32c3-public-workbench.mjs',
   '../src/stm32-public-workbench.mjs',
+  '../expansion-drafts/controller-runtime-bridge-v1.mjs',
+  '../expansion-drafts/rp2040-runtime-bridge-adapter-v1.mjs',
+  '../expansion-drafts/rp2040-conformance-fixtures-v1.mjs',
+  '../expansion-drafts/rp2040-firmware-artifact-v1.mjs',
   '../expansion-drafts/project-v3-contact-persistence.mjs',
   '../expansion-drafts/ground-reference-integration-v1.mjs',
   '../expansion-drafts/toggle-switch-integration-v1.mjs',
@@ -89,7 +100,7 @@ async function implementationClosure(paths) {
   return stable({ members, sha256: sha256(members) });
 }
 
-function manifest(version, implementationId, implementation) {
+function manifest(version, implementationId, implementation, lineage = null) {
   const ownedEntries = entries.map((entry) => {
     const pipelineId = entry.profile === 'board.atmega328p-16mhz-v1'
       ? (entry.componentType.startsWith('board.') || ['resistor.fixed-v1', 'led.basic-v1',
@@ -105,6 +116,7 @@ function manifest(version, implementationId, implementation) {
   const value = { schema: 'intent-mcu-model-library-manifest@2',
     libraryId: 'intent-mcu-public-models', version, implementationId,
     implementationSha256: implementation.sha256, implementationMembers: implementation.members,
+    ...(lineage ? { lineage: stable(lineage) } : {}),
     runtimeContracts: ['avr8js@0.21.1', 'rp2040js@1.4.0', 'esp32c3-qemu@project-pinned',
       'renode@1.17.0'], entries: ownedEntries };
   return stable({ ...value, manifestSha256: sha256(value) });
@@ -123,12 +135,25 @@ const currentImplementation = await implementationClosure([...CURRENT_CLOSURE,
 const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
-const current = manifest('2.0.0-x56-current', 'intent-mcu-model-bundle-current-x56@2', currentImplementation);
+const current = manifest(
+  '2.0.0-pico-presentation.1-current',
+  'intent-mcu-model-bundle-current-pico-presentation-1@3',
+  currentImplementation,
+  {
+    priorVersion: PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    compatibility: 'explicit-data-only-migration; runtime-and-verdict-authority-cleared',
+    semanticDisposition: 'component, compiler, toolchain and emulator semantics unchanged',
+    presentationDisposition: 'bounded Pico cadence, exact ACK backpressure and final-Pause bypass',
+    baselineClosureDisposition: 'staging/main.mjs drifted after d40731a853b085e57c419bd277a253257b3dce28; current closure now hashes the reviewed current bytes',
+  },
+);
 const output = `// SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 // Generated immutable snapshots. Regenerate only through an explicitly reviewed library release.
 
 export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(retained, null, 2)});
+export const PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

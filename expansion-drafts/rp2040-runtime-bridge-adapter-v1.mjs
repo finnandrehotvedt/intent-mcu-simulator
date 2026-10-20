@@ -407,7 +407,7 @@ export class Rp2040RuntimeBridgeAdapter {
     }
   }
 
-  handle(command) {
+  handle(command, { includeSnapshot = true } = {}) {
     if (!validateRuntimeCommand(command) || command.requestId !== this.lastRequestId + 1) {
       throw errorWithCode('RUNTIME_COMMAND_INVALID');
     }
@@ -454,7 +454,12 @@ export class Rp2040RuntimeBridgeAdapter {
     if (!this.blocked) {
       this.#emit('progress', { instructions: this.epochInstructions });
     }
-    return this.snapshot();
+    return includeSnapshot ? this.snapshot() : null;
+  }
+
+  handleWithoutSnapshot(command) {
+    if (command?.type !== 'advance') throw errorWithCode('RUNTIME_COMMAND_INVALID');
+    return this.handle(command, { includeSnapshot: false });
   }
 
   snapshot() {
@@ -474,6 +479,16 @@ export class Rp2040RuntimeBridgeAdapter {
       pwm: structuredClone(this.pwmHistory),
       adc: structuredClone(this.adcHistory),
       virtualNanos: Math.round(this.machine.clock.nanos),
+    };
+  }
+
+  machineStatus() {
+    return {
+      cycle: this.machine.core.cycles,
+      instructions: this.epochInstructions,
+      blocked: this.blocked,
+      blockedCode: this.blockedCode,
+      blockedPeripheral: this.blockedPeripheral,
     };
   }
 }

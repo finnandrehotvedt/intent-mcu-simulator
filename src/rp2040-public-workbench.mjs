@@ -14,6 +14,7 @@ import {
   CURRENT_MODEL_LIBRARY_LOCK, modelLibraryExecutionIdentity, normalizeModelLibraryLock,
   resolveModelLibrary,
 } from './model-library.mjs';
+import { acceptsPresentation, presentationAck } from './rp2040-snapshot-pacer.mjs';
 
 export const RP2040_PUBLIC_PROJECT_SCHEMA = 'intent-mcu-rp2040-public-project@1';
 export const RP2040_PUBLIC_BUILD_SCHEMA = 'intent-mcu-rp2040-source-build-request@1';
@@ -120,6 +121,8 @@ export class Rp2040PublicWorkbench {
     this.artifactRevision = null;
     this.worker = null;
     this.workerGeneration = 0;
+    this.presentationGeneration = 0;
+    this.acceptedPresentationSequence = 0;
     this.abort = null;
     this.active = false;
     this.lastRuntime = null;
@@ -221,12 +224,20 @@ export class Rp2040PublicWorkbench {
 
   terminateWorker() {
     this.workerGeneration += 1;
+    this.presentationGeneration += 1;
+    this.acceptedPresentationSequence = 0;
     if (this.worker) {
       this.worker.postMessage({ command: 'dispose' });
       this.worker.terminate();
     }
     this.worker = null;
     this.lastRuntime = null;
+  }
+
+  beginPresentationGeneration() {
+    this.presentationGeneration += 1;
+    this.acceptedPresentationSequence = 0;
+    return this.presentationGeneration;
   }
 
   invalidate(message) {
@@ -376,7 +387,8 @@ export class Rp2040PublicWorkbench {
       return { ok: false, code: 'RUN_REQUIRES_CURRENT_BUILD' };
     }
     if (this.worker && this.phase === 'paused') {
-      this.worker.postMessage({ command: 'run' });
+      this.worker.postMessage({ command: 'run',
+        presentationGeneration: this.beginPresentationGeneration() });
       this.phase = 'running';
       this.message = 'Pico runtime resumed from the current source-bound artifact.';
       this.render();
@@ -392,16 +404,36 @@ export class Rp2040PublicWorkbench {
     worker.addEventListener('message', ({ data }) => {
       if (generation !== this.workerGeneration || worker !== this.worker) return;
       if (data.kind === 'disposed') return;
+      if (data.artifactIdentity !== this.artifact?.uf2Sha256) {
+        if (data.kind === 'stopped-error' || data.kind === 'error') {
+          this.phase = 'failed';
+          this.message = `Runtime stopped (${data.message ?? 'unbound runtime error'}).`;
+          this.terminateWorker();
+          this.render();
+        }
+        return;
+      }
+      const ack = data.presentation ? presentationAck(data) : null;
+      if (data.presentation && !acceptsPresentation(data, {
+        artifactIdentity: this.artifact.uf2Sha256,
+        presentationGeneration: this.presentationGeneration,
+        lastSequence: this.acceptedPresentationSequence,
+      })) return;
+      if (ack) this.acceptedPresentationSequence = ack.sequence;
       this.lastRuntime = data;
       if (data.kind === 'ready') {
-        this.phase = 'running';
-        this.message = 'Pico runtime started. GPIO0 and UART0 come from the compiled source.';
-        worker.postMessage({ command: 'run' });
+        if (this.phase === 'starting') {
+          this.phase = 'running';
+          this.message = 'Pico runtime started. GPIO0 and UART0 come from the compiled source.';
+          worker.postMessage({ command: 'run',
+            presentationGeneration: this.beginPresentationGeneration() });
+        }
       } else if (data.kind === 'stopped-error' || data.kind === 'error') {
         this.phase = 'failed';
         this.message = `Runtime stopped (${data.message ?? 'bounded runtime error'}).`;
       } else this.phase = data.paused ? 'paused' : 'running';
       this.render();
+      if (ack && generation === this.workerGeneration && worker === this.worker) worker.postMessage(ack);
     });
     worker.addEventListener('error', (event) => {
       if (generation !== this.workerGeneration) return;
@@ -419,14 +451,20 @@ export class Rp2040PublicWorkbench {
 
   pause() {
     if (!this.worker) return { ok: false, code: 'RUNTIME_NOT_ACTIVE' };
-    this.worker.postMessage({ command: 'pause' });
+    this.worker.postMessage({ command: 'pause',
+      presentationGeneration: this.beginPresentationGeneration() });
+    this.phase = 'pausing';
+    this.message = 'Pause requested. Waiting for the final current runtime snapshot.';
+    this.render();
     return { ok: true, code: 'OK' };
   }
 
   reset() {
     if (!this.worker) return { ok: false, code: 'RUNTIME_NOT_ACTIVE' };
     this.lastRuntime = null;
-    this.worker.postMessage({ command: 'reset' });
+    this.worker.postMessage({ command: 'reset',
+      presentationGeneration: this.beginPresentationGeneration() });
+    this.phase = 'resetting';
     this.message = 'Pico reset requested. Earlier evidence was retired while the fresh reset snapshot is pending.';
     this.render();
     return { ok: true, code: 'OK' };

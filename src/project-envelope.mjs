@@ -299,7 +299,7 @@ export function canonicalProjectEnvelope(profile, project, adapters, brief = emp
   if (!adapter) throw new Error('PROJECT_ENVELOPE_PROFILE');
   const library = normalizeModelLibraryLock(modelLibrary);
   if (!library.ok) throw Object.assign(new Error(library.code), { code: library.code, details: library.details });
-  const execution = modelLibraryExecutionIdentity(library.lock);
+  const execution = modelLibraryExecutionIdentity(library.lock, { allowMigrationOnly: true });
   if (!execution.ok) throw Object.assign(new Error(execution.code), execution);
   const prepared = prepare(adapter, project, { profile, modelLibrary: library.lock,
     bundle: execution.implementation, modelLibraryIdentity: execution.identity });
@@ -457,7 +457,7 @@ export function prepareProjectEnvelope(source, adapters) {
     const resolvedLibrary = normalizeModelLibraryLock(modelLibrary);
     if (!resolvedLibrary.ok) return resolvedLibrary;
     modelLibrary = resolvedLibrary.lock;
-    const execution = modelLibraryExecutionIdentity(modelLibrary);
+    const execution = modelLibraryExecutionIdentity(modelLibrary, { allowMigrationOnly: true });
     if (!execution.ok) return execution;
     const prepared = prepare(adapter, nested, { profile, modelLibrary,
       bundle: execution.implementation, modelLibraryIdentity: execution.identity });

@@ -3,7 +3,8 @@
 
 import { exactKeys } from './strict-json.mjs';
 import {
-  CURRENT_MODEL_LIBRARY_MANIFEST, RETAINED_MODEL_LIBRARY_MANIFEST,
+  CURRENT_MODEL_LIBRARY_MANIFEST, PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST,
+  RETAINED_MODEL_LIBRARY_MANIFEST,
 } from './model-library-snapshots.mjs';
 import { productionModelBundle } from './model-bundle-registry.mjs';
 
@@ -19,6 +20,7 @@ const deepFreeze = (value) => {
   return value;
 };
 deepFreeze(CURRENT_MODEL_LIBRARY_MANIFEST);
+deepFreeze(PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST);
 deepFreeze(RETAINED_MODEL_LIBRARY_MANIFEST);
 
 const lockFor = (manifest) => deepFreeze({
@@ -30,10 +32,12 @@ const lockFor = (manifest) => deepFreeze({
 });
 
 export const CURRENT_MODEL_LIBRARY_LOCK = lockFor(CURRENT_MODEL_LIBRARY_MANIFEST);
+export const PRIOR_CURRENT_MODEL_LIBRARY_LOCK = lockFor(PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST);
 export const RETAINED_MODEL_LIBRARY_LOCK = lockFor(RETAINED_MODEL_LIBRARY_MANIFEST);
 
 const trustedByHash = new Map([
   [CURRENT_MODEL_LIBRARY_LOCK.manifestSha256, CURRENT_MODEL_LIBRARY_MANIFEST],
+  [PRIOR_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256, PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST],
   [RETAINED_MODEL_LIBRARY_LOCK.manifestSha256, RETAINED_MODEL_LIBRARY_MANIFEST],
 ]);
 
@@ -141,6 +145,7 @@ function semanticFieldChanges(prior, next) {
 }
 
 const currentEntries = entryMap(CURRENT_MODEL_LIBRARY_MANIFEST);
+const priorCurrentEntries = entryMap(PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST);
 const retainedEntries = entryMap(RETAINED_MODEL_LIBRARY_MANIFEST);
 const supportedProfiles = new Set(CURRENT_MODEL_LIBRARY_MANIFEST.entries.map((entry) => entry.profile));
 
@@ -211,22 +216,29 @@ function validateProjectWithEntries(entries, manifest, profile, project) {
 export function resolveModelLibrary(value) {
   const normalized = normalizeModelLibraryLock(value);
   if (!normalized.ok) return normalized;
-  const retained = normalized.lock.manifestSha256 === RETAINED_MODEL_LIBRARY_LOCK.manifestSha256;
-  return { ...normalized, retained,
-    implementation: productionModelBundle(retained) };
+  const role = normalized.lock.manifestSha256 === RETAINED_MODEL_LIBRARY_LOCK.manifestSha256
+    ? 'retained'
+    : normalized.lock.manifestSha256 === PRIOR_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256
+    ? 'prior-current-migration' : 'current';
+  return { ...normalized, retained: role === 'retained', historical: role !== 'current', role,
+    implementation: productionModelBundle(role) };
 }
 
 export function validateProjectModelLibrary(lock, profile, project) {
   const resolved = resolveModelLibrary(lock);
   if (!resolved.ok) return resolved;
-  const entries = resolved.retained ? retainedEntries : currentEntries;
+  const entries = resolved.role === 'retained' ? retainedEntries
+    : resolved.role === 'prior-current-migration' ? priorCurrentEntries : currentEntries;
   const result = validateProjectWithEntries(entries, resolved.manifest, profile, project);
   return result.ok ? { ...result, lock: clone(resolved.lock), retained: resolved.retained } : result;
 }
 
-export function modelLibraryExecutionIdentity(lock) {
+export function modelLibraryExecutionIdentity(lock, { allowMigrationOnly = false } = {}) {
   const resolved = resolveModelLibrary(lock);
   if (!resolved.ok) return resolved;
+  if (resolved.role === 'prior-current-migration' && !allowMigrationOnly) {
+    return failure('MODEL_LIBRARY_MIGRATION_REQUIRED', [resolved.lock.version]);
+  }
   return { ok: true, code: 'OK', identity: {
     libraryId: resolved.lock.libraryId,
     version: resolved.lock.version,
@@ -234,6 +246,8 @@ export function modelLibraryExecutionIdentity(lock) {
     implementationSha256: resolved.lock.implementationSha256,
     implementationId: resolved.implementation.id,
     retained: resolved.retained,
+    ...(resolved.role === 'prior-current-migration'
+      ? { migrationOnly: true, executableAuthority: false } : {}),
   }, implementation: resolved.implementation, manifest: resolved.manifest };
 }
 
@@ -296,4 +310,8 @@ export function runModelLibraryConformance(lock) {
 
 export function trustedModelLibraryManifests() {
   return [clone(RETAINED_MODEL_LIBRARY_MANIFEST), clone(CURRENT_MODEL_LIBRARY_MANIFEST)];
+}
+
+export function historicalModelLibraryManifests() {
+  return [clone(RETAINED_MODEL_LIBRARY_MANIFEST), clone(PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST)];
 }

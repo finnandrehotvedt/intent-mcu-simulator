@@ -77,10 +77,17 @@ export class Rp2040ExperimentalRuntime {
 
   runSlice() {
     if (this.paused) return this.snapshot('paused');
-    this.#command('advance', { budgetCycles: RUN_SLICE_CYCLES });
-    const machine = this.adapter.machineSnapshot();
-    if (machine.blocked) throw errorWithCode(machine.blockedCode ?? 'RUNTIME_CAPABILITY_UNSUPPORTED');
+    this.advanceSlice();
     return this.snapshot('status');
+  }
+
+  advanceSlice() {
+    this.#ensureActive();
+    if (this.paused) return;
+    const command = createRuntimeCommand(++this.requestId, 'advance', { budgetCycles: RUN_SLICE_CYCLES });
+    this.adapter.handleWithoutSnapshot(command);
+    const machine = this.adapter.machineStatus();
+    if (machine.blocked) throw errorWithCode(machine.blockedCode ?? 'RUNTIME_CAPABILITY_UNSUPPORTED');
   }
 
   step() {
