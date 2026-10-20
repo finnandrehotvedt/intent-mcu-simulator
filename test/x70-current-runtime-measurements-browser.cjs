@@ -10,6 +10,16 @@ const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/
 const base = process.env.X70_CURRENT_URL || 'http://127.0.0.1:18872';
 const evidenceDir = process.env.X70_CURRENT_EVIDENCE || '/evidence';
 const skipAvr = process.env.X70_SKIP_AVR === '1';
+const zeroProducerFailureFixture = process.env.X70_ZERO_PRODUCER_FAILURE_FIXTURE === '1';
+const parsedFailureHoldMs = Number.parseInt(process.env.X70_FAILURE_HOLD_MS ?? '0', 10);
+const failureHoldMs = Number.isSafeInteger(parsedFailureHoldMs)
+  ? Math.max(0, Math.min(parsedFailureHoldMs, 30 * 60 * 1000)) : 0;
+const parsedFailureCdpPort = Number.parseInt(process.env.X70_FAILURE_CDP_PORT ?? '0', 10);
+const failureCdpPort = Number.isSafeInteger(parsedFailureCdpPort)
+  && parsedFailureCdpPort >= 1024 && parsedFailureCdpPort <= 65535 ? parsedFailureCdpPort : 0;
+const failureActionPath = process.env.X70_FAILURE_ACTION
+  || path.join(evidenceDir, 'failure-action.json');
+const failureHoldPath = path.join(evidenceDir, 'failure-hold.json');
 const onlyProfiles = new Set((process.env.X70_ONLY || '').split(',').map((value) => value.trim()).filter(Boolean));
 const profiles = [
   { id: 'board.atmega328p-16mhz-v1', slug: 'avr', build: '#quick-build', run: '#quick-run',
@@ -32,6 +42,79 @@ const storage = () => ({
   session: Object.fromEntries(Object.keys(sessionStorage).sort().map((key) => [key, sessionStorage.getItem(key)])),
 });
 const sha256 = (source) => crypto.createHash('sha256').update(source).digest('hex');
+const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+function writeJson(target, value) {
+  fs.writeFileSync(target, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+async function holdFailedPage(stage, error) {
+  if (failureHoldMs === 0) return { status: 'disabled' };
+  assert(failureCdpPort > 0, 'X70_FAILURE_CDP_PORT is required when failure hold is enabled');
+  const token = crypto.randomUUID();
+  const startedAt = new Date();
+  const deadline = Date.now() + failureHoldMs;
+  const record = {
+    schema: 'intent-mcu-x70-failure-hold@1', status: 'held', token, stage,
+    error: { message: error.message, stack: error.stack }, pid: process.pid,
+    cdpEndpoint: `http://127.0.0.1:${failureCdpPort}`,
+    actionPath: failureActionPath, startedAt: startedAt.toISOString(),
+    expiresAt: new Date(deadline).toISOString(),
+    allowedActions: ['release'],
+  };
+  writeJson(failureHoldPath, record);
+  while (Date.now() < deadline) {
+    try {
+      const action = JSON.parse(fs.readFileSync(failureActionPath, 'utf8'));
+      if (action?.schema === 'intent-mcu-x70-failure-action@1'
+          && action.token === token && action.action === 'release') {
+        const released = { ...record, status: 'released', releasedAt: new Date().toISOString() };
+        writeJson(failureHoldPath, released);
+        return released;
+      }
+    } catch { /* control file absent or incomplete; keep the bounded page alive */ }
+    await delay(250);
+  }
+  const timedOut = { ...record, status: 'timed-out', timedOutAt: new Date().toISOString() };
+  writeJson(failureHoldPath, timedOut);
+  return timedOut;
+}
+
+async function assertZeroProducerFailureSurface(page) {
+  const selectors = [
+    '#board-select', '#quick-build', '#quick-run', '#quick-pause',
+    '#accessible-svg-export', '#accessible-svg-status',
+    '#project-open-input', '#pico-open-input', '#c3-open-input', '#stm32-open-input',
+    '#workbench-project-dialog', '#unsaved-change-dialog',
+  ];
+  for (const selector of selectors) assert.equal(await page.locator(selector).count(), 1, `${selector} missing`);
+  const profileChecks = [];
+  for (const profile of [
+    { id: 'board.atmega328p-16mhz-v1', status: 'ATmega328P · compile and tested virtual runtime.',
+      build: 'Build', run: 'Run' },
+    { id: 'board.rp2040-pico-v1', status: 'RP2040 Pico · bounded public C11 build + browser-worker GPIO0/UART0 runtime.',
+      build: 'Build Pico', run: 'Run Pico' },
+  ]) {
+    await page.selectOption('#board-select', profile.id);
+    await page.waitForFunction((id) => window.__SHARED_INSTRUMENT_SUMMARY__?.profile === id, profile.id);
+    for (const selector of ['#quick-build', '#quick-run', '#quick-pause', '#accessible-svg-export']) {
+      assert.equal(await page.locator(selector).isVisible(), true, `${profile.id} ${selector} hidden`);
+    }
+    assert.equal((await page.locator('#controller-status').textContent()).trim(), profile.status);
+    assert.equal((await page.locator('#quick-build').textContent()).trim(), profile.build);
+    assert.equal((await page.locator('#quick-run').textContent()).trim(), profile.run);
+    assert.equal(await page.locator('#quick-build').isDisabled(), false);
+    assert.equal(await page.locator('#quick-run').isDisabled(), true);
+    assert.equal(await page.locator('#quick-pause').isDisabled(), true);
+    assert.equal(await page.locator('#accessible-svg-export').isDisabled(), false);
+    profileChecks.push({ profile: profile.id, status: profile.status, build: profile.build, run: profile.run,
+      buildReady: true, runInitiallyDisabled: true, pauseInitiallyDisabled: true, exportEnabled: true });
+  }
+  assert.equal(await page.locator('#workbench-project-dialog').evaluate((node) => node.open), false);
+  assert.equal(await page.locator('#unsaved-change-dialog').evaluate((node) => node.open), false);
+  assert.equal(await page.evaluate(() => window.__M11_READY__ === true), true);
+  return { selectors, profileChecks, dialogsClosed: true, builds: 0, runs: 0, scenarios: 0 };
+}
 
 function expectedSerial(channel, profile) {
   const allRecords = Array.isArray(channel.value?.records) ? channel.value.records : [];
@@ -129,34 +212,46 @@ async function assertActiveRejected(page, profile) {
   const count = () => { downloads += 1; };
   page.on('download', count);
   const before = await page.locator('#accessible-svg-status').textContent();
-  await page.locator('#accessible-svg-export').evaluate((button) => button.click());
+  const button = page.locator('#accessible-svg-export');
+  assert.equal(await button.isVisible(), true, `${profile.slug}: export hidden`);
+  assert.equal(await button.isDisabled(), false, `${profile.slug}: export disabled`);
+  await button.click({ noWaitAfter: true });
   await page.waitForFunction((prior) => {
     const current = document.querySelector('#accessible-svg-status')?.textContent ?? '';
     return current !== prior && /Pause the current|downloaded|rejected|cancelled/u.test(current);
   }, before, { timeout: 10_000 });
-  assert.match(await page.locator('#accessible-svg-status').textContent(), /Pause the current/u);
+  const status = await page.locator('#accessible-svg-status').textContent();
+  assert.match(status, /Pause the current/u);
+  assert.doesNotMatch(status, /downloaded/u);
   await page.waitForTimeout(250);
   page.off('download', count);
   assert.equal(downloads, 0, `${profile.slug}: active runtime created an export`);
 }
 
-async function downloadAndValidate(page, context, profile) {
+async function downloadAndValidate(page, context, profile, setStage = () => {}) {
+  setStage('export-click-download');
   const beforeStorage = await page.evaluate(storage);
   const downloadEvent = page.waitForEvent('download', { timeout: 20_000 });
   await page.click('#accessible-svg-export');
   const download = await downloadEvent;
   const target = path.join(evidenceDir, `${profile.slug}.current-runtime.accessible-demonstration.svg`);
   await download.saveAs(target);
+  setStage('export-status');
   await page.waitForFunction(() => /current observation-only runtime measurements included/u.test(
     document.querySelector('#accessible-svg-status')?.textContent ?? ''), null, { timeout: 20_000 });
   const source = fs.readFileSync(target, 'utf8');
+  setStage('app-validate');
   const result = await page.evaluate(async (svg) => window.__X70_ACCESSIBLE_DEMONSTRATION__.validate(svg), source);
   const native = await page.evaluate(() => structuredClone(window.__SHARED_INSTRUMENT_SUMMARY__));
+  setStage('native-summary-match');
   assertProjection(result.report, native, profile);
+  setStage('storage-unchanged');
   assert.deepEqual(await page.evaluate(storage), beforeStorage, `${profile.slug}: export changed browser storage`);
 
+  setStage('standalone-open');
   const standalone = await context.newPage();
   await standalone.goto(`file://${target}`);
+  setStage('standalone-semantics');
   assert.match(await standalone.locator('title').textContent(), /accessible circuit demonstration/iu);
   assert.match(await standalone.locator('desc').textContent(), /current (?:observation-only )?runtime measurements/iu);
   assert.equal(await standalone.locator('[data-kind="measurement-status"][data-id="current-runtime-measurements"]').count(), 1);
@@ -164,7 +259,9 @@ async function downloadAndValidate(page, context, profile) {
     nodes.map((node) => node.getAttribute('data-id'))), ['serial', 'gpio', 'logic', 'input']);
   assert.equal(await standalone.locator('script,foreignObject,image,a').count(), 0);
   if (profile.slug === 'avr') {
-    await standalone.screenshot({ path: path.join(evidenceDir, 'avr-current-runtime-standalone.png'), fullPage: true });
+    setStage('standalone-screenshot');
+    await standalone.screenshot({ path: path.join(evidenceDir, 'avr-current-runtime-standalone.png'),
+      fullPage: true, timeout: 10_000 });
   }
   await standalone.close();
   return { source, report: result.report, native, sha256: sha256(source), bytes: Buffer.byteLength(source) };
@@ -188,7 +285,8 @@ async function reopenAuthoredProject(page, profile) {
 
 (async () => {
   fs.mkdirSync(evidenceDir, { recursive: true });
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, args: failureCdpPort
+    ? [`--remote-debugging-address=127.0.0.1`, `--remote-debugging-port=${failureCdpPort}`] : [] });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
   const page = await context.newPage();
   const errors = []; const outside = []; const mutations = []; const workers = [];
@@ -201,9 +299,16 @@ async function reopenAuthoredProject(page, profile) {
     if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method())) mutations.push(`${request.method()} ${url.pathname}`);
   });
   let stage = 'page-open';
+  let builds = 0; let runs = 0;
   try {
     assert.equal((await page.goto(base, { waitUntil: 'networkidle' }))?.status(), 200);
     await page.waitForFunction(() => window.__M11_READY__ === true && window.__X70_ACCESSIBLE_DEMONSTRATION__);
+    if (zeroProducerFailureFixture) {
+      stage = 'zero-producer-failure-fixture';
+      const surface = await assertZeroProducerFailureSurface(page);
+      writeJson(path.join(evidenceDir, 'zero-producer-surface.json'), surface);
+      throw new Error('X70_ZERO_PRODUCER_FAILURE_FIXTURE');
+    }
     if (journeyProfiles.some(({ slug }) => slug === 'avr')) {
       await page.click('#project-files-open');
       await page.waitForSelector('#workbench-project-dialog[open]');
@@ -215,7 +320,6 @@ async function reopenAuthoredProject(page, profile) {
 
     const evidence = {};
     const geometry = {};
-    let builds = 0; let runs = 0;
     for (const profile of journeyProfiles) {
       stage = `${profile.slug}:select`;
       await page.selectOption('#board-select', profile.id);
@@ -275,7 +379,8 @@ async function reopenAuthoredProject(page, profile) {
       stage = `${profile.slug}:geometry`;
       geometry[profile.slug] = await assertGeometry(page, profile);
       stage = `${profile.slug}:download-and-validate`;
-      evidence[profile.slug] = await downloadAndValidate(page, context, profile);
+      evidence[profile.slug] = await downloadAndValidate(page, context, profile,
+        (substage) => { stage = `${profile.slug}:download-and-validate:${substage}`; });
       if (profile.slug === 'avr') {
         await page.screenshot({ path: path.join(evidenceDir, 'avr-current-runtime-control.png'), fullPage: false });
       }
@@ -302,7 +407,7 @@ async function reopenAuthoredProject(page, profile) {
     fs.writeFileSync(path.join(evidenceDir, 'result.json'), `${JSON.stringify(result, null, 2)}\n`);
     process.stdout.write(`${JSON.stringify(result)}\n`);
   } catch (error) {
-    const failure = await page.evaluate(({ stage, message, stack }) => ({
+    const failure = await page.evaluate(({ stage, message, stack, builds, runs }) => ({
       stage, error: { message, stack },
       url: location.href,
       profile: document.querySelector('#board-select')?.value ?? null,
@@ -314,13 +419,17 @@ async function reopenAuthoredProject(page, profile) {
       sharedSummary: window.__SHARED_INSTRUMENT_SUMMARY__ ?? null,
       avrState: window.__M6_STATE__ ?? null,
       picoState: window.__RP2040_PUBLIC_STATE__ ?? null,
-    }), { stage, message: error.message, stack: error.stack }).catch((captureError) => ({
+      producerActivity: { builds, runs, scenarios: 0 },
+    }), { stage, message: error.message, stack: error.stack, builds, runs }).catch((captureError) => ({
       stage, error: { message: error.message, stack: error.stack }, captureError: String(captureError),
     }));
     fs.writeFileSync(path.join(evidenceDir, 'failure-state.json'), `${JSON.stringify(failure, null, 2)}\n`);
     await page.screenshot({ path: path.join(evidenceDir, 'failure-page.png'), fullPage: true,
       timeout: 10_000 }).catch(() => {});
-    throw error;
+    const hold = await holdFailedPage(stage, error);
+    if (!(zeroProducerFailureFixture && error.message === 'X70_ZERO_PRODUCER_FAILURE_FIXTURE')) throw error;
+    process.stdout.write(`${JSON.stringify({ result: 'expected-zero-producer-failure',
+      producerActivity: { builds, runs, scenarios: 0 }, holdStatus: hold.status })}\n`);
   } finally {
     await browser.close();
   }

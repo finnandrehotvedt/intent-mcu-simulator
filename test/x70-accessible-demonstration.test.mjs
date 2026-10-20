@@ -3,6 +3,7 @@
 
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   ACCESSIBLE_DEMONSTRATION_SCHEMA,
@@ -19,6 +20,8 @@ import {
 import { createEsp32C3CircuitDraft } from '../src/esp32c3-public-circuit.mjs';
 import { createExampleProject } from '../src/example-projects.mjs';
 import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
+import { sharedInstrumentSummary } from '../src/instrument-capabilities.mjs';
+import { createLifecycleState, transitionLifecycle } from '../src/lifecycle.mjs';
 import { RELEASE_VERSION } from '../src/release-metadata.mjs';
 import { createRp2040PicoCircuitDraft } from '../src/rp2040-pico-circuit.mjs';
 import { createStm32CircuitDraft } from '../src/stm32-public-circuit.mjs';
@@ -272,6 +275,35 @@ test('X70 AVR binding rejects a valid old runtime joined to a new artifact ident
   assert.equal(avrAccessibleRuntimeBindingMatches(rebound), false);
   const staleSource = clone(base); staleSource.currentSourceIdentity = '{"source":"edited"}';
   assert.equal(avrAccessibleRuntimeBindingMatches(staleSource), false);
+});
+
+test('X70 AVR Save/Open seam retires runtime authority without another producer', () => {
+  const main = readFileSync(new URL('../staging/main.mjs', import.meta.url), 'utf8');
+  assert.match(main, /function installPreparedProjectEnvelope[\s\S]*installProjectGeneration\(\{[\s\S]*reason: 'project\.file-open'/u);
+  assert.match(main, /function installProjectGeneration[\s\S]*stopRuntime\(runtimeMessage, \{ updateLifecycle: false \}\)[\s\S]*type: 'project\.install'/u);
+  assert.match(main, /publish\(\{[\s\S]*artifactIdentity: null[\s\S]*runtime: null/u);
+
+  const hash = (character) => character.repeat(64);
+  let lifecycle = createLifecycleState({ empty: false });
+  const started = transitionLifecycle(lifecycle, { type: 'build.start' });
+  lifecycle = transitionLifecycle(started.state, { type: 'build.succeeded', binding: started.binding,
+    artifactIdentity: hash('a'), inputIdentity: hash('b') }).state;
+  const loaded = transitionLifecycle(lifecycle, { type: 'runtime.load' });
+  lifecycle = transitionLifecycle(loaded.state, { type: 'runtime.run' }).state;
+  lifecycle = transitionLifecycle(lifecycle, { type: 'runtime.pause' }).state;
+  assert.equal(lifecycle.phase, 'paused');
+  const opened = transitionLifecycle(lifecycle, {
+    type: 'project.install', empty: false, reason: 'project.file-open',
+  }).state;
+  assert.equal(opened.phase, 'editing');
+  assert.equal(opened.artifact, null);
+  assert.equal(opened.runtimeBinding, null);
+  const summary = sharedInstrumentSummary(AVR_PROFILE, {
+    lifecycle: opened, artifactIdentity: null, runtime: null,
+  });
+  assert.equal(summary.state, 'no-current-runtime');
+  assert.equal(summary.artifactIdentity, null);
+  assert(Object.values(summary.channels).every((channel) => channel.classification === 'unavailable'));
 });
 
 test('X70 rechecks live guard after every asynchronous boundary', async () => {
