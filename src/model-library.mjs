@@ -4,7 +4,7 @@
 import { exactKeys } from './strict-json.mjs';
 import {
   CURRENT_MODEL_LIBRARY_MANIFEST, PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST,
-  PRE_X47_CURRENT_MODEL_LIBRARY_MANIFEST,
+  PRE_X47_CURRENT_MODEL_LIBRARY_MANIFEST, PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_MANIFEST,
   RETAINED_MODEL_LIBRARY_MANIFEST,
 } from './model-library-snapshots.mjs';
 import { productionModelBundle } from './model-bundle-registry.mjs';
@@ -23,6 +23,7 @@ const deepFreeze = (value) => {
 deepFreeze(CURRENT_MODEL_LIBRARY_MANIFEST);
 deepFreeze(PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST);
 deepFreeze(PRE_X47_CURRENT_MODEL_LIBRARY_MANIFEST);
+deepFreeze(PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_MANIFEST);
 deepFreeze(RETAINED_MODEL_LIBRARY_MANIFEST);
 
 const lockFor = (manifest) => deepFreeze({
@@ -36,12 +37,16 @@ const lockFor = (manifest) => deepFreeze({
 export const CURRENT_MODEL_LIBRARY_LOCK = lockFor(CURRENT_MODEL_LIBRARY_MANIFEST);
 export const PRIOR_CURRENT_MODEL_LIBRARY_LOCK = lockFor(PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST);
 export const PRE_X47_CURRENT_MODEL_LIBRARY_LOCK = lockFor(PRE_X47_CURRENT_MODEL_LIBRARY_MANIFEST);
+export const PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_LOCK =
+  lockFor(PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_MANIFEST);
 export const RETAINED_MODEL_LIBRARY_LOCK = lockFor(RETAINED_MODEL_LIBRARY_MANIFEST);
 
 const trustedByHash = new Map([
   [CURRENT_MODEL_LIBRARY_LOCK.manifestSha256, CURRENT_MODEL_LIBRARY_MANIFEST],
   [PRIOR_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256, PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST],
   [PRE_X47_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256, PRE_X47_CURRENT_MODEL_LIBRARY_MANIFEST],
+  [PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256,
+    PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_MANIFEST],
   [RETAINED_MODEL_LIBRARY_LOCK.manifestSha256, RETAINED_MODEL_LIBRARY_MANIFEST],
 ]);
 
@@ -224,7 +229,9 @@ export function resolveModelLibrary(value) {
     : normalized.lock.manifestSha256 === PRIOR_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256
     ? 'prior-current-migration'
     : normalized.lock.manifestSha256 === PRE_X47_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256
-    ? 'pre-x47-current-migration' : 'current';
+    ? 'pre-x47-current-migration'
+    : normalized.lock.manifestSha256 === PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256
+    ? 'pre-x47-validation-current-migration' : 'current';
   return { ...normalized, retained: role === 'retained', historical: role !== 'current', role,
     implementation: productionModelBundle(role) };
 }
@@ -319,5 +326,6 @@ export function trustedModelLibraryManifests() {
 
 export function historicalModelLibraryManifests() {
   return [clone(RETAINED_MODEL_LIBRARY_MANIFEST), clone(PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST),
-    clone(PRE_X47_CURRENT_MODEL_LIBRARY_MANIFEST)];
+    clone(PRE_X47_CURRENT_MODEL_LIBRARY_MANIFEST),
+    clone(PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_MANIFEST)];
 }

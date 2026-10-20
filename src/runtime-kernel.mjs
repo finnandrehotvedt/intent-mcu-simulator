@@ -87,6 +87,19 @@ export class OrderedInputQueue {
     return removed;
   }
 
+  rollbackTail(sequences) {
+    if (!Array.isArray(sequences) || sequences.length === 0
+        || sequences.some((value) => !Number.isSafeInteger(value))) throw new TypeError('Invalid rollback');
+    const ordered = [...sequences].sort((a, b) => a - b);
+    if (ordered.at(-1) !== this.nextSequence - 1
+        || ordered.some((value, index) => value !== ordered[0] + index)) throw new Error('INPUT_ROLLBACK_NOT_TAIL');
+    const selected = new Set(ordered);
+    if (this.applied.some((event) => selected.has(event.sequence))) throw new Error('INPUT_ROLLBACK_APPLIED');
+    this.pending = this.pending.filter((event) => !selected.has(event.sequence));
+    this.log = this.log.filter((event) => !selected.has(event.sequence));
+    this.nextSequence = ordered[0];
+  }
+
   snapshot() {
     return {
       pending: clone(this.pending),
@@ -289,37 +302,48 @@ export class RuntimeKernel {
     const before = this.inputs.snapshot();
     if (before.log.length + request.events.length > before.retention.limit
         || this.x47Transactions.size >= 32) throw new Error('X47_TRANSACTION_RETENTION_LIMIT');
-    const queued = request.events.map((event, eventIndex) => this.inputs.enqueue(
-      { type: 'digital-scheduled', pin: event.pin, level: event.level,
-        transactionId: request.transactionId, eventIndex },
-      this.adapter.cpu.cycles,
-      request.expectedBaseCycle + event.offsetCycles,
-    ));
-    for (const [eventIndex, event] of queued.entries()) {
-      this.adapter.scheduleDigital(event.targetCycle, event.pin, event.level,
-        { transactionId: request.transactionId, eventIndex });
-    }
-    this.digitalSequenceTailCycle = queued.at(-1).targetCycle;
-    const after = this.inputs.snapshot();
-    const receipt = validateX47QueueReceipt({
+    const predicted = request.events.map((event, eventIndex) => ({
+      eventIndex, pin: event.pin, level: event.level, offsetCycles: event.offsetCycles,
+      targetCycle: request.expectedBaseCycle + event.offsetCycles,
+      queueSequence: this.inputs.nextSequence + eventIndex,
+    }));
+    const predictedReceipt = {
       schema: X47_QUEUE_RECEIPT_SCHEMA,
       transactionId: request.transactionId,
       canonicalPulseSha256: request.canonicalPulseSha256,
       binding: clone(request.binding),
       baseCycle: request.expectedBaseCycle,
-      events: queued.map((event, eventIndex) => ({
-        eventIndex, pin: event.pin, level: event.level,
-        offsetCycles: request.events[eventIndex].offsetCycles,
-        targetCycle: event.targetCycle, queueSequence: event.sequence,
-      })),
+      events: predicted,
       retention: {
-        limit: after.retention.limit,
+        limit: before.retention.limit,
         beforeRequestedRetained: before.retention.requested.retained,
         beforeRequestedDropped: before.retention.requested.dropped,
-        afterRequestedRetained: after.retention.requested.retained,
-        afterRequestedDropped: after.retention.requested.dropped,
+        afterRequestedRetained: before.retention.requested.retained + request.events.length,
+        afterRequestedDropped: before.retention.requested.dropped,
       },
-    }, this.x47Authority, this.x47RuntimeIdentity);
+    };
+    validateX47QueueReceipt(predictedReceipt, { authority: this.x47Authority,
+      runtimeIdentity: this.x47RuntimeIdentity, request });
+    const queued = [];
+    try {
+      for (const [eventIndex, event] of request.events.entries()) {
+        const item = this.inputs.enqueue(
+          { type: 'digital-scheduled', pin: event.pin, level: event.level,
+            transactionId: request.transactionId, eventIndex },
+          this.adapter.cpu.cycles, request.expectedBaseCycle + event.offsetCycles,
+        );
+        queued.push(item);
+        this.adapter.scheduleDigital(item.targetCycle, item.pin, item.level,
+          { transactionId: request.transactionId, eventIndex });
+      }
+    } catch (error) {
+      this.adapter.cancelX47Transactions([request.transactionId]);
+      if (queued.length) this.inputs.rollbackTail(queued.map((event) => event.sequence));
+      throw error;
+    }
+    this.digitalSequenceTailCycle = queued.at(-1).targetCycle;
+    const receipt = validateX47QueueReceipt(predictedReceipt, { authority: this.x47Authority,
+      runtimeIdentity: this.x47RuntimeIdentity, request });
     this.x47Transactions.set(request.transactionId,
       { canonical, request: clone(request), queueReceipt: clone(receipt), cancelReceipt: null });
     return clone(receipt);
@@ -333,7 +357,7 @@ export class RuntimeKernel {
     const requested = eventLog.log.filter((event) => event.transactionId === transactionId);
     const drained = eventLog.applied.filter((event) => event.transactionId === transactionId);
     const transitions = adapter.records.filter((event) => event.transactionId === transactionId);
-    let discontinuities = adapter.dropped;
+    let discontinuities = eventLog.dropped + eventLog.retention.applied.dropped + adapter.dropped;
     const events = transaction.queueReceipt.events.map((event) => {
       const appliedMatches = drained.filter((item) => item.sequence === event.queueSequence);
       const adapterMatches = transitions.filter((item) => item.eventIndex === event.eventIndex);
@@ -353,6 +377,7 @@ export class RuntimeKernel {
     return validateX47ExecutionReceipt({
       schema: X47_EXECUTION_RECEIPT_SCHEMA,
       transactionId,
+      canonicalPulseSha256: transaction.request.canonicalPulseSha256,
       binding: clone(transaction.request.binding),
       baseCycle: transaction.request.expectedBaseCycle,
       complete,
@@ -363,7 +388,8 @@ export class RuntimeKernel {
         adapter: { expected: 2, retained: transitions.length, dropped: adapter.dropped },
         discontinuities,
       },
-    }, this.x47Authority, this.x47RuntimeIdentity);
+    }, { authority: this.x47Authority, runtimeIdentity: this.x47RuntimeIdentity,
+      request: transaction.request, queueReceipt: transaction.queueReceipt });
   }
 
   cancelX47Transactions(reason, transactionId = null, binding = null) {
@@ -373,18 +399,44 @@ export class RuntimeKernel {
       (transactionId === null || id === transactionId) && !value.cancelReceipt);
     if (transactionId !== null && selected.length === 0) throw new Error('X47_TRANSACTION_UNKNOWN');
     const cycle = this.adapter.cpu.cycles;
-    const applied = new Set(this.inputs.applied.map((event) => event.sequence));
+    const eventLog = this.inputs.snapshot();
+    const adapter = this.adapter.x47DigitalTransitionSnapshot();
+    const applied = new Set(eventLog.applied.map((event) => event.sequence));
     const receipts = selected.map(([id, transaction]) => validateX47CancelReceipt({
       schema: X47_CANCEL_RECEIPT_SCHEMA,
       transactionId: id,
+      canonicalPulseSha256: transaction.request.canonicalPulseSha256,
       binding: clone(transaction.request.binding),
+      baseCycle: transaction.request.expectedBaseCycle,
       reason,
       cancelCycle: cycle,
       state: 'cancelled',
-      unapplied: transaction.queueReceipt.events
+      queuePending: transaction.queueReceipt.events
         .filter((event) => !applied.has(event.queueSequence))
-        .map((event) => ({ queueSequence: event.queueSequence, targetCycle: event.targetCycle })),
-    }, this.x47Authority, this.x47RuntimeIdentity));
+        .map((event) => ({ eventIndex: event.eventIndex, queueSequence: event.queueSequence,
+          targetCycle: event.targetCycle })),
+      adapterScheduled: adapter.scheduled.filter((event) => event.transactionId === id)
+        .map((event) => ({ eventIndex: event.eventIndex, targetCycle: event.targetCycle })),
+      adapterApplied: adapter.records.filter((event) => event.transactionId === id)
+        .map((event) => ({ eventIndex: event.eventIndex, targetCycle: event.targetCycle,
+          appliedCycle: event.appliedCycle, transitioned: event.transitioned,
+          transitionCycle: event.transitionCycle })),
+      retention: {
+        requested: { expected: 2, retained: eventLog.log.filter((event) =>
+          event.transactionId === id).length, dropped: eventLog.dropped },
+        drained: { expected: 2, retained: eventLog.applied.filter((event) =>
+          event.transactionId === id).length, dropped: eventLog.retention.applied.dropped },
+        adapter: { expected: 2, retained: adapter.scheduled.filter((event) =>
+          event.transactionId === id).length + adapter.records.filter((event) =>
+          event.transactionId === id).length, dropped: adapter.dropped },
+        discontinuities: eventLog.dropped + eventLog.retention.applied.dropped + adapter.dropped,
+      },
+      evidenceComplete: eventLog.dropped === 0 && eventLog.retention.applied.dropped === 0
+        && adapter.dropped === 0
+        && adapter.scheduled.filter((event) => event.transactionId === id).length
+          + adapter.records.filter((event) => event.transactionId === id).length === 2,
+    }, { authority: this.x47Authority, runtimeIdentity: this.x47RuntimeIdentity,
+      request: transaction.request, queueReceipt: transaction.queueReceipt }));
     const ids = receipts.map((receipt) => receipt.transactionId);
     const selectedIds = new Set(ids);
     this.inputs.removePending((event) => selectedIds.has(event.transactionId));

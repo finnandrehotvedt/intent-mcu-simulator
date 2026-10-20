@@ -145,6 +145,7 @@ test('private X47 worker contract binds acceptance and cancellation to one curre
     schema: X47_RUNTIME_AUTHORITY_SCHEMA,
     profile: 'board.atmega328p-16mhz-v1',
     projectGeneration: runtimeBinding.projectGeneration,
+    buildGeneration: 31,
     sourceProjectRevision: 29,
     sourceSha256: '3'.repeat(64),
     graphIdentity: `sha256:${'4'.repeat(64)}`,

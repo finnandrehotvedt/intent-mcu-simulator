@@ -421,6 +421,13 @@ export class Atmega328PAdapter {
   x47DigitalTransitionSnapshot() {
     return {
       records: this.x47DigitalTransitions.map((entry) => ({ ...entry })),
+      scheduled: this.scheduledEvents.filter((event) => event.x47).map((event) => ({
+        transactionId: event.x47.transactionId,
+        eventIndex: event.x47.eventIndex,
+        targetCycle: event.cycle,
+        pin: event.pin,
+        level: Boolean(event.level),
+      })),
       dropped: this.x47DigitalTransitionDrops,
       retention: { limit: X47_TRANSITION_LIMIT, retained: this.x47DigitalTransitions.length,
         dropped: this.x47DigitalTransitionDrops },

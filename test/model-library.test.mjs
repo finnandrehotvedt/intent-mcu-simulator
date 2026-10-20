@@ -25,6 +25,7 @@ import {
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, PRE_X47_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_LOCK,
   PRIOR_CURRENT_MODEL_LIBRARY_LOCK, RETAINED_MODEL_LIBRARY_LOCK,
   compareModelLibraryEntries, modelLibraryMigrationPreview, normalizeModelLibraryLock,
   historicalModelLibraryManifests, modelLibraryExecutionIdentity, resolveModelLibrary,
@@ -152,7 +153,7 @@ test('retained and current locks use distinct real resolver instances with match
 test('production electrical and runtime paths dispatch through the exact selected implementation', () => {
   for (const [lock, expected] of [
     [RETAINED_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-retained-rc72@2'],
-    [CURRENT_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-current-x47-runtime-contract-1@4'],
+    [CURRENT_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-current-x47-receipt-validation-1@5'],
   ]) {
     const avr = validateCircuit(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
     assert.equal(avr.ok, true);
@@ -177,7 +178,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
 
 test('prior X56 and pre-X47 locks remain exact and data-migratable but cannot authorize execution', () => {
   const historical = historicalModelLibraryManifests();
-  assert.equal(historical.length, 3);
+  assert.equal(historical.length, 4);
   const prior = historical[1];
   assert.equal(prior.version, '2.0.0-x56-current');
   assert.equal(prior.manifestSha256, '5c94ce070526d2e7e417fed0cb152fc28bdea24ee9beb52c65488328d41eac0b');
@@ -207,6 +208,21 @@ test('prior X56 and pre-X47 locks remain exact and data-migratable but cannot au
   assert.equal(x47Migration.semanticChanges.length, 0);
   assert.equal(x47Migration.rendererChanges.length, 0);
   assert.equal(x47Migration.unchanged.length, 25);
+
+  const preValidation = historical[3];
+  assert.equal(preValidation.version, '2.0.0-x47-runtime-contract.1-current');
+  assert.equal(preValidation.manifestSha256,
+    '5e72951afde80c8f0217b6486c7ff2c2ca235dbe34b937a3170597e92cbb8f75');
+  assert.equal(preValidation.implementationSha256,
+    '6a7c7f3c530613832a553a7e7264e1c1a1af91c69bb5c6b725513b5ad3e0328d');
+  assert.equal(normalizeModelLibraryLock(PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
+  assert.equal(modelLibraryExecutionIdentity(PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_LOCK).code,
+    'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const validationMigration = modelLibraryMigrationPreview(PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(validationMigration.ok, true);
+  assert.equal(validationMigration.semanticChanges.length, 0);
+  assert.equal(validationMigration.rendererChanges.length, 0);
+  assert.equal(validationMigration.unchanged.length, 25);
 });
 
 test('retained behavior is a dependency-closed historical source graph with no current imports', async () => {

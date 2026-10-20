@@ -33,6 +33,7 @@ const authority = () => ({
   schema: X47_RUNTIME_AUTHORITY_SCHEMA,
   profile: 'board.atmega328p-16mhz-v1',
   projectGeneration: 7,
+  buildGeneration: 5,
   sourceProjectRevision: 19,
   sourceSha256: hash('c'),
   graphIdentity: `sha256:${hash('d')}`,
@@ -139,7 +140,9 @@ test('X47 cancellation receipts precede explicit removal and reset ledger erasur
   const [receipt] = explicit.cancelX47Transactions('EXPLICIT_CANCEL', accepted.transactionId,
     accepted.binding);
   assert.equal(receipt.state, 'cancelled');
-  assert.deepEqual(receipt.unapplied.map((event) => event.queueSequence), [1, 2]);
+  assert.deepEqual(receipt.queuePending.map((event) => event.queueSequence), [1, 2]);
+  assert.deepEqual(receipt.adapterScheduled.map((event) => event.eventIndex), [0, 1]);
+  assert.deepEqual(receipt.adapterApplied, []);
   assert.equal(explicit.inputs.snapshot().pending.length, 0);
   assert.throws(() => explicit.queueX47Transaction(request()), /X47_TRANSACTION_CANCELLED/u);
 
@@ -167,22 +170,110 @@ test('X47 queue, execution and cancellation receipts reject mutation or inferred
   const runtimeIdentity = identity();
   const kernel = runtime(runtimeIdentity);
   kernel.adapter.setDigitalPin(2, false);
-  const queue = kernel.queueX47Transaction(request(runtimeIdentity));
-  assert.deepEqual(validateX47QueueReceipt(queue, authority(), runtimeIdentity), queue);
-  assert.throws(() => validateX47QueueReceipt({ ...queue, extra: true }, authority(), runtimeIdentity),
+  const apply = request(runtimeIdentity);
+  const queue = kernel.queueX47Transaction(apply);
+  const context = { authority: authority(), runtimeIdentity, request: apply, queueReceipt: queue };
+  assert.deepEqual(validateX47QueueReceipt(queue, context), queue);
+  assert.throws(() => validateX47QueueReceipt({ ...queue, extra: true }, context),
     /X47_QUEUE_RECEIPT_INVALID/u);
   const wrongTarget = structuredClone(queue); wrongTarget.events[0].targetCycle += 1;
-  assert.throws(() => validateX47QueueReceipt(wrongTarget, authority(), runtimeIdentity),
+  assert.throws(() => validateX47QueueReceipt(wrongTarget, context),
     /X47_QUEUE_TARGET_INVALID/u);
   for (let index = 0; index < 5; index += 1) kernel.step();
   const execution = kernel.x47ExecutionReceipt(queue.transactionId);
-  assert.deepEqual(validateX47ExecutionReceipt(execution, authority(), runtimeIdentity), execution);
+  assert.deepEqual(validateX47ExecutionReceipt(execution, context), execution);
+  const swappedExecution = structuredClone(execution); swappedExecution.events.reverse();
+  assert.throws(() => validateX47ExecutionReceipt(swappedExecution, context));
+  const duplicateExecutionSequence = structuredClone(execution);
+  duplicateExecutionSequence.events[1].queueSequence = duplicateExecutionSequence.events[0].queueSequence;
+  assert.throws(() => validateX47ExecutionReceipt(duplicateExecutionSequence, context));
+  const wrongExecutionHash = { ...execution, canonicalPulseSha256: hash('0') };
+  assert.throws(() => validateX47ExecutionReceipt(wrongExecutionHash, context),
+    /X47_RECEIPT_REQUEST_MISMATCH/u);
   const invented = structuredClone(execution);
   invented.events[0].transitionCycle = invented.events[0].adapterAppliedCycle;
-  assert.throws(() => validateX47ExecutionReceipt(invented, authority(), runtimeIdentity),
+  assert.throws(() => validateX47ExecutionReceipt(invented, context),
     /X47_EXECUTION_COMPLETION_INVALID|X47_TRANSITION_CORRELATION_INVALID/u);
   const [cancelled] = kernel.cancelX47Transactions('EXPLICIT_CANCEL', queue.transactionId, queue.binding);
-  assert.deepEqual(validateX47CancelReceipt(cancelled, authority(), runtimeIdentity), cancelled);
+  assert.deepEqual(validateX47CancelReceipt(cancelled, context), cancelled);
   assert.throws(() => validateX47CancelReceipt({ ...cancelled, reason: 'TIMEOUT' },
-    authority(), runtimeIdentity), /X47_CANCEL_RECEIPT_INVALID/u);
+    context), /X47_CANCEL_RECEIPT_INVALID/u);
+});
+
+test('X47 receipt joins reject swapped, duplicated, stale and arithmetically unsafe evidence', () => {
+  const runtimeIdentity = identity();
+  const apply = request(runtimeIdentity);
+  const kernel = runtime(runtimeIdentity);
+  const queue = kernel.queueX47Transaction(apply);
+  const context = { authority: authority(), runtimeIdentity, request: apply, queueReceipt: queue };
+  const mutations = [];
+  const swapped = structuredClone(queue); swapped.events.reverse(); mutations.push(swapped);
+  const duplicateIndex = structuredClone(queue); duplicateIndex.events[1].eventIndex = 0; mutations.push(duplicateIndex);
+  const duplicateSequence = structuredClone(queue); duplicateSequence.events[1].queueSequence =
+    duplicateSequence.events[0].queueSequence; mutations.push(duplicateSequence);
+  const wrongOffset = structuredClone(queue); wrongOffset.events[0].offsetCycles = 3; mutations.push(wrongOffset);
+  const wrongBase = structuredClone(queue); wrongBase.baseCycle = 1; mutations.push(wrongBase);
+  const wrongHash = structuredClone(queue); wrongHash.canonicalPulseSha256 = hash('0'); mutations.push(wrongHash);
+  for (const candidate of mutations) assert.throws(() => validateX47QueueReceipt(candidate, context));
+
+  const unsafeApply = { ...apply, expectedBaseCycle: Number.MAX_SAFE_INTEGER - 1,
+    events: [{ pin: 2, offsetCycles: 2, level: false }, { pin: 2, offsetCycles: 4, level: true }] };
+  assert.throws(() => validateX47ApplyRequest(unsafeApply, { authority: authority(), runtimeIdentity,
+    profile: 'board.atmega328p-16mhz-v1', paused: true,
+    currentCycle: Number.MAX_SAFE_INTEGER - 1, pendingDigitalTailCycle: Number.MAX_SAFE_INTEGER - 1 }),
+  /X47_PULSE_EVENTS_INVALID/u);
+
+  const staleAuthority = { ...authority(), buildGeneration: 6 };
+  assert.throws(() => validateX47QueueReceipt(queue,
+    { ...context, authority: staleAuthority }), /X47_WORKER_BINDING_STALE/u);
+});
+
+test('X47 retention loss is truthful incomplete evidence and does not throw', () => {
+  const kernel = runtime();
+  const queue = kernel.queueX47Transaction(request());
+  kernel.inputs.dropped = 1;
+  const receipt = kernel.x47ExecutionReceipt(queue.transactionId);
+  assert.equal(receipt.complete, false);
+  assert.equal(receipt.retention.requested.dropped, 1);
+  assert.ok(receipt.retention.discontinuities >= 1);
+  const [cancelled] = kernel.cancelX47Transactions('EXPLICIT_CANCEL', queue.transactionId, queue.binding);
+  assert.equal(cancelled.evidenceComplete, false);
+  assert.equal(cancelled.retention.requested.dropped, 1);
+});
+
+test('X47 cancellation separates queue pending from already adapter-applied events', () => {
+  const runtimeIdentity = identity();
+  const kernel = new RuntimeKernel(':0200000000C03E\n:00000001FF', DEFAULT_CIRCUIT, {
+    modelLibraryLock: CURRENT_MODEL_LIBRARY_LOCK,
+    modelExecutionContextSha256: runtimeIdentity.modelExecutionContextSha256,
+    x47RuntimeAuthority: authority(), runtimeIdentity,
+  });
+  const pulse = request(runtimeIdentity, { events: [
+    { pin: 2, offsetCycles: 1, level: false },
+    { pin: 2, offsetCycles: 5, level: true },
+  ] });
+  const queue = kernel.queueX47Transaction(pulse);
+  kernel.runInstructions(2);
+  const [receipt] = kernel.cancelX47Transactions('EXPLICIT_CANCEL', queue.transactionId, queue.binding);
+  assert.deepEqual(receipt.queuePending.map((event) => event.eventIndex), [0, 1]);
+  assert.deepEqual(receipt.adapterScheduled.map((event) => event.eventIndex), [1]);
+  assert.deepEqual(receipt.adapterApplied.map((event) => event.eventIndex), [0]);
+  assert.deepEqual(receipt.adapterApplied.map((event) => event.appliedCycle), [2]);
+});
+
+test('X47 queue admission rolls back atomically when adapter scheduling fails', () => {
+  const kernel = runtime();
+  const original = kernel.adapter.scheduleDigital.bind(kernel.adapter);
+  let calls = 0;
+  kernel.adapter.scheduleDigital = (...args) => {
+    calls += 1;
+    if (calls === 2) throw new Error('SCHEDULE_FAILED');
+    return original(...args);
+  };
+  assert.throws(() => kernel.queueX47Transaction(request()), /SCHEDULE_FAILED/u);
+  const snapshot = kernel.inputs.snapshot();
+  assert.equal(snapshot.pending.length, 0);
+  assert.equal(snapshot.log.length, 0);
+  assert.equal(kernel.inputs.nextSequence, 1);
+  assert.equal(kernel.adapter.x47DigitalTransitionSnapshot().scheduled.length, 0);
 });

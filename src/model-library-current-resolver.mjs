@@ -32,7 +32,7 @@ const exactInput = (value, keys) => value && typeof value === 'object' && !Array
 // Current behavior is separately owned so future current changes cannot mutate
 // the retained pre-X56 implementation by alias or shared constant.
 export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
-  id: 'intent-mcu-model-bundle-current-x47-runtime-contract-1@4',
+  id: 'intent-mcu-model-bundle-current-x47-receipt-validation-1@5',
   manifestVersion: CURRENT_MODEL_LIBRARY_MANIFEST.version,
   definition(profile, componentType) {
     const entry = entries.get(`${profile}\u0000${componentType}`);
@@ -195,5 +195,12 @@ export const PRE_X47_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.fre
   ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
   id: 'intent-mcu-model-bundle-current-pico-presentation-1@3',
   manifestVersion: '2.0.0-pico-presentation.1-current',
+  migrationOnly: true,
+});
+
+export const PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-x47-runtime-contract-1@4',
+  manifestVersion: '2.0.0-x47-runtime-contract.1-current',
   migrationOnly: true,
 });
