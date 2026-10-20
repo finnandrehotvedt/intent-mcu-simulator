@@ -10,6 +10,60 @@ const base = process.env.X47_URL || 'http://127.0.0.1:18883';
 const evidenceDir = process.env.X47_EVIDENCE_DIR || '';
 const viewports = [{ width: 1366, height: 768 }, { width: 1440, height: 900 }];
 
+async function loadButtonExample(page) {
+  if (await page.locator('#workbench-project-dialog').getAttribute('open') === null) {
+    await page.locator('#project-files-open').focus();
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('#workbench-project-dialog[open]');
+  }
+  await page.locator('#project-demo').focus();
+  await page.keyboard.press('Enter');
+  await page.waitForSelector('#example-picker-dialog[open]');
+  await page.locator('.starter-card[data-example="button"]').focus();
+  await page.keyboard.press('Enter');
+  if (await page.locator('#unsaved-change-dialog').getAttribute('open') !== null) {
+    await page.locator('#unsaved-discard').focus();
+    await page.keyboard.press('Enter');
+  }
+  await page.waitForFunction(() => window.__M6_STATE__.graph?.components?.some(
+    (component) => component.type === 'button.momentary-v1',
+  ));
+}
+
+async function openX47(page) {
+  await page.locator('#instruments-open').focus();
+  await page.keyboard.press('Enter');
+  await page.waitForSelector('#workbench-instruments-dialog[open]');
+  const panel = page.locator('#workbench-instruments-dialog [data-x47-pulse-preview]');
+  await panel.waitFor({ state: 'visible' });
+  await page.waitForFunction(() => !document.querySelector(
+    '#workbench-instruments-dialog [data-x47-preview]',
+  ).disabled);
+  return panel;
+}
+
+async function holdDigest(page) {
+  await page.evaluate(() => {
+    if (!window.__X47_NATIVE_DIGEST__) window.__X47_NATIVE_DIGEST__ = crypto.subtle.digest.bind(crypto.subtle);
+    let release;
+    const gate = new Promise((resolve) => { release = resolve; });
+    window.__X47_RELEASE_DIGEST__ = release;
+    Object.defineProperty(crypto.subtle, 'digest', {
+      configurable: true,
+      value: async (...args) => { await gate; return window.__X47_NATIVE_DIGEST__(...args); },
+    });
+  });
+}
+
+async function releaseDigest(page) {
+  await page.evaluate(() => {
+    window.__X47_RELEASE_DIGEST__();
+    Object.defineProperty(crypto.subtle, 'digest', {
+      configurable: true, value: window.__X47_NATIVE_DIGEST__,
+    });
+  });
+}
+
 (async () => {
   if (evidenceDir) await mkdir(evidenceDir, { recursive: true });
   const browser = await chromium.launch({ headless: true });
@@ -58,31 +112,10 @@ const viewports = [{ width: 1366, height: 768 }, { width: 1440, height: 900 }];
 
       // Load authored project data through the real chooser. This is not a
       // firmware producer and gives the preview its exact validated D2 target.
-      await page.locator('#project-files-open').focus();
-      await page.keyboard.press('Enter');
-      await page.waitForSelector('#workbench-project-dialog[open]');
-      await page.locator('#project-demo').focus();
-      await page.keyboard.press('Enter');
-      await page.waitForSelector('#example-picker-dialog[open]');
-      await page.locator('.starter-card[data-example="button"]').focus();
-      await page.keyboard.press('Enter');
-      if (await page.locator('#unsaved-change-dialog').getAttribute('open') !== null) {
-        await page.locator('#unsaved-discard').focus();
-        await page.keyboard.press('Enter');
-      }
-      await page.waitForFunction(() => window.__M6_STATE__.graph?.components?.some(
-        (component) => component.type === 'button.momentary-v1',
-      ));
+      await loadButtonExample(page);
 
       // Use the real keyboard-accessible Instruments dialog path.
-      await page.locator('#instruments-open').focus();
-      await page.keyboard.press('Enter');
-      await page.waitForSelector('#workbench-instruments-dialog[open]');
-      const panel = page.locator('#workbench-instruments-dialog [data-x47-pulse-preview]');
-      await panel.waitFor({ state: 'visible' });
-      await page.waitForFunction(() => !document.querySelector(
-        '#workbench-instruments-dialog [data-x47-preview]',
-      ).disabled);
+      const panel = await openX47(page);
       const activityBefore = await page.evaluate(() => structuredClone(window.__X47_TEST_ACTIVITY__));
 
       const start = panel.locator('[data-x47-start]');
@@ -116,6 +149,26 @@ const viewports = [{ width: 1366, height: 768 }, { width: 1440, height: 900 }];
       assert.match(await panel.textContent(), /Apply is intentionally absent/u);
       assert.equal(await panel.locator('button').count(), 1, 'preview panel must expose no Apply control');
 
+      // A rejected replacement is atomic: while hashing, public reads expose
+      // no old bytes; after strict rejection the prior accepted preview returns.
+      const acceptedText = snapshot.canonicalText;
+      await width.fill('0');
+      await preview.focus();
+      await page.keyboard.press('Enter');
+      await page.waitForFunction(() => document.querySelector(
+        '#workbench-instruments-dialog [data-x47-state]',
+      ).textContent.includes('Rejected'));
+      const retained = await page.evaluate(() => window.__X47_PULSE_PREVIEW__.snapshot());
+      assert.equal(retained.state, 'preview');
+      assert.equal(retained.canonicalText, acceptedText);
+      assert.deepEqual(retained.events, snapshot.events);
+      await width.fill('32000');
+      await preview.focus();
+      await page.keyboard.press('Enter');
+      await page.waitForFunction(() => document.querySelector(
+        '#workbench-instruments-dialog [data-x47-state]',
+      ).textContent === 'Preview ready');
+
       const readability = await panel.evaluate((root) => {
         const fontSizes = [...root.querySelectorAll('strong, span, p, label, input, button, li, summary')]
           .map((node) => parseFloat(getComputedStyle(node).fontSize));
@@ -142,16 +195,84 @@ const viewports = [{ width: 1366, height: 768 }, { width: 1440, height: 900 }];
         path: path.join(evidenceDir, `x47-avr-d2-pulse-preview-${viewport.width}x${viewport.height}.png`),
       });
 
+      const raceResults = [];
+      if (viewport.width === 1366) {
+        // Source keyboard edit while the graph digest is pending. The prior
+        // record and events disappear before the digest is released.
+        await holdDigest(page);
+        await preview.focus(); await page.keyboard.press('Enter');
+        await page.waitForFunction(() => window.__X47_PULSE_PREVIEW__.snapshot().state === 'pending');
+        assert.equal(await page.evaluate(() => window.__X47_PULSE_PREVIEW__.canonicalText()), null);
+        assert.deepEqual(await page.evaluate(() => window.__X47_PULSE_PREVIEW__.expandedEvents()), []);
+        await page.keyboard.press('Escape');
+        await page.locator('#firmware-open').focus(); await page.keyboard.press('Enter');
+        await page.waitForSelector('#workbench-firmware-dialog[open]');
+        await page.locator('#source').focus(); await page.keyboard.press('End');
+        await page.keyboard.type('\n// x47 pending source edit');
+        assert.equal(await page.evaluate(() => window.__X47_PULSE_PREVIEW__.canonicalText()), null);
+        assert.deepEqual(await page.evaluate(() => window.__X47_PULSE_PREVIEW__.expandedEvents()), []);
+        await releaseDigest(page); await page.waitForTimeout(20);
+        assert.notEqual((await page.evaluate(() => window.__X47_PULSE_PREVIEW__.snapshot())).state, 'preview');
+        raceResults.push('source-keyboard-cleared');
+
+        // Reload authored data, then delete the button with the keyboard while
+        // another digest is pending. Capture-phase invalidation precedes the
+        // graph transaction and no stale API data survives.
+        await page.keyboard.press('Escape'); await loadButtonExample(page);
+        const graphPanel = await openX47(page);
+        await graphPanel.locator('[data-x47-preview]').click();
+        await page.waitForFunction(() => window.__X47_PULSE_PREVIEW__.snapshot().state === 'preview');
+        await holdDigest(page);
+        await graphPanel.locator('[data-x47-preview]').click();
+        await page.waitForFunction(() => window.__X47_PULSE_PREVIEW__.snapshot().state === 'pending');
+        await page.keyboard.press('Escape');
+        const buttonCard = page.locator('#component-layer [data-component-id="button-1"]');
+        await buttonCard.click({ force: true }); await buttonCard.focus();
+        await page.keyboard.press('Delete');
+        assert.equal(await page.evaluate(() => window.__X47_PULSE_PREVIEW__.canonicalText()), null);
+        assert.deepEqual(await page.evaluate(() => window.__X47_PULSE_PREVIEW__.expandedEvents()), []);
+        await releaseDigest(page); await page.waitForTimeout(20);
+        assert.notEqual((await page.evaluate(() => window.__X47_PULSE_PREVIEW__.snapshot())).state, 'preview');
+        raceResults.push('graph-keyboard-cleared');
+
+        // A profile replacement also cancels a pending digest and
+        // cannot restore the old AVR preview when that digest resolves.
+        await loadButtonExample(page);
+        const profilePanel = await openX47(page);
+        await profilePanel.locator('[data-x47-preview]').click();
+        await page.waitForFunction(() => window.__X47_PULSE_PREVIEW__.snapshot().state === 'preview');
+        await holdDigest(page);
+        await profilePanel.locator('[data-x47-preview]').click();
+        await page.waitForFunction(() => window.__X47_PULSE_PREVIEW__.snapshot().state === 'pending');
+        await page.keyboard.press('Escape');
+        await page.locator('#board-select').selectOption('board.rp2040-pico-v1');
+        await page.waitForFunction(() => document.body.dataset.activeProfile !== 'board.atmega328p-16mhz-v1');
+        assert.equal(await page.evaluate(() => window.__X47_PULSE_PREVIEW__.canonicalText()), null);
+        assert.deepEqual(await page.evaluate(() => window.__X47_PULSE_PREVIEW__.expandedEvents()), []);
+        await releaseDigest(page); await page.waitForTimeout(20);
+        assert.notEqual((await page.evaluate(() => window.__X47_PULSE_PREVIEW__.snapshot())).state, 'preview');
+        raceResults.push('profile-replacement-cleared');
+      }
+
+      const finalActivity = await page.evaluate(() => structuredClone(window.__X47_TEST_ACTIVITY__));
+      assert.equal(finalActivity.workers - activityBefore.workers, 0);
+      assert.equal(finalActivity.serviceWorkers - activityBefore.serviceWorkers, 0);
+      assert.deepEqual(producerRequests, []);
+      assert.deepEqual(outside, []);
+      assert.deepEqual(failures, []);
+
       // Escape closes the real modal and restores focus to its opener.
-      await page.keyboard.press('Escape');
-      await page.waitForFunction(() => !document.querySelector('#workbench-instruments-dialog').open);
-      assert.equal(await page.evaluate(() => document.activeElement?.id), 'instruments-open');
+      if (await page.locator('#workbench-instruments-dialog').getAttribute('open') !== null) {
+        await page.keyboard.press('Escape');
+        await page.waitForFunction(() => !document.querySelector('#workbench-instruments-dialog').open);
+        assert.equal(await page.evaluate(() => document.activeElement?.id), 'instruments-open');
+      }
       reports.push({ viewport, activityDelta: {
         storageWrites: activityAfter.storageWrites - activityBefore.storageWrites,
         workers: activityAfter.workers - activityBefore.workers,
         serviceWorkers: activityAfter.serviceWorkers - activityBefore.serviceWorkers,
       }, producerRequests: producerRequests.length, outsideRequests: outside.length,
-      eventCycles: snapshot.events.map((event) => event.offsetCycles), readability });
+      eventCycles: snapshot.events.map((event) => event.offsetCycles), raceResults, readability });
       await page.close();
     }
   } finally { await browser.close(); }

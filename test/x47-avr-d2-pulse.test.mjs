@@ -6,14 +6,17 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { DEFAULT_CIRCUIT } from '../src/default-circuit.mjs';
 import {
+  captureX47PulseSource,
   canonicalX47PulseText,
   createX47PulseContext,
+  createX47PulseContextFromSource,
   createX47PulsePreviewOwner,
   createX47PulseRecord,
   expandX47PulseRecord,
   inspectX47AvrD2Target,
   parseX47PulseText,
   validateX47PulseRecord,
+  x47PulseSourceMatches,
   X47_AVR_PROFILE,
   X47_GENERATOR_ID,
   X47_MAX_END_CYCLES,
@@ -58,6 +61,23 @@ test('validated D2-to-ground graph produces one deterministic bound context', as
   changed.components.find((item) => item.id === 'button-1').label = 'Changed button label';
   assert.notEqual((await createX47PulseContext(X47_AVR_PROFILE, 7, changed)).graphIdentity,
     first.graphIdentity);
+});
+
+test('source capture is immutable and exposes any graph or revision race after hashing', async () => {
+  const mutable = structuredClone(DEFAULT_CIRCUIT);
+  const source = captureX47PulseSource(X47_AVR_PROFILE, 3, 7, mutable);
+  assert.equal(Object.isFrozen(source), true);
+  assert.equal(Object.isFrozen(source.graphSnapshot), true);
+  assert.equal(Object.isFrozen(source.graphSnapshot.components[0]), true);
+  mutable.components.find((item) => item.id === 'button-1').label = 'Changed during digest';
+  assert.equal(x47PulseSourceMatches(source, X47_AVR_PROFILE, 3, 7, mutable), false);
+  assert.equal(x47PulseSourceMatches(source, X47_AVR_PROFILE, 4, 7, DEFAULT_CIRCUIT), false);
+  assert.equal(x47PulseSourceMatches(source, X47_AVR_PROFILE, 3, 8, DEFAULT_CIRCUIT), false);
+  assert.equal(x47PulseSourceMatches(source, X47_AVR_PROFILE, 3, 7, DEFAULT_CIRCUIT), true);
+  const capturedContext = await createX47PulseContextFromSource(source);
+  const directContext = await createX47PulseContext(X47_AVR_PROFILE, 7, DEFAULT_CIRCUIT);
+  assert.deepEqual(capturedContext, directContext);
+  assert.throws(() => { source.graphSnapshot.components[0].label = 'forbidden'; }, TypeError);
 });
 
 test('strict canonical bytes round-trip with exact fixed contract', () => {
@@ -152,6 +172,10 @@ test('shared shell is preview-only, transient and outside model closure', async 
     'X47_PROJECT_OPENED', 'X47_PROFILE_CHANGED']) assert.match(shell, new RegExp(code, 'u'));
   assert.match(shell, /Preview only/u);
   assert.match(shell, /Apply is intentionally absent/u);
+  assert.match(shell, /X47_SOURCE_CHANGED_DURING_HASH/u);
+  assert.match(shell, /state: 'pending'.*record: null.*canonicalText: null.*events: \[\]/su);
+  assert.match(shell, /snapshot: currentSnapshot/u);
+  assert.match(shell, /x47PulseSourceMatches/u);
   assert.doesNotMatch(`${owner}\n${shell}`, /localStorage|sessionStorage|indexedDB|serviceWorker|postMessage\(/u);
   assert.doesNotMatch(`${owner}\n${shell}`, /queueDigitalSequence|digital-sequence/u);
   assert.doesNotMatch(modelClosure, /x47-avr-d2-pulse|shared-workbench-shell/u);

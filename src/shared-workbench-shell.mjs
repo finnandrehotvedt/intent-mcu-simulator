@@ -23,12 +23,14 @@ import {
   x43VirtualNanosecondsText,
 } from './x43-avr-observation-profile.mjs';
 import {
+  captureX47PulseSource,
   canonicalX47PulseText,
-  createX47PulseContext,
+  createX47PulseContextFromSource,
   createX47PulsePreviewOwner,
   createX47PulseRecord,
   expandX47PulseRecord,
   inspectX47AvrD2Target,
+  x47PulseSourceMatches,
 } from './x47-avr-d2-pulse.mjs';
 
 export const SHARED_WORKBENCH_SCHEMA = 'intent-mcu-shared-workbench@1';
@@ -758,11 +760,51 @@ function installX47PulsePreview(document, activeProfileReader) {
   const owner = createX47PulsePreviewOwner();
   let operation = 0;
   let lastContext = null;
+  let lastSource = null;
+  let pending = false;
+  let draftChanged = false;
+  let notice = null;
 
   const state = () => document.defaultView?.__M6_STATE__ ?? null;
-  const context = async () => {
+  const captureSource = () => {
     const current = state();
-    return createX47PulseContext(activeProfileReader(), current?.revision, current?.graph);
+    return captureX47PulseSource(activeProfileReader(), current?.lifecycle?.projectGeneration,
+      current?.revision, current?.graph);
+  };
+  const resolveContext = async () => {
+    const source = captureSource();
+    const context = await createX47PulseContextFromSource(source);
+    const current = state();
+    if (!x47PulseSourceMatches(source, activeProfileReader(), current?.lifecycle?.projectGeneration,
+      current?.revision, current?.graph)) {
+      const error = new Error('X47_SOURCE_CHANGED_DURING_HASH');
+      error.code = 'X47_SOURCE_CHANGED_DURING_HASH';
+      throw error;
+    }
+    return { source, context };
+  };
+  const redacted = (reason = 'X47_BINDING_REVALIDATING') => ({
+    state: 'pending', reason, record: null, canonicalText: null, events: [],
+  });
+  const currentSnapshot = () => {
+    if (pending) return redacted();
+    const snapshot = owner.snapshot();
+    if (snapshot.state !== 'preview') return snapshot;
+    const current = state();
+    if (!lastSource || !lastContext || !x47PulseSourceMatches(
+      lastSource, activeProfileReader(), current?.lifecycle?.projectGeneration,
+      current?.revision, current?.graph,
+    )) {
+      operation += 1;
+      lastSource = null;
+      lastContext = null;
+      draftChanged = false;
+      notice = null;
+      const invalidated = owner.invalidate('X47_BINDING_CHANGED');
+      paintSnapshot(invalidated, null);
+      return invalidated;
+    }
+    return owner.revalidate(lastContext);
   };
   const paintSnapshot = (snapshot, availability = null) => {
     for (const panel of panels) {
@@ -770,11 +812,14 @@ function installX47PulsePreview(document, activeProfileReader) {
       const preview = panel.querySelector('[data-x47-preview]');
       const output = panel.querySelector('[data-x47-output]');
       panel.dataset.state = snapshot.state;
-      status.textContent = snapshot.state === 'preview' ? 'Preview ready'
+      status.textContent = snapshot.state === 'pending' ? 'Checking binding'
+        : snapshot.state === 'preview' && notice ? 'Rejected · preview retained'
+        : snapshot.state === 'preview' && draftChanged ? 'Previous preview retained'
+        : snapshot.state === 'preview' ? 'Preview ready'
         : snapshot.state === 'invalidated' ? 'Cleared' : availability ? 'Ready' : 'Unavailable';
-      preview.disabled = !availability;
+      preview.disabled = snapshot.state === 'pending' || !availability;
       panel.querySelector('[data-x47-binding]').textContent = availability
-        ? `Current ${availability.target.componentId}: ${availability.target.inputEndpoint} → ${availability.target.contactEndpoint}, ${availability.target.groundContactEndpoint} → ${availability.target.groundEndpoint} · revision ${availability.sourceProjectRevision} · graph ${availability.graphIdentity.slice(0, 19)}…`
+        ? `${notice ? `${notice} · ` : ''}Current ${availability.target.componentId}: ${availability.target.inputEndpoint} → ${availability.target.contactEndpoint}, ${availability.target.groundContactEndpoint} → ${availability.target.groundEndpoint} · revision ${availability.sourceProjectRevision} · graph ${availability.graphIdentity.slice(0, 19)}…`
         : snapshot.reason ?? 'Requires one validated AVR button wired from D2 to ground.';
       output.hidden = snapshot.state !== 'preview';
       const rows = snapshot.events.map((event) => {
@@ -788,15 +833,22 @@ function installX47PulsePreview(document, activeProfileReader) {
   };
   const refresh = async () => {
     const ticket = ++operation;
+    pending = true;
+    notice = null;
+    paintSnapshot(redacted(), null);
     try {
-      const nextContext = await context();
-      if (ticket !== operation) return owner.snapshot();
-      lastContext = nextContext;
-      const snapshot = owner.revalidate(nextContext);
-      paintSnapshot(snapshot, nextContext);
+      const resolved = await resolveContext();
+      if (ticket !== operation) return currentSnapshot();
+      pending = false;
+      lastSource = resolved.source;
+      lastContext = resolved.context;
+      const snapshot = owner.revalidate(resolved.context);
+      paintSnapshot(snapshot, resolved.context);
       return snapshot;
     } catch (error) {
-      if (ticket !== operation) return owner.snapshot();
+      if (ticket !== operation) return currentSnapshot();
+      pending = false;
+      lastSource = null;
       lastContext = null;
       const snapshot = owner.invalidate(error.code ?? 'X47_UNAVAILABLE');
       paintSnapshot(snapshot, null);
@@ -805,7 +857,11 @@ function installX47PulsePreview(document, activeProfileReader) {
   };
   const invalidate = (reason) => {
     operation += 1;
+    pending = false;
+    lastSource = null;
     lastContext = null;
+    draftChanged = false;
+    notice = null;
     const snapshot = owner.invalidate(reason);
     paintSnapshot(snapshot, null);
     return snapshot;
@@ -813,26 +869,37 @@ function installX47PulsePreview(document, activeProfileReader) {
   for (const panel of panels) {
     for (const input of panel.querySelectorAll('[data-x47-start],[data-x47-width]')) {
       input.addEventListener('input', () => {
-        if (owner.snapshot().state === 'preview') invalidate('X47_DRAFT_CHANGED');
-        void refresh();
+        if (pending) { operation += 1; pending = false; }
+        draftChanged = owner.snapshot().state === 'preview';
+        notice = null;
+        const snapshot = currentSnapshot();
+        paintSnapshot(snapshot, lastContext);
       });
     }
     panel.querySelector('[data-x47-preview]').addEventListener('click', async () => {
       const ticket = ++operation;
+      const startOffsetCycles = Number(panel.querySelector('[data-x47-start]').value);
+      const widthCycles = Number(panel.querySelector('[data-x47-width]').value);
+      pending = true;
+      notice = null;
+      paintSnapshot(redacted(), null);
       try {
-        const authoredContext = await context();
+        const resolved = await resolveContext();
         if (ticket !== operation) return;
-        const startOffsetCycles = Number(panel.querySelector('[data-x47-start]').value);
-        const widthCycles = Number(panel.querySelector('[data-x47-width]').value);
-        const record = createX47PulseRecord({ startOffsetCycles, widthCycles }, authoredContext);
-        const currentContext = await context();
-        if (ticket !== operation) return;
-        const snapshot = owner.accept(record, currentContext);
-        lastContext = currentContext;
-        paintSnapshot(snapshot, currentContext);
+        const record = createX47PulseRecord(
+          { startOffsetCycles, widthCycles }, resolved.context,
+        );
+        const snapshot = owner.accept(record, resolved.context);
+        pending = false;
+        lastSource = resolved.source;
+        lastContext = resolved.context;
+        draftChanged = false;
+        paintSnapshot(snapshot, resolved.context);
       } catch (error) {
         if (ticket !== operation) return;
-        const snapshot = owner.invalidate(error.code ?? 'X47_PREVIEW_REJECTED');
+        pending = false;
+        notice = error.code ?? 'X47_PREVIEW_REJECTED';
+        const snapshot = currentSnapshot();
         paintSnapshot(snapshot, lastContext);
       }
     });
@@ -849,6 +916,10 @@ function installX47PulsePreview(document, activeProfileReader) {
     if (event.target?.id === 'board-select') invalidate('X47_PROFILE_CHANGED');
     else if (event.target?.id === 'project-open-input') invalidate('X47_PROJECT_OPENED');
   }, true);
+  document.addEventListener('keydown', (event) => {
+    if (!['Delete', 'Backspace'].includes(event.key) || event.target?.closest?.('input,textarea,select')) return;
+    if (pending || owner.snapshot().state === 'preview') invalidate('X47_GRAPH_EDIT_STARTED');
+  }, true);
   document.addEventListener('click', (event) => {
     const reason = invalidationEvents.get(event.target?.id);
     if (reason) invalidate(reason);
@@ -856,22 +927,33 @@ function installX47PulsePreview(document, activeProfileReader) {
       document.defaultView?.queueMicrotask(() => { void refresh(); });
     }
   }, true);
+  const BindingObserver = document.defaultView?.MutationObserver;
+  const bindingObserver = BindingObserver ? new BindingObserver(() => {
+    const snapshot = currentSnapshot();
+    paintSnapshot(snapshot, snapshot.state === 'preview' ? lastContext : null);
+  }) : null;
+  if (bindingObserver) {
+    for (const selector of ['#project-message', '#build-state', '#quick-state', '#wire-state']) {
+      const node = document.querySelector(selector);
+      if (node) bindingObserver.observe(node, { childList: true, characterData: true, subtree: true });
+    }
+  }
   const api = Object.freeze({
     refresh,
     invalidate,
-    snapshot: owner.snapshot,
+    snapshot: currentSnapshot,
     canonicalText: () => {
-      const snapshot = owner.snapshot();
+      const snapshot = currentSnapshot();
       return snapshot.record ? canonicalX47PulseText(snapshot.record, lastContext) : null;
     },
     expandedEvents: () => {
-      const snapshot = owner.snapshot();
+      const snapshot = currentSnapshot();
       return snapshot.record ? expandX47PulseRecord(snapshot.record, lastContext) : [];
     },
     inspectTarget: () => inspectX47AvrD2Target(state()?.graph),
   });
   document.defaultView.__X47_PULSE_PREVIEW__ = api;
-  paintSnapshot(owner.snapshot(), null);
+  paintSnapshot(currentSnapshot(), null);
   void refresh();
   return api;
 }

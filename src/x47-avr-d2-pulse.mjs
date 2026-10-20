@@ -19,10 +19,20 @@ const TARGET_KEYS = Object.freeze([
   'groundEndpoint', 'groundContactEndpoint',
 ]);
 const CONTEXT_KEYS = Object.freeze(['profile', 'sourceProjectRevision', 'graphIdentity', 'target']);
+const SOURCE_KEYS = Object.freeze([
+  'profile', 'projectGeneration', 'sourceProjectRevision', 'graphSnapshotText', 'graphSnapshot', 'target',
+]);
 const EVENT_KEYS = Object.freeze(['pin', 'offsetCycles', 'level']);
 const GROUND_PINS = new Set(['GND1', 'GND2', 'GND3']);
 
 const clone = (value) => structuredClone(value);
+const deepFreeze = (value) => {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const item of Object.values(value)) deepFreeze(item);
+  }
+  return value;
+};
 const exactKeys = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
 const reject = (code) => { const error = new TypeError(code); error.code = code; throw error; };
@@ -103,12 +113,49 @@ export function inspectX47AvrD2Target(graph) {
   return matches[0];
 }
 
-export async function createX47PulseContext(profile, sourceProjectRevision, graph) {
+export function captureX47PulseSource(profile, projectGeneration, sourceProjectRevision, graph) {
   if (profile !== X47_AVR_PROFILE) reject('X47_PROFILE');
+  if (!safePositive(projectGeneration)) reject('X47_PROJECT_GENERATION');
   if (!safeRevision(sourceProjectRevision)) reject('X47_SOURCE_REVISION');
-  const target = inspectX47AvrD2Target(graph);
-  const graphIdentity = `sha256:${await sha256(stableStringify(graph))}`;
+  const graphSnapshot = clone(graph);
+  const target = inspectX47AvrD2Target(graphSnapshot);
+  const graphSnapshotText = stableStringify(graphSnapshot);
+  return deepFreeze({ profile, projectGeneration, sourceProjectRevision,
+    graphSnapshotText, graphSnapshot, target });
+}
+
+function validateSource(source) {
+  if (!exactKeys(source, SOURCE_KEYS) || source.profile !== X47_AVR_PROFILE
+      || !safePositive(source.projectGeneration)
+      || !safeRevision(source.sourceProjectRevision)
+      || typeof source.graphSnapshotText !== 'string'
+      || source.graphSnapshotText !== stableStringify(source.graphSnapshot)
+      || stableStringify(source.target) !== stableStringify(inspectX47AvrD2Target(source.graphSnapshot))) {
+    reject('X47_SOURCE_SNAPSHOT');
+  }
+  return source;
+}
+
+export function x47PulseSourceMatches(source, profile, projectGeneration, sourceProjectRevision, graph) {
+  try {
+    const expected = validateSource(source);
+    const current = captureX47PulseSource(profile, projectGeneration, sourceProjectRevision, graph);
+    return expected.profile === current.profile
+      && expected.projectGeneration === current.projectGeneration
+      && expected.sourceProjectRevision === current.sourceProjectRevision
+      && expected.graphSnapshotText === current.graphSnapshotText;
+  } catch { return false; }
+}
+
+export async function createX47PulseContextFromSource(source) {
+  const captured = validateSource(source);
+  const graphIdentity = `sha256:${await sha256(captured.graphSnapshotText)}`;
+  const { profile, sourceProjectRevision, target } = captured;
   return Object.freeze({ profile, sourceProjectRevision, graphIdentity, target: Object.freeze(target) });
+}
+
+export async function createX47PulseContext(profile, sourceProjectRevision, graph) {
+  return createX47PulseContextFromSource(captureX47PulseSource(profile, 1, sourceProjectRevision, graph));
 }
 
 export function validateX47PulseContext(context) {
