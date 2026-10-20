@@ -35,6 +35,8 @@ test('X63 corrupt-record confirmation tokens are typed, cyclic-safe and bounded'
   changed.self = changed;
   assert.equal(rawHistoryRecordToken(first), rawHistoryRecordToken(same));
   assert.notEqual(rawHistoryRecordToken(first), rawHistoryRecordToken(changed));
+  const bytes = new Uint8Array([1, 2, 3, 4]);
+  assert.notEqual(rawHistoryRecordToken(bytes.subarray(0, 2)), rawHistoryRecordToken(bytes.subarray(1, 3)));
   assert.equal(rawHistoryRecordToken({ oversized: 'x'.repeat(LOCAL_HISTORY_RECORD_LIMIT * 5) }), null);
 });
 const hash = async (value) => createHash('sha256').update(value).digest('hex');

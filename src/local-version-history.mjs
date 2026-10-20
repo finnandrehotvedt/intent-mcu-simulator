@@ -160,7 +160,7 @@ export function rawHistoryRecordToken(value) {
       if (item instanceof Date) token = `date:${item.toISOString()}`;
       else if (item instanceof ArrayBuffer) token = `array-buffer:${[...new Uint8Array(item)]
         .map((byte) => byte.toString(16).padStart(2, '0')).join('')}`;
-      else if (ArrayBuffer.isView(item)) token = `view:${item.constructor.name}:${encode(item.buffer, depth + 1)}`;
+      else if (ArrayBuffer.isView(item)) token = `view:${item.constructor.name}:${item.byteOffset}:${item.byteLength}:${encode(item.buffer, depth + 1)}`;
       else if (Array.isArray(item)) token = `array:${reference}:[${item.map((child) => encode(child, depth + 1)).join(',')}]`;
       else if (Object.getPrototypeOf(item) === Object.prototype || Object.getPrototypeOf(item) === null) {
         token = `object:${reference}:{${Object.keys(item).sort().map((key) =>
