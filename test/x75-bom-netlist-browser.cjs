@@ -45,6 +45,7 @@ const storage = () => ({
 
     const geometryCases = [];
     for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }]) {
+      const requiredVisibleHeight = viewport.height <= 768 ? 430 : 540;
       await page.setViewportSize(viewport);
       for (const profile of profiles) {
         await page.selectOption('#board-select', profile);
@@ -62,11 +63,16 @@ const storage = () => ({
           };
         }, { id: profile, visualSelector: profileVisuals[profile] });
         assert(measured.stageTop <= 210, `${profile} stage starts at ${measured.stageTop}`);
-        assert(measured.stageVisibleHeight >= (viewport.height <= 768 ? 430 : 540));
+        assert(measured.stageVisibleHeight >= requiredVisibleHeight);
         assert(measured.visibleWidth >= 700);
-        assert(measured.visibleHeight > 0);
+        assert(measured.visibleHeight >= requiredVisibleHeight,
+          `${profile} diagram exposes ${measured.visibleHeight}px at ${viewport.width}x${viewport.height}`);
         assert(measured.overflow <= 1);
-        geometryCases.push({ viewport: `${viewport.width}x${viewport.height}`, ...measured });
+        geometryCases.push({
+          viewport: `${viewport.width}x${viewport.height}`,
+          requiredVisibleHeight,
+          ...measured,
+        });
       }
     }
     await page.setViewportSize({ width: 1440, height: 1000 });
@@ -181,7 +187,7 @@ const storage = () => ({
     await page.screenshot({ path: path.join(evidenceDir, 'x75-private-build-list.png'), fullPage: false });
     console.log(JSON.stringify({
       result: 'pass', browser: 'chromium', profiles: profiles.length, actualDownloads: 5,
-      geometryCases: geometryCases.length,
+      geometryCaseCount: geometryCases.length, geometryCases,
       deterministicRepeat: true, valueOnlyChange: true, movementExcluded: true, undoRestored: true,
       staleCancelled: true, outsideRequests: 0, mutations: 0, workers: 0, serviceWorkers: 0,
     }));
