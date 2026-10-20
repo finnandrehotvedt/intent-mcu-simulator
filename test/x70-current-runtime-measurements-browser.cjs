@@ -194,6 +194,9 @@ async function reopenAuthoredProject(page, profile) {
   try {
     assert.equal((await page.goto(base, { waitUntil: 'networkidle' }))?.status(), 200);
     await page.waitForFunction(() => window.__M11_READY__ === true && window.__X70_ACCESSIBLE_DEMONSTRATION__);
+    await page.click('#project-files-open');
+    await page.waitForSelector('#workbench-project-dialog[open]');
+    await page.click('#project-demo');
     await page.click('.starter-card[data-example="pwm-pulse"]');
     if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
     await page.waitForFunction(() => document.querySelector('#example-select').value === 'pwm-pulse');
