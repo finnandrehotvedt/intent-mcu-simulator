@@ -127,6 +127,43 @@ test('captured interval remains valid only under exact binding and monotonic cou
   assert.equal(changed.snapshot(next).reason, 'X43_BINDING_CHANGED');
 });
 
+test('observing compares Capture to the latest accepted sample, not only Start', () => {
+  const owner = createX43AvrObservationProfile();
+  owner.start(observation(200, 120), 100);
+  assert.equal(owner.snapshot(observation(400, 250)).state, 'observing');
+  const regressed = owner.capture(observation(300, 180), 110);
+  assert.equal(regressed.state, 'invalidated');
+  assert.equal(regressed.reason, 'X43_COUNTER_REGRESSION');
+  assert.equal(regressed.interval, null);
+  assert.equal(owner.snapshot(observation(500, 300)).state, 'invalidated');
+});
+
+test('captured monotonic progress advances the floor while the frozen interval stays exact', () => {
+  const owner = createX43AvrObservationProfile();
+  owner.start(observation(200, 120), 100);
+  const captured = owner.capture(observation(300, 180), 110);
+  assert.deepEqual(captured.interval.delta, { cycles: 100, instructions: 60 });
+  const progressed = owner.snapshot(observation(500, 300));
+  assert.equal(progressed.state, 'captured');
+  assert.deepEqual(progressed.interval, captured.interval, 'later progress must not rewrite the captured interval');
+  const regressed = owner.snapshot(observation(400, 250));
+  assert.equal(regressed.state, 'invalidated');
+  assert.equal(regressed.reason, 'X43_COUNTER_REGRESSION');
+  assert.equal(regressed.interval, null);
+});
+
+test('cycle and instruction monotonicity are independent and duplicate samples are idempotent', () => {
+  for (const next of [observation(399, 260), observation(410, 249)]) {
+    const owner = createX43AvrObservationProfile();
+    owner.start(observation(200, 120), 100);
+    assert.equal(owner.snapshot(observation(400, 250)).state, 'observing');
+    assert.equal(owner.snapshot(observation(400, 250)).state, 'observing');
+    const invalid = owner.snapshot(next);
+    assert.equal(invalid.reason, 'X43_COUNTER_REGRESSION');
+    assert.equal(invalid.interval, null);
+  }
+});
+
 test('missing current observation, counter regression and wall regression fail closed', () => {
   const missing = createX43AvrObservationProfile();
   missing.start(observation(), 10);

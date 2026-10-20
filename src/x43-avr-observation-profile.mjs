@@ -184,10 +184,12 @@ export function x43AvrProfileAvailability(profile, state) {
 
 export function createX43AvrObservationProfile() {
   let view = blank();
+  let lastAccepted = null;
 
   const publicView = () => clone(view);
   const invalidate = (reason = 'X43_INVALIDATED') => {
     view = blank('invalidated', reason);
+    lastAccepted = null;
     return publicView();
   };
   const prepare = (observation) => {
@@ -209,10 +211,11 @@ export function createX43AvrObservationProfile() {
       return invalidate(error.code ?? 'X43_OBSERVATION_INVALID');
     }
     if (!bindingMatches(view.binding, current)) return invalidate('X43_BINDING_CHANGED');
-    const floor = view.state === 'captured' ? view.interval.end : view.interval.start;
-    if (current.cycle < floor.cycle || current.instructions < floor.instructions) {
+    if (!lastAccepted || current.cycle < lastAccepted.cycle
+        || current.instructions < lastAccepted.instructions) {
       return invalidate('X43_COUNTER_REGRESSION');
     }
+    lastAccepted = { cycle: current.cycle, instructions: current.instructions };
     return publicView();
   };
   const start = (observation, wallMilliseconds) => {
@@ -220,6 +223,7 @@ export function createX43AvrObservationProfile() {
     const wall = finiteWall(wallMilliseconds, 'X43_WALL_TIME');
     view = blank('observing', null);
     view.binding = bindingFrom(current);
+    lastAccepted = { cycle: current.cycle, instructions: current.instructions };
     view.interval = {
       start: { cycle: current.cycle, instructions: current.instructions, wallMilliseconds: wall },
       end: null,

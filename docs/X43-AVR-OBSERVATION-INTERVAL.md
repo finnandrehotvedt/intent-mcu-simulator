@@ -33,7 +33,13 @@ is not consulted here.
 ## Lifecycle
 
 Observing and captured intervals are revalidated before every API snapshot and
-presentation. Missing/mixed identity, unsafe counters, counter regression,
+presentation. Each successfully validated sample advances an internal floor
+for cycles and instructions independently; duplicate samples are idempotent,
+while either counter falling below the latest accepted sample clears the
+interval. This authority covers only projections actually presented to the
+owner by paint, snapshot or Capture; a regression and recovery wholly between
+two sampled projections is not observed or claimed. Missing/mixed identity,
+unsafe counters, counter regression,
 source or circuit change, Build, Reset, Stop, New, accepted Open/example load,
 profile switch, worker/model/generation change or runtime retirement clears the
 measurement fail-closed. A rejected or cancelled Open does not alter the

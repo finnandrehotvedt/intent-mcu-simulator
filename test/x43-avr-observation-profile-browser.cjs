@@ -132,6 +132,35 @@ async function stopControl(page, id) {
         path: path.join(evidenceDir, `x43-avr-profile-replay-${viewport.width}x${viewport.height}.png`),
       });
 
+      // A later accepted projection becomes the monotonic floor. Capture may
+      // not fall back toward Start, and the stale interval clears before paint.
+      await inject(page, fixture);
+      await panel.locator('[data-x43-start]').click();
+      const orderStart = await page.evaluate(() => window.__X43_AVR_PROFILE__.snapshot().interval.start);
+      await inject(page, fixture, { cycle: orderStart.cycle + 200, instructions: orderStart.instructions + 130 });
+      assert.equal((await page.evaluate(() => window.__X43_AVR_PROFILE__.snapshot())).state, 'observing');
+      await inject(page, fixture, { cycle: orderStart.cycle + 100, instructions: orderStart.instructions + 60 });
+      await panel.locator('[data-x43-capture]').click();
+      const orderRegression = await page.evaluate(() => window.__X43_AVR_PROFILE__.snapshot());
+      assert.equal(orderRegression.state, 'invalidated');
+      assert.equal(orderRegression.reason, 'X43_COUNTER_REGRESSION');
+      assert.equal(orderRegression.interval, null);
+      assert.equal(await panel.locator('[data-x43-counters]').textContent(), 'No captured interval.');
+      if (evidenceDir) await panel.screenshot({
+        path: path.join(evidenceDir, `x43-counter-regression-cleared-${viewport.width}x${viewport.height}.png`),
+      });
+
+      // Establish a new explicit capture for the Open lifecycle checks below.
+      await inject(page, fixture);
+      await panel.locator('[data-x43-start]').click();
+      await inject(page, fixture, { cycle: fixture.runtime.cycle + 320, instructions: fixture.runtime.instructions + 160 });
+      await panel.locator('[data-x43-capture]').click();
+      assert.equal((await page.evaluate(() => window.__X43_AVR_PROFILE__.snapshot())).state, 'captured');
+      const activityAfterX43Sequences = await page.evaluate(() => structuredClone(window.__X43_TEST_ACTIVITY__));
+      assert.equal(activityAfterX43Sequences.storageWrites - activityBefore.storageWrites, 0);
+      assert.equal(activityAfterX43Sequences.workers - activityBefore.workers, 0);
+      assert.equal(activityAfterX43Sequences.serviceWorkers - activityBefore.serviceWorkers, 0);
+
       // Rejected and cancelled Open preserve the exact captured binding.
       await page.click('#workbench-instruments-dialog .workbench-popup-close');
       await page.click('#project-files-open');
@@ -219,9 +248,10 @@ async function stopControl(page, id) {
       assert.equal(producerRequests.length, 0, JSON.stringify(producerRequests));
       assert.equal(failures.length, 0, JSON.stringify(failures));
       reports.push({ viewport, fixtureReplay: true, delta: captured.interval.delta,
-        virtualTime: captured.interval.virtualTime, readability, outsideRequests: outside.length,
+        virtualTime: captured.interval.virtualTime, counterRegressionClearedBeforePresentation: true,
+        readability, outsideRequests: outside.length,
         producerRequests: producerRequests.length, workersCreated: activityAfter.workers - activityBefore.workers,
-        x43ActionStorageWrites: activityAfterCapture.storageWrites - activityBefore.storageWrites,
+        x43ActionStorageWrites: activityAfterX43Sequences.storageWrites - activityBefore.storageWrites,
         storageWritesDuringWholeLifecycleReview: activityAfter.storageWrites - activityBefore.storageWrites,
         horizontalOverflowPixels: activityAfter.overflow });
       await page.close();
