@@ -216,6 +216,8 @@ async function reopenAuthoredProject(page, profile) {
       const buildPhase = await page.evaluate(({ name }) => name === '__M6_STATE__'
         ? window[name].buildState : window[name].phase, { name: profile.state });
       assert.equal(buildPhase, profile.built, `${profile.slug}: build ended ${buildPhase}`);
+      await page.waitForFunction((selector) => !document.querySelector(selector)?.disabled,
+        profile.run, { timeout: 20_000 });
       assert.equal(await page.locator(profile.run).isDisabled(), false, `${profile.slug}: Run disabled after Build`);
       await page.click(profile.run); runs += 1;
       await page.waitForFunction(({ name, phase }) => {
