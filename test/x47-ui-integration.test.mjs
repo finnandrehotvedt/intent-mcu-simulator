@@ -102,6 +102,12 @@ test('retirement clears current authority before stale lifecycle messages', () =
   const retired = owner.retire('X47_SOURCE_EDITED');
   assert.equal(retired.authority, null);
   assert.equal(retired.runtimeIdentity, null);
+  assert.equal(retired.binding, null);
+  assert.equal(retired.request.transactionId, queue.transactionId);
+  assert.equal(retired.queueReceipt.transactionId, queue.transactionId);
+  assert.equal(retired.executionReceipt.transactionId, queue.transactionId);
+  assert.throws(() => owner.beginApply('x47-ui-after-retire'), /X47_UI_APPLY_NOT_READY/u);
+  assert.throws(() => owner.resume({ workerToken: 9, runtimeIdentity }), /X47_UI_WORKER_STALE/u);
   assert.throws(() => owner.observeExecution({ workerToken: 9, runtimeIdentity,
     executionReceipt: kernel.x47ExecutionReceipt(queue.transactionId) }), /X47_UI_WORKER_STALE/u);
 });

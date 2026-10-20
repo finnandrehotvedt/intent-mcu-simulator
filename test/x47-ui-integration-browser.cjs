@@ -323,6 +323,13 @@ function fakeWorkerInstaller() {
           ?.includes('Reset cancellation acknowledged'));
         await waitSyntheticPaused(page);
         assert.equal(await page.evaluate(() => window.__X47_SYNTHETIC_WORKERS__), workersBeforeReset);
+        const retainedPanel = page.locator('[data-x47-pulse-preview]').first();
+        assert.equal(await retainedPanel.locator('[data-x47-apply]').isDisabled(), true);
+        assert.equal(await retainedPanel.locator('[data-x47-resume]').isDisabled(), true);
+        assert.match(await retainedPanel.locator('[data-x47-runtime-state]').textContent(),
+          /Historical evidence · non-current; active authority revoked/u);
+        assert.match(await retainedPanel.locator('[data-x47-fact="target"]').textContent(),
+          /^Historical · non-current/u);
         raceResults.push('reset-cancellation-separated');
         await loadButtonExample(page);
       }

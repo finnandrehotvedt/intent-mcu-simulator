@@ -857,28 +857,34 @@ function installX47PulsePreview(document, activeProfileReader) {
     resume.disabled = integration.phase !== 'resume-required';
     stop.disabled = !['resume-required', 'running', 'ready'].includes(integration.phase)
       || !integration.queueReceipt;
-    panel.querySelector('[data-x47-runtime-state]').textContent = integration.reason;
+    const historical = ['retired', 'stopped', 'timeout'].includes(integration.phase)
+      && Boolean(integration.request || integration.queueReceipt || integration.executionReceipt
+        || integration.cancelReceipt || integration.cancelTimeout);
+    const evidencePrefix = historical ? 'Historical · non-current · ' : '';
+    panel.querySelector('[data-x47-runtime-state]').textContent = historical
+      ? `Historical evidence · non-current; active authority revoked. ${integration.reason}`
+      : integration.reason;
     const execution = integration.executionReceipt;
     const events = execution?.events ?? integration.queueReceipt?.events ?? [];
-    panel.querySelector('[data-x47-fact="target"]').textContent = events.length
+    panel.querySelector('[data-x47-fact="target"]').textContent = evidencePrefix + (events.length
       ? events.map((event) => `event ${event.eventIndex + 1}: ${event.targetCycle.toLocaleString('en-US')}`).join(' · ')
-      : 'Not requested';
-    panel.querySelector('[data-x47-fact="drain"]').textContent = factText(execution?.events,
-      'drainAppliedCycle', 'Not observed');
-    panel.querySelector('[data-x47-fact="adapter"]').textContent = factText(execution?.events,
-      'adapterAppliedCycle', 'Not observed');
-    panel.querySelector('[data-x47-fact="transition"]').textContent = execution?.events?.length
+      : 'Not requested');
+    panel.querySelector('[data-x47-fact="drain"]').textContent = evidencePrefix
+      + factText(execution?.events, 'drainAppliedCycle', 'Not observed');
+    panel.querySelector('[data-x47-fact="adapter"]').textContent = evidencePrefix
+      + factText(execution?.events, 'adapterAppliedCycle', 'Not observed');
+    panel.querySelector('[data-x47-fact="transition"]').textContent = evidencePrefix + (execution?.events?.length
       ? execution.events.map((event) => event.transitioned === null
         ? `event ${event.eventIndex + 1}: unknown`
         : event.transitioned
           ? `event ${event.eventIndex + 1}: cycle ${event.transitionCycle.toLocaleString('en-US')}`
           : `event ${event.eventIndex + 1}: applied, no electrical transition`).join(' · ')
-      : 'Not observed';
-    panel.querySelector('[data-x47-fact="cancel"]').textContent = integration.cancelTimeout
+      : 'Not observed');
+    panel.querySelector('[data-x47-fact="cancel"]').textContent = evidencePrefix + (integration.cancelTimeout
       ? 'Not completed: acknowledgement timeout'
       : integration.cancelReceipt
         ? integration.cancelReceipt.evidenceComplete ? 'Complete evidence' : 'Acknowledged · evidence incomplete'
-        : 'Not requested';
+        : 'Not requested');
   };
   const refresh = async () => {
     const ticket = ++operation;
