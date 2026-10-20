@@ -11,6 +11,9 @@ import {
   filterCatalog,
 } from '../src/component-catalog.mjs';
 import { createAccessibleConnectionView } from '../src/accessible-connections.mjs';
+import {
+  bomNetlistInputGuard, createBomNetlistExport, parseBomNetlistText,
+} from '../src/bom-netlist-export.mjs';
 import { createProjectNavigationView, searchProjectNavigation } from '../src/project-navigation.mjs';
 import { CIRCUIT_SCHEMA, validateCircuit } from '../src/circuit-engine.mjs';
 import { DEFAULT_CIRCUIT } from '../src/default-circuit.mjs';
@@ -407,6 +410,7 @@ const elements = Object.fromEntries([
   'counterexample-reduce', 'counterexample-reduction-summary',
   'fault-suite-load', 'fault-suite-replay', 'fault-suite-summary',
   'starter-examples', 'starter-gallery', 'quick-controls', 'workbench-workspace', 'project-bar',
+  'build-list-export', 'build-list-status',
   'project-navigation', 'project-navigation-query', 'project-navigation-status', 'project-navigation-results',
   'family-select', 'board-select', 'controller-status', 'toolchain-boundary',
   'controller-workbench', 'controller-workbench-eyebrow', 'controller-workbench-title', 'controller-workbench-badge',
@@ -6706,6 +6710,48 @@ function profileProjectName(profile) {
   const project = profileProjectDocument(profile);
   return project.metadata?.name ?? project.name ?? 'intent-mcu-project';
 }
+function bomNetlistExportInput(profile = selectedCompilerProfile) {
+  const projectDocument = profileProjectDocument(profile);
+  const active = profile === AVR_PROFILE ? currentProject() : projectDocument;
+  const graph = profile === AVR_PROFILE
+    ? active.candidateCircuit ?? active.project?.circuit ?? active.circuit
+    : projectDocument.circuit;
+  if (!graph) throw Object.assign(new Error('BOM_NETLIST_GRAPH_INVALID'), { code: 'BOM_NETLIST_GRAPH_INVALID' });
+  return {
+    productRelease: RELEASE_VERSION,
+    profile,
+    projectName: profileProjectName(profile),
+    graph: structuredClone(graph),
+    modelLibraryLock: modelLibraryLockFor(profile),
+  };
+}
+let bomNetlistExportSequence = 0;
+async function exportCurrentBomNetlist() {
+  const sequence = ++bomNetlistExportSequence;
+  const input = bomNetlistExportInput();
+  const guard = bomNetlistInputGuard(input);
+  elements.buildliststatus.textContent = 'Preparing a local build list from the current validated authored graph…';
+  try {
+    const result = await createBomNetlistExport(input);
+    if (sequence !== bomNetlistExportSequence
+        || selectedCompilerProfile !== input.profile
+        || bomNetlistInputGuard(bomNetlistExportInput(input.profile)) !== guard) {
+      throw Object.assign(new Error('BOM_NETLIST_STALE_EXPORT'), { code: 'BOM_NETLIST_STALE_EXPORT' });
+    }
+    await parseBomNetlistText(result.text);
+    const stem = input.projectName.normalize('NFKD').replace(/[^A-Za-z0-9 _.-]/gu, '')
+      .trim().replace(/\s+/gu, '-').slice(0, 64) || 'intent-mcu-project';
+    downloadText(`${stem}.build-list.json`, result.text, 'application/json');
+    elements.buildliststatus.textContent = 'Build list downloaded locally. It is not a purchase list and contains no firmware, runtime evidence or physical-equivalence claim.';
+    return { ok: true, code: 'OK', ...result };
+  } catch (error) {
+    const code = error.code ?? error.message ?? 'BOM_NETLIST_EXPORT_FAILED';
+    elements.buildliststatus.textContent = code === 'BOM_NETLIST_STALE_EXPORT'
+      ? 'Build list cancelled because the project or controller changed while it was being prepared. Try again.'
+      : `Build list rejected (${code}). The current project was not changed.`;
+    return { ok: false, code };
+  }
+}
 function commonProjectFilename(profile) {
   const stem = profileProjectName(profile).normalize('NFKD')
     .replace(/[^A-Za-z0-9 _.-]/gu, '').trim().replace(/\s+/gu, '-').slice(0, 64);
@@ -12023,6 +12069,7 @@ elements.promptapply.addEventListener('click', () => {
   persistProject(); publish({ importReport: result.report ?? result.code }); renderProject();
   elements.promptmessage.textContent = `Proposal ${elements.promptmode.value === 'merge' ? 'merged with' : 'replaced'} the circuit after passing the same safety checks as manual wiring.`;
 });
+elements.buildlistexport.addEventListener('click', () => { void exportCurrentBomNetlist(); });
 
 document.addEventListener('pointerup', finishComponentDrag);
 document.addEventListener('mousemove', (event) => { if (componentDrag) moveComponentDrag(event); });
@@ -12096,6 +12143,12 @@ window.addEventListener('pagehide', () => {
   c3PublicWorkbench.disposeForPageExit();
 });
 window.__M6_ADD__ = addComponent;
+window.__X75_BOM_NETLIST__ = Object.freeze({
+  current: async (profile = selectedCompilerProfile) => createBomNetlistExport(bomNetlistExportInput(profile)),
+  parse: (source) => parseBomNetlistText(source),
+  download: () => exportCurrentBomNetlist(),
+  guard: (profile = selectedCompilerProfile) => bomNetlistInputGuard(bomNetlistExportInput(profile)),
+});
 window.__M6_CONNECT__ = (from, to) => { pendingEndpoint = parseEndpoint(from); handlePin(parseEndpoint(to)); };
 window.__M6_PROJECT__ = () => JSON.parse(currentProjectText());
 window.__M6_IMPORT__ = (source, mode = 'replace') => {
