@@ -9,6 +9,11 @@ import {
   parseReleaseChangeRegistryText,
   parseReleaseChangesText,
 } from '../src/release-changes.mjs';
+import {
+  OFFLINE_SUPPORT_MATRIX,
+  canonicalOfflineSupportMatrixText,
+  offlineSupportMatrixHtml,
+} from '../src/offline-support-matrix.mjs';
 import { RELEASE_VERSION } from '../src/release-metadata.mjs';
 
 const dist = new URL('../dist/', import.meta.url);
@@ -25,6 +30,11 @@ const releaseChanges = parseReleaseChangesText(releaseChangesSource, {
 const releaseChangesText = canonicalReleaseChangesText(releaseChanges, {
   currentVersion: RELEASE_VERSION, implementationSha256, registry,
 });
+const offlineSupportMatrixText = canonicalOfflineSupportMatrixText(OFFLINE_SUPPORT_MATRIX);
+const supportSource = await readFile(new URL('../staging/support.html', import.meta.url), 'utf8');
+const supportToken = '<!-- X86_OFFLINE_SUPPORT_MATRIX -->';
+if (supportSource.split(supportToken).length !== 2) throw new Error('OFFLINE_SUPPORT_MATRIX_TOKEN');
+const supportHtml = supportSource.replace(supportToken, offlineSupportMatrixHtml(OFFLINE_SUPPORT_MATRIX));
 await mkdir(dist, { recursive: true });
 for (const entry of await readdir(dist)) await rm(new URL(entry, dist), { recursive: true, force: true });
 await Promise.all([
@@ -38,9 +48,10 @@ await Promise.all([
   cp(new URL('../staging/controllers.html', import.meta.url), new URL('controllers.html', dist)),
   cp(new URL('../staging/components.html', import.meta.url), new URL('components.html', dist)),
   cp(new URL('../staging/examples.html', import.meta.url), new URL('examples.html', dist)),
-  cp(new URL('../staging/support.html', import.meta.url), new URL('support.html', dist)),
+  writeFile(new URL('support.html', dist), supportHtml),
   cp(new URL('../staging/physical-checklist.html', import.meta.url), new URL('physical-checklist.html', dist)),
   writeFile(new URL('release-changes.json', dist), releaseChangesText),
+  writeFile(new URL('offline-support-matrix.json', dist), offlineSupportMatrixText),
   build({ entryPoints: [new URL('../staging/main.mjs', import.meta.url).pathname], outfile: new URL('main.js', dist).pathname, bundle: true, format: 'esm', platform: 'browser', minifyWhitespace: true, legalComments: 'eof' }),
   build({ entryPoints: [new URL('../staging/physical-checklist-page.mjs', import.meta.url).pathname], outfile: new URL('physical-checklist.js', dist).pathname, bundle: true, format: 'esm', platform: 'browser', minifyWhitespace: true, legalComments: 'eof' }),
   build({ entryPoints: [new URL('../src/simulator.worker.mjs', import.meta.url).pathname], outfile: new URL('simulator.worker.js', dist).pathname, bundle: true, format: 'esm', platform: 'browser', minifyWhitespace: true, legalComments: 'eof' }),

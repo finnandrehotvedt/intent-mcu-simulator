@@ -8,6 +8,8 @@ Licence: Apache-2.0 for project-owned source; third-party components keep their 
 Current public version: 1.1.0-rc.81
 Machine-readable release changes: /release-changes.json (strict static
 intent-mcu-release-changes@1 metadata; no Apply, Build, Run, replay or verdict authority).
+Offline support matrix: /offline-support-matrix.json (strict static
+intent-mcu-offline-support-matrix@1 facts; loaded-tab local files do not add a service worker, offline compiler or Run authority).
 Manual physical verification checklist: /physical-checklist.html (23 finite
 profile-owned items; current-tab records are unverified user statements, not
 device measurements, automatic verdicts, safety evidence or certification).

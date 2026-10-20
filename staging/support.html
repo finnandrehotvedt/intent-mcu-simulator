@@ -10,6 +10,7 @@
   <link rel="canonical" href="https://lab.teachthecompany.com/support.html">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
+  <link rel="alternate" href="/offline-support-matrix.json" type="application/json" title="Offline support matrix">
 </head>
 <body>
   <main class="docs-main">
@@ -40,6 +41,11 @@
       <article class="docs-card"><h2>Can it upload to a physical board?</h2><p>No. This release runs tested educational AVR, Pico, ESP32-C3, and STM32F429ZI subsets in virtual hardware. It does not access USB or Serial devices and is not electrical-safety certification. The separate <a href="/physical-checklist.html">physical verification checklist</a> is an inert current-tab manual record: it does not read a device, validate a measurement or decide pass, safety, compliance or certification.</p></article>
       <article class="docs-card"><h2>What does STM32 support?</h2><p>One bounded STM32F429ZI C11 grammar compiles in the fixed ARM toolchain and executes in actual Renode 1.17.0. Only PB0 output, USART3 uppercase text, strict ELF admission and reset replay are claimed. The named PB0/resistor/LED/GND teaching path is editable and validated, but remains an ideal circuit rather than physical or analogue equivalence.</p></article>
       <article class="docs-card"><h2>Where can I report a problem?</h2><p>Use the public repository issue templates for ordinary bugs. For a suspected vulnerability, follow the repository's private security-reporting instructions.</p><nav class="docs-nav"><a href="https://github.com/finnandrehotvedt/intent-mcu-simulator/issues">Report a bug</a><a href="https://github.com/finnandrehotvedt/intent-mcu-simulator/security/policy">Security policy</a></nav></article>
+    </section>
+    <section class="panel offline-support" id="offline-support" aria-labelledby="offline-support-title">
+      <p class="eyebrow">X86 · CURRENT NETWORK BOUNDARY</p>
+      <h2 id="offline-support-title">What works after the network disconnects?</h2>
+      <!-- X86_OFFLINE_SUPPORT_MATRIX -->
     </section>
     <section class="panel"><h2>Honest experiment outcomes</h2><p class="docs-intro">The supported thermostat experiment keeps academic outcome separate from job execution. Passed and failed require complete producer evidence; missing, dropped or out-of-window evidence is indeterminate, and unavailable experiment support is unsupported. A cancelled, timed-out or infrastructure-failed job can never become an academic pass or failed assertion. Actual observation time and source/artifact identity remain attached to completed evidence.</p></section>
     <section class="panel"><h2>Compare two retained experiment packages</h2><p class="docs-intro">The local Compare experiment packages disclosure accepts one canonical strict-v3 Before file and one After file. It reparses both original files, requires matching profile, experiment, requirements, scenarios, model/tool context and complete evidence-row identities, then shows only literal identity, source, authored-circuit and retained measured-result differences. Files stay in the current tab and are not uploaded or saved by the Lab. Replacing, cancelling or clearing either file removes the accepted view. Comparison cannot Build, Run, replay firmware, apply a project, infer a cause, choose a winner or create a new verdict.</p></section>
