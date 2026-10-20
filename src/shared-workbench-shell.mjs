@@ -22,6 +22,14 @@ import {
   projectX43AvrObservationStatus,
   x43VirtualNanosecondsText,
 } from './x43-avr-observation-profile.mjs';
+import {
+  canonicalX47PulseText,
+  createX47PulseContext,
+  createX47PulsePreviewOwner,
+  createX47PulseRecord,
+  expandX47PulseRecord,
+  inspectX47AvrD2Target,
+} from './x47-avr-d2-pulse.mjs';
 
 export const SHARED_WORKBENCH_SCHEMA = 'intent-mcu-shared-workbench@1';
 export const SHARED_WORKBENCH_SURFACES = Object.freeze([
@@ -716,6 +724,158 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
   return api;
 }
 
+function createX47Panel(document, ordinal) {
+  const panel = document.createElement('section');
+  panel.className = 'x47-pulse-preview';
+  panel.dataset.x47PulsePreview = '';
+  panel.setAttribute('aria-labelledby', `x47-pulse-title-${ordinal}`);
+  panel.innerHTML = `
+    <div class="shared-instrument-tool-heading">
+      <strong id="x47-pulse-title-${ordinal}">D2 active-low pulse</strong>
+      <span data-x47-state>Checking</span>
+    </div>
+    <p class="x47-pulse-boundary"><strong>Preview only</strong> · transient · not saved · creates no worker. Apply, Build and Run are unavailable in this private slice.</p>
+    <div class="x47-pulse-controls">
+      <label>Start offset <span><input data-x47-start type="number" inputmode="numeric" min="1" max="1599999" step="1" value="16000"> cycles</span></label>
+      <label>Pulse width <span><input data-x47-width type="number" inputmode="numeric" min="1" max="1599999" step="1" value="32000"> cycles</span></label>
+      <button type="button" data-x47-preview disabled>Create preview</button>
+    </div>
+    <p data-x47-binding>Checking the current AVR graph.</p>
+    <div class="x47-pulse-output" data-x47-output hidden>
+      <ol data-x47-events aria-label="Expanded D2 events"></ol>
+      <details><summary>Canonical transient record</summary><pre data-x47-canonical></pre></details>
+    </div>
+    <p class="x47-pulse-gap">Apply is intentionally absent: the current sequence API does not yet prove full graph/revision/runtime binding and reset/cancel semantics.</p>`;
+  return panel;
+}
+
+function installX47PulsePreview(document, activeProfileReader) {
+  const panels = [...document.querySelectorAll('[data-shared-instrument-tools]')].map((tools, index) => {
+    const panel = createX47Panel(document, index + 1);
+    tools.append(panel);
+    return panel;
+  });
+  const owner = createX47PulsePreviewOwner();
+  let operation = 0;
+  let lastContext = null;
+
+  const state = () => document.defaultView?.__M6_STATE__ ?? null;
+  const context = async () => {
+    const current = state();
+    return createX47PulseContext(activeProfileReader(), current?.revision, current?.graph);
+  };
+  const paintSnapshot = (snapshot, availability = null) => {
+    for (const panel of panels) {
+      const status = panel.querySelector('[data-x47-state]');
+      const preview = panel.querySelector('[data-x47-preview]');
+      const output = panel.querySelector('[data-x47-output]');
+      panel.dataset.state = snapshot.state;
+      status.textContent = snapshot.state === 'preview' ? 'Preview ready'
+        : snapshot.state === 'invalidated' ? 'Cleared' : availability ? 'Ready' : 'Unavailable';
+      preview.disabled = !availability;
+      panel.querySelector('[data-x47-binding]').textContent = availability
+        ? `Current ${availability.target.componentId}: ${availability.target.inputEndpoint} → ${availability.target.contactEndpoint}, ${availability.target.groundContactEndpoint} → ${availability.target.groundEndpoint} · revision ${availability.sourceProjectRevision} · graph ${availability.graphIdentity.slice(0, 19)}…`
+        : snapshot.reason ?? 'Requires one validated AVR button wired from D2 to ground.';
+      output.hidden = snapshot.state !== 'preview';
+      const rows = snapshot.events.map((event) => {
+        const item = document.createElement('li');
+        item.textContent = `${event.offsetCycles.toLocaleString('en-US')} cycles · ${event.pin} ${event.level ? 'HIGH' : 'LOW'}`;
+        return item;
+      });
+      panel.querySelector('[data-x47-events]').replaceChildren(...rows);
+      panel.querySelector('[data-x47-canonical]').textContent = snapshot.canonicalText ?? '';
+    }
+  };
+  const refresh = async () => {
+    const ticket = ++operation;
+    try {
+      const nextContext = await context();
+      if (ticket !== operation) return owner.snapshot();
+      lastContext = nextContext;
+      const snapshot = owner.revalidate(nextContext);
+      paintSnapshot(snapshot, nextContext);
+      return snapshot;
+    } catch (error) {
+      if (ticket !== operation) return owner.snapshot();
+      lastContext = null;
+      const snapshot = owner.invalidate(error.code ?? 'X47_UNAVAILABLE');
+      paintSnapshot(snapshot, null);
+      return snapshot;
+    }
+  };
+  const invalidate = (reason) => {
+    operation += 1;
+    lastContext = null;
+    const snapshot = owner.invalidate(reason);
+    paintSnapshot(snapshot, null);
+    return snapshot;
+  };
+  for (const panel of panels) {
+    for (const input of panel.querySelectorAll('[data-x47-start],[data-x47-width]')) {
+      input.addEventListener('input', () => {
+        if (owner.snapshot().state === 'preview') invalidate('X47_DRAFT_CHANGED');
+        void refresh();
+      });
+    }
+    panel.querySelector('[data-x47-preview]').addEventListener('click', async () => {
+      const ticket = ++operation;
+      try {
+        const authoredContext = await context();
+        if (ticket !== operation) return;
+        const startOffsetCycles = Number(panel.querySelector('[data-x47-start]').value);
+        const widthCycles = Number(panel.querySelector('[data-x47-width]').value);
+        const record = createX47PulseRecord({ startOffsetCycles, widthCycles }, authoredContext);
+        const currentContext = await context();
+        if (ticket !== operation) return;
+        const snapshot = owner.accept(record, currentContext);
+        lastContext = currentContext;
+        paintSnapshot(snapshot, currentContext);
+      } catch (error) {
+        if (ticket !== operation) return;
+        const snapshot = owner.invalidate(error.code ?? 'X47_PREVIEW_REJECTED');
+        paintSnapshot(snapshot, lastContext);
+      }
+    });
+  }
+  const invalidationEvents = new Map([
+    ['build', 'X47_BUILD_STARTED'], ['run', 'X47_RUN_STARTED'], ['reset', 'X47_RESET'],
+    ['stop', 'X47_RUNTIME_RETIRED'], ['project-new', 'X47_NEW_PROJECT'],
+    ['project-demo', 'X47_EXAMPLE_OPENED'], ['project-open', 'X47_OPEN_STARTED'],
+  ]);
+  document.addEventListener('input', (event) => {
+    if (event.target?.id === 'source') invalidate('X47_SOURCE_EDITED');
+  }, true);
+  document.addEventListener('change', (event) => {
+    if (event.target?.id === 'board-select') invalidate('X47_PROFILE_CHANGED');
+    else if (event.target?.id === 'project-open-input') invalidate('X47_PROJECT_OPENED');
+  }, true);
+  document.addEventListener('click', (event) => {
+    const reason = invalidationEvents.get(event.target?.id);
+    if (reason) invalidate(reason);
+    else if (!event.target?.closest?.('[data-x47-pulse-preview]') && owner.snapshot().state === 'preview') {
+      document.defaultView?.queueMicrotask(() => { void refresh(); });
+    }
+  }, true);
+  const api = Object.freeze({
+    refresh,
+    invalidate,
+    snapshot: owner.snapshot,
+    canonicalText: () => {
+      const snapshot = owner.snapshot();
+      return snapshot.record ? canonicalX47PulseText(snapshot.record, lastContext) : null;
+    },
+    expandedEvents: () => {
+      const snapshot = owner.snapshot();
+      return snapshot.record ? expandX47PulseRecord(snapshot.record, lastContext) : [];
+    },
+    inspectTarget: () => inspectX47AvrD2Target(state()?.graph),
+  });
+  document.defaultView.__X47_PULSE_PREVIEW__ = api;
+  paintSnapshot(owner.snapshot(), null);
+  void refresh();
+  return api;
+}
+
 export function mountSharedWorkbenchShell(document) {
   const legacy = mountLegacySharedWorkbenchShell(document);
   const adapterMap = new Map(sharedWorkbenchAdapters().map((adapter) => [adapter.profile, adapter]));
@@ -825,6 +985,7 @@ export function mountSharedWorkbenchShell(document) {
   let viewMode = 'advanced';
   const x42 = installX42TriggerCapture(document, () => activeProfile);
   const x43 = installX43AvrObservationProfile(document, () => activeProfile);
+  const x47 = installX47PulsePreview(document, () => activeProfile);
 
   const viewButtons = Object.freeze({
     simple: document.querySelector('#workbench-view-simple'),
@@ -875,7 +1036,7 @@ export function mountSharedWorkbenchShell(document) {
     returnFocus = requestedOpener ?? document.activeElement ?? popup.opener;
     popup.opener.setAttribute('aria-expanded', 'true');
     popup.dialog.showModal();
-    if (name === 'instruments') { x42.refresh(); x43.refresh(); }
+    if (name === 'instruments') { x42.refresh(); x43.refresh(); void x47.refresh(); }
     if (initialFocus) {
       const heading = popup.dialog.querySelector('h2');
       queueMicrotask(() => (heading ?? popupFocusable(popup.dialog)[0])?.focus({ preventScroll: true }));
@@ -979,6 +1140,7 @@ export function mountSharedWorkbenchShell(document) {
       if (profile !== activeProfile) {
         x42.invalidate('X42_PROFILE_CHANGED');
         x43.invalidate('X43_PROFILE_CHANGED');
+        x47.invalidate('X47_PROFILE_CHANGED');
       }
       closePopup();
       if (activeCanvas) parking.append(activeCanvas);

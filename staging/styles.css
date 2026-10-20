@@ -1247,9 +1247,29 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .x43-profile-facts dt, .x43-profile-unsupported dt { color: #b9ceda; font: 750 .75rem/1.4 ui-monospace, monospace; text-transform: uppercase; }
 .x43-profile-facts dd, .x43-profile-unsupported dd { margin-top: 4px; color: var(--text); text-align: left; font: .76rem/1.5 ui-monospace, monospace; overflow-wrap: anywhere; }
 .x43-profile-unsupported dd[data-status="unavailable"] { color: #d7c38f; }
+.x47-pulse-preview { grid-column: 1 / -1; border-color: #4d6f42 !important; background: linear-gradient(135deg, #06120f, #0b201b) !important; }
+.x47-pulse-preview[data-state="preview"] { border-color: var(--lime) !important; }
+.x47-pulse-preview[data-state="invalidated"] { border-color: #98637a !important; }
+.x47-pulse-preview .shared-instrument-tool-heading { align-items: center; font: 800 .78rem/1.4 ui-monospace, monospace; }
+.x47-pulse-preview .shared-instrument-tool-heading span { padding: 4px 8px; border: 1px solid currentColor; border-radius: 999px; }
+.x47-pulse-boundary, .x47-pulse-gap, .x47-pulse-preview [data-x47-binding] { margin: 8px 0; color: #b9ceda; font: .76rem/1.55 ui-monospace, monospace; overflow-wrap: anywhere; }
+.x47-pulse-boundary strong { color: var(--lime); text-transform: uppercase; }
+.x47-pulse-gap { color: #d7c38f; }
+.x47-pulse-controls { display: grid; grid-template-columns: minmax(190px, 1fr) minmax(190px, 1fr) minmax(150px, .65fr); gap: 8px; align-items: end; }
+.x47-pulse-controls label { display: grid; gap: 5px; color: #b9ceda; font: 700 .75rem/1.4 ui-monospace, monospace; text-transform: uppercase; }
+.x47-pulse-controls label span { display: flex; align-items: center; gap: 7px; text-transform: none; }
+.x47-pulse-controls input { width: 100%; min-width: 0; min-height: 38px; }
+.x47-pulse-controls button { min-height: 38px; color: #07121d; border-color: var(--lime); background: var(--lime); font: 850 .76rem/1.35 ui-monospace, monospace; }
+.x47-pulse-controls button:disabled { color: var(--muted); border-color: var(--line); background: #0b1b29; }
+.x47-pulse-output { display: grid; grid-template-columns: minmax(220px, .6fr) minmax(300px, 1.4fr); gap: 8px; margin-top: 10px; }
+.x47-pulse-output ol, .x47-pulse-output details { min-width: 0; margin: 0; padding: 10px 10px 10px 34px; border: 1px solid #315d4b; border-radius: 8px; background: #020b08; color: #c6fbd4; font: .76rem/1.55 ui-monospace, monospace; }
+.x47-pulse-output details { padding: 10px; }
+.x47-pulse-output summary { cursor: pointer; color: var(--cyan); font-weight: 800; }
+.x47-pulse-output pre { max-height: 180px; overflow: auto; margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #c6fbd4; font: inherit; }
 @media (max-width: 760px) {
   .shared-instrument-tools, .failure-replay-results { grid-template-columns: 1fr; }
-  .x42-trigger-controls, .x42-trigger-facts, .x43-profile-facts, .x43-profile-unsupported { grid-template-columns: 1fr; }
+  .x42-trigger-controls, .x42-trigger-facts, .x43-profile-facts, .x43-profile-unsupported,
+  .x47-pulse-controls, .x47-pulse-output { grid-template-columns: 1fr; }
 }
 .control-runtime-evidence { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
 .control-runtime-evidence summary { cursor: pointer; color: var(--cyan); font: 800 .72rem ui-monospace, monospace; }
