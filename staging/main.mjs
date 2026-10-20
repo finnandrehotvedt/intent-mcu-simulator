@@ -56,7 +56,7 @@ import {
   MODEL_RUNTIME_BINDING_SCHEMA, RUNTIME_BINDING_SCHEMA, validateWorkerRuntimeIdentity,
 } from '../src/runtime-identity.mjs';
 import {
-  X47_RUNTIME_AUTHORITY_SCHEMA,
+  X47_RUNTIME_AUTHORITY_SCHEMA, validateX47CancelReceipt,
 } from '../src/x47-runtime-transaction.mjs';
 import { createX47UiOwner } from '../src/x47-ui-integration.mjs';
 import {
@@ -657,6 +657,13 @@ let x47WorkerIdentity = null;
 let x47ExplicitPauseRequested = false;
 let x47StopTimer = null;
 let x47TerminalProjection = null;
+let x47AsyncEpoch = 0;
+let x47LoadTicket = 0;
+let x47PauseTicket = 0;
+let x47ApplyTicket = 0;
+let x47ResetExpectation = null;
+let x47WorkerStatus = null;
+let x47WorkerStatusSequence = 0;
 const accessibleConnectionNotices = new Map();
 
 function renderX47Integration(snapshot = x47TerminalProjection ?? x47UiOwner.snapshot()) {
@@ -666,6 +673,13 @@ function renderX47Integration(snapshot = x47TerminalProjection ?? x47UiOwner.sna
 }
 
 function retireX47Integration(reason, { preserveTerminal = false } = {}) {
+  x47AsyncEpoch += 1;
+  x47LoadTicket += 1;
+  x47PauseTicket += 1;
+  x47ApplyTicket += 1;
+  x47ResetExpectation = null;
+  x47WorkerStatus = null;
+  x47WorkerStatusSequence += 1;
   if (x47StopTimer !== null) clearTimeout(x47StopTimer);
   x47StopTimer = null;
   x47RuntimeAuthority = null;
@@ -679,52 +693,92 @@ function retireX47Integration(reason, { preserveTerminal = false } = {}) {
   }
 }
 
-async function x47AuthorityForRuntime(runtimeBinding, modelImplementationSha256,
-  modelExecutionContextSha256) {
-  if (selectedCompilerProfile !== AVR_PROFILE || !lifecycle.artifact
-      || lifecycle.artifact.artifactIdentity !== runtimeBinding.artifactIdentity
-      || modelLibraryLockFor(AVR_PROFILE).manifestSha256 !== CURRENT_MODEL_LIBRARY_LOCK.manifestSha256) return null;
+function x47LoadStillCurrent(frozen) {
+  return frozen.loadTicket === x47LoadTicket && frozen.asyncEpoch === x47AsyncEpoch
+    && frozen.workerToken === workerToken && selectedCompilerProfile === frozen.profile
+    && lifecycle.projectGeneration === frozen.runtimeBinding.projectGeneration
+    && lifecycle.runtimeGeneration === frozen.runtimeBinding.runtimeGeneration
+    && lifecycle.artifact?.artifactIdentity === frozen.runtimeBinding.artifactIdentity
+    && lifecycle.artifact?.buildGeneration === frozen.buildGeneration
+    && editor.revision === frozen.sourceProjectRevision
+    && modelLibraryLockFor(frozen.profile).manifestSha256 === frozen.modelLibraryLock.manifestSha256
+    && JSON.stringify(currentProject().source.files) === frozen.sourceFilesJson
+    && JSON.stringify(currentProject().circuit) === frozen.circuitJson;
+}
+
+async function x47AuthorityForRuntime(frozen) {
+  if (frozen.profile !== AVR_PROFILE
+      || frozen.modelLibraryLock.manifestSha256 !== CURRENT_MODEL_LIBRARY_LOCK.manifestSha256) return null;
   try {
-    const source = captureX47PulseSource(AVR_PROFILE, lifecycle.projectGeneration,
-      editor.revision, currentProject().circuit);
+    const source = captureX47PulseSource(AVR_PROFILE, frozen.runtimeBinding.projectGeneration,
+      frozen.sourceProjectRevision, frozen.circuit);
     const context = await createX47PulseContextFromSource(source);
-    const sourceFiles = [...currentProject().source.files]
-      .map((file) => ({ name: file.name, content: file.content }))
-      .sort((left, right) => left.name.localeCompare(right.name));
+    if (!x47LoadStillCurrent(frozen)) throw new Error('X47_LOAD_EPOCH_STALE');
+    const sourceSha256 = await projectTextSha256(frozen.canonicalSourceFiles);
+    if (!x47LoadStillCurrent(frozen)) throw new Error('X47_LOAD_EPOCH_STALE');
     return {
       schema: X47_RUNTIME_AUTHORITY_SCHEMA,
       profile: AVR_PROFILE,
-      projectGeneration: lifecycle.projectGeneration,
-      buildGeneration: lifecycle.artifact.buildGeneration,
-      sourceProjectRevision: editor.revision,
-      sourceSha256: await projectTextSha256(JSON.stringify(sourceFiles)),
+      projectGeneration: frozen.runtimeBinding.projectGeneration,
+      buildGeneration: frozen.buildGeneration,
+      sourceProjectRevision: frozen.sourceProjectRevision,
+      sourceSha256,
       graphIdentity: context.graphIdentity,
-      inputIdentitySha256: lifecycle.artifact.inputIdentity,
-      artifactIdentity: lifecycle.artifact.artifactIdentity,
-      runtimeGeneration: runtimeBinding.runtimeGeneration,
-      modelImplementationSha256,
-      modelExecutionContextSha256,
+      inputIdentitySha256: frozen.inputIdentitySha256,
+      artifactIdentity: frozen.runtimeBinding.artifactIdentity,
+      runtimeGeneration: frozen.runtimeBinding.runtimeGeneration,
+      modelImplementationSha256: frozen.modelImplementationSha256,
+      modelExecutionContextSha256: frozen.modelExecutionContextSha256,
     };
-  } catch { return null; }
+  } catch (error) {
+    if (error.message === 'X47_LOAD_EPOCH_STALE') throw error;
+    if (!x47LoadStillCurrent(frozen)) throw new Error('X47_LOAD_EPOCH_STALE');
+    return null;
+  }
 }
 
-async function bindPausedX47Preview(token, identity, cycle) {
-  const api = window.__X47_PULSE_PREVIEW__;
+function frozenX47Preview(api) {
   const canonicalText = api?.canonicalText?.();
   const context = api?.bindingContext?.();
   const events = api?.expandedEvents?.();
-  if (!x47RuntimeAuthority || !canonicalText || !context || !Array.isArray(events)
-      || context.graphIdentity !== x47RuntimeAuthority.graphIdentity
-      || context.sourceProjectRevision !== x47RuntimeAuthority.sourceProjectRevision) {
+  return { canonicalText, context, events };
+}
+
+function sameX47Preview(left, right) {
+  return left.canonicalText === right.canonicalText
+    && sameRuntimeIdentity(left.context, right.context)
+    && sameRuntimeIdentity(left.events, right.events);
+}
+
+async function bindPausedX47Preview(token, identity, cycle, expectedWorker = worker) {
+  const api = window.__X47_PULSE_PREVIEW__;
+  const frozen = frozenX47Preview(api);
+  const owner = x47UiOwner.snapshot();
+  const authority = structuredClone(x47RuntimeAuthority);
+  const asyncEpoch = x47AsyncEpoch;
+  const pauseTicket = ++x47PauseTicket;
+  const status = x47WorkerStatus;
+  if (!authority || !frozen.canonicalText || !frozen.context || !Array.isArray(frozen.events)
+      || !status || status.workerToken !== token || status.cycle !== cycle || status.paused !== true
+      || status.kind !== 'paused' || status.worker !== expectedWorker
+      || frozen.context.graphIdentity !== authority.graphIdentity
+      || frozen.context.sourceProjectRevision !== authority.sourceProjectRevision) {
     renderX47Integration({ ...x47UiOwner.snapshot(), reason: 'Create a current D2 preview while explicitly paused.' });
     return false;
   }
   const preview = {
-    canonicalPulseSha256: await projectTextSha256(canonicalText),
-    events: events.map((event) => ({ pin: 2, offsetCycles: event.offsetCycles, level: event.level })),
+    canonicalPulseSha256: await projectTextSha256(frozen.canonicalText),
+    events: frozen.events.map((event) => ({ pin: 2, offsetCycles: event.offsetCycles, level: event.level })),
   };
-  if (token !== workerToken || !x47WorkerIdentity || !sameRuntimeIdentity(identity, x47WorkerIdentity)
-      || lifecycle.phase !== 'paused') return false;
+  const live = frozenX47Preview(api);
+  if (pauseTicket !== x47PauseTicket || asyncEpoch !== x47AsyncEpoch
+      || token !== workerToken || expectedWorker !== worker || !x47WorkerIdentity
+      || !sameRuntimeIdentity(identity, x47WorkerIdentity) || lifecycle.phase !== 'paused'
+      || status !== x47WorkerStatus
+      || x47UiOwner.snapshot().phase !== 'await-pause'
+      || !sameRuntimeIdentity(owner, x47UiOwner.snapshot()) || !sameX47Preview(frozen, live)
+      || frozen.context.graphIdentity !== x47RuntimeAuthority?.graphIdentity
+      || frozen.context.sourceProjectRevision !== x47RuntimeAuthority?.sourceProjectRevision) return false;
   renderX47Integration(x47UiOwner.noteExplicitPause({ workerToken: token,
     runtimeIdentity: identity, cycle, preview }));
   return true;
@@ -11003,21 +11057,61 @@ async function loadArtifact(hex, artifactIdentity, {
     modelImplementationSha256,
     modelExecutionContextSha256,
   };
-  x47RuntimeAuthority = await x47AuthorityForRuntime(runtimeBinding,
-    modelImplementationSha256, modelExecutionContextSha256);
-  let workerInstanceNonce = null;
+  const runtimeProject = structuredClone(currentRuntimeProject());
+  const project = structuredClone(currentProject());
+  const modelLibraryLock = structuredClone(modelLibraryLockFor(AVR_PROFILE));
   const token = ++workerToken;
+  const frozen = {
+    loadTicket: ++x47LoadTicket,
+    asyncEpoch: ++x47AsyncEpoch,
+    workerToken: token,
+    profile: selectedCompilerProfile,
+    runtimeBinding: structuredClone(runtimeBinding),
+    buildGeneration: lifecycle.artifact?.buildGeneration,
+    inputIdentitySha256: lifecycle.artifact?.inputIdentity,
+    sourceProjectRevision: editor.revision,
+    sourceFilesJson: JSON.stringify(project.source.files),
+    canonicalSourceFiles: JSON.stringify([...project.source.files]
+      .map((file) => ({ name: file.name, content: file.content }))
+      .sort((left, right) => left.name.localeCompare(right.name))),
+    circuit: structuredClone(project.circuit),
+    circuitJson: JSON.stringify(project.circuit),
+    runtimeCircuit: structuredClone(runtimeProject.circuit),
+    modelLibraryLock,
+    modelImplementationSha256,
+    modelExecutionContextSha256,
+    digitalInputs: structuredClone(currentCandidateInputs()),
+    instruments: {
+      logicChannels: [...project.instruments.logicChannels],
+      selectedPin: project.instruments.selectedPin,
+      serialHistoryLimit: project.instruments.serial.historyLimit,
+    },
+    x34Probe: x34Probe ? structuredClone(x34Probe) : null,
+  };
+  let authority;
+  try { authority = await x47AuthorityForRuntime(frozen); }
+  catch (error) { if (error.message === 'X47_LOAD_EPOCH_STALE') return; throw error; }
+  if (!x47LoadStillCurrent(frozen)) return;
+  x47RuntimeAuthority = authority;
+  let workerInstanceNonce = null;
   runtimeWorkerCreations += 1;
   publish({ runtimeWorkerCreations });
-  worker = new Worker('./simulator.worker.js', { type: 'module' });
-  worker.addEventListener('message', async ({ data }) => {
-    if (token !== workerToken) return;
+  const loadWorker = new Worker('./simulator.worker.js', { type: 'module' });
+  if (!x47LoadStillCurrent(frozen)) { loadWorker.terminate(); return; }
+  worker = loadWorker;
+  const ownsWorker = () => token === workerToken && worker === loadWorker;
+  const terminateOwnedWorker = () => {
+    loadWorker.terminate();
+    if (worker === loadWorker) worker = null;
+  };
+  loadWorker.addEventListener('message', async ({ data }) => {
+    if (!ownsWorker()) return;
     let identity;
     try {
       identity = validateWorkerRuntimeIdentity(data.runtimeIdentity, workerRuntimeBinding, workerInstanceNonce);
       workerInstanceNonce ??= identity.workerInstanceNonce;
     } catch (error) {
-      worker?.terminate(); worker = null; running = false;
+      terminateOwnedWorker(); running = false;
       showActionableError(elements.projectmessage, error.code ?? 'RUNTIME_WORKER_IDENTITY_STALE',
         'A stale or unbound runtime message was rejected. Build and run again.');
       return;
@@ -11029,6 +11123,22 @@ async function loadArtifact(hex, artifactIdentity, {
         return;
       }
       if (data.kind === 'x47-cancelled') {
+        if (data.reason === 'RESET') {
+          const expected = x47ResetExpectation;
+          if (!expected || expected.worker !== loadWorker || expected.workerToken !== token
+              || data.disposeToken !== undefined || data.receipts?.length !== 1
+              || !sameRuntimeIdentity(identity, expected.runtimeIdentity)) {
+            throw new Error('X47_UI_RESET_ACK_INVALID');
+          }
+          const receipt = validateX47CancelReceipt(data.receipts[0], expected);
+          if (receipt.reason !== 'RESET') throw new Error('X47_UI_RESET_ACK_INVALID');
+          x47ResetExpectation = null;
+          renderX47Integration({ ...x47UiOwner.snapshot(),
+            reason: receipt.evidenceComplete
+              ? 'Reset cancellation acknowledged with complete evidence.'
+              : 'Reset cancellation acknowledged; evidence remains incomplete.' });
+          return;
+        }
         if (!data.disposeToken || data.receipts?.length !== 1) throw new Error('X47_UI_CANCEL_ACK_INVALID');
         renderX47Integration(x47UiOwner.acceptCancellation({ workerToken: token,
           runtimeIdentity: identity, disposeToken: data.disposeToken, receipt: data.receipts[0] }));
@@ -11046,7 +11156,7 @@ async function loadArtifact(hex, artifactIdentity, {
       }
     } catch (error) {
       retireX47Integration(error.code ?? error.message ?? 'X47_UI_MESSAGE_REJECTED');
-      worker?.terminate(); worker = null; running = false;
+      terminateOwnedWorker(); running = false;
       showActionableError(elements.projectmessage, error.code ?? 'X47_UI_MESSAGE_REJECTED', error.message);
       return;
     }
@@ -11056,11 +11166,14 @@ async function loadArtifact(hex, artifactIdentity, {
       clearX40SharedTimeline('A later worker message invalidated the prior shared timeline.');
     }
     lastWorkerMessage = performance.now(); running = data.paused === false && data.kind !== 'error';
+    x47WorkerStatus = { worker: loadWorker, workerToken: token,
+      runtimeIdentity: structuredClone(identity), cycle: data.cycle, paused: data.paused,
+      kind: data.kind, sequence: ++x47WorkerStatusSequence };
     if (data.kind === 'ready') {
       setRuntimeEnabled(true);
-      if (x47RuntimeAuthority) {
+      if (authority) {
         x47WorkerIdentity = structuredClone(identity);
-        renderX47Integration(x47UiOwner.bind({ authority: x47RuntimeAuthority,
+        renderX47Integration(x47UiOwner.bind({ authority,
           runtimeIdentity: identity, workerToken: token }));
       }
     }
@@ -11078,12 +11191,13 @@ async function loadArtifact(hex, artifactIdentity, {
     if (x47ExplicitPauseRequested && data.paused === true && data.kind === 'paused'
         && x47UiOwner.snapshot().phase === 'await-pause') {
       x47ExplicitPauseRequested = false;
-      await bindPausedX47Preview(token, identity, data.cycle);
+      await bindPausedX47Preview(token, identity, data.cycle, loadWorker);
     }
+    if (!ownsWorker()) return;
     scheduleWorkerRuntimeRender(data);
   });
-  worker.addEventListener('error', (event) => {
-    if (token !== workerToken) return;
+  loadWorker.addEventListener('error', (event) => {
+    if (!ownsWorker()) return;
     running = false; const state = { kind: 'stopped-error', message: event.message };
     applyLifecycle({ type: 'runtime.message', binding: runtimeBinding, message: state });
     publish({ runtime: state });
@@ -11092,19 +11206,20 @@ async function loadArtifact(hex, artifactIdentity, {
     elements.workerstate.textContent = 'Stopped — rebuild the current project';
   });
   elements.artifact.textContent = artifactIdentity.slice(0, 12);
-  worker.postMessage({
-    command: 'init', hex, circuit: structuredClone(currentRuntimeProject().circuit),
-    modelLibraryLock: modelLibraryLockFor(AVR_PROFILE),
+  if (!ownsWorker()) { terminateOwnedWorker(); return; }
+  loadWorker.postMessage({
+    command: 'init', hex, circuit: frozen.runtimeCircuit,
+    modelLibraryLock: frozen.modelLibraryLock,
     modelImplementationSha256,
     modelExecutionContextSha256,
     runtimeBinding: workerRuntimeBinding,
-    ...(x47RuntimeAuthority ? { x47RuntimeAuthority: structuredClone(x47RuntimeAuthority) } : {}),
-    ...(x34Probe ? { x34Probe: structuredClone(x34Probe) } : {}),
-    digitalInputs: currentCandidateInputs(),
+    ...(authority ? { x47RuntimeAuthority: structuredClone(authority) } : {}),
+    ...(frozen.x34Probe ? { x34Probe: frozen.x34Probe } : {}),
+    digitalInputs: frozen.digitalInputs,
     instruments: {
-      logicChannels: [...currentProject().instruments.logicChannels],
-      selectedPin: currentProject().instruments.selectedPin,
-      serialHistoryLimit: currentProject().instruments.serial.historyLimit,
+      logicChannels: frozen.instruments.logicChannels,
+      selectedPin: frozen.instruments.selectedPin,
+      serialHistoryLimit: frozen.instruments.serialHistoryLimit,
     },
   });
 }
@@ -11393,7 +11508,17 @@ elements.pause.addEventListener('click', () => {
 });
 elements.step.addEventListener('click', () => worker?.postMessage({ command: 'step' }));
 elements.reset.addEventListener('click', () => {
+  const resetWorker = worker;
+  const resetIdentity = structuredClone(x47WorkerIdentity);
+  const resetOwner = x47UiOwner.snapshot();
+  const resetExpectation = resetWorker && resetIdentity && resetOwner.authority
+      && resetOwner.request && resetOwner.queueReceipt
+    ? { worker: resetWorker, workerToken, runtimeIdentity: resetIdentity,
+      authority: resetOwner.authority, request: resetOwner.request,
+      queueReceipt: resetOwner.queueReceipt }
+    : null;
   retireX47Integration('X47_RESET');
+  x47ResetExpectation = resetExpectation;
   authoredScenarioResults = [];
   clearX40SharedTimeline('Reset invalidated the prior shared timeline.');
   invalidateVersionRegressionReport('Reset cleared active comparison review authority.');
@@ -11405,44 +11530,68 @@ elements.reset.addEventListener('click', () => {
   invalidatePrecisionCheckReport('Reset cleared the prior X34 report. Run the instrumented check again for current evidence.');
   invalidateCausalChainReport('Reset cleared the prior X35 report. Run the causal check again for current evidence.');
   clearX39FailureLocator();
-  if (!worker) return;
+  if (!resetWorker || resetWorker !== worker) return;
   renderInstrumentEvidence(null);
-  worker.postMessage({ command: 'reset' });
+  resetWorker.postMessage({ command: 'reset' });
   renderThermostatExperimentPanel();
 });
 
 document.addEventListener('x47-preview-ready', () => {
   if (lifecycle.phase === 'paused' && x47WorkerIdentity
-      && x47UiOwner.snapshot().phase === 'await-pause') {
-    void bindPausedX47Preview(workerToken, x47WorkerIdentity,
-      window.__M6_STATE__.runtime?.cycle ?? -1);
+      && x47UiOwner.snapshot().phase === 'await-pause' && x47WorkerStatus?.paused === true) {
+    void bindPausedX47Preview(workerToken, x47WorkerIdentity, x47WorkerStatus.cycle,
+      x47WorkerStatus.worker);
   }
 });
 
 document.addEventListener('x47-apply-request', async () => {
+  let applyTicket = null;
+  let asyncEpoch = null;
   try {
     const state = x47UiOwner.snapshot();
     const api = window.__X47_PULSE_PREVIEW__;
-    const canonicalText = api?.canonicalText?.();
-    const context = api?.bindingContext?.();
-    const events = api?.expandedEvents?.();
-    if (state.phase !== 'ready' || lifecycle.phase !== 'paused' || !worker || !canonicalText
-        || !context || context.graphIdentity !== x47RuntimeAuthority?.graphIdentity
-        || context.sourceProjectRevision !== x47RuntimeAuthority?.sourceProjectRevision) {
+    const frozen = frozenX47Preview(api);
+    const applyWorker = worker;
+    const applyWorkerToken = workerToken;
+    const applyIdentity = structuredClone(x47WorkerIdentity);
+    const authority = structuredClone(x47RuntimeAuthority);
+    const pausedStatus = x47WorkerStatus;
+    const pausedCycle = pausedStatus?.cycle;
+    applyTicket = ++x47ApplyTicket;
+    asyncEpoch = x47AsyncEpoch;
+    if (state.phase !== 'ready' || lifecycle.phase !== 'paused' || !applyWorker
+        || !applyIdentity || !authority || !frozen.canonicalText || !frozen.context
+        || !Array.isArray(frozen.events) || pausedStatus?.paused !== true
+        || pausedStatus.worker !== applyWorker || pausedStatus.workerToken !== applyWorkerToken
+        || pausedCycle !== state.pausedCycle
+        || frozen.context.graphIdentity !== authority.graphIdentity
+        || frozen.context.sourceProjectRevision !== authority.sourceProjectRevision) {
       throw Object.assign(new Error('X47_UI_APPLY_NOT_READY'), { code: 'X47_UI_APPLY_NOT_READY' });
     }
     const currentPreview = {
-      canonicalPulseSha256: await projectTextSha256(canonicalText),
-      events: events.map((event) => ({ pin: 2, offsetCycles: event.offsetCycles, level: event.level })),
+      canonicalPulseSha256: await projectTextSha256(frozen.canonicalText),
+      events: frozen.events.map((event) => ({ pin: 2, offsetCycles: event.offsetCycles, level: event.level })),
     };
-    if (!sameRuntimeIdentity(currentPreview, state.preview)) {
+    const live = frozenX47Preview(api);
+    if (applyTicket !== x47ApplyTicket || asyncEpoch !== x47AsyncEpoch
+        || applyWorkerToken !== workerToken || applyWorker !== worker
+        || lifecycle.phase !== 'paused' || pausedStatus !== x47WorkerStatus
+        || !sameRuntimeIdentity(applyIdentity, x47WorkerIdentity)
+        || !sameRuntimeIdentity(authority, x47RuntimeAuthority)
+        || !sameRuntimeIdentity(state, x47UiOwner.snapshot())
+        || !sameX47Preview(frozen, live)
+        || frozen.context.graphIdentity !== x47RuntimeAuthority?.graphIdentity
+        || frozen.context.sourceProjectRevision !== x47RuntimeAuthority?.sourceProjectRevision
+        || !sameRuntimeIdentity(currentPreview, state.preview)) {
       throw Object.assign(new Error('X47_UI_PREVIEW_STALE'), { code: 'X47_UI_PREVIEW_STALE' });
     }
     const request = x47UiOwner.beginApply(`x47-ui-${crypto.randomUUID()}`);
     renderX47Integration(x47UiOwner.snapshot());
-    worker.postMessage({ command: 'x47-apply', request });
+    applyWorker.postMessage({ command: 'x47-apply', request });
   } catch (error) {
-    renderX47Integration({ ...x47UiOwner.snapshot(), reason: error.code ?? error.message });
+    if (applyTicket === x47ApplyTicket && asyncEpoch === x47AsyncEpoch) {
+      renderX47Integration({ ...x47UiOwner.snapshot(), reason: error.code ?? error.message });
+    }
   }
 });
 
@@ -11463,6 +11612,10 @@ document.addEventListener('x47-stop-request', () => {
   try {
     if (!worker || !x47WorkerIdentity || x47StopTimer !== null) throw new Error('X47_UI_STOP_INVALID');
     const disposeToken = `x47-stop-${crypto.randomUUID()}`;
+    x47AsyncEpoch += 1;
+    x47PauseTicket += 1;
+    x47ApplyTicket += 1;
+    x47ResetExpectation = null;
     renderX47Integration(x47UiOwner.beginStop(disposeToken));
     worker.postMessage({ command: 'dispose', disposeToken });
     x47StopTimer = setTimeout(() => {

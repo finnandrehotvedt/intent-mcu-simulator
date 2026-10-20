@@ -22,9 +22,63 @@ async function loadButtonExample(page) {
   ));
 }
 
+async function armDigestGate(page, pass = 0) {
+  await page.evaluate((allowed) => { void window.__X47_DIGEST_GATE__.holdNextAfter(allowed); }, pass);
+}
+
+async function waitDigestHeld(page) {
+  await page.waitForFunction(() => window.__X47_DIGEST_GATE__.state()?.held === true);
+}
+
+async function releaseDigestGate(page) {
+  await page.evaluate(() => window.__X47_DIGEST_GATE__.release());
+}
+
+async function waitSyntheticPaused(page) {
+  await page.waitForFunction(() => document.querySelector('#worker-state')?.textContent.includes('Paused'));
+}
+
+async function syntheticBuild(page) {
+  await page.locator('#quick-build').click();
+  await waitSyntheticPaused(page);
+}
+
+async function appendSyntheticSource(page, text) {
+  await page.evaluate((suffix) => {
+    const source = document.querySelector('#source');
+    source.value += `\n// ${suffix}`;
+    source.dispatchEvent(new Event('input', { bubbles: true }));
+  }, text);
+}
+
 function fakeWorkerInstaller() {
   window.__X47_FAKE_STALL_DISPOSE__ = false;
   window.__X47_SYNTHETIC_WORKERS__ = 0;
+  window.__X47_SYNTHETIC_COMMANDS__ = [];
+  const nativeDigest = crypto.subtle.digest.bind(crypto.subtle);
+  let digestGate = null;
+  Object.defineProperty(crypto.subtle, 'digest', { configurable: true, value: async (...args) => {
+    if (digestGate) {
+      digestGate.calls += 1;
+      if (!digestGate.held && digestGate.calls === digestGate.pass + 1) {
+        digestGate.held = true;
+        digestGate.signal();
+        await digestGate.promise;
+      }
+    }
+    return nativeDigest(...args);
+  } });
+  window.__X47_DIGEST_GATE__ = {
+    holdNextAfter(pass = 0) {
+      let release; let signal;
+      const promise = new Promise((resolve) => { release = resolve; });
+      const held = new Promise((resolve) => { signal = resolve; });
+      digestGate = { pass, calls: 0, held: false, promise, release, signal, heldPromise: held };
+      return held;
+    },
+    release() { digestGate?.release(); digestGate = null; },
+    state() { return digestGate ? { calls: digestGate.calls, held: digestGate.held } : null; },
+  };
   const clone = (value) => structuredClone(value);
   class SyntheticX47Worker extends EventTarget {
     constructor() { super(); this.identity = null; this.init = null; this.queue = null;
@@ -42,6 +96,7 @@ function fakeWorkerInstaller() {
         modelExecutionContextSha256: this.identity.modelExecutionContextSha256, ...extra };
     }
     postMessage(data) {
+      window.__X47_SYNTHETIC_COMMANDS__.push(data.command);
       if (data.command === 'init') {
         this.init = clone(data);
         this.identity = { schema: 'intent-mcu-worker-runtime-identity@2',
@@ -114,6 +169,27 @@ function fakeWorkerInstaller() {
             x47CancellationReceipts: [receipt], runtimeIdentity: clone(this.identity),
             modelExecutionContextSha256: this.identity.modelExecutionContextSha256 });
         }, 0);
+        return;
+      }
+      if (data.command === 'reset') {
+        if (this.queue) {
+          const receipt = { schema: 'intent-mcu-x47-cancel-receipt@2',
+            transactionId: this.queue.transactionId,
+            canonicalPulseSha256: this.queue.canonicalPulseSha256,
+            binding: clone(this.queue.binding), baseCycle: this.queue.baseCycle, reason: 'RESET',
+            cancelCycle: this.queue.baseCycle, state: 'cancelled', evidenceComplete: false,
+            queuePending: this.queue.events.map((event) => ({ eventIndex: event.eventIndex,
+              queueSequence: event.queueSequence, targetCycle: event.targetCycle })),
+            adapterScheduled: this.queue.events.map((event) => ({ eventIndex: event.eventIndex,
+              targetCycle: event.targetCycle })), adapterApplied: [],
+            retention: { requested: { expected: 2, retained: 2, dropped: 0 },
+              drained: { expected: 2, retained: 0, dropped: 0 },
+              adapter: { expected: 2, retained: 0, dropped: 0 }, discontinuities: 0 } };
+          setTimeout(() => this.emit({ kind: 'x47-cancelled', reason: 'RESET', receipts: [receipt],
+            runtimeIdentity: clone(this.identity),
+            modelExecutionContextSha256: this.identity.modelExecutionContextSha256 }), 0);
+        }
+        setTimeout(() => this.emit(this.snapshot('reset', true, 0)), 0);
       }
     }
     terminate() { this.terminated = true; }
@@ -162,6 +238,94 @@ function fakeWorkerInstaller() {
         await page.locator('#walkthrough button').last().click();
       }
       await loadButtonExample(page);
+      const raceResults = [];
+      if (viewport.width === 1366) {
+        for (const action of ['source', 'open', 'new-build']) {
+          const workersBefore = await page.evaluate(() => window.__X47_SYNTHETIC_WORKERS__);
+          await armDigestGate(page, 1);
+          await page.locator('#quick-build').click();
+          await waitDigestHeld(page);
+          if (action === 'source') {
+            await appendSyntheticSource(page, 'async load retirement');
+          } else if (action === 'open') await loadButtonExample(page);
+          else {
+            await page.locator('#quick-build').click();
+            await waitSyntheticPaused(page);
+          }
+          await releaseDigestGate(page);
+          await page.waitForTimeout(80);
+          const workersAfter = await page.evaluate(() => window.__X47_SYNTHETIC_WORKERS__);
+          assert.equal(workersAfter, workersBefore + (action === 'new-build' ? 1 : 0),
+            `stale ${action} load created a worker`);
+          raceResults.push(`load-vs-${action}`);
+          await loadButtonExample(page);
+        }
+
+        // A held Pause hash cannot bind after authored source replacement.
+        await syntheticBuild(page);
+        await page.locator('#quick-run').click();
+        await page.waitForFunction(() => document.querySelector('#worker-state')?.textContent.includes('Running'));
+        await page.locator('#quick-pause').click();
+        await waitSyntheticPaused(page);
+        await page.locator('#instruments-open').click();
+        let racePanel = page.locator('#workbench-instruments-dialog [data-x47-pulse-preview]');
+        await armDigestGate(page, 1);
+        await racePanel.locator('[data-x47-preview]').click();
+        await waitDigestHeld(page);
+        await appendSyntheticSource(page, 'retire held pause');
+        await releaseDigestGate(page);
+        await page.waitForTimeout(80);
+        assert.equal(await page.evaluate(() => window.__M6_STATE__.x47Integration?.phase), 'retired');
+        raceResults.push('pause-hash-vs-source');
+        await page.keyboard.press('Escape');
+        await loadButtonExample(page);
+
+        // Stop invalidates a held Apply hash; two concurrent Apply requests still send exactly one.
+        await syntheticBuild(page);
+        await page.locator('#quick-run').click();
+        await page.waitForFunction(() => document.querySelector('#worker-state')?.textContent.includes('Running'));
+        await page.locator('#quick-pause').click();
+        await waitSyntheticPaused(page);
+        await page.locator('#instruments-open').click();
+        racePanel = page.locator('#workbench-instruments-dialog [data-x47-pulse-preview]');
+        await racePanel.locator('[data-x47-preview]').click();
+        await page.waitForFunction(() => !document.querySelector('[data-x47-apply]').disabled);
+        let applies = await page.evaluate(() => window.__X47_SYNTHETIC_COMMANDS__
+          .filter((command) => command === 'x47-apply').length);
+        await armDigestGate(page, 0);
+        await page.evaluate(() => document.dispatchEvent(new CustomEvent('x47-apply-request')));
+        await waitDigestHeld(page);
+        await page.evaluate(() => document.dispatchEvent(new CustomEvent('x47-stop-request')));
+        await releaseDigestGate(page);
+        await page.waitForTimeout(80);
+        assert.equal(await page.evaluate(() => window.__X47_SYNTHETIC_COMMANDS__
+          .filter((command) => command === 'x47-apply').length), applies);
+        raceResults.push('apply-hash-vs-stop');
+
+        await armDigestGate(page, 0);
+        await page.evaluate(() => {
+          document.dispatchEvent(new CustomEvent('x47-apply-request'));
+          document.dispatchEvent(new CustomEvent('x47-apply-request'));
+        });
+        await waitDigestHeld(page);
+        await page.waitForFunction((before) => window.__X47_SYNTHETIC_COMMANDS__
+          .filter((command) => command === 'x47-apply').length === before + 1, applies);
+        await releaseDigestGate(page);
+        await page.waitForFunction(() => window.__M6_STATE__.x47Integration?.phase === 'resume-required');
+        assert.equal(await page.evaluate(() => window.__X47_SYNTHETIC_COMMANDS__
+          .filter((command) => command === 'x47-apply').length), applies + 1);
+        raceResults.push('two-apply-one-send');
+
+        await page.keyboard.press('Escape');
+        const workersBeforeReset = await page.evaluate(() => window.__X47_SYNTHETIC_WORKERS__);
+        await page.locator('#quick-reset').click();
+        await page.waitForFunction(() => window.__M6_STATE__.x47Integration?.reason
+          ?.includes('Reset cancellation acknowledged'));
+        await waitSyntheticPaused(page);
+        assert.equal(await page.evaluate(() => window.__X47_SYNTHETIC_WORKERS__), workersBeforeReset);
+        raceResults.push('reset-cancellation-separated');
+        await loadButtonExample(page);
+      }
       await page.locator('#instruments-open').click();
       let panel = page.locator('#workbench-instruments-dialog [data-x47-pulse-preview]');
       await panel.waitFor({ state: 'visible' });
@@ -212,12 +376,15 @@ function fakeWorkerInstaller() {
       assert(readability.pageOverflow <= 1, JSON.stringify(readability));
       assert(readability.minimumFontPixels >= 10.7, JSON.stringify(readability));
       assert.deepEqual(outside, []); assert.deepEqual(failures, []);
-      assert.deepEqual(buildRequests, ['POST /api/build', 'GET /api/build/synthetic-x47-build']);
+      assert(buildRequests.length >= 2 && buildRequests.length % 2 === 0,
+        JSON.stringify(buildRequests));
+      assert(buildRequests.every((request, index) => request === (index % 2 === 0
+        ? 'POST /api/build' : 'GET /api/build/synthetic-x47-build')));
       if (evidenceDir) await panel.screenshot({ path: path.join(evidenceDir,
         `x47-private-ui-${viewport.width}x${viewport.height}.png`) });
       reports.push({ viewport, outcome: viewport.width === 1440 ? 'timeout-not-completed' : 'stopped-complete',
         syntheticBuildRequests: buildRequests.length, syntheticWorkers: await page.evaluate(() => window.__X47_SYNTHETIC_WORKERS__),
-        readability });
+        raceResults, readability });
       await context.close();
     }
   } finally { await browser.close(); }

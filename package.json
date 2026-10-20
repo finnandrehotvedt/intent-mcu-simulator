@@ -97,7 +97,7 @@
     "test:x42": "node --test --test-concurrency=1 test/x42-digital-edge-trigger-capture.test.mjs",
     "test:x42:browser": "node test/x42-armed-trigger-browser.cjs",
     "test:x47": "node --test --test-concurrency=1 test/x47-avr-d2-pulse.test.mjs test/x47-runtime-transaction.test.mjs test/x47-ui-integration.test.mjs test/runtime-worker-identity.test.mjs",
-    "test:x47:browser": "node test/x47-avr-d2-pulse-browser.cjs",
+    "test:x47:browser": "node test/x47-avr-d2-pulse-browser.cjs && node test/x47-ui-integration-browser.cjs",
     "test:x88": "node --test --test-concurrency=1 test/x88-release-changes.test.mjs test/release-identity-copy.test.mjs test/capability-discovery.test.mjs",
     "test:x88:browser": "node test/x88-release-changes-browser.cjs",
     "test:x76": "node --test --test-concurrency=1 test/x76-physical-checklist.test.mjs",

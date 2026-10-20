@@ -23,6 +23,9 @@ const PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_X47_UI_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X47_UI_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 
 const stable = (value) => {
   if (Array.isArray(value)) return value.map(stable);
@@ -146,16 +149,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x47-ui-integration.1-current',
-  'intent-mcu-model-bundle-current-x47-ui-integration-1@6',
+  '2.0.0-x47-ui-async-epoch.1-current',
+  'intent-mcu-model-bundle-current-x47-ui-async-epoch-1@7',
   currentImplementation,
   {
-    priorVersion: PRE_X47_UI_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X47_UI_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'explicit-data-only-migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component semantics unchanged; private AVR X47 UI authority remains exact-worker, exact-request and exact-queue bound',
-    presentationDisposition: 'private X47 Apply, explicit Resume and bounded two-phase Stop are integrated; public deployment unchanged',
-    baselineClosureDisposition: 'current closure adds the private X47 UI owner and terminal lifecycle; prior receipt-validation current remains migration-only',
+    semanticDisposition: 'component semantics unchanged; private AVR X47 asynchronous load, pause, apply, reset and dispose authority is epoch-bound',
+    presentationDisposition: 'no new public presentation; stale asynchronous X47 work cannot resurrect private UI authority',
+    baselineClosureDisposition: 'current closure fixes private X47 asynchronous epoch and RESET cancellation races; prior UI-integration current remains migration-only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -167,6 +170,7 @@ export const PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringi
 export const PRE_X47_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X47_UI_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_UI_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);
