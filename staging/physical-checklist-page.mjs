@@ -16,6 +16,7 @@ const identityRoot = document.querySelector('#physical-identity');
 const boundary = document.querySelector('#physical-boundary');
 const status = document.querySelector('#physical-status');
 const fileInput = document.querySelector('#physical-file');
+const printProjection = document.querySelector('#physical-print-projection');
 let current = createPhysicalChecklist(PHYSICAL_CHECKLIST_DEFINITIONS[0].profile);
 let generation = 0;
 
@@ -84,6 +85,70 @@ function updateBoundary(value = null) {
     ? '<strong>Manual user record present — not independently verified</strong><span>No measurement, pass, safety or certification verdict is supplied by the Lab.</span>'
     : '<strong>Physical evidence absent</strong><span>Manual check not measured. Simulator evidence is not physical-board evidence.</span>';
   boundary.dataset.present = String(present);
+}
+
+const PRINT_STATUS = Object.freeze({
+  'manual-not-measured': 'Manual check not measured',
+  'manual-recorded': 'Manual user record — not independently verified',
+  'not-applicable': 'Not applicable to this setup',
+  'profile-unavailable': 'Unavailable in this profile',
+});
+
+function appendText(parent, tag, text, className = '') {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  element.textContent = text;
+  parent.append(element);
+  return element;
+}
+
+function renderPrintProjection(value) {
+  printProjection.replaceChildren();
+  appendText(printProjection, 'p', 'X76 · MANUAL PHYSICAL BOUNDARY', 'eyebrow');
+  appendText(printProjection, 'h2', 'Printable physical verification record');
+  appendText(printProjection, 'p', value.evidenceBoundary.physicalEvidencePresent
+    ? 'Manual user record present — not independently verified. No measurement, pass, safety or certification verdict is supplied by the Lab.'
+    : 'Physical evidence absent — manual check not measured. Simulator evidence is not physical-board evidence.',
+  'physical-print-boundary');
+  const identity = document.createElement('dl');
+  identity.className = 'physical-print-identity';
+  for (const [term, detail] of [
+    ['Schema', value.schema], ['Definition version', value.definitionVersion],
+    ['Product release', value.productRelease], ['Definition baseline source', value.sourceCommit],
+    ['Profile', value.profile], ['Controller model', value.controllerModel],
+    ['Definition SHA-256', value.definitionSha256],
+  ]) {
+    const row = document.createElement('div');
+    appendText(row, 'dt', term);
+    appendText(row, 'dd', String(detail));
+    identity.append(row);
+  }
+  printProjection.append(identity);
+  const list = document.createElement('div');
+  list.className = 'physical-print-items';
+  for (const [index, item] of value.items.entries()) {
+    const article = document.createElement('article');
+    article.dataset.printItemId = item.id;
+    appendText(article, 'h3', `${index + 1}. ${item.subject}`);
+    appendText(article, 'p', `Status: ${PRINT_STATUS[item.status]}`, 'physical-print-status');
+    article.querySelector('.physical-print-status').dataset.printStatus = item.status;
+    appendText(article, 'p', `Simulator basis: ${item.simulatorBasis}`);
+    appendText(article, 'p', item.guidance);
+    if (item.observation) {
+      const observation = document.createElement('dl');
+      observation.className = 'physical-print-observation';
+      for (const [term, detail] of Object.entries(item.observation)) {
+        const row = document.createElement('div');
+        appendText(row, 'dt', term[0].toUpperCase() + term.slice(1));
+        appendText(row, 'dd', detail || '—');
+        observation.append(row);
+      }
+      article.append(observation);
+    }
+    list.append(article);
+  }
+  printProjection.append(list);
+  appendText(printProjection, 'p', 'Manual user record only · not independently verified · no device access, automatic verdict, safety claim or certification.', 'physical-print-footer');
 }
 
 function syncDraft() {
@@ -175,6 +240,7 @@ document.querySelector('#physical-download').addEventListener('click', () => {
 document.querySelector('#physical-print').addEventListener('click', () => {
   try {
     current = candidateFromDom();
+    renderPrintProjection(current);
     document.documentElement.dataset.printRequested = 'true';
     setStatus('Print requested. The Lab cannot confirm an operating-system print or PDF save.');
     window.print();

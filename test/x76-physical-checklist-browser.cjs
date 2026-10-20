@@ -72,8 +72,14 @@ const workbenchState = () => ({
       for (let row = 0; row < expected; row += 1) {
         assert(await rows.nth(row).getAttribute('data-item-id'));
         assert.match(await rows.nth(row).locator('.physical-basis').textContent(), /tested|project-model|unavailable/u);
-        await rows.nth(row).locator('[data-item-status]').focus();
-        assert.equal(await page.evaluate(() => document.activeElement?.matches('[data-item-status]')), true);
+        const statusControl = rows.nth(row).locator('[data-item-status]');
+        if (await statusControl.isDisabled()) {
+          assert.match(await rows.nth(row).textContent(), /Unavailable in this profile/u);
+          assert.equal(await statusControl.getAttribute('disabled'), '');
+        } else {
+          await statusControl.focus();
+          assert.equal(await page.evaluate(() => document.activeElement?.matches('[data-item-status]')), true);
+        }
       }
       total += expected;
     }
@@ -117,6 +123,7 @@ const workbenchState = () => ({
     await page.locator('#physical-open').focus();
     await page.keyboard.press('Enter');
     await (await chooserPromise).setFiles(downloadedPath);
+    await page.waitForFunction(() => document.querySelector('#physical-status')?.textContent.includes('Opened'));
     assert.match(await page.locator('#physical-status').textContent(), /Opened .* locally/u);
     assert.match(await page.locator('#physical-boundary').textContent(), /not independently verified/iu);
 
@@ -201,6 +208,23 @@ const workbenchState = () => ({
     await page.waitForFunction(() => document.querySelector('#physical-status')?.textContent.includes('PHYSICAL_CHECKLIST_INPUT_LIMIT'));
     assert.equal(await page.evaluate(() => window.__X76_FILE_READS__.length), largeReadsBefore);
 
+    const printChooser = page.waitForEvent('filechooser');
+    await page.locator('#physical-open').click();
+    await (await printChooser).setFiles(downloadedPath);
+    await page.waitForFunction(() => document.querySelector('#physical-status')?.textContent.includes('x76-actual-download.json'));
+    const printFirst = page.locator('[data-item-id="avr-supply-under-load"]');
+    const valuePrefix = '<b>literal & value</b> ';
+    const notesPrefix = '<manual & unverified notes> ';
+    const longValue = valuePrefix + 'x'.repeat(500 - [...valuePrefix].length);
+    const longNotes = notesPrefix + '😀'.repeat(500 - [...notesPrefix].length);
+    const printUnit = 'mA <manual>';
+    const printMethod = 'meter & scope "manual"';
+    await printFirst.locator('[data-observation="value"]').fill(longValue);
+    await printFirst.locator('[data-observation="unit"]').fill(printUnit);
+    await printFirst.locator('[data-observation="method"]').fill(printMethod);
+    await printFirst.locator('[data-observation="notes"]').fill(longNotes);
+    assert.match(await page.locator('#physical-boundary').textContent(), /not independently verified/iu);
+
     await page.evaluate(() => { window.__X76_PRINT_CALLS__ = 0; window.print = () => { window.__X76_PRINT_CALLS__ += 1; }; });
     await page.locator('#physical-print').focus();
     await page.keyboard.press('Enter');
@@ -208,7 +232,23 @@ const workbenchState = () => ({
     assert.match(await page.locator('#physical-status').textContent(), /cannot confirm an operating-system print or PDF save/u);
     await page.emulateMedia({ media: 'print' });
     assert.equal(await page.locator('.no-print').first().evaluate((element) => getComputedStyle(element).display), 'none');
-    assert.equal(await page.locator('[data-item-id]').count(), 6);
+    const printRows = page.locator('[data-print-item-id]');
+    assert.equal(await printRows.count(), 6);
+    assert.deepEqual(await printRows.locator('[data-print-status]').evaluateAll((nodes) => nodes.map((node) => node.dataset.printStatus)),
+      ['manual-recorded', 'manual-not-measured', 'manual-not-measured', 'manual-not-measured', 'manual-not-measured', 'manual-not-measured']);
+    const printText = await page.locator('#physical-print-projection').textContent();
+    for (const expected of [longValue, longNotes, printUnit, printMethod,
+      'intent-mcu-physical-verification-checklist@1', 'board.atmega328p-16mhz-v1',
+      downloaded.definitionSha256, 'Manual user record present — not independently verified']) {
+      assert(printText.includes(expected), `print projection omitted ${expected.slice(0, 40)}`);
+    }
+    assert.equal(await page.locator('#physical-print-projection b').count(), 0);
+    assert.equal(await page.locator('.physical-print-observation dd').first().evaluate((element) => {
+      const style = getComputedStyle(element);
+      return style.whiteSpace === 'pre-wrap' && ['anywhere', 'break-word'].includes(style.overflowWrap);
+    }), true);
+    assert.equal(await page.locator('input, select, button').evaluateAll((nodes) => nodes
+      .filter((node) => getComputedStyle(node).display !== 'none').length), 0);
     assert.match(await page.locator('footer').textContent(), /no device access, firmware action, automatic verdict or certification/iu);
     await page.screenshot({ path: path.join(evidenceDir, 'x76-private-checklist.png'), fullPage: true });
 
@@ -233,7 +273,8 @@ const workbenchState = () => ({
       actualDownloadOpen: true, malformedIdentityAtomic: true, cancelNoLoss: true,
       delayedReadGuard: true, latestOpenWins: true, oversizeRejectedBeforeRead: true,
       unicodeScalarBoundary: true,
-      printProjection: true, reloadClears: true, projectIdentityUnchanged: true,
+      printProjection: true, printFullManualRecord: true, printInteractiveControls: 0,
+      disabledUnavailableReadableNotFocusable: true, reloadClears: true, projectIdentityUnchanged: true,
       deviceApiCalls: 0, workers: 0, networkWrites: 0, outsideRequests: 0, storage: 0, cookies: 0 }));
   } finally { await browser.close(); }
 })().catch((error) => { console.error(error.stack || String(error)); process.exitCode = 1; });

@@ -1350,6 +1350,7 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
 .physical-observation label { display: grid; gap: 4px; color: var(--muted); font-size: .72rem; }
 #physical-status[data-valid="false"] { color: var(--danger); }
 .physical-certification-boundary { border-color: var(--amber); }
+.physical-print-projection { display: none; }
 @media (max-width: 640px) {
   .physical-checklist-controls, .physical-checklist-identity dl, .physical-observation { grid-template-columns: 1fr; }
 }
@@ -1357,6 +1358,20 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   :root { color-scheme: light; }
   body { background: #fff; color: #111; }
   .no-print { display: none !important; }
+  .physical-checklist-identity, .physical-checklist-list { display: none !important; }
+  .physical-print-projection { display: block; }
+  .physical-print-projection h2 { margin: 0 0 10px; }
+  .physical-print-boundary, .physical-print-footer { padding: 10px; border: 2px solid #333; font-weight: 700; }
+  .physical-print-identity { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .physical-print-identity div, .physical-print-observation div { min-width: 0; padding: 5px; border: 1px solid #777; }
+  .physical-print-identity dt, .physical-print-observation dt { font-weight: 700; }
+  .physical-print-identity dd, .physical-print-observation dd { margin: 3px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
+  .physical-print-items { display: grid; gap: 10px; }
+  .physical-print-items article { padding: 10px; border: 1px solid #555; break-inside: avoid; }
+  .physical-print-items h3, .physical-print-items p { margin: 0 0 7px; }
+  .physical-print-status { font-weight: 800; }
+  .physical-print-observation { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+  .physical-checklist-main input, .physical-checklist-main select, .physical-checklist-main button { display: none !important; }
   .docs-main { width: 100%; padding: 0; }
   .panel, .physical-boundary { color: #111; background: #fff; border-color: #555; box-shadow: none; }
   .physical-boundary strong, .physical-item-heading h2, .physical-checklist-identity h2, .physical-certification-boundary h2 { color: #111; }
