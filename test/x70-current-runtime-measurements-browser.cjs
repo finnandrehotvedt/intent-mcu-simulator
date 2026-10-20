@@ -10,6 +10,7 @@ const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/
 const base = process.env.X70_CURRENT_URL || 'http://127.0.0.1:18872';
 const evidenceDir = process.env.X70_CURRENT_EVIDENCE || '/evidence';
 const skipAvr = process.env.X70_SKIP_AVR === '1';
+const onlyProfiles = new Set((process.env.X70_ONLY || '').split(',').map((value) => value.trim()).filter(Boolean));
 const profiles = [
   { id: 'board.atmega328p-16mhz-v1', slug: 'avr', build: '#quick-build', run: '#quick-run',
     pause: '#quick-pause', state: '__M6_STATE__', built: 'succeeded', complete: 'paused', timeout: 45_000 },
@@ -20,7 +21,9 @@ const profiles = [
   { id: 'board.stm32f429zi-nucleo144-v1', slug: 'stm32', build: '#quick-build', run: '#quick-run',
     state: '__STM32_PUBLIC_STATE__', built: 'built', complete: 'completed', timeout: 190_000 },
 ];
-const journeyProfiles = skipAvr ? profiles.filter(({ slug }) => slug !== 'avr') : profiles;
+const journeyProfiles = onlyProfiles.size
+  ? profiles.filter(({ slug }) => onlyProfiles.has(slug))
+  : skipAvr ? profiles.filter(({ slug }) => slug !== 'avr') : profiles;
 const visuals = Object.freeze({
   avr: '#circuit-canvas', pico: '#pico-diagram', c3: '#c3-diagram', stm32: '#stm32-diagram',
 });
@@ -200,7 +203,7 @@ async function reopenAuthoredProject(page, profile) {
   try {
     assert.equal((await page.goto(base, { waitUntil: 'networkidle' }))?.status(), 200);
     await page.waitForFunction(() => window.__M11_READY__ === true && window.__X70_ACCESSIBLE_DEMONSTRATION__);
-    if (!skipAvr) {
+    if (journeyProfiles.some(({ slug }) => slug === 'avr')) {
       await page.click('#project-files-open');
       await page.waitForSelector('#workbench-project-dialog[open]');
       await page.click('#project-demo');
@@ -262,7 +265,7 @@ async function reopenAuthoredProject(page, profile) {
         evidence[slug].report.measurements.channels.map(({ classification }) => classification)])),
       timeBases: Object.fromEntries(journeyProfiles.map(({ slug }) => [slug,
         evidence[slug].report.measurements.channels.map(({ time }) => time.basis)])),
-      geometry, activeRuntimeRejected: skipAvr ? ['pico'] : ['avr', 'pico'],
+      geometry, activeRuntimeRejected: journeyProfiles.filter(({ pause }) => pause).map(({ slug }) => slug),
       saveOpenClearedRuntime: journeyProfiles.map(({ slug }) => slug),
       workersObserved: workers.length, serviceWorkers: 0, outsideRequests: 0,
       mutations, cookies: 0, browserErrors: 0 };
