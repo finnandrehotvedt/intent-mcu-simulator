@@ -22,6 +22,15 @@
       ]
     },
     {
+      "id": "X42",
+      "capabilities": [
+        "intent-mcu-x42-digital-edge-capture@1"
+      ],
+      "contracts": [
+        "x42-avr-armed-digital-edge-capture-v1"
+      ]
+    },
+    {
       "id": "X59",
       "capabilities": [
         "intent-mcu-shared-workbench-view@1"

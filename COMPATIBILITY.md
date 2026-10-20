@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.32 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.91 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -79,6 +79,17 @@ The source editor accepts `main.ino` plus bounded project-local `.h`, `.hpp`,
 `.c` and `.cpp` files. The fixed compile profile is Arduino AVR Boards 1.8.8,
 Arduino CLI 1.5.1 and AVR GCC 7.3.0-atmel3.6.1-arduino7. No arbitrary library
 installation is supported.
+
+The X42 observer is supported only for AVR's retained authoritative digital
+worker transitions. It must be explicitly armed before a future rising or
+falling edge and freezes 16 same-channel transitions before the trigger, the
+trigger transition and 16 after it. Observation is transient, capped and bound
+to exact project, source, artifact, model, runtime and graph lifecycle identity;
+dropped or discontinuous rows fail closed. RP2040 has no approved transition
+retention bound for this contract, ESP32-C3 exposes project-model GPIO rather
+than QEMU pin timing, and STM32 exposes a final observation rather than a
+waveform, so X42 is unavailable for those profiles. Open never restores a
+capture or runtime authority.
 
 One bounded thermostat experiment uses that same AVR compiler/runtime path.
 Its exact graph is an ideal analogue temperature module on A1, an active-low

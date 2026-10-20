@@ -1,4 +1,30 @@
-# Intent MCU Simulator 1.1.0-rc.90
+# Intent MCU Simulator 1.1.0-rc.91
+
+## X42 armed digital-edge trigger capture
+
+This release completes X42 for the documented AVR profile with one transient,
+read-only observer over authoritative current-worker digital transitions. A
+learner explicitly arms a rising or falling edge on one channel; only a future
+edge can trigger. The frozen bounded result contains 16 preceding rows, the
+trigger row and 16 following rows, with native worker cycles and levels.
+
+Capture fails closed on source discontinuity, dropped rows, overlap ambiguity,
+profile/project/artifact/model/runtime/graph changes, Build, Reset, New, Open
+or unsupported source shape. It creates no worker, firmware action, persistent
+state, automatic replay or verdict. RP2040 retention is not yet sufficient for
+this contract; ESP32-C3 exposes project-model GPIO rather than QEMU pin timing;
+STM32 exposes one final observation rather than a waveform. Those profiles are
+explicitly unavailable for X42.
+
+Desktop accepted the actual native AVR arm-before-future-edge evidence and the
+reviewed browser lifecycle/readability replay at 1366×768 and 1440×900. The
+native result contains 33 D13 rows, arm cycle 6,085,550, trigger cycle 6,403,174
+and zero dropped rows. This release adds no producer activity. Counts are X
+**72/0/24**, P1 **59/0/0**.
+
+---
+
+## 1.1.0-rc.90
 
 ## X59 shared Simple and Advanced view
 

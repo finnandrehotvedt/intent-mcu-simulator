@@ -28,24 +28,24 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc89 to rc90 X59 closure release bytes', async () => {
+test('X88 owner binds canonical rc90 to rc91 X42 closure release bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.90');
+  assert.equal(release.version, '1.1.0-rc.91');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
-  assert(registry.ids.includes('X59'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.89', current: '1.1.0-rc.90' });
+  assert(registry.ids.includes('X42'));
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.90', current: '1.1.0-rc.91' });
   assert.deepEqual(value.changes, [
     {
-      id: 'X59', classification: 'changed', capabilities: ['intent-mcu-shared-workbench-view@1'],
-      contracts: ['x59-four-profile-simple-advanced-view-v1'],
-      summary: 'Completes X59 with one shared session-only Simple and Advanced presentation across all four profiles without changing canonical project, runtime or storage data.',
+      id: 'X42', classification: 'changed', capabilities: ['intent-mcu-x42-digital-edge-capture@1'],
+      contracts: ['x42-avr-armed-digital-edge-capture-v1'],
+      summary: 'Completes X42 for AVR with an armed future-edge capture over authoritative worker transitions, fixed 16+1+16 rows, bounded observation and fail-closed lifecycle binding.',
     },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records the reviewed rc.89 to rc.90 X59 presentation release without adding firmware action, runtime authority, storage, replay or verdict authority.',
+      summary: 'Records the reviewed rc.90 to rc.91 X42 release without adding firmware action, stored runtime authority, project persistence, automatic replay or verdict authority.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -108,7 +108,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.90');
+  assert.equal(discovery.identity.version, '1.1.0-rc.91');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

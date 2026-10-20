@@ -18,7 +18,7 @@ const clone = (value) => structuredClone(value);
 test('X86 canonical owner has four exact profiles and honest finite states', () => {
   assert.equal(OFFLINE_SUPPORT_MATRIX.schema, 'intent-mcu-offline-support-matrix@1');
   assert.equal(OFFLINE_SUPPORT_MATRIX.contract, 'x86-honest-offline-support-matrix-v1');
-  assert.equal(OFFLINE_SUPPORT_MATRIX.release, '1.1.0-rc.90');
+  assert.equal(OFFLINE_SUPPORT_MATRIX.release, '1.1.0-rc.91');
   assert.deepEqual(OFFLINE_SUPPORT_MATRIX.profiles.map(({ id }) => id), [
     'board.atmega328p-16mhz-v1', 'board.rp2040-pico-v1',
     'board.esp32-c3-devmodule-v1', 'board.stm32f429zi-nucleo144-v1',

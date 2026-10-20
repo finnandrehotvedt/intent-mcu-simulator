@@ -1,6 +1,6 @@
 # X42 armed digital-edge trigger capture
 
-The private X42 increment adds one transient, read-only observer. It does not
+The public rc.91 X42 increment adds one transient, read-only observer. It does not
 compile, run, reset or command firmware. A user chooses one named AVR trace
 channel and Rising or Falling, then explicitly arms before a future edge.
 Historical rows cannot trigger.
@@ -45,7 +45,7 @@ Stop or identity/continuity change invalidates it. Nothing is stored in the
 project, browser storage, a service worker or a server. A captured window is an
 observation, not a failure diagnosis, test verdict or causal claim.
 
-The native core evidence accepted for private review was produced from product
+The native core evidence accepted for this reviewed release was produced from product
 source `e1eb513ab99ed24f93581398b73eaadd09f60e99` with the visibly edited,
 111-byte 20 ms acceptance fixture whose source SHA-256 is
 `5611d06a4e15ab110c0ddde5692723c36999baa8ddd104901396430bcb0b532f`.
@@ -71,6 +71,9 @@ long identities wrap, and the trigger row uses both color and a border/backgroun
 highlight. These are presentation constraints only; they do not change the
 observer, runtime, model or evidence authority.
 
-The native core capture is accepted as private evidence. X42 as a whole remains
-planned until the readability diff, targeted screenshots and replay evidence
-receive separate Desktop review and public-release authorization.
+Desktop accepted the actual native AVR arm-before-future-edge core evidence and
+the separate browser replay for bounded rendering, keyboard operation,
+lifecycle invalidation and readable 1366×768/1440×900 layouts. The replay is
+not represented as a second live run. Together they close X42 only for the
+documented AVR support boundary; the other profiles remain unavailable as
+listed above.

@@ -2,6 +2,18 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.91 — 2026-10-20
+
+- Completes X42 for AVR with an explicit armed future rising/falling edge over
+  authoritative current-worker transitions and a fixed 16 + 1 + 16-row window.
+- Binds capture to exact project, artifact, model, runtime, graph and source
+  lifecycle identity; discontinuity, dropped rows and authority changes fail
+  closed and terminate observation.
+- Keeps RP2040, ESP32-C3 and STM32 unavailable for X42 under their documented
+  retention/source boundaries instead of inferring waveform support.
+- Advances counts to X **72/0/24**, P1 **59/0/0**, with no new Build, Run,
+  scenario, worker, persistence, replay, verdict or infrastructure authority.
+
 ## 1.1.0-rc.90 — 2026-10-20
 
 - Completes X59 with one accessible session-only Simple/Advanced presentation
