@@ -2,6 +2,17 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.77 — 2026-10-20
+
+- Published the independently reviewed X64 detail inside the existing X05
+  current/candidate proposal review for all four public profiles.
+- Added deterministic typed authored facts for source files, catalogue-owned
+  component properties/units, positions, exact net endpoints and saved tests.
+- Added complete literal source-file differences with bounded line comparison,
+  explicit complete non-minimal fallback and safe text-only rendering.
+- Preserved X05 as the sole parser, stale-base lifecycle and Apply boundary;
+  X64 adds no code-meaning inference, Build, Run, verdict or mutation authority.
+
 ## 1.1.0-rc.76 — 2026-10-20
 
 - Published the independently reviewed X61 search over the complete current

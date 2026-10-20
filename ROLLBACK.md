@@ -1,13 +1,13 @@
-# Rollback basis for 1.1.0-rc.76
+# Rollback basis for 1.1.0-rc.77
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain exact accepted rc.75 source commit
-`79d03a1267ccdeba95580812ab811699cd386ac0` and VM103 image
-`sha256:045dc14dee05441a54645be49f8175b66456ecf671cec19c33f354da37194060`
-as the pre-rc.76 app-only recovery basis.
+Retain exact accepted rc.76 source commit
+`6dff50cdfddd8c7ab19b193688e2855d9afa5df2` and VM103 image
+`sha256:fe97390b3528ae3ed60da64522898773efab9941a5ba39895fcca8a138f0944a`
+as the pre-rc.77 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
@@ -78,6 +78,11 @@ editing surface only; the authored named-pin topology remains unchanged.
 Rc.76 adds transient current-project search without changing project files,
 graph authority, Build or runtime state. Rolling back removes the search
 disclosure only; learner-owned files and authored topology remain unchanged.
+
+Rc.77 adds a typed authored-fact summary and complete literal source-file
+difference to the existing X05 proposal review. Rolling back removes only that
+additional transient detail. It does not migrate learner files, change the X05
+parser or Apply lifecycle, or alter compiler/runtime authority.
 
 Browser recovery and learner-owned files are never deleted by deployment or
 rollback. Do not change DNS, shared Caddy configuration, compiler/runtime

@@ -1,4 +1,29 @@
-# Intent MCU Simulator 1.1.0-rc.76
+# Intent MCU Simulator 1.1.0-rc.77
+
+## Typed authored changes and literal source differences
+
+This release publishes the independently reviewed X64 detail inside the
+existing X05 proposal review. For AVR, RP2040 Pico, ESP32-C3 and STM32F429ZI,
+one accepted current/candidate pair now produces a learner-readable summary of
+validated authored facts: changed source files, catalogue-owned component
+properties and units, positions, exact net endpoints and saved test or
+expectation data.
+
+The adjacent source view is intentionally different. It displays the complete
+literal source-file difference, preserving authored text, whitespace and
+final-newline state without parsing or explaining source semantics. It does not
+claim what code means or what firmware will do. Comparison work is bounded; if
+the line-edit budget is reached, the complete remove/add replacement is shown
+and explicitly labelled non-minimal.
+
+X05 remains the only strict parser, current-project identity check and Apply
+boundary. Editing the proposal clears the review, Apply revalidates the base,
+and an accepted candidate still requires a fresh Build. X64 itself cannot
+Apply, Build, Run, decide a verdict or restore runtime authority.
+
+---
+
+## 1.1.0-rc.76
 
 ## Search the current authored project
 

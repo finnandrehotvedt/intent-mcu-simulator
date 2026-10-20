@@ -1,8 +1,15 @@
-# Migration to 1.1.0-rc.76
+# Migration to 1.1.0-rc.77
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.77 changes no project schema or stored project semantics. The X64 summary
+and literal source-file difference are transient projections of an already
+accepted X05 current/candidate pair. They are never saved, grant no mutation or
+runtime authority and require no file conversion. The existing X05 Apply action
+still revalidates the exact base and installs authored data only, requiring a
+fresh Build before Run.
 
 Rc.76 changes no project schema or stored project semantics. Project search is
 transient presentation rebuilt from the current strictly validated authored

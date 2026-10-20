@@ -116,6 +116,15 @@ profile, generation, revision or graph identities. Query/results are transient,
 unsaved browser presentation and add no network, Build, runtime or verdict
 authority.
 
+An accepted X05 proposal also exposes **Detailed change review**. Its summary
+contains deterministic typed authored facts from the validated project schema:
+component properties with catalogue units, positions, exact net endpoints and
+saved test/expectation changes. Beside that summary, a complete literal
+source-file difference preserves authored text, whitespace and final-newline
+state. The source view does not infer code meaning or firmware behavior. It
+adds no Apply, Build, Run or verdict authority; the existing X05 Apply action
+remains separate and revalidates the exact current/candidate identities.
+
 The Pico, ESP32-C3 and STM32 teaching circuits share a deliberately bounded
 named-pin cable workflow for their existing controller/resistor/LED/ground
 graphs. A learner can delete and recreate a cable from two compatible free
