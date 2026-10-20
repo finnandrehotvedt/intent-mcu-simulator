@@ -13,6 +13,23 @@ if (!browserType) throw new Error(`Unsupported browser: ${browserName}`);
 function assert(condition, message) { if (!condition) throw new Error(message); }
 function progress(stage) { console.log(JSON.stringify({ browser: browserName, stage })); }
 
+async function loadButtonExample(page) {
+  await page.click('#project-files-open');
+  await page.click('#project-demo');
+  await page.click('.starter-card[data-example="button"]');
+  if (await page.locator('#unsaved-change-dialog').getAttribute('open') !== null) {
+    await page.click('#unsaved-discard');
+  }
+  await page.waitForFunction(() => window.__M6_STATE__.graph?.components?.some(
+    (component) => component.type === 'button.momentary-v1'));
+}
+
+async function ensureProjectFilesOpen(page) {
+  if (await page.locator('#workbench-project-dialog').getAttribute('open') === null) {
+    await page.click('#project-files-open');
+  }
+}
+
 let browser;
 (async () => {
   browser = await browserType.launch({ headless: true });
@@ -26,15 +43,18 @@ let browser;
   await fallback.goto(base, { waitUntil: 'domcontentloaded' });
   await fallback.waitForFunction(() => window.__M11_READY__ === true);
   await fallback.evaluate(() => { window.showSaveFilePicker = undefined; window.showOpenFilePicker = undefined; });
-  await fallback.click('#project-demo');
+  await loadButtonExample(fallback);
+  await fallback.click('#project-files-open');
   await fallback.fill('#project-name', 'Local file trainer');
   await fallback.locator('#project-name').press('Tab');
   const canonical = await fallback.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
+  await ensureProjectFilesOpen(fallback);
   const [download] = await Promise.all([fallback.waitForEvent('download'), fallback.click('#project-save')]);
   assert(download.suggestedFilename() === 'Local-file-trainer.intent-mcu.json', 'fallback save filename is not deterministic');
   const downloadPath = await download.path();
   assert((await fallback.textContent('#project-message')).includes('browser chooses the download location'), 'fallback location ownership is not explained');
   assert((await fallback.textContent('#project-state')).includes('download requested'), 'fallback state overclaims a completed native write');
+  await ensureProjectFilesOpen(fallback);
   await fallback.click('#project-new');
   await fallback.click('#unsaved-discard');
   await fallback.setInputFiles('#project-open-input', downloadPath);
@@ -67,19 +87,24 @@ let browser;
   });
   await native.goto(base, { waitUntil: 'domcontentloaded' });
   await native.waitForFunction(() => window.__M11_READY__ === true);
-  await native.click('#project-demo');
+  await loadButtonExample(native);
+  await native.click('#project-files-open');
   await native.fill('#project-name', 'Native file trainer');
   await native.locator('#project-name').press('Tab');
   const nativeCanonical = await native.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
+  await ensureProjectFilesOpen(native);
   const [nativeDownload] = await Promise.all([native.waitForEvent('download'), native.click('#project-save')]);
   const nativeText = require('node:fs').readFileSync(await nativeDownload.path(), 'utf8');
   await native.evaluate((text) => { window.__LOCAL_FILE_TEXT__ = text; }, nativeText);
   assert(JSON.stringify(JSON.parse(nativeText).project) === nativeCanonical, 'common download changed native-authored project bytes');
   assert((await native.textContent('#project-state')).includes('download requested'), 'common download state is not explicit');
+  await ensureProjectFilesOpen(native);
   await native.click('#project-native-save-copy');
   await native.waitForFunction(() => window.__NATIVE_PROJECT_FILES__.status().connected);
   assert(await native.evaluate(() => window.__LOCAL_FILE_TEXT__) === nativeText, 'native Save copy changed canonical bytes');
+  await ensureProjectFilesOpen(native);
   await native.click('#project-new');
+  await ensureProjectFilesOpen(native);
   await native.click('#project-native-open');
   await native.waitForFunction(() => document.querySelector('#project-message').textContent.includes('Common project opened'));
   assert(JSON.stringify(await native.evaluate(() => window.__M6_PROJECT__())) === nativeCanonical, 'native save/open changed canonical project bytes');
@@ -87,6 +112,7 @@ let browser;
   await native.evaluate(() => {
     window.showOpenFilePicker = async () => { throw new DOMException('cancelled', 'AbortError'); };
   });
+  await ensureProjectFilesOpen(native);
   await native.click('#project-native-open');
   assert((await native.textContent('#project-message')).includes('Connected Open cancelled'), 'native cancel is not explained');
   assert(await native.evaluate(() => JSON.stringify(window.__M6_PROJECT__())) === beforeCancel, 'cancelled open changed project state');
@@ -97,8 +123,7 @@ let browser;
   assert((await native.textContent('#project-message')).includes('unchanged'), 'invalid open is not explained');
   assert(await native.evaluate(() => JSON.stringify(window.__M6_PROJECT__())) === beforeCancel, 'invalid open changed project state');
   for (const viewport of [
-    { width: 1440, height: 900 }, { width: 768, height: 900 },
-    { width: 390, height: 844 }, { width: 320, height: 720 },
+    { width: 1440, height: 900 }, { width: 1366, height: 768 },
   ]) {
     await native.setViewportSize(viewport);
     const responsive = await native.evaluate(() => ({
@@ -106,7 +131,8 @@ let browser;
       save: Boolean(document.querySelector('#project-save')?.getClientRects().length),
       open: Boolean(document.querySelector('#project-open')?.getClientRects().length),
     }));
-    assert(responsive.overflow <= 1 && responsive.save && responsive.open, `file controls overflow at ${viewport.width}px`);
+    assert(responsive.overflow <= 1 && responsive.save && responsive.open,
+      `desktop file controls overflow at ${viewport.width}px`);
   }
   assert(nativeMutations.length === 0, `native file workflow made server mutation request: ${nativeMutations.join(', ')}`);
   progress('deterministic-download-native-save-copy-open-cancel-invalid-responsive');

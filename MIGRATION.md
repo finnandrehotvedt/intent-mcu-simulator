@@ -1,8 +1,20 @@
-# Migration to 1.1.0-rc.92
+# Migration to 1.1.0-rc.93
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.93 recognizes four earlier current-model identities: pre-X47, pre-validation,
+pre-UI and pre-async-epoch. Each path completely validates the saved data,
+preserves the same 25 authored cells, records migration provenance and clears
+artifact, runtime and X47 authority. The original learner-owned file is never
+overwritten. A fresh Build and Run are required before any current runtime
+action. Unknown or malformed model identities remain rejected.
+
+X47 previews and request/queue/execution/cancellation state are transient and
+are not stored in project files or browser recovery. Retained in-tab facts are
+historical non-current evidence after retirement and grant no Apply or Resume
+authority.
 
 Rc.92 changes no project, package, compiler-artifact, model-library, cache or
 browser-storage schema. X43 interval observations are transient current-tab

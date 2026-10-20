@@ -28,11 +28,17 @@ async function ready(page) {
   await page.goto(base, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.__M11_READY__ === true && window.__NATIVE_PROJECT_FILES__);
 }
+async function ensureProjectFilesOpen(page) {
+  if (await page.locator('#workbench-project-dialog').getAttribute('open') === null) {
+    await page.click('#project-files-open');
+  }
+}
 async function choose(page, profile) {
   await page.selectOption('#board-select', profile.option);
   await page.waitForFunction((value) => document.querySelector('#board-select').value === value, profile.option);
 }
 async function rename(page, profile, value) {
+  await ensureProjectFilesOpen(page);
   await page.fill(profile.name, value);
   await page.locator(profile.name).press('Tab');
 }
@@ -113,6 +119,7 @@ async function verifyFallback(browser) {
   await ready(page);
   for (const profile of profiles) {
     await choose(page, profile);
+    await ensureProjectFilesOpen(page);
     assert.equal(await page.locator(profile.nativeOpen).isHidden(), true, `${profile.id}: native Open visible without support`);
     assert.equal(await page.locator(profile.nativeCopy).isHidden(), true, `${profile.id}: native Save copy visible without support`);
     const [download] = await Promise.all([page.waitForEvent('download'), page.click(profile.download)]);
@@ -133,11 +140,13 @@ async function verifyNative(browser) {
 
   for (const profile of profiles) {
     await choose(page, profile);
+    await ensureProjectFilesOpen(page);
     assert.equal(await page.locator(profile.nativeCopy).isVisible(), true, `${profile.id}: native Save copy hidden`);
     assert.equal(await page.locator(profile.nativeSave).isDisabled(), true, `${profile.id}: disconnected Save enabled`);
     await rename(page, profile, `${profile.id.toUpperCase()} native parity`);
     assert.equal(await page.evaluate((value) => window.__UNSAVED_CHANGE_GUARD__.isDirty(value), profile.option), true);
     await page.evaluate(() => { window.__NATIVE_FILE_MOCK__.mode = 'ok'; window.__NATIVE_FILE_MOCK__.nextName = 'chosen.intent-mcu.json'; });
+    await ensureProjectFilesOpen(page);
     await page.click(profile.nativeCopy);
     await waitIdle(page, profile);
     const expected = await canonical(page, profile);
@@ -151,6 +160,7 @@ async function verifyNative(browser) {
     if (profile.id === 'avr' && screenshotPath) await page.screenshot({ path: screenshotPath });
     await rename(page, profile, `${profile.id.toUpperCase()} native parity edited`);
     const beforeSave = (await mockState(page)).writes.length;
+    await ensureProjectFilesOpen(page);
     await page.click(profile.nativeSave);
     await waitIdle(page, profile);
     assert.equal((await mockState(page)).writes.length, beforeSave + 1, `${profile.id}: connected Save did not write`);
@@ -160,9 +170,11 @@ async function verifyNative(browser) {
 
   const avr = profiles[0];
   await choose(page, avr);
+  await ensureProjectFilesOpen(page);
   const connectedBeforeCancel = await page.evaluate(() => window.__NATIVE_PROJECT_FILES__.status());
   await rename(page, avr, 'AVR cancellation remains dirty');
   await page.evaluate(() => { window.__NATIVE_FILE_MOCK__.mode = 'abort'; });
+  await ensureProjectFilesOpen(page);
   await page.click(avr.nativeCopy); await waitIdle(page, avr);
   assert.deepEqual(await page.evaluate(() => window.__NATIVE_PROJECT_FILES__.status()), connectedBeforeCancel,
     'Save copy cancellation changed current connection');
@@ -172,6 +184,7 @@ async function verifyNative(browser) {
     const before = await canonical(page, avr);
     const writes = (await mockState(page)).writes.length;
     await page.evaluate((value) => { window.__NATIVE_FILE_MOCK__.mode = value; }, mode);
+    await ensureProjectFilesOpen(page);
     await page.click(avr.nativeCopy); await waitIdle(page, avr);
     assert.equal(await canonical(page, avr), before, `${mode}: project changed`);
     assert.equal((await mockState(page)).writes.length, writes, `${mode}: completed write claimed`);
@@ -179,6 +192,7 @@ async function verifyNative(browser) {
   }
 
   await page.evaluate(() => { window.__NATIVE_FILE_MOCK__.mode = 'deferred'; });
+  await ensureProjectFilesOpen(page);
   await page.click(avr.nativeCopy);
   await page.waitForFunction(() => window.__NATIVE_PROJECT_FILES__.status().busy);
   const writesBeforeStale = (await mockState(page)).writes.length;
@@ -188,10 +202,12 @@ async function verifyNative(browser) {
   assert.equal((await mockState(page)).writes.length, writesBeforeStale, 'stale picker overwrote a file');
 
   await page.evaluate(() => { window.__NATIVE_FILE_MOCK__.mode = 'hang'; });
+  await ensureProjectFilesOpen(page);
   await page.click(avr.nativeCopy);
   await page.waitForFunction(() => window.__NATIVE_PROJECT_FILES__.status().busy);
   const [download] = await Promise.all([page.waitForEvent('download'), page.click(avr.download)]);
   assert(download.suggestedFilename().endsWith('.intent-mcu.json'), 'hung native picker blocked primary Download copy');
+  await ensureProjectFilesOpen(page);
   await page.click('#project-new');
   await page.waitForSelector('#unsaved-change-dialog[open]');
   await page.click('#unsaved-keep');
@@ -205,15 +221,18 @@ async function verifyNative(browser) {
   const openPage = await openContext.newPage();
   const openRequests = trackRequests(openPage);
   await ready(openPage);
+  await ensureProjectFilesOpen(openPage);
   const cleanText = await canonical(openPage, avr);
   await rename(openPage, avr, 'AVR dirty before connected Open');
   await openPage.evaluate((text) => { window.__NATIVE_FILE_MOCK__.openText = text; }, cleanText);
+  await ensureProjectFilesOpen(openPage);
   await openPage.click(avr.nativeOpen);
   await openPage.waitForSelector('#unsaved-change-dialog[open]');
   assert.equal(await openPage.evaluate(() => window.__NATIVE_PROJECT_FILES__.status().connected), false,
     'native handle attached before unsaved decision');
   await openPage.click('#unsaved-keep');
   assert.equal(await openPage.inputValue(avr.name), 'AVR dirty before connected Open');
+  await ensureProjectFilesOpen(openPage);
   await openPage.click(avr.nativeOpen);
   await openPage.waitForSelector('#unsaved-change-dialog[open]');
   await openPage.click('#unsaved-discard');
@@ -228,20 +247,25 @@ async function verifyNative(browser) {
 
   const legacyText = await openPage.evaluate(() => window.__COMMON_PROJECT_FILES__.legacy());
   await openPage.evaluate((text) => { window.__NATIVE_FILE_MOCK__.openText = text; }, legacyText);
+  await ensureProjectFilesOpen(openPage);
   await openPage.click(avr.nativeOpen); await waitIdle(openPage, avr);
   assert.equal(await openPage.evaluate(() => window.__NATIVE_PROJECT_FILES__.status().connected), false,
     'legacy original became a writable connected file');
 
   await openPage.evaluate(() => { window.__NATIVE_FILE_MOCK__.mode = 'ok'; });
+  await ensureProjectFilesOpen(openPage);
   await openPage.click(avr.nativeCopy); await waitIdle(openPage, avr);
   assert.equal(await openPage.evaluate(() => window.__NATIVE_PROJECT_FILES__.status().connected), true);
+  await ensureProjectFilesOpen(openPage);
   await openPage.click('#project-new');
   await openPage.waitForFunction(() => !window.__NATIVE_PROJECT_FILES__.status().connected);
 
   const c3 = profiles[2];
   await choose(openPage, c3);
+  await ensureProjectFilesOpen(openPage);
   const c3Text = await canonical(openPage, c3);
   await choose(openPage, avr);
+  await ensureProjectFilesOpen(openPage);
   await openPage.evaluate((text) => { window.__NATIVE_FILE_MOCK__.openText = text; }, c3Text);
   await openPage.click(avr.nativeOpen);
   await openPage.waitForFunction((value) => document.querySelector('#board-select').value === value, c3.option);

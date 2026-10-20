@@ -28,27 +28,27 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc91 to rc92 partial X43 release bytes', async () => {
+test('X88 owner binds canonical rc92 to rc93 partial X47 release bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.92');
+  assert.equal(release.version, '1.1.0-rc.93');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
-  assert(registry.ids.includes('X43'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.91', current: '1.1.0-rc.92' });
+  assert(registry.ids.includes('X47'));
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.92', current: '1.1.0-rc.93' });
   assert.deepEqual(value.changes, [
     {
-      id: 'X43', classification: 'changed', capabilities: ['intent-mcu-x43-avr-observation-interval@1'],
-      contracts: ['x43-avr-observation-interval-v1'],
-      summary: 'Publishes the partial X43 AVR-only cycle and executed-instruction observation interval with exact lifecycle binding, fail-closed counter ordering and explicit unavailable memory and stack fields.',
+      id: 'X47', classification: 'changed', capabilities: ['intent-mcu-x47-avr-d2-pulse@1'],
+      contracts: ['x47-avr-d2-active-low-pulse-v1'],
+      summary: 'Publishes partial AVR-only D2 active-low pulse preview and current-worker application with strict source, graph, artifact, model, epoch, receipt, cancellation and lifecycle binding.',
     },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records the reviewed rc.91 to rc.92 partial X43 release without adding firmware action, stored runtime authority, project persistence, automatic replay or verdict authority.',
+      summary: 'Records the reviewed rc.92 to rc.93 partial X47 release without adding a firmware Build, Run or scenario, stored authority, automatic replay or verdict authority.',
     },
   ]);
-  assert.equal(value.migrationRequired, false);
+  assert.equal(value.migrationRequired, true);
   assert.equal(value.breakingChangesPresent, false);
   assert.deepEqual(value.authority, { apply: false, build: false, run: false, replay: false, verdict: false });
   assert.equal(value.product.source.implementation.sha256, options.implementationSha256);
@@ -108,7 +108,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.92');
+  assert.equal(discovery.identity.version, '1.1.0-rc.93');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

@@ -40,6 +40,15 @@
       ]
     },
     {
+      "id": "X47",
+      "capabilities": [
+        "intent-mcu-x47-avr-d2-pulse@1"
+      ],
+      "contracts": [
+        "x47-avr-d2-active-low-pulse-v1"
+      ]
+    },
+    {
       "id": "X59",
       "capabilities": [
         "intent-mcu-shared-workbench-view@1"

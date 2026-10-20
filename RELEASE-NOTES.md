@@ -1,4 +1,33 @@
-# Intent MCU Simulator 1.1.0-rc.92
+# Intent MCU Simulator 1.1.0-rc.93
+
+## X47 partial AVR D2 pulse input
+
+This release publishes the reviewed partial X47 slice for the exact AVR
+button-on-D2 graph. A learner can create a deterministic active-low pulse
+preview, then apply it only after a current firmware Run has been explicitly
+paused. The request is bound to the exact source, graph, artifact, model,
+runtime generation and worker epoch; queue and execution receipts must match
+before Resume is available.
+
+Stop uses a two-phase cancellation-then-disposal handshake and revokes active
+authority even when acknowledgement times out. Reset and lifecycle changes
+also revoke authority. Retained request, queue and execution facts are labelled
+`Historical · non-current`; they cannot authorize Apply, Resume or a late
+worker receipt. Four recognized earlier current-model identities migrate
+data-only to the current model and clear execution authority.
+
+The accepted immutable native evidence proves the canonical 16,000-cycle LOW
+edge and 48,000-cycle HIGH edge plus the accepted Stop sequence. The saved
+RESET evidence genuinely proves the criteria it reached, while its original
+receipt remains failed-not-accepted. Pending-pulse RESET cancellation is
+synthetic-only. Wider waveforms, noise/CSV and other profiles remain planned,
+so X47 is partial. This release performs no new firmware Build, Run or
+scenario. X-status taxonomy is **72 complete / 2 partial / 22 planned**; P1 is
+**59/0/0**.
+
+---
+
+## 1.1.0-rc.92
 
 ## X43 partial AVR runtime profile interval
 

@@ -12,6 +12,10 @@ const profiles = [
   { id: 'board.stm32f429zi-nucleo144-v1', family: 'architecture.stm32-v1', name: '#stm32-project-name', source: '#stm32-source', api: '__STM32_PUBLIC_WORKBENCH__' },
 ];
 
+async function ensureDialog(page, id, trigger) {
+  if (await page.locator(id).getAttribute('open') === null) await page.click(trigger);
+}
+
 (async () => {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1265, height: 900 } });
@@ -21,9 +25,13 @@ const profiles = [
     await page.selectOption('#family-select', profile.family);
     await page.waitForFunction((key) => window[key]?.state().active === true, profile.api);
     const expectedName = `PARKED DRAFT ${index + 1}`;
+    await ensureDialog(page, '#workbench-project-dialog', '#project-files-open');
     await page.fill(profile.name, expectedName);
     await page.locator(profile.name).blur();
+    await page.keyboard.press('Escape');
+    await ensureDialog(page, '#workbench-firmware-dialog', '#firmware-open');
     await page.fill(profile.source, `${await page.inputValue(profile.source)}\n/* PARKED_${index + 1} */\n`);
+    await page.keyboard.press('Escape');
     await page.evaluate((key) => {
       const result = window[key].moveCircuitComponent('resistor-1', 0.49, 0.31);
       if (!result.ok) throw new Error(result.code);

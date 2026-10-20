@@ -2,6 +2,21 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.93 — 2026-10-20
+
+- Publishes the reviewed partial X47 AVR-only D2 active-low pulse preview and
+  exact current-paused-worker Apply/Resume journey.
+- Binds source, graph, artifact, model implementation/execution context,
+  runtime generation and worker epoch through strict queue, execution and
+  cancellation receipts.
+- Uses two-phase Stop cancellation/disposal, fail-closed timeout behavior and
+  explicit `Historical · non-current` retained evidence after authority is
+  revoked.
+- Recognizes four earlier current-model identities through data-only migration
+  that preserves authored cells and clears executable/runtime authority.
+- Advances X status to **72 complete / 2 partial / 22 planned**, P1 **59/0/0**.
+  No new firmware Build, Run or scenario was performed for this release.
+
 ## 1.1.0-rc.92 — 2026-10-20
 
 - Publishes the reviewed partial X43 AVR-only Runtime profile interval: an

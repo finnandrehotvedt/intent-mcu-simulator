@@ -50,9 +50,9 @@ const browserState = () => ({
     assert.match(fetched.type, /^application\/json;/u);
     assert.match(fetched.csp, /default-src 'none'/u);
     const delta = JSON.parse(fetched.text);
-    assert.deepEqual(delta.release, { previous: '1.1.0-rc.91', current: '1.1.0-rc.92' });
+    assert.deepEqual(delta.release, { previous: '1.1.0-rc.92', current: '1.1.0-rc.93' });
     assert.deepEqual(delta.changes.map(({ id, classification }) => ({ id, classification })),
-      [{ id: 'X42', classification: 'changed' }, { id: 'X88', classification: 'changed' }]);
+      [{ id: 'X47', classification: 'changed' }, { id: 'X88', classification: 'changed' }]);
     assert.deepEqual(delta.authority, { apply: false, build: false, run: false, replay: false, verdict: false });
     const after = await page.evaluate(browserState);
     const databasesAfter = await page.evaluate(async () => (await indexedDB.databases()).map(({ name, version }) => ({ name, version })));
