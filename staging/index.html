@@ -36,22 +36,24 @@
       <p class="lede">Build and run four bounded controller paths. C3 uses actual QEMU CPU/UART with a separate GPIO2 model; STM32 uses actual Renode PB0/USART3 with an ideal external LED teaching path.</p>
     </header>
     <section id="top-workbench-shell" class="top-workbench-shell" aria-labelledby="top-workbench-title">
-      <header class="top-workbench-toolbar">
-        <div class="top-workbench-identity"><p class="eyebrow">ACTIVE BUILD SURFACE</p><h2 id="top-workbench-title">Build the circuit</h2></div>
-        <div id="top-controller-controls" class="top-controller-controls"></div>
-        <div id="top-primary-controls" class="top-primary-controls"></div>
-      </header>
-      <nav id="workbench-popup-controls" class="workbench-popup-controls" aria-label="Open secondary workbench tools">
-        <button id="project-files-open" type="button" aria-haspopup="dialog" aria-controls="workbench-project-dialog">Project &amp; files</button>
-        <button id="toggle-catalog" type="button" aria-haspopup="dialog" aria-controls="workbench-parts-dialog">Parts</button>
-        <button id="toggle-inspector" type="button" aria-haspopup="dialog" aria-controls="workbench-inspector-dialog">Inspector</button>
-        <button id="firmware-open" type="button" aria-haspopup="dialog" aria-controls="workbench-firmware-dialog">Firmware</button>
-        <button id="brief-tests-open" type="button" aria-haspopup="dialog" aria-controls="workbench-brief-dialog">Brief &amp; tests</button>
-        <button id="instruments-open" type="button" aria-haspopup="dialog" aria-controls="workbench-instruments-dialog">Instruments</button>
-        <button id="help-limits-open" type="button" aria-haspopup="dialog" aria-controls="workbench-help-dialog">Help &amp; limits</button>
-        <button id="build-list-export" type="button">Export build list</button>
-      </nav>
-      <p id="build-list-status" class="build-list-status" role="status">Exports named connections and authored values only. Not a purchase list; no firmware or runtime evidence is included.</p>
+      <div id="top-workbench-sticky-controls" class="top-workbench-sticky-controls">
+        <header class="top-workbench-toolbar">
+          <div class="top-workbench-identity"><p class="eyebrow">ACTIVE BUILD SURFACE</p><h2 id="top-workbench-title">Build the circuit</h2></div>
+          <div id="top-controller-controls" class="top-controller-controls"></div>
+          <div id="top-primary-controls" class="top-primary-controls"></div>
+        </header>
+        <nav id="workbench-popup-controls" class="workbench-popup-controls" aria-label="Open secondary workbench tools">
+          <button id="project-files-open" type="button" aria-haspopup="dialog" aria-controls="workbench-project-dialog">Project &amp; files</button>
+          <button id="toggle-catalog" type="button" aria-haspopup="dialog" aria-controls="workbench-parts-dialog">Parts</button>
+          <button id="toggle-inspector" type="button" aria-haspopup="dialog" aria-controls="workbench-inspector-dialog">Inspector</button>
+          <button id="firmware-open" type="button" aria-haspopup="dialog" aria-controls="workbench-firmware-dialog">Firmware</button>
+          <button id="brief-tests-open" type="button" aria-haspopup="dialog" aria-controls="workbench-brief-dialog">Brief &amp; tests</button>
+          <button id="instruments-open" type="button" aria-haspopup="dialog" aria-controls="workbench-instruments-dialog">Instruments</button>
+          <button id="help-limits-open" type="button" aria-haspopup="dialog" aria-controls="workbench-help-dialog">Help &amp; limits</button>
+          <button id="build-list-export" type="button">Export build list</button>
+        </nav>
+        <p id="build-list-status" class="build-list-status" role="status">Exports named connections and authored values only. Not a purchase list; no firmware or runtime evidence is included.</p>
+      </div>
       <section id="active-canvas-stage" class="active-canvas-stage" aria-label="Active controller circuit build surface">
         <div id="active-canvas-mount"></div>
         <div class="top-workbench-status" aria-label="Current workbench status">
