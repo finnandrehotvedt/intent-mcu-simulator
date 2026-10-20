@@ -6,7 +6,7 @@ unchanged.
 
 Retain exact accepted rc.80 source commit
 `9baecd8f110dd1dc666e0a3525a83bc65e619071` and VM103 image
-`sha256:0fc49bda9d3eae293a4c41bead398e5c7a8c7cb15edb75ba59a840687e47982`
+`sha256:0fc49bda9d3e3ae293a4c41bead398e5c7a8c7cb15edb75ba59a840687e47982`
 as the pre-rc.81 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
