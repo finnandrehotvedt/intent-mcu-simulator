@@ -67,6 +67,34 @@
       <details id="technical-error" class="technical-error" hidden><summary>Technical details</summary><pre id="technical-error-detail"></pre></details>
     </section>
 
+    <details id="local-history" class="local-history panel">
+      <summary>Local version history <span id="local-history-badge">Off</span></summary>
+      <p class="truth">Optional versions stay in this browser profile at this exact site. They are not uploaded, encrypted by the Lab or a durable backup. Browser clearing, private mode, storage eviction or device loss can remove them; keep important projects as downloaded files.</p>
+      <div class="local-history-controls">
+        <button id="local-history-enable" type="button">Enable local history</button>
+        <button id="local-history-disable" type="button" hidden>Turn off history</button>
+        <label for="local-history-retention">Keep at most
+          <select id="local-history-retention" disabled><option value="3">3 versions</option><option value="10">10 versions</option></select>
+        </label>
+        <label for="local-history-label">Optional label
+          <input id="local-history-label" type="text" maxlength="80" autocomplete="off" disabled placeholder="Before changing the LED">
+        </label>
+        <button id="local-history-save" type="button" disabled>Save local version</button>
+        <button id="local-history-clear" type="button" disabled>Delete all local versions</button>
+      </div>
+      <p id="local-history-status" class="truth" role="status" aria-live="polite">History is off. No history database is opened and no project source is captured. Enabling is explicit.</p>
+      <ol id="local-history-list" class="local-history-list" aria-label="Saved local project versions"></ol>
+    </details>
+
+    <dialog id="local-history-confirm" class="unsaved-change-dialog" aria-labelledby="local-history-confirm-title">
+      <form method="dialog">
+        <h2 id="local-history-confirm-title">Confirm local history change</h2>
+        <p id="local-history-confirm-description"></p>
+        <p id="local-history-confirm-status" class="truth" role="status">The current project and downloaded files are not deleted.</p>
+        <div class="dialog-actions"><button id="local-history-confirm-cancel" type="button">Cancel</button><button id="local-history-confirm-accept" type="button" class="danger">Confirm</button></div>
+      </form>
+    </dialog>
+
     <nav id="quick-controls" class="quick-controls panel" aria-label="Persistent build and runtime controls">
       <span><strong>Workbench</strong><small id="quick-state">Empty project</small></span>
       <button id="toggle-catalog" type="button" aria-pressed="false">Parts</button>

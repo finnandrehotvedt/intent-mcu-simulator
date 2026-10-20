@@ -207,6 +207,11 @@ The intended manual workflow is:
    recovery is separate from the durable user-owned file. A valid same-profile
    Open, or AVR New, asks before replacing authored changes; requesting a
    download copy does not claim that the browser completed a durable write.
+   Optional local version history is off by default. An explicit opt-in and
+   explicit Save local version action can retain 3 or 10 canonical project
+   files in first-party IndexedDB across all four profiles. It never restores
+   file, build, runtime or result authority, and it is local convenience rather
+   than encrypted or durable backup storage.
    Imported projects and
    Prompt Bridge proposals pass the same strict schema and electrical rules as
    manual edits.

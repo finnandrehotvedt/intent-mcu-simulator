@@ -247,6 +247,12 @@ import {
   prepareProjectEnvelope,
 } from '../src/project-envelope.mjs';
 import {
+  IndexedDbLocalVersionVault,
+  LOCAL_HISTORY_ENABLED_KEY,
+  createHistoryRecord,
+  inspectHistoryRecord,
+} from '../src/local-version-history.mjs';
+import {
   CURRENT_MODEL_LIBRARY_LOCK,
   RETAINED_MODEL_LIBRARY_LOCK,
   modelLibraryMigrationPreview,
@@ -362,6 +368,11 @@ const elements = Object.fromEntries([
   'project-message', 'project-name', 'project-new', 'project-demo', 'project-save', 'project-open', 'project-open-input',
   'project-native-open', 'project-native-save', 'project-native-save-copy', 'project-file-connection',
   'model-library-detail', 'model-library-summary', 'model-library-status', 'model-library-changes', 'model-library-migrate',
+  'local-history', 'local-history-badge', 'local-history-enable', 'local-history-disable',
+  'local-history-retention', 'local-history-label', 'local-history-save', 'local-history-clear',
+  'local-history-status', 'local-history-list', 'local-history-confirm',
+  'local-history-confirm-title', 'local-history-confirm-description', 'local-history-confirm-status',
+  'local-history-confirm-cancel', 'local-history-confirm-accept',
   'project-reload', 'project-export', 'project-import',
   'project-import-mode', 'undo', 'redo', 'prompt-generate', 'prompt-copy', 'prompt-output', 'prompt-response',
   'prompt-mode', 'prompt-apply', 'prompt-message', 'component-controls',
@@ -7044,6 +7055,347 @@ function installNativeFileControls() {
   }
   renderNativeFileControls();
 }
+
+let localHistoryVault = null;
+let localHistorySettings = { enabled: false, retentionCount: 3 };
+let pendingLocalHistoryConfirmation = null;
+
+function historyFailure(error) {
+  const code = (typeof error?.code === 'string' && error.code)
+    || error?.name || error?.message || 'LOCAL_HISTORY_FAILED';
+  elements.localhistorystatus.textContent = `Local history failed (${code}). The current project, downloaded files and prior local versions are unchanged.`;
+  return { ok: false, code };
+}
+
+function setHistoryControls(enabled) {
+  elements.localhistory.dataset.enabled = String(enabled);
+  elements.localhistorybadge.textContent = enabled ? `On · keep ${localHistorySettings.retentionCount}` : 'Off';
+  elements.localhistoryenable.hidden = enabled;
+  elements.localhistorydisable.hidden = !enabled;
+  elements.localhistoryretention.disabled = !enabled;
+  elements.localhistorylabel.disabled = !enabled;
+  elements.localhistorysave.disabled = !enabled;
+  if (!enabled) {
+    elements.localhistoryclear.disabled = true;
+    elements.localhistorylist.replaceChildren();
+  }
+}
+
+function closeLocalHistoryConfirmation({ cancelled = true } = {}) {
+  const pending = pendingLocalHistoryConfirmation;
+  pendingLocalHistoryConfirmation = null;
+  if (elements.localhistoryconfirm.open) elements.localhistoryconfirm.close(cancelled ? 'cancel' : 'confirmed');
+  if (cancelled) pending?.onCancel?.();
+  pending?.returnFocus?.focus?.();
+}
+
+function requestLocalHistoryConfirmation({ title, description, acceptLabel, run, onCancel = null }) {
+  if (pendingLocalHistoryConfirmation || elements.localhistoryconfirm.open) {
+    elements.localhistorystatus.textContent = 'Finish the current local-history decision first. No additional action was queued.';
+    return;
+  }
+  pendingLocalHistoryConfirmation = { run, onCancel, returnFocus: document.activeElement };
+  elements.localhistoryconfirmtitle.textContent = title;
+  elements.localhistoryconfirmdescription.textContent = description;
+  elements.localhistoryconfirmstatus.textContent = 'The current project, browser recovery and downloaded files are not deleted.';
+  elements.localhistoryconfirmaccept.textContent = acceptLabel;
+  elements.localhistoryconfirm.showModal();
+  elements.localhistoryconfirmcancel.focus();
+}
+
+function historyRecordFilename(record, raw = false) {
+  const profile = String(record?.profile ?? 'unknown').replace(/[^a-z0-9.-]/giu, '-').slice(0, 48);
+  const hash = String(record?.projectSha256 ?? 'unverified').slice(0, 12);
+  return raw ? `invalid-local-history-recovery-${profile}-${hash}.json`
+    : `local-history-${profile}-${hash}.intent-mcu.json`;
+}
+
+async function inspectStoredHistoryRecord(record) {
+  return inspectHistoryRecord(record, {
+    prepare: (source) => prepareProjectEnvelope(source, commonProjectAdapters),
+  });
+}
+
+async function installHistoryRecordIfCurrent(id, expectedHash) {
+  try {
+    const latest = await localHistoryVault?.get(id);
+    if (!latest || latest.projectSha256 !== expectedHash) return historyFailure({ code: 'LOCAL_HISTORY_STALE_SELECTION' });
+    const inspected = await inspectStoredHistoryRecord(latest);
+    if (!inspected.ok) return historyFailure({ code: inspected.code });
+    installPreparedProjectEnvelope(inspected.prepared, null);
+    elements.localhistorystatus.textContent = `Opened local version ${expectedHash.slice(0, 12)}. File connection, history, artifact, runtime and result authority were cleared; Build fresh before Run.`;
+    await refreshLocalHistory();
+    return inspected;
+  } catch (error) { return historyFailure(error); }
+}
+
+async function openHistoryRecord(id) {
+  try {
+    const record = await localHistoryVault?.get(id);
+    if (!record) return historyFailure({ code: 'LOCAL_HISTORY_STALE_SELECTION' });
+    const inspected = await inspectStoredHistoryRecord(record);
+    if (!inspected.ok) return historyFailure({ code: inspected.code });
+    const continueAction = () => { void installHistoryRecordIfCurrent(id, record.projectSha256); };
+    if (inspected.prepared.profile === selectedCompilerProfile && requestUnsavedChangeGuard({
+      profile: selectedCompilerProfile,
+      actionLabel: 'opening this local version',
+      continueAction,
+    })) return { ...inspected, pending: true };
+    return installHistoryRecordIfCurrent(id, record.projectSha256);
+  } catch (error) { return historyFailure(error); }
+}
+
+async function downloadHistoryRecord(id, { raw = false } = {}) {
+  try {
+    const record = await localHistoryVault?.get(id);
+    if (!record || typeof record.envelope !== 'string') return historyFailure({ code: 'LOCAL_HISTORY_STALE_SELECTION' });
+    if (!raw) {
+      const inspected = await inspectStoredHistoryRecord(record);
+      if (!inspected.ok) return historyFailure({ code: inspected.code });
+    }
+    downloadText(historyRecordFilename(record, raw), record.envelope, 'application/json');
+    elements.localhistorystatus.textContent = raw
+      ? 'Raw invalid recovery bytes downloaded without opening or installing them.'
+      : `Downloaded exact local version ${record.projectSha256.slice(0, 12)}. The current project and file connection are unchanged.`;
+    return { ok: true, code: raw ? 'LOCAL_HISTORY_RAW_RECOVERY_DOWNLOADED' : 'LOCAL_HISTORY_DOWNLOADED' };
+  } catch (error) { return historyFailure(error); }
+}
+
+async function deleteHistoryRecord(id) {
+  try {
+    const decision = await localHistoryVault.delete(id);
+    if (decision.code !== 'LOCAL_HISTORY_DELETE_CONFIRMATION_REQUIRED') return historyFailure({ code: decision.code });
+    requestLocalHistoryConfirmation({
+      title: 'Delete this local version?',
+      description: `Delete only ${typeof decision.record?.projectSha256 === 'string'
+        ? decision.record.projectSha256.slice(0, 12) : 'this invalid recovery record'} from this browser's local history?`,
+      acceptLabel: 'Delete local version',
+      run: async () => {
+        const result = await localHistoryVault.delete(id, decision.confirmation);
+        if (!result.ok) return historyFailure({ code: result.code });
+        elements.localhistorystatus.textContent = 'Deleted the confirmed local version. The current project and downloaded files are unchanged.';
+        await refreshLocalHistory();
+        return result;
+      },
+    });
+    return decision;
+  } catch (error) { return historyFailure(error); }
+}
+
+function historyRow(entry, inspected) {
+  const { record, storageKey, storageToken } = entry;
+  const valid = inspected.ok;
+  const item = document.createElement('li');
+  item.className = 'local-history-row';
+  item.dataset.historyId = valid ? record.id : storageToken;
+  item.dataset.valid = String(valid);
+  const copy = document.createElement('div');
+  const title = document.createElement('strong');
+  title.textContent = valid ? (record.label || inspected.projectName) : 'Invalid local history record';
+  const details = document.createElement('small');
+  details.textContent = valid
+    ? `${record.profile} · ${record.projectSha256.slice(0, 12)} · ${record.modelLibrary.version} / ${record.modelLibrary.manifestSha256.slice(0, 12)} · ${record.byteLength} bytes · ${record.createdAt}`
+    : `${String(record?.profile ?? 'unknown')} · ${String(record?.projectSha256 ?? 'unverified').slice(0, 12)} · cannot be opened`;
+  copy.append(title, details);
+  const actions = document.createElement('div');
+  actions.className = 'local-history-actions';
+  const open = Object.assign(document.createElement('button'), { type: 'button', textContent: 'Open this version', disabled: !valid });
+  const download = Object.assign(document.createElement('button'), { type: 'button', textContent: 'Download copy', disabled: !valid });
+  const raw = Object.assign(document.createElement('button'), { type: 'button', textContent: 'Download raw recovery copy', hidden: valid || typeof record?.envelope !== 'string' });
+  const remove = Object.assign(document.createElement('button'), { type: 'button', textContent: 'Delete local version' });
+  open.addEventListener('click', () => { void openHistoryRecord(storageKey); });
+  download.addEventListener('click', () => { void downloadHistoryRecord(storageKey); });
+  raw.addEventListener('click', () => { void downloadHistoryRecord(storageKey, { raw: true }); });
+  remove.addEventListener('click', () => { void deleteHistoryRecord(storageKey); });
+  actions.append(open, download, raw, remove);
+  item.append(copy, actions);
+  return item;
+}
+
+async function refreshLocalHistory(message = null) {
+  if (!localHistoryVault || !localHistorySettings.enabled) { setHistoryControls(false); return []; }
+  try {
+    const entries = await localHistoryVault.listEntries();
+    const inspected = await Promise.all(entries.map((entry) => inspectStoredHistoryRecord(entry.record)));
+    elements.localhistorylist.replaceChildren(...entries.slice().reverse().map(
+      (entry, reverseIndex) => historyRow(entry, inspected[entries.length - reverseIndex - 1]),
+    ));
+    elements.localhistoryclear.disabled = entries.length === 0;
+    elements.localhistorybadge.textContent = `On · ${entries.length}/${localHistorySettings.retentionCount}`;
+    elements.localhistoryretention.value = String(localHistorySettings.retentionCount);
+    const invalidCount = entries.filter((entry) => !entry.valid).length;
+    elements.localhistorystatus.textContent = message ?? (entries.length
+      ? `${entries.length} explicit local version${entries.length === 1 ? '' : 's'} retained in this browser.${invalidCount ? ` ${invalidCount} invalid record${invalidCount === 1 ? '' : 's'} can only be downloaded raw or explicitly deleted; saving and retention changes are blocked.` : ''} Local convenience, not backup.`
+      : 'History is enabled, but no project version has been saved. Nothing is captured automatically.');
+    return entries;
+  } catch (error) { historyFailure(error); return []; }
+}
+
+async function enableLocalHistory({ resume = false } = {}) {
+  if (localHistoryVault) return refreshLocalHistory();
+  try {
+    const vault = new IndexedDbLocalVersionVault(window.indexedDB);
+    await vault.open();
+    let settings = await vault.settings();
+    if (resume && !settings.enabled) {
+      localStorage.setItem(LOCAL_HISTORY_ENABLED_KEY, 'false');
+      vault.close();
+      setHistoryControls(false);
+      elements.localhistorystatus.textContent = 'History is off. Retained versions were not deleted; enable history to inspect them.';
+      return [];
+    }
+    if (!resume) {
+      const enabled = await vault.setEnabled(true);
+      if (!enabled.ok) throw Object.assign(new Error(enabled.code), enabled);
+      settings = await vault.settings();
+      try { localStorage.setItem(LOCAL_HISTORY_ENABLED_KEY, 'true'); }
+      catch (error) {
+        await vault.setEnabled(false);
+        vault.close();
+        throw error;
+      }
+    }
+    localHistoryVault = vault;
+    localHistorySettings = settings;
+    setHistoryControls(true);
+    return refreshLocalHistory(resume ? null : 'Local history enabled. Nothing is captured until you choose Save local version.');
+  } catch (error) {
+    localHistoryVault?.close(); localHistoryVault = null;
+    setHistoryControls(false);
+    return historyFailure(error);
+  }
+}
+
+async function disableLocalHistory() {
+  try {
+    if (!localHistoryVault) return { ok: true, code: 'LOCAL_HISTORY_ALREADY_DISABLED' };
+    const result = await localHistoryVault.setEnabled(false);
+    if (!result.ok) return historyFailure({ code: result.code });
+    try { localStorage.setItem(LOCAL_HISTORY_ENABLED_KEY, 'false'); } catch { /* DB setting remains authoritative */ }
+    localHistoryVault.close(); localHistoryVault = null;
+    localHistorySettings = { ...localHistorySettings, enabled: false };
+    setHistoryControls(false);
+    elements.localhistorystatus.textContent = 'History is off. Retained local versions were not deleted. Enable history to inspect them again.';
+    return result;
+  } catch (error) { return historyFailure(error); }
+}
+
+async function saveLocalHistoryVersion(confirmation = null, candidate = null) {
+  try {
+    if (!localHistoryVault || !localHistorySettings.enabled) return historyFailure({ code: 'LOCAL_HISTORY_DISABLED' });
+    let record = candidate;
+    if (!record) {
+      const envelope = commonProjectText(selectedCompilerProfile);
+      const prepared = prepareProjectEnvelope(envelope, commonProjectAdapters);
+      if (!prepared.ok || prepared.profile !== selectedCompilerProfile) return historyFailure({ code: prepared.code ?? 'LOCAL_HISTORY_PROJECT_INVALID' });
+      const created = await createHistoryRecord({
+        envelope, profile: prepared.profile, modelLibrary: prepared.modelLibrary,
+        label: elements.localhistorylabel.value,
+      });
+      if (!created.ok) return historyFailure({ code: created.code });
+      record = created.record;
+    }
+    const result = await localHistoryVault.save(record, confirmation);
+    if (result.code === 'LOCAL_HISTORY_REPLACE_CONFIRMATION_REQUIRED') {
+      requestLocalHistoryConfirmation({
+        title: 'Replace the oldest local version?',
+        description: `The global limit is ${result.confirmation.retentionCount}. Saving ${record.projectSha256.slice(0, 12)} will delete only oldest version ${result.oldest.projectSha256.slice(0, 12)} after transaction-time revalidation.`,
+        acceptLabel: 'Replace oldest and save',
+        run: () => saveLocalHistoryVersion(result.confirmation, record),
+      });
+      return result;
+    }
+    if (!result.ok) return historyFailure({ code: result.code });
+    if (result.code === 'LOCAL_HISTORY_SAVED') elements.localhistorylabel.value = '';
+    await refreshLocalHistory(result.code === 'LOCAL_HISTORY_ALREADY_SAVED'
+      ? 'This exact canonical project version is already saved. No duplicate was created.'
+      : `Saved local version ${record.projectSha256.slice(0, 12)}. No Build, Run or upload occurred.`);
+    return result;
+  } catch (error) { return historyFailure(error); }
+}
+
+async function changeLocalHistoryRetention(retentionCount, confirmation = null) {
+  try {
+    const prior = localHistorySettings.retentionCount;
+    const result = await localHistoryVault.setRetention(retentionCount, confirmation);
+    if (result.code === 'LOCAL_HISTORY_RETENTION_CONFIRMATION_REQUIRED') {
+      requestLocalHistoryConfirmation({
+        title: `Keep only ${retentionCount} local versions?`,
+        description: `This will delete exactly ${result.remove.length} named oldest version${result.remove.length === 1 ? '' : 's'} after transaction-time revalidation: ${result.remove.map((record) => record.projectSha256.slice(0, 12)).join(', ')}.`,
+        acceptLabel: 'Delete listed versions',
+        onCancel: () => { elements.localhistoryretention.value = String(prior); },
+        run: () => changeLocalHistoryRetention(retentionCount, result.confirmation),
+      });
+      return result;
+    }
+    if (!result.ok) { elements.localhistoryretention.value = String(prior); return historyFailure({ code: result.code }); }
+    localHistorySettings = { ...localHistorySettings, retentionCount };
+    await refreshLocalHistory(`Retention is now ${retentionCount}. Only explicitly confirmed records were removed.`);
+    return result;
+  } catch (error) { return historyFailure(error); }
+}
+
+async function clearLocalHistory(confirmation = null) {
+  try {
+    const result = await localHistoryVault.clear(confirmation);
+    if (result.code === 'LOCAL_HISTORY_CLEAR_CONFIRMATION_REQUIRED') {
+      requestLocalHistoryConfirmation({
+        title: 'Delete all local versions?',
+        description: `Delete exactly ${result.records.length} retained version${result.records.length === 1 ? '' : 's'} from this browser? History stays enabled.`,
+        acceptLabel: 'Delete all local versions',
+        run: () => clearLocalHistory(result.confirmation),
+      });
+      return result;
+    }
+    if (!result.ok) return historyFailure({ code: result.code });
+    await refreshLocalHistory('All confirmed local versions were deleted. The current project, browser recovery and downloaded files are unchanged.');
+    return result;
+  } catch (error) { return historyFailure(error); }
+}
+
+function installLocalHistoryControls() {
+  setHistoryControls(false);
+  elements.localhistoryenable.addEventListener('click', () => { void enableLocalHistory(); });
+  elements.localhistorydisable.addEventListener('click', () => { void disableLocalHistory(); });
+  elements.localhistorysave.addEventListener('click', () => { void saveLocalHistoryVersion(); });
+  elements.localhistoryretention.addEventListener('change', () => {
+    void changeLocalHistoryRetention(Number(elements.localhistoryretention.value));
+  });
+  elements.localhistoryclear.addEventListener('click', () => { void clearLocalHistory(); });
+  elements.localhistoryconfirmcancel.addEventListener('click', () => closeLocalHistoryConfirmation());
+  elements.localhistoryconfirm.addEventListener('cancel', (event) => { event.preventDefault(); closeLocalHistoryConfirmation(); });
+  elements.localhistoryconfirmaccept.addEventListener('click', async () => {
+    const pending = pendingLocalHistoryConfirmation;
+    if (!pending) return;
+    elements.localhistoryconfirmaccept.disabled = true;
+    try {
+      const result = await pending.run();
+      if (result?.ok) closeLocalHistoryConfirmation({ cancelled: false });
+      else if (result?.code === 'LOCAL_HISTORY_REPLACE_CONFIRMATION_REQUIRED'
+        || result?.code === 'LOCAL_HISTORY_RETENTION_CONFIRMATION_REQUIRED'
+        || result?.code === 'LOCAL_HISTORY_DELETE_CONFIRMATION_REQUIRED'
+        || result?.code === 'LOCAL_HISTORY_CLEAR_CONFIRMATION_REQUIRED') {
+        closeLocalHistoryConfirmation({ cancelled: false });
+      } else {
+        elements.localhistoryconfirmstatus.textContent = `Action stopped (${result?.code ?? 'LOCAL_HISTORY_FAILED'}). No record was deleted.`;
+      }
+    } finally { elements.localhistoryconfirmaccept.disabled = false; }
+  });
+  let enabled = false;
+  try { enabled = localStorage.getItem(LOCAL_HISTORY_ENABLED_KEY) === 'true'; } catch { /* off stays inert */ }
+  if (enabled) void enableLocalHistory({ resume: true });
+}
+
+window.__LOCAL_VERSION_HISTORY__ = Object.freeze({
+  enabled: () => Boolean(localHistoryVault && localHistorySettings.enabled),
+  databaseOpen: () => Boolean(localHistoryVault?.database),
+  settings: () => structuredClone(localHistorySettings),
+  list: () => localHistoryVault?.list() ?? Promise.resolve([]),
+  entries: () => localHistoryVault?.listEntries() ?? Promise.resolve([]),
+  save: () => saveLocalHistoryVersion(),
+  open: (id) => openHistoryRecord(id),
+  disable: () => disableLocalHistory(),
+});
 window.__NATIVE_PROJECT_FILES__ = Object.freeze({
   capabilities: () => structuredClone(nativeFileCapabilities()),
   status: (profile = selectedCompilerProfile) => ({
@@ -11567,6 +11919,7 @@ elements.projectmessage.textContent = recoveryRestored?.ok
 if ((stored || recoveryStored) && !restored?.ok) elements.recoveryexport.disabled = false;
 for (const profile of [AVR_PROFILE, RP2040_PROFILE, ESP32C3_PROFILE, STM32F429ZI_PROFILE]) setProjectBaseline(profile);
 installNativeFileControls();
+installLocalHistoryControls();
 window.__UNSAVED_CHANGE_GUARD__ = Object.freeze({
   isDirty: (profile = selectedCompilerProfile) => isProjectDirty(profile),
   baseline: (profile = selectedCompilerProfile) => projectBaselines.get(profile),

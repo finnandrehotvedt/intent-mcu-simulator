@@ -49,6 +49,22 @@ h2 { font-size: 1.22rem; margin: 0; }
 .model-library-detail[open] summary { border-bottom: 1px solid #26475b; }
 .model-library-detail > .truth, .model-library-detail ul, .model-library-detail button, .model-library-limit { margin: 8px 10px; }
 .model-library-detail ul { padding-left: 18px; color: var(--muted); font-size: .7rem; line-height: 1.5; overflow-wrap: anywhere; }
+.local-history { grid-column: 1 / -1; min-width: 0; border: 1px solid #31536c; border-radius: 9px; background: #07141f; }
+.local-history summary { padding: 8px 10px; color: var(--cyan); cursor: pointer; font: 800 .72rem/1.4 ui-monospace, monospace; }
+.local-history summary span { margin-left: .4rem; color: var(--muted); }
+.local-history[data-enabled="true"] summary span { color: var(--green); }
+.local-history[open] summary { border-bottom: 1px solid #26475b; }
+.local-history > .truth, .local-history-controls, .local-history-list { margin: 10px; }
+.local-history-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+.local-history-controls label { display: grid; gap: 4px; color: var(--muted); font-size: .7rem; }
+.local-history-controls input { min-width: min(300px, 70vw); }
+.local-history-list { display: grid; gap: 8px; padding: 0; list-style: none; }
+.local-history-row { display: grid; grid-template-columns: minmax(180px, 1fr) auto; gap: 10px; align-items: center; padding: 10px; border: 1px solid #26475b; border-radius: 8px; background: #091a28; }
+.local-history-row[data-valid="false"] { border-color: var(--red); }
+.local-history-row strong, .local-history-row small { display: block; overflow-wrap: anywhere; }
+.local-history-row small { margin-top: 3px; color: var(--muted); font: .65rem/1.45 ui-monospace, monospace; }
+.local-history-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+@media (max-width: 760px) { .local-history-row { grid-template-columns: 1fr; } .local-history-actions { justify-content: flex-start; } }
 .model-library-limit { color: var(--amber); font-size: .7rem; line-height: 1.45; }
 .project-name-field { display: grid; gap: 4px; max-width: 360px; color: var(--muted); font-size: .72rem; letter-spacing: .05em; text-transform: uppercase; }
 .project-name-field input { min-width: 0; color: var(--text); font-size: .95rem; font-weight: 700; letter-spacing: 0; text-transform: none; }

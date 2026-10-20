@@ -25,6 +25,8 @@
     "test:x05": "node --test --test-concurrency=1 test/project-patch.test.mjs",
     "test:x06": "node --test --test-concurrency=1 test/design-comparison.test.mjs",
     "test:x64": "node --test --test-concurrency=1 test/x64-authored-change-review.test.mjs test/project-patch.test.mjs test/design-comparison.test.mjs",
+    "test:x63": "node --test --test-concurrency=1 test/local-version-history.test.mjs test/project-envelope.test.mjs",
+    "test:x63:browser": "node test/x63-local-version-history-browser.cjs",
     "test:x07": "node --test --test-concurrency=1 test/shared-domain-engine.test.mjs",
     "test:x08": "node --test --test-concurrency=1 test/bounded-action-contracts.test.mjs",
     "test:external-client": "node --test --test-concurrency=1 test/external-client-protocol.test.mjs test/bounded-action-contracts.test.mjs",

@@ -33,6 +33,7 @@ board or parts as interchangeable with another profile.
 - Load and run the accepted artifact in the deterministic virtual MCU worker.
 - Inspect GPIO, LEDs, buttons, potentiometers, serial bytes, logic traces, and pin state.
 - Save and reopen a project file on the learner's computer; browser recovery is separate.
+- Optionally enable first-party local version history and explicitly retain up to 3 or 10 canonical project files across all four profiles. It is off by default, never auto-captures source, never uploads a version and never restores file, build, runtime or result authority; it is convenience rather than backup.
 - Build submits only the active profile's bounded source to this Lab's same-origin isolated compiler for one temporary job. Successful user firmware is returned only through that short-lived private job and is not retained in a shared artifact cache; an identical later Build compiles again. Pinned tool images and curated public examples remain reusable and separate. This is not cloud project storage: there is no account or durable server project, and temporary source/output follows the bounded cleanup lifecycle.
 - Existing AVR/Pico, ESP32-C3 and STM32 queue, rate, job, session and concurrency limits return a positive bounded whole-second Retry-After value. It is advisory, reserves no capacity, requires a fresh request and never causes automatic browser retry.
 - Optionally generate a portable Prompt Bridge request and validate returned structured circuit data.
