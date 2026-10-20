@@ -2,6 +2,17 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.85 — 2026-10-20
+
+- Keeps the existing controller selectors, Build/Run controls and named tool
+  buttons visible while the active circuit workbench is being scrolled.
+- Bounds the sticky group to the top workbench so it releases before unrelated
+  lower content, with the original authoritative controls and dialog owners.
+- Falls back to ordinary document flow for low-height, narrow and 200%-zoom
+  layouts to preserve reachability and avoid large canvas occlusion.
+- Adds no functional-longlist completion, firmware action, storage, runtime,
+  service, endpoint, mobile behavior or infrastructure.
+
 ## 1.1.0-rc.84 — 2026-10-20
 
 - Published X75 as one strict deterministic local build-list/named-net export

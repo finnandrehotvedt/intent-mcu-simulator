@@ -11,21 +11,10 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.83",
-    "current": "1.1.0-rc.84"
+    "previous": "1.1.0-rc.84",
+    "current": "1.1.0-rc.85"
   },
   "changes": [
-    {
-      "id": "X75",
-      "classification": "additive",
-      "capabilities": [
-        "intent-mcu-bom-netlist@1"
-      ],
-      "contracts": [
-        "x75-finite-bom-netlist-export-v1"
-      ],
-      "summary": "Adds the reviewed strict local four-profile build-list and named-net export with explicit non-procurement and non-runtime boundaries."
-    },
     {
       "id": "X88",
       "classification": "changed",
@@ -35,7 +24,7 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records the reviewed rc.83 to rc.84 X75 release without adding action, runtime or verdict authority."
+      "summary": "Records the reviewed rc.84 to rc.85 section-bounded sticky workbench layout without adding action, runtime or verdict authority."
     }
   ],
   "migrationRequired": false,

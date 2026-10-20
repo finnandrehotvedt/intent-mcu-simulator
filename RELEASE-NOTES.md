@@ -1,4 +1,25 @@
-# Intent MCU Simulator 1.1.0-rc.84
+# Intent MCU Simulator 1.1.0-rc.85
+
+## Section-bounded workbench controls
+
+This release publishes the independently reviewed desktop scroll behavior for
+the top circuit workbench. The existing controller selectors, Build/Run
+controls and named tool buttons remain visible while the active circuit region
+is being scrolled, then release before unrelated lower content.
+
+The controls remain their original authoritative DOM nodes. Existing popup
+focus, Escape return, project and source drafts, file guards, local history,
+Inspector/Undo and fullscreen canvases are preserved. At low viewport height,
+narrow width or a 200%-zoom equivalent, the group returns to ordinary document
+flow so it remains reachable without covering most of the circuit.
+
+This presentation-only release adds no functional-longlist completion,
+firmware action, runtime, storage, endpoint, mobile behavior, account,
+analytics, third-party request or infrastructure.
+
+---
+
+## 1.1.0-rc.84
 
 ## Finite local build-list and named-net export
 

@@ -1,8 +1,13 @@
-# Migration to 1.1.0-rc.84
+# Migration to 1.1.0-rc.85
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.85 changes no project, package, runtime, cache or browser-storage schema.
+The section-bounded sticky workbench reuses the existing authoritative control
+and dialog nodes and converts no learner data. Existing projects, recovery,
+history and downloaded files require no migration.
 
 Rc.84 changes no project, package, runtime, cache or browser-storage schema.
 X75 reads the current validated authored graph and downloads a separate local
