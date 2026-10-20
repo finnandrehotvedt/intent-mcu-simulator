@@ -49,7 +49,8 @@ async function delayedRace(page, action, expectedDownloads = 0) {
   await page.click('#accessible-svg-export');
   await page.waitForFunction(() => window.__X70_DELAY_CALLS__ >= 1);
   await action();
-  await page.waitForTimeout(320);
+  await page.waitForFunction(() => /cancelled|downloaded/u.test(
+    document.querySelector('#accessible-svg-status')?.textContent ?? ''), null, { timeout: 15_000 });
   page.off('download', count);
   assert.equal(downloads, expectedDownloads);
   assert.match(await page.locator('#accessible-svg-status').textContent(), /cancelled|downloaded/u);
@@ -168,7 +169,10 @@ async function delayedRace(page, action, expectedDownloads = 0) {
     // Each async race is fresh because the page reload restores native crypto.
     await page.reload({ waitUntil: 'networkidle' });
     await page.waitForFunction(() => window.__X70_ACCESSIBLE_DEMONSTRATION__);
-    await delayedRace(page, async () => page.selectOption('#board-select', 'board.rp2040-pico-v1'));
+    await delayedRace(page, async () => {
+      const selected = await page.inputValue('#board-select');
+      await page.selectOption('#board-select', selected === profiles[0] ? profiles[1] : profiles[0]);
+    });
     await page.reload({ waitUntil: 'networkidle' }); await page.waitForFunction(() => window.__X70_ACCESSIBLE_DEMONSTRATION__);
     const openSource = await page.evaluate(() => window.__COMMON_PROJECT_FILES__.current());
     await delayedRace(page, async () => page.setInputFiles('#project-open-input', {
