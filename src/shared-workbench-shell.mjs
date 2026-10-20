@@ -1086,9 +1086,12 @@ function installX49OffsetComparison(document, activeProfileReader) {
       const rows = snapshot.cases.map((entry) => {
         const row = document.createElement('tr');
         const native = entry.native;
-        const nativeText = snapshot.classification === 'synthetic-browser-replay-not-native-evidence' && native
-          ? `Synthetic replay only · ADC ${native.adc.value} completed at cycle ${native.adc.completionCycle.toLocaleString('en-US')} · mailbox ${native.firmwareTransaction.temperatureC} °C · D13 ${native.pin.level ? 'HIGH' : 'LOW'} · cannot pass native acceptance`
-          : 'Unavailable · requires a fresh source/artifact/model/worker/time/input-bound instrumented mailbox observation.';
+        let nativeText = 'Unavailable · requires a fresh source/artifact/model/worker/time/input-bound instrumented mailbox observation.';
+        if (snapshot.classification === 'synthetic-browser-replay-not-native-evidence' && native) {
+          nativeText = entry.outcome?.academicStatus === 'indeterminate'
+            ? `Synthetic replay only · indeterminate (${entry.outcome.reason}) · cannot pass native acceptance`
+            : `Synthetic replay only · ${entry.outcome?.academicStatus ?? 'unavailable'} · ADC ${native.adc.value} completed at cycle ${native.adc.completionCycle.toLocaleString('en-US')} · mailbox ${native.firmwareTransaction.temperatureC} °C · D13 ${native.pin.level ? 'HIGH' : 'LOW'} · cannot pass native acceptance`;
+        }
         const cells = [
           entry.caseId,
           `Reference ${entry.authored.referenceTemperatureC} °C · offset ${entry.authored.offsetC >= 0 ? '+' : ''}${entry.authored.offsetC} °C · effective ${entry.authored.effectiveTemperatureC} °C`,
@@ -1134,7 +1137,7 @@ function installX49OffsetComparison(document, activeProfileReader) {
     invalidate,
     snapshot: () => owner.snapshot(),
     fixedCases: () => structuredClone(X49_CASES),
-    acceptSyntheticReplay: (report) => paint(owner.acceptSyntheticReplay(report)),
+    acceptSyntheticReplay: async (report) => paint(await owner.acceptSyntheticReplay(report)),
   });
   document.defaultView.__X49_OFFSET_COMPARISON__ = api;
   paint();

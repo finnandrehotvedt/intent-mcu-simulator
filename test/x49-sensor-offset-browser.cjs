@@ -2,6 +2,7 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 const assert = require('node:assert/strict');
+const { createHash } = require('node:crypto');
 const { mkdir, writeFile } = require('node:fs/promises');
 const path = require('node:path');
 const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/runner/node_modules', 'playwright'));
@@ -10,41 +11,70 @@ const base = process.env.X49_URL || 'http://127.0.0.1:18884';
 const evidenceDir = process.env.X49_EVIDENCE_DIR || '';
 const viewports = [{ width: 1366, height: 768 }, { width: 1440, height: 900 }];
 
+function stable(value) {
+  if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`;
+  if (value && typeof value === 'object') return `{${Object.keys(value).sort().map(
+    (key) => `${JSON.stringify(key)}:${stable(value[key])}`,
+  ).join(',')}}`;
+  return JSON.stringify(value);
+}
+
+function sealReport(value) {
+  const sealed = structuredClone(value); delete sealed.semanticSha256;
+  value.semanticSha256 = createHash('sha256').update(stable(sealed)).digest('hex');
+  return value;
+}
+
 function report() {
   const sourceSha256 = '1'.repeat(64); const artifactIdentity = '2'.repeat(64);
   const modelImplementationSha256 = '3'.repeat(64); const modelExecutionContextSha256 = '4'.repeat(64);
+  const graphIdentity = `sha256:${'5'.repeat(64)}`;
   const values = [
-    ['baseline-offset-0', 0, 30, 2, 409, 29, true],
-    ['offset-plus-1', 1, 31, 2.025, 414, 30, false],
+    ['baseline-offset-0', '4300d360967677c0cd653cb7bf4cd93ab6d8e8235cb76a38d86ae5b43f25679b', 0, 30, 2, 409, 29, true],
+    ['offset-plus-1', 'ac42be30971461c12d66abda86f45ed28263006e0d85ca3dad6a6c0ed08dff2a', 1, 31, 2.025, 414, 30, false],
   ];
-  return {
-    schema: 'intent-mcu-x49-sensor-offset-report@1', contractId: 'x49-avr-temperature-offset-v1',
-    fixtureClass: 'instrumented-avr-mailbox-fixture-required', sourceSha256, artifactIdentity,
-    cases: values.map(([caseId, offsetC, effectiveTemperatureC, voltage, adcValue, temperatureC, level], index) => {
+  const value = {
+    schema: 'intent-mcu-x49-sensor-offset-report@2', contractId: 'x49-avr-temperature-offset-v2',
+    experimentBinding: { schema: 'intent-mcu-x49-experiment-binding@1',
+      profile: 'board.atmega328p-16mhz-v1', projectGeneration: 9, graphIdentity,
+      sourceSha256, artifactIdentity, modelImplementationSha256, modelExecutionContextSha256,
+      fixtureClass: 'instrumented-avr-mailbox-fixture-required',
+      componentId: 'temperature-sensor-1', boardPin: 'A1' },
+    cases: values.map(([caseId, inputIdentity, offsetC, effectiveTemperatureC,
+      voltage, adcValue, temperatureC, level], index) => {
       const runtimeBinding = { schema: 'intent-mcu-runtime-binding@2', projectGeneration: 9,
         runtimeGeneration: 40 + index, artifactIdentity, modelImplementationSha256,
         modelExecutionContextSha256 };
       return {
-        caseId,
-        input: { authored: { referenceTemperatureC: 30, offsetC, effectiveTemperatureC },
+        schema: 'intent-mcu-x49-native-case@1', caseId, profile: 'board.atmega328p-16mhz-v1',
+        input: { schema: 'intent-mcu-x49-cycle-zero-input@1', inputIdentity, graphIdentity,
+          authored: { referenceTemperatureC: 30, offsetC, effectiveTemperatureC },
           targetCycle: 0, appliedCycle: 0, retainedThroughCycle: 3_000_000 },
-        modelOutput: { componentId: 'temperature-sensor-1', boardPin: 'A1', voltage },
+        modelOutput: { schema: 'intent-mcu-x49-model-output@1',
+          componentId: 'temperature-sensor-1', boardPin: 'A1', voltage },
         runtimeBinding,
         runtimeIdentity: { schema: 'intent-mcu-worker-runtime-identity@2', projectGeneration: 9,
           runtimeGeneration: 40 + index, artifactIdentity, modelImplementationSha256,
           modelExecutionContextSha256, workerInitialization: index + 1,
           workerInstanceNonce: String(index + 5).repeat(32) },
-        adc: { channel: 1, value: adcValue, startCycle: 2_600_000, completionCycle: 2_700_000 },
+        adc: { schema: 'intent-mcu-x49-adc-observation@1', channel: 1, value: adcValue,
+          startCycle: 2_600_000, completionCycle: 2_700_000 },
         firmwareTransaction: { schema: 'intent-mcu-x34-firmware-producer@1',
           fixtureClass: 'instrumented-avr-mailbox-fixture-required', sourceSha256, artifactIdentity,
           commit: 2, temperatureC, d13Level: level ? 1 : 0, adcChannel: 1,
           adcValue, adcCompletionCycle: 2_700_000, beginCycle: 2_800_000, commitCycle: 2_900_000 },
-        pin: { pin: 'D13', mode: 'OUTPUT', level, observedCycle: 2_900_000 },
-        time: { cpuCycles: 3_000_000, virtualMilliseconds: 187.5 },
-        retention: { droppedTraceRows: 0, droppedAdcCompletions: 0, droppedMailboxTransactions: 0 },
+        pin: { schema: 'intent-mcu-x49-pin-observation@1', pin: 'D13', mode: 'OUTPUT',
+          level, observedCycle: 2_950_000 },
+        time: { schema: 'intent-mcu-x49-virtual-time@1', cpuCycles: 3_000_000,
+          virtualMilliseconds: 187.5 },
+        retention: { schema: 'intent-mcu-x49-retention@1', completeThroughCycle: 3_000_000,
+          droppedTraceRows: 0, droppedAdcCompletions: 0, droppedMailboxTransactions: 0 },
+        evidence: { schema: 'intent-mcu-x49-case-evidence-state@1', state: 'complete', reason: null },
       };
     }),
+    semanticSha256: '',
   };
+  return sealReport(value);
 }
 
 (async () => {
@@ -107,6 +137,22 @@ function report() {
       assert.match(await panel.textContent(), /Synthetic browser replay.*Academic\/native status remains unavailable/su);
       assert.match(await panel.textContent(), /cannot pass native acceptance/u);
       assert.equal((await page.evaluate(() => window.__X49_OFFSET_COMPARISON__.snapshot())).academicStatus, 'unavailable');
+
+      const incomplete = report(); incomplete.cases[0].adc = null; sealReport(incomplete);
+      await page.evaluate((value) => window.__X49_OFFSET_COMPARISON__.acceptSyntheticReplay(value), incomplete);
+      assert.match(await panel.textContent(), /Synthetic replay only · indeterminate \(missing-evidence\)/u);
+      assert.equal((await page.evaluate(() => window.__X49_OFFSET_COMPARISON__.snapshot())).academicStatus, 'unavailable');
+
+      const malformed = report(); malformed.cases[0].adc.value = 410;
+      const rejected = await page.evaluate(async (value) => {
+        try { await window.__X49_OFFSET_COMPARISON__.acceptSyntheticReplay(value); return null; }
+        catch (error) { return error.code ?? error.message; }
+      }, malformed);
+      assert.equal(rejected, 'X49_REPORT_HASH_INVALID');
+      assert.equal((await page.evaluate(() => window.__X49_OFFSET_COMPARISON__.snapshot())).state, 'synthetic-replay');
+      if (evidenceDir) await panel.screenshot({
+        path: path.join(evidenceDir, `x49-evidence-contract-${viewport.width}x${viewport.height}.png`),
+      });
       const afterX49 = await page.evaluate(() => structuredClone(window.__X49_ACTIVITY__));
       assert.deepEqual({ storageWrites: afterX49.storageWrites - before.storageWrites,
         workers: afterX49.workers - before.workers,
@@ -134,12 +180,11 @@ function report() {
       assert.equal(after.workers - before.workers, 0);
       assert.equal(after.serviceWorkers - before.serviceWorkers, 0);
       assert.deepEqual(producerRequests, []); assert.deepEqual(outside, []); assert.deepEqual(failures, []);
-      if (evidenceDir) await panel.screenshot({ path: path.join(evidenceDir, `x49-offset-${viewport.width}x${viewport.height}.png`) });
       results.push({ viewport, readability, producerRequests: 0, outsideRequests: 0,
         storageWrites: 0, workers: 0, serviceWorkers: 0, academicStatus: 'unavailable' });
       await page.close();
     }
-    if (evidenceDir) await writeFile(path.join(evidenceDir, 'X49-PRIVATE-BROWSER.json'), `${JSON.stringify(results, null, 2)}\n`);
+    if (evidenceDir) await writeFile(path.join(evidenceDir, 'X49-EVIDENCE-CONTRACT-BROWSER.json'), `${JSON.stringify(results, null, 2)}\n`);
     process.stdout.write(`${JSON.stringify(results)}\n`);
   } finally { await browser.close(); }
 })().catch((error) => { console.error(error); process.exitCode = 1; });
