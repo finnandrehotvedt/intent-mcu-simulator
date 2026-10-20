@@ -121,6 +121,19 @@ async function delayedRace(page, action, expectedDownloads = 0) {
       assert.match(await standalone.locator('desc').textContent(), /connected named pins.*No current measurements/u);
       assert.equal(await standalone.locator('[data-kind="net"]').count(), validated.counts.nets);
       assert.equal(await standalone.locator('[data-kind="pin"]').count(), validated.counts.endpoints);
+      assert.equal(await standalone.locator('[data-kind="endpoint-label"]').count(), validated.counts.endpoints);
+      for (const net of validated.nets) {
+        for (const endpoint of net.endpoints) {
+          assert.equal(await standalone.locator(`[data-kind="endpoint-label"][data-id="${endpoint.key}"]`).count(), 1);
+          const pin = standalone.locator(`[data-kind="pin"][data-id="${endpoint.key}"]`);
+          const wire = standalone.locator(`path[data-endpoint="${endpoint.key}"]`);
+          const [cx, cy, d] = await Promise.all([
+            pin.getAttribute('cx'), pin.getAttribute('cy'), wire.getAttribute('d'),
+          ]);
+          const start = d.match(/^M ([0-9.-]+) ([0-9.-]+)/u);
+          assert(start && Number(start[1]) === Number(cx) && Number(start[2]) === Number(cy), endpoint.key);
+        }
+      }
       const box = await standalone.locator('svg').boundingBox();
       assert(box && box.width > 0 && box.height > 0);
       await standalone.close();
@@ -157,8 +170,18 @@ async function delayedRace(page, action, expectedDownloads = 0) {
       storage: { local: Object.fromEntries(Object.keys(localStorage).sort().map((key) => [key, localStorage.getItem(key)])),
         session: Object.fromEntries(Object.keys(sessionStorage).sort().map((key) => [key, sessionStorage.getItem(key)])) },
       workers: window.__M6_STATE__?.runtimeWorkerCreations ?? 0 }));
-    const malicious = edited.source.replace('</svg>', '<script>throw new Error("x")</script></svg>');
-    await assert.rejects(() => page.evaluate((source) => window.__X70_ACCESSIBLE_DEMONSTRATION__.validate(source), malicious));
+    const maliciousCases = [
+      edited.source.replace('</svg>', '<script>throw new Error("x")</script></svg>'),
+      edited.source.replace('</svg>', '<rect onload="throw 1"/></svg>'),
+      edited.source.replace('</svg>', '<a href="https://example.invalid/">outside</a></svg>'),
+      edited.source.replace('</svg>', '<image href="data:image/svg+xml,forbidden"/></svg>'),
+      edited.source.replace('<svg ', '<!DOCTYPE svg [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><svg '),
+      edited.source.replace('</svg>', '<foreignObject><p>forbidden</p></foreignObject></svg>'),
+    ];
+    for (const malicious of maliciousCases) {
+      await assert.rejects(() => page.evaluate((source) =>
+        window.__X70_ACCESSIBLE_DEMONSTRATION__.validate(source), malicious));
+    }
     const tamperedHash = edited.source.replace(editedReport.integrity.reportSha256, '0'.repeat(64));
     await assert.rejects(() => page.evaluate((source) => window.__X70_ACCESSIBLE_DEMONSTRATION__.validate(source), tamperedHash));
     assert.deepEqual(await page.evaluate(() => ({ guard: window.__X70_ACCESSIBLE_DEMONSTRATION__.guard(),
@@ -198,7 +221,7 @@ async function delayedRace(page, action, expectedDownloads = 0) {
     await page.screenshot({ path: path.join(evidenceDir, 'x70-private-export-control.png'), fullPage: false });
     console.log(JSON.stringify({ result: 'pass', profiles: 4, actualSvgDownloads: 7,
       standaloneOpens: 4, viewportCases, inspector330: true, movement: true, rotation: true,
-      maliciousRejected: true, tamperRejected: true, staleRaceClasses: 6,
+      maliciousRejected: maliciousCases.length, tamperRejected: true, staleRaceClasses: 6,
       builds: 0, runs: 0, scenarios: 0, workers: 0, serviceWorkers: 0,
       outsideRequests: 0, mutations: 0 }));
   } finally { await browser.close(); }
