@@ -9,6 +9,7 @@ const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/
 
 const base = process.env.X70_CURRENT_URL || 'http://127.0.0.1:18872';
 const evidenceDir = process.env.X70_CURRENT_EVIDENCE || '/evidence';
+const skipAvr = process.env.X70_SKIP_AVR === '1';
 const profiles = [
   { id: 'board.atmega328p-16mhz-v1', slug: 'avr', build: '#quick-build', run: '#quick-run',
     pause: '#quick-pause', state: '__M6_STATE__', built: 'succeeded', complete: 'paused', timeout: 45_000 },
@@ -19,6 +20,7 @@ const profiles = [
   { id: 'board.stm32f429zi-nucleo144-v1', slug: 'stm32', build: '#stm32-build', run: '#stm32-run',
     state: '__STM32_PUBLIC_STATE__', built: 'built', complete: 'completed', timeout: 190_000 },
 ];
+const journeyProfiles = skipAvr ? profiles.filter(({ slug }) => slug !== 'avr') : profiles;
 const visuals = Object.freeze({
   avr: '#circuit-canvas', pico: '#pico-diagram', c3: '#c3-diagram', stm32: '#stm32-diagram',
 });
@@ -198,17 +200,19 @@ async function reopenAuthoredProject(page, profile) {
   try {
     assert.equal((await page.goto(base, { waitUntil: 'networkidle' }))?.status(), 200);
     await page.waitForFunction(() => window.__M11_READY__ === true && window.__X70_ACCESSIBLE_DEMONSTRATION__);
-    await page.click('#project-files-open');
-    await page.waitForSelector('#workbench-project-dialog[open]');
-    await page.click('#project-demo');
-    await page.click('.starter-card[data-example="pwm-pulse"]');
-    if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
-    await page.waitForFunction(() => document.querySelector('#example-select').value === 'pwm-pulse');
+    if (!skipAvr) {
+      await page.click('#project-files-open');
+      await page.waitForSelector('#workbench-project-dialog[open]');
+      await page.click('#project-demo');
+      await page.click('.starter-card[data-example="pwm-pulse"]');
+      if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
+      await page.waitForFunction(() => document.querySelector('#example-select').value === 'pwm-pulse');
+    }
 
     const evidence = {};
     const geometry = {};
     let builds = 0; let runs = 0;
-    for (const profile of profiles) {
+    for (const profile of journeyProfiles) {
       await page.selectOption('#board-select', profile.id);
       await page.waitForFunction((id) => window.__SHARED_INSTRUMENT_SUMMARY__?.profile === id, profile.id);
       assert.equal(await page.locator(profile.build).isDisabled(), false, `${profile.slug}: Build disabled`);
@@ -246,19 +250,20 @@ async function reopenAuthoredProject(page, profile) {
       await reopenAuthoredProject(page, profile);
     }
 
-    assert.equal(builds, 4); assert.equal(runs, 4);
+    assert.equal(builds, journeyProfiles.length); assert.equal(runs, journeyProfiles.length);
     assert.deepEqual(errors, []); assert.deepEqual(outside, []);
     assert.equal(context.serviceWorkers().length, 0); assert.equal((await context.cookies()).length, 0);
     const result = { result: 'pass', schema: 'intent-mcu-accessible-demonstration@2',
-      profiles: profiles.map(({ id }) => id), builds, runs, scenarios: 0,
-      artifacts: Object.fromEntries(profiles.map(({ slug }) => [slug, evidence[slug].report.measurements.artifactIdentity])),
-      svg: Object.fromEntries(profiles.map(({ slug }) => [slug,
+      profiles: journeyProfiles.map(({ id }) => id), builds, runs, scenarios: 0,
+      artifacts: Object.fromEntries(journeyProfiles.map(({ slug }) => [slug, evidence[slug].report.measurements.artifactIdentity])),
+      svg: Object.fromEntries(journeyProfiles.map(({ slug }) => [slug,
         { sha256: evidence[slug].sha256, bytes: evidence[slug].bytes }])),
-      classifications: Object.fromEntries(profiles.map(({ slug }) => [slug,
+      classifications: Object.fromEntries(journeyProfiles.map(({ slug }) => [slug,
         evidence[slug].report.measurements.channels.map(({ classification }) => classification)])),
-      timeBases: Object.fromEntries(profiles.map(({ slug }) => [slug,
+      timeBases: Object.fromEntries(journeyProfiles.map(({ slug }) => [slug,
         evidence[slug].report.measurements.channels.map(({ time }) => time.basis)])),
-      geometry, activeRuntimeRejected: ['avr', 'pico'], saveOpenClearedRuntime: profiles.map(({ slug }) => slug),
+      geometry, activeRuntimeRejected: skipAvr ? ['pico'] : ['avr', 'pico'],
+      saveOpenClearedRuntime: journeyProfiles.map(({ slug }) => slug),
       workersObserved: workers.length, serviceWorkers: 0, outsideRequests: 0,
       mutations, cookies: 0, browserErrors: 0 };
     fs.writeFileSync(path.join(evidenceDir, 'result.json'), `${JSON.stringify(result, null, 2)}\n`);
