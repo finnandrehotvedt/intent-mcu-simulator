@@ -1,8 +1,15 @@
-# Migration to 1.1.0-rc.86
+# Migration to 1.1.0-rc.87
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.87 changes no project, package, compiler-artifact, cache or browser-storage
+schema. Recognized older X56 model-library files still require the existing
+explicit data-only migration; migration clears runtime and verdict authority
+and never overwrites the original. Current Pico measurement SVG data is only
+available after a genuine current Run, while no-current exports remain
+explicit. Existing learner-owned files require no conversion.
 
 Rc.86 changes no project, package, runtime, cache or browser-storage schema.
 The X70 no-current slice reads the current validated authored graph and

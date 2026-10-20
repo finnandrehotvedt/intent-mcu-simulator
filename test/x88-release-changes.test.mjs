@@ -28,24 +28,24 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc85 to rc86 partial X70 release bytes', async () => {
+test('X88 owner binds canonical rc86 to rc87 partial X70 release bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.86');
+  assert.equal(release.version, '1.1.0-rc.87');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
   assert(registry.ids.includes('X86'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.85', current: '1.1.0-rc.86' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.86', current: '1.1.0-rc.87' });
   assert.deepEqual(value.changes, [
     {
-      id: 'X70', classification: 'additive', capabilities: ['intent-mcu-accessible-demonstration@1'],
+      id: 'X70', classification: 'changed', capabilities: ['intent-mcu-accessible-demonstration@1'],
       contracts: ['x70-canonical-authored-graph-svg-v1'],
-      summary: 'Adds the reviewed deterministic local four-profile accessible SVG of the authored graph with explicit no-current-measurement status.',
+      summary: 'Publishes the reviewed Pico current-measurement SVG path with bounded presentation pacing while preserving explicit no-current exports for every profile.',
     },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records the reviewed rc.85 to rc.86 partial X70 no-current SVG release without adding action, runtime or verdict authority.',
+      summary: 'Records the reviewed rc.86 to rc.87 partial X70 measurement-export release without adding firmware action, replay or verdict authority.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -108,7 +108,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.86');
+  assert.equal(discovery.identity.version, '1.1.0-rc.87');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

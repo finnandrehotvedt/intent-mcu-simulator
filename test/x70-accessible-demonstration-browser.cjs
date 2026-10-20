@@ -52,11 +52,14 @@ async function delayedRace(page, action, expectedDownloads = 0) {
   });
   let downloads = 0; const count = () => { downloads += 1; };
   page.on('download', count);
+  const expectedDownload = expectedDownloads > 0
+    ? page.waitForEvent('download', { timeout: 15_000 }) : null;
   await page.click('#accessible-svg-export');
   await page.waitForFunction(() => window.__X70_DELAY_CALLS__ >= 1);
   await action();
   await page.waitForFunction(() => /cancelled|downloaded/u.test(
     document.querySelector('#accessible-svg-status')?.textContent ?? ''), null, { timeout: 15_000 });
+  if (expectedDownload) await expectedDownload;
   page.off('download', count);
   assert.equal(downloads, expectedDownloads);
   assert.match(await page.locator('#accessible-svg-status').textContent(), /cancelled|downloaded/u);

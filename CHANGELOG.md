@@ -2,6 +2,17 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.87 — 2026-10-20
+
+- Publishes the independently reviewed Pico current-runtime measurement path
+  in the existing deterministic accessible SVG export.
+- Uses bounded Pico presentation pacing, exact acknowledgement backpressure
+  and a final-Pause bypass so the visible workbench remains responsive.
+- Keeps AVR, ESP32-C3 and STM32 no-current SVG exports explicit and unchanged;
+  the three prior genuine runtime files remain historical original identities.
+- Keeps X70 partial at X **68/2/26** and adds no firmware Build, Run, scenario,
+  endpoint, storage, service worker, DNS, Caddy or infrastructure change.
+
 ## 1.1.0-rc.86 — 2026-10-20
 
 - Adds X70's reviewed deterministic local accessible SVG export for AVR,

@@ -1,4 +1,28 @@
-# Intent MCU Simulator 1.1.0-rc.86
+# Intent MCU Simulator 1.1.0-rc.87
+
+## Reviewed Pico pacing and current-measurement SVG
+
+This release publishes the independently reviewed Pico current-runtime
+measurement path in the existing local deterministic accessible SVG export.
+The current-model manifest binds the exact reviewed Pico presentation bytes.
+Bounded snapshot cadence, exact acknowledgement backpressure and a final-Pause
+bypass keep the workbench responsive without changing compiler, firmware,
+toolchain or emulator semantics.
+
+The SVG remains fail-closed: a current measurement is included only after a
+genuine current Run with exact artifact, model and runtime identity. Ordinary
+AVR, Pico, ESP32-C3 and STM32 exports still say **No current measurements**
+when no current observation exists. The three previously retained genuine
+runtime exports remain historical original-identity evidence and are not
+relabelled as rc.87.
+
+X70 remains partial. This release performs no firmware Build, Run or scenario
+and adds no endpoint, storage, service worker, account, third-party request,
+DNS, Caddy or infrastructure change.
+
+---
+
+## 1.1.0-rc.86
 
 ## Accessible authored-graph SVG — no-current slice
 

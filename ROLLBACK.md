@@ -1,16 +1,21 @@
-# Rollback basis for 1.1.0-rc.86
+# Rollback basis for 1.1.0-rc.87
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain exact accepted rc.85 source commit
-`da5c2779af8455b983bbcd96f7ea4f475ff58545` and VM103 image
-`sha256:1df84b5a4b3d473a0b5e8f5104b8292718ddb3f33d46333460fa8ae965f40071`
-as the pre-rc.86 app-only recovery basis.
+Retain exact accepted rc.86 source commit
+`571ee3482de4bdc50500a5191f7b394258dc53e3` and VM103 image
+`sha256:77f65818dab04f82923b2069a957e00f5471c9793b4395a45302d27d10e518cb`
+as the pre-rc.87 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
+
+Rc.87 publishes only the reviewed Pico presentation pacing and current-runtime
+measurement path in the existing X70 export. Rolling back restores rc.86's
+explicit no-current-only public behavior. It does not migrate, rewrite or
+delete learner-owned project, history, package or downloaded SVG files.
 
 Rc.86 adds only the local X70 no-current accessible SVG export and compact
 nine-tool/status layout correction. Rolling back removes that export and

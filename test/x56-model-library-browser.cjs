@@ -44,12 +44,56 @@ const profiles = [
   const avr = profiles[0];
   await page.selectOption('#board-select', avr);
   const current = await page.evaluate((selected) => window.__COMMON_PROJECT_FILES__.current(selected), avr);
-  const retained = JSON.parse(current);
-  retained.schema = 'intent-mcu-project-envelope@6';
-  delete retained.modelLibrary;
+  const preX56 = JSON.parse(current);
+  preX56.schema = 'intent-mcu-project-envelope@6';
+  delete preX56.modelLibrary;
   await page.setInputFiles('#project-open-input', {
-    name: 'retained-pre-x56.intent-mcu.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(retained)),
+    name: 'generated-pre-x56.intent-mcu.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(preX56)),
   });
+  await page.waitForFunction(() => document.querySelector('#model-library-summary').textContent.includes('retained'));
+  const preX56State = await page.evaluate(() => ({
+    bytes: window.__COMMON_PROJECT_FILES__.current(),
+    preview: window.__COMMON_PROJECT_FILES__.modelLibraryPreview(),
+    buttonDisabled: document.querySelector('#model-library-migrate').disabled,
+    runtime: window.__M6_STATE__.artifactIdentity,
+  }));
+  assert.equal(preX56State.preview.migrationRequired, true);
+  assert.equal(preX56State.preview.semanticChanges.length, 0);
+  assert.equal(preX56State.preview.rendererChanges.length, 0);
+  assert.equal(preX56State.preview.unchanged.length, 25);
+  assert.equal(preX56State.buttonDisabled, false,
+    'pre-X56 retained compatibility lost its separately supported data-only migration path');
+  assert.equal(preX56State.runtime, null);
+
+  const priorX56 = JSON.parse(current);
+  priorX56.modelLibrary = {
+    schema: 'intent-mcu-model-library-lock@2',
+    libraryId: 'intent-mcu-public-models',
+    version: '2.0.0-x56-current',
+    manifestSha256: '5c94ce070526d2e7e417fed0cb152fc28bdea24ee9beb52c65488328d41eac0b',
+    implementationSha256: '4e0fc926236de5edda6b3e85c3770b709a4ae3643d47b8cd9b3138c4c1b61633',
+  };
+  const priorX56Bytes = JSON.stringify(priorX56);
+
+  await page.click('#firmware-open');
+  const sourceBefore = await page.inputValue('#source');
+  await page.fill('#source', `${sourceBefore}\n// generated-prior-x56-cancel-guard`);
+  await page.keyboard.press('Escape');
+  const dirtyRetainedBytes = await page.evaluate(() => window.__COMMON_PROJECT_FILES__.current());
+  await page.setInputFiles('#project-open-input', {
+    name: 'generated-prior-x56.intent-mcu.json', mimeType: 'application/json', buffer: Buffer.from(priorX56Bytes),
+  });
+  await page.waitForFunction(() => document.querySelector('#unsaved-change-dialog').open);
+  await page.click('#unsaved-keep');
+  assert.equal(await page.evaluate(() => window.__COMMON_PROJECT_FILES__.current()), dirtyRetainedBytes,
+    'cancelled prior-X56 Open replaced the retained project');
+  assert.match(await page.inputValue('#source'), /generated-prior-x56-cancel-guard/u);
+
+  await page.setInputFiles('#project-open-input', {
+    name: 'generated-prior-x56.intent-mcu.json', mimeType: 'application/json', buffer: Buffer.from(priorX56Bytes),
+  });
+  await page.waitForFunction(() => document.querySelector('#unsaved-change-dialog').open);
+  await page.click('#unsaved-discard');
   await page.waitForFunction(() => document.querySelector('#model-library-summary').textContent.includes('retained'));
   const retainedState = await page.evaluate(() => ({
     bytes: window.__COMMON_PROJECT_FILES__.current(),
@@ -66,8 +110,10 @@ const profiles = [
   assert.equal(retainedState.buttonDisabled, false);
   assert.equal(retainedState.runtime, null);
 
-  await page.locator('#model-library-detail > summary').focus();
-  await page.keyboard.press('Enter');
+  await page.click('#project-files-open');
+  if (!await page.locator('#model-library-detail').evaluate((node) => node.open)) {
+    await page.click('#model-library-detail > summary');
+  }
   assert.equal(await page.locator('#model-library-detail').evaluate((node) => node.open), true);
   const [download] = await Promise.all([
     page.waitForEvent('download'),
@@ -84,17 +130,34 @@ const profiles = [
     'preview or migration created a runtime worker');
   if (process.env.X56_SCREENSHOT) await page.screenshot({ path: process.env.X56_SCREENSHOT });
 
-  await page.setViewportSize({ width: 390, height: 844 });
-  assert((await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 1,
-    'model-library disclosure caused horizontal overflow');
+  await page.setInputFiles('#project-open-input', {
+    name: 'generated-prior-x56-migrated.intent-mcu.json', mimeType: 'application/json',
+    buffer: Buffer.from(fs.readFileSync(downloadedPath)),
+  });
+  await page.waitForFunction((version) => JSON.parse(window.__COMMON_PROJECT_FILES__.current()).modelLibrary.version === version,
+    profileLocks[avr].lock.version);
+  assert.equal(await page.evaluate(() => window.__M6_STATE__.artifactIdentity), null);
+  await page.click('#project-files-open');
+  const [saved] = await Promise.all([page.waitForEvent('download'), page.click('#project-save')]);
+  const savedEnvelope = JSON.parse(fs.readFileSync(await saved.path(), 'utf8'));
+  assert.deepEqual(savedEnvelope.modelLibrary, profileLocks[avr].lock);
+  assert.equal(savedEnvelope.runtime, undefined);
+  if (await page.locator('#workbench-project-dialog').evaluate((node) => node.open)) {
+    await page.keyboard.press('Escape');
+  }
 
-  const forged = JSON.parse(retainedState.bytes);
+  assert((await page.evaluate(() => document.documentElement.scrollWidth
+    - document.documentElement.clientWidth)) <= 1,
+  'model-library disclosure caused horizontal overflow in the supported desktop workbench');
+
+  const protectedBytes = await page.evaluate(() => window.__COMMON_PROJECT_FILES__.current());
+  const forged = JSON.parse(protectedBytes);
   forged.modelLibrary = { ...forged.modelLibrary, version: 'forged', manifestSha256: 'b'.repeat(64) };
   await page.setInputFiles('#project-open-input', {
     name: 'forged.intent-mcu.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(forged)),
   });
   await page.waitForFunction(() => document.querySelector('#project-message').textContent.includes('MODEL_LIBRARY_LOCK_UNTRUSTED'));
-  assert.equal(await page.evaluate(() => window.__COMMON_PROJECT_FILES__.current()), retainedState.bytes,
+  assert.equal(await page.evaluate(() => window.__COMMON_PROJECT_FILES__.current()), protectedBytes,
     'untrusted model-library lock changed the open project');
 
   assert.deepEqual(outside, []);
@@ -102,5 +165,6 @@ const profiles = [
   assert.equal((await context.cookies()).length, 0);
   await browser.close();
   process.stdout.write(`${JSON.stringify({ result: 'pass', profiles: profiles.length, exactLocks: true,
-    retainedResolver: true, migrationCopyOnly: true, forgedLockRejected: true, externalRequests: 0 })}\n`);
+    generatedPreX56Retained: true, generatedPriorX56: true, openCancelAtomic: true,
+    migrationCopyOnly: true, migratedSaveRoundtrip: true, forgedLockRejected: true, externalRequests: 0 })}\n`);
 })().catch((error) => { process.stderr.write(`${error.stack || error}\n`); process.exit(1); });

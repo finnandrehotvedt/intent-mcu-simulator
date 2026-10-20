@@ -24,6 +24,7 @@ const C3 = 'board.esp32-c3-devmodule-v1';
   await page.goto(base, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.__M11_READY__ === true);
 
+  await page.click('#project-files-open');
   await page.click('#project-demo');
   await page.click('.starter-card[data-example="avr-thermostat-boundary-v1"]');
   const legacy = await page.evaluate(() => window.__M6_PROJECT__());
@@ -74,9 +75,11 @@ const C3 = 'board.esp32-c3-devmodule-v1';
     'raw authority was silently stripped instead of rejecting atomically');
 
   await page.selectOption('#family-select', 'architecture.esp32-v1');
+  await page.click('#project-files-open');
   await page.fill('#c3-project-name', 'C3 CROSS FAMILY FILE');
   await page.locator('#c3-project-name').press('Tab');
   const c3Envelope = await page.evaluate((profile) => window.__COMMON_PROJECT_FILES__.current(profile), C3);
+  await page.keyboard.press('Escape');
   await page.selectOption('#family-select', 'architecture.avr-v1');
   assert.deepEqual(await page.evaluate(() => window.__M6_PROJECT__()), legacy, 'AVR draft was not parked across profile switch');
   await page.setInputFiles('#project-open-input', { name: 'c3.intent-mcu.json', mimeType: 'application/json', buffer: Buffer.from(c3Envelope) });
@@ -86,6 +89,7 @@ const C3 = 'board.esp32-c3-devmodule-v1';
   assert.deepEqual(await page.evaluate(() => window.__M6_PROJECT__()), legacy,
     'valid cross-family Open changed the parked previous profile');
 
+  await page.click('#project-files-open');
   const [legacyDownload] = await Promise.all([page.waitForEvent('download'), page.click('#project-export')]);
   const legacyPath = await legacyDownload.path();
   assert.equal(JSON.parse(fs.readFileSync(legacyPath, 'utf8')).schema, 'intent-mcu-project-contact-persistence@1');
