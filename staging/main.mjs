@@ -1220,6 +1220,9 @@ function navigateProjectResult(entry, expectedIdentity) {
   }
   const profile = selectedCompilerProfile;
   if (entry.kind === 'component' || entry.kind === 'pin' || entry.kind === 'net') {
+    // These targets are owned by the always-present circuit canvas. Close the
+    // Brief popup first so the resulting selection/focus is actually visible.
+    sharedWorkbenchShell.closeDialog({ restoreFocus: false });
     if (profile === AVR_PROFILE) {
       if (entry.kind === 'net') { selectNet(entry.target.netId); drawCircuitWires(); }
       else selectComponent(entry.target.componentId);
@@ -1234,11 +1237,16 @@ function navigateProjectResult(entry, expectedIdentity) {
         : profile === ESP32C3_PROFILE ? '#c3-editor-components .pin-anchor' : '#stm32-editor-components .pin-anchor', entry.target.pinKey);
     }
   } else if (entry.kind === 'file' || entry.kind === 'source') {
+    // Source now lives in the Firmware popup. Move the authoritative editor
+    // into view before focusing the requested file/line; focusing its parked
+    // node would report success while leaving the user on a hidden surface.
     if (profile === AVR_PROFILE) {
       selectedSourceFile = entry.target.file; renderProject();
+      sharedWorkbenchShell.openDialog('firmware', document.querySelector('#firmware-open'));
       if (entry.target.line) focusSourceLine(elements.source, currentProject().source.files.find((item) => item.name === entry.target.file).content, entry.target.line);
       else elements.sourcefile.focus();
     } else {
+      sharedWorkbenchShell.openDialog('firmware', document.querySelector('#firmware-open'));
       const textarea = profile === RP2040_PROFILE ? elements.picosource : profile === ESP32C3_PROFILE ? elements.c3source : elements.stm32source;
       if (entry.target.line) focusSourceLine(textarea, textarea.value, entry.target.line); else textarea.focus();
     }
@@ -6882,8 +6890,8 @@ function authoredProjectFingerprint(profile) {
     if (profile === AVR_PROFILE) return JSON.stringify({
       name: elements.projectname.value, source: elements.source.value, project: currentProject(),
     });
-    const state = profile === RP2040_PROFILE ? picoPublicWorkbench.state()
-      : profile === ESP32C3_PROFILE ? c3PublicWorkbench.state() : stm32PublicWorkbench.state();
+    const state = profile === RP2040_PROFILE ? picoPublicWorkbench.snapshot()
+      : profile === ESP32C3_PROFILE ? c3PublicWorkbench.snapshot() : stm32PublicWorkbench.snapshot();
     return JSON.stringify({ name: state.project?.name ?? state.name, source: state.project?.source ?? state.source,
       circuit: state.project?.circuit ?? state.circuit });
   }

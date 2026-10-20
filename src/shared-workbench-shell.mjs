@@ -590,7 +590,7 @@ export function mountSharedWorkbenchShell(document) {
       return false;
     },
     openDialog(name, opener = null) { return openPopup(name, opener); },
-    closeDialog() { return closePopup(); },
+    closeDialog(options = {}) { return closePopup(options); },
     openSerial() {
       openPopup('instruments', document.activeElement ?? popupByName.get('instruments').opener);
       const serial = activeProfile === AVR_PROFILE

@@ -125,9 +125,22 @@ h2 { font-size: 1.22rem; margin: 0; }
 #active-canvas-mount .canvas-tools { margin: 0 0 5px; gap: 4px; }
 #active-canvas-mount .canvas-tools button,
 #active-canvas-mount .bounded-circuit-actions button { min-height: 30px; }
-#active-canvas-mount .pico-editor-heading { min-height: 26px; margin-bottom: 3px; }
-#active-canvas-mount .pico-editor-heading small { font-size: .62rem; }
-#active-canvas-mount .named-wire-state { min-height: 18px; margin: 3px 0; overflow: hidden; font-size: .65rem; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+#active-canvas-mount .pico-circuit-pane,
+#active-canvas-mount .c3-circuit-pane,
+#active-canvas-mount .stm32-circuit-pane { gap: 3px; }
+#active-canvas-mount .pico-editor-heading { min-height: 26px; margin: 0; }
+#active-canvas-mount .pico-editor-heading small { display: none; }
+#active-canvas-mount .pico-circuit-actions,
+#active-canvas-mount .c3-circuit-actions,
+#active-canvas-mount .stm32-circuit-actions { display: flex; flex-wrap: nowrap; gap: 4px; height: 32px; margin: 0; padding: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+#active-canvas-mount .pico-circuit-actions::-webkit-scrollbar,
+#active-canvas-mount .c3-circuit-actions::-webkit-scrollbar,
+#active-canvas-mount .stm32-circuit-actions::-webkit-scrollbar { display: none; }
+#active-canvas-mount .pico-circuit-actions > *,
+#active-canvas-mount .c3-circuit-actions > *,
+#active-canvas-mount .stm32-circuit-actions > * { flex: 0 0 auto; min-height: 28px; padding: 3px 6px; font-size: .64rem; }
+#active-canvas-mount .named-wire-state { box-sizing: border-box; height: 22px; min-height: 22px; margin: 0; padding: 3px 6px; overflow: hidden; font-size: .65rem; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+#active-canvas-mount .bounded-crossing-key { min-height: 18px; margin: 0; font-size: .62rem; line-height: 1.2; }
 #active-canvas-mount .circuit-canvas,
 #active-canvas-mount .pico-editor-canvas { height: max(560px, calc(100vh - 200px)); min-height: 560px; max-height: 720px; }
 #active-canvas-mount .pico-circuit-state,
