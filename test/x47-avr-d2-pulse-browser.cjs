@@ -145,7 +145,8 @@ async function releaseDigest(page) {
       const windowRevision = await page.evaluate(() => window.__M6_STATE__.revision);
       assert.equal(parsed.sourceProjectRevision, windowRevision);
       assert.equal(await panel.locator('[data-x47-events] li').count(), 2);
-      assert.match(await panel.textContent(), /Private integration.*transient.*not saved.*not native hardware evidence/su);
+      assert.match(await panel.textContent(), /AVR D2 pulse.*transient.*not saved.*Usage and evidence limits/su);
+      assert.equal(await panel.locator('a[href="/support.html#x47-avr-d2-pulse"]').count(), 1);
       assert.match(await panel.textContent(), /Build, Run, then explicitly Pause before Apply/u);
       assert.equal(await panel.locator('button').count(), 4);
       assert.equal(await panel.locator('[data-x47-apply]').isDisabled(), true);

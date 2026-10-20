@@ -161,18 +161,28 @@ test('preview owner preserves accepted bytes on rejection and clears atomically 
   assert.equal(owner.invalidate('X47_RESET').reason, 'X47_RESET');
 });
 
-test('shared shell keeps preview transient while private Apply is model-identity bound', async () => {
-  const [shell, owner, modelClosure] = await Promise.all([
+test('shared shell keeps preview transient while current Apply is model-identity bound', async () => {
+  const [shell, owner, modelClosure, support, controllers] = await Promise.all([
     readFile(new URL('../src/shared-workbench-shell.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../src/x47-avr-d2-pulse.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../scripts/generate-model-library-snapshots.mjs', import.meta.url), 'utf8'),
+    readFile(new URL('../staging/support.html', import.meta.url), 'utf8'),
+    readFile(new URL('../staging/controllers.html', import.meta.url), 'utf8'),
   ]);
   for (const code of ['X47_SOURCE_EDITED', 'X47_BUILD_STARTED', 'X47_RUN_STARTED', 'X47_RESET',
     'X47_RUNTIME_RETIRED', 'X47_NEW_PROJECT', 'X47_EXAMPLE_OPENED', 'X47_OPEN_STARTED',
     'X47_PROJECT_OPENED', 'X47_PROFILE_CHANGED']) assert.match(shell, new RegExp(code, 'u'));
-  assert.match(shell, /Private integration/u);
+  assert.match(shell, /AVR D2 pulse/u);
   assert.match(shell, /Apply to paused D2/u);
-  assert.match(shell, /synthetic browser evidence is not native hardware evidence/u);
+  assert.match(shell, /support\.html#x47-avr-d2-pulse/u);
+  assert.doesNotMatch(shell, /Private integration/u);
+  assert.match(support, /id="x47-avr-d2-pulse"/u);
+  assert.match(support, /Pending-pulse RESET cancellation.*synthetic browser-worker/su);
+  assert.match(support, /not native emulator or physical-hardware evidence/u);
+  assert.match(support, /Wider waveforms, noise, CSV workflows and non-AVR profiles remain unavailable/u);
+  assert.match(controllers, /id="x47-profile-boundary"/u);
+  assert.match(controllers, /exact AVR momentary-button-to-ground graph/u);
+  assert.match(controllers, /support\.html#x47-avr-d2-pulse/u);
   assert.match(shell, /X47_SOURCE_CHANGED_DURING_HASH/u);
   assert.match(shell, /state: 'pending'.*record: null.*canonicalText: null.*events: \[\]/su);
   assert.match(shell, /snapshot: currentSnapshot/u);

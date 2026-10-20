@@ -736,7 +736,7 @@ function createX47Panel(document, ordinal) {
       <strong id="x47-pulse-title-${ordinal}">D2 active-low pulse</strong>
       <span data-x47-state>Checking</span>
     </div>
-    <p class="x47-pulse-boundary"><strong>Private integration</strong> · transient · not saved · synthetic browser evidence is not native hardware evidence.</p>
+    <p class="x47-pulse-boundary"><strong>AVR D2 pulse</strong> · transient · not saved · <a href="/support.html#x47-avr-d2-pulse">Usage and evidence limits</a>.</p>
     <div class="x47-pulse-controls">
       <label>Start offset <span><input data-x47-start type="number" inputmode="numeric" min="1" max="1599999" step="1" value="16000"> cycles</span></label>
       <label>Pulse width <span><input data-x47-width type="number" inputmode="numeric" min="1" max="1599999" step="1" value="32000"> cycles</span></label>
