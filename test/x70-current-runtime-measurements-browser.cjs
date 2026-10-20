@@ -13,11 +13,11 @@ const skipAvr = process.env.X70_SKIP_AVR === '1';
 const profiles = [
   { id: 'board.atmega328p-16mhz-v1', slug: 'avr', build: '#quick-build', run: '#quick-run',
     pause: '#quick-pause', state: '__M6_STATE__', built: 'succeeded', complete: 'paused', timeout: 45_000 },
-  { id: 'board.rp2040-pico-v1', slug: 'pico', build: '#pico-build', run: '#pico-run',
-    pause: '#pico-pause', state: '__RP2040_PUBLIC_STATE__', built: 'built', complete: 'paused', timeout: 45_000 },
-  { id: 'board.esp32-c3-devmodule-v1', slug: 'c3', build: '#c3-build', run: '#c3-run',
+  { id: 'board.rp2040-pico-v1', slug: 'pico', build: '#quick-build', run: '#quick-run',
+    pause: '#quick-pause', state: '__RP2040_PUBLIC_STATE__', built: 'built', complete: 'paused', timeout: 45_000 },
+  { id: 'board.esp32-c3-devmodule-v1', slug: 'c3', build: '#quick-build', run: '#quick-run',
     state: '__ESP32C3_PUBLIC_STATE__', built: 'built', complete: 'complete', timeout: 190_000 },
-  { id: 'board.stm32f429zi-nucleo144-v1', slug: 'stm32', build: '#stm32-build', run: '#stm32-run',
+  { id: 'board.stm32f429zi-nucleo144-v1', slug: 'stm32', build: '#quick-build', run: '#quick-run',
     state: '__STM32_PUBLIC_STATE__', built: 'built', complete: 'completed', timeout: 190_000 },
 ];
 const journeyProfiles = skipAvr ? profiles.filter(({ slug }) => slug !== 'avr') : profiles;
