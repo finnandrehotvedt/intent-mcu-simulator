@@ -117,7 +117,7 @@ h2 { font-size: 1.22rem; margin: 0; }
 .workbench-popup-controls { display: grid; grid-template-columns: repeat(8,minmax(0,1fr)); gap: 6px; }
 .workbench-popup-controls button { min-height: 32px; padding: 4px 7px; overflow: hidden; font-size: .7rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .workbench-popup-controls button[aria-expanded="true"] { color: #06111a; background: var(--cyan); border-color: var(--cyan); }
-.build-list-status { margin: 0; padding: 4px 10px; border: 1px solid #29495b; border-radius: 8px; color: var(--muted); background: #071620; font-size: .66rem; }
+.build-list-status { margin: 0; padding: 2px 10px; border: 1px solid #29495b; border-radius: 8px; color: var(--muted); background: #071620; font-size: .66rem; line-height: 1.2; }
 .active-canvas-stage { min-width: 0; border: 1px solid #315c72; border-radius: 14px; background: #07141f; box-shadow: 0 18px 50px #0006; overflow: hidden; }
 #active-canvas-mount { min-width: 0; }
 #active-canvas-mount > [data-shared-surface="canvas"],
