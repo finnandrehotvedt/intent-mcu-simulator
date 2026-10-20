@@ -80,15 +80,16 @@ async function saveVersion(page) {
   const snapshot = await page.evaluate(() => ({
     profile: document.querySelector('#board-select').value,
     canonical: window.__COMMON_PROJECT_FILES__.current(),
+    status: document.querySelector('#local-history-status').textContent,
   }));
   const expectedId = historyId(snapshot.profile, snapshot.canonical);
   await activate(page.locator('#local-history-save'));
-  await page.waitForFunction(async (id) => {
+  await page.waitForFunction(async ({ id, priorStatus }) => {
     const text = document.querySelector('#local-history-status').textContent;
     const saved = (await window.__LOCAL_VERSION_HISTORY__.list()).some((record) => record?.id === id);
-    return saved || /LOCAL_HISTORY_/u.test(text)
+    return (text !== priorStatus && (saved || /LOCAL_HISTORY_|Saved local version|already saved/u.test(text)))
       || document.querySelector('#local-history-confirm').open;
-  }, expectedId);
+  }, { id: expectedId, priorStatus: snapshot.status });
 }
 
 function installGuards() {
