@@ -61,6 +61,11 @@ import {
   validateCheckableEvidenceReport,
 } from '../src/checkable-evidence-report.mjs';
 import {
+  EXPERIMENT_PACKAGE_COMPARISON_LIMITS,
+  compareExperimentPackages,
+  parseExperimentComparisonSlot,
+} from '../src/experiment-package-comparison.mjs';
+import {
   COMPONENT_SUPPORT_CELLS,
   COMPONENT_SUPPORT_MODELS,
   COMPONENT_SUPPORT_PROFILES,
@@ -424,6 +429,13 @@ const elements = Object.fromEntries([
   'authored-change-review-back',
   'expectation-reference-input', 'expectation-reference-status', 'expectation-reference-identity',
   'experiment-package-download', 'experiment-package-state', 'experiment-package-detail',
+  'experiment-package-comparison', 'experiment-package-comparison-state',
+  'experiment-package-before-open', 'experiment-package-before-name', 'experiment-package-before-input',
+  'experiment-package-after-open', 'experiment-package-after-name', 'experiment-package-after-input',
+  'experiment-package-compare', 'experiment-package-comparison-clear',
+  'experiment-package-comparison-status', 'experiment-package-comparison-review',
+  'experiment-package-comparison-identities', 'experiment-package-comparison-source',
+  'experiment-package-comparison-circuit', 'experiment-package-comparison-results',
   'design-comparison-create', 'design-comparison-summary', 'design-comparison-status',
   'design-comparison-alternatives', 'design-comparison-differences',
   'shared-domain-engine-inspect', 'shared-domain-engine-summary', 'shared-domain-engine-status',
@@ -7885,6 +7897,175 @@ async function downloadCurrentExperimentPackage() {
     `Local package downloaded · SHA-256 ${created.sha256.slice(0, 12)}… · measurement completeness ${measurementEnvelope.measurementCompleteness.projectionSha256.slice(0, 12)}… (identity/integrity, not truth) · review your authored text before sharing.`, created.sha256);
   return created;
 }
+
+const experimentPackageComparisonSlots = { before: null, after: null };
+let acceptedExperimentPackageComparison = null;
+let experimentPackageComparisonGeneration = 0;
+
+function emptyComparisonGroup(root, message) {
+  const item = document.createElement('p');
+  item.className = 'requirement-trace-empty';
+  item.textContent = message;
+  root.replaceChildren(item);
+}
+
+function clearAcceptedExperimentPackageComparison(message = 'Choose two canonical strict-v3 packages. Files stay in this tab only.') {
+  experimentPackageComparisonGeneration += 1;
+  acceptedExperimentPackageComparison = null;
+  elements.experimentpackagecomparisonreview.hidden = true;
+  elements.experimentpackagecomparisonstate.textContent = experimentPackageComparisonSlots.before
+    || experimentPackageComparisonSlots.after ? 'Not compared' : 'Empty';
+  elements.experimentpackagecomparisonstatus.dataset.valid = '';
+  elements.experimentpackagecomparisonstatus.textContent = message;
+  emptyComparisonGroup(elements.experimentpackagecomparisonidentities, 'No accepted identity comparison.');
+  emptyComparisonGroup(elements.experimentpackagecomparisonsource, 'No accepted source comparison.');
+  emptyComparisonGroup(elements.experimentpackagecomparisoncircuit, 'No accepted circuit comparison.');
+  emptyComparisonGroup(elements.experimentpackagecomparisonresults, 'No accepted result comparison.');
+}
+
+function renderExperimentPackageComparisonSlotState() {
+  elements.experimentpackagebeforename.textContent = experimentPackageComparisonSlots.before?.name
+    ?? 'No Before file';
+  elements.experimentpackageaftername.textContent = experimentPackageComparisonSlots.after?.name
+    ?? 'No After file';
+  elements.experimentpackagecompare.disabled = !(experimentPackageComparisonSlots.before
+    && experimentPackageComparisonSlots.after);
+  elements.experimentpackagecomparisonclear.disabled = !(experimentPackageComparisonSlots.before
+    || experimentPackageComparisonSlots.after || acceptedExperimentPackageComparison);
+}
+
+async function selectExperimentPackageComparisonFile(side, file) {
+  clearAcceptedExperimentPackageComparison(`${side === 'before' ? 'Before' : 'After'} selection changed. Revalidation is required.`);
+  const generation = experimentPackageComparisonGeneration;
+  experimentPackageComparisonSlots[side] = null;
+  renderExperimentPackageComparisonSlotState();
+  if (!file) {
+    elements.experimentpackagecomparisonstatus.textContent = 'Selection cancelled. No prior comparison authority was retained.';
+    return null;
+  }
+  if (file.size > EXPERIMENT_PACKAGE_COMPARISON_LIMITS.packageBytes) {
+    elements.experimentpackagecomparisonstatus.dataset.valid = 'false';
+    elements.experimentpackagecomparisonstatus.textContent = `Package rejected (X41_PACKAGE_LIMIT). ${side} remains empty.`;
+    return null;
+  }
+  let source;
+  try { source = await file.text(); }
+  catch {
+    if (generation !== experimentPackageComparisonGeneration) {
+      return { ok: false, code: 'X41_STALE_SLOT' };
+    }
+    elements.experimentpackagecomparisonstatus.dataset.valid = 'false';
+    elements.experimentpackagecomparisonstatus.textContent = `Package rejected (X41_FILE_READ). ${side} remains empty.`;
+    return null;
+  }
+  const parsed = await parseExperimentComparisonSlot(source, commonProjectAdapters, side);
+  if (generation !== experimentPackageComparisonGeneration) return { ok: false, code: 'X41_STALE_SLOT' };
+  if (!parsed.ok) {
+    elements.experimentpackagecomparisonstatus.dataset.valid = 'false';
+    elements.experimentpackagecomparisonstatus.textContent = `Package rejected (${parsed.code}). ${side} remains empty.`;
+    return null;
+  }
+  experimentPackageComparisonSlots[side] = Object.freeze({
+    name: file.name, source, sha256: parsed.sha256, bytes: parsed.bytes,
+  });
+  renderExperimentPackageComparisonSlotState();
+  elements.experimentpackagecomparisonstatus.dataset.valid = 'true';
+  elements.experimentpackagecomparisonstatus.textContent = `${side === 'before' ? 'Before' : 'After'} accepted locally · SHA-256 ${parsed.sha256}. ${elements.experimentpackagecompare.disabled ? 'Choose the other package.' : 'Ready for strict Compare.'}`;
+  return parsed;
+}
+
+function comparisonList() {
+  const list = document.createElement('ul');
+  list.className = 'experiment-package-comparison-list';
+  return list;
+}
+
+function comparisonRow(title, text, changed = false) {
+  const row = document.createElement('li');
+  row.className = 'experiment-package-comparison-row';
+  row.dataset.changed = String(changed);
+  const heading = document.createElement('strong'); heading.textContent = title;
+  const body = document.createElement('span'); body.textContent = text;
+  row.append(heading, body); return row;
+}
+
+function renderAcceptedExperimentPackageComparison(comparison) {
+  const identityList = comparisonList();
+  for (const key of Object.keys(comparison.before.identities)) {
+    identityList.append(comparisonRow(key,
+      `Before ${comparison.before.identities[key]} · After ${comparison.after.identities[key]}`,
+      comparison.before.identities[key] !== comparison.after.identities[key]));
+  }
+  identityList.append(comparisonRow('Compatible evidence context',
+    `${comparison.compatibility.evidenceAdapterId} · ${comparison.compatibility.evidenceClass} · ${comparison.compatibility.nativeTimeBasis} · ${comparison.compatibility.evidenceRows} rows`, false));
+  elements.experimentpackagecomparisonidentities.replaceChildren(identityList);
+
+  const sourceRoot = document.createDocumentFragment();
+  for (const diff of comparison.source.diffs) {
+    const details = document.createElement('details'); details.className = 'experiment-package-comparison-source-diff';
+    const summary = document.createElement('summary');
+    summary.textContent = `${diff.name} · literal ${diff.status} · +${diff.addedLines} / −${diff.removedLines}`;
+    const pre = document.createElement('pre'); pre.tabIndex = 0; pre.textContent = diff.text;
+    details.append(summary, pre); sourceRoot.append(details);
+  }
+  elements.experimentpackagecomparisonsource.replaceChildren(sourceRoot);
+
+  const circuitList = comparisonList();
+  for (const row of comparison.circuit.rows) {
+    circuitList.append(comparisonRow(`${row.kind} · ${row.ownerId}`, row.summary, true));
+  }
+  elements.experimentpackagecomparisoncircuit.replaceChildren(circuitList);
+
+  const resultList = comparisonList();
+  for (const row of comparison.results) {
+    const level = (value) => value ? 'HIGH' : 'LOW';
+    resultList.append(comparisonRow(row.id,
+      `Expected ${level(row.expected.level)} · Before ${level(row.before.observed.level)} (${row.before.reportedAcademicStatus}, ${row.before.evidenceStatus}) at ${row.before.virtualMilliseconds} ms · After ${level(row.after.observed.level)} (${row.after.reportedAcademicStatus}, ${row.after.evidenceStatus}) at ${row.after.virtualMilliseconds} ms`, row.changed));
+  }
+  elements.experimentpackagecomparisonresults.replaceChildren(resultList);
+  elements.experimentpackagecomparisonreview.hidden = false;
+  elements.experimentpackagecomparisonstate.textContent = 'Compatible';
+  elements.experimentpackagecomparisonstatus.dataset.valid = 'true';
+  elements.experimentpackagecomparisonstatus.textContent = `Compatible retained contexts · reported Before ${comparison.before.reportedAcademicStatus} / After ${comparison.after.reportedAcademicStatus} · literal facts only, no new verdict or causal claim.`;
+}
+
+async function compareSelectedExperimentPackages() {
+  const before = experimentPackageComparisonSlots.before;
+  const after = experimentPackageComparisonSlots.after;
+  clearAcceptedExperimentPackageComparison('Strictly reparsing both original package texts…');
+  if (!before || !after) return { ok: false, code: 'X41_BOTH_SLOTS_REQUIRED' };
+  const generation = experimentPackageComparisonGeneration;
+  const result = await compareExperimentPackages({
+    beforeSource: before.source,
+    afterSource: after.source,
+    adapters: commonProjectAdapters,
+    expectedBeforeSha256: before.sha256,
+    expectedAfterSha256: after.sha256,
+  });
+  if (generation !== experimentPackageComparisonGeneration
+      || experimentPackageComparisonSlots.before?.sha256 !== before.sha256
+      || experimentPackageComparisonSlots.after?.sha256 !== after.sha256) {
+    return { ok: false, code: 'X41_STALE_SLOT' };
+  }
+  if (!result.ok) {
+    elements.experimentpackagecomparisonstatus.dataset.valid = 'false';
+    elements.experimentpackagecomparisonstatus.textContent = `Compare rejected (${result.code}). No comparison authority was retained.`;
+    return result;
+  }
+  acceptedExperimentPackageComparison = result.comparison;
+  renderAcceptedExperimentPackageComparison(result.comparison);
+  renderExperimentPackageComparisonSlotState();
+  return result;
+}
+
+function clearExperimentPackageComparison() {
+  experimentPackageComparisonSlots.before = null;
+  experimentPackageComparisonSlots.after = null;
+  elements.experimentpackagebeforeinput.value = '';
+  elements.experimentpackageafterinput.value = '';
+  clearAcceptedExperimentPackageComparison();
+  renderExperimentPackageComparisonSlotState();
+}
 function renderExpectationReference() {
   const supported = selectedCompilerProfile === AVR_PROFILE && thermostatProjectActive()
     && Boolean(scenarioTimelineEditor?.timeline);
@@ -8197,6 +8378,28 @@ elements.projectpatchinput.addEventListener('input', () => clearProjectPatchRevi
 elements.projectpatchreview.addEventListener('click', () => { void reviewCurrentProjectPatch(); });
 elements.designcomparisoncreate.addEventListener('click', () => { void compareReviewedProjectDesigns(); });
 elements.projectpatchapply.addEventListener('click', () => { void applyReviewedProjectPatch(); });
+elements.experimentpackagebeforeopen.addEventListener('click', () => {
+  clearAcceptedExperimentPackageComparison('Before chooser opened. No prior comparison authority was retained.');
+  experimentPackageComparisonSlots.before = null;
+  renderExperimentPackageComparisonSlotState();
+  elements.experimentpackagebeforeinput.value = '';
+  elements.experimentpackagebeforeinput.click();
+});
+elements.experimentpackageafteropen.addEventListener('click', () => {
+  clearAcceptedExperimentPackageComparison('After chooser opened. No prior comparison authority was retained.');
+  experimentPackageComparisonSlots.after = null;
+  renderExperimentPackageComparisonSlotState();
+  elements.experimentpackageafterinput.value = '';
+  elements.experimentpackageafterinput.click();
+});
+elements.experimentpackagebeforeinput.addEventListener('change', () => {
+  void selectExperimentPackageComparisonFile('before', elements.experimentpackagebeforeinput.files[0] ?? null);
+});
+elements.experimentpackageafterinput.addEventListener('change', () => {
+  void selectExperimentPackageComparisonFile('after', elements.experimentpackageafterinput.files[0] ?? null);
+});
+elements.experimentpackagecompare.addEventListener('click', () => { void compareSelectedExperimentPackages(); });
+elements.experimentpackagecomparisonclear.addEventListener('click', clearExperimentPackageComparison);
 elements.authoredchangereviewshowsource.addEventListener('click', () => {
   const first = elements.authoredchangereviewdiffs.querySelector('details');
   if (!first) return;
@@ -8234,6 +8437,24 @@ window.__PROJECT_PATCH__ = Object.freeze({
     buildAuthority: false,
   } : null,
 });
+window.__EXPERIMENT_PACKAGE_COMPARISON__ = Object.freeze({
+  limits: Object.freeze({ ...EXPERIMENT_PACKAGE_COMPARISON_LIMITS }),
+  compare: () => compareSelectedExperimentPackages(),
+  clear: () => clearExperimentPackageComparison(),
+  state: () => ({
+    before: experimentPackageComparisonSlots.before
+      ? { name: experimentPackageComparisonSlots.before.name,
+        sha256: experimentPackageComparisonSlots.before.sha256,
+        bytes: experimentPackageComparisonSlots.before.bytes } : null,
+    after: experimentPackageComparisonSlots.after
+      ? { name: experimentPackageComparisonSlots.after.name,
+        sha256: experimentPackageComparisonSlots.after.sha256,
+        bytes: experimentPackageComparisonSlots.after.bytes } : null,
+    comparison: acceptedExperimentPackageComparison
+      ? structuredClone(acceptedExperimentPackageComparison) : null,
+  }),
+});
+clearExperimentPackageComparison();
 window.__AUTHORED_CHANGE_REVIEW__ = Object.freeze({
   schema: AUTHORED_CHANGE_REVIEW_SCHEMA,
   state: () => pendingAuthoredChangeReview ? structuredClone(pendingAuthoredChangeReview) : null,

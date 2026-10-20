@@ -192,6 +192,27 @@
           <code id="expectation-reference-identity">Unlocked</code>
           <div class="experiment-package-actions"><button id="experiment-package-download" type="button" disabled>Download experiment package</button><span id="experiment-package-state" role="status">AVR thermostat project required</span></div>
           <details id="experiment-package-detail" class="experiment-package-detail"><summary>What the package contains</summary><p>One local JSON file combines the authored source, circuit, scenario, matching expectation reference and current measured report. Its manifest binds source, circuit, scenario, test, artifact, model and tool identities. It excludes compiled firmware and cannot restore a runtime, green state or verdict.</p><p>Automatic credential and authority fields are excluded. The Lab cannot recognize every secret a person may type into source or descriptions, so review your authored text before sharing the file. Nothing is uploaded or stored by this action.</p></details>
+          <details id="experiment-package-comparison" class="experiment-package-comparison">
+            <summary><span>Compare experiment packages</span><span id="experiment-package-comparison-state">Empty</span></summary>
+            <p>Open one Before file and one After file locally. Compare strictly reparses both original packages and shows retained literal facts only. It does not Build, Run, restore authority, infer a cause, choose a winner or create a verdict.</p>
+            <div class="experiment-package-comparison-actions">
+              <button id="experiment-package-before-open" type="button">Choose Before</button>
+              <span id="experiment-package-before-name">No Before file</span>
+              <input id="experiment-package-before-input" class="sr-only" type="file" accept="application/json,.json,.intent-mcu-experiment.json" aria-label="Choose Before experiment package">
+              <button id="experiment-package-after-open" type="button">Choose After</button>
+              <span id="experiment-package-after-name">No After file</span>
+              <input id="experiment-package-after-input" class="sr-only" type="file" accept="application/json,.json,.intent-mcu-experiment.json" aria-label="Choose After experiment package">
+              <button id="experiment-package-compare" type="button" disabled>Compare</button>
+              <button id="experiment-package-comparison-clear" type="button" disabled>Clear</button>
+            </div>
+            <p id="experiment-package-comparison-status" role="status">Choose two canonical strict-v3 packages. Files stay in this tab only.</p>
+            <div id="experiment-package-comparison-review" class="experiment-package-comparison-review" hidden>
+              <section aria-labelledby="experiment-package-comparison-identity-title"><h5 id="experiment-package-comparison-identity-title">Identity</h5><div id="experiment-package-comparison-identities"></div></section>
+              <section aria-labelledby="experiment-package-comparison-source-title"><h5 id="experiment-package-comparison-source-title">Source</h5><div id="experiment-package-comparison-source"></div></section>
+              <section aria-labelledby="experiment-package-comparison-circuit-title"><h5 id="experiment-package-comparison-circuit-title">Circuit</h5><div id="experiment-package-comparison-circuit"></div></section>
+              <section aria-labelledby="experiment-package-comparison-results-title"><h5 id="experiment-package-comparison-results-title">Results</h5><div id="experiment-package-comparison-results"></div></section>
+            </div>
+          </details>
         </section>
         <label>Requested change<textarea id="project-patch-description" rows="3" maxlength="2000" placeholder="Move the LED, route its cable clearly, and update main.c to drive the reviewed pin."></textarea></label>
         <div class="project-patch-actions"><button id="project-patch-generate" type="button">Generate patch prompt</button><button id="project-patch-copy" type="button" disabled>Copy prompt</button></div>
