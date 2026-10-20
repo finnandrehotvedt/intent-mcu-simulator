@@ -2,6 +2,17 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.76 — 2026-10-20
+
+- Published the independently reviewed X61 search over the complete current
+  authored project for AVR, Pico, ESP32-C3 and STM32.
+- Added keyboard activation for exact components, named pins, nets, files,
+  source lines and saved requirement/test owners, plus AVR scenario owners.
+- Rejects stale results by profile, generation, revision and graph identity;
+  navigation preserves canonical data, dirty/history and runtime authority.
+- Keeps queries/results transient and unsaved, makes no network request, and
+  bounds visible excerpts without dropping valid authoritative search text.
+
 ## 1.1.0-rc.75 — 2026-10-20
 
 - Published the independently reviewed X60 Connections disclosure in the

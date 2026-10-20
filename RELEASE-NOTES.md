@@ -1,4 +1,23 @@
-# Intent MCU Simulator 1.1.0-rc.75
+# Intent MCU Simulator 1.1.0-rc.76
+
+## Search the current authored project
+
+This release publishes the independently reviewed X61 local project search.
+The disclosure above the workbench searches the current profile's components,
+named pins, nets, accepted source files and lines, saved requirements/test IDs
+and AVR scenario owners. Activating a result delegates to the existing owner:
+it selects the exact component or net, focuses the named pin or file, selects
+the source line, or focuses the saved requirement or scenario.
+
+Search is deterministic, transient browser presentation. Its query and results
+are not saved, do not call a network service and grant no project, Build,
+runtime, evidence or verdict authority. Stale profile, generation, revision or
+graph results reject instead of navigating approximately. Long valid owner
+text remains fully searchable while result excerpts are visibly bounded.
+
+---
+
+## 1.1.0-rc.75
 
 ## Accessible connection editing
 

@@ -108,6 +108,14 @@ physical or analogue model.
 Selecting a non-AVR profile parks the AVR project without remapping its circuit;
 returning to AVR restores that workbench.
 
+The shared **Search current project** disclosure indexes only the active,
+strictly validated authored project: components, named pins, nets, accepted
+source files and lines, saved requirement/test owners and AVR scenario owners.
+Keyboard activation delegates to the existing owner surface and rejects stale
+profile, generation, revision or graph identities. Query/results are transient,
+unsaved browser presentation and add no network, Build, runtime or verdict
+authority.
+
 The Pico, ESP32-C3 and STM32 teaching circuits share a deliberately bounded
 named-pin cable workflow for their existing controller/resistor/LED/ground
 graphs. A learner can delete and recreate a cable from two compatible free

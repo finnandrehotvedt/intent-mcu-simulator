@@ -1,8 +1,13 @@
-# Migration to 1.1.0-rc.75
+# Migration to 1.1.0-rc.76
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.76 changes no project schema or stored project semantics. Project search is
+transient presentation rebuilt from the current strictly validated authored
+project. Queries, result lists and navigation focus are not saved. Existing
+files require no conversion; Open still restores no executable authority.
 
 Rc.75 changes no project schema or stored project semantics. The Connections
 disclosure is a second, keyboard-operable projection of the current named-pin

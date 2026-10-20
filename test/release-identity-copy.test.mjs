@@ -16,7 +16,7 @@ test('one release authority matches package capability and dynamic OCI projectio
   ]);
   assert.deepEqual(Object.keys(release).sort(), ['schema', 'version']);
   assert.equal(release.schema, 'intent-mcu-release@1');
-  assert.equal(release.version, '1.1.0-rc.75');
+  assert.equal(release.version, '1.1.0-rc.76');
   assert.equal(RELEASE_VERSION, release.version);
   assert.equal(PRODUCT_VERSION, release.version);
   assert.equal(packageValue.version, release.version);

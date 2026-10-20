@@ -20,12 +20,12 @@ test('public documentation facts derive from the current release and canonical c
     read('../staging/llms.txt'), read('../staging/sitemap.xml'),
   ]);
   const avrCount = exampleCatalog().length + 1 + 1 + avrReferenceStarterCatalog().length;
-  assert.equal(RELEASE_VERSION, '1.1.0-rc.75');
+  assert.equal(RELEASE_VERSION, '1.1.0-rc.76');
   assert.equal(avrCount, 15);
   assert.equal(THERMOSTAT_SCENARIOS.scenarios.length, 4);
   assert.match(THERMOSTAT_EXPERIMENT_CARD.outcome, /four reset-isolated/u);
   for (const page of [controllers, components, examples, support, llms]) {
-    assert.match(page, /1\.1\.0-rc\.75/u);
+    assert.match(page, /1\.1\.0-rc\.76/u);
     assert.doesNotMatch(page, /1\.1\.0-rc\.41/u);
   }
   assert.match(controllers, /four reset-isolated boundary scenarios/u);
@@ -55,4 +55,9 @@ test('docs preserve canonical runtime/model boundaries and explain the Build pri
   assert.match(support, /no project-selected command, package, hook or network download/u);
   assert.match(support, /Older recognized files map to the finite retained pre-X56 model resolver only after complete validation/u);
   assert.match(support, /explicit preview-and-download action that creates a new data-only copy and never overwrites the open original/u);
+  assert.match(support, /Search current project/u);
+  assert.match(support, /query and results are not saved or sent to a search service/u);
+  assert.match(support, /profile, generation, revision or graph changed/u);
+  assert.match(llms, /transient local presentation/u);
+  assert.match(llms, /saved requirement\/test owners and AVR scenario owners/u);
 });
