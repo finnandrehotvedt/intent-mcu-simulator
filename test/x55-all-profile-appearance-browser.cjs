@@ -70,25 +70,37 @@ async function snapshot(page, profile) {
       await page.waitForSelector('#workbench-inspector-dialog[open]');
       const select = page.locator(`${profile.properties} [data-bounded-appearance="resistor-1"]`);
       const apply = page.locator(`${profile.properties} [data-bounded-appearance-apply="resistor-1"]`);
+      const width = page.locator(`${profile.properties} input[data-bounded-body="widthPct"]`);
       await select.waitFor({ state: 'visible' });
+      assert.equal(await apply.isEnabled(), false, `${profile.id}: unchanged Apply was enabled`);
       const before = await snapshot(page, profile);
       assert.equal(before.workers, 0, `${profile.id}: worker existed before visual edit`);
       await select.selectOption('cool-blue');
+      await width.fill('80');
       assert.equal(await apply.isEnabled(), true, `${profile.id}: visual Apply unavailable`);
       await apply.click();
       await page.waitForFunction(({ global }) => window[global].state().circuitEditor.draft.layout
-        .componentAppearance.components['resistor-1']?.preset === 'cool-blue', profile);
+        .componentAppearance.components['resistor-1']?.preset === 'cool-blue'
+        && window[global].state().circuitEditor.draft.layout.componentAppearance
+          .components['resistor-1']?.body?.widthPct === 80, profile);
+      assert.equal(await apply.isEnabled(), false, `${profile.id}: committed Apply stayed enabled`);
       const after = await snapshot(page, profile);
       for (const key of ['source', 'components', 'nets', 'positions', 'wireStyles', 'wireRoutes',
         'artifact', 'runtime', 'runnable', 'phase', 'modelLibrary']) {
         assert.deepEqual(after[key], before[key], `${profile.id}: ${key} changed`);
       }
       assert.deepEqual(after.appearance.components['resistor-1'], { preset: 'cool-blue',
-        body: { widthPct: 100, heightPct: 100, cornerPct: 100 } });
+        body: { widthPct: 80, heightPct: 100, cornerPct: 100 } });
       assert.equal(after.workers, 0, `${profile.id}: visual edit created a worker`);
       assert.equal(await card.locator('.resistor-body.appearance-cool-blue').count(), 1,
         `${profile.id}: canvas did not render selected body`);
 
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.querySelector('#workbench-inspector-dialog').open);
+      await card.click();
+      await page.click('#toggle-inspector');
+      await page.waitForSelector('#workbench-inspector-dialog[open]');
+      assert.equal(await apply.isEnabled(), false, `${profile.id}: reopened unchanged Apply was enabled`);
       await page.keyboard.press('Escape');
       await page.waitForFunction(() => !document.querySelector('#workbench-inspector-dialog').open);
       await page.click('#project-files-open');
@@ -113,7 +125,7 @@ async function snapshot(page, profile) {
       if (await page.locator('#workbench-project-dialog').getAttribute('open') !== null) await page.keyboard.press('Escape');
       await page.locator('#top-workbench-shell').screenshot({ path: path.join(output, `${profile.id}-cool-blue.png`) });
       report.push({ profile: profile.option, preset: 'cool-blue', electricalInvariant: 'equal',
-        runtimeInvariant: 'equal', saveOpen: 'pass', workerCreations: 0 });
+        runtimeInvariant: 'equal', noOpApplyDisabled: true, saveOpen: 'pass', workerCreations: 0 });
     }
     assert.deepEqual(producerRequests, []);
     fs.writeFileSync(path.join(output, 'report.json'), `${JSON.stringify({ result: 'pass', profiles: report,

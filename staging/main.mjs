@@ -1123,6 +1123,7 @@ function renderBoundedComponentCatalog({ state, editCircuit, list, properties })
   const updateApply = () => { apply.disabled = !changed(); };
   appearanceSelect.addEventListener('change', updateApply);
   Object.values(bodyInputs).forEach((control) => control.addEventListener('input', updateApply));
+  updateApply();
   apply.addEventListener('click', () => editCircuit(
     'setComponentAppearanceEdit', selected.id, appearanceSelect.value, selectedBody(),
   ));

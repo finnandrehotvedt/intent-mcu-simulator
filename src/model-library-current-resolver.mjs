@@ -32,7 +32,7 @@ const exactInput = (value, keys) => value && typeof value === 'object' && !Array
 // Current behavior is separately owned so future current changes cannot mutate
 // the retained pre-X56 implementation by alias or shared constant.
 export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
-  id: 'intent-mcu-model-bundle-current-x55-bounded-body-editor-2@21',
+  id: 'intent-mcu-model-bundle-current-x55-noop-apply-fix-1@22',
   manifestVersion: CURRENT_MODEL_LIBRARY_MANIFEST.version,
   definition(profile, componentType) {
     const entry = entries.get(`${profile}\u0000${componentType}`);
@@ -179,6 +179,13 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
     }
     return failure('MODEL_LIBRARY_PRODUCTION_UNAVAILABLE', [componentType]);
   },
+});
+
+export const PRE_X55_NOOP_APPLY_FIX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-x55-bounded-body-editor-2@21',
+  manifestVersion: '2.0.0-x55-bounded-body-editor.2-current',
+  migrationOnly: true,
 });
 
 export const PRE_X55_BODY_LEAD_FIX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({

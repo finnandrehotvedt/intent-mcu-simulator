@@ -145,6 +145,8 @@ async function assertRejectedFileIsAtomic(page, filePath, expectedCode, before) 
       const card = await selectResistorByKeyboard(page);
       assert.equal(await page.locator('#appearance-editor').isVisible(), true);
       assert.match(await page.locator('#appearance-status').textContent(), /Invariant pass.*pins A\/B/iu);
+      assert.equal(await page.locator('#appearance-apply').isEnabled(), false,
+        'unchanged AVR Apply was enabled');
 
       const previewBefore = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
       await page.locator('#appearance-preset').focus();
@@ -188,6 +190,8 @@ async function assertRejectedFileIsAtomic(page, filePath, expectedCode, before) 
       await page.locator('#appearance-corner').fill('35');
       await page.click('#appearance-apply');
       await page.waitForFunction(() => window.__X55_APPEARANCE_STATE__?.currentPreset === 'cool-blue');
+      assert.equal(await page.locator('#appearance-apply').isEnabled(), false,
+        'committed AVR Apply stayed enabled');
       assert.equal(await card.locator('.resistor-body.appearance-cool-blue').count(), 1);
       assert.deepEqual(await page.evaluate(() => window.__M6_PROJECT__().layout.componentAppearance
         .components['resistor-1'].body), { widthPct: 88, heightPct: 84, cornerPct: 35 });
@@ -197,6 +201,8 @@ async function assertRejectedFileIsAtomic(page, filePath, expectedCode, before) 
       await page.keyboard.press('Control+Shift+z');
       await page.waitForFunction(() => window.__M6_PROJECT__().layout.componentAppearance
         .components['resistor-1']?.body?.widthPct === 88);
+      assert.equal(await page.locator('#appearance-apply').isEnabled(), false,
+        'restored committed AVR Apply stayed enabled');
 
       const invariantCases = [];
       for (let rotation = 0; rotation < 360; rotation += 90) {

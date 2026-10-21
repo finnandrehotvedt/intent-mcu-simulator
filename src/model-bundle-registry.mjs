@@ -3,6 +3,7 @@
 
 import {
   CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  PRE_X55_NOOP_APPLY_FIX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   PRE_X55_BODY_LEAD_FIX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   PRE_X55_BODY_EDITOR_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   PRE_X55_LED_OUTLINE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
@@ -29,6 +30,9 @@ import { RETAINED_MODEL_LIBRARY_IMPLEMENTATION } from './model-library-retained-
 // complete allowlisted lock, then selects one of these finite static imports.
 export function productionModelBundle(role) {
   if (role === 'retained') return RETAINED_MODEL_LIBRARY_IMPLEMENTATION;
+  if (role === 'pre-x55-noop-apply-fix-current-migration') {
+    return PRE_X55_NOOP_APPLY_FIX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION;
+  }
   if (role === 'pre-x55-body-lead-fix-current-migration') {
     return PRE_X55_BODY_LEAD_FIX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION;
   }
