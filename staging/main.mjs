@@ -792,7 +792,7 @@ async function bindPausedX47Preview(token, identity, cycle, expectedWorker = wor
       || token !== workerToken || expectedWorker !== worker || !x47WorkerIdentity
       || !sameRuntimeIdentity(identity, x47WorkerIdentity) || lifecycle.phase !== 'paused'
       || status !== x47WorkerStatus
-      || x47UiOwner.snapshot().phase !== 'await-pause'
+      || !x47CanBindExplicitPause(x47UiOwner.snapshot())
       || !sameRuntimeIdentity(owner, x47UiOwner.snapshot()) || !sameX47Preview(frozen, live)
       || frozen.context.graphIdentity !== x47RuntimeAuthority?.graphIdentity
       || frozen.context.sourceProjectRevision !== x47RuntimeAuthority?.sourceProjectRevision) return false;
@@ -802,6 +802,11 @@ async function bindPausedX47Preview(token, identity, cycle, expectedWorker = wor
 }
 
 function sameRuntimeIdentity(left, right) { return JSON.stringify(left) === JSON.stringify(right); }
+
+function x47CanBindExplicitPause(owner = x47UiOwner.snapshot()) {
+  return owner.phase === 'await-pause'
+    || (owner.phase === 'running' && owner.executionReceipt?.complete === true);
+}
 
 function renderProfileDiagnostics(snapshot, { textarea, summary, links, current }) {
   const diagnostics = snapshot?.diagnostics ?? [];
@@ -11339,13 +11344,18 @@ async function loadArtifact(hex, artifactIdentity, {
         retireX47Integration(error.code ?? error.message ?? 'X47_UI_EXECUTION_REJECTED');
       }
     }
-    if (x47ExplicitPauseRequested && data.paused === true && data.kind === 'paused'
-        && x47UiOwner.snapshot().phase === 'await-pause') {
-      x47ExplicitPauseRequested = false;
-      await bindPausedX47Preview(token, identity, data.cycle, loadWorker);
-    }
+    const bindExplicitPause = x47ExplicitPauseRequested && data.paused === true
+      && data.kind === 'paused' && x47CanBindExplicitPause();
     if (!ownsWorker()) return;
     scheduleWorkerRuntimeRender(data);
+    if (bindExplicitPause) {
+      for (let attempt = 0; attempt < 4 && x47ExplicitPauseRequested; attempt += 1) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        if (!ownsWorker() || lifecycle.phase !== 'paused' || !x47CanBindExplicitPause()) break;
+        const bound = await bindPausedX47Preview(token, identity, data.cycle, loadWorker);
+        if (bound) { x47ExplicitPauseRequested = false; break; }
+      }
+    }
   });
   loadWorker.addEventListener('error', (event) => {
     if (!ownsWorker()) return;
@@ -11653,7 +11663,7 @@ elements.run.addEventListener('click', () => {
 elements.pause.addEventListener('click', () => {
   const result = applyLifecycle({ type: 'runtime.pause' });
   if (result.accepted) {
-    x47ExplicitPauseRequested = x47UiOwner.snapshot().phase === 'await-pause';
+    x47ExplicitPauseRequested = x47CanBindExplicitPause();
     worker?.postMessage({ command: 'pause' });
   }
 });
@@ -11706,9 +11716,9 @@ document.addEventListener('x43-stack-capture-request', (event) => {
 
 document.addEventListener('x47-preview-ready', () => {
   if (lifecycle.phase === 'paused' && x47WorkerIdentity
-      && x47UiOwner.snapshot().phase === 'await-pause' && x47WorkerStatus?.paused === true) {
+      && x47CanBindExplicitPause() && x47WorkerStatus?.paused === true) {
     void bindPausedX47Preview(workerToken, x47WorkerIdentity, x47WorkerStatus.cycle,
-      x47WorkerStatus.worker);
+      x47WorkerStatus.worker).then((bound) => { if (bound) x47ExplicitPauseRequested = false; });
   }
 });
 

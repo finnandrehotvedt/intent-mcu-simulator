@@ -73,6 +73,47 @@ test('accepted queue and execution are joined to the exact saved request and wor
   assert.equal(owner.snapshot().phase, 'running');
 });
 
+test('completed D2 Resume can re-pause only on the same exact worker at a fresh cycle', () => {
+  const { owner, kernel, queue } = acceptedOwner();
+  owner.resume({ workerToken: 9, runtimeIdentity });
+  for (const event of queue.events) {
+    kernel.runUntilCycle(event.targetCycle);
+    kernel.step();
+  }
+  owner.observeExecution({ workerToken: 9, runtimeIdentity,
+    executionReceipt: kernel.x47ExecutionReceipt(queue.transactionId) });
+  const before = owner.snapshot();
+  assert.equal(before.phase, 'running');
+  assert.equal(before.executionReceipt.complete, true);
+
+  const staleNonce = { ...runtimeIdentity, workerInstanceNonce: '2'.repeat(32) };
+  const staleGeneration = { ...runtimeIdentity, runtimeGeneration: runtimeIdentity.runtimeGeneration + 1 };
+  assert.throws(() => owner.noteExplicitPause({ workerToken: 9, runtimeIdentity: staleNonce,
+    cycle: 5, preview }), /X47_UI_WORKER_STALE/u);
+  assert.throws(() => owner.noteExplicitPause({ workerToken: 9, runtimeIdentity: staleGeneration,
+    cycle: 5, preview }), /X47_UI_WORKER_STALE/u);
+  assert.throws(() => owner.noteExplicitPause({ workerToken: 9, runtimeIdentity,
+    cycle: before.pausedCycle, preview }), /X47_UI_PAUSE_INVALID/u);
+
+  const ready = owner.noteExplicitPause({ workerToken: 9, runtimeIdentity, cycle: 5, preview });
+  assert.equal(ready.phase, 'ready');
+  assert.equal(ready.reason, 'Re-paused binding ready.');
+  assert.equal(ready.pausedCycle, 5);
+  assert.deepEqual(ready.authority, authority);
+  assert.deepEqual(ready.runtimeIdentity, runtimeIdentity);
+  assert.equal(ready.executionReceipt.complete, true);
+});
+
+test('running owner cannot re-pause before D2 execution is complete or after retirement', () => {
+  const { owner } = acceptedOwner();
+  owner.resume({ workerToken: 9, runtimeIdentity });
+  assert.throws(() => owner.noteExplicitPause({ workerToken: 9, runtimeIdentity,
+    cycle: 5, preview }), /X47_UI_PAUSE_INVALID/u);
+  owner.retire('X47_SOURCE_EDITED');
+  assert.throws(() => owner.noteExplicitPause({ workerToken: 9, runtimeIdentity,
+    cycle: 6, preview }), /X47_UI_WORKER_STALE/u);
+});
+
 test('Stop requires exact cancellation before exact disposed and preserves incomplete truth', () => {
   const { owner, kernel, queue } = acceptedOwner();
   owner.beginStop('dispose-one');

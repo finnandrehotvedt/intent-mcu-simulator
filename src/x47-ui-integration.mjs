@@ -70,10 +70,16 @@ export function createX47UiOwner() {
     },
     noteExplicitPause({ workerToken, runtimeIdentity, cycle, preview }) {
       requireEpoch(workerToken, runtimeIdentity);
-      if (!state.ran || state.phase !== 'await-pause' || !Number.isSafeInteger(cycle) || cycle < 0) {
+      const initialPause = state.phase === 'await-pause' && state.pausedCycle === null;
+      const completedRePause = state.phase === 'running'
+        && state.executionReceipt?.complete === true
+        && Number.isSafeInteger(state.pausedCycle) && cycle > state.pausedCycle;
+      if (!state.ran || (!initialPause && !completedRePause)
+          || !Number.isSafeInteger(cycle) || cycle < 0) {
         fail('X47_UI_PAUSE_INVALID');
       }
-      state = { ...state, phase: 'ready', reason: 'Paused binding ready.', pausedCycle: cycle,
+      state = { ...state, phase: 'ready',
+        reason: completedRePause ? 'Re-paused binding ready.' : 'Paused binding ready.', pausedCycle: cycle,
         preview: validatePreview(preview) };
       return snapshot();
     },

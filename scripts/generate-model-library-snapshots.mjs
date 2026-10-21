@@ -22,6 +22,9 @@ const PRE_X47_MOMENTARY_CONTROL_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_X47_REPAUSE_STATE_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X47_REPAUSE_STATE_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -179,16 +182,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x47-repeatable-apply-fix.1-current',
-  'intent-mcu-model-bundle-current-x47-repeatable-apply-fix-1@16',
+  '2.0.0-x47-repause-state-fix.1-current',
+  'intent-mcu-model-bundle-current-x47-repause-state-fix-1@17',
   currentImplementation,
   {
-    priorVersion: PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X47_REPAUSE_STATE_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X47_REPAUSE_STATE_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'explicit-data-only-migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component and electrical semantics are unchanged; accepted momentary state now publishes one current visual graph for exact repeatable-input authority binding',
-    presentationDisposition: 'repeatable Apply rejection is immediate, machine-readable and visible while retaining the finite preview',
-    baselineClosureDisposition: 'the reviewed X47 momentary-control identity and accepted public rc.98 identity remain immutable and migration-only',
+    semanticDisposition: 'component and electrical semantics are unchanged; a completed D2 Resume can bind one later explicit Pause only to the exact current worker identity and a fresh cycle',
+    presentationDisposition: 'the re-paused state becomes ready for the existing deterministic repeatable-input preview and Apply flow without auto-resume',
+    baselineClosureDisposition: 'the reviewed X47 repeatable-Apply identity and accepted public rc.98 identity remain immutable and migration-only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -210,6 +213,7 @@ export const PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze($
 export const PRE_X47_REPEATABLE_REJECTION_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_REPEATABLE_REJECTION_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X47_MOMENTARY_CONTROL_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_MOMENTARY_CONTROL_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X47_REPAUSE_STATE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_REPAUSE_STATE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);
