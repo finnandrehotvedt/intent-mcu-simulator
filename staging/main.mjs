@@ -9286,6 +9286,7 @@ function setMomentaryControl(componentId, pressed, action = 'canvas button') {
   }
   publish({
     project: JSON.parse(currentProjectText()), revision: editor.revision,
+    graph: structuredClone(currentProject().circuit),
     lastAction: `BUTTON_${pressed ? 'PRESSED' : 'RELEASED'}`,
   });
   elements.projectmessage.textContent = `${component.label} ${pressed ? 'pressed' : 'released'} through ${action}.`;

@@ -1186,7 +1186,8 @@ function installX47RepeatableInputs(document, activeProfileReader) {
     && source.revision === state()?.revision
     && source.graphJson === JSON.stringify(state()?.graph);
   const snapshot = () => ({ state: record && sourceStillCurrent() ? 'preview' : 'unavailable',
-    reason: notice, context: context ? structuredClone(context) : null,
+    reason: notice ?? (integration.phase === 'rejected' ? integration.reason : null),
+    context: context ? structuredClone(context) : null,
     record: record ? structuredClone(record) : null, canonicalText });
   const canApply = () => Boolean(record && !draftChanged && sourceStillCurrent()
     && state()?.lifecycle?.phase === 'paused'
@@ -1196,9 +1197,13 @@ function installX47RepeatableInputs(document, activeProfileReader) {
       context = null; record = null; canonicalText = null;
       notice = 'X47_REPEATABLE_BINDING_CHANGED';
     }
+    const applyRejected = Boolean(record && integration.phase === 'rejected');
     for (const panel of panels) {
-      panel.dataset.state = record ? 'preview' : notice ? 'invalidated' : 'ready';
-      panel.querySelector('[data-x47-repeatable-state]').textContent = record && notice
+      panel.dataset.state = applyRejected
+        ? 'rejected' : record ? 'preview' : notice ? 'invalidated' : 'ready';
+      panel.querySelector('[data-x47-repeatable-state]').textContent = applyRejected
+        ? `Apply rejected · preview retained · ${integration.reason}`
+        : record && notice
         ? `Rejected · previous preview retained · ${notice}`
         : record && draftChanged ? 'Previous preview retained'
           : record ? 'Preview ready' : notice ? `Rejected · ${notice}` : context ? 'Ready' : 'Unavailable';

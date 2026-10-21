@@ -24,7 +24,8 @@ import {
   createTemperatureLcdThresholdExample,
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
-  CURRENT_MODEL_LIBRARY_LOCK, PRE_X47_MOMENTARY_CONTROL_CURRENT_MODEL_LIBRARY_LOCK,
+  CURRENT_MODEL_LIBRARY_LOCK, PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_X47_MOMENTARY_CONTROL_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X47_REPEATABLE_REJECTION_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_LOCK,
@@ -163,7 +164,7 @@ test('retained and current locks use distinct real resolver instances with match
 test('production electrical and runtime paths dispatch through the exact selected implementation', () => {
   for (const [lock, expected] of [
     [RETAINED_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-retained-rc72@2'],
-    [CURRENT_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-current-x47-momentary-control-fix-1@15'],
+    [CURRENT_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-current-x47-repeatable-apply-fix-1@16'],
   ]) {
     const avr = validateCircuit(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
     assert.equal(avr.ok, true);
@@ -188,8 +189,21 @@ test('production electrical and runtime paths dispatch through the exact selecte
 
 test('prior current locks remain exact and data-migratable but cannot authorize execution', () => {
   const historical = historicalModelLibraryManifests();
-  assert.equal(historical.length, 14);
-  const preMomentaryControl = historical.at(-1);
+  assert.equal(historical.length, 15);
+  const preRepeatableApply = historical.at(-1);
+  assert.equal(preRepeatableApply.version, '2.0.0-x47-momentary-control-fix.1-current');
+  assert.equal(normalizeModelLibraryLock(PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
+  assert.equal(modelLibraryExecutionIdentity(
+    PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_LOCK,
+  ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const applyMigration = modelLibraryMigrationPreview(
+    PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_LOCK,
+  );
+  assert.equal(applyMigration.ok, true);
+  assert.equal(applyMigration.semanticChanges.length, 0);
+  assert.equal(applyMigration.rendererChanges.length, 0);
+  assert.equal(applyMigration.unchanged.length, 25);
+  const preMomentaryControl = historical.at(-2);
   assert.equal(preMomentaryControl.version, '2.0.0-x47-repeatable-inputs-candidate.2-current');
   assert.equal(normalizeModelLibraryLock(PRE_X47_MOMENTARY_CONTROL_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
   assert.equal(modelLibraryExecutionIdentity(
@@ -202,7 +216,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(momentaryMigration.semanticChanges.length, 0);
   assert.equal(momentaryMigration.rendererChanges.length, 0);
   assert.equal(momentaryMigration.unchanged.length, 25);
-  const preRejection = historical.at(-2);
+  const preRejection = historical.at(-3);
   assert.equal(preRejection.version, '2.0.0-x47-repeatable-inputs-candidate.1-current');
   assert.equal(normalizeModelLibraryLock(PRE_X47_REPEATABLE_REJECTION_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
   assert.equal(modelLibraryExecutionIdentity(
@@ -215,7 +229,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(rejectionMigration.semanticChanges.length, 0);
   assert.equal(rejectionMigration.rendererChanges.length, 0);
   assert.equal(rejectionMigration.unchanged.length, 25);
-  const preRepeatable = historical.at(-3);
+  const preRepeatable = historical.at(-4);
   assert.equal(preRepeatable.version, '2.0.0-x43-stack-hotpath-candidate.1-current');
   assert.equal(normalizeModelLibraryLock(PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
   assert.equal(modelLibraryExecutionIdentity(PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_LOCK).code,
