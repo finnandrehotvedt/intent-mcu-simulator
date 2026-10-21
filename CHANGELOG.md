@@ -2,6 +2,21 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.99 — 2026-10-21
+
+- Completes the original bounded AVR X47 criterion with finite A1 ramp,
+  seeded-noise and recorded schedules plus the existing D2 active-low pulse.
+- Preserves exact source, graph, artifact, model, generation and worker binding;
+  input Apply never resumes execution, D2 Resume is explicit, a later explicit
+  Pause rebinds only the same fresh-cycle worker, and Reset clears pending work.
+- Retains the accepted native ramp/noise/recorded ADC and D13 evidence, lossless
+  pressed-LOW D2 evidence and same-worker pending-Reset proof. This release adds
+  no Build, Run or Scenario.
+- Keeps X43 and X55 partial, M2–M4 partial and M5 planned. Non-AVR input,
+  arbitrary signals, saved/replayed schedules, physical equivalence and verdict
+  authority remain unavailable. Status is X **74 complete / 2 partial / 20
+  planned**, P1 **59/0/0**; cumulative producer accounting is **32/31/0**.
+
 ## 1.1.0-rc.98 — 2026-10-21
 
 - Publishes the reviewed AVR-only X43 observed-stack address-depth slice with

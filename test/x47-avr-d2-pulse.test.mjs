@@ -177,11 +177,11 @@ test('shared shell keeps preview transient while current Apply is model-identity
   assert.match(shell, /support\.html#x47-avr-d2-pulse/u);
   assert.doesNotMatch(shell, /Private integration/u);
   assert.match(support, /id="x47-avr-d2-pulse"/u);
-  assert.match(support, /Pending-pulse RESET cancellation.*synthetic browser-worker/su);
-  assert.match(support, /not native emulator or physical-hardware evidence/u);
-  assert.match(support, /Wider waveforms, noise, CSV workflows and non-AVR profiles remain unavailable/u);
+  assert.match(support, /accepted native emulator evidence covers A1 ramp/u);
+  assert.match(support, /pressed-LOW D2 pulse, fresh re-pause, future pending A1 events and one Reset to cycle zero/u);
+  assert.match(support, /Arbitrary signals, CSV\/network import, persistence\/replay, non-AVR profiles/u);
   assert.match(controllers, /id="x47-profile-boundary"/u);
-  assert.match(controllers, /exact AVR momentary-button-to-ground graph/u);
+  assert.match(controllers, /exact button-to-ground graph/u);
   assert.match(controllers, /support\.html#x47-avr-d2-pulse/u);
   assert.match(shell, /X47_SOURCE_CHANGED_DURING_HASH/u);
   assert.match(shell, /state: 'pending'.*record: null.*canonicalText: null.*events: \[\]/su);

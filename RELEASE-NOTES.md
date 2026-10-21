@@ -1,4 +1,34 @@
-# Intent MCU Simulator 1.1.0-rc.98
+# Intent MCU Simulator 1.1.0-rc.99
+
+## X47 complete bounded AVR input sequences
+
+This release completes the original bounded X47 criterion for the exact AVR
+teaching graphs. Instruments can create strict finite temperature schedules on
+A1 as a ramp, deterministic seeded noise or recorded points, and can queue the
+existing active-low D2 pulse. Every record declares AVR native-cycle time,
+units and finite limits. Apply is bound to one exact current paused worker and
+never resumes execution; D2 Resume remains explicit.
+
+The accepted native evidence covers ramp, two identical same-seed noise runs
+and recorded input through actual A1 ADC and D13 firmware response. It also
+proves the canonical pressed-LOW D2 baseline, lossless LOW-without-duplicate-
+transition then actual HIGH transition, a later explicit fresh-cycle Pause on
+the same exact worker, five future A1 events pending, and one Reset returning
+cycle zero with empty queues. Source, graph, artifact, model implementation and
+execution context, runtime generation, worker initialization and nonce remain
+joined throughout.
+
+This does not add non-AVR input injection, arbitrary signal generation, CSV or
+network import, saved schedules, automatic replay, physical equivalence or
+verdict authority. X43 and X55 remain partial; M2–M4 remain partial and M5
+planned. Rc.99 itself performs no firmware Build, Run or Scenario and reuses
+the independently accepted native evidence. Status is X **74 complete / 2
+partial / 20 planned**, P1 **59/0/0**, with cumulative producer accounting
+**32/31/0**.
+
+---
+
+## 1.1.0-rc.98
 
 ## X43 partial AVR observed stack address depth
 

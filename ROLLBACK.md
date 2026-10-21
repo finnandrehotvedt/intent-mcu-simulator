@@ -1,16 +1,23 @@
-# Rollback basis for 1.1.0-rc.98
+# Rollback basis for 1.1.0-rc.99
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain exact accepted rc.97 source commit
-`1c60fbde963f1b0c3127a21da6ada1a4206206f1` and VM103 image
-`sha256:0ef483526c137cc93c553513c29c99384d9a30e23bd29c99ea753298ae82661e`
-as the pre-rc.98 app-only recovery basis.
+Retain exact accepted rc.98 source commit
+`036d4804719b943f3ac0914d9da1a85919c5e853` and VM103 image
+`sha256:49970cf47f4659af49e480329f2c4a0dda3f01d7c67078a28cf312c02ed11844`
+as the pre-rc.99 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
+
+Rc.99 publishes the reviewed complete bounded AVR X47 input sequence and the
+accepted current model identity. Rolling back restores rc.98 without rewriting
+or deleting learner-owned projects. Finite previews, seeds, schedules, receipts
+and pending events are transient and are not restored. A file carrying the
+rc.99 model identity must be retained unchanged and opened in rc.99 or a later
+compatible release; rc.98 must not relabel it or infer executable authority.
 
 Rc.98 publishes the reviewed AVR observed-stack address-depth slice and its
 current model identity. Rolling back restores rc.97 without rewriting or

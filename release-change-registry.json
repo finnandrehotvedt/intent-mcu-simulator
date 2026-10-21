@@ -44,10 +44,13 @@
     {
       "id": "X47",
       "capabilities": [
-        "intent-mcu-x47-avr-d2-pulse@1"
+        "intent-mcu-x47-avr-d2-pulse@1",
+        "intent-mcu-x47-repeatable-apply@1",
+        "intent-mcu-x47-repeatable-input@1"
       ],
       "contracts": [
-        "x47-avr-d2-active-low-pulse-v1"
+        "x47-avr-d2-active-low-pulse-v1",
+        "x47-avr-repeatable-a1-input-v1"
       ]
     },
     {

@@ -1137,7 +1137,7 @@ function createX47RepeatablePanel(document, ordinal) {
       <strong id="x47-repeatable-title-${ordinal}">Repeatable A1 inputs</strong>
       <span data-x47-repeatable-state>Checking</span>
     </div>
-    <p class="x47-repeatable-boundary"><strong>Private candidate</strong> · finite data-only preview · not saved · no native execution claim.</p>
+    <p class="x47-repeatable-boundary"><strong>Bounded AVR input</strong> · finite local preview · not saved · Apply never resumes execution.</p>
     <div class="x47-repeatable-controls">
       <label>Input family
         <select data-x47-repeatable-family>

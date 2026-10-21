@@ -11,22 +11,23 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.97",
-    "current": "1.1.0-rc.98"
+    "previous": "1.1.0-rc.98",
+    "current": "1.1.0-rc.99"
   },
   "changes": [
     {
-      "id": "X43",
+      "id": "X47",
       "classification": "changed",
       "capabilities": [
-        "intent-mcu-x43-avr-observation-interval@1",
-        "intent-mcu-x43-avr-observed-stack@1"
+        "intent-mcu-x47-avr-d2-pulse@1",
+        "intent-mcu-x47-repeatable-apply@1",
+        "intent-mcu-x47-repeatable-input@1"
       ],
       "contracts": [
-        "x43-avr-observation-interval-v1",
-        "x43-avr-observed-stack-v1"
+        "x47-avr-d2-active-low-pulse-v1",
+        "x47-avr-repeatable-a1-input-v1"
       ],
-      "summary": "Publishes reviewed AVR observed stack address depth: current SP, interval minimum and since-reset minimum with exact worker binding, Pause freeze and Reset clear; heap, free SRAM and true memory high-water remain unavailable."
+      "summary": "Completes bounded AVR X47 with finite A1 ramp, seeded-noise and recorded schedules plus the D2 active-low pulse, paused-worker binding, explicit Resume and Reset cancellation; other profiles and arbitrary signals remain unavailable."
     },
     {
       "id": "X88",
@@ -37,7 +38,7 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records the reviewed rc.97 to rc.98 X43 observed-stack release; the release packet reuses accepted native evidence, adds no firmware Build, Run or scenario and grants no memory-content, heap, physical or verdict authority."
+      "summary": "Records the reviewed rc.98 to rc.99 X47 completion; the release packet reuses accepted native evidence, adds no firmware Build, Run or scenario and grants no non-AVR, arbitrary-signal, saved-replay, physical or verdict authority."
     }
   ],
   "migrationRequired": false,

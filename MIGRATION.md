@@ -1,8 +1,15 @@
-# Migration to 1.1.0-rc.98
+# Migration to 1.1.0-rc.99
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.99 recognizes the accepted X47 repeatable-input, momentary-control,
+repeatable-Apply and re-pause model identities through explicit data-only
+migration. Authored cells and validated controls are preserved; artifact,
+runtime, X47 input and verdict authority are cleared and require a fresh Build.
+Finite previews, schedules, seeds, receipts and pending events are transient and
+are never saved or replayed. Unknown model identities continue to fail closed.
 
 Rc.98 adds transient current-worker X43 stack-pointer observations and a new
 current model-library identity with strict data-only migration from rc.97. It

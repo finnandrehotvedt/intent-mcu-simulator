@@ -1,8 +1,8 @@
-# X47 partial AVR D2 pulse input
+# X47 complete bounded AVR input sequences
 
-Status: public partial implementation in `1.1.0-rc.93`.
+Status: complete against the original bounded AVR criterion in `1.1.0-rc.99`.
 
-X47 accepts one finite deterministic input shape for the exact AVR teaching
+X47 accepts finite deterministic input shapes for the exact AVR teaching
 graph: a momentary button connects D2 to one controller ground. The local
 preview schema is `intent-mcu-x47-avr-d2-pulse@1` and the generator contract is
 `x47-avr-d2-active-low-pulse-v1`. It contains one active-low pulse bounded to
@@ -25,9 +25,14 @@ Four earlier current-model identities are accepted only through explicit
 data-only migration. Migration preserves authored cells, records provenance
 and clears executable/runtime authority. Unknown identities fail closed.
 
-The immutable native evidence covers the canonical D2 pulse and accepted Stop
-sequence. The saved RESET attempt genuinely reached its documented runtime
-criteria, but its original receipt remains failed-not-accepted. Pending-pulse
-RESET cancellation is synthetic-browser evidence only. Wider waveforms,
-noise/CSV workflows and non-AVR profiles remain outside this partial slice.
-The rc.93 release itself performs no firmware Build, Run or scenario.
+The immutable native evidence covers finite A1 ramp, same-seed noise and
+recorded schedules through actual ADC and D13 firmware response, plus the
+canonical pressed-LOW D2 pulse, fresh-cycle re-pause, future pending A1 events
+and one Reset to cycle zero with empty queues. Reset retires active UI authority
+while the worker Reset receipt retains its exact identity.
+
+The complete status is bounded to the exact AVR A1 temperature and D2 button
+models, declared units, finite event counts and deterministic seed. Arbitrary
+signals, CSV or network import, saved/replayed schedules, non-AVR profiles,
+physical equivalence and verdict authority remain unavailable. The rc.99
+release itself performs no firmware Build, Run or Scenario.

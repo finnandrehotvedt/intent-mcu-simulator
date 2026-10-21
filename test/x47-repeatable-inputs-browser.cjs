@@ -98,7 +98,7 @@ const evidenceDir = process.env.X47_EVIDENCE_DIR || '';
     assert.equal((await page.evaluate(() => window.__X47_REPEATABLE_INPUTS__.snapshot())).canonicalText,
       acceptedRecorded);
 
-    assert.match(await panel.textContent(), /Private candidate.*finite data-only preview.*no native execution claim/su);
+    assert.match(await panel.textContent(), /Bounded AVR input.*finite local preview.*Apply never resumes execution/su);
     assert.match(await panel.textContent(), /Apply queues data only and never resumes execution/u);
     assert.equal(await panel.locator('[data-x47-repeatable-events] li').count(), 2);
     const readability = await panel.evaluate((root) => ({
