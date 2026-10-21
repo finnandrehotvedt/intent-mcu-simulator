@@ -125,6 +125,11 @@ import {
   thermostatFirmwareVariant,
 } from '../src/thermostat-experiment.mjs';
 import {
+  X48_PLANT_ID,
+  X48_PROFILE,
+  X48_SCHEMA,
+} from '../src/x48-ideal-room-plant.mjs';
+import {
   ScenarioTimelineEditor, defaultThermostatScenarioTimeline, faultInjectionThermostatTimeline,
   generateSeededThermostatTimeline, scenarioTimelineRuntimeEvents,
 } from '../src/scenario-timeline.mjs';
@@ -5944,6 +5949,83 @@ function thermostatRuntimeReady() {
     && ['ready', 'paused'].includes(lifecycle.phase)
     && loadedSourceIdentity === buildInputIdentity();
 }
+
+let x48RuntimeActive = false;
+let x48OrdinaryControlState = null;
+function x48Controls(active) {
+  const controls = [elements.build, elements.run, elements.pause, elements.step, elements.reset,
+    elements.quickbuild, elements.quickrun, elements.quickpause, elements.quickreset,
+    elements.projectnew, elements.projectdemo, elements.projectopen].filter(Boolean);
+  if (active && !x48OrdinaryControlState) {
+    x48OrdinaryControlState = new Map(controls.map((control) => [control, control.disabled]));
+    for (const control of controls) { control.disabled = true; control.dataset.x48Excluded = 'true'; }
+  } else if (!active && x48OrdinaryControlState) {
+    for (const [control, disabled] of x48OrdinaryControlState) {
+      control.disabled = disabled; delete control.dataset.x48Excluded;
+    }
+    x48OrdinaryControlState = null;
+  }
+}
+function x48Eligibility() {
+  const runtime = window.__M6_STATE__.runtime;
+  const identity = runtime?.runtimeIdentity;
+  if (selectedCompilerProfile !== X48_PROFILE) return { eligible: false, code: 'X48_PROFILE_UNAVAILABLE', message: 'Available only for the AVR thermostat.' };
+  if (!thermostatProjectActive() || thermostatFirmwareVariant(currentProject()) !== 'correct') {
+    return { eligible: false, code: 'X48_EXACT_THERMOSTAT_REQUIRED', message: 'Open the exact unedited Thermostat boundary test.' };
+  }
+  if (!thermostatRuntimeReady() || !identity || runtime.kind !== 'ready'
+      || runtime.cycle !== 0 || runtime.paused !== true) {
+    return { eligible: false, code: 'X48_FRESH_BUILD_REQUIRED', message: 'Make a fresh Build and do not press ordinary Run.' };
+  }
+  if (x48RuntimeActive) return { eligible: false, code: 'X48_OPERATION_ACTIVE', message: 'The ideal room loop is already running.' };
+  if (identity.artifactIdentity !== lifecycle.artifact?.artifactIdentity
+      || identity.projectGeneration !== lifecycle.artifact?.projectGeneration
+      || identity.runtimeGeneration !== lifecycle.runtimeBinding?.runtimeGeneration
+      || identity.modelImplementationSha256 !== modelLibraryLockFor(X48_PROFILE).implementationSha256
+      || identity.modelExecutionContextSha256 !== runtime.modelExecutionContextSha256
+      || lifecycle.artifact?.inputIdentity !== window.__M6_STATE__.inputIdentity) {
+    return { eligible: false, code: 'X48_BINDING_STALE', message: 'The current source, artifact, model and worker binding is incomplete or stale.' };
+  }
+  return { eligible: true, code: 'OK', message: 'Ready at cycle zero. Start uses this one current worker and no ordinary Run.' };
+}
+function x48Binding() {
+  const identity = window.__M6_STATE__.runtime.runtimeIdentity;
+  return {
+    schema: X48_SCHEMA,
+    plantId: X48_PLANT_ID,
+    profile: X48_PROFILE,
+    inputIdentity: lifecycle.artifact.inputIdentity,
+    projectGeneration: identity.projectGeneration,
+    runtimeGeneration: identity.runtimeGeneration,
+    artifactIdentity: identity.artifactIdentity,
+    modelImplementationSha256: identity.modelImplementationSha256,
+    modelExecutionContextSha256: identity.modelExecutionContextSha256,
+    workerInitialization: identity.workerInitialization,
+    workerInstanceNonce: identity.workerInstanceNonce,
+  };
+}
+function dispatchX48State(detail) {
+  document.dispatchEvent(new CustomEvent('x48-state', { detail: structuredClone(detail) }));
+}
+function startX48RoomLoop() {
+  const eligible = x48Eligibility();
+  if (!eligible.eligible) { dispatchX48State({ kind: 'x48-indeterminate', message: eligible.message }); return eligible; }
+  x48RuntimeActive = true; x48Controls(true);
+  worker.postMessage({ command: 'x48-run', binding: x48Binding() });
+  return { eligible: true, code: 'X48_START_POSTED' };
+}
+function cancelX48RoomLoop() {
+  if (!x48RuntimeActive || !worker) return { ok: false, code: 'X48_OPERATION_UNAVAILABLE' };
+  worker.postMessage({ command: 'x48-cancel' });
+  return { ok: true, code: 'X48_CANCEL_POSTED' };
+}
+window.__X48_RUNTIME_BRIDGE__ = Object.freeze({
+  eligibility: x48Eligibility,
+  start: startX48RoomLoop,
+  cancel: cancelX48RoomLoop,
+});
+document.addEventListener('x48-start-request', startX48RoomLoop);
+document.addEventListener('x48-cancel-request', cancelX48RoomLoop);
 function nextScenarioId() {
   const used = new Set(scenarioTimelineEditor?.timeline.scenarios.map((item) => item.id) ?? []);
   for (let index = 1; index <= 999; index += 1) {

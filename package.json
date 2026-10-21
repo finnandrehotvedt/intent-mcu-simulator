@@ -115,6 +115,8 @@
     "check:x49:private-closure": "node scripts/generate-x49-private-runtime-manifest.mjs",
     "test:x49:browser": "node test/x49-sensor-offset-browser.cjs",
     "test:x49:public:browser": "node test/x49-public-browser.cjs",
+    "test:x48": "node --test --test-concurrency=1 test/x48-ideal-room-plant.test.mjs test/x48-worker-lifecycle.test.mjs test/x48-current-closure.test.mjs",
+    "test:x48:browser": "node test/x48-ideal-room-browser.cjs",
     "test:x55": "node --test --test-concurrency=1 test/x55-resistor-appearance.test.mjs test/x55-current-closure.test.mjs test/x55-profile-control-owner.test.mjs test/model-library.test.mjs test/project-envelope.test.mjs test/lifecycle.test.mjs",
     "test:x55:appearance:browser": "node test/x55-resistor-appearance-browser.cjs && node test/x55-all-profile-appearance-browser.cjs && node test/x55-led-outline-browser.cjs",
     "test:x55:profile-controls:browser": "node test/x55-profile-control-browser.cjs",

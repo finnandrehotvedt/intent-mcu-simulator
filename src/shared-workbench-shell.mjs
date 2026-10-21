@@ -51,6 +51,10 @@ import {
   X49_PUBLIC_NATIVE_OFFSET,
 } from './x49-public-authoring.mjs';
 import { createX49PublicRunner } from './x49-public-runner.mjs';
+import {
+  X48_NOMINAL_TICK_CYCLES,
+  X48_TICK_COUNT,
+} from './x48-ideal-room-plant.mjs';
 
 export const SHARED_WORKBENCH_SCHEMA = 'intent-mcu-shared-workbench@1';
 export const SHARED_WORKBENCH_SURFACES = Object.freeze([
@@ -1331,6 +1335,127 @@ function createX49Panel(document, ordinal) {
     </div>
     <p class="x49-offset-producer"><strong>Candidate producer boundary:</strong> a separately instrumented in-memory copy of the exact AVR thermostat source is required; ordinary current firmware, thermostat snapshots and UART text are not native verification.</p>`;
   return panel;
+}
+
+function createX48Panel(document, ordinal) {
+  const panel = document.createElement('section');
+  panel.className = 'x48-room-loop';
+  panel.dataset.x48RoomLoop = '';
+  panel.dataset.state = 'unavailable';
+  panel.setAttribute('aria-labelledby', `x48-room-title-${ordinal}`);
+  panel.innerHTML = `
+    <div class="shared-instrument-tool-heading">
+      <strong id="x48-room-title-${ordinal}">Ideal room control loop</strong>
+      <span data-x48-state>Unavailable</span>
+    </div>
+    <p class="x48-room-boundary"><strong>Discrete educational model</strong> · ${X48_TICK_COUNT} ticks on a nominal 160 ms schedule · each sample uses the first completed AVR instruction boundary at or after its target.</p>
+    <div class="x48-room-actions">
+      <button type="button" data-x48-start disabled>Run ideal room loop</button>
+      <button type="button" data-x48-cancel hidden>Cancel loop</button>
+    </div>
+    <p data-x48-message>Open the exact thermostat example and make a fresh Build. Ordinary Run is not used.</p>
+    <dl class="x48-room-facts">
+      <div><dt>Schedule</dt><dd>Nominal ${X48_NOMINAL_TICK_CYCLES.toLocaleString('en-US')} cycles/tick; actual producer boundary retained.</dd></div>
+      <div><dt>Result</dt><dd data-x48-result>No transient result.</dd></div>
+    </dl>
+    <div class="x48-room-table-wrap" data-x48-output hidden>
+      <table><caption>Nominal schedule and actual producer evidence</caption>
+        <thead><tr><th>Tick</th><th>Temperature input</th><th>D13</th><th>Nominal target</th><th>Actual / lateness</th><th>Next input apply</th></tr></thead>
+        <tbody data-x48-rows></tbody>
+      </table>
+    </div>
+    <p class="x48-room-limit">Not physical time, thermal calibration, a continuous solver or safety evidence. Results are transient and bound to one current source/artifact/model/worker.</p>`;
+  return panel;
+}
+
+function installX48RoomLoop(document, activeProfileReader) {
+  const panels = [...document.querySelectorAll('[data-shared-instrument-tools]')].map((tools, index) => {
+    const panel = createX48Panel(document, index + 1); tools.append(panel); return panel;
+  });
+  let state = { phase: 'ready', message: 'Fresh exact thermostat Build required.', result: null };
+  const bridge = () => document.defaultView.__X48_RUNTIME_BRIDGE__ ?? null;
+  const eligibility = () => {
+    if (activeProfileReader() !== AVR_PROFILE) return { eligible: false, code: 'X48_PROFILE_UNAVAILABLE' };
+    try { return bridge()?.eligibility?.() ?? { eligible: false, code: 'X48_RUNTIME_BRIDGE_UNAVAILABLE' }; }
+    catch { return { eligible: false, code: 'X48_ELIGIBILITY_INVALID' }; }
+  };
+  const paint = () => {
+    const eligible = eligibility();
+    const running = state.phase === 'running';
+    const rows = state.result?.rows ?? [];
+    for (const panel of panels) {
+      panel.dataset.state = state.phase;
+      panel.querySelector('[data-x48-state]').textContent = running
+        ? `Running ${rows.length}/${X48_TICK_COUNT}`
+        : state.phase === 'ready' && !eligible.eligible ? 'Unavailable' : state.phase;
+      panel.querySelector('[data-x48-start]').disabled = running || !eligible.eligible;
+      panel.querySelector('[data-x48-cancel]').hidden = !running;
+      panel.querySelector('[data-x48-message]').textContent = running || state.phase !== 'ready'
+        ? state.message : eligible.message ?? 'Fresh exact thermostat Build required.';
+      panel.querySelector('[data-x48-result]').textContent = state.result
+        ? `${state.result.status} · ${rows.length}/${X48_TICK_COUNT} rows${state.result.reason ? ` · ${state.result.reason}` : ''}`
+        : 'No transient result.';
+      panel.querySelector('[data-x48-output]').hidden = rows.length === 0;
+      panel.querySelector('[data-x48-rows]').replaceChildren(...rows.map((row) => {
+        const tr = document.createElement('tr');
+        for (const text of [
+          String(row.tick),
+          `${(row.inputMilliC / 1000).toFixed(3)} °C`,
+          `${row.observedD13.mode}/${row.observedD13.level ? 'HIGH' : 'LOW'} · ${row.matched ? 'matches' : 'contradiction'}`,
+          row.nominalTargetCycle.toLocaleString('en-US'),
+          `${row.actualSampleCycle.toLocaleString('en-US')} / +${row.latenessCycles}`,
+          `${(row.nextMilliC / 1000).toFixed(3)} °C @ ${row.inputAppliedCycle.toLocaleString('en-US')}`,
+        ]) { const td = document.createElement('td'); td.textContent = text; tr.append(td); }
+        return tr;
+      }));
+    }
+    return structuredClone(state);
+  };
+  for (const panel of panels) {
+    panel.querySelector('[data-x48-start]').addEventListener('click', () => {
+      state = { phase: 'running', message: 'Starting at cycle zero…', result: null };
+      paint(); document.dispatchEvent(new CustomEvent('x48-start-request'));
+    });
+    panel.querySelector('[data-x48-cancel]').addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('x48-cancel-request'));
+    });
+  }
+  document.addEventListener('x48-state', (event) => {
+    const detail = event.detail ?? {};
+    const phase = detail.kind === 'x48-started' || detail.kind === 'x48-progress' ? 'running'
+      : detail.kind === 'x48-complete' ? detail.result?.status ?? 'indeterminate'
+        : detail.kind === 'x48-cancelled' || detail.kind === 'x48-indeterminate' ? 'indeterminate'
+          : 'indeterminate';
+    state = { phase, message: detail.message ?? (phase === 'running'
+      ? `Executing bounded worker slices; ${detail.result?.rows?.length ?? 0}/${X48_TICK_COUNT} rows retained.`
+      : detail.result?.reason ?? 'Loop ended without complete evidence.'),
+    result: detail.result ? structuredClone(detail.result) : null };
+    paint();
+  });
+  document.addEventListener('input', (event) => {
+    if (event.target?.id === 'source') invalidate('X48_SOURCE_EDITED');
+  }, true);
+  document.addEventListener('change', (event) => {
+    if (event.target?.id === 'board-select') invalidate('X48_PROFILE_CHANGED');
+    else if (event.target?.id === 'project-open-input') invalidate('X48_PROJECT_OPENED');
+  }, true);
+  const Observer = document.defaultView?.MutationObserver;
+  const observer = Observer ? new Observer(() => paint()) : null;
+  if (observer) {
+    for (const selector of ['#project-message', '#build-state', '#quick-state', '#wire-state']) {
+      const node = document.querySelector(selector);
+      if (node) observer.observe(node, { childList: true, characterData: true, subtree: true });
+    }
+  }
+  const invalidate = (reason) => {
+    state = { phase: 'indeterminate', message: reason, result: state.result
+      ? { ...state.result, status: 'indeterminate', reason } : null };
+    return paint();
+  };
+  const api = Object.freeze({ refresh: paint, invalidate, snapshot: () => structuredClone(state) });
+  document.defaultView.__X48_ROOM_LOOP__ = api;
+  paint();
+  return api;
 }
 
 function installX49OffsetComparison(document, activeProfileReader) {
