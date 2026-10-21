@@ -69,6 +69,7 @@
       ],
       "contracts": [
         "x55-all-profile-fixed-resistor-appearance-v1",
+        "x55-all-profile-led-outline-appearance-v1",
         "x55-avr-fixed-resistor-appearance-v1"
       ]
     },

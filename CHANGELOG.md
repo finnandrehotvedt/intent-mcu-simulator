@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.102 — 2026-10-21
+
+- Adds two finite, original LED outline presets—Round 5 mm and Soft square—to
+  the existing shared LED across AVR, Pico, ESP32-C3 and STM32.
+- Keeps Preview non-mutating and Apply layout-only/undoable. Electrical colour,
+  forward voltage, ANODE/CATHODE anchors, named nets, source, artifact and
+  runtime identity remain unchanged; Save/Open retains the selected outline.
+- Adds no uploaded or arbitrary geometry, new component/model, topology or
+  runtime behavior. X55 remains partial and status stays X **75/1/20**.
+- Reuses accepted 51/51 focused, 55/55 pretest, 421/421 full, 40/40 posttest,
+  four-profile browser and exact-SHA CI evidence with 0 firmware Build, Run,
+  Scenario or worker.
+
 ## 1.1.0-rc.101 — 2026-10-21
 
 - Extends the two existing original fixed-resistor body presets from AVR to

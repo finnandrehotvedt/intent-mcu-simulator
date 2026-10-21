@@ -1,4 +1,25 @@
-# Intent MCU Simulator 1.1.0-rc.101
+# Intent MCU Simulator 1.1.0-rc.102
+
+## X55 partial finite LED outline appearance across four profiles
+
+This release adds two original, finite outline presets—Round 5 mm and Soft
+square—to the existing shared LED across AVR, Pico, ESP32-C3 and STM32.
+Preview is non-mutating. Apply stores one layout-only value and remains
+undoable; local Save/Open preserves it.
+
+The outline control cannot change electrical colour, ideal forward voltage,
+ANODE/CATHODE anchors, named nets, source, model identity, artifact or runtime
+authority. It adds no uploaded/arbitrary geometry, new component, topology,
+physical-equivalence or electrical-behavior claim. X55 remains partial.
+
+The reviewed candidate passed 51/51 focused tests, 55/55 pretests, 421/421
+full tests, 40/40 posttests, four-profile browser acceptance and exact-SHA
+Source CI. Rc.102 performs 0 firmware Build, 0 Run, 0 Scenario and 0 worker.
+Status remains X **75/1/20** and P1 **59/0/0**.
+
+---
+
+## 1.1.0-rc.101
 
 ## X55 partial fixed-resistor appearance across four profiles
 

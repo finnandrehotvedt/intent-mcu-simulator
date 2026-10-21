@@ -1,8 +1,14 @@
-# Migration to 1.1.0-rc.101
+# Migration to 1.1.0-rc.102
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.102 recognizes the finite all-profile LED-outline appearance identity.
+Existing rc.101 files are validated and migrate as data only; authored
+components, electrical colour, pins, nets and layout are preserved while
+executable/runtime/verdict authority is cleared. Missing LED appearance means
+Round 5 mm. Unknown, uploaded or malformed outline values fail closed.
 
 Rc.101 recognizes the explicit all-profile resistor-appearance model identity.
 Existing rc.100 files are validated and migrated as data only; authored
