@@ -22,6 +22,7 @@ import {
   projectX43AvrObservationStatus,
   x43VirtualNanosecondsText,
 } from './x43-avr-observation-profile.mjs';
+import { validateX43AvrStackSnapshot } from './x43-avr-stack-profile.mjs';
 import {
   captureX47PulseSource,
   canonicalX47PulseText,
@@ -613,11 +614,12 @@ function createX43Panel(document, ordinal) {
       <div><dt>Simulated time</dt><dd data-x43-virtual>Unavailable until capture.</dd></div>
       <div><dt>Wall diagnostic</dt><dd data-x43-wall>Not a semantic or hardware time.</dd></div>
     </dl>
-    <dl class="x43-profile-unsupported" aria-label="Unavailable runtime profile fields">
+    <dl class="x43-profile-unsupported" aria-label="Runtime memory and observed stack fields">
       <div><dt>Dynamic SRAM</dt><dd data-status="unavailable">Unavailable · runtime does not expose use.</dd></div>
       <div><dt>Heap</dt><dd data-status="unavailable">Unavailable · runtime does not expose use.</dd></div>
-      <div><dt>Current stack</dt><dd data-status="unavailable">Unavailable · runtime does not expose depth.</dd></div>
-      <div><dt>Peak stack</dt><dd data-status="unavailable">Unavailable · runtime does not expose a high-water mark.</dd></div>
+      <div><dt>Current observed stack</dt><dd data-x43-stack-current data-status="unavailable">Unavailable · no current AVR stack-pointer sample.</dd></div>
+      <div><dt>Interval max observed</dt><dd data-x43-stack-interval data-status="unavailable">Unavailable until a native observation starts.</dd></div>
+      <div><dt>Since-reset max observed</dt><dd data-x43-stack-all-time data-status="unavailable">Unavailable · no current AVR worker.</dd></div>
     </dl>`;
   return panel;
 }
@@ -629,6 +631,11 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
     return panel;
   });
   const owner = createX43AvrObservationProfile();
+  let stackToken = null;
+  const stackSnapshot = () => {
+    try { return validateX43AvrStackSnapshot(document.defaultView?.__M6_STATE__?.runtime?.x43Stack); }
+    catch { return null; }
+  };
   const current = () => {
     const profile = activeProfileReader();
     try {
@@ -653,6 +660,7 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
       }
     }
     const transitioning = snapshot.state === 'transitioning';
+    const stack = stackSnapshot();
     for (const panel of panels) {
       panel.dataset.state = snapshot.state;
       panel.querySelector('[data-x43-state]').textContent = snapshot.state;
@@ -684,6 +692,28 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
         : wall
         ? `${wall.milliseconds.toFixed(3)} ms browser wall · ${wall.cyclesPerSecond === null ? 'throughput unavailable' : `${Math.round(wall.cyclesPerSecond).toLocaleString('en-US')} cycles/s · ${Math.round(wall.instructionsPerSecond).toLocaleString('en-US')} instructions/s`} · diagnostic only`
         : 'Not a semantic or hardware time.';
+      const currentStack = panel.querySelector('[data-x43-stack-current]');
+      const intervalStack = panel.querySelector('[data-x43-stack-interval]');
+      const allTimeStack = panel.querySelector('[data-x43-stack-all-time]');
+      currentStack.dataset.status = stack?.current ? 'available' : 'unavailable';
+      currentStack.textContent = stack?.current
+        ? `SP 0x${stack.current.pointer.toString(16).padStart(4, '0')} · ${stack.current.depthBytes} B below reset top`
+        : `Unavailable · ${stack?.allTimeReason ?? 'no current AVR stack-pointer sample'}.`;
+      const nativeInterval = stack?.interval?.token === stackToken ? stack.interval : null;
+      intervalStack.dataset.status = nativeInterval && nativeInterval.state !== 'unavailable'
+        ? 'available' : 'unavailable';
+      intervalStack.textContent = nativeInterval?.state === 'captured'
+        ? `${nativeInterval.maximumObservedDepthBytes} B observed address depth · minimum SP 0x${nativeInterval.minimumPointer.toString(16).padStart(4, '0')} · ${nativeInterval.samples} instruction-boundary samples`
+        : nativeInterval?.state === 'observing'
+          ? `Observing · ${nativeInterval.maximumObservedDepthBytes} B maximum so far · ${nativeInterval.samples} samples`
+          : nativeInterval?.state === 'unavailable'
+            ? `Unavailable · ${nativeInterval.reason}.`
+            : stackToken ? 'Awaiting the bound worker observation acknowledgement.'
+              : 'Unavailable until a native observation starts.';
+      allTimeStack.dataset.status = stack?.allTime ? 'available' : 'unavailable';
+      allTimeStack.textContent = stack?.allTime
+        ? `${stack.allTime.maximumObservedDepthBytes} B observed address depth · minimum SP 0x${stack.allTime.minimumPointer.toString(16).padStart(4, '0')} · reset/new worker clears this value`
+        : `Unavailable · ${stack?.allTimeReason ?? 'no current AVR worker'}.`;
     }
     return snapshot;
   };
@@ -692,7 +722,13 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
       const { observation, reason } = current();
       if (!observation) owner.invalidate(reason ?? 'X43_START_UNAVAILABLE');
       else {
-        try { owner.start(observation, document.defaultView.performance.now()); }
+        try {
+          stackToken = `x43-stack-${document.defaultView.crypto.randomUUID()}`;
+          document.dispatchEvent(new document.defaultView.CustomEvent('x43-stack-start-request', {
+            detail: { token: stackToken },
+          }));
+          owner.start(observation, document.defaultView.performance.now());
+        }
         catch (error) { owner.invalidate(error.code ?? 'X43_START_REJECTED'); }
       }
       paint();
@@ -701,7 +737,13 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
       const { observation, reason } = current();
       if (!observation) owner.invalidate(reason ?? 'X43_CAPTURE_UNAVAILABLE');
       else {
-        try { owner.capture(observation, document.defaultView.performance.now()); }
+        try {
+          if (!stackToken) throw Object.assign(new Error('X43_STACK_TOKEN_MISSING'), { code: 'X43_STACK_TOKEN_MISSING' });
+          document.dispatchEvent(new document.defaultView.CustomEvent('x43-stack-capture-request', {
+            detail: { token: stackToken },
+          }));
+          owner.capture(observation, document.defaultView.performance.now());
+        }
         catch (error) { owner.invalidate(error.code ?? 'X43_CAPTURE_REJECTED'); }
       }
       paint();

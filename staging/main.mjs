@@ -563,6 +563,7 @@ let pendingEndpoint = null;
 let wireMode = 'connect';
 let worker = null;
 let workerToken = 0;
+let currentRuntimeWorkerIdentity = null;
 let runtimeRenderTimer = null;
 let pendingRuntimeRender = null;
 let runtimeWorkerCreations = 0;
@@ -9332,6 +9333,7 @@ function stopRuntime(message = 'No current artifact loaded', {
   workerToken += 1;
   worker?.terminate();
   worker = null;
+  currentRuntimeWorkerIdentity = null;
   if (runtimeRenderTimer !== null) clearTimeout(runtimeRenderTimer);
   runtimeRenderTimer = null; pendingRuntimeRender = null;
   running = false;
@@ -11212,7 +11214,7 @@ async function loadArtifact(hex, artifactIdentity, {
   const ownsWorker = () => token === workerToken && worker === loadWorker;
   const terminateOwnedWorker = () => {
     loadWorker.terminate();
-    if (worker === loadWorker) worker = null;
+    if (worker === loadWorker) { worker = null; currentRuntimeWorkerIdentity = null; }
   };
   loadWorker.addEventListener('message', async ({ data }) => {
     if (!ownsWorker()) return;
@@ -11220,6 +11222,7 @@ async function loadArtifact(hex, artifactIdentity, {
     try {
       identity = validateWorkerRuntimeIdentity(data.runtimeIdentity, workerRuntimeBinding, workerInstanceNonce);
       workerInstanceNonce ??= identity.workerInstanceNonce;
+      currentRuntimeWorkerIdentity = structuredClone(identity);
     } catch (error) {
       terminateOwnedWorker(); running = false;
       showActionableError(elements.projectmessage, error.code ?? 'RUNTIME_WORKER_IDENTITY_STALE',
@@ -11644,6 +11647,23 @@ elements.reset.addEventListener('click', () => {
   renderInstrumentEvidence(null);
   resetWorker.postMessage({ command: 'reset' });
   renderThermostatExperimentPanel();
+});
+
+function postX43StackCommand(command, token) {
+  const identity = currentRuntimeWorkerIdentity;
+  if (!worker || !identity || selectedCompilerProfile !== AVR_PROFILE
+      || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(token ?? '')) return false;
+  worker.postMessage({ command, token, artifactIdentity: identity.artifactIdentity,
+    runtimeGeneration: identity.runtimeGeneration,
+    workerInstanceNonce: identity.workerInstanceNonce });
+  return true;
+}
+
+document.addEventListener('x43-stack-start-request', (event) => {
+  postX43StackCommand('x43-stack-start', event.detail?.token);
+});
+document.addEventListener('x43-stack-capture-request', (event) => {
+  postX43StackCommand('x43-stack-capture', event.detail?.token);
 });
 
 document.addEventListener('x47-preview-ready', () => {

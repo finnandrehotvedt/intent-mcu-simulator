@@ -271,10 +271,10 @@ test('missing current observation, counter regression and wall regression fail c
   assert.equal(stopped.snapshot(null).state, 'invalidated');
 });
 
-test('memory, heap and stack remain explicit unavailable values rather than zero', () => {
+test('dynamic SRAM and heap remain explicit unavailable values rather than zero', () => {
   const owner = createX43AvrObservationProfile();
   const view = owner.start(observation(), 0);
-  assert.deepEqual(Object.keys(view.support).sort(), ['currentStack', 'dynamicSram', 'heap', 'peakStack']);
+  assert.deepEqual(Object.keys(view.support).sort(), ['dynamicSram', 'heap']);
   for (const item of Object.values(view.support)) {
     assert.equal(item.value, null);
     assert.equal(item.status, 'unavailable');

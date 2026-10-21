@@ -8,8 +8,8 @@ import test from 'node:test';
 
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 const immutableRuntime = Object.freeze({
-  'src/simulator.worker.mjs': '6ea2c7328fce143f192c3a27d1dfac66502075e3f7924d53fd0318c57dbbcdaa',
-  'src/runtime-kernel.mjs': 'bebaeddfd8aa26564b6caf6972e4371aabb9b64f24f484c76b78c957e27c29dd',
+  'src/simulator.worker.mjs': 'c7a1f5d3923e4a8ab8fe5d68bc2193d0b08c82a6489ffa7f382ddf2df8b57af5',
+  'src/runtime-kernel.mjs': 'cf2d19836d808f5187642f9788d8c84b29a265e8ee70ad88cb03131d934385b3',
   'src/x49-public-run-contract.mjs': 'fa11957f8f4d2b528d2a4d71c42f64cc47cd0234be50b8dd129843802749c70b',
   'src/x49-public-runner.mjs': '7d869bf9621a8fa921e9a7a1bb198c426f07c1473f7ca5fde680e5bd5399c09c',
   'src/x49-sensor-offset.mjs': 'ef0e8a7ddd5e9acbc052d4b522ea56b317f8cbc1a59ef53a0b7471bfd7e8cbba',

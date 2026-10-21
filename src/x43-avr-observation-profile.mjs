@@ -171,8 +171,6 @@ export function x43VirtualNanosecondsText(rational) {
 const support = Object.freeze({
   dynamicSram: Object.freeze({ value: null, status: 'unavailable', reason: 'runtime-does-not-expose-dynamic-sram-use' }),
   heap: Object.freeze({ value: null, status: 'unavailable', reason: 'runtime-does-not-expose-heap-use' }),
-  currentStack: Object.freeze({ value: null, status: 'unavailable', reason: 'runtime-does-not-expose-current-stack-depth' }),
-  peakStack: Object.freeze({ value: null, status: 'unavailable', reason: 'runtime-does-not-expose-stack-high-water-mark' }),
 });
 
 const blank = (state = 'unavailable', reason = 'unavailable-no-current-avr-worker') => ({

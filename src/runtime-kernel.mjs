@@ -20,6 +20,7 @@ import {
   validateX47RuntimeAuthority,
   validateX47WorkerBinding,
 } from './x47-runtime-transaction.mjs';
+import { createX43AvrStackTracker } from './x43-avr-stack-profile.mjs';
 
 export const INPUT_EVENT_LIMIT = 10_000;
 export const LOGIC_TRANSITION_LIMIT = TRACE_LIMIT;
@@ -128,6 +129,10 @@ export class RuntimeKernel {
       speed: options.speed ?? 1,
       ...(options.x34Probe ? { x34Probe: options.x34Probe } : {}),
       ...(options.x35Probe ? { x35Probe: options.x35Probe } : {}),
+    });
+    this.x43StackTracker = createX43AvrStackTracker({
+      pointer: this.adapter.cpu.SP, cycle: this.adapter.cpu.cycles,
+      instructions: this.adapter.instructions,
     });
     this.x35Probe = options.x35Probe ?? null;
     this.modelLibraryLock = options.modelLibraryLock ?? null;
@@ -464,28 +469,22 @@ export class RuntimeKernel {
 
   runInstructions(count) {
     this.#flushInputs();
-    if (this.adapter.x35Enabled) {
-      if (!Number.isInteger(count) || count < 0) throw new Error('Instruction count must be a non-negative integer');
-      for (let index = 0; index < count; index += 1) this.#stepAndProjectX35();
-      return this.snapshot();
-    }
-    return this.adapter.runInstructions(count);
+    if (!Number.isInteger(count) || count < 0) throw new Error('Instruction count must be a non-negative integer');
+    for (let index = 0; index < count; index += 1) this.#stepAndProjectX35();
+    return this.snapshot();
   }
 
   runUntilCycle(targetCycle, maxInstructions) {
     this.#flushInputs();
-    if (this.adapter.x35Enabled) {
-      if (!Number.isSafeInteger(targetCycle) || targetCycle < this.adapter.cpu.cycles) {
-        throw new Error('Target cycle is invalid');
-      }
-      let count = 0;
-      while (this.adapter.cpu.cycles < targetCycle) {
-        this.#stepAndProjectX35(); count += 1;
-        if (count >= (maxInstructions ?? 100_000_000)) throw new Error('Instruction slice limit reached');
-      }
-      return this.snapshot();
+    if (!Number.isSafeInteger(targetCycle) || targetCycle < this.adapter.cpu.cycles) {
+      throw new Error('Target cycle is invalid');
     }
-    return this.adapter.runUntilCycle(targetCycle, maxInstructions);
+    let count = 0;
+    while (this.adapter.cpu.cycles < targetCycle) {
+      this.#stepAndProjectX35(); count += 1;
+      if (count >= (maxInstructions ?? 100_000_000)) throw new Error('Instruction slice limit reached');
+    }
+    return this.snapshot();
   }
 
   step() {
@@ -495,6 +494,8 @@ export class RuntimeKernel {
 
   #stepAndProjectX35() {
     const result = this.adapter.step();
+    this.x43StackTracker.observe({ pointer: this.adapter.cpu.SP,
+      cycle: this.adapter.cpu.cycles, instructions: this.adapter.instructions });
     if (this.adapter.x35ProjectionPending) {
       const machine = this.adapter.snapshot();
       this.adapter.projectX35(x35TopologyProjection(
@@ -516,10 +517,24 @@ export class RuntimeKernel {
     return this.snapshot();
   }
 
+  startX43StackObservation(token) {
+    this.x43StackTracker.start(token);
+    return this.snapshot();
+  }
+
+  captureX43StackObservation(token) {
+    this.x43StackTracker.capture(token);
+    return this.snapshot();
+  }
+
   reset() {
     const hadX47Authority = Boolean(this.x47Authority);
     const x47CancellationReceipts = this.cancelX47Transactions('RESET');
     this.adapter.reset();
+    this.x43StackTracker = createX43AvrStackTracker({
+      pointer: this.adapter.cpu.SP, cycle: this.adapter.cpu.cycles,
+      instructions: this.adapter.instructions,
+    });
     this.circuit.applyControls(this.adapter);
     this.inputs.reset();
     this.serialClearAbsolute = 0;
@@ -544,6 +559,7 @@ export class RuntimeKernel {
     const pin = machine.pins.find((entry) => entry.pin === this.selectedPin) ?? null;
     return {
       ...machine,
+      x43Stack: this.x43StackTracker.snapshot(),
       ...(this.modelExecutionContextSha256 ? {
         modelExecutionContextSha256: this.modelExecutionContextSha256,
       } : {}),

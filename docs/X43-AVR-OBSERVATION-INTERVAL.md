@@ -26,10 +26,29 @@ Save/Open never serializes or restores an interval.
   diagnostics for this browser/host only. They are not semantic time, a test
   result or a hardware benchmark.
 
-Dynamic SRAM use, heap use, current stack depth and peak/high-water stack are
-shown as **Unavailable** because the runtime does not expose those producers.
-The X34 four-byte firmware-owned mailbox is not a generic memory profiler and
-is not consulted here.
+## Private observed-stack candidate after rc.97
+
+The unreviewed private candidate adds a direct producer from avr8js 0.21.1
+`CPU.SP`. The ATmega328P runtime uses 2,048 SRAM bytes at data addresses
+`0x0100..0x08ff`; avr8js resets SP to `0x08ff`. The adapter samples SP after
+each executed instruction and the following `cpu.tick()`. That boundary also
+observes interrupt entry, including nested interrupt entry when firmware
+explicitly re-enables interrupts.
+
+The panel reports the current SP, the minimum SP observed during one explicit
+worker-bound interval, and the minimum SP observed since reset. Depth is only
+the bounded address distance `0x08ff - observed SP` (0..2,047 bytes). It is not
+live-byte occupancy, a memory-content high-water scan, dynamic SRAM use, heap
+use or free SRAM. A pointer outside the ATmega328P SRAM range makes the affected
+minimum unavailable rather than producing an estimate. Reset and a new worker
+clear all history. Dynamic SRAM and heap remain **Unavailable**, and no other
+controller profile gains equivalent support.
+
+This candidate changes runtime telemetry and therefore uses a new current model
+identity. The accepted rc.97 identity remains allowlisted only for explicit
+data migration and cannot authorize execution under the candidate identity.
+The public rc.97 deployment remains unchanged and still exposes stack fields as
+unavailable until separate review and native acceptance.
 
 ## Lifecycle
 

@@ -107,6 +107,17 @@ function presentationGeneration(data) {
   return data.presentationGeneration;
 }
 
+function x43StackCommand(data) {
+  if (!exactKeys(data, ['command', 'token', 'artifactIdentity', 'runtimeGeneration', 'workerInstanceNonce'])
+      || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(data.token ?? '')
+      || data.artifactIdentity !== runtimeIdentity?.artifactIdentity
+      || data.runtimeGeneration !== runtimeIdentity?.runtimeGeneration
+      || data.workerInstanceNonce !== runtimeIdentity?.workerInstanceNonce) {
+    throw new Error('X43_STACK_COMMAND_STALE');
+  }
+  return data.token;
+}
+
 function createRp2040Pacer(runtime) {
   return new Rp2040SnapshotPacer({
     artifactIdentity: runtime.artifactIdentity,
@@ -244,6 +255,16 @@ async function handleMessage(data) {
         const snapshot = kernel.sample();
         emit({ kind: 'sample', ...snapshot, led: snapshot.circuit.leds.some((item) => item.on) });
       }
+    } else if (data.command === 'x43-stack-start') {
+      if (isRp2040()) throw new Error('X43_STACK_PROFILE_UNAVAILABLE');
+      const snapshot = kernel.startX43StackObservation(x43StackCommand(data));
+      emit({ kind: 'x43-stack-started', ...snapshot,
+        led: snapshot.circuit.leds.some((item) => item.on) });
+    } else if (data.command === 'x43-stack-capture') {
+      if (isRp2040()) throw new Error('X43_STACK_PROFILE_UNAVAILABLE');
+      const snapshot = kernel.captureX43StackObservation(x43StackCommand(data));
+      emit({ kind: 'x43-stack-captured', ...snapshot,
+        led: snapshot.circuit.leds.some((item) => item.on) });
     } else if (data.command === 'step') {
       running = false;
       generation++;
