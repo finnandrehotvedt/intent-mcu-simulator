@@ -65,7 +65,7 @@ function lifecycleIsBusy(state) {
     || ['building', 'running', 'resetting'].includes(state?.lifecycle?.phase);
 }
 
-export async function captureX49PublicAuthority(state, cryptoImpl = globalThis.crypto) {
+function synchronousAuthorityValue(state) {
   if (!state || state.compilerTarget !== AVR_PROFILE || state.compileAvailable !== true
       || !Number.isSafeInteger(state.revision) || state.revision < 0
       || !Number.isSafeInteger(state.lifecycle?.projectGeneration)
@@ -77,15 +77,36 @@ export async function captureX49PublicAuthority(state, cryptoImpl = globalThis.c
   if (surface.profile !== AVR_PROFILE) reject('X49_PUBLIC_PROFILE_AUTHORITY_INVALID');
   const source = mainSource(surface.files);
   if (source !== THERMOSTAT_EXPERIMENT_SOURCE) reject('X49_PUBLIC_SOURCE_AUTHORITY_INVALID');
-  const sourceSha256 = await x49Sha256(source, cryptoImpl);
   const graphCanonical = stableX49Stringify(surface.graph);
   if (graphCanonical !== X49_PUBLIC_GRAPH_CANONICAL) reject('X49_PUBLIC_GRAPH_AUTHORITY_INVALID');
+  return Object.freeze({
+    compilerTarget: state.compilerTarget,
+    compileAvailable: state.compileAvailable,
+    revision: state.revision,
+    projectGeneration: state.lifecycle.projectGeneration,
+    lifecyclePhase: state.lifecycle.phase,
+    buildState: state.buildState,
+    profile: surface.profile,
+    source,
+    graphCanonical,
+  });
+}
+
+export function x49PublicSynchronousAuthorityFingerprint(state) {
+  return stableX49Stringify(synchronousAuthorityValue(state));
+}
+
+export async function captureX49PublicAuthority(state, cryptoImpl = globalThis.crypto) {
+  const synchronous = synchronousAuthorityValue(state);
+  const source = synchronous.source;
+  const sourceSha256 = await x49Sha256(source, cryptoImpl);
+  const { graphCanonical } = synchronous;
   const graphIdentity = `sha256:${await x49Sha256(graphCanonical, cryptoImpl)}`;
   return Object.freeze({
     schema: X49_PUBLIC_RUN_AUTHORITY_SCHEMA,
     profile: AVR_PROFILE,
-    revision: state.revision,
-    projectGeneration: state.lifecycle.projectGeneration,
+    revision: synchronous.revision,
+    projectGeneration: synchronous.projectGeneration,
     source,
     sourceSha256,
     graphCanonical,

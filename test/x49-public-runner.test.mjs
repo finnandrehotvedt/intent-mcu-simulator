@@ -164,6 +164,59 @@ test('X49 public runner rechecks its token after a held authority digest', async
   assert.equal(fetches, 0);
 });
 
+test('held authority digest cannot hide synchronous project drift before POST', async () => {
+  const state = x49PublicState(); const authority = await captureX49PublicAuthority(state);
+  let release; const held = new Promise((resolve) => { release = resolve; });
+  let fetches = 0; let workers = 0;
+  const runner = createX49PublicRunner({ contextReader: () => state,
+    captureAuthority: async () => authority, authorityStillCurrent: () => held,
+    fetchImpl: async () => { fetches += 1; throw new Error('FETCH_MUST_NOT_RUN'); },
+    workerFactory: () => { workers += 1; throw new Error('WORKER_MUST_NOT_RUN'); } });
+  const running = runner.start();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  state.revision += 1; state.buildState = 'dirty-programmatic-change';
+  release(true);
+  await assert.rejects(running, { code: 'X49_PUBLIC_AUTHORITY_RETIRED' });
+  assert.deepEqual({ fetches, workers }, { fetches: 0, workers: 0 });
+  assert.equal(runner.snapshot().phase, 'indeterminate');
+});
+
+test('authoring offset and revision are operation authority', async () => {
+  const state = x49PublicState(); const authority = await captureX49PublicAuthority(state);
+  const authored = { offsetC: 1, revision: 3 };
+  let release; const held = new Promise((resolve) => { release = resolve; });
+  let fetches = 0;
+  const runner = createX49PublicRunner({ contextReader: () => state, authoringReader: () => authored,
+    captureAuthority: async () => authority, authorityStillCurrent: () => held,
+    fetchImpl: async () => { fetches += 1; throw new Error('FETCH_MUST_NOT_RUN'); },
+    workerFactory: () => { throw new Error('WORKER_MUST_NOT_RUN'); } });
+  const running = runner.start();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  authored.offsetC = 0; authored.revision += 1; release(true);
+  await assert.rejects(running, { code: 'X49_PUBLIC_AUTHORING_RETIRED' });
+  assert.equal(fetches, 0);
+
+  const ineligible = createX49PublicRunner({ contextReader: () => state,
+    authoringReader: () => ({ offsetC: 0, revision: 1 }),
+    fetchImpl: async () => { fetches += 1; throw new Error('FETCH_MUST_NOT_RUN'); },
+    workerFactory: () => { throw new Error('WORKER_MUST_NOT_RUN'); } });
+  await assert.rejects(ineligible.start(), { code: 'X49_PUBLIC_AUTHORING_NOT_NATIVE' });
+  assert.equal(fetches, 0);
+});
+
+test('async eligibility cannot enable from a stale authority hash', async () => {
+  const state = x49PublicState(); const authority = await captureX49PublicAuthority(state);
+  let release; const held = new Promise((resolve) => { release = resolve; });
+  const runner = createX49PublicRunner({ contextReader: () => state,
+    captureAuthority: () => held,
+    fetchImpl: async () => { throw new Error('FETCH_MUST_NOT_RUN'); },
+    workerFactory: () => { throw new Error('WORKER_MUST_NOT_RUN'); } });
+  const checking = runner.eligibility();
+  state.revision += 1; state.buildState = 'changed-during-eligibility';
+  release(authority);
+  assert.deepEqual(await checking, { eligible: false, code: 'X49_PUBLIC_AUTHORITY_RETIRED' });
+});
+
 test('X49 public runner deletes a late POST claim after cancellation', async () => {
   const state = x49PublicState(); const result = await x49BuildResult();
   let releasePost; let postStarted = false; const heldPost = new Promise((resolve) => { releasePost = resolve; });
@@ -267,4 +320,17 @@ test('X49 public runner retires programmatic drift and ignores late build comple
   await assert.rejects(running, { code: 'X49_PUBLIC_OPERATION_RETIRED' });
   await new Promise((resolve) => setTimeout(resolve, 10));
   assert.equal(runner.snapshot().phase, 'retired');
+});
+
+test('accepted projection retires synchronously after programmatic authority drift', async () => {
+  const harness = await runnerHarness();
+  await harness.runner.start();
+  assert.equal(harness.runner.snapshot().phase, 'passed');
+  const requests = harness.requests.length; const workers = harness.workers.length;
+  harness.state.project.project.source.files[0].content += '\n// programmatic drift';
+  harness.state.revision += 1;
+  assert.equal(harness.runner.snapshot().phase, 'retired');
+  assert.equal(harness.runner.snapshot().projection, null);
+  assert.deepEqual({ requests: harness.requests.length, workers: harness.workers.length },
+    { requests, workers });
 });

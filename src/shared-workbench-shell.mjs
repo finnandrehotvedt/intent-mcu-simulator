@@ -1077,7 +1077,7 @@ function createX49Panel(document, ordinal) {
         <tbody data-x49-rows></tbody>
       </table>
     </div>
-    <p class="x49-offset-producer"><strong>Firmware integer producer:</strong> private X34-style instrumented four-byte mailbox fixture only; ordinary thermostat snapshots and UART text are not authoritative.</p>`;
+    <p class="x49-offset-producer"><strong>Candidate producer boundary:</strong> a separately instrumented in-memory copy of the exact AVR thermostat source is required; ordinary current firmware, thermostat snapshots and UART text are not native verification.</p>`;
   return panel;
 }
 
@@ -1091,8 +1091,11 @@ function installX49OffsetComparison(document, activeProfileReader) {
   const authoring = createX49PublicAuthoringOwner();
   const runner = createX49PublicRunner({
     contextReader: () => structuredClone(document.defaultView.__M6_STATE__ ?? {}),
+    authoringReader: () => authoring.snapshot(),
   });
   let runnerSnapshot = runner.snapshot();
+  let eligibilityEpoch = 0;
+  let nativeEligibility = { eligible: false, code: 'X49_PUBLIC_ELIGIBILITY_CHECKING' };
   let savedControlState = null;
   const ordinaryControlIds = Object.freeze([
     'build', 'run', 'pause', 'reset', 'stop', 'quick-build', 'quick-run', 'quick-pause',
@@ -1101,6 +1104,15 @@ function installX49OffsetComparison(document, activeProfileReader) {
   const nativeEntry = (entry) => runnerSnapshot.projection?.cases?.find(
     (candidate) => candidate.authored.offsetC === entry.authored.offsetC,
   ) ?? null;
+  const eligibilityMessage = (code) => ({
+    X49_PUBLIC_ELIGIBILITY_CHECKING: 'Checking the exact thermostat source, graph and project revision.',
+    X49_PUBLIC_AUTHORING_NOT_NATIVE: 'Native comparison requires the exact +1 °C authored offset.',
+    X49_PUBLIC_GRAPH_AUTHORITY_INVALID: 'Native comparison requires the exact AVR thermostat example and wiring graph.',
+    X49_PUBLIC_SOURCE_AUTHORITY_INVALID: 'Native comparison requires the exact unedited AVR thermostat source.',
+    X49_PUBLIC_PROFILE_AUTHORITY_INVALID: 'Native comparison is available only for the AVR thermostat profile.',
+    X49_PUBLIC_NORMAL_OPERATION_ACTIVE: 'Finish the ordinary build or run before starting this comparison.',
+    X49_PUBLIC_AUTHORITY_RETIRED: 'The project changed while eligibility was checked; refresh the exact thermostat example.',
+  }[code] ?? 'Native comparison is unavailable for the current project authority.');
   const previewEntries = (snapshot) => {
     if (runnerSnapshot.projection?.cases?.length) return runnerSnapshot.projection.cases;
     if (snapshot.classification === 'synthetic-browser-replay-not-native-evidence') return snapshot.cases;
@@ -1137,12 +1149,15 @@ function installX49OffsetComparison(document, activeProfileReader) {
     const available = activeProfileReader() === AVR_PROFILE;
     const authored = authoring.snapshot();
     const running = runner.active();
+    const nativeAvailable = available && nativeEligibility.eligible;
     const visualPhase = snapshot.classification === 'synthetic-browser-replay-not-native-evidence'
       ? 'synthetic-replay' : snapshot.state === 'invalidated' ? 'invalidated' : runnerSnapshot.phase;
     reflectMutualExclusion();
     for (const panel of panels) {
       panel.dataset.state = available ? visualPhase : 'unavailable';
       panel.querySelector('[data-x49-state]').textContent = !available ? 'Unavailable for this profile'
+        : !nativeEligibility.eligible && runnerSnapshot.phase === 'ready'
+          ? nativeEligibility.code === 'X49_PUBLIC_ELIGIBILITY_CHECKING' ? 'Checking native eligibility' : 'Native unavailable'
         : visualPhase === 'synthetic-replay' ? 'Synthetic replay · not native'
           : visualPhase === 'invalidated' ? 'Cleared'
             : runnerSnapshot.phase === 'passed' ? 'Native academic pass'
@@ -1151,7 +1166,7 @@ function installX49OffsetComparison(document, activeProfileReader) {
               : runnerSnapshot.phase === 'ready' ? 'Ready' : runnerSnapshot.phase.replaceAll('-', ' ');
       panel.querySelector('[data-x49-preview]').disabled = !available;
       panel.querySelector('[data-x49-offset]').disabled = !available || running;
-      panel.querySelector('[data-x49-native]').disabled = !available || running
+      panel.querySelector('[data-x49-native]').disabled = !nativeAvailable || running
         || authored.offsetC !== X49_PUBLIC_NATIVE_OFFSET;
       panel.querySelector('[data-x49-cancel]').hidden = !running;
       const output = panel.querySelector('[data-x49-output]');
@@ -1182,6 +1197,8 @@ function installX49OffsetComparison(document, activeProfileReader) {
       panel.querySelector('[data-x49-rows]').replaceChildren(...rows);
       panel.querySelector('[data-x49-message]').textContent = !available
         ? 'The fixed comparison is available only for the AVR thermostat teaching case.'
+        : !nativeEligibility.eligible && !running
+          ? eligibilityMessage(nativeEligibility.code)
         : visualPhase === 'invalidated'
           ? `${snapshot.reason}. The transient comparison and any replay were cleared.`
           : visualPhase === 'synthetic-replay'
@@ -1190,11 +1207,28 @@ function installX49OffsetComparison(document, activeProfileReader) {
     }
     return { ...snapshot, authoring: authored, runner: runner.snapshot() };
   };
+  const refreshEligibility = async () => {
+    const token = ++eligibilityEpoch;
+    nativeEligibility = { eligible: false, code: 'X49_PUBLIC_ELIGIBILITY_CHECKING' };
+    paint(owner.snapshot());
+    const checked = await runner.eligibility();
+    if (token !== eligibilityEpoch) return;
+    nativeEligibility = checked;
+    paint(owner.snapshot());
+  };
+  const synchronizeOffsets = (offsetC) => {
+    for (const candidate of panels) candidate.querySelector('[data-x49-offset]').value = String(offsetC);
+  };
   for (const panel of panels) {
     panel.querySelector('[data-x49-offset]').addEventListener('change', (event) => {
-      authoring.select(Number(event.target.value));
-      runner.previewOnly('Calculated preview only; no compiler request or worker was started.');
+      const offsetC = Number(event.target.value);
+      const wasActive = runner.active();
+      authoring.select(offsetC); synchronizeOffsets(offsetC);
+      if (wasActive) {
+        void runner.retire('X49_PUBLIC_AUTHORING_CHANGED'); owner.invalidate('X49_PUBLIC_AUTHORING_CHANGED');
+      } else runner.previewOnly('Calculated preview only; no compiler request or worker was started.');
       paint(owner.preview());
+      void refreshEligibility();
     });
     panel.querySelector('[data-x49-preview]').addEventListener('click', () => {
       runner.previewOnly('Calculated preview only; no compiler request or worker was started.');
@@ -1209,8 +1243,10 @@ function installX49OffsetComparison(document, activeProfileReader) {
   }
   runner.subscribe((value) => { runnerSnapshot = value; paint(owner.snapshot()); });
   const invalidate = (reason) => {
-    if (runner.active()) void runner.retire(reason);
-    return paint(owner.invalidate(reason));
+    if (runner.active() || runner.snapshot().phase === 'passed') void runner.retire(reason);
+    const painted = paint(owner.invalidate(reason));
+    void refreshEligibility();
+    return painted;
   };
   const invalidationEvents = new Map([
     ['build', 'X49_BUILD_STARTED'], ['run', 'X49_RUN_STARTED'], ['reset', 'X49_RESET'],
@@ -1253,7 +1289,7 @@ function installX49OffsetComparison(document, activeProfileReader) {
     },
   });
   const api = Object.freeze({
-    refresh: () => paint(owner.snapshot()),
+    refresh: () => { void refreshEligibility(); return paint(owner.snapshot()); },
     preview: () => paint(owner.preview()),
     invalidate,
     snapshot: () => owner.snapshot(),
@@ -1266,6 +1302,7 @@ function installX49OffsetComparison(document, activeProfileReader) {
   });
   document.defaultView.__X49_OFFSET_COMPARISON__ = api;
   paint();
+  void refreshEligibility();
   return api;
 }
 

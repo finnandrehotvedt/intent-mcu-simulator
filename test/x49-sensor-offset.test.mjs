@@ -276,7 +276,7 @@ test('shared UI remains outside locked model closure and has zero producer or pe
     readFile(new URL('../scripts/generate-model-library-snapshots.mjs', import.meta.url), 'utf8'),
   ]);
   assert.match(shell, /Authored, calculated and observed evidence remain separate/u);
-  assert.match(shell, /ordinary thermostat snapshots and UART text are not authoritative/u);
+  assert.match(shell, /ordinary current firmware, thermostat snapshots and UART text are not native verification/u);
   assert.match(shell, /Synthetic replay · not native/u);
   assert.doesNotMatch(`${owner}\n${shell}`, /localStorage|sessionStorage|indexedDB|serviceWorker/u);
   assert.doesNotMatch(`${owner}\n${shell}`, /fetch\(|postMessage\(|\/api\/build|\/api\/run|scenario/u);

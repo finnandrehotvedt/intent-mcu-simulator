@@ -149,6 +149,14 @@ async function artifact(inputIdentity) {
       const response = await page.goto(base, { waitUntil: 'networkidle' }); assert.equal(response.status(), 200);
       await page.waitForFunction(() => window.__M11_READY__ === true && window.__X49_OFFSET_COMPARISON__);
       if (await page.locator('#walkthrough').getAttribute('open') !== null) await page.locator('#walkthrough button').last().click();
+      await page.locator('#instruments-open').click();
+      const initialPanel = page.locator('#workbench-instruments-dialog [data-x49-offset-comparison]');
+      await initialPanel.waitFor({ state: 'visible' });
+      await page.waitForFunction(() => document.querySelector(
+        '#workbench-instruments-dialog [data-x49-native]')?.disabled === true);
+      assert.match(await initialPanel.locator('[data-x49-message]').textContent(),
+        /exact AVR thermostat|exact unedited AVR thermostat|only for the AVR thermostat profile/u);
+      await page.locator('#workbench-instruments-dialog .workbench-popup-close').click();
       await page.click('#project-files-open'); await page.waitForSelector('#workbench-project-dialog[open]');
       await page.click('#project-demo'); await page.waitForSelector('#example-picker-dialog[open]');
       await page.click('.starter-card[data-example="avr-thermostat-boundary-v1"]');
@@ -161,11 +169,15 @@ async function artifact(inputIdentity) {
       const panel = page.locator('#workbench-instruments-dialog [data-x49-offset-comparison]');
       await panel.waitFor({ state: 'visible' });
       await panel.locator('[data-x49-offset]').selectOption('-2');
+      assert.deepEqual(await page.locator('[data-x49-offset]').evaluateAll(
+        (items) => items.map((item) => item.value)), ['-2', '-2', '-2', '-2']);
       await panel.locator('[data-x49-preview]').click();
       assert.match(await panel.textContent(), /offset -2 °C/u);
       assert.equal((await page.evaluate(() => window.__X49_PUBLIC_ACTIVITY__.workers)), before.workers);
       assert.equal(await panel.locator('[data-x49-native]').isDisabled(), true);
       await panel.locator('[data-x49-offset]').selectOption('1');
+      await page.waitForFunction(() => document.querySelector(
+        '#workbench-instruments-dialog [data-x49-native]')?.disabled === false);
       await panel.locator('[data-x49-native]').click();
       await page.waitForFunction(() => !['ready', 'preview-only'].includes(
         window.__X49_OFFSET_COMPARISON__.runner().phase));
@@ -207,6 +219,14 @@ async function artifact(inputIdentity) {
         path: path.join(evidenceDir, `x49-public-candidate-${viewport.width}x${viewport.height}.png`),
         animations: 'disabled',
       });
+      const beforeRetainedDrift = { requests: requests.length, workers: after.workers };
+      const retiredPass = await page.evaluate(() => {
+        window.__M6_STATE__.revision += 1;
+        return window.__X49_OFFSET_COMPARISON__.runner();
+      });
+      assert.equal(retiredPass.phase, 'retired'); assert.equal(retiredPass.projection, null);
+      assert.deepEqual({ requests: requests.length,
+        workers: await page.evaluate(() => window.__X49_PUBLIC_ACTIVITY__.workers) }, beforeRetainedDrift);
       swapRequestIdentity = true;
       const workersBeforeSwap = after.workers;
       const swapped = await page.evaluate(async () => {
@@ -218,6 +238,14 @@ async function artifact(inputIdentity) {
       assert.equal((await page.evaluate(() => window.__X49_PUBLIC_ACTIVITY__.workers)), workersBeforeSwap);
       assert.equal((await page.evaluate(() => window.__X49_OFFSET_COMPARISON__.runner().phase)), 'failed');
       assert.deepEqual(requests.slice(-2), ['POST /api/build', 'DELETE /api/build/x49-browser-job']);
+      await panel.locator('[data-x49-offset]').selectOption('0');
+      const requestCountBeforeOffsetReject = requests.length;
+      const offsetReject = await page.evaluate(async () => {
+        try { await window.__X49_OFFSET_COMPARISON__.startNative(); return null; }
+        catch (error) { return error.code ?? error.message; }
+      });
+      assert.equal(offsetReject, 'X49_PUBLIC_AUTHORING_NOT_NATIVE');
+      assert.equal(requests.length, requestCountBeforeOffsetReject);
       assert.deepEqual(outside, []); assert.deepEqual(errors, []);
       results.push({ viewport, requests: requests.length, outsideRequests: outside.length,
         workers: after.workers - before.workers, storageWrites: after.storageWrites - before.storageWrites,

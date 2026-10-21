@@ -13,6 +13,7 @@ import {
   sealX49PublicNativeResult,
   validateX49BuildClaim,
   x49PublicAuthorityStillCurrent,
+  x49PublicSynchronousAuthorityFingerprint,
 } from './x49-public-run-contract.mjs';
 
 export const X49_PUBLIC_RUNNER_SCHEMA = 'intent-mcu-x49-public-runner@1';
@@ -83,6 +84,7 @@ export function classifyX49PublicCase(terminal, expected) {
 
 export function createX49PublicRunner({
   contextReader,
+  authoringReader = () => ({ offsetC: 1, revision: 1 }),
   fetchImpl = globalThis.fetch?.bind(globalThis),
   workerFactory = (url, options) => new Worker(url, options),
   workerUrl = './x49-offset.worker.js',
@@ -97,9 +99,11 @@ export function createX49PublicRunner({
   prepareBuild = prepareX49PublicBuild,
   validateWorkerInit = validateX49PrivateInit,
 } = {}) {
-  if (typeof contextReader !== 'function' || typeof fetchImpl !== 'function'
+  if (typeof contextReader !== 'function' || typeof authoringReader !== 'function'
+      || typeof fetchImpl !== 'function'
       || typeof workerFactory !== 'function') reject('X49_PUBLIC_RUNNER_HOST_INVALID');
   let operation = null;
+  let retained = null;
   let epoch = 0;
   let serial = 0;
   let state = {
@@ -117,6 +121,40 @@ export function createX49PublicRunner({
     for (const listener of listeners) listener(clone(state));
     return clone(state);
   };
+  const readAuthoring = () => {
+    const authored = authoringReader();
+    if (!Number.isSafeInteger(authored?.offsetC)
+        || !Number.isSafeInteger(authored?.revision) || authored.revision < 1) {
+      reject('X49_PUBLIC_AUTHORING_AUTHORITY_INVALID');
+    }
+    return Object.freeze({ offsetC: authored.offsetC, revision: authored.revision });
+  };
+  const authoringMatches = (expected) => {
+    try {
+      const current = readAuthoring();
+      return current.offsetC === expected.offsetC && current.revision === expected.revision;
+    } catch { return false; }
+  };
+  const synchronousMatches = (expected) => {
+    try { return x49PublicSynchronousAuthorityFingerprint(contextReader()) === expected; }
+    catch { return false; }
+  };
+  const clearRetained = () => {
+    if (!retained) return;
+    clearInterval(retained.monitor);
+    retained = null;
+  };
+  const retireRetained = (reason = 'X49_PUBLIC_AUTHORITY_RETIRED') => {
+    if (!retained) return false;
+    const generation = retained.generation;
+    clearRetained();
+    publish('retired', reason, null, generation);
+    return true;
+  };
+  const retireRetainedIfSyncDrift = () => {
+    if (retained && (!synchronousMatches(retained.synchronousAuthority)
+        || !authoringMatches(retained.authoring))) retireRetained('X49_PUBLIC_AUTHORITY_RETIRED');
+  };
   const assertCurrent = (active) => {
     if (operation !== active || active.epoch !== epoch || active.controller.signal.aborted) {
       reject('X49_PUBLIC_OPERATION_RETIRED');
@@ -124,11 +162,23 @@ export function createX49PublicRunner({
   };
   const guard = async (active) => {
     assertCurrent(active);
+    if (!synchronousMatches(active.synchronousAuthority)) reject('X49_PUBLIC_AUTHORITY_RETIRED');
+    if (!authoringMatches(active.authoring)) reject('X49_PUBLIC_AUTHORING_RETIRED');
+    const synchronousBefore = x49PublicSynchronousAuthorityFingerprint(contextReader());
+    const authoringBefore = readAuthoring();
     const current = await authorityStillCurrent(active.authority, contextReader(), cryptoImpl);
     assertCurrent(active);
-    if (!current) {
+    let synchronousAfter = null; let authoringAfter = null;
+    try { synchronousAfter = x49PublicSynchronousAuthorityFingerprint(contextReader()); } catch { /* retired */ }
+    try { authoringAfter = readAuthoring(); } catch { /* retired */ }
+    if (!current || synchronousBefore !== active.synchronousAuthority
+        || synchronousAfter !== active.synchronousAuthority) {
       reject('X49_PUBLIC_AUTHORITY_RETIRED');
     }
+    if (authoringBefore.offsetC !== active.authoring.offsetC
+        || authoringBefore.revision !== active.authoring.revision
+        || authoringAfter?.offsetC !== active.authoring.offsetC
+        || authoringAfter?.revision !== active.authoring.revision) reject('X49_PUBLIC_AUTHORING_RETIRED');
   };
   const cancelBuild = async (job) => {
     if (!job) return;
@@ -278,22 +328,66 @@ export function createX49PublicRunner({
     return { acceptedInit, terminal };
   };
 
+  const installRetainedMonitor = (active) => {
+    const record = { generation: active.generation, authority: active.authority,
+      synchronousAuthority: active.synchronousAuthority, authoring: active.authoring, monitor: null };
+    retained = record;
+    record.monitor = setInterval(() => {
+      if (retained !== record) return;
+      if (!synchronousMatches(record.synchronousAuthority) || !authoringMatches(record.authoring)) {
+        retireRetained('X49_PUBLIC_AUTHORITY_RETIRED'); return;
+      }
+      void authorityStillCurrent(record.authority, contextReader(), cryptoImpl).then((current) => {
+        if (retained === record && (!current || !synchronousMatches(record.synchronousAuthority)
+            || !authoringMatches(record.authoring))) retireRetained('X49_PUBLIC_AUTHORITY_RETIRED');
+      }).catch(() => { if (retained === record) retireRetained('X49_PUBLIC_AUTHORITY_RETIRED'); });
+    }, 50);
+    record.monitor.unref?.();
+  };
+
   const api = {
     subscribe(listener) {
       if (typeof listener !== 'function') reject('X49_PUBLIC_LISTENER_INVALID');
       listeners.add(listener); listener(clone(state));
       return () => listeners.delete(listener);
     },
-    snapshot: () => clone(state),
-    active: () => Boolean(operation && !terminalPhase(state.phase)),
+    snapshot() { retireRetainedIfSyncDrift(); return clone(state); },
+    active() { retireRetainedIfSyncDrift(); return Boolean(operation && !terminalPhase(state.phase)); },
+    async eligibility() {
+      let frozen; let synchronousAuthority; let authored;
+      try {
+        frozen = clone(contextReader());
+        synchronousAuthority = x49PublicSynchronousAuthorityFingerprint(frozen);
+        authored = readAuthoring();
+        if (authored.offsetC !== 1) return Object.freeze({ eligible: false,
+          code: 'X49_PUBLIC_AUTHORING_NOT_NATIVE' });
+        const authority = await captureAuthority(frozen, cryptoImpl);
+        if (!synchronousMatches(synchronousAuthority) || !authoringMatches(authored)) {
+          return Object.freeze({ eligible: false, code: 'X49_PUBLIC_AUTHORITY_RETIRED' });
+        }
+        const current = await authorityStillCurrent(authority, contextReader(), cryptoImpl);
+        if (!current || !synchronousMatches(synchronousAuthority) || !authoringMatches(authored)) {
+          return Object.freeze({ eligible: false, code: 'X49_PUBLIC_AUTHORITY_RETIRED' });
+        }
+        return Object.freeze({ eligible: true, code: 'X49_PUBLIC_NATIVE_ELIGIBLE' });
+      } catch (error) {
+        return Object.freeze({ eligible: false, code: error.code ?? 'X49_PUBLIC_AUTHORITY_INVALID' });
+      }
+    },
     previewOnly(message = 'Calculated preview only; no firmware was started.') {
-      if (!operation) publish('preview-only', message);
+      if (!operation) { clearRetained(); publish('preview-only', message); }
       return clone(state);
     },
     async start() {
       if (operation) reject('X49_PUBLIC_OPERATION_ACTIVE');
+      retireRetainedIfSyncDrift();
+      const authored = readAuthoring();
+      if (authored.offsetC !== 1) reject('X49_PUBLIC_AUTHORING_NOT_NATIVE');
+      const frozenState = clone(contextReader());
+      const synchronousAuthority = x49PublicSynchronousAuthorityFingerprint(frozenState);
+      clearRetained();
       const active = { generation: ++serial, epoch: ++epoch, authority: null,
-        frozenState: clone(contextReader()), controller: new AbortController(),
+        frozenState, synchronousAuthority, authoring: authored, controller: new AbortController(),
         workers: [], job: null, capability: null, artifact: null, monitor: null };
       operation = active;
       publish('building', 'Checking exact source, graph and compiler authority.', null, active.generation);
@@ -303,10 +397,9 @@ export function createX49PublicRunner({
         await guard(active);
         active.monitor = setInterval(() => {
           if (operation !== active) return;
-          void authorityStillCurrent(active.authority, contextReader(), cryptoImpl).then((current) => {
-            if (operation === active && active.epoch === epoch && !current) {
-              retireActive(active, 'X49_PUBLIC_AUTHORITY_RETIRED', 'retired');
-            }
+          void guard(active).catch((error) => {
+            if (operation === active) retireActive(active,
+              error.code ?? 'X49_PUBLIC_AUTHORITY_RETIRED', 'retired');
           });
         }, 50);
         const request = await prepareBuild(active.authority, cryptoImpl);
@@ -328,6 +421,7 @@ export function createX49PublicRunner({
         active.capability = null;
         clearInterval(active.monitor);
         operation = null; epoch += 1;
+        installRetainedMonitor(active);
         return publish('passed', 'Academic browser-native evidence passed. Physical evidence remains absent.',
           sealed.projection, active.generation);
       } catch (error) {
@@ -344,7 +438,10 @@ export function createX49PublicRunner({
       }
     },
     cancel: (reason = 'X49_PUBLIC_CANCELLED') => Promise.resolve(retireActive(operation, reason, 'cancelled')),
-    retire: (reason = 'X49_PUBLIC_RETIRED') => Promise.resolve(retireActive(operation, reason, 'retired')),
+    retire(reason = 'X49_PUBLIC_RETIRED') {
+      if (operation) return Promise.resolve(retireActive(operation, reason, 'retired'));
+      retireRetained(reason); return Promise.resolve(clone(state));
+    },
   };
   return Object.freeze(api);
 }
