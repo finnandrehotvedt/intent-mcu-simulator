@@ -228,6 +228,10 @@ export function evaluateThermostatObservation(id, snapshot) {
         targetCycle: event.targetCycle,
       })),
     },
+    retention: {
+      inputEventsDropped: Number.isSafeInteger(eventLog?.dropped) ? eventLog.dropped : null,
+      serialEventsDropped: Number.isSafeInteger(serial?.dropped) ? serial.dropped : null,
+    },
     checks: {
       timeInWindow,
       inputsComplete,

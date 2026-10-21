@@ -62,8 +62,14 @@ function testVerdictFrom(result) {
       && typeof evidence.artifactIdentity === 'string'
       && typeof evidence.sourceIdentity === 'string') {
     const primary = evidence.primaryObservation;
-    const outcome = primary?.schema
-      ? currentMeasurementOutcome(evidence.outcome, primary) : evidence.outcome;
+    const parentIdentitiesMatch = result.result.artifactIdentity === evidence.artifactIdentity
+      && result.result.sourceIdentity === evidence.sourceIdentity
+      && result.result.projectGeneration === evidence.projectGeneration
+      && result.result.runtimeGeneration === evidence.runtimeGeneration;
+    const measurementReport = primary?.schema === 'intent-mcu-thermostat-observation-result@1'
+      ? (parentIdentitiesMatch ? evidence : { ...clone(evidence), sourceIdentity: null })
+      : primary;
+    const outcome = currentMeasurementOutcome(evidence.outcome, measurementReport);
     return {
       schema: evidence.schema,
       experimentId: safeString(evidence.experimentId),

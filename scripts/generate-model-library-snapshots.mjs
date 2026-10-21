@@ -35,6 +35,9 @@ const PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_UX_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_UX_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_M2_COMPLETENESS_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_M2_COMPLETENESS_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 
 const stable = (value) => {
   if (Array.isArray(value)) return value.map(stable);
@@ -160,16 +163,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-ux-public-isolation.1-current',
-  'intent-mcu-model-bundle-current-ux-public-isolation-1@10',
+  '2.0.0-m2-completeness-contract.1-current',
+  'intent-mcu-model-bundle-current-m2-completeness-contract-1@11',
   currentImplementation,
   {
-    priorVersion: PRE_UX_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_UX_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_M2_COMPLETENESS_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_M2_COMPLETENESS_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'explicit-data-only-migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component, electrical and runtime semantics are unchanged from accepted public rc.95',
-    presentationDisposition: 'reviewed UX only: collision-free short pin labels, simpler local files, existing guide access and documentation navigation',
-    baselineClosureDisposition: 'current closure is accepted public rc.95 plus reviewed UX only; the exact rc.95 identity remains immutable migration-only',
+    semanticDisposition: 'component and electrical semantics are unchanged; bounded M2 result evidence now requires exact source-backed completeness joins',
+    presentationDisposition: 'unchanged from accepted public rc.96',
+    baselineClosureDisposition: 'current private closure is accepted public rc.96 plus the unreleased M2 completeness contract; rc.96 remains immutable migration-only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -185,6 +188,7 @@ export const PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON
 export const PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_UX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_UX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_M2_COMPLETENESS_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_M2_COMPLETENESS_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);
