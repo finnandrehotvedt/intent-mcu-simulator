@@ -38,6 +38,12 @@ import {
   X49_OFFSET_LIMITS,
   X49_VIRTUAL_WINDOW,
 } from './x49-sensor-offset.mjs';
+import {
+  calculateX49PublicPreview,
+  createX49PublicAuthoringOwner,
+  X49_PUBLIC_NATIVE_OFFSET,
+} from './x49-public-authoring.mjs';
+import { createX49PublicRunner } from './x49-public-runner.mjs';
 
 export const SHARED_WORKBENCH_SCHEMA = 'intent-mcu-shared-workbench@1';
 export const SHARED_WORKBENCH_SURFACES = Object.freeze([
@@ -1049,12 +1055,21 @@ function createX49Panel(document, ordinal) {
       <strong id="x49-offset-title-${ordinal}">Temperature sensor offset comparison</strong>
       <span data-x49-state>Ready</span>
     </div>
-    <p class="x49-offset-boundary"><strong>Ideal model composition</strong> · transient · not saved · integer offset ${X49_OFFSET_LIMITS.minimum}…+${X49_OFFSET_LIMITS.maximum} °C. No firmware is started here.</p>
+    <p class="x49-offset-boundary"><strong>Ideal model composition</strong> · transient · not saved · integer offset ${X49_OFFSET_LIMITS.minimum}…+${X49_OFFSET_LIMITS.maximum} °C.</p>
     <div class="x49-offset-actions">
-      <button type="button" data-x49-preview>Preview the two fixed cases</button>
+      <label>Candidate offset
+        <select data-x49-offset aria-label="Candidate temperature offset">
+          ${Array.from({ length: X49_OFFSET_LIMITS.maximum - X49_OFFSET_LIMITS.minimum + 1 },
+    (_, index) => index + X49_OFFSET_LIMITS.minimum).map((value) => `<option value="${value}"${value === X49_PUBLIC_NATIVE_OFFSET ? ' selected' : ''}>${value >= 0 ? '+' : ''}${value} °C</option>`).join('')}
+        </select>
+      </label>
+      <button type="button" data-x49-preview>Preview calculation</button>
+      <button type="button" data-x49-native>Build and run verified +1 comparison</button>
+      <button type="button" data-x49-cancel hidden>Cancel comparison</button>
       <span data-x49-window>${X49_VIRTUAL_WINDOW.minimumMilliseconds}–${X49_VIRTUAL_WINDOW.maximumMilliseconds} ms virtual acceptance window · cycle-zero inputs</span>
     </div>
-    <p data-x49-message>Authored inputs and calculated expectations are available. Native observations require a later instrumented-mailbox run.</p>
+    <p class="x49-offset-disclosure"><strong>Before native run:</strong> an instrumented copy of this exact source is sent to the same-origin isolated compiler for this run. It is not saved into the project.</p>
+    <p data-x49-message>Choose any offset for a calculated preview. Native execution is restricted to baseline 0 versus candidate +1.</p>
     <div class="x49-offset-table-wrap" data-x49-output hidden>
       <table>
         <caption>Authored, calculated and observed evidence remain separate</caption>
@@ -1073,21 +1088,83 @@ function installX49OffsetComparison(document, activeProfileReader) {
     return panel;
   });
   const owner = createX49ProjectionOwner();
+  const authoring = createX49PublicAuthoringOwner();
+  const runner = createX49PublicRunner({
+    contextReader: () => structuredClone(document.defaultView.__M6_STATE__ ?? {}),
+  });
+  let runnerSnapshot = runner.snapshot();
+  let savedControlState = null;
+  const ordinaryControlIds = Object.freeze([
+    'build', 'run', 'pause', 'reset', 'stop', 'quick-build', 'quick-run', 'quick-pause',
+    'quick-reset', 'quick-stop', 'project-new', 'project-demo', 'project-open',
+  ]);
+  const nativeEntry = (entry) => runnerSnapshot.projection?.cases?.find(
+    (candidate) => candidate.authored.offsetC === entry.authored.offsetC,
+  ) ?? null;
+  const previewEntries = (snapshot) => {
+    if (runnerSnapshot.projection?.cases?.length) return runnerSnapshot.projection.cases;
+    if (snapshot.classification === 'synthetic-browser-replay-not-native-evidence') return snapshot.cases;
+    const selected = authoring.snapshot();
+    const values = selected.offsetC === 0 ? [selected] : [calculateX49PublicPreview(0), selected];
+    return values.map((value) => ({
+      caseId: value.offsetC === 0 ? 'baseline-offset-0' : `candidate-offset-${value.offsetC}`,
+      authored: { referenceTemperatureC: value.referenceTemperatureC,
+        offsetC: value.offsetC, effectiveTemperatureC: value.effectiveTemperatureC },
+      calculated: value.calculated,
+      native: nativeEntry(value),
+    }));
+  };
+  const reflectMutualExclusion = () => {
+    const active = runner.active();
+    const controls = ordinaryControlIds.map((id) => document.getElementById(id)).filter(Boolean);
+    if (active && !savedControlState) {
+      savedControlState = new Map(controls.map((control) => [control, control.disabled]));
+      for (const control of controls) {
+        control.disabled = true;
+        control.setAttribute('aria-disabled', 'true');
+        control.dataset.x49Excluded = 'true';
+      }
+    } else if (!active && savedControlState) {
+      for (const [control, disabled] of savedControlState) {
+        control.disabled = disabled;
+        control.removeAttribute('aria-disabled');
+        delete control.dataset.x49Excluded;
+      }
+      savedControlState = null;
+    }
+  };
   const paint = (snapshot = owner.snapshot()) => {
     const available = activeProfileReader() === AVR_PROFILE;
+    const authored = authoring.snapshot();
+    const running = runner.active();
+    const visualPhase = snapshot.classification === 'synthetic-browser-replay-not-native-evidence'
+      ? 'synthetic-replay' : snapshot.state === 'invalidated' ? 'invalidated' : runnerSnapshot.phase;
+    reflectMutualExclusion();
     for (const panel of panels) {
-      panel.dataset.state = available ? snapshot.state : 'unavailable';
+      panel.dataset.state = available ? visualPhase : 'unavailable';
       panel.querySelector('[data-x49-state]').textContent = !available ? 'Unavailable for this profile'
-        : snapshot.state === 'synthetic-replay' ? 'Synthetic replay · not native'
-          : snapshot.state === 'invalidated' ? 'Cleared' : snapshot.state === 'preview' ? 'Calculated preview' : 'Ready';
+        : visualPhase === 'synthetic-replay' ? 'Synthetic replay · not native'
+          : visualPhase === 'invalidated' ? 'Cleared'
+            : runnerSnapshot.phase === 'passed' ? 'Native academic pass'
+          : runnerSnapshot.phase === 'preview-only' ? 'Calculated preview'
+            : runnerSnapshot.phase === 'retired' ? 'Retired'
+              : runnerSnapshot.phase === 'ready' ? 'Ready' : runnerSnapshot.phase.replaceAll('-', ' ');
       panel.querySelector('[data-x49-preview]').disabled = !available;
+      panel.querySelector('[data-x49-offset]').disabled = !available || running;
+      panel.querySelector('[data-x49-native]').disabled = !available || running
+        || authored.offsetC !== X49_PUBLIC_NATIVE_OFFSET;
+      panel.querySelector('[data-x49-cancel]').hidden = !running;
       const output = panel.querySelector('[data-x49-output]');
-      output.hidden = !available || !snapshot.cases.length || snapshot.state === 'ready';
-      const rows = snapshot.cases.map((entry) => {
+      const entries = previewEntries(snapshot);
+      output.hidden = !available || visualPhase === 'invalidated'
+        || (!entries.length && runnerSnapshot.phase === 'ready');
+      const rows = entries.map((entry) => {
         const row = document.createElement('tr');
-        const native = entry.native;
+        const native = entry.native?.native ?? entry.native;
         let nativeText = 'Unavailable · requires a fresh source/artifact/model/worker/time/input-bound instrumented mailbox observation.';
-        if (snapshot.classification === 'synthetic-browser-replay-not-native-evidence' && native) {
+        if (runnerSnapshot.phase === 'passed' && native) {
+          nativeText = `Browser-native pass · ADC ${native.adc.value} · firmware ${native.firmwareTransaction.temperatureC} °C · D13 ${native.pin.level ? 'HIGH' : 'LOW'} · cycle ${native.time.cpuCycles.toLocaleString('en-US')} · five writes · zero drops`;
+        } else if (snapshot.classification === 'synthetic-browser-replay-not-native-evidence' && native) {
           nativeText = entry.outcome?.academicStatus === 'indeterminate'
             ? `Synthetic replay only · indeterminate (${entry.outcome.reason}) · cannot pass native acceptance`
             : `Synthetic replay only · ${entry.outcome?.academicStatus ?? 'unavailable'} · ADC ${native.adc.value} completed at cycle ${native.adc.completionCycle.toLocaleString('en-US')} · mailbox ${native.firmwareTransaction.temperatureC} °C · D13 ${native.pin.level ? 'HIGH' : 'LOW'} · cannot pass native acceptance`;
@@ -1105,16 +1182,36 @@ function installX49OffsetComparison(document, activeProfileReader) {
       panel.querySelector('[data-x49-rows]').replaceChildren(...rows);
       panel.querySelector('[data-x49-message]').textContent = !available
         ? 'The fixed comparison is available only for the AVR thermostat teaching case.'
-        : snapshot.state === 'invalidated'
+        : visualPhase === 'invalidated'
           ? `${snapshot.reason}. The transient comparison and any replay were cleared.`
-          : snapshot.classification === 'synthetic-browser-replay-not-native-evidence'
+          : visualPhase === 'synthetic-replay'
             ? 'Synthetic browser replay is visible for UI verification only. Academic/native status remains unavailable.'
-            : 'Authored inputs and calculated expectations are separate from unavailable native and physical observations.';
+            : runnerSnapshot.message;
     }
-    return snapshot;
+    return { ...snapshot, authoring: authored, runner: runner.snapshot() };
   };
-  for (const panel of panels) panel.querySelector('[data-x49-preview]').addEventListener('click', () => paint(owner.preview()));
-  const invalidate = (reason) => paint(owner.invalidate(reason));
+  for (const panel of panels) {
+    panel.querySelector('[data-x49-offset]').addEventListener('change', (event) => {
+      authoring.select(Number(event.target.value));
+      runner.previewOnly('Calculated preview only; no compiler request or worker was started.');
+      paint(owner.preview());
+    });
+    panel.querySelector('[data-x49-preview]').addEventListener('click', () => {
+      runner.previewOnly('Calculated preview only; no compiler request or worker was started.');
+      paint(owner.preview());
+    });
+    panel.querySelector('[data-x49-native]').addEventListener('click', () => {
+      void runner.start().catch(() => {}).finally(() => paint(owner.snapshot()));
+    });
+    panel.querySelector('[data-x49-cancel]').addEventListener('click', () => {
+      void runner.cancel('X49_PUBLIC_USER_CANCELLED').finally(() => paint(owner.snapshot()));
+    });
+  }
+  runner.subscribe((value) => { runnerSnapshot = value; paint(owner.snapshot()); });
+  const invalidate = (reason) => {
+    if (runner.active()) void runner.retire(reason);
+    return paint(owner.invalidate(reason));
+  };
   const invalidationEvents = new Map([
     ['build', 'X49_BUILD_STARTED'], ['run', 'X49_RUN_STARTED'], ['reset', 'X49_RESET'],
     ['stop', 'X49_RUNTIME_RETIRED'], ['project-new', 'X49_NEW_PROJECT'],
@@ -1129,14 +1226,42 @@ function installX49OffsetComparison(document, activeProfileReader) {
   }, true);
   document.addEventListener('click', (event) => {
     const reason = invalidationEvents.get(event.target?.id);
-    if (reason) invalidate(reason);
+    if (reason) {
+      if (runner.active()) {
+        event.preventDefault(); event.stopImmediatePropagation();
+      }
+      invalidate(reason);
+    }
   }, true);
+  Object.defineProperty(document.defaultView, '__AGENT_ACTIONS__', {
+    configurable: true,
+    get() { return this.__x49AgentActions ?? undefined; },
+    set(value) {
+      const original = value;
+      this.__x49AgentActions = Object.freeze({ ...original,
+        execute: async (source) => {
+          let action = source?.action;
+          if (!action && typeof source === 'string') {
+            try { action = JSON.parse(source).action; } catch { action = null; }
+          }
+          if (runner.active() && ['firmware.build', 'runtime.run', 'project.create'].includes(action)) {
+            return { ok: false, executed: false, code: 'X49_PUBLIC_OPERATION_ACTIVE', action };
+          }
+          return original.execute(source);
+        },
+      });
+    },
+  });
   const api = Object.freeze({
     refresh: () => paint(owner.snapshot()),
     preview: () => paint(owner.preview()),
     invalidate,
     snapshot: () => owner.snapshot(),
     fixedCases: () => structuredClone(X49_CASES),
+    authoring: () => authoring.snapshot(),
+    runner: () => runner.snapshot(),
+    startNative: () => runner.start(),
+    cancelNative: () => runner.cancel(),
     acceptSyntheticReplay: async (report) => paint(await owner.acceptSyntheticReplay(report)),
   });
   document.defaultView.__X49_OFFSET_COMPARISON__ = api;
