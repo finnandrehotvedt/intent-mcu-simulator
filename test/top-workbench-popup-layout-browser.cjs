@@ -302,13 +302,15 @@ async function verifyDialog(page, name, openerSelector, profile) {
     await filePage.keyboard.press('Escape');
     report.localHistoryJourney = { enabled: true, saved: true, cancelPreserved: true, confirmedClear: true, disabled: true };
 
-    // The actual moved Inspector property editor still commits once, and the
-    // existing canvas Undo restores the original circuit value.
+    // The moved Inspector previews the model value until its explicit atomic
+    // Apply, and the existing canvas Undo restores the original circuit value.
     await selectProfile(filePage, profiles[1]);
     await filePage.click('#active-canvas-mount [data-component-id="resistor-1"]');
     await filePage.click('#toggle-inspector');
     await filePage.fill('#resistor-1-ohms', '330');
-    await filePage.locator('#resistor-1-ohms').dispatchEvent('change');
+    assert.equal(await filePage.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuit
+      .components.find((item) => item.id === 'resistor-1').properties.ohms), 220);
+    await filePage.click('[data-bounded-model-apply="resistor-1"]');
     await filePage.waitForFunction(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuit
       .components.find((item) => item.id === 'resistor-1').properties.ohms === 330);
     await filePage.keyboard.press('Escape');

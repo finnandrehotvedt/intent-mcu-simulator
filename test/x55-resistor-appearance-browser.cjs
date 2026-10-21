@@ -30,6 +30,9 @@ async function selectResistorByKeyboard(page) {
     await page.click('#toggle-inspector');
     await page.waitForSelector('#workbench-inspector-dialog[open]');
   }
+  if (!await page.locator('#appearance-editor').isVisible()) {
+    await page.click('#component-editor-drawing-tab');
+  }
   return card;
 }
 

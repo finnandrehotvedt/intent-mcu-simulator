@@ -49,6 +49,7 @@ const anchors = (page, selector) => page.evaluate((root) => Object.fromEntries(
     await page.click('.starter-card[data-example="blink"]');
     const avrCard = page.locator('#component-layer [data-component-id="led-1"]');
     await avrCard.click(); await page.click('#toggle-inspector');
+    await page.click('#component-editor-drawing-tab');
     assert.deepEqual(await avrCard.locator('[data-body-contact]').evaluateAll((nodes) =>
       nodes.map((node) => Number(node.getAttribute('y1')))), [55, 57]);
     const avrBefore = await page.evaluate(() => ({
@@ -119,6 +120,7 @@ const anchors = (page, selector) => page.evaluate((root) => Object.fromEntries(
         await page.click('#toggle-inspector');
       }
       await page.waitForSelector('#workbench-inspector-dialog[open]');
+      await page.locator(`${profile.properties} [data-component-editor-mode="drawing"]`).click();
       const control = page.locator(`${profile.properties} select[data-bounded-appearance="led-1"]`);
       const apply = page.locator(`${profile.properties} button[data-bounded-appearance-apply="led-1"]`);
       const body = (key) => page.locator(`${profile.properties} input[data-bounded-body="${key}"]`);

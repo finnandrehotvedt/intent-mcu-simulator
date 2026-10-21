@@ -913,7 +913,20 @@ button:disabled, select:disabled { opacity: .42; }
 .support-detail { min-height: 54px; color: var(--muted); font-size: .76rem; line-height: 1.45; }
 .inspector-actions { margin: 10px 0 16px; }
 .inspector-actions button { flex: 1 1 90px; }
+.component-editor { display: grid; gap: 10px; margin: 0 0 16px; padding: 12px; border: 1px solid #315468; border-radius: 12px; background: #071722; }
+.component-editor[hidden], .component-editor-panel[hidden] { display: none; }
+.component-editor-heading { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+.component-editor-heading h3, .component-editor-heading p { margin: 0; }
+.component-editor-heading > span { padding: 3px 7px; border: 1px solid #35667d; border-radius: 999px; color: var(--cyan); font: 700 .64rem ui-monospace, monospace; white-space: nowrap; }
+.component-editor-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 4px; border: 1px solid #274558; border-radius: 10px; background: #050d14; }
+.component-editor-tabs button { min-width: 0; }
+.component-editor-tabs button[aria-selected="true"] { border-color: var(--lime); color: #07120b; background: var(--lime); }
+.component-editor-panel { display: grid; gap: 9px; min-width: 0; }
+.component-editor-invariant { margin: 0; padding: 8px; border-left: 3px solid var(--cyan); background: #0a1d2a; color: var(--muted); font-size: .72rem; line-height: 1.45; }
+.component-editor-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.component-editor-actions button { width: 100%; }
 .appearance-editor { display: grid; gap: 8px; margin: 0 0 16px; padding: 12px; border: 1px solid #315468; border-radius: 12px; background: #071722; }
+.component-editor .appearance-editor { margin: 0; padding: 0; border: 0; background: transparent; }
 .appearance-editor[hidden] { display: none; }
 .appearance-editor h3, .appearance-editor p { margin: 0; }
 .appearance-preview { min-height: 72px; display: grid; place-items: center; padding: 8px; border: 1px solid #274558; border-radius: 9px; background: #f5f1e7; overflow: hidden; }

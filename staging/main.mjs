@@ -397,6 +397,8 @@ const elements = Object.fromEntries([
   'catalog-support-open', 'component-support-dialog', 'component-support-close',
   'component-support-profile', 'component-support-summary', 'component-support-mode', 'component-support-body',
   'catalog-list', 'catalog-prev', 'catalog-page', 'catalog-next', 'selection-name', 'property-editor', 'rotate-component', 'duplicate-component', 'delete-component',
+  'component-editor', 'component-editor-model-tab', 'component-editor-drawing-tab',
+  'component-editor-model-panel', 'component-editor-drawing-panel',
   'appearance-editor', 'appearance-editor-title', 'appearance-preset', 'appearance-preview', 'appearance-status', 'appearance-apply',
   'appearance-width', 'appearance-width-value', 'appearance-height', 'appearance-height-value',
   'appearance-corner', 'appearance-corner-value', 'appearance-cancel',
@@ -568,6 +570,7 @@ const CATALOG_WINDOW_LIMIT = 80;
 let editor;
 let selectedComponentId = null;
 let appearancePreview = null;
+const componentEditorModes = new Map();
 let selectedNetId = null;
 let pendingEndpoint = null;
 let wireMode = 'connect';
@@ -998,7 +1001,60 @@ function boundedPartSummary(part, component) {
   return 'Unsupported';
 }
 
-function renderBoundedComponentCatalog({ state, editCircuit, list, properties }) {
+function componentEditorKey(profile, componentId) {
+  return `${profile}:${componentId}`;
+}
+
+function createComponentEditorSplit({ profile, component, modelPanel, drawingPanel }) {
+  const root = document.createElement('section'); root.className = 'component-editor';
+  root.dataset.componentEditor = component.id; root.dataset.profile = profile;
+  const heading = document.createElement('div'); heading.className = 'component-editor-heading';
+  const headingText = document.createElement('div');
+  const eyebrow = document.createElement('p'); eyebrow.className = 'eyebrow'; eyebrow.textContent = 'X55 · BOUNDED COMPONENT EDITOR';
+  const title = document.createElement('h3'); title.textContent = `${component.label} editor`;
+  const badge = document.createElement('span'); badge.textContent = 'Preview first';
+  headingText.append(eyebrow, title); heading.append(headingText, badge);
+  const tabs = document.createElement('div'); tabs.className = 'component-editor-tabs';
+  tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', `${component.label} editor workspace`);
+  const safeId = `${profile}-${component.id}`.replace(/[^a-z0-9_-]+/giu, '-');
+  const buttons = {};
+  const panels = { model: modelPanel, drawing: drawingPanel };
+  for (const [mode, label] of [['model', 'Model property'], ['drawing', 'Drawing']]) {
+    const button = document.createElement('button'); button.type = 'button'; button.textContent = label;
+    button.id = `${safeId}-${mode}-tab`; button.dataset.componentEditorMode = mode;
+    button.setAttribute('role', 'tab'); button.setAttribute('aria-controls', `${safeId}-${mode}-panel`);
+    panels[mode].id = `${safeId}-${mode}-panel`; panels[mode].classList.add('component-editor-panel');
+    panels[mode].setAttribute('role', 'tabpanel'); panels[mode].setAttribute('aria-labelledby', button.id);
+    buttons[mode] = button; tabs.append(button);
+  }
+  const key = componentEditorKey(profile, component.id);
+  const setMode = (mode, focus = false) => {
+    componentEditorModes.set(key, mode);
+    for (const name of ['model', 'drawing']) {
+      const active = name === mode;
+      buttons[name].setAttribute('aria-selected', String(active)); buttons[name].tabIndex = active ? 0 : -1;
+      panels[name].hidden = !active;
+    }
+    root.dataset.mode = mode;
+    if (focus) buttons[mode].focus({ preventScroll: true });
+  };
+  for (const [mode, button] of Object.entries(buttons)) {
+    button.addEventListener('click', () => setMode(mode));
+    button.addEventListener('keydown', (event) => {
+      const order = ['model', 'drawing']; const current = order.indexOf(mode);
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? order.length - 1
+        : event.key === 'ArrowLeft' ? (current - 1 + order.length) % order.length
+          : event.key === 'ArrowRight' ? (current + 1) % order.length : -1;
+      if (next < 0) return;
+      event.preventDefault(); event.stopPropagation(); setMode(order[next], true);
+    });
+  }
+  setMode(componentEditorModes.get(key) ?? 'model');
+  root.append(heading, tabs, modelPanel, drawingPanel);
+  return root;
+}
+
+function renderBoundedComponentCatalog({ profile, state, editCircuit, list, properties }) {
   const { draft, selection, catalog } = state.circuitEditor;
   const rows = catalog.parts.map((part) => {
     const component = draft.components.find((candidate) => candidate.type === part.type);
@@ -1036,31 +1092,12 @@ function renderBoundedComponentCatalog({ state, editCircuit, list, properties })
   const row = document.createElement('div'); row.className = 'bounded-property-row';
   const label = document.createElement('label');
   const limit = document.createElement('small');
-  const commitOnChange = (control, value) => {
-    let committing = false;
-    const commit = () => {
-      if (committing) return;
-      committing = true;
-      const next = value();
-      // Programmatic browser tests can dispatch change while the control is
-      // still focused. Move focus first so the synchronous state render does
-      // not replace a focused node and trigger a re-entrant blur/change.
-      if (document.activeElement === control) control.blur();
-      editCircuit('setComponentProperty', selected.id, control.dataset.boundedProperty, next);
-    };
-    // Native change is the normal commit path. Blur is an explicit fallback
-    // for accessibility/browser automation paths that settle the edited field
-    // without delivering change to the application before the popup closes.
-    control.addEventListener('change', commit);
-    control.addEventListener('blur', commit);
-  };
   let input;
   if (selected.type === 'resistor.fixed-v1') {
     label.append('Resistance (Ω)');
     limit.textContent = 'Accepted only when the selected LED remains within the exact 3.3 V / 12 mA ideal-model limit.';
     input = document.createElement('input'); input.type = 'number'; input.min = '1'; input.max = '10000000';
     input.step = '1'; input.value = String(selected.properties.ohms); input.dataset.boundedProperty = 'ohms';
-    commitOnChange(input, () => Number(input.value));
   } else {
     label.append('LED colour');
     limit.textContent = 'Colour selects a tested ideal forward-voltage constant; it is not a wavelength, brightness or physical-accuracy claim.';
@@ -1069,7 +1106,6 @@ function renderBoundedComponentCatalog({ state, editCircuit, list, properties })
       const option = document.createElement('option'); option.value = color; option.textContent = color;
       option.selected = color === selected.properties.color; input.append(option);
     }
-    commitOnChange(input, () => input.value);
   }
   label.append(limit); input.id = `${selected.id}-${input.dataset.boundedProperty}`; label.htmlFor = input.id;
   row.append(label, input);
@@ -1077,7 +1113,49 @@ function renderBoundedComponentCatalog({ state, editCircuit, list, properties })
     properties.replaceChildren(row); return;
   }
 
-  const appearance = document.createElement('div'); appearance.className = 'bounded-property-row bounded-appearance-row';
+  const modelPanel = document.createElement('section');
+  const modelStatus = document.createElement('p'); modelStatus.className = 'component-editor-invariant'; modelStatus.setAttribute('role', 'status');
+  const modelApply = document.createElement('button'); modelApply.type = 'button'; modelApply.textContent = 'Apply model property';
+  modelApply.dataset.boundedModelApply = selected.id;
+  const modelCancel = document.createElement('button'); modelCancel.type = 'button'; modelCancel.textContent = 'Cancel preview';
+  modelCancel.dataset.componentEditorCancel = 'model';
+  const currentValue = selected.properties[input.dataset.boundedProperty];
+  const previewValue = () => typeof currentValue === 'number' ? Number(input.value) : input.value;
+  const modelValid = () => input.checkValidity() && (typeof currentValue !== 'number' || Number.isInteger(previewValue()));
+  const modelChanged = () => previewValue() !== currentValue;
+  const updateModel = () => {
+    const valid = modelValid(); const changed = modelChanged();
+    input.setAttribute('aria-invalid', String(!valid)); modelApply.disabled = !valid || !changed;
+    modelStatus.textContent = !valid
+      ? 'Preview rejected · enter a value inside the existing bounded model contract. No project data changed.'
+      : changed
+        ? `Model preview only · Apply changes ${input.dataset.boundedProperty}; pins, anchors, named nets, drawing, source, artifact and runtime identity stay unchanged.`
+        : `Current model value · ${input.dataset.boundedProperty} is unchanged. Apply is disabled.`;
+  };
+  input.addEventListener('input', updateModel); input.addEventListener('change', updateModel);
+  modelCancel.addEventListener('click', () => {
+    input.value = String(currentValue); updateModel();
+    if (document.querySelector('#workbench-inspector-dialog')?.open) input.focus({ preventScroll: true });
+  });
+  const capturedRevision = state.circuitEditor.revision;
+  modelApply.addEventListener('click', () => {
+    if (!modelValid() || !modelChanged()) return;
+    const currentRevision = (profile === RP2040_PROFILE ? picoPublicWorkbench.snapshot()
+      : profile === ESP32C3_PROFILE ? c3PublicWorkbench.snapshot() : stm32PublicWorkbench.snapshot()).circuitEditor.revision;
+    if (currentRevision !== capturedRevision) {
+      modelStatus.textContent = 'Preview stale · the project changed. Reopen the current value before applying.';
+      modelApply.disabled = true; return;
+    }
+    const result = editCircuit('setComponentProperty', selected.id, input.dataset.boundedProperty, previewValue());
+    if (!result?.ok) {
+      modelStatus.textContent = `Model edit rejected (${result?.code ?? 'validation failed'}). The project is unchanged.`;
+      modelApply.disabled = true;
+    }
+  });
+  const modelActions = document.createElement('div'); modelActions.className = 'component-editor-actions';
+  modelActions.append(modelCancel, modelApply); modelPanel.append(row, modelStatus, modelActions); updateModel();
+
+  const appearance = document.createElement('section'); appearance.className = 'bounded-property-row bounded-appearance-row';
   const appearanceLabel = document.createElement('label');
   appearanceLabel.textContent = selected.type === 'resistor.fixed-v1' ? 'Body preset' : 'Outline preset';
   const appearanceSelect = document.createElement('select');
@@ -1124,21 +1202,29 @@ function renderBoundedComponentCatalog({ state, editCircuit, list, properties })
   appearanceSelect.addEventListener('change', updateApply);
   Object.values(bodyInputs).forEach((control) => control.addEventListener('input', updateApply));
   updateApply();
-  apply.addEventListener('click', () => editCircuit(
-    'setComponentAppearanceEdit', selected.id, appearanceSelect.value, selectedBody(),
-  ));
+  apply.addEventListener('click', () => {
+    const currentRevision = (profile === RP2040_PROFILE ? picoPublicWorkbench.snapshot()
+      : profile === ESP32C3_PROFILE ? c3PublicWorkbench.snapshot() : stm32PublicWorkbench.snapshot()).circuitEditor.revision;
+    if (currentRevision !== capturedRevision) {
+      status.textContent = 'Visual preview stale · the project changed. Reopen the current drawing before applying.';
+      apply.disabled = true; return;
+    }
+    editCircuit('setComponentAppearanceEdit', selected.id, appearanceSelect.value, selectedBody());
+  });
   const cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = 'Cancel preview';
+  cancel.dataset.componentEditorCancel = 'drawing';
   cancel.addEventListener('click', () => {
     appearanceSelect.value = currentPreset;
     for (const [key, control] of Object.entries(bodyInputs)) control.value = String(currentBody[key]);
     bodyControls.querySelectorAll('output').forEach((output, index) => {
       output.textContent = `${currentBody[['widthPct', 'heightPct', 'cornerPct'][index]]}%`;
     });
-    renderPreview(); updateApply(); appearanceSelect.focus();
+    renderPreview(); updateApply();
+    if (document.querySelector('#workbench-inspector-dialog')?.open) appearanceSelect.focus({ preventScroll: true });
   });
   const actions = document.createElement('div'); actions.className = 'appearance-actions'; actions.append(cancel, apply);
   appearanceLabel.append(appearanceSelect, status); appearance.append(appearanceLabel, bodyControls, preview, actions);
-  properties.replaceChildren(row, appearance);
+  properties.replaceChildren(createComponentEditorSplit({ profile, component: selected, modelPanel, drawingPanel: appearance }));
 }
 
 function accessibleValidation(result) {
@@ -2093,7 +2179,7 @@ function renderPicoCircuitEditor(state) {
   elements.picowirestate.textContent = namedWireInstruction(wireDraft);
   elements.picozoomvalue.value = `${Math.round(picoEditorZoom * 100)}%`;
   renderBoundedComponentCatalog({
-    state, editCircuit: (...args) => picoPublicWorkbench.editCircuit(...args),
+    profile: RP2040_PROFILE, state, editCircuit: (...args) => picoPublicWorkbench.editCircuit(...args),
     list: elements.picopartslist, properties: elements.picopartproperties,
   });
   const cards = draft.components.map((component) => {
@@ -2367,7 +2453,7 @@ function renderC3CircuitEditor(state) {
   elements.c3wirestate.textContent = namedWireInstruction(wireDraft);
   elements.c3zoomvalue.value = `${Math.round(c3EditorZoom * 100)}%`;
   renderBoundedComponentCatalog({
-    state, editCircuit: (...args) => c3PublicWorkbench.editCircuit(...args),
+    profile: ESP32C3_PROFILE, state, editCircuit: (...args) => c3PublicWorkbench.editCircuit(...args),
     list: elements.c3partslist, properties: elements.c3partproperties,
   });
   const modeledLed = Boolean(state.circuitAccepted && state.runtime?.modeledCircuit?.epochs?.at(-1)?.led?.on);
@@ -2641,7 +2727,7 @@ function renderStm32CircuitEditor(state) {
   elements.stm32wirestate.textContent = namedWireInstruction(wireDraft);
   elements.stm32zoomvalue.value = `${Math.round(stm32EditorZoom * 100)}%`;
   renderBoundedComponentCatalog({
-    state, editCircuit: (...args) => stm32PublicWorkbench.editCircuit(...args),
+    profile: STM32F429ZI_PROFILE, state, editCircuit: (...args) => stm32PublicWorkbench.editCircuit(...args),
     list: elements.stm32partslist, properties: elements.stm32partproperties,
   });
   const observedLed = Boolean(state.circuitAccepted && state.runtime?.observed?.pb0);
@@ -10535,6 +10621,65 @@ function addComponent(type, point = null) {
 function renderPropertyEditor(component) {
   if (!component || !Object.keys(component.properties).length) { elements.propertyeditor.replaceChildren(); return; }
   const definition = uiComponentCatalog[component.type];
+  if (['resistor.fixed-v1', 'led.basic-v1'].includes(component.type)) {
+    const key = component.type === 'resistor.fixed-v1' ? 'ohms' : 'color';
+    const value = component.properties[key]; const contract = definition.propertySchema[key] ?? {};
+    const row = document.createElement('div'); row.className = 'property-row';
+    const label = document.createElement('label'); label.textContent = key === 'ohms' ? 'Resistance (Ω)' : 'LED colour';
+    let input;
+    if (key === 'color') {
+      input = document.createElement('select');
+      for (const color of ['red', 'yellow', 'green', 'blue']) {
+        const option = document.createElement('option'); option.value = color; option.textContent = color;
+        option.selected = color === value; input.append(option);
+      }
+    } else {
+      input = document.createElement('input'); input.type = 'number'; input.value = String(value);
+      if (typeof contract.minimum === 'number') input.min = String(contract.minimum);
+      if (typeof contract.maximum === 'number') input.max = String(contract.maximum);
+      input.step = contract.kind === 'integer' ? '1' : 'any';
+    }
+    input.id = `${component.id}-${key}`; input.dataset.property = key; label.htmlFor = input.id;
+    const status = document.createElement('p'); status.className = 'component-editor-invariant'; status.setAttribute('role', 'status');
+    const cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = 'Cancel preview';
+    cancel.dataset.componentEditorCancel = 'model';
+    const apply = document.createElement('button'); apply.type = 'button'; apply.textContent = 'Apply model property';
+    apply.dataset.modelPropertyApply = component.id;
+    const previewValue = () => typeof value === 'number' ? Number(input.value) : input.value;
+    const valid = () => input.checkValidity() && (typeof value !== 'number' || Number.isInteger(previewValue()));
+    const changed = () => previewValue() !== value;
+    const update = () => {
+      const accepted = valid(); const dirty = changed();
+      input.setAttribute('aria-invalid', String(!accepted)); apply.disabled = !accepted || !dirty;
+      status.textContent = !accepted
+        ? 'Preview rejected · enter a value inside the existing bounded model contract. No project data changed.'
+        : dirty
+          ? `Model preview only · Apply changes ${key}; pins, anchors, named nets, drawing, source, artifact and runtime identity stay unchanged.`
+          : `Current model value · ${key} is unchanged. Apply is disabled.`;
+    };
+    input.addEventListener('input', update); input.addEventListener('change', update);
+    cancel.addEventListener('click', () => {
+      input.value = String(value); update();
+      if (document.querySelector('#workbench-inspector-dialog')?.open) input.focus({ preventScroll: true });
+    });
+    const capturedRevision = editor.revision;
+    apply.addEventListener('click', () => {
+      if (!valid() || !changed()) return;
+      if (editor.revision !== capturedRevision) {
+        status.textContent = 'Preview stale · the project changed. Reopen the current value before applying.';
+        apply.disabled = true; return;
+      }
+      const result = applyEditor({ type: 'component.property.set', componentId: component.id, key, value: previewValue() },
+        `Updated ${component.id}.${key}`);
+      if (!result?.ok) {
+        status.textContent = `Model edit rejected (${result?.code ?? 'validation failed'}). The project is unchanged.`;
+        apply.disabled = true;
+      }
+    });
+    const actions = document.createElement('div'); actions.className = 'component-editor-actions'; actions.append(cancel, apply);
+    row.append(label, input); elements.propertyeditor.replaceChildren(row, status, actions); update();
+    return;
+  }
   const rows = Object.entries(component.properties).map(([key, value]) => {
     const row = document.createElement('div'); row.className = 'property-row';
     const contract = definition.propertySchema[key] ?? {};
@@ -10564,6 +10709,34 @@ function renderPropertyEditor(component) {
     label.htmlFor = `${component.id}-${key}`; input.id = label.htmlFor; row.append(label, input); return row;
   });
   elements.propertyeditor.replaceChildren(...rows);
+}
+
+function setAvrComponentEditorMode(mode, focus = false) {
+  if (!['model', 'drawing'].includes(mode)) return;
+  const buttons = { model: elements.componenteditormodeltab, drawing: elements.componenteditordrawingtab };
+  const panels = { model: elements.componenteditormodelpanel, drawing: elements.componenteditordrawingpanel };
+  componentEditorModes.set(componentEditorKey(AVR_PROFILE, selectedComponentId), mode);
+  for (const name of ['model', 'drawing']) {
+    const active = name === mode;
+    buttons[name].setAttribute('aria-selected', String(active)); buttons[name].tabIndex = active ? 0 : -1;
+    panels[name].hidden = !active;
+  }
+  elements.componenteditor.dataset.mode = mode;
+  if (focus) buttons[mode].focus({ preventScroll: true });
+}
+
+function renderAvrComponentEditor(component) {
+  const supported = ['resistor.fixed-v1', 'led.basic-v1'].includes(component?.type);
+  elements.componenteditor.hidden = !component || !Object.keys(component.properties ?? {}).length;
+  elements.componenteditor.dataset.bounded = String(supported);
+  elements.componenteditor.querySelector('.component-editor-heading').hidden = !supported;
+  elements.componenteditor.querySelector('.component-editor-tabs').hidden = !supported;
+  if (!supported) {
+    elements.componenteditormodelpanel.hidden = false;
+    elements.componenteditordrawingpanel.hidden = true;
+    return;
+  }
+  setAvrComponentEditorMode(componentEditorModes.get(componentEditorKey(AVR_PROFILE, component.id)) ?? 'model');
 }
 
 function appearanceInvariant(component, layout = currentProject().layout) {
@@ -10751,6 +10924,7 @@ function renderInspector() {
   elements.deletecomponent.disabled = !component;
   renderPropertyEditor(component);
   renderAppearanceEditor(component);
+  renderAvrComponentEditor(component);
 
   const prior = selectedNetId;
   const options = [new Option('No net selected', ''), ...currentProject().circuit.nets.map((net) => new Option(`${net.id} · ${net.endpoints.length} pins`, net.id))];
@@ -12272,7 +12446,8 @@ elements.appearancecancel.addEventListener('click', () => {
   prepareAppearancePreview(component, componentAppearancePreset(
     currentProject().layout.componentAppearance, component.id, component.type,
   ), componentAppearanceBody(currentProject().layout.componentAppearance, component.id, component.type));
-  renderAppearanceEditor(component); elements.appearancepreset.focus();
+  renderAppearanceEditor(component);
+  if (document.querySelector('#workbench-inspector-dialog')?.open) elements.appearancepreset.focus({ preventScroll: true });
 });
 elements.appearanceapply.addEventListener('click', () => {
   const component = currentProject().circuit.components.find(
@@ -12287,6 +12462,24 @@ elements.appearanceapply.addEventListener('click', () => {
   appearancePreview = null;
   applyEditor({ type: 'component.appearance.edit', componentId: component.id, preset, body },
     `Applied visual-only ${preset} body edit to ${component.id}`);
+});
+for (const [mode, button] of [
+  ['model', elements.componenteditormodeltab], ['drawing', elements.componenteditordrawingtab],
+]) {
+  button.addEventListener('click', () => setAvrComponentEditorMode(mode));
+  button.addEventListener('keydown', (event) => {
+    const next = event.key === 'ArrowLeft' || event.key === 'Home' ? 'model'
+      : event.key === 'ArrowRight' || event.key === 'End' ? 'drawing' : null;
+    if (!next) return;
+    event.preventDefault(); event.stopPropagation(); setAvrComponentEditorMode(next, true);
+  });
+}
+document.querySelector('#workbench-inspector-dialog').addEventListener('close', () => {
+  // A popup preview never becomes parked authored state. Closing, Escape or a
+  // profile switch discards both mode previews through their own Cancel path.
+  for (const cancel of document.querySelectorAll('#workbench-inspector-dialog [data-component-editor-cancel]')) {
+    cancel.click();
+  }
 });
 elements.rotatecomponent.addEventListener('click', () => {
   if (!selectedComponentId) return;

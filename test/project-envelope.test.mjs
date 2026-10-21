@@ -13,6 +13,7 @@ import {
 } from '../src/project-envelope.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, PRE_X55_ALL_PROFILE_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_X55_SPLIT_EDITOR_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_NOOP_APPLY_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_BODY_LEAD_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_BODY_EDITOR_CURRENT_MODEL_LIBRARY_LOCK,
@@ -252,6 +253,24 @@ test('public rc.103 envelope migrates data-only after the no-op Apply correction
   assert.equal(opened.ok, true);
   assert.deepEqual(opened.project, project);
   assert.deepEqual(opened.modelLibrary, PRE_X55_NOOP_APPLY_FIX_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(opened.report.executableAuthorityCleared, true);
+  assert.equal(opened.report.modelLibrary.migrationAvailable, true);
+  const migrated = migrateProjectModelLibrary(oldEnvelope, adapters);
+  assert.equal(migrated.ok, true);
+  assert.equal(migrated.originalUnchanged, oldEnvelope);
+  assert.equal(migrated.executableAuthorityCleared, true);
+  assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
+});
+
+test('private no-op Apply envelope migrates data-only after the split editor', () => {
+  const oldEnvelope = canonicalProjectEnvelope(
+    profile, project, adapters, emptyProjectBrief(), null,
+    PRE_X55_SPLIT_EDITOR_CURRENT_MODEL_LIBRARY_LOCK,
+  );
+  const opened = prepareProjectEnvelope(oldEnvelope, adapters);
+  assert.equal(opened.ok, true);
+  assert.deepEqual(opened.project, project);
+  assert.deepEqual(opened.modelLibrary, PRE_X55_SPLIT_EDITOR_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(opened.report.executableAuthorityCleared, true);
   assert.equal(opened.report.modelLibrary.migrationAvailable, true);
   const migrated = migrateProjectModelLibrary(oldEnvelope, adapters);

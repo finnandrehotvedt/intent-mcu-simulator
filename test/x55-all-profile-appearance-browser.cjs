@@ -68,6 +68,7 @@ async function snapshot(page, profile) {
       await card.click();
       await page.click('#toggle-inspector');
       await page.waitForSelector('#workbench-inspector-dialog[open]');
+      await page.locator(`${profile.properties} [data-component-editor-mode="drawing"]`).click();
       const select = page.locator(`${profile.properties} [data-bounded-appearance="resistor-1"]`);
       const apply = page.locator(`${profile.properties} [data-bounded-appearance-apply="resistor-1"]`);
       const width = page.locator(`${profile.properties} input[data-bounded-body="widthPct"]`);

@@ -602,7 +602,16 @@
         <p class="eyebrow">3 · INSPECT</p><h2 id="inspector-title">Selection</h2><p id="selection-name" class="selection-name">Nothing selected</p>
         <p id="selection-support" class="support-detail">Select a part to see its exact simulation support.</p>
         <div class="inspector-actions"><button id="rotate-component" type="button" disabled>Rotate 90°</button><button id="duplicate-component" type="button" disabled>Duplicate</button><button id="delete-component" type="button" disabled>Delete</button></div>
-        <div id="property-editor"></div>
+        <section id="component-editor" class="component-editor" aria-labelledby="component-editor-title" hidden>
+          <div class="component-editor-heading"><div><p class="eyebrow">X55 · BOUNDED COMPONENT EDITOR</p><h3 id="component-editor-title">Component editor</h3></div><span>Preview first</span></div>
+          <div class="component-editor-tabs" role="tablist" aria-label="Component editor workspace">
+            <button id="component-editor-model-tab" type="button" role="tab" aria-controls="component-editor-model-panel" aria-selected="true">Model property</button>
+            <button id="component-editor-drawing-tab" type="button" role="tab" aria-controls="component-editor-drawing-panel" aria-selected="false" tabindex="-1">Drawing</button>
+          </div>
+          <section id="component-editor-model-panel" class="component-editor-panel" role="tabpanel" aria-labelledby="component-editor-model-tab">
+            <div id="property-editor"></div>
+          </section>
+          <section id="component-editor-drawing-panel" class="component-editor-panel" role="tabpanel" aria-labelledby="component-editor-drawing-tab" hidden>
         <section id="appearance-editor" class="appearance-editor" aria-labelledby="appearance-editor-title" hidden>
           <p class="eyebrow">X55 · VISUAL ONLY</p>
           <h3 id="appearance-editor-title">Resistor appearance</h3>
@@ -620,7 +629,9 @@
           </fieldset>
           <div id="appearance-preview" class="appearance-preview" aria-label="Non-mutating component appearance preview"></div>
           <p id="appearance-status" class="truth" role="status">Select a supported part to review appearance invariants.</p>
-          <div class="appearance-actions"><button id="appearance-cancel" type="button">Cancel preview</button><button id="appearance-apply" type="button" disabled>Apply visual edit</button></div>
+          <div class="appearance-actions"><button id="appearance-cancel" type="button" data-component-editor-cancel="drawing">Cancel preview</button><button id="appearance-apply" type="button" disabled>Apply visual edit</button></div>
+        </section>
+          </section>
         </section>
         <label for="selected-net">Net / wire</label><select id="selected-net"><option value="">No net selected</option></select>
         <label for="wire-color">Wire colour</label><select id="wire-color" disabled><option value="#39dff2">Signal · cyan</option><option value="#f04f5f">Power · red</option><option value="#a8ff3f">Analogue · green</option><option value="#f5c451">Yellow</option><option value="#f28cf3">Magenta</option><option value="#f6f1e7">White</option><option value="#303943">Ground · charcoal</option><option value="#5f8cff">Blue</option></select>
