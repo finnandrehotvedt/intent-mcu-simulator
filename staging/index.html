@@ -43,6 +43,7 @@
           <div id="top-primary-controls" class="top-primary-controls"></div>
         </header>
         <nav id="workbench-popup-controls" class="workbench-popup-controls" aria-label="Open secondary workbench tools">
+          <button id="top-get-started" class="workbench-get-started" type="button" aria-haspopup="dialog" aria-controls="walkthrough">Get started</button>
           <button id="project-files-open" type="button" aria-haspopup="dialog" aria-controls="workbench-project-dialog">Project &amp; files</button>
           <button id="toggle-catalog" type="button" aria-haspopup="dialog" aria-controls="workbench-parts-dialog">Parts</button>
           <button id="toggle-inspector" type="button" aria-haspopup="dialog" aria-controls="workbench-inspector-dialog">Inspector</button>
@@ -65,26 +66,44 @@
         </div>
       </section>
     </section>
-    <aside class="desktop-required" aria-label="Desktop requirement"><strong>Desktop browser required for the interactive workbench.</strong> Keyboard, file and canvas workflows are verified for desktop use. On a phone or tablet, use the <a href="/controllers.html">controller overview</a>, <a href="/components.html">component guide</a>, <a href="/examples.html">examples</a> and <a href="/support.html">support notes</a>, then return on a desktop to build.</aside>
+    <aside class="desktop-required" aria-label="Desktop requirement">
+      <section id="workbench-help-summary" class="workbench-help-summary" aria-labelledby="workbench-help-summary-title">
+        <p class="eyebrow">QUICK HELP</p>
+        <h2 id="workbench-help-summary-title">What do you want to do?</h2>
+        <div class="workbench-help-choices">
+          <button id="help-get-started" type="button">Get started</button>
+          <a href="/support.html#help-build-run">Build &amp; Run</a>
+          <a href="/support.html#fault-validation-boundary">Wiring</a>
+          <a href="/support.html#help-save-open">Save &amp; Open</a>
+          <a href="/support.html#support-limits">Support limits</a>
+        </div>
+      </section>
+      <strong>Desktop browser required for the interactive workbench.</strong> Keyboard, file and canvas workflows are verified for desktop use. On a phone or tablet, use the <a href="/controllers.html">controller overview</a>, <a href="/components.html">component guide</a>, <a href="/examples.html">examples</a> and <a href="/support.html">support notes</a>, then return on a desktop to build.
+    </aside>
 
     <section id="project-bar" class="project-bar panel" aria-label="Project controls" data-shared-surface="project">
       <div><p class="eyebrow">LOCAL PROJECT</p><label class="project-name-field" for="project-name">Project name <input id="project-name" type="text" maxlength="80" value="Untitled project" autocomplete="off"></label><strong id="project-state">Untitled project · empty · not saved</strong><span id="lifecycle-state" class="lifecycle-state">empty</span></div>
-      <div class="toolbar">
+      <div class="toolbar project-toolbar">
         <button id="project-new" type="button">New empty</button>
         <select id="example-select" hidden aria-hidden="true" tabindex="-1" aria-label="Selected example project"><option value="blink">Blink LED</option><option value="button">Button input</option><option value="adc">ADC dial</option><option value="pwm">PWM fade</option><option value="pwm-pulse">PWM pulse</option><option value="temperature-lcd-threshold">Temperature display</option><option value="avr-thermostat-boundary-v1">Thermostat boundary test</option><option value="avr-ground-reference-input">Ground reference input</option><option value="avr-toggle-input">SPST toggle input</option><option value="avr-spdt-selector">SPDT input selector</option><option value="avr-light-analogue">Analogue light level</option><option value="avr-light-threshold">Digital light threshold</option><option value="avr-active-buzzer">Logical active buzzer</option><option value="avr-seven-segment">Seven-segment digits</option><option value="avr-rotary-encoder">Quadrature encoder</option></select>
         <span id="starter-gallery" class="starter-launch"><button id="project-demo" type="button" aria-haspopup="dialog" aria-controls="example-picker-dialog">Choose example <span aria-hidden="true">· 15</span></button></span>
         <button id="walkthrough-open" type="button">First project guide</button>
         <button id="undo" type="button" disabled>Undo</button><button id="redo" type="button" disabled>Redo</button>
-        <button id="project-save" type="button">Download copy</button><button id="project-open" type="button">Open project</button>
-        <button id="project-native-open" class="native-file-action" type="button" hidden>Open &amp; connect…</button>
-        <button id="project-native-save" class="native-file-action" type="button" hidden disabled>Save connected file</button>
-        <button id="project-native-save-copy" class="native-file-action" type="button" hidden>Save copy…</button>
-        <input id="project-open-input" class="sr-only" type="file" accept="application/json,.json" aria-label="Open project file">
-        <button id="project-reload" type="button">Restore browser recovery</button>
-        <button id="project-export" type="button">Legacy copy</button><button id="recovery-export" type="button" disabled>Download recovery</button>
-        <label class="file-button" for="project-import">Import JSON</label>
-        <input id="project-import" class="sr-only" type="file" accept="application/json,.json">
-        <select id="project-import-mode" aria-label="Project import mode"><option value="replace">Replace project</option><option value="merge">Merge circuit</option><option value="migrate-v1">Migrate v1 project</option></select>
+        <button id="project-save" class="project-file-primary" type="button">Download copy</button><button id="project-open" class="project-file-primary" type="button">Open project</button>
+        <details class="project-file-advanced">
+          <summary>Advanced file &amp; recovery</summary>
+          <div class="project-file-advanced-actions">
+            <button id="project-native-open" class="native-file-action" type="button" hidden>Open &amp; connect…</button>
+            <button id="project-native-save" class="native-file-action" type="button" hidden disabled>Save connected file</button>
+            <button id="project-native-save-copy" class="native-file-action" type="button" hidden>Save copy…</button>
+            <input id="project-open-input" class="sr-only" type="file" accept="application/json,.json" aria-label="Open project file">
+            <button id="project-reload" type="button">Restore browser recovery</button>
+            <button id="project-export" type="button">Legacy copy</button><button id="recovery-export" type="button" disabled>Download recovery</button>
+            <label class="file-button" for="project-import">Import JSON</label>
+            <input id="project-import" class="sr-only" type="file" accept="application/json,.json">
+            <select id="project-import-mode" aria-label="Project import mode"><option value="replace">Replace project</option><option value="merge">Merge circuit</option><option value="migrate-v1">Migrate v1 project</option></select>
+          </div>
+        </details>
       </div>
       <p id="project-file-connection" class="file-connection" role="status">Download copy and Open project work without a native file connection.</p>
       <p id="project-message" class="truth" role="status">No account or cloud project store. Save/Open uses a file on your computer; your browser or operating system chooses its location. Browser recovery is separate.</p>

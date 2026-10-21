@@ -418,7 +418,7 @@ const elements = Object.fromEntries([
   'editor-title', 'source-file', 'source-file-name', 'source-file-add', 'source-file-remove',
   'lifecycle-state', 'technical-error', 'technical-error-detail', 'delete-branch',
   'example-select', 'example-picker-dialog', 'example-picker-close', 'example-picker-search', 'example-picker-status',
-  'walkthrough-open', 'walkthrough', 'recovery-export', 'quick-state', 'quick-build', 'quick-run', 'quick-pause', 'quick-reset', 'quick-stop',
+  'walkthrough-open', 'top-get-started', 'help-get-started', 'walkthrough', 'recovery-export', 'quick-state', 'quick-build', 'quick-run', 'quick-pause', 'quick-reset', 'quick-stop',
   'unsaved-change-dialog', 'unsaved-change-title', 'unsaved-change-description', 'unsaved-change-status',
   'unsaved-keep', 'unsaved-download', 'unsaved-discard',
   'toggle-catalog', 'toggle-inspector', 'catalog-resizer', 'inspector-resizer', 'show-pin-labels', 'focus-canvas', 'fullscreen-canvas',
@@ -10190,14 +10190,20 @@ function renderComponents() {
       appearancePreset: resistorAppearancePreset(currentProject().layout.componentAppearance, component.id),
     }));
     card.append(createTerminalWireLayer(component, definition));
-    for (const pin of definition.pins) {
+    for (const [pinIndex, pin] of definition.pins.entries()) {
       const anchor = document.createElement('button'); anchor.type = 'button'; anchor.className = 'pin-anchor';
       anchor.dataset.endpoint = `${component.id}.${pin.id}`; anchor.textContent = pin.id;
-      anchor.dataset.label = `${pin.label} · ${component.id}.${pin.id}`;
+      anchor.dataset.labelSide = pin.anchor.y < 0.5 ? 'top' : 'bottom';
+      anchor.style.setProperty('--pin-label-lane', String(pinIndex % 5));
       anchor.title = `${component.id}.${pin.id} · ${pin.label} · ${pin.role}`;
       anchor.setAttribute('aria-label', anchor.title);
       anchor.style.setProperty('--pin-x', String(pin.anchor.x));
       anchor.style.setProperty('--pin-y', String(pin.anchor.y));
+      const visibleLabel = document.createElement('span');
+      visibleLabel.className = 'pin-anchor-label';
+      visibleLabel.setAttribute('aria-hidden', 'true');
+      visibleLabel.textContent = pin.label;
+      anchor.append(visibleLabel);
       if (pendingEndpoint && endpointKey(pendingEndpoint) === anchor.dataset.endpoint) anchor.classList.add('pending');
       else if (pendingEndpoint) anchor.classList.add('available');
       anchor.addEventListener('click', (event) => {
@@ -12777,7 +12783,15 @@ elements.projectreload.addEventListener('click', () => {
 });
 elements.projectexport.addEventListener('click', () => saveLegacyProject(AVR_PROFILE));
 
-elements.walkthroughopen.addEventListener('click', () => elements.walkthrough.showModal());
+function openFirstProjectGuide() {
+  if (!elements.walkthrough.open) elements.walkthrough.showModal();
+}
+elements.walkthroughopen.addEventListener('click', openFirstProjectGuide);
+elements.topgetstarted.addEventListener('click', openFirstProjectGuide);
+elements.helpgetstarted.addEventListener('click', () => {
+  document.querySelector('#workbench-help-dialog .workbench-popup-close')?.click();
+  queueMicrotask(openFirstProjectGuide);
+});
 elements.unsavedkeep.addEventListener('click', closeUnsavedChangeGuard);
 elements.unsavedchangedialog.addEventListener('cancel', (event) => {
   event.preventDefault();

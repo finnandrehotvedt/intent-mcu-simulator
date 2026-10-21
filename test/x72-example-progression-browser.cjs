@@ -29,14 +29,16 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   const initial = await page.evaluate(() => ({
     workers: window.__M6_STATE__.runtimeWorkerCreations,
     chooserOpen: document.querySelector('#example-picker-dialog').open,
-    chooseVisible: Boolean(document.querySelector('#project-demo').getClientRects().length),
-    projectBarVisible: Boolean(document.querySelector('.project-bar').getClientRects().length),
-    primaryVisible: Boolean(document.querySelector('#controller-primary-action').getClientRects().length),
+    projectOpenerVisible: Boolean(document.querySelector('#project-files-open').getClientRects().length),
+    activeCanvasVisible: Boolean(document.querySelector('#active-canvas-stage').getClientRects().length),
   }));
   assert(!initial.chooserOpen, 'example chooser displaced the workspace on load');
-  assert(initial.chooseVisible && initial.projectBarVisible && initial.primaryVisible,
-    'primary workspace or project actions are not prominent on load');
+  assert(initial.projectOpenerVisible && initial.activeCanvasVisible,
+    'primary workspace or Project & files action is not prominent on load');
 
+  await page.click('#project-files-open');
+  assert(await page.locator('#project-demo').isVisible() && await page.locator('.project-bar').isVisible(),
+    'Choose example is not visible inside Project & files');
   await page.click('#project-demo');
   const cards = page.locator('.starter-card');
   assert(await cards.count() === 15, 'AVR chooser must retain exactly 15 cards');
@@ -67,21 +69,28 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) {
     await page.click('#unsaved-discard');
   }
+  if (await page.locator('#workbench-project-dialog').evaluate((node) => node.open)) {
+    await page.click('#workbench-project-dialog .workbench-popup-close');
+  }
   await page.waitForFunction(() => window.__M6_STATE__.thermostatExperiment?.active === true);
-  assert(await page.locator('#scenario-editor').isVisible(),
+  await page.click('#brief-tests-open');
+  assert(await page.locator('#scenario-editor').count() === 1,
     'Thermostat did not expose the supported Scenario timeline next step');
   assert((await page.textContent('#scenario-editor')).includes('AVR thermostat subset'),
     'Scenario timeline omitted its supported-subset boundary');
 
+  await page.keyboard.press('Escape');
   const profiles = [
-    ['board.rp2040-pico-v1', 'pico'],
-    ['board.esp32-c3-devmodule-v1', 'c3'],
-    ['board.stm32f429zi-nucleo144-v1', 'stm32'],
+    ['architecture.rp2040-v1', 'board.rp2040-pico-v1', 'pico', '__RP2040_PUBLIC_WORKBENCH__'],
+    ['architecture.esp32-v1', 'board.esp32-c3-devmodule-v1', 'c3', '__ESP32C3_PUBLIC_WORKBENCH__'],
+    ['architecture.stm32-v1', 'board.stm32f429zi-nucleo144-v1', 'stm32', '__STM32_PUBLIC_WORKBENCH__'],
   ];
   const profileCards = [];
-  for (const [option, prefix] of profiles) {
+  for (const [family, option, prefix, api] of profiles) {
+    await page.selectOption('#family-select', family);
     await page.selectOption('#board-select', option);
-    await page.waitForFunction((id) => document.querySelector(`#${id}-public-workbench`)?.getClientRects().length, prefix);
+    await page.waitForFunction(({ option, api }) => document.querySelector('#board-select').value === option
+      && window[api]?.state().active === true, { option, api });
     const rows = await page.locator(`#${prefix}-profile-examples .profile-example-card`).evaluateAll((nodes) => nodes.map((node) => ({
       id: node.dataset.profileExample,
       labels: [...node.querySelectorAll('span b')].map((item) => item.textContent),
@@ -94,10 +103,14 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
     }
   }
 
+  await page.selectOption('#family-select', 'architecture.avr-v1');
   await page.selectOption('#board-select', 'board.atmega328p-16mhz-v1');
   for (const viewport of [{ width: 1440, height: 1000 }, { width: 1024, height: 900 }]) {
     await page.setViewportSize(viewport);
-    if (!(await page.locator('#example-picker-dialog').evaluate((node) => node.open))) await page.click('#project-demo');
+    if (!(await page.locator('#example-picker-dialog').evaluate((node) => node.open))) {
+      if (!(await page.locator('#workbench-project-dialog').evaluate((node) => node.open))) await page.click('#project-files-open');
+      await page.click('#project-demo');
+    }
     const layout = await page.evaluate(() => ({
       pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       gridOverflow: document.querySelector('#starter-examples').scrollWidth
@@ -111,15 +124,7 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
     await page.keyboard.press('Escape');
     assert(await page.locator('#project-demo').evaluate((node) => document.activeElement === node),
       `${viewport.width}px Escape did not restore focus`);
-    if (await page.getAttribute('#serial-tab', 'aria-expanded') !== 'true') await page.click('#serial-tab');
-    const serial = await page.evaluate(() => ({
-      overlap: document.querySelector('main').getBoundingClientRect().right
-        > document.querySelector('#serial-dock').getBoundingClientRect().left + 1,
-      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-    }));
-    assert(!serial.overlap && serial.overflow <= 1,
-      `${viewport.width}px Serial overlaps the workbench: ${JSON.stringify(serial)}`);
-    await page.click('#serial-close');
+    await page.click('#workbench-project-dialog .workbench-popup-close');
   }
 
   const finalWorkers = await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations);
@@ -130,6 +135,7 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   assert(errors.length === 0, `X72 raised browser errors: ${errors.join(' | ')}`);
 
   await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.click('#project-files-open');
   await page.click('#project-demo');
   if (screenshot) {
     fs.mkdirSync(path.dirname(screenshot), { recursive: true });

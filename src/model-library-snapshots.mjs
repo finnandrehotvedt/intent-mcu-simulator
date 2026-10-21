@@ -28050,7 +28050,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "bebd85e7a091aef0cbb4a0c6bd3e22ec97c9941de593d990b6cbed2a71ee07ea"
+      "sha256": "0b05bc277222fe3c8c094d5d9d9247b6b39c9c89880cbeb8448bd2cd00331a48"
     },
     {
       "path": "src/rp2040-snapshot-pacer.mjs",
@@ -28173,7 +28173,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "a0c44d8ed972d10088a0f29865fd89dc85280d12f6b3bd7c5ab62e3a8a09eb2c"
     }
   ],
-  "implementationSha256": "c6393b0f1852c76dc8ed79593fa2768d0ac32548e2a953c3a637d74f7e9694e9",
+  "implementationSha256": "d1b91cb8ffd6c6fa9c6c3b7f5fbc0be63841fa6cf45374547075a86790cf8fa7",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "current closure adds epoch-owned X48 lifecycle isolation; the prior X48 candidate and rc.95 X55 identity remain immutable migration-only",
@@ -28183,7 +28183,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x48-instruction-boundary-room.1-current",
     "semanticDisposition": "component semantics unchanged; X48 authority is bound to exact source, graph, plant, project, build, runtime, artifact and model identities"
   },
-  "manifestSha256": "a14562a2452eb76bad70e4eb0e9961967289d4610add0a239618c730ed77c73e",
+  "manifestSha256": "1a53105ca7a9fce91befa53270594d7121ff85a44b22287fbd4d8cb8415662a7",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",
