@@ -269,7 +269,7 @@ test('late digest completion cannot resurrect replay retired by invalidation', a
   });
 });
 
-test('shared UI remains outside locked model closure and has zero producer or persistence authority', async () => {
+test('X49 synthetic owner stays outside the closure while shared UI has no X49 producer authority', async () => {
   const [shell, owner, modelClosure] = await Promise.all([
     readFile(new URL('../src/shared-workbench-shell.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../src/x49-sensor-offset.mjs', import.meta.url), 'utf8'),
@@ -280,5 +280,6 @@ test('shared UI remains outside locked model closure and has zero producer or pe
   assert.match(shell, /Synthetic replay · not native/u);
   assert.doesNotMatch(`${owner}\n${shell}`, /localStorage|sessionStorage|indexedDB|serviceWorker/u);
   assert.doesNotMatch(`${owner}\n${shell}`, /fetch\(|postMessage\(|\/api\/build|\/api\/run|scenario/u);
-  assert.doesNotMatch(modelClosure, /x49-sensor-offset|shared-workbench-shell/u);
+  assert.doesNotMatch(modelClosure, /x49-sensor-offset/u);
+  assert.match(modelClosure, /shared-workbench-shell/u);
 });
