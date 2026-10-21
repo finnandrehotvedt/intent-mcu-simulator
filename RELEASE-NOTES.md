@@ -1,4 +1,30 @@
-# Intent MCU Simulator 1.1.0-rc.102
+# Intent MCU Simulator 1.1.0-rc.103
+
+## X55 partial bounded body geometry editor across four profiles
+
+This release adds one coherent, separate visual editor for the existing
+resistor and LED on AVR, Pico, ESP32-C3 and STM32. Width and height are
+strictly bounded to 80–100%, and corner softness to 0–100%. Preview does not
+mutate the project, Cancel restores the complete preview, Apply is one
+visual-only Undo/Redo transaction, and strict data-only Save/Open retains
+accepted geometry.
+
+Electrical pin and world anchors, named nets, wire routes, resistance, LED
+colour and forward voltage, source, artifact and runtime authority remain
+unchanged. Rendered leads overlap each accepted body edge without moving their
+electrical endpoints; the historical LED without body data retains its exact
+prior geometry. Arbitrary SVG/code upload, new parts and a general model or
+drawing editor remain unavailable. X55 stays partial.
+
+The reviewed candidate passed 60/60 targeted tests and reused accepted 58/58
+focused, 28/28 top-layout, 55/55 pretest, 423/423 full, 40/40 posttest,
+browser-extreme and exact-SHA Source CI evidence. Rc.103 performs 0 firmware
+Build, 0 Run, 0 Scenario and 0 worker. Status remains X **75/1/20** and P1
+**59/0/0**.
+
+---
+
+## 1.1.0-rc.102
 
 ## X55 partial finite LED outline appearance across four profiles
 

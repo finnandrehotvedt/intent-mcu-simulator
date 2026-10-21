@@ -2,6 +2,22 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.103 — 2026-10-21
+
+- Adds one coherent, bounded body editor for the existing resistor and LED
+  across AVR, Pico, ESP32-C3 and STM32: width and height are limited to
+  80–100%, and corner softness to 0–100%.
+- Keeps electrical anchors, world bounds, named nets, wire routes, electrical
+  properties, source, artifact and runtime authority unchanged. Preview is
+  non-mutating; Cancel is atomic; Apply is one visual-only Undo/Redo step; and
+  strict data-only Save/Open retains accepted values.
+- Connects rendered leads to every admitted body extreme while preserving the
+  historical default LED geometry. No arbitrary SVG/code upload, new part,
+  general model/drawing editor or X55 closure is claimed.
+- Reuses accepted 60/60 targeted, 58/58 focused, 28/28 top-layout, 55/55
+  pretest, 423/423 full, 40/40 posttest, browser-extreme and exact-SHA CI
+  evidence with 0 firmware Build, Run, Scenario or worker.
+
 ## 1.1.0-rc.102 — 2026-10-21
 
 - Adds two finite, original LED outline presets—Round 5 mm and Soft square—to

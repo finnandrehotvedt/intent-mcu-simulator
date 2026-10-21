@@ -68,12 +68,12 @@ const baselineProjectHashes = Object.freeze({
   'avr-active-buzzer': '999a45c11f65edf45e02d29815ab9df38d29534cb41c9609482cd1b3f9ae03d6',
   'avr-seven-segment': 'b8bbdca870e92d26026eef5ceb1219a1771f62422eb789fb8652180360b88733',
   'avr-rotary-encoder': 'b86effd37b2593b7740c903cb0916a821f826f32ce5e0723d7539f382478a817',
-  'pico-led-on': 'f0fcf03252715ed06a11c804da8a20d82562252af92a8266357f71ce72360ce1',
-  'pico-led-off': '32a9c93f5a44b3b5b5acc1181c0c5fd15f8b7a6d83b21f033f8bd7918f42d775',
-  'c3-led-on': '5f9c3059523bad3522f6cabaa64a2faa1a319d45a7055f17fffd2f6c3f17b3e8',
-  'c3-led-off': 'aed21ac47fb48d86f403c6d52d0405e530742cbfecb5ca73901e4a645e0efe0a',
-  'stm32-led-on': '92b7ccfe1fd4c17e93646800e705edf31acc28a4d377c0f25554ce9e83f5eb21',
-  'stm32-led-off': 'b4b6ba25385882f3c9f4764415b825ad44c4ff870c1ae5289ac4829b8e40b39d',
+  'pico-led-on': '264c514565c6106264ec1f1d25e21ba8278827b4541b31464588490726e4d44d',
+  'pico-led-off': 'd8369e2d6b162c56b347256d11aec5d9b2c6c1d68884c24822fe2a2881e7a183',
+  'c3-led-on': 'b1057cef5aa1834a80cef10f218ed386d59b3d946974d67d0d125ea6fc03177f',
+  'c3-led-off': '258dfd6212b9fa05cd44cf2f475c44b2cc1594806851aa1e1fadedcb64c9a4d2',
+  'stm32-led-on': 'be7b7508d22cfe5ece9477899d201d5b63ee464308e8bca91de401f4c5c8ca91',
+  'stm32-led-off': '583cc4927d716a9ce7808654d4422c1bbf7b786f4f5d0b2450cd41183d47bcb3',
 });
 const hash = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 

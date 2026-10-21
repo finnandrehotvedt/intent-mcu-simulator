@@ -1,8 +1,15 @@
-# Migration to 1.1.0-rc.102
+# Migration to 1.1.0-rc.103
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.103 recognizes the bounded body-geometry identity for the existing resistor
+and LED. Rc.102 files validate and migrate as data only; components, pins,
+nets, electrical properties and accepted layout remain intact while
+executable/runtime/verdict authority is cleared. Missing body geometry uses
+the historical 100/100/100 visual default. Fractional, nonfinite,
+out-of-range, unknown or authority-bearing fields fail closed.
 
 Rc.102 recognizes the finite all-profile LED-outline appearance identity.
 Existing rc.101 files are validated and migrate as data only; authored
