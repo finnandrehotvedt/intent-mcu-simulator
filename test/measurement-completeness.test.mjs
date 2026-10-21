@@ -70,6 +70,8 @@ test('registry enumerates all fifteen current downloadable schemas exactly once'
   assert.deepEqual(MEASUREMENT_PRODUCER_REGISTRY.reportOwners.map((item) => item.reportSchema), REPORT_SCHEMAS);
   assert.equal(new Set(MEASUREMENT_PRODUCER_REGISTRY.reportOwners.map((item) => item.producerId)).size, 15);
   assert.ok(MEASUREMENT_PRODUCER_REGISTRY.surfaceOwners.some(
+    (item) => item.reportSchema === 'intent-mcu-bounded-test-evidence@1'));
+  assert.ok(MEASUREMENT_PRODUCER_REGISTRY.surfaceOwners.some(
     (item) => item.reportSchema === 'intent-mcu-external-client-result@1'));
 });
 

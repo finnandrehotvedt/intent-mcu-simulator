@@ -24,8 +24,8 @@ const retainedReport = async () => JSON.parse(await readFile(new URL(
 test('X82 has one explicit finite-path adapter for every registered report and surface owner', () => {
   const owners = [...MEASUREMENT_PRODUCER_REGISTRY.reportOwners,
     ...MEASUREMENT_PRODUCER_REGISTRY.surfaceOwners];
-  assert.equal(owners.length, 27);
-  assert.equal(CHECKABLE_EVIDENCE_ADAPTERS.length, 27);
+  assert.equal(owners.length, 28);
+  assert.equal(CHECKABLE_EVIDENCE_ADAPTERS.length, 28);
   assert.deepEqual(new Set(CHECKABLE_EVIDENCE_ADAPTERS.map((item) => item.reportSchema)),
     new Set(owners.map((item) => item.reportSchema)));
   assert.ok(CHECKABLE_EVIDENCE_ADAPTERS.every((item) => item.adapterId.startsWith('x82-')));
@@ -146,7 +146,7 @@ test('X82 X34 paths match the canonical report producer without rewriting retain
     ['repeats[].adc.value', 'repeats[].voltage.value']);
 });
 
-test('X82 exercises every one of the 27 owner maps against its current native shape', async () => {
+test('X82 exercises every one of the 28 owner maps against its current native shape', async () => {
   const profile = 'board.atmega328p-16mhz-v1';
   const cases = [
     ['intent-mcu-regression-report@1', { results: [{ caseId: 'avr', actual: { scenariosPassed: 4 }, rawVirtualTime: { timebase: 'virtual-millisecond' } }] }, 1],
@@ -164,6 +164,7 @@ test('X82 exercises every one of the 27 owner maps against its current native sh
     ['intent-mcu-x36-failure-replay-report@1', { repeats: [{ repeat: 'A', fault: { instructionOrdinal: 9, address: 78 } }] }, 2],
     ['intent-mcu-x23-usart-response-report@1', { runs: [{ label: 'A', rxRequest: { value: 75 }, rxComplete: { cycle: 12 }, consumer: { d13: true, finalCycle: 20 } }] }, 2],
     ['intent-mcu-authored-scenario-report@1', { results: [{ scenarioId: 'a', virtualMilliseconds: 200, observed: { level: false, mode: 'OUTPUT' } }] }, 2],
+    ['intent-mcu-bounded-test-evidence@1', { observations: [{ scenarioId: 'a', virtualMilliseconds: 200, observed: { d13: false, serialText: 'READY' }, checks: { inputsComplete: true } }] }, 3],
     ['intent-mcu-thermostat-observation-result@1', { virtualMilliseconds: 200, observed: { d13: false, d13Mode: 'OUTPUT' } }, 2],
     ['intent-mcu-scenario-observation-result@1', { virtualMilliseconds: 200, observed: { level: false, mode: 'OUTPUT' } }, 2],
     ['intent-mcu-x39-failure-location@1', { pin: { actualLevel: true }, observation: { actualMilliseconds: 200 } }, 1],
@@ -177,7 +178,7 @@ test('X82 exercises every one of the 27 owner maps against its current native sh
     ['intent-mcu-external-client-result@1', { authoritativeResult: { result: { observation: { virtualMilliseconds: 200, observed: { d13: false } } } } }, 1],
     ['intent-mcu-control-runtime-evidence@1', { models: 8, fields: 11 }, 0],
   ];
-  assert.equal(cases.length, 27);
+  assert.equal(cases.length, 28);
   for (const [schema, shape, expectedKnown] of cases) {
     const report = await createCheckableEvidenceReport({ schema, profile, ...shape });
     const knownRows = report.measurements.filter((item) => item.value.state === 'known');

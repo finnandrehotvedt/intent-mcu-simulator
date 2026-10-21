@@ -23,6 +23,7 @@ const REPORT_OWNERS = [
 ];
 
 const SURFACE_OWNERS = [
+  ['intent-mcu-bounded-test-evidence@1', 'bounded-thermostat-suite-avr', 'actual-runtime', 'reset-epoch-sequence', ['input', 'gpio', 'serial']],
   ['intent-mcu-thermostat-observation-result@1', 'thermostat-observation-avr', 'actual-runtime', 'virtual-millisecond', ['input', 'gpio', 'serial']],
   ['intent-mcu-scenario-observation-result@1', 'scenario-observation-avr', 'actual-runtime', 'virtual-millisecond', ['input', 'gpio']],
   ['intent-mcu-x39-failure-location@1', 'x39-failure-location', 'derived-projection', 'virtual-millisecond', ['source-observation']],
@@ -62,6 +63,7 @@ const REQUIRED_IDENTITIES = Object.freeze(Object.fromEntries([
   ['intent-mcu-thermostat-observation-result@1', ['source', 'artifact']],
   ['intent-mcu-scenario-observation-result@1', ['source', 'artifact']],
   ['intent-mcu-x40-avr-shared-timeline@1', ['source', 'artifact']],
+  ['intent-mcu-bounded-test-evidence@1', ['source', 'artifact']],
 ]));
 
 const exactKeys = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
@@ -115,7 +117,7 @@ function provenance(report) {
     ['report-schema', report.schema],
     ['semantic-report', report.semanticSha256],
     ['project', report.projectSha256 ?? report.bindings?.projectSha256],
-    ['source', report.sourceSha256 ?? report.bindings?.sourceSha256],
+    ['source', report.sourceSha256 ?? report.sourceIdentity ?? report.bindings?.sourceSha256],
     ['artifact', report.artifactSha256 ?? report.artifactIdentity ?? report.artifactIdentitySha256
       ?? report.bindings?.artifactIdentitySha256],
     ['topology', report.topologySha256 ?? report.graphSha256],
@@ -237,6 +239,59 @@ function fullRetentionFacts(retained, dropped, proof, { sampled, samplingStrateg
 }
 
 function explicitOwnerFacts(report, channelId) {
+  if (report.schema === 'intent-mcu-bounded-test-evidence@1') {
+    const observations = report.observations;
+    const hash = /^[a-f0-9]{64}$/u;
+    const statuses = new Set(['passed', 'failed', 'indeterminate', 'unsupported']);
+    const validTop = Array.isArray(observations) && observations.length === 4
+      && new Set(observations.map((item) => item?.scenarioId)).size === observations.length
+      && hash.test(report.sourceIdentity ?? '') && hash.test(report.artifactIdentity ?? '')
+      && Number.isSafeInteger(report.projectGeneration) && report.projectGeneration >= 1
+      && Number.isSafeInteger(report.runtimeGeneration) && report.runtimeGeneration >= 1
+      && report.outcome?.schema === 'intent-mcu-experiment-outcome@1'
+      && report.outcome?.jobStatus === 'completed' && report.outcome?.evidenceStatus === 'complete'
+      && statuses.has(report.status) && report.status === report.outcome.academicStatus
+      && report.jobStatus === 'completed'
+      && observations.some((item) => item?.scenarioId === report.primaryObservation?.scenarioId
+        && item?.status === report.primaryObservation?.status);
+    const validRows = validTop && observations.every((item) => {
+      const retention = item.retention;
+      const retentionValid = retention === undefined || (NON_NEGATIVE(retention.inputEventsDropped)
+        && NON_NEGATIVE(retention.serialEventsDropped)
+        && retention.inputEventsDropped === 0 && retention.serialEventsDropped === 0);
+      return item?.schema === 'intent-mcu-thermostat-observation-result@1'
+        && item.experimentId === report.experimentId && typeof item.scenarioId === 'string'
+        && statuses.has(item.status) && item.status === item.outcome?.academicStatus
+        && item.outcome?.schema === 'intent-mcu-experiment-outcome@1'
+        && item.outcome?.jobStatus === 'completed' && item.outcome?.evidenceStatus === 'complete'
+        && Number.isFinite(item.virtualMilliseconds) && item.virtualMilliseconds >= 0
+        && item.checks?.timeInWindow === true && item.checks?.inputsComplete === true
+        && item.checks?.pinObserved === true && item.checks?.serialObserved === true
+        && Array.isArray(item.observed?.inputControls) && item.observed.inputControls.length > 0
+        && item.observed.inputControls.every((control) => typeof control?.componentId === 'string'
+          && typeof control?.key === 'string' && Number.isSafeInteger(control?.targetCycle))
+        && item.observed?.d13Mode === 'OUTPUT' && typeof item.observed?.d13 === 'boolean'
+        && typeof item.observed?.serialText === 'string' && item.observed.serialText.length > 0
+        && retentionValid;
+    });
+    if (!validRows) return null;
+    const aggregate = observations.some((item) => item.status === 'failed') ? 'failed'
+      : observations.some((item) => item.status === 'indeterminate') ? 'indeterminate'
+      : observations.some((item) => item.status === 'unsupported') ? 'unsupported'
+      : observations.every((item) => item.status === 'passed') ? 'passed' : 'indeterminate';
+    if (aggregate !== report.status) return null;
+    if (channelId === 'input') return fullRetentionFacts(
+      observations.reduce((count, item) => count + item.observed.inputControls.length, 0), 0,
+      'bounded-test-evidence@1 retains producer-confirmed complete input controls for every reset-isolated row',
+      { sampled: false, samplingStrategy: 'full retained input-control set per scenario' });
+    if (channelId === 'gpio') return fullRetentionFacts(observations.length, 0,
+      'bounded-test-evidence@1 retains one producer-confirmed D13 observation per scenario',
+      { sampled: true, samplingStrategy: 'one requirement-owned pin observation per scenario' });
+    if (channelId === 'serial') return fullRetentionFacts(observations.length, 0,
+      'bounded-test-evidence@1 retains producer-confirmed Serial evidence for every scenario',
+      { sampled: false, samplingStrategy: 'full retained Serial text per scenario' });
+    return null;
+  }
   if (report.schema === 'intent-mcu-authored-scenario-report@1') {
     const results = report.results;
     if (!Array.isArray(results) || !NON_NEGATIVE(report.resultCount)
