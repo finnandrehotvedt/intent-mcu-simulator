@@ -63,17 +63,25 @@ test('paused worker accepts one bound A1 schedule; overlap, Reset and Dispose fa
   const request = createX47RepeatableApplyRequest({ transactionId: 'x47-ramp-worker',
     canonicalScheduleSha256: digest, binding, expectedBaseCycle: 0, record }, authority,
   ready.runtimeIdentity);
+  const wrongBase = { ...structuredClone(request), expectedBaseCycle: 1 };
+  const rejectedBase = await send({ command: 'x47-repeatable-apply', request: wrongBase },
+    (value) => value.kind === 'x47-repeatable-rejected');
+  assert.equal(rejectedBase.reason, 'X47_REPEATABLE_PAUSED_BASE_REQUIRED');
+  assert.equal(rejectedBase.paused, true);
   const accepted = await send({ command: 'x47-repeatable-apply', request },
     (value) => value.kind === 'x47-repeatable-accepted');
   assert.equal(accepted.retained, 3); assert.equal(accepted.dropped, 0);
   assert.deepEqual(accepted.events.map((item) => item.targetCycle), [10, 20, 30]);
   const overlap = await send({ command: 'x47-repeatable-apply', request },
-    (value) => value.kind === 'error');
-  assert.equal(overlap.message, 'X47_REPEATABLE_OVERLAP');
+    (value) => value.kind === 'x47-repeatable-rejected');
+  assert.equal(overlap.reason, 'X47_REPEATABLE_OVERLAP');
+  assert.equal(overlap.paused, true);
+  assert.equal(overlap.transactionId, request.transactionId);
+  assert.equal(overlap.canonicalScheduleSha256, request.canonicalScheduleSha256);
   await send({ command: 'reset' }, (value) => value.kind === 'reset');
   const stale = await send({ command: 'x47-repeatable-apply', request },
-    (value) => value.kind === 'error');
-  assert.equal(stale.message, 'X47_REPEATABLE_RUNTIME_UNAVAILABLE');
+    (value) => value.kind === 'x47-repeatable-rejected');
+  assert.equal(stale.reason, 'X47_REPEATABLE_RUNTIME_UNAVAILABLE');
 
   const readyAfterReset = await send({ command: 'init', hex: ':00000001FF', circuit: runtimeCircuit,
     modelLibraryLock: CURRENT_MODEL_LIBRARY_LOCK,

@@ -33,7 +33,7 @@ test('later approved increments preserve X49 runtime bytes and never import its 
   const immutableRuntime = {
     'src/atmega328p-adapter.mjs': '65136d0b607336db992ba7dab81447813331b103136ec7c5348e6fc1ca9300de',
     'src/runtime-kernel.mjs': '8ae935906e1981916b7bc1ab7c2243c6624404b232d1844e1d690c632172bc6e',
-    'src/simulator.worker.mjs': '08ab74983a6fc0ed60edb3bbb6dfb2e453b225381150feb7bfec3a1d28b1dc3f',
+    'src/simulator.worker.mjs': '024f2c8bcb2993e48c8e17efa730e3bc2f5900dc20a2eb406d3902931800436a',
   };
   for (const [path, hash] of Object.entries(immutableRuntime)) {
     const bytes = await readFile(new URL(`../${path}`, import.meta.url));

@@ -11251,6 +11251,22 @@ async function loadArtifact(hex, artifactIdentity, {
         window.__X47_REPEATABLE_INPUTS__?.accepted?.(data);
         return;
       }
+      if (data.kind === 'x47-repeatable-rejected') {
+        const pending = x47RepeatablePending;
+        if (!pending || pending.worker !== loadWorker || pending.workerToken !== token
+            || pending.transactionId !== data.transactionId
+            || pending.canonicalScheduleSha256 !== data.canonicalScheduleSha256
+            || lifecycle.phase !== 'paused' || data.paused !== true
+            || data.cycle !== x47WorkerStatus?.cycle
+            || !/^X47_REPEATABLE_[A-Z_]+$/u.test(data.reason ?? '')
+            || !sameRuntimeIdentity(identity, pending.runtimeIdentity)) {
+          throw new Error('X47_REPEATABLE_REJECTION_STALE');
+        }
+        x47RepeatablePending = null;
+        renderX47Integration({ ...x47UiOwner.snapshot(),
+          reason: `Repeatable input rejected: ${data.reason}. The paused worker remains current.` });
+        return;
+      }
       if (data.kind === 'x47-accepted') {
         renderX47Integration(x47UiOwner.accept({ workerToken: token, runtimeIdentity: identity,
           receipt: data.receipt, executionReceipt: data.executionReceipt }));

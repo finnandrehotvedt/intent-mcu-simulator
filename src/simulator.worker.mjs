@@ -325,46 +325,61 @@ async function handleMessage(data) {
       emit({ kind: 'x47-accepted', receipt, executionReceipt:
         kernel.x47ExecutionReceipt(receipt.transactionId) });
     } else if (data.command === 'x47-repeatable-apply') {
-      if (isRp2040() || !kernel || !x47RepeatableAuthority || !runtimeIdentity) {
-        throw new Error('X47_REPEATABLE_RUNTIME_UNAVAILABLE');
+      const transactionId = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(
+        data.request?.transactionId ?? '',
+      ) ? data.request.transactionId : null;
+      const canonicalScheduleSha256 = /^[a-f0-9]{64}$/u.test(
+        data.request?.canonicalScheduleSha256 ?? '',
+      ) ? data.request.canonicalScheduleSha256 : null;
+      try {
+        if (isRp2040() || !kernel || !x47RepeatableAuthority || !runtimeIdentity) {
+          throw new Error('X47_REPEATABLE_RUNTIME_UNAVAILABLE');
+        }
+        if (!exactKeys(data, ['command', 'request'])) throw new Error('X47_REPEATABLE_COMMAND_INVALID');
+        const request = validateX47RepeatableApplyRequest(
+          data.request, x47RepeatableAuthority, runtimeIdentity,
+        );
+        const currentCycle = kernel.adapter.cpu.cycles;
+        if (!kernel.adapter.paused || request.expectedBaseCycle !== currentCycle) {
+          throw new Error('X47_REPEATABLE_PAUSED_BASE_REQUIRED');
+        }
+        if (x47RepeatablePending && currentCycle <= x47RepeatablePending.endCycle) {
+          throw new Error('X47_REPEATABLE_OVERLAP');
+        }
+        const graphTarget = kernel.circuit.graph.components.find(
+          (item) => item.id === 'temperature-sensor-1',
+        );
+        if (graphTarget?.type !== 'potentiometer.linear-v1'
+            || !Number.isFinite(graphTarget.controls?.position)) {
+          throw new Error('X47_REPEATABLE_RUNTIME_GRAPH');
+        }
+        const before = kernel.inputs.snapshot();
+        if (before.pending.length || before.log.length + request.schedule.length > before.retention.limit) {
+          throw new Error('X47_REPEATABLE_INPUT_CONFLICT');
+        }
+        const accepted = request.schedule.map((event, eventIndex) => {
+          const targetCycle = request.expectedBaseCycle + event.offsetCycles;
+          const position = event.positionNumerator / event.positionDenominator;
+          const queued = kernel.queueControlAtCycle(event.componentId, event.key, position, targetCycle);
+          return { eventIndex, offsetCycles: event.offsetCycles, targetCycle,
+            temperatureC: event.temperatureC, positionNumerator: event.positionNumerator,
+            positionDenominator: event.positionDenominator, queueSequence: queued.sequence };
+        });
+        x47RepeatablePending = { transactionId: request.transactionId,
+          endCycle: accepted.at(-1).targetCycle };
+        emit({ kind: 'x47-repeatable-accepted', schema: 'intent-mcu-x47-repeatable-queue@1',
+          transactionId: request.transactionId,
+          canonicalScheduleSha256: request.canonicalScheduleSha256,
+          binding: request.binding, baseCycle: request.expectedBaseCycle,
+          events: accepted, retained: accepted.length, dropped: 0 });
+      } catch (error) {
+        const snapshot = kernel?.snapshot() ?? { cycle: 0, instructions: 0, paused: true,
+          circuit: { leds: [] } };
+        emit({ kind: 'x47-repeatable-rejected', ...snapshot,
+          transactionId, canonicalScheduleSha256,
+          reason: error instanceof Error ? error.message : String(error),
+          led: snapshot.circuit.leds.some((item) => item.on) });
       }
-      if (!exactKeys(data, ['command', 'request'])) throw new Error('X47_REPEATABLE_COMMAND_INVALID');
-      const request = validateX47RepeatableApplyRequest(
-        data.request, x47RepeatableAuthority, runtimeIdentity,
-      );
-      const currentCycle = kernel.adapter.cpu.cycles;
-      if (!kernel.adapter.paused || request.expectedBaseCycle !== currentCycle) {
-        throw new Error('X47_REPEATABLE_PAUSED_BASE_REQUIRED');
-      }
-      if (x47RepeatablePending && currentCycle <= x47RepeatablePending.endCycle) {
-        throw new Error('X47_REPEATABLE_OVERLAP');
-      }
-      const graphTarget = kernel.circuit.graph.components.find(
-        (item) => item.id === 'temperature-sensor-1',
-      );
-      if (graphTarget?.type !== 'potentiometer.linear-v1'
-          || !Number.isFinite(graphTarget.controls?.position)) {
-        throw new Error('X47_REPEATABLE_RUNTIME_GRAPH');
-      }
-      const before = kernel.inputs.snapshot();
-      if (before.pending.length || before.log.length + request.schedule.length > before.retention.limit) {
-        throw new Error('X47_REPEATABLE_INPUT_CONFLICT');
-      }
-      const accepted = request.schedule.map((event, eventIndex) => {
-        const targetCycle = request.expectedBaseCycle + event.offsetCycles;
-        const position = event.positionNumerator / event.positionDenominator;
-        const queued = kernel.queueControlAtCycle(event.componentId, event.key, position, targetCycle);
-        return { eventIndex, offsetCycles: event.offsetCycles, targetCycle,
-          temperatureC: event.temperatureC, positionNumerator: event.positionNumerator,
-          positionDenominator: event.positionDenominator, queueSequence: queued.sequence };
-      });
-      x47RepeatablePending = { transactionId: request.transactionId,
-        endCycle: accepted.at(-1).targetCycle };
-      emit({ kind: 'x47-repeatable-accepted', schema: 'intent-mcu-x47-repeatable-queue@1',
-        transactionId: request.transactionId,
-        canonicalScheduleSha256: request.canonicalScheduleSha256,
-        binding: request.binding, baseCycle: request.expectedBaseCycle,
-        events: accepted, retained: accepted.length, dropped: 0 });
     } else if (data.command === 'x47-cancel') {
       if (isRp2040()) throw new Error('X47_PROFILE_UNAVAILABLE');
       if (!exactKeys(data, ['command', 'transactionId', 'binding'])) {
