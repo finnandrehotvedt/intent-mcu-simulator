@@ -54,6 +54,7 @@ export const CANDIDATE_EDITOR_HISTORY_LIMIT = 64;
 const clone = (value) => structuredClone(value);
 const failure = (code, revision, details = []) => ({ ok: false, code, revision, details });
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
+const MOMENTARY_BUTTON_TYPE = 'button.momentary-v1';
 const CANDIDATE_COMPONENT_TYPES = new Set([
   GROUND_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
   LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
@@ -606,6 +607,21 @@ export class CandidateEditorSession {
           if (!component) return failure('EDITOR_COMPONENT_MISSING', this.revision);
           if (component.type === GROUND_REFERENCE_TYPE) {
             return failure('CANDIDATE_EDITOR_GROUND_IMMUTABLE', this.revision);
+          }
+          if (component.type === MOMENTARY_BUTTON_TYPE) {
+            if (command.key !== 'pressed' || typeof command.value !== 'boolean') {
+              return failure('PROJECT_CONTACT_BUTTON_STATE', this.revision);
+            }
+            component.controls.pressed = command.value;
+            const projected = draft.project.circuit.components.find(
+              (item) => item.id === component.id,
+            );
+            if (!projected || projected.type !== MOMENTARY_BUTTON_TYPE) {
+              return failure('PROJECT_CONTACT_BASE_GRAPH_MISMATCH', this.revision);
+            }
+            projected.controls.pressed = command.value;
+            runtimeDirty = true;
+            break;
           }
           if (component.type === TOGGLE_SWITCH_TYPE) {
             if (command.key !== 'closed' || typeof command.value !== 'boolean') {
