@@ -1,4 +1,29 @@
-# Intent MCU Simulator 1.1.0-rc.97
+# Intent MCU Simulator 1.1.0-rc.98
+
+## X43 partial AVR observed stack address depth
+
+This release publishes the independently reviewed AVR-only observed-stack
+slice on top of the existing Runtime profile interval. Instruments reports the
+current stack pointer, the minimum pointer during one explicit worker-bound
+interval and the minimum pointer since Reset. Depth is the bounded address
+distance `0x08ff - SP`; it is not live-byte occupancy.
+
+The accepted native proof used one compiled nested-call fixture on one exact
+artifact/model/generation/worker binding. The artifact contained 9 CALL/RCALL,
+17 PUSH and 5 RET/RETI instructions. The worker observed minimum SP `0x08e0`,
+31 bytes maximum address depth and 400,001 captured interval samples. Pause
+froze the capture and same-worker Reset restored `0x08ff`, depth 0 and cleared
+the interval.
+
+Dynamic SRAM, heap, free SRAM and a true memory high-water mark remain
+unavailable. Other controller profiles gain no equivalent support, so X43
+remains partial. Rc.98 adds no firmware Build, Run or scenario; it reuses the
+accepted native proof. Counts remain X **73 complete / 3 partial / 20
+planned**, P1 **59/0/0**, with cumulative producer accounting **23/26/0**.
+
+---
+
+## 1.1.0-rc.97
 
 ## X49 Support status correction
 

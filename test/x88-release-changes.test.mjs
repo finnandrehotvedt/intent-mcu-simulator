@@ -28,26 +28,26 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc96 to rc97 documentation-only X49 correction bytes', async () => {
+test('X88 owner binds canonical rc97 to rc98 reviewed X43 observed-stack bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.97');
+  assert.equal(release.version, '1.1.0-rc.98');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
   assert(registry.ids.includes('X47'));
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.96', current: '1.1.0-rc.97' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.97', current: '1.1.0-rc.98' });
   assert.deepEqual(value.changes, [
     {
-      id: 'X49', classification: 'changed', capabilities: ['intent-mcu-x49-public-runner@1'],
-      contracts: ['x49-avr-temperature-offset-v2'],
-      summary: "Corrects Support status for X49's original criterion: one specified AVR baseline 0 versus +1 degree ideal sensor-deviation comparison, with no calibration, durable offset, drift, generic tolerance or factory guarantee.",
+      id: 'X43', classification: 'changed', capabilities: ['intent-mcu-x43-avr-observation-interval@1', 'intent-mcu-x43-avr-observed-stack@1'],
+      contracts: ['x43-avr-observation-interval-v1', 'x43-avr-observed-stack-v1'],
+      summary: 'Publishes reviewed AVR observed stack address depth: current SP, interval minimum and since-reset minimum with exact worker binding, Pause freeze and Reset clear; heap, free SRAM and true memory high-water remain unavailable.',
     },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records the reviewed rc.96 to rc.97 documentation-only X49 status correction; the release packet adds no firmware Build, Run or scenario and grants no new project, runtime, physical or verdict authority.',
+      summary: 'Records the reviewed rc.97 to rc.98 X43 observed-stack release; the release packet reuses accepted native evidence, adds no firmware Build, Run or scenario and grants no memory-content, heap, physical or verdict authority.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -110,7 +110,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.97');
+  assert.equal(discovery.identity.version, '1.1.0-rc.98');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

@@ -26,9 +26,9 @@ Save/Open never serializes or restores an interval.
   diagnostics for this browser/host only. They are not semantic time, a test
   result or a hardware benchmark.
 
-## Private observed-stack candidate after rc.97
+## Public observed-stack slice in rc.98
 
-The unreviewed private candidate adds a direct producer from avr8js 0.21.1
+The independently reviewed public slice adds a direct producer from avr8js 0.21.1
 `CPU.SP`. The ATmega328P runtime uses 2,048 SRAM bytes at data addresses
 `0x0100..0x08ff`; avr8js resets SP to `0x08ff`. The adapter samples SP after
 each executed instruction and the following `cpu.tick()`. That boundary also
@@ -44,11 +44,15 @@ minimum unavailable rather than producing an estimate. Reset and a new worker
 clear all history. Dynamic SRAM and heap remain **Unavailable**, and no other
 controller profile gains equivalent support.
 
-This candidate changes runtime telemetry and therefore uses a new current model
+This slice changes runtime telemetry and therefore uses a new current model
 identity. The accepted rc.97 identity remains allowlisted only for explicit
-data migration and cannot authorize execution under the candidate identity.
-The public rc.97 deployment remains unchanged and still exposes stack fields as
-unavailable until separate review and native acceptance.
+data migration and cannot authorize execution under the rc.98 identity.
+
+The accepted native fixture contained 9 CALL/RCALL, 17 PUSH and 5 RET/RETI
+instructions. On one exact artifact/model/generation/worker binding, the worker
+observed minimum SP `0x08e0`, 31 bytes maximum address depth and 400,001
+captured interval samples. Pause froze the captured interval and same-worker
+Reset restored SP/minimum SP to `0x08ff`, depth 0 and cleared interval authority.
 
 ## Lifecycle
 
@@ -85,6 +89,8 @@ deterministic browser fixture is presentation/lifecycle replay only; it does
 not compile or execute firmware and is not represented as another native run.
 The rc.92 release itself performs no Build, Run or scenario.
 
-This bounded proof does not supply dynamic SRAM, heap or stack measurements,
+This bounded proof supplies stack address-depth observation, not live stack
+occupancy. It does not supply dynamic SRAM, heap, free SRAM or a true memory
+high-water measurement,
 does not profile the other three public controller profiles and is not a
 physical-hardware benchmark. Those missing portions keep X43 partial.

@@ -33,10 +33,12 @@
     {
       "id": "X43",
       "capabilities": [
-        "intent-mcu-x43-avr-observation-interval@1"
+        "intent-mcu-x43-avr-observation-interval@1",
+        "intent-mcu-x43-avr-observed-stack@1"
       ],
       "contracts": [
-        "x43-avr-observation-interval-v1"
+        "x43-avr-observation-interval-v1",
+        "x43-avr-observed-stack-v1"
       ]
     },
     {

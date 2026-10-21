@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.98 — 2026-10-21
+
+- Publishes the reviewed AVR-only X43 observed-stack address-depth slice with
+  current SP, interval minimum and since-reset minimum from avr8js `CPU.SP`.
+- Preserves exact source/artifact/model/generation/worker binding, Pause freeze
+  and same-worker Reset clear; accepted native evidence observed minimum SP
+  `0x08e0`, 31 bytes maximum depth and 400,001 interval samples.
+- Explicitly does not claim live-byte occupancy, dynamic SRAM, heap, free SRAM,
+  true memory high-water, other-profile equivalence or physical hardware.
+- X43 remains partial. Status remains X **73 complete / 3 partial / 20
+  planned**, P1 **59/0/0**; the release adds no Build, Run or scenario and
+  cumulative accepted producer accounting is **23/26/0**.
+
 ## 1.1.0-rc.97 — 2026-10-21
 
 - Corrects stale Support wording so X49 is complete only against its original

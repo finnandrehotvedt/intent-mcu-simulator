@@ -1,8 +1,15 @@
-# Migration to 1.1.0-rc.97
+# Migration to 1.1.0-rc.98
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.98 adds transient current-worker X43 stack-pointer observations and a new
+current model-library identity with strict data-only migration from rc.97. It
+changes no project, package, compiler-artifact, cache or browser-storage schema.
+Existing learner-owned files require no conversion; migration clears executable
+and runtime authority and requires a fresh Build. Stack intervals and since-reset
+history are never saved or restored.
 
 Rc.97 changes Support and release metadata only. It changes no project,
 package, compiler-artifact, model-library, cache or browser-storage schema.
