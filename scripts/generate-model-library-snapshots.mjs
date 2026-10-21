@@ -13,6 +13,9 @@ import { controlContractsFor } from '../src/model-control-contracts.mjs';
 import * as existingSnapshots from '../src/model-library-snapshots.mjs';
 
 const { RETAINED_MODEL_LIBRARY_MANIFEST } = existingSnapshots;
+const PRE_X43_ELF_BOUNDARY_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X43_ELF_BOUNDARY_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_X43_CANONICAL_OWNER_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X43_CANONICAL_OWNER_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -184,15 +187,15 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x43-canonical-owner.1-current',
-  'intent-mcu-model-bundle-current-x43-canonical-owner-1@17',
+  '2.0.0-x43-elf-boundary.1-current',
+  'intent-mcu-model-bundle-current-x43-elf-boundary-1@18',
   currentImplementation,
   {
-    priorVersion: PRE_X43_CANONICAL_OWNER_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X43_CANONICAL_OWNER_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X43_ELF_BOUNDARY_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X43_ELF_BOUNDARY_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'explicit-data-only-migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component, electrical and runtime semantics are unchanged; strict allocator provenance accepts only realpath-verified absolute spellings of the exact pinned archive with exact malloc.o member',
-    presentationDisposition: 'no UI change; compiler-owned allocator provenance remains exact and fail-closed',
+    semanticDisposition: 'component and electrical semantics are unchanged; AVR static heap boundary requires matching linker symbols and exact contiguous writable SRAM load extent',
+    presentationDisposition: 'no UI change; saved real ELF parsing remains strict and fail-closed',
     baselineClosureDisposition: 'accepted public rc.98 identity remains immutable and migration-only',
   },
 );
@@ -201,6 +204,7 @@ const output = `// SPDX-License-Identifier: Apache-2.0
 // Generated immutable snapshots. Regenerate only through an explicitly reviewed library release.
 
 export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(retained, null, 2)});
+export const PRE_X43_ELF_BOUNDARY_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_ELF_BOUNDARY_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_CANONICAL_OWNER_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_CANONICAL_OWNER_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_LINKER_PROOF_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_LINKER_PROOF_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_HEAP_WORKER_PACKAGE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_HEAP_WORKER_PACKAGE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});

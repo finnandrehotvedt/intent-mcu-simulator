@@ -10,9 +10,12 @@ export const X43_AVR_HEAP_SAMPLE_SCHEMA = 'intent-mcu-x43-avr-heap-frontier-samp
 export const X43_AVR_HEAP_ALLOCATOR = AVR_ALLOCATOR_ID;
 
 const HEADER_BYTES = 52;
+const PROGRAM_BYTES = 32;
 const SECTION_BYTES = 40;
 const SYMBOL_BYTES = 16;
 const AVR_MACHINE = 83;
+const PT_LOAD = 1;
+const PF_READ_WRITE = 6;
 const SHT_SYMTAB = 2;
 const STB_GLOBAL = 1;
 const STT_NOTYPE = 0;
@@ -25,7 +28,7 @@ const RAMEND = 0x08ff;
 const HASH = /^[a-f0-9]{64}$/u;
 const TOKEN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u;
 const REQUIRED = Object.freeze([
-  '_end', '__brkval', '__flp', '__malloc_heap_start', '__malloc_heap_end',
+  '_end', '__heap_start', '__brkval', '__flp', '__malloc_heap_start', '__malloc_heap_end',
   '__malloc_margin', 'malloc', 'free',
 ]);
 
@@ -74,6 +77,31 @@ function symbolInSection(symbol, sections, allowEnd = false) {
     && symbol.value >= section.address
     && (allowEnd && symbol.size === 0 ? symbol.value <= end : symbolEnd <= end);
 }
+function staticHeapBoundary(symbol, programs, bytesLength, sections) {
+  const boundaries = [symbol._end, symbol.__heap_start];
+  if (boundaries.some((item) => item.binding !== STB_GLOBAL || item.type !== STT_NOTYPE
+      || item.other !== 0 || item.size !== 0 || item.sectionIndex === SHN_UNDEF
+      || item.sectionIndex >= sections.length || item.value < DATA_MARKER + SRAM_START
+      || item.value - DATA_MARKER > RAMEND)) return null;
+  const associatedSection = sections[boundaries[0].sectionIndex];
+  if (boundaries[1].sectionIndex !== boundaries[0].sectionIndex
+      || !associatedSection || (associatedSection.flags & 2) !== 0) return null;
+  const writableLoads = programs.filter((program) => program.type === PT_LOAD
+    && (program.flags & 2) !== 0).sort((left, right) => left.virtualAddress - right.virtualAddress);
+  if (!writableLoads.length || writableLoads.some((program) => program.flags !== PF_READ_WRITE
+      || program.memoryBytes < 1 || program.fileBytes > program.memoryBytes
+      || !bounded(program.offset, program.fileBytes, bytesLength)
+      || program.virtualAddress < DATA_MARKER + SRAM_START
+      || !Number.isSafeInteger(program.virtualAddress + program.memoryBytes)
+      || program.virtualAddress + program.memoryBytes > DATA_MARKER + RAMEND + 1)) return null;
+  if (writableLoads[0].virtualAddress !== DATA_MARKER + SRAM_START
+      || writableLoads.some((program, index) => index > 0
+        && program.virtualAddress !== writableLoads[index - 1].virtualAddress
+          + writableLoads[index - 1].memoryBytes)) return null;
+  const exactEnd = writableLoads.at(-1).virtualAddress + writableLoads.at(-1).memoryBytes;
+  if (boundaries.some((item) => item.value !== exactEnd)) return null;
+  return exactEnd - DATA_MARKER;
+}
 function binding(value) {
   if (!exactKeys(value, ['artifactIdentity', 'modelImplementationSha256', 'modelExecutionContextSha256'])
       || !HASH.test(value.artifactIdentity ?? '') || !HASH.test(value.modelImplementationSha256 ?? '')
@@ -95,6 +123,19 @@ export async function parseX43AvrHeapSymbols(artifact, rawBinding, cryptoImpl = 
       || bytes[4] !== 1 || bytes[5] !== 1 || bytes[6] !== 1
       || view.getUint16(18, true) !== AVR_MACHINE) reject('X43_HEAP_ELF_HEADER_INVALID');
   const sectionOffset = view.getUint32(32, true);
+  const programOffset = view.getUint32(28, true);
+  const programEntryBytes = view.getUint16(42, true);
+  const programCount = view.getUint16(44, true);
+  if (programEntryBytes !== PROGRAM_BYTES || programCount < 1 || programCount > 128
+      || !bounded(programOffset, programEntryBytes * programCount, bytes.length)) {
+    reject('X43_HEAP_ELF_PROGRAM_TABLE_INVALID');
+  }
+  const programs = Array.from({ length: programCount }, (_, index) => {
+    const offset = programOffset + index * programEntryBytes;
+    return { type: view.getUint32(offset, true), offset: view.getUint32(offset + 4, true),
+      virtualAddress: view.getUint32(offset + 8, true), fileBytes: view.getUint32(offset + 16, true),
+      memoryBytes: view.getUint32(offset + 20, true), flags: view.getUint32(offset + 24, true) };
+  });
   const sectionEntryBytes = view.getUint16(46, true);
   const sectionCount = view.getUint16(48, true);
   if (sectionEntryBytes !== SECTION_BYTES || sectionCount < 1 || sectionCount > 512
@@ -103,7 +144,8 @@ export async function parseX43AvrHeapSymbols(artifact, rawBinding, cryptoImpl = 
   }
   const sections = Array.from({ length: sectionCount }, (_, index) => {
     const offset = sectionOffset + index * sectionEntryBytes;
-    return { index, type: view.getUint32(offset + 4, true), address: view.getUint32(offset + 12, true),
+    return { index, type: view.getUint32(offset + 4, true), flags: view.getUint32(offset + 8, true),
+      address: view.getUint32(offset + 12, true),
       offset: view.getUint32(offset + 16, true), size: view.getUint32(offset + 20, true),
       link: view.getUint32(offset + 24, true), entryBytes: view.getUint32(offset + 36, true) };
   });
@@ -160,11 +202,8 @@ export async function parseX43AvrHeapSymbols(artifact, rawBinding, cryptoImpl = 
       return unavailable('allocator-elf-function-proof-invalid');
     }
   }
-  if (symbol._end.binding !== STB_GLOBAL || symbol._end.type !== STT_NOTYPE
-      || symbol._end.other !== 0 || symbol._end.sectionIndex === SHN_UNDEF
-      || symbol._end.sectionIndex >= sections.length || !symbolInSection(symbol._end, sections, true)
-      || symbol._end.value < DATA_MARKER + SRAM_START
-      || symbol._end.value - DATA_MARKER > RAMEND) {
+  const staticHeapStart = staticHeapBoundary(symbol, programs, bytes.length, sections);
+  if (staticHeapStart === null) {
     return unavailable('allocator-elf-static-end-invalid');
   }
   const addresses = Object.fromEntries(objects.map((name) => [name,
@@ -174,7 +213,6 @@ export async function parseX43AvrHeapSymbols(artifact, rawBinding, cryptoImpl = 
       && range.start < other.end && other.start < range.end))) {
     return unavailable('allocator-elf-object-overlap');
   }
-  const staticHeapStart = dataAddress(symbol._end, 0, 'X43_HEAP_ELF_STATIC_END_SRAM_BOUNDS');
   if (ranges.some(({ end }) => end > staticHeapStart)) {
     return unavailable('allocator-elf-static-boundary-invalid');
   }
