@@ -25,6 +25,7 @@ import {
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_X55_BODY_LEAD_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_BODY_EDITOR_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X47_MOMENTARY_CONTROL_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X47_REPEATABLE_REJECTION_CURRENT_MODEL_LIBRARY_LOCK,
@@ -166,7 +167,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
   for (const [lock, expected] of [
     [RETAINED_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-retained-rc72@2'],
     [CURRENT_MODEL_LIBRARY_LOCK,
-      'intent-mcu-model-bundle-current-x55-bounded-body-editor-1@20'],
+      'intent-mcu-model-bundle-current-x55-bounded-body-editor-2@21'],
   ]) {
     const avr = validateCircuit(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
     assert.equal(avr.ok, true);
@@ -191,7 +192,11 @@ test('production electrical and runtime paths dispatch through the exact selecte
 
 test('prior current locks remain exact and data-migratable but cannot authorize execution', () => {
   const historical = historicalModelLibraryManifests();
-  assert.equal(historical.length, 17);
+  assert.equal(historical.length, 18);
+  assert.equal(normalizeModelLibraryLock(PRE_X55_BODY_LEAD_FIX_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
+  assert.equal(modelLibraryExecutionIdentity(
+    PRE_X55_BODY_LEAD_FIX_CURRENT_MODEL_LIBRARY_LOCK,
+  ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
   assert.equal(normalizeModelLibraryLock(PRE_X55_BODY_EDITOR_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
   assert.equal(modelLibraryExecutionIdentity(
     PRE_X55_BODY_EDITOR_CURRENT_MODEL_LIBRARY_LOCK,

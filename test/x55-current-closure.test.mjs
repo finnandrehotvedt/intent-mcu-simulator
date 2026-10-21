@@ -8,10 +8,12 @@ import test from 'node:test';
 
 import {
   CURRENT_MODEL_LIBRARY_MANIFEST,
+  PRE_X55_BODY_LEAD_FIX_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST,
 } from '../src/model-library-snapshots.mjs';
 import {
+  PRE_X55_BODY_LEAD_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_CURRENT_MODEL_LIBRARY_LOCK,
   modelLibraryExecutionIdentity,
@@ -46,6 +48,22 @@ test('X55 current identity explicitly owns every newly executed appearance path'
     const source = await readFile(new URL(`../${path}`, import.meta.url), 'utf8');
     assert.match(source, /component-appearance\.mjs/u, `${path} hides its X55 dependency`);
   }
+});
+
+test('first bounded-body identity is immutable migration-only after lead continuity correction', () => {
+  assert.equal(PRE_X55_BODY_LEAD_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    '2.0.0-x55-bounded-body-editor.1-current');
+  assert.equal(PRE_X55_BODY_LEAD_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    'e2986e0870e6f3ee3e5897775c38eca5c740101beb46ba9336e3bb9785f04d25');
+  assert.equal(modelLibraryExecutionIdentity(
+    PRE_X55_BODY_LEAD_FIX_CURRENT_MODEL_LIBRARY_LOCK,
+  ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const preview = modelLibraryMigrationPreview(PRE_X55_BODY_LEAD_FIX_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(preview.ok, true);
+  assert.equal(preview.migrationRequired, true);
+  assert.deepEqual(preview.semanticChanges, []);
+  assert.deepEqual(preview.rendererChanges, []);
+  assert.equal(preview.unchanged.length, 25);
 });
 
 test('pre-X55 identity stays immutable and does not absorb X55 owners', () => {

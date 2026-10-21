@@ -136,10 +136,13 @@ function resistor(svg, definition, component, { appearancePreset = 'standard-bei
   const shoulder = 12 * body.widthPct / 100 * corner;
   const controlX = 4 * body.widthPct / 100 * corner;
   const controlY = 6 * body.heightPct / 100 * corner;
+  const leadOverlap = 1;
   const outline = `M ${left} ${top + controlY} Q ${left + controlX} ${top} ${left + shoulder} ${top} H ${right - shoulder} Q ${right - controlX} ${top} ${right} ${top + controlY} V ${bottom - controlY} Q ${right - controlX} ${bottom} ${right - shoulder} ${bottom} H ${left + shoulder} Q ${left + controlX} ${bottom} ${left} ${bottom - controlY} Z`;
   append(svg,
-    element('line', { x1: 4, y1: 24, x2: 43, y2: 24, class: 'metal-lead' }),
-    element('line', { x1: 107, y1: 24, x2: 146, y2: 24, class: 'metal-lead' }),
+    element('line', { x1: 4, y1: 24, x2: left + leadOverlap, y2: 24,
+      class: 'metal-lead', 'data-body-contact': 'left' }),
+    element('line', { x1: right - leadOverlap, y1: 24, x2: 146, y2: 24,
+      class: 'metal-lead', 'data-body-contact': 'right' }),
     element('path', { d: outline, class: `resistor-body appearance-${preset}`, 'data-body-geometry': `${body.widthPct}/${body.heightPct}/${body.cornerPct}` }),
   );
   const bandScale = `translate(75 24) scale(${body.widthPct / 100} ${body.heightPct / 100}) translate(-75 -24)`;
@@ -165,9 +168,12 @@ function led(svg, definition, component, { appearancePreset = 'round-5mm', appea
       ? 'M 17 53 V 29 Q 17 17 29 17 H 43 Q 55 17 55 29 V 53 Z'
       : 'M 18 53 V 35 A 18 18 0 0 1 54 35 V 53 Z';
   const bodyScale = `translate(36 53) scale(${body.widthPct / 100} ${body.heightPct / 100}) translate(-36 -53)`;
+  const leadTop = customBody ? bottom + 1 : null;
   append(svg,
-    element('line', { x1: 27, y1: 55, x2: 27, y2: 94, class: 'metal-lead' }),
-    element('line', { x1: 46, y1: 57, x2: 46, y2: 94, class: 'metal-lead' }),
+    element('line', { x1: 27, y1: leadTop ?? 55, x2: 27, y2: 94,
+      class: 'metal-lead', 'data-body-contact': 'anode' }),
+    element('line', { x1: 46, y1: leadTop ?? 57, x2: 46, y2: 94,
+      class: 'metal-lead', 'data-body-contact': 'cathode' }),
     element('path', { d: outline, class: `component-led ${color} appearance-${appearancePreset}`, 'data-led-id': component.id, 'data-body-geometry': `${body.widthPct}/${body.heightPct}/${body.cornerPct}`, role: 'img', 'aria-label': `${component.label} is off` }),
     element('path', { d: 'M 20 52 H 54', class: 'led-rim', transform: bodyScale }),
     element('path', { d: 'M 47 35 V 48', class: 'led-cathode-flat', transform: bodyScale }),

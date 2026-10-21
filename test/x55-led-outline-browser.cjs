@@ -49,6 +49,8 @@ const anchors = (page, selector) => page.evaluate((root) => Object.fromEntries(
     await page.click('.starter-card[data-example="blink"]');
     const avrCard = page.locator('#component-layer [data-component-id="led-1"]');
     await avrCard.click(); await page.click('#toggle-inspector');
+    assert.deepEqual(await avrCard.locator('[data-body-contact]').evaluateAll((nodes) =>
+      nodes.map((node) => Number(node.getAttribute('y1')))), [55, 57]);
     const avrBefore = await page.evaluate(() => ({
       source: window.__M6_PROJECT__().source,
       circuit: window.__M6_PROJECT__().circuit,
@@ -59,6 +61,24 @@ const anchors = (page, selector) => page.evaluate((root) => Object.fromEntries(
     await page.locator('#appearance-preset').focus();
     await page.keyboard.press('End');
     await page.waitForFunction(() => document.querySelector('#appearance-preset').value === 'soft-square');
+    for (const widthPct of [80, 100]) {
+      for (const heightPct of [80, 100]) {
+        for (const cornerPct of [0, 100]) {
+          await page.locator('#appearance-width').fill(String(widthPct));
+          await page.locator('#appearance-height').fill(String(heightPct));
+          await page.locator('#appearance-corner').fill(String(cornerPct));
+          assert.deepEqual(await page.locator('#appearance-preview [data-body-contact]').evaluateAll(
+            (nodes) => nodes.map((node) => Number(node.getAttribute('y1'))),
+          ), [54, 54]);
+        }
+      }
+    }
+    await page.locator('#appearance-width').fill('80');
+    await page.locator('#appearance-height').fill('80');
+    await page.locator('#appearance-corner').fill('0');
+    await page.locator('#appearance-preview').screenshot({
+      path: path.join(output, 'avr-led-lead-continuity-extreme.png'),
+    });
     await page.locator('#appearance-width').fill('88');
     await page.locator('#appearance-height').fill('84');
     await page.locator('#appearance-corner').fill('35');
@@ -80,7 +100,8 @@ const anchors = (page, selector) => page.evaluate((root) => Object.fromEntries(
     await page.locator('#top-workbench-shell').screenshot({ path: path.join(output, 'avr-soft-square.png') });
 
     const report = [{ profile: 'board.atmega328p-16mhz-v1', previewNonmutating: true,
-      apply: 'soft-square', anchors: 'equal', electricalRuntime: 'equal' }];
+      apply: 'soft-square', anchors: 'equal', electricalRuntime: 'equal',
+      leadContinuity: 'historical-default-preserved-and-custom-overlap-1-svg-unit' }];
     for (const profile of profiles) {
       await page.selectOption('#board-select', profile.option);
       await page.waitForFunction(({ global }) => window[global]?.state().active === true, profile);
@@ -109,6 +130,8 @@ const anchors = (page, selector) => page.evaluate((root) => Object.fromEntries(
       assert.equal(await page.locator(`${profile.properties} .appearance-preview [data-body-geometry="88/84/35"]`).count(), 1);
       await apply.click();
       assert.equal(await card.locator('.component-led.appearance-soft-square').count(), 1);
+      assert.deepEqual(await card.locator('[data-body-contact]').evaluateAll((nodes) =>
+        nodes.map((node) => Number(node.getAttribute('y1')))), [54, 54]);
       assert.deepEqual(await anchors(page, profile.layer), anchorBefore);
       const after = await page.evaluate(({ global }) => {
         const state = window[global].state();
@@ -123,7 +146,7 @@ const anchors = (page, selector) => page.evaluate((root) => Object.fromEntries(
         path: path.join(output, `${profile.option.split('.')[1]}-soft-square.png`),
       });
       report.push({ profile: profile.option, previewNonmutating: true, apply: 'soft-square',
-        anchors: 'equal', electricalRuntime: 'equal' });
+        anchors: 'equal', electricalRuntime: 'equal', leadContinuity: 'overlap-1-svg-unit' });
     }
     for (const profile of profiles) {
       await page.selectOption('#board-select', profile.option);
@@ -135,7 +158,7 @@ const anchors = (page, selector) => page.evaluate((root) => Object.fromEntries(
     assert.deepEqual(producerRequests, []);
     assert.equal(await page.evaluate(() => window.__X55_LED_WORKERS__), 0);
     const result = { result: 'pass', profiles: report, firmwareBuilds: 0, runtimeRuns: 0,
-      scenarios: 0, workers: 0, producerRequests };
+      scenarios: 0, workers: 0, producerRequests, ledExtremeCases: 8 };
     fs.writeFileSync(path.join(output, 'report.json'), `${JSON.stringify(result, null, 2)}\n`);
     console.log(JSON.stringify({ result: 'pass', profiles: report.length, workers: 0 }));
   } finally {

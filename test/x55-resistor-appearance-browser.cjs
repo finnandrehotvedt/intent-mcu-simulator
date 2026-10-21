@@ -52,6 +52,22 @@ async function anchors(page) {
   })));
 }
 
+async function assertResistorLeadContinuity(page, root, widthPct) {
+  const contact = await page.locator(root).evaluate((node, width) => {
+    const left = 75 - (70 * width / 100) / 2;
+    const right = 75 + (70 * width / 100) / 2;
+    const leftLead = node.querySelector('[data-body-contact="left"]');
+    const rightLead = node.querySelector('[data-body-contact="right"]');
+    return {
+      left, right,
+      leftEnd: Number(leftLead?.getAttribute('x2')),
+      rightStart: Number(rightLead?.getAttribute('x1')),
+    };
+  }, widthPct);
+  assert.equal(contact.leftEnd, contact.left + 1);
+  assert.equal(contact.rightStart, contact.right - 1);
+}
+
 async function applyPresetWithKeyboard(page, preset) {
   const select = page.locator('#appearance-preset');
   await select.focus();
@@ -139,6 +155,22 @@ async function assertRejectedFileIsAtomic(page, filePath, expectedCode, before) 
       assert.equal(await card.locator('.resistor-body.appearance-standard-beige').count(), 1);
       assert.equal(await page.locator('#appearance-preview .resistor-body.appearance-cool-blue').count(), 1);
       assert.equal(await page.locator('#appearance-apply').isEnabled(), true);
+      for (const widthPct of [80, 100]) {
+        for (const heightPct of [80, 100]) {
+          for (const cornerPct of [0, 100]) {
+            await page.locator('#appearance-width').fill(String(widthPct));
+            await page.locator('#appearance-height').fill(String(heightPct));
+            await page.locator('#appearance-corner').fill(String(cornerPct));
+            await assertResistorLeadContinuity(page, '#appearance-preview', widthPct);
+          }
+        }
+      }
+      await page.locator('#appearance-width').fill('80');
+      await page.locator('#appearance-height').fill('80');
+      await page.locator('#appearance-corner').fill('0');
+      await page.locator('#appearance-preview').screenshot({
+        path: path.join(outputDir, `x55-lead-continuity-${viewport.width}.png`),
+      });
       await page.locator('#appearance-width').fill('88');
       await page.locator('#appearance-height').fill('84');
       await page.locator('#appearance-corner').fill('35');
@@ -185,7 +217,23 @@ async function assertRejectedFileIsAtomic(page, filePath, expectedCode, before) 
         await selectResistorByKeyboard(page);
         const before = await anchors(page);
         const targetPreset = rotation % 180 === 0 ? 'standard-beige' : 'cool-blue';
-        await applyPresetWithKeyboard(page, targetPreset);
+        const widthPct = rotation % 180 === 0 ? 80 : 100;
+        const heightPct = rotation < 180 ? 80 : 100;
+        const cornerPct = rotation % 180 === 0 ? 0 : 100;
+        await page.locator('#appearance-preset').selectOption(targetPreset);
+        await page.locator('#appearance-width').fill(String(widthPct));
+        await page.locator('#appearance-height').fill(String(heightPct));
+        await page.locator('#appearance-corner').fill(String(cornerPct));
+        await assertResistorLeadContinuity(page, '#appearance-preview', widthPct);
+        await page.click('#appearance-apply');
+        await page.waitForFunction(({ width, height, corner }) => {
+          const body = window.__M6_PROJECT__().layout.componentAppearance
+            .components['resistor-1']?.body;
+          return body?.widthPct === width && body?.heightPct === height
+            && body?.cornerPct === corner;
+        }, { width: widthPct, height: heightPct, corner: cornerPct });
+        await assertResistorLeadContinuity(page,
+          '#component-layer .circuit-component[data-component-id="resistor-1"]', widthPct);
         const after = await anchors(page);
         assert.deepEqual(after, before, `pin anchors moved at ${rotation} degrees`);
         const state = await page.evaluate(() => ({
@@ -196,7 +244,8 @@ async function assertRejectedFileIsAtomic(page, filePath, expectedCode, before) 
         }));
         assert.equal(state.position.rotation, rotation);
         assert.equal(state.x55.invariant, 'equal');
-        invariantCases.push({ rotation, before, after, preset: targetPreset });
+        invariantCases.push({ rotation, before, after, preset: targetPreset,
+          body: { widthPct, heightPct, cornerPct }, leadContinuity: 'overlap-1-svg-unit' });
       }
 
       await applyPresetWithKeyboard(page, 'cool-blue');
