@@ -1065,7 +1065,32 @@ function renderBoundedComponentCatalog({ state, editCircuit, list, properties })
     commitOnChange(input, () => input.value);
   }
   label.append(limit); input.id = `${selected.id}-${input.dataset.boundedProperty}`; label.htmlFor = input.id;
-  row.append(label, input); properties.replaceChildren(row);
+  row.append(label, input);
+  if (selected.type !== 'resistor.fixed-v1') { properties.replaceChildren(row); return; }
+
+  const appearance = document.createElement('div'); appearance.className = 'bounded-property-row bounded-appearance-row';
+  const appearanceLabel = document.createElement('label'); appearanceLabel.textContent = 'Body preset';
+  const appearanceSelect = document.createElement('select');
+  appearanceSelect.dataset.boundedAppearance = selected.id;
+  const currentPreset = resistorAppearancePreset(draft.layout.componentAppearance, selected.id);
+  for (const preset of RESISTOR_APPEARANCE_PRESETS) {
+    const option = document.createElement('option'); option.value = preset.id; option.textContent = preset.label;
+    option.selected = preset.id === currentPreset; appearanceSelect.append(option);
+  }
+  const preview = document.createElement('div'); preview.className = 'appearance-preview bounded-appearance-preview';
+  const renderPreview = () => preview.replaceChildren(createBaseComponentArtwork(
+    uiComponentCatalog[selected.type], selected, { appearancePreset: appearanceSelect.value },
+  ));
+  appearanceSelect.addEventListener('change', renderPreview); renderPreview();
+  const status = document.createElement('small');
+  status.textContent = 'Visual preview only · pins A/B, named nets, resistance and runtime semantics stay unchanged.';
+  const apply = document.createElement('button'); apply.type = 'button'; apply.textContent = 'Apply visual preset';
+  apply.dataset.boundedAppearanceApply = selected.id;
+  apply.disabled = appearanceSelect.value === currentPreset;
+  appearanceSelect.addEventListener('change', () => { apply.disabled = appearanceSelect.value === currentPreset; });
+  apply.addEventListener('click', () => editCircuit('setComponentAppearance', selected.id, appearanceSelect.value));
+  appearanceLabel.append(appearanceSelect, status); appearance.append(appearanceLabel, preview, apply);
+  properties.replaceChildren(row, appearance);
 }
 
 function accessibleValidation(result) {
@@ -2035,7 +2060,9 @@ function renderPicoCircuitEditor(state) {
     const partScale = picoEditorZoom * responsiveScale;
     card.style.setProperty('--part-width', `${definition.artwork.cssWidth * partScale}px`);
     card.style.setProperty('--part-height', `${definition.artwork.cssHeight * partScale}px`);
-    const artwork = createBaseComponentArtwork(definition, component); card.append(artwork);
+    const artwork = createBaseComponentArtwork(definition, component, {
+      appearancePreset: resistorAppearancePreset(draft.layout.componentAppearance, component.id),
+    }); card.append(artwork);
     const led = artwork.querySelector('[data-led-id]');
     if (led) {
       led.id = 'pico-external-led'; led.classList.toggle('on', Boolean(state.circuitObservation?.on));
@@ -2125,6 +2152,7 @@ window.__RP2040_PUBLIC_WORKBENCH__ = {
   activateEndpoint: (endpoint) => picoPublicWorkbench.editCircuit('activateEndpoint', endpoint),
   addMissingComponent: (type) => picoPublicWorkbench.editCircuit('addMissingComponent', type),
   setComponentProperty: (id, key, value) => picoPublicWorkbench.editCircuit('setComponentProperty', id, key, value),
+  setComponentAppearance: (id, preset) => picoPublicWorkbench.editCircuit('setComponentAppearance', id, preset),
   beginReconnect: () => picoPublicWorkbench.editCircuit('beginReconnect'),
   cancelWire: () => picoPublicWorkbench.editCircuit('cancelWireDraft'),
   addWireBend: () => editBoundedRoute('pico', 'bend'),
@@ -2304,7 +2332,9 @@ function renderC3CircuitEditor(state) {
     card.style.setProperty('--rotation', `${position.rotation}deg`);
     card.style.setProperty('--part-width', `${definition.artwork.cssWidth * c3EditorZoom * responsiveScale}px`);
     card.style.setProperty('--part-height', `${definition.artwork.cssHeight * c3EditorZoom * responsiveScale}px`);
-    const artwork = createBaseComponentArtwork(definition, component); card.append(artwork);
+    const artwork = createBaseComponentArtwork(definition, component, {
+      appearancePreset: resistorAppearancePreset(draft.layout.componentAppearance, component.id),
+    }); card.append(artwork);
     const led = artwork.querySelector('[data-led-id]');
     if (led) {
       led.id = 'c3-external-led'; led.classList.toggle('on', modeledLed);
@@ -2390,6 +2420,7 @@ window.__ESP32C3_PUBLIC_WORKBENCH__ = {
   activateEndpoint: (endpoint) => c3PublicWorkbench.editCircuit('activateEndpoint', endpoint),
   addMissingComponent: (type) => c3PublicWorkbench.editCircuit('addMissingComponent', type),
   setComponentProperty: (id, key, value) => c3PublicWorkbench.editCircuit('setComponentProperty', id, key, value),
+  setComponentAppearance: (id, preset) => c3PublicWorkbench.editCircuit('setComponentAppearance', id, preset),
   beginReconnect: () => c3PublicWorkbench.editCircuit('beginReconnect'),
   cancelWire: () => c3PublicWorkbench.editCircuit('cancelWireDraft'),
   addWireBend: () => editBoundedRoute('c3', 'bend'),
@@ -2573,7 +2604,9 @@ function renderStm32CircuitEditor(state) {
     card.style.setProperty('--rotation', `${position.rotation}deg`);
     card.style.setProperty('--part-width', `${definition.artwork.cssWidth * stm32EditorZoom * responsiveScale}px`);
     card.style.setProperty('--part-height', `${definition.artwork.cssHeight * stm32EditorZoom * responsiveScale}px`);
-    const artwork = createBaseComponentArtwork(definition, component); card.append(artwork);
+    const artwork = createBaseComponentArtwork(definition, component, {
+      appearancePreset: resistorAppearancePreset(draft.layout.componentAppearance, component.id),
+    }); card.append(artwork);
     const led = artwork.querySelector('[data-led-id]');
     if (led) {
       led.id = 'stm32-external-led'; led.classList.toggle('on', observedLed);
@@ -2666,6 +2699,7 @@ window.__STM32_PUBLIC_WORKBENCH__ = {
   activateEndpoint: (endpoint) => stm32PublicWorkbench.editCircuit('activateEndpoint', endpoint),
   addMissingComponent: (type) => stm32PublicWorkbench.editCircuit('addMissingComponent', type),
   setComponentProperty: (id, key, value) => stm32PublicWorkbench.editCircuit('setComponentProperty', id, key, value),
+  setComponentAppearance: (id, preset) => stm32PublicWorkbench.editCircuit('setComponentAppearance', id, preset),
   beginReconnect: () => stm32PublicWorkbench.editCircuit('beginReconnect'),
   cancelWire: () => stm32PublicWorkbench.editCircuit('cancelWireDraft'),
   addWireBend: () => editBoundedRoute('stm32', 'bend'),
@@ -10489,7 +10523,7 @@ function appearanceInvariant(component, layout = currentProject().layout) {
 }
 
 function prepareAppearancePreview(component, preset) {
-  if (selectedCompilerProfile !== AVR_PROFILE || component?.type !== 'resistor.fixed-v1'
+  if (component?.type !== 'resistor.fixed-v1'
       || !RESISTOR_APPEARANCE_PRESETS.some((item) => item.id === preset)) {
     appearancePreview = null;
     return null;
@@ -10506,7 +10540,7 @@ function prepareAppearancePreview(component, preset) {
 }
 
 function renderAppearanceEditor(component) {
-  const supported = selectedCompilerProfile === AVR_PROFILE && component?.type === 'resistor.fixed-v1';
+  const supported = component?.type === 'resistor.fixed-v1';
   elements.appearanceeditor.hidden = !supported;
   if (!supported) {
     appearancePreview = null;

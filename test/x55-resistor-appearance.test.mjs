@@ -27,7 +27,7 @@ const clone = (value) => structuredClone(value);
 const appearance = (components = {}) => ({ schema: COMPONENT_APPEARANCE_SCHEMA, components });
 const command = (session, value) => session.apply({ ...value, revision: session.revision });
 
-test('X55 appearance data is finite, AVR-only, resistor-only and exact-key strict', () => {
+test('X55 appearance data is finite, four-profile, resistor-only and exact-key strict', () => {
   const project = validateProjectV2(createExampleProject('blink').project).project;
   const accepted = normalizeComponentAppearance(
     appearance({ 'resistor-1': { preset: 'cool-blue' } }), project.circuit,
@@ -45,17 +45,22 @@ test('X55 appearance data is finite, AVR-only, resistor-only and exact-key stric
     'board.stm32f429zi-nucleo144-v1']) {
     const nonAvr = clone(project.circuit);
     nonAvr.components.find((item) => item.type.startsWith('board.')).type = profile;
-    assert.equal(normalizeComponentAppearance(
+    assert.deepEqual(normalizeComponentAppearance(
       appearance({ 'resistor-1': { preset: 'cool-blue' } }), nonAvr,
-    ), null, profile);
+    ), appearance({ 'resistor-1': { preset: 'cool-blue' } }), profile);
     assert.deepEqual(normalizeComponentAppearance(undefined, nonAvr), appearance(), profile);
-    assert.throws(() => withResistorAppearance(
+    assert.deepEqual(withResistorAppearance(
       undefined, nonAvr, 'resistor-1', 'cool-blue',
-    ), (error) => error?.code === 'COMPONENT_APPEARANCE_INVALID', profile);
+    ), appearance({ 'resistor-1': { preset: 'cool-blue' } }), profile);
   }
+  const unsupported = clone(project.circuit);
+  unsupported.components.find((item) => item.type.startsWith('board.')).type = 'board.unknown-v1';
+  assert.equal(normalizeComponentAppearance(
+    appearance({ 'resistor-1': { preset: 'cool-blue' } }), unsupported,
+  ), null);
 });
 
-test('X55 preview and apply preserve pins, normalized world anchors, nets, model, ohms, source and position', () => {
+test('X55 preview and apply preserve all-profile pins, normalized world anchors, nets, model, ohms, source and position', () => {
   const project = validateProjectV2(createExampleProject('blink').project).project;
   const definition = catalogType('resistor.fixed-v1');
   const editor = new ProjectEditorReducer(project);
@@ -104,6 +109,26 @@ test('X55 preview and apply preserve pins, normalized world anchors, nets, model
     circuit: applied.project.circuit,
   }), buildInputBefore);
   assert.equal(resistorAppearancePreset(applied.project.layout.componentAppearance, 'resistor-1'), 'cool-blue');
+  for (const profile of ['board.rp2040-pico-v1', 'board.esp32-c3-devmodule-v1',
+    'board.stm32f429zi-nucleo144-v1']) {
+    const graph = clone(project.circuit);
+    graph.components.find((item) => item.type.startsWith('board.')).type = profile;
+    const before = componentAppearanceInvariantSnapshot({
+      componentId: 'resistor-1', graph, layout: project.layout,
+      source: project.source, boardProfile: profile, definition,
+    });
+    const after = componentAppearanceInvariantSnapshot({
+      componentId: 'resistor-1', graph, layout: {
+        ...project.layout,
+        componentAppearance: withResistorAppearance(
+          project.layout.componentAppearance, graph, 'resistor-1', 'cool-blue',
+        ),
+      }, source: project.source, boardProfile: profile, definition,
+    });
+    assert.deepEqual(componentAppearanceInvariantReview(before, after), {
+      schema: 'intent-mcu-component-appearance-invariant@1', equal: true, changedFields: [],
+    }, profile);
+  }
 });
 
 test('X55 visual history, duplicate, remove, merge and actual file Save/Open remain atomic', async () => {

@@ -252,7 +252,7 @@ async function assertRejectedFileIsAtomic(page, filePath, expectedCode, before) 
           assert.deepEqual(await page.evaluate(() => ({
             hidden: document.querySelector('#appearance-editor').hidden,
             state: window.__X55_APPEARANCE_STATE__,
-          })), { hidden: true, state: null }, `${profile} exposed AVR appearance authority`);
+          })), { hidden: true, state: null }, `${profile} exposed appearance on a parked AVR draft`);
         }
         assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), parked,
           `${profile} changed parked AVR draft`);

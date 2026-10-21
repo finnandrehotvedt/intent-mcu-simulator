@@ -164,7 +164,8 @@ test('retained and current locks use distinct real resolver instances with match
 test('production electrical and runtime paths dispatch through the exact selected implementation', () => {
   for (const [lock, expected] of [
     [RETAINED_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-retained-rc72@2'],
-    [CURRENT_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-current-x47-repause-state-fix-1@17'],
+    [CURRENT_MODEL_LIBRARY_LOCK,
+      'intent-mcu-model-bundle-current-x55-all-profile-resistor-appearance-1@18'],
   ]) {
     const avr = validateCircuit(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
     assert.equal(avr.ok, true);

@@ -8,6 +8,7 @@ import {
   NamedSeriesLedCircuitEditor, createSeriesLedComponentPolicy, createSeriesLedConnectionPolicy,
 } from './named-series-led-circuit-editor.mjs';
 import { normalizeStoredRoute } from './route-model.mjs';
+import { emptyComponentAppearance, normalizeComponentAppearance } from './component-appearance.mjs';
 import { exactKeys } from './strict-json.mjs';
 
 export const ESP32C3_PUBLIC_CIRCUIT_SCHEMA = 'intent-mcu-esp32c3-public-circuit@1';
@@ -110,6 +111,7 @@ export function createEsp32C3CircuitDraft() {
       },
       wireStyles: { 'net-gpio2': '#f5c451', 'net-series': '#f04f5f', 'net-ground': '#303943' },
       wireRoutes: {},
+      componentAppearance: emptyComponentAppearance(),
     },
   };
 }
@@ -145,7 +147,9 @@ export function normalizeEsp32C3CircuitDraft(value) {
       || !Array.isArray(value.components) || !Array.isArray(value.nets)
       || value.components.length > 4 || value.nets.length > 4
       || !(exactKeys(value.layout, ['positions', 'wireStyles'])
-        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes']))
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'componentAppearance'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes', 'componentAppearance']))
       || value.layout.positions === null || Array.isArray(value.layout.positions)
       || value.layout.wireStyles === null || Array.isArray(value.layout.wireStyles)) {
     throw Object.assign(new Error('C3_CIRCUIT_SHAPE'), { code: 'C3_CIRCUIT_SHAPE' });
@@ -208,8 +212,14 @@ export function normalizeEsp32C3CircuitDraft(value) {
     }
     wireRoutes[net.id] = route;
   }
+  const componentAppearance = normalizeComponentAppearance(value.layout.componentAppearance, {
+    components, nets,
+  });
+  if (!componentAppearance) {
+    throw Object.assign(new Error('C3_CIRCUIT_LAYOUT_INVALID'), { code: 'C3_CIRCUIT_LAYOUT_INVALID' });
+  }
   return { schema: ESP32C3_PUBLIC_CIRCUIT_SCHEMA, boardProfile: ESP32C3_PUBLIC_PROFILE,
-    components, nets, layout: { positions, wireStyles, wireRoutes } };
+    components, nets, layout: { positions, wireStyles, wireRoutes, componentAppearance } };
 }
 
 function hasPair(net, left, right) {

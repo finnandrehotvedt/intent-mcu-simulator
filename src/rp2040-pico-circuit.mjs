@@ -6,6 +6,7 @@ import {
   NamedSeriesLedCircuitEditor, createSeriesLedComponentPolicy, createSeriesLedConnectionPolicy,
 } from './named-series-led-circuit-editor.mjs';
 import { normalizeStoredRoute } from './route-model.mjs';
+import { emptyComponentAppearance, normalizeComponentAppearance } from './component-appearance.mjs';
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
 
 export const RP2040_PICO_CIRCUIT_SCHEMA = 'intent-mcu-rp2040-pico-circuit@1';
@@ -111,6 +112,7 @@ export function createRp2040PicoCircuitDraft() {
       },
       wireStyles: { 'net-gpio0': '#f5c451', 'net-series': '#f04f5f', 'net-ground': '#303943' },
       wireRoutes: {},
+      componentAppearance: emptyComponentAppearance(),
     },
   };
 }
@@ -146,7 +148,9 @@ export function normalizeRp2040PicoCircuitDraft(value) {
       || !Array.isArray(value.components) || !Array.isArray(value.nets)
       || value.components.length > 4 || value.nets.length > 4
       || !(exactKeys(value.layout, ['positions', 'wireStyles'])
-        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes']))
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'componentAppearance'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes', 'componentAppearance']))
       || value.layout.positions === null || Array.isArray(value.layout.positions)
       || value.layout.wireStyles === null || Array.isArray(value.layout.wireStyles)) {
     throw Object.assign(new Error('RP2040_CIRCUIT_SHAPE'), { code: 'RP2040_CIRCUIT_SHAPE' });
@@ -209,8 +213,14 @@ export function normalizeRp2040PicoCircuitDraft(value) {
     }
     wireRoutes[net.id] = route;
   }
+  const componentAppearance = normalizeComponentAppearance(value.layout.componentAppearance, {
+    components, nets,
+  });
+  if (!componentAppearance) {
+    throw Object.assign(new Error('RP2040_CIRCUIT_LAYOUT_INVALID'), { code: 'RP2040_CIRCUIT_LAYOUT_INVALID' });
+  }
   return { schema: RP2040_PICO_CIRCUIT_SCHEMA, boardProfile: RP2040_PICO_PROFILE, components, nets,
-    layout: { positions, wireStyles, wireRoutes } };
+    layout: { positions, wireStyles, wireRoutes, componentAppearance } };
 }
 
 function hasPair(net, left, right) {

@@ -25,6 +25,9 @@ const PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_X47_REPAUSE_STATE_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X47_REPAUSE_STATE_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_X55_ALL_PROFILE_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X55_ALL_PROFILE_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -182,16 +185,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x47-repause-state-fix.1-current',
-  'intent-mcu-model-bundle-current-x47-repause-state-fix-1@17',
+  '2.0.0-x55-all-profile-resistor-appearance.1-current',
+  'intent-mcu-model-bundle-current-x55-all-profile-resistor-appearance-1@18',
   currentImplementation,
   {
-    priorVersion: PRE_X47_REPAUSE_STATE_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X47_REPAUSE_STATE_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X55_ALL_PROFILE_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X55_ALL_PROFILE_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'explicit-data-only-migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component and electrical semantics are unchanged; a completed D2 Resume can bind one later explicit Pause only to the exact current worker identity and a fresh cycle',
-    presentationDisposition: 'the re-paused state becomes ready for the existing deterministic repeatable-input preview and Apply flow without auto-resume',
-    baselineClosureDisposition: 'the reviewed X47 repeatable-Apply identity and accepted public rc.98 identity remain immutable and migration-only',
+    semanticDisposition: 'component electrical and runtime semantics are unchanged; fixed-resistor appearance data is admitted across the four existing profiles without changing pins, nets, resistance or execution',
+    presentationDisposition: 'the two existing finite resistor body presets become visible on the Pico, ESP32-C3 and STM32 workbenches as well as AVR',
+    baselineClosureDisposition: 'the accepted public rc.100 identity remains immutable and migration-only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -214,6 +217,7 @@ export const PRE_X47_REPEATABLE_REJECTION_CURRENT_MODEL_LIBRARY_MANIFEST = Objec
 export const PRE_X47_MOMENTARY_CONTROL_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_MOMENTARY_CONTROL_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X47_REPAUSE_STATE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_REPAUSE_STATE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X55_ALL_PROFILE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X55_ALL_PROFILE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

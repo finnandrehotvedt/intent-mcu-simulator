@@ -10,6 +10,12 @@ export const RESISTOR_APPEARANCE_PRESETS = Object.freeze([
 ]);
 
 const PRESETS = new Set(RESISTOR_APPEARANCE_PRESETS.map(({ id }) => id));
+const SUPPORTED_BOARD_TYPES = new Set([
+  'board.atmega328p-16mhz-v1',
+  'board.rp2040-pico-v1',
+  'board.esp32-c3-devmodule-v1',
+  'board.stm32f429zi-nucleo144-v1',
+]);
 const clone = (value) => structuredClone(value);
 const ownObject = (value) => value !== null && typeof value === 'object'
   && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype;
@@ -36,16 +42,14 @@ export function normalizeComponentAppearance(value, graph, { missing = true } = 
       || !graph || !Array.isArray(graph.components)) return null;
   const byId = new Map(graph.components.map((component) => [component.id, component]));
   const components = {};
-  const avrGraph = graph.components.some(
-    (component) => component.type === 'board.atmega328p-16mhz-v1',
-  ) && !graph.components.some(
-    (component) => component.type.startsWith('board.')
-      && component.type !== 'board.atmega328p-16mhz-v1',
-  );
+  const boardTypes = graph.components.filter(
+    (component) => component.type.startsWith('board.'),
+  ).map((component) => component.type);
+  const supportedGraph = boardTypes.length === 1 && SUPPORTED_BOARD_TYPES.has(boardTypes[0]);
   for (const componentId of Object.keys(source.components).sort(compare)) {
     const component = byId.get(componentId);
     const appearance = source.components[componentId];
-    if (!avrGraph || !component || component.type !== 'resistor.fixed-v1' || !ownObject(appearance)
+    if (!supportedGraph || !component || component.type !== 'resistor.fixed-v1' || !ownObject(appearance)
         || !exactKeys(appearance, ['preset']) || !PRESETS.has(appearance.preset)) return null;
     components[componentId] = { preset: appearance.preset };
   }

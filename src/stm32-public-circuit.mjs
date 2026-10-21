@@ -7,6 +7,7 @@ import {
   NamedSeriesLedCircuitEditor, createSeriesLedComponentPolicy, createSeriesLedConnectionPolicy,
 } from './named-series-led-circuit-editor.mjs';
 import { normalizeStoredRoute } from './route-model.mjs';
+import { emptyComponentAppearance, normalizeComponentAppearance } from './component-appearance.mjs';
 import { exactKeys } from './strict-json.mjs';
 
 export const STM32_PUBLIC_CIRCUIT_SCHEMA = 'intent-mcu-stm32-public-circuit@1';
@@ -114,6 +115,7 @@ export function createStm32CircuitDraft() {
       },
       wireStyles: { 'net-pb0': '#e2ab1b', 'net-series': '#e13e51', 'net-ground': '#202a34' },
       wireRoutes: {},
+      componentAppearance: emptyComponentAppearance(),
     },
   };
 }
@@ -153,7 +155,9 @@ export function normalizeStm32CircuitDraft(value) {
       || !Array.isArray(value.components) || !Array.isArray(value.nets)
       || value.components.length > 4 || value.nets.length > 4
       || !(exactKeys(value.layout, ['positions', 'wireStyles'])
-        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes']))
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'componentAppearance'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes', 'componentAppearance']))
       || value.layout.positions === null || Array.isArray(value.layout.positions)
       || value.layout.wireStyles === null || Array.isArray(value.layout.wireStyles)) {
     throw Object.assign(new Error('STM32_CIRCUIT_SHAPE'), { code: 'STM32_CIRCUIT_SHAPE' });
@@ -220,8 +224,14 @@ export function normalizeStm32CircuitDraft(value) {
     }
     wireRoutes[net.id] = route;
   }
+  const componentAppearance = normalizeComponentAppearance(value.layout.componentAppearance, {
+    components, nets,
+  });
+  if (!componentAppearance) {
+    throw Object.assign(new Error('STM32_CIRCUIT_LAYOUT_INVALID'), { code: 'STM32_CIRCUIT_LAYOUT_INVALID' });
+  }
   return { schema: STM32_PUBLIC_CIRCUIT_SCHEMA, boardProfile: STM32_PUBLIC_PROFILE,
-    components, nets, layout: { positions, wireStyles, wireRoutes } };
+    components, nets, layout: { positions, wireStyles, wireRoutes, componentAppearance } };
 }
 
 function hasPair(net, left, right) {

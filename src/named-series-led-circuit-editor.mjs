@@ -2,6 +2,7 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import { normalizeStoredRoute } from './route-model.mjs';
+import { withResistorAppearance } from './component-appearance.mjs';
 
 const clone = (value) => structuredClone(value);
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
@@ -184,6 +185,9 @@ export class NamedSeriesLedCircuitEditor {
       next.components = next.components.filter((item) => item.id !== this.selection.id);
       next.nets = next.nets.filter((net) => !net.endpoints.some((endpoint) => endpoint.component === this.selection.id));
       delete next.layout.positions[this.selection.id];
+      if (next.layout.componentAppearance?.components) {
+        delete next.layout.componentAppearance.components[this.selection.id];
+      }
       for (const id of Object.keys(next.layout.wireStyles)) {
         if (!next.nets.some((net) => net.id === id)) delete next.layout.wireStyles[id];
       }
@@ -283,6 +287,25 @@ export class NamedSeriesLedCircuitEditor {
         ...this.commit(next, { kind: 'component', id: componentId }) };
     } catch (error) {
       return this.fail('COMPONENT_PROPERTY_UNSUPPORTED', { componentId, key, value, cause: error.code ?? error.message });
+    }
+  }
+
+  setComponentAppearance(componentId, preset) {
+    const component = this.draft.components.find((candidate) => candidate.id === componentId);
+    if (!component || component.type !== BOUNDED_RESISTOR_TYPE) {
+      return this.fail('COMPONENT_APPEARANCE_UNSUPPORTED', { componentId, preset });
+    }
+    const next = clone(this.draft);
+    try {
+      next.layout.componentAppearance = withResistorAppearance(
+        next.layout.componentAppearance, next, componentId, preset,
+      );
+      return { ok: true, changed: true, code: this.code('COMPONENT_APPEARANCE_UPDATED'),
+        componentId, preset, ...this.commit(next, { kind: 'component', id: componentId }, 'layout') };
+    } catch (error) {
+      return this.fail('COMPONENT_APPEARANCE_UNSUPPORTED', {
+        componentId, preset, cause: error.code ?? error.message,
+      });
     }
   }
 
