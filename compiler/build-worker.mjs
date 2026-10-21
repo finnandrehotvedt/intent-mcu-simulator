@@ -17,7 +17,7 @@ import {
 } from './build-protocol.mjs';
 import {
   AVR_ALLOCATOR_ARCHIVE, AVR_ALLOCATOR_MEMBER, avrAllocatorTraceFlags,
-  createAvrAllocatorProvenance,
+  createAvrAllocatorLinkerProofDiagnostic, createAvrAllocatorProvenance,
 } from './avr-allocator-provenance.mjs';
 
 const WORKSPACE = '/workspace';
@@ -185,6 +185,14 @@ function sanitiseDiagnostics(text) {
   return { text: clean, diagnostics };
 }
 
+function appendAllocatorProofDiagnostic(text, proof) {
+  const line = `allocator-linker-proof ${JSON.stringify(proof)}`;
+  const retainedBytes = Buffer.from(text, 'utf8')
+    .subarray(0, Math.max(0, BUILD_LIMITS.diagnosticsBytes - Buffer.byteLength(line, 'utf8') - 2));
+  const retained = retainedBytes.toString('utf8').replace(/\uFFFD$/u, '');
+  return `${retained}${retained.endsWith('\n') || retained.length === 0 ? '' : '\n'}${line}\n`;
+}
+
 async function prepare(request) {
   await Promise.all([
     rm(SKETCH, { recursive: true, force: true }),
@@ -225,6 +233,14 @@ async function main() {
     return { status: 'failed', code: 'OUTPUT_LIMIT', text: '', diagnostics: [], isolation };
   }
   const elfSha256 = sha256(elf);
+  const allocatorProvenance = createAvrAllocatorProvenance({
+    linkerText: compiler.text, elfSha256, ...allocatorArchive,
+  });
+  if (allocatorProvenance.state === 'unavailable') {
+    output.text = appendAllocatorProofDiagnostic(output.text,
+      createAvrAllocatorLinkerProofDiagnostic(compiler.text,
+        (owner) => sha256(Buffer.from(owner, 'utf8'))));
+  }
   return {
     status: 'succeeded',
     code: 'BUILD_OK',
@@ -238,9 +254,7 @@ async function main() {
       elfSha256,
       hexBytes: hex.length,
       elfBytes: elf.length,
-      allocatorProvenance: createAvrAllocatorProvenance({
-        linkerText: compiler.text, elfSha256, ...allocatorArchive,
-      }),
+      allocatorProvenance,
     },
   };
 }

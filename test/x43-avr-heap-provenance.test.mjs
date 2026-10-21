@@ -6,7 +6,8 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   AVR_ALLOCATOR_ARCHIVE, AVR_ALLOCATOR_ARCHIVE_SHA256, AVR_ALLOCATOR_MEMBER,
-  AVR_ALLOCATOR_MEMBER_SHA256, AVR_ALLOCATOR_SYMBOLS, createAvrAllocatorProvenance,
+  AVR_ALLOCATOR_MEMBER_SHA256, AVR_ALLOCATOR_SYMBOLS,
+  createAvrAllocatorLinkerProofDiagnostic, createAvrAllocatorProvenance,
   normalizeAvrAllocatorProvenance,
 } from '../compiler/avr-allocator-provenance.mjs';
 import { BuildCoordinator } from '../compiler/build-coordinator.mjs';
@@ -16,6 +17,7 @@ const ELF = 'a'.repeat(64);
 const exactOwner = `${AVR_ALLOCATOR_ARCHIVE}(${AVR_ALLOCATOR_MEMBER})`;
 const trace = (ownerFor = () => exactOwner) => AVR_ALLOCATOR_SYMBOLS
   .map((symbol) => `${ownerFor(symbol)}: definition of ${symbol}`).join('\n');
+const ownerHash = (value) => sha256(Buffer.from(value, 'utf8'));
 
 test('only the exact pinned archive member definition set creates supported provenance', () => {
   const supported = createAvrAllocatorProvenance({ linkerText: trace(), elfSha256: ELF,
@@ -37,9 +39,33 @@ test('only the exact pinned archive member definition set creates supported prov
     memberSha256: AVR_ALLOCATOR_MEMBER_SHA256,
   });
   assert.equal(duplicate.state, 'unavailable');
+  const wrongArchive = createAvrAllocatorProvenance({
+    linkerText: trace((symbol) => symbol === 'malloc'
+      ? '/opt/arduino/untrusted/avr5/libc.a(malloc.o)' : exactOwner),
+    elfSha256: ELF, archiveSha256: AVR_ALLOCATOR_ARCHIVE_SHA256,
+    memberSha256: AVR_ALLOCATOR_MEMBER_SHA256,
+  });
+  assert.equal(wrongArchive.reason, 'allocator-linker-definition-unproven');
   assert.equal(createAvrAllocatorProvenance({ linkerText: trace(), elfSha256: ELF,
     archiveSha256: 'b'.repeat(64), memberSha256: AVR_ALLOCATOR_MEMBER_SHA256 }).reason,
   'allocator-toolchain-archive-untrusted');
+});
+
+test('bounded linker proof diagnostic classifies and hashes owners without exposing paths', () => {
+  const projectOwner = '/workspace/build/sketch/main.ino.cpp.o';
+  const otherArchiveMember = `${AVR_ALLOCATOR_ARCHIVE}(other.o)`;
+  const linkerText = `${trace((symbol) => symbol === 'malloc' ? AVR_ALLOCATOR_ARCHIVE
+    : symbol === 'free' ? otherArchiveMember : exactOwner)}\n${projectOwner}: definition of free`;
+  const proof = createAvrAllocatorLinkerProofDiagnostic(linkerText, ownerHash);
+  assert.equal(proof.expectedOwnerSha256, ownerHash(exactOwner));
+  assert.deepEqual(proof.symbols.find(({ symbol }) => symbol === 'malloc').owners,
+    [{ classification: 'pinned-archive-member-omitted',
+      ownerSha256: ownerHash(AVR_ALLOCATOR_ARCHIVE) }]);
+  assert.deepEqual(proof.symbols.find(({ symbol }) => symbol === 'free').owners,
+    [{ classification: 'pinned-archive-other-member', ownerSha256: ownerHash(otherArchiveMember) },
+      { classification: 'project-or-transient-object', ownerSha256: ownerHash(projectOwner) }]);
+  assert.equal(JSON.stringify(proof).includes('/opt/'), false);
+  assert.equal(JSON.stringify(proof).includes('/workspace/'), false);
 });
 
 test('missing, malformed, unknown allocator and cross-ELF metadata normalize unavailable', () => {
@@ -80,6 +106,10 @@ test('ordinary valid AVR build result stays succeeded when optional heap metadat
 });
 
 test('async optional heap parsing rechecks current build and source identity before accepting', async () => {
-  const source = await readFile(new URL('../staging/main.mjs', import.meta.url), 'utf8');
+  const [source, worker] = await Promise.all([
+    readFile(new URL('../staging/main.mjs', import.meta.url), 'utf8'),
+    readFile(new URL('../compiler/build-worker.mjs', import.meta.url), 'utf8'),
+  ]);
   assert.match(source, /await parseX43AvrHeapSymbols\([\s\S]+if \(!currentBuildBinding\(binding\) \|\| buildInputIdentity\(\) !== inputAtSubmit\) return;[\s\S]+type: 'build\.succeeded'/u);
+  assert.match(worker, /allocatorProvenance\.state === 'unavailable'[\s\S]+createAvrAllocatorLinkerProofDiagnostic\(compiler\.text,[\s\S]+sha256\(Buffer\.from\(owner, 'utf8'\)\)/u);
 });
