@@ -10,6 +10,10 @@ import {
   X43_AVR_HEAP_ALLOCATOR, parseX43AvrHeapSymbols, sampleX43AvrHeapFrontier,
   validateX43AvrHeapSample, validateX43AvrHeapSymbols,
 } from '../src/x43-avr-heap-profile.mjs';
+import {
+  AVR_ALLOCATOR_ARCHIVE_SHA256, AVR_ALLOCATOR_ID, AVR_ALLOCATOR_MEMBER,
+  AVR_ALLOCATOR_MEMBER_SHA256, AVR_ALLOCATOR_PROVENANCE_SCHEMA, AVR_ALLOCATOR_SYMBOLS,
+} from '../compiler/avr-allocator-provenance.mjs';
 
 const binding = { artifactIdentity: 'a'.repeat(64), modelImplementationSha256: 'b'.repeat(64),
   modelExecutionContextSha256: 'c'.repeat(64) };
@@ -27,7 +31,7 @@ const records = [
 function u32(bytes, offset, value) { new DataView(bytes.buffer).setUint32(offset, value, true); }
 function u16(bytes, offset, value) { new DataView(bytes.buffer).setUint16(offset, value, true); }
 
-async function fixture(symbols = records) {
+async function fixture(symbols = records, provenance = 'supported') {
   const names = [''].concat([...new Set(symbols.map(({ name }) => name))]);
   const offsets = new Map();
   const strings = [];
@@ -54,10 +58,15 @@ async function fixture(symbols = records) {
     const base = symbolOffset + (index + 1) * 16;
     u32(bytes, base, offsets.get(record.name)); u32(bytes, base + 4, record.value);
     u32(bytes, base + 8, record.size); bytes[base + 12] = (record.binding << 4) | record.type;
-    u16(bytes, base + 14, 1);
+    u16(bytes, base + 14, record.sectionIndex ?? 1);
   });
   const hash = Buffer.from(await webcrypto.subtle.digest('SHA-256', bytes)).toString('hex');
-  return { elfBase64: Buffer.from(bytes).toString('base64'), elfSha256: hash };
+  const supported = { schema: AVR_ALLOCATOR_PROVENANCE_SCHEMA, state: 'supported', reason: null,
+    elfSha256: hash, allocator: AVR_ALLOCATOR_ID, archiveSha256: AVR_ALLOCATOR_ARCHIVE_SHA256,
+    member: AVR_ALLOCATOR_MEMBER, memberSha256: AVR_ALLOCATOR_MEMBER_SHA256,
+    symbols: [...AVR_ALLOCATOR_SYMBOLS] };
+  return { elfBase64: Buffer.from(bytes).toString('base64'), elfSha256: hash,
+    allocatorProvenance: provenance === 'supported' ? supported : provenance };
 }
 
 function write16(memory, address, value) {
@@ -76,17 +85,42 @@ test('strict ELF parser binds the exact avr-libc allocator symbol set to artifac
   assert.equal(parsed.modelImplementationSha256, binding.modelImplementationSha256);
 });
 
-test('missing allocator linkage is unavailable while malformed present authority rejects', async () => {
+test('missing or malformed allocator ELF proof is unavailable without becoming build authority', async () => {
   const unavailable = await parseX43AvrHeapSymbols(await fixture(records.filter(
     ({ name }) => !['malloc', 'free', '__brkval', '__flp', '__malloc_heap_start',
       '__malloc_heap_end', '__malloc_margin'].includes(name))), binding, webcrypto);
   assert.equal(unavailable.state, 'unavailable');
-  assert.equal(unavailable.reason, 'avr-libc-allocator-symbol-set-not-linked');
-  await assert.rejects(parseX43AvrHeapSymbols(await fixture([...records,
-    { ...records[1] }]), binding, webcrypto), { code: 'X43_HEAP_ELF_SYMBOL_DUPLICATE' });
-  await assert.rejects(parseX43AvrHeapSymbols(await fixture(records.map((record) =>
-    record.name === '__brkval' ? { ...record, type: 2 } : record)), binding, webcrypto),
-  { code: 'X43_HEAP_ELF_ALLOCATOR_OBJECT_INVALID' });
+  assert.equal(unavailable.reason, 'allocator-elf-symbol-set-mismatch');
+  assert.equal((await parseX43AvrHeapSymbols(await fixture([...records,
+    { ...records[1] }]), binding, webcrypto)).reason, 'allocator-elf-symbol-set-mismatch');
+  const malformed = await parseX43AvrHeapSymbols(await fixture(records.map((record) =>
+    record.name === '__brkval' ? { ...record, type: 2 } : record)), binding, webcrypto);
+  assert.equal(malformed.reason, 'allocator-elf-object-proof-invalid');
+});
+
+test('names alone, unknown provenance, object overlap, SRAM-end and section mismatch stay unavailable', async () => {
+  const namesOnly = await fixture(records, null);
+  assert.equal((await parseX43AvrHeapSymbols(namesOnly, binding, webcrypto)).reason,
+    'allocator-provenance-missing');
+  const unknown = await fixture(records, 'supported');
+  unknown.allocatorProvenance = { ...unknown.allocatorProvenance, allocator: 'project-malloc@1' };
+  assert.equal((await parseX43AvrHeapSymbols(unknown, binding, webcrypto)).reason,
+    'allocator-provenance-untrusted');
+  const overlap = records.map((record) => record.name === '__flp'
+    ? { ...record, value: 0x800111 } : record);
+  assert.equal((await parseX43AvrHeapSymbols(await fixture(overlap), binding, webcrypto)).reason,
+    'allocator-elf-object-overlap');
+  const endOfSram = records.map((record) => record.name === '__brkval'
+    ? { ...record, value: 0x8008ff } : record);
+  assert.equal((await parseX43AvrHeapSymbols(await fixture(endOfSram), binding, webcrypto)).reason,
+    'allocator-elf-object-proof-invalid');
+  const sectionMismatch = records.map((record) => record.name === 'malloc'
+    ? { ...record, sectionIndex: 2 } : record);
+  assert.equal((await parseX43AvrHeapSymbols(await fixture(sectionMismatch), binding, webcrypto)).reason,
+    'allocator-elf-function-proof-invalid');
+  const invalidProfile = structuredClone(await parseX43AvrHeapSymbols(await fixture(), binding, webcrypto));
+  invalidProfile.symbols.brkvalAddress = 0x08ff;
+  assert.throws(() => validateX43AvrHeapSymbols(invalidProfile), { code: 'X43_HEAP_SYMBOL_PROFILE_INVALID' });
 });
 
 test('one explicit fixed-address sample reports frontier-to-SP address gap without free-memory claims', async () => {

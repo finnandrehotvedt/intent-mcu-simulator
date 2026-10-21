@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
+import {
+  AVR_ALLOCATOR_ID, normalizeAvrAllocatorProvenance,
+} from '../compiler/avr-allocator-provenance.mjs';
+
 export const X43_AVR_HEAP_SYMBOL_SCHEMA = 'intent-mcu-x43-avr-heap-symbols@1';
 export const X43_AVR_HEAP_SAMPLE_SCHEMA = 'intent-mcu-x43-avr-heap-frontier-sample@1';
-export const X43_AVR_HEAP_ALLOCATOR = 'avr-libc@2.0.0-malloc';
+export const X43_AVR_HEAP_ALLOCATOR = AVR_ALLOCATOR_ID;
 
 const HEADER_BYTES = 52;
 const SECTION_BYTES = 40;
@@ -55,11 +59,20 @@ function stringAt(bytes, offset, end) {
   try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes.subarray(offset, cursor)); }
   catch { return reject('X43_HEAP_ELF_STRING_INVALID'); }
 }
-function dataAddress(symbol, code) {
+function dataAddress(symbol, size, code) {
   if (symbol.value < DATA_MARKER) reject(code);
   const address = symbol.value - DATA_MARKER;
-  if (address < SRAM_START || address > RAMEND) reject(code);
+  if (address < SRAM_START || address > RAMEND || size < 0 || address + size - 1 > RAMEND) reject(code);
   return address;
+}
+function symbolInSection(symbol, sections, allowEnd = false) {
+  const section = sections[symbol.sectionIndex];
+  if (!section || !Number.isSafeInteger(section.address) || !Number.isSafeInteger(section.size)) return false;
+  const end = section.address + section.size;
+  const symbolEnd = symbol.value + symbol.size;
+  return Number.isSafeInteger(end) && Number.isSafeInteger(symbolEnd)
+    && symbol.value >= section.address
+    && (allowEnd && symbol.size === 0 ? symbol.value <= end : symbolEnd <= end);
 }
 function binding(value) {
   if (!exactKeys(value, ['artifactIdentity', 'modelImplementationSha256', 'modelExecutionContextSha256'])
@@ -69,7 +82,10 @@ function binding(value) {
 }
 
 export async function parseX43AvrHeapSymbols(artifact, rawBinding, cryptoImpl = globalThis.crypto) {
-  if (!exactKeys(artifact, ['elfBase64', 'elfSha256']) || !HASH.test(artifact.elfSha256 ?? '')
+  if (!artifact || typeof artifact !== 'object' || Array.isArray(artifact)
+      || !Object.keys(artifact).every((key) => ['elfBase64', 'elfSha256', 'allocatorProvenance'].includes(key))
+      || !Object.hasOwn(artifact, 'elfBase64') || !Object.hasOwn(artifact, 'elfSha256')
+      || !HASH.test(artifact.elfSha256 ?? '')
       || typeof artifact.elfBase64 !== 'string') reject('X43_HEAP_ELF_ARTIFACT_INVALID');
   const acceptedBinding = binding(rawBinding);
   const bytes = decode(artifact.elfBase64);
@@ -91,6 +107,16 @@ export async function parseX43AvrHeapSymbols(artifact, rawBinding, cryptoImpl = 
       offset: view.getUint32(offset + 16, true), size: view.getUint32(offset + 20, true),
       link: view.getUint32(offset + 24, true), entryBytes: view.getUint32(offset + 36, true) };
   });
+  const provenance = normalizeAvrAllocatorProvenance(
+    artifact.allocatorProvenance, artifact.elfSha256,
+  );
+  const unavailable = (reason) => Object.freeze({ schema: X43_AVR_HEAP_SYMBOL_SCHEMA,
+    state: 'unavailable', reason,
+    artifactIdentity: acceptedBinding.artifactIdentity, elfSha256: artifact.elfSha256,
+    modelImplementationSha256: acceptedBinding.modelImplementationSha256,
+    modelExecutionContextSha256: acceptedBinding.modelExecutionContextSha256,
+    allocator: null, provenance, symbols: null });
+  if (provenance.state !== 'supported') return unavailable(provenance.reason);
   const matches = new Map(REQUIRED.map((name) => [name, []]));
   for (const table of sections.filter((section) => section.type === SHT_SYMTAB)) {
     if (table.entryBytes !== SYMBOL_BYTES || table.size % SYMBOL_BYTES
@@ -111,42 +137,52 @@ export async function parseX43AvrHeapSymbols(artifact, rawBinding, cryptoImpl = 
     }
   }
   const missing = REQUIRED.filter((name) => matches.get(name).length === 0);
-  if (missing.length) return Object.freeze({ schema: X43_AVR_HEAP_SYMBOL_SCHEMA,
-    state: 'unavailable', reason: 'avr-libc-allocator-symbol-set-not-linked',
-    artifactIdentity: acceptedBinding.artifactIdentity, elfSha256: artifact.elfSha256,
-    modelImplementationSha256: acceptedBinding.modelImplementationSha256,
-    modelExecutionContextSha256: acceptedBinding.modelExecutionContextSha256,
-    allocator: null, symbols: null });
-  if (REQUIRED.some((name) => matches.get(name).length !== 1)) reject('X43_HEAP_ELF_SYMBOL_DUPLICATE');
+  if (missing.length) return unavailable('allocator-elf-symbol-set-mismatch');
+  if (REQUIRED.some((name) => matches.get(name).length !== 1)) {
+    return unavailable('allocator-elf-symbol-set-mismatch');
+  }
   const symbol = Object.fromEntries(REQUIRED.map((name) => [name, matches.get(name)[0]]));
   const objects = ['__brkval', '__flp', '__malloc_heap_start', '__malloc_heap_end', '__malloc_margin'];
   for (const name of objects) {
     const item = symbol[name];
     if (item.binding !== STB_GLOBAL || item.type !== STT_OBJECT || item.other !== 0
-        || item.sectionIndex === SHN_UNDEF || item.sectionIndex >= sections.length || item.size !== 2) {
-      reject('X43_HEAP_ELF_ALLOCATOR_OBJECT_INVALID');
+        || item.sectionIndex === SHN_UNDEF || item.sectionIndex >= sections.length || item.size !== 2
+        || !symbolInSection(item, sections) || item.value < DATA_MARKER + SRAM_START
+        || item.value - DATA_MARKER + 1 > RAMEND) {
+      return unavailable('allocator-elf-object-proof-invalid');
     }
   }
   for (const name of ['malloc', 'free']) {
     const item = symbol[name];
     if (item.binding !== STB_GLOBAL || item.type !== STT_FUNC || item.other !== 0
-        || item.sectionIndex === SHN_UNDEF || item.sectionIndex >= sections.length || item.size < 1) {
-      reject('X43_HEAP_ELF_ALLOCATOR_FUNCTION_INVALID');
+        || item.sectionIndex === SHN_UNDEF || item.sectionIndex >= sections.length || item.size < 1
+        || !symbolInSection(item, sections)) {
+      return unavailable('allocator-elf-function-proof-invalid');
     }
   }
   if (symbol._end.binding !== STB_GLOBAL || symbol._end.type !== STT_NOTYPE
-      || symbol._end.other !== 0 || symbol._end.sectionIndex === SHN_UNDEF) {
-    reject('X43_HEAP_ELF_STATIC_END_INVALID');
+      || symbol._end.other !== 0 || symbol._end.sectionIndex === SHN_UNDEF
+      || symbol._end.sectionIndex >= sections.length || !symbolInSection(symbol._end, sections, true)
+      || symbol._end.value < DATA_MARKER + SRAM_START
+      || symbol._end.value - DATA_MARKER > RAMEND) {
+    return unavailable('allocator-elf-static-end-invalid');
   }
   const addresses = Object.fromEntries(objects.map((name) => [name,
-    dataAddress(symbol[name], 'X43_HEAP_ELF_ALLOCATOR_OBJECT_SRAM_BOUNDS')]));
-  if (new Set(Object.values(addresses)).size !== objects.length) reject('X43_HEAP_ELF_ALLOCATOR_OBJECT_OVERLAP');
-  const staticHeapStart = dataAddress(symbol._end, 'X43_HEAP_ELF_STATIC_END_SRAM_BOUNDS');
+    dataAddress(symbol[name], symbol[name].size, 'X43_HEAP_ELF_ALLOCATOR_OBJECT_SRAM_BOUNDS')]));
+  const ranges = Object.values(addresses).map((start) => ({ start, end: start + 2 }));
+  if (ranges.some((range, index) => ranges.some((other, otherIndex) => index !== otherIndex
+      && range.start < other.end && other.start < range.end))) {
+    return unavailable('allocator-elf-object-overlap');
+  }
+  const staticHeapStart = dataAddress(symbol._end, 0, 'X43_HEAP_ELF_STATIC_END_SRAM_BOUNDS');
+  if (ranges.some(({ end }) => end > staticHeapStart)) {
+    return unavailable('allocator-elf-static-boundary-invalid');
+  }
   return Object.freeze({ schema: X43_AVR_HEAP_SYMBOL_SCHEMA, state: 'supported', reason: null,
     artifactIdentity: acceptedBinding.artifactIdentity, elfSha256: artifact.elfSha256,
     modelImplementationSha256: acceptedBinding.modelImplementationSha256,
     modelExecutionContextSha256: acceptedBinding.modelExecutionContextSha256,
-    allocator: X43_AVR_HEAP_ALLOCATOR,
+    allocator: X43_AVR_HEAP_ALLOCATOR, provenance,
     symbols: Object.freeze({ staticHeapStart, brkvalAddress: addresses.__brkval,
       freeListAddress: addresses.__flp, heapStartAddress: addresses.__malloc_heap_start,
       heapEndAddress: addresses.__malloc_heap_end, marginAddress: addresses.__malloc_margin }) });
@@ -154,11 +190,15 @@ export async function parseX43AvrHeapSymbols(artifact, rawBinding, cryptoImpl = 
 
 export function validateX43AvrHeapSymbols(value) {
   if (!exactKeys(value, ['schema', 'state', 'reason', 'artifactIdentity', 'elfSha256',
-    'modelImplementationSha256', 'modelExecutionContextSha256', 'allocator', 'symbols'])
+    'modelImplementationSha256', 'modelExecutionContextSha256', 'allocator', 'provenance', 'symbols'])
       || value.schema !== X43_AVR_HEAP_SYMBOL_SCHEMA || !['supported', 'unavailable'].includes(value.state)
       || !HASH.test(value.artifactIdentity ?? '') || !HASH.test(value.elfSha256 ?? '')
       || !HASH.test(value.modelImplementationSha256 ?? '')
       || !HASH.test(value.modelExecutionContextSha256 ?? '')) reject('X43_HEAP_SYMBOL_PROFILE_INVALID');
+  const provenance = normalizeAvrAllocatorProvenance(value.provenance, value.elfSha256);
+  if (JSON.stringify(provenance) !== JSON.stringify(value.provenance)) {
+    reject('X43_HEAP_SYMBOL_PROFILE_INVALID');
+  }
   if (value.state === 'unavailable') {
     if (typeof value.reason !== 'string' || value.allocator !== null || value.symbols !== null) {
       reject('X43_HEAP_SYMBOL_PROFILE_INVALID');
@@ -166,10 +206,23 @@ export function validateX43AvrHeapSymbols(value) {
     return structuredClone(value);
   }
   if (value.reason !== null || value.allocator !== X43_AVR_HEAP_ALLOCATOR
+      || provenance.state !== 'supported'
       || !exactKeys(value.symbols, ['staticHeapStart', 'brkvalAddress', 'freeListAddress',
         'heapStartAddress', 'heapEndAddress', 'marginAddress'])
-      || Object.values(value.symbols).some((address) => !Number.isInteger(address)
-        || address < SRAM_START || address > RAMEND)) reject('X43_HEAP_SYMBOL_PROFILE_INVALID');
+      || !Number.isInteger(value.symbols.staticHeapStart)
+      || value.symbols.staticHeapStart < SRAM_START || value.symbols.staticHeapStart > RAMEND
+      || ['brkvalAddress', 'freeListAddress', 'heapStartAddress', 'heapEndAddress', 'marginAddress']
+        .some((key) => !Number.isInteger(value.symbols[key])
+          || value.symbols[key] < SRAM_START || value.symbols[key] + 1 > RAMEND)) {
+    reject('X43_HEAP_SYMBOL_PROFILE_INVALID');
+  }
+  const objectStarts = ['brkvalAddress', 'freeListAddress', 'heapStartAddress',
+    'heapEndAddress', 'marginAddress'].map((key) => value.symbols[key]);
+  if (objectStarts.some((start, index) => objectStarts.some((other, otherIndex) =>
+    index !== otherIndex && start < other + 2 && other < start + 2))
+      || objectStarts.some((start) => start + 2 > value.symbols.staticHeapStart)) {
+    reject('X43_HEAP_SYMBOL_PROFILE_INVALID');
+  }
   return structuredClone(value);
 }
 

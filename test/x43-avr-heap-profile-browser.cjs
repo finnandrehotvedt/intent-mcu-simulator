@@ -51,7 +51,14 @@ const evidenceDir = process.env.X43_HEAP_EVIDENCE_DIR || '';
         artifactIdentity: identity.artifactIdentity, elfSha256: 'd'.repeat(64),
         modelImplementationSha256: identity.modelImplementationSha256,
         modelExecutionContextSha256: identity.modelExecutionContextSha256,
-        allocator: 'avr-libc@2.0.0-malloc', symbols: { staticHeapStart: 0x0180,
+        allocator: 'avr-libc@2.0.0-malloc', provenance: {
+          schema: 'intent-mcu-avr-allocator-provenance@1', state: 'supported', reason: null,
+          elfSha256: 'd'.repeat(64), allocator: 'avr-libc@2.0.0-malloc',
+          archiveSha256: 'f4e9bdaa567959659f6974d75aeef8acb7ea17fbfac4bc3f85b8f8640af4f1e8',
+          member: 'malloc.o', memberSha256: 'bc6353d3d3f242f9ac6b2b2c68a30145040d14d27ff022d41bb35a4535620541',
+          symbols: ['__brkval', '__flp', '__malloc_heap_end', '__malloc_heap_start',
+            '__malloc_margin', 'free', 'malloc'],
+        }, symbols: { staticHeapStart: 0x0180,
           brkvalAddress: 0x0110, freeListAddress: 0x0112, heapStartAddress: 0x0114,
           heapEndAddress: 0x0116, marginAddress: 0x0118 },
       };

@@ -8,6 +8,7 @@ import { DEFAULT_CIRCUIT } from '../src/default-circuit.mjs';
 import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
 import { MODEL_RUNTIME_BINDING_SCHEMA } from '../src/runtime-identity.mjs';
 import { X43_AVR_HEAP_SYMBOL_SCHEMA } from '../src/x43-avr-heap-profile.mjs';
+import { AVR_ALLOCATOR_PROVENANCE_SCHEMA } from '../compiler/avr-allocator-provenance.mjs';
 
 const messages = [];
 globalThis.crypto ??= webcrypto;
@@ -36,7 +37,10 @@ test('worker accepts only artifact/model-bound metadata and identity-bound sampl
     reason: 'avr-libc-allocator-symbol-set-not-linked', artifactIdentity: runtimeBinding.artifactIdentity,
     elfSha256: 'c'.repeat(64), modelImplementationSha256: runtimeBinding.modelImplementationSha256,
     modelExecutionContextSha256: runtimeBinding.modelExecutionContextSha256,
-    allocator: null, symbols: null };
+    allocator: null, provenance: { schema: AVR_ALLOCATOR_PROVENANCE_SCHEMA,
+      state: 'unavailable', reason: 'avr-libc-allocator-symbol-set-not-linked',
+      elfSha256: 'c'.repeat(64), allocator: null, archiveSha256: null,
+      member: null, memberSha256: null, symbols: null }, symbols: null };
   const init = { command: 'init', hex: ':00000001FF', circuit: DEFAULT_CIRCUIT,
     runtimeBinding, modelLibraryLock: CURRENT_MODEL_LIBRARY_LOCK,
     modelImplementationSha256: runtimeBinding.modelImplementationSha256,

@@ -11368,8 +11368,10 @@ async function pollJob(job, inputAtSubmit, modelExecutionContextSha256, modelImp
       const result = { ...status.result, modelExecutionContextSha256, modelImplementationSha256 };
       const x43HeapProfile = await parseX43AvrHeapSymbols({
         elfBase64: result.artifact.elfBase64, elfSha256: result.artifact.elfSha256,
+        allocatorProvenance: result.artifact.allocatorProvenance ?? null,
       }, { artifactIdentity: result.artifactIdentity,
         modelImplementationSha256, modelExecutionContextSha256 });
+      if (!currentBuildBinding(binding) || buildInputIdentity() !== inputAtSubmit) return;
       const acceptedBuild = applyLifecycle({
         type: 'build.succeeded', binding,
         artifactIdentity: result.artifactIdentity, inputIdentity: result.inputIdentity,
