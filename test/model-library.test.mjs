@@ -24,7 +24,8 @@ import {
   createTemperatureLcdThresholdExample,
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
-  CURRENT_MODEL_LIBRARY_LOCK, PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_LOCK,
+  CURRENT_MODEL_LIBRARY_LOCK, PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X43_STACK_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_UX_CURRENT_MODEL_LIBRARY_LOCK,
@@ -160,7 +161,7 @@ test('retained and current locks use distinct real resolver instances with match
 test('production electrical and runtime paths dispatch through the exact selected implementation', () => {
   for (const [lock, expected] of [
     [RETAINED_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-retained-rc72@2'],
-    [CURRENT_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12'],
+    [CURRENT_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13'],
   ]) {
     const avr = validateCircuit(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
     assert.equal(avr.ok, true);
@@ -185,7 +186,17 @@ test('production electrical and runtime paths dispatch through the exact selecte
 
 test('prior current locks remain exact and data-migratable but cannot authorize execution', () => {
   const historical = historicalModelLibraryManifests();
-  assert.equal(historical.length, 11);
+  assert.equal(historical.length, 12);
+  const preRepeatable = historical.at(-1);
+  assert.equal(preRepeatable.version, '2.0.0-x43-stack-hotpath-candidate.1-current');
+  assert.equal(normalizeModelLibraryLock(PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
+  assert.equal(modelLibraryExecutionIdentity(PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_LOCK).code,
+    'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const repeatableMigration = modelLibraryMigrationPreview(PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(repeatableMigration.ok, true);
+  assert.equal(repeatableMigration.semanticChanges.length, 0);
+  assert.equal(repeatableMigration.rendererChanges.length, 0);
+  assert.equal(repeatableMigration.unchanged.length, 25);
   const preHotpath = historical[1];
   assert.equal(preHotpath.version, '2.0.0-x43-observed-stack-candidate.1-current');
   assert.equal(normalizeModelLibraryLock(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_LOCK).ok, true);

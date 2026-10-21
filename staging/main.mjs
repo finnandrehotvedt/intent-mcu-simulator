@@ -63,12 +63,15 @@ import {
   MODEL_RUNTIME_BINDING_SCHEMA, RUNTIME_BINDING_SCHEMA, validateWorkerRuntimeIdentity,
 } from '../src/runtime-identity.mjs';
 import {
-  X47_RUNTIME_AUTHORITY_SCHEMA, validateX47CancelReceipt,
+  createX47WorkerBinding, X47_RUNTIME_AUTHORITY_SCHEMA, validateX47CancelReceipt,
 } from '../src/x47-runtime-transaction.mjs';
 import { createX47UiOwner } from '../src/x47-ui-integration.mjs';
 import {
   captureX47PulseSource, createX47PulseContextFromSource,
 } from '../src/x47-avr-d2-pulse.mjs';
+import {
+  createX47RepeatableApplyRequest, validateX47RepeatableRecord,
+} from '../src/x47-repeatable-inputs.mjs';
 import { mountSharedWorkbenchShell } from '../src/shared-workbench-shell.mjs';
 import {
   avrInstrumentEvidence, instrumentCapability, sharedInstrumentSummary, sharedInstrumentView,
@@ -674,10 +677,12 @@ let x47ApplyTicket = 0;
 let x47ResetExpectation = null;
 let x47WorkerStatus = null;
 let x47WorkerStatusSequence = 0;
+let x47RepeatablePending = null;
 const accessibleConnectionNotices = new Map();
 
 function renderX47Integration(snapshot = x47TerminalProjection ?? x47UiOwner.snapshot()) {
   window.__X47_PULSE_PREVIEW__?.integration?.(snapshot);
+  window.__X47_REPEATABLE_INPUTS__?.integration?.(snapshot);
   publish({ x47Integration: structuredClone(snapshot) });
   return snapshot;
 }
@@ -690,11 +695,13 @@ function retireX47Integration(reason, { preserveTerminal = false } = {}) {
   x47ResetExpectation = null;
   x47WorkerStatus = null;
   x47WorkerStatusSequence += 1;
+  x47RepeatablePending = null;
   if (x47StopTimer !== null) clearTimeout(x47StopTimer);
   x47StopTimer = null;
   x47RuntimeAuthority = null;
   x47WorkerIdentity = null;
   x47ExplicitPauseRequested = false;
+  window.__X47_REPEATABLE_INPUTS__?.invalidate?.(reason);
   if (!preserveTerminal) {
     x47TerminalProjection = null;
     const retired = x47UiOwner.retire(reason);
@@ -11230,6 +11237,20 @@ async function loadArtifact(hex, artifactIdentity, {
       return;
     }
     try {
+      if (data.kind === 'x47-repeatable-accepted') {
+        const pending = x47RepeatablePending;
+        if (!pending || pending.worker !== loadWorker || pending.workerToken !== token
+            || pending.transactionId !== data.transactionId
+            || pending.canonicalScheduleSha256 !== data.canonicalScheduleSha256
+            || lifecycle.phase !== 'paused' || data.baseCycle !== x47WorkerStatus?.cycle
+            || data.dropped !== 0 || data.retained !== data.events?.length
+            || !sameRuntimeIdentity(identity, pending.runtimeIdentity)) {
+          throw new Error('X47_REPEATABLE_ACCEPT_STALE');
+        }
+        x47RepeatablePending = null;
+        window.__X47_REPEATABLE_INPUTS__?.accepted?.(data);
+        return;
+      }
       if (data.kind === 'x47-accepted') {
         renderX47Integration(x47UiOwner.accept({ workerToken: token, runtimeIdentity: identity,
           receipt: data.receipt, executionReceipt: data.executionReceipt }));
@@ -11671,6 +11692,54 @@ document.addEventListener('x47-preview-ready', () => {
       && x47UiOwner.snapshot().phase === 'await-pause' && x47WorkerStatus?.paused === true) {
     void bindPausedX47Preview(workerToken, x47WorkerIdentity, x47WorkerStatus.cycle,
       x47WorkerStatus.worker);
+  }
+});
+
+document.addEventListener('x47-repeatable-apply-request', async (event) => {
+  const applyWorker = worker;
+  const applyWorkerToken = workerToken;
+  const identity = structuredClone(x47WorkerIdentity);
+  const authority = structuredClone(x47RuntimeAuthority);
+  const pausedStatus = x47WorkerStatus;
+  const owner = x47UiOwner.snapshot();
+  const uiSnapshot = window.__X47_REPEATABLE_INPUTS__?.snapshot?.();
+  try {
+    if (x47RepeatablePending || !applyWorker || !identity || !authority
+        || lifecycle.phase !== 'paused' || pausedStatus?.paused !== true
+        || pausedStatus.kind !== 'paused' || pausedStatus.worker !== applyWorker
+        || pausedStatus.workerToken !== applyWorkerToken || !owner.ran
+        || !['await-pause', 'ready'].includes(owner.phase) || !uiSnapshot?.record
+        || event.detail?.canonicalText !== uiSnapshot.canonicalText
+        || !sameRuntimeIdentity(event.detail?.record, uiSnapshot.record)
+        || event.detail?.context?.graphIdentity !== authority.graphIdentity
+        || event.detail?.context?.sourceProjectRevision !== authority.sourceProjectRevision) {
+      throw Object.assign(new Error('X47_REPEATABLE_APPLY_NOT_READY'),
+        { code: 'X47_REPEATABLE_APPLY_NOT_READY' });
+    }
+    const record = validateX47RepeatableRecord(event.detail.record, event.detail.context);
+    const canonicalScheduleSha256 = await projectTextSha256(event.detail.canonicalText);
+    const live = window.__X47_REPEATABLE_INPUTS__?.snapshot?.();
+    if (applyWorker !== worker || applyWorkerToken !== workerToken
+        || lifecycle.phase !== 'paused' || pausedStatus !== x47WorkerStatus
+        || !sameRuntimeIdentity(identity, x47WorkerIdentity)
+        || !sameRuntimeIdentity(authority, x47RuntimeAuthority)
+        || !sameRuntimeIdentity(uiSnapshot, live)) {
+      throw Object.assign(new Error('X47_REPEATABLE_APPLY_STALE'),
+        { code: 'X47_REPEATABLE_APPLY_STALE' });
+    }
+    const transactionId = `x47-repeatable-${crypto.randomUUID()}`;
+    const request = createX47RepeatableApplyRequest({ transactionId,
+      canonicalScheduleSha256, binding: createX47WorkerBinding(authority, identity),
+      expectedBaseCycle: pausedStatus.cycle, record }, authority, identity);
+    x47RepeatablePending = { worker: applyWorker, workerToken: applyWorkerToken,
+      transactionId, canonicalScheduleSha256, runtimeIdentity: structuredClone(identity) };
+    applyWorker.postMessage({ command: 'x47-repeatable-apply', request });
+  } catch (error) {
+    if (applyWorker === worker && applyWorkerToken === workerToken) {
+      x47RepeatablePending = null;
+      window.__X47_REPEATABLE_INPUTS__?.integration?.({ phase: 'rejected',
+        reason: error.code ?? error.message });
+    }
   }
 });
 

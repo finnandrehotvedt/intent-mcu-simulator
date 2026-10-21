@@ -33,6 +33,12 @@ import {
   inspectX47AvrD2Target,
   x47PulseSourceMatches,
 } from './x47-avr-d2-pulse.mjs';
+import { parseStrictJson } from './strict-json.mjs';
+import {
+  canonicalX47RepeatableText,
+  createX47RepeatableContext,
+  createX47RepeatableRecord,
+} from './x47-repeatable-inputs.mjs';
 import {
   createX49ProjectionOwner,
   X49_CASES,
@@ -1115,6 +1121,177 @@ function installX47PulsePreview(document, activeProfileReader) {
   return api;
 }
 
+const X47_REPEATABLE_DEFAULTS = Object.freeze({
+  ramp: '{"startTemperatureC":20,"endTemperatureC":40,"eventCount":5,"startOffsetCycles":16000,"stepCycles":16000}',
+  'seeded-noise': '{"centerTemperatureC":30,"amplitudeC":4,"eventCount":8,"startOffsetCycles":8000,"stepCycles":8000}',
+  recorded: '{"points":[{"offsetCycles":16000,"temperatureC":20},{"offsetCycles":32000,"temperatureC":30},{"offsetCycles":48000,"temperatureC":40}]}',
+});
+
+function createX47RepeatablePanel(document, ordinal) {
+  const panel = document.createElement('section');
+  panel.className = 'x47-repeatable-inputs';
+  panel.dataset.x47RepeatableInputs = '';
+  panel.setAttribute('aria-labelledby', `x47-repeatable-title-${ordinal}`);
+  panel.innerHTML = `
+    <div class="shared-instrument-tool-heading">
+      <strong id="x47-repeatable-title-${ordinal}">Repeatable A1 inputs</strong>
+      <span data-x47-repeatable-state>Checking</span>
+    </div>
+    <p class="x47-repeatable-boundary"><strong>Private candidate</strong> · finite data-only preview · not saved · no native execution claim.</p>
+    <div class="x47-repeatable-controls">
+      <label>Input family
+        <select data-x47-repeatable-family>
+          <option value="ramp">Temperature ramp</option>
+          <option value="seeded-noise">Seeded temperature noise</option>
+          <option value="recorded">Recorded temperature sequence</option>
+        </select>
+      </label>
+      <label data-x47-repeatable-seed-wrap hidden>Unsigned 32-bit seed
+        <input data-x47-repeatable-seed type="number" inputmode="numeric" min="0" max="4294967295" step="1" value="305419896">
+      </label>
+      <button type="button" data-x47-repeatable-preview disabled>Create finite preview</button>
+    </div>
+    <label class="x47-repeatable-parameters">Strict local JSON parameters
+      <textarea data-x47-repeatable-parameters rows="4" spellcheck="false">${X47_REPEATABLE_DEFAULTS.ramp}</textarea>
+    </label>
+    <p data-x47-repeatable-binding>Checking exact A1 temperature and D2 button wiring.</p>
+    <div class="x47-repeatable-output" data-x47-repeatable-output hidden>
+      <div><strong>Expanded schedule</strong><ol data-x47-repeatable-events></ol></div>
+      <details><summary>Canonical bounded record</summary><pre data-x47-repeatable-canonical></pre></details>
+    </div>
+    <div class="x47-repeatable-actions">
+      <button type="button" data-x47-repeatable-apply disabled>Apply to paused A1</button>
+    </div>
+    <p data-x47-repeatable-runtime>Build, Run, then explicitly Pause. Apply only queues the finite schedule; it never resumes execution.</p>`;
+  return panel;
+}
+
+function installX47RepeatableInputs(document, activeProfileReader) {
+  const panels = [...document.querySelectorAll('[data-shared-instrument-tools]')].map((tools, index) => {
+    const panel = createX47RepeatablePanel(document, index + 1);
+    tools.append(panel);
+    return panel;
+  });
+  let operation = 0;
+  let context = null;
+  let record = null;
+  let canonicalText = null;
+  let source = null;
+  let notice = null;
+  let draftChanged = false;
+  let integration = { phase: 'unavailable', reason: 'No current paused worker.' };
+  const state = () => document.defaultView?.__M6_STATE__ ?? null;
+  const sourceStillCurrent = () => source && source.profile === activeProfileReader()
+    && source.projectGeneration === state()?.lifecycle?.projectGeneration
+    && source.revision === state()?.revision
+    && source.graphJson === JSON.stringify(state()?.graph);
+  const snapshot = () => ({ state: record && sourceStillCurrent() ? 'preview' : 'unavailable',
+    reason: notice, context: context ? structuredClone(context) : null,
+    record: record ? structuredClone(record) : null, canonicalText });
+  const canApply = () => Boolean(record && !draftChanged && sourceStillCurrent()
+    && state()?.lifecycle?.phase === 'paused'
+    && ['await-pause', 'ready'].includes(integration.phase));
+  const paint = () => {
+    if (record && !sourceStillCurrent()) {
+      context = null; record = null; canonicalText = null;
+      notice = 'X47_REPEATABLE_BINDING_CHANGED';
+    }
+    for (const panel of panels) {
+      panel.dataset.state = record ? 'preview' : notice ? 'invalidated' : 'ready';
+      panel.querySelector('[data-x47-repeatable-state]').textContent = record && notice
+        ? `Rejected · previous preview retained · ${notice}`
+        : record && draftChanged ? 'Previous preview retained'
+          : record ? 'Preview ready' : notice ? `Rejected · ${notice}` : context ? 'Ready' : 'Unavailable';
+      panel.querySelector('[data-x47-repeatable-preview]').disabled = !context;
+      panel.querySelector('[data-x47-repeatable-apply]').disabled = !canApply();
+      panel.querySelector('[data-x47-repeatable-binding]').textContent = context
+        ? `Current ${context.target.componentId}: ${context.target.signalEndpoint} → ${context.target.inputEndpoint} · ${context.target.units} · revision ${context.sourceProjectRevision} · graph ${context.graphIdentity.slice(0, 19)}…`
+        : notice ?? 'Requires the exact AVR thermostat graph with A1 temperature sensor and D2 button.';
+      panel.querySelector('[data-x47-repeatable-output]').hidden = !record;
+      panel.querySelector('[data-x47-repeatable-canonical]').textContent = canonicalText ?? '';
+      const rows = record?.events.map((event) => {
+        const item = document.createElement('li');
+        item.textContent = `${event.offsetCycles.toLocaleString('en-US')} cycles · ${event.temperatureC} °C`;
+        return item;
+      }) ?? [];
+      panel.querySelector('[data-x47-repeatable-events]').replaceChildren(...rows);
+      panel.querySelector('[data-x47-repeatable-runtime]').textContent = integration.accepted
+        ? `${integration.accepted.events.length} events queued on the current paused worker; execution has not been resumed or claimed.`
+        : `${integration.reason ?? 'No current paused worker.'} Apply queues data only and never resumes execution.`;
+    }
+    return snapshot();
+  };
+  const refresh = async () => {
+    const ticket = ++operation;
+    const current = state();
+    const captured = { profile: activeProfileReader(),
+      projectGeneration: current?.lifecycle?.projectGeneration, revision: current?.revision,
+      graphJson: JSON.stringify(current?.graph), graph: structuredClone(current?.graph) };
+    try {
+      const next = await createX47RepeatableContext(captured.profile, captured.projectGeneration,
+        captured.revision, captured.graph);
+      if (ticket !== operation || captured.profile !== activeProfileReader()
+          || captured.projectGeneration !== state()?.lifecycle?.projectGeneration
+          || captured.revision !== state()?.revision
+          || captured.graphJson !== JSON.stringify(state()?.graph)) return snapshot();
+      source = { profile: captured.profile, projectGeneration: captured.projectGeneration,
+        revision: captured.revision, graphJson: captured.graphJson };
+      context = next; notice = null;
+    } catch (error) {
+      if (ticket !== operation) return snapshot();
+      source = null; context = null; record = null; canonicalText = null;
+      notice = error.code ?? error.message;
+    }
+    return paint();
+  };
+  const invalidate = (reason) => {
+    operation += 1; source = null; context = null; record = null; canonicalText = null; draftChanged = false;
+    notice = reason; integration = { phase: 'unavailable', reason };
+    return paint();
+  };
+  for (const panel of panels) {
+    const family = panel.querySelector('[data-x47-repeatable-family]');
+    const parameters = panel.querySelector('[data-x47-repeatable-parameters]');
+    const seedWrap = panel.querySelector('[data-x47-repeatable-seed-wrap]');
+    family.addEventListener('change', () => {
+      parameters.value = X47_REPEATABLE_DEFAULTS[family.value];
+      seedWrap.hidden = family.value !== 'seeded-noise';
+      record = null; canonicalText = null; notice = null; draftChanged = false; paint();
+    });
+    parameters.addEventListener('input', () => { draftChanged = Boolean(record); notice = null; paint(); });
+    panel.querySelector('[data-x47-repeatable-seed]').addEventListener('input', () => {
+      draftChanged = Boolean(record); notice = null; paint();
+    });
+    panel.querySelector('[data-x47-repeatable-preview]').addEventListener('click', () => {
+      try {
+        if (!context || !sourceStillCurrent()) throw new Error('X47_REPEATABLE_BINDING_CHANGED');
+        const parsed = parseStrictJson(parameters.value);
+        const seed = family.value === 'seeded-noise'
+          ? Number(panel.querySelector('[data-x47-repeatable-seed]').value) : null;
+        const next = createX47RepeatableRecord(family.value, parsed, context, seed);
+        record = next; canonicalText = canonicalX47RepeatableText(next, context);
+        notice = null; draftChanged = false; integration = { ...integration, accepted: null };
+      } catch (error) {
+        notice = error.code ?? error.message;
+      }
+      paint();
+    });
+    panel.querySelector('[data-x47-repeatable-apply]').addEventListener('click', () => {
+      if (!canApply()) return;
+      document.dispatchEvent(new CustomEvent('x47-repeatable-apply-request', { detail: {
+        context: structuredClone(context), record: structuredClone(record), canonicalText,
+      } }));
+    });
+  }
+  const api = Object.freeze({ refresh, invalidate, snapshot: () => paint(),
+    integration(value) { integration = structuredClone(value); return paint(); },
+    accepted(value) { integration = { ...integration, accepted: structuredClone(value),
+      phase: 'queued', reason: 'Finite schedule accepted while paused.' }; return paint(); } });
+  document.defaultView.__X47_REPEATABLE_INPUTS__ = api;
+  void refresh();
+  return api;
+}
+
 function createX49Panel(document, ordinal) {
   const panel = document.createElement('section');
   panel.className = 'x49-offset-comparison';
@@ -1486,6 +1663,7 @@ export function mountSharedWorkbenchShell(document) {
   const x42 = installX42TriggerCapture(document, () => activeProfile);
   const x43 = installX43AvrObservationProfile(document, () => activeProfile);
   const x47 = installX47PulsePreview(document, () => activeProfile);
+  const x47Repeatable = installX47RepeatableInputs(document, () => activeProfile);
   const x49 = installX49OffsetComparison(document, () => activeProfile);
 
   const viewButtons = Object.freeze({
@@ -1537,7 +1715,9 @@ export function mountSharedWorkbenchShell(document) {
     returnFocus = requestedOpener ?? document.activeElement ?? popup.opener;
     popup.opener.setAttribute('aria-expanded', 'true');
     popup.dialog.showModal();
-    if (name === 'instruments') { x42.refresh(); x43.refresh(); void x47.refresh(); x49.refresh(); }
+    if (name === 'instruments') {
+      x42.refresh(); x43.refresh(); void x47.refresh(); void x47Repeatable.refresh(); x49.refresh();
+    }
     if (initialFocus) {
       const heading = popup.dialog.querySelector('h2');
       queueMicrotask(() => (heading ?? popupFocusable(popup.dialog)[0])?.focus({ preventScroll: true }));
@@ -1642,6 +1822,7 @@ export function mountSharedWorkbenchShell(document) {
         x42.invalidate('X42_PROFILE_CHANGED');
         x43.invalidate('X43_PROFILE_CHANGED');
         x47.invalidate('X47_PROFILE_CHANGED');
+        x47Repeatable.invalidate('X47_REPEATABLE_PROFILE_CHANGED');
         x49.invalidate('X49_PROFILE_CHANGED');
       }
       closePopup();
