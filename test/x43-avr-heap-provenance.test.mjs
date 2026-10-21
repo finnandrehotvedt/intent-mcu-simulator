@@ -8,7 +8,8 @@ import {
   AVR_ALLOCATOR_ARCHIVE, AVR_ALLOCATOR_ARCHIVE_SHA256, AVR_ALLOCATOR_MEMBER,
   AVR_ALLOCATOR_MEMBER_SHA256, AVR_ALLOCATOR_SYMBOLS,
   createAvrAllocatorLinkerProofDiagnostic, createAvrAllocatorProvenance,
-  normalizeAvrAllocatorProvenance,
+  normalizeAvrAllocatorArchivePath, normalizeAvrAllocatorProvenance,
+  verifyAvrAllocatorArchiveSpellings,
 } from '../compiler/avr-allocator-provenance.mjs';
 import { BuildCoordinator } from '../compiler/build-coordinator.mjs';
 import { BUILD_REQUEST_SCHEMA, sha256 } from '../compiler/build-protocol.mjs';
@@ -18,6 +19,8 @@ const exactOwner = `${AVR_ALLOCATOR_ARCHIVE}(${AVR_ALLOCATOR_MEMBER})`;
 const trace = (ownerFor = () => exactOwner) => AVR_ALLOCATOR_SYMBOLS
   .map((symbol) => `${ownerFor(symbol)}: definition of ${symbol}`).join('\n');
 const ownerHash = (value) => sha256(Buffer.from(value, 'utf8'));
+const actualArchivePath = '/opt/arduino/data/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5/libc.a';
+const actualOwner = `${actualArchivePath}(${AVR_ALLOCATOR_MEMBER})`;
 
 test('only the exact pinned archive member definition set creates supported provenance', () => {
   const supported = createAvrAllocatorProvenance({ linkerText: trace(), elfSha256: ELF,
@@ -49,6 +52,49 @@ test('only the exact pinned archive member definition set creates supported prov
   assert.equal(createAvrAllocatorProvenance({ linkerText: trace(), elfSha256: ELF,
     archiveSha256: 'b'.repeat(64), memberSha256: AVR_ALLOCATOR_MEMBER_SHA256 }).reason,
   'allocator-toolchain-archive-untrusted');
+});
+
+test('actual GCC spelling requires exact realpath verification before canonical acceptance', async () => {
+  assert.equal(normalizeAvrAllocatorArchivePath(actualArchivePath), AVR_ALLOCATOR_ARCHIVE);
+  assert.equal(ownerHash(actualOwner),
+    'e237fcc8cd68c6060fff840d981478e3138475bfe39541e1c45c6744e7819235');
+  assert.equal(ownerHash(exactOwner),
+    '6bd28e80b1d4f24c886a0684c91f8421d7874cdf3e2252b44f071c3fc860d063');
+  const actualTrace = trace(() => actualOwner);
+  const base = { linkerText: actualTrace, elfSha256: ELF,
+    archiveSha256: AVR_ALLOCATOR_ARCHIVE_SHA256,
+    memberSha256: AVR_ALLOCATOR_MEMBER_SHA256 };
+  assert.equal(createAvrAllocatorProvenance(base).state, 'unavailable');
+  const verifiedArchivePaths = await verifyAvrAllocatorArchiveSpellings(actualTrace,
+    async (value) => value === AVR_ALLOCATOR_ARCHIVE || value === actualArchivePath
+      ? AVR_ALLOCATOR_ARCHIVE : Promise.reject(new Error('UNTRUSTED_PATH')));
+  assert.deepEqual(verifiedArchivePaths, [actualArchivePath]);
+  assert.equal(createAvrAllocatorProvenance({ ...base, verifiedArchivePaths }).state, 'supported');
+});
+
+test('relative, wrong archive, other member, project, traversal and symlink escape owners reject', async () => {
+  const vectors = [
+    'relative/libc.a(malloc.o)',
+    '/opt/arduino/untrusted/libc.a(malloc.o)',
+    `${AVR_ALLOCATOR_ARCHIVE}(free.o)`,
+    '/workspace/build/main.ino.cpp.o',
+    `/prefix${AVR_ALLOCATOR_ARCHIVE}(malloc.o)`,
+    `${AVR_ALLOCATOR_ARCHIVE}.backup(malloc.o)`,
+    `${AVR_ALLOCATOR_ARCHIVE}(malloc.o).suffix`,
+    '/opt/arduino/link/../data/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/avr/lib/avr5/libc.a(malloc.o)',
+  ];
+  for (const owner of vectors) {
+    const linkerText = trace(() => owner);
+    const verifiedArchivePaths = await verifyAvrAllocatorArchiveSpellings(linkerText,
+      async (value) => value === AVR_ALLOCATOR_ARCHIVE ? AVR_ALLOCATOR_ARCHIVE
+        : '/outside/pinned-toolchain');
+    assert.equal(createAvrAllocatorProvenance({ linkerText, elfSha256: ELF,
+      archiveSha256: AVR_ALLOCATOR_ARCHIVE_SHA256,
+      memberSha256: AVR_ALLOCATOR_MEMBER_SHA256,
+      verifiedArchivePaths }).state, 'unavailable');
+  }
+  assert.equal(normalizeAvrAllocatorArchivePath('../../libc.a'), null);
+  assert.equal(normalizeAvrAllocatorArchivePath('relative/libc.a'), null);
 });
 
 test('bounded linker proof diagnostic classifies and hashes owners without exposing paths', () => {
@@ -112,4 +158,5 @@ test('async optional heap parsing rechecks current build and source identity bef
   ]);
   assert.match(source, /await parseX43AvrHeapSymbols\([\s\S]+if \(!currentBuildBinding\(binding\) \|\| buildInputIdentity\(\) !== inputAtSubmit\) return;[\s\S]+type: 'build\.succeeded'/u);
   assert.match(worker, /allocatorProvenance\.state === 'unavailable'[\s\S]+createAvrAllocatorLinkerProofDiagnostic\(compiler\.text,[\s\S]+sha256\(Buffer\.from\(owner, 'utf8'\)\)/u);
+  assert.match(worker, /verifyAvrAllocatorArchiveSpellings\(compiler\.text, realpath\)[\s\S]+createAvrAllocatorProvenance\([\s\S]+verifiedArchivePaths/u);
 });

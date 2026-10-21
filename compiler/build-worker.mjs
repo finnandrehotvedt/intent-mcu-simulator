@@ -3,7 +3,7 @@
 
 import { spawn } from 'node:child_process';
 import { constants as fsConstants } from 'node:fs';
-import { access, mkdir, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, readdir, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { networkInterfaces } from 'node:os';
 import dns from 'node:dns/promises';
 import net from 'node:net';
@@ -18,6 +18,7 @@ import {
 import {
   AVR_ALLOCATOR_ARCHIVE, AVR_ALLOCATOR_MEMBER, avrAllocatorTraceFlags,
   createAvrAllocatorLinkerProofDiagnostic, createAvrAllocatorProvenance,
+  verifyAvrAllocatorArchiveSpellings,
 } from './avr-allocator-provenance.mjs';
 
 const WORKSPACE = '/workspace';
@@ -233,8 +234,9 @@ async function main() {
     return { status: 'failed', code: 'OUTPUT_LIMIT', text: '', diagnostics: [], isolation };
   }
   const elfSha256 = sha256(elf);
+  const verifiedArchivePaths = await verifyAvrAllocatorArchiveSpellings(compiler.text, realpath);
   const allocatorProvenance = createAvrAllocatorProvenance({
-    linkerText: compiler.text, elfSha256, ...allocatorArchive,
+    linkerText: compiler.text, elfSha256, ...allocatorArchive, verifiedArchivePaths,
   });
   if (allocatorProvenance.state === 'unavailable') {
     output.text = appendAllocatorProofDiagnostic(output.text,

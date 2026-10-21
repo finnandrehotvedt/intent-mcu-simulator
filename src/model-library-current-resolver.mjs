@@ -32,7 +32,7 @@ const exactInput = (value, keys) => value && typeof value === 'object' && !Array
 // Current behavior is separately owned so future current changes cannot mutate
 // the retained pre-X56 implementation by alias or shared constant.
 export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
-  id: 'intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16',
+  id: 'intent-mcu-model-bundle-current-x43-canonical-owner-1@17',
   manifestVersion: CURRENT_MODEL_LIBRARY_MANIFEST.version,
   definition(profile, componentType) {
     const entry = entries.get(`${profile}\u0000${componentType}`);
@@ -179,6 +179,13 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
     }
     return failure('MODEL_LIBRARY_PRODUCTION_UNAVAILABLE', [componentType]);
   },
+});
+
+export const PRE_X43_CANONICAL_OWNER_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16',
+  manifestVersion: '2.0.0-x43-linker-proof-diagnostic.1-current',
+  migrationOnly: true,
 });
 
 export const PRE_X43_LINKER_PROOF_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
