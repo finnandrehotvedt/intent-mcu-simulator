@@ -11,10 +11,10 @@ import {
 
 test('synthetic tracker fixture distinguishes current, interval and since-reset observed depth', () => {
   const tracker = createX43AvrStackTracker({ pointer: X43_AVR_RAMEND });
-  tracker.observe({ pointer: 0x08f9, cycle: 4, instructions: 2 });
+  tracker.observe(0x08f9, 4, 2);
   tracker.start('synthetic-interval-1');
-  tracker.observe({ pointer: 0x08ef, cycle: 8, instructions: 4 });
-  tracker.observe({ pointer: 0x08f5, cycle: 12, instructions: 6 });
+  tracker.observe(0x08ef, 8, 4);
+  tracker.observe(0x08f5, 12, 6);
   const captured = validateX43AvrStackSnapshot(tracker.capture('synthetic-interval-1'));
   assert.equal(captured.current.pointer, 0x08f5);
   assert.equal(captured.current.depthBytes, 10);
@@ -30,12 +30,46 @@ test('synthetic tracker fixture distinguishes current, interval and since-reset 
 test('synthetic out-of-SRAM fixture fails observed minima closed without claiming free memory', () => {
   const tracker = createX43AvrStackTracker({ pointer: X43_AVR_RAMEND });
   tracker.start('synthetic-invalid-sp');
-  const unavailable = tracker.observe({ pointer: 0x00ff, cycle: 2, instructions: 1 });
+  tracker.observe(0x00ff, 2, 1);
+  const unavailable = tracker.snapshot();
   assert.equal(unavailable.current, null);
   assert.equal(unavailable.allTime, null);
   assert.equal(unavailable.allTimeReason, 'stack-pointer-outside-atmega328p-sram');
   assert.equal(unavailable.interval.state, 'unavailable');
   assert.throws(() => tracker.capture('wrong-token'), /X43_STACK_TOKEN_STALE/u);
+});
+
+test('scalar observation hot path preserves a long synthetic interval without materializing reports', (context) => {
+  const tracker = createX43AvrStackTracker({ pointer: X43_AVR_RAMEND });
+  tracker.start('synthetic-many-observations');
+  const nativeStructuredClone = globalThis.structuredClone;
+  let cloneCalls = 0;
+  globalThis.structuredClone = (...args) => { cloneCalls += 1; return nativeStructuredClone(...args); };
+  const observations = 250_000;
+  const startedAt = performance.now();
+  let observationResult;
+  try {
+    for (let index = 1; index <= observations; index += 1) {
+      const depth = index % 97;
+      observationResult = tracker.observe(X43_AVR_RAMEND - depth, index * 2, index);
+    }
+  } finally {
+    globalThis.structuredClone = nativeStructuredClone;
+  }
+  const elapsedMilliseconds = performance.now() - startedAt;
+  assert.equal(observationResult, undefined);
+  assert.equal(cloneCalls, 0);
+  const captured = tracker.capture('synthetic-many-observations');
+  assert.deepEqual(captured.current, { pointer: X43_AVR_RAMEND - (observations % 97),
+    depthBytes: observations % 97, cycle: observations * 2, instructions: observations });
+  assert.equal(captured.interval.minimumPointer, X43_AVR_RAMEND - 96);
+  assert.equal(captured.interval.maximumObservedDepthBytes, 96);
+  assert.equal(captured.interval.samples, observations + 1);
+  assert.deepEqual(captured.interval.end, captured.current);
+  assert.equal(captured.allTime.minimumPointer, X43_AVR_RAMEND - 96);
+  assert.equal(captured.allTime.samples, observations + 1);
+  context.diagnostic(JSON.stringify({ authority: 'synthetic tracker-only diagnostic; not a native benchmark',
+    observations, elapsedMilliseconds: Number(elapsedMilliseconds.toFixed(3)) }));
 });
 
 test('actual runtime samples avr8js CPU.SP after every instruction plus tick and reset clears history', () => {

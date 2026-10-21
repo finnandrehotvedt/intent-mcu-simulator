@@ -22,19 +22,51 @@ function counter(value, code) {
 function validPointer(value) {
   return Number.isInteger(value) && value >= X43_AVR_SRAM_START && value <= X43_AVR_RAMEND;
 }
-function point(pointer, cycle, instructions) {
-  return Object.freeze({ pointer, depthBytes: X43_AVR_RAMEND - pointer,
+function pointSnapshot(pointer, cycle, instructions) {
+  return { pointer, depthBytes: X43_AVR_RAMEND - pointer,
     cycle: counter(cycle, 'X43_STACK_CYCLE'),
-    instructions: counter(instructions, 'X43_STACK_INSTRUCTIONS') });
+    instructions: counter(instructions, 'X43_STACK_INSTRUCTIONS') };
 }
 
 export function createX43AvrStackTracker({ pointer, cycle = 0, instructions = 0 }) {
   if (pointer !== X43_AVR_RAMEND) reject('X43_STACK_RESET_POINTER_INVALID');
-  let current = point(pointer, cycle, instructions);
+  let currentAvailable = true;
+  let currentPointer = pointer;
+  let currentCycle = counter(cycle, 'X43_STACK_CYCLE');
+  let currentInstructions = counter(instructions, 'X43_STACK_INSTRUCTIONS');
   let minimumPointer = pointer;
   let samples = 1;
   let allTimeReason = null;
-  let interval = null;
+  let intervalState = null;
+  let intervalToken = null;
+  let intervalReason = null;
+  let intervalStartPointer = null;
+  let intervalStartCycle = null;
+  let intervalStartInstructions = null;
+  let intervalCurrentPointer = null;
+  let intervalCurrentCycle = null;
+  let intervalCurrentInstructions = null;
+  let intervalEndPointer = null;
+  let intervalEndCycle = null;
+  let intervalEndInstructions = null;
+  let intervalMinimumPointer = null;
+  let intervalSamples = 0;
+
+  const materializePoint = (entryPointer, entryCycle, entryInstructions) =>
+    pointSnapshot(entryPointer, entryCycle, entryInstructions);
+  const materializeInterval = () => intervalState ? {
+    state: intervalState,
+    token: intervalToken,
+    reason: intervalReason,
+    start: materializePoint(intervalStartPointer, intervalStartCycle, intervalStartInstructions),
+    current: intervalCurrentPointer === null ? null
+      : materializePoint(intervalCurrentPointer, intervalCurrentCycle, intervalCurrentInstructions),
+    end: intervalEndPointer === null ? null
+      : materializePoint(intervalEndPointer, intervalEndCycle, intervalEndInstructions),
+    minimumPointer: intervalMinimumPointer,
+    maximumObservedDepthBytes: X43_AVR_RAMEND - intervalMinimumPointer,
+    samples: intervalSamples,
+  } : null;
 
   const snapshot = () => Object.freeze({
     schema: X43_AVR_STACK_SCHEMA,
@@ -43,56 +75,81 @@ export function createX43AvrStackTracker({ pointer, cycle = 0, instructions = 0 
     sram: Object.freeze({ start: X43_AVR_SRAM_START, end: X43_AVR_RAMEND,
       bytes: X43_AVR_SRAM_BYTES, registerSpaceBytes: X43_AVR_SRAM_START }),
     resetPointer: X43_AVR_RAMEND,
-    current: current ? clone(current) : null,
+    current: currentAvailable
+      ? materializePoint(currentPointer, currentCycle, currentInstructions) : null,
     allTime: allTimeReason ? null : Object.freeze({ minimumPointer,
       maximumObservedDepthBytes: X43_AVR_RAMEND - minimumPointer, samples }),
     allTimeReason,
-    interval: interval ? clone(interval) : null,
+    interval: materializeInterval(),
     semantics: Object.freeze({ growsTowardLowerAddresses: true,
       includesInterruptEntryAfterTick: true, includesNestedInterruptsWhenFirmwareReenablesThem: true,
       measuresAddressDistanceFromResetTop: true, measuresLiveBytes: false,
       measuresHeap: false, measuresFreeSram: false, memoryHighWaterMark: false }),
   });
 
-  const observe = ({ pointer: nextPointer, cycle: nextCycle, instructions: nextInstructions }) => {
+  const observe = (nextPointer, nextCycle, nextInstructions) => {
     counter(nextCycle, 'X43_STACK_CYCLE'); counter(nextInstructions, 'X43_STACK_INSTRUCTIONS');
-    if (current && (nextCycle < current.cycle || nextInstructions < current.instructions)) {
+    if (currentAvailable && (nextCycle < currentCycle || nextInstructions < currentInstructions)) {
       reject('X43_STACK_COUNTER_REGRESSION');
     }
     samples += 1;
     if (!validPointer(nextPointer)) {
-      current = null;
+      currentAvailable = false;
       allTimeReason = 'stack-pointer-outside-atmega328p-sram';
-      if (interval?.state === 'observing') {
-        interval = { ...interval, state: 'unavailable', reason: allTimeReason, end: null };
+      if (intervalState === 'observing') {
+        intervalState = 'unavailable';
+        intervalReason = allTimeReason;
+        intervalEndPointer = null;
+        intervalEndCycle = null;
+        intervalEndInstructions = null;
       }
-      return snapshot();
+      return;
     }
-    current = point(nextPointer, nextCycle, nextInstructions);
+    currentAvailable = true;
+    currentPointer = nextPointer;
+    currentCycle = nextCycle;
+    currentInstructions = nextInstructions;
     if (!allTimeReason) minimumPointer = Math.min(minimumPointer, nextPointer);
-    if (interval?.state === 'observing') {
-      interval.current = clone(current);
-      interval.minimumPointer = Math.min(interval.minimumPointer, nextPointer);
-      interval.maximumObservedDepthBytes = X43_AVR_RAMEND - interval.minimumPointer;
-      interval.samples += 1;
+    if (intervalState === 'observing') {
+      intervalCurrentPointer = nextPointer;
+      intervalCurrentCycle = nextCycle;
+      intervalCurrentInstructions = nextInstructions;
+      intervalMinimumPointer = Math.min(intervalMinimumPointer, nextPointer);
+      intervalSamples += 1;
     }
-    return snapshot();
   };
 
   const start = (token) => {
     if (!TOKEN.test(token ?? '')) reject('X43_STACK_TOKEN_INVALID');
-    if (!current) reject('X43_STACK_CURRENT_UNAVAILABLE');
-    interval = { state: 'observing', token, reason: null, start: clone(current),
-      current: clone(current), end: null, minimumPointer: current.pointer,
-      maximumObservedDepthBytes: current.depthBytes, samples: 1 };
+    if (!currentAvailable) reject('X43_STACK_CURRENT_UNAVAILABLE');
+    intervalState = 'observing';
+    intervalToken = token;
+    intervalReason = null;
+    intervalStartPointer = currentPointer;
+    intervalStartCycle = currentCycle;
+    intervalStartInstructions = currentInstructions;
+    intervalCurrentPointer = currentPointer;
+    intervalCurrentCycle = currentCycle;
+    intervalCurrentInstructions = currentInstructions;
+    intervalEndPointer = null;
+    intervalEndCycle = null;
+    intervalEndInstructions = null;
+    intervalMinimumPointer = currentPointer;
+    intervalSamples = 1;
     return snapshot();
   };
 
   const capture = (token) => {
-    if (!TOKEN.test(token ?? '') || interval?.token !== token) reject('X43_STACK_TOKEN_STALE');
-    if (interval.state === 'unavailable') return snapshot();
-    if (interval.state !== 'observing' || !current) reject('X43_STACK_NOT_OBSERVING');
-    interval = { ...interval, state: 'captured', current: clone(current), end: clone(current) };
+    if (!TOKEN.test(token ?? '') || intervalToken !== token) reject('X43_STACK_TOKEN_STALE');
+    if (intervalState === 'unavailable') return snapshot();
+    if (intervalState !== 'observing' || !currentAvailable) reject('X43_STACK_NOT_OBSERVING');
+    intervalState = 'captured';
+    intervalCurrentPointer = currentPointer;
+    intervalCurrentCycle = currentCycle;
+    intervalCurrentInstructions = currentInstructions;
+    intervalEndPointer = currentPointer;
+    intervalEndCycle = currentCycle;
+    intervalEndInstructions = currentInstructions;
     return snapshot();
   };
 

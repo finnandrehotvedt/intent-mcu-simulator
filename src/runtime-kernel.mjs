@@ -494,8 +494,9 @@ export class RuntimeKernel {
 
   #stepAndProjectX35() {
     const result = this.adapter.step();
-    this.x43StackTracker.observe({ pointer: this.adapter.cpu.SP,
-      cycle: this.adapter.cpu.cycles, instructions: this.adapter.instructions });
+    this.x43StackTracker.observe(
+      this.adapter.cpu.SP, this.adapter.cpu.cycles, this.adapter.instructions,
+    );
     if (this.adapter.x35ProjectionPending) {
       const machine = this.adapter.snapshot();
       this.adapter.projectX35(x35TopologyProjection(

@@ -632,6 +632,8 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
   });
   const owner = createX43AvrObservationProfile();
   let stackToken = null;
+  let stackPending = null;
+  const clearStackAuthority = () => { stackToken = null; stackPending = null; };
   const stackSnapshot = () => {
     try { return validateX43AvrStackSnapshot(document.defaultView?.__M6_STATE__?.runtime?.x43Stack); }
     catch { return null; }
@@ -653,7 +655,10 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
     else {
       snapshot = owner.peek();
       if (observation) snapshot = owner.snapshot(observation);
-      else if (['observing', 'captured'].includes(snapshot.state)) snapshot = owner.invalidate(reason);
+      else if (['observing', 'captured'].includes(snapshot.state)) {
+        clearStackAuthority();
+        snapshot = owner.invalidate(reason);
+      }
       if (snapshot.state === 'unavailable') {
         owner.prepare(observation);
         snapshot = owner.peek();
@@ -700,9 +705,16 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
         ? `SP 0x${stack.current.pointer.toString(16).padStart(4, '0')} · ${stack.current.depthBytes} B below reset top`
         : `Unavailable · ${stack?.allTimeReason ?? 'no current AVR stack-pointer sample'}.`;
       const nativeInterval = stack?.interval?.token === stackToken ? stack.interval : null;
+      if (stackPending === 'start' && nativeInterval) stackPending = null;
+      if (stackPending === 'capture'
+          && ['captured', 'unavailable'].includes(nativeInterval?.state)) stackPending = null;
       intervalStack.dataset.status = nativeInterval && nativeInterval.state !== 'unavailable'
         ? 'available' : 'unavailable';
-      intervalStack.textContent = nativeInterval?.state === 'captured'
+      intervalStack.textContent = stackPending === 'start'
+        ? 'Start requested · awaiting the bound worker acknowledgement; pre-ack CPU counters are not the native stack interval.'
+        : stackPending === 'capture'
+          ? 'Capture requested · awaiting the bound worker acknowledgement; the native stack interval is still observing.'
+          : nativeInterval?.state === 'captured'
         ? `${nativeInterval.maximumObservedDepthBytes} B observed address depth · minimum SP 0x${nativeInterval.minimumPointer.toString(16).padStart(4, '0')} · ${nativeInterval.samples} instruction-boundary samples`
         : nativeInterval?.state === 'observing'
           ? `Observing · ${nativeInterval.maximumObservedDepthBytes} B maximum so far · ${nativeInterval.samples} samples`
@@ -724,12 +736,16 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
       else {
         try {
           stackToken = `x43-stack-${document.defaultView.crypto.randomUUID()}`;
+          stackPending = 'start';
           document.dispatchEvent(new document.defaultView.CustomEvent('x43-stack-start-request', {
             detail: { token: stackToken },
           }));
           owner.start(observation, document.defaultView.performance.now());
         }
-        catch (error) { owner.invalidate(error.code ?? 'X43_START_REJECTED'); }
+        catch (error) {
+          clearStackAuthority();
+          owner.invalidate(error.code ?? 'X43_START_REJECTED');
+        }
       }
       paint();
     });
@@ -739,23 +755,35 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
       else {
         try {
           if (!stackToken) throw Object.assign(new Error('X43_STACK_TOKEN_MISSING'), { code: 'X43_STACK_TOKEN_MISSING' });
+          stackPending = 'capture';
           document.dispatchEvent(new document.defaultView.CustomEvent('x43-stack-capture-request', {
             detail: { token: stackToken },
           }));
           owner.capture(observation, document.defaultView.performance.now());
         }
-        catch (error) { owner.invalidate(error.code ?? 'X43_CAPTURE_REJECTED'); }
+        catch (error) {
+          clearStackAuthority();
+          owner.invalidate(error.code ?? 'X43_CAPTURE_REJECTED');
+        }
       }
       paint();
     });
   }
-  const invalidate = (reason) => { const snapshot = owner.invalidate(reason); paint(); return snapshot; };
+  const invalidate = (reason) => {
+    clearStackAuthority();
+    const snapshot = owner.invalidate(reason);
+    paint();
+    return snapshot;
+  };
   const invalidateEvents = new Map([
     ['build', 'X43_BUILD_STARTED'], ['reset', 'X43_RESET'], ['stop', 'X43_STOP'],
     ['project-new', 'X43_NEW_PROJECT'], ['project-demo', 'X43_EXAMPLE_LOADED'],
   ]);
   document.addEventListener('input', (event) => {
     if (event.target?.id === 'source') invalidate('X43_SOURCE_EDITED');
+  }, true);
+  document.addEventListener('change', (event) => {
+    if (event.target?.id === 'board-select') invalidate('X43_PROFILE_CHANGED');
   }, true);
   document.addEventListener('click', (event) => {
     const reason = invalidateEvents.get(event.target?.id);

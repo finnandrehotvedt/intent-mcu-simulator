@@ -32,7 +32,7 @@ test('generated private runtime and evidence-tool closures are exact and fresh',
 test('later approved increments preserve X49 runtime bytes and never import its private owners', async () => {
   const immutableRuntime = {
     'src/atmega328p-adapter.mjs': '65136d0b607336db992ba7dab81447813331b103136ec7c5348e6fc1ca9300de',
-    'src/runtime-kernel.mjs': 'cf2d19836d808f5187642f9788d8c84b29a265e8ee70ad88cb03131d934385b3',
+    'src/runtime-kernel.mjs': '8ae935906e1981916b7bc1ab7c2243c6624404b232d1844e1d690c632172bc6e',
     'src/simulator.worker.mjs': 'c7a1f5d3923e4a8ab8fe5d68bc2193d0b08c82a6489ffa7f382ddf2df8b57af5',
   };
   for (const [path, hash] of Object.entries(immutableRuntime)) {

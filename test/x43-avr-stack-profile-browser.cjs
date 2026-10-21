@@ -51,6 +51,8 @@ const fixturePath = process.env.X43_AVR_FIXTURE
     await panel.locator('[data-x43-start]').click();
     const token = await page.evaluate(() => window.__X43_STACK_TEST__.token);
     assert.match(token, /^x43-stack-/u);
+    assert.match(await panel.locator('[data-x43-stack-interval]').textContent(),
+      /Start requested.*pre-ack CPU counters are not the native stack interval/u);
     await page.evaluate((nativeToken) => {
       const runtime = window.__M6_STATE__.runtime;
       runtime.x43Stack = window.__X43_STACK_TEST__.stack({ state: 'observing', token: nativeToken,
@@ -64,6 +66,8 @@ const fixturePath = process.env.X43_AVR_FIXTURE
       document.querySelector('#workbench-instruments-dialog [data-x43-stack-interval]').textContent));
 
     await panel.locator('[data-x43-capture]').click();
+    assert.match(await panel.locator('[data-x43-stack-interval]').textContent(),
+      /Capture requested.*native stack interval is still observing/u);
     await page.evaluate((nativeToken) => {
       const runtime = window.__M6_STATE__.runtime;
       runtime.x43Stack = window.__X43_STACK_TEST__.stack({ state: 'captured', token: nativeToken,
@@ -81,6 +85,14 @@ const fixturePath = process.env.X43_AVR_FIXTURE
     if (evidenceDir) {
       await mkdir(evidenceDir, { recursive: true });
       await panel.screenshot({ path: path.join(evidenceDir, 'x43-stack-synthetic-candidate-1366x768.png') });
+    }
+    await page.evaluate(() => window.__X43_AVR_PROFILE__.invalidate('X43_TEST_WORKER_RETIRED'));
+    assert.doesNotMatch(await panel.locator('[data-x43-stack-interval]').textContent(),
+      /24 B observed address depth|minimum SP 0x08e7/u);
+    assert.match(await panel.locator('[data-x43-stack-interval]').textContent(),
+      /Unavailable until a native observation starts/u);
+    if (evidenceDir) {
+      await panel.screenshot({ path: path.join(evidenceDir, 'x43-stack-stale-token-cleared-1366x768.png') });
     }
     console.log(JSON.stringify({ fixture: 'synthetic', viewport: '1366x768',
       currentPointer: '0x08f3', currentDepthBytes: 12,
