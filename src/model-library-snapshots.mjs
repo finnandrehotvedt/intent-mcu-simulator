@@ -20263,7 +20263,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/component-appearance.mjs",
-      "sha256": "63f3d0a070a6ee5af99e213c63036e16a320f9e0b4da01c3b080b15dc80d195d"
+      "sha256": "4c6b62483e52e1f48cf16c48f3b3de57ac99296ccec443d7efdfc3678c04add7"
     },
     {
       "path": "src/project-v2.mjs",
@@ -20426,7 +20426,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "b4c63b9ff78c5f4ce0dba877a1f96bd83214603dcc830eef44f8511e520af6a6"
     }
   ],
-  "implementationSha256": "947355660aa447e3427b0d77962c7668e70d964de30482ffdfec4f822eeda4ff",
+  "implementationSha256": "4f3b6180fb8b927562aa6700fb14a3c95f41307c6fdef3bbf27ed69eafc0e4ae",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "current closure adds the strict X55 appearance contract, persistence/editor owners and renderer/UI integration; rc.94 current remains migration-only",
@@ -20436,7 +20436,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x47-ui-async-epoch.1-current",
     "semanticDisposition": "component semantics unchanged; AVR resistor appearance is finite visual-only project data"
   },
-  "manifestSha256": "16a4aca8061ce708542a499b00881a33324cefc28d524eb9d3393733ef3dcb97",
+  "manifestSha256": "5e778f334ccae4ef914927d22675176315ac589a22695f7e500ee32c2f419806",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

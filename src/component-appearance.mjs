@@ -67,7 +67,13 @@ export function withResistorAppearance(value, graph, componentId, preset) {
     });
   }
   normalized.components[componentId] = { preset };
-  return normalized;
+  const accepted = normalizeComponentAppearance(normalized, graph, { missing: false });
+  if (!accepted) {
+    throw Object.assign(new Error('COMPONENT_APPEARANCE_INVALID'), {
+      code: 'COMPONENT_APPEARANCE_INVALID', details: [componentId, preset],
+    });
+  }
+  return accepted;
 }
 
 export function componentAppearanceInvariantSnapshot({

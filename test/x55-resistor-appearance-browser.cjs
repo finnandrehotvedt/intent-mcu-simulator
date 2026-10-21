@@ -69,12 +69,36 @@ async function applyPresetWithKeyboard(page, preset) {
     preset);
 }
 
+async function profileProjects(page) {
+  return page.evaluate((ids) => Object.fromEntries(ids.map((profile) => [
+    profile, JSON.stringify(window.__COMMON_PROJECT_FILES__.current(profile)),
+  ])), profiles);
+}
+
+async function closeProjectDialog(page) {
+  if (await page.locator('#workbench-project-dialog').getAttribute('open') !== null) {
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('#workbench-project-dialog').open);
+  }
+}
+
+async function assertRejectedFileIsAtomic(page, filePath, expectedCode, before) {
+  await closeProjectDialog(page);
+  await page.click('#project-files-open');
+  await page.setInputFiles('#project-open-input', filePath);
+  await page.waitForFunction((code) => document.querySelector('#project-message')
+    ?.textContent.includes(`Open rejected (${code})`), expectedCode);
+  assert.deepEqual(await profileProjects(page), before, `${expectedCode} changed a parked draft`);
+  await closeProjectDialog(page);
+}
+
 (async () => {
   fs.mkdirSync(outputDir, { recursive: true });
   const browser = await chromium.launch({ headless: true });
   const report = {
     result: 'pass', firmwareBuilds: 0, runtimeRuns: 0, scenarios: 0,
-    producerRequests: [], mutatingRequests: [], viewports: [], screenshots: [],
+    producerRequests: [], mutatingRequests: [], thirdPartyRequests: [],
+    viewports: [], screenshots: [],
   };
   try {
     for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }]) {
@@ -95,10 +119,12 @@ async function applyPresetWithKeyboard(page, preset) {
           report.producerRequests.push(record);
         }
         if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method())) report.mutatingRequests.push(record);
+        if (new URL(request.url()).origin !== new URL(base).origin) report.thirdPartyRequests.push(record);
       });
       assert.equal((await page.goto(base, { waitUntil: 'domcontentloaded' }))?.status(), 200);
       await page.waitForFunction(() => window.__M11_READY__ === true);
       await loadBlinkExample(page);
+      const storageKeysBefore = await page.evaluate(() => Object.keys(localStorage).sort());
       const initialProject = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
       const card = await selectResistorByKeyboard(page);
       assert.equal(await page.locator('#appearance-editor').isVisible(), true);
@@ -163,6 +189,16 @@ async function applyPresetWithKeyboard(page, preset) {
       const download = await downloadPromise;
       const savedPath = await download.path();
       assert(fs.statSync(savedPath).size > 0);
+      const savedEnvelope = fs.readFileSync(savedPath, 'utf8');
+      const malformedPath = path.join(outputDir, `x55-malformed-${viewport.width}.json`);
+      const duplicatePath = path.join(outputDir, `x55-duplicate-${viewport.width}.json`);
+      fs.writeFileSync(malformedPath, '{');
+      const duplicateEnvelope = savedEnvelope.replace(
+        /"schema"\s*:\s*"intent-mcu-project-envelope@8"/u,
+        '"schema":"intent-mcu-project-envelope@8","schema":"intent-mcu-project-envelope@8"',
+      );
+      assert.notEqual(duplicateEnvelope, savedEnvelope);
+      fs.writeFileSync(duplicatePath, duplicateEnvelope);
       await page.keyboard.press('Escape');
       await selectResistorByKeyboard(page);
       await applyPresetWithKeyboard(page, 'standard-beige');
@@ -175,6 +211,38 @@ async function applyPresetWithKeyboard(page, preset) {
       await page.waitForFunction(() => window.__M6_PROJECT__().layout.componentAppearance
         ?.components['resistor-1']?.preset === 'cool-blue');
       assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), savedProject);
+
+      await closeProjectDialog(page);
+      const strictBefore = await profileProjects(page);
+      await assertRejectedFileIsAtomic(page, malformedPath, 'MALFORMED_JSON', strictBefore);
+      await assertRejectedFileIsAtomic(page, duplicatePath, 'DUPLICATE_KEY', strictBefore);
+
+      await selectResistorByKeyboard(page);
+      await applyPresetWithKeyboard(page, 'standard-beige');
+      if (await page.locator('#workbench-inspector-dialog').getAttribute('open') !== null) {
+        await page.keyboard.press('Escape');
+        await page.waitForFunction(() => !document.querySelector('#workbench-inspector-dialog').open);
+      }
+      const cancelBefore = await profileProjects(page);
+      await page.click('#project-files-open');
+      await page.setInputFiles('#project-open-input', savedPath);
+      await page.waitForSelector('#unsaved-change-dialog[open]');
+      await page.click('#unsaved-keep');
+      assert.deepEqual(await profileProjects(page), cancelBefore,
+        'Keep editing changed one of the four parked drafts');
+      await closeProjectDialog(page);
+      await page.click('#project-files-open');
+      await page.setInputFiles('#project-open-input', savedPath);
+      await page.waitForSelector('#unsaved-change-dialog[open]');
+      await page.click('#unsaved-discard');
+      await page.waitForFunction(() => window.__M6_PROJECT__().layout.componentAppearance
+        ?.components['resistor-1']?.preset === 'cool-blue');
+      assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), savedProject);
+      const roundtripProfiles = await profileProjects(page);
+      for (const profile of profiles.slice(1)) {
+        assert.equal(roundtripProfiles[profile], cancelBefore[profile],
+          `${profile} changed during AVR file roundtrip`);
+      }
 
       const parked = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
       for (const profile of profiles) {
@@ -196,6 +264,8 @@ async function applyPresetWithKeyboard(page, preset) {
 
       assert.equal(await page.evaluate(() => window.__X55_WORKERS__), 0);
       assert.equal(await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations), 0);
+      assert.deepEqual(await page.evaluate(() => Object.keys(localStorage).sort()), storageKeysBefore);
+      assert.deepEqual(await context.cookies(), []);
       assert.equal(errors.length, 0, errors.join(' | '));
       assert((await page.evaluate(() => document.documentElement.scrollWidth
         - document.documentElement.clientWidth)) <= 1);
@@ -203,12 +273,15 @@ async function applyPresetWithKeyboard(page, preset) {
       await page.screenshot({ path: screenshot, fullPage: false });
       report.screenshots.push(screenshot);
       report.viewports.push({ viewport, initialProjectBytes: Buffer.byteLength(initialProject),
-        invariantCases, saveOpenExact: true, profileParkingExact: true, keyboard: true,
+        invariantCases, saveOpenExact: true, strictMalformedAtomic: true,
+        strictDuplicateAtomic: true, cancelFourProfileAtomic: true,
+        profileParkingExact: true, keyboard: true,
         workerCreations: 0, browserErrors: 0 });
       await context.close();
     }
     assert.deepEqual(report.producerRequests, []);
     assert.deepEqual(report.mutatingRequests, []);
+    assert.deepEqual(report.thirdPartyRequests, []);
     fs.writeFileSync(path.join(outputDir, 'x55-browser.json'), `${JSON.stringify(report, null, 2)}\n`);
     process.stdout.write(`${JSON.stringify(report)}\n`);
   } finally {

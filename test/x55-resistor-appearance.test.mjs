@@ -13,6 +13,7 @@ import {
   componentAppearanceInvariantSnapshot,
   normalizeComponentAppearance,
   resistorAppearancePreset,
+  withResistorAppearance,
 } from '../src/component-appearance.mjs';
 import { catalogType } from '../src/component-catalog.mjs';
 import { validateCircuit } from '../src/circuit-engine.mjs';
@@ -48,6 +49,9 @@ test('X55 appearance data is finite, AVR-only, resistor-only and exact-key stric
       appearance({ 'resistor-1': { preset: 'cool-blue' } }), nonAvr,
     ), null, profile);
     assert.deepEqual(normalizeComponentAppearance(undefined, nonAvr), appearance(), profile);
+    assert.throws(() => withResistorAppearance(
+      undefined, nonAvr, 'resistor-1', 'cool-blue',
+    ), (error) => error?.code === 'COMPONENT_APPEARANCE_INVALID', profile);
   }
 });
 
@@ -77,6 +81,12 @@ test('X55 preview and apply preserve pins, normalized world anchors, nets, model
   const sourceBefore = clone(editor.project.source);
   const circuitBefore = clone(editor.project.circuit);
   const layoutBefore = clone(editor.project.layout);
+  const buildBefore = clone(editor.project.build);
+  const buildInputBefore = JSON.stringify({
+    boardProfile: editor.project.boardProfile,
+    source: editor.project.source,
+    circuit: editor.project.circuit,
+  });
   const applied = editor.apply({
     type: 'component.appearance.set', revision: 0,
     componentId: 'resistor-1', preset: 'cool-blue',
@@ -87,6 +97,12 @@ test('X55 preview and apply preserve pins, normalized world anchors, nets, model
   assert.deepEqual(applied.project.source, sourceBefore);
   assert.deepEqual(applied.project.circuit, circuitBefore);
   assert.deepEqual(applied.project.layout.positions, layoutBefore.positions);
+  assert.deepEqual(applied.project.build, buildBefore);
+  assert.equal(JSON.stringify({
+    boardProfile: applied.project.boardProfile,
+    source: applied.project.source,
+    circuit: applied.project.circuit,
+  }), buildInputBefore);
   assert.equal(resistorAppearancePreset(applied.project.layout.componentAppearance, 'resistor-1'), 'cool-blue');
 });
 
