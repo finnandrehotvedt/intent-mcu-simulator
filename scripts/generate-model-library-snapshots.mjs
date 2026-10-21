@@ -13,6 +13,9 @@ import { controlContractsFor } from '../src/model-control-contracts.mjs';
 import * as existingSnapshots from '../src/model-library-snapshots.mjs';
 
 const { RETAINED_MODEL_LIBRARY_MANIFEST } = existingSnapshots;
+const PRE_X43_HEAP_WORKER_PACKAGE_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X43_HEAP_WORKER_PACKAGE_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_X43_HEAP_PROVENANCE_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X43_HEAP_PROVENANCE_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -175,15 +178,15 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x43-heap-provenance-fix.1-current',
-  'intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14',
+  '2.0.0-x43-heap-worker-package-fix.1-current',
+  'intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15',
   currentImplementation,
   {
-    priorVersion: PRE_X43_HEAP_PROVENANCE_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X43_HEAP_PROVENANCE_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X43_HEAP_WORKER_PACKAGE_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X43_HEAP_WORKER_PACKAGE_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'explicit-data-only-migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component and electrical semantics are unchanged; heap support additionally requires exact pinned archive-member linker provenance',
-    presentationDisposition: 'unsupported or malformed optional heap metadata remains unavailable without breaking ordinary firmware Build and Run',
+    semanticDisposition: 'component, electrical, runtime and allocator-provenance semantics are unchanged; only the existing worker import closure is packaged',
+    presentationDisposition: 'no UI change; the pinned private worker can start and validate jobs with its complete static module graph',
     baselineClosureDisposition: 'accepted public rc.98 identity remains immutable and migration-only',
   },
 );
@@ -192,6 +195,7 @@ const output = `// SPDX-License-Identifier: Apache-2.0
 // Generated immutable snapshots. Regenerate only through an explicitly reviewed library release.
 
 export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(retained, null, 2)});
+export const PRE_X43_HEAP_WORKER_PACKAGE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_HEAP_WORKER_PACKAGE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_HEAP_PROVENANCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_HEAP_PROVENANCE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_HEAP_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_HEAP_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
