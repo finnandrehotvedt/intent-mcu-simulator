@@ -8,6 +8,7 @@ import test from 'node:test';
 
 import {
   CURRENT_MODEL_LIBRARY_MANIFEST,
+  PRE_X55_MODEL_COPY_FIX_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X55_SPLIT_EDITOR_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X55_NOOP_APPLY_FIX_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X55_BODY_LEAD_FIX_CURRENT_MODEL_LIBRARY_MANIFEST,
@@ -16,6 +17,7 @@ import {
 } from '../src/model-library-snapshots.mjs';
 import {
   PRE_X55_NOOP_APPLY_FIX_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_X55_MODEL_COPY_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_SPLIT_EDITOR_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_BODY_LEAD_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_LOCK,
@@ -52,6 +54,21 @@ test('X55 current identity explicitly owns every newly executed appearance path'
     const source = await readFile(new URL(`../${path}`, import.meta.url), 'utf8');
     assert.match(source, /component-appearance\.mjs/u, `${path} hides its X55 dependency`);
   }
+});
+
+test('private split-editor identity is immutable migration-only after model copy correction', () => {
+  assert.equal(PRE_X55_MODEL_COPY_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    '2.0.0-x55-split-editor.1-current');
+  assert.equal(PRE_X55_MODEL_COPY_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    '6d9c89f8d8194c7959800add1b91425f917f68bc07abcd955e0a48fa8000b483');
+  assert.equal(modelLibraryExecutionIdentity(
+    PRE_X55_MODEL_COPY_FIX_CURRENT_MODEL_LIBRARY_LOCK,
+  ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const preview = modelLibraryMigrationPreview(PRE_X55_MODEL_COPY_FIX_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(preview.ok, true);
+  assert.deepEqual(preview.semanticChanges, []);
+  assert.deepEqual(preview.rendererChanges, []);
+  assert.equal(preview.unchanged.length, 25);
 });
 
 test('private no-op Apply identity is immutable migration-only after the split editor', () => {

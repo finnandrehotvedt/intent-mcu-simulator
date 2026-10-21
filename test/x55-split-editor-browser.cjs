@@ -156,10 +156,19 @@ async function appearancePreset(page, profile, id) {
       const freshApply = root.locator(profile.modelApply).first();
       await freshInput.fill('330');
       assert.equal(await freshApply.isEnabled(), true, `${profile.id}: changed model Apply disabled`);
+      assert.match(await root.locator('.component-editor-invariant').first().textContent(),
+        /Model preview only.*no project or runtime state has changed.*Apply changes ohms.*revalidates the model property and circuit.*retires current executable and runtime evidence.*fresh Build before Run.*Pins, anchors, named nets, drawing and source stay unchanged/iu,
+        `${profile.id}: model Preview and Apply authority wording is incomplete`);
       assert.deepEqual(await projectSnapshot(page, profile), before, `${profile.id}: model preview mutated project`);
       await drawingTab.click();
       const drawingSelect = root.locator(profile.appearance).first();
       const drawingApply = root.locator(profile.drawingApply).first(); const drawingCancel = root.locator(profile.drawingCancel).first();
+      const drawingInvariant = profile.id === 'avr' ? root.locator('#appearance-status')
+        : root.locator('.bounded-appearance-row small').filter({ hasText: 'Visual preview only' });
+      assert.match(await drawingInvariant.textContent(), profile.id === 'avr'
+        ? /Invariant pass.*electrical properties, source, position and rotation unchanged/iu
+        : /Visual preview only.*electrical properties and runtime semantics stay unchanged/iu,
+      `${profile.id}: Drawing layout-only invariant wording changed`);
       await drawingSelect.selectOption('cool-blue');
       assert.equal(await drawingApply.isEnabled(), true, `${profile.id}: drawing preview unavailable`);
       await modelTab.click();

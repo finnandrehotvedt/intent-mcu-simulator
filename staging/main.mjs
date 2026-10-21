@@ -1129,7 +1129,7 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
     modelStatus.textContent = !valid
       ? 'Preview rejected · enter a value inside the existing bounded model contract. No project data changed.'
       : changed
-        ? `Model preview only · Apply changes ${input.dataset.boundedProperty}; pins, anchors, named nets, drawing, source, artifact and runtime identity stay unchanged.`
+        ? `Model preview only · no project or runtime state has changed. Apply changes ${input.dataset.boundedProperty}, revalidates the model property and circuit, retires current executable and runtime evidence, and requires a fresh Build before Run. Pins, anchors, named nets, drawing and source stay unchanged.`
         : `Current model value · ${input.dataset.boundedProperty} is unchanged. Apply is disabled.`;
   };
   input.addEventListener('input', updateModel); input.addEventListener('change', updateModel);
@@ -10654,7 +10654,7 @@ function renderPropertyEditor(component) {
       status.textContent = !accepted
         ? 'Preview rejected · enter a value inside the existing bounded model contract. No project data changed.'
         : dirty
-          ? `Model preview only · Apply changes ${key}; pins, anchors, named nets, drawing, source, artifact and runtime identity stay unchanged.`
+          ? `Model preview only · no project or runtime state has changed. Apply changes ${key}, revalidates the model property and circuit, retires current executable and runtime evidence, and requires a fresh Build before Run. Pins, anchors, named nets, drawing and source stay unchanged.`
           : `Current model value · ${key} is unchanged. Apply is disabled.`;
     };
     input.addEventListener('input', update); input.addEventListener('change', update);
