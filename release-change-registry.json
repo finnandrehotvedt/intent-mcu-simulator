@@ -49,6 +49,15 @@
       ]
     },
     {
+      "id": "X49",
+      "capabilities": [
+        "intent-mcu-x49-public-runner@1"
+      ],
+      "contracts": [
+        "x49-avr-temperature-offset-v2"
+      ]
+    },
+    {
       "id": "X59",
       "capabilities": [
         "intent-mcu-shared-workbench-view@1"

@@ -2,6 +2,20 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.94 — 2026-10-21
+
+- Publishes the reviewed partial X49 AVR thermostat comparison for the exact
+  baseline 0 versus candidate +1 °C pair.
+- Uses one explicit same-origin build and two fresh dedicated browser workers,
+  bound to exact source, graph, revision, artifact, model, worker, input and
+  virtual-time authority; later drift retires the transient projection.
+- Keeps all other offsets calculated-only and labels physical evidence absent.
+  Other sensors, profiles, persistence, automatic replay and general experiment
+  authoring remain planned.
+- Advances X status to **72 complete / 3 partial / 21 planned**, P1 **59/0/0**.
+  The release packet adds no Build, Run or scenario; cumulative accepted
+  private producer accounting remains **19/22/0**.
+
 ## 1.1.0-rc.93 — 2026-10-20
 
 - Publishes the reviewed partial X47 AVR-only D2 active-low pulse preview and

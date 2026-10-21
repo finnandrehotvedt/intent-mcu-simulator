@@ -1,4 +1,31 @@
-# Intent MCU Simulator 1.1.0-rc.93
+# Intent MCU Simulator 1.1.0-rc.94
+
+## X49 partial AVR thermostat offset comparison
+
+This release publishes the reviewed partial X49 slice for the exact AVR
+thermostat starter. In Instruments, a learner may preview bounded integer
+temperature offsets. The only native comparison is fixed to baseline 0 versus
+candidate +1 °C and requires one explicit action, one fresh same-origin
+isolated build and two fresh dedicated browser workers.
+
+The accepted native evidence reports ADC 409/414, firmware 29/30 °C, D13
+HIGH/LOW, 2,560,000 cycles, 160 ms, five retained mailbox writes and zero
+drops for each case. It is bound to the exact source, graph, project revision,
+artifact, model, worker, input and virtual-time window. Any authority drift
+retires the transient accepted projection. Physical evidence is explicitly
+absent; this is not hardware, tolerance, probability or factory proof.
+
+Other offsets remain calculated previews only. Other source shapes, graphs,
+sensors, profiles, physical devices, persistence, saved evidence, automatic
+replay and general experiment authoring remain planned, so X49 is partial.
+The rc.94 release packet performs no new firmware Build, Run or scenario; the
+accepted private producer accounting remains Build 19 / Run 22 / scenario 0.
+X-status taxonomy is **72 complete / 3 partial / 21 planned**; P1 is
+**59/0/0**.
+
+---
+
+## 1.1.0-rc.93
 
 ## X47 partial AVR D2 pulse input
 

@@ -1,8 +1,14 @@
-# Migration to 1.1.0-rc.93
+# Migration to 1.1.0-rc.94
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.94 changes no project, package, model-library, cache or browser-storage
+schema. X49 authored offsets, compiler claims, worker observations and accepted
+projections are transient current-tab state and are never saved or restored.
+Existing learner-owned files require no conversion; Open grants no X49 build,
+runtime, result, physical or verdict authority.
 
 Rc.93 recognizes four earlier current-model identities: pre-X47, pre-validation,
 pre-UI and pre-async-epoch. Each path completely validates the saved data,

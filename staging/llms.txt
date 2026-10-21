@@ -5,7 +5,7 @@
 Canonical application: https://lab.teachthecompany.com/
 Source and setup: https://github.com/finnandrehotvedt/intent-mcu-simulator
 Licence: Apache-2.0 for project-owned source; third-party components keep their own terms.
-Current public version: 1.1.0-rc.93
+Current public version: 1.1.0-rc.94
 Machine-readable release changes: /release-changes.json (strict static
 intent-mcu-release-changes@1 metadata; no Apply, Build, Run, replay or verdict authority).
 Offline support matrix: /offline-support-matrix.json (strict static
@@ -34,6 +34,7 @@ board or parts as interchangeable with another profile.
 
 - Start with an empty project, one of fifteen validated AVR starters, or either paired UART/LED example on each bounded Pico, ESP32-C3 and STM32 profile.
 - The thermostat starter compiles the visible source and runs four reset-isolated virtual-time scenarios: below, equal, above and disabled. Pass requires executed D13, matching UART and complete ordered input evidence; its known-bad equality variant must fail exactly at 30 C.
+- The partial X49 instrument compares only the exact AVR thermostat baseline 0 with candidate +1 C through one explicit temporary same-origin build and two fresh dedicated workers. Other offsets are calculated previews only. Accepted evidence is transient and retires on authority drift; physical evidence is absent.
 - In AVR, add any of 16 selectable supported components and connect named pin anchors manually.
 - Representable named-rail shorts, known output contention, supply-role mismatch, ground, polarity, resistance and bounded ideal-current faults fail closed with corrective actions. Arbitrary circuit solving and physical-safety claims are excluded.
 - Edit source and compile it through the isolated, fixed AVR toolchain.
@@ -59,6 +60,7 @@ board or parts as interchangeable with another profile.
 
 - The verified teaching profile is a bounded ATmega328P 16 MHz, 5 V subset, not complete hardware equivalence.
 - Simulation is not physical safety certification and does not replace testing on suitable physical hardware.
+- X49 native evidence is an academic emulator observation for one fixed pair, not sensor calibration, tolerance, probability, damage, factory or physical-hardware evidence.
 - Prompt Bridge has no hosted AI API or agent/tool connection. It creates portable text for a user-selected tool.
 - An optional separate local stdio adapter exposes strict read-only machine-readable discovery for four exact profiles, named pins, API/runtime limits, parts, quotas and versions, then connects another local client to exactly seven bounded actions through an ephemeral browser pinned to this Lab origin. It opens no listener, public API, account, credential or server project and cannot Apply a patch. Runtime observations keep their documented producer/model limitations.
 - Stdio action results retain the authoritative router response and separately classify validation failure, unsupported, temporarily busy, timeout, cancellation, producer-backed test failure and other execution failure. Only busy recommends a bounded delayed retry with a new request ID.
@@ -80,6 +82,7 @@ board or parts as interchangeable with another profile.
 - ESP32-C3 first project: https://lab.teachthecompany.com/examples.html#esp32c3-first-project
 - STM32 first project: https://lab.teachthecompany.com/examples.html#stm32-first-project
 - Thermostat boundary experiment: https://lab.teachthecompany.com/examples.html#thermostat-boundary-test
+- X49 exact contract and limits: https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/docs/X49-AVR-TEMPERATURE-OFFSET.md
 - Help and limitations: https://lab.teachthecompany.com/support.html
 - Physical verification checklist: https://lab.teachthecompany.com/physical-checklist.html
 - Contribution guide: https://github.com/finnandrehotvedt/intent-mcu-simulator/blob/main/CONTRIBUTING.md

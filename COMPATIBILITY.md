@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.93 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.94 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -108,6 +108,16 @@ requires cancellation before disposal and revokes authority on timeout. Reset,
 Build, Open, New, source/graph change and profile change also revoke authority.
 Retained receipts are historical non-current evidence only. Wider waveforms,
 noise, CSV workflows and all non-AVR profiles remain unavailable for X47.
+
+The partial X49 temperature-offset comparison is supported only for the exact
+AVR thermostat starter and exact unedited source/graph authority. The native
+path is fixed to baseline 0 versus candidate +1 °C, uses one explicit
+same-origin isolated build and two fresh dedicated workers, and accepts only
+complete zero-drop mailbox evidence in the bounded 160 ms virtual window.
+Other offsets are calculated previews only. Any source, graph, project,
+profile, authoring, artifact, model or worker drift retires the transient
+projection. Physical evidence is absent; other sensors, profiles, persistence,
+automatic replay and general experiment authoring remain unavailable for X49.
 
 One bounded thermostat experiment uses that same AVR compiler/runtime path.
 Its exact graph is an ideal analogue temperature module on A1, an active-low
