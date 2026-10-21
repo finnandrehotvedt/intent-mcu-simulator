@@ -11,20 +11,20 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.95",
-    "current": "1.1.0-rc.96"
+    "previous": "1.1.0-rc.96",
+    "current": "1.1.0-rc.97"
   },
   "changes": [
     {
-      "id": "X59",
+      "id": "X49",
       "classification": "changed",
       "capabilities": [
-        "intent-mcu-shared-workbench-view@1"
+        "intent-mcu-x49-public-runner@1"
       ],
       "contracts": [
-        "x59-four-profile-simple-advanced-view-v1"
+        "x49-avr-temperature-offset-v2"
       ],
-      "summary": "Refines the reviewed four-profile workbench with readable pin labels, clearer local-file hierarchy, task-led Help, guide and example entry points, while preserving canonical project, compiler, runtime and authority boundaries."
+      "summary": "Corrects Support status for X49's original criterion: one specified AVR baseline 0 versus +1 degree ideal sensor-deviation comparison, with no calibration, durable offset, drift, generic tolerance or factory guarantee."
     },
     {
       "id": "X88",
@@ -35,7 +35,7 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records the reviewed rc.95 to rc.96 presentation-only UX release; the release packet adds no firmware Build, Run or scenario and grants no new project, runtime, physical or verdict authority."
+      "summary": "Records the reviewed rc.96 to rc.97 documentation-only X49 status correction; the release packet adds no firmware Build, Run or scenario and grants no new project, runtime, physical or verdict authority."
     }
   ],
   "migrationRequired": false,

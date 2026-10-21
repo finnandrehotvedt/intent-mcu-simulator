@@ -26,7 +26,6 @@ import {
 import {
   CURRENT_MODEL_LIBRARY_LOCK, PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_UX_CURRENT_MODEL_LIBRARY_LOCK,
-  PRE_M2_COMPLETENESS_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X47_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_LOCK,
@@ -159,7 +158,7 @@ test('retained and current locks use distinct real resolver instances with match
 test('production electrical and runtime paths dispatch through the exact selected implementation', () => {
   for (const [lock, expected] of [
     [RETAINED_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-retained-rc72@2'],
-    [CURRENT_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-current-m2-completeness-contract-1@11'],
+    [CURRENT_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-current-ux-public-isolation-1@10'],
   ]) {
     const avr = validateCircuit(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
     assert.equal(avr.ok, true);
@@ -184,7 +183,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
 
 test('prior current locks remain exact and data-migratable but cannot authorize execution', () => {
   const historical = historicalModelLibraryManifests();
-  assert.equal(historical.length, 10);
+  assert.equal(historical.length, 9);
   const preControlLabel = historical[1];
   assert.equal(preControlLabel.version, '2.0.0-x55-resistor-appearance.1-current');
   assert.equal(preControlLabel.manifestSha256,
@@ -298,17 +297,6 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(uxMigration.semanticChanges.length, 0);
   assert.equal(uxMigration.rendererChanges.length, 0);
   assert.equal(uxMigration.unchanged.length, 25);
-
-  const preM2 = historical[9];
-  assert.equal(preM2.version, '2.0.0-ux-public-isolation.1-current');
-  assert.equal(normalizeModelLibraryLock(PRE_M2_COMPLETENESS_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
-  assert.equal(modelLibraryExecutionIdentity(PRE_M2_COMPLETENESS_CURRENT_MODEL_LIBRARY_LOCK).code,
-    'MODEL_LIBRARY_MIGRATION_REQUIRED');
-  const m2Migration = modelLibraryMigrationPreview(PRE_M2_COMPLETENESS_CURRENT_MODEL_LIBRARY_LOCK);
-  assert.equal(m2Migration.ok, true);
-  assert.equal(m2Migration.semanticChanges.length, 0);
-  assert.equal(m2Migration.rendererChanges.length, 0);
-  assert.equal(m2Migration.unchanged.length, 25);
 });
 
 test('retained behavior is a dependency-closed historical source graph with no current imports', async () => {

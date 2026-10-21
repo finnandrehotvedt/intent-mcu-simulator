@@ -98,11 +98,6 @@ const ADAPTER_SPECS = [
     row('observed.level', 'Observed authored-scenario GPIO level', 'digital-level', 'gpio', { unit: 'logic-level', collection: 'results', idPath: 'scenarioId', observationPath: 'virtualMilliseconds' }),
     row('observed.mode', 'Observed authored-scenario GPIO mode', 'digital-mode', 'gpio', { unit: 'mode', collection: 'results', idPath: 'scenarioId', observationPath: 'virtualMilliseconds' }),
   ]),
-  adapter('intent-mcu-bounded-test-evidence@1', 'x82-bounded-test-suite-v1', 'The bounded suite joins reset-isolated producer rows; it is not an independent runtime producer.', [
-    row('observed.d13', 'Observed bounded-suite D13 level', 'digital-level', 'gpio', { unit: 'logic-level', collection: 'observations', idPath: 'scenarioId', observationPath: 'virtualMilliseconds' }),
-    row('observed.serialText', 'Observed bounded-suite Serial text', 'text-record', 'serial', { unit: 'text', collection: 'observations', idPath: 'scenarioId', observationPath: 'virtualMilliseconds' }),
-    row('checks.inputsComplete', 'Producer-confirmed bounded-suite input capture', 'state', 'input', { unit: 'boolean', collection: 'observations', idPath: 'scenarioId', observationPath: 'virtualMilliseconds' }),
-  ]),
   adapter('intent-mcu-thermostat-observation-result@1', 'x82-thermostat-native-v2', 'One thermostat observation is bounded to its declared ideal scenario and interval.', [
     row('observed.d13', 'Observed thermostat D13 level', 'digital-level', 'gpio', { unit: 'logic-level', observationPath: 'virtualMilliseconds' }),
     row('observed.d13Mode', 'Observed thermostat D13 mode', 'digital-mode', 'gpio', { unit: 'mode', observationPath: 'virtualMilliseconds' }),

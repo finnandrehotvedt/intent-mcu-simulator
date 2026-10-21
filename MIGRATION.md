@@ -1,8 +1,13 @@
-# Migration to 1.1.0-rc.96
+# Migration to 1.1.0-rc.97
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.97 changes Support and release metadata only. It changes no project,
+package, compiler-artifact, model-library, cache or browser-storage schema.
+Existing learner-owned files require no conversion, and no X49 runtime,
+physical or verdict authority is added.
 
 Rc.96 changes presentation, documentation and immutable model-library identity
 only. Recognized rc.95 files migrate data-only after complete validation,

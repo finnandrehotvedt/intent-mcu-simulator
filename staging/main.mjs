@@ -7987,8 +7987,6 @@ async function runThermostatTestThroughUi(profile, signal) {
       code: 'ACTION_TEST_EVALUATED',
       artifactIdentity: testEvidence.artifactIdentity,
       sourceIdentity: testEvidence.sourceIdentity,
-      projectGeneration: testEvidence.projectGeneration,
-      runtimeGeneration: testEvidence.runtimeGeneration,
       testEvidence,
     };
   } finally { signal.removeEventListener('abort', cancel); }

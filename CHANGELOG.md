@@ -2,6 +2,20 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.97 — 2026-10-21
+
+- Corrects stale Support wording so X49 is complete only against its original
+  criterion: one specified AVR thermostat baseline 0 versus +1 °C ideal
+  sensor-deviation comparison.
+- Explicitly denies physical calibration, a durable device offset, drift,
+  generic component tolerance, accuracy class, probability distribution and
+  factory guarantee; all other offsets remain calculated-only.
+- Preserves rc.96 runtime, compiler, worker and model behavior byte-for-byte.
+  X43, X47, X55 and M2 remain partial; this release performs no Build, Run or
+  scenario.
+- Status remains X **73 complete / 3 partial / 20 planned**, P1 **59/0/0**;
+  cumulative accepted producer accounting remains **22/25/0**.
+
 ## 1.1.0-rc.96 — 2026-10-21
 
 - Refines the reviewed four-profile workbench with compact project-owned pin

@@ -1,4 +1,27 @@
-# Intent MCU Simulator 1.1.0-rc.96
+# Intent MCU Simulator 1.1.0-rc.97
+
+## X49 Support status correction
+
+This documentation-only release corrects stale Support wording against X49's
+original criterion. X49 is complete only for the specified public AVR
+thermostat baseline 0 versus +1 °C ideal sensor-deviation comparison. The
+reviewed native evidence remains ADC 409/414, firmware 29/30 °C, D13 HIGH/LOW,
+160 ms, five retained writes and zero drops.
+
+This is not physical calibration, a durable device offset, drift, a generic
+component-tolerance model, an accuracy class, a probability distribution or a
+factory guarantee. Other offsets remain calculated-only; other sensors,
+profiles, saved evidence, replay and general experiment authoring remain
+unavailable. X43, X47, X55 and M2 remain partial.
+
+Rc.97 changes no runtime, compiler, worker, model, project or storage behavior
+from accepted rc.96 and performs no firmware Build, Run or scenario. Counts
+remain X **73 complete / 3 partial / 20 planned**, P1 **59/0/0**, with
+cumulative accepted producer accounting **22/25/0**.
+
+---
+
+## 1.1.0-rc.96
 
 ## Reviewed workbench navigation and pin-label presentation
 

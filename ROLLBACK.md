@@ -1,16 +1,21 @@
-# Rollback basis for 1.1.0-rc.96
+# Rollback basis for 1.1.0-rc.97
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain exact accepted rc.95 source commit
-`e3432adae440dafa491ce2181a33f941af5025fd` and VM103 image
-`sha256:1730c26770f1d8818d84ac56a1a653ece6ab8fde186aece872219f2f20da9f2a`
-as the pre-rc.96 app-only recovery basis.
+Retain exact accepted rc.96 source commit
+`486371a6095b6db0a6ae9d1ced04c297dcfff3b1` and VM103 image
+`sha256:874fb3c9eb6993470c32984e0293e923b97b392ce0fd7bffb80e5834f9464d6a`
+as the pre-rc.97 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
+
+Rc.97 changes only Support wording and coherent release identity. Rolling back
+restores rc.96 wording without rewriting or deleting learner-owned projects,
+recovery data, local history or downloaded files and without changing runtime,
+compiler, worker or model behavior.
 
 Rc.96 publishes only the reviewed presentation and navigation refinement plus
 its immutable model-library identity transition. Rolling back restores rc.95

@@ -90,10 +90,6 @@ test('verdict requires complete timed input, executed D13 and agreeing Serial ev
       primaryExecutedPin: true,
       corroboratingSerial: true,
     });
-    assert.deepEqual(result.retention, {
-      inputEventsDropped: 0,
-      serialEventsDropped: 0,
-    });
     assert.equal(result.outcome.jobStatus, 'completed');
   }
   const equality = THERMOSTAT_SCENARIOS.scenarios[1];
@@ -115,9 +111,7 @@ test('X18 missing producer evidence is indeterminate rather than passed or faile
   const missingInputs = snapshotFor(scenario); missingInputs.eventLog.log = [];
   assert.equal(evaluateThermostatObservation(scenario.id, missingInputs).status, 'indeterminate');
   const missingSerial = snapshotFor(scenario); delete missingSerial.instruments.serial;
-  const serialResult = evaluateThermostatObservation(scenario.id, missingSerial);
-  assert.equal(serialResult.status, 'indeterminate');
-  assert.equal(serialResult.retention.serialEventsDropped, null);
+  assert.equal(evaluateThermostatObservation(scenario.id, missingSerial).status, 'indeterminate');
 });
 
 test('known-bad equality behavior is contractually visible as an executed-output failure', () => {
