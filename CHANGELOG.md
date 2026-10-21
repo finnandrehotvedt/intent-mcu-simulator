@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.95 — 2026-10-21
+
+- Publishes the reviewed partial X55 AVR fixed-resistor appearance editor with
+  two original finite body presets and a non-mutating preview before Apply.
+- Preserves exact A/B pins, named nets, resistance, model, position, rotation,
+  firmware source and runtime authority through Apply, Undo, Redo and
+  Save/Open; other parts and profiles remain unavailable.
+- Restores AVR quick-control labels and disabled state after returning from
+  Pico, ESP32-C3 or STM32 without adding runtime authority.
+- Advances X status to **72 complete / 4 partial / 20 planned**, P1
+  **59/0/0**. The release packet adds no Build, Run or scenario; cumulative
+  accepted private producer accounting remains **20/23/0**.
+
 ## 1.1.0-rc.94 — 2026-10-21
 
 - Publishes the reviewed partial X49 AVR thermostat comparison for the exact

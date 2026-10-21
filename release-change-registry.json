@@ -58,6 +58,15 @@
       ]
     },
     {
+      "id": "X55",
+      "capabilities": [
+        "intent-mcu-component-appearance@1"
+      ],
+      "contracts": [
+        "x55-avr-fixed-resistor-appearance-v1"
+      ]
+    },
+    {
       "id": "X59",
       "capabilities": [
         "intent-mcu-shared-workbench-view@1"

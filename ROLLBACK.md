@@ -1,16 +1,24 @@
-# Rollback basis for 1.1.0-rc.94
+# Rollback basis for 1.1.0-rc.95
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain exact accepted rc.93 source commit
-`46a25259046d7985c8e158dbb0d3e776c53e216b` and VM103 image
-`sha256:722f3de7b8bfc5413ab51fc2c775f64e68cbb54cd5743fbc7f63e26131399df1`
-as the pre-rc.94 app-only recovery basis.
+Retain exact accepted rc.94 source commit
+`76e7843979764fc8656e967c3fe96595819fab4f` and VM103 image
+`sha256:ab1dc5c266d65cb63206d2b6f1a874393a43a820c5cd23878bb3f94a7d18efed`
+as the pre-rc.95 app-only recovery basis.
 If release acceptance fails, restore that exact app image and files, recreate
 only the Lab container, wait for health and verify Lab plus the existing
 Teach-domain URLs.
+
+Rc.95 publishes the reviewed partial AVR-only X55 fixed-resistor appearance
+editor and AVR quick-control restoration. Rolling back restores rc.94 without
+rewriting or deleting learner-owned files. A file containing the new bounded
+appearance field must be retained unchanged and opened in rc.95 or a later
+compatible release; rc.94 must not relabel it or infer executable authority.
+The prior X55 model identity remains migration-only and is never made current
+by rollback.
 
 Rc.94 publishes the reviewed partial AVR-only X49 baseline 0 versus candidate
 +1 °C thermostat comparison. Rolling back restores rc.93 without rewriting or

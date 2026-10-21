@@ -11,20 +11,20 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.93",
-    "current": "1.1.0-rc.94"
+    "previous": "1.1.0-rc.94",
+    "current": "1.1.0-rc.95"
   },
   "changes": [
     {
-      "id": "X49",
+      "id": "X55",
       "classification": "changed",
       "capabilities": [
-        "intent-mcu-x49-public-runner@1"
+        "intent-mcu-component-appearance@1"
       ],
       "contracts": [
-        "x49-avr-temperature-offset-v2"
+        "x55-avr-fixed-resistor-appearance-v1"
       ],
-      "summary": "Publishes the partial AVR thermostat baseline 0 versus candidate +1 degree comparison with one explicit same-origin build, two fresh dedicated workers, strict authority retirement and physical evidence absent."
+      "summary": "Publishes two original visual body presets for fixed AVR resistors with strict A/B pin, named-net, resistance, model, position, rotation, source and runtime invariants; no arbitrary drawing, topology or physical claim is added."
     },
     {
       "id": "X88",
@@ -35,7 +35,7 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records the reviewed rc.93 to rc.94 partial X49 release; the release packet adds no firmware Build, Run or scenario and grants no stored, replay, physical or verdict authority."
+      "summary": "Records the reviewed rc.94 to rc.95 partial X55 release; the release packet reuses accepted native proof, adds no firmware Build, Run or scenario and grants no drawing, topology, physical or verdict authority."
     }
   ],
   "migrationRequired": false,

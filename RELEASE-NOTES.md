@@ -1,4 +1,29 @@
-# Intent MCU Simulator 1.1.0-rc.94
+# Intent MCU Simulator 1.1.0-rc.95
+
+## X55 partial AVR fixed-resistor appearance
+
+This release publishes the reviewed partial X55 slice for fixed resistors in
+the AVR workbench. A learner may preview and apply either of two original body
+presets. Preview is non-mutating; Apply creates one ordinary authored-data
+transaction, and the existing Undo/Redo and Save/Open paths preserve the
+selected preset.
+
+The appearance editor cannot alter A/B pins, named nets, resistance, model,
+position, rotation, firmware source, artifact or runtime authority. It does
+not offer arbitrary drawing, imported artwork, third-party simulator assets,
+physical equivalence or electrical behavior claims. Other component types and
+controller profiles remain unavailable for this contract, so X55 is partial.
+
+The accepted private native proof remains one AVR Build and one Run with one
+worker and unchanged input/artifact/runtime binding through Preview, Apply,
+Undo and Redo. This rc.95 release packet performs no new firmware Build, Run
+or scenario. Cumulative accepted private producer accounting remains Build 20
+/ Run 23 / scenario 0. X-status taxonomy is **72 complete / 4 partial / 20
+planned**; P1 is **59/0/0**.
+
+---
+
+## 1.1.0-rc.94
 
 ## X49 partial AVR thermostat offset comparison
 

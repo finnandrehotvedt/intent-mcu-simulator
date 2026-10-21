@@ -1,8 +1,17 @@
-# Migration to 1.1.0-rc.94
+# Migration to 1.1.0-rc.95
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.95 adds one strictly bounded `appearance` field to current authored AVR
+project data. The accepted value is one of two project-owned fixed-resistor
+body presets and cannot change pins, nets, resistance, model, position,
+rotation, source or runtime authority. Existing files without the field open
+with the default appearance. Files carrying the prior recognized X55 model
+identity migrate data-only to the current identity, preserve authored data and
+clear executable/runtime authority; the original file is never overwritten.
+Unknown or malformed appearance and model identities remain rejected.
 
 Rc.94 changes no project, package, model-library, cache or browser-storage
 schema. X49 authored offsets, compiler claims, worker observations and accepted
