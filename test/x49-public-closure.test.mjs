@@ -16,7 +16,7 @@ const immutableRuntime = Object.freeze({
   'src/x49-public-authoring.mjs': 'a1f47c371bcd7ada4bcfb452d41be18908937eba507ce8b5abc973993209a0d2',
 });
 
-test('later approved UI/model increments preserve X49 public runtime owners and sanitized output', async () => {
+test('approved X48 worker increment preserves X49 public owners and sanitized output', async () => {
   for (const [pathname, expected] of Object.entries(immutableRuntime)) {
     assert.equal(hash(await readFile(pathname)), expected, pathname);
   }
