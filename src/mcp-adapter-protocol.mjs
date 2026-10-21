@@ -4,7 +4,8 @@
 import { BOUNDED_ACTION_REQUEST_LIMIT } from './bounded-action-contracts.mjs';
 import { CAPABILITY_DISCOVERY_REQUEST_SCHEMA, CAPABILITY_DISCOVERY_SCHEMA } from './capability-discovery.mjs';
 import {
-  EXTERNAL_CLIENT_CANCEL_SCHEMA, EXTERNAL_CLIENT_JOB_REQUEST_SCHEMA,
+  EXTERNAL_CLIENT_CANCEL_SCHEMA, EXTERNAL_CLIENT_CONTEXT_REQUEST_SCHEMA,
+  EXTERNAL_CLIENT_JOB_REQUEST_SCHEMA, parseExternalClientContextResult,
 } from './external-client-protocol.mjs';
 import { parseStrictJson } from './strict-json.mjs';
 
@@ -99,6 +100,7 @@ export function createMcpProtocolRouter({ ready, sendCanonical } = {}) {
   let initializeResponded = false;
   let initialized = false;
   let cancelSequence = 0;
+  let contextSequence = 0;
   const activeCalls = new Map();
 
   async function handle(message) {
@@ -161,13 +163,16 @@ export function createMcpProtocolRouter({ ready, sendCanonical } = {}) {
           || !object(message.params.arguments)) return rpcError(message.id ?? null, -32602, 'Invalid tools/call parameters');
       const { name, arguments: args } = message.params;
       let canonical;
-      if (name === 'intent_mcu_context') return rpcResult(message.id, toolResult({
-        schema: 'intent-mcu-mcp-context@1', ok: true, executed: false,
-        context: structuredClone(ready.context), actions: structuredClone(ready.actions),
-        origin: ready.origin, applyAuthority: false, genericCommand: false,
-        durableServerProject: false, publicEndpoint: false,
-      }));
-      if (name === 'intent_mcu_discover') canonical = {
+      if (name === 'intent_mcu_context') {
+        if (Object.keys(args).length !== 0) {
+          return rpcResult(message.id, toolResult({ ok: false, code: 'MCP_CONTEXT_ARGUMENTS', executed: false }));
+        }
+        contextSequence += 1;
+        canonical = {
+          schema: EXTERNAL_CLIENT_CONTEXT_REQUEST_SCHEMA,
+          requestId: `mcp-context-${String(contextSequence).padStart(4, '0')}`,
+        };
+      } else if (name === 'intent_mcu_discover') canonical = {
         schema: CAPABILITY_DISCOVERY_REQUEST_SCHEMA, ...structuredClone(args),
       };
       else if (name === 'intent_mcu_action') canonical = structuredClone(args);
@@ -179,7 +184,29 @@ export function createMcpProtocolRouter({ ready, sendCanonical } = {}) {
       if (name === 'intent_mcu_action' && typeof canonical.requestId === 'string') {
         activeCalls.set(idKey(message.id), canonical.requestId);
       }
-      try { return rpcResult(message.id, toolResult(await sendCanonical(canonical))); }
+      try {
+        const result = await sendCanonical(canonical);
+        if (name === 'intent_mcu_context' && result?.ok === true) {
+          let accepted;
+          try {
+            accepted = parseExternalClientContextResult(result, { requestId: canonical.requestId,
+              sourceIdentity: ready.sourceIdentity, origin: ready.origin });
+          } catch {
+            return rpcResult(message.id, toolResult({ ok: false,
+              code: 'MCP_CONTEXT_RESPONSE_INVALID', executed: false }));
+          }
+          return rpcResult(message.id, toolResult({
+            schema: 'intent-mcu-mcp-context@1', ok: true, code: accepted.code, executed: false,
+            context: structuredClone(accepted.context), actions: structuredClone(accepted.actions),
+            sourceIdentity: structuredClone(accepted.sourceIdentity), review: structuredClone(accepted.review),
+            origin: accepted.origin, reviewMode: accepted.reviewMode,
+            humanReviewSurface: accepted.humanReviewSurface,
+            applyAuthority: false, genericCommand: false,
+            durableServerProject: false, publicEndpoint: false,
+          }));
+        }
+        return rpcResult(message.id, toolResult(result));
+      }
       catch (error) {
         return rpcResult(message.id, toolResult({
           ok: false, code: error.code ?? 'MCP_DOWNSTREAM_FAILURE', executed: false,

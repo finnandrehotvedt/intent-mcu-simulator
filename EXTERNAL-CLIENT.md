@@ -9,6 +9,25 @@ Run `node examples/external-client-example.mjs` in the existing pinned browser
 acceptance environment. The example starts the adapter as a child process and
 consumes JSON Lines over stdin/stdout.
 
+The default browser remains headless. An operator who must perform the existing
+human Review/Apply gate in the adapter-owned page can start the process with
+`INTENT_MCU_ADAPTER_REVIEW_MODE=visible`. On Linux, visible mode requires an
+existing `DISPLAY`; absence fails with
+`EXTERNAL_CLIENT_VISIBLE_DISPLAY_REQUIRED` and never silently falls back to
+headless. This process option grants the client no browser-driving authority.
+
+The client may refresh the same page's bounded context with:
+
+```json
+{"schema":"intent-mcu-external-client-context-request@1","requestId":"client-context-0001"}
+```
+
+The strict read-only result contains only the current profile/generation,
+seven-action list, source identity and fixed review status/pending/enabled
+booleans. It accepts no selector, expression, function, click, paste or Apply
+input. Context fails closed while another page operation is in flight or when
+the page is closed, navigated/replaced, or its source identity drifts.
+
 Before choosing an action, a client may send the strict read-only discovery
 request below. The result reports the same four profiles, named pins, API and
 runtime limits, part support, quotas, schemas and version/source identity used
@@ -34,9 +53,10 @@ Unknown fields, unsupported versions and invented capabilities or actions are
 rejected; a status of `unavailable` is never promoted by the adapter.
 
 Patch proposals are data only. The adapter cannot apply them. Review remains
-non-mutating and Apply requires a separate explicit browser-user action against
-the exact current base hash. The test harness may drive that visible button to
-verify the boundary; this is test authority, not client authority.
+non-mutating and Apply requires an explicit human action in the visible
+adapter-owned browser against the exact current base hash. A test harness may
+invoke the existing page gate to verify lifecycle behavior; this synthetic test
+authority must not be described as a human action or native acceptance.
 
 Runtime evidence retains its producer limitations. AVR cycles are actual
 worker observations; other controller profiles retain their documented
@@ -62,9 +82,10 @@ out-of-window producer evidence is indeterminate, not a failed assertion. See
 The bounded thermostat acceptance uses the same seven actions. For the exact
 `avr-thermostat-boundary-v1` starter, `project.create` may select the approved
 `correct` or `known-bad-equality` firmware variant, and `runtime.run` may name
-that experiment. The resulting actual three-scenario verdict is available in
+that experiment. The resulting actual four-scenario verdict is available in
 `runtime.run` and `result.read`, associated with the compiler input hash,
-artifact hash, project/runtime generations and scenario observation. This is a
+artifact hash, project/runtime generations and reset-isolated scenario
+observations. This is a
 fixed test capability, not arbitrary source selection or a new action.
 
 Each action request is also a short-lived in-memory job. Its request ID is the

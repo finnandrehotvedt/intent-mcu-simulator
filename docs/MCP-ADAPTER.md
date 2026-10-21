@@ -20,8 +20,10 @@ only JSON-RPC messages on stdout.
 
 ## Tools and authority
 
-- `intent_mcu_context` returns the fixed origin, active profile and current
-  generation needed to construct a bounded request.
+- `intent_mcu_context` sends a fresh strict read-only request to the same
+  adapter-owned page and returns its fixed origin, active profile, current
+  generation, source identity and bounded review-state snapshot. It does not
+  reuse startup context.
 - `intent_mcu_discover` forwards the canonical read-only discovery envelope.
 - `intent_mcu_action` forwards one exact bounded request for one of the seven
   existing actions.
@@ -37,6 +39,12 @@ selection, account access, credentials, public listening, durable server
 projects or topology changes. Tool output contains the complete canonical
 result both as JSON text and `structuredContent`; the wrapper does not convert
 a refusal into execution evidence.
+
+For an operator-visible human Review/Apply gate, start MCP with
+`INTENT_MCU_ADAPTER_REVIEW_MODE=visible` in an existing graphical session. The
+child adapter uses the same page for context and actions. On Linux a missing
+`DISPLAY` is a terminal configuration error; no headless fallback occurs.
+The MCP client still has no selector, DOM, eval, click, paste or Apply surface.
 
 ## Reference client
 
