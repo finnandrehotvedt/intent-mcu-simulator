@@ -10,6 +10,7 @@ import {
   validateProjectV2,
 } from './project-v2.mjs';
 import { parseStrictJson } from './strict-json.mjs';
+import { withResistorAppearance } from './component-appearance.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, normalizeModelLibraryLock, resolveModelLibrary,
 } from './model-library.mjs';
@@ -131,6 +132,8 @@ function visualProject(result) {
         net.id, { color: defaultWireColor(net, graph) },
       ])),
       viewport: clone(layout.viewport),
+      ...(layout.componentAppearance
+        ? { componentAppearance: clone(layout.componentAppearance) } : {}),
     },
     instruments: clone(projectV3.instruments),
     build: { status: 'dirty', inputIdentity: null, artifactIdentity: null },
@@ -430,6 +433,11 @@ export class CandidateEditorSession {
             y: Math.min(0.92, Math.max(0.08, position.y + 0.04)),
             rotation: position.rotation,
           };
+          if (draft.candidateLayout.componentAppearance?.components[source.id]) {
+            draft.candidateLayout.componentAppearance.components[copy.id] = clone(
+              draft.candidateLayout.componentAppearance.components[source.id],
+            );
+          }
           runtimeDirty = true;
           break;
         }
@@ -448,6 +456,9 @@ export class CandidateEditorSession {
             (item) => item.id !== command.componentId,
           );
           delete draft.candidateLayout.positions[command.componentId];
+          if (draft.candidateLayout.componentAppearance) {
+            delete draft.candidateLayout.componentAppearance.components[command.componentId];
+          }
           const changedNets = [];
           for (const net of draft.candidateCircuit.nets) {
             const endpoints = net.endpoints.filter(
@@ -552,6 +563,23 @@ export class CandidateEditorSession {
             return failure('EDITOR_COMMAND_SHAPE', this.revision);
           }
           draft.candidateLayout.positions[command.componentId].rotation = command.rotation;
+          break;
+        }
+        case 'component.appearance.set': {
+          if (!exactCommand(command, ['componentId', 'preset'])) {
+            return failure('EDITOR_COMMAND_SHAPE', this.revision);
+          }
+          try {
+            draft.candidateLayout.componentAppearance = withResistorAppearance(
+              draft.candidateLayout.componentAppearance,
+              draft.candidateCircuit,
+              command.componentId,
+              command.preset,
+            );
+          } catch (error) {
+            return failure(error.code ?? 'COMPONENT_APPEARANCE_INVALID', this.revision,
+              error.details ?? [command.componentId, command.preset]);
+          }
           break;
         }
         case 'viewport.set': {

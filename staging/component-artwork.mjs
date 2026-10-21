@@ -126,11 +126,12 @@ function stm32F429ziBoard(svg, definition) {
   drawTerminals(svg, definition, 3.3);
 }
 
-function resistor(svg, definition, component) {
+function resistor(svg, definition, component, { appearancePreset = 'standard-beige' } = {}) {
+  const preset = appearancePreset === 'cool-blue' ? 'cool-blue' : 'standard-beige';
   append(svg,
     element('line', { x1: 4, y1: 24, x2: 43, y2: 24, class: 'metal-lead' }),
     element('line', { x1: 107, y1: 24, x2: 146, y2: 24, class: 'metal-lead' }),
-    element('path', { d: 'M 40 16 Q 44 10 52 10 H 98 Q 106 10 110 16 V 32 Q 106 38 98 38 H 52 Q 44 38 40 32 Z', class: 'resistor-body' }),
+    element('path', { d: 'M 40 16 Q 44 10 52 10 H 98 Q 106 10 110 16 V 32 Q 106 38 98 38 H 52 Q 44 38 40 32 Z', class: `resistor-body appearance-${preset}` }),
   );
   resistorBands(component.properties.ohms).forEach((color, index) => {
     svg.append(element('rect', { x: 55 + index * 13, y: 11, width: 5, height: 26, rx: 1, fill: color }));
@@ -206,7 +207,8 @@ if (JSON.stringify(COMPONENT_ARTWORK_RENDERER_IDS) !== JSON.stringify(ARTWORK_RE
   throw new Error('Artwork renderer registry does not match the component catalogue contract.');
 }
 
-export function createComponentArtwork(definition, component, { thumbnail = false } = {}) {
+export function createComponentArtwork(definition, component, options = {}) {
+  const { thumbnail = false, appearancePreset } = options;
   const svg = element('svg', {
     class: `component-artwork${thumbnail ? ' catalog-thumbnail' : ''}`,
     viewBox: definition.artwork.viewBox.join(' '),
@@ -216,6 +218,6 @@ export function createComponentArtwork(definition, component, { thumbnail = fals
   svg.append(element('title', {}, thumbnail ? definition.displayName : component.label));
   const renderer = renderers[definition.artwork.renderer];
   if (!renderer) throw new Error(`Unknown artwork renderer: ${definition.artwork.renderer}`);
-  renderer(svg, definition, component);
+  renderer(svg, definition, component, { appearancePreset });
   return svg;
 }

@@ -6,6 +6,7 @@ import { CIRCUIT_SCHEMA, validateCircuit } from '../src/circuit-engine.mjs';
 import { defaultWireColor } from '../src/project-v2.mjs';
 import { normalizeStoredRoute } from '../src/route-model.mjs';
 import { exactKeys, parseStrictJson } from '../src/strict-json.mjs';
+import { normalizeComponentAppearance } from '../src/component-appearance.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, modelLibraryExecutionIdentity, validateProjectModelLibrary,
 } from '../src/model-library.mjs';
@@ -294,7 +295,10 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
 }
 
 function normalizeCandidateLayout(value, graph) {
-  if (!exactKeys(value, ['schema', 'positions', 'wireRoutes', 'viewport'])
+  const legacyShape = exactKeys(value, ['schema', 'positions', 'wireRoutes', 'viewport']);
+  const currentShape = exactKeys(value,
+    ['schema', 'positions', 'wireRoutes', 'viewport', 'componentAppearance']);
+  if ((!legacyShape && !currentShape)
       || value.schema !== CANDIDATE_LAYOUT_SCHEMA
       || value.positions === null || typeof value.positions !== 'object' || Array.isArray(value.positions)
       || Object.getPrototypeOf(value.positions) !== Object.prototype
@@ -332,6 +336,10 @@ function normalizeCandidateLayout(value, graph) {
       || !Number.isFinite(value.viewport.panY) || value.viewport.panY < -1 || value.viewport.panY > 1) {
     fail('PROJECT_CONTACT_LAYOUT_VIEWPORT');
   }
+  const componentAppearance = normalizeComponentAppearance(
+    currentShape ? value.componentAppearance : undefined, graph,
+  );
+  if (!componentAppearance) fail('PROJECT_CONTACT_LAYOUT_APPEARANCE');
   const pinAnchors = {};
   for (const component of graph.components) {
     const pins = componentPins(component);
@@ -350,6 +358,7 @@ function normalizeCandidateLayout(value, graph) {
       positions,
       wireRoutes,
       viewport: clone(value.viewport),
+      ...(currentShape ? { componentAppearance } : {}),
     },
     pinAnchors,
   };
@@ -692,7 +701,7 @@ function runtimeLayout(candidateLayout, runtimeGraph, runtimePositionSources = {
     clone(candidateLayout.positions[component.id]
       ?? candidateLayout.positions[runtimePositionSources[component.id]]),
   ]));
-  return {
+  const layout = {
     positions,
     wireRoutes: {},
     wireStyles: Object.fromEntries(runtimeGraph.nets.map((net) => [
@@ -700,6 +709,16 @@ function runtimeLayout(candidateLayout, runtimeGraph, runtimePositionSources = {
     ])),
     viewport: clone(candidateLayout.viewport),
   };
+  if (candidateLayout.componentAppearance) {
+    layout.componentAppearance = normalizeComponentAppearance({
+      schema: candidateLayout.componentAppearance.schema,
+      components: Object.fromEntries(Object.entries(candidateLayout.componentAppearance.components)
+        .filter(([componentId]) => runtimeGraph.components.some(
+          (component) => component.id === componentId && component.type === 'resistor.fixed-v1',
+        ))),
+    }, runtimeGraph);
+  }
+  return layout;
 }
 
 const UNSAFE_DRAFT_CODES = new Set([

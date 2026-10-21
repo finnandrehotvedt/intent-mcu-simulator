@@ -19,6 +19,7 @@ import {
 } from './project-v2.mjs';
 import { isRouteFamily, normalizeStoredRoute } from './route-model.mjs';
 import { projectChangeRelevance } from './lifecycle.mjs';
+import { emptyComponentAppearance, withResistorAppearance } from './component-appearance.mjs';
 
 export const PROJECT_HISTORY_LIMIT = 64;
 const clone = (value) => structuredClone(value);
@@ -140,6 +141,11 @@ function applyMutation(current, command) {
       next.layout.positions[copy.id] = {
         x: Math.min(1, position.x + 0.04), y: Math.min(1, position.y + 0.04), rotation: position.rotation,
       };
+      if (next.layout.componentAppearance?.components[source.id]) {
+        next.layout.componentAppearance.components[copy.id] = clone(
+          next.layout.componentAppearance.components[source.id],
+        );
+      }
       runtimeDirty = true;
       break;
     }
@@ -147,6 +153,9 @@ function applyMutation(current, command) {
       if (!exactCommand(command, ['componentId']) || !componentById(graph, command.componentId)) throw new Error('EDITOR_COMPONENT_MISSING');
       graph.components = graph.components.filter((component) => component.id !== command.componentId);
       delete next.layout.positions[command.componentId];
+      if (next.layout.componentAppearance) {
+        delete next.layout.componentAppearance.components[command.componentId];
+      }
       const removedNets = new Set();
       graph.nets = graph.nets.flatMap((net) => {
         const endpoints = net.endpoints.filter((endpoint) => endpoint.component !== command.componentId);
@@ -179,6 +188,13 @@ function applyMutation(current, command) {
       }
       if (!next.layout.positions[command.componentId]) throw new Error('EDITOR_COMPONENT_MISSING');
       next.layout.positions[command.componentId].rotation = command.rotation;
+      break;
+    }
+    case 'component.appearance.set': {
+      if (!exactCommand(command, ['componentId', 'preset'])) throw new Error('EDITOR_COMMAND_SHAPE');
+      next.layout.componentAppearance = withResistorAppearance(
+        next.layout.componentAppearance, graph, command.componentId, command.preset,
+      );
       break;
     }
     case 'component.property.set': {
@@ -376,6 +392,12 @@ export function mergeCircuitProject(baseValue, incomingValue) {
     merged.layout.positions[id] = {
       x: Math.min(1, position.x + 0.03), y: Math.min(1, position.y + 0.03), rotation: position.rotation,
     };
+    if (incoming.layout.componentAppearance?.components[component.id]) {
+      merged.layout.componentAppearance ??= emptyComponentAppearance();
+      merged.layout.componentAppearance.components[id] = clone(
+        incoming.layout.componentAppearance.components[component.id],
+      );
+    }
   }
 
   const currentEndpointNets = new Map();
@@ -506,6 +528,7 @@ export class ProjectEditorReducer {
       next.layout.positions = validation.project.layout.positions;
       next.layout.wireRoutes = validation.project.layout.wireRoutes;
       next.layout.wireStyles = validation.project.layout.wireStyles;
+      next.layout.componentAppearance = validation.project.layout.componentAppearance;
       dirtyBuild(next);
       const electrical = requireRunnable ? validateCircuit(next.circuit) : null;
       if (electrical && !electrical.ok) return resultError(electrical.code, this.revision, electrical.diagnostics);

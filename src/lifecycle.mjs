@@ -75,6 +75,7 @@ export function projectChangeRelevance(commandType) {
     || commandType === 'wire.style.set'
     || commandType === 'component.move'
     || commandType === 'component.rotate'
+    || commandType === 'component.appearance.set'
     || commandType === 'project.rename'
     || commandType === 'viewport.set'
   ) return 'visual';

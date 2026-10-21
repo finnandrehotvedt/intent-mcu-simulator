@@ -39,6 +39,13 @@ import {
   PROJECT_RECOVERY_KEY, PROJECT_SCHEMA, PROJECT_STORAGE_KEY, migrateProjectV1, parseProjectV2,
 } from '../src/project-v2.mjs';
 import {
+  RESISTOR_APPEARANCE_PRESETS,
+  componentAppearanceInvariantReview,
+  componentAppearanceInvariantSnapshot,
+  resistorAppearancePreset,
+  withResistorAppearance,
+} from '../src/component-appearance.mjs';
+import {
   addRouteJog,
   isRouteFamily,
   materializeRouteFamily,
@@ -382,6 +389,7 @@ const elements = Object.fromEntries([
   'catalog-support-open', 'component-support-dialog', 'component-support-close',
   'component-support-profile', 'component-support-summary', 'component-support-mode', 'component-support-body',
   'catalog-list', 'catalog-prev', 'catalog-page', 'catalog-next', 'selection-name', 'property-editor', 'rotate-component', 'duplicate-component', 'delete-component',
+  'appearance-editor', 'appearance-preset', 'appearance-preview', 'appearance-status', 'appearance-apply',
   'accessible-connections-root',
   'selected-net', 'net-members', 'wire-color', 'wire-bends', 'selection-support', 'reconnect-mode', 'add-bend', 'delete-wire', 'remove-junction', 'zoom-value',
   'zoom-in', 'zoom-out', 'pan-left', 'pan-right', 'pan-up', 'pan-down', 'view-reset', 'fit-project', 'project-state',
@@ -549,6 +557,7 @@ const CATALOG_WINDOW_LIMIT = 80;
 
 let editor;
 let selectedComponentId = null;
+let appearancePreview = null;
 let selectedNetId = null;
 let pendingEndpoint = null;
 let wireMode = 'connect';
@@ -2694,8 +2703,10 @@ document.addEventListener('keydown', (event) => {
 });
 
 function setSelection(next) {
+  const priorComponentId = selectedComponentId;
   selection = next?.kind ? structuredClone(next) : { kind: 'none' };
   selectedComponentId = selection.kind === 'component' ? selection.componentId : null;
+  if (selectedComponentId !== priorComponentId) appearancePreview = null;
   selectedNetId = ['wire-segment', 'net'].includes(selection.kind) ? selection.netId : null;
   selectedRouteSegment = selection.kind === 'wire-segment'
     ? {
@@ -10020,7 +10031,9 @@ function renderComponents() {
     card.style.setProperty('--rotation', `${currentProject().layout.positions[component.id].rotation}deg`);
     card.style.setProperty('--part-width', `${definition.artwork.cssWidth}px`);
     card.style.setProperty('--part-height', `${definition.artwork.cssHeight}px`);
-    card.append(createComponentArtwork(definition, component));
+    card.append(createComponentArtwork(definition, component, {
+      appearancePreset: resistorAppearancePreset(currentProject().layout.componentAppearance, component.id),
+    }));
     card.append(createTerminalWireLayer(component, definition));
     for (const pin of definition.pins) {
       const anchor = document.createElement('button'); anchor.type = 'button'; anchor.className = 'pin-anchor';
@@ -10090,12 +10103,18 @@ function renderComponents() {
         card.append(control);
       }
     }
-    card.addEventListener('click', () => {
+    const selectCard = () => {
       selectComponent(component.id);
       renderInspector();
       for (const candidate of elements.componentlayer.querySelectorAll('.circuit-component')) {
         candidate.classList.toggle('selected', candidate.dataset.componentId === component.id);
       }
+    };
+    card.addEventListener('click', selectCard);
+    card.addEventListener('keydown', (event) => {
+      if (!['Enter', ' '].includes(event.key) || event.target !== card) return;
+      event.preventDefault();
+      selectCard();
     });
     cardPointerDrag(card, component.id);
     return card;
@@ -10425,6 +10444,78 @@ function renderPropertyEditor(component) {
   elements.propertyeditor.replaceChildren(...rows);
 }
 
+function appearanceInvariant(component, layout = currentProject().layout) {
+  return componentAppearanceInvariantSnapshot({
+    componentId: component.id,
+    graph: currentProject().circuit,
+    layout,
+    source: currentProject().source,
+    boardProfile: currentProject().boardProfile,
+    definition: uiComponentCatalog[component.type],
+  });
+}
+
+function prepareAppearancePreview(component, preset) {
+  if (selectedCompilerProfile !== AVR_PROFILE || component?.type !== 'resistor.fixed-v1'
+      || !RESISTOR_APPEARANCE_PRESETS.some((item) => item.id === preset)) {
+    appearancePreview = null;
+    return null;
+  }
+  const before = appearanceInvariant(component);
+  const candidateLayout = structuredClone(currentProject().layout);
+  candidateLayout.componentAppearance = withResistorAppearance(
+    candidateLayout.componentAppearance, currentProject().circuit, component.id, preset,
+  );
+  const after = appearanceInvariant(component, candidateLayout);
+  const review = componentAppearanceInvariantReview(before, after);
+  appearancePreview = { componentId: component.id, revision: editor.revision, preset, review };
+  return appearancePreview;
+}
+
+function renderAppearanceEditor(component) {
+  const supported = selectedCompilerProfile === AVR_PROFILE && component?.type === 'resistor.fixed-v1';
+  elements.appearanceeditor.hidden = !supported;
+  if (!supported) {
+    appearancePreview = null;
+    window.__X55_APPEARANCE_STATE__ = null;
+    elements.appearancepreview.replaceChildren();
+    elements.appearanceapply.disabled = true;
+    return;
+  }
+  const currentPreset = resistorAppearancePreset(
+    currentProject().layout.componentAppearance, component.id,
+  );
+  if (!appearancePreview || appearancePreview.componentId !== component.id
+      || appearancePreview.revision !== editor.revision) {
+    prepareAppearancePreview(component, currentPreset);
+  }
+  const options = RESISTOR_APPEARANCE_PRESETS.map(({ id, label }) => {
+    const option = new Option(label, id);
+    option.selected = id === appearancePreview.preset;
+    return option;
+  });
+  elements.appearancepreset.replaceChildren(...options);
+  const definition = uiComponentCatalog[component.type];
+  elements.appearancepreview.replaceChildren(createComponentArtwork(
+    definition, component, { appearancePreset: appearancePreview.preset },
+  ));
+  const connectedNets = currentProject().circuit.nets.filter((net) => net.endpoints.some(
+    (endpoint) => endpoint.component === component.id,
+  )).length;
+  const invariant = appearancePreview.review.equal;
+  elements.appearancestatus.textContent = invariant
+    ? `Invariant pass · pins A/B, ${connectedNets} named nets, ${definition.modelRef}, ${component.properties.ohms} Ω, source, position and rotation unchanged. Preview is not saved until Apply.`
+    : 'Invariant failed · Apply is blocked because electrical or anchor state changed.';
+  elements.appearanceapply.disabled = !invariant || appearancePreview.preset === currentPreset;
+  window.__X55_APPEARANCE_STATE__ = Object.freeze({
+    componentId: component.id,
+    currentPreset,
+    previewPreset: appearancePreview.preset,
+    invariant: invariant ? 'equal' : 'changed',
+    revision: editor.revision,
+  });
+}
+
 function renderWireBends(net) {
   if (!net) { elements.wirebends.textContent = 'Select a net to edit route bends.'; return; }
   const storedRoute = currentProject().layout.wireRoutes[net.id];
@@ -10511,6 +10602,7 @@ function renderInspector() {
   elements.duplicatecomponent.disabled = !component || component.type.startsWith('board.');
   elements.deletecomponent.disabled = !component;
   renderPropertyEditor(component);
+  renderAppearanceEditor(component);
 
   const prior = selectedNetId;
   const options = [new Option('No net selected', ''), ...currentProject().circuit.nets.map((net) => new Option(`${net.id} · ${net.endpoints.length} pins`, net.id))];
@@ -11906,6 +11998,26 @@ elements.logiccursora.addEventListener('input', () => { if (window.__M6_STATE__.
 elements.logiccursorb.addEventListener('input', () => { if (window.__M6_STATE__.runtime) renderRuntime(window.__M6_STATE__.runtime); });
 elements.pinselect.addEventListener('change', () => { currentProject().instruments.selectedPin = elements.pinselect.value; persistProject(); if (window.__M6_STATE__.runtime) renderRuntime(window.__M6_STATE__.runtime); });
 
+elements.appearancepreset.addEventListener('change', () => {
+  const component = currentProject().circuit.components.find(
+    (item) => item.id === selectedComponentId,
+  );
+  prepareAppearancePreview(component, elements.appearancepreset.value);
+  renderAppearanceEditor(component);
+});
+elements.appearanceapply.addEventListener('click', () => {
+  const component = currentProject().circuit.components.find(
+    (item) => item.id === selectedComponentId,
+  );
+  if (!component || appearancePreview?.componentId !== component.id
+      || appearancePreview.revision !== editor.revision) return;
+  const prepared = prepareAppearancePreview(component, appearancePreview.preset);
+  if (!prepared?.review.equal) return;
+  const preset = prepared.preset;
+  appearancePreview = null;
+  applyEditor({ type: 'component.appearance.set', componentId: component.id, preset },
+    `Applied visual-only ${preset} preset to ${component.id}`);
+});
 elements.rotatecomponent.addEventListener('click', () => {
   if (!selectedComponentId) return;
   const rotation = (currentProject().layout.positions[selectedComponentId].rotation + 90) % 360;

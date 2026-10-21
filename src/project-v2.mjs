@@ -10,6 +10,7 @@ import {
 } from './circuit-engine.mjs';
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
 import { normalizeStoredRoute } from './route-model.mjs';
+import { normalizeComponentAppearance } from './component-appearance.mjs';
 
 export const PROJECT_SCHEMA = 'teach-lab-project@2';
 export const PROJECT_STORAGE_KEY = 'teach-lab.simulator.project.v2';
@@ -62,8 +63,10 @@ export function defaultWireColor(net, graph = null) {
 function normalizeLayout(layout, graph) {
   const legacyShape = exactKeys(layout, ['positions']);
   const priorV2Shape = exactKeys(layout, ['positions', 'wireRoutes', 'viewport']);
-  const currentShape = exactKeys(layout, ['positions', 'wireRoutes', 'wireStyles', 'viewport']);
-  if (!legacyShape && !priorV2Shape && !currentShape) return null;
+  const priorCurrentShape = exactKeys(layout, ['positions', 'wireRoutes', 'wireStyles', 'viewport']);
+  const currentShape = exactKeys(layout,
+    ['positions', 'wireRoutes', 'wireStyles', 'viewport', 'componentAppearance']);
+  if (!legacyShape && !priorV2Shape && !priorCurrentShape && !currentShape) return null;
   if (!ownObject(layout.positions)) return null;
   const componentIds = graph.components.map((component) => component.id).sort();
   if (Object.keys(layout.positions).sort().join('|') !== componentIds.join('|')) return null;
@@ -90,7 +93,7 @@ function normalizeLayout(layout, graph) {
     wireRoutes[netId] = normalized;
   }
   const wireStyles = {};
-  const sourceStyles = currentShape ? layout.wireStyles : {};
+  const sourceStyles = priorCurrentShape || currentShape ? layout.wireStyles : {};
   if (!ownObject(sourceStyles)) return null;
   for (const netId of Object.keys(sourceStyles)) if (!netIds.has(netId)) return null;
   for (const net of graph.nets) {
@@ -103,7 +106,14 @@ function normalizeLayout(layout, graph) {
       || !Number.isFinite(viewport.zoom) || viewport.zoom < 0.5 || viewport.zoom > 3
       || !Number.isFinite(viewport.panX) || viewport.panX < -1 || viewport.panX > 1
       || !Number.isFinite(viewport.panY) || viewport.panY < -1 || viewport.panY > 1) return null;
-  return { positions, wireRoutes, wireStyles, viewport: clone(viewport) };
+  const componentAppearance = normalizeComponentAppearance(
+    currentShape ? layout.componentAppearance : undefined, graph,
+  );
+  if (!componentAppearance) return null;
+  return {
+    positions, wireRoutes, wireStyles, viewport: clone(viewport),
+    ...(currentShape ? { componentAppearance } : {}),
+  };
 }
 
 function validateSource(source) {

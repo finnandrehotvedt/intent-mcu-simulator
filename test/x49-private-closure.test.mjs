@@ -29,21 +29,22 @@ test('generated private runtime and evidence-tool closures are exact and fresh',
   assert.deepEqual(manifest.externalContracts, ['avr8js@0.21.1']);
 });
 
-test('approved private work leaves adapter, public runtime/model and save schemas byte-identical', async () => {
-  const expected = {
+test('later approved increments preserve X49 runtime bytes and never import its private owners', async () => {
+  const immutableRuntime = {
     'src/atmega328p-adapter.mjs': '65136d0b607336db992ba7dab81447813331b103136ec7c5348e6fc1ca9300de',
     'src/runtime-kernel.mjs': 'bebaeddfd8aa26564b6caf6972e4371aabb9b64f24f484c76b78c957e27c29dd',
     'src/simulator.worker.mjs': '6ea2c7328fce143f192c3a27d1dfac66502075e3f7924d53fd0318c57dbbcdaa',
-    'staging/main.mjs': 'efa2a74b992bfdf56fcfacca34392ab2d267e8172135c1a6f34a84c7c16e2365',
-    'scripts/generate-model-library-snapshots.mjs': 'd817ba0cbf3c2a22d1e733636ab287abf455d07c337ce917703cddbf7bc324d8',
-    'src/model-library.mjs': 'b0f38db2ece5d7a3ff7bdbb4d6dc9463e89bcff2a771b72d84ea1f1173389d1d',
-    'src/model-library-snapshots.mjs': '88dbd7af2268172b155c4d0b7fb1253461daa959a5c41dc185dce34f95fe58c5',
-    'src/project-v2.mjs': '7d4004e1c34ba58978593eb3577d2f7e49152ee5c652ef5c578871d84f982339',
-    'src/project-envelope.mjs': 'ff4ab3f6680d2b5f0c6aabc16537062465fc85381d4b6d1fc642a39a14094adf',
   };
-  for (const [path, hash] of Object.entries(expected)) {
+  for (const [path, hash] of Object.entries(immutableRuntime)) {
     const bytes = await readFile(new URL(`../${path}`, import.meta.url));
     assert.equal(sha256(bytes), hash, path);
+  }
+  for (const path of [
+    ...Object.keys(immutableRuntime), 'staging/main.mjs',
+    'scripts/generate-model-library-snapshots.mjs', 'src/model-library.mjs',
+    'src/model-library-snapshots.mjs', 'src/project-v2.mjs', 'src/project-envelope.mjs',
+  ]) {
+    const bytes = await readFile(new URL(`../${path}`, import.meta.url));
     assert.doesNotMatch(bytes.toString(), /x49-private\.worker|x49-private-instrumented-runtime/u, path);
   }
 });

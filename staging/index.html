@@ -584,6 +584,16 @@
         <p id="selection-support" class="support-detail">Select a part to see its exact simulation support.</p>
         <div class="inspector-actions"><button id="rotate-component" type="button" disabled>Rotate 90°</button><button id="duplicate-component" type="button" disabled>Duplicate</button><button id="delete-component" type="button" disabled>Delete</button></div>
         <div id="property-editor"></div>
+        <section id="appearance-editor" class="appearance-editor" aria-labelledby="appearance-editor-title" hidden>
+          <p class="eyebrow">X55 · VISUAL ONLY</p>
+          <h3 id="appearance-editor-title">Resistor appearance</h3>
+          <p>Preview one original body preset. Value bands, pins, nets and model behavior remain authoritative and unchanged.</p>
+          <label for="appearance-preset">Body preset</label>
+          <select id="appearance-preset"></select>
+          <div id="appearance-preview" class="appearance-preview" aria-label="Non-mutating resistor appearance preview"></div>
+          <p id="appearance-status" class="truth" role="status">Select a fixed resistor to review appearance invariants.</p>
+          <button id="appearance-apply" type="button" disabled>Apply visual preset</button>
+        </section>
         <label for="selected-net">Net / wire</label><select id="selected-net"><option value="">No net selected</option></select>
         <label for="wire-color">Wire colour</label><select id="wire-color" disabled><option value="#39dff2">Signal · cyan</option><option value="#f04f5f">Power · red</option><option value="#a8ff3f">Analogue · green</option><option value="#f5c451">Yellow</option><option value="#f28cf3">Magenta</option><option value="#f6f1e7">White</option><option value="#303943">Ground · charcoal</option><option value="#5f8cff">Blue</option></select>
         <div class="inspector-actions"><button id="reconnect-mode" type="button">Reconnect selected branch</button><button id="add-bend" type="button" disabled>Add orthogonal jog</button><button id="delete-branch" type="button" disabled>Delete selected branch</button><button id="delete-wire" type="button" disabled>Delete whole net</button><button id="remove-junction" type="button" disabled>Remove junction</button></div>
