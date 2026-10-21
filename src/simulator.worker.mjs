@@ -9,6 +9,7 @@ import {
 } from './runtime-identity.mjs';
 import { modelLibraryExecutionIdentity } from './model-library.mjs';
 import { exactKeys } from './strict-json.mjs';
+import { validateX43AvrHeapSymbols } from './x43-avr-heap-profile.mjs';
 
 let kernel = null;
 let rp2040 = null;
@@ -118,6 +119,17 @@ function x43StackCommand(data) {
   return data.token;
 }
 
+function x43HeapCommand(data) {
+  if (!exactKeys(data, ['command', 'token', 'artifactIdentity', 'runtimeGeneration', 'workerInstanceNonce'])
+      || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(data.token ?? '')
+      || data.artifactIdentity !== runtimeIdentity?.artifactIdentity
+      || data.runtimeGeneration !== runtimeIdentity?.runtimeGeneration
+      || data.workerInstanceNonce !== runtimeIdentity?.workerInstanceNonce) {
+    throw new Error('X43_HEAP_COMMAND_STALE');
+  }
+  return data.token;
+}
+
 function createRp2040Pacer(runtime) {
   return new Rp2040SnapshotPacer({
     artifactIdentity: runtime.artifactIdentity,
@@ -145,6 +157,14 @@ async function handleMessage(data) {
       }
       if (data.x35Probe && (!binding || data.x35Probe.artifactIdentity !== binding.artifactIdentity)) {
         throw new Error('X35_RUNTIME_ARTIFACT_BINDING_MISMATCH');
+      }
+      if (data.x43HeapProfile) {
+        const heapProfile = validateX43AvrHeapSymbols(data.x43HeapProfile);
+        if (!binding || heapProfile.artifactIdentity !== binding.artifactIdentity
+            || heapProfile.modelImplementationSha256 !== binding.modelImplementationSha256
+            || heapProfile.modelExecutionContextSha256 !== binding.modelExecutionContextSha256) {
+          throw new Error('X43_HEAP_RUNTIME_BINDING_MISMATCH');
+        }
       }
       if (data.runtimeProfile === RP2040_EXPERIMENTAL_PROFILE) {
         const candidate = await Rp2040ExperimentalRuntime.create(data.firmware ?? null);
@@ -181,6 +201,7 @@ async function handleMessage(data) {
           modelExecutionContextSha256: data.modelExecutionContextSha256,
           ...(data.x34Probe ? { x34Probe: data.x34Probe } : {}),
           ...(data.x35Probe ? { x35Probe: data.x35Probe } : {}),
+          ...(data.x43HeapProfile ? { x43HeapProfile: data.x43HeapProfile } : {}),
           ...(data.x47RuntimeAuthority ? { x47RuntimeAuthority: data.x47RuntimeAuthority,
             runtimeIdentity } : {}),
         });
@@ -193,6 +214,7 @@ async function handleMessage(data) {
           ...(data.instruments ?? {}),
           ...(data.x34Probe ? { x34Probe: data.x34Probe } : {}),
           ...(data.x35Probe ? { x35Probe: data.x35Probe } : {}),
+          ...(data.x43HeapProfile ? { x43HeapProfile: data.x43HeapProfile } : {}),
         });
       }
       for (const input of data.digitalInputs ?? []) applyDigitalInput(input);
@@ -264,6 +286,11 @@ async function handleMessage(data) {
       if (isRp2040()) throw new Error('X43_STACK_PROFILE_UNAVAILABLE');
       const snapshot = kernel.captureX43StackObservation(x43StackCommand(data));
       emit({ kind: 'x43-stack-captured', ...snapshot,
+        led: snapshot.circuit.leds.some((item) => item.on) });
+    } else if (data.command === 'x43-heap-sample') {
+      if (isRp2040()) throw new Error('X43_HEAP_PROFILE_UNAVAILABLE');
+      const snapshot = kernel.sampleX43HeapFrontier(x43HeapCommand(data));
+      emit({ kind: 'x43-heap-sampled', ...snapshot,
         led: snapshot.circuit.leds.some((item) => item.on) });
     } else if (data.command === 'step') {
       running = false;

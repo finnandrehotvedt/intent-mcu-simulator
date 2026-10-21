@@ -24,6 +24,9 @@ import {
 } from './x43-avr-observation-profile.mjs';
 import { validateX43AvrStackSnapshot } from './x43-avr-stack-profile.mjs';
 import {
+  validateX43AvrHeapSample, validateX43AvrHeapSymbols,
+} from './x43-avr-heap-profile.mjs';
+import {
   captureX47PulseSource,
   canonicalX47PulseText,
   createX47PulseContextFromSource,
@@ -607,6 +610,7 @@ function createX43Panel(document, ordinal) {
     <div class="x43-profile-controls">
       <button type="button" data-x43-start disabled>Start observation</button>
       <button type="button" data-x43-capture disabled>Capture now</button>
+      <button type="button" data-x43-heap-sample disabled>Sample heap frontier</button>
     </div>
     <dl class="x43-profile-facts">
       <div><dt>Binding</dt><dd data-x43-binding>No current AVR worker.</dd></div>
@@ -615,8 +619,9 @@ function createX43Panel(document, ordinal) {
       <div><dt>Wall diagnostic</dt><dd data-x43-wall>Not a semantic or hardware time.</dd></div>
     </dl>
     <dl class="x43-profile-unsupported" aria-label="Runtime memory and observed stack fields">
-      <div><dt>Dynamic SRAM</dt><dd data-status="unavailable">Unavailable · runtime does not expose use.</dd></div>
-      <div><dt>Heap</dt><dd data-status="unavailable">Unavailable · runtime does not expose use.</dd></div>
+      <div><dt>Allocator frontier</dt><dd data-x43-heap-frontier data-status="unavailable">Unavailable · no validated avr-libc allocator metadata.</dd></div>
+      <div><dt>Frontier ↔ observed SP</dt><dd data-x43-heap-gap data-status="unavailable">Unavailable · not a free-SRAM or allocatable-memory value.</dd></div>
+      <div><dt>Allocator boundary</dt><dd data-x43-heap-boundary data-status="unavailable">Unavailable · heap contents, live use and fragmentation are not inspected.</dd></div>
       <div><dt>Current observed stack</dt><dd data-x43-stack-current data-status="unavailable">Unavailable · no current AVR stack-pointer sample.</dd></div>
       <div><dt>Interval max observed</dt><dd data-x43-stack-interval data-status="unavailable">Unavailable until a native observation starts.</dd></div>
       <div><dt>Since-reset max observed</dt><dd data-x43-stack-all-time data-status="unavailable">Unavailable · no current AVR worker.</dd></div>
@@ -633,10 +638,41 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
   const owner = createX43AvrObservationProfile();
   let stackToken = null;
   let stackPending = null;
-  const clearStackAuthority = () => { stackToken = null; stackPending = null; };
+  let heapToken = null;
+  let heapPending = false;
+  const clearStackAuthority = () => {
+    stackToken = null; stackPending = null; heapToken = null; heapPending = false;
+  };
   const stackSnapshot = () => {
     try { return validateX43AvrStackSnapshot(document.defaultView?.__M6_STATE__?.runtime?.x43Stack); }
     catch { return null; }
+  };
+  const heapProjection = (observation) => {
+    const runtime = document.defaultView?.__M6_STATE__?.runtime;
+    let profile;
+    try { profile = validateX43AvrHeapSymbols(runtime?.x43HeapProfile); }
+    catch { return { profile: null, sample: null, reason: 'invalid-or-missing-allocator-metadata' }; }
+    if (profile.state !== 'supported') return { profile, sample: null, reason: profile.reason };
+    let sample = null;
+    try { sample = validateX43AvrHeapSample(runtime?.x43Heap); } catch { /* unavailable until requested */ }
+    const runtimeIdentity = runtime?.runtimeIdentity;
+    const exact = observation && runtimeIdentity
+      && profile.artifactIdentity === observation.artifactIdentity
+      && profile.modelImplementationSha256 === observation.modelImplementationSha256
+      && profile.modelExecutionContextSha256 === observation.modelExecutionContextSha256
+      && runtimeIdentity.artifactIdentity === observation.artifactIdentity
+      && runtimeIdentity.runtimeGeneration === observation.runtimeGeneration
+      && runtimeIdentity.workerInstanceNonce === observation.workerInstanceNonce;
+    if (!exact) return { profile, sample: null, reason: 'allocator-metadata-binding-mismatch' };
+    if (sample && (sample.token !== heapToken
+        || sample.artifactIdentity !== profile.artifactIdentity
+        || sample.elfSha256 !== profile.elfSha256
+        || sample.modelImplementationSha256 !== profile.modelImplementationSha256
+        || sample.modelExecutionContextSha256 !== profile.modelExecutionContextSha256)) {
+      sample = null;
+    }
+    if (heapPending && sample) heapPending = false;
+    return { profile, sample, reason: sample ? null : 'sample-required' };
   };
   const current = () => {
     const profile = activeProfileReader();
@@ -666,15 +702,21 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
     }
     const transitioning = snapshot.state === 'transitioning';
     const stack = stackSnapshot();
+    const heap = heapProjection(observation);
     for (const panel of panels) {
       panel.dataset.state = snapshot.state;
       panel.querySelector('[data-x43-state]').textContent = snapshot.state;
       const start = panel.querySelector('[data-x43-start]');
       const capture = panel.querySelector('[data-x43-capture]');
+      const heapSample = panel.querySelector('[data-x43-heap-sample]');
       start.disabled = transitioning || !observation || snapshot.state === 'observing';
       start.textContent = ['captured', 'invalidated'].includes(snapshot.state)
         ? 'Start new observation' : 'Start observation';
       capture.disabled = transitioning || !observation || snapshot.state !== 'observing';
+      heapSample.disabled = transitioning || !observation
+        || heap.profile?.state !== 'supported' || heapPending;
+      heapSample.textContent = heapPending ? 'Sampling bound worker…'
+        : heap.sample ? 'Sample heap frontier again' : 'Sample heap frontier';
       panel.querySelector('[data-x43-binding]').textContent = transitioning
         ? 'Awaiting one coherent AVR worker status; controls and values are unavailable during the atomic transition.'
         : snapshot.binding
@@ -700,6 +742,25 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
       const currentStack = panel.querySelector('[data-x43-stack-current]');
       const intervalStack = panel.querySelector('[data-x43-stack-interval]');
       const allTimeStack = panel.querySelector('[data-x43-stack-all-time]');
+      const heapFrontier = panel.querySelector('[data-x43-heap-frontier]');
+      const heapGap = panel.querySelector('[data-x43-heap-gap]');
+      const heapBoundary = panel.querySelector('[data-x43-heap-boundary]');
+      heapFrontier.dataset.status = heap.sample ? 'available' : 'unavailable';
+      heapGap.dataset.status = heap.sample ? 'available' : 'unavailable';
+      heapBoundary.dataset.status = heap.profile?.state === 'supported' ? 'available' : 'unavailable';
+      heapFrontier.textContent = heapPending
+        ? 'Sample requested · awaiting the exact bound worker acknowledgement.'
+        : heap.sample
+          ? `0x${heap.sample.frontier.toString(16).padStart(4, '0')} · ${heap.sample.allocatorExtended ? '__brkval extended' : 'heap-start basis; __brkval null'} · cycle ${heap.sample.cycle.toLocaleString('en-US')}`
+          : heap.profile?.state === 'supported'
+            ? 'Available on explicit request · no memory bytes or free-list nodes are exposed.'
+            : `Unavailable · ${heap.reason}.`;
+      heapGap.textContent = heap.sample
+        ? `${heap.sample.frontierToStackAddressGapBytes.toLocaleString('en-US')} B address gap to observed SP 0x${heap.sample.stackPointer.toString(16).padStart(4, '0')} · ${heap.sample.relation} · not free SRAM or allocatable RAM`
+        : 'Unavailable · requires one bound frontier sample; never inferred from source or a guessed address.';
+      heapBoundary.textContent = heap.profile?.state === 'supported'
+        ? `${heap.profile.allocator} · ELF ${heap.profile.elfSha256.slice(0, 12)}… · contents/live use/fragmentation/collision safety unavailable`
+        : 'Unavailable · allocator symbol set is absent or unsupported.';
       currentStack.dataset.status = stack?.current ? 'available' : 'unavailable';
       currentStack.textContent = stack?.current
         ? `SP 0x${stack.current.pointer.toString(16).padStart(4, '0')} · ${stack.current.depthBytes} B below reset top`
@@ -765,6 +826,22 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
           clearStackAuthority();
           owner.invalidate(error.code ?? 'X43_CAPTURE_REJECTED');
         }
+      }
+      paint();
+    });
+    panel.querySelector('[data-x43-heap-sample]').addEventListener('click', () => {
+      const { observation, reason } = current();
+      const heap = heapProjection(observation);
+      if (!observation || heap.profile?.state !== 'supported') {
+        heapPending = false;
+        heapToken = null;
+        owner.invalidate(reason ?? heap.reason ?? 'X43_HEAP_SAMPLE_UNAVAILABLE');
+      } else {
+        heapToken = `x43-heap-${document.defaultView.crypto.randomUUID()}`;
+        heapPending = true;
+        document.dispatchEvent(new document.defaultView.CustomEvent('x43-heap-sample-request', {
+          detail: { token: heapToken },
+        }));
       }
       paint();
     });

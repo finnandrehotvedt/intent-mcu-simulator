@@ -13,6 +13,9 @@ import { controlContractsFor } from '../src/model-control-contracts.mjs';
 import * as existingSnapshots from '../src/model-library-snapshots.mjs';
 
 const { RETAINED_MODEL_LIBRARY_MANIFEST } = existingSnapshots;
+const PRE_X43_HEAP_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X43_HEAP_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -89,6 +92,7 @@ const entries = COMPONENT_SUPPORT_CELLS.filter((cell) => cell.available)
 const CURRENT_CLOSURE = Object.freeze([
   '../src/component-catalog.mjs', '../src/circuit-engine.mjs', '../src/runtime-kernel.mjs',
   '../src/atmega328p-adapter.mjs', '../src/x43-avr-stack-profile.mjs',
+  '../src/x43-avr-heap-profile.mjs',
   '../src/x47-runtime-transaction.mjs',
   '../src/x47-ui-integration.mjs', '../src/strict-json.mjs',
   '../src/component-appearance.mjs', '../src/project-v2.mjs', '../src/project-editor.mjs',
@@ -166,16 +170,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x43-stack-hotpath-candidate.1-current',
-  'intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12',
+  '2.0.0-x43-heap-frontier-candidate.1-current',
+  'intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13',
   currentImplementation,
   {
-    priorVersion: PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X43_HEAP_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X43_HEAP_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'explicit-data-only-migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component, electrical and observed CPU.SP semantics are unchanged; tracker observation now updates scalar state only',
-    presentationDisposition: 'private X43 candidate distinguishes pending native stack acknowledgements and clears retired interval tokens',
-    baselineClosureDisposition: 'accepted public rc.97 identity remains immutable and migration-only',
+    semanticDisposition: 'component and electrical semantics are unchanged; exact avr-libc allocator-symbol SRAM observation is explicit-request-only',
+    presentationDisposition: 'private X43 candidate distinguishes allocator frontier from live heap, free SRAM, fragmentation and collision safety',
+    baselineClosureDisposition: 'accepted public rc.98 identity remains immutable and migration-only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -183,6 +187,7 @@ const output = `// SPDX-License-Identifier: Apache-2.0
 // Generated immutable snapshots. Regenerate only through an explicitly reviewed library release.
 
 export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(retained, null, 2)});
+export const PRE_X43_HEAP_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_HEAP_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});

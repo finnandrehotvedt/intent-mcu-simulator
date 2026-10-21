@@ -29,11 +29,11 @@ test('generated private runtime and evidence-tool closures are exact and fresh',
   assert.deepEqual(manifest.externalContracts, ['avr8js@0.21.1']);
 });
 
-test('later approved increments preserve X49 runtime bytes and never import its private owners', async () => {
+test('approved X43 heap extension is pinned and never imports X49 private owners', async () => {
   const immutableRuntime = {
     'src/atmega328p-adapter.mjs': '65136d0b607336db992ba7dab81447813331b103136ec7c5348e6fc1ca9300de',
-    'src/runtime-kernel.mjs': '8ae935906e1981916b7bc1ab7c2243c6624404b232d1844e1d690c632172bc6e',
-    'src/simulator.worker.mjs': 'c7a1f5d3923e4a8ab8fe5d68bc2193d0b08c82a6489ffa7f382ddf2df8b57af5',
+    'src/runtime-kernel.mjs': 'b1bb960f9a60b37652318cd8a87c189e9a791603a705eb17710ff640a202efd7',
+    'src/simulator.worker.mjs': '7de0aac12d59c7fac8c12c68a555555bb8e68442389f8a46cfa358898e1e49fd',
   };
   for (const [path, hash] of Object.entries(immutableRuntime)) {
     const bytes = await readFile(new URL(`../${path}`, import.meta.url));

@@ -185,6 +185,7 @@ import {
   x33RuntimeSha256, x33RuntimeSuiteIdentity, x33RuntimeTopologyIdentity,
 } from '../src/x33-runtime-state-contract.mjs';
 import { parseX34ProbeSymbol } from '../src/x34-avr-probe-symbol.mjs';
+import { parseX43AvrHeapSymbols } from '../src/x43-avr-heap-profile.mjs';
 import {
   X34_FIXTURE_ID, X34_INSTRUMENTED_SOURCE,
 } from '../src/x34-precision-fixture.mjs';
@@ -11148,7 +11149,8 @@ function scheduleWorkerRuntimeRender(message) {
 }
 
 async function loadArtifact(hex, artifactIdentity, {
-  x34Probe = null, modelExecutionContextSha256, modelImplementationSha256,
+  x34Probe = null, x43HeapProfile = null,
+  modelExecutionContextSha256, modelImplementationSha256,
 } = {}) {
   if (!/^[a-f0-9]{64}$/u.test(modelExecutionContextSha256 ?? '')
       || !/^[a-f0-9]{64}$/u.test(modelImplementationSha256 ?? '')) {
@@ -11199,6 +11201,7 @@ async function loadArtifact(hex, artifactIdentity, {
       serialHistoryLimit: project.instruments.serial.historyLimit,
     },
     x34Probe: x34Probe ? structuredClone(x34Probe) : null,
+    x43HeapProfile: x43HeapProfile ? structuredClone(x43HeapProfile) : null,
   };
   let authority;
   try { authority = await x47AuthorityForRuntime(frozen); }
@@ -11328,6 +11331,7 @@ async function loadArtifact(hex, artifactIdentity, {
     runtimeBinding: workerRuntimeBinding,
     ...(authority ? { x47RuntimeAuthority: structuredClone(authority) } : {}),
     ...(frozen.x34Probe ? { x34Probe: frozen.x34Probe } : {}),
+    ...(frozen.x43HeapProfile ? { x43HeapProfile: frozen.x43HeapProfile } : {}),
     digitalInputs: frozen.digitalInputs,
     instruments: {
       logicChannels: frozen.instruments.logicChannels,
@@ -11362,6 +11366,10 @@ async function pollJob(job, inputAtSubmit, modelExecutionContextSha256, modelImp
     if (status.status === 'succeeded') {
       if (buildInputIdentity() !== inputAtSubmit) return;
       const result = { ...status.result, modelExecutionContextSha256, modelImplementationSha256 };
+      const x43HeapProfile = await parseX43AvrHeapSymbols({
+        elfBase64: result.artifact.elfBase64, elfSha256: result.artifact.elfSha256,
+      }, { artifactIdentity: result.artifactIdentity,
+        modelImplementationSha256, modelExecutionContextSha256 });
       const acceptedBuild = applyLifecycle({
         type: 'build.succeeded', binding,
         artifactIdentity: result.artifactIdentity, inputIdentity: result.inputIdentity,
@@ -11375,7 +11383,7 @@ async function pollJob(job, inputAtSubmit, modelExecutionContextSha256, modelImp
       publish({ buildState: 'succeeded', artifactIdentity: result.artifactIdentity, inputIdentity: result.inputIdentity, cacheHit: status.cacheHit });
       clearTechnicalError();
       await loadArtifact(result.artifact.hex, result.artifactIdentity, {
-        modelExecutionContextSha256, modelImplementationSha256,
+        x43HeapProfile, modelExecutionContextSha256, modelImplementationSha256,
       }); return;
     }
     const errorCode = status.status === 'timeout' ? 'BUILD_TIMEOUT' : 'BUILD_FAILED';
@@ -11649,7 +11657,7 @@ elements.reset.addEventListener('click', () => {
   renderThermostatExperimentPanel();
 });
 
-function postX43StackCommand(command, token) {
+function postX43RuntimeCommand(command, token) {
   const identity = currentRuntimeWorkerIdentity;
   if (!worker || !identity || selectedCompilerProfile !== AVR_PROFILE
       || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(token ?? '')) return false;
@@ -11660,10 +11668,13 @@ function postX43StackCommand(command, token) {
 }
 
 document.addEventListener('x43-stack-start-request', (event) => {
-  postX43StackCommand('x43-stack-start', event.detail?.token);
+  postX43RuntimeCommand('x43-stack-start', event.detail?.token);
 });
 document.addEventListener('x43-stack-capture-request', (event) => {
-  postX43StackCommand('x43-stack-capture', event.detail?.token);
+  postX43RuntimeCommand('x43-stack-capture', event.detail?.token);
+});
+document.addEventListener('x43-heap-sample-request', (event) => {
+  postX43RuntimeCommand('x43-heap-sample', event.detail?.token);
 });
 
 document.addEventListener('x47-preview-ready', () => {
