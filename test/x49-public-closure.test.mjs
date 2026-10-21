@@ -7,16 +7,17 @@ import { readFile, readdir } from 'node:fs/promises';
 import test from 'node:test';
 
 const hash = (value) => createHash('sha256').update(value).digest('hex');
-const immutable = Object.freeze({
-  'staging/main.mjs': 'efa2a74b992bfdf56fcfacca34392ab2d267e8172135c1a6f34a84c7c16e2365',
+const immutableRuntime = Object.freeze({
   'src/simulator.worker.mjs': '6ea2c7328fce143f192c3a27d1dfac66502075e3f7924d53fd0318c57dbbcdaa',
   'src/runtime-kernel.mjs': 'bebaeddfd8aa26564b6caf6972e4371aabb9b64f24f484c76b78c957e27c29dd',
-  'src/model-library.mjs': 'b0f38db2ece5d7a3ff7bdbb4d6dc9463e89bcff2a771b72d84ea1f1173389d1d',
-  'src/project-envelope.mjs': 'ff4ab3f6680d2b5f0c6aabc16537062465fc85381d4b6d1fc642a39a14094adf',
+  'src/x49-public-run-contract.mjs': 'fa11957f8f4d2b528d2a4d71c42f64cc47cd0234be50b8dd129843802749c70b',
+  'src/x49-public-runner.mjs': '7d869bf9621a8fa921e9a7a1bb198c426f07c1473f7ca5fde680e5bd5399c09c',
+  'src/x49-sensor-offset.mjs': 'ef0e8a7ddd5e9acbc052d4b522ea56b317f8cbc1a59ef53a0b7471bfd7e8cbba',
+  'src/x49-public-authoring.mjs': 'a1f47c371bcd7ada4bcfb452d41be18908937eba507ce8b5abc973993209a0d2',
 });
 
-test('X49 public candidate preserves excluded public closure and emits only its dedicated worker', async () => {
-  for (const [pathname, expected] of Object.entries(immutable)) {
+test('later approved UI/model increments preserve X49 public runtime owners and sanitized output', async () => {
+  for (const [pathname, expected] of Object.entries(immutableRuntime)) {
     assert.equal(hash(await readFile(pathname)), expected, pathname);
   }
   const files = (await readdir('dist')).sort();
