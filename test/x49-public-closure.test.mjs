@@ -8,7 +8,7 @@ import test from 'node:test';
 
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 const immutableRuntime = Object.freeze({
-  'src/simulator.worker.mjs': '6ea2c7328fce143f192c3a27d1dfac66502075e3f7924d53fd0318c57dbbcdaa',
+  'src/simulator.worker.mjs': '0824d8ed1aad74a7b1d84f63d6f7b5256da067ca43ef753c6f80029147d39542',
   'src/runtime-kernel.mjs': 'bebaeddfd8aa26564b6caf6972e4371aabb9b64f24f484c76b78c957e27c29dd',
   'src/x49-public-run-contract.mjs': 'fa11957f8f4d2b528d2a4d71c42f64cc47cd0234be50b8dd129843802749c70b',
   'src/x49-public-runner.mjs': '7d869bf9621a8fa921e9a7a1bb198c426f07c1473f7ca5fde680e5bd5399c09c',
@@ -16,7 +16,7 @@ const immutableRuntime = Object.freeze({
   'src/x49-public-authoring.mjs': 'a1f47c371bcd7ada4bcfb452d41be18908937eba507ce8b5abc973993209a0d2',
 });
 
-test('later approved UI/model increments preserve X49 public runtime owners and sanitized output', async () => {
+test('approved X48 worker increment preserves X49 public owners and sanitized output', async () => {
   for (const [pathname, expected] of Object.entries(immutableRuntime)) {
     assert.equal(hash(await readFile(pathname)), expected, pathname);
   }

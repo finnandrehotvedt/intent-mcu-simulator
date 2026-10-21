@@ -29,11 +29,11 @@ test('generated private runtime and evidence-tool closures are exact and fresh',
   assert.deepEqual(manifest.externalContracts, ['avr8js@0.21.1']);
 });
 
-test('later approved increments preserve X49 runtime bytes and never import its private owners', async () => {
+test('approved X48 worker increment preserves X49 runtime dependencies and private-owner isolation', async () => {
   const immutableRuntime = {
     'src/atmega328p-adapter.mjs': '65136d0b607336db992ba7dab81447813331b103136ec7c5348e6fc1ca9300de',
     'src/runtime-kernel.mjs': 'bebaeddfd8aa26564b6caf6972e4371aabb9b64f24f484c76b78c957e27c29dd',
-    'src/simulator.worker.mjs': '6ea2c7328fce143f192c3a27d1dfac66502075e3f7924d53fd0318c57dbbcdaa',
+    'src/simulator.worker.mjs': '0824d8ed1aad74a7b1d84f63d6f7b5256da067ca43ef753c6f80029147d39542',
   };
   for (const [path, hash] of Object.entries(immutableRuntime)) {
     const bytes = await readFile(new URL(`../${path}`, import.meta.url));

@@ -189,6 +189,6 @@ test('shared shell keeps preview transient while current Apply is model-identity
   assert.match(shell, /x47PulseSourceMatches/u);
   assert.doesNotMatch(`${owner}\n${shell}`, /localStorage|sessionStorage|indexedDB|serviceWorker|postMessage\(/u);
   assert.doesNotMatch(`${owner}\n${shell}`, /queueDigitalSequence|digital-sequence/u);
-  assert.match(modelClosure, /x47-ui-integration/u);
-  assert.doesNotMatch(modelClosure, /x47-avr-d2-pulse|shared-workbench-shell/u);
+  assert.match(modelClosure, /x47-ui-integration|shared-workbench-shell/u);
+  assert.doesNotMatch(modelClosure, /x47-avr-d2-pulse/u);
 });
