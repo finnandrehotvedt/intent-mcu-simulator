@@ -2,6 +2,20 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.101 — 2026-10-21
+
+- Extends the two existing original fixed-resistor body presets from AVR to
+  the existing Pico, ESP32-C3 and STM32 workbenches.
+- Keeps Preview non-mutating and Apply layout-only. Pins, named nets,
+  resistance, component position/rotation, source, model and runtime authority
+  remain unchanged, and Save/Open retains the selected preset.
+- Adds no arbitrary drawing, custom geometry/colour, imported artwork, new
+  component, topology or runtime behavior. X55 remains partial and status stays
+  X **75 complete / 1 partial / 20 planned**, P1 **59/0/0**.
+- Reuses the accepted 55/55 pretest, 419/419 full, 40/40 posttest and
+  four-profile browser evidence. This release performs 0 firmware Build,
+  0 Run and 0 Scenario; cumulative accounting remains **32/31/0**.
+
 ## 1.1.0-rc.100 — 2026-10-21
 
 - Corrects the canonical X43 status to complete against its original bounded

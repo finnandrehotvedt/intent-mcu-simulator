@@ -1,4 +1,27 @@
-# Intent MCU Simulator 1.1.0-rc.100
+# Intent MCU Simulator 1.1.0-rc.101
+
+## X55 partial fixed-resistor appearance across four profiles
+
+This release extends the two existing original fixed-resistor body presets
+from AVR to the existing Pico, ESP32-C3 and STM32 workbenches. Preview remains
+non-mutating. Apply stores one finite layout value, and the existing Undo/Redo
+and local Save/Open paths retain the selected preset.
+
+The appearance control cannot change A/B pins, named nets, resistance,
+position, rotation, source, model identity, artifact or runtime authority.
+No arbitrary drawing, custom geometry or colour, imported artwork, new part,
+topology, physical equivalence or electrical-behavior claim is added. X55
+therefore remains partial.
+
+The accepted candidate passed 55/55 pretests, 419/419 full tests, 40/40
+posttests and browser acceptance across all four profiles with zero runtime
+workers or producer requests. Rc.101 performs 0 firmware Build, 0 Run and
+0 Scenario. Status remains X **75/1/20**, P1 **59/0/0**, and cumulative
+producer accounting remains **32/31/0**.
+
+---
+
+## 1.1.0-rc.100
 
 ## X43 original-criterion status reconciliation
 

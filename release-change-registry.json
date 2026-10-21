@@ -68,6 +68,7 @@
         "intent-mcu-component-appearance@1"
       ],
       "contracts": [
+        "x55-all-profile-fixed-resistor-appearance-v1",
         "x55-avr-fixed-resistor-appearance-v1"
       ]
     },

@@ -28,26 +28,26 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc99 to rc100 X43 status reconciliation bytes', async () => {
+test('X88 owner binds canonical rc100 to rc101 partial X55 all-profile bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.100');
+  assert.equal(release.version, '1.1.0-rc.101');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
   assert(registry.ids.includes('X47'));
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.99', current: '1.1.0-rc.100' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.100', current: '1.1.0-rc.101' });
   assert.deepEqual(value.changes, [
     {
-      id: 'X43', classification: 'changed', capabilities: ['intent-mcu-x43-avr-observation-interval@1', 'intent-mcu-x43-avr-observed-stack@1'],
-      contracts: ['x43-avr-observation-interval-v1', 'x43-avr-observed-stack-v1'],
-      summary: 'Corrects X43 to complete against its original bounded precision criterion using accepted public instruction, cycle, runtime and stack evidence; heap, free SRAM, stack contents, live occupancy and physical benchmarking remain unavailable.',
+      id: 'X55', classification: 'changed', capabilities: ['intent-mcu-component-appearance@1'],
+      contracts: ['x55-all-profile-fixed-resistor-appearance-v1', 'x55-avr-fixed-resistor-appearance-v1'],
+      summary: 'Extends the two existing fixed-resistor body presets across AVR, Pico, ESP32-C3 and STM32 while preserving pins, nets, resistance, source, model and runtime authority; no general editor is added.',
     },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records the rc.99 to rc.100 X43 status reconciliation against accepted original-criterion evidence; this metadata-only correction adds no Build, Run, scenario, runtime behavior, heap claim or new authority.',
+      summary: 'Records the reviewed rc.100 to rc.101 partial X55 increment across four profiles; it reuses accepted tests, performs no firmware Build, Run or Scenario and grants no drawing, physical or verdict authority.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -110,7 +110,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.100');
+  assert.equal(discovery.identity.version, '1.1.0-rc.101');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

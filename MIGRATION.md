@@ -1,8 +1,15 @@
-# Migration to 1.1.0-rc.100
+# Migration to 1.1.0-rc.101
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.101 recognizes the explicit all-profile resistor-appearance model identity.
+Existing rc.100 files are validated and migrated as data only; authored
+components, pins, nets, resistance and layout are preserved while executable,
+runtime and verdict authority are cleared. The original local file is never
+overwritten. Missing appearance data means the standard beige preset; malformed
+or unknown presets fail closed.
 
 Rc.100 changes status metadata and explanatory copy only. It changes no project,
 package, model-library, compiler-artifact, cache or browser-storage schema.
