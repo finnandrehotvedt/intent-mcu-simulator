@@ -9,6 +9,20 @@ import {
 } from './runtime-identity.mjs';
 import { modelLibraryExecutionIdentity } from './model-library.mjs';
 import { exactKeys } from './strict-json.mjs';
+import {
+  X48_MAX_BOUNDARY_LATENESS_CYCLES,
+  X48_NOMINAL_TICK_CYCLES,
+  X48_SLICE_INSTRUCTIONS,
+  X48_TICK_COUNT,
+  appendX48Observation,
+  createX48RunState,
+  finishX48Run,
+  indeterminateX48Run,
+  validateX48Binding,
+  validateX48ThermostatGraph,
+  x48PlantStep,
+  x48TemperaturePosition,
+} from './x48-ideal-room-plant.mjs';
 
 let kernel = null;
 let rp2040 = null;
@@ -18,6 +32,9 @@ let generation = 0;
 let initialization = 0;
 let runtimeIdentity = null;
 let validatedModelExecutionContextSha256 = null;
+let x48CurrentModel = false;
+let x48Operation = null;
+let x48Epoch = 0;
 
 const identityFields = () => runtimeIdentity ? {
   runtimeIdentity: structuredClone(runtimeIdentity),
@@ -72,7 +89,128 @@ function acknowledgeX47Cancellation(reason, disposeToken = null) {
   return receipts;
 }
 
+function x48Retention(snapshot) {
+  return {
+    inputDrops: snapshot.eventLog?.dropped ?? -1,
+    logicDrops: snapshot.retentionDrops?.logic ?? -1,
+    serialDrops: snapshot.retentionDrops?.serial ?? -1,
+    adcDrops: snapshot.retentionDrops?.adc ?? -1,
+    unsupportedDrops: snapshot.retentionDrops?.unsupported ?? -1,
+  };
+}
+
+function x48ApplyControl(componentId, key, value, cycle) {
+  const before = kernel.adapter.cpu.cycles;
+  const queued = kernel.queueControlAtCycle(componentId, key, value, cycle);
+  const after = kernel.adapter.cpu.cycles;
+  const applied = kernel.inputs.snapshot().applied.find((item) => item.sequence === queued.sequence);
+  if (before !== cycle || after !== cycle || applied?.targetCycle !== cycle
+      || applied?.appliedCycle !== cycle) throw new Error('X48_INPUT_CAUSALITY_INVALID');
+  return applied;
+}
+
+function cancelX48(reason, kind = 'x48-cancelled') {
+  x48Epoch += 1;
+  if (!x48Operation) return null;
+  const operation = x48Operation;
+  x48Operation = null;
+  const result = indeterminateX48Run(operation.state, reason);
+  const snapshot = kernel?.snapshot();
+  if (snapshot) emit({ kind, result, ...snapshot,
+    led: snapshot.circuit.leds.some((item) => item.on) });
+  return result;
+}
+
+function x48Terminal(kind, result) {
+  x48Operation = null;
+  const snapshot = kernel.snapshot();
+  emit({ kind, result, ...snapshot, led: snapshot.circuit.leds.some((item) => item.on) });
+}
+
+function advanceX48(activeEpoch) {
+  const operation = x48Operation;
+  if (!operation || operation.epoch !== activeEpoch || activeEpoch !== x48Epoch) return;
+  try {
+    const tick = operation.state.rows.length + 1;
+    const nominalTargetCycle = tick * X48_NOMINAL_TICK_CYCLES;
+    let instructions = 0;
+    while (kernel.adapter.cpu.cycles < nominalTargetCycle
+        && instructions < X48_SLICE_INSTRUCTIONS) {
+      kernel.step();
+      instructions += 1;
+    }
+    if (kernel.adapter.cpu.cycles < nominalTargetCycle) {
+      setTimeout(() => advanceX48(activeEpoch), 0);
+      return;
+    }
+    const sampled = kernel.sample();
+    const actualSampleCycle = sampled.cycle;
+    if (actualSampleCycle - nominalTargetCycle > X48_MAX_BOUNDARY_LATENESS_CYCLES) {
+      x48Terminal('x48-indeterminate', indeterminateX48Run(
+        operation.state, 'X48_BOUNDARY_LATENESS_UNSUPPORTED',
+      ));
+      return;
+    }
+    const pin = sampled.pins.find((item) => item.pin === 'D13');
+    if (!pin || pin.mode !== 'OUTPUT' || typeof pin.level !== 'boolean') {
+      x48Terminal('x48-indeterminate', indeterminateX48Run(
+        operation.state, 'X48_D13_INDETERMINATE',
+      ));
+      return;
+    }
+    const nextMilliC = x48PlantStep(operation.state.currentMilliC,
+      { mode: pin.mode, level: pin.level }).nextMilliC;
+    const applied = x48ApplyControl('temperature-sensor-1', 'position',
+      x48TemperaturePosition(nextMilliC), actualSampleCycle);
+    const row = appendX48Observation(operation.state, {
+      tick,
+      nominalTargetCycle,
+      actualSampleCycle,
+      pin: { mode: pin.mode, level: pin.level },
+      inputTargetCycle: applied.targetCycle,
+      inputAppliedCycle: applied.appliedCycle,
+      retention: x48Retention(kernel.snapshot()),
+    });
+    const progress = kernel.snapshot();
+    emit({ kind: 'x48-progress', row, result: structuredClone(operation.state), ...progress,
+      led: progress.circuit.leds.some((item) => item.on) });
+    if (tick === X48_TICK_COUNT) {
+      x48Terminal('x48-complete', finishX48Run(operation.state));
+      return;
+    }
+    setTimeout(() => advanceX48(activeEpoch), 0);
+  } catch (error) {
+    const reason = /^X48_[A-Z0-9_]+$/u.test(error.code ?? error.message)
+      ? (error.code ?? error.message) : 'X48_RUNTIME_ERROR';
+    x48Terminal('x48-indeterminate', indeterminateX48Run(operation.state, reason));
+  }
+}
+
+function startX48(binding) {
+  if (!x48CurrentModel) throw new Error('X48_CURRENT_MODEL_REQUIRED');
+  if (x48Operation) throw new Error('X48_OPERATION_ACTIVE');
+  if (running || !kernel.adapter.paused || kernel.adapter.cpu.cycles !== 0) {
+    throw new Error('X48_FRESH_PAUSED_RUNTIME_REQUIRED');
+  }
+  validateX48ThermostatGraph(kernel.circuit.graph);
+  const acceptedBinding = validateX48Binding(binding, runtimeIdentity);
+  const state = createX48RunState(acceptedBinding);
+  const temperature = x48ApplyControl('temperature-sensor-1', 'position',
+    x48TemperaturePosition(state.currentMilliC), 0);
+  const enable = x48ApplyControl('enable-button-1', 'pressed', true, 0);
+  const epoch = ++x48Epoch;
+  x48Operation = { epoch, state };
+  const snapshot = kernel.snapshot();
+  emit({ kind: 'x48-started', result: structuredClone(state), initialInputs: {
+    temperature: { targetCycle: temperature.targetCycle, appliedCycle: temperature.appliedCycle },
+    enable: { targetCycle: enable.targetCycle, appliedCycle: enable.appliedCycle },
+  }, ...snapshot, led: snapshot.circuit.leds.some((item) => item.on) });
+  setTimeout(() => advanceX48(epoch), 0);
+}
+
 function disposeRuntime(x47CancellationReceipts = []) {
+  x48Epoch += 1;
+  x48Operation = null;
   const disposedIdentity = runtimeIdentity ? structuredClone(runtimeIdentity) : null;
   running = false;
   generation++;
@@ -84,6 +222,7 @@ function disposeRuntime(x47CancellationReceipts = []) {
   kernel = null;
   runtimeIdentity = null;
   validatedModelExecutionContextSha256 = null;
+  x48CurrentModel = false;
   return { disposedIdentity, x47CancellationReceipts };
 }
 
@@ -161,6 +300,7 @@ async function handleMessage(data) {
         if (!modelLibrary.manifest.runtimeContracts.includes('avr8js@0.21.1')) {
           throw new Error('MODEL_LIBRARY_RUNTIME_CONTRACT_UNAVAILABLE');
         }
+        x48CurrentModel = !modelLibrary.identity.retained;
         if (data.x47RuntimeAuthority && modelLibrary.identity.retained) {
           throw new Error('X47_CURRENT_MODEL_REQUIRED');
         }
@@ -194,6 +334,7 @@ async function handleMessage(data) {
             && !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(data.disposeToken))) {
         throw new Error('X47_DISPOSE_COMMAND_INVALID');
       }
+      if (x48Operation) cancelX48('X48_DISPOSED');
       const profile = isRp2040() ? RP2040_EXPERIMENTAL_PROFILE : 'board.atmega328p-16mhz-v1';
       const x47CancellationReceipts = acknowledgeX47Cancellation('DISPOSE', data.disposeToken ?? null);
       const { disposedIdentity } = disposeRuntime(x47CancellationReceipts);
@@ -205,6 +346,9 @@ async function handleMessage(data) {
       return;
     }
     if (!kernel && !rp2040) throw new Error('Worker is not initialized');
+    if (x48Operation && !['x48-cancel', 'reset', 'dispose'].includes(data.command)) {
+      throw new Error('X48_OPERATION_ACTIVE');
+    }
     if (data.command === 'snapshot-ack') {
       if (isRp2040()) rp2040Pacer.acknowledge(data);
       return;
@@ -258,6 +402,7 @@ async function handleMessage(data) {
         emit({ kind: 'stepped', step, ...snapshot, led: snapshot.circuit.leds.some((item) => item.on) });
       }
     } else if (data.command === 'reset') {
+      if (x48Operation) cancelX48('X48_RESET');
       running = false;
       generation++;
       if (isRp2040()) {
@@ -276,6 +421,14 @@ async function handleMessage(data) {
       if (data.targetCycle === undefined) kernel.queueControl(data.componentId, data.key, data.value);
       else kernel.queueControlAtCycle(data.componentId, data.key, data.value, data.targetCycle);
       status('control');
+    } else if (data.command === 'x48-run') {
+      if (!exactKeys(data, ['command', 'binding'])) throw new Error('X48_RUN_COMMAND_INVALID');
+      if (isRp2040()) throw new Error('X48_PROFILE_UNAVAILABLE');
+      startX48(data.binding);
+    } else if (data.command === 'x48-cancel') {
+      if (!exactKeys(data, ['command'])) throw new Error('X48_CANCEL_COMMAND_INVALID');
+      if (!x48Operation) throw new Error('X48_OPERATION_UNAVAILABLE');
+      cancelX48('X48_USER_CANCELLED');
     } else if (data.command === 'digital-input') {
       if (isRp2040()) throw new Error('RP2040_DIGITAL_INPUT_UNSUPPORTED');
       applyDigitalInput(data);

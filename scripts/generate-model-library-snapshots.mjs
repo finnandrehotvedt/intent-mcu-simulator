@@ -32,6 +32,8 @@ const PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST = existingSnapshots.PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 
 const stable = (value) => {
   if (Array.isArray(value)) return value.map(stable);
@@ -81,7 +83,9 @@ const entries = COMPONENT_SUPPORT_CELLS.filter((cell) => cell.available)
 const CURRENT_CLOSURE = Object.freeze([
   '../src/component-catalog.mjs', '../src/circuit-engine.mjs', '../src/runtime-kernel.mjs',
   '../src/atmega328p-adapter.mjs', '../src/x47-runtime-transaction.mjs',
+  '../src/x48-ideal-room-plant.mjs',
   '../src/x47-ui-integration.mjs', '../src/strict-json.mjs',
+  '../src/shared-workbench-shell.mjs',
   '../src/component-appearance.mjs', '../src/project-v2.mjs', '../src/project-editor.mjs',
   '../src/lifecycle.mjs', '../staging/component-artwork.mjs',
   '../src/model-library.mjs', '../src/model-bundle-registry.mjs', '../src/project-envelope.mjs',
@@ -157,16 +161,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x55-control-label-fix.1-current',
-  'intent-mcu-model-bundle-current-x55-control-label-fix-1@9',
+  '2.0.0-x48-instruction-boundary-room.1-current',
+  'intent-mcu-model-bundle-current-x48-instruction-boundary-room-1@10',
   currentImplementation,
   {
-    priorVersion: PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'explicit-data-only-migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component semantics unchanged; AVR resistor appearance remains finite visual-only project data',
-    presentationDisposition: 'AVR quick controls restore exact labels, titles and disabled state after every profile return; component rendering is unchanged',
-    baselineClosureDisposition: 'current closure adds the X55 profile-control correction; the prior rc.94 X55 appearance identity remains migration-only',
+    semanticDisposition: 'component semantics unchanged; X48 adds one transient exact-thermostat process owner around existing validated controls',
+    presentationDisposition: 'X48 reports nominal targets separately from actual completed-instruction producer cycles and lateness',
+    baselineClosureDisposition: 'current closure adds the bounded X48 worker and UI path; rc.95 X55 identity remains immutable migration-only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -181,6 +185,7 @@ export const PRE_X47_UI_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.st
 export const PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);
