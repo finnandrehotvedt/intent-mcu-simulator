@@ -5,10 +5,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import manifest from '../src/x49-private-runtime-manifest.json' with { type: 'json' };
 import {
-  acceptX49PublicArtifact, captureX49PublicAuthority, prepareX49PublicBuild,
+  acceptX49PublicArtifact, captureX49PublicAuthority, expectedX49BuildInputIdentity, prepareX49PublicBuild,
   x49PublicAuthorityStillCurrent,
 } from '../src/x49-public-run-contract.mjs';
 import { X49_INSTRUMENTED_SOURCE_SHA256 } from '../src/x49-instrumented-fixture-contract.mjs';
+import { buildInputIdentity, normalizeBuildRequestValue } from '../compiler/build-protocol.mjs';
 import { x49BuildResult, x49PublicState } from './x49-public-fixtures.mjs';
 
 test('X49 public contract freezes source, graph, profile, generation and toolchain authority', async () => {
@@ -20,8 +21,14 @@ test('X49 public contract freezes source, graph, profile, generation and toolcha
   assert.equal(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(request.files[0].content))
     .then((bytes) => [...new Uint8Array(bytes)].map((part) => part.toString(16).padStart(2, '0')).join('')),
   X49_INSTRUMENTED_SOURCE_SHA256);
-  const claim = { jobId: 'job-1', capability: 'capability', inputIdentity: 'a'.repeat(64) };
-  const accepted = await acceptX49PublicArtifact({ claim, result: await x49BuildResult(), authority, manifest });
+  const inputIdentity = await expectedX49BuildInputIdentity(request);
+  assert.equal(inputIdentity, buildInputIdentity(normalizeBuildRequestValue(request), {
+    toolchainManifestSha256: '098e57cc2da7f46f0abea657a33473ef7c2a3c2f556152640fb4862ad4de53d2',
+    imageId: 'sha256:62e4324594b63e88b17052a17eb9edf52593aff7d907647bc1e9c2fd809fbc74',
+  }));
+  const claim = { jobId: 'job-1', capability: 'capability', inputIdentity };
+  const accepted = await acceptX49PublicArtifact({ claim, result: await x49BuildResult(inputIdentity),
+    request, authority, manifest });
   assert.equal(accepted.experimentBinding.graphIdentity, authority.graphIdentity);
   assert.equal(accepted.probe.symbol.dataAddress, 0x100);
 
@@ -34,6 +41,11 @@ test('X49 public contract freezes source, graph, profile, generation and toolcha
   const running = x49PublicState(); running.lifecycle.phase = 'running';
   await assert.rejects(captureX49PublicAuthority(running), { code: 'X49_PUBLIC_NORMAL_OPERATION_ACTIVE' });
   const artifactDrift = await x49BuildResult(); artifactDrift.toolchainIdentitySha256 = '0'.repeat(64);
-  await assert.rejects(acceptX49PublicArtifact({ claim, result: artifactDrift, authority, manifest }),
+  await assert.rejects(acceptX49PublicArtifact({ claim, result: artifactDrift, request, authority, manifest }),
     { code: 'X49_PUBLIC_BUILD_RESULT_INVALID' });
+  const swappedIdentity = 'b'.repeat(64);
+  const swappedClaim = { ...claim, inputIdentity: swappedIdentity };
+  await assert.rejects(acceptX49PublicArtifact({ claim: swappedClaim,
+    result: await x49BuildResult(swappedIdentity), request, authority, manifest }),
+  { code: 'X49_PUBLIC_BUILD_RESULT_INVALID' });
 });

@@ -116,6 +116,30 @@ export async function prepareX49PublicBuild(authority, cryptoImpl = globalThis.c
   });
 }
 
+export async function expectedX49BuildInputIdentity(request, cryptoImpl = globalThis.crypto) {
+  if (request?.schema !== 'teach-lab-build-request@1' || request.board !== AVR_PROFILE
+      || !Array.isArray(request.files) || request.files.length !== 1
+      || request.files[0]?.name !== 'main.ino' || typeof request.files[0]?.content !== 'string') {
+    reject('X49_PUBLIC_BUILD_REQUEST_INVALID');
+  }
+  const files = request.files.map(({ name, content }) => ({
+    name,
+    content: content.normalize('NFC').replace(/\r\n?/gu, '\n'),
+  }));
+  const sourceDigest = await x49Sha256(JSON.stringify({
+    schema: request.schema,
+    board: request.board,
+    files,
+  }), cryptoImpl);
+  return x49Sha256(JSON.stringify({
+    sourceDigest,
+    board: request.board,
+    toolchainManifestSha256: X49_PUBLIC_TOOLCHAIN_IDENTITY,
+    toolchainImageId: X49_PUBLIC_TOOLCHAIN_IMAGE,
+    fixedBuildFlags: candidateCompilerTarget(AVR_PROFILE).fixedBuildFlags,
+  }), cryptoImpl);
+}
+
 export function validateX49BuildClaim(value) {
   if (!value || typeof value.jobId !== 'string' || !value.jobId
       || typeof value.capability !== 'string' || !value.capability
@@ -123,10 +147,12 @@ export function validateX49BuildClaim(value) {
   return clone({ jobId: value.jobId, capability: value.capability, inputIdentity: value.inputIdentity });
 }
 
-export async function acceptX49PublicArtifact({ claim, result, authority, manifest },
+export async function acceptX49PublicArtifact({ claim, result, request, authority, manifest },
   cryptoImpl = globalThis.crypto) {
   validateX49BuildClaim(claim);
-  if (!result || result.inputIdentity !== claim.inputIdentity
+  const expectedInputIdentity = await expectedX49BuildInputIdentity(request, cryptoImpl);
+  if (claim.inputIdentity !== expectedInputIdentity
+      || !result || result.inputIdentity !== expectedInputIdentity
       || !HASH.test(result.artifactIdentity ?? '')
       || result.toolchainIdentitySha256 !== X49_PUBLIC_TOOLCHAIN_IDENTITY
       || result.toolchainImageId !== X49_PUBLIC_TOOLCHAIN_IMAGE

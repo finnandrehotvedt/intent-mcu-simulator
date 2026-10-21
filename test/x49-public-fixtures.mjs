@@ -4,7 +4,13 @@
 import { createHash } from 'node:crypto';
 import { createThermostatExperiment } from '../src/thermostat-experiment.mjs';
 import { AVR_PROFILE } from '../src/compile-targets.mjs';
-import { X49_PUBLIC_TOOLCHAIN_IDENTITY, X49_PUBLIC_TOOLCHAIN_IMAGE } from '../src/x49-public-run-contract.mjs';
+import {
+  captureX49PublicAuthority,
+  expectedX49BuildInputIdentity,
+  prepareX49PublicBuild,
+  X49_PUBLIC_TOOLCHAIN_IDENTITY,
+  X49_PUBLIC_TOOLCHAIN_IMAGE,
+} from '../src/x49-public-run-contract.mjs';
 
 export const hash = (value) => createHash('sha256').update(value).digest('hex');
 
@@ -44,13 +50,19 @@ export async function x49ProbeElf() {
   return { elfBase64: Buffer.from(bytes).toString('base64'), elfSha256: hash(bytes) };
 }
 
-export async function x49BuildResult(inputIdentity = 'a'.repeat(64)) {
+export async function x49ExpectedBuildInputIdentity() {
+  const authority = await captureX49PublicAuthority(x49PublicState());
+  return expectedX49BuildInputIdentity(await prepareX49PublicBuild(authority));
+}
+
+export async function x49BuildResult(inputIdentity = null) {
+  const effectiveInputIdentity = inputIdentity ?? await x49ExpectedBuildInputIdentity();
   const hex = ':00000001FF'; const elf = await x49ProbeElf();
   const artifact = { hex, hexSha256: hash(hex), ...elf };
-  const artifactIdentity = hash(JSON.stringify({ inputIdentity,
+  const artifactIdentity = hash(JSON.stringify({ inputIdentity: effectiveInputIdentity,
     hexSha256: artifact.hexSha256, elfSha256: artifact.elfSha256 }));
   return {
-    code: 'BUILD_OK', inputIdentity, artifactIdentity, artifact,
+    code: 'BUILD_OK', inputIdentity: effectiveInputIdentity, artifactIdentity, artifact,
     toolchainImageId: X49_PUBLIC_TOOLCHAIN_IMAGE,
     toolchainIdentitySha256: X49_PUBLIC_TOOLCHAIN_IDENTITY,
   };

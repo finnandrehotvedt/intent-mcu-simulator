@@ -12,7 +12,18 @@ const evidenceDir = process.env.X49_EVIDENCE_DIR || '';
 const viewports = [{ width: 1366, height: 768 }, { width: 1440, height: 900 }];
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 
-async function artifact() {
+function buildInputIdentity(request) {
+  const files = request.files.map(({ name, content }) => ({
+    name, content: content.normalize('NFC').replace(/\r\n?/g, '\n'),
+  }));
+  const sourceDigest = sha256(JSON.stringify({ schema: request.schema, board: request.board, files }));
+  return sha256(JSON.stringify({ sourceDigest, board: request.board,
+    toolchainManifestSha256: '098e57cc2da7f46f0abea657a33473ef7c2a3c2f556152640fb4862ad4de53d2',
+    toolchainImageId: 'sha256:62e4324594b63e88b17052a17eb9edf52593aff7d907647bc1e9c2fd809fbc74',
+    fixedBuildFlags: ['--fqbn=arduino:avr:uno', '--warnings=all', '--no-color'] }));
+}
+
+async function artifact(inputIdentity) {
   const target = 'intent_x49_probe_v1'; const encoder = new TextEncoder();
   const strings = encoder.encode(`\0${target}\0`); const sectionStart = 52;
   const stringStart = sectionStart + 4 * 40; const symbolStart = stringStart + strings.length;
@@ -29,7 +40,7 @@ async function artifact() {
   section(3, 2, 0, symbolStart, 32, 2, 16); bytes.set(strings, stringStart);
   const symbol = symbolStart + 16; view.setUint32(symbol, 1, true); view.setUint32(symbol + 4, 0x800100, true);
   view.setUint32(symbol + 8, 4, true); view.setUint8(symbol + 12, 0x11); view.setUint16(symbol + 14, 1, true);
-  const hex = ':00000001FF'; const inputIdentity = 'a'.repeat(64);
+  const hex = ':00000001FF';
   const value = { hex, hexSha256: sha256(hex), elfBase64: Buffer.from(bytes).toString('base64'),
     elfSha256: sha256(bytes) };
   return { code: 'BUILD_OK', inputIdentity,
@@ -41,19 +52,25 @@ async function artifact() {
 
 (async () => {
   if (evidenceDir) await mkdir(evidenceDir, { recursive: true });
-  const buildResult = await artifact(); const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true });
   const results = [];
   try {
     for (const viewport of viewports) {
       const context = await browser.newContext({ viewport }); const page = await context.newPage();
-      const requests = []; const outside = []; const errors = [];
+      const requests = []; const outside = []; const errors = []; let buildResult = null;
+      let swapRequestIdentity = false;
       await page.route('**/*', async (route) => {
         const request = route.request(); const url = new URL(request.url());
         if (!url.pathname.startsWith('/api/build')) return route.continue();
         requests.push(`${request.method()} ${url.pathname}`);
-        if (request.method() === 'POST') return route.fulfill({ status: 202, contentType: 'application/json',
-          body: JSON.stringify({ jobId: 'x49-browser-job', capability: 'memory-only-browser-capability',
-            inputIdentity: buildResult.inputIdentity }) });
+        if (request.method() === 'POST') {
+          const inputIdentity = swapRequestIdentity
+            ? 'b'.repeat(64) : buildInputIdentity(request.postDataJSON());
+          buildResult = await artifact(inputIdentity);
+          return route.fulfill({ status: 202, contentType: 'application/json',
+            body: JSON.stringify({ jobId: 'x49-browser-job', capability: 'memory-only-browser-capability',
+              inputIdentity }) });
+        }
         if (request.method() === 'GET') return route.fulfill({ status: 200, contentType: 'application/json',
           body: JSON.stringify({ status: 'succeeded', result: buildResult }) });
         return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
@@ -177,7 +194,6 @@ async function artifact() {
         serviceWorkers: after.serviceWorkers - before.serviceWorkers },
       { workers: 2, terminated: 2, storageWrites: 0, serviceWorkers: 0 });
       assert.deepEqual(requests, ['POST /api/build', 'GET /api/build/x49-browser-job']);
-      assert.deepEqual(outside, []); assert.deepEqual(errors, []);
       const readability = await panel.evaluate((root) => ({
         minimumFontPixels: Math.min(...[...root.querySelectorAll('strong,span,p,button,select,th,td')]
           .map((node) => parseFloat(getComputedStyle(node).fontSize))),
@@ -191,6 +207,18 @@ async function artifact() {
         path: path.join(evidenceDir, `x49-public-candidate-${viewport.width}x${viewport.height}.png`),
         animations: 'disabled',
       });
+      swapRequestIdentity = true;
+      const workersBeforeSwap = after.workers;
+      const swapped = await page.evaluate(async () => {
+        try { await window.__X49_OFFSET_COMPARISON__.startNative(); return null; }
+        catch (error) { return error.code ?? error.message; }
+      });
+      assert.equal(swapped, 'X49_PUBLIC_BUILD_INPUT_IDENTITY_INVALID');
+      await page.waitForFunction(() => !window.__X49_OFFSET_COMPARISON__.runner().phase.startsWith('building'));
+      assert.equal((await page.evaluate(() => window.__X49_PUBLIC_ACTIVITY__.workers)), workersBeforeSwap);
+      assert.equal((await page.evaluate(() => window.__X49_OFFSET_COMPARISON__.runner().phase)), 'failed');
+      assert.deepEqual(requests.slice(-2), ['POST /api/build', 'DELETE /api/build/x49-browser-job']);
+      assert.deepEqual(outside, []); assert.deepEqual(errors, []);
       results.push({ viewport, requests: requests.length, outsideRequests: outside.length,
         workers: after.workers - before.workers, storageWrites: after.storageWrites - before.storageWrites,
         physicalStatus: 'absent', readability });
