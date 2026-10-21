@@ -100,7 +100,7 @@ function cancelX48(reason, kind = 'x48-cancelled') {
   if (!x48Operation) return null;
   const operation = x48Operation;
   x48Operation = null;
-  const result = indeterminateX48Run(operation.state, reason);
+  const result = validateX48Result(indeterminateX48Run(operation.state, reason), operation.state.binding);
   const snapshot = kernel?.snapshot();
   if (snapshot) emit({ kind, result, ...snapshot,
     led: snapshot.circuit.leds.some((item) => item.on) });
@@ -108,9 +108,10 @@ function cancelX48(reason, kind = 'x48-cancelled') {
 }
 
 function x48Terminal(kind, result) {
+  const accepted = validateX48Result(result, x48Operation?.state.binding);
   x48Operation = null;
   const snapshot = kernel.snapshot();
-  emit({ kind, result, ...snapshot, led: snapshot.circuit.leds.some((item) => item.on) });
+  emit({ kind, result: accepted, ...snapshot, led: snapshot.circuit.leds.some((item) => item.on) });
 }
 
 function advanceX48(activeEpoch) {
@@ -122,7 +123,10 @@ function advanceX48(activeEpoch) {
     let instructions = 0;
     while (kernel.adapter.cpu.cycles < nominalTargetCycle
         && instructions < X48_SLICE_INSTRUCTIONS) {
-      kernel.step();
+      const completed = kernel.step();
+      if (!Number.isSafeInteger(completed?.cycles) || completed.cycles < 1 || completed.cycles > 6) {
+        throw new Error('X48_BOUNDARY_STEP_UNSUPPORTED');
+      }
       instructions += 1;
     }
     if (kernel.adapter.cpu.cycles < nominalTargetCycle) {
@@ -174,12 +178,13 @@ function advanceX48(activeEpoch) {
 
 function startX48(binding) {
   if (!x48CurrentModel) throw new Error('X48_CURRENT_MODEL_REQUIRED');
+  if (!x48TrustedAuthority) throw new Error('X48_TRUSTED_INIT_AUTHORITY_REQUIRED');
   if (x48Operation) throw new Error('X48_OPERATION_ACTIVE');
   if (running || !kernel.adapter.paused || kernel.adapter.cpu.cycles !== 0) {
     throw new Error('X48_FRESH_PAUSED_RUNTIME_REQUIRED');
   }
   validateX48ThermostatGraph(kernel.circuit.graph);
-  const acceptedBinding = validateX48Binding(binding, runtimeIdentity);
+  const acceptedBinding = validateX48Binding(binding, runtimeIdentity, x48TrustedAuthority);
   const state = createX48RunState(acceptedBinding);
   const temperature = x48ApplyControl('temperature-sensor-1', 'position',
     x48TemperaturePosition(state.currentMilliC), 0);
@@ -301,6 +306,8 @@ async function handleMessage(data) {
           throw new Error('MODEL_LIBRARY_RUNTIME_CONTRACT_UNAVAILABLE');
         }
         x48CurrentModel = !modelLibrary.identity.retained;
+        x48TrustedAuthority = data.x48Authority
+          ? validateX48Authority(data.x48Authority, runtimeIdentity) : null;
         if (data.x47RuntimeAuthority && modelLibrary.identity.retained) {
           throw new Error('X47_CURRENT_MODEL_REQUIRED');
         }

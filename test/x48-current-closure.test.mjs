@@ -7,9 +7,11 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   CURRENT_MODEL_LIBRARY_MANIFEST, PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST,
+  PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST,
 } from '../src/model-library-snapshots.mjs';
 import {
-  PRE_X48_CURRENT_MODEL_LIBRARY_LOCK, modelLibraryExecutionIdentity,
+  PRE_X48_CURRENT_MODEL_LIBRARY_LOCK, PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_LOCK,
+  modelLibraryExecutionIdentity,
   modelLibraryMigrationPreview,
 } from '../src/model-library.mjs';
 
@@ -24,7 +26,18 @@ test('X48 current identity owns every newly executed path', async () => {
     assert.equal(createHash('sha256').update(bytes).digest('hex'), members.get(path), path);
   }
   assert.equal(CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    '2.0.0-x48-authority-review.1-current');
+});
+
+test('the first X48 candidate remains byte-exact migration-only', () => {
+  assert.equal(PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST.version,
     '2.0.0-x48-instruction-boundary-room.1-current');
+  assert.equal(PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    '52aea649e33bafdc3b4bdce31276529fa85400b1b00ccf983c611570eb5bebec');
+  assert.equal(PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST.implementationSha256,
+    'a667601c353f8d9c3ed5846706925d6a0cbb6c04d260935883e7f850de3cd671');
+  assert.equal(modelLibraryExecutionIdentity(PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_LOCK).code,
+    'MODEL_LIBRARY_MIGRATION_REQUIRED');
 });
 
 test('rc.95 identity remains byte-exact migration-only and cannot execute', () => {

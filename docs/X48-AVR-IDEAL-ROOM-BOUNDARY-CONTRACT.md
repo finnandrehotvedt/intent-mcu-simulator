@@ -27,6 +27,16 @@ AVR instruction and then one `cpu.tick()`:
 - therefore one step advances by at most 6 cycles and can overshoot a target by
   at most 5 cycles.
 
+The source proof is pinned to avr8js 0.21.1: `cpu/instruction.js` adds one base
+cycle and at most three additional cycles when `pc22Bits` is false;
+`cpu/cpu.js` derives `pc22Bits` from program memory larger than `0x20000`, while
+the project adapter constructs the ATmega328P CPU from its smaller fixed flash;
+`cpu/interrupt.js` adds exactly two cycles. The project adapter calls exactly
+one `avrInstruction(cpu)` followed by exactly one `cpu.tick()` per `step()`, and
+the X48 worker rejects any observed step outside 1…6 cycles. The worker samples
+D13 only after that completed step and tick. Focused source tests pin these
+owners and retain the negative six-cycle-lateness rejection.
+
 An actual cycle below the nominal target, lateness outside 0…5, an unsupported
 access, a missing/unknown producer or any retention drop makes the result
 indeterminate. Cycles are never split, rolled back, relabelled or rewritten.
