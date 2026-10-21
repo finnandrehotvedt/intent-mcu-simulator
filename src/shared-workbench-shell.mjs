@@ -1274,7 +1274,8 @@ function installX49OffsetComparison(document, activeProfileReader) {
     const available = activeProfileReader() === AVR_PROFILE;
     const authored = authoring.snapshot();
     const running = runner.active();
-    const nativeAvailable = available && nativeEligibility.eligible;
+    const x48Active = Boolean(document.defaultView.__X48_RUNTIME_BRIDGE__?.active?.());
+    const nativeAvailable = available && nativeEligibility.eligible && !x48Active;
     const visualPhase = snapshot.classification === 'synthetic-browser-replay-not-native-evidence'
       ? 'synthetic-replay' : snapshot.state === 'invalidated' ? 'invalidated' : runnerSnapshot.phase;
     reflectMutualExclusion();
@@ -1360,6 +1361,10 @@ function installX49OffsetComparison(document, activeProfileReader) {
       paint(owner.preview());
     });
     panel.querySelector('[data-x49-native]').addEventListener('click', () => {
+      if (document.defaultView.__X48_RUNTIME_BRIDGE__?.active?.()) {
+        runner.previewOnly('X48 owns the current worker; cancel the ideal room loop before starting X49.');
+        paint(owner.snapshot()); return;
+      }
       void runner.start().catch(() => {}).finally(() => paint(owner.snapshot()));
     });
     panel.querySelector('[data-x49-cancel]').addEventListener('click', () => {

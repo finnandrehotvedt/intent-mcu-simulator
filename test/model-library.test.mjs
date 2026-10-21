@@ -157,7 +157,7 @@ test('retained and current locks use distinct real resolver instances with match
 test('production electrical and runtime paths dispatch through the exact selected implementation', () => {
   for (const [lock, expected] of [
     [RETAINED_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-retained-rc72@2'],
-    [CURRENT_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-current-x48-instruction-boundary-room-1@10'],
+    [CURRENT_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-current-x48-authority-review-1@11'],
   ]) {
     const avr = validateCircuit(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
     assert.equal(avr.ok, true);
@@ -182,8 +182,12 @@ test('production electrical and runtime paths dispatch through the exact selecte
 
 test('prior current locks remain exact and data-migratable but cannot authorize execution', () => {
   const historical = historicalModelLibraryManifests();
-  assert.equal(historical.length, 9);
-  const preControlLabel = historical[1];
+  assert.equal(historical.length, 10);
+  const preAuthority = historical[1];
+  assert.equal(preAuthority.version, '2.0.0-x48-instruction-boundary-room.1-current');
+  assert.equal(preAuthority.manifestSha256,
+    '52aea649e33bafdc3b4bdce31276529fa85400b1b00ccf983c611570eb5bebec');
+  const preControlLabel = historical[2];
   assert.equal(preControlLabel.version, '2.0.0-x55-resistor-appearance.1-current');
   assert.equal(preControlLabel.manifestSha256,
     '5e778f334ccae4ef914927d22675176315ac589a22695f7e500ee32c2f419806');
@@ -198,7 +202,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(controlLabelMigration.rendererChanges.length, 0);
   assert.equal(controlLabelMigration.unchanged.length, 25);
 
-  const preX55 = historical[2];
+  const preX55 = historical[3];
   assert.equal(preX55.version, '2.0.0-x47-ui-async-epoch.1-current');
   assert.equal(normalizeModelLibraryLock(PRE_X55_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
   assert.equal(modelLibraryExecutionIdentity(PRE_X55_CURRENT_MODEL_LIBRARY_LOCK).code,
@@ -209,7 +213,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(x55Migration.rendererChanges.length, 0);
   assert.equal(x55Migration.unchanged.length, 25);
 
-  const prior = historical[3];
+  const prior = historical[4];
   assert.equal(prior.version, '2.0.0-x56-current');
   assert.equal(prior.manifestSha256, '5c94ce070526d2e7e417fed0cb152fc28bdea24ee9beb52c65488328d41eac0b');
   assert.equal(prior.implementationSha256, '4e0fc926236de5edda6b3e85c3770b709a4ae3643d47b8cd9b3138c4c1b61633');
@@ -223,7 +227,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(migration.rendererChanges.length, 0);
   assert.equal(migration.unchanged.length, 25);
 
-  const preX47 = historical[4];
+  const preX47 = historical[5];
   assert.equal(preX47.version, '2.0.0-pico-presentation.1-current');
   assert.equal(preX47.manifestSha256,
     '567aebbbf1885d31f9401fa3cf1ae98b7263d1b32f22a6b7886ec686b3c0dac3');
@@ -239,7 +243,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(x47Migration.rendererChanges.length, 0);
   assert.equal(x47Migration.unchanged.length, 25);
 
-  const preValidation = historical[5];
+  const preValidation = historical[6];
   assert.equal(preValidation.version, '2.0.0-x47-runtime-contract.1-current');
   assert.equal(preValidation.manifestSha256,
     '5e72951afde80c8f0217b6486c7ff2c2ca235dbe34b937a3170597e92cbb8f75');
@@ -254,7 +258,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(validationMigration.rendererChanges.length, 0);
   assert.equal(validationMigration.unchanged.length, 25);
 
-  const preUi = historical[6];
+  const preUi = historical[7];
   assert.equal(preUi.version, '2.0.0-x47-receipt-validation.1-current');
   assert.equal(preUi.manifestSha256,
     '49792e65a899ee8cb44818ecf2cbcccf5deb86153ac391d9a0600b6c96cd9756');
@@ -269,7 +273,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(uiMigration.rendererChanges.length, 0);
   assert.equal(uiMigration.unchanged.length, 25);
 
-  const preAsync = historical[7];
+  const preAsync = historical[8];
   assert.equal(preAsync.version, '2.0.0-x47-ui-integration.1-current');
   assert.equal(preAsync.manifestSha256,
     '3d3c5f0e53bc3f1c55c6fd5d84c9b8a73bd7444603c5fc0ff9cbdb00d76340d6');

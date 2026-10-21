@@ -3,6 +3,7 @@
 
 import {
   CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   PRE_X48_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   PRE_X55_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
@@ -19,6 +20,9 @@ import { RETAINED_MODEL_LIBRARY_IMPLEMENTATION } from './model-library-retained-
 // complete allowlisted lock, then selects one of these finite static imports.
 export function productionModelBundle(role) {
   if (role === 'retained') return RETAINED_MODEL_LIBRARY_IMPLEMENTATION;
+  if (role === 'pre-x48-authority-current-migration') {
+    return PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION;
+  }
   if (role === 'pre-x48-current-migration') {
     return PRE_X48_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION;
   }

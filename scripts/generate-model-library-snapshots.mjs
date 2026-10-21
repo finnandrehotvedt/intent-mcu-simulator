@@ -34,6 +34,9 @@ const PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST =
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST = existingSnapshots.PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 
 const stable = (value) => {
   if (Array.isArray(value)) return value.map(stable);
@@ -161,16 +164,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x48-instruction-boundary-room.1-current',
-  'intent-mcu-model-bundle-current-x48-instruction-boundary-room-1@10',
+  '2.0.0-x48-authority-review.1-current',
+  'intent-mcu-model-bundle-current-x48-authority-review-1@11',
   currentImplementation,
   {
-    priorVersion: PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'explicit-data-only-migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component semantics unchanged; X48 adds one transient exact-thermostat process owner around existing validated controls',
-    presentationDisposition: 'X48 reports nominal targets separately from actual completed-instruction producer cycles and lateness',
-    baselineClosureDisposition: 'current closure adds the bounded X48 worker and UI path; rc.95 X55 identity remains immutable migration-only',
+    semanticDisposition: 'component semantics unchanged; X48 authority is bound to exact source, graph, plant, project, build, runtime, artifact and model identities',
+    presentationDisposition: 'X48 terminal reports are strictly parsed and independently recomputed before presentation',
+    baselineClosureDisposition: 'current closure adds epoch-owned X48 lifecycle isolation; the prior X48 candidate and rc.95 X55 identity remain immutable migration-only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -186,6 +189,7 @@ export const PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON
 export const PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

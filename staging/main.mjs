@@ -117,9 +117,15 @@ import {
   thermostatFirmwareVariant,
 } from '../src/thermostat-experiment.mjs';
 import {
+  X48_AUTHORITY_SCHEMA,
+  X48_PLANT_CONTRACT_IDENTITY,
   X48_PLANT_ID,
   X48_PROFILE,
   X48_SCHEMA,
+  createX48Binding,
+  createX48OperationEpochOwner,
+  validateX48Binding,
+  validateX48Result,
 } from '../src/x48-ideal-room-plant.mjs';
 import {
   ScenarioTimelineEditor, defaultThermostatScenarioTimeline, faultInjectionThermostatTimeline,
@@ -5656,20 +5662,63 @@ function thermostatRuntimeReady() {
 }
 
 let x48RuntimeActive = false;
+let x48RuntimeAuthority = null;
+let x48Operation = null;
+let x48OperationEpoch = 0;
+const x48EpochOwner = createX48OperationEpochOwner();
 let x48OrdinaryControlState = null;
-function x48Controls(active) {
+function x48Controls(active, epoch = null, restore = true) {
   const controls = [elements.build, elements.run, elements.pause, elements.step, elements.reset,
     elements.quickbuild, elements.quickrun, elements.quickpause, elements.quickreset,
     elements.projectnew, elements.projectdemo, elements.projectopen].filter(Boolean);
   if (active && !x48OrdinaryControlState) {
-    x48OrdinaryControlState = new Map(controls.map((control) => [control, control.disabled]));
+    x48OrdinaryControlState = { epoch, states: new Map(
+      controls.map((control) => [control, control.disabled]),
+    ) };
     for (const control of controls) { control.disabled = true; control.dataset.x48Excluded = 'true'; }
-  } else if (!active && x48OrdinaryControlState) {
-    for (const [control, disabled] of x48OrdinaryControlState) {
-      control.disabled = disabled; delete control.dataset.x48Excluded;
+  } else if (!active && x48OrdinaryControlState && x48OrdinaryControlState.epoch === epoch) {
+    for (const [control, disabled] of x48OrdinaryControlState.states) {
+      if (restore) control.disabled = disabled;
+      delete control.dataset.x48Excluded;
     }
     x48OrdinaryControlState = null;
   }
+}
+function x48Nonce() {
+  const bytes = new Uint8Array(16); crypto.getRandomValues(bytes);
+  return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+function sameX48Value(left, right) { return JSON.stringify(left) === JSON.stringify(right); }
+function x48OperationCurrent(operation = x48Operation) {
+  if (!operation || operation.epoch !== x48OperationEpoch || operation.worker !== worker
+      || operation.workerToken !== workerToken || selectedCompilerProfile !== X48_PROFILE
+      || lifecycle.projectGeneration !== operation.authority.projectGeneration
+      || lifecycle.runtimeGeneration !== operation.authority.runtimeGeneration
+      || lifecycle.artifact?.buildGeneration !== operation.authority.buildGeneration
+      || lifecycle.artifact?.artifactIdentity !== operation.authority.artifactIdentity
+      || lifecycle.artifact?.inputIdentity !== operation.authority.inputIdentity
+      || editor.revision !== operation.authority.sourceProjectRevision
+      || modelLibraryLockFor(X48_PROFILE).implementationSha256
+        !== operation.authority.modelImplementationSha256
+      || JSON.stringify(currentProject().source.files) !== operation.sourceFilesJson
+      || JSON.stringify(currentProject().circuit) !== operation.circuitJson
+      || !sameX48Value(operation.authority, x48RuntimeAuthority)) return false;
+  return sameRuntimeIdentity(window.__M6_STATE__.runtime?.runtimeIdentity, operation.runtimeIdentity);
+}
+function retireX48RoomLoop(reason, { command = null, restoreControls = false } = {}) {
+  const operation = x48Operation;
+  x48OperationEpoch += 1;
+  x48Operation = null;
+  x48RuntimeActive = false;
+  x48EpochOwner.retire();
+  if (!operation) return null;
+  if (command && operation.worker === worker) {
+    try { operation.worker.postMessage({ command }); } catch { /* worker already unavailable */ }
+  }
+  x48Controls(false, operation.epoch, restoreControls);
+  const result = operation.result ? { ...structuredClone(operation.result), status: 'indeterminate', reason } : null;
+  dispatchX48State({ kind: 'x48-indeterminate', message: reason, ...(result ? { result } : {}) });
+  return operation;
 }
 function x48Eligibility() {
   const runtime = window.__M6_STATE__.runtime;
@@ -5682,7 +5731,8 @@ function x48Eligibility() {
       || runtime.cycle !== 0 || runtime.paused !== true) {
     return { eligible: false, code: 'X48_FRESH_BUILD_REQUIRED', message: 'Make a fresh Build and do not press ordinary Run.' };
   }
-  if (x48RuntimeActive) return { eligible: false, code: 'X48_OPERATION_ACTIVE', message: 'The ideal room loop is already running.' };
+  if (x48RuntimeActive || x48Operation) return { eligible: false, code: 'X48_OPERATION_ACTIVE', message: 'The ideal room loop is already running.' };
+  if (!x48RuntimeAuthority) return { eligible: false, code: 'X48_AUTHORITY_UNAVAILABLE', message: 'Rebuild to bind source, graph and artifact authority.' };
   if (identity.artifactIdentity !== lifecycle.artifact?.artifactIdentity
       || identity.projectGeneration !== lifecycle.artifact?.projectGeneration
       || identity.runtimeGeneration !== lifecycle.runtimeBinding?.runtimeGeneration
@@ -5693,21 +5743,9 @@ function x48Eligibility() {
   }
   return { eligible: true, code: 'OK', message: 'Ready at cycle zero. Start uses this one current worker and no ordinary Run.' };
 }
-function x48Binding() {
+function x48Binding(operationNonce) {
   const identity = window.__M6_STATE__.runtime.runtimeIdentity;
-  return {
-    schema: X48_SCHEMA,
-    plantId: X48_PLANT_ID,
-    profile: X48_PROFILE,
-    inputIdentity: lifecycle.artifact.inputIdentity,
-    projectGeneration: identity.projectGeneration,
-    runtimeGeneration: identity.runtimeGeneration,
-    artifactIdentity: identity.artifactIdentity,
-    modelImplementationSha256: identity.modelImplementationSha256,
-    modelExecutionContextSha256: identity.modelExecutionContextSha256,
-    workerInitialization: identity.workerInitialization,
-    workerInstanceNonce: identity.workerInstanceNonce,
-  };
+  return createX48Binding(x48RuntimeAuthority, identity, operationNonce);
 }
 function dispatchX48State(detail) {
   document.dispatchEvent(new CustomEvent('x48-state', { detail: structuredClone(detail) }));
@@ -5715,8 +5753,19 @@ function dispatchX48State(detail) {
 function startX48RoomLoop() {
   const eligible = x48Eligibility();
   if (!eligible.eligible) { dispatchX48State({ kind: 'x48-indeterminate', message: eligible.message }); return eligible; }
-  x48RuntimeActive = true; x48Controls(true);
-  worker.postMessage({ command: 'x48-run', binding: x48Binding() });
+  const epoch = ++x48OperationEpoch;
+  const operationNonce = x48Nonce();
+  const binding = x48Binding(operationNonce);
+  const epochTicket = x48EpochOwner.begin(binding);
+  x48Operation = { epoch, operationNonce, binding, worker, workerToken,
+    epochTicket,
+    runtimeIdentity: structuredClone(window.__M6_STATE__.runtime.runtimeIdentity),
+    authority: structuredClone(x48RuntimeAuthority), result: null,
+    sourceFilesJson: JSON.stringify(currentProject().source.files),
+    circuitJson: JSON.stringify(currentProject().circuit) };
+  x48RuntimeActive = true; x48Controls(true, epoch);
+  elements.workerstate.textContent = 'Plant running · ordinary runtime paused';
+  worker.postMessage({ command: 'x48-run', binding });
   return { eligible: true, code: 'X48_START_POSTED' };
 }
 function cancelX48RoomLoop() {
@@ -5728,6 +5777,7 @@ window.__X48_RUNTIME_BRIDGE__ = Object.freeze({
   eligibility: x48Eligibility,
   start: startX48RoomLoop,
   cancel: cancelX48RoomLoop,
+  active: () => Boolean(x48Operation),
 });
 document.addEventListener('x48-start-request', startX48RoomLoop);
 document.addEventListener('x48-cancel-request', cancelX48RoomLoop);
@@ -7997,6 +8047,7 @@ function boundedRuntimeResult(profile = selectedCompilerProfile) {
   };
 }
 async function buildThroughActiveUi(profile, signal) {
+  if (x48RuntimeActive || x48Operation) return { ok: false, code: 'X48_OPERATION_ACTIVE' };
   const cancel = () => {
     if (profile === AVR_PROFILE) elements.cancel.click();
     else if (profile === RP2040_PROFILE) picoPublicWorkbench.stop();
@@ -8016,6 +8067,7 @@ async function buildThroughActiveUi(profile, signal) {
   } finally { signal.removeEventListener('abort', cancel); }
 }
 async function runThroughActiveUi(profile, signal) {
+  if (x48RuntimeActive || x48Operation) return { ok: false, code: 'X48_OPERATION_ACTIVE' };
   const cancel = () => {
     if (profile === AVR_PROFILE) {
       const paused = applyLifecycle({ type: 'runtime.pause' });
@@ -8049,6 +8101,7 @@ async function runThroughActiveUi(profile, signal) {
   }
 }
 async function runThermostatTestThroughUi(profile, signal) {
+  if (x48RuntimeActive || x48Operation) return { ok: false, code: 'X48_OPERATION_ACTIVE' };
   if (profile !== AVR_PROFILE || !thermostatProjectActive()) {
     return { ok: false, code: 'ACTION_TEST_UNSUPPORTED' };
   }
@@ -9404,6 +9457,8 @@ function releaseCanvasButton(reason = 'canvas button') {
 function stopRuntime(message = 'No current artifact loaded', {
   updateLifecycle = true, stale = false, preserveX47Terminal = false,
 } = {}) {
+  retireX48RoomLoop('X48_RUNTIME_RETIRED', { command: 'x48-cancel', restoreControls: false });
+  x48RuntimeAuthority = null;
   retireX47Integration('X47_RUNTIME_RETIRED', { preserveTerminal: preserveX47Terminal });
   invalidateDigitalStateRuntimeReport('Runtime worker retirement cleared the prior X33 runtime report. Run the producer check again.');
   clearX40SharedTimeline(`${message}. The prior shared timeline was invalidated.`);
@@ -9441,6 +9496,7 @@ function detachOutstandingBuild() {
 }
 
 function installProjectGeneration({ empty, reason, runtimeMessage }) {
+  retireX48RoomLoop('X48_PROJECT_REPLACED', { command: 'x48-cancel', restoreControls: false });
   retireX47Integration('X47_PROJECT_REPLACED');
   detachOutstandingBuild();
   stopRuntime(runtimeMessage, { updateLifecycle: false });
@@ -9469,6 +9525,11 @@ function installProjectGeneration({ empty, reason, runtimeMessage }) {
 }
 
 function applyEditor(command, message = command.type) {
+  if (commandBuildRelevance(command.type) === 'build') {
+    retireX48RoomLoop('X48_AUTHORED_INPUT_CHANGED', {
+      command: 'x48-cancel', restoreControls: false,
+    });
+  }
   if (commandBuildRelevance(command.type) === 'build') retireX47Integration('X47_AUTHORED_INPUT_CHANGED');
   const result = editor.apply({ ...command, revision: editor.revision }, { running });
   if (!result.ok) {
@@ -11279,6 +11340,23 @@ async function loadArtifact(hex, artifactIdentity, {
   catch (error) { if (error.message === 'X47_LOAD_EPOCH_STALE') return; throw error; }
   if (!x47LoadStillCurrent(frozen)) return;
   x47RuntimeAuthority = authority;
+  const x48Authority = authority ? {
+    schema: X48_AUTHORITY_SCHEMA,
+    plantId: X48_PLANT_ID,
+    plantContractIdentity: X48_PLANT_CONTRACT_IDENTITY,
+    profile: X48_PROFILE,
+    inputIdentity: authority.inputIdentitySha256,
+    sourceIdentity: authority.sourceSha256,
+    graphIdentity: authority.graphIdentity,
+    projectGeneration: authority.projectGeneration,
+    buildGeneration: authority.buildGeneration,
+    sourceProjectRevision: authority.sourceProjectRevision,
+    runtimeGeneration: authority.runtimeGeneration,
+    artifactIdentity: authority.artifactIdentity,
+    modelImplementationSha256: authority.modelImplementationSha256,
+    modelExecutionContextSha256: authority.modelExecutionContextSha256,
+  } : null;
+  x48RuntimeAuthority = x48Authority ? structuredClone(x48Authority) : null;
   let workerInstanceNonce = null;
   runtimeWorkerCreations += 1;
   publish({ runtimeWorkerCreations });
@@ -11305,14 +11383,31 @@ async function loadArtifact(hex, artifactIdentity, {
     try {
       if (['x48-started', 'x48-progress', 'x48-complete', 'x48-indeterminate',
         'x48-cancelled'].includes(data.kind)) {
+        const operation = x48Operation;
+        if (!operation || !x48EpochOwner.accepts(operation.epochTicket, data.result?.binding)) return;
+        if (!x48OperationCurrent(operation)) {
+          retireX48RoomLoop('X48_AUTHORITY_DRIFT', { command: 'x48-cancel' });
+          return;
+        }
+        validateX48Binding(data.result?.binding, identity, operation.authority);
+        const result = validateX48Result(data.result, operation.binding);
         const acceptedMessage = applyLifecycle({ type: 'runtime.message', binding: runtimeBinding, message: data });
-        if (!acceptedMessage.accepted) return;
+        if (!acceptedMessage.accepted) {
+          retireX48RoomLoop('X48_LIFECYCLE_REJECTED', { command: 'x48-cancel' });
+          return;
+        }
         const terminal = ['x48-complete', 'x48-indeterminate', 'x48-cancelled'].includes(data.kind);
+        operation.result = structuredClone(result);
         x48RuntimeActive = !terminal;
-        if (terminal) x48Controls(false); else x48Controls(true);
-        publish({ runtime: data });
-        dispatchX48State(data);
+        if (terminal) {
+          if (!x48EpochOwner.complete(operation.epochTicket, result.binding)) return;
+          x48Operation = null;
+          x48Controls(false, operation.epoch, true);
+        } else x48Controls(true, operation.epoch);
+        publish({ runtime: { ...data, result } });
+        dispatchX48State({ ...data, result });
         if (terminal) renderRuntime(data, { publishState: false });
+        else elements.workerstate.textContent = 'Plant running · ordinary runtime paused';
         return;
       }
       if (data.kind === 'x47-accepted') {
@@ -11396,6 +11491,8 @@ async function loadArtifact(hex, artifactIdentity, {
   });
   loadWorker.addEventListener('error', (event) => {
     if (!ownsWorker()) return;
+    retireX48RoomLoop('X48_WORKER_ERROR', { restoreControls: false });
+    x48RuntimeAuthority = null;
     running = false; const state = { kind: 'stopped-error', message: event.message };
     applyLifecycle({ type: 'runtime.message', binding: runtimeBinding, message: state });
     publish({ runtime: state });
@@ -11411,6 +11508,7 @@ async function loadArtifact(hex, artifactIdentity, {
     modelImplementationSha256,
     modelExecutionContextSha256,
     runtimeBinding: workerRuntimeBinding,
+    ...(x48Authority ? { x48Authority: structuredClone(x48Authority) } : {}),
     ...(authority ? { x47RuntimeAuthority: structuredClone(authority) } : {}),
     ...(frozen.x34Probe ? { x34Probe: frozen.x34Probe } : {}),
     digitalInputs: frozen.digitalInputs,
@@ -11479,6 +11577,11 @@ async function pollJob(job, inputAtSubmit, modelExecutionContextSha256, modelImp
 }
 
 async function build() {
+  if (x48RuntimeActive || x48Operation) {
+    showActionableError(elements.projectmessage, 'X48_OPERATION_ACTIVE',
+      'Cancel the ideal room loop before starting a new Build.');
+    return { ok: false, code: 'X48_OPERATION_ACTIVE' };
+  }
   retireX47Integration('X47_BUILD_STARTED');
   invalidateVersionRegressionReport('A new build cleared active comparison review authority.');
   invalidateFailureReplayReport('A new build retired the X36 replay workers and cleared export authority. Open the replay point again.');
@@ -11680,6 +11783,11 @@ elements.cancel.addEventListener('click', () => {
   publish({ buildState: 'cancelled', artifactIdentity: null, inputIdentity: null, cacheHit: false });
 });
 elements.run.addEventListener('click', () => {
+  if (x48RuntimeActive || x48Operation) {
+    showActionableError(elements.projectmessage, 'X48_OPERATION_ACTIVE',
+      'Ordinary Run is excluded while the ideal room loop owns the worker.');
+    return;
+  }
   if (x47UiOwner.snapshot().phase === 'resume-required') {
     elements.projectmessage.textContent = 'Use Resume explicitly in the D2 pulse panel after Apply.';
     return;
@@ -11698,15 +11806,20 @@ elements.run.addEventListener('click', () => {
   renderThermostatExperimentPanel();
 });
 elements.pause.addEventListener('click', () => {
+  if (x48RuntimeActive || x48Operation) return;
   const result = applyLifecycle({ type: 'runtime.pause' });
   if (result.accepted) {
     x47ExplicitPauseRequested = x47UiOwner.snapshot().phase === 'await-pause';
     worker?.postMessage({ command: 'pause' });
   }
 });
-elements.step.addEventListener('click', () => worker?.postMessage({ command: 'step' }));
+elements.step.addEventListener('click', () => {
+  if (x48RuntimeActive || x48Operation) return;
+  worker?.postMessage({ command: 'step' });
+});
 elements.reset.addEventListener('click', () => {
   const resetWorker = worker;
+  retireX48RoomLoop('X48_RESET', { restoreControls: false });
   const resetIdentity = structuredClone(x47WorkerIdentity);
   const resetOwner = x47UiOwner.snapshot();
   const resetExpectation = resetWorker && resetIdentity && resetOwner.authority
@@ -12852,9 +12965,19 @@ setInterval(() => {
 }, 250);
 
 window.__M3_BUILD__ = build;
-window.__M3_COMMAND__ = (command, value) => worker?.postMessage(command === 'speed' ? { command, speed: value } : { command });
-window.__M4_CONTROL__ = (componentId, key, value) => worker?.postMessage({ command: 'control', componentId, key, value });
-window.__M5_COMMAND__ = (command, value) => worker?.postMessage({ command, value });
+window.__M3_COMMAND__ = (command, value) => {
+  if (x48RuntimeActive || x48Operation) return { ok: false, code: 'X48_OPERATION_ACTIVE' };
+  worker?.postMessage(command === 'speed' ? { command, speed: value } : { command });
+  return { ok: true };
+};
+window.__M4_CONTROL__ = (componentId, key, value) => {
+  if (x48RuntimeActive || x48Operation) return { ok: false, code: 'X48_OPERATION_ACTIVE' };
+  worker?.postMessage({ command: 'control', componentId, key, value }); return { ok: true };
+};
+window.__M5_COMMAND__ = (command, value) => {
+  if (x48RuntimeActive || x48Operation) return { ok: false, code: 'X48_OPERATION_ACTIVE' };
+  worker?.postMessage({ command, value }); return { ok: true };
+};
 window.__CHECKABLE_EVIDENCE__ = Object.freeze({
   set: (report) => setCheckableEvidenceReport(report),
   setPackage: (source) => setCheckableEvidencePackage(source),
@@ -12863,6 +12986,7 @@ window.__CHECKABLE_EVIDENCE__ = Object.freeze({
   download: () => downloadCheckableEvidenceReport(),
 });
 window.addEventListener('pagehide', () => {
+  retireX48RoomLoop('X48_PAGE_EXIT', { command: 'x48-cancel', restoreControls: false });
   retireFailureReplayWorkers(); failureReplayReport = null;
   invalidateUsartResponseReport('Page exit retired X23 USART0 workers.');
   picoPublicWorkbench.deactivate();
