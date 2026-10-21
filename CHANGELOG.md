@@ -2,6 +2,21 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.100 — 2026-10-21
+
+- Corrects the canonical X43 status to complete against its original bounded
+  precision criterion, using the already accepted public/native instruction,
+  cycle, runtime and stack-pointer/address-depth evidence.
+- Preserves explicit limits: heap, free SRAM, stack contents, live occupancy,
+  non-AVR profiling and physical benchmarking remain unavailable. Generic heap
+  was not an original X43 completion dependency.
+- Changes release/status metadata and public explanatory copy only. Runtime,
+  compiler, worker and model semantics are unchanged; no Build, Run or Scenario
+  was performed.
+- Status is X **75 complete / 1 partial / 20 planned**, with only X55 partial;
+  P1 remains **59/0/0**, M2–M4 partial and M5 planned. Cumulative producer
+  accounting remains **32/31/0**.
+
 ## 1.1.0-rc.99 — 2026-10-21
 
 - Completes the original bounded AVR X47 criterion with finite A1 ramp,
@@ -12,10 +27,14 @@ All notable public source changes are recorded here.
 - Retains the accepted native ramp/noise/recorded ADC and D13 evidence, lossless
   pressed-LOW D2 evidence and same-worker pending-Reset proof. This release adds
   no Build, Run or Scenario.
-- Keeps X43 and X55 partial, M2–M4 partial and M5 planned. Non-AVR input,
+- Rc.99 shipped the stale X43/X55 partial count below; rc.100 corrects that
+  metadata against the already accepted X43 original-criterion closure. The
+  accepted post-X47 truth is X **75/1/20**, with only X55 partial.
+- The rc.99 release boundary still keeps M2–M4 partial and M5 planned. Non-AVR input,
   arbitrary signals, saved/replayed schedules, physical equivalence and verdict
-  authority remain unavailable. Status is X **74 complete / 2 partial / 20
-  planned**, P1 **59/0/0**; cumulative producer accounting is **32/31/0**.
+  authority remain unavailable. Its published stale status was X **74 complete
+  / 2 partial / 20 planned**, P1 **59/0/0**; cumulative producer accounting was
+  **32/31/0**.
 
 ## 1.1.0-rc.98 — 2026-10-21
 

@@ -1,8 +1,12 @@
-# Migration to 1.1.0-rc.99
+# Migration to 1.1.0-rc.100
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.100 changes status metadata and explanatory copy only. It changes no project,
+package, model-library, compiler-artifact, cache or browser-storage schema.
+Existing learner-owned files require no conversion.
 
 Rc.99 recognizes the accepted X47 repeatable-input, momentary-control,
 repeatable-Apply and re-pause model identities through explicit data-only

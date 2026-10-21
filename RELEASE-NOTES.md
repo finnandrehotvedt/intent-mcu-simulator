@@ -1,4 +1,26 @@
-# Intent MCU Simulator 1.1.0-rc.99
+# Intent MCU Simulator 1.1.0-rc.100
+
+## X43 original-criterion status reconciliation
+
+This metadata-only release restores the independently accepted X43 closure
+against its original bounded criterion: instructions, memory/stack and runtime
+are shown only at precision the runtime can support. Existing public and native
+evidence already provides actual worker instruction/cycle counts, cycle-derived
+virtual runtime, current/interval/since-reset stack observations, 31-byte
+maximum observed address depth, Pause freeze and same-worker Reset clear.
+
+Heap use, free SRAM, stack contents, live occupancy, non-AVR profiling and
+physical benchmarking remain unavailable and unclaimed. Generic heap was not
+required by the original criterion. No runtime, compiler, worker or model
+semantics changed, and rc.100 performs no Build, Run or Scenario.
+
+Status is X **75 complete / 1 partial / 20 planned**, with only X55 partial;
+P1 remains **59/0/0**, M2–M4 remain partial and M5 planned. Cumulative producer
+accounting remains **32/31/0**.
+
+---
+
+## 1.1.0-rc.99
 
 ## X47 complete bounded AVR input sequences
 
@@ -20,11 +42,12 @@ joined throughout.
 
 This does not add non-AVR input injection, arbitrary signal generation, CSV or
 network import, saved schedules, automatic replay, physical equivalence or
-verdict authority. X43 and X55 remain partial; M2–M4 remain partial and M5
-planned. Rc.99 itself performs no firmware Build, Run or Scenario and reuses
-the independently accepted native evidence. Status is X **74 complete / 2
-partial / 20 planned**, P1 **59/0/0**, with cumulative producer accounting
-**32/31/0**.
+verdict authority. Rc.99 published stale metadata saying X43 and X55 were both
+partial and X **74/2/20**; rc.100 corrects that against the already accepted
+X43 original-criterion closure. The accepted post-X47 truth is X **75/1/20**,
+with only X55 partial. M2–M4 remain partial and M5 planned. Rc.99 itself
+performed no firmware Build, Run or Scenario and reused the independently
+accepted native evidence; cumulative producer accounting was **32/31/0**.
 
 ---
 

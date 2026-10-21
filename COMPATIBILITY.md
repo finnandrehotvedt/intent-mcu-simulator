@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.99 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.100 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -91,13 +91,15 @@ than QEMU pin timing, and STM32 exposes a final observation rather than a
 waveform, so X42 is unavailable for those profiles. Open never restores a
 capture or runtime authority.
 
-The partial X43 Runtime profile interval is supported only for an already-
+The complete-against-original-criterion X43 Runtime profile is supported only for an already-
 current AVR worker. It binds native emulator cycle and executed-instruction
 deltas to one exact source, artifact, model and worker lifecycle and derives
 exact 16 MHz virtual time. Browser wall throughput is diagnostic only. Dynamic
-SRAM, heap, current stack and peak stack are unavailable; RP2040, ESP32-C3 and
-STM32 profiling are unavailable for this contract. No result is a physical-
-hardware benchmark.
+SRAM heap use, free SRAM, stack contents and live occupancy are unavailable;
+RP2040, ESP32-C3 and STM32 profiling are unavailable for this contract. The
+accepted current/interval/since-reset stack-pointer observations and observed
+address depth satisfy the original bounded precision criterion; no result is a
+physical-hardware benchmark.
 
 The complete bounded X47 input sequence is supported only for the exact AVR graph with
 one momentary button wired from D2 to one controller ground. It creates one

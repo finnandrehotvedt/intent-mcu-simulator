@@ -1,7 +1,7 @@
-# X43 partial AVR observation interval
+# X43 complete bounded AVR runtime profile
 
-Status: public AVR-only implementation slice in 1.1.0-rc.92; X43 remains
-partial, not complete.
+Status: complete against the original bounded precision criterion in
+`1.1.0-rc.100`. The implementation remains AVR-only and explicitly limited.
 
 The Runtime profile interval panel observes an already-current AVR worker. An
 explicit **Start observation** stores its exact source, artifact, editor
@@ -93,4 +93,8 @@ This bounded proof supplies stack address-depth observation, not live stack
 occupancy. It does not supply dynamic SRAM, heap, free SRAM or a true memory
 high-water measurement,
 does not profile the other three public controller profiles and is not a
-physical-hardware benchmark. Those missing portions keep X43 partial.
+physical-hardware benchmark. Those facts remain unavailable without blocking
+the original criterion, which requires only that instructions, memory/stack
+and runtime be shown at precision the runtime can support. Accepted public and
+native evidence supplies that bounded precision; generic heap was never an
+original completion dependency.

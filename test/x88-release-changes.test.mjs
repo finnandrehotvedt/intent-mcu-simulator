@@ -28,26 +28,26 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc98 to rc99 reviewed X47 completion bytes', async () => {
+test('X88 owner binds canonical rc99 to rc100 X43 status reconciliation bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.99');
+  assert.equal(release.version, '1.1.0-rc.100');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
   assert(registry.ids.includes('X47'));
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.98', current: '1.1.0-rc.99' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.99', current: '1.1.0-rc.100' });
   assert.deepEqual(value.changes, [
     {
-      id: 'X47', classification: 'changed', capabilities: ['intent-mcu-x47-avr-d2-pulse@1', 'intent-mcu-x47-repeatable-apply@1', 'intent-mcu-x47-repeatable-input@1'],
-      contracts: ['x47-avr-d2-active-low-pulse-v1', 'x47-avr-repeatable-a1-input-v1'],
-      summary: 'Completes bounded AVR X47 with finite A1 ramp, seeded-noise and recorded schedules plus the D2 active-low pulse, paused-worker binding, explicit Resume and Reset cancellation; other profiles and arbitrary signals remain unavailable.',
+      id: 'X43', classification: 'changed', capabilities: ['intent-mcu-x43-avr-observation-interval@1', 'intent-mcu-x43-avr-observed-stack@1'],
+      contracts: ['x43-avr-observation-interval-v1', 'x43-avr-observed-stack-v1'],
+      summary: 'Corrects X43 to complete against its original bounded precision criterion using accepted public instruction, cycle, runtime and stack evidence; heap, free SRAM, stack contents, live occupancy and physical benchmarking remain unavailable.',
     },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records the reviewed rc.98 to rc.99 X47 completion; the release packet reuses accepted native evidence, adds no firmware Build, Run or scenario and grants no non-AVR, arbitrary-signal, saved-replay, physical or verdict authority.',
+      summary: 'Records the rc.99 to rc.100 X43 status reconciliation against accepted original-criterion evidence; this metadata-only correction adds no Build, Run, scenario, runtime behavior, heap claim or new authority.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -110,7 +110,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.99');
+  assert.equal(discovery.identity.version, '1.1.0-rc.100');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);
