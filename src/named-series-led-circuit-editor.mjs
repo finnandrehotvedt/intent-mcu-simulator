@@ -2,7 +2,7 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import { normalizeStoredRoute } from './route-model.mjs';
-import { withResistorAppearance } from './component-appearance.mjs';
+import { withComponentAppearance } from './component-appearance.mjs';
 
 const clone = (value) => structuredClone(value);
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
@@ -292,12 +292,12 @@ export class NamedSeriesLedCircuitEditor {
 
   setComponentAppearance(componentId, preset) {
     const component = this.draft.components.find((candidate) => candidate.id === componentId);
-    if (!component || component.type !== BOUNDED_RESISTOR_TYPE) {
+    if (!component || ![BOUNDED_RESISTOR_TYPE, BOUNDED_LED_TYPE].includes(component.type)) {
       return this.fail('COMPONENT_APPEARANCE_UNSUPPORTED', { componentId, preset });
     }
     const next = clone(this.draft);
     try {
-      next.layout.componentAppearance = withResistorAppearance(
+      next.layout.componentAppearance = withComponentAppearance(
         next.layout.componentAppearance, next, componentId, preset,
       );
       return { ok: true, changed: true, code: this.code('COMPONENT_APPEARANCE_UPDATED'),

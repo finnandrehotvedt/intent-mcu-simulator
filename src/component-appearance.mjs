@@ -8,8 +8,19 @@ export const RESISTOR_APPEARANCE_PRESETS = Object.freeze([
   Object.freeze({ id: 'standard-beige', label: 'Standard beige' }),
   Object.freeze({ id: 'cool-blue', label: 'Cool blue' }),
 ]);
+export const LED_APPEARANCE_PRESETS = Object.freeze([
+  Object.freeze({ id: 'round-5mm', label: 'Round 5 mm' }),
+  Object.freeze({ id: 'soft-square', label: 'Soft square' }),
+]);
 
-const PRESETS = new Set(RESISTOR_APPEARANCE_PRESETS.map(({ id }) => id));
+const PRESETS_BY_TYPE = Object.freeze({
+  'resistor.fixed-v1': new Set(RESISTOR_APPEARANCE_PRESETS.map(({ id }) => id)),
+  'led.basic-v1': new Set(LED_APPEARANCE_PRESETS.map(({ id }) => id)),
+});
+const DEFAULT_PRESET_BY_TYPE = Object.freeze({
+  'resistor.fixed-v1': 'standard-beige',
+  'led.basic-v1': 'round-5mm',
+});
 const SUPPORTED_BOARD_TYPES = new Set([
   'board.atmega328p-16mhz-v1',
   'board.rp2040-pico-v1',
@@ -49,23 +60,29 @@ export function normalizeComponentAppearance(value, graph, { missing = true } = 
   for (const componentId of Object.keys(source.components).sort(compare)) {
     const component = byId.get(componentId);
     const appearance = source.components[componentId];
-    if (!supportedGraph || !component || component.type !== 'resistor.fixed-v1' || !ownObject(appearance)
-        || !exactKeys(appearance, ['preset']) || !PRESETS.has(appearance.preset)) return null;
+    const presets = PRESETS_BY_TYPE[component?.type];
+    if (!supportedGraph || !component || !presets || !ownObject(appearance)
+        || !exactKeys(appearance, ['preset']) || !presets.has(appearance.preset)) return null;
     components[componentId] = { preset: appearance.preset };
   }
   return { schema: COMPONENT_APPEARANCE_SCHEMA, components };
 }
 
 export function resistorAppearancePreset(value, componentId) {
-  return value?.schema === COMPONENT_APPEARANCE_SCHEMA
-    && PRESETS.has(value.components?.[componentId]?.preset)
-    ? value.components[componentId].preset : 'standard-beige';
+  return componentAppearancePreset(value, componentId, 'resistor.fixed-v1');
 }
 
-export function withResistorAppearance(value, graph, componentId, preset) {
+export function componentAppearancePreset(value, componentId, componentType) {
+  const presets = PRESETS_BY_TYPE[componentType];
+  return value?.schema === COMPONENT_APPEARANCE_SCHEMA
+    && presets?.has(value.components?.[componentId]?.preset)
+    ? value.components[componentId].preset : DEFAULT_PRESET_BY_TYPE[componentType] ?? null;
+}
+
+export function withComponentAppearance(value, graph, componentId, preset) {
   const normalized = normalizeComponentAppearance(value, graph);
   const component = graph?.components?.find((item) => item.id === componentId);
-  if (!normalized || !component || component.type !== 'resistor.fixed-v1' || !PRESETS.has(preset)) {
+  if (!normalized || !component || !PRESETS_BY_TYPE[component.type]?.has(preset)) {
     throw Object.assign(new Error('COMPONENT_APPEARANCE_INVALID'), {
       code: 'COMPONENT_APPEARANCE_INVALID', details: [componentId, preset],
     });
@@ -80,13 +97,25 @@ export function withResistorAppearance(value, graph, componentId, preset) {
   return accepted;
 }
 
+export function withResistorAppearance(value, graph, componentId, preset) {
+  const component = graph?.components?.find((item) => item.id === componentId);
+  if (component?.type !== 'resistor.fixed-v1') {
+    throw Object.assign(new Error('COMPONENT_APPEARANCE_INVALID'), {
+      code: 'COMPONENT_APPEARANCE_INVALID', details: [componentId, preset],
+    });
+  }
+  return withComponentAppearance(value, graph, componentId, preset);
+}
+
 export function componentAppearanceInvariantSnapshot({
   componentId, graph, layout, source, boardProfile, definition,
 }) {
   const component = graph?.components?.find((item) => item.id === componentId);
   const position = layout?.positions?.[componentId];
-  if (!component || component.type !== 'resistor.fixed-v1' || !position || !definition
-      || definition.type !== component.type || definition.modelRef !== 'model.resistor-fixed-v1') {
+  const supportedModel = component?.type === 'resistor.fixed-v1'
+    ? 'model.resistor-fixed-v1' : component?.type === 'led.basic-v1' ? 'model.led-current-v1' : null;
+  if (!component || !supportedModel || !position || !definition
+      || definition.type !== component.type || definition.modelRef !== supportedModel) {
     throw Object.assign(new Error('COMPONENT_APPEARANCE_INVARIANT_INPUT'), {
       code: 'COMPONENT_APPEARANCE_INVARIANT_INPUT', details: [componentId],
     });

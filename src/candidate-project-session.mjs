@@ -10,7 +10,7 @@ import {
   validateProjectV2,
 } from './project-v2.mjs';
 import { parseStrictJson } from './strict-json.mjs';
-import { withResistorAppearance } from './component-appearance.mjs';
+import { withComponentAppearance } from './component-appearance.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, normalizeModelLibraryLock, resolveModelLibrary,
 } from './model-library.mjs';
@@ -571,7 +571,7 @@ export class CandidateEditorSession {
             return failure('EDITOR_COMMAND_SHAPE', this.revision);
           }
           try {
-            draft.candidateLayout.componentAppearance = withResistorAppearance(
+            draft.candidateLayout.componentAppearance = withComponentAppearance(
               draft.candidateLayout.componentAppearance,
               draft.candidateCircuit,
               command.componentId,

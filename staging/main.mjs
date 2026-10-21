@@ -39,11 +39,12 @@ import {
   PROJECT_RECOVERY_KEY, PROJECT_SCHEMA, PROJECT_STORAGE_KEY, migrateProjectV1, parseProjectV2,
 } from '../src/project-v2.mjs';
 import {
+  LED_APPEARANCE_PRESETS,
   RESISTOR_APPEARANCE_PRESETS,
+  componentAppearancePreset,
   componentAppearanceInvariantReview,
   componentAppearanceInvariantSnapshot,
-  resistorAppearancePreset,
-  withResistorAppearance,
+  withComponentAppearance,
 } from '../src/component-appearance.mjs';
 import {
   addRouteJog,
@@ -392,7 +393,7 @@ const elements = Object.fromEntries([
   'catalog-support-open', 'component-support-dialog', 'component-support-close',
   'component-support-profile', 'component-support-summary', 'component-support-mode', 'component-support-body',
   'catalog-list', 'catalog-prev', 'catalog-page', 'catalog-next', 'selection-name', 'property-editor', 'rotate-component', 'duplicate-component', 'delete-component',
-  'appearance-editor', 'appearance-preset', 'appearance-preview', 'appearance-status', 'appearance-apply',
+  'appearance-editor', 'appearance-editor-title', 'appearance-preset', 'appearance-preview', 'appearance-status', 'appearance-apply',
   'accessible-connections-root',
   'selected-net', 'net-members', 'wire-color', 'wire-bends', 'selection-support', 'reconnect-mode', 'add-bend', 'delete-wire', 'remove-junction', 'zoom-value',
   'zoom-in', 'zoom-out', 'pan-left', 'pan-right', 'pan-up', 'pan-down', 'view-reset', 'fit-project', 'project-state',
@@ -1066,14 +1067,21 @@ function renderBoundedComponentCatalog({ state, editCircuit, list, properties })
   }
   label.append(limit); input.id = `${selected.id}-${input.dataset.boundedProperty}`; label.htmlFor = input.id;
   row.append(label, input);
-  if (selected.type !== 'resistor.fixed-v1') { properties.replaceChildren(row); return; }
+  if (!['resistor.fixed-v1', 'led.basic-v1'].includes(selected.type)) {
+    properties.replaceChildren(row); return;
+  }
 
   const appearance = document.createElement('div'); appearance.className = 'bounded-property-row bounded-appearance-row';
-  const appearanceLabel = document.createElement('label'); appearanceLabel.textContent = 'Body preset';
+  const appearanceLabel = document.createElement('label');
+  appearanceLabel.textContent = selected.type === 'resistor.fixed-v1' ? 'Body preset' : 'Outline preset';
   const appearanceSelect = document.createElement('select');
   appearanceSelect.dataset.boundedAppearance = selected.id;
-  const currentPreset = resistorAppearancePreset(draft.layout.componentAppearance, selected.id);
-  for (const preset of RESISTOR_APPEARANCE_PRESETS) {
+  const currentPreset = componentAppearancePreset(
+    draft.layout.componentAppearance, selected.id, selected.type,
+  );
+  const appearancePresets = selected.type === 'resistor.fixed-v1'
+    ? RESISTOR_APPEARANCE_PRESETS : LED_APPEARANCE_PRESETS;
+  for (const preset of appearancePresets) {
     const option = document.createElement('option'); option.value = preset.id; option.textContent = preset.label;
     option.selected = preset.id === currentPreset; appearanceSelect.append(option);
   }
@@ -1083,7 +1091,8 @@ function renderBoundedComponentCatalog({ state, editCircuit, list, properties })
   ));
   appearanceSelect.addEventListener('change', renderPreview); renderPreview();
   const status = document.createElement('small');
-  status.textContent = 'Visual preview only · pins A/B, named nets, resistance and runtime semantics stay unchanged.';
+  status.textContent = `Visual preview only · pins ${uiComponentCatalog[selected.type].pins
+    .map(({ id }) => id).join('/')}, named nets, electrical properties and runtime semantics stay unchanged.`;
   const apply = document.createElement('button'); apply.type = 'button'; apply.textContent = 'Apply visual preset';
   apply.dataset.boundedAppearanceApply = selected.id;
   apply.disabled = appearanceSelect.value === currentPreset;
@@ -2061,7 +2070,7 @@ function renderPicoCircuitEditor(state) {
     card.style.setProperty('--part-width', `${definition.artwork.cssWidth * partScale}px`);
     card.style.setProperty('--part-height', `${definition.artwork.cssHeight * partScale}px`);
     const artwork = createBaseComponentArtwork(definition, component, {
-      appearancePreset: resistorAppearancePreset(draft.layout.componentAppearance, component.id),
+      appearancePreset: componentAppearancePreset(draft.layout.componentAppearance, component.id, component.type),
     }); card.append(artwork);
     const led = artwork.querySelector('[data-led-id]');
     if (led) {
@@ -2333,7 +2342,7 @@ function renderC3CircuitEditor(state) {
     card.style.setProperty('--part-width', `${definition.artwork.cssWidth * c3EditorZoom * responsiveScale}px`);
     card.style.setProperty('--part-height', `${definition.artwork.cssHeight * c3EditorZoom * responsiveScale}px`);
     const artwork = createBaseComponentArtwork(definition, component, {
-      appearancePreset: resistorAppearancePreset(draft.layout.componentAppearance, component.id),
+      appearancePreset: componentAppearancePreset(draft.layout.componentAppearance, component.id, component.type),
     }); card.append(artwork);
     const led = artwork.querySelector('[data-led-id]');
     if (led) {
@@ -2605,7 +2614,7 @@ function renderStm32CircuitEditor(state) {
     card.style.setProperty('--part-width', `${definition.artwork.cssWidth * stm32EditorZoom * responsiveScale}px`);
     card.style.setProperty('--part-height', `${definition.artwork.cssHeight * stm32EditorZoom * responsiveScale}px`);
     const artwork = createBaseComponentArtwork(definition, component, {
-      appearancePreset: resistorAppearancePreset(draft.layout.componentAppearance, component.id),
+      appearancePreset: componentAppearancePreset(draft.layout.componentAppearance, component.id, component.type),
     }); card.append(artwork);
     const led = artwork.querySelector('[data-led-id]');
     if (led) {
@@ -10093,7 +10102,7 @@ function renderComponents() {
     card.style.setProperty('--part-width', `${definition.artwork.cssWidth}px`);
     card.style.setProperty('--part-height', `${definition.artwork.cssHeight}px`);
     card.append(createComponentArtwork(definition, component, {
-      appearancePreset: resistorAppearancePreset(currentProject().layout.componentAppearance, component.id),
+      appearancePreset: componentAppearancePreset(currentProject().layout.componentAppearance, component.id, component.type),
     }));
     card.append(createTerminalWireLayer(component, definition));
     for (const [pinIndex, pin] of definition.pins.entries()) {
@@ -10523,14 +10532,15 @@ function appearanceInvariant(component, layout = currentProject().layout) {
 }
 
 function prepareAppearancePreview(component, preset) {
-  if (component?.type !== 'resistor.fixed-v1'
-      || !RESISTOR_APPEARANCE_PRESETS.some((item) => item.id === preset)) {
+  const presets = component?.type === 'resistor.fixed-v1' ? RESISTOR_APPEARANCE_PRESETS
+    : component?.type === 'led.basic-v1' ? LED_APPEARANCE_PRESETS : [];
+  if (!presets.some((item) => item.id === preset)) {
     appearancePreview = null;
     return null;
   }
   const before = appearanceInvariant(component);
   const candidateLayout = structuredClone(currentProject().layout);
-  candidateLayout.componentAppearance = withResistorAppearance(
+  candidateLayout.componentAppearance = withComponentAppearance(
     candidateLayout.componentAppearance, currentProject().circuit, component.id, preset,
   );
   const after = appearanceInvariant(component, candidateLayout);
@@ -10540,7 +10550,7 @@ function prepareAppearancePreview(component, preset) {
 }
 
 function renderAppearanceEditor(component) {
-  const supported = component?.type === 'resistor.fixed-v1';
+  const supported = ['resistor.fixed-v1', 'led.basic-v1'].includes(component?.type);
   elements.appearanceeditor.hidden = !supported;
   if (!supported) {
     appearancePreview = null;
@@ -10549,14 +10559,18 @@ function renderAppearanceEditor(component) {
     elements.appearanceapply.disabled = true;
     return;
   }
-  const currentPreset = resistorAppearancePreset(
-    currentProject().layout.componentAppearance, component.id,
+  const currentPreset = componentAppearancePreset(
+    currentProject().layout.componentAppearance, component.id, component.type,
   );
   if (!appearancePreview || appearancePreview.componentId !== component.id
       || appearancePreview.revision !== editor.revision) {
     prepareAppearancePreview(component, currentPreset);
   }
-  const options = RESISTOR_APPEARANCE_PRESETS.map(({ id, label }) => {
+  const presets = component.type === 'resistor.fixed-v1'
+    ? RESISTOR_APPEARANCE_PRESETS : LED_APPEARANCE_PRESETS;
+  elements.appearanceeditortitle.textContent = component.type === 'resistor.fixed-v1'
+    ? 'Resistor appearance' : 'LED outline appearance';
+  const options = presets.map(({ id, label }) => {
     const option = new Option(label, id);
     option.selected = id === appearancePreview.preset;
     return option;
@@ -10571,7 +10585,7 @@ function renderAppearanceEditor(component) {
   )).length;
   const invariant = appearancePreview.review.equal;
   elements.appearancestatus.textContent = invariant
-    ? `Invariant pass · pins A/B, ${connectedNets} named nets, ${definition.modelRef}, ${component.properties.ohms} Ω, source, position and rotation unchanged. Preview is not saved until Apply.`
+    ? `Invariant pass · pins ${definition.pins.map(({ id }) => id).join('/')}, ${connectedNets} named nets, ${definition.modelRef}, electrical properties, source, position and rotation unchanged. Preview is not saved until Apply.`
     : 'Invariant failed · Apply is blocked because electrical or anchor state changed.';
   elements.appearanceapply.disabled = !invariant || appearancePreview.preset === currentPreset;
   window.__X55_APPEARANCE_STATE__ = Object.freeze({

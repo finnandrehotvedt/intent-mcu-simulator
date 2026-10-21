@@ -139,12 +139,15 @@ function resistor(svg, definition, component, { appearancePreset = 'standard-bei
   drawTerminals(svg, definition, 2.8);
 }
 
-function led(svg, definition, component) {
+function led(svg, definition, component, { appearancePreset = 'round-5mm' } = {}) {
   const color = component.properties.color;
+  const outline = appearancePreset === 'soft-square'
+    ? 'M 17 53 V 29 Q 17 17 29 17 H 43 Q 55 17 55 29 V 53 Z'
+    : 'M 18 53 V 35 A 18 18 0 0 1 54 35 V 53 Z';
   append(svg,
     element('line', { x1: 27, y1: 55, x2: 27, y2: 94, class: 'metal-lead' }),
     element('line', { x1: 46, y1: 57, x2: 46, y2: 94, class: 'metal-lead' }),
-    element('path', { d: 'M 18 53 V 35 A 18 18 0 0 1 54 35 V 53 Z', class: `component-led ${color}`, 'data-led-id': component.id, role: 'img', 'aria-label': `${component.label} is off` }),
+    element('path', { d: outline, class: `component-led ${color} appearance-${appearancePreset}`, 'data-led-id': component.id, role: 'img', 'aria-label': `${component.label} is off` }),
     element('path', { d: 'M 20 52 H 54', class: 'led-rim' }),
     element('path', { d: 'M 47 35 V 48', class: 'led-cathode-flat' }),
     element('ellipse', { cx: 30, cy: 30, rx: 5, ry: 8, class: 'led-highlight' }),

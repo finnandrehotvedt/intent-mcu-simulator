@@ -9,11 +9,14 @@ import test from 'node:test';
 
 import {
   COMPONENT_APPEARANCE_SCHEMA,
+  LED_APPEARANCE_PRESETS,
+  componentAppearancePreset,
   componentAppearanceInvariantReview,
   componentAppearanceInvariantSnapshot,
   normalizeComponentAppearance,
   resistorAppearancePreset,
   withResistorAppearance,
+  withComponentAppearance,
 } from '../src/component-appearance.mjs';
 import { catalogType } from '../src/component-catalog.mjs';
 import { validateCircuit } from '../src/circuit-engine.mjs';
@@ -27,7 +30,7 @@ const clone = (value) => structuredClone(value);
 const appearance = (components = {}) => ({ schema: COMPONENT_APPEARANCE_SCHEMA, components });
 const command = (session, value) => session.apply({ ...value, revision: session.revision });
 
-test('X55 appearance data is finite, four-profile, resistor-only and exact-key strict', () => {
+test('X55 appearance data is finite, four-profile, supported-part-only and exact-key strict', () => {
   const project = validateProjectV2(createExampleProject('blink').project).project;
   const accepted = normalizeComponentAppearance(
     appearance({ 'resistor-1': { preset: 'cool-blue' } }), project.circuit,
@@ -57,6 +60,46 @@ test('X55 appearance data is finite, four-profile, resistor-only and exact-key s
   unsupported.components.find((item) => item.type.startsWith('board.')).type = 'board.unknown-v1';
   assert.equal(normalizeComponentAppearance(
     appearance({ 'resistor-1': { preset: 'cool-blue' } }), unsupported,
+  ), null);
+});
+
+test('X55 finite LED outline presets preserve electrical colour, pins, anchors, nets and runtime input', () => {
+  assert.deepEqual(LED_APPEARANCE_PRESETS.map(({ id }) => id), ['round-5mm', 'soft-square']);
+  const project = validateProjectV2(createExampleProject('blink').project).project;
+  const beforeProject = clone(project);
+  const definition = catalogType('led.basic-v1');
+  const before = componentAppearanceInvariantSnapshot({
+    componentId: 'led-1', graph: project.circuit, layout: project.layout,
+    source: project.source, boardProfile: project.boardProfile, definition,
+  });
+  const nextAppearance = withComponentAppearance(
+    project.layout.componentAppearance, project.circuit, 'led-1', 'soft-square',
+  );
+  const after = componentAppearanceInvariantSnapshot({
+    componentId: 'led-1', graph: project.circuit,
+    layout: { ...project.layout, componentAppearance: nextAppearance },
+    source: project.source, boardProfile: project.boardProfile, definition,
+  });
+  assert.equal(componentAppearancePreset(nextAppearance, 'led-1', 'led.basic-v1'), 'soft-square');
+  assert.deepEqual(componentAppearanceInvariantReview(before, after), {
+    schema: 'intent-mcu-component-appearance-invariant@1', equal: true, changedFields: [],
+  });
+  const editor = new ProjectEditorReducer(project);
+  const applied = editor.apply({ type: 'component.appearance.set', revision: 0,
+    componentId: 'led-1', preset: 'soft-square' }, { running: true });
+  assert.equal(applied.ok, true);
+  assert.equal(applied.buildRelevant, false);
+  assert.equal(applied.stopped, false);
+  assert.deepEqual(applied.project.circuit, beforeProject.circuit);
+  assert.deepEqual(applied.project.source, beforeProject.source);
+  assert.deepEqual(applied.project.layout.positions, beforeProject.layout.positions);
+  assert.equal(applied.project.circuit.components.find(({ id }) => id === 'led-1').properties.color,
+    beforeProject.circuit.components.find(({ id }) => id === 'led-1').properties.color);
+  assert.equal(editor.apply({ type: 'undo', revision: 1 }).ok, true);
+  assert.equal(componentAppearancePreset(editor.project.layout.componentAppearance,
+    'led-1', 'led.basic-v1'), 'round-5mm');
+  assert.equal(normalizeComponentAppearance(
+    appearance({ 'led-1': { preset: 'unknown-outline' } }), project.circuit,
   ), null);
 });
 
@@ -146,10 +189,17 @@ test('X55 visual history, duplicate, remove, merge and actual file Save/Open rem
   assert.equal(Object.hasOwn(editor.project.layout.componentAppearance.components, 'resistor-copy'), false);
 
   const incoming = validateProjectV2(createExampleProject('blink').project).project;
-  incoming.layout.componentAppearance = appearance({ 'resistor-1': { preset: 'cool-blue' } });
+  incoming.layout.componentAppearance = appearance({
+    'resistor-1': { preset: 'cool-blue' },
+    'led-1': { preset: 'soft-square' },
+  });
   const merged = mergeCircuitProject(editor.project, incoming);
   const mapped = merged.report.componentIds['resistor-1'];
+  const mappedLed = merged.report.componentIds['led-1'];
   assert.equal(resistorAppearancePreset(merged.project.layout.componentAppearance, mapped), 'cool-blue');
+  assert.equal(componentAppearancePreset(
+    merged.project.layout.componentAppearance, mappedLed, 'led.basic-v1',
+  ), 'soft-square');
 
   const directory = await mkdtemp(join(tmpdir(), 'x55-appearance-'));
   const file = join(directory, 'project.intent-mcu.json');
@@ -163,6 +213,9 @@ test('X55 visual history, duplicate, remove, merge and actual file Save/Open rem
     hostile.layout.componentAppearance.components[mapped].authority = 'runtime';
     const bytesBefore = await readFile(file, 'utf8');
     assert.equal(parseProjectV2(JSON.stringify(hostile)).ok, false);
+    const malformedLed = JSON.parse(saved);
+    malformedLed.layout.componentAppearance.components[mappedLed].preset = 'uploaded-outline';
+    assert.equal(parseProjectV2(JSON.stringify(malformedLed)).ok, false);
     assert.equal(await readFile(file, 'utf8'), bytesBefore);
   } finally {
     await rm(directory, { recursive: true, force: true });

@@ -19,7 +19,7 @@ import {
 } from './project-v2.mjs';
 import { isRouteFamily, normalizeStoredRoute } from './route-model.mjs';
 import { projectChangeRelevance } from './lifecycle.mjs';
-import { emptyComponentAppearance, withResistorAppearance } from './component-appearance.mjs';
+import { emptyComponentAppearance, withComponentAppearance } from './component-appearance.mjs';
 
 export const PROJECT_HISTORY_LIMIT = 64;
 const clone = (value) => structuredClone(value);
@@ -192,7 +192,7 @@ function applyMutation(current, command) {
     }
     case 'component.appearance.set': {
       if (!exactCommand(command, ['componentId', 'preset'])) throw new Error('EDITOR_COMMAND_SHAPE');
-      next.layout.componentAppearance = withResistorAppearance(
+      next.layout.componentAppearance = withComponentAppearance(
         next.layout.componentAppearance, graph, command.componentId, command.preset,
       );
       break;
