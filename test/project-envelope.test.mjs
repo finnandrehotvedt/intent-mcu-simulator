@@ -13,6 +13,7 @@ import {
 } from '../src/project-envelope.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, PRE_X55_ALL_PROFILE_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_X55_BODY_EDITOR_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_LED_OUTLINE_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_UX_CURRENT_MODEL_LIBRARY_LOCK,
@@ -195,6 +196,24 @@ test('public rc.101 envelope reopens only for explicit data migration with runti
   assert.equal(opened.ok, true);
   assert.deepEqual(opened.project, project);
   assert.deepEqual(opened.modelLibrary, PRE_X55_LED_OUTLINE_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(opened.report.executableAuthorityCleared, true);
+  assert.equal(opened.report.modelLibrary.migrationAvailable, true);
+  const migrated = migrateProjectModelLibrary(oldEnvelope, adapters);
+  assert.equal(migrated.ok, true);
+  assert.equal(migrated.originalUnchanged, oldEnvelope);
+  assert.equal(migrated.executableAuthorityCleared, true);
+  assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
+});
+
+test('public rc.102 envelope reopens only for explicit data migration with runtime authority cleared', () => {
+  const oldEnvelope = canonicalProjectEnvelope(
+    profile, project, adapters, emptyProjectBrief(), null,
+    PRE_X55_BODY_EDITOR_CURRENT_MODEL_LIBRARY_LOCK,
+  );
+  const opened = prepareProjectEnvelope(oldEnvelope, adapters);
+  assert.equal(opened.ok, true);
+  assert.deepEqual(opened.project, project);
+  assert.deepEqual(opened.modelLibrary, PRE_X55_BODY_EDITOR_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(opened.report.executableAuthorityCleared, true);
   assert.equal(opened.report.modelLibrary.migrationAvailable, true);
   const migrated = migrateProjectModelLibrary(oldEnvelope, adapters);

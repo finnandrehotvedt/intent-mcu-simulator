@@ -62,7 +62,7 @@ async function applyPresetWithKeyboard(page, preset) {
     await page.waitForFunction((value) => document.querySelector('#appearance-preset').value === value,
       preset);
   }
-  await page.keyboard.press('Tab');
+  for (let index = 0; index < 5; index += 1) await page.keyboard.press('Tab');
   assert.equal(await page.evaluate(() => document.activeElement?.id), 'appearance-apply');
   await page.keyboard.press('Enter');
   await page.waitForFunction((value) => window.__X55_APPEARANCE_STATE__?.currentPreset === value,
@@ -139,10 +139,32 @@ async function assertRejectedFileIsAtomic(page, filePath, expectedCode, before) 
       assert.equal(await card.locator('.resistor-body.appearance-standard-beige').count(), 1);
       assert.equal(await page.locator('#appearance-preview .resistor-body.appearance-cool-blue').count(), 1);
       assert.equal(await page.locator('#appearance-apply').isEnabled(), true);
-      await page.keyboard.press('Tab');
-      await page.keyboard.press('Enter');
+      await page.locator('#appearance-width').fill('88');
+      await page.locator('#appearance-height').fill('84');
+      await page.locator('#appearance-corner').fill('35');
+      assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), previewBefore,
+        'body preview mutated the canonical project');
+      assert.equal(await page.locator('#appearance-preview [data-body-geometry="88/84/35"]').count(), 1);
+      await page.click('#appearance-cancel');
+      assert.deepEqual(await page.evaluate(() => window.__X55_APPEARANCE_STATE__.previewBody),
+        { widthPct: 100, heightPct: 100, cornerPct: 100 });
+      assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), previewBefore,
+        'Cancel mutated the canonical project');
+      await page.locator('#appearance-preset').selectOption('cool-blue');
+      await page.locator('#appearance-width').fill('88');
+      await page.locator('#appearance-height').fill('84');
+      await page.locator('#appearance-corner').fill('35');
+      await page.click('#appearance-apply');
       await page.waitForFunction(() => window.__X55_APPEARANCE_STATE__?.currentPreset === 'cool-blue');
       assert.equal(await card.locator('.resistor-body.appearance-cool-blue').count(), 1);
+      assert.deepEqual(await page.evaluate(() => window.__M6_PROJECT__().layout.componentAppearance
+        .components['resistor-1'].body), { widthPct: 88, heightPct: 84, cornerPct: 35 });
+      await page.keyboard.press('Control+z');
+      await page.waitForFunction(() => !window.__M6_PROJECT__().layout.componentAppearance
+        ?.components?.['resistor-1']);
+      await page.keyboard.press('Control+Shift+z');
+      await page.waitForFunction(() => window.__M6_PROJECT__().layout.componentAppearance
+        .components['resistor-1']?.body?.widthPct === 88);
 
       const invariantCases = [];
       for (let rotation = 0; rotation < 360; rotation += 90) {

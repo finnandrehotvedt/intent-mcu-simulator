@@ -126,31 +126,52 @@ function stm32F429ziBoard(svg, definition) {
   drawTerminals(svg, definition, 3.3);
 }
 
-function resistor(svg, definition, component, { appearancePreset = 'standard-beige' } = {}) {
+function resistor(svg, definition, component, { appearancePreset = 'standard-beige', appearanceBody = null } = {}) {
   const preset = appearancePreset === 'cool-blue' ? 'cool-blue' : 'standard-beige';
+  const body = appearanceBody ?? { widthPct: 100, heightPct: 100, cornerPct: 100 };
+  const width = 70 * body.widthPct / 100; const height = 28 * body.heightPct / 100;
+  const left = 75 - width / 2; const right = 75 + width / 2;
+  const top = 24 - height / 2; const bottom = 24 + height / 2;
+  const corner = body.cornerPct / 100;
+  const shoulder = 12 * body.widthPct / 100 * corner;
+  const controlX = 4 * body.widthPct / 100 * corner;
+  const controlY = 6 * body.heightPct / 100 * corner;
+  const outline = `M ${left} ${top + controlY} Q ${left + controlX} ${top} ${left + shoulder} ${top} H ${right - shoulder} Q ${right - controlX} ${top} ${right} ${top + controlY} V ${bottom - controlY} Q ${right - controlX} ${bottom} ${right - shoulder} ${bottom} H ${left + shoulder} Q ${left + controlX} ${bottom} ${left} ${bottom - controlY} Z`;
   append(svg,
     element('line', { x1: 4, y1: 24, x2: 43, y2: 24, class: 'metal-lead' }),
     element('line', { x1: 107, y1: 24, x2: 146, y2: 24, class: 'metal-lead' }),
-    element('path', { d: 'M 40 16 Q 44 10 52 10 H 98 Q 106 10 110 16 V 32 Q 106 38 98 38 H 52 Q 44 38 40 32 Z', class: `resistor-body appearance-${preset}` }),
+    element('path', { d: outline, class: `resistor-body appearance-${preset}`, 'data-body-geometry': `${body.widthPct}/${body.heightPct}/${body.cornerPct}` }),
   );
+  const bandScale = `translate(75 24) scale(${body.widthPct / 100} ${body.heightPct / 100}) translate(-75 -24)`;
   resistorBands(component.properties.ohms).forEach((color, index) => {
-    svg.append(element('rect', { x: 55 + index * 13, y: 11, width: 5, height: 26, rx: 1, fill: color }));
+    svg.append(element('rect', { x: 55 + index * 13, y: 11, width: 5, height: 26, rx: 1, fill: color, transform: bandScale }));
   });
   drawTerminals(svg, definition, 2.8);
 }
 
-function led(svg, definition, component, { appearancePreset = 'round-5mm' } = {}) {
+function led(svg, definition, component, { appearancePreset = 'round-5mm', appearanceBody = null } = {}) {
   const color = component.properties.color;
-  const outline = appearancePreset === 'soft-square'
-    ? 'M 17 53 V 29 Q 17 17 29 17 H 43 Q 55 17 55 29 V 53 Z'
-    : 'M 18 53 V 35 A 18 18 0 0 1 54 35 V 53 Z';
+  const customBody = appearanceBody !== null;
+  const body = appearanceBody ?? { widthPct: 100, heightPct: 100, cornerPct: 100 };
+  const baseWidth = appearancePreset === 'soft-square' ? 38 : 36;
+  const width = baseWidth * body.widthPct / 100; const height = 36 * body.heightPct / 100;
+  const left = 36 - width / 2; const right = 36 + width / 2; const bottom = 53; const top = bottom - height;
+  const maxCorner = Math.min(width / 2, height / 2);
+  const presetCorner = appearancePreset === 'soft-square' ? 12 : maxCorner;
+  const corner = Math.min(maxCorner, presetCorner * body.cornerPct / 100);
+  const outline = customBody
+    ? `M ${left} ${bottom} V ${top + corner} Q ${left} ${top} ${left + corner} ${top} H ${right - corner} Q ${right} ${top} ${right} ${top + corner} V ${bottom} Z`
+    : appearancePreset === 'soft-square'
+      ? 'M 17 53 V 29 Q 17 17 29 17 H 43 Q 55 17 55 29 V 53 Z'
+      : 'M 18 53 V 35 A 18 18 0 0 1 54 35 V 53 Z';
+  const bodyScale = `translate(36 53) scale(${body.widthPct / 100} ${body.heightPct / 100}) translate(-36 -53)`;
   append(svg,
     element('line', { x1: 27, y1: 55, x2: 27, y2: 94, class: 'metal-lead' }),
     element('line', { x1: 46, y1: 57, x2: 46, y2: 94, class: 'metal-lead' }),
-    element('path', { d: outline, class: `component-led ${color} appearance-${appearancePreset}`, 'data-led-id': component.id, role: 'img', 'aria-label': `${component.label} is off` }),
-    element('path', { d: 'M 20 52 H 54', class: 'led-rim' }),
-    element('path', { d: 'M 47 35 V 48', class: 'led-cathode-flat' }),
-    element('ellipse', { cx: 30, cy: 30, rx: 5, ry: 8, class: 'led-highlight' }),
+    element('path', { d: outline, class: `component-led ${color} appearance-${appearancePreset}`, 'data-led-id': component.id, 'data-body-geometry': `${body.widthPct}/${body.heightPct}/${body.cornerPct}`, role: 'img', 'aria-label': `${component.label} is off` }),
+    element('path', { d: 'M 20 52 H 54', class: 'led-rim', transform: bodyScale }),
+    element('path', { d: 'M 47 35 V 48', class: 'led-cathode-flat', transform: bodyScale }),
+    element('ellipse', { cx: 30, cy: 30, rx: 5, ry: 8, class: 'led-highlight', transform: bodyScale }),
   );
   drawTerminals(svg, definition, 3);
 }
@@ -211,7 +232,7 @@ if (JSON.stringify(COMPONENT_ARTWORK_RENDERER_IDS) !== JSON.stringify(ARTWORK_RE
 }
 
 export function createComponentArtwork(definition, component, options = {}) {
-  const { thumbnail = false, appearancePreset } = options;
+  const { thumbnail = false, appearancePreset, appearanceBody } = options;
   const svg = element('svg', {
     class: `component-artwork${thumbnail ? ' catalog-thumbnail' : ''}`,
     viewBox: definition.artwork.viewBox.join(' '),
@@ -221,6 +242,6 @@ export function createComponentArtwork(definition, component, options = {}) {
   svg.append(element('title', {}, thumbnail ? definition.displayName : component.label));
   const renderer = renderers[definition.artwork.renderer];
   if (!renderer) throw new Error(`Unknown artwork renderer: ${definition.artwork.renderer}`);
-  renderer(svg, definition, component, { appearancePreset });
+  renderer(svg, definition, component, { appearancePreset, appearanceBody });
   return svg;
 }

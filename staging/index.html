@@ -609,9 +609,18 @@
           <p>Preview one finite original visual preset. Electrical properties, pins, nets and model behavior remain authoritative and unchanged.</p>
           <label for="appearance-preset">Visual preset</label>
           <select id="appearance-preset"></select>
+          <fieldset class="appearance-body-controls">
+            <legend>Bounded body geometry</legend>
+            <label for="appearance-width">Width <output id="appearance-width-value">100%</output></label>
+            <input id="appearance-width" type="range" min="80" max="100" step="1" value="100">
+            <label for="appearance-height">Height <output id="appearance-height-value">100%</output></label>
+            <input id="appearance-height" type="range" min="80" max="100" step="1" value="100">
+            <label for="appearance-corner">Corner softness <output id="appearance-corner-value">100%</output></label>
+            <input id="appearance-corner" type="range" min="0" max="100" step="1" value="100">
+          </fieldset>
           <div id="appearance-preview" class="appearance-preview" aria-label="Non-mutating component appearance preview"></div>
           <p id="appearance-status" class="truth" role="status">Select a supported part to review appearance invariants.</p>
-          <button id="appearance-apply" type="button" disabled>Apply visual preset</button>
+          <div class="appearance-actions"><button id="appearance-cancel" type="button">Cancel preview</button><button id="appearance-apply" type="button" disabled>Apply visual edit</button></div>
         </section>
         <label for="selected-net">Net / wire</label><select id="selected-net"><option value="">No net selected</option></select>
         <label for="wire-color">Wire colour</label><select id="wire-color" disabled><option value="#39dff2">Signal · cyan</option><option value="#f04f5f">Power · red</option><option value="#a8ff3f">Analogue · green</option><option value="#f5c451">Yellow</option><option value="#f28cf3">Magenta</option><option value="#f6f1e7">White</option><option value="#303943">Ground · charcoal</option><option value="#5f8cff">Blue</option></select>

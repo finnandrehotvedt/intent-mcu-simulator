@@ -919,6 +919,11 @@ button:disabled, select:disabled { opacity: .42; }
 .appearance-preview { min-height: 72px; display: grid; place-items: center; padding: 8px; border: 1px solid #274558; border-radius: 9px; background: #f5f1e7; overflow: hidden; }
 .appearance-preview .component-artwork { width: min(100%, 180px); height: auto; }
 .appearance-editor button { width: 100%; }
+.appearance-body-controls { display: grid; grid-template-columns: 1fr; gap: 6px; margin: 0; padding: 10px; border: 1px solid #315468; border-radius: 9px; }
+.appearance-body-controls legend { padding: 0 5px; color: var(--cyan); font-size: .72rem; font-weight: 800; }
+.appearance-body-controls label { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: .72rem; }
+.appearance-body-controls output { color: var(--text); font-family: ui-monospace, monospace; }
+.appearance-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .property-row { display: grid; grid-template-columns: 1fr 90px; gap: 8px; align-items: center; }
 .property-row label { margin: 0; }
 .net-members { min-height: 74px; margin-top: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #07141f; color: #c2d2da; font: .73rem/1.45 ui-monospace, monospace; overflow-wrap: anywhere; }

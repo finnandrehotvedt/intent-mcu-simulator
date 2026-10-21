@@ -83,7 +83,8 @@ async function snapshot(page, profile) {
         'artifact', 'runtime', 'runnable', 'phase', 'modelLibrary']) {
         assert.deepEqual(after[key], before[key], `${profile.id}: ${key} changed`);
       }
-      assert.deepEqual(after.appearance.components['resistor-1'], { preset: 'cool-blue' });
+      assert.deepEqual(after.appearance.components['resistor-1'], { preset: 'cool-blue',
+        body: { widthPct: 100, heightPct: 100, cornerPct: 100 } });
       assert.equal(after.workers, 0, `${profile.id}: visual edit created a worker`);
       assert.equal(await card.locator('.resistor-body.appearance-cool-blue').count(), 1,
         `${profile.id}: canvas did not render selected body`);

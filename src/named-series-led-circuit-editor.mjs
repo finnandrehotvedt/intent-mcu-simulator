@@ -2,7 +2,7 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import { normalizeStoredRoute } from './route-model.mjs';
-import { withComponentAppearance } from './component-appearance.mjs';
+import { withComponentAppearance, withComponentAppearanceBody } from './component-appearance.mjs';
 
 const clone = (value) => structuredClone(value);
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
@@ -305,6 +305,47 @@ export class NamedSeriesLedCircuitEditor {
     } catch (error) {
       return this.fail('COMPONENT_APPEARANCE_UNSUPPORTED', {
         componentId, preset, cause: error.code ?? error.message,
+      });
+    }
+  }
+
+  setComponentAppearanceBody(componentId, body) {
+    const component = this.draft.components.find((candidate) => candidate.id === componentId);
+    if (!component || ![BOUNDED_RESISTOR_TYPE, BOUNDED_LED_TYPE].includes(component.type)) {
+      return this.fail('COMPONENT_APPEARANCE_UNSUPPORTED', { componentId, body });
+    }
+    const next = clone(this.draft);
+    try {
+      next.layout.componentAppearance = withComponentAppearanceBody(
+        next.layout.componentAppearance, next, componentId, body,
+      );
+      return { ok: true, changed: true, code: this.code('COMPONENT_APPEARANCE_UPDATED'),
+        componentId, body: clone(body), ...this.commit(next, { kind: 'component', id: componentId }, 'layout') };
+    } catch (error) {
+      return this.fail('COMPONENT_APPEARANCE_UNSUPPORTED', {
+        componentId, body, cause: error.code ?? error.message,
+      });
+    }
+  }
+
+  setComponentAppearanceEdit(componentId, preset, body) {
+    const component = this.draft.components.find((candidate) => candidate.id === componentId);
+    if (!component || ![BOUNDED_RESISTOR_TYPE, BOUNDED_LED_TYPE].includes(component.type)) {
+      return this.fail('COMPONENT_APPEARANCE_UNSUPPORTED', { componentId, preset, body });
+    }
+    const next = clone(this.draft);
+    try {
+      const presetAppearance = withComponentAppearance(
+        next.layout.componentAppearance, next, componentId, preset,
+      );
+      next.layout.componentAppearance = withComponentAppearanceBody(
+        presetAppearance, next, componentId, body,
+      );
+      return { ok: true, changed: true, code: this.code('COMPONENT_APPEARANCE_UPDATED'),
+        componentId, preset, body: clone(body), ...this.commit(next, { kind: 'component', id: componentId }, 'layout') };
+    } catch (error) {
+      return this.fail('COMPONENT_APPEARANCE_UNSUPPORTED', {
+        componentId, preset, body, cause: error.code ?? error.message,
       });
     }
   }

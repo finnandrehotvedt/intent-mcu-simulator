@@ -10,7 +10,7 @@ import {
   validateProjectV2,
 } from './project-v2.mjs';
 import { parseStrictJson } from './strict-json.mjs';
-import { withComponentAppearance } from './component-appearance.mjs';
+import { withComponentAppearance, withComponentAppearanceBody } from './component-appearance.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, normalizeModelLibraryLock, resolveModelLibrary,
 } from './model-library.mjs';
@@ -580,6 +580,46 @@ export class CandidateEditorSession {
           } catch (error) {
             return failure(error.code ?? 'COMPONENT_APPEARANCE_INVALID', this.revision,
               error.details ?? [command.componentId, command.preset]);
+          }
+          break;
+        }
+        case 'component.appearance.body.set': {
+          if (!exactCommand(command, ['componentId', 'body'])) {
+            return failure('EDITOR_COMMAND_SHAPE', this.revision);
+          }
+          try {
+            draft.candidateLayout.componentAppearance = withComponentAppearanceBody(
+              draft.candidateLayout.componentAppearance,
+              draft.candidateCircuit,
+              command.componentId,
+              command.body,
+            );
+          } catch (error) {
+            return failure(error.code ?? 'COMPONENT_APPEARANCE_INVALID', this.revision,
+              error.details ?? [command.componentId, command.body]);
+          }
+          break;
+        }
+        case 'component.appearance.edit': {
+          if (!exactCommand(command, ['componentId', 'preset', 'body'])) {
+            return failure('EDITOR_COMMAND_SHAPE', this.revision);
+          }
+          try {
+            const presetAppearance = withComponentAppearance(
+              draft.candidateLayout.componentAppearance,
+              draft.candidateCircuit,
+              command.componentId,
+              command.preset,
+            );
+            draft.candidateLayout.componentAppearance = withComponentAppearanceBody(
+              presetAppearance,
+              draft.candidateCircuit,
+              command.componentId,
+              command.body,
+            );
+          } catch (error) {
+            return failure(error.code ?? 'COMPONENT_APPEARANCE_INVALID', this.revision,
+              error.details ?? [command.componentId, command.preset, command.body]);
           }
           break;
         }

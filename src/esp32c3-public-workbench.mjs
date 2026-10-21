@@ -390,14 +390,14 @@ export class Esp32C3PublicWorkbench {
   editCircuit(operation, ...args) {
     if (!['deleteSelected', 'undo', 'redo', 'moveComponent', 'rotateComponent',
       'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint',
-      'addMissingComponent', 'setComponentProperty', 'setComponentAppearance',
+      'addMissingComponent', 'setComponentProperty', 'setComponentAppearance', 'setComponentAppearanceEdit',
       'setWireColor', 'setWireRoute'].includes(operation)) {
       return { ok: false, code: 'C3_CIRCUIT_OPERATION_INVALID' };
     }
     const revision = this.circuitEditor.revision;
     const result = this.circuitEditor[operation](...args);
     if (!result.ok) {
-      if (['addMissingComponent', 'setComponentProperty', 'setComponentAppearance'].includes(operation)) {
+      if (['addMissingComponent', 'setComponentProperty', 'setComponentAppearance', 'setComponentAppearanceEdit'].includes(operation)) {
         this.message = `Part change rejected (${result.code}). The circuit and flash authority are unchanged.`;
       }
       this.render(); return result;
@@ -409,7 +409,7 @@ export class Esp32C3PublicWorkbench {
       return result;
     }
     this.project.circuit = clone(result.draft);
-    const layoutOnly = ['moveComponent', 'rotateComponent', 'setComponentAppearance',
+    const layoutOnly = ['moveComponent', 'rotateComponent', 'setComponentAppearance', 'setComponentAppearanceEdit',
       'setWireColor', 'setWireRoute'].includes(operation)
       || ['undo', 'redo'].includes(operation) && result.changeKind === 'layout';
     if (layoutOnly) {

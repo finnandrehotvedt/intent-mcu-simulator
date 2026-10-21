@@ -10,6 +10,7 @@ import test from 'node:test';
 import {
   COMPONENT_APPEARANCE_SCHEMA,
   LED_APPEARANCE_PRESETS,
+  componentAppearanceBody,
   componentAppearancePreset,
   componentAppearanceInvariantReview,
   componentAppearanceInvariantSnapshot,
@@ -17,6 +18,7 @@ import {
   resistorAppearancePreset,
   withResistorAppearance,
   withComponentAppearance,
+  withComponentAppearanceBody,
 } from '../src/component-appearance.mjs';
 import { catalogType } from '../src/component-catalog.mjs';
 import { validateCircuit } from '../src/circuit-engine.mjs';
@@ -61,6 +63,53 @@ test('X55 appearance data is finite, four-profile, supported-part-only and exact
   assert.equal(normalizeComponentAppearance(
     appearance({ 'resistor-1': { preset: 'cool-blue' } }), unsupported,
   ), null);
+});
+
+test('X55 bounded body geometry is strict data-only state with atomic history and fixed anchors', () => {
+  const project = validateProjectV2(createExampleProject('blink').project).project;
+  const body = { widthPct: 88, heightPct: 84, cornerPct: 35 };
+  const before = componentAppearanceInvariantSnapshot({
+    componentId: 'resistor-1', graph: project.circuit, layout: project.layout,
+    source: project.source, boardProfile: project.boardProfile,
+    definition: catalogType('resistor.fixed-v1'),
+  });
+  const appearanceWithBody = withComponentAppearanceBody(
+    project.layout.componentAppearance, project.circuit, 'resistor-1', body,
+  );
+  const after = componentAppearanceInvariantSnapshot({
+    componentId: 'resistor-1', graph: project.circuit,
+    layout: { ...project.layout, componentAppearance: appearanceWithBody },
+    source: project.source, boardProfile: project.boardProfile,
+    definition: catalogType('resistor.fixed-v1'),
+  });
+  assert.deepEqual(componentAppearanceBody(appearanceWithBody, 'resistor-1', 'resistor.fixed-v1'), body);
+  assert.deepEqual(componentAppearanceInvariantReview(before, after), {
+    schema: 'intent-mcu-component-appearance-invariant@1', equal: true, changedFields: [],
+  });
+  for (const rejectedBody of [
+    { ...body, widthPct: 79 }, { ...body, heightPct: 101 }, { ...body, cornerPct: Infinity },
+    { ...body, widthPct: 88.5 }, { ...body, authority: 'runtime' },
+  ]) assert.throws(() => withComponentAppearanceBody(
+    project.layout.componentAppearance, project.circuit, 'resistor-1', rejectedBody,
+  ), /COMPONENT_APPEARANCE_INVALID/u);
+
+  const editor = new ProjectEditorReducer(project);
+  const circuitBefore = clone(editor.project.circuit); const sourceBefore = clone(editor.project.source);
+  const routesBefore = clone(editor.project.layout.wireRoutes); const buildBefore = clone(editor.project.build);
+  const applied = editor.apply({ type: 'component.appearance.edit', revision: 0,
+    componentId: 'resistor-1', preset: 'cool-blue', body }, { running: true });
+  assert.equal(applied.ok, true); assert.equal(applied.buildRelevant, false); assert.equal(applied.stopped, false);
+  assert.deepEqual(applied.project.circuit, circuitBefore); assert.deepEqual(applied.project.source, sourceBefore);
+  assert.deepEqual(applied.project.layout.wireRoutes, routesBefore); assert.deepEqual(applied.project.build, buildBefore);
+  assert.deepEqual(componentAppearanceBody(applied.project.layout.componentAppearance,
+    'resistor-1', 'resistor.fixed-v1'), body);
+  assert.equal(editor.apply({ type: 'undo', revision: 1 }).ok, true);
+  assert.deepEqual(componentAppearanceBody(editor.project.layout.componentAppearance,
+    'resistor-1', 'resistor.fixed-v1'), { widthPct: 100, heightPct: 100, cornerPct: 100 });
+  assert.equal(editor.apply({ type: 'redo', revision: 2 }).ok, true);
+  assert.deepEqual(componentAppearanceBody(editor.project.layout.componentAppearance,
+    'resistor-1', 'resistor.fixed-v1'), body);
+  assert.equal(parseProjectV2(canonicalProjectJson(editor.project)).ok, true);
 });
 
 test('X55 finite LED outline presets preserve electrical colour, pins, anchors, nets and runtime input', () => {

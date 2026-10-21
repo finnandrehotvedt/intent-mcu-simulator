@@ -39,12 +39,16 @@ import {
   PROJECT_RECOVERY_KEY, PROJECT_SCHEMA, PROJECT_STORAGE_KEY, migrateProjectV1, parseProjectV2,
 } from '../src/project-v2.mjs';
 import {
+  COMPONENT_BODY_BOUNDS,
   LED_APPEARANCE_PRESETS,
   RESISTOR_APPEARANCE_PRESETS,
+  componentAppearanceBody,
+  componentAppearanceBodyOrNull,
   componentAppearancePreset,
   componentAppearanceInvariantReview,
   componentAppearanceInvariantSnapshot,
   withComponentAppearance,
+  withComponentAppearanceBody,
 } from '../src/component-appearance.mjs';
 import {
   addRouteJog,
@@ -394,6 +398,8 @@ const elements = Object.fromEntries([
   'component-support-profile', 'component-support-summary', 'component-support-mode', 'component-support-body',
   'catalog-list', 'catalog-prev', 'catalog-page', 'catalog-next', 'selection-name', 'property-editor', 'rotate-component', 'duplicate-component', 'delete-component',
   'appearance-editor', 'appearance-editor-title', 'appearance-preset', 'appearance-preview', 'appearance-status', 'appearance-apply',
+  'appearance-width', 'appearance-width-value', 'appearance-height', 'appearance-height-value',
+  'appearance-corner', 'appearance-corner-value', 'appearance-cancel',
   'accessible-connections-root',
   'selected-net', 'net-members', 'wire-color', 'wire-bends', 'selection-support', 'reconnect-mode', 'add-bend', 'delete-wire', 'remove-junction', 'zoom-value',
   'zoom-in', 'zoom-out', 'pan-left', 'pan-right', 'pan-up', 'pan-down', 'view-reset', 'fit-project', 'project-state',
@@ -1086,8 +1092,25 @@ function renderBoundedComponentCatalog({ state, editCircuit, list, properties })
     option.selected = preset.id === currentPreset; appearanceSelect.append(option);
   }
   const preview = document.createElement('div'); preview.className = 'appearance-preview bounded-appearance-preview';
+  const currentBody = componentAppearanceBody(
+    draft.layout.componentAppearance, selected.id, selected.type,
+  );
+  const bodyControls = document.createElement('fieldset'); bodyControls.className = 'appearance-body-controls';
+  bodyControls.append(Object.assign(document.createElement('legend'), { textContent: 'Bounded body geometry' }));
+  const bodyInputs = {};
+  for (const [key, labelText] of [['widthPct', 'Width'], ['heightPct', 'Height'], ['cornerPct', 'Corner softness']]) {
+    const labelNode = document.createElement('label'); const output = document.createElement('output');
+    output.textContent = `${currentBody[key]}%`; labelNode.append(labelText, output);
+    const control = document.createElement('input'); control.type = 'range';
+    control.min = String(COMPONENT_BODY_BOUNDS[key].minimum); control.max = String(COMPONENT_BODY_BOUNDS[key].maximum);
+    control.step = String(COMPONENT_BODY_BOUNDS[key].step); control.value = String(currentBody[key]);
+    control.dataset.boundedBody = key; control.addEventListener('input', () => { output.textContent = `${control.value}%`; renderPreview(); });
+    bodyInputs[key] = control; bodyControls.append(labelNode, control);
+  }
+  const selectedBody = () => Object.fromEntries(Object.entries(bodyInputs).map(([key, control]) => [key, Number(control.value)]));
   const renderPreview = () => preview.replaceChildren(createBaseComponentArtwork(
-    uiComponentCatalog[selected.type], selected, { appearancePreset: appearanceSelect.value },
+    uiComponentCatalog[selected.type], selected,
+    { appearancePreset: appearanceSelect.value, appearanceBody: selectedBody() },
   ));
   appearanceSelect.addEventListener('change', renderPreview); renderPreview();
   const status = document.createElement('small');
@@ -1095,10 +1118,25 @@ function renderBoundedComponentCatalog({ state, editCircuit, list, properties })
     .map(({ id }) => id).join('/')}, named nets, electrical properties and runtime semantics stay unchanged.`;
   const apply = document.createElement('button'); apply.type = 'button'; apply.textContent = 'Apply visual preset';
   apply.dataset.boundedAppearanceApply = selected.id;
-  apply.disabled = appearanceSelect.value === currentPreset;
-  appearanceSelect.addEventListener('change', () => { apply.disabled = appearanceSelect.value === currentPreset; });
-  apply.addEventListener('click', () => editCircuit('setComponentAppearance', selected.id, appearanceSelect.value));
-  appearanceLabel.append(appearanceSelect, status); appearance.append(appearanceLabel, preview, apply);
+  const changed = () => appearanceSelect.value !== currentPreset
+    || JSON.stringify(selectedBody()) !== JSON.stringify(currentBody);
+  const updateApply = () => { apply.disabled = !changed(); };
+  appearanceSelect.addEventListener('change', updateApply);
+  Object.values(bodyInputs).forEach((control) => control.addEventListener('input', updateApply));
+  apply.addEventListener('click', () => editCircuit(
+    'setComponentAppearanceEdit', selected.id, appearanceSelect.value, selectedBody(),
+  ));
+  const cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = 'Cancel preview';
+  cancel.addEventListener('click', () => {
+    appearanceSelect.value = currentPreset;
+    for (const [key, control] of Object.entries(bodyInputs)) control.value = String(currentBody[key]);
+    bodyControls.querySelectorAll('output').forEach((output, index) => {
+      output.textContent = `${currentBody[['widthPct', 'heightPct', 'cornerPct'][index]]}%`;
+    });
+    renderPreview(); updateApply(); appearanceSelect.focus();
+  });
+  const actions = document.createElement('div'); actions.className = 'appearance-actions'; actions.append(cancel, apply);
+  appearanceLabel.append(appearanceSelect, status); appearance.append(appearanceLabel, bodyControls, preview, actions);
   properties.replaceChildren(row, appearance);
 }
 
@@ -2071,6 +2109,7 @@ function renderPicoCircuitEditor(state) {
     card.style.setProperty('--part-height', `${definition.artwork.cssHeight * partScale}px`);
     const artwork = createBaseComponentArtwork(definition, component, {
       appearancePreset: componentAppearancePreset(draft.layout.componentAppearance, component.id, component.type),
+      appearanceBody: componentAppearanceBodyOrNull(draft.layout.componentAppearance, component.id, component.type),
     }); card.append(artwork);
     const led = artwork.querySelector('[data-led-id]');
     if (led) {
@@ -2162,6 +2201,7 @@ window.__RP2040_PUBLIC_WORKBENCH__ = {
   addMissingComponent: (type) => picoPublicWorkbench.editCircuit('addMissingComponent', type),
   setComponentProperty: (id, key, value) => picoPublicWorkbench.editCircuit('setComponentProperty', id, key, value),
   setComponentAppearance: (id, preset) => picoPublicWorkbench.editCircuit('setComponentAppearance', id, preset),
+  setComponentAppearanceEdit: (id, preset, body) => picoPublicWorkbench.editCircuit('setComponentAppearanceEdit', id, preset, body),
   beginReconnect: () => picoPublicWorkbench.editCircuit('beginReconnect'),
   cancelWire: () => picoPublicWorkbench.editCircuit('cancelWireDraft'),
   addWireBend: () => editBoundedRoute('pico', 'bend'),
@@ -2343,6 +2383,7 @@ function renderC3CircuitEditor(state) {
     card.style.setProperty('--part-height', `${definition.artwork.cssHeight * c3EditorZoom * responsiveScale}px`);
     const artwork = createBaseComponentArtwork(definition, component, {
       appearancePreset: componentAppearancePreset(draft.layout.componentAppearance, component.id, component.type),
+      appearanceBody: componentAppearanceBodyOrNull(draft.layout.componentAppearance, component.id, component.type),
     }); card.append(artwork);
     const led = artwork.querySelector('[data-led-id]');
     if (led) {
@@ -2430,6 +2471,7 @@ window.__ESP32C3_PUBLIC_WORKBENCH__ = {
   addMissingComponent: (type) => c3PublicWorkbench.editCircuit('addMissingComponent', type),
   setComponentProperty: (id, key, value) => c3PublicWorkbench.editCircuit('setComponentProperty', id, key, value),
   setComponentAppearance: (id, preset) => c3PublicWorkbench.editCircuit('setComponentAppearance', id, preset),
+  setComponentAppearanceEdit: (id, preset, body) => c3PublicWorkbench.editCircuit('setComponentAppearanceEdit', id, preset, body),
   beginReconnect: () => c3PublicWorkbench.editCircuit('beginReconnect'),
   cancelWire: () => c3PublicWorkbench.editCircuit('cancelWireDraft'),
   addWireBend: () => editBoundedRoute('c3', 'bend'),
@@ -2615,6 +2657,7 @@ function renderStm32CircuitEditor(state) {
     card.style.setProperty('--part-height', `${definition.artwork.cssHeight * stm32EditorZoom * responsiveScale}px`);
     const artwork = createBaseComponentArtwork(definition, component, {
       appearancePreset: componentAppearancePreset(draft.layout.componentAppearance, component.id, component.type),
+      appearanceBody: componentAppearanceBodyOrNull(draft.layout.componentAppearance, component.id, component.type),
     }); card.append(artwork);
     const led = artwork.querySelector('[data-led-id]');
     if (led) {
@@ -2709,6 +2752,7 @@ window.__STM32_PUBLIC_WORKBENCH__ = {
   addMissingComponent: (type) => stm32PublicWorkbench.editCircuit('addMissingComponent', type),
   setComponentProperty: (id, key, value) => stm32PublicWorkbench.editCircuit('setComponentProperty', id, key, value),
   setComponentAppearance: (id, preset) => stm32PublicWorkbench.editCircuit('setComponentAppearance', id, preset),
+  setComponentAppearanceEdit: (id, preset, body) => stm32PublicWorkbench.editCircuit('setComponentAppearanceEdit', id, preset, body),
   beginReconnect: () => stm32PublicWorkbench.editCircuit('beginReconnect'),
   cancelWire: () => stm32PublicWorkbench.editCircuit('cancelWireDraft'),
   addWireBend: () => editBoundedRoute('stm32', 'bend'),
@@ -10103,6 +10147,7 @@ function renderComponents() {
     card.style.setProperty('--part-height', `${definition.artwork.cssHeight}px`);
     card.append(createComponentArtwork(definition, component, {
       appearancePreset: componentAppearancePreset(currentProject().layout.componentAppearance, component.id, component.type),
+      appearanceBody: componentAppearanceBodyOrNull(currentProject().layout.componentAppearance, component.id, component.type),
     }));
     card.append(createTerminalWireLayer(component, definition));
     for (const [pinIndex, pin] of definition.pins.entries()) {
@@ -10531,7 +10576,9 @@ function appearanceInvariant(component, layout = currentProject().layout) {
   });
 }
 
-function prepareAppearancePreview(component, preset) {
+function prepareAppearancePreview(component, preset, body = componentAppearanceBody(
+  currentProject().layout.componentAppearance, component?.id, component?.type,
+)) {
   const presets = component?.type === 'resistor.fixed-v1' ? RESISTOR_APPEARANCE_PRESETS
     : component?.type === 'led.basic-v1' ? LED_APPEARANCE_PRESETS : [];
   if (!presets.some((item) => item.id === preset)) {
@@ -10543,9 +10590,12 @@ function prepareAppearancePreview(component, preset) {
   candidateLayout.componentAppearance = withComponentAppearance(
     candidateLayout.componentAppearance, currentProject().circuit, component.id, preset,
   );
+  candidateLayout.componentAppearance = withComponentAppearanceBody(
+    candidateLayout.componentAppearance, currentProject().circuit, component.id, body,
+  );
   const after = appearanceInvariant(component, candidateLayout);
   const review = componentAppearanceInvariantReview(before, after);
-  appearancePreview = { componentId: component.id, revision: editor.revision, preset, review };
+  appearancePreview = { componentId: component.id, revision: editor.revision, preset, body, review };
   return appearancePreview;
 }
 
@@ -10562,6 +10612,9 @@ function renderAppearanceEditor(component) {
   const currentPreset = componentAppearancePreset(
     currentProject().layout.componentAppearance, component.id, component.type,
   );
+  const currentBody = componentAppearanceBody(
+    currentProject().layout.componentAppearance, component.id, component.type,
+  );
   if (!appearancePreview || appearancePreview.componentId !== component.id
       || appearancePreview.revision !== editor.revision) {
     prepareAppearancePreview(component, currentPreset);
@@ -10576,9 +10629,19 @@ function renderAppearanceEditor(component) {
     return option;
   });
   elements.appearancepreset.replaceChildren(...options);
+  for (const [key, input, output] of [
+    ['widthPct', elements.appearancewidth, elements.appearancewidthvalue],
+    ['heightPct', elements.appearanceheight, elements.appearanceheightvalue],
+    ['cornerPct', elements.appearancecorner, elements.appearancecornervalue],
+  ]) {
+    input.min = String(COMPONENT_BODY_BOUNDS[key].minimum);
+    input.max = String(COMPONENT_BODY_BOUNDS[key].maximum);
+    input.step = String(COMPONENT_BODY_BOUNDS[key].step);
+    input.value = String(appearancePreview.body[key]); output.value = `${appearancePreview.body[key]}%`;
+  }
   const definition = uiComponentCatalog[component.type];
   elements.appearancepreview.replaceChildren(createComponentArtwork(
-    definition, component, { appearancePreset: appearancePreview.preset },
+    definition, component, { appearancePreset: appearancePreview.preset, appearanceBody: appearancePreview.body },
   ));
   const connectedNets = currentProject().circuit.nets.filter((net) => net.endpoints.some(
     (endpoint) => endpoint.component === component.id,
@@ -10587,11 +10650,14 @@ function renderAppearanceEditor(component) {
   elements.appearancestatus.textContent = invariant
     ? `Invariant pass · pins ${definition.pins.map(({ id }) => id).join('/')}, ${connectedNets} named nets, ${definition.modelRef}, electrical properties, source, position and rotation unchanged. Preview is not saved until Apply.`
     : 'Invariant failed · Apply is blocked because electrical or anchor state changed.';
-  elements.appearanceapply.disabled = !invariant || appearancePreview.preset === currentPreset;
+  elements.appearanceapply.disabled = !invariant || (appearancePreview.preset === currentPreset
+    && JSON.stringify(appearancePreview.body) === JSON.stringify(currentBody));
   window.__X55_APPEARANCE_STATE__ = Object.freeze({
     componentId: component.id,
     currentPreset,
     previewPreset: appearancePreview.preset,
+    currentBody,
+    previewBody: structuredClone(appearancePreview.body),
     invariant: invariant ? 'equal' : 'changed',
     revision: editor.revision,
   });
@@ -12184,8 +12250,28 @@ elements.appearancepreset.addEventListener('change', () => {
   const component = currentProject().circuit.components.find(
     (item) => item.id === selectedComponentId,
   );
-  prepareAppearancePreview(component, elements.appearancepreset.value);
+  prepareAppearancePreview(component, elements.appearancepreset.value, appearancePreview?.body);
   renderAppearanceEditor(component);
+});
+for (const input of [elements.appearancewidth, elements.appearanceheight, elements.appearancecorner]) {
+  input.addEventListener('input', () => {
+    const component = currentProject().circuit.components.find((item) => item.id === selectedComponentId);
+    if (!component) return;
+    prepareAppearancePreview(component, elements.appearancepreset.value, {
+      widthPct: Number(elements.appearancewidth.value),
+      heightPct: Number(elements.appearanceheight.value),
+      cornerPct: Number(elements.appearancecorner.value),
+    });
+    renderAppearanceEditor(component);
+  });
+}
+elements.appearancecancel.addEventListener('click', () => {
+  const component = currentProject().circuit.components.find((item) => item.id === selectedComponentId);
+  if (!component) return;
+  prepareAppearancePreview(component, componentAppearancePreset(
+    currentProject().layout.componentAppearance, component.id, component.type,
+  ), componentAppearanceBody(currentProject().layout.componentAppearance, component.id, component.type));
+  renderAppearanceEditor(component); elements.appearancepreset.focus();
 });
 elements.appearanceapply.addEventListener('click', () => {
   const component = currentProject().circuit.components.find(
@@ -12193,12 +12279,13 @@ elements.appearanceapply.addEventListener('click', () => {
   );
   if (!component || appearancePreview?.componentId !== component.id
       || appearancePreview.revision !== editor.revision) return;
-  const prepared = prepareAppearancePreview(component, appearancePreview.preset);
+  const prepared = prepareAppearancePreview(component, appearancePreview.preset, appearancePreview.body);
   if (!prepared?.review.equal) return;
   const preset = prepared.preset;
+  const body = structuredClone(prepared.body);
   appearancePreview = null;
-  applyEditor({ type: 'component.appearance.set', componentId: component.id, preset },
-    `Applied visual-only ${preset} preset to ${component.id}`);
+  applyEditor({ type: 'component.appearance.edit', componentId: component.id, preset, body },
+    `Applied visual-only ${preset} body edit to ${component.id}`);
 });
 elements.rotatecomponent.addEventListener('click', () => {
   if (!selectedComponentId) return;

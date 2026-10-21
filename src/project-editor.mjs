@@ -19,7 +19,7 @@ import {
 } from './project-v2.mjs';
 import { isRouteFamily, normalizeStoredRoute } from './route-model.mjs';
 import { projectChangeRelevance } from './lifecycle.mjs';
-import { emptyComponentAppearance, withComponentAppearance } from './component-appearance.mjs';
+import { emptyComponentAppearance, withComponentAppearance, withComponentAppearanceBody } from './component-appearance.mjs';
 
 export const PROJECT_HISTORY_LIMIT = 64;
 const clone = (value) => structuredClone(value);
@@ -194,6 +194,23 @@ function applyMutation(current, command) {
       if (!exactCommand(command, ['componentId', 'preset'])) throw new Error('EDITOR_COMMAND_SHAPE');
       next.layout.componentAppearance = withComponentAppearance(
         next.layout.componentAppearance, graph, command.componentId, command.preset,
+      );
+      break;
+    }
+    case 'component.appearance.body.set': {
+      if (!exactCommand(command, ['componentId', 'body'])) throw new Error('EDITOR_COMMAND_SHAPE');
+      next.layout.componentAppearance = withComponentAppearanceBody(
+        next.layout.componentAppearance, graph, command.componentId, command.body,
+      );
+      break;
+    }
+    case 'component.appearance.edit': {
+      if (!exactCommand(command, ['componentId', 'preset', 'body'])) throw new Error('EDITOR_COMMAND_SHAPE');
+      const presetAppearance = withComponentAppearance(
+        next.layout.componentAppearance, graph, command.componentId, command.preset,
+      );
+      next.layout.componentAppearance = withComponentAppearanceBody(
+        presetAppearance, graph, command.componentId, command.body,
       );
       break;
     }
