@@ -2615,15592 +2615,6 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze({
   "schema": "intent-mcu-model-library-manifest@2",
   "version": "2.0.0-rc.72-retained"
 });
-export const PRE_X43_ELF_BOUNDARY_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
-  "entries": [
-    {
-      "behaviorContractSha256": "4a85d33375cdfb32a720dd6ef0b00946b91ff3cd4b3b1bd786a31daaa97a87f3",
-      "componentType": "board.atmega328p-16mhz-v1",
-      "componentVersion": 1,
-      "modelId": "model.atmega328p-board-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "board.atmega328p-16mhz-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 150,
-        "cssWidth": 300,
-        "renderer": "board-atmega328p",
-        "thumbnail": "board-atmega328p",
-        "viewBox": [
-          0,
-          0,
-          160,
-          80
-        ]
-      },
-      "rendererContractSha256": "a3529e81b49ea07434d583dc701a609044326b0f716ba2ef665d87a2f52a018a",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.atmega328p-board-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D0",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D1",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D2",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D3",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D4",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D5",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D6",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D7",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D8",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D9",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D10",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D11",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D12",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D13",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A0",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A1",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A2",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A3",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A4",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A5",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "5V",
-            "role": "power-out",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "GND1",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "GND2",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "GND3",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Tested ATmega328P subset only; not complete physical-board equivalence."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "fc24be479f5217bd7f07e42dad258520ec1f58fda3da9e8086e775e38e431f29",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "6776f9eee726c541db2156146b9560896c7b9b743dce348fc59b600f65416740",
-      "componentType": "button.momentary-v1",
-      "componentVersion": 1,
-      "modelId": "model.button-momentary-no-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "button.momentary-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 78,
-        "cssWidth": 100,
-        "renderer": "button-tactile",
-        "thumbnail": "button-tactile",
-        "viewBox": [
-          0,
-          0,
-          100,
-          78
-        ]
-      },
-      "rendererContractSha256": "200542372ea2b0cef1bcf3187978e26955341815222422b2feebd0ee97eb6265",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "pressed": {
-            "default": false,
-            "kind": "boolean",
-            "mutability": "authored"
-          }
-        },
-        "internalTerminalGroups": [
-          {
-            "pin": "A",
-            "terminals": [
-              "A1",
-              "A2"
-            ]
-          },
-          {
-            "pin": "B",
-            "terminals": [
-              "B1",
-              "B2"
-            ]
-          }
-        ],
-        "modelId": "model.button-momentary-no-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "attachmentTerminal": "A1",
-              "terminals": [
-                "A1",
-                "A2"
-              ]
-            },
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "attachmentTerminal": "B1",
-              "terminals": [
-                "B1",
-                "B2"
-              ]
-            },
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "normallyOpen": {
-            "default": true,
-            "kind": "boolean"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Normally-open ideal contact; A1/A2 and B1/B2 are explicit internally common terminal groups."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "67034c86f1f01dbec2a7a87b40b650899edfaa9d5e26b18e27545e2067bab7d3",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "d90fbb575682b5800d773c5d88a0e3be7d0ebad859fadb33bba34698e1c0f6c3",
-      "componentType": "input.rotary-encoder-quadrature-v1",
-      "componentVersion": 1,
-      "modelId": "model.rotary-encoder-quadrature-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "input.rotary-encoder-quadrature-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 110,
-        "cssWidth": 128,
-        "renderer": "input-rotary-encoder-quadrature",
-        "thumbnail": "input-rotary-encoder-quadrature",
-        "viewBox": [
-          0,
-          0,
-          128,
-          110
-        ]
-      },
-      "rendererContractSha256": "70233214cea0c0d3af791f0d13e7a53d069c826a722b657235090fa2647809eb",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "detent": {
-            "default": 0,
-            "kind": "integer",
-            "maximum": 999,
-            "minimum": -999,
-            "mutability": "transition-only",
-            "unit": "detent"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.rotary-encoder-quadrature-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "pullMode": "input-pullup",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A",
-            "role": "digital-out",
-            "signals": [
-              "digital.quadrature-contact"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "COM",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "pullMode": "input-pullup",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "B",
-            "role": "digital-out",
-            "signals": [
-              "digital.quadrature-contact"
-            ]
-          }
-        ],
-        "properties": {
-          "encoding": {
-            "default": "gray-2bit",
-            "kind": "enum",
-            "values": [
-              "gray-2bit"
-            ]
-          },
-          "pullMode": {
-            "default": "input-pullup",
-            "kind": "enum",
-            "values": [
-              "input-pullup"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "A and B must connect directly to the supported AVR external-interrupt pins D2 and D3, one unique phase per pin; COM must connect directly to board ground.",
-            "Each detent emits the deterministic ideal Gray sequence CW 11→01→00→10→11 or CCW 11→10→00→01→11 at 16,000 cycles per phase.",
-            "A/B are open contacts read HIGH through firmware INPUT_PULLUP and close LOW to COM. Firmware must decode the transitions; the UI never writes a counter value.",
-            "No contact bounce, resistance, acceleration, missed edges, shaft switch, mechanical timing or physical detent behavior is modelled."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "64a10bc430af43a501afcd5a5e9b8cbf82ab39c5a0f575014940a26c1c5fb771",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "2429f1835efb2db1534163f88250eae5d5b3ce67cf304f200eed472cd2fd1e41",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "21fb0e50c51fa346fa63188bea49715ae171506939e27576d9b9b7b64554e6da",
-      "componentType": "output.active-buzzer-module-v1",
-      "componentVersion": 1,
-      "modelId": "model.active-buzzer-logical-enable-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "output.active-buzzer-module-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "output-active-buzzer-module",
-        "thumbnail": "output-active-buzzer-module",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "b1da623cd44588659ca208b9c9e6c06b40a5506cbfe8ec1b1d2ad93ac0e5fdf1",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.active-buzzer-logical-enable-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "activeLevel": "HIGH",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "EN",
-            "role": "digital-in",
-            "signals": [
-              "digital.high-active-enable"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Ideal 5 V active-buzzer module with a high-active, high-impedance EN input on one direct AVR D2–D13 GPIO output.",
-            "The existing runtime GPIO state drives a silent visual enabled/disabled indicator; no browser audio is produced.",
-            "No oscillator, waveform, frequency, duty-to-tone, sound pressure, supply current, GPIO current, loading, tolerance, resonance, thermal or physical acoustic accuracy is modelled."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "a2165819e146e0ed027e50c802ef5ca7f3e5c3c460868b94d68ee9a925e3d44e",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "a52faf170bd3585b93bfc8aa4568312cfd9e7c71bfed790e16d443a91cf43815",
-      "componentType": "output.character-lcd-16x2-4bit-v1",
-      "componentVersion": 1,
-      "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "output.character-lcd-16x2-4bit-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 130,
-        "cssWidth": 220,
-        "renderer": "output-character-lcd-16x2-4bit",
-        "thumbnail": "output-character-lcd-16x2-4bit",
-        "viewBox": [
-          0,
-          0,
-          220,
-          130
-        ]
-      },
-      "rendererContractSha256": "19637bb2f2c867f15a8beacf073e019373e97e82b045d4f9c62658df9d12f3f9",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "RS",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-register-select"
-            ]
-          },
-          {
-            "constraints": {
-              "requiredLevel": "LOW",
-              "writeOnly": true
-            },
-            "id": "RW",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "latchEdge": "falling",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "E",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-enable"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 4,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D4",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 5,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D5",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 6,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D6",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 7,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D7",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Bounded HD44780-style write-only 4-bit decoder for one 16×2 display. VCC requires 5 V, GND and RW require ground, and RS, E and D4–D7 require six unique direct AVR D2–D13 outputs.",
-            "Supported initialization is 0x3,0x3,0x3,0x2 followed by commands 0x28,0x0C,0x06,0x01 with enforced power-on, enable-pulse and instruction timing. Supported runtime commands are clear, home, 4-bit/2-line function set, display-on, increment entry mode and visible DDRAM addresses.",
-            "Printable ASCII 0x20–0x7E is rendered. Reads, busy flag, RW-high operation, custom glyphs/CGRAM, cursor or blink modes, display shifts, automatic line wrapping, 8-bit mode, I²C, backpacks, contrast, backlight, current and physical timing tolerances are unsupported."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "7b5ae575ea2513ecc0452e086a6c321db93bd1299d2d1a2c8bc1b7def5e2b132",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "06dc73c16b0cfdfc06de405634e018584820ddacc88fddb5b185e64c907576e3",
-      "componentType": "output.rgb-led-common-cathode-v1",
-      "componentVersion": 1,
-      "modelId": "model.rgb-led-common-cathode-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "output.rgb-led-common-cathode-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "output-rgb-led-common-cathode",
-        "thumbnail": "output-rgb-led-common-cathode",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "604f4f8f4fa53fe6e2bbfb9dd6e11886d92c5079ec4e44ba5f1ebcc93a4a3a3a",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.rgb-led-common-cathode-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "channel": "red",
-              "polarity": "anode",
-              "requiresSeriesResistor": true
-            },
-            "id": "R",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-channel"
-            ]
-          },
-          {
-            "constraints": {
-              "channel": "green",
-              "polarity": "anode",
-              "requiresSeriesResistor": true
-            },
-            "id": "G",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-channel"
-            ]
-          },
-          {
-            "constraints": {
-              "channel": "blue",
-              "polarity": "anode",
-              "requiresSeriesResistor": true
-            },
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-channel"
-            ]
-          },
-          {
-            "constraints": {
-              "commonCathode": true,
-              "polarity": "cathode"
-            },
-            "id": "COM",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Ideal common-cathode teaching model projected through three independently validated existing LED channels.",
-            "R, G and B each require one dedicated external series resistor and one supported AVR PWM output: D3, D5, D6, D9, D10 or D11; COM must connect to ground.",
-            "Displayed colour is only the commanded relative PWM mix. No wavelength, luminous intensity, optical mixing, current matching, tolerance, thermal or physical colour accuracy is claimed."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "6302f0b958d0b9d30326cc61cc50073eec36aa9ff60ca07e103afa5a107d7ed2",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "bac10a19e8fd23dceb9c1a0a3eb369b80d6e264f6ecc943759746ee893b314c3",
-      "componentType": "output.seven-segment-common-cathode-v1",
-      "componentVersion": 1,
-      "modelId": "model.seven-segment-common-cathode-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "output.seven-segment-common-cathode-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 120,
-        "cssWidth": 160,
-        "renderer": "output-seven-segment-common-cathode",
-        "thumbnail": "output-seven-segment-common-cathode",
-        "viewBox": [
-          0,
-          0,
-          160,
-          120
-        ]
-      },
-      "rendererContractSha256": "e8a6732efecaadfeafa61e941e596e7707552879d71eeba9fed1dc42e95a9ba2",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.seven-segment-common-cathode-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "a"
-            },
-            "id": "a",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "b"
-            },
-            "id": "b",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "c"
-            },
-            "id": "c",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "d"
-            },
-            "id": "d",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "e"
-            },
-            "id": "e",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "f"
-            },
-            "id": "f",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "g"
-            },
-            "id": "g",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "commonCathode": true,
-              "polarity": "cathode"
-            },
-            "id": "COM",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Ideal single-digit common-cathode teaching model projected through seven independently validated existing LED channels.",
-            "Segments a through g each require one dedicated external series resistor and one unique AVR D2–D13 digital output; COM must connect to ground.",
-            "Only commanded segment on/off state is shown. No decimal point, multiplexing, driver IC, brightness, optical, package-current, tolerance, thermal or physical display accuracy is modelled."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "11e0e7c4cf2ffd2a74ee9a13133aed906c24894a9be78a3e37a316d84695a668",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "08ad572458d28e5df84971242ae3c4f99ea585bc15f8d9c45df33a080c3bdf7b",
-      "componentType": "potentiometer.linear-v1",
-      "componentVersion": 1,
-      "modelId": "model.pot-divider-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "potentiometer.linear-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 110,
-        "renderer": "potentiometer-rotary",
-        "thumbnail": "potentiometer-rotary",
-        "viewBox": [
-          0,
-          0,
-          110,
-          100
-        ]
-      },
-      "rendererContractSha256": "7b1688b9b69b5de9bd7079abb2617d13dd9844132d5e26564d3d5497cb314f21",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "position": {
-            "default": 0.5,
-            "kind": "number",
-            "maximum": 1,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "ratio"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.pot-divider-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "HIGH",
-            "role": "passive",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "WIPER",
-            "role": "passive",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "LOW",
-            "role": "passive",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 10000,
-            "kind": "number",
-            "maximum": 10000000,
-            "minimum": 1,
-            "unit": "Ω"
-          },
-          "taper": {
-            "default": "linear",
-            "kind": "enum",
-            "values": [
-              "linear"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Linear 5 V divider only; no loading, tolerance or non-linear taper model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "b1707fc143253ab9a0af55d379e6d9c155b31030c1e1fed48924ef1cf326ec03",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "9c7718b8be7742ccc2ba7a156ebe392c6dd39fad6e6039b3bceff9a3eedbdb84",
-      "componentType": "reference.ground-v1",
-      "componentVersion": 1,
-      "modelId": "model.ground-reference-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "reference.ground-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 72,
-        "cssWidth": 72,
-        "renderer": "ground-reference-symbol",
-        "thumbnail": "ground-reference-symbol",
-        "viewBox": [
-          0,
-          0,
-          72,
-          72
-        ]
-      },
-      "rendererContractSha256": "6068255d29e2e1dabe95c75167d28efdc19694a376c532b6ebab6caa0b19cee2",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.ground-reference-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "REF",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {
-          "potentialVolts": {
-            "default": 0,
-            "kind": "number",
-            "maximum": 0,
-            "minimum": 0,
-            "unit": "V"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded to one-controller 5 V AVR teaching circuits with at most three independent reference nets.",
-            "Represents circuit 0 V only; it is not earth, chassis or protective ground.",
-            "Does not source voltage or current and does not model ground loops or multiple reference domains."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "a8b939586b60a0b5269e9cf262aba2fa4af9e27a9aae6c789883ca22737f61fc",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "00bbba0d9bc5ce5cc276dfda93be2d9bd34348332960bf21edd9b6a76f33b801",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "b768b3bd5fbe8e434ed9296a8713e057e4e8bf4fccf954ebf30fad4dac54dc15",
-      "componentType": "sensor.light-analogue-v1",
-      "componentVersion": 1,
-      "modelId": "model.light-analogue-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "sensor.light-analogue-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "sensor-light-analogue",
-        "thumbnail": "sensor-light-analogue",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "e99a821f74da1c8a615eeb2f8b4cc14e6fc3c3a1503c1493f81b7b844d3c06d1",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "lightLevel": {
-            "default": 0.5,
-            "kind": "number",
-            "maximum": 1,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "ratio"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.light-analogue-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "AOUT",
-            "role": "analogue-out",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Idealized module signal only: light level maps linearly to 0–5 V on AOUT from a fixed 5 V supply.",
-            "No lux calibration, physical LDR curve, loading, tolerance, noise, response time or ambient-light physics is modelled.",
-            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "32d8032d88d3eb95ebf781d53fbecbceef5a2bcd03a36d76f0987ac78082ed85",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "fa1ac395c472cd857fce316e5801505746d51e55c074e52ac5de6e3c120f8cf2",
-      "componentType": "sensor.light-threshold-digital-v1",
-      "componentVersion": 1,
-      "modelId": "model.light-threshold-digital-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "sensor.light-threshold-digital-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "sensor-light-threshold-digital",
-        "thumbnail": "sensor-light-threshold-digital",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "fe677e716d3f419d2848da150cad49ae9ab7db1e82abec49cb117728de114a5a",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "hysteresisPercentagePoints": {
-            "default": 5,
-            "kind": "number",
-            "maximum": 10,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "percentage-point"
-          },
-          "lightLevelPercent": {
-            "default": 40,
-            "kind": "number",
-            "maximum": 100,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "%"
-          },
-          "outputActive": {
-            "default": false,
-            "kind": "boolean",
-            "mutability": "derived"
-          },
-          "thresholdPercent": {
-            "default": 50,
-            "kind": "number",
-            "maximum": 100,
-            "minimum": 10,
-            "mutability": "authored",
-            "unit": "%"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.light-threshold-digital-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "DOUT",
-            "role": "digital-out",
-            "signals": [
-              "digital.active-low"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Generic idealized signal only: input and threshold are percentages; hysteresis is measured in percentage points.",
-            "DOUT is active LOW: it activates at input >= threshold, deactivates at input <= threshold - hysteresis, and retains its prior state inside that band.",
-            "No lux calibration, physical detector curve, propagation delay, electrical loading, tolerance, noise or ambient-light physics is modelled.",
-            "DOUT must connect directly and exclusively to one D2–D12 INPUT_PULLUP pin on the supported 5 V AVR controller."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "af209039275b9cecebaee139b829e911fb3d0d6eb2f8dd15edd40bcde1baa992",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "498a25c0b1e978bbeb04db94f96d7ad92959c5fdcbfd562eb198cc01d3293c2b",
-      "componentType": "sensor.temperature-analogue-v1",
-      "componentVersion": 1,
-      "modelId": "model.temperature-analogue-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "sensor.temperature-analogue-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "sensor-temperature-analogue",
-        "thumbnail": "sensor-temperature-analogue",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "56771edd9c32a5600ea97fdd7871bbb5575b8640f24838a2a575c3abffac3310",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "temperatureC": {
-            "default": 25,
-            "kind": "number",
-            "maximum": 150,
-            "minimum": -50,
-            "mutability": "authored",
-            "unit": "°C"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.temperature-analogue-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "AOUT",
-            "role": "analogue-out",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Idealized generic module only: -50 to 150 °C maps linearly to 0–5 V using AOUT = (temperatureC + 50) / 40 V.",
-            "No physical-sensor accuracy, calibration error, self-heating, thermal lag, loading, tolerance or noise is modelled.",
-            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "83428743da39b176d458a323047645d234dcdebfac4a2622fb53cea123e2ee99",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "47a908ddc94759dc419515ca1b551332dad7fd43fec96b5ee895ad14744aef3d",
-      "componentType": "switch.changeover-spdt-v1",
-      "componentVersion": 1,
-      "modelId": "model.switch-changeover-spdt-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "switch.changeover-spdt-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 120,
-        "cssWidth": 180,
-        "renderer": "switch-changeover-spdt",
-        "thumbnail": "switch-changeover-spdt",
-        "viewBox": [
-          0,
-          0,
-          150,
-          100
-        ]
-      },
-      "rendererContractSha256": "66c9bcef1d82302791e8f4d5f84a7c97e1f3ffdda220b1119630ece57c457113",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "selectedThrow": {
-            "default": "A",
-            "kind": "enum",
-            "mutability": "authored",
-            "values": [
-              "A",
-              "B"
-            ]
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.switch-changeover-spdt-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "COM",
-            "role": "passive",
-            "signals": []
-          },
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": []
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": []
-          }
-        ],
-        "properties": {
-          "transitionPolicy": {
-            "default": "break-before-make",
-            "kind": "enum",
-            "values": [
-              "break-before-make"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Only one AVR digital-input COM selecting a direct GND or 5 V throw is simulated.",
-            "BREAK uses the INPUT_PULLUP release level; generic high-impedance and analogue contact networks are rejected.",
-            "No bounce, resistance, delay, arcing, current rating or output-drive inference is modelled."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "3b1af60efa5006c701d4e21d15e0660319075641918b95595f320281cdb9ad44",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "0fefa31de419557dfbcfb28940166b3be77617196c3a26382e623a63528b4649",
-      "componentType": "switch.toggle-spst-v1",
-      "componentVersion": 1,
-      "modelId": "model.switch-toggle-spst-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "switch.toggle-spst-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 82,
-        "cssWidth": 112,
-        "renderer": "switch-toggle-spst",
-        "thumbnail": "switch-toggle-spst",
-        "viewBox": [
-          0,
-          0,
-          112,
-          82
-        ]
-      },
-      "rendererContractSha256": "9cd549733a3df4fa1a9f1e9a20035150c9474ca697ed396ef05161f398f5abde",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "closed": {
-            "default": false,
-            "kind": "boolean",
-            "mutability": "authored"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.switch-toggle-spst-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "normallyOpen": {
-            "default": true,
-            "kind": "boolean"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Ideal latching normally-open SPST contact in the existing 0–5 V AVR digital-input topology.",
-            "No contact bounce, resistance, current rating, arcing or mechanical wear model.",
-            "Not an SPDT selector, mains switch or physical-safety model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "9173550bff2f8d5b71cfdbaaef97b9a20e734a7f05678c1a029ee5d6d6e02a0f",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "4f5914579ca7c58a26143c2339a6af4d0e4626458b5f12a7698b4c62df8f899b",
-      "componentType": "board.esp32-c3-devmodule-v1",
-      "componentVersion": 1,
-      "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "board.esp32-c3-devmodule-v1-state-v1",
-        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
-      },
-      "profile": "board.esp32-c3-devmodule-v1",
-      "renderer": {
-        "cssHeight": 220,
-        "cssWidth": 160,
-        "renderer": "board-esp32-c3-profile",
-        "thumbnail": "board-esp32-c3-profile",
-        "viewBox": [
-          0,
-          0,
-          160,
-          220
-        ]
-      },
-      "rendererContractSha256": "95b58544ffb4f3a11a9eb2514ed269bc0464d7b2bd3e1e7f50dda1839c841974",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "connector": "J1",
-              "physicalPin": 4,
-              "strappingPin": true,
-              "voltageMax": 3.3,
-              "voltageMin": 0
-            },
-            "id": "GPIO2",
-            "role": "digital-io",
-            "signals": [
-              "digital.output"
-            ]
-          },
-          {
-            "constraints": {
-              "connector": "J1",
-              "physicalPin": 6
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Actual QEMU CPU/UART is separate from this executed-register-write GPIO2 project model.",
-            "GPIO2 is a strapping pin; this bounded teaching path is not physical-board equivalence."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "47f21637431be47217854b63ded12bc182b93af75d0f25cd8a36c05d7ee0a74d",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "8f6d414ec5140abc9d675f37b6aee9835a106e96dcc01edabf42d3c7d36bfc7b",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
-      },
-      "profile": "board.esp32-c3-devmodule-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "411e12fe0e5417c57c66e754fc0acf6fee472d559cc82c3ba6d49df97fb59dbc",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
-      },
-      "profile": "board.esp32-c3-devmodule-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "db0d8b36ddeccaa57ad6a31ce3f6298257a538585c1299ecc43a350c7067bddd",
-      "componentType": "board.rp2040-pico-v1",
-      "componentVersion": 1,
-      "modelId": "model.rp2040-pico-gpio0-public-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "board.rp2040-pico-v1-state-v1",
-        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
-      },
-      "profile": "board.rp2040-pico-v1",
-      "renderer": {
-        "cssHeight": 300,
-        "cssWidth": 132,
-        "renderer": "board-rp2040-pico",
-        "thumbnail": "board-rp2040-pico",
-        "viewBox": [
-          0,
-          0,
-          132,
-          300
-        ]
-      },
-      "rendererContractSha256": "52d6e473d0ddb6e77f4299987759cf671fcc9d7025d827651d9220935605250c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.rp2040-pico-gpio0-public-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "physicalPin": 1,
-              "voltageMax": 3.3,
-              "voltageMin": 0
-            },
-            "id": "GP0",
-            "role": "digital-io",
-            "signals": [
-              "digital.output",
-              "pwm.output"
-            ]
-          },
-          {
-            "constraints": {
-              "physicalPin": 3
-            },
-            "id": "GND3",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Public bounded GPIO0 output circuit subset only; no complete board or physical-hardware equivalence.",
-            "GPIO25 is the onboard LED connection and is intentionally not exposed as a header anchor."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "981d93d732c94ee648051dab6505f97712f18d7ecd26544102ee58239f72c265",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "6c25bdb457d28e13b67d92c01c7454b6486a75925e797a43b62676ca33dd929f",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
-      },
-      "profile": "board.rp2040-pico-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "7879117db2bb84a350b21c614aba3c55db429b493e86cc21e0e3c02adf3838bf",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
-      },
-      "profile": "board.rp2040-pico-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "b80ae97b0a40322aa66867448e0c1f58b9be84857311f153f8b00def0a858724",
-      "componentType": "board.stm32f429zi-nucleo144-v1",
-      "componentVersion": 1,
-      "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "board.stm32f429zi-nucleo144-v1-state-v1",
-        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
-      },
-      "profile": "board.stm32f429zi-nucleo144-v1",
-      "renderer": {
-        "cssHeight": 230,
-        "cssWidth": 190,
-        "renderer": "board-stm32f429zi-profile",
-        "thumbnail": "board-stm32f429zi-profile",
-        "viewBox": [
-          0,
-          0,
-          190,
-          230
-        ]
-      },
-      "rendererContractSha256": "5d3909f79e7ac00abfde9bc6d67044203ca6f262f7c17d28781331c6aec46de3",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "connector": "CN11",
-              "physicalPin": 34,
-              "voltageMax": 3.3,
-              "voltageMin": 0
-            },
-            "id": "PB0",
-            "role": "digital-io",
-            "signals": [
-              "digital.output"
-            ]
-          },
-          {
-            "constraints": {
-              "connector": "CN11",
-              "physicalPin": 35
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Public bounded PB0 and USART3 subset only; no complete board or physical-hardware equivalence.",
-            "The external resistor and LED are an ideal teaching circuit driven by actual Renode-observed PB0."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "4f2061383d5c2011fae731719a9e8a50883d1c37bcf8e607c56a6d2550310a76",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "61a2cb60d993b4c112671b4174bf5a1a555c5863c32cf2e1d660f0212d415f2c",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
-      },
-      "profile": "board.stm32f429zi-nucleo144-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "22d61abb9f197dda68a7e636ce2f83cfcf0bb8ff6aa9c81d040cefe684c67f37",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
-      },
-      "profile": "board.stm32f429zi-nucleo144-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    }
-  ],
-  "implementationId": "intent-mcu-model-bundle-current-x43-canonical-owner-1@17",
-  "implementationMembers": [
-    {
-      "path": "src/component-catalog.mjs",
-      "sha256": "d461c7f52e591f2937518dd7cc30f9fdfd915cd9c6104624364d2236ecf1d236"
-    },
-    {
-      "path": "src/circuit-engine.mjs",
-      "sha256": "87ebd90e9ebb32c8fd7dbc8d7b3c9e8108bf834278b6592729334a0301f48166"
-    },
-    {
-      "path": "src/runtime-kernel.mjs",
-      "sha256": "b1bb960f9a60b37652318cd8a87c189e9a791603a705eb17710ff640a202efd7"
-    },
-    {
-      "path": "src/atmega328p-adapter.mjs",
-      "sha256": "65136d0b607336db992ba7dab81447813331b103136ec7c5348e6fc1ca9300de"
-    },
-    {
-      "path": "src/x43-avr-stack-profile.mjs",
-      "sha256": "daab81af7d7af8ccec2749328bcd1deae2e7f0e7a785af8ce726ba9efbee6758"
-    },
-    {
-      "path": "src/x43-avr-heap-profile.mjs",
-      "sha256": "4f26c5cc3b55950de3a27af6c6dce679b9dcea4a56aa5e2b82b65759d1102056"
-    },
-    {
-      "path": "compiler/avr-allocator-provenance.mjs",
-      "sha256": "feaf2e25aa9d80c38ee42865b65166caa8a1ac454326ec178175213f4abcda84"
-    },
-    {
-      "path": "compiler/build-coordinator.mjs",
-      "sha256": "7e4a03b6111c7b87b0e49b6813fef53059acd80405285ebc723ffa41e8440ffd"
-    },
-    {
-      "path": "compiler/build-worker.mjs",
-      "sha256": "dd6a5bc83bac39f75b371ca2ab0ceed72355dd3c049b2fded0430a09c6d948d7"
-    },
-    {
-      "path": "compiler/build-protocol.mjs",
-      "sha256": "a434642391598b05c592e6df4f8eef792f235df5017156c03def65da9f12b4bb"
-    },
-    {
-      "path": "Dockerfile.toolchain",
-      "sha256": "dfa1519879b0169583c3490aec9cc396ff0690bfad1ffdcaef263a91749708f1"
-    },
-    {
-      "path": "src/x47-runtime-transaction.mjs",
-      "sha256": "34b90ff05ee63b97ff88ef18d70efdc0bcaf6814f57940ab3580e894caa108e6"
-    },
-    {
-      "path": "src/x47-ui-integration.mjs",
-      "sha256": "baee930e2a369b091f2b3237fca815928d7d87d91ce9cc962aef72f09e92b3d3"
-    },
-    {
-      "path": "src/strict-json.mjs",
-      "sha256": "2a8bcfeed40b56f44d771ddbd2bad77b7ce17698e7f9f608afae8e828d8cb5e5"
-    },
-    {
-      "path": "src/component-appearance.mjs",
-      "sha256": "4c6b62483e52e1f48cf16c48f3b3de57ac99296ccec443d7efdfc3678c04add7"
-    },
-    {
-      "path": "src/project-v2.mjs",
-      "sha256": "453422102ebb64cb1485687d37d2c75155d63e231cf16c7e4a9ba2f86e7b9ca0"
-    },
-    {
-      "path": "src/project-editor.mjs",
-      "sha256": "d50ad45104b980a44b7ab3a62d4da749b54646d6c1eb5327b5447dd098a18ce4"
-    },
-    {
-      "path": "src/lifecycle.mjs",
-      "sha256": "4772e4491d4feb853673d6c8caeee9eb58ece4756805b92638342a5fcd7889d6"
-    },
-    {
-      "path": "staging/component-artwork.mjs",
-      "sha256": "b038661a2d7a26266d0602bb9ccb124cceb17b577ccaf66228db90441f49fdfc"
-    },
-    {
-      "path": "src/model-library.mjs",
-      "sha256": "c83d57a33e3a302de97f89f5fb259048e378e252bd2e914124f7f8b916729b74"
-    },
-    {
-      "path": "src/model-bundle-registry.mjs",
-      "sha256": "79f11aaa527ba7f81584c0b1e60c03e15044de677d5020f6e9a95965ebfa059a"
-    },
-    {
-      "path": "src/project-envelope.mjs",
-      "sha256": "ff4ab3f6680d2b5f0c6aabc16537062465fc85381d4b6d1fc642a39a14094adf"
-    },
-    {
-      "path": "src/model-control-contracts.mjs",
-      "sha256": "138d6f0b76abc3b1a509b741e581030192d91923864c8f804f42c32ef82abaa4"
-    },
-    {
-      "path": "src/simulator.worker.mjs",
-      "sha256": "7de0aac12d59c7fac8c12c68a555555bb8e68442389f8a46cfa358898e1e49fd"
-    },
-    {
-      "path": "staging/main.mjs",
-      "sha256": "0ef10fe0eb0759db2bdca4b7eaf75c3a4144cb36f68d918d3d41d9e57ad711ee"
-    },
-    {
-      "path": "src/rp2040-snapshot-pacer.mjs",
-      "sha256": "cc6ae6a1ba2ccf30382d4eefdd547de81c0053c6923e978b5e0dcf18c2a53b7e"
-    },
-    {
-      "path": "src/rp2040-experimental-runtime.mjs",
-      "sha256": "93463965a8f379afdea256f270f2efb2876d9ec8ddff7f9e9676d7a7ad82a10d"
-    },
-    {
-      "path": "src/runtime-identity.mjs",
-      "sha256": "dcd4e0df743d6310a6661cc3a2cf6b2d2879e33a3b82a3dd8620570c689231e8"
-    },
-    {
-      "path": "src/candidate-project-session.mjs",
-      "sha256": "079a528132787c424d12ec8b7514eb075ce11086f5e2962b8553e6fb4a1de43d"
-    },
-    {
-      "path": "src/candidate-spdt-runtime.mjs",
-      "sha256": "cac63a72f4e0a8b67468d638d5ae9cf8bf49a76420e62d648bb4745bf9d8de31"
-    },
-    {
-      "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "5d60089e6da394f332410b54e270d8620cde812ea3d48d0005622348838426bf"
-    },
-    {
-      "path": "src/rp2040-pico-circuit.mjs",
-      "sha256": "9ba0ac0a14f5c33c16d43f6a7eb7313a657b36bf10cfe13ea24cd893625524f0"
-    },
-    {
-      "path": "src/esp32c3-public-circuit.mjs",
-      "sha256": "47fad0c2e060118a986cf08b6a83a24e8e0d955fa15fe4a3f399a51e51179b66"
-    },
-    {
-      "path": "src/stm32-public-circuit.mjs",
-      "sha256": "12873127b49d7c9c65f79b52228fee0d0419f2f7a8856aac0c7b0dc528001988"
-    },
-    {
-      "path": "src/rp2040-public-workbench.mjs",
-      "sha256": "c04d0beb03c037ad02f20e3fa8271306ff3f954b6575e6c84bea96ed231219af"
-    },
-    {
-      "path": "src/esp32c3-public-workbench.mjs",
-      "sha256": "f3a21835f0125df0948397aa32f276c66f5601d08064cd12cc584b65b001e76a"
-    },
-    {
-      "path": "src/stm32-public-workbench.mjs",
-      "sha256": "cd52cbfa009e847080f27bbc401eac344d9795e08ef9177efdd43d4042a99672"
-    },
-    {
-      "path": "expansion-drafts/controller-runtime-bridge-v1.mjs",
-      "sha256": "670767df34464eb8fb47037bf44f4911545ea58941832c81fb842eaba5793278"
-    },
-    {
-      "path": "expansion-drafts/rp2040-runtime-bridge-adapter-v1.mjs",
-      "sha256": "4b7496cd38a995bcecfb3b3456edce10f0d671606f0fa3d6c36e99762ee2ac56"
-    },
-    {
-      "path": "expansion-drafts/rp2040-conformance-fixtures-v1.mjs",
-      "sha256": "3d8eb99253b2c91876b6ac678838a2cf35b72e5261362be94575f364ac962bb9"
-    },
-    {
-      "path": "expansion-drafts/rp2040-firmware-artifact-v1.mjs",
-      "sha256": "7f08aa59de5e69eddd5e1a4cfd7c1e900f898d7c65425eb6274247058c53430b"
-    },
-    {
-      "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "bca551ac31347c998a849f62ad3989b47a4b5f0471fce58d36a6c64d1b288746"
-    },
-    {
-      "path": "expansion-drafts/ground-reference-integration-v1.mjs",
-      "sha256": "59dc3833915afbec325b2d06e815c3250ad858ad1769da03c509ae7e3cd38958"
-    },
-    {
-      "path": "expansion-drafts/toggle-switch-integration-v1.mjs",
-      "sha256": "90fcaad32074957021ffe5bde973c81c08a3dd0f345495ab169218416dc0e389"
-    },
-    {
-      "path": "expansion-drafts/switch-contact-graph-v1.mjs",
-      "sha256": "073a5079335b222c53410971dcab42324cfa3ad639cc4b57a879fbe6efa476d2"
-    },
-    {
-      "path": "expansion-drafts/ideal-three-pin-analogue-module-v1.mjs",
-      "sha256": "383caf45e17281997b5b6e6f8a63bde660e19a1e48e1d0be1c137a8d36c187d3"
-    },
-    {
-      "path": "expansion-drafts/light-analogue-sensor-v1.mjs",
-      "sha256": "1a6efe15ec9b955f2824b711d32ea5d310d7966a223f8366031158514db24fbc"
-    },
-    {
-      "path": "expansion-drafts/temperature-analogue-sensor-v1.mjs",
-      "sha256": "5f3290f865e79ecf7362ea6b6ea667d9e01670a5daabb1b1cf70e977a6307817"
-    },
-    {
-      "path": "expansion-drafts/digital-light-threshold-module-v1.mjs",
-      "sha256": "f3a203a7c92e412a615599e6b0dbca9a84af3c15843c47e7bedc3a8f4d48d2bd"
-    },
-    {
-      "path": "expansion-drafts/common-cathode-rgb-led-v1.mjs",
-      "sha256": "42d045d2882ed745c4f2895d21bc0683582ce185c03b1dce9b854f98389f69d1"
-    },
-    {
-      "path": "expansion-drafts/active-buzzer-module-v1.mjs",
-      "sha256": "aa8bd1dc352a689ebcf0443cc2595426cdcf46396b1bc47b742c3731b2dafe94"
-    },
-    {
-      "path": "expansion-drafts/seven-segment-common-cathode-v1.mjs",
-      "sha256": "5d2b30cdfcfd48ad8dfc6e767ac9c9ee2825018e94980cf8915d5550b7d69905"
-    },
-    {
-      "path": "expansion-drafts/character-lcd-16x2-4bit-v1.mjs",
-      "sha256": "463871c751ee4e7857d46ceb75500f417c59a59af331535e8e3b2c87d17b27ee"
-    },
-    {
-      "path": "expansion-drafts/rotary-encoder-quadrature-v1.mjs",
-      "sha256": "0671974cb26e5447db07266f2e6a85a1f4fdd2fb8463453aa274987177167ac8"
-    },
-    {
-      "path": "src/model-library-current-resolver.mjs",
-      "sha256": "1d04035f9920109a3d169238887ef906ee7e8e827fde558c3b7a14c3b387c003"
-    }
-  ],
-  "implementationSha256": "7cea090271ca57486a46121359dafe604693c2aca57bf4ee69bea187f010800e",
-  "libraryId": "intent-mcu-public-models",
-  "lineage": {
-    "baselineClosureDisposition": "accepted public rc.98 identity remains immutable and migration-only",
-    "compatibility": "explicit-data-only-migration; runtime-and-verdict-authority-cleared",
-    "presentationDisposition": "no UI change; compiler-owned allocator provenance remains exact and fail-closed",
-    "priorManifestSha256": "3b1651d52064f62c74028797a1b2f93c466c6c8b4521febb6befed4c4c7799b8",
-    "priorVersion": "2.0.0-x43-linker-proof-diagnostic.1-current",
-    "semanticDisposition": "component, electrical and runtime semantics are unchanged; strict allocator provenance accepts only realpath-verified absolute spellings of the exact pinned archive with exact malloc.o member"
-  },
-  "manifestSha256": "4b408585f8f329e6800b811a83f936d6b854a3f003e5aa3164f6e5be56822c6e",
-  "runtimeContracts": [
-    "avr8js@0.21.1",
-    "rp2040js@1.4.0",
-    "esp32c3-qemu@project-pinned",
-    "renode@1.17.0"
-  ],
-  "schema": "intent-mcu-model-library-manifest@2",
-  "version": "2.0.0-x43-canonical-owner.1-current"
-});
-export const PRE_X43_CANONICAL_OWNER_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
-  "entries": [
-    {
-      "behaviorContractSha256": "ec63df3314404a6ba5a9e94b7d090395d31f78350e926bab312919ed7cdedfc0",
-      "componentType": "board.atmega328p-16mhz-v1",
-      "componentVersion": 1,
-      "modelId": "model.atmega328p-board-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "board.atmega328p-16mhz-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 150,
-        "cssWidth": 300,
-        "renderer": "board-atmega328p",
-        "thumbnail": "board-atmega328p",
-        "viewBox": [
-          0,
-          0,
-          160,
-          80
-        ]
-      },
-      "rendererContractSha256": "a3529e81b49ea07434d583dc701a609044326b0f716ba2ef665d87a2f52a018a",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.atmega328p-board-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D0",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D1",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D2",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D3",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D4",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D5",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D6",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D7",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D8",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D9",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D10",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D11",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D12",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D13",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A0",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A1",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A2",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A3",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A4",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A5",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "5V",
-            "role": "power-out",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "GND1",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "GND2",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "GND3",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Tested ATmega328P subset only; not complete physical-board equivalence."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "fc24be479f5217bd7f07e42dad258520ec1f58fda3da9e8086e775e38e431f29",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "bdd3580082d7115ebeb5a3e2f75954a919d8c12a5d26fe780b96ef2cff64562a",
-      "componentType": "button.momentary-v1",
-      "componentVersion": 1,
-      "modelId": "model.button-momentary-no-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "button.momentary-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 78,
-        "cssWidth": 100,
-        "renderer": "button-tactile",
-        "thumbnail": "button-tactile",
-        "viewBox": [
-          0,
-          0,
-          100,
-          78
-        ]
-      },
-      "rendererContractSha256": "200542372ea2b0cef1bcf3187978e26955341815222422b2feebd0ee97eb6265",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "pressed": {
-            "default": false,
-            "kind": "boolean",
-            "mutability": "authored"
-          }
-        },
-        "internalTerminalGroups": [
-          {
-            "pin": "A",
-            "terminals": [
-              "A1",
-              "A2"
-            ]
-          },
-          {
-            "pin": "B",
-            "terminals": [
-              "B1",
-              "B2"
-            ]
-          }
-        ],
-        "modelId": "model.button-momentary-no-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "attachmentTerminal": "A1",
-              "terminals": [
-                "A1",
-                "A2"
-              ]
-            },
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "attachmentTerminal": "B1",
-              "terminals": [
-                "B1",
-                "B2"
-              ]
-            },
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "normallyOpen": {
-            "default": true,
-            "kind": "boolean"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Normally-open ideal contact; A1/A2 and B1/B2 are explicit internally common terminal groups."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "67034c86f1f01dbec2a7a87b40b650899edfaa9d5e26b18e27545e2067bab7d3",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "ab747fd313da044a21f7bb3affb8b894b8c9b00710931488e59b606c8e77118a",
-      "componentType": "input.rotary-encoder-quadrature-v1",
-      "componentVersion": 1,
-      "modelId": "model.rotary-encoder-quadrature-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "input.rotary-encoder-quadrature-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 110,
-        "cssWidth": 128,
-        "renderer": "input-rotary-encoder-quadrature",
-        "thumbnail": "input-rotary-encoder-quadrature",
-        "viewBox": [
-          0,
-          0,
-          128,
-          110
-        ]
-      },
-      "rendererContractSha256": "70233214cea0c0d3af791f0d13e7a53d069c826a722b657235090fa2647809eb",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "detent": {
-            "default": 0,
-            "kind": "integer",
-            "maximum": 999,
-            "minimum": -999,
-            "mutability": "transition-only",
-            "unit": "detent"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.rotary-encoder-quadrature-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "pullMode": "input-pullup",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A",
-            "role": "digital-out",
-            "signals": [
-              "digital.quadrature-contact"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "COM",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "pullMode": "input-pullup",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "B",
-            "role": "digital-out",
-            "signals": [
-              "digital.quadrature-contact"
-            ]
-          }
-        ],
-        "properties": {
-          "encoding": {
-            "default": "gray-2bit",
-            "kind": "enum",
-            "values": [
-              "gray-2bit"
-            ]
-          },
-          "pullMode": {
-            "default": "input-pullup",
-            "kind": "enum",
-            "values": [
-              "input-pullup"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "A and B must connect directly to the supported AVR external-interrupt pins D2 and D3, one unique phase per pin; COM must connect directly to board ground.",
-            "Each detent emits the deterministic ideal Gray sequence CW 11→01→00→10→11 or CCW 11→10→00→01→11 at 16,000 cycles per phase.",
-            "A/B are open contacts read HIGH through firmware INPUT_PULLUP and close LOW to COM. Firmware must decode the transitions; the UI never writes a counter value.",
-            "No contact bounce, resistance, acceleration, missed edges, shaft switch, mechanical timing or physical detent behavior is modelled."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "64a10bc430af43a501afcd5a5e9b8cbf82ab39c5a0f575014940a26c1c5fb771",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "2e742419c199114d89e49c9e97cb873fe1a7a48038763b87b6ac8121114fcff3",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "3935c5cce2b35750e379a9e584d1e435a45310af9e71b2ec659fa1069515b0df",
-      "componentType": "output.active-buzzer-module-v1",
-      "componentVersion": 1,
-      "modelId": "model.active-buzzer-logical-enable-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "output.active-buzzer-module-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "output-active-buzzer-module",
-        "thumbnail": "output-active-buzzer-module",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "b1da623cd44588659ca208b9c9e6c06b40a5506cbfe8ec1b1d2ad93ac0e5fdf1",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.active-buzzer-logical-enable-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "activeLevel": "HIGH",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "EN",
-            "role": "digital-in",
-            "signals": [
-              "digital.high-active-enable"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Ideal 5 V active-buzzer module with a high-active, high-impedance EN input on one direct AVR D2–D13 GPIO output.",
-            "The existing runtime GPIO state drives a silent visual enabled/disabled indicator; no browser audio is produced.",
-            "No oscillator, waveform, frequency, duty-to-tone, sound pressure, supply current, GPIO current, loading, tolerance, resonance, thermal or physical acoustic accuracy is modelled."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "a2165819e146e0ed027e50c802ef5ca7f3e5c3c460868b94d68ee9a925e3d44e",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "fc4d8fd35df4fb8c4daf4ca37c67874289dc6d4b295d6828167fa378cc9c0057",
-      "componentType": "output.character-lcd-16x2-4bit-v1",
-      "componentVersion": 1,
-      "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "output.character-lcd-16x2-4bit-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 130,
-        "cssWidth": 220,
-        "renderer": "output-character-lcd-16x2-4bit",
-        "thumbnail": "output-character-lcd-16x2-4bit",
-        "viewBox": [
-          0,
-          0,
-          220,
-          130
-        ]
-      },
-      "rendererContractSha256": "19637bb2f2c867f15a8beacf073e019373e97e82b045d4f9c62658df9d12f3f9",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "RS",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-register-select"
-            ]
-          },
-          {
-            "constraints": {
-              "requiredLevel": "LOW",
-              "writeOnly": true
-            },
-            "id": "RW",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "latchEdge": "falling",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "E",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-enable"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 4,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D4",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 5,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D5",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 6,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D6",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 7,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D7",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Bounded HD44780-style write-only 4-bit decoder for one 16×2 display. VCC requires 5 V, GND and RW require ground, and RS, E and D4–D7 require six unique direct AVR D2–D13 outputs.",
-            "Supported initialization is 0x3,0x3,0x3,0x2 followed by commands 0x28,0x0C,0x06,0x01 with enforced power-on, enable-pulse and instruction timing. Supported runtime commands are clear, home, 4-bit/2-line function set, display-on, increment entry mode and visible DDRAM addresses.",
-            "Printable ASCII 0x20–0x7E is rendered. Reads, busy flag, RW-high operation, custom glyphs/CGRAM, cursor or blink modes, display shifts, automatic line wrapping, 8-bit mode, I²C, backpacks, contrast, backlight, current and physical timing tolerances are unsupported."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "7b5ae575ea2513ecc0452e086a6c321db93bd1299d2d1a2c8bc1b7def5e2b132",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "88dbbecaf28208ca176010d4fc59228d5725ec410b938e3bd9596e92e14ad1e5",
-      "componentType": "output.rgb-led-common-cathode-v1",
-      "componentVersion": 1,
-      "modelId": "model.rgb-led-common-cathode-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "output.rgb-led-common-cathode-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "output-rgb-led-common-cathode",
-        "thumbnail": "output-rgb-led-common-cathode",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "604f4f8f4fa53fe6e2bbfb9dd6e11886d92c5079ec4e44ba5f1ebcc93a4a3a3a",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.rgb-led-common-cathode-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "channel": "red",
-              "polarity": "anode",
-              "requiresSeriesResistor": true
-            },
-            "id": "R",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-channel"
-            ]
-          },
-          {
-            "constraints": {
-              "channel": "green",
-              "polarity": "anode",
-              "requiresSeriesResistor": true
-            },
-            "id": "G",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-channel"
-            ]
-          },
-          {
-            "constraints": {
-              "channel": "blue",
-              "polarity": "anode",
-              "requiresSeriesResistor": true
-            },
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-channel"
-            ]
-          },
-          {
-            "constraints": {
-              "commonCathode": true,
-              "polarity": "cathode"
-            },
-            "id": "COM",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Ideal common-cathode teaching model projected through three independently validated existing LED channels.",
-            "R, G and B each require one dedicated external series resistor and one supported AVR PWM output: D3, D5, D6, D9, D10 or D11; COM must connect to ground.",
-            "Displayed colour is only the commanded relative PWM mix. No wavelength, luminous intensity, optical mixing, current matching, tolerance, thermal or physical colour accuracy is claimed."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "6302f0b958d0b9d30326cc61cc50073eec36aa9ff60ca07e103afa5a107d7ed2",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "276e79c4837228dc172ad2c0f04d954eeda50dc09999edcd9390a5607525e512",
-      "componentType": "output.seven-segment-common-cathode-v1",
-      "componentVersion": 1,
-      "modelId": "model.seven-segment-common-cathode-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "output.seven-segment-common-cathode-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 120,
-        "cssWidth": 160,
-        "renderer": "output-seven-segment-common-cathode",
-        "thumbnail": "output-seven-segment-common-cathode",
-        "viewBox": [
-          0,
-          0,
-          160,
-          120
-        ]
-      },
-      "rendererContractSha256": "e8a6732efecaadfeafa61e941e596e7707552879d71eeba9fed1dc42e95a9ba2",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.seven-segment-common-cathode-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "a"
-            },
-            "id": "a",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "b"
-            },
-            "id": "b",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "c"
-            },
-            "id": "c",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "d"
-            },
-            "id": "d",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "e"
-            },
-            "id": "e",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "f"
-            },
-            "id": "f",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "g"
-            },
-            "id": "g",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "commonCathode": true,
-              "polarity": "cathode"
-            },
-            "id": "COM",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Ideal single-digit common-cathode teaching model projected through seven independently validated existing LED channels.",
-            "Segments a through g each require one dedicated external series resistor and one unique AVR D2–D13 digital output; COM must connect to ground.",
-            "Only commanded segment on/off state is shown. No decimal point, multiplexing, driver IC, brightness, optical, package-current, tolerance, thermal or physical display accuracy is modelled."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "11e0e7c4cf2ffd2a74ee9a13133aed906c24894a9be78a3e37a316d84695a668",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "209f84934c9174f1a5426022b28df648b4446a1533b44fc1df29e4555b0c7541",
-      "componentType": "potentiometer.linear-v1",
-      "componentVersion": 1,
-      "modelId": "model.pot-divider-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "potentiometer.linear-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 110,
-        "renderer": "potentiometer-rotary",
-        "thumbnail": "potentiometer-rotary",
-        "viewBox": [
-          0,
-          0,
-          110,
-          100
-        ]
-      },
-      "rendererContractSha256": "7b1688b9b69b5de9bd7079abb2617d13dd9844132d5e26564d3d5497cb314f21",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "position": {
-            "default": 0.5,
-            "kind": "number",
-            "maximum": 1,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "ratio"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.pot-divider-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "HIGH",
-            "role": "passive",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "WIPER",
-            "role": "passive",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "LOW",
-            "role": "passive",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 10000,
-            "kind": "number",
-            "maximum": 10000000,
-            "minimum": 1,
-            "unit": "Ω"
-          },
-          "taper": {
-            "default": "linear",
-            "kind": "enum",
-            "values": [
-              "linear"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Linear 5 V divider only; no loading, tolerance or non-linear taper model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "b1707fc143253ab9a0af55d379e6d9c155b31030c1e1fed48924ef1cf326ec03",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "1391b87ba9023e104ba8584b3161c921c873bece0cc4017131b8595b1dec2999",
-      "componentType": "reference.ground-v1",
-      "componentVersion": 1,
-      "modelId": "model.ground-reference-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "reference.ground-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 72,
-        "cssWidth": 72,
-        "renderer": "ground-reference-symbol",
-        "thumbnail": "ground-reference-symbol",
-        "viewBox": [
-          0,
-          0,
-          72,
-          72
-        ]
-      },
-      "rendererContractSha256": "6068255d29e2e1dabe95c75167d28efdc19694a376c532b6ebab6caa0b19cee2",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.ground-reference-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "REF",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {
-          "potentialVolts": {
-            "default": 0,
-            "kind": "number",
-            "maximum": 0,
-            "minimum": 0,
-            "unit": "V"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded to one-controller 5 V AVR teaching circuits with at most three independent reference nets.",
-            "Represents circuit 0 V only; it is not earth, chassis or protective ground.",
-            "Does not source voltage or current and does not model ground loops or multiple reference domains."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "a8b939586b60a0b5269e9cf262aba2fa4af9e27a9aae6c789883ca22737f61fc",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "cc3d2efda16e12a81d66ee50c8c6028e1a9e63732c4923967beb3a9e0d9a0afe",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "794f1fc64447ab86d20a8994d815a3d596fb1110ad7e489ece21329be8bb25d7",
-      "componentType": "sensor.light-analogue-v1",
-      "componentVersion": 1,
-      "modelId": "model.light-analogue-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "sensor.light-analogue-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "sensor-light-analogue",
-        "thumbnail": "sensor-light-analogue",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "e99a821f74da1c8a615eeb2f8b4cc14e6fc3c3a1503c1493f81b7b844d3c06d1",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "lightLevel": {
-            "default": 0.5,
-            "kind": "number",
-            "maximum": 1,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "ratio"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.light-analogue-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "AOUT",
-            "role": "analogue-out",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Idealized module signal only: light level maps linearly to 0–5 V on AOUT from a fixed 5 V supply.",
-            "No lux calibration, physical LDR curve, loading, tolerance, noise, response time or ambient-light physics is modelled.",
-            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "32d8032d88d3eb95ebf781d53fbecbceef5a2bcd03a36d76f0987ac78082ed85",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "80f133ce1b905d652bdf39dd5475d612e263a91222af3bd9626082400bacd155",
-      "componentType": "sensor.light-threshold-digital-v1",
-      "componentVersion": 1,
-      "modelId": "model.light-threshold-digital-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "sensor.light-threshold-digital-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "sensor-light-threshold-digital",
-        "thumbnail": "sensor-light-threshold-digital",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "fe677e716d3f419d2848da150cad49ae9ab7db1e82abec49cb117728de114a5a",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "hysteresisPercentagePoints": {
-            "default": 5,
-            "kind": "number",
-            "maximum": 10,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "percentage-point"
-          },
-          "lightLevelPercent": {
-            "default": 40,
-            "kind": "number",
-            "maximum": 100,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "%"
-          },
-          "outputActive": {
-            "default": false,
-            "kind": "boolean",
-            "mutability": "derived"
-          },
-          "thresholdPercent": {
-            "default": 50,
-            "kind": "number",
-            "maximum": 100,
-            "minimum": 10,
-            "mutability": "authored",
-            "unit": "%"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.light-threshold-digital-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "DOUT",
-            "role": "digital-out",
-            "signals": [
-              "digital.active-low"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Generic idealized signal only: input and threshold are percentages; hysteresis is measured in percentage points.",
-            "DOUT is active LOW: it activates at input >= threshold, deactivates at input <= threshold - hysteresis, and retains its prior state inside that band.",
-            "No lux calibration, physical detector curve, propagation delay, electrical loading, tolerance, noise or ambient-light physics is modelled.",
-            "DOUT must connect directly and exclusively to one D2–D12 INPUT_PULLUP pin on the supported 5 V AVR controller."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "af209039275b9cecebaee139b829e911fb3d0d6eb2f8dd15edd40bcde1baa992",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "17974f0d34bd4b3c7c1dd896e112163ef0624ae4e3e0aaa2b462831adba1e238",
-      "componentType": "sensor.temperature-analogue-v1",
-      "componentVersion": 1,
-      "modelId": "model.temperature-analogue-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "sensor.temperature-analogue-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "sensor-temperature-analogue",
-        "thumbnail": "sensor-temperature-analogue",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "56771edd9c32a5600ea97fdd7871bbb5575b8640f24838a2a575c3abffac3310",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "temperatureC": {
-            "default": 25,
-            "kind": "number",
-            "maximum": 150,
-            "minimum": -50,
-            "mutability": "authored",
-            "unit": "°C"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.temperature-analogue-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "AOUT",
-            "role": "analogue-out",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Idealized generic module only: -50 to 150 °C maps linearly to 0–5 V using AOUT = (temperatureC + 50) / 40 V.",
-            "No physical-sensor accuracy, calibration error, self-heating, thermal lag, loading, tolerance or noise is modelled.",
-            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "83428743da39b176d458a323047645d234dcdebfac4a2622fb53cea123e2ee99",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "6719456345f44ee2d9e6b006a2b488a519cd3c455537b7d1f25bdd6e0bfdbe78",
-      "componentType": "switch.changeover-spdt-v1",
-      "componentVersion": 1,
-      "modelId": "model.switch-changeover-spdt-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "switch.changeover-spdt-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 120,
-        "cssWidth": 180,
-        "renderer": "switch-changeover-spdt",
-        "thumbnail": "switch-changeover-spdt",
-        "viewBox": [
-          0,
-          0,
-          150,
-          100
-        ]
-      },
-      "rendererContractSha256": "66c9bcef1d82302791e8f4d5f84a7c97e1f3ffdda220b1119630ece57c457113",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "selectedThrow": {
-            "default": "A",
-            "kind": "enum",
-            "mutability": "authored",
-            "values": [
-              "A",
-              "B"
-            ]
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.switch-changeover-spdt-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "COM",
-            "role": "passive",
-            "signals": []
-          },
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": []
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": []
-          }
-        ],
-        "properties": {
-          "transitionPolicy": {
-            "default": "break-before-make",
-            "kind": "enum",
-            "values": [
-              "break-before-make"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Only one AVR digital-input COM selecting a direct GND or 5 V throw is simulated.",
-            "BREAK uses the INPUT_PULLUP release level; generic high-impedance and analogue contact networks are rejected.",
-            "No bounce, resistance, delay, arcing, current rating or output-drive inference is modelled."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "3b1af60efa5006c701d4e21d15e0660319075641918b95595f320281cdb9ad44",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "f1b4fae7dbd0af50b9f2c49951c4cfe50e12f48968008d7f261beeb7f763b8c5",
-      "componentType": "switch.toggle-spst-v1",
-      "componentVersion": 1,
-      "modelId": "model.switch-toggle-spst-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "switch.toggle-spst-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 82,
-        "cssWidth": 112,
-        "renderer": "switch-toggle-spst",
-        "thumbnail": "switch-toggle-spst",
-        "viewBox": [
-          0,
-          0,
-          112,
-          82
-        ]
-      },
-      "rendererContractSha256": "9cd549733a3df4fa1a9f1e9a20035150c9474ca697ed396ef05161f398f5abde",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "closed": {
-            "default": false,
-            "kind": "boolean",
-            "mutability": "authored"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.switch-toggle-spst-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "normallyOpen": {
-            "default": true,
-            "kind": "boolean"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Ideal latching normally-open SPST contact in the existing 0–5 V AVR digital-input topology.",
-            "No contact bounce, resistance, current rating, arcing or mechanical wear model.",
-            "Not an SPDT selector, mains switch or physical-safety model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "9173550bff2f8d5b71cfdbaaef97b9a20e734a7f05678c1a029ee5d6d6e02a0f",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "edb6cb99679b11cb825a186ade5dace1bb3ec43edc57838bc9c3e31b7143e8c0",
-      "componentType": "board.esp32-c3-devmodule-v1",
-      "componentVersion": 1,
-      "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "board.esp32-c3-devmodule-v1-state-v1",
-        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
-      },
-      "profile": "board.esp32-c3-devmodule-v1",
-      "renderer": {
-        "cssHeight": 220,
-        "cssWidth": 160,
-        "renderer": "board-esp32-c3-profile",
-        "thumbnail": "board-esp32-c3-profile",
-        "viewBox": [
-          0,
-          0,
-          160,
-          220
-        ]
-      },
-      "rendererContractSha256": "95b58544ffb4f3a11a9eb2514ed269bc0464d7b2bd3e1e7f50dda1839c841974",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "connector": "J1",
-              "physicalPin": 4,
-              "strappingPin": true,
-              "voltageMax": 3.3,
-              "voltageMin": 0
-            },
-            "id": "GPIO2",
-            "role": "digital-io",
-            "signals": [
-              "digital.output"
-            ]
-          },
-          {
-            "constraints": {
-              "connector": "J1",
-              "physicalPin": 6
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Actual QEMU CPU/UART is separate from this executed-register-write GPIO2 project model.",
-            "GPIO2 is a strapping pin; this bounded teaching path is not physical-board equivalence."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "47f21637431be47217854b63ded12bc182b93af75d0f25cd8a36c05d7ee0a74d",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "2fe666c0ee52d5bfbbd79aee73b0f9c12dbefbb70b5bfc0229abddd57ba129a2",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
-      },
-      "profile": "board.esp32-c3-devmodule-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "4e9294fc0eb1cad93ab4d302c4efa0541edb5d8c14c15a495a83df21290b7f31",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
-      },
-      "profile": "board.esp32-c3-devmodule-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "56609d3915fb27cd49c5b7582413245bf59567019591f363a061f815edcc65e5",
-      "componentType": "board.rp2040-pico-v1",
-      "componentVersion": 1,
-      "modelId": "model.rp2040-pico-gpio0-public-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "board.rp2040-pico-v1-state-v1",
-        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
-      },
-      "profile": "board.rp2040-pico-v1",
-      "renderer": {
-        "cssHeight": 300,
-        "cssWidth": 132,
-        "renderer": "board-rp2040-pico",
-        "thumbnail": "board-rp2040-pico",
-        "viewBox": [
-          0,
-          0,
-          132,
-          300
-        ]
-      },
-      "rendererContractSha256": "52d6e473d0ddb6e77f4299987759cf671fcc9d7025d827651d9220935605250c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.rp2040-pico-gpio0-public-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "physicalPin": 1,
-              "voltageMax": 3.3,
-              "voltageMin": 0
-            },
-            "id": "GP0",
-            "role": "digital-io",
-            "signals": [
-              "digital.output",
-              "pwm.output"
-            ]
-          },
-          {
-            "constraints": {
-              "physicalPin": 3
-            },
-            "id": "GND3",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Public bounded GPIO0 output circuit subset only; no complete board or physical-hardware equivalence.",
-            "GPIO25 is the onboard LED connection and is intentionally not exposed as a header anchor."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "981d93d732c94ee648051dab6505f97712f18d7ecd26544102ee58239f72c265",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "70c9da28bb0f5a8303fc79ffb7cff2a9b8922f08b598337518b87b6fb9f71bee",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
-      },
-      "profile": "board.rp2040-pico-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "489421b0b86f394c370eb0ae30dd028a6c15509714f5ef3163023fb4446109ad",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
-      },
-      "profile": "board.rp2040-pico-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "199999085186cf8ffb9e0313d2f204875fca426f35d3be05983c3e433090ef47",
-      "componentType": "board.stm32f429zi-nucleo144-v1",
-      "componentVersion": 1,
-      "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "board.stm32f429zi-nucleo144-v1-state-v1",
-        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
-      },
-      "profile": "board.stm32f429zi-nucleo144-v1",
-      "renderer": {
-        "cssHeight": 230,
-        "cssWidth": 190,
-        "renderer": "board-stm32f429zi-profile",
-        "thumbnail": "board-stm32f429zi-profile",
-        "viewBox": [
-          0,
-          0,
-          190,
-          230
-        ]
-      },
-      "rendererContractSha256": "5d3909f79e7ac00abfde9bc6d67044203ca6f262f7c17d28781331c6aec46de3",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "connector": "CN11",
-              "physicalPin": 34,
-              "voltageMax": 3.3,
-              "voltageMin": 0
-            },
-            "id": "PB0",
-            "role": "digital-io",
-            "signals": [
-              "digital.output"
-            ]
-          },
-          {
-            "constraints": {
-              "connector": "CN11",
-              "physicalPin": 35
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Public bounded PB0 and USART3 subset only; no complete board or physical-hardware equivalence.",
-            "The external resistor and LED are an ideal teaching circuit driven by actual Renode-observed PB0."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "4f2061383d5c2011fae731719a9e8a50883d1c37bcf8e607c56a6d2550310a76",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "f6f353d90f0f926d18e75356b091c2729c3b716eb05fb741c24a594ed9285429",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
-      },
-      "profile": "board.stm32f429zi-nucleo144-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "ba09c083f20e1c6e7ced072b4f4176a0c6335400b76dff95feede6fcccfab66e",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
-      },
-      "profile": "board.stm32f429zi-nucleo144-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    }
-  ],
-  "implementationId": "intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16",
-  "implementationMembers": [
-    {
-      "path": "src/component-catalog.mjs",
-      "sha256": "d461c7f52e591f2937518dd7cc30f9fdfd915cd9c6104624364d2236ecf1d236"
-    },
-    {
-      "path": "src/circuit-engine.mjs",
-      "sha256": "87ebd90e9ebb32c8fd7dbc8d7b3c9e8108bf834278b6592729334a0301f48166"
-    },
-    {
-      "path": "src/runtime-kernel.mjs",
-      "sha256": "b1bb960f9a60b37652318cd8a87c189e9a791603a705eb17710ff640a202efd7"
-    },
-    {
-      "path": "src/atmega328p-adapter.mjs",
-      "sha256": "65136d0b607336db992ba7dab81447813331b103136ec7c5348e6fc1ca9300de"
-    },
-    {
-      "path": "src/x43-avr-stack-profile.mjs",
-      "sha256": "daab81af7d7af8ccec2749328bcd1deae2e7f0e7a785af8ce726ba9efbee6758"
-    },
-    {
-      "path": "src/x43-avr-heap-profile.mjs",
-      "sha256": "4f26c5cc3b55950de3a27af6c6dce679b9dcea4a56aa5e2b82b65759d1102056"
-    },
-    {
-      "path": "compiler/avr-allocator-provenance.mjs",
-      "sha256": "831c1f17dce07618d94584155315f5547cb79dd28e25488d2dd5ccb1b26c9266"
-    },
-    {
-      "path": "compiler/build-coordinator.mjs",
-      "sha256": "7e4a03b6111c7b87b0e49b6813fef53059acd80405285ebc723ffa41e8440ffd"
-    },
-    {
-      "path": "compiler/build-worker.mjs",
-      "sha256": "355f3f611d1095f8c9458d62892cef8c862aaeefd3e2a5d25121c6273caee738"
-    },
-    {
-      "path": "compiler/build-protocol.mjs",
-      "sha256": "a434642391598b05c592e6df4f8eef792f235df5017156c03def65da9f12b4bb"
-    },
-    {
-      "path": "Dockerfile.toolchain",
-      "sha256": "dfa1519879b0169583c3490aec9cc396ff0690bfad1ffdcaef263a91749708f1"
-    },
-    {
-      "path": "src/x47-runtime-transaction.mjs",
-      "sha256": "34b90ff05ee63b97ff88ef18d70efdc0bcaf6814f57940ab3580e894caa108e6"
-    },
-    {
-      "path": "src/x47-ui-integration.mjs",
-      "sha256": "baee930e2a369b091f2b3237fca815928d7d87d91ce9cc962aef72f09e92b3d3"
-    },
-    {
-      "path": "src/strict-json.mjs",
-      "sha256": "2a8bcfeed40b56f44d771ddbd2bad77b7ce17698e7f9f608afae8e828d8cb5e5"
-    },
-    {
-      "path": "src/component-appearance.mjs",
-      "sha256": "4c6b62483e52e1f48cf16c48f3b3de57ac99296ccec443d7efdfc3678c04add7"
-    },
-    {
-      "path": "src/project-v2.mjs",
-      "sha256": "453422102ebb64cb1485687d37d2c75155d63e231cf16c7e4a9ba2f86e7b9ca0"
-    },
-    {
-      "path": "src/project-editor.mjs",
-      "sha256": "d50ad45104b980a44b7ab3a62d4da749b54646d6c1eb5327b5447dd098a18ce4"
-    },
-    {
-      "path": "src/lifecycle.mjs",
-      "sha256": "4772e4491d4feb853673d6c8caeee9eb58ece4756805b92638342a5fcd7889d6"
-    },
-    {
-      "path": "staging/component-artwork.mjs",
-      "sha256": "b038661a2d7a26266d0602bb9ccb124cceb17b577ccaf66228db90441f49fdfc"
-    },
-    {
-      "path": "src/model-library.mjs",
-      "sha256": "ed6b2115f4081fd75179b87f3e499552e61ea2042bc955f9fe16607e6b32ea28"
-    },
-    {
-      "path": "src/model-bundle-registry.mjs",
-      "sha256": "243176edaa2f568340702f677e0f7a049c0cd5164424fe7cd1d6a5bf7dcc00a9"
-    },
-    {
-      "path": "src/project-envelope.mjs",
-      "sha256": "ff4ab3f6680d2b5f0c6aabc16537062465fc85381d4b6d1fc642a39a14094adf"
-    },
-    {
-      "path": "src/model-control-contracts.mjs",
-      "sha256": "138d6f0b76abc3b1a509b741e581030192d91923864c8f804f42c32ef82abaa4"
-    },
-    {
-      "path": "src/simulator.worker.mjs",
-      "sha256": "7de0aac12d59c7fac8c12c68a555555bb8e68442389f8a46cfa358898e1e49fd"
-    },
-    {
-      "path": "staging/main.mjs",
-      "sha256": "0ef10fe0eb0759db2bdca4b7eaf75c3a4144cb36f68d918d3d41d9e57ad711ee"
-    },
-    {
-      "path": "src/rp2040-snapshot-pacer.mjs",
-      "sha256": "cc6ae6a1ba2ccf30382d4eefdd547de81c0053c6923e978b5e0dcf18c2a53b7e"
-    },
-    {
-      "path": "src/rp2040-experimental-runtime.mjs",
-      "sha256": "93463965a8f379afdea256f270f2efb2876d9ec8ddff7f9e9676d7a7ad82a10d"
-    },
-    {
-      "path": "src/runtime-identity.mjs",
-      "sha256": "dcd4e0df743d6310a6661cc3a2cf6b2d2879e33a3b82a3dd8620570c689231e8"
-    },
-    {
-      "path": "src/candidate-project-session.mjs",
-      "sha256": "079a528132787c424d12ec8b7514eb075ce11086f5e2962b8553e6fb4a1de43d"
-    },
-    {
-      "path": "src/candidate-spdt-runtime.mjs",
-      "sha256": "cac63a72f4e0a8b67468d638d5ae9cf8bf49a76420e62d648bb4745bf9d8de31"
-    },
-    {
-      "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "5d60089e6da394f332410b54e270d8620cde812ea3d48d0005622348838426bf"
-    },
-    {
-      "path": "src/rp2040-pico-circuit.mjs",
-      "sha256": "9ba0ac0a14f5c33c16d43f6a7eb7313a657b36bf10cfe13ea24cd893625524f0"
-    },
-    {
-      "path": "src/esp32c3-public-circuit.mjs",
-      "sha256": "47fad0c2e060118a986cf08b6a83a24e8e0d955fa15fe4a3f399a51e51179b66"
-    },
-    {
-      "path": "src/stm32-public-circuit.mjs",
-      "sha256": "12873127b49d7c9c65f79b52228fee0d0419f2f7a8856aac0c7b0dc528001988"
-    },
-    {
-      "path": "src/rp2040-public-workbench.mjs",
-      "sha256": "c04d0beb03c037ad02f20e3fa8271306ff3f954b6575e6c84bea96ed231219af"
-    },
-    {
-      "path": "src/esp32c3-public-workbench.mjs",
-      "sha256": "f3a21835f0125df0948397aa32f276c66f5601d08064cd12cc584b65b001e76a"
-    },
-    {
-      "path": "src/stm32-public-workbench.mjs",
-      "sha256": "cd52cbfa009e847080f27bbc401eac344d9795e08ef9177efdd43d4042a99672"
-    },
-    {
-      "path": "expansion-drafts/controller-runtime-bridge-v1.mjs",
-      "sha256": "670767df34464eb8fb47037bf44f4911545ea58941832c81fb842eaba5793278"
-    },
-    {
-      "path": "expansion-drafts/rp2040-runtime-bridge-adapter-v1.mjs",
-      "sha256": "4b7496cd38a995bcecfb3b3456edce10f0d671606f0fa3d6c36e99762ee2ac56"
-    },
-    {
-      "path": "expansion-drafts/rp2040-conformance-fixtures-v1.mjs",
-      "sha256": "3d8eb99253b2c91876b6ac678838a2cf35b72e5261362be94575f364ac962bb9"
-    },
-    {
-      "path": "expansion-drafts/rp2040-firmware-artifact-v1.mjs",
-      "sha256": "7f08aa59de5e69eddd5e1a4cfd7c1e900f898d7c65425eb6274247058c53430b"
-    },
-    {
-      "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "bca551ac31347c998a849f62ad3989b47a4b5f0471fce58d36a6c64d1b288746"
-    },
-    {
-      "path": "expansion-drafts/ground-reference-integration-v1.mjs",
-      "sha256": "59dc3833915afbec325b2d06e815c3250ad858ad1769da03c509ae7e3cd38958"
-    },
-    {
-      "path": "expansion-drafts/toggle-switch-integration-v1.mjs",
-      "sha256": "90fcaad32074957021ffe5bde973c81c08a3dd0f345495ab169218416dc0e389"
-    },
-    {
-      "path": "expansion-drafts/switch-contact-graph-v1.mjs",
-      "sha256": "073a5079335b222c53410971dcab42324cfa3ad639cc4b57a879fbe6efa476d2"
-    },
-    {
-      "path": "expansion-drafts/ideal-three-pin-analogue-module-v1.mjs",
-      "sha256": "383caf45e17281997b5b6e6f8a63bde660e19a1e48e1d0be1c137a8d36c187d3"
-    },
-    {
-      "path": "expansion-drafts/light-analogue-sensor-v1.mjs",
-      "sha256": "1a6efe15ec9b955f2824b711d32ea5d310d7966a223f8366031158514db24fbc"
-    },
-    {
-      "path": "expansion-drafts/temperature-analogue-sensor-v1.mjs",
-      "sha256": "5f3290f865e79ecf7362ea6b6ea667d9e01670a5daabb1b1cf70e977a6307817"
-    },
-    {
-      "path": "expansion-drafts/digital-light-threshold-module-v1.mjs",
-      "sha256": "f3a203a7c92e412a615599e6b0dbca9a84af3c15843c47e7bedc3a8f4d48d2bd"
-    },
-    {
-      "path": "expansion-drafts/common-cathode-rgb-led-v1.mjs",
-      "sha256": "42d045d2882ed745c4f2895d21bc0683582ce185c03b1dce9b854f98389f69d1"
-    },
-    {
-      "path": "expansion-drafts/active-buzzer-module-v1.mjs",
-      "sha256": "aa8bd1dc352a689ebcf0443cc2595426cdcf46396b1bc47b742c3731b2dafe94"
-    },
-    {
-      "path": "expansion-drafts/seven-segment-common-cathode-v1.mjs",
-      "sha256": "5d2b30cdfcfd48ad8dfc6e767ac9c9ee2825018e94980cf8915d5550b7d69905"
-    },
-    {
-      "path": "expansion-drafts/character-lcd-16x2-4bit-v1.mjs",
-      "sha256": "463871c751ee4e7857d46ceb75500f417c59a59af331535e8e3b2c87d17b27ee"
-    },
-    {
-      "path": "expansion-drafts/rotary-encoder-quadrature-v1.mjs",
-      "sha256": "0671974cb26e5447db07266f2e6a85a1f4fdd2fb8463453aa274987177167ac8"
-    },
-    {
-      "path": "src/model-library-current-resolver.mjs",
-      "sha256": "507f8378e54bc5ff952a10f928ed3a92a78c8de5444843cd3b985160f5175e46"
-    }
-  ],
-  "implementationSha256": "49d0cd75ed6b9996dc0b6e107b7e7ba4f08ae2d61b48eac74a77e78eff5b19c4",
-  "libraryId": "intent-mcu-public-models",
-  "lineage": {
-    "baselineClosureDisposition": "accepted public rc.98 identity remains immutable and migration-only",
-    "compatibility": "explicit-data-only-migration; runtime-and-verdict-authority-cleared",
-    "presentationDisposition": "no UI change; future private compiler diagnostics can identify owner-format classes without exposing raw paths",
-    "priorManifestSha256": "75b8dbfbd52d7af3ce2a30d8711936c9c1c6ea06913da0ce8bbc9f8d18c84b65",
-    "priorVersion": "2.0.0-x43-heap-worker-package-fix.1-current",
-    "semanticDisposition": "component, electrical, runtime and strict allocator-provenance acceptance semantics are unchanged; unavailable owner evidence gains bounded classification and hashes"
-  },
-  "manifestSha256": "3b1651d52064f62c74028797a1b2f93c466c6c8b4521febb6befed4c4c7799b8",
-  "runtimeContracts": [
-    "avr8js@0.21.1",
-    "rp2040js@1.4.0",
-    "esp32c3-qemu@project-pinned",
-    "renode@1.17.0"
-  ],
-  "schema": "intent-mcu-model-library-manifest@2",
-  "version": "2.0.0-x43-linker-proof-diagnostic.1-current"
-});
-export const PRE_X43_LINKER_PROOF_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
-  "entries": [
-    {
-      "behaviorContractSha256": "2ba168d8910b8f311611da20ae31eb49c9cdffa49a79c54a07a91c598b237018",
-      "componentType": "board.atmega328p-16mhz-v1",
-      "componentVersion": 1,
-      "modelId": "model.atmega328p-board-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "board.atmega328p-16mhz-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 150,
-        "cssWidth": 300,
-        "renderer": "board-atmega328p",
-        "thumbnail": "board-atmega328p",
-        "viewBox": [
-          0,
-          0,
-          160,
-          80
-        ]
-      },
-      "rendererContractSha256": "a3529e81b49ea07434d583dc701a609044326b0f716ba2ef665d87a2f52a018a",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.atmega328p-board-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D0",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D1",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D2",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D3",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D4",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D5",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D6",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D7",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D8",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D9",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D10",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D11",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D12",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D13",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A0",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A1",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A2",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A3",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A4",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A5",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "5V",
-            "role": "power-out",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "GND1",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "GND2",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "GND3",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Tested ATmega328P subset only; not complete physical-board equivalence."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "fc24be479f5217bd7f07e42dad258520ec1f58fda3da9e8086e775e38e431f29",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "eabf6f87858fa345ac20d840a6c936c23323a81ae75133538f6c8f5af2361d2f",
-      "componentType": "button.momentary-v1",
-      "componentVersion": 1,
-      "modelId": "model.button-momentary-no-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "button.momentary-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 78,
-        "cssWidth": 100,
-        "renderer": "button-tactile",
-        "thumbnail": "button-tactile",
-        "viewBox": [
-          0,
-          0,
-          100,
-          78
-        ]
-      },
-      "rendererContractSha256": "200542372ea2b0cef1bcf3187978e26955341815222422b2feebd0ee97eb6265",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "pressed": {
-            "default": false,
-            "kind": "boolean",
-            "mutability": "authored"
-          }
-        },
-        "internalTerminalGroups": [
-          {
-            "pin": "A",
-            "terminals": [
-              "A1",
-              "A2"
-            ]
-          },
-          {
-            "pin": "B",
-            "terminals": [
-              "B1",
-              "B2"
-            ]
-          }
-        ],
-        "modelId": "model.button-momentary-no-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "attachmentTerminal": "A1",
-              "terminals": [
-                "A1",
-                "A2"
-              ]
-            },
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "attachmentTerminal": "B1",
-              "terminals": [
-                "B1",
-                "B2"
-              ]
-            },
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "normallyOpen": {
-            "default": true,
-            "kind": "boolean"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Normally-open ideal contact; A1/A2 and B1/B2 are explicit internally common terminal groups."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "67034c86f1f01dbec2a7a87b40b650899edfaa9d5e26b18e27545e2067bab7d3",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "a69cdaff819bef72e787276c498c55ea0128b436fd87637283ebe94c4807a696",
-      "componentType": "input.rotary-encoder-quadrature-v1",
-      "componentVersion": 1,
-      "modelId": "model.rotary-encoder-quadrature-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "input.rotary-encoder-quadrature-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 110,
-        "cssWidth": 128,
-        "renderer": "input-rotary-encoder-quadrature",
-        "thumbnail": "input-rotary-encoder-quadrature",
-        "viewBox": [
-          0,
-          0,
-          128,
-          110
-        ]
-      },
-      "rendererContractSha256": "70233214cea0c0d3af791f0d13e7a53d069c826a722b657235090fa2647809eb",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "detent": {
-            "default": 0,
-            "kind": "integer",
-            "maximum": 999,
-            "minimum": -999,
-            "mutability": "transition-only",
-            "unit": "detent"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.rotary-encoder-quadrature-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "pullMode": "input-pullup",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A",
-            "role": "digital-out",
-            "signals": [
-              "digital.quadrature-contact"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "COM",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "pullMode": "input-pullup",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "B",
-            "role": "digital-out",
-            "signals": [
-              "digital.quadrature-contact"
-            ]
-          }
-        ],
-        "properties": {
-          "encoding": {
-            "default": "gray-2bit",
-            "kind": "enum",
-            "values": [
-              "gray-2bit"
-            ]
-          },
-          "pullMode": {
-            "default": "input-pullup",
-            "kind": "enum",
-            "values": [
-              "input-pullup"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "A and B must connect directly to the supported AVR external-interrupt pins D2 and D3, one unique phase per pin; COM must connect directly to board ground.",
-            "Each detent emits the deterministic ideal Gray sequence CW 11→01→00→10→11 or CCW 11→10→00→01→11 at 16,000 cycles per phase.",
-            "A/B are open contacts read HIGH through firmware INPUT_PULLUP and close LOW to COM. Firmware must decode the transitions; the UI never writes a counter value.",
-            "No contact bounce, resistance, acceleration, missed edges, shaft switch, mechanical timing or physical detent behavior is modelled."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "64a10bc430af43a501afcd5a5e9b8cbf82ab39c5a0f575014940a26c1c5fb771",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "7f3b718dac33bfaf1718fa5daa219960273ade7103086fa4cd79c451922ad2fa",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "5462475d3b90bf20ec9baa1ffbd46a96b958dc35db9e57a6b558f750e932394d",
-      "componentType": "output.active-buzzer-module-v1",
-      "componentVersion": 1,
-      "modelId": "model.active-buzzer-logical-enable-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "output.active-buzzer-module-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "output-active-buzzer-module",
-        "thumbnail": "output-active-buzzer-module",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "b1da623cd44588659ca208b9c9e6c06b40a5506cbfe8ec1b1d2ad93ac0e5fdf1",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.active-buzzer-logical-enable-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "activeLevel": "HIGH",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "EN",
-            "role": "digital-in",
-            "signals": [
-              "digital.high-active-enable"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Ideal 5 V active-buzzer module with a high-active, high-impedance EN input on one direct AVR D2–D13 GPIO output.",
-            "The existing runtime GPIO state drives a silent visual enabled/disabled indicator; no browser audio is produced.",
-            "No oscillator, waveform, frequency, duty-to-tone, sound pressure, supply current, GPIO current, loading, tolerance, resonance, thermal or physical acoustic accuracy is modelled."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "a2165819e146e0ed027e50c802ef5ca7f3e5c3c460868b94d68ee9a925e3d44e",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "b1db50ad06e4a26699b2f10a3f56e2b8c5ff8c4015490c53833d1f040fa3c3c4",
-      "componentType": "output.character-lcd-16x2-4bit-v1",
-      "componentVersion": 1,
-      "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "output.character-lcd-16x2-4bit-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 130,
-        "cssWidth": 220,
-        "renderer": "output-character-lcd-16x2-4bit",
-        "thumbnail": "output-character-lcd-16x2-4bit",
-        "viewBox": [
-          0,
-          0,
-          220,
-          130
-        ]
-      },
-      "rendererContractSha256": "19637bb2f2c867f15a8beacf073e019373e97e82b045d4f9c62658df9d12f3f9",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "RS",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-register-select"
-            ]
-          },
-          {
-            "constraints": {
-              "requiredLevel": "LOW",
-              "writeOnly": true
-            },
-            "id": "RW",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "latchEdge": "falling",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "E",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-enable"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 4,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D4",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 5,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D5",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 6,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D6",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 7,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D7",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Bounded HD44780-style write-only 4-bit decoder for one 16×2 display. VCC requires 5 V, GND and RW require ground, and RS, E and D4–D7 require six unique direct AVR D2–D13 outputs.",
-            "Supported initialization is 0x3,0x3,0x3,0x2 followed by commands 0x28,0x0C,0x06,0x01 with enforced power-on, enable-pulse and instruction timing. Supported runtime commands are clear, home, 4-bit/2-line function set, display-on, increment entry mode and visible DDRAM addresses.",
-            "Printable ASCII 0x20–0x7E is rendered. Reads, busy flag, RW-high operation, custom glyphs/CGRAM, cursor or blink modes, display shifts, automatic line wrapping, 8-bit mode, I²C, backpacks, contrast, backlight, current and physical timing tolerances are unsupported."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "7b5ae575ea2513ecc0452e086a6c321db93bd1299d2d1a2c8bc1b7def5e2b132",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "601a1a447468cfbbcc8ee5ab82b1ca3e19f44eb4a09d116eef29e5a811f8d56d",
-      "componentType": "output.rgb-led-common-cathode-v1",
-      "componentVersion": 1,
-      "modelId": "model.rgb-led-common-cathode-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "output.rgb-led-common-cathode-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "output-rgb-led-common-cathode",
-        "thumbnail": "output-rgb-led-common-cathode",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "604f4f8f4fa53fe6e2bbfb9dd6e11886d92c5079ec4e44ba5f1ebcc93a4a3a3a",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.rgb-led-common-cathode-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "channel": "red",
-              "polarity": "anode",
-              "requiresSeriesResistor": true
-            },
-            "id": "R",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-channel"
-            ]
-          },
-          {
-            "constraints": {
-              "channel": "green",
-              "polarity": "anode",
-              "requiresSeriesResistor": true
-            },
-            "id": "G",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-channel"
-            ]
-          },
-          {
-            "constraints": {
-              "channel": "blue",
-              "polarity": "anode",
-              "requiresSeriesResistor": true
-            },
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-channel"
-            ]
-          },
-          {
-            "constraints": {
-              "commonCathode": true,
-              "polarity": "cathode"
-            },
-            "id": "COM",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Ideal common-cathode teaching model projected through three independently validated existing LED channels.",
-            "R, G and B each require one dedicated external series resistor and one supported AVR PWM output: D3, D5, D6, D9, D10 or D11; COM must connect to ground.",
-            "Displayed colour is only the commanded relative PWM mix. No wavelength, luminous intensity, optical mixing, current matching, tolerance, thermal or physical colour accuracy is claimed."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "6302f0b958d0b9d30326cc61cc50073eec36aa9ff60ca07e103afa5a107d7ed2",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "2be6038455eb7114a13ebe4c598f2603ead7c9dc4d94c95f4b63109d5aa02d33",
-      "componentType": "output.seven-segment-common-cathode-v1",
-      "componentVersion": 1,
-      "modelId": "model.seven-segment-common-cathode-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "output.seven-segment-common-cathode-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 120,
-        "cssWidth": 160,
-        "renderer": "output-seven-segment-common-cathode",
-        "thumbnail": "output-seven-segment-common-cathode",
-        "viewBox": [
-          0,
-          0,
-          160,
-          120
-        ]
-      },
-      "rendererContractSha256": "e8a6732efecaadfeafa61e941e596e7707552879d71eeba9fed1dc42e95a9ba2",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.seven-segment-common-cathode-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "a"
-            },
-            "id": "a",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "b"
-            },
-            "id": "b",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "c"
-            },
-            "id": "c",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "d"
-            },
-            "id": "d",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "e"
-            },
-            "id": "e",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "f"
-            },
-            "id": "f",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "g"
-            },
-            "id": "g",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "commonCathode": true,
-              "polarity": "cathode"
-            },
-            "id": "COM",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Ideal single-digit common-cathode teaching model projected through seven independently validated existing LED channels.",
-            "Segments a through g each require one dedicated external series resistor and one unique AVR D2–D13 digital output; COM must connect to ground.",
-            "Only commanded segment on/off state is shown. No decimal point, multiplexing, driver IC, brightness, optical, package-current, tolerance, thermal or physical display accuracy is modelled."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "11e0e7c4cf2ffd2a74ee9a13133aed906c24894a9be78a3e37a316d84695a668",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "053bd4b0ed55f8b46e7af621bd62faf585566e67fa438bfc2eb456cc092b2254",
-      "componentType": "potentiometer.linear-v1",
-      "componentVersion": 1,
-      "modelId": "model.pot-divider-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "potentiometer.linear-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 110,
-        "renderer": "potentiometer-rotary",
-        "thumbnail": "potentiometer-rotary",
-        "viewBox": [
-          0,
-          0,
-          110,
-          100
-        ]
-      },
-      "rendererContractSha256": "7b1688b9b69b5de9bd7079abb2617d13dd9844132d5e26564d3d5497cb314f21",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "position": {
-            "default": 0.5,
-            "kind": "number",
-            "maximum": 1,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "ratio"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.pot-divider-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "HIGH",
-            "role": "passive",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "WIPER",
-            "role": "passive",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "LOW",
-            "role": "passive",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 10000,
-            "kind": "number",
-            "maximum": 10000000,
-            "minimum": 1,
-            "unit": "Ω"
-          },
-          "taper": {
-            "default": "linear",
-            "kind": "enum",
-            "values": [
-              "linear"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Linear 5 V divider only; no loading, tolerance or non-linear taper model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "b1707fc143253ab9a0af55d379e6d9c155b31030c1e1fed48924ef1cf326ec03",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "a024ee38e6d670721d2a623a1e55e5bda5fdad8a4b7172f7771d5e208e9c62a9",
-      "componentType": "reference.ground-v1",
-      "componentVersion": 1,
-      "modelId": "model.ground-reference-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "reference.ground-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 72,
-        "cssWidth": 72,
-        "renderer": "ground-reference-symbol",
-        "thumbnail": "ground-reference-symbol",
-        "viewBox": [
-          0,
-          0,
-          72,
-          72
-        ]
-      },
-      "rendererContractSha256": "6068255d29e2e1dabe95c75167d28efdc19694a376c532b6ebab6caa0b19cee2",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.ground-reference-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "REF",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {
-          "potentialVolts": {
-            "default": 0,
-            "kind": "number",
-            "maximum": 0,
-            "minimum": 0,
-            "unit": "V"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded to one-controller 5 V AVR teaching circuits with at most three independent reference nets.",
-            "Represents circuit 0 V only; it is not earth, chassis or protective ground.",
-            "Does not source voltage or current and does not model ground loops or multiple reference domains."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "a8b939586b60a0b5269e9cf262aba2fa4af9e27a9aae6c789883ca22737f61fc",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "bf63d04236f4cb5bbff005698245ea135112e584973a324f105d0f1f8f4441ba",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "cb94c0dfaeb955e931098331b6c8cc7227f25b2afbb75ce158873fcf2531a79f",
-      "componentType": "sensor.light-analogue-v1",
-      "componentVersion": 1,
-      "modelId": "model.light-analogue-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "sensor.light-analogue-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "sensor-light-analogue",
-        "thumbnail": "sensor-light-analogue",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "e99a821f74da1c8a615eeb2f8b4cc14e6fc3c3a1503c1493f81b7b844d3c06d1",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "lightLevel": {
-            "default": 0.5,
-            "kind": "number",
-            "maximum": 1,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "ratio"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.light-analogue-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "AOUT",
-            "role": "analogue-out",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Idealized module signal only: light level maps linearly to 0–5 V on AOUT from a fixed 5 V supply.",
-            "No lux calibration, physical LDR curve, loading, tolerance, noise, response time or ambient-light physics is modelled.",
-            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "32d8032d88d3eb95ebf781d53fbecbceef5a2bcd03a36d76f0987ac78082ed85",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "b9787940a15b2781d5107b42d74ecd6f4d7454cad4324924e447d963de817bb5",
-      "componentType": "sensor.light-threshold-digital-v1",
-      "componentVersion": 1,
-      "modelId": "model.light-threshold-digital-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "sensor.light-threshold-digital-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "sensor-light-threshold-digital",
-        "thumbnail": "sensor-light-threshold-digital",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "fe677e716d3f419d2848da150cad49ae9ab7db1e82abec49cb117728de114a5a",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "hysteresisPercentagePoints": {
-            "default": 5,
-            "kind": "number",
-            "maximum": 10,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "percentage-point"
-          },
-          "lightLevelPercent": {
-            "default": 40,
-            "kind": "number",
-            "maximum": 100,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "%"
-          },
-          "outputActive": {
-            "default": false,
-            "kind": "boolean",
-            "mutability": "derived"
-          },
-          "thresholdPercent": {
-            "default": 50,
-            "kind": "number",
-            "maximum": 100,
-            "minimum": 10,
-            "mutability": "authored",
-            "unit": "%"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.light-threshold-digital-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "DOUT",
-            "role": "digital-out",
-            "signals": [
-              "digital.active-low"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Generic idealized signal only: input and threshold are percentages; hysteresis is measured in percentage points.",
-            "DOUT is active LOW: it activates at input >= threshold, deactivates at input <= threshold - hysteresis, and retains its prior state inside that band.",
-            "No lux calibration, physical detector curve, propagation delay, electrical loading, tolerance, noise or ambient-light physics is modelled.",
-            "DOUT must connect directly and exclusively to one D2–D12 INPUT_PULLUP pin on the supported 5 V AVR controller."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "af209039275b9cecebaee139b829e911fb3d0d6eb2f8dd15edd40bcde1baa992",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "96d00e819523aaefdf0a32154f62002a34c0096a412fe8934066268d7ba35af0",
-      "componentType": "sensor.temperature-analogue-v1",
-      "componentVersion": 1,
-      "modelId": "model.temperature-analogue-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "sensor.temperature-analogue-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "sensor-temperature-analogue",
-        "thumbnail": "sensor-temperature-analogue",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "56771edd9c32a5600ea97fdd7871bbb5575b8640f24838a2a575c3abffac3310",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "temperatureC": {
-            "default": 25,
-            "kind": "number",
-            "maximum": 150,
-            "minimum": -50,
-            "mutability": "authored",
-            "unit": "°C"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.temperature-analogue-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "AOUT",
-            "role": "analogue-out",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Idealized generic module only: -50 to 150 °C maps linearly to 0–5 V using AOUT = (temperatureC + 50) / 40 V.",
-            "No physical-sensor accuracy, calibration error, self-heating, thermal lag, loading, tolerance or noise is modelled.",
-            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "83428743da39b176d458a323047645d234dcdebfac4a2622fb53cea123e2ee99",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "e6b1fd553ad39c9a76cdbf4c15914e93aaf047614c94d4274b89f542db7e23e5",
-      "componentType": "switch.changeover-spdt-v1",
-      "componentVersion": 1,
-      "modelId": "model.switch-changeover-spdt-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "switch.changeover-spdt-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 120,
-        "cssWidth": 180,
-        "renderer": "switch-changeover-spdt",
-        "thumbnail": "switch-changeover-spdt",
-        "viewBox": [
-          0,
-          0,
-          150,
-          100
-        ]
-      },
-      "rendererContractSha256": "66c9bcef1d82302791e8f4d5f84a7c97e1f3ffdda220b1119630ece57c457113",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "selectedThrow": {
-            "default": "A",
-            "kind": "enum",
-            "mutability": "authored",
-            "values": [
-              "A",
-              "B"
-            ]
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.switch-changeover-spdt-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "COM",
-            "role": "passive",
-            "signals": []
-          },
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": []
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": []
-          }
-        ],
-        "properties": {
-          "transitionPolicy": {
-            "default": "break-before-make",
-            "kind": "enum",
-            "values": [
-              "break-before-make"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Only one AVR digital-input COM selecting a direct GND or 5 V throw is simulated.",
-            "BREAK uses the INPUT_PULLUP release level; generic high-impedance and analogue contact networks are rejected.",
-            "No bounce, resistance, delay, arcing, current rating or output-drive inference is modelled."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "3b1af60efa5006c701d4e21d15e0660319075641918b95595f320281cdb9ad44",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "8f54eb8c246f3c15ff84b04f17084f78384266d5c6fea64b528ee5a440944922",
-      "componentType": "switch.toggle-spst-v1",
-      "componentVersion": 1,
-      "modelId": "model.switch-toggle-spst-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "switch.toggle-spst-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 82,
-        "cssWidth": 112,
-        "renderer": "switch-toggle-spst",
-        "thumbnail": "switch-toggle-spst",
-        "viewBox": [
-          0,
-          0,
-          112,
-          82
-        ]
-      },
-      "rendererContractSha256": "9cd549733a3df4fa1a9f1e9a20035150c9474ca697ed396ef05161f398f5abde",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "closed": {
-            "default": false,
-            "kind": "boolean",
-            "mutability": "authored"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.switch-toggle-spst-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "normallyOpen": {
-            "default": true,
-            "kind": "boolean"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Ideal latching normally-open SPST contact in the existing 0–5 V AVR digital-input topology.",
-            "No contact bounce, resistance, current rating, arcing or mechanical wear model.",
-            "Not an SPDT selector, mains switch or physical-safety model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "9173550bff2f8d5b71cfdbaaef97b9a20e734a7f05678c1a029ee5d6d6e02a0f",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "e829b931d475d41a2e84e477e0f632c575ce9fdd436ad5c6de7b967b7f0bc822",
-      "componentType": "board.esp32-c3-devmodule-v1",
-      "componentVersion": 1,
-      "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "board.esp32-c3-devmodule-v1-state-v1",
-        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
-      },
-      "profile": "board.esp32-c3-devmodule-v1",
-      "renderer": {
-        "cssHeight": 220,
-        "cssWidth": 160,
-        "renderer": "board-esp32-c3-profile",
-        "thumbnail": "board-esp32-c3-profile",
-        "viewBox": [
-          0,
-          0,
-          160,
-          220
-        ]
-      },
-      "rendererContractSha256": "95b58544ffb4f3a11a9eb2514ed269bc0464d7b2bd3e1e7f50dda1839c841974",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "connector": "J1",
-              "physicalPin": 4,
-              "strappingPin": true,
-              "voltageMax": 3.3,
-              "voltageMin": 0
-            },
-            "id": "GPIO2",
-            "role": "digital-io",
-            "signals": [
-              "digital.output"
-            ]
-          },
-          {
-            "constraints": {
-              "connector": "J1",
-              "physicalPin": 6
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Actual QEMU CPU/UART is separate from this executed-register-write GPIO2 project model.",
-            "GPIO2 is a strapping pin; this bounded teaching path is not physical-board equivalence."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "47f21637431be47217854b63ded12bc182b93af75d0f25cd8a36c05d7ee0a74d",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "7aeb4fed97127bad6c54e8466a636d67201fb7fa82a4cf39e09e86e3e2a6d235",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
-      },
-      "profile": "board.esp32-c3-devmodule-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "64ec6d0e91e465a211429f0529ae5991fa38f3b5da8480bdb4343e3127850a86",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
-      },
-      "profile": "board.esp32-c3-devmodule-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "1d019e071d05a70bd5e8fd3bd7c102e1308aa466439d7da72f8bdcc16cf70f58",
-      "componentType": "board.rp2040-pico-v1",
-      "componentVersion": 1,
-      "modelId": "model.rp2040-pico-gpio0-public-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "board.rp2040-pico-v1-state-v1",
-        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
-      },
-      "profile": "board.rp2040-pico-v1",
-      "renderer": {
-        "cssHeight": 300,
-        "cssWidth": 132,
-        "renderer": "board-rp2040-pico",
-        "thumbnail": "board-rp2040-pico",
-        "viewBox": [
-          0,
-          0,
-          132,
-          300
-        ]
-      },
-      "rendererContractSha256": "52d6e473d0ddb6e77f4299987759cf671fcc9d7025d827651d9220935605250c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.rp2040-pico-gpio0-public-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "physicalPin": 1,
-              "voltageMax": 3.3,
-              "voltageMin": 0
-            },
-            "id": "GP0",
-            "role": "digital-io",
-            "signals": [
-              "digital.output",
-              "pwm.output"
-            ]
-          },
-          {
-            "constraints": {
-              "physicalPin": 3
-            },
-            "id": "GND3",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Public bounded GPIO0 output circuit subset only; no complete board or physical-hardware equivalence.",
-            "GPIO25 is the onboard LED connection and is intentionally not exposed as a header anchor."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "981d93d732c94ee648051dab6505f97712f18d7ecd26544102ee58239f72c265",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "3cadb57867cf5a8b9e19d9e18c7a76f5ba5ffb79a782c8e981f554aadc46f3b9",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
-      },
-      "profile": "board.rp2040-pico-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "69ad3b8a05a7b58d205f9961dd0a2769062def8978db455e1e7bd8c919309c15",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
-      },
-      "profile": "board.rp2040-pico-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "8d5fd13b6e1a7324e3c9c7880678811ac02461a1daf4abd2e997edcee199a51e",
-      "componentType": "board.stm32f429zi-nucleo144-v1",
-      "componentVersion": 1,
-      "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "board.stm32f429zi-nucleo144-v1-state-v1",
-        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
-      },
-      "profile": "board.stm32f429zi-nucleo144-v1",
-      "renderer": {
-        "cssHeight": 230,
-        "cssWidth": 190,
-        "renderer": "board-stm32f429zi-profile",
-        "thumbnail": "board-stm32f429zi-profile",
-        "viewBox": [
-          0,
-          0,
-          190,
-          230
-        ]
-      },
-      "rendererContractSha256": "5d3909f79e7ac00abfde9bc6d67044203ca6f262f7c17d28781331c6aec46de3",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "connector": "CN11",
-              "physicalPin": 34,
-              "voltageMax": 3.3,
-              "voltageMin": 0
-            },
-            "id": "PB0",
-            "role": "digital-io",
-            "signals": [
-              "digital.output"
-            ]
-          },
-          {
-            "constraints": {
-              "connector": "CN11",
-              "physicalPin": 35
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Public bounded PB0 and USART3 subset only; no complete board or physical-hardware equivalence.",
-            "The external resistor and LED are an ideal teaching circuit driven by actual Renode-observed PB0."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "4f2061383d5c2011fae731719a9e8a50883d1c37bcf8e607c56a6d2550310a76",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "79caec08c666ae60593963d53a8f7d830b2092fc5f18afa4735720b255b0e0b3",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
-      },
-      "profile": "board.stm32f429zi-nucleo144-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "9f07c54efd300a03c0413bf034ebfa0441c723c6abb1639cb7f8e8686038215b",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
-      },
-      "profile": "board.stm32f429zi-nucleo144-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    }
-  ],
-  "implementationId": "intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15",
-  "implementationMembers": [
-    {
-      "path": "src/component-catalog.mjs",
-      "sha256": "d461c7f52e591f2937518dd7cc30f9fdfd915cd9c6104624364d2236ecf1d236"
-    },
-    {
-      "path": "src/circuit-engine.mjs",
-      "sha256": "87ebd90e9ebb32c8fd7dbc8d7b3c9e8108bf834278b6592729334a0301f48166"
-    },
-    {
-      "path": "src/runtime-kernel.mjs",
-      "sha256": "b1bb960f9a60b37652318cd8a87c189e9a791603a705eb17710ff640a202efd7"
-    },
-    {
-      "path": "src/atmega328p-adapter.mjs",
-      "sha256": "65136d0b607336db992ba7dab81447813331b103136ec7c5348e6fc1ca9300de"
-    },
-    {
-      "path": "src/x43-avr-stack-profile.mjs",
-      "sha256": "daab81af7d7af8ccec2749328bcd1deae2e7f0e7a785af8ce726ba9efbee6758"
-    },
-    {
-      "path": "src/x43-avr-heap-profile.mjs",
-      "sha256": "4f26c5cc3b55950de3a27af6c6dce679b9dcea4a56aa5e2b82b65759d1102056"
-    },
-    {
-      "path": "compiler/avr-allocator-provenance.mjs",
-      "sha256": "abd96f1f59f0a524c8517f3884abf83ff7662f62bbcee1483e4813185df952ea"
-    },
-    {
-      "path": "compiler/build-coordinator.mjs",
-      "sha256": "7e4a03b6111c7b87b0e49b6813fef53059acd80405285ebc723ffa41e8440ffd"
-    },
-    {
-      "path": "compiler/build-worker.mjs",
-      "sha256": "8ab69f241900dcd5a3eb00fb73227421789423158e2490f272e964cf2fed56b1"
-    },
-    {
-      "path": "compiler/build-protocol.mjs",
-      "sha256": "a434642391598b05c592e6df4f8eef792f235df5017156c03def65da9f12b4bb"
-    },
-    {
-      "path": "Dockerfile.toolchain",
-      "sha256": "dfa1519879b0169583c3490aec9cc396ff0690bfad1ffdcaef263a91749708f1"
-    },
-    {
-      "path": "src/x47-runtime-transaction.mjs",
-      "sha256": "34b90ff05ee63b97ff88ef18d70efdc0bcaf6814f57940ab3580e894caa108e6"
-    },
-    {
-      "path": "src/x47-ui-integration.mjs",
-      "sha256": "baee930e2a369b091f2b3237fca815928d7d87d91ce9cc962aef72f09e92b3d3"
-    },
-    {
-      "path": "src/strict-json.mjs",
-      "sha256": "2a8bcfeed40b56f44d771ddbd2bad77b7ce17698e7f9f608afae8e828d8cb5e5"
-    },
-    {
-      "path": "src/component-appearance.mjs",
-      "sha256": "4c6b62483e52e1f48cf16c48f3b3de57ac99296ccec443d7efdfc3678c04add7"
-    },
-    {
-      "path": "src/project-v2.mjs",
-      "sha256": "453422102ebb64cb1485687d37d2c75155d63e231cf16c7e4a9ba2f86e7b9ca0"
-    },
-    {
-      "path": "src/project-editor.mjs",
-      "sha256": "d50ad45104b980a44b7ab3a62d4da749b54646d6c1eb5327b5447dd098a18ce4"
-    },
-    {
-      "path": "src/lifecycle.mjs",
-      "sha256": "4772e4491d4feb853673d6c8caeee9eb58ece4756805b92638342a5fcd7889d6"
-    },
-    {
-      "path": "staging/component-artwork.mjs",
-      "sha256": "b038661a2d7a26266d0602bb9ccb124cceb17b577ccaf66228db90441f49fdfc"
-    },
-    {
-      "path": "src/model-library.mjs",
-      "sha256": "2ebf5d3ec4b25a694d2edc9cc08888e74d2959650ae386a442598c8809501efe"
-    },
-    {
-      "path": "src/model-bundle-registry.mjs",
-      "sha256": "f8e68a37092e3efaa3128dcc994c9fecabd358360638329990726f5efb175872"
-    },
-    {
-      "path": "src/project-envelope.mjs",
-      "sha256": "ff4ab3f6680d2b5f0c6aabc16537062465fc85381d4b6d1fc642a39a14094adf"
-    },
-    {
-      "path": "src/model-control-contracts.mjs",
-      "sha256": "138d6f0b76abc3b1a509b741e581030192d91923864c8f804f42c32ef82abaa4"
-    },
-    {
-      "path": "src/simulator.worker.mjs",
-      "sha256": "7de0aac12d59c7fac8c12c68a555555bb8e68442389f8a46cfa358898e1e49fd"
-    },
-    {
-      "path": "staging/main.mjs",
-      "sha256": "0ef10fe0eb0759db2bdca4b7eaf75c3a4144cb36f68d918d3d41d9e57ad711ee"
-    },
-    {
-      "path": "src/rp2040-snapshot-pacer.mjs",
-      "sha256": "cc6ae6a1ba2ccf30382d4eefdd547de81c0053c6923e978b5e0dcf18c2a53b7e"
-    },
-    {
-      "path": "src/rp2040-experimental-runtime.mjs",
-      "sha256": "93463965a8f379afdea256f270f2efb2876d9ec8ddff7f9e9676d7a7ad82a10d"
-    },
-    {
-      "path": "src/runtime-identity.mjs",
-      "sha256": "dcd4e0df743d6310a6661cc3a2cf6b2d2879e33a3b82a3dd8620570c689231e8"
-    },
-    {
-      "path": "src/candidate-project-session.mjs",
-      "sha256": "079a528132787c424d12ec8b7514eb075ce11086f5e2962b8553e6fb4a1de43d"
-    },
-    {
-      "path": "src/candidate-spdt-runtime.mjs",
-      "sha256": "cac63a72f4e0a8b67468d638d5ae9cf8bf49a76420e62d648bb4745bf9d8de31"
-    },
-    {
-      "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "5d60089e6da394f332410b54e270d8620cde812ea3d48d0005622348838426bf"
-    },
-    {
-      "path": "src/rp2040-pico-circuit.mjs",
-      "sha256": "9ba0ac0a14f5c33c16d43f6a7eb7313a657b36bf10cfe13ea24cd893625524f0"
-    },
-    {
-      "path": "src/esp32c3-public-circuit.mjs",
-      "sha256": "47fad0c2e060118a986cf08b6a83a24e8e0d955fa15fe4a3f399a51e51179b66"
-    },
-    {
-      "path": "src/stm32-public-circuit.mjs",
-      "sha256": "12873127b49d7c9c65f79b52228fee0d0419f2f7a8856aac0c7b0dc528001988"
-    },
-    {
-      "path": "src/rp2040-public-workbench.mjs",
-      "sha256": "c04d0beb03c037ad02f20e3fa8271306ff3f954b6575e6c84bea96ed231219af"
-    },
-    {
-      "path": "src/esp32c3-public-workbench.mjs",
-      "sha256": "f3a21835f0125df0948397aa32f276c66f5601d08064cd12cc584b65b001e76a"
-    },
-    {
-      "path": "src/stm32-public-workbench.mjs",
-      "sha256": "cd52cbfa009e847080f27bbc401eac344d9795e08ef9177efdd43d4042a99672"
-    },
-    {
-      "path": "expansion-drafts/controller-runtime-bridge-v1.mjs",
-      "sha256": "670767df34464eb8fb47037bf44f4911545ea58941832c81fb842eaba5793278"
-    },
-    {
-      "path": "expansion-drafts/rp2040-runtime-bridge-adapter-v1.mjs",
-      "sha256": "4b7496cd38a995bcecfb3b3456edce10f0d671606f0fa3d6c36e99762ee2ac56"
-    },
-    {
-      "path": "expansion-drafts/rp2040-conformance-fixtures-v1.mjs",
-      "sha256": "3d8eb99253b2c91876b6ac678838a2cf35b72e5261362be94575f364ac962bb9"
-    },
-    {
-      "path": "expansion-drafts/rp2040-firmware-artifact-v1.mjs",
-      "sha256": "7f08aa59de5e69eddd5e1a4cfd7c1e900f898d7c65425eb6274247058c53430b"
-    },
-    {
-      "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "bca551ac31347c998a849f62ad3989b47a4b5f0471fce58d36a6c64d1b288746"
-    },
-    {
-      "path": "expansion-drafts/ground-reference-integration-v1.mjs",
-      "sha256": "59dc3833915afbec325b2d06e815c3250ad858ad1769da03c509ae7e3cd38958"
-    },
-    {
-      "path": "expansion-drafts/toggle-switch-integration-v1.mjs",
-      "sha256": "90fcaad32074957021ffe5bde973c81c08a3dd0f345495ab169218416dc0e389"
-    },
-    {
-      "path": "expansion-drafts/switch-contact-graph-v1.mjs",
-      "sha256": "073a5079335b222c53410971dcab42324cfa3ad639cc4b57a879fbe6efa476d2"
-    },
-    {
-      "path": "expansion-drafts/ideal-three-pin-analogue-module-v1.mjs",
-      "sha256": "383caf45e17281997b5b6e6f8a63bde660e19a1e48e1d0be1c137a8d36c187d3"
-    },
-    {
-      "path": "expansion-drafts/light-analogue-sensor-v1.mjs",
-      "sha256": "1a6efe15ec9b955f2824b711d32ea5d310d7966a223f8366031158514db24fbc"
-    },
-    {
-      "path": "expansion-drafts/temperature-analogue-sensor-v1.mjs",
-      "sha256": "5f3290f865e79ecf7362ea6b6ea667d9e01670a5daabb1b1cf70e977a6307817"
-    },
-    {
-      "path": "expansion-drafts/digital-light-threshold-module-v1.mjs",
-      "sha256": "f3a203a7c92e412a615599e6b0dbca9a84af3c15843c47e7bedc3a8f4d48d2bd"
-    },
-    {
-      "path": "expansion-drafts/common-cathode-rgb-led-v1.mjs",
-      "sha256": "42d045d2882ed745c4f2895d21bc0683582ce185c03b1dce9b854f98389f69d1"
-    },
-    {
-      "path": "expansion-drafts/active-buzzer-module-v1.mjs",
-      "sha256": "aa8bd1dc352a689ebcf0443cc2595426cdcf46396b1bc47b742c3731b2dafe94"
-    },
-    {
-      "path": "expansion-drafts/seven-segment-common-cathode-v1.mjs",
-      "sha256": "5d2b30cdfcfd48ad8dfc6e767ac9c9ee2825018e94980cf8915d5550b7d69905"
-    },
-    {
-      "path": "expansion-drafts/character-lcd-16x2-4bit-v1.mjs",
-      "sha256": "463871c751ee4e7857d46ceb75500f417c59a59af331535e8e3b2c87d17b27ee"
-    },
-    {
-      "path": "expansion-drafts/rotary-encoder-quadrature-v1.mjs",
-      "sha256": "0671974cb26e5447db07266f2e6a85a1f4fdd2fb8463453aa274987177167ac8"
-    },
-    {
-      "path": "src/model-library-current-resolver.mjs",
-      "sha256": "339c42cef9c34d1a636ad30ec9545dc90d2dd87a567a4df4d7c994ca6b0a73ea"
-    }
-  ],
-  "implementationSha256": "bc8c7e662745f51e73c2e44b986d9406d3d0ae910bae1aa55146cd8641ada734",
-  "libraryId": "intent-mcu-public-models",
-  "lineage": {
-    "baselineClosureDisposition": "accepted public rc.98 identity remains immutable and migration-only",
-    "compatibility": "explicit-data-only-migration; runtime-and-verdict-authority-cleared",
-    "presentationDisposition": "no UI change; the pinned private worker can start and validate jobs with its complete static module graph",
-    "priorManifestSha256": "3fa5a0e0fed1f1903783a1c3aadb7ae7ff9248fff2a669d9d584966b3d5b78e3",
-    "priorVersion": "2.0.0-x43-heap-provenance-fix.1-current",
-    "semanticDisposition": "component, electrical, runtime and allocator-provenance semantics are unchanged; only the existing worker import closure is packaged"
-  },
-  "manifestSha256": "75b8dbfbd52d7af3ce2a30d8711936c9c1c6ea06913da0ce8bbc9f8d18c84b65",
-  "runtimeContracts": [
-    "avr8js@0.21.1",
-    "rp2040js@1.4.0",
-    "esp32c3-qemu@project-pinned",
-    "renode@1.17.0"
-  ],
-  "schema": "intent-mcu-model-library-manifest@2",
-  "version": "2.0.0-x43-heap-worker-package-fix.1-current"
-});
-export const PRE_X43_HEAP_WORKER_PACKAGE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
-  "entries": [
-    {
-      "behaviorContractSha256": "6cc5704bdf3a4b0a62ef5f1e0213dbfcfba2e291bb1170a4c291088f58133122",
-      "componentType": "board.atmega328p-16mhz-v1",
-      "componentVersion": 1,
-      "modelId": "model.atmega328p-board-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "board.atmega328p-16mhz-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 150,
-        "cssWidth": 300,
-        "renderer": "board-atmega328p",
-        "thumbnail": "board-atmega328p",
-        "viewBox": [
-          0,
-          0,
-          160,
-          80
-        ]
-      },
-      "rendererContractSha256": "a3529e81b49ea07434d583dc701a609044326b0f716ba2ef665d87a2f52a018a",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.atmega328p-board-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D0",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D1",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D2",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D3",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D4",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D5",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D6",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D7",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D8",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D9",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D10",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D11",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D12",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D13",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A0",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A1",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A2",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A3",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A4",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A5",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "5V",
-            "role": "power-out",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "GND1",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "GND2",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "GND3",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Tested ATmega328P subset only; not complete physical-board equivalence."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "fc24be479f5217bd7f07e42dad258520ec1f58fda3da9e8086e775e38e431f29",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "06b98fc0ac932d844ac3dd154ec6592db829255502f388275510f363640eaa22",
-      "componentType": "button.momentary-v1",
-      "componentVersion": 1,
-      "modelId": "model.button-momentary-no-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "button.momentary-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 78,
-        "cssWidth": 100,
-        "renderer": "button-tactile",
-        "thumbnail": "button-tactile",
-        "viewBox": [
-          0,
-          0,
-          100,
-          78
-        ]
-      },
-      "rendererContractSha256": "200542372ea2b0cef1bcf3187978e26955341815222422b2feebd0ee97eb6265",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "pressed": {
-            "default": false,
-            "kind": "boolean",
-            "mutability": "authored"
-          }
-        },
-        "internalTerminalGroups": [
-          {
-            "pin": "A",
-            "terminals": [
-              "A1",
-              "A2"
-            ]
-          },
-          {
-            "pin": "B",
-            "terminals": [
-              "B1",
-              "B2"
-            ]
-          }
-        ],
-        "modelId": "model.button-momentary-no-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "attachmentTerminal": "A1",
-              "terminals": [
-                "A1",
-                "A2"
-              ]
-            },
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "attachmentTerminal": "B1",
-              "terminals": [
-                "B1",
-                "B2"
-              ]
-            },
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "normallyOpen": {
-            "default": true,
-            "kind": "boolean"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Normally-open ideal contact; A1/A2 and B1/B2 are explicit internally common terminal groups."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "67034c86f1f01dbec2a7a87b40b650899edfaa9d5e26b18e27545e2067bab7d3",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "a53fdff68e84a4571c18c82813242eadf79f6f299e03af2decab7a24d4f03c81",
-      "componentType": "input.rotary-encoder-quadrature-v1",
-      "componentVersion": 1,
-      "modelId": "model.rotary-encoder-quadrature-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "input.rotary-encoder-quadrature-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 110,
-        "cssWidth": 128,
-        "renderer": "input-rotary-encoder-quadrature",
-        "thumbnail": "input-rotary-encoder-quadrature",
-        "viewBox": [
-          0,
-          0,
-          128,
-          110
-        ]
-      },
-      "rendererContractSha256": "70233214cea0c0d3af791f0d13e7a53d069c826a722b657235090fa2647809eb",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "detent": {
-            "default": 0,
-            "kind": "integer",
-            "maximum": 999,
-            "minimum": -999,
-            "mutability": "transition-only",
-            "unit": "detent"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.rotary-encoder-quadrature-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "pullMode": "input-pullup",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A",
-            "role": "digital-out",
-            "signals": [
-              "digital.quadrature-contact"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "COM",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "pullMode": "input-pullup",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "B",
-            "role": "digital-out",
-            "signals": [
-              "digital.quadrature-contact"
-            ]
-          }
-        ],
-        "properties": {
-          "encoding": {
-            "default": "gray-2bit",
-            "kind": "enum",
-            "values": [
-              "gray-2bit"
-            ]
-          },
-          "pullMode": {
-            "default": "input-pullup",
-            "kind": "enum",
-            "values": [
-              "input-pullup"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "A and B must connect directly to the supported AVR external-interrupt pins D2 and D3, one unique phase per pin; COM must connect directly to board ground.",
-            "Each detent emits the deterministic ideal Gray sequence CW 11→01→00→10→11 or CCW 11→10→00→01→11 at 16,000 cycles per phase.",
-            "A/B are open contacts read HIGH through firmware INPUT_PULLUP and close LOW to COM. Firmware must decode the transitions; the UI never writes a counter value.",
-            "No contact bounce, resistance, acceleration, missed edges, shaft switch, mechanical timing or physical detent behavior is modelled."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "64a10bc430af43a501afcd5a5e9b8cbf82ab39c5a0f575014940a26c1c5fb771",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "a1f021280db49de8cb51164797c649b5ea02c7888974e2ce68ad7e836a83552f",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "c830bed7e1176ffe6c7381a7fad17fe7b05800fe651e62bc2bb9630217ba465d",
-      "componentType": "output.active-buzzer-module-v1",
-      "componentVersion": 1,
-      "modelId": "model.active-buzzer-logical-enable-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "output.active-buzzer-module-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "output-active-buzzer-module",
-        "thumbnail": "output-active-buzzer-module",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "b1da623cd44588659ca208b9c9e6c06b40a5506cbfe8ec1b1d2ad93ac0e5fdf1",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.active-buzzer-logical-enable-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "activeLevel": "HIGH",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "EN",
-            "role": "digital-in",
-            "signals": [
-              "digital.high-active-enable"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Ideal 5 V active-buzzer module with a high-active, high-impedance EN input on one direct AVR D2–D13 GPIO output.",
-            "The existing runtime GPIO state drives a silent visual enabled/disabled indicator; no browser audio is produced.",
-            "No oscillator, waveform, frequency, duty-to-tone, sound pressure, supply current, GPIO current, loading, tolerance, resonance, thermal or physical acoustic accuracy is modelled."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "a2165819e146e0ed027e50c802ef5ca7f3e5c3c460868b94d68ee9a925e3d44e",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "02bb93c06dc9a866aebfb7561b34d7db68aa81a8afa639bce57499159b010733",
-      "componentType": "output.character-lcd-16x2-4bit-v1",
-      "componentVersion": 1,
-      "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "output.character-lcd-16x2-4bit-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 130,
-        "cssWidth": 220,
-        "renderer": "output-character-lcd-16x2-4bit",
-        "thumbnail": "output-character-lcd-16x2-4bit",
-        "viewBox": [
-          0,
-          0,
-          220,
-          130
-        ]
-      },
-      "rendererContractSha256": "19637bb2f2c867f15a8beacf073e019373e97e82b045d4f9c62658df9d12f3f9",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "RS",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-register-select"
-            ]
-          },
-          {
-            "constraints": {
-              "requiredLevel": "LOW",
-              "writeOnly": true
-            },
-            "id": "RW",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "latchEdge": "falling",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "E",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-enable"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 4,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D4",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 5,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D5",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 6,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D6",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 7,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D7",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Bounded HD44780-style write-only 4-bit decoder for one 16×2 display. VCC requires 5 V, GND and RW require ground, and RS, E and D4–D7 require six unique direct AVR D2–D13 outputs.",
-            "Supported initialization is 0x3,0x3,0x3,0x2 followed by commands 0x28,0x0C,0x06,0x01 with enforced power-on, enable-pulse and instruction timing. Supported runtime commands are clear, home, 4-bit/2-line function set, display-on, increment entry mode and visible DDRAM addresses.",
-            "Printable ASCII 0x20–0x7E is rendered. Reads, busy flag, RW-high operation, custom glyphs/CGRAM, cursor or blink modes, display shifts, automatic line wrapping, 8-bit mode, I²C, backpacks, contrast, backlight, current and physical timing tolerances are unsupported."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "7b5ae575ea2513ecc0452e086a6c321db93bd1299d2d1a2c8bc1b7def5e2b132",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "de133aff753e1fd18d754e1c47997e17a2092d5d505395bb2fde1a67964f2fb0",
-      "componentType": "output.rgb-led-common-cathode-v1",
-      "componentVersion": 1,
-      "modelId": "model.rgb-led-common-cathode-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "output.rgb-led-common-cathode-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "output-rgb-led-common-cathode",
-        "thumbnail": "output-rgb-led-common-cathode",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "604f4f8f4fa53fe6e2bbfb9dd6e11886d92c5079ec4e44ba5f1ebcc93a4a3a3a",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.rgb-led-common-cathode-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "channel": "red",
-              "polarity": "anode",
-              "requiresSeriesResistor": true
-            },
-            "id": "R",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-channel"
-            ]
-          },
-          {
-            "constraints": {
-              "channel": "green",
-              "polarity": "anode",
-              "requiresSeriesResistor": true
-            },
-            "id": "G",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-channel"
-            ]
-          },
-          {
-            "constraints": {
-              "channel": "blue",
-              "polarity": "anode",
-              "requiresSeriesResistor": true
-            },
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-channel"
-            ]
-          },
-          {
-            "constraints": {
-              "commonCathode": true,
-              "polarity": "cathode"
-            },
-            "id": "COM",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Ideal common-cathode teaching model projected through three independently validated existing LED channels.",
-            "R, G and B each require one dedicated external series resistor and one supported AVR PWM output: D3, D5, D6, D9, D10 or D11; COM must connect to ground.",
-            "Displayed colour is only the commanded relative PWM mix. No wavelength, luminous intensity, optical mixing, current matching, tolerance, thermal or physical colour accuracy is claimed."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "6302f0b958d0b9d30326cc61cc50073eec36aa9ff60ca07e103afa5a107d7ed2",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "4a8495e31eb7dfe5c674ad6fc989d0157cefda78937ad123ee9bc517007649bf",
-      "componentType": "output.seven-segment-common-cathode-v1",
-      "componentVersion": 1,
-      "modelId": "model.seven-segment-common-cathode-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "output.seven-segment-common-cathode-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 120,
-        "cssWidth": 160,
-        "renderer": "output-seven-segment-common-cathode",
-        "thumbnail": "output-seven-segment-common-cathode",
-        "viewBox": [
-          0,
-          0,
-          160,
-          120
-        ]
-      },
-      "rendererContractSha256": "e8a6732efecaadfeafa61e941e596e7707552879d71eeba9fed1dc42e95a9ba2",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.seven-segment-common-cathode-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "a"
-            },
-            "id": "a",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "b"
-            },
-            "id": "b",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "c"
-            },
-            "id": "c",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "d"
-            },
-            "id": "d",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "e"
-            },
-            "id": "e",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "f"
-            },
-            "id": "f",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "g"
-            },
-            "id": "g",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "commonCathode": true,
-              "polarity": "cathode"
-            },
-            "id": "COM",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Ideal single-digit common-cathode teaching model projected through seven independently validated existing LED channels.",
-            "Segments a through g each require one dedicated external series resistor and one unique AVR D2–D13 digital output; COM must connect to ground.",
-            "Only commanded segment on/off state is shown. No decimal point, multiplexing, driver IC, brightness, optical, package-current, tolerance, thermal or physical display accuracy is modelled."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "11e0e7c4cf2ffd2a74ee9a13133aed906c24894a9be78a3e37a316d84695a668",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "ba049185bafa9afdd90c6e89849f2af4b1bd12290e16b2d652fbff856cd97a64",
-      "componentType": "potentiometer.linear-v1",
-      "componentVersion": 1,
-      "modelId": "model.pot-divider-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "potentiometer.linear-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 110,
-        "renderer": "potentiometer-rotary",
-        "thumbnail": "potentiometer-rotary",
-        "viewBox": [
-          0,
-          0,
-          110,
-          100
-        ]
-      },
-      "rendererContractSha256": "7b1688b9b69b5de9bd7079abb2617d13dd9844132d5e26564d3d5497cb314f21",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "position": {
-            "default": 0.5,
-            "kind": "number",
-            "maximum": 1,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "ratio"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.pot-divider-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "HIGH",
-            "role": "passive",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "WIPER",
-            "role": "passive",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "LOW",
-            "role": "passive",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 10000,
-            "kind": "number",
-            "maximum": 10000000,
-            "minimum": 1,
-            "unit": "Ω"
-          },
-          "taper": {
-            "default": "linear",
-            "kind": "enum",
-            "values": [
-              "linear"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Linear 5 V divider only; no loading, tolerance or non-linear taper model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "b1707fc143253ab9a0af55d379e6d9c155b31030c1e1fed48924ef1cf326ec03",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "3585a6183757e71a305a886163e1920891747c3b7c54426a2c9d0fa6837e6198",
-      "componentType": "reference.ground-v1",
-      "componentVersion": 1,
-      "modelId": "model.ground-reference-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "reference.ground-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 72,
-        "cssWidth": 72,
-        "renderer": "ground-reference-symbol",
-        "thumbnail": "ground-reference-symbol",
-        "viewBox": [
-          0,
-          0,
-          72,
-          72
-        ]
-      },
-      "rendererContractSha256": "6068255d29e2e1dabe95c75167d28efdc19694a376c532b6ebab6caa0b19cee2",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.ground-reference-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "REF",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {
-          "potentialVolts": {
-            "default": 0,
-            "kind": "number",
-            "maximum": 0,
-            "minimum": 0,
-            "unit": "V"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded to one-controller 5 V AVR teaching circuits with at most three independent reference nets.",
-            "Represents circuit 0 V only; it is not earth, chassis or protective ground.",
-            "Does not source voltage or current and does not model ground loops or multiple reference domains."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "a8b939586b60a0b5269e9cf262aba2fa4af9e27a9aae6c789883ca22737f61fc",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "956eb22c69842bd29fbbbe186c83257127d46c4288e7404920f1ee6e86c2ec0e",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "9c8e881c67f63c49e1b1afde01ab0c17dd7792a9a5a71af8c4181401bb0e2aed",
-      "componentType": "sensor.light-analogue-v1",
-      "componentVersion": 1,
-      "modelId": "model.light-analogue-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "sensor.light-analogue-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "sensor-light-analogue",
-        "thumbnail": "sensor-light-analogue",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "e99a821f74da1c8a615eeb2f8b4cc14e6fc3c3a1503c1493f81b7b844d3c06d1",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "lightLevel": {
-            "default": 0.5,
-            "kind": "number",
-            "maximum": 1,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "ratio"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.light-analogue-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "AOUT",
-            "role": "analogue-out",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Idealized module signal only: light level maps linearly to 0–5 V on AOUT from a fixed 5 V supply.",
-            "No lux calibration, physical LDR curve, loading, tolerance, noise, response time or ambient-light physics is modelled.",
-            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "32d8032d88d3eb95ebf781d53fbecbceef5a2bcd03a36d76f0987ac78082ed85",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "3808481c4cc1bae9e2ce541352b889a9d0c468dd661fee24e339f4a3de1a3a53",
-      "componentType": "sensor.light-threshold-digital-v1",
-      "componentVersion": 1,
-      "modelId": "model.light-threshold-digital-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "sensor.light-threshold-digital-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "sensor-light-threshold-digital",
-        "thumbnail": "sensor-light-threshold-digital",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "fe677e716d3f419d2848da150cad49ae9ab7db1e82abec49cb117728de114a5a",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "hysteresisPercentagePoints": {
-            "default": 5,
-            "kind": "number",
-            "maximum": 10,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "percentage-point"
-          },
-          "lightLevelPercent": {
-            "default": 40,
-            "kind": "number",
-            "maximum": 100,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "%"
-          },
-          "outputActive": {
-            "default": false,
-            "kind": "boolean",
-            "mutability": "derived"
-          },
-          "thresholdPercent": {
-            "default": 50,
-            "kind": "number",
-            "maximum": 100,
-            "minimum": 10,
-            "mutability": "authored",
-            "unit": "%"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.light-threshold-digital-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "DOUT",
-            "role": "digital-out",
-            "signals": [
-              "digital.active-low"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Generic idealized signal only: input and threshold are percentages; hysteresis is measured in percentage points.",
-            "DOUT is active LOW: it activates at input >= threshold, deactivates at input <= threshold - hysteresis, and retains its prior state inside that band.",
-            "No lux calibration, physical detector curve, propagation delay, electrical loading, tolerance, noise or ambient-light physics is modelled.",
-            "DOUT must connect directly and exclusively to one D2–D12 INPUT_PULLUP pin on the supported 5 V AVR controller."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "af209039275b9cecebaee139b829e911fb3d0d6eb2f8dd15edd40bcde1baa992",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "1eadda845c14903c2ce96d119fccb41c8fb4d30bb3a7d7781bade91625f38adf",
-      "componentType": "sensor.temperature-analogue-v1",
-      "componentVersion": 1,
-      "modelId": "model.temperature-analogue-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "sensor.temperature-analogue-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "sensor-temperature-analogue",
-        "thumbnail": "sensor-temperature-analogue",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "56771edd9c32a5600ea97fdd7871bbb5575b8640f24838a2a575c3abffac3310",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "temperatureC": {
-            "default": 25,
-            "kind": "number",
-            "maximum": 150,
-            "minimum": -50,
-            "mutability": "authored",
-            "unit": "°C"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.temperature-analogue-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "AOUT",
-            "role": "analogue-out",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Idealized generic module only: -50 to 150 °C maps linearly to 0–5 V using AOUT = (temperatureC + 50) / 40 V.",
-            "No physical-sensor accuracy, calibration error, self-heating, thermal lag, loading, tolerance or noise is modelled.",
-            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "83428743da39b176d458a323047645d234dcdebfac4a2622fb53cea123e2ee99",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "a24fa04b33079b50b4c230a9f47eefeb55284e6aad980d9c4ee1a7e04d83333a",
-      "componentType": "switch.changeover-spdt-v1",
-      "componentVersion": 1,
-      "modelId": "model.switch-changeover-spdt-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "switch.changeover-spdt-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 120,
-        "cssWidth": 180,
-        "renderer": "switch-changeover-spdt",
-        "thumbnail": "switch-changeover-spdt",
-        "viewBox": [
-          0,
-          0,
-          150,
-          100
-        ]
-      },
-      "rendererContractSha256": "66c9bcef1d82302791e8f4d5f84a7c97e1f3ffdda220b1119630ece57c457113",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "selectedThrow": {
-            "default": "A",
-            "kind": "enum",
-            "mutability": "authored",
-            "values": [
-              "A",
-              "B"
-            ]
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.switch-changeover-spdt-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "COM",
-            "role": "passive",
-            "signals": []
-          },
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": []
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": []
-          }
-        ],
-        "properties": {
-          "transitionPolicy": {
-            "default": "break-before-make",
-            "kind": "enum",
-            "values": [
-              "break-before-make"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Only one AVR digital-input COM selecting a direct GND or 5 V throw is simulated.",
-            "BREAK uses the INPUT_PULLUP release level; generic high-impedance and analogue contact networks are rejected.",
-            "No bounce, resistance, delay, arcing, current rating or output-drive inference is modelled."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "3b1af60efa5006c701d4e21d15e0660319075641918b95595f320281cdb9ad44",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "33c193088a11cce9ff68980fb9b37e8fabfce35fdbfca60282977223f7d19409",
-      "componentType": "switch.toggle-spst-v1",
-      "componentVersion": 1,
-      "modelId": "model.switch-toggle-spst-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "switch.toggle-spst-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 82,
-        "cssWidth": 112,
-        "renderer": "switch-toggle-spst",
-        "thumbnail": "switch-toggle-spst",
-        "viewBox": [
-          0,
-          0,
-          112,
-          82
-        ]
-      },
-      "rendererContractSha256": "9cd549733a3df4fa1a9f1e9a20035150c9474ca697ed396ef05161f398f5abde",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "closed": {
-            "default": false,
-            "kind": "boolean",
-            "mutability": "authored"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.switch-toggle-spst-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "normallyOpen": {
-            "default": true,
-            "kind": "boolean"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Ideal latching normally-open SPST contact in the existing 0–5 V AVR digital-input topology.",
-            "No contact bounce, resistance, current rating, arcing or mechanical wear model.",
-            "Not an SPDT selector, mains switch or physical-safety model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "9173550bff2f8d5b71cfdbaaef97b9a20e734a7f05678c1a029ee5d6d6e02a0f",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "567cd812c85131628deec060e04271b8be9a871eaef6ce75bbcdbc520dc5eaaf",
-      "componentType": "board.esp32-c3-devmodule-v1",
-      "componentVersion": 1,
-      "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "board.esp32-c3-devmodule-v1-state-v1",
-        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
-      },
-      "profile": "board.esp32-c3-devmodule-v1",
-      "renderer": {
-        "cssHeight": 220,
-        "cssWidth": 160,
-        "renderer": "board-esp32-c3-profile",
-        "thumbnail": "board-esp32-c3-profile",
-        "viewBox": [
-          0,
-          0,
-          160,
-          220
-        ]
-      },
-      "rendererContractSha256": "95b58544ffb4f3a11a9eb2514ed269bc0464d7b2bd3e1e7f50dda1839c841974",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "connector": "J1",
-              "physicalPin": 4,
-              "strappingPin": true,
-              "voltageMax": 3.3,
-              "voltageMin": 0
-            },
-            "id": "GPIO2",
-            "role": "digital-io",
-            "signals": [
-              "digital.output"
-            ]
-          },
-          {
-            "constraints": {
-              "connector": "J1",
-              "physicalPin": 6
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Actual QEMU CPU/UART is separate from this executed-register-write GPIO2 project model.",
-            "GPIO2 is a strapping pin; this bounded teaching path is not physical-board equivalence."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "47f21637431be47217854b63ded12bc182b93af75d0f25cd8a36c05d7ee0a74d",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "b4e2a5cd3f1ec29bc0930111cacf80ca9ea1cc130486583c5d53fe907d098c58",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
-      },
-      "profile": "board.esp32-c3-devmodule-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "4e3270e118536be3b175319a5bf1e48d6d16f81445c93d333a10ccd5be660bc1",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
-      },
-      "profile": "board.esp32-c3-devmodule-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "6e557bb0ac3fb3d18a3db3dad320f9619d807b24dff896575c7ae2ad17eabdb1",
-      "componentType": "board.rp2040-pico-v1",
-      "componentVersion": 1,
-      "modelId": "model.rp2040-pico-gpio0-public-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "board.rp2040-pico-v1-state-v1",
-        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
-      },
-      "profile": "board.rp2040-pico-v1",
-      "renderer": {
-        "cssHeight": 300,
-        "cssWidth": 132,
-        "renderer": "board-rp2040-pico",
-        "thumbnail": "board-rp2040-pico",
-        "viewBox": [
-          0,
-          0,
-          132,
-          300
-        ]
-      },
-      "rendererContractSha256": "52d6e473d0ddb6e77f4299987759cf671fcc9d7025d827651d9220935605250c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.rp2040-pico-gpio0-public-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "physicalPin": 1,
-              "voltageMax": 3.3,
-              "voltageMin": 0
-            },
-            "id": "GP0",
-            "role": "digital-io",
-            "signals": [
-              "digital.output",
-              "pwm.output"
-            ]
-          },
-          {
-            "constraints": {
-              "physicalPin": 3
-            },
-            "id": "GND3",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Public bounded GPIO0 output circuit subset only; no complete board or physical-hardware equivalence.",
-            "GPIO25 is the onboard LED connection and is intentionally not exposed as a header anchor."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "981d93d732c94ee648051dab6505f97712f18d7ecd26544102ee58239f72c265",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "7b9e5c4035f22e44b4f9d61a7487dc12aa58b93931d28da15ed797dadf451663",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
-      },
-      "profile": "board.rp2040-pico-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "f45529e97ba5a348beacfa62d5eb3a0acf4a658eecd61de0bd8aea14749218ac",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
-      },
-      "profile": "board.rp2040-pico-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "be564470410b1e4908a4fdecda961e56718f28d91939a70f091d7cac77a0a023",
-      "componentType": "board.stm32f429zi-nucleo144-v1",
-      "componentVersion": 1,
-      "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "board.stm32f429zi-nucleo144-v1-state-v1",
-        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
-      },
-      "profile": "board.stm32f429zi-nucleo144-v1",
-      "renderer": {
-        "cssHeight": 230,
-        "cssWidth": 190,
-        "renderer": "board-stm32f429zi-profile",
-        "thumbnail": "board-stm32f429zi-profile",
-        "viewBox": [
-          0,
-          0,
-          190,
-          230
-        ]
-      },
-      "rendererContractSha256": "5d3909f79e7ac00abfde9bc6d67044203ca6f262f7c17d28781331c6aec46de3",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "connector": "CN11",
-              "physicalPin": 34,
-              "voltageMax": 3.3,
-              "voltageMin": 0
-            },
-            "id": "PB0",
-            "role": "digital-io",
-            "signals": [
-              "digital.output"
-            ]
-          },
-          {
-            "constraints": {
-              "connector": "CN11",
-              "physicalPin": 35
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Public bounded PB0 and USART3 subset only; no complete board or physical-hardware equivalence.",
-            "The external resistor and LED are an ideal teaching circuit driven by actual Renode-observed PB0."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "4f2061383d5c2011fae731719a9e8a50883d1c37bcf8e607c56a6d2550310a76",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "c7f60745555e765868f9bddc5929e7361b99fcb4095a72ab7e766ab684eaf144",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
-      },
-      "profile": "board.stm32f429zi-nucleo144-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "376385e005661ef942cdca9f5f6627bac79bd38856378dede5258b2f676405f0",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
-      },
-      "profile": "board.stm32f429zi-nucleo144-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    }
-  ],
-  "implementationId": "intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14",
-  "implementationMembers": [
-    {
-      "path": "src/component-catalog.mjs",
-      "sha256": "d461c7f52e591f2937518dd7cc30f9fdfd915cd9c6104624364d2236ecf1d236"
-    },
-    {
-      "path": "src/circuit-engine.mjs",
-      "sha256": "87ebd90e9ebb32c8fd7dbc8d7b3c9e8108bf834278b6592729334a0301f48166"
-    },
-    {
-      "path": "src/runtime-kernel.mjs",
-      "sha256": "b1bb960f9a60b37652318cd8a87c189e9a791603a705eb17710ff640a202efd7"
-    },
-    {
-      "path": "src/atmega328p-adapter.mjs",
-      "sha256": "65136d0b607336db992ba7dab81447813331b103136ec7c5348e6fc1ca9300de"
-    },
-    {
-      "path": "src/x43-avr-stack-profile.mjs",
-      "sha256": "daab81af7d7af8ccec2749328bcd1deae2e7f0e7a785af8ce726ba9efbee6758"
-    },
-    {
-      "path": "src/x43-avr-heap-profile.mjs",
-      "sha256": "4f26c5cc3b55950de3a27af6c6dce679b9dcea4a56aa5e2b82b65759d1102056"
-    },
-    {
-      "path": "compiler/avr-allocator-provenance.mjs",
-      "sha256": "abd96f1f59f0a524c8517f3884abf83ff7662f62bbcee1483e4813185df952ea"
-    },
-    {
-      "path": "compiler/build-coordinator.mjs",
-      "sha256": "7e4a03b6111c7b87b0e49b6813fef53059acd80405285ebc723ffa41e8440ffd"
-    },
-    {
-      "path": "compiler/build-worker.mjs",
-      "sha256": "8ab69f241900dcd5a3eb00fb73227421789423158e2490f272e964cf2fed56b1"
-    },
-    {
-      "path": "compiler/build-protocol.mjs",
-      "sha256": "a434642391598b05c592e6df4f8eef792f235df5017156c03def65da9f12b4bb"
-    },
-    {
-      "path": "Dockerfile.toolchain",
-      "sha256": "05008526c706ca99183d206a99b13e61ec2b1174591d47d4181fc8d78d3c92e2"
-    },
-    {
-      "path": "src/x47-runtime-transaction.mjs",
-      "sha256": "34b90ff05ee63b97ff88ef18d70efdc0bcaf6814f57940ab3580e894caa108e6"
-    },
-    {
-      "path": "src/x47-ui-integration.mjs",
-      "sha256": "baee930e2a369b091f2b3237fca815928d7d87d91ce9cc962aef72f09e92b3d3"
-    },
-    {
-      "path": "src/strict-json.mjs",
-      "sha256": "2a8bcfeed40b56f44d771ddbd2bad77b7ce17698e7f9f608afae8e828d8cb5e5"
-    },
-    {
-      "path": "src/component-appearance.mjs",
-      "sha256": "4c6b62483e52e1f48cf16c48f3b3de57ac99296ccec443d7efdfc3678c04add7"
-    },
-    {
-      "path": "src/project-v2.mjs",
-      "sha256": "453422102ebb64cb1485687d37d2c75155d63e231cf16c7e4a9ba2f86e7b9ca0"
-    },
-    {
-      "path": "src/project-editor.mjs",
-      "sha256": "d50ad45104b980a44b7ab3a62d4da749b54646d6c1eb5327b5447dd098a18ce4"
-    },
-    {
-      "path": "src/lifecycle.mjs",
-      "sha256": "4772e4491d4feb853673d6c8caeee9eb58ece4756805b92638342a5fcd7889d6"
-    },
-    {
-      "path": "staging/component-artwork.mjs",
-      "sha256": "b038661a2d7a26266d0602bb9ccb124cceb17b577ccaf66228db90441f49fdfc"
-    },
-    {
-      "path": "src/model-library.mjs",
-      "sha256": "6dd3013cbc65f5c05588c31e5e7519ad3316c03e7f25d16242de98e012f83909"
-    },
-    {
-      "path": "src/model-bundle-registry.mjs",
-      "sha256": "941ff4af959f2b7742a0553cce29947b0a7acb13b2ab55fb8195165cc70b8371"
-    },
-    {
-      "path": "src/project-envelope.mjs",
-      "sha256": "ff4ab3f6680d2b5f0c6aabc16537062465fc85381d4b6d1fc642a39a14094adf"
-    },
-    {
-      "path": "src/model-control-contracts.mjs",
-      "sha256": "138d6f0b76abc3b1a509b741e581030192d91923864c8f804f42c32ef82abaa4"
-    },
-    {
-      "path": "src/simulator.worker.mjs",
-      "sha256": "7de0aac12d59c7fac8c12c68a555555bb8e68442389f8a46cfa358898e1e49fd"
-    },
-    {
-      "path": "staging/main.mjs",
-      "sha256": "0ef10fe0eb0759db2bdca4b7eaf75c3a4144cb36f68d918d3d41d9e57ad711ee"
-    },
-    {
-      "path": "src/rp2040-snapshot-pacer.mjs",
-      "sha256": "cc6ae6a1ba2ccf30382d4eefdd547de81c0053c6923e978b5e0dcf18c2a53b7e"
-    },
-    {
-      "path": "src/rp2040-experimental-runtime.mjs",
-      "sha256": "93463965a8f379afdea256f270f2efb2876d9ec8ddff7f9e9676d7a7ad82a10d"
-    },
-    {
-      "path": "src/runtime-identity.mjs",
-      "sha256": "dcd4e0df743d6310a6661cc3a2cf6b2d2879e33a3b82a3dd8620570c689231e8"
-    },
-    {
-      "path": "src/candidate-project-session.mjs",
-      "sha256": "079a528132787c424d12ec8b7514eb075ce11086f5e2962b8553e6fb4a1de43d"
-    },
-    {
-      "path": "src/candidate-spdt-runtime.mjs",
-      "sha256": "cac63a72f4e0a8b67468d638d5ae9cf8bf49a76420e62d648bb4745bf9d8de31"
-    },
-    {
-      "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "5d60089e6da394f332410b54e270d8620cde812ea3d48d0005622348838426bf"
-    },
-    {
-      "path": "src/rp2040-pico-circuit.mjs",
-      "sha256": "9ba0ac0a14f5c33c16d43f6a7eb7313a657b36bf10cfe13ea24cd893625524f0"
-    },
-    {
-      "path": "src/esp32c3-public-circuit.mjs",
-      "sha256": "47fad0c2e060118a986cf08b6a83a24e8e0d955fa15fe4a3f399a51e51179b66"
-    },
-    {
-      "path": "src/stm32-public-circuit.mjs",
-      "sha256": "12873127b49d7c9c65f79b52228fee0d0419f2f7a8856aac0c7b0dc528001988"
-    },
-    {
-      "path": "src/rp2040-public-workbench.mjs",
-      "sha256": "c04d0beb03c037ad02f20e3fa8271306ff3f954b6575e6c84bea96ed231219af"
-    },
-    {
-      "path": "src/esp32c3-public-workbench.mjs",
-      "sha256": "f3a21835f0125df0948397aa32f276c66f5601d08064cd12cc584b65b001e76a"
-    },
-    {
-      "path": "src/stm32-public-workbench.mjs",
-      "sha256": "cd52cbfa009e847080f27bbc401eac344d9795e08ef9177efdd43d4042a99672"
-    },
-    {
-      "path": "expansion-drafts/controller-runtime-bridge-v1.mjs",
-      "sha256": "670767df34464eb8fb47037bf44f4911545ea58941832c81fb842eaba5793278"
-    },
-    {
-      "path": "expansion-drafts/rp2040-runtime-bridge-adapter-v1.mjs",
-      "sha256": "4b7496cd38a995bcecfb3b3456edce10f0d671606f0fa3d6c36e99762ee2ac56"
-    },
-    {
-      "path": "expansion-drafts/rp2040-conformance-fixtures-v1.mjs",
-      "sha256": "3d8eb99253b2c91876b6ac678838a2cf35b72e5261362be94575f364ac962bb9"
-    },
-    {
-      "path": "expansion-drafts/rp2040-firmware-artifact-v1.mjs",
-      "sha256": "7f08aa59de5e69eddd5e1a4cfd7c1e900f898d7c65425eb6274247058c53430b"
-    },
-    {
-      "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "bca551ac31347c998a849f62ad3989b47a4b5f0471fce58d36a6c64d1b288746"
-    },
-    {
-      "path": "expansion-drafts/ground-reference-integration-v1.mjs",
-      "sha256": "59dc3833915afbec325b2d06e815c3250ad858ad1769da03c509ae7e3cd38958"
-    },
-    {
-      "path": "expansion-drafts/toggle-switch-integration-v1.mjs",
-      "sha256": "90fcaad32074957021ffe5bde973c81c08a3dd0f345495ab169218416dc0e389"
-    },
-    {
-      "path": "expansion-drafts/switch-contact-graph-v1.mjs",
-      "sha256": "073a5079335b222c53410971dcab42324cfa3ad639cc4b57a879fbe6efa476d2"
-    },
-    {
-      "path": "expansion-drafts/ideal-three-pin-analogue-module-v1.mjs",
-      "sha256": "383caf45e17281997b5b6e6f8a63bde660e19a1e48e1d0be1c137a8d36c187d3"
-    },
-    {
-      "path": "expansion-drafts/light-analogue-sensor-v1.mjs",
-      "sha256": "1a6efe15ec9b955f2824b711d32ea5d310d7966a223f8366031158514db24fbc"
-    },
-    {
-      "path": "expansion-drafts/temperature-analogue-sensor-v1.mjs",
-      "sha256": "5f3290f865e79ecf7362ea6b6ea667d9e01670a5daabb1b1cf70e977a6307817"
-    },
-    {
-      "path": "expansion-drafts/digital-light-threshold-module-v1.mjs",
-      "sha256": "f3a203a7c92e412a615599e6b0dbca9a84af3c15843c47e7bedc3a8f4d48d2bd"
-    },
-    {
-      "path": "expansion-drafts/common-cathode-rgb-led-v1.mjs",
-      "sha256": "42d045d2882ed745c4f2895d21bc0683582ce185c03b1dce9b854f98389f69d1"
-    },
-    {
-      "path": "expansion-drafts/active-buzzer-module-v1.mjs",
-      "sha256": "aa8bd1dc352a689ebcf0443cc2595426cdcf46396b1bc47b742c3731b2dafe94"
-    },
-    {
-      "path": "expansion-drafts/seven-segment-common-cathode-v1.mjs",
-      "sha256": "5d2b30cdfcfd48ad8dfc6e767ac9c9ee2825018e94980cf8915d5550b7d69905"
-    },
-    {
-      "path": "expansion-drafts/character-lcd-16x2-4bit-v1.mjs",
-      "sha256": "463871c751ee4e7857d46ceb75500f417c59a59af331535e8e3b2c87d17b27ee"
-    },
-    {
-      "path": "expansion-drafts/rotary-encoder-quadrature-v1.mjs",
-      "sha256": "0671974cb26e5447db07266f2e6a85a1f4fdd2fb8463453aa274987177167ac8"
-    },
-    {
-      "path": "src/model-library-current-resolver.mjs",
-      "sha256": "9e08761d0ba461e71156e21a4f1d569db41cd95de25a34b4e93a5661d8058ba5"
-    }
-  ],
-  "implementationSha256": "25cade9bc388b1f400ffb1e52f84bd09679f019ea3656d7903f4b6838f601a8c",
-  "libraryId": "intent-mcu-public-models",
-  "lineage": {
-    "baselineClosureDisposition": "accepted public rc.98 identity remains immutable and migration-only",
-    "compatibility": "explicit-data-only-migration; runtime-and-verdict-authority-cleared",
-    "presentationDisposition": "unsupported or malformed optional heap metadata remains unavailable without breaking ordinary firmware Build and Run",
-    "priorManifestSha256": "fb2e24797f2e4513bf29e003cc902bda99c71520fe9becd7031fcc12dedb8be2",
-    "priorVersion": "2.0.0-x43-heap-frontier-candidate.1-current",
-    "semanticDisposition": "component and electrical semantics are unchanged; heap support additionally requires exact pinned archive-member linker provenance"
-  },
-  "manifestSha256": "3fa5a0e0fed1f1903783a1c3aadb7ae7ff9248fff2a669d9d584966b3d5b78e3",
-  "runtimeContracts": [
-    "avr8js@0.21.1",
-    "rp2040js@1.4.0",
-    "esp32c3-qemu@project-pinned",
-    "renode@1.17.0"
-  ],
-  "schema": "intent-mcu-model-library-manifest@2",
-  "version": "2.0.0-x43-heap-provenance-fix.1-current"
-});
-export const PRE_X43_HEAP_PROVENANCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
-  "entries": [
-    {
-      "behaviorContractSha256": "8a16b4363336188ec3c587b95b1a40a3f6890416909c53746a669f4e29ebccf8",
-      "componentType": "board.atmega328p-16mhz-v1",
-      "componentVersion": 1,
-      "modelId": "model.atmega328p-board-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "board.atmega328p-16mhz-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 150,
-        "cssWidth": 300,
-        "renderer": "board-atmega328p",
-        "thumbnail": "board-atmega328p",
-        "viewBox": [
-          0,
-          0,
-          160,
-          80
-        ]
-      },
-      "rendererContractSha256": "a3529e81b49ea07434d583dc701a609044326b0f716ba2ef665d87a2f52a018a",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.atmega328p-board-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D0",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D1",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D2",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D3",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D4",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D5",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D6",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D7",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D8",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D9",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D10",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D11",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D12",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D13",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A0",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A1",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A2",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A3",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A4",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A5",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "5V",
-            "role": "power-out",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "GND1",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "GND2",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "GND3",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Tested ATmega328P subset only; not complete physical-board equivalence."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "fc24be479f5217bd7f07e42dad258520ec1f58fda3da9e8086e775e38e431f29",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "ef86e48c35ece351afb2909f1fccbfcf07414e49d3b94feee41e3df3c551c7a9",
-      "componentType": "button.momentary-v1",
-      "componentVersion": 1,
-      "modelId": "model.button-momentary-no-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "button.momentary-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 78,
-        "cssWidth": 100,
-        "renderer": "button-tactile",
-        "thumbnail": "button-tactile",
-        "viewBox": [
-          0,
-          0,
-          100,
-          78
-        ]
-      },
-      "rendererContractSha256": "200542372ea2b0cef1bcf3187978e26955341815222422b2feebd0ee97eb6265",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "pressed": {
-            "default": false,
-            "kind": "boolean",
-            "mutability": "authored"
-          }
-        },
-        "internalTerminalGroups": [
-          {
-            "pin": "A",
-            "terminals": [
-              "A1",
-              "A2"
-            ]
-          },
-          {
-            "pin": "B",
-            "terminals": [
-              "B1",
-              "B2"
-            ]
-          }
-        ],
-        "modelId": "model.button-momentary-no-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "attachmentTerminal": "A1",
-              "terminals": [
-                "A1",
-                "A2"
-              ]
-            },
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "attachmentTerminal": "B1",
-              "terminals": [
-                "B1",
-                "B2"
-              ]
-            },
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "normallyOpen": {
-            "default": true,
-            "kind": "boolean"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Normally-open ideal contact; A1/A2 and B1/B2 are explicit internally common terminal groups."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "67034c86f1f01dbec2a7a87b40b650899edfaa9d5e26b18e27545e2067bab7d3",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "02439437029fb058f4dc340ec0aa375d57cf4206c05af2a26476c62bb6a54e59",
-      "componentType": "input.rotary-encoder-quadrature-v1",
-      "componentVersion": 1,
-      "modelId": "model.rotary-encoder-quadrature-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "input.rotary-encoder-quadrature-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 110,
-        "cssWidth": 128,
-        "renderer": "input-rotary-encoder-quadrature",
-        "thumbnail": "input-rotary-encoder-quadrature",
-        "viewBox": [
-          0,
-          0,
-          128,
-          110
-        ]
-      },
-      "rendererContractSha256": "70233214cea0c0d3af791f0d13e7a53d069c826a722b657235090fa2647809eb",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "detent": {
-            "default": 0,
-            "kind": "integer",
-            "maximum": 999,
-            "minimum": -999,
-            "mutability": "transition-only",
-            "unit": "detent"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.rotary-encoder-quadrature-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "pullMode": "input-pullup",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A",
-            "role": "digital-out",
-            "signals": [
-              "digital.quadrature-contact"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "COM",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "pullMode": "input-pullup",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "B",
-            "role": "digital-out",
-            "signals": [
-              "digital.quadrature-contact"
-            ]
-          }
-        ],
-        "properties": {
-          "encoding": {
-            "default": "gray-2bit",
-            "kind": "enum",
-            "values": [
-              "gray-2bit"
-            ]
-          },
-          "pullMode": {
-            "default": "input-pullup",
-            "kind": "enum",
-            "values": [
-              "input-pullup"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "A and B must connect directly to the supported AVR external-interrupt pins D2 and D3, one unique phase per pin; COM must connect directly to board ground.",
-            "Each detent emits the deterministic ideal Gray sequence CW 11→01→00→10→11 or CCW 11→10→00→01→11 at 16,000 cycles per phase.",
-            "A/B are open contacts read HIGH through firmware INPUT_PULLUP and close LOW to COM. Firmware must decode the transitions; the UI never writes a counter value.",
-            "No contact bounce, resistance, acceleration, missed edges, shaft switch, mechanical timing or physical detent behavior is modelled."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "64a10bc430af43a501afcd5a5e9b8cbf82ab39c5a0f575014940a26c1c5fb771",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "bf7585b946ae3656c42799d5adc34707a9ec67ee30b9613ac11858ce2e25fb4a",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "a60089087cffe39f7065e338f7bc1fd6ae9d641649ae0c986d8af0f5258a47a0",
-      "componentType": "output.active-buzzer-module-v1",
-      "componentVersion": 1,
-      "modelId": "model.active-buzzer-logical-enable-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "output.active-buzzer-module-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "output-active-buzzer-module",
-        "thumbnail": "output-active-buzzer-module",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "b1da623cd44588659ca208b9c9e6c06b40a5506cbfe8ec1b1d2ad93ac0e5fdf1",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.active-buzzer-logical-enable-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "activeLevel": "HIGH",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "EN",
-            "role": "digital-in",
-            "signals": [
-              "digital.high-active-enable"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Ideal 5 V active-buzzer module with a high-active, high-impedance EN input on one direct AVR D2–D13 GPIO output.",
-            "The existing runtime GPIO state drives a silent visual enabled/disabled indicator; no browser audio is produced.",
-            "No oscillator, waveform, frequency, duty-to-tone, sound pressure, supply current, GPIO current, loading, tolerance, resonance, thermal or physical acoustic accuracy is modelled."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "a2165819e146e0ed027e50c802ef5ca7f3e5c3c460868b94d68ee9a925e3d44e",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "95a3df8b7eb6060b25632b6fcf26f0bb07ca6d31fe58b02366fd34f175ad230c",
-      "componentType": "output.character-lcd-16x2-4bit-v1",
-      "componentVersion": 1,
-      "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "output.character-lcd-16x2-4bit-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 130,
-        "cssWidth": 220,
-        "renderer": "output-character-lcd-16x2-4bit",
-        "thumbnail": "output-character-lcd-16x2-4bit",
-        "viewBox": [
-          0,
-          0,
-          220,
-          130
-        ]
-      },
-      "rendererContractSha256": "19637bb2f2c867f15a8beacf073e019373e97e82b045d4f9c62658df9d12f3f9",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "RS",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-register-select"
-            ]
-          },
-          {
-            "constraints": {
-              "requiredLevel": "LOW",
-              "writeOnly": true
-            },
-            "id": "RW",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "latchEdge": "falling",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "E",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-enable"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 4,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D4",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 5,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D5",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 6,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D6",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 7,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D7",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Bounded HD44780-style write-only 4-bit decoder for one 16×2 display. VCC requires 5 V, GND and RW require ground, and RS, E and D4–D7 require six unique direct AVR D2–D13 outputs.",
-            "Supported initialization is 0x3,0x3,0x3,0x2 followed by commands 0x28,0x0C,0x06,0x01 with enforced power-on, enable-pulse and instruction timing. Supported runtime commands are clear, home, 4-bit/2-line function set, display-on, increment entry mode and visible DDRAM addresses.",
-            "Printable ASCII 0x20–0x7E is rendered. Reads, busy flag, RW-high operation, custom glyphs/CGRAM, cursor or blink modes, display shifts, automatic line wrapping, 8-bit mode, I²C, backpacks, contrast, backlight, current and physical timing tolerances are unsupported."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "7b5ae575ea2513ecc0452e086a6c321db93bd1299d2d1a2c8bc1b7def5e2b132",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "ea81bef435b00aba5887d36f3e294136007377470bf3f60f6e7431bd26dd0988",
-      "componentType": "output.rgb-led-common-cathode-v1",
-      "componentVersion": 1,
-      "modelId": "model.rgb-led-common-cathode-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "output.rgb-led-common-cathode-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "output-rgb-led-common-cathode",
-        "thumbnail": "output-rgb-led-common-cathode",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "604f4f8f4fa53fe6e2bbfb9dd6e11886d92c5079ec4e44ba5f1ebcc93a4a3a3a",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.rgb-led-common-cathode-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "channel": "red",
-              "polarity": "anode",
-              "requiresSeriesResistor": true
-            },
-            "id": "R",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-channel"
-            ]
-          },
-          {
-            "constraints": {
-              "channel": "green",
-              "polarity": "anode",
-              "requiresSeriesResistor": true
-            },
-            "id": "G",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-channel"
-            ]
-          },
-          {
-            "constraints": {
-              "channel": "blue",
-              "polarity": "anode",
-              "requiresSeriesResistor": true
-            },
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-channel"
-            ]
-          },
-          {
-            "constraints": {
-              "commonCathode": true,
-              "polarity": "cathode"
-            },
-            "id": "COM",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Ideal common-cathode teaching model projected through three independently validated existing LED channels.",
-            "R, G and B each require one dedicated external series resistor and one supported AVR PWM output: D3, D5, D6, D9, D10 or D11; COM must connect to ground.",
-            "Displayed colour is only the commanded relative PWM mix. No wavelength, luminous intensity, optical mixing, current matching, tolerance, thermal or physical colour accuracy is claimed."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "6302f0b958d0b9d30326cc61cc50073eec36aa9ff60ca07e103afa5a107d7ed2",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "e0a3e06dae01578d009d2eca8f716d49bcd5f53b6f627d7d8aa747f1fb1b3c7c",
-      "componentType": "output.seven-segment-common-cathode-v1",
-      "componentVersion": 1,
-      "modelId": "model.seven-segment-common-cathode-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "output.seven-segment-common-cathode-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 120,
-        "cssWidth": 160,
-        "renderer": "output-seven-segment-common-cathode",
-        "thumbnail": "output-seven-segment-common-cathode",
-        "viewBox": [
-          0,
-          0,
-          160,
-          120
-        ]
-      },
-      "rendererContractSha256": "e8a6732efecaadfeafa61e941e596e7707552879d71eeba9fed1dc42e95a9ba2",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.seven-segment-common-cathode-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "a"
-            },
-            "id": "a",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "b"
-            },
-            "id": "b",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "c"
-            },
-            "id": "c",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "d"
-            },
-            "id": "d",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "e"
-            },
-            "id": "e",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "f"
-            },
-            "id": "f",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "g"
-            },
-            "id": "g",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "commonCathode": true,
-              "polarity": "cathode"
-            },
-            "id": "COM",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Ideal single-digit common-cathode teaching model projected through seven independently validated existing LED channels.",
-            "Segments a through g each require one dedicated external series resistor and one unique AVR D2–D13 digital output; COM must connect to ground.",
-            "Only commanded segment on/off state is shown. No decimal point, multiplexing, driver IC, brightness, optical, package-current, tolerance, thermal or physical display accuracy is modelled."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "11e0e7c4cf2ffd2a74ee9a13133aed906c24894a9be78a3e37a316d84695a668",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "cdc051a988b5ba362b4e8f13e645902990073df58c8672b71269c149472b9c37",
-      "componentType": "potentiometer.linear-v1",
-      "componentVersion": 1,
-      "modelId": "model.pot-divider-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "potentiometer.linear-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 110,
-        "renderer": "potentiometer-rotary",
-        "thumbnail": "potentiometer-rotary",
-        "viewBox": [
-          0,
-          0,
-          110,
-          100
-        ]
-      },
-      "rendererContractSha256": "7b1688b9b69b5de9bd7079abb2617d13dd9844132d5e26564d3d5497cb314f21",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "position": {
-            "default": 0.5,
-            "kind": "number",
-            "maximum": 1,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "ratio"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.pot-divider-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "HIGH",
-            "role": "passive",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "WIPER",
-            "role": "passive",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "LOW",
-            "role": "passive",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 10000,
-            "kind": "number",
-            "maximum": 10000000,
-            "minimum": 1,
-            "unit": "Ω"
-          },
-          "taper": {
-            "default": "linear",
-            "kind": "enum",
-            "values": [
-              "linear"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Linear 5 V divider only; no loading, tolerance or non-linear taper model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "b1707fc143253ab9a0af55d379e6d9c155b31030c1e1fed48924ef1cf326ec03",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "99ef9afefe3655962262cc0ed6e7f62405fdf78efb66f23e1a54b66fbdc0db10",
-      "componentType": "reference.ground-v1",
-      "componentVersion": 1,
-      "modelId": "model.ground-reference-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "reference.ground-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 72,
-        "cssWidth": 72,
-        "renderer": "ground-reference-symbol",
-        "thumbnail": "ground-reference-symbol",
-        "viewBox": [
-          0,
-          0,
-          72,
-          72
-        ]
-      },
-      "rendererContractSha256": "6068255d29e2e1dabe95c75167d28efdc19694a376c532b6ebab6caa0b19cee2",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.ground-reference-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "REF",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {
-          "potentialVolts": {
-            "default": 0,
-            "kind": "number",
-            "maximum": 0,
-            "minimum": 0,
-            "unit": "V"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded to one-controller 5 V AVR teaching circuits with at most three independent reference nets.",
-            "Represents circuit 0 V only; it is not earth, chassis or protective ground.",
-            "Does not source voltage or current and does not model ground loops or multiple reference domains."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "a8b939586b60a0b5269e9cf262aba2fa4af9e27a9aae6c789883ca22737f61fc",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "b9b2570b8d50675c8bae5e975be4ea5cf9fdc84b0e9bc4a8a72091ebfe9da707",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "e37697b6669ed0fc9c89507e756b2312163b3ecd14ded19078e5b212420c77f0",
-      "componentType": "sensor.light-analogue-v1",
-      "componentVersion": 1,
-      "modelId": "model.light-analogue-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "sensor.light-analogue-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "sensor-light-analogue",
-        "thumbnail": "sensor-light-analogue",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "e99a821f74da1c8a615eeb2f8b4cc14e6fc3c3a1503c1493f81b7b844d3c06d1",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "lightLevel": {
-            "default": 0.5,
-            "kind": "number",
-            "maximum": 1,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "ratio"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.light-analogue-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "AOUT",
-            "role": "analogue-out",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Idealized module signal only: light level maps linearly to 0–5 V on AOUT from a fixed 5 V supply.",
-            "No lux calibration, physical LDR curve, loading, tolerance, noise, response time or ambient-light physics is modelled.",
-            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "32d8032d88d3eb95ebf781d53fbecbceef5a2bcd03a36d76f0987ac78082ed85",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "07131e540fcdd8265084aaeeb0e03163139f21ad29ea4aaa4171b1777cfd6d76",
-      "componentType": "sensor.light-threshold-digital-v1",
-      "componentVersion": 1,
-      "modelId": "model.light-threshold-digital-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "sensor.light-threshold-digital-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "sensor-light-threshold-digital",
-        "thumbnail": "sensor-light-threshold-digital",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "fe677e716d3f419d2848da150cad49ae9ab7db1e82abec49cb117728de114a5a",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "hysteresisPercentagePoints": {
-            "default": 5,
-            "kind": "number",
-            "maximum": 10,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "percentage-point"
-          },
-          "lightLevelPercent": {
-            "default": 40,
-            "kind": "number",
-            "maximum": 100,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "%"
-          },
-          "outputActive": {
-            "default": false,
-            "kind": "boolean",
-            "mutability": "derived"
-          },
-          "thresholdPercent": {
-            "default": 50,
-            "kind": "number",
-            "maximum": 100,
-            "minimum": 10,
-            "mutability": "authored",
-            "unit": "%"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.light-threshold-digital-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "DOUT",
-            "role": "digital-out",
-            "signals": [
-              "digital.active-low"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Generic idealized signal only: input and threshold are percentages; hysteresis is measured in percentage points.",
-            "DOUT is active LOW: it activates at input >= threshold, deactivates at input <= threshold - hysteresis, and retains its prior state inside that band.",
-            "No lux calibration, physical detector curve, propagation delay, electrical loading, tolerance, noise or ambient-light physics is modelled.",
-            "DOUT must connect directly and exclusively to one D2–D12 INPUT_PULLUP pin on the supported 5 V AVR controller."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "af209039275b9cecebaee139b829e911fb3d0d6eb2f8dd15edd40bcde1baa992",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "2066f0e6c93cd0b0a535f525eb454c98c0b01c8ee0edff971558d4b1c9a4a865",
-      "componentType": "sensor.temperature-analogue-v1",
-      "componentVersion": 1,
-      "modelId": "model.temperature-analogue-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "sensor.temperature-analogue-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "sensor-temperature-analogue",
-        "thumbnail": "sensor-temperature-analogue",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "56771edd9c32a5600ea97fdd7871bbb5575b8640f24838a2a575c3abffac3310",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "temperatureC": {
-            "default": 25,
-            "kind": "number",
-            "maximum": 150,
-            "minimum": -50,
-            "mutability": "authored",
-            "unit": "°C"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.temperature-analogue-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "AOUT",
-            "role": "analogue-out",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Idealized generic module only: -50 to 150 °C maps linearly to 0–5 V using AOUT = (temperatureC + 50) / 40 V.",
-            "No physical-sensor accuracy, calibration error, self-heating, thermal lag, loading, tolerance or noise is modelled.",
-            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "83428743da39b176d458a323047645d234dcdebfac4a2622fb53cea123e2ee99",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "b6dd77769864d089ea78a79fefea2af16cf746ad809dbb6deb46e745b32f034c",
-      "componentType": "switch.changeover-spdt-v1",
-      "componentVersion": 1,
-      "modelId": "model.switch-changeover-spdt-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "switch.changeover-spdt-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 120,
-        "cssWidth": 180,
-        "renderer": "switch-changeover-spdt",
-        "thumbnail": "switch-changeover-spdt",
-        "viewBox": [
-          0,
-          0,
-          150,
-          100
-        ]
-      },
-      "rendererContractSha256": "66c9bcef1d82302791e8f4d5f84a7c97e1f3ffdda220b1119630ece57c457113",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "selectedThrow": {
-            "default": "A",
-            "kind": "enum",
-            "mutability": "authored",
-            "values": [
-              "A",
-              "B"
-            ]
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.switch-changeover-spdt-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "COM",
-            "role": "passive",
-            "signals": []
-          },
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": []
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": []
-          }
-        ],
-        "properties": {
-          "transitionPolicy": {
-            "default": "break-before-make",
-            "kind": "enum",
-            "values": [
-              "break-before-make"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Only one AVR digital-input COM selecting a direct GND or 5 V throw is simulated.",
-            "BREAK uses the INPUT_PULLUP release level; generic high-impedance and analogue contact networks are rejected.",
-            "No bounce, resistance, delay, arcing, current rating or output-drive inference is modelled."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "3b1af60efa5006c701d4e21d15e0660319075641918b95595f320281cdb9ad44",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "6022c826eadb48b0088b9662ba72a456d786505eb5801b3ec2e5b5a0fd5ae3c3",
-      "componentType": "switch.toggle-spst-v1",
-      "componentVersion": 1,
-      "modelId": "model.switch-toggle-spst-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "switch.toggle-spst-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 82,
-        "cssWidth": 112,
-        "renderer": "switch-toggle-spst",
-        "thumbnail": "switch-toggle-spst",
-        "viewBox": [
-          0,
-          0,
-          112,
-          82
-        ]
-      },
-      "rendererContractSha256": "9cd549733a3df4fa1a9f1e9a20035150c9474ca697ed396ef05161f398f5abde",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "closed": {
-            "default": false,
-            "kind": "boolean",
-            "mutability": "authored"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.switch-toggle-spst-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "normallyOpen": {
-            "default": true,
-            "kind": "boolean"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Ideal latching normally-open SPST contact in the existing 0–5 V AVR digital-input topology.",
-            "No contact bounce, resistance, current rating, arcing or mechanical wear model.",
-            "Not an SPDT selector, mains switch or physical-safety model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "9173550bff2f8d5b71cfdbaaef97b9a20e734a7f05678c1a029ee5d6d6e02a0f",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "57728ea56b5084c95b7a05f03cb391f174f31047371d4c324677a32d6089a28b",
-      "componentType": "board.esp32-c3-devmodule-v1",
-      "componentVersion": 1,
-      "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "board.esp32-c3-devmodule-v1-state-v1",
-        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
-      },
-      "profile": "board.esp32-c3-devmodule-v1",
-      "renderer": {
-        "cssHeight": 220,
-        "cssWidth": 160,
-        "renderer": "board-esp32-c3-profile",
-        "thumbnail": "board-esp32-c3-profile",
-        "viewBox": [
-          0,
-          0,
-          160,
-          220
-        ]
-      },
-      "rendererContractSha256": "95b58544ffb4f3a11a9eb2514ed269bc0464d7b2bd3e1e7f50dda1839c841974",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "connector": "J1",
-              "physicalPin": 4,
-              "strappingPin": true,
-              "voltageMax": 3.3,
-              "voltageMin": 0
-            },
-            "id": "GPIO2",
-            "role": "digital-io",
-            "signals": [
-              "digital.output"
-            ]
-          },
-          {
-            "constraints": {
-              "connector": "J1",
-              "physicalPin": 6
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Actual QEMU CPU/UART is separate from this executed-register-write GPIO2 project model.",
-            "GPIO2 is a strapping pin; this bounded teaching path is not physical-board equivalence."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "47f21637431be47217854b63ded12bc182b93af75d0f25cd8a36c05d7ee0a74d",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "bf1fc14b80be915ffbd5b5b9e11dd0b28cc7e6f6600a37c56d817b2aad67babc",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
-      },
-      "profile": "board.esp32-c3-devmodule-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "6b99b21a7f909e526251c75ea3713a32d7f896af34ba9ef5b3501c8bd49f360b",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
-      },
-      "profile": "board.esp32-c3-devmodule-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "1aee4fc5b4f5a21a4a4ad553503854ed5d23eb8b05da9ae79478e9353b8d1a58",
-      "componentType": "board.rp2040-pico-v1",
-      "componentVersion": 1,
-      "modelId": "model.rp2040-pico-gpio0-public-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "board.rp2040-pico-v1-state-v1",
-        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
-      },
-      "profile": "board.rp2040-pico-v1",
-      "renderer": {
-        "cssHeight": 300,
-        "cssWidth": 132,
-        "renderer": "board-rp2040-pico",
-        "thumbnail": "board-rp2040-pico",
-        "viewBox": [
-          0,
-          0,
-          132,
-          300
-        ]
-      },
-      "rendererContractSha256": "52d6e473d0ddb6e77f4299987759cf671fcc9d7025d827651d9220935605250c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.rp2040-pico-gpio0-public-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "physicalPin": 1,
-              "voltageMax": 3.3,
-              "voltageMin": 0
-            },
-            "id": "GP0",
-            "role": "digital-io",
-            "signals": [
-              "digital.output",
-              "pwm.output"
-            ]
-          },
-          {
-            "constraints": {
-              "physicalPin": 3
-            },
-            "id": "GND3",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Public bounded GPIO0 output circuit subset only; no complete board or physical-hardware equivalence.",
-            "GPIO25 is the onboard LED connection and is intentionally not exposed as a header anchor."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "981d93d732c94ee648051dab6505f97712f18d7ecd26544102ee58239f72c265",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "45f1615d84863de5eb0ca88a2568f89b9979d909d7e022a5b198624469050d5e",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
-      },
-      "profile": "board.rp2040-pico-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "8a358782f4bf31009b0a678e6fd014f8a707809c24c81cb00d80b26c59850a2b",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
-      },
-      "profile": "board.rp2040-pico-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "632711b7cf6dee67b23cf28c2530cd44b90c9a47bb994dea58410994498188d2",
-      "componentType": "board.stm32f429zi-nucleo144-v1",
-      "componentVersion": 1,
-      "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "board.stm32f429zi-nucleo144-v1-state-v1",
-        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
-      },
-      "profile": "board.stm32f429zi-nucleo144-v1",
-      "renderer": {
-        "cssHeight": 230,
-        "cssWidth": 190,
-        "renderer": "board-stm32f429zi-profile",
-        "thumbnail": "board-stm32f429zi-profile",
-        "viewBox": [
-          0,
-          0,
-          190,
-          230
-        ]
-      },
-      "rendererContractSha256": "5d3909f79e7ac00abfde9bc6d67044203ca6f262f7c17d28781331c6aec46de3",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "connector": "CN11",
-              "physicalPin": 34,
-              "voltageMax": 3.3,
-              "voltageMin": 0
-            },
-            "id": "PB0",
-            "role": "digital-io",
-            "signals": [
-              "digital.output"
-            ]
-          },
-          {
-            "constraints": {
-              "connector": "CN11",
-              "physicalPin": 35
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Public bounded PB0 and USART3 subset only; no complete board or physical-hardware equivalence.",
-            "The external resistor and LED are an ideal teaching circuit driven by actual Renode-observed PB0."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "4f2061383d5c2011fae731719a9e8a50883d1c37bcf8e607c56a6d2550310a76",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "063df2a5c8e640c001fa908f7996cea86778f3381ca0a6b843463ddcec7aaf7f",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
-      },
-      "profile": "board.stm32f429zi-nucleo144-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "6ae23917b7a845dc2b9a87a733a974cd4e2d1d5b630b69040a5528131fb67899",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
-      },
-      "profile": "board.stm32f429zi-nucleo144-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    }
-  ],
-  "implementationId": "intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13",
-  "implementationMembers": [
-    {
-      "path": "src/component-catalog.mjs",
-      "sha256": "d461c7f52e591f2937518dd7cc30f9fdfd915cd9c6104624364d2236ecf1d236"
-    },
-    {
-      "path": "src/circuit-engine.mjs",
-      "sha256": "87ebd90e9ebb32c8fd7dbc8d7b3c9e8108bf834278b6592729334a0301f48166"
-    },
-    {
-      "path": "src/runtime-kernel.mjs",
-      "sha256": "b1bb960f9a60b37652318cd8a87c189e9a791603a705eb17710ff640a202efd7"
-    },
-    {
-      "path": "src/atmega328p-adapter.mjs",
-      "sha256": "65136d0b607336db992ba7dab81447813331b103136ec7c5348e6fc1ca9300de"
-    },
-    {
-      "path": "src/x43-avr-stack-profile.mjs",
-      "sha256": "daab81af7d7af8ccec2749328bcd1deae2e7f0e7a785af8ce726ba9efbee6758"
-    },
-    {
-      "path": "src/x43-avr-heap-profile.mjs",
-      "sha256": "bb45b5caa7f23b35090a45c600072e7d7170f64713941111bf1b6d54d0b87822"
-    },
-    {
-      "path": "src/x47-runtime-transaction.mjs",
-      "sha256": "34b90ff05ee63b97ff88ef18d70efdc0bcaf6814f57940ab3580e894caa108e6"
-    },
-    {
-      "path": "src/x47-ui-integration.mjs",
-      "sha256": "baee930e2a369b091f2b3237fca815928d7d87d91ce9cc962aef72f09e92b3d3"
-    },
-    {
-      "path": "src/strict-json.mjs",
-      "sha256": "2a8bcfeed40b56f44d771ddbd2bad77b7ce17698e7f9f608afae8e828d8cb5e5"
-    },
-    {
-      "path": "src/component-appearance.mjs",
-      "sha256": "4c6b62483e52e1f48cf16c48f3b3de57ac99296ccec443d7efdfc3678c04add7"
-    },
-    {
-      "path": "src/project-v2.mjs",
-      "sha256": "453422102ebb64cb1485687d37d2c75155d63e231cf16c7e4a9ba2f86e7b9ca0"
-    },
-    {
-      "path": "src/project-editor.mjs",
-      "sha256": "d50ad45104b980a44b7ab3a62d4da749b54646d6c1eb5327b5447dd098a18ce4"
-    },
-    {
-      "path": "src/lifecycle.mjs",
-      "sha256": "4772e4491d4feb853673d6c8caeee9eb58ece4756805b92638342a5fcd7889d6"
-    },
-    {
-      "path": "staging/component-artwork.mjs",
-      "sha256": "b038661a2d7a26266d0602bb9ccb124cceb17b577ccaf66228db90441f49fdfc"
-    },
-    {
-      "path": "src/model-library.mjs",
-      "sha256": "1b959a988e77e70c5a59a053e50f96f27bcb074bde07e83f0aecc31fdbacfaf0"
-    },
-    {
-      "path": "src/model-bundle-registry.mjs",
-      "sha256": "1caf6d23bf2c579f579fe721dc24cde93140ee3f4636b3038a0bda1df03ca6ac"
-    },
-    {
-      "path": "src/project-envelope.mjs",
-      "sha256": "ff4ab3f6680d2b5f0c6aabc16537062465fc85381d4b6d1fc642a39a14094adf"
-    },
-    {
-      "path": "src/model-control-contracts.mjs",
-      "sha256": "138d6f0b76abc3b1a509b741e581030192d91923864c8f804f42c32ef82abaa4"
-    },
-    {
-      "path": "src/simulator.worker.mjs",
-      "sha256": "7de0aac12d59c7fac8c12c68a555555bb8e68442389f8a46cfa358898e1e49fd"
-    },
-    {
-      "path": "staging/main.mjs",
-      "sha256": "a92be8f241ebba5327df1ef190eaa734f4e61c939483642d1a3059228a6d707b"
-    },
-    {
-      "path": "src/rp2040-snapshot-pacer.mjs",
-      "sha256": "cc6ae6a1ba2ccf30382d4eefdd547de81c0053c6923e978b5e0dcf18c2a53b7e"
-    },
-    {
-      "path": "src/rp2040-experimental-runtime.mjs",
-      "sha256": "93463965a8f379afdea256f270f2efb2876d9ec8ddff7f9e9676d7a7ad82a10d"
-    },
-    {
-      "path": "src/runtime-identity.mjs",
-      "sha256": "dcd4e0df743d6310a6661cc3a2cf6b2d2879e33a3b82a3dd8620570c689231e8"
-    },
-    {
-      "path": "src/candidate-project-session.mjs",
-      "sha256": "079a528132787c424d12ec8b7514eb075ce11086f5e2962b8553e6fb4a1de43d"
-    },
-    {
-      "path": "src/candidate-spdt-runtime.mjs",
-      "sha256": "cac63a72f4e0a8b67468d638d5ae9cf8bf49a76420e62d648bb4745bf9d8de31"
-    },
-    {
-      "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "5d60089e6da394f332410b54e270d8620cde812ea3d48d0005622348838426bf"
-    },
-    {
-      "path": "src/rp2040-pico-circuit.mjs",
-      "sha256": "9ba0ac0a14f5c33c16d43f6a7eb7313a657b36bf10cfe13ea24cd893625524f0"
-    },
-    {
-      "path": "src/esp32c3-public-circuit.mjs",
-      "sha256": "47fad0c2e060118a986cf08b6a83a24e8e0d955fa15fe4a3f399a51e51179b66"
-    },
-    {
-      "path": "src/stm32-public-circuit.mjs",
-      "sha256": "12873127b49d7c9c65f79b52228fee0d0419f2f7a8856aac0c7b0dc528001988"
-    },
-    {
-      "path": "src/rp2040-public-workbench.mjs",
-      "sha256": "c04d0beb03c037ad02f20e3fa8271306ff3f954b6575e6c84bea96ed231219af"
-    },
-    {
-      "path": "src/esp32c3-public-workbench.mjs",
-      "sha256": "f3a21835f0125df0948397aa32f276c66f5601d08064cd12cc584b65b001e76a"
-    },
-    {
-      "path": "src/stm32-public-workbench.mjs",
-      "sha256": "cd52cbfa009e847080f27bbc401eac344d9795e08ef9177efdd43d4042a99672"
-    },
-    {
-      "path": "expansion-drafts/controller-runtime-bridge-v1.mjs",
-      "sha256": "670767df34464eb8fb47037bf44f4911545ea58941832c81fb842eaba5793278"
-    },
-    {
-      "path": "expansion-drafts/rp2040-runtime-bridge-adapter-v1.mjs",
-      "sha256": "4b7496cd38a995bcecfb3b3456edce10f0d671606f0fa3d6c36e99762ee2ac56"
-    },
-    {
-      "path": "expansion-drafts/rp2040-conformance-fixtures-v1.mjs",
-      "sha256": "3d8eb99253b2c91876b6ac678838a2cf35b72e5261362be94575f364ac962bb9"
-    },
-    {
-      "path": "expansion-drafts/rp2040-firmware-artifact-v1.mjs",
-      "sha256": "7f08aa59de5e69eddd5e1a4cfd7c1e900f898d7c65425eb6274247058c53430b"
-    },
-    {
-      "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "bca551ac31347c998a849f62ad3989b47a4b5f0471fce58d36a6c64d1b288746"
-    },
-    {
-      "path": "expansion-drafts/ground-reference-integration-v1.mjs",
-      "sha256": "59dc3833915afbec325b2d06e815c3250ad858ad1769da03c509ae7e3cd38958"
-    },
-    {
-      "path": "expansion-drafts/toggle-switch-integration-v1.mjs",
-      "sha256": "90fcaad32074957021ffe5bde973c81c08a3dd0f345495ab169218416dc0e389"
-    },
-    {
-      "path": "expansion-drafts/switch-contact-graph-v1.mjs",
-      "sha256": "073a5079335b222c53410971dcab42324cfa3ad639cc4b57a879fbe6efa476d2"
-    },
-    {
-      "path": "expansion-drafts/ideal-three-pin-analogue-module-v1.mjs",
-      "sha256": "383caf45e17281997b5b6e6f8a63bde660e19a1e48e1d0be1c137a8d36c187d3"
-    },
-    {
-      "path": "expansion-drafts/light-analogue-sensor-v1.mjs",
-      "sha256": "1a6efe15ec9b955f2824b711d32ea5d310d7966a223f8366031158514db24fbc"
-    },
-    {
-      "path": "expansion-drafts/temperature-analogue-sensor-v1.mjs",
-      "sha256": "5f3290f865e79ecf7362ea6b6ea667d9e01670a5daabb1b1cf70e977a6307817"
-    },
-    {
-      "path": "expansion-drafts/digital-light-threshold-module-v1.mjs",
-      "sha256": "f3a203a7c92e412a615599e6b0dbca9a84af3c15843c47e7bedc3a8f4d48d2bd"
-    },
-    {
-      "path": "expansion-drafts/common-cathode-rgb-led-v1.mjs",
-      "sha256": "42d045d2882ed745c4f2895d21bc0683582ce185c03b1dce9b854f98389f69d1"
-    },
-    {
-      "path": "expansion-drafts/active-buzzer-module-v1.mjs",
-      "sha256": "aa8bd1dc352a689ebcf0443cc2595426cdcf46396b1bc47b742c3731b2dafe94"
-    },
-    {
-      "path": "expansion-drafts/seven-segment-common-cathode-v1.mjs",
-      "sha256": "5d2b30cdfcfd48ad8dfc6e767ac9c9ee2825018e94980cf8915d5550b7d69905"
-    },
-    {
-      "path": "expansion-drafts/character-lcd-16x2-4bit-v1.mjs",
-      "sha256": "463871c751ee4e7857d46ceb75500f417c59a59af331535e8e3b2c87d17b27ee"
-    },
-    {
-      "path": "expansion-drafts/rotary-encoder-quadrature-v1.mjs",
-      "sha256": "0671974cb26e5447db07266f2e6a85a1f4fdd2fb8463453aa274987177167ac8"
-    },
-    {
-      "path": "src/model-library-current-resolver.mjs",
-      "sha256": "ebdd2e3c7d01fd9a2ac41f34fe044823037145855acd9521f713ea8de5e365f3"
-    }
-  ],
-  "implementationSha256": "7ab4a22de81b0d98ebaf1180494c9dbcf9b34d90e2748469934a445156c24cd9",
-  "libraryId": "intent-mcu-public-models",
-  "lineage": {
-    "baselineClosureDisposition": "accepted public rc.98 identity remains immutable and migration-only",
-    "compatibility": "explicit-data-only-migration; runtime-and-verdict-authority-cleared",
-    "presentationDisposition": "private X43 candidate distinguishes allocator frontier from live heap, free SRAM, fragmentation and collision safety",
-    "priorManifestSha256": "af955739ce5d154f519e51d1fa72d82b756c241d931e6f2f8a7631875620d456",
-    "priorVersion": "2.0.0-x43-stack-hotpath-candidate.1-current",
-    "semanticDisposition": "component and electrical semantics are unchanged; exact avr-libc allocator-symbol SRAM observation is explicit-request-only"
-  },
-  "manifestSha256": "fb2e24797f2e4513bf29e003cc902bda99c71520fe9becd7031fcc12dedb8be2",
-  "runtimeContracts": [
-    "avr8js@0.21.1",
-    "rp2040js@1.4.0",
-    "esp32c3-qemu@project-pinned",
-    "renode@1.17.0"
-  ],
-  "schema": "intent-mcu-model-library-manifest@2",
-  "version": "2.0.0-x43-heap-frontier-candidate.1-current"
-});
-export const PRE_X43_HEAP_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
-  "entries": [
-    {
-      "behaviorContractSha256": "2711bbf998e271192e2ece46d76909d09598a59791f8757578ac572ac9ef91bb",
-      "componentType": "board.atmega328p-16mhz-v1",
-      "componentVersion": 1,
-      "modelId": "model.atmega328p-board-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "board.atmega328p-16mhz-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 150,
-        "cssWidth": 300,
-        "renderer": "board-atmega328p",
-        "thumbnail": "board-atmega328p",
-        "viewBox": [
-          0,
-          0,
-          160,
-          80
-        ]
-      },
-      "rendererContractSha256": "a3529e81b49ea07434d583dc701a609044326b0f716ba2ef665d87a2f52a018a",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.atmega328p-board-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D0",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D1",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D2",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D3",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D4",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D5",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D6",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D7",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D8",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D9",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D10",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D11",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D12",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D13",
-            "role": "digital-io",
-            "signals": [
-              "digital.bidirectional",
-              "digital.input",
-              "digital.pull-up"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A0",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A1",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A2",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A3",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A4",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A5",
-            "role": "analogue-in",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "5V",
-            "role": "power-out",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "GND1",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "GND2",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "GND3",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Tested ATmega328P subset only; not complete physical-board equivalence."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "fc24be479f5217bd7f07e42dad258520ec1f58fda3da9e8086e775e38e431f29",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "5b2e0c1bd8b8315be89442be565498baffaac302b8dd6d044190960abdccbf0a",
-      "componentType": "button.momentary-v1",
-      "componentVersion": 1,
-      "modelId": "model.button-momentary-no-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "button.momentary-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 78,
-        "cssWidth": 100,
-        "renderer": "button-tactile",
-        "thumbnail": "button-tactile",
-        "viewBox": [
-          0,
-          0,
-          100,
-          78
-        ]
-      },
-      "rendererContractSha256": "200542372ea2b0cef1bcf3187978e26955341815222422b2feebd0ee97eb6265",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "pressed": {
-            "default": false,
-            "kind": "boolean",
-            "mutability": "authored"
-          }
-        },
-        "internalTerminalGroups": [
-          {
-            "pin": "A",
-            "terminals": [
-              "A1",
-              "A2"
-            ]
-          },
-          {
-            "pin": "B",
-            "terminals": [
-              "B1",
-              "B2"
-            ]
-          }
-        ],
-        "modelId": "model.button-momentary-no-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "attachmentTerminal": "A1",
-              "terminals": [
-                "A1",
-                "A2"
-              ]
-            },
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "attachmentTerminal": "B1",
-              "terminals": [
-                "B1",
-                "B2"
-              ]
-            },
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "normallyOpen": {
-            "default": true,
-            "kind": "boolean"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Normally-open ideal contact; A1/A2 and B1/B2 are explicit internally common terminal groups."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "67034c86f1f01dbec2a7a87b40b650899edfaa9d5e26b18e27545e2067bab7d3",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "055794fec9c138c7b821a7388565d716e13c809c033f7fefe5a6ea9226b1cea8",
-      "componentType": "input.rotary-encoder-quadrature-v1",
-      "componentVersion": 1,
-      "modelId": "model.rotary-encoder-quadrature-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "input.rotary-encoder-quadrature-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 110,
-        "cssWidth": 128,
-        "renderer": "input-rotary-encoder-quadrature",
-        "thumbnail": "input-rotary-encoder-quadrature",
-        "viewBox": [
-          0,
-          0,
-          128,
-          110
-        ]
-      },
-      "rendererContractSha256": "70233214cea0c0d3af791f0d13e7a53d069c826a722b657235090fa2647809eb",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "detent": {
-            "default": 0,
-            "kind": "integer",
-            "maximum": 999,
-            "minimum": -999,
-            "mutability": "transition-only",
-            "unit": "detent"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.rotary-encoder-quadrature-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "pullMode": "input-pullup",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "A",
-            "role": "digital-out",
-            "signals": [
-              "digital.quadrature-contact"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "COM",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "pullMode": "input-pullup",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "B",
-            "role": "digital-out",
-            "signals": [
-              "digital.quadrature-contact"
-            ]
-          }
-        ],
-        "properties": {
-          "encoding": {
-            "default": "gray-2bit",
-            "kind": "enum",
-            "values": [
-              "gray-2bit"
-            ]
-          },
-          "pullMode": {
-            "default": "input-pullup",
-            "kind": "enum",
-            "values": [
-              "input-pullup"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "A and B must connect directly to the supported AVR external-interrupt pins D2 and D3, one unique phase per pin; COM must connect directly to board ground.",
-            "Each detent emits the deterministic ideal Gray sequence CW 11→01→00→10→11 or CCW 11→10→00→01→11 at 16,000 cycles per phase.",
-            "A/B are open contacts read HIGH through firmware INPUT_PULLUP and close LOW to COM. Firmware must decode the transitions; the UI never writes a counter value.",
-            "No contact bounce, resistance, acceleration, missed edges, shaft switch, mechanical timing or physical detent behavior is modelled."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "64a10bc430af43a501afcd5a5e9b8cbf82ab39c5a0f575014940a26c1c5fb771",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "11f3239e8b80dbcc4a89c0d68f834e6c6f5720009174323845ea56311c9a2805",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "d8aa189a945314c0d1bc10a60c627097f95433a49ad4288e54686033947c3720",
-      "componentType": "output.active-buzzer-module-v1",
-      "componentVersion": 1,
-      "modelId": "model.active-buzzer-logical-enable-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "output.active-buzzer-module-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "output-active-buzzer-module",
-        "thumbnail": "output-active-buzzer-module",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "b1da623cd44588659ca208b9c9e6c06b40a5506cbfe8ec1b1d2ad93ac0e5fdf1",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.active-buzzer-logical-enable-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "activeLevel": "HIGH",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "EN",
-            "role": "digital-in",
-            "signals": [
-              "digital.high-active-enable"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Ideal 5 V active-buzzer module with a high-active, high-impedance EN input on one direct AVR D2–D13 GPIO output.",
-            "The existing runtime GPIO state drives a silent visual enabled/disabled indicator; no browser audio is produced.",
-            "No oscillator, waveform, frequency, duty-to-tone, sound pressure, supply current, GPIO current, loading, tolerance, resonance, thermal or physical acoustic accuracy is modelled."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "a2165819e146e0ed027e50c802ef5ca7f3e5c3c460868b94d68ee9a925e3d44e",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "66c7c40b8f41a9d7ebd20b8b9bb2e5b6d04cf84d345d625040bafe139d79e5e3",
-      "componentType": "output.character-lcd-16x2-4bit-v1",
-      "componentVersion": 1,
-      "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "output.character-lcd-16x2-4bit-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 130,
-        "cssWidth": 220,
-        "renderer": "output-character-lcd-16x2-4bit",
-        "thumbnail": "output-character-lcd-16x2-4bit",
-        "viewBox": [
-          0,
-          0,
-          220,
-          130
-        ]
-      },
-      "rendererContractSha256": "19637bb2f2c867f15a8beacf073e019373e97e82b045d4f9c62658df9d12f3f9",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "RS",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-register-select"
-            ]
-          },
-          {
-            "constraints": {
-              "requiredLevel": "LOW",
-              "writeOnly": true
-            },
-            "id": "RW",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "latchEdge": "falling",
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "E",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-enable"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 4,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D4",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 5,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D5",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 6,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D6",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          },
-          {
-            "constraints": {
-              "bit": 7,
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "D7",
-            "role": "digital-in",
-            "signals": [
-              "digital.hd44780-data-4bit"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Bounded HD44780-style write-only 4-bit decoder for one 16×2 display. VCC requires 5 V, GND and RW require ground, and RS, E and D4–D7 require six unique direct AVR D2–D13 outputs.",
-            "Supported initialization is 0x3,0x3,0x3,0x2 followed by commands 0x28,0x0C,0x06,0x01 with enforced power-on, enable-pulse and instruction timing. Supported runtime commands are clear, home, 4-bit/2-line function set, display-on, increment entry mode and visible DDRAM addresses.",
-            "Printable ASCII 0x20–0x7E is rendered. Reads, busy flag, RW-high operation, custom glyphs/CGRAM, cursor or blink modes, display shifts, automatic line wrapping, 8-bit mode, I²C, backpacks, contrast, backlight, current and physical timing tolerances are unsupported."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "7b5ae575ea2513ecc0452e086a6c321db93bd1299d2d1a2c8bc1b7def5e2b132",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "ee8147e105fd1e8240a5d218a44759d023621ed12352abf7cce1d366af6a3b28",
-      "componentType": "output.rgb-led-common-cathode-v1",
-      "componentVersion": 1,
-      "modelId": "model.rgb-led-common-cathode-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "output.rgb-led-common-cathode-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "output-rgb-led-common-cathode",
-        "thumbnail": "output-rgb-led-common-cathode",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "604f4f8f4fa53fe6e2bbfb9dd6e11886d92c5079ec4e44ba5f1ebcc93a4a3a3a",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.rgb-led-common-cathode-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "channel": "red",
-              "polarity": "anode",
-              "requiresSeriesResistor": true
-            },
-            "id": "R",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-channel"
-            ]
-          },
-          {
-            "constraints": {
-              "channel": "green",
-              "polarity": "anode",
-              "requiresSeriesResistor": true
-            },
-            "id": "G",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-channel"
-            ]
-          },
-          {
-            "constraints": {
-              "channel": "blue",
-              "polarity": "anode",
-              "requiresSeriesResistor": true
-            },
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-channel"
-            ]
-          },
-          {
-            "constraints": {
-              "commonCathode": true,
-              "polarity": "cathode"
-            },
-            "id": "COM",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Ideal common-cathode teaching model projected through three independently validated existing LED channels.",
-            "R, G and B each require one dedicated external series resistor and one supported AVR PWM output: D3, D5, D6, D9, D10 or D11; COM must connect to ground.",
-            "Displayed colour is only the commanded relative PWM mix. No wavelength, luminous intensity, optical mixing, current matching, tolerance, thermal or physical colour accuracy is claimed."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "6302f0b958d0b9d30326cc61cc50073eec36aa9ff60ca07e103afa5a107d7ed2",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "1a99a8fc4639a925f1669f792a32eb83f850d9eb7d71e620892efe5ee64024d3",
-      "componentType": "output.seven-segment-common-cathode-v1",
-      "componentVersion": 1,
-      "modelId": "model.seven-segment-common-cathode-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "output.seven-segment-common-cathode-v1-observer-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 120,
-        "cssWidth": 160,
-        "renderer": "output-seven-segment-common-cathode",
-        "thumbnail": "output-seven-segment-common-cathode",
-        "viewBox": [
-          0,
-          0,
-          160,
-          120
-        ]
-      },
-      "rendererContractSha256": "e8a6732efecaadfeafa61e941e596e7707552879d71eeba9fed1dc42e95a9ba2",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.seven-segment-common-cathode-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "a"
-            },
-            "id": "a",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "b"
-            },
-            "id": "b",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "c"
-            },
-            "id": "c",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "d"
-            },
-            "id": "d",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "e"
-            },
-            "id": "e",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "f"
-            },
-            "id": "f",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "anode",
-              "requiresSeriesResistor": true,
-              "segment": "g"
-            },
-            "id": "g",
-            "role": "passive",
-            "signals": [
-              "passive.current-limited-led-segment"
-            ]
-          },
-          {
-            "constraints": {
-              "commonCathode": true,
-              "polarity": "cathode"
-            },
-            "id": "COM",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Ideal single-digit common-cathode teaching model projected through seven independently validated existing LED channels.",
-            "Segments a through g each require one dedicated external series resistor and one unique AVR D2–D13 digital output; COM must connect to ground.",
-            "Only commanded segment on/off state is shown. No decimal point, multiplexing, driver IC, brightness, optical, package-current, tolerance, thermal or physical display accuracy is modelled."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "11e0e7c4cf2ffd2a74ee9a13133aed906c24894a9be78a3e37a316d84695a668",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "731f4588812e71a304fe9b497920af84f7aa7fbbaa010bf8988fd719bce745c2",
-      "componentType": "potentiometer.linear-v1",
-      "componentVersion": 1,
-      "modelId": "model.pot-divider-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "potentiometer.linear-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 110,
-        "renderer": "potentiometer-rotary",
-        "thumbnail": "potentiometer-rotary",
-        "viewBox": [
-          0,
-          0,
-          110,
-          100
-        ]
-      },
-      "rendererContractSha256": "7b1688b9b69b5de9bd7079abb2617d13dd9844132d5e26564d3d5497cb314f21",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "position": {
-            "default": 0.5,
-            "kind": "number",
-            "maximum": 1,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "ratio"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.pot-divider-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "HIGH",
-            "role": "passive",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "WIPER",
-            "role": "passive",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "LOW",
-            "role": "passive",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 10000,
-            "kind": "number",
-            "maximum": 10000000,
-            "minimum": 1,
-            "unit": "Ω"
-          },
-          "taper": {
-            "default": "linear",
-            "kind": "enum",
-            "values": [
-              "linear"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Linear 5 V divider only; no loading, tolerance or non-linear taper model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "b1707fc143253ab9a0af55d379e6d9c155b31030c1e1fed48924ef1cf326ec03",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "dcba7478852860fa508a568bb7df12582f48e079ff183280850fecb1d862c5cd",
-      "componentType": "reference.ground-v1",
-      "componentVersion": 1,
-      "modelId": "model.ground-reference-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "reference.ground-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 72,
-        "cssWidth": 72,
-        "renderer": "ground-reference-symbol",
-        "thumbnail": "ground-reference-symbol",
-        "viewBox": [
-          0,
-          0,
-          72,
-          72
-        ]
-      },
-      "rendererContractSha256": "6068255d29e2e1dabe95c75167d28efdc19694a376c532b6ebab6caa0b19cee2",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.ground-reference-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "REF",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {
-          "potentialVolts": {
-            "default": 0,
-            "kind": "number",
-            "maximum": 0,
-            "minimum": 0,
-            "unit": "V"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded to one-controller 5 V AVR teaching circuits with at most three independent reference nets.",
-            "Represents circuit 0 V only; it is not earth, chassis or protective ground.",
-            "Does not source voltage or current and does not model ground loops or multiple reference domains."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "a8b939586b60a0b5269e9cf262aba2fa4af9e27a9aae6c789883ca22737f61fc",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "2d3d9b6540a83e72a51758b1d2bfb6c046496d91091e0836073eb90e0f6401e2",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "avr-base-circuit-runtime-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "2f916943a7dd171ccdd86ab536a3a9254a5e1016a58985333e5080e189e1b141",
-      "componentType": "sensor.light-analogue-v1",
-      "componentVersion": 1,
-      "modelId": "model.light-analogue-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "sensor.light-analogue-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "sensor-light-analogue",
-        "thumbnail": "sensor-light-analogue",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "e99a821f74da1c8a615eeb2f8b4cc14e6fc3c3a1503c1493f81b7b844d3c06d1",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "lightLevel": {
-            "default": 0.5,
-            "kind": "number",
-            "maximum": 1,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "ratio"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.light-analogue-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "AOUT",
-            "role": "analogue-out",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Idealized module signal only: light level maps linearly to 0–5 V on AOUT from a fixed 5 V supply.",
-            "No lux calibration, physical LDR curve, loading, tolerance, noise, response time or ambient-light physics is modelled.",
-            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "32d8032d88d3eb95ebf781d53fbecbceef5a2bcd03a36d76f0987ac78082ed85",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "4a9fdbbd3e525e76faca1613281631cf1f78fe298ac22bfab68e1bf6fb6b966e",
-      "componentType": "sensor.light-threshold-digital-v1",
-      "componentVersion": 1,
-      "modelId": "model.light-threshold-digital-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "sensor.light-threshold-digital-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "sensor-light-threshold-digital",
-        "thumbnail": "sensor-light-threshold-digital",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "fe677e716d3f419d2848da150cad49ae9ab7db1e82abec49cb117728de114a5a",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "hysteresisPercentagePoints": {
-            "default": 5,
-            "kind": "number",
-            "maximum": 10,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "percentage-point"
-          },
-          "lightLevelPercent": {
-            "default": 40,
-            "kind": "number",
-            "maximum": 100,
-            "minimum": 0,
-            "mutability": "authored",
-            "unit": "%"
-          },
-          "outputActive": {
-            "default": false,
-            "kind": "boolean",
-            "mutability": "derived"
-          },
-          "thresholdPercent": {
-            "default": 50,
-            "kind": "number",
-            "maximum": 100,
-            "minimum": 10,
-            "mutability": "authored",
-            "unit": "%"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.light-threshold-digital-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "DOUT",
-            "role": "digital-out",
-            "signals": [
-              "digital.active-low"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Generic idealized signal only: input and threshold are percentages; hysteresis is measured in percentage points.",
-            "DOUT is active LOW: it activates at input >= threshold, deactivates at input <= threshold - hysteresis, and retains its prior state inside that band.",
-            "No lux calibration, physical detector curve, propagation delay, electrical loading, tolerance, noise or ambient-light physics is modelled.",
-            "DOUT must connect directly and exclusively to one D2–D12 INPUT_PULLUP pin on the supported 5 V AVR controller."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "af209039275b9cecebaee139b829e911fb3d0d6eb2f8dd15edd40bcde1baa992",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "3c3046367ea13ee809d6da91920b1d9b1485592d65d6950d2b873d9a1fca1acc",
-      "componentType": "sensor.temperature-analogue-v1",
-      "componentVersion": 1,
-      "modelId": "model.temperature-analogue-ideal-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "sensor.temperature-analogue-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 120,
-        "renderer": "sensor-temperature-analogue",
-        "thumbnail": "sensor-temperature-analogue",
-        "viewBox": [
-          0,
-          0,
-          120,
-          100
-        ]
-      },
-      "rendererContractSha256": "56771edd9c32a5600ea97fdd7871bbb5575b8640f24838a2a575c3abffac3310",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "temperatureC": {
-            "default": 25,
-            "kind": "number",
-            "maximum": 150,
-            "minimum": -50,
-            "mutability": "authored",
-            "unit": "°C"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.temperature-analogue-ideal-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "voltage": 5
-            },
-            "id": "VCC",
-            "role": "power-in",
-            "signals": [
-              "power.5v-reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltage": 0
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          },
-          {
-            "constraints": {
-              "voltageMax": 5,
-              "voltageMin": 0
-            },
-            "id": "AOUT",
-            "role": "analogue-out",
-            "signals": [
-              "analogue.scalar-0-5v"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Idealized generic module only: -50 to 150 °C maps linearly to 0–5 V using AOUT = (temperatureC + 50) / 40 V.",
-            "No physical-sensor accuracy, calibration error, self-heating, thermal lag, loading, tolerance or noise is modelled.",
-            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "83428743da39b176d458a323047645d234dcdebfac4a2622fb53cea123e2ee99",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "3a656c831f15c42612405495549bcb364b72c08303ae7868d4137ccba85335b2",
-      "componentType": "switch.changeover-spdt-v1",
-      "componentVersion": 1,
-      "modelId": "model.switch-changeover-spdt-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "switch.changeover-spdt-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 120,
-        "cssWidth": 180,
-        "renderer": "switch-changeover-spdt",
-        "thumbnail": "switch-changeover-spdt",
-        "viewBox": [
-          0,
-          0,
-          150,
-          100
-        ]
-      },
-      "rendererContractSha256": "66c9bcef1d82302791e8f4d5f84a7c97e1f3ffdda220b1119630ece57c457113",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "selectedThrow": {
-            "default": "A",
-            "kind": "enum",
-            "mutability": "authored",
-            "values": [
-              "A",
-              "B"
-            ]
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.switch-changeover-spdt-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "COM",
-            "role": "passive",
-            "signals": []
-          },
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": []
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": []
-          }
-        ],
-        "properties": {
-          "transitionPolicy": {
-            "default": "break-before-make",
-            "kind": "enum",
-            "values": [
-              "break-before-make"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Only one AVR digital-input COM selecting a direct GND or 5 V throw is simulated.",
-            "BREAK uses the INPUT_PULLUP release level; generic high-impedance and analogue contact networks are rejected.",
-            "No bounce, resistance, delay, arcing, current rating or output-drive inference is modelled."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "3b1af60efa5006c701d4e21d15e0660319075641918b95595f320281cdb9ad44",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "d5e9b48e9b134f0d3271cae3ad22e5ad2d9042e483fe095a68c98d5b55ba9a2b",
-      "componentType": "switch.toggle-spst-v1",
-      "componentVersion": 1,
-      "modelId": "model.switch-toggle-spst-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "switch.toggle-spst-v1-state-v1",
-        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
-      },
-      "profile": "board.atmega328p-16mhz-v1",
-      "renderer": {
-        "cssHeight": 82,
-        "cssWidth": 112,
-        "renderer": "switch-toggle-spst",
-        "thumbnail": "switch-toggle-spst",
-        "viewBox": [
-          0,
-          0,
-          112,
-          82
-        ]
-      },
-      "rendererContractSha256": "9cd549733a3df4fa1a9f1e9a20035150c9474ca697ed396ef05161f398f5abde",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {
-          "closed": {
-            "default": false,
-            "kind": "boolean",
-            "mutability": "authored"
-          }
-        },
-        "internalTerminalGroups": [],
-        "modelId": "model.switch-toggle-spst-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "normallyOpen": {
-            "default": true,
-            "kind": "boolean"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Ideal latching normally-open SPST contact in the existing 0–5 V AVR digital-input topology.",
-            "No contact bounce, resistance, current rating, arcing or mechanical wear model.",
-            "Not an SPDT selector, mains switch or physical-safety model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "9173550bff2f8d5b71cfdbaaef97b9a20e734a7f05678c1a029ee5d6d6e02a0f",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "4bd5d3685ce1eb8146e49a37096eed49d365290388286be090e74dcb419bd368",
-      "componentType": "board.esp32-c3-devmodule-v1",
-      "componentVersion": 1,
-      "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "board.esp32-c3-devmodule-v1-state-v1",
-        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
-      },
-      "profile": "board.esp32-c3-devmodule-v1",
-      "renderer": {
-        "cssHeight": 220,
-        "cssWidth": 160,
-        "renderer": "board-esp32-c3-profile",
-        "thumbnail": "board-esp32-c3-profile",
-        "viewBox": [
-          0,
-          0,
-          160,
-          220
-        ]
-      },
-      "rendererContractSha256": "95b58544ffb4f3a11a9eb2514ed269bc0464d7b2bd3e1e7f50dda1839c841974",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "connector": "J1",
-              "physicalPin": 4,
-              "strappingPin": true,
-              "voltageMax": 3.3,
-              "voltageMin": 0
-            },
-            "id": "GPIO2",
-            "role": "digital-io",
-            "signals": [
-              "digital.output"
-            ]
-          },
-          {
-            "constraints": {
-              "connector": "J1",
-              "physicalPin": 6
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Actual QEMU CPU/UART is separate from this executed-register-write GPIO2 project model.",
-            "GPIO2 is a strapping pin; this bounded teaching path is not physical-board equivalence."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "47f21637431be47217854b63ded12bc182b93af75d0f25cd8a36c05d7ee0a74d",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "79fb849190b7147c2f9a0bf534d85e80db6ff10842607df2a8a171fffe145192",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
-      },
-      "profile": "board.esp32-c3-devmodule-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "81661d22e83c4decefa8a391a925d0078e922169c02e9c8580d3b8b923a867dc",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
-      },
-      "profile": "board.esp32-c3-devmodule-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "fced6748c62c7744d2b166a5803a461146bb86eeb1440db3a6e422c7c05d0342",
-      "componentType": "board.rp2040-pico-v1",
-      "componentVersion": 1,
-      "modelId": "model.rp2040-pico-gpio0-public-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "board.rp2040-pico-v1-state-v1",
-        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
-      },
-      "profile": "board.rp2040-pico-v1",
-      "renderer": {
-        "cssHeight": 300,
-        "cssWidth": 132,
-        "renderer": "board-rp2040-pico",
-        "thumbnail": "board-rp2040-pico",
-        "viewBox": [
-          0,
-          0,
-          132,
-          300
-        ]
-      },
-      "rendererContractSha256": "52d6e473d0ddb6e77f4299987759cf671fcc9d7025d827651d9220935605250c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.rp2040-pico-gpio0-public-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "physicalPin": 1,
-              "voltageMax": 3.3,
-              "voltageMin": 0
-            },
-            "id": "GP0",
-            "role": "digital-io",
-            "signals": [
-              "digital.output",
-              "pwm.output"
-            ]
-          },
-          {
-            "constraints": {
-              "physicalPin": 3
-            },
-            "id": "GND3",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Public bounded GPIO0 output circuit subset only; no complete board or physical-hardware equivalence.",
-            "GPIO25 is the onboard LED connection and is intentionally not exposed as a header anchor."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "981d93d732c94ee648051dab6505f97712f18d7ecd26544102ee58239f72c265",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "675477e27d47bda06cfcee4fe9a936151ce534bcf71b48410e72f79eda7ba648",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
-      },
-      "profile": "board.rp2040-pico-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "3d5a9ef69989007fa86fb45d7491ab5b73934ffb7887660bdd340890c40d1df9",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
-      },
-      "profile": "board.rp2040-pico-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "ada9e0c133fa5df2228916349a7a8549c96cad6bc49307a2b5baee6b429922d9",
-      "componentType": "board.stm32f429zi-nucleo144-v1",
-      "componentVersion": 1,
-      "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "board.stm32f429zi-nucleo144-v1-state-v1",
-        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
-      },
-      "profile": "board.stm32f429zi-nucleo144-v1",
-      "renderer": {
-        "cssHeight": 230,
-        "cssWidth": 190,
-        "renderer": "board-stm32f429zi-profile",
-        "thumbnail": "board-stm32f429zi-profile",
-        "viewBox": [
-          0,
-          0,
-          190,
-          230
-        ]
-      },
-      "rendererContractSha256": "5d3909f79e7ac00abfde9bc6d67044203ca6f262f7c17d28781331c6aec46de3",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "connector": "CN11",
-              "physicalPin": 34,
-              "voltageMax": 3.3,
-              "voltageMin": 0
-            },
-            "id": "PB0",
-            "role": "digital-io",
-            "signals": [
-              "digital.output"
-            ]
-          },
-          {
-            "constraints": {
-              "connector": "CN11",
-              "physicalPin": 35
-            },
-            "id": "GND",
-            "role": "ground",
-            "signals": [
-              "ground.reference"
-            ]
-          }
-        ],
-        "properties": {},
-        "support": {
-          "limitations": [
-            "Public bounded PB0 and USART3 subset only; no complete board or physical-hardware equivalence.",
-            "The external resistor and LED are an ideal teaching circuit driven by actual Renode-observed PB0."
-          ],
-          "status": "partial"
-        }
-      },
-      "semanticSha256": "4f2061383d5c2011fae731719a9e8a50883d1c37bcf8e607c56a6d2550310a76",
-      "supportStatus": "partial"
-    },
-    {
-      "behaviorContractSha256": "4277dd3f37b275b52cbb4b4843acd6e045bf20e938f7d7b488d8fd059694a7da",
-      "componentType": "led.basic-v1",
-      "componentVersion": 1,
-      "modelId": "model.led-current-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "led.basic-v1-state-v1",
-        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
-      },
-      "profile": "board.stm32f429zi-nucleo144-v1",
-      "renderer": {
-        "cssHeight": 100,
-        "cssWidth": 70,
-        "renderer": "led-through-hole",
-        "thumbnail": "led-through-hole",
-        "viewBox": [
-          0,
-          0,
-          70,
-          100
-        ]
-      },
-      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.led-current-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {
-              "polarity": "anode"
-            },
-            "id": "ANODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {
-              "polarity": "cathode"
-            },
-            "id": "CATHODE",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "color": {
-            "default": "red",
-            "kind": "enum",
-            "values": [
-              "red",
-              "yellow",
-              "green",
-              "blue"
-            ]
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
-      "supportStatus": "simulated"
-    },
-    {
-      "behaviorContractSha256": "a41b46e9c71e1f7c2ea6ff64ed68068735f5a894d11be9946017fad21251e2d5",
-      "componentType": "resistor.fixed-v1",
-      "componentVersion": 1,
-      "modelId": "model.resistor-fixed-v1",
-      "modelVersion": 1,
-      "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-        "observerId": "resistor.fixed-v1-state-v1",
-        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
-      },
-      "profile": "board.stm32f429zi-nucleo144-v1",
-      "renderer": {
-        "cssHeight": 48,
-        "cssWidth": 150,
-        "renderer": "resistor-axial",
-        "thumbnail": "resistor-axial",
-        "viewBox": [
-          0,
-          0,
-          150,
-          48
-        ]
-      },
-      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
-      "semantic": {
-        "componentVersion": 1,
-        "controls": {},
-        "internalTerminalGroups": [],
-        "modelId": "model.resistor-fixed-v1",
-        "modelVersion": 1,
-        "pins": [
-          {
-            "constraints": {},
-            "id": "A",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          },
-          {
-            "constraints": {},
-            "id": "B",
-            "role": "passive",
-            "signals": [
-              "passive.two-terminal"
-            ]
-          }
-        ],
-        "properties": {
-          "ohms": {
-            "default": 220,
-            "kind": "number",
-            "maximum": 1000000000,
-            "minimum": 1,
-            "unit": "Ω"
-          }
-        },
-        "support": {
-          "limitations": [
-            "Bounded ideal resistance in supported teaching topologies; no thermal model."
-          ],
-          "status": "simulated"
-        }
-      },
-      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
-      "supportStatus": "simulated"
-    }
-  ],
-  "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
-  "implementationMembers": [
-    {
-      "path": "src/component-catalog.mjs",
-      "sha256": "d461c7f52e591f2937518dd7cc30f9fdfd915cd9c6104624364d2236ecf1d236"
-    },
-    {
-      "path": "src/circuit-engine.mjs",
-      "sha256": "87ebd90e9ebb32c8fd7dbc8d7b3c9e8108bf834278b6592729334a0301f48166"
-    },
-    {
-      "path": "src/runtime-kernel.mjs",
-      "sha256": "8ae935906e1981916b7bc1ab7c2243c6624404b232d1844e1d690c632172bc6e"
-    },
-    {
-      "path": "src/atmega328p-adapter.mjs",
-      "sha256": "65136d0b607336db992ba7dab81447813331b103136ec7c5348e6fc1ca9300de"
-    },
-    {
-      "path": "src/x43-avr-stack-profile.mjs",
-      "sha256": "daab81af7d7af8ccec2749328bcd1deae2e7f0e7a785af8ce726ba9efbee6758"
-    },
-    {
-      "path": "src/x47-runtime-transaction.mjs",
-      "sha256": "34b90ff05ee63b97ff88ef18d70efdc0bcaf6814f57940ab3580e894caa108e6"
-    },
-    {
-      "path": "src/x47-ui-integration.mjs",
-      "sha256": "baee930e2a369b091f2b3237fca815928d7d87d91ce9cc962aef72f09e92b3d3"
-    },
-    {
-      "path": "src/strict-json.mjs",
-      "sha256": "2a8bcfeed40b56f44d771ddbd2bad77b7ce17698e7f9f608afae8e828d8cb5e5"
-    },
-    {
-      "path": "src/component-appearance.mjs",
-      "sha256": "4c6b62483e52e1f48cf16c48f3b3de57ac99296ccec443d7efdfc3678c04add7"
-    },
-    {
-      "path": "src/project-v2.mjs",
-      "sha256": "453422102ebb64cb1485687d37d2c75155d63e231cf16c7e4a9ba2f86e7b9ca0"
-    },
-    {
-      "path": "src/project-editor.mjs",
-      "sha256": "d50ad45104b980a44b7ab3a62d4da749b54646d6c1eb5327b5447dd098a18ce4"
-    },
-    {
-      "path": "src/lifecycle.mjs",
-      "sha256": "4772e4491d4feb853673d6c8caeee9eb58ece4756805b92638342a5fcd7889d6"
-    },
-    {
-      "path": "staging/component-artwork.mjs",
-      "sha256": "b038661a2d7a26266d0602bb9ccb124cceb17b577ccaf66228db90441f49fdfc"
-    },
-    {
-      "path": "src/model-library.mjs",
-      "sha256": "0742e545023113a5f361693ac030c8f13dbdafdba5235c44fde3c9873555f205"
-    },
-    {
-      "path": "src/model-bundle-registry.mjs",
-      "sha256": "57aab98b10dfabbfd8f6f2afdb7bca0e3a899a43a4ed2f576138901e4ed70b3f"
-    },
-    {
-      "path": "src/project-envelope.mjs",
-      "sha256": "ff4ab3f6680d2b5f0c6aabc16537062465fc85381d4b6d1fc642a39a14094adf"
-    },
-    {
-      "path": "src/model-control-contracts.mjs",
-      "sha256": "138d6f0b76abc3b1a509b741e581030192d91923864c8f804f42c32ef82abaa4"
-    },
-    {
-      "path": "src/simulator.worker.mjs",
-      "sha256": "c7a1f5d3923e4a8ab8fe5d68bc2193d0b08c82a6489ffa7f382ddf2df8b57af5"
-    },
-    {
-      "path": "staging/main.mjs",
-      "sha256": "1b354bc9a6cead1b0bf81c1120aecf9d5b8ca8498f0dff1f9f7866c64392b3fb"
-    },
-    {
-      "path": "src/rp2040-snapshot-pacer.mjs",
-      "sha256": "cc6ae6a1ba2ccf30382d4eefdd547de81c0053c6923e978b5e0dcf18c2a53b7e"
-    },
-    {
-      "path": "src/rp2040-experimental-runtime.mjs",
-      "sha256": "93463965a8f379afdea256f270f2efb2876d9ec8ddff7f9e9676d7a7ad82a10d"
-    },
-    {
-      "path": "src/runtime-identity.mjs",
-      "sha256": "dcd4e0df743d6310a6661cc3a2cf6b2d2879e33a3b82a3dd8620570c689231e8"
-    },
-    {
-      "path": "src/candidate-project-session.mjs",
-      "sha256": "079a528132787c424d12ec8b7514eb075ce11086f5e2962b8553e6fb4a1de43d"
-    },
-    {
-      "path": "src/candidate-spdt-runtime.mjs",
-      "sha256": "cac63a72f4e0a8b67468d638d5ae9cf8bf49a76420e62d648bb4745bf9d8de31"
-    },
-    {
-      "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "5d60089e6da394f332410b54e270d8620cde812ea3d48d0005622348838426bf"
-    },
-    {
-      "path": "src/rp2040-pico-circuit.mjs",
-      "sha256": "9ba0ac0a14f5c33c16d43f6a7eb7313a657b36bf10cfe13ea24cd893625524f0"
-    },
-    {
-      "path": "src/esp32c3-public-circuit.mjs",
-      "sha256": "47fad0c2e060118a986cf08b6a83a24e8e0d955fa15fe4a3f399a51e51179b66"
-    },
-    {
-      "path": "src/stm32-public-circuit.mjs",
-      "sha256": "12873127b49d7c9c65f79b52228fee0d0419f2f7a8856aac0c7b0dc528001988"
-    },
-    {
-      "path": "src/rp2040-public-workbench.mjs",
-      "sha256": "c04d0beb03c037ad02f20e3fa8271306ff3f954b6575e6c84bea96ed231219af"
-    },
-    {
-      "path": "src/esp32c3-public-workbench.mjs",
-      "sha256": "f3a21835f0125df0948397aa32f276c66f5601d08064cd12cc584b65b001e76a"
-    },
-    {
-      "path": "src/stm32-public-workbench.mjs",
-      "sha256": "cd52cbfa009e847080f27bbc401eac344d9795e08ef9177efdd43d4042a99672"
-    },
-    {
-      "path": "expansion-drafts/controller-runtime-bridge-v1.mjs",
-      "sha256": "670767df34464eb8fb47037bf44f4911545ea58941832c81fb842eaba5793278"
-    },
-    {
-      "path": "expansion-drafts/rp2040-runtime-bridge-adapter-v1.mjs",
-      "sha256": "4b7496cd38a995bcecfb3b3456edce10f0d671606f0fa3d6c36e99762ee2ac56"
-    },
-    {
-      "path": "expansion-drafts/rp2040-conformance-fixtures-v1.mjs",
-      "sha256": "3d8eb99253b2c91876b6ac678838a2cf35b72e5261362be94575f364ac962bb9"
-    },
-    {
-      "path": "expansion-drafts/rp2040-firmware-artifact-v1.mjs",
-      "sha256": "7f08aa59de5e69eddd5e1a4cfd7c1e900f898d7c65425eb6274247058c53430b"
-    },
-    {
-      "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "bca551ac31347c998a849f62ad3989b47a4b5f0471fce58d36a6c64d1b288746"
-    },
-    {
-      "path": "expansion-drafts/ground-reference-integration-v1.mjs",
-      "sha256": "59dc3833915afbec325b2d06e815c3250ad858ad1769da03c509ae7e3cd38958"
-    },
-    {
-      "path": "expansion-drafts/toggle-switch-integration-v1.mjs",
-      "sha256": "90fcaad32074957021ffe5bde973c81c08a3dd0f345495ab169218416dc0e389"
-    },
-    {
-      "path": "expansion-drafts/switch-contact-graph-v1.mjs",
-      "sha256": "073a5079335b222c53410971dcab42324cfa3ad639cc4b57a879fbe6efa476d2"
-    },
-    {
-      "path": "expansion-drafts/ideal-three-pin-analogue-module-v1.mjs",
-      "sha256": "383caf45e17281997b5b6e6f8a63bde660e19a1e48e1d0be1c137a8d36c187d3"
-    },
-    {
-      "path": "expansion-drafts/light-analogue-sensor-v1.mjs",
-      "sha256": "1a6efe15ec9b955f2824b711d32ea5d310d7966a223f8366031158514db24fbc"
-    },
-    {
-      "path": "expansion-drafts/temperature-analogue-sensor-v1.mjs",
-      "sha256": "5f3290f865e79ecf7362ea6b6ea667d9e01670a5daabb1b1cf70e977a6307817"
-    },
-    {
-      "path": "expansion-drafts/digital-light-threshold-module-v1.mjs",
-      "sha256": "f3a203a7c92e412a615599e6b0dbca9a84af3c15843c47e7bedc3a8f4d48d2bd"
-    },
-    {
-      "path": "expansion-drafts/common-cathode-rgb-led-v1.mjs",
-      "sha256": "42d045d2882ed745c4f2895d21bc0683582ce185c03b1dce9b854f98389f69d1"
-    },
-    {
-      "path": "expansion-drafts/active-buzzer-module-v1.mjs",
-      "sha256": "aa8bd1dc352a689ebcf0443cc2595426cdcf46396b1bc47b742c3731b2dafe94"
-    },
-    {
-      "path": "expansion-drafts/seven-segment-common-cathode-v1.mjs",
-      "sha256": "5d2b30cdfcfd48ad8dfc6e767ac9c9ee2825018e94980cf8915d5550b7d69905"
-    },
-    {
-      "path": "expansion-drafts/character-lcd-16x2-4bit-v1.mjs",
-      "sha256": "463871c751ee4e7857d46ceb75500f417c59a59af331535e8e3b2c87d17b27ee"
-    },
-    {
-      "path": "expansion-drafts/rotary-encoder-quadrature-v1.mjs",
-      "sha256": "0671974cb26e5447db07266f2e6a85a1f4fdd2fb8463453aa274987177167ac8"
-    },
-    {
-      "path": "src/model-library-current-resolver.mjs",
-      "sha256": "9a9b46deff45b0aaeac743397e1d9c699cabf0a2ac90f7b2abe8382a0065aaf7"
-    }
-  ],
-  "implementationSha256": "38d777eb434f589d3e64e774b7dc586c2459616597e8c35011aeb4381d87e696",
-  "libraryId": "intent-mcu-public-models",
-  "lineage": {
-    "baselineClosureDisposition": "accepted public rc.97 identity remains immutable and migration-only",
-    "compatibility": "explicit-data-only-migration; runtime-and-verdict-authority-cleared",
-    "presentationDisposition": "private X43 candidate distinguishes pending native stack acknowledgements and clears retired interval tokens",
-    "priorManifestSha256": "4713ae428479d911a56414eae6890c1bda96a0da64547a0fe8699948f432eb9d",
-    "priorVersion": "2.0.0-x43-observed-stack-candidate.1-current",
-    "semanticDisposition": "component, electrical and observed CPU.SP semantics are unchanged; tracker observation now updates scalar state only"
-  },
-  "manifestSha256": "af955739ce5d154f519e51d1fa72d82b756c241d931e6f2f8a7631875620d456",
-  "runtimeContracts": [
-    "avr8js@0.21.1",
-    "rp2040js@1.4.0",
-    "esp32c3-qemu@project-pinned",
-    "renode@1.17.0"
-  ],
-  "schema": "intent-mcu-model-library-manifest@2",
-  "version": "2.0.0-x43-stack-hotpath-candidate.1-current"
-});
 export const PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
   "entries": [
     {
@@ -43767,16 +28181,16 @@ export const PRE_UX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
   "schema": "intent-mcu-model-library-manifest@2",
   "version": "2.0.0-x55-control-label-fix.1-current"
 });
-export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
+export const PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
   "entries": [
     {
-      "behaviorContractSha256": "0e9f2057523e0d5c8f2ef041a94b42cbfe2cafb15447916af1d1063f080f494d",
+      "behaviorContractSha256": "2711bbf998e271192e2ece46d76909d09598a59791f8757578ac572ac9ef91bb",
       "componentType": "board.atmega328p-16mhz-v1",
       "componentVersion": 1,
       "modelId": "model.atmega328p-board-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "board.atmega328p-16mhz-v1-state-v1",
         "pipelineId": "avr-base-circuit-runtime-v1"
       },
@@ -44096,13 +28510,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "054c034ef40f7f8ae0f9351eac2b81a39c8e450edba2901c460b8747694c5805",
+      "behaviorContractSha256": "5b2e0c1bd8b8315be89442be565498baffaac302b8dd6d044190960abdccbf0a",
       "componentType": "button.momentary-v1",
       "componentVersion": 1,
       "modelId": "model.button-momentary-no-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "button.momentary-v1-state-v1",
         "pipelineId": "avr-base-circuit-runtime-v1"
       },
@@ -44194,13 +28608,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "f93b4297c5a9fd072427341b5c2d26a2810e93307adfd9df38f2bbf9d286f08f",
+      "behaviorContractSha256": "055794fec9c138c7b821a7388565d716e13c809c033f7fefe5a6ea9226b1cea8",
       "componentType": "input.rotary-encoder-quadrature-v1",
       "componentVersion": 1,
       "modelId": "model.rotary-encoder-quadrature-ideal-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "input.rotary-encoder-quadrature-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -44299,13 +28713,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "4d99fb6308f18db37ff1e5b570eb3c4d5418a350261293fac9a0716d4d4290e9",
+      "behaviorContractSha256": "11f3239e8b80dbcc4a89c0d68f834e6c6f5720009174323845ea56311c9a2805",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "led.basic-v1-state-v1",
         "pipelineId": "avr-base-circuit-runtime-v1"
       },
@@ -44374,13 +28788,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "4f6bac4a96c9c32a550e19adfbe5a06277f7500db676bb13635970694e915583",
+      "behaviorContractSha256": "d8aa189a945314c0d1bc10a60c627097f95433a49ad4288e54686033947c3720",
       "componentType": "output.active-buzzer-module-v1",
       "componentVersion": 1,
       "modelId": "model.active-buzzer-logical-enable-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "output.active-buzzer-module-v1-observer-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -44452,13 +28866,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "e64328fdfe9c8a4f6353dabd7fdb7de7f396faa0b6c6eb647570b9050e089964",
+      "behaviorContractSha256": "66c7c40b8f41a9d7ebd20b8b9bb2e5b6d04cf84d345d625040bafe139d79e5e3",
       "componentType": "output.character-lcd-16x2-4bit-v1",
       "componentVersion": 1,
       "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "output.character-lcd-16x2-4bit-v1-observer-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -44600,13 +29014,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "6ee01c9891001c066052b033af872d0340c33260e14484b4ba3542c1d4a57cf5",
+      "behaviorContractSha256": "ee8147e105fd1e8240a5d218a44759d023621ed12352abf7cce1d366af6a3b28",
       "componentType": "output.rgb-led-common-cathode-v1",
       "componentVersion": 1,
       "modelId": "model.rgb-led-common-cathode-ideal-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "output.rgb-led-common-cathode-v1-observer-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -44693,13 +29107,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "b120018b973a19eef79e07d9dd1b4d7c9d5bffdf7ed4c42c84760db0d0820fb8",
+      "behaviorContractSha256": "1a99a8fc4639a925f1669f792a32eb83f850d9eb7d71e620892efe5ee64024d3",
       "componentType": "output.seven-segment-common-cathode-v1",
       "componentVersion": 1,
       "modelId": "model.seven-segment-common-cathode-ideal-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "output.seven-segment-common-cathode-v1-observer-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -44834,13 +29248,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "f4e3dc4bda1e32a29c79499552e32236fd6ccb9c94a92dd6d12afbe2daf61809",
+      "behaviorContractSha256": "731f4588812e71a304fe9b497920af84f7aa7fbbaa010bf8988fd719bce745c2",
       "componentType": "potentiometer.linear-v1",
       "componentVersion": 1,
       "modelId": "model.pot-divider-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "potentiometer.linear-v1-state-v1",
         "pipelineId": "avr-base-circuit-runtime-v1"
       },
@@ -44926,13 +29340,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "5accf27100152e998ea2a8650cfd6a5f86c233e07bcc9cd93fa7df79686a487e",
+      "behaviorContractSha256": "dcba7478852860fa508a568bb7df12582f48e079ff183280850fecb1d862c5cd",
       "componentType": "reference.ground-v1",
       "componentVersion": 1,
       "modelId": "model.ground-reference-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "reference.ground-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -44990,13 +29404,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "e9cf9754394b162a871779d98d660ca9c60b05418481a86d5f3d95194842c98b",
+      "behaviorContractSha256": "2d3d9b6540a83e72a51758b1d2bfb6c046496d91091e0836073eb90e0f6401e2",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "resistor.fixed-v1-state-v1",
         "pipelineId": "avr-base-circuit-runtime-v1"
       },
@@ -45058,13 +29472,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "e1d1e88b79f9c1de94a5478ad50e17d34ba71b7ad2ea36cb3d3a7924c040b3cc",
+      "behaviorContractSha256": "2f916943a7dd171ccdd86ab536a3a9254a5e1016a58985333e5080e189e1b141",
       "componentType": "sensor.light-analogue-v1",
       "componentVersion": 1,
       "modelId": "model.light-analogue-ideal-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "sensor.light-analogue-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -45144,13 +29558,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "b180f754582c4c5e5b8984ead3ba67ad03667dd7b780c6447e2199cb4d9e9c1a",
+      "behaviorContractSha256": "4a9fdbbd3e525e76faca1613281631cf1f78fe298ac22bfab68e1bf6fb6b966e",
       "componentType": "sensor.light-threshold-digital-v1",
       "componentVersion": 1,
       "modelId": "model.light-threshold-digital-ideal-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "sensor.light-threshold-digital-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -45252,13 +29666,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "6ff36d06330557b12d631e0a7a518cf38fdcb6e752d5a25eeb70a81b8e75d2a1",
+      "behaviorContractSha256": "3c3046367ea13ee809d6da91920b1d9b1485592d65d6950d2b873d9a1fca1acc",
       "componentType": "sensor.temperature-analogue-v1",
       "componentVersion": 1,
       "modelId": "model.temperature-analogue-ideal-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "sensor.temperature-analogue-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -45338,13 +29752,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "becc5a04e14315d009bbd279d10ce2ea332f856d2677e6b8857f5c62fbdcf011",
+      "behaviorContractSha256": "3a656c831f15c42612405495549bcb364b72c08303ae7868d4137ccba85335b2",
       "componentType": "switch.changeover-spdt-v1",
       "componentVersion": 1,
       "modelId": "model.switch-changeover-spdt-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "switch.changeover-spdt-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -45420,13 +29834,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "373e76b8506f30f3a0be35904de6b6ee1b42a2853d6dc9648e607c1d93e737a3",
+      "behaviorContractSha256": "d5e9b48e9b134f0d3271cae3ad22e5ad2d9042e483fe095a68c98d5b55ba9a2b",
       "componentType": "switch.toggle-spst-v1",
       "componentVersion": 1,
       "modelId": "model.switch-toggle-spst-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "switch.toggle-spst-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -45493,13 +29907,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "a434bd02a0323253f82710c26c23186a6e7e6216c45504fbe2b6da563d236df0",
+      "behaviorContractSha256": "4bd5d3685ce1eb8146e49a37096eed49d365290388286be090e74dcb419bd368",
       "componentType": "board.esp32-c3-devmodule-v1",
       "componentVersion": 1,
       "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "board.esp32-c3-devmodule-v1-state-v1",
         "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
       },
@@ -45563,13 +29977,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "2188f3c02138a75deffb1c612d72ab115c0f60fb1a17d5ef8cb95f09fff47ecc",
+      "behaviorContractSha256": "79fb849190b7147c2f9a0bf534d85e80db6ff10842607df2a8a171fffe145192",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "led.basic-v1-state-v1",
         "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
       },
@@ -45638,13 +30052,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "f6602685b4ca9751dbccbd91df00b7b39d51b8642ebcca3cd43cda2e7ae868fb",
+      "behaviorContractSha256": "81661d22e83c4decefa8a391a925d0078e922169c02e9c8580d3b8b923a867dc",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "resistor.fixed-v1-state-v1",
         "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
       },
@@ -45706,13 +30120,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "a00b93b42bf24cbedb9fbeef40ffd04a84672dc87835e2de6204594aa41c0203",
+      "behaviorContractSha256": "fced6748c62c7744d2b166a5803a461146bb86eeb1440db3a6e422c7c05d0342",
       "componentType": "board.rp2040-pico-v1",
       "componentVersion": 1,
       "modelId": "model.rp2040-pico-gpio0-public-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "board.rp2040-pico-v1-state-v1",
         "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
       },
@@ -45774,13 +30188,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "b2068f12a72c2f3a218b55cc89daa4632cbcdea2439cef532ab4decb600a13af",
+      "behaviorContractSha256": "675477e27d47bda06cfcee4fe9a936151ce534bcf71b48410e72f79eda7ba648",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "led.basic-v1-state-v1",
         "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
       },
@@ -45849,13 +30263,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "478928283e877a532a1dd94b774a2f4a3a7f1ad27de24ed49306fa048707a5e5",
+      "behaviorContractSha256": "3d5a9ef69989007fa86fb45d7491ab5b73934ffb7887660bdd340890c40d1df9",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "resistor.fixed-v1-state-v1",
         "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
       },
@@ -45917,13 +30331,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "6038d83125c145848d3b392367df3e3401120ec2eeabc34b0b11d9e7ff0f0a00",
+      "behaviorContractSha256": "ada9e0c133fa5df2228916349a7a8549c96cad6bc49307a2b5baee6b429922d9",
       "componentType": "board.stm32f429zi-nucleo144-v1",
       "componentVersion": 1,
       "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "board.stm32f429zi-nucleo144-v1-state-v1",
         "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
       },
@@ -45986,13 +30400,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "59ebe0d3e26d5ae0f99670797f7c26f5371064f67bf7cd06a766ce3e6d7642a6",
+      "behaviorContractSha256": "4277dd3f37b275b52cbb4b4843acd6e045bf20e938f7d7b488d8fd059694a7da",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "led.basic-v1-state-v1",
         "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
       },
@@ -46061,13 +30475,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "76ceca195b7e2b251f348f83d818a535e2014d627fba4c99b030269f916748a1",
+      "behaviorContractSha256": "a41b46e9c71e1f7c2ea6ff64ed68068735f5a894d11be9946017fad21251e2d5",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+        "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
         "observerId": "resistor.fixed-v1-state-v1",
         "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
       },
@@ -46129,7 +30543,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     }
   ],
-  "implementationId": "intent-mcu-model-bundle-current-x43-elf-boundary-1@18",
+  "implementationId": "intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12",
   "implementationMembers": [
     {
       "path": "src/component-catalog.mjs",
@@ -46141,7 +30555,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/runtime-kernel.mjs",
-      "sha256": "b1bb960f9a60b37652318cd8a87c189e9a791603a705eb17710ff640a202efd7"
+      "sha256": "8ae935906e1981916b7bc1ab7c2243c6624404b232d1844e1d690c632172bc6e"
     },
     {
       "path": "src/atmega328p-adapter.mjs",
@@ -46150,30 +30564,6 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     {
       "path": "src/x43-avr-stack-profile.mjs",
       "sha256": "daab81af7d7af8ccec2749328bcd1deae2e7f0e7a785af8ce726ba9efbee6758"
-    },
-    {
-      "path": "src/x43-avr-heap-profile.mjs",
-      "sha256": "265fd338e49194784f8cb70f06aeca76dde7148b9462c7b7bd9f833f6bb3e936"
-    },
-    {
-      "path": "compiler/avr-allocator-provenance.mjs",
-      "sha256": "feaf2e25aa9d80c38ee42865b65166caa8a1ac454326ec178175213f4abcda84"
-    },
-    {
-      "path": "compiler/build-coordinator.mjs",
-      "sha256": "7e4a03b6111c7b87b0e49b6813fef53059acd80405285ebc723ffa41e8440ffd"
-    },
-    {
-      "path": "compiler/build-worker.mjs",
-      "sha256": "dd6a5bc83bac39f75b371ca2ab0ceed72355dd3c049b2fded0430a09c6d948d7"
-    },
-    {
-      "path": "compiler/build-protocol.mjs",
-      "sha256": "a434642391598b05c592e6df4f8eef792f235df5017156c03def65da9f12b4bb"
-    },
-    {
-      "path": "Dockerfile.toolchain",
-      "sha256": "dfa1519879b0169583c3490aec9cc396ff0690bfad1ffdcaef263a91749708f1"
     },
     {
       "path": "src/x47-runtime-transaction.mjs",
@@ -46209,11 +30599,11 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library.mjs",
-      "sha256": "3bc4b4fb529f8cedcaa4756ada4a7f89e36df43e4a45c6f92a562c9eb2c41ed4"
+      "sha256": "0742e545023113a5f361693ac030c8f13dbdafdba5235c44fde3c9873555f205"
     },
     {
       "path": "src/model-bundle-registry.mjs",
-      "sha256": "143dc59a68bb2a1f6234dea494d05f32d4913f7272fb1663fb36f0d53231c7d0"
+      "sha256": "57aab98b10dfabbfd8f6f2afdb7bca0e3a899a43a4ed2f576138901e4ed70b3f"
     },
     {
       "path": "src/project-envelope.mjs",
@@ -46225,11 +30615,11 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/simulator.worker.mjs",
-      "sha256": "7de0aac12d59c7fac8c12c68a555555bb8e68442389f8a46cfa358898e1e49fd"
+      "sha256": "c7a1f5d3923e4a8ab8fe5d68bc2193d0b08c82a6489ffa7f382ddf2df8b57af5"
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "0ef10fe0eb0759db2bdca4b7eaf75c3a4144cb36f68d918d3d41d9e57ad711ee"
+      "sha256": "1b354bc9a6cead1b0bf81c1120aecf9d5b8ca8498f0dff1f9f7866c64392b3fb"
     },
     {
       "path": "src/rp2040-snapshot-pacer.mjs",
@@ -46349,20 +30739,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "0abcf0b33e4e6ff7af1076f104168a25ade9142209fcfc09525bf2648f7337c9"
+      "sha256": "9a9b46deff45b0aaeac743397e1d9c699cabf0a2ac90f7b2abe8382a0065aaf7"
     }
   ],
-  "implementationSha256": "5d50f0263b1fc230d00a2cd3150d559dcc411bc5d1db54c94a166aa733f54cd5",
+  "implementationSha256": "38d777eb434f589d3e64e774b7dc586c2459616597e8c35011aeb4381d87e696",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
-    "baselineClosureDisposition": "accepted public rc.98 identity remains immutable and migration-only",
+    "baselineClosureDisposition": "accepted public rc.97 identity remains immutable and migration-only",
     "compatibility": "explicit-data-only-migration; runtime-and-verdict-authority-cleared",
-    "presentationDisposition": "no UI change; saved real ELF parsing remains strict and fail-closed",
-    "priorManifestSha256": "4b408585f8f329e6800b811a83f936d6b854a3f003e5aa3164f6e5be56822c6e",
-    "priorVersion": "2.0.0-x43-canonical-owner.1-current",
-    "semanticDisposition": "component and electrical semantics are unchanged; AVR static heap boundary requires matching linker symbols and exact contiguous writable SRAM load extent"
+    "presentationDisposition": "private X43 candidate distinguishes pending native stack acknowledgements and clears retired interval tokens",
+    "priorManifestSha256": "4713ae428479d911a56414eae6890c1bda96a0da64547a0fe8699948f432eb9d",
+    "priorVersion": "2.0.0-x43-observed-stack-candidate.1-current",
+    "semanticDisposition": "component, electrical and observed CPU.SP semantics are unchanged; tracker observation now updates scalar state only"
   },
-  "manifestSha256": "e4e42f357396ec72630455b8acc1ea43a206d1e8b39d80ec67ba355a774fe3a4",
+  "manifestSha256": "af955739ce5d154f519e51d1fa72d82b756c241d931e6f2f8a7631875620d456",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",
@@ -46370,5 +30760,2590 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "renode@1.17.0"
   ],
   "schema": "intent-mcu-model-library-manifest@2",
-  "version": "2.0.0-x43-elf-boundary.1-current"
+  "version": "2.0.0-x43-stack-hotpath-candidate.1-current"
+});
+export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
+  "entries": [
+    {
+      "behaviorContractSha256": "00a351d8640ab704d624736a8e278c220cc53c95810f0ae83deb42c8cbc3754e",
+      "componentType": "board.atmega328p-16mhz-v1",
+      "componentVersion": 1,
+      "modelId": "model.atmega328p-board-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "board.atmega328p-16mhz-v1-state-v1",
+        "pipelineId": "avr-base-circuit-runtime-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 150,
+        "cssWidth": 300,
+        "renderer": "board-atmega328p",
+        "thumbnail": "board-atmega328p",
+        "viewBox": [
+          0,
+          0,
+          160,
+          80
+        ]
+      },
+      "rendererContractSha256": "a3529e81b49ea07434d583dc701a609044326b0f716ba2ef665d87a2f52a018a",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.atmega328p-board-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D0",
+            "role": "digital-io",
+            "signals": [
+              "digital.bidirectional",
+              "digital.input",
+              "digital.pull-up"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D1",
+            "role": "digital-io",
+            "signals": [
+              "digital.bidirectional",
+              "digital.input",
+              "digital.pull-up"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D2",
+            "role": "digital-io",
+            "signals": [
+              "digital.bidirectional",
+              "digital.input",
+              "digital.pull-up"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D3",
+            "role": "digital-io",
+            "signals": [
+              "digital.bidirectional",
+              "digital.input",
+              "digital.pull-up"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D4",
+            "role": "digital-io",
+            "signals": [
+              "digital.bidirectional",
+              "digital.input",
+              "digital.pull-up"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D5",
+            "role": "digital-io",
+            "signals": [
+              "digital.bidirectional",
+              "digital.input",
+              "digital.pull-up"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D6",
+            "role": "digital-io",
+            "signals": [
+              "digital.bidirectional",
+              "digital.input",
+              "digital.pull-up"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D7",
+            "role": "digital-io",
+            "signals": [
+              "digital.bidirectional",
+              "digital.input",
+              "digital.pull-up"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D8",
+            "role": "digital-io",
+            "signals": [
+              "digital.bidirectional",
+              "digital.input",
+              "digital.pull-up"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D9",
+            "role": "digital-io",
+            "signals": [
+              "digital.bidirectional",
+              "digital.input",
+              "digital.pull-up"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D10",
+            "role": "digital-io",
+            "signals": [
+              "digital.bidirectional",
+              "digital.input",
+              "digital.pull-up"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D11",
+            "role": "digital-io",
+            "signals": [
+              "digital.bidirectional",
+              "digital.input",
+              "digital.pull-up"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D12",
+            "role": "digital-io",
+            "signals": [
+              "digital.bidirectional",
+              "digital.input",
+              "digital.pull-up"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D13",
+            "role": "digital-io",
+            "signals": [
+              "digital.bidirectional",
+              "digital.input",
+              "digital.pull-up"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "A0",
+            "role": "analogue-in",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "A1",
+            "role": "analogue-in",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "A2",
+            "role": "analogue-in",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "A3",
+            "role": "analogue-in",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "A4",
+            "role": "analogue-in",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "A5",
+            "role": "analogue-in",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "5V",
+            "role": "power-out",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "GND1",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "GND2",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "GND3",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Tested ATmega328P subset only; not complete physical-board equivalence."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "fc24be479f5217bd7f07e42dad258520ec1f58fda3da9e8086e775e38e431f29",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "f188e9b98cf1d7277f96ef3a44dcecfa4a0f4641b86c078ab38427aa3e31a5ab",
+      "componentType": "button.momentary-v1",
+      "componentVersion": 1,
+      "modelId": "model.button-momentary-no-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "button.momentary-v1-state-v1",
+        "pipelineId": "avr-base-circuit-runtime-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 78,
+        "cssWidth": 100,
+        "renderer": "button-tactile",
+        "thumbnail": "button-tactile",
+        "viewBox": [
+          0,
+          0,
+          100,
+          78
+        ]
+      },
+      "rendererContractSha256": "200542372ea2b0cef1bcf3187978e26955341815222422b2feebd0ee97eb6265",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "pressed": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          }
+        },
+        "internalTerminalGroups": [
+          {
+            "pin": "A",
+            "terminals": [
+              "A1",
+              "A2"
+            ]
+          },
+          {
+            "pin": "B",
+            "terminals": [
+              "B1",
+              "B2"
+            ]
+          }
+        ],
+        "modelId": "model.button-momentary-no-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "attachmentTerminal": "A1",
+              "terminals": [
+                "A1",
+                "A2"
+              ]
+            },
+            "id": "A",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          },
+          {
+            "constraints": {
+              "attachmentTerminal": "B1",
+              "terminals": [
+                "B1",
+                "B2"
+              ]
+            },
+            "id": "B",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          }
+        ],
+        "properties": {
+          "normallyOpen": {
+            "default": true,
+            "kind": "boolean"
+          }
+        },
+        "support": {
+          "limitations": [
+            "Normally-open ideal contact; A1/A2 and B1/B2 are explicit internally common terminal groups."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "67034c86f1f01dbec2a7a87b40b650899edfaa9d5e26b18e27545e2067bab7d3",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "59ad5879fff54f2c00ae9f47f0275c95cb3e66df87817257e666dd84a9734478",
+      "componentType": "input.rotary-encoder-quadrature-v1",
+      "componentVersion": 1,
+      "modelId": "model.rotary-encoder-quadrature-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "input.rotary-encoder-quadrature-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 110,
+        "cssWidth": 128,
+        "renderer": "input-rotary-encoder-quadrature",
+        "thumbnail": "input-rotary-encoder-quadrature",
+        "viewBox": [
+          0,
+          0,
+          128,
+          110
+        ]
+      },
+      "rendererContractSha256": "70233214cea0c0d3af791f0d13e7a53d069c826a722b657235090fa2647809eb",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "detent": {
+            "default": 0,
+            "kind": "integer",
+            "maximum": 999,
+            "minimum": -999,
+            "mutability": "transition-only",
+            "unit": "detent"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.rotary-encoder-quadrature-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "pullMode": "input-pullup",
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "A",
+            "role": "digital-out",
+            "signals": [
+              "digital.quadrature-contact"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "COM",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "pullMode": "input-pullup",
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "B",
+            "role": "digital-out",
+            "signals": [
+              "digital.quadrature-contact"
+            ]
+          }
+        ],
+        "properties": {
+          "encoding": {
+            "default": "gray-2bit",
+            "kind": "enum",
+            "values": [
+              "gray-2bit"
+            ]
+          },
+          "pullMode": {
+            "default": "input-pullup",
+            "kind": "enum",
+            "values": [
+              "input-pullup"
+            ]
+          }
+        },
+        "support": {
+          "limitations": [
+            "A and B must connect directly to the supported AVR external-interrupt pins D2 and D3, one unique phase per pin; COM must connect directly to board ground.",
+            "Each detent emits the deterministic ideal Gray sequence CW 11→01→00→10→11 or CCW 11→10→00→01→11 at 16,000 cycles per phase.",
+            "A/B are open contacts read HIGH through firmware INPUT_PULLUP and close LOW to COM. Firmware must decode the transitions; the UI never writes a counter value.",
+            "No contact bounce, resistance, acceleration, missed edges, shaft switch, mechanical timing or physical detent behavior is modelled."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "64a10bc430af43a501afcd5a5e9b8cbf82ab39c5a0f575014940a26c1c5fb771",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "29608cad00993d26cc2f18ccdfb761145178461bf6651656a2b742dbcb6c73ed",
+      "componentType": "led.basic-v1",
+      "componentVersion": 1,
+      "modelId": "model.led-current-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "led.basic-v1-state-v1",
+        "pipelineId": "avr-base-circuit-runtime-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 70,
+        "renderer": "led-through-hole",
+        "thumbnail": "led-through-hole",
+        "viewBox": [
+          0,
+          0,
+          70,
+          100
+        ]
+      },
+      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.led-current-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "polarity": "anode"
+            },
+            "id": "ANODE",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "cathode"
+            },
+            "id": "CATHODE",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          }
+        ],
+        "properties": {
+          "color": {
+            "default": "red",
+            "kind": "enum",
+            "values": [
+              "red",
+              "yellow",
+              "green",
+              "blue"
+            ]
+          }
+        },
+        "support": {
+          "limitations": [
+            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "696af8c91d5ac7b5682c7c60ceb92aa80025acb070f6c7ec61294c9335979fcf",
+      "componentType": "output.active-buzzer-module-v1",
+      "componentVersion": 1,
+      "modelId": "model.active-buzzer-logical-enable-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "output.active-buzzer-module-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "output-active-buzzer-module",
+        "thumbnail": "output-active-buzzer-module",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "b1da623cd44588659ca208b9c9e6c06b40a5506cbfe8ec1b1d2ad93ac0e5fdf1",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.active-buzzer-logical-enable-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "activeLevel": "HIGH",
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "EN",
+            "role": "digital-in",
+            "signals": [
+              "digital.high-active-enable"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Ideal 5 V active-buzzer module with a high-active, high-impedance EN input on one direct AVR D2–D13 GPIO output.",
+            "The existing runtime GPIO state drives a silent visual enabled/disabled indicator; no browser audio is produced.",
+            "No oscillator, waveform, frequency, duty-to-tone, sound pressure, supply current, GPIO current, loading, tolerance, resonance, thermal or physical acoustic accuracy is modelled."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "a2165819e146e0ed027e50c802ef5ca7f3e5c3c460868b94d68ee9a925e3d44e",
+      "supportStatus": "partial"
+    },
+    {
+      "behaviorContractSha256": "a2954ebc8e41bf1fb0724c481342f0b5695e3b46bacd9563051161d360b3bb95",
+      "componentType": "output.character-lcd-16x2-4bit-v1",
+      "componentVersion": 1,
+      "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "output.character-lcd-16x2-4bit-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 130,
+        "cssWidth": 220,
+        "renderer": "output-character-lcd-16x2-4bit",
+        "thumbnail": "output-character-lcd-16x2-4bit",
+        "viewBox": [
+          0,
+          0,
+          220,
+          130
+        ]
+      },
+      "rendererContractSha256": "19637bb2f2c867f15a8beacf073e019373e97e82b045d4f9c62658df9d12f3f9",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "RS",
+            "role": "digital-in",
+            "signals": [
+              "digital.hd44780-register-select"
+            ]
+          },
+          {
+            "constraints": {
+              "requiredLevel": "LOW",
+              "writeOnly": true
+            },
+            "id": "RW",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "latchEdge": "falling",
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "E",
+            "role": "digital-in",
+            "signals": [
+              "digital.hd44780-enable"
+            ]
+          },
+          {
+            "constraints": {
+              "bit": 4,
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D4",
+            "role": "digital-in",
+            "signals": [
+              "digital.hd44780-data-4bit"
+            ]
+          },
+          {
+            "constraints": {
+              "bit": 5,
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D5",
+            "role": "digital-in",
+            "signals": [
+              "digital.hd44780-data-4bit"
+            ]
+          },
+          {
+            "constraints": {
+              "bit": 6,
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D6",
+            "role": "digital-in",
+            "signals": [
+              "digital.hd44780-data-4bit"
+            ]
+          },
+          {
+            "constraints": {
+              "bit": 7,
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D7",
+            "role": "digital-in",
+            "signals": [
+              "digital.hd44780-data-4bit"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Bounded HD44780-style write-only 4-bit decoder for one 16×2 display. VCC requires 5 V, GND and RW require ground, and RS, E and D4–D7 require six unique direct AVR D2–D13 outputs.",
+            "Supported initialization is 0x3,0x3,0x3,0x2 followed by commands 0x28,0x0C,0x06,0x01 with enforced power-on, enable-pulse and instruction timing. Supported runtime commands are clear, home, 4-bit/2-line function set, display-on, increment entry mode and visible DDRAM addresses.",
+            "Printable ASCII 0x20–0x7E is rendered. Reads, busy flag, RW-high operation, custom glyphs/CGRAM, cursor or blink modes, display shifts, automatic line wrapping, 8-bit mode, I²C, backpacks, contrast, backlight, current and physical timing tolerances are unsupported."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "7b5ae575ea2513ecc0452e086a6c321db93bd1299d2d1a2c8bc1b7def5e2b132",
+      "supportStatus": "partial"
+    },
+    {
+      "behaviorContractSha256": "ebb0fd705baf1c2638aba3e355c400e397dad1160d4c50f0ffa4e3b0c407a0b4",
+      "componentType": "output.rgb-led-common-cathode-v1",
+      "componentVersion": 1,
+      "modelId": "model.rgb-led-common-cathode-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "output.rgb-led-common-cathode-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "output-rgb-led-common-cathode",
+        "thumbnail": "output-rgb-led-common-cathode",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "604f4f8f4fa53fe6e2bbfb9dd6e11886d92c5079ec4e44ba5f1ebcc93a4a3a3a",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.rgb-led-common-cathode-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "channel": "red",
+              "polarity": "anode",
+              "requiresSeriesResistor": true
+            },
+            "id": "R",
+            "role": "passive",
+            "signals": [
+              "passive.current-limited-led-channel"
+            ]
+          },
+          {
+            "constraints": {
+              "channel": "green",
+              "polarity": "anode",
+              "requiresSeriesResistor": true
+            },
+            "id": "G",
+            "role": "passive",
+            "signals": [
+              "passive.current-limited-led-channel"
+            ]
+          },
+          {
+            "constraints": {
+              "channel": "blue",
+              "polarity": "anode",
+              "requiresSeriesResistor": true
+            },
+            "id": "B",
+            "role": "passive",
+            "signals": [
+              "passive.current-limited-led-channel"
+            ]
+          },
+          {
+            "constraints": {
+              "commonCathode": true,
+              "polarity": "cathode"
+            },
+            "id": "COM",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Ideal common-cathode teaching model projected through three independently validated existing LED channels.",
+            "R, G and B each require one dedicated external series resistor and one supported AVR PWM output: D3, D5, D6, D9, D10 or D11; COM must connect to ground.",
+            "Displayed colour is only the commanded relative PWM mix. No wavelength, luminous intensity, optical mixing, current matching, tolerance, thermal or physical colour accuracy is claimed."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "6302f0b958d0b9d30326cc61cc50073eec36aa9ff60ca07e103afa5a107d7ed2",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "26f5d80d77246f80f862526f5822212f56f2de1a40d3b42484cec2a1530b29c7",
+      "componentType": "output.seven-segment-common-cathode-v1",
+      "componentVersion": 1,
+      "modelId": "model.seven-segment-common-cathode-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "output.seven-segment-common-cathode-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 120,
+        "cssWidth": 160,
+        "renderer": "output-seven-segment-common-cathode",
+        "thumbnail": "output-seven-segment-common-cathode",
+        "viewBox": [
+          0,
+          0,
+          160,
+          120
+        ]
+      },
+      "rendererContractSha256": "e8a6732efecaadfeafa61e941e596e7707552879d71eeba9fed1dc42e95a9ba2",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.seven-segment-common-cathode-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "polarity": "anode",
+              "requiresSeriesResistor": true,
+              "segment": "a"
+            },
+            "id": "a",
+            "role": "passive",
+            "signals": [
+              "passive.current-limited-led-segment"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "anode",
+              "requiresSeriesResistor": true,
+              "segment": "b"
+            },
+            "id": "b",
+            "role": "passive",
+            "signals": [
+              "passive.current-limited-led-segment"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "anode",
+              "requiresSeriesResistor": true,
+              "segment": "c"
+            },
+            "id": "c",
+            "role": "passive",
+            "signals": [
+              "passive.current-limited-led-segment"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "anode",
+              "requiresSeriesResistor": true,
+              "segment": "d"
+            },
+            "id": "d",
+            "role": "passive",
+            "signals": [
+              "passive.current-limited-led-segment"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "anode",
+              "requiresSeriesResistor": true,
+              "segment": "e"
+            },
+            "id": "e",
+            "role": "passive",
+            "signals": [
+              "passive.current-limited-led-segment"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "anode",
+              "requiresSeriesResistor": true,
+              "segment": "f"
+            },
+            "id": "f",
+            "role": "passive",
+            "signals": [
+              "passive.current-limited-led-segment"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "anode",
+              "requiresSeriesResistor": true,
+              "segment": "g"
+            },
+            "id": "g",
+            "role": "passive",
+            "signals": [
+              "passive.current-limited-led-segment"
+            ]
+          },
+          {
+            "constraints": {
+              "commonCathode": true,
+              "polarity": "cathode"
+            },
+            "id": "COM",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Ideal single-digit common-cathode teaching model projected through seven independently validated existing LED channels.",
+            "Segments a through g each require one dedicated external series resistor and one unique AVR D2–D13 digital output; COM must connect to ground.",
+            "Only commanded segment on/off state is shown. No decimal point, multiplexing, driver IC, brightness, optical, package-current, tolerance, thermal or physical display accuracy is modelled."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "11e0e7c4cf2ffd2a74ee9a13133aed906c24894a9be78a3e37a316d84695a668",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "d0d091dee72dfa2a178a0e83c2f4a64be81d81c6f283746817992b73fcaf4d81",
+      "componentType": "potentiometer.linear-v1",
+      "componentVersion": 1,
+      "modelId": "model.pot-divider-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "potentiometer.linear-v1-state-v1",
+        "pipelineId": "avr-base-circuit-runtime-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 110,
+        "renderer": "potentiometer-rotary",
+        "thumbnail": "potentiometer-rotary",
+        "viewBox": [
+          0,
+          0,
+          110,
+          100
+        ]
+      },
+      "rendererContractSha256": "7b1688b9b69b5de9bd7079abb2617d13dd9844132d5e26564d3d5497cb314f21",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "position": {
+            "default": 0.5,
+            "kind": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "ratio"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.pot-divider-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {},
+            "id": "HIGH",
+            "role": "passive",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "WIPER",
+            "role": "passive",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "LOW",
+            "role": "passive",
+            "signals": [
+              "ground.reference"
+            ]
+          }
+        ],
+        "properties": {
+          "ohms": {
+            "default": 10000,
+            "kind": "number",
+            "maximum": 10000000,
+            "minimum": 1,
+            "unit": "Ω"
+          },
+          "taper": {
+            "default": "linear",
+            "kind": "enum",
+            "values": [
+              "linear"
+            ]
+          }
+        },
+        "support": {
+          "limitations": [
+            "Linear 5 V divider only; no loading, tolerance or non-linear taper model."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "b1707fc143253ab9a0af55d379e6d9c155b31030c1e1fed48924ef1cf326ec03",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "85586fd9a06abd0ea544e01e914483b90106c30522cad29932cdaae70f25190d",
+      "componentType": "reference.ground-v1",
+      "componentVersion": 1,
+      "modelId": "model.ground-reference-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "reference.ground-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 72,
+        "cssWidth": 72,
+        "renderer": "ground-reference-symbol",
+        "thumbnail": "ground-reference-symbol",
+        "viewBox": [
+          0,
+          0,
+          72,
+          72
+        ]
+      },
+      "rendererContractSha256": "6068255d29e2e1dabe95c75167d28efdc19694a376c532b6ebab6caa0b19cee2",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.ground-reference-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "REF",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          }
+        ],
+        "properties": {
+          "potentialVolts": {
+            "default": 0,
+            "kind": "number",
+            "maximum": 0,
+            "minimum": 0,
+            "unit": "V"
+          }
+        },
+        "support": {
+          "limitations": [
+            "Bounded to one-controller 5 V AVR teaching circuits with at most three independent reference nets.",
+            "Represents circuit 0 V only; it is not earth, chassis or protective ground.",
+            "Does not source voltage or current and does not model ground loops or multiple reference domains."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "a8b939586b60a0b5269e9cf262aba2fa4af9e27a9aae6c789883ca22737f61fc",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "3c8592952a95d3dc9061b3c18dd2b69f298792308a18154e1a3fd4af327f15a7",
+      "componentType": "resistor.fixed-v1",
+      "componentVersion": 1,
+      "modelId": "model.resistor-fixed-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "resistor.fixed-v1-state-v1",
+        "pipelineId": "avr-base-circuit-runtime-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 48,
+        "cssWidth": 150,
+        "renderer": "resistor-axial",
+        "thumbnail": "resistor-axial",
+        "viewBox": [
+          0,
+          0,
+          150,
+          48
+        ]
+      },
+      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.resistor-fixed-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {},
+            "id": "A",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "B",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          }
+        ],
+        "properties": {
+          "ohms": {
+            "default": 220,
+            "kind": "number",
+            "maximum": 1000000000,
+            "minimum": 1,
+            "unit": "Ω"
+          }
+        },
+        "support": {
+          "limitations": [
+            "Bounded ideal resistance in supported teaching topologies; no thermal model."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "98349e660b1d87550f63d5ddf601207bd912a46d58814c45349f76cde37222a0",
+      "componentType": "sensor.light-analogue-v1",
+      "componentVersion": 1,
+      "modelId": "model.light-analogue-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "sensor.light-analogue-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "sensor-light-analogue",
+        "thumbnail": "sensor-light-analogue",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "e99a821f74da1c8a615eeb2f8b4cc14e6fc3c3a1503c1493f81b7b844d3c06d1",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "lightLevel": {
+            "default": 0.5,
+            "kind": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "ratio"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.light-analogue-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "AOUT",
+            "role": "analogue-out",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Idealized module signal only: light level maps linearly to 0–5 V on AOUT from a fixed 5 V supply.",
+            "No lux calibration, physical LDR curve, loading, tolerance, noise, response time or ambient-light physics is modelled.",
+            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "32d8032d88d3eb95ebf781d53fbecbceef5a2bcd03a36d76f0987ac78082ed85",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "916e8eae5815d6cbfc853ed5e1db3d3a5e65b8254730df7c7635ad81e20dab9b",
+      "componentType": "sensor.light-threshold-digital-v1",
+      "componentVersion": 1,
+      "modelId": "model.light-threshold-digital-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "sensor.light-threshold-digital-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "sensor-light-threshold-digital",
+        "thumbnail": "sensor-light-threshold-digital",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "fe677e716d3f419d2848da150cad49ae9ab7db1e82abec49cb117728de114a5a",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "hysteresisPercentagePoints": {
+            "default": 5,
+            "kind": "number",
+            "maximum": 10,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "percentage-point"
+          },
+          "lightLevelPercent": {
+            "default": 40,
+            "kind": "number",
+            "maximum": 100,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "%"
+          },
+          "outputActive": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "derived"
+          },
+          "thresholdPercent": {
+            "default": 50,
+            "kind": "number",
+            "maximum": 100,
+            "minimum": 10,
+            "mutability": "authored",
+            "unit": "%"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.light-threshold-digital-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "DOUT",
+            "role": "digital-out",
+            "signals": [
+              "digital.active-low"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Generic idealized signal only: input and threshold are percentages; hysteresis is measured in percentage points.",
+            "DOUT is active LOW: it activates at input >= threshold, deactivates at input <= threshold - hysteresis, and retains its prior state inside that band.",
+            "No lux calibration, physical detector curve, propagation delay, electrical loading, tolerance, noise or ambient-light physics is modelled.",
+            "DOUT must connect directly and exclusively to one D2–D12 INPUT_PULLUP pin on the supported 5 V AVR controller."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "af209039275b9cecebaee139b829e911fb3d0d6eb2f8dd15edd40bcde1baa992",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "5f95a86896d59b18e754f71f0b0beaf0b3e4a403d8c8536af4c123a6038b9b86",
+      "componentType": "sensor.temperature-analogue-v1",
+      "componentVersion": 1,
+      "modelId": "model.temperature-analogue-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "sensor.temperature-analogue-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "sensor-temperature-analogue",
+        "thumbnail": "sensor-temperature-analogue",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "56771edd9c32a5600ea97fdd7871bbb5575b8640f24838a2a575c3abffac3310",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "temperatureC": {
+            "default": 25,
+            "kind": "number",
+            "maximum": 150,
+            "minimum": -50,
+            "mutability": "authored",
+            "unit": "°C"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.temperature-analogue-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "AOUT",
+            "role": "analogue-out",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Idealized generic module only: -50 to 150 °C maps linearly to 0–5 V using AOUT = (temperatureC + 50) / 40 V.",
+            "No physical-sensor accuracy, calibration error, self-heating, thermal lag, loading, tolerance or noise is modelled.",
+            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "83428743da39b176d458a323047645d234dcdebfac4a2622fb53cea123e2ee99",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "e47f7141d45ce9e07f5b431985816e576c3eb254f13b99a00d3bfcffbd0591b8",
+      "componentType": "switch.changeover-spdt-v1",
+      "componentVersion": 1,
+      "modelId": "model.switch-changeover-spdt-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "switch.changeover-spdt-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 120,
+        "cssWidth": 180,
+        "renderer": "switch-changeover-spdt",
+        "thumbnail": "switch-changeover-spdt",
+        "viewBox": [
+          0,
+          0,
+          150,
+          100
+        ]
+      },
+      "rendererContractSha256": "66c9bcef1d82302791e8f4d5f84a7c97e1f3ffdda220b1119630ece57c457113",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "selectedThrow": {
+            "default": "A",
+            "kind": "enum",
+            "mutability": "authored",
+            "values": [
+              "A",
+              "B"
+            ]
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.switch-changeover-spdt-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {},
+            "id": "COM",
+            "role": "passive",
+            "signals": []
+          },
+          {
+            "constraints": {},
+            "id": "A",
+            "role": "passive",
+            "signals": []
+          },
+          {
+            "constraints": {},
+            "id": "B",
+            "role": "passive",
+            "signals": []
+          }
+        ],
+        "properties": {
+          "transitionPolicy": {
+            "default": "break-before-make",
+            "kind": "enum",
+            "values": [
+              "break-before-make"
+            ]
+          }
+        },
+        "support": {
+          "limitations": [
+            "Only one AVR digital-input COM selecting a direct GND or 5 V throw is simulated.",
+            "BREAK uses the INPUT_PULLUP release level; generic high-impedance and analogue contact networks are rejected.",
+            "No bounce, resistance, delay, arcing, current rating or output-drive inference is modelled."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "3b1af60efa5006c701d4e21d15e0660319075641918b95595f320281cdb9ad44",
+      "supportStatus": "partial"
+    },
+    {
+      "behaviorContractSha256": "bb2a9732aeba03e273d8973b0870d617b55b2b6be112ff0bf8220a62a7928e51",
+      "componentType": "switch.toggle-spst-v1",
+      "componentVersion": 1,
+      "modelId": "model.switch-toggle-spst-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "switch.toggle-spst-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 82,
+        "cssWidth": 112,
+        "renderer": "switch-toggle-spst",
+        "thumbnail": "switch-toggle-spst",
+        "viewBox": [
+          0,
+          0,
+          112,
+          82
+        ]
+      },
+      "rendererContractSha256": "9cd549733a3df4fa1a9f1e9a20035150c9474ca697ed396ef05161f398f5abde",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "closed": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.switch-toggle-spst-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {},
+            "id": "A",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "B",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          }
+        ],
+        "properties": {
+          "normallyOpen": {
+            "default": true,
+            "kind": "boolean"
+          }
+        },
+        "support": {
+          "limitations": [
+            "Ideal latching normally-open SPST contact in the existing 0–5 V AVR digital-input topology.",
+            "No contact bounce, resistance, current rating, arcing or mechanical wear model.",
+            "Not an SPDT selector, mains switch or physical-safety model."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "9173550bff2f8d5b71cfdbaaef97b9a20e734a7f05678c1a029ee5d6d6e02a0f",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "c36e95609466ef8428e1f89a96bc4426471c4482bf45b378b91927792643e2e6",
+      "componentType": "board.esp32-c3-devmodule-v1",
+      "componentVersion": 1,
+      "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "board.esp32-c3-devmodule-v1-state-v1",
+        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
+      },
+      "profile": "board.esp32-c3-devmodule-v1",
+      "renderer": {
+        "cssHeight": 220,
+        "cssWidth": 160,
+        "renderer": "board-esp32-c3-profile",
+        "thumbnail": "board-esp32-c3-profile",
+        "viewBox": [
+          0,
+          0,
+          160,
+          220
+        ]
+      },
+      "rendererContractSha256": "95b58544ffb4f3a11a9eb2514ed269bc0464d7b2bd3e1e7f50dda1839c841974",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "connector": "J1",
+              "physicalPin": 4,
+              "strappingPin": true,
+              "voltageMax": 3.3,
+              "voltageMin": 0
+            },
+            "id": "GPIO2",
+            "role": "digital-io",
+            "signals": [
+              "digital.output"
+            ]
+          },
+          {
+            "constraints": {
+              "connector": "J1",
+              "physicalPin": 6
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Actual QEMU CPU/UART is separate from this executed-register-write GPIO2 project model.",
+            "GPIO2 is a strapping pin; this bounded teaching path is not physical-board equivalence."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "47f21637431be47217854b63ded12bc182b93af75d0f25cd8a36c05d7ee0a74d",
+      "supportStatus": "partial"
+    },
+    {
+      "behaviorContractSha256": "b0ef71782b27fb546279c0f56e0f5826380aad1f9088c1e9a9d1334fb850e9ea",
+      "componentType": "led.basic-v1",
+      "componentVersion": 1,
+      "modelId": "model.led-current-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "led.basic-v1-state-v1",
+        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
+      },
+      "profile": "board.esp32-c3-devmodule-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 70,
+        "renderer": "led-through-hole",
+        "thumbnail": "led-through-hole",
+        "viewBox": [
+          0,
+          0,
+          70,
+          100
+        ]
+      },
+      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.led-current-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "polarity": "anode"
+            },
+            "id": "ANODE",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "cathode"
+            },
+            "id": "CATHODE",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          }
+        ],
+        "properties": {
+          "color": {
+            "default": "red",
+            "kind": "enum",
+            "values": [
+              "red",
+              "yellow",
+              "green",
+              "blue"
+            ]
+          }
+        },
+        "support": {
+          "limitations": [
+            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "9880a3fce1a22c879076ac8de5a8c1069bc13a055e9cf93a2fb9b3b6fc3a76b0",
+      "componentType": "resistor.fixed-v1",
+      "componentVersion": 1,
+      "modelId": "model.resistor-fixed-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "resistor.fixed-v1-state-v1",
+        "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
+      },
+      "profile": "board.esp32-c3-devmodule-v1",
+      "renderer": {
+        "cssHeight": 48,
+        "cssWidth": 150,
+        "renderer": "resistor-axial",
+        "thumbnail": "resistor-axial",
+        "viewBox": [
+          0,
+          0,
+          150,
+          48
+        ]
+      },
+      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.resistor-fixed-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {},
+            "id": "A",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "B",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          }
+        ],
+        "properties": {
+          "ohms": {
+            "default": 220,
+            "kind": "number",
+            "maximum": 1000000000,
+            "minimum": 1,
+            "unit": "Ω"
+          }
+        },
+        "support": {
+          "limitations": [
+            "Bounded ideal resistance in supported teaching topologies; no thermal model."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "e6ea6539d25fe3b493a3a046f8279121dcc111c2d406ef7bbb5eeaef7319bcc7",
+      "componentType": "board.rp2040-pico-v1",
+      "componentVersion": 1,
+      "modelId": "model.rp2040-pico-gpio0-public-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "board.rp2040-pico-v1-state-v1",
+        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
+      },
+      "profile": "board.rp2040-pico-v1",
+      "renderer": {
+        "cssHeight": 300,
+        "cssWidth": 132,
+        "renderer": "board-rp2040-pico",
+        "thumbnail": "board-rp2040-pico",
+        "viewBox": [
+          0,
+          0,
+          132,
+          300
+        ]
+      },
+      "rendererContractSha256": "52d6e473d0ddb6e77f4299987759cf671fcc9d7025d827651d9220935605250c",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.rp2040-pico-gpio0-public-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "physicalPin": 1,
+              "voltageMax": 3.3,
+              "voltageMin": 0
+            },
+            "id": "GP0",
+            "role": "digital-io",
+            "signals": [
+              "digital.output",
+              "pwm.output"
+            ]
+          },
+          {
+            "constraints": {
+              "physicalPin": 3
+            },
+            "id": "GND3",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Public bounded GPIO0 output circuit subset only; no complete board or physical-hardware equivalence.",
+            "GPIO25 is the onboard LED connection and is intentionally not exposed as a header anchor."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "981d93d732c94ee648051dab6505f97712f18d7ecd26544102ee58239f72c265",
+      "supportStatus": "partial"
+    },
+    {
+      "behaviorContractSha256": "67afbe98d4d2f2ac02617e8165d9be2f75f9146fb741c40e73e758ad452a709c",
+      "componentType": "led.basic-v1",
+      "componentVersion": 1,
+      "modelId": "model.led-current-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "led.basic-v1-state-v1",
+        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
+      },
+      "profile": "board.rp2040-pico-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 70,
+        "renderer": "led-through-hole",
+        "thumbnail": "led-through-hole",
+        "viewBox": [
+          0,
+          0,
+          70,
+          100
+        ]
+      },
+      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.led-current-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "polarity": "anode"
+            },
+            "id": "ANODE",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "cathode"
+            },
+            "id": "CATHODE",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          }
+        ],
+        "properties": {
+          "color": {
+            "default": "red",
+            "kind": "enum",
+            "values": [
+              "red",
+              "yellow",
+              "green",
+              "blue"
+            ]
+          }
+        },
+        "support": {
+          "limitations": [
+            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "6892fd77db174d7cb2e44c0ac2a024bdb45c134947fe40ded5f80214d609184b",
+      "componentType": "resistor.fixed-v1",
+      "componentVersion": 1,
+      "modelId": "model.resistor-fixed-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "resistor.fixed-v1-state-v1",
+        "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
+      },
+      "profile": "board.rp2040-pico-v1",
+      "renderer": {
+        "cssHeight": 48,
+        "cssWidth": 150,
+        "renderer": "resistor-axial",
+        "thumbnail": "resistor-axial",
+        "viewBox": [
+          0,
+          0,
+          150,
+          48
+        ]
+      },
+      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.resistor-fixed-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {},
+            "id": "A",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "B",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          }
+        ],
+        "properties": {
+          "ohms": {
+            "default": 220,
+            "kind": "number",
+            "maximum": 1000000000,
+            "minimum": 1,
+            "unit": "Ω"
+          }
+        },
+        "support": {
+          "limitations": [
+            "Bounded ideal resistance in supported teaching topologies; no thermal model."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "9b154a8b04881f695cee722cd8bf225cef0a30c19337477bdf4eead843391155",
+      "componentType": "board.stm32f429zi-nucleo144-v1",
+      "componentVersion": 1,
+      "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "board.stm32f429zi-nucleo144-v1-state-v1",
+        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
+      },
+      "profile": "board.stm32f429zi-nucleo144-v1",
+      "renderer": {
+        "cssHeight": 230,
+        "cssWidth": 190,
+        "renderer": "board-stm32f429zi-profile",
+        "thumbnail": "board-stm32f429zi-profile",
+        "viewBox": [
+          0,
+          0,
+          190,
+          230
+        ]
+      },
+      "rendererContractSha256": "5d3909f79e7ac00abfde9bc6d67044203ca6f262f7c17d28781331c6aec46de3",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "connector": "CN11",
+              "physicalPin": 34,
+              "voltageMax": 3.3,
+              "voltageMin": 0
+            },
+            "id": "PB0",
+            "role": "digital-io",
+            "signals": [
+              "digital.output"
+            ]
+          },
+          {
+            "constraints": {
+              "connector": "CN11",
+              "physicalPin": 35
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Public bounded PB0 and USART3 subset only; no complete board or physical-hardware equivalence.",
+            "The external resistor and LED are an ideal teaching circuit driven by actual Renode-observed PB0."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "4f2061383d5c2011fae731719a9e8a50883d1c37bcf8e607c56a6d2550310a76",
+      "supportStatus": "partial"
+    },
+    {
+      "behaviorContractSha256": "f3a4408c1f9f37156f67ff1679ed87ec19bd4bb48f29c971a527bc057fc9447d",
+      "componentType": "led.basic-v1",
+      "componentVersion": 1,
+      "modelId": "model.led-current-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "led.basic-v1-state-v1",
+        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
+      },
+      "profile": "board.stm32f429zi-nucleo144-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 70,
+        "renderer": "led-through-hole",
+        "thumbnail": "led-through-hole",
+        "viewBox": [
+          0,
+          0,
+          70,
+          100
+        ]
+      },
+      "rendererContractSha256": "efb71c15179cb9e196e46aba9d04f05709657121228eb85338ce70d3469e9a1c",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.led-current-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "polarity": "anode"
+            },
+            "id": "ANODE",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "cathode"
+            },
+            "id": "CATHODE",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          }
+        ],
+        "properties": {
+          "color": {
+            "default": "red",
+            "kind": "enum",
+            "values": [
+              "red",
+              "yellow",
+              "green",
+              "blue"
+            ]
+          }
+        },
+        "support": {
+          "limitations": [
+            "Bounded polarity, current and relative-brightness model; requires validated series resistor."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "c817a08b2c150c232e07d9b5abdfc4af979f9446f16ece6b206ca43ab59008ba",
+      "componentType": "resistor.fixed-v1",
+      "componentVersion": 1,
+      "modelId": "model.resistor-fixed-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+        "observerId": "resistor.fixed-v1-state-v1",
+        "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
+      },
+      "profile": "board.stm32f429zi-nucleo144-v1",
+      "renderer": {
+        "cssHeight": 48,
+        "cssWidth": 150,
+        "renderer": "resistor-axial",
+        "thumbnail": "resistor-axial",
+        "viewBox": [
+          0,
+          0,
+          150,
+          48
+        ]
+      },
+      "rendererContractSha256": "acfddf1c874bc85e26eeb5d923d462d2beb07de5b770f504bde80bc9a132fe9c",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.resistor-fixed-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {},
+            "id": "A",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "B",
+            "role": "passive",
+            "signals": [
+              "passive.two-terminal"
+            ]
+          }
+        ],
+        "properties": {
+          "ohms": {
+            "default": 220,
+            "kind": "number",
+            "maximum": 1000000000,
+            "minimum": 1,
+            "unit": "Ω"
+          }
+        },
+        "support": {
+          "limitations": [
+            "Bounded ideal resistance in supported teaching topologies; no thermal model."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "2ea2491482e535548e2ddd54fad98e57870d713b3f6c19510eb0ff53b449594b",
+      "supportStatus": "simulated"
+    }
+  ],
+  "implementationId": "intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13",
+  "implementationMembers": [
+    {
+      "path": "src/component-catalog.mjs",
+      "sha256": "d461c7f52e591f2937518dd7cc30f9fdfd915cd9c6104624364d2236ecf1d236"
+    },
+    {
+      "path": "src/circuit-engine.mjs",
+      "sha256": "87ebd90e9ebb32c8fd7dbc8d7b3c9e8108bf834278b6592729334a0301f48166"
+    },
+    {
+      "path": "src/runtime-kernel.mjs",
+      "sha256": "8ae935906e1981916b7bc1ab7c2243c6624404b232d1844e1d690c632172bc6e"
+    },
+    {
+      "path": "src/atmega328p-adapter.mjs",
+      "sha256": "65136d0b607336db992ba7dab81447813331b103136ec7c5348e6fc1ca9300de"
+    },
+    {
+      "path": "src/x43-avr-stack-profile.mjs",
+      "sha256": "daab81af7d7af8ccec2749328bcd1deae2e7f0e7a785af8ce726ba9efbee6758"
+    },
+    {
+      "path": "src/x47-runtime-transaction.mjs",
+      "sha256": "34b90ff05ee63b97ff88ef18d70efdc0bcaf6814f57940ab3580e894caa108e6"
+    },
+    {
+      "path": "src/x47-ui-integration.mjs",
+      "sha256": "baee930e2a369b091f2b3237fca815928d7d87d91ce9cc962aef72f09e92b3d3"
+    },
+    {
+      "path": "src/strict-json.mjs",
+      "sha256": "2a8bcfeed40b56f44d771ddbd2bad77b7ce17698e7f9f608afae8e828d8cb5e5"
+    },
+    {
+      "path": "src/x47-repeatable-inputs.mjs",
+      "sha256": "954f162a4ccfc87ea746fe0240572c23c70cf8c0b7150e446adbc87678e69e45"
+    },
+    {
+      "path": "src/component-appearance.mjs",
+      "sha256": "4c6b62483e52e1f48cf16c48f3b3de57ac99296ccec443d7efdfc3678c04add7"
+    },
+    {
+      "path": "src/project-v2.mjs",
+      "sha256": "453422102ebb64cb1485687d37d2c75155d63e231cf16c7e4a9ba2f86e7b9ca0"
+    },
+    {
+      "path": "src/project-editor.mjs",
+      "sha256": "d50ad45104b980a44b7ab3a62d4da749b54646d6c1eb5327b5447dd098a18ce4"
+    },
+    {
+      "path": "src/lifecycle.mjs",
+      "sha256": "4772e4491d4feb853673d6c8caeee9eb58ece4756805b92638342a5fcd7889d6"
+    },
+    {
+      "path": "staging/component-artwork.mjs",
+      "sha256": "b038661a2d7a26266d0602bb9ccb124cceb17b577ccaf66228db90441f49fdfc"
+    },
+    {
+      "path": "src/model-library.mjs",
+      "sha256": "0499fbd8bbd9c49f256d155c15ac2daed3ccb94ebfa2eacff611aa9787ccd7b7"
+    },
+    {
+      "path": "src/model-bundle-registry.mjs",
+      "sha256": "f74f449363350b89e102d727ac659797a14dc7ae648d5ca9e20b90ec19c9ccff"
+    },
+    {
+      "path": "src/project-envelope.mjs",
+      "sha256": "ff4ab3f6680d2b5f0c6aabc16537062465fc85381d4b6d1fc642a39a14094adf"
+    },
+    {
+      "path": "src/model-control-contracts.mjs",
+      "sha256": "138d6f0b76abc3b1a509b741e581030192d91923864c8f804f42c32ef82abaa4"
+    },
+    {
+      "path": "src/simulator.worker.mjs",
+      "sha256": "08ab74983a6fc0ed60edb3bbb6dfb2e453b225381150feb7bfec3a1d28b1dc3f"
+    },
+    {
+      "path": "staging/main.mjs",
+      "sha256": "f7503620e453fa5145d50db8ba9713798fe51ba1ef738c2e4bf290f3f5b1f2c3"
+    },
+    {
+      "path": "src/rp2040-snapshot-pacer.mjs",
+      "sha256": "cc6ae6a1ba2ccf30382d4eefdd547de81c0053c6923e978b5e0dcf18c2a53b7e"
+    },
+    {
+      "path": "src/rp2040-experimental-runtime.mjs",
+      "sha256": "93463965a8f379afdea256f270f2efb2876d9ec8ddff7f9e9676d7a7ad82a10d"
+    },
+    {
+      "path": "src/runtime-identity.mjs",
+      "sha256": "dcd4e0df743d6310a6661cc3a2cf6b2d2879e33a3b82a3dd8620570c689231e8"
+    },
+    {
+      "path": "src/candidate-project-session.mjs",
+      "sha256": "079a528132787c424d12ec8b7514eb075ce11086f5e2962b8553e6fb4a1de43d"
+    },
+    {
+      "path": "src/candidate-spdt-runtime.mjs",
+      "sha256": "cac63a72f4e0a8b67468d638d5ae9cf8bf49a76420e62d648bb4745bf9d8de31"
+    },
+    {
+      "path": "src/candidate-existing-ui-adapter.mjs",
+      "sha256": "5d60089e6da394f332410b54e270d8620cde812ea3d48d0005622348838426bf"
+    },
+    {
+      "path": "src/rp2040-pico-circuit.mjs",
+      "sha256": "9ba0ac0a14f5c33c16d43f6a7eb7313a657b36bf10cfe13ea24cd893625524f0"
+    },
+    {
+      "path": "src/esp32c3-public-circuit.mjs",
+      "sha256": "47fad0c2e060118a986cf08b6a83a24e8e0d955fa15fe4a3f399a51e51179b66"
+    },
+    {
+      "path": "src/stm32-public-circuit.mjs",
+      "sha256": "12873127b49d7c9c65f79b52228fee0d0419f2f7a8856aac0c7b0dc528001988"
+    },
+    {
+      "path": "src/rp2040-public-workbench.mjs",
+      "sha256": "c04d0beb03c037ad02f20e3fa8271306ff3f954b6575e6c84bea96ed231219af"
+    },
+    {
+      "path": "src/esp32c3-public-workbench.mjs",
+      "sha256": "f3a21835f0125df0948397aa32f276c66f5601d08064cd12cc584b65b001e76a"
+    },
+    {
+      "path": "src/stm32-public-workbench.mjs",
+      "sha256": "cd52cbfa009e847080f27bbc401eac344d9795e08ef9177efdd43d4042a99672"
+    },
+    {
+      "path": "expansion-drafts/controller-runtime-bridge-v1.mjs",
+      "sha256": "670767df34464eb8fb47037bf44f4911545ea58941832c81fb842eaba5793278"
+    },
+    {
+      "path": "expansion-drafts/rp2040-runtime-bridge-adapter-v1.mjs",
+      "sha256": "4b7496cd38a995bcecfb3b3456edce10f0d671606f0fa3d6c36e99762ee2ac56"
+    },
+    {
+      "path": "expansion-drafts/rp2040-conformance-fixtures-v1.mjs",
+      "sha256": "3d8eb99253b2c91876b6ac678838a2cf35b72e5261362be94575f364ac962bb9"
+    },
+    {
+      "path": "expansion-drafts/rp2040-firmware-artifact-v1.mjs",
+      "sha256": "7f08aa59de5e69eddd5e1a4cfd7c1e900f898d7c65425eb6274247058c53430b"
+    },
+    {
+      "path": "expansion-drafts/project-v3-contact-persistence.mjs",
+      "sha256": "bca551ac31347c998a849f62ad3989b47a4b5f0471fce58d36a6c64d1b288746"
+    },
+    {
+      "path": "expansion-drafts/ground-reference-integration-v1.mjs",
+      "sha256": "59dc3833915afbec325b2d06e815c3250ad858ad1769da03c509ae7e3cd38958"
+    },
+    {
+      "path": "expansion-drafts/toggle-switch-integration-v1.mjs",
+      "sha256": "90fcaad32074957021ffe5bde973c81c08a3dd0f345495ab169218416dc0e389"
+    },
+    {
+      "path": "expansion-drafts/switch-contact-graph-v1.mjs",
+      "sha256": "073a5079335b222c53410971dcab42324cfa3ad639cc4b57a879fbe6efa476d2"
+    },
+    {
+      "path": "expansion-drafts/ideal-three-pin-analogue-module-v1.mjs",
+      "sha256": "383caf45e17281997b5b6e6f8a63bde660e19a1e48e1d0be1c137a8d36c187d3"
+    },
+    {
+      "path": "expansion-drafts/light-analogue-sensor-v1.mjs",
+      "sha256": "1a6efe15ec9b955f2824b711d32ea5d310d7966a223f8366031158514db24fbc"
+    },
+    {
+      "path": "expansion-drafts/temperature-analogue-sensor-v1.mjs",
+      "sha256": "5f3290f865e79ecf7362ea6b6ea667d9e01670a5daabb1b1cf70e977a6307817"
+    },
+    {
+      "path": "expansion-drafts/digital-light-threshold-module-v1.mjs",
+      "sha256": "f3a203a7c92e412a615599e6b0dbca9a84af3c15843c47e7bedc3a8f4d48d2bd"
+    },
+    {
+      "path": "expansion-drafts/common-cathode-rgb-led-v1.mjs",
+      "sha256": "42d045d2882ed745c4f2895d21bc0683582ce185c03b1dce9b854f98389f69d1"
+    },
+    {
+      "path": "expansion-drafts/active-buzzer-module-v1.mjs",
+      "sha256": "aa8bd1dc352a689ebcf0443cc2595426cdcf46396b1bc47b742c3731b2dafe94"
+    },
+    {
+      "path": "expansion-drafts/seven-segment-common-cathode-v1.mjs",
+      "sha256": "5d2b30cdfcfd48ad8dfc6e767ac9c9ee2825018e94980cf8915d5550b7d69905"
+    },
+    {
+      "path": "expansion-drafts/character-lcd-16x2-4bit-v1.mjs",
+      "sha256": "463871c751ee4e7857d46ceb75500f417c59a59af331535e8e3b2c87d17b27ee"
+    },
+    {
+      "path": "expansion-drafts/rotary-encoder-quadrature-v1.mjs",
+      "sha256": "0671974cb26e5447db07266f2e6a85a1f4fdd2fb8463453aa274987177167ac8"
+    },
+    {
+      "path": "src/model-library-current-resolver.mjs",
+      "sha256": "e636f16a5e25e19fceb458f1b0d4fc832d2657f20352e94a37672b1fbc51a9d2"
+    }
+  ],
+  "implementationSha256": "da3a66c294fdb2e452cad971eb3eb856d401daee687ae0279bfcb08f80ba10a0",
+  "libraryId": "intent-mcu-public-models",
+  "lineage": {
+    "baselineClosureDisposition": "accepted public rc.98 identity remains immutable and migration-only",
+    "compatibility": "explicit-data-only-migration; runtime-and-verdict-authority-cleared",
+    "presentationDisposition": "private X47 candidate adds finite ramp, seeded-noise and strict recorded-input authoring with explicit units and no implicit run",
+    "priorManifestSha256": "af955739ce5d154f519e51d1fa72d82b756c241d931e6f2f8a7631875620d456",
+    "priorVersion": "2.0.0-x43-stack-hotpath-candidate.1-current",
+    "semanticDisposition": "component and electrical semantics are unchanged; current AVR runtime adds one bounded A1 schedule producer through the existing validated control path"
+  },
+  "manifestSha256": "9f345fe572cc9f8a05cd29cf9ca5b18373c170631236645ba5ce3e00112cf2d2",
+  "runtimeContracts": [
+    "avr8js@0.21.1",
+    "rp2040js@1.4.0",
+    "esp32c3-qemu@project-pinned",
+    "renode@1.17.0"
+  ],
+  "schema": "intent-mcu-model-library-manifest@2",
+  "version": "2.0.0-x47-repeatable-inputs-candidate.1-current"
 });

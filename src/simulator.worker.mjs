@@ -9,7 +9,7 @@ import {
 } from './runtime-identity.mjs';
 import { modelLibraryExecutionIdentity } from './model-library.mjs';
 import { exactKeys } from './strict-json.mjs';
-import { validateX43AvrHeapSymbols } from './x43-avr-heap-profile.mjs';
+import { validateX47RepeatableApplyRequest } from './x47-repeatable-inputs.mjs';
 
 let kernel = null;
 let rp2040 = null;
@@ -19,6 +19,8 @@ let generation = 0;
 let initialization = 0;
 let runtimeIdentity = null;
 let validatedModelExecutionContextSha256 = null;
+let x47RepeatableAuthority = null;
+let x47RepeatablePending = null;
 
 const identityFields = () => runtimeIdentity ? {
   runtimeIdentity: structuredClone(runtimeIdentity),
@@ -85,6 +87,8 @@ function disposeRuntime(x47CancellationReceipts = []) {
   kernel = null;
   runtimeIdentity = null;
   validatedModelExecutionContextSha256 = null;
+  x47RepeatableAuthority = null;
+  x47RepeatablePending = null;
   return { disposedIdentity, x47CancellationReceipts };
 }
 
@@ -119,17 +123,6 @@ function x43StackCommand(data) {
   return data.token;
 }
 
-function x43HeapCommand(data) {
-  if (!exactKeys(data, ['command', 'token', 'artifactIdentity', 'runtimeGeneration', 'workerInstanceNonce'])
-      || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(data.token ?? '')
-      || data.artifactIdentity !== runtimeIdentity?.artifactIdentity
-      || data.runtimeGeneration !== runtimeIdentity?.runtimeGeneration
-      || data.workerInstanceNonce !== runtimeIdentity?.workerInstanceNonce) {
-    throw new Error('X43_HEAP_COMMAND_STALE');
-  }
-  return data.token;
-}
-
 function createRp2040Pacer(runtime) {
   return new Rp2040SnapshotPacer({
     artifactIdentity: runtime.artifactIdentity,
@@ -152,19 +145,13 @@ async function handleMessage(data) {
       const currentInitialization = ++initialization;
       const binding = data.runtimeBinding ? runtimeInitBinding(data.runtimeBinding) : null;
       runtimeIdentity = binding ? createWorkerRuntimeIdentity(binding, currentInitialization) : null;
+      x47RepeatableAuthority = data.x47RuntimeAuthority ? structuredClone(data.x47RuntimeAuthority) : null;
+      x47RepeatablePending = null;
       if (data.x34Probe && (!binding || data.x34Probe.artifactIdentity !== binding.artifactIdentity)) {
         throw new Error('X34_RUNTIME_ARTIFACT_BINDING_MISMATCH');
       }
       if (data.x35Probe && (!binding || data.x35Probe.artifactIdentity !== binding.artifactIdentity)) {
         throw new Error('X35_RUNTIME_ARTIFACT_BINDING_MISMATCH');
-      }
-      if (data.x43HeapProfile) {
-        const heapProfile = validateX43AvrHeapSymbols(data.x43HeapProfile);
-        if (!binding || heapProfile.artifactIdentity !== binding.artifactIdentity
-            || heapProfile.modelImplementationSha256 !== binding.modelImplementationSha256
-            || heapProfile.modelExecutionContextSha256 !== binding.modelExecutionContextSha256) {
-          throw new Error('X43_HEAP_RUNTIME_BINDING_MISMATCH');
-        }
       }
       if (data.runtimeProfile === RP2040_EXPERIMENTAL_PROFILE) {
         const candidate = await Rp2040ExperimentalRuntime.create(data.firmware ?? null);
@@ -201,7 +188,6 @@ async function handleMessage(data) {
           modelExecutionContextSha256: data.modelExecutionContextSha256,
           ...(data.x34Probe ? { x34Probe: data.x34Probe } : {}),
           ...(data.x35Probe ? { x35Probe: data.x35Probe } : {}),
-          ...(data.x43HeapProfile ? { x43HeapProfile: data.x43HeapProfile } : {}),
           ...(data.x47RuntimeAuthority ? { x47RuntimeAuthority: data.x47RuntimeAuthority,
             runtimeIdentity } : {}),
         });
@@ -214,7 +200,6 @@ async function handleMessage(data) {
           ...(data.instruments ?? {}),
           ...(data.x34Probe ? { x34Probe: data.x34Probe } : {}),
           ...(data.x35Probe ? { x35Probe: data.x35Probe } : {}),
-          ...(data.x43HeapProfile ? { x43HeapProfile: data.x43HeapProfile } : {}),
         });
       }
       for (const input of data.digitalInputs ?? []) applyDigitalInput(input);
@@ -287,11 +272,6 @@ async function handleMessage(data) {
       const snapshot = kernel.captureX43StackObservation(x43StackCommand(data));
       emit({ kind: 'x43-stack-captured', ...snapshot,
         led: snapshot.circuit.leds.some((item) => item.on) });
-    } else if (data.command === 'x43-heap-sample') {
-      if (isRp2040()) throw new Error('X43_HEAP_PROFILE_UNAVAILABLE');
-      const snapshot = kernel.sampleX43HeapFrontier(x43HeapCommand(data));
-      emit({ kind: 'x43-heap-sampled', ...snapshot,
-        led: snapshot.circuit.leds.some((item) => item.on) });
     } else if (data.command === 'step') {
       running = false;
       generation++;
@@ -315,6 +295,8 @@ async function handleMessage(data) {
       else {
         const x47CancellationReceipts = acknowledgeX47Cancellation('RESET');
         const snapshot = kernel.reset();
+        x47RepeatablePending = null;
+        x47RepeatableAuthority = null;
         emit({ kind: 'reset', ...snapshot,
           ...(x47CancellationReceipts.length ? { x47CancellationReceipts } : {}),
           led: snapshot.circuit.leds.some((item) => item.on) });
@@ -342,6 +324,47 @@ async function handleMessage(data) {
       const receipt = kernel.queueX47Transaction(data.request);
       emit({ kind: 'x47-accepted', receipt, executionReceipt:
         kernel.x47ExecutionReceipt(receipt.transactionId) });
+    } else if (data.command === 'x47-repeatable-apply') {
+      if (isRp2040() || !kernel || !x47RepeatableAuthority || !runtimeIdentity) {
+        throw new Error('X47_REPEATABLE_RUNTIME_UNAVAILABLE');
+      }
+      if (!exactKeys(data, ['command', 'request'])) throw new Error('X47_REPEATABLE_COMMAND_INVALID');
+      const request = validateX47RepeatableApplyRequest(
+        data.request, x47RepeatableAuthority, runtimeIdentity,
+      );
+      const currentCycle = kernel.adapter.cpu.cycles;
+      if (!kernel.adapter.paused || request.expectedBaseCycle !== currentCycle) {
+        throw new Error('X47_REPEATABLE_PAUSED_BASE_REQUIRED');
+      }
+      if (x47RepeatablePending && currentCycle <= x47RepeatablePending.endCycle) {
+        throw new Error('X47_REPEATABLE_OVERLAP');
+      }
+      const graphTarget = kernel.circuit.graph.components.find(
+        (item) => item.id === 'temperature-sensor-1',
+      );
+      if (graphTarget?.type !== 'potentiometer.linear-v1'
+          || !Number.isFinite(graphTarget.controls?.position)) {
+        throw new Error('X47_REPEATABLE_RUNTIME_GRAPH');
+      }
+      const before = kernel.inputs.snapshot();
+      if (before.pending.length || before.log.length + request.schedule.length > before.retention.limit) {
+        throw new Error('X47_REPEATABLE_INPUT_CONFLICT');
+      }
+      const accepted = request.schedule.map((event, eventIndex) => {
+        const targetCycle = request.expectedBaseCycle + event.offsetCycles;
+        const position = event.positionNumerator / event.positionDenominator;
+        const queued = kernel.queueControlAtCycle(event.componentId, event.key, position, targetCycle);
+        return { eventIndex, offsetCycles: event.offsetCycles, targetCycle,
+          temperatureC: event.temperatureC, positionNumerator: event.positionNumerator,
+          positionDenominator: event.positionDenominator, queueSequence: queued.sequence };
+      });
+      x47RepeatablePending = { transactionId: request.transactionId,
+        endCycle: accepted.at(-1).targetCycle };
+      emit({ kind: 'x47-repeatable-accepted', schema: 'intent-mcu-x47-repeatable-queue@1',
+        transactionId: request.transactionId,
+        canonicalScheduleSha256: request.canonicalScheduleSha256,
+        binding: request.binding, baseCycle: request.expectedBaseCycle,
+        events: accepted, retained: accepted.length, dropped: 0 });
     } else if (data.command === 'x47-cancel') {
       if (isRp2040()) throw new Error('X47_PROFILE_UNAVAILABLE');
       if (!exactKeys(data, ['command', 'transactionId', 'binding'])) {

@@ -1300,6 +1300,29 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .x47-runtime-facts div:last-child { border-inline-end: 0; }
 .x47-runtime-facts dt { color: #86a9b8; font: 750 .67rem/1.35 ui-monospace, monospace; text-transform: uppercase; }
 .x47-runtime-facts dd { margin: 4px 0 0; color: #e8f3f7; font: .72rem/1.45 ui-monospace, monospace; overflow-wrap: anywhere; }
+.x47-repeatable-inputs { grid-column: 1 / -1; border-color: #315d70 !important; background: linear-gradient(135deg, #06131a, #0a2028) !important; }
+.x47-repeatable-inputs[data-state="preview"] { border-color: var(--cyan) !important; box-shadow: inset 3px 0 0 var(--cyan); }
+.x47-repeatable-inputs[data-state="invalidated"] { border-color: #98637a !important; }
+.x47-repeatable-inputs .shared-instrument-tool-heading { align-items: center; font: 800 .78rem/1.4 ui-monospace, monospace; }
+.x47-repeatable-inputs .shared-instrument-tool-heading span { padding: 4px 8px; border: 1px solid currentColor; border-radius: 999px; }
+.x47-repeatable-boundary, .x47-repeatable-inputs [data-x47-repeatable-binding],
+.x47-repeatable-inputs [data-x47-repeatable-runtime] { margin: 8px 0; color: #b9ceda; font: .76rem/1.55 ui-monospace, monospace; overflow-wrap: anywhere; }
+.x47-repeatable-boundary strong { color: var(--cyan); text-transform: uppercase; }
+.x47-repeatable-controls { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(190px, .7fr) minmax(190px, .7fr); gap: 8px; align-items: end; }
+.x47-repeatable-controls label, .x47-repeatable-parameters { display: grid; gap: 5px; color: #b9ceda; font: 700 .75rem/1.4 ui-monospace, monospace; text-transform: uppercase; }
+.x47-repeatable-controls select, .x47-repeatable-controls input,
+.x47-repeatable-controls button { min-height: 38px; min-width: 0; }
+.x47-repeatable-controls button, .x47-repeatable-actions button { color: #06131a; border-color: var(--cyan); background: var(--cyan); font: 850 .76rem/1.35 ui-monospace, monospace; }
+.x47-repeatable-controls button:disabled, .x47-repeatable-actions button:disabled { color: var(--muted); border-color: var(--line); background: #0b1b29; }
+.x47-repeatable-parameters { margin-top: 9px; }
+.x47-repeatable-parameters textarea { width: 100%; min-height: 84px; resize: vertical; white-space: pre-wrap; color: #d8f8ff; background: #030d13; font: .74rem/1.5 ui-monospace, monospace; }
+.x47-repeatable-output { display: grid; grid-template-columns: minmax(240px, .7fr) minmax(320px, 1.3fr); gap: 8px; margin-top: 10px; }
+.x47-repeatable-output > div, .x47-repeatable-output details { min-width: 0; margin: 0; padding: 10px; border: 1px solid #315d70; border-radius: 8px; background: #020b10; color: #c9f7ff; font: .76rem/1.55 ui-monospace, monospace; }
+.x47-repeatable-output ol { max-height: 180px; overflow: auto; margin: 8px 0 0; padding-left: 24px; }
+.x47-repeatable-output summary { cursor: pointer; color: var(--cyan); font-weight: 800; }
+.x47-repeatable-output pre { max-height: 180px; overflow: auto; margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #c9f7ff; font: inherit; }
+.x47-repeatable-actions { display: flex; gap: 8px; margin-top: 10px; }
+.x47-repeatable-actions button { min-height: 38px; }
 .x49-offset-comparison { grid-column: 1 / -1; border-color: #795f2d !important; background: linear-gradient(135deg, #111006, #201a08) !important; }
 .x49-offset-comparison[data-state="preview"] { border-color: var(--amber) !important; }
 .x49-offset-comparison[data-state="synthetic-replay"] { border-color: var(--cyan) !important; }
@@ -1334,7 +1357,8 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 @media (max-width: 760px) {
   .shared-instrument-tools, .failure-replay-results { grid-template-columns: 1fr; }
   .x42-trigger-controls, .x42-trigger-facts, .x43-profile-facts, .x43-profile-unsupported,
-  .x47-pulse-controls, .x47-pulse-output, .x47-runtime-facts { grid-template-columns: 1fr; }
+  .x47-pulse-controls, .x47-pulse-output, .x47-runtime-facts,
+  .x47-repeatable-controls, .x47-repeatable-output { grid-template-columns: 1fr; }
   .x47-runtime-facts div { border-inline-end: 0; border-block-end: 1px solid #315d4b; }
 }
 .control-runtime-evidence { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }

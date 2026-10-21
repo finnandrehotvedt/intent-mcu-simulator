@@ -13,23 +13,8 @@ import { controlContractsFor } from '../src/model-control-contracts.mjs';
 import * as existingSnapshots from '../src/model-library-snapshots.mjs';
 
 const { RETAINED_MODEL_LIBRARY_MANIFEST } = existingSnapshots;
-const PRE_X43_ELF_BOUNDARY_CURRENT_MODEL_LIBRARY_MANIFEST =
-  existingSnapshots.PRE_X43_ELF_BOUNDARY_CURRENT_MODEL_LIBRARY_MANIFEST
-  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
-const PRE_X43_CANONICAL_OWNER_CURRENT_MODEL_LIBRARY_MANIFEST =
-  existingSnapshots.PRE_X43_CANONICAL_OWNER_CURRENT_MODEL_LIBRARY_MANIFEST
-  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
-const PRE_X43_LINKER_PROOF_CURRENT_MODEL_LIBRARY_MANIFEST =
-  existingSnapshots.PRE_X43_LINKER_PROOF_CURRENT_MODEL_LIBRARY_MANIFEST
-  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
-const PRE_X43_HEAP_WORKER_PACKAGE_CURRENT_MODEL_LIBRARY_MANIFEST =
-  existingSnapshots.PRE_X43_HEAP_WORKER_PACKAGE_CURRENT_MODEL_LIBRARY_MANIFEST
-  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
-const PRE_X43_HEAP_PROVENANCE_CURRENT_MODEL_LIBRARY_MANIFEST =
-  existingSnapshots.PRE_X43_HEAP_PROVENANCE_CURRENT_MODEL_LIBRARY_MANIFEST
-  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
-const PRE_X43_HEAP_CURRENT_MODEL_LIBRARY_MANIFEST =
-  existingSnapshots.PRE_X43_HEAP_CURRENT_MODEL_LIBRARY_MANIFEST
+const PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST
@@ -107,11 +92,9 @@ const entries = COMPONENT_SUPPORT_CELLS.filter((cell) => cell.available)
 const CURRENT_CLOSURE = Object.freeze([
   '../src/component-catalog.mjs', '../src/circuit-engine.mjs', '../src/runtime-kernel.mjs',
   '../src/atmega328p-adapter.mjs', '../src/x43-avr-stack-profile.mjs',
-  '../src/x43-avr-heap-profile.mjs',
-  '../compiler/avr-allocator-provenance.mjs', '../compiler/build-coordinator.mjs',
-  '../compiler/build-worker.mjs', '../compiler/build-protocol.mjs', '../Dockerfile.toolchain',
   '../src/x47-runtime-transaction.mjs',
   '../src/x47-ui-integration.mjs', '../src/strict-json.mjs',
+  '../src/x47-repeatable-inputs.mjs',
   '../src/component-appearance.mjs', '../src/project-v2.mjs', '../src/project-editor.mjs',
   '../src/lifecycle.mjs', '../staging/component-artwork.mjs',
   '../src/model-library.mjs', '../src/model-bundle-registry.mjs', '../src/project-envelope.mjs',
@@ -187,15 +170,15 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x43-elf-boundary.1-current',
-  'intent-mcu-model-bundle-current-x43-elf-boundary-1@18',
+  '2.0.0-x47-repeatable-inputs-candidate.1-current',
+  'intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13',
   currentImplementation,
   {
-    priorVersion: PRE_X43_ELF_BOUNDARY_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X43_ELF_BOUNDARY_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'explicit-data-only-migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component and electrical semantics are unchanged; AVR static heap boundary requires matching linker symbols and exact contiguous writable SRAM load extent',
-    presentationDisposition: 'no UI change; saved real ELF parsing remains strict and fail-closed',
+    semanticDisposition: 'component and electrical semantics are unchanged; current AVR runtime adds one bounded A1 schedule producer through the existing validated control path',
+    presentationDisposition: 'private X47 candidate adds finite ramp, seeded-noise and strict recorded-input authoring with explicit units and no implicit run',
     baselineClosureDisposition: 'accepted public rc.98 identity remains immutable and migration-only',
   },
 );
@@ -204,12 +187,6 @@ const output = `// SPDX-License-Identifier: Apache-2.0
 // Generated immutable snapshots. Regenerate only through an explicitly reviewed library release.
 
 export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(retained, null, 2)});
-export const PRE_X43_ELF_BOUNDARY_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_ELF_BOUNDARY_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
-export const PRE_X43_CANONICAL_OWNER_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_CANONICAL_OWNER_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
-export const PRE_X43_LINKER_PROOF_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_LINKER_PROOF_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
-export const PRE_X43_HEAP_WORKER_PACKAGE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_HEAP_WORKER_PACKAGE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
-export const PRE_X43_HEAP_PROVENANCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_HEAP_PROVENANCE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
-export const PRE_X43_HEAP_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_HEAP_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
@@ -220,6 +197,7 @@ export const PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON
 export const PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_UX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_UX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

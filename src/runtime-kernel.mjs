@@ -21,9 +21,6 @@ import {
   validateX47WorkerBinding,
 } from './x47-runtime-transaction.mjs';
 import { createX43AvrStackTracker } from './x43-avr-stack-profile.mjs';
-import {
-  sampleX43AvrHeapFrontier, validateX43AvrHeapSymbols,
-} from './x43-avr-heap-profile.mjs';
 
 export const INPUT_EVENT_LIMIT = 10_000;
 export const LOGIC_TRANSITION_LIMIT = TRACE_LIMIT;
@@ -137,9 +134,6 @@ export class RuntimeKernel {
       pointer: this.adapter.cpu.SP, cycle: this.adapter.cpu.cycles,
       instructions: this.adapter.instructions,
     });
-    this.x43HeapProfile = options.x43HeapProfile
-      ? validateX43AvrHeapSymbols(options.x43HeapProfile) : null;
-    this.x43HeapSample = null;
     this.x35Probe = options.x35Probe ?? null;
     this.modelLibraryLock = options.modelLibraryLock ?? null;
     this.modelExecutionContextSha256 = options.modelExecutionContextSha256 ?? null;
@@ -534,15 +528,6 @@ export class RuntimeKernel {
     return this.snapshot();
   }
 
-  sampleX43HeapFrontier(token) {
-    if (!this.x43HeapProfile) throw new Error('X43_HEAP_PROFILE_UNAVAILABLE');
-    this.x43HeapSample = sampleX43AvrHeapFrontier(this.x43HeapProfile, this.adapter.cpu.data, {
-      pointer: this.adapter.cpu.SP, cycle: this.adapter.cpu.cycles,
-      instructions: this.adapter.instructions,
-    }, token);
-    return this.snapshot();
-  }
-
   reset() {
     const hadX47Authority = Boolean(this.x47Authority);
     const x47CancellationReceipts = this.cancelX47Transactions('RESET');
@@ -551,7 +536,6 @@ export class RuntimeKernel {
       pointer: this.adapter.cpu.SP, cycle: this.adapter.cpu.cycles,
       instructions: this.adapter.instructions,
     });
-    this.x43HeapSample = null;
     this.circuit.applyControls(this.adapter);
     this.inputs.reset();
     this.serialClearAbsolute = 0;
@@ -577,8 +561,6 @@ export class RuntimeKernel {
     return {
       ...machine,
       x43Stack: this.x43StackTracker.snapshot(),
-      x43HeapProfile: this.x43HeapProfile,
-      x43Heap: this.x43HeapSample,
       ...(this.modelExecutionContextSha256 ? {
         modelExecutionContextSha256: this.modelExecutionContextSha256,
       } : {}),

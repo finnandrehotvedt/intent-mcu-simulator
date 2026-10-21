@@ -32,7 +32,7 @@ const exactInput = (value, keys) => value && typeof value === 'object' && !Array
 // Current behavior is separately owned so future current changes cannot mutate
 // the retained pre-X56 implementation by alias or shared constant.
 export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
-  id: 'intent-mcu-model-bundle-current-x43-elf-boundary-1@18',
+  id: 'intent-mcu-model-bundle-current-x47-repeatable-inputs-candidate-1@13',
   manifestVersion: CURRENT_MODEL_LIBRARY_MANIFEST.version,
   definition(profile, componentType) {
     const entry = entries.get(`${profile}\u0000${componentType}`);
@@ -181,42 +181,7 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
   },
 });
 
-export const PRE_X43_ELF_BOUNDARY_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
-  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
-  id: 'intent-mcu-model-bundle-current-x43-canonical-owner-1@17',
-  manifestVersion: '2.0.0-x43-canonical-owner.1-current',
-  migrationOnly: true,
-});
-
-export const PRE_X43_CANONICAL_OWNER_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
-  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
-  id: 'intent-mcu-model-bundle-current-x43-linker-proof-diagnostic-1@16',
-  manifestVersion: '2.0.0-x43-linker-proof-diagnostic.1-current',
-  migrationOnly: true,
-});
-
-export const PRE_X43_LINKER_PROOF_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
-  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
-  id: 'intent-mcu-model-bundle-current-x43-heap-worker-package-fix-1@15',
-  manifestVersion: '2.0.0-x43-heap-worker-package-fix.1-current',
-  migrationOnly: true,
-});
-
-export const PRE_X43_HEAP_WORKER_PACKAGE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
-  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
-  id: 'intent-mcu-model-bundle-current-x43-heap-provenance-fix-1@14',
-  manifestVersion: '2.0.0-x43-heap-provenance-fix.1-current',
-  migrationOnly: true,
-});
-
-export const PRE_X43_HEAP_PROVENANCE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
-  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
-  id: 'intent-mcu-model-bundle-current-x43-heap-frontier-candidate-1@13',
-  manifestVersion: '2.0.0-x43-heap-frontier-candidate.1-current',
-  migrationOnly: true,
-});
-
-export const PRE_X43_HEAP_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+export const PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
   ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
   id: 'intent-mcu-model-bundle-current-x43-stack-hotpath-candidate-1@12',
   manifestVersion: '2.0.0-x43-stack-hotpath-candidate.1-current',

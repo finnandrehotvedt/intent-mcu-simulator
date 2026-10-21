@@ -3,7 +3,7 @@
 
 import { spawn } from 'node:child_process';
 import { constants as fsConstants } from 'node:fs';
-import { access, mkdir, readFile, readdir, realpath, rm, symlink, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { networkInterfaces } from 'node:os';
 import dns from 'node:dns/promises';
 import net from 'node:net';
@@ -15,17 +15,11 @@ import {
   sha256,
   sourceDigest,
 } from './build-protocol.mjs';
-import {
-  AVR_ALLOCATOR_ARCHIVE, AVR_ALLOCATOR_MEMBER, avrAllocatorTraceFlags,
-  createAvrAllocatorLinkerProofDiagnostic, createAvrAllocatorProvenance,
-  verifyAvrAllocatorArchiveSpellings,
-} from './avr-allocator-provenance.mjs';
 
 const WORKSPACE = '/workspace';
 const SKETCH = `${WORKSPACE}/main`;
 const BUILD = `${WORKSPACE}/build`;
 const OUTPUT = `${WORKSPACE}/out`;
-const AVR_AR = '/opt/arduino/data/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/bin/avr-ar';
 
 function exactKeys(value, expected) {
   if (value === null || typeof value !== 'object' || Array.isArray(value) || Object.getPrototypeOf(value) !== Object.prototype) return false;
@@ -96,9 +90,7 @@ function runCompiler() {
   const args = [
     'compile', '--config-file', '/opt/arduino/arduino-cli.yaml',
     '--fqbn', 'arduino:avr:uno', '--build-path', BUILD, '--output-dir', OUTPUT,
-    '--warnings', 'all', '--no-color',
-    '--build-property', `compiler.c.elf.extra_flags=${avrAllocatorTraceFlags()}`,
-    SKETCH,
+    '--warnings', 'all', '--no-color', SKETCH,
   ];
   return new Promise((resolve, reject) => {
     const child = spawn('/usr/local/bin/arduino-cli', args, {
@@ -133,37 +125,6 @@ function runCompiler() {
   });
 }
 
-function archiveMemberBytes() {
-  return new Promise((resolve, reject) => {
-    const child = spawn(AVR_AR, ['p', AVR_ALLOCATOR_ARCHIVE, AVR_ALLOCATOR_MEMBER], {
-      shell: false, env: { PATH: process.env.PATH }, stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    const stdout = []; const stderr = []; let bytes = 0;
-    child.stdout.on('data', (chunk) => {
-      bytes += chunk.length;
-      if (bytes > 1024 * 1024) child.kill('SIGKILL'); else stdout.push(chunk);
-    });
-    child.stderr.on('data', (chunk) => {
-      bytes += chunk.length;
-      if (bytes > 1024 * 1024) child.kill('SIGKILL'); else stderr.push(chunk);
-    });
-    child.once('error', reject);
-    child.once('close', (code) => {
-      if (code !== 0 || bytes > 1024 * 1024) reject(new Error('ALLOCATOR_ARCHIVE_MEMBER_READ_FAILED'));
-      else resolve(Buffer.concat(stdout));
-    });
-  });
-}
-
-async function allocatorArchiveIdentity() {
-  try {
-    const [archive, member] = await Promise.all([readFile(AVR_ALLOCATOR_ARCHIVE), archiveMemberBytes()]);
-    return { archiveSha256: sha256(archive), memberSha256: sha256(member) };
-  } catch {
-    return { archiveSha256: null, memberSha256: null };
-  }
-}
-
 function sanitiseDiagnostics(text) {
   const clean = text
     .replaceAll(SKETCH + '/', '')
@@ -184,14 +145,6 @@ function sanitiseDiagnostics(text) {
     });
   }
   return { text: clean, diagnostics };
-}
-
-function appendAllocatorProofDiagnostic(text, proof) {
-  const line = `allocator-linker-proof ${JSON.stringify(proof)}`;
-  const retainedBytes = Buffer.from(text, 'utf8')
-    .subarray(0, Math.max(0, BUILD_LIMITS.diagnosticsBytes - Buffer.byteLength(line, 'utf8') - 2));
-  const retained = retainedBytes.toString('utf8').replace(/\uFFFD$/u, '');
-  return `${retained}${retained.endsWith('\n') || retained.length === 0 ? '' : '\n'}${line}\n`;
 }
 
 async function prepare(request) {
@@ -227,21 +180,11 @@ async function main() {
   const output = sanitiseDiagnostics(compiler.text);
   if (compiler.overflow) return { status: 'failed', code: 'DIAGNOSTIC_LIMIT', ...output, isolation };
   if (compiler.code !== 0) return { status: 'failed', code: 'COMPILE_FAILED', ...output, isolation };
-  const [hex, elf, allocatorArchive] = await Promise.all([
-    readFile(`${OUTPUT}/main.ino.hex`), readFile(`${OUTPUT}/main.ino.elf`), allocatorArchiveIdentity(),
+  const [hex, elf] = await Promise.all([
+    readFile(`${OUTPUT}/main.ino.hex`), readFile(`${OUTPUT}/main.ino.elf`),
   ]);
   if (hex.length + elf.length > BUILD_LIMITS.outputBytes) {
     return { status: 'failed', code: 'OUTPUT_LIMIT', text: '', diagnostics: [], isolation };
-  }
-  const elfSha256 = sha256(elf);
-  const verifiedArchivePaths = await verifyAvrAllocatorArchiveSpellings(compiler.text, realpath);
-  const allocatorProvenance = createAvrAllocatorProvenance({
-    linkerText: compiler.text, elfSha256, ...allocatorArchive, verifiedArchivePaths,
-  });
-  if (allocatorProvenance.state === 'unavailable') {
-    output.text = appendAllocatorProofDiagnostic(output.text,
-      createAvrAllocatorLinkerProofDiagnostic(compiler.text,
-        (owner) => sha256(Buffer.from(owner, 'utf8'))));
   }
   return {
     status: 'succeeded',
@@ -253,10 +196,9 @@ async function main() {
       hex: hex.toString('utf8'),
       elfBase64: elf.toString('base64'),
       hexSha256: sha256(hex),
-      elfSha256,
+      elfSha256: sha256(elf),
       hexBytes: hex.length,
       elfBytes: elf.length,
-      allocatorProvenance,
     },
   };
 }

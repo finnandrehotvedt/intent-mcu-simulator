@@ -24,9 +24,6 @@ import {
 } from './x43-avr-observation-profile.mjs';
 import { validateX43AvrStackSnapshot } from './x43-avr-stack-profile.mjs';
 import {
-  validateX43AvrHeapSample, validateX43AvrHeapSymbols,
-} from './x43-avr-heap-profile.mjs';
-import {
   captureX47PulseSource,
   canonicalX47PulseText,
   createX47PulseContextFromSource,
@@ -36,6 +33,12 @@ import {
   inspectX47AvrD2Target,
   x47PulseSourceMatches,
 } from './x47-avr-d2-pulse.mjs';
+import { parseStrictJson } from './strict-json.mjs';
+import {
+  canonicalX47RepeatableText,
+  createX47RepeatableContext,
+  createX47RepeatableRecord,
+} from './x47-repeatable-inputs.mjs';
 import {
   createX49ProjectionOwner,
   X49_CASES,
@@ -610,7 +613,6 @@ function createX43Panel(document, ordinal) {
     <div class="x43-profile-controls">
       <button type="button" data-x43-start disabled>Start observation</button>
       <button type="button" data-x43-capture disabled>Capture now</button>
-      <button type="button" data-x43-heap-sample disabled>Sample heap frontier</button>
     </div>
     <dl class="x43-profile-facts">
       <div><dt>Binding</dt><dd data-x43-binding>No current AVR worker.</dd></div>
@@ -619,9 +621,8 @@ function createX43Panel(document, ordinal) {
       <div><dt>Wall diagnostic</dt><dd data-x43-wall>Not a semantic or hardware time.</dd></div>
     </dl>
     <dl class="x43-profile-unsupported" aria-label="Runtime memory and observed stack fields">
-      <div><dt>Allocator frontier</dt><dd data-x43-heap-frontier data-status="unavailable">Unavailable · no validated avr-libc allocator metadata.</dd></div>
-      <div><dt>Frontier ↔ observed SP</dt><dd data-x43-heap-gap data-status="unavailable">Unavailable · not a free-SRAM or allocatable-memory value.</dd></div>
-      <div><dt>Allocator boundary</dt><dd data-x43-heap-boundary data-status="unavailable">Unavailable · heap contents, live use and fragmentation are not inspected.</dd></div>
+      <div><dt>Dynamic SRAM</dt><dd data-status="unavailable">Unavailable · runtime does not expose use.</dd></div>
+      <div><dt>Heap</dt><dd data-status="unavailable">Unavailable · runtime does not expose use.</dd></div>
       <div><dt>Current observed stack</dt><dd data-x43-stack-current data-status="unavailable">Unavailable · no current AVR stack-pointer sample.</dd></div>
       <div><dt>Interval max observed</dt><dd data-x43-stack-interval data-status="unavailable">Unavailable until a native observation starts.</dd></div>
       <div><dt>Since-reset max observed</dt><dd data-x43-stack-all-time data-status="unavailable">Unavailable · no current AVR worker.</dd></div>
@@ -638,41 +639,10 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
   const owner = createX43AvrObservationProfile();
   let stackToken = null;
   let stackPending = null;
-  let heapToken = null;
-  let heapPending = false;
-  const clearStackAuthority = () => {
-    stackToken = null; stackPending = null; heapToken = null; heapPending = false;
-  };
+  const clearStackAuthority = () => { stackToken = null; stackPending = null; };
   const stackSnapshot = () => {
     try { return validateX43AvrStackSnapshot(document.defaultView?.__M6_STATE__?.runtime?.x43Stack); }
     catch { return null; }
-  };
-  const heapProjection = (observation) => {
-    const runtime = document.defaultView?.__M6_STATE__?.runtime;
-    let profile;
-    try { profile = validateX43AvrHeapSymbols(runtime?.x43HeapProfile); }
-    catch { return { profile: null, sample: null, reason: 'invalid-or-missing-allocator-metadata' }; }
-    if (profile.state !== 'supported') return { profile, sample: null, reason: profile.reason };
-    let sample = null;
-    try { sample = validateX43AvrHeapSample(runtime?.x43Heap); } catch { /* unavailable until requested */ }
-    const runtimeIdentity = runtime?.runtimeIdentity;
-    const exact = observation && runtimeIdentity
-      && profile.artifactIdentity === observation.artifactIdentity
-      && profile.modelImplementationSha256 === observation.modelImplementationSha256
-      && profile.modelExecutionContextSha256 === observation.modelExecutionContextSha256
-      && runtimeIdentity.artifactIdentity === observation.artifactIdentity
-      && runtimeIdentity.runtimeGeneration === observation.runtimeGeneration
-      && runtimeIdentity.workerInstanceNonce === observation.workerInstanceNonce;
-    if (!exact) return { profile, sample: null, reason: 'allocator-metadata-binding-mismatch' };
-    if (sample && (sample.token !== heapToken
-        || sample.artifactIdentity !== profile.artifactIdentity
-        || sample.elfSha256 !== profile.elfSha256
-        || sample.modelImplementationSha256 !== profile.modelImplementationSha256
-        || sample.modelExecutionContextSha256 !== profile.modelExecutionContextSha256)) {
-      sample = null;
-    }
-    if (heapPending && sample) heapPending = false;
-    return { profile, sample, reason: sample ? null : 'sample-required' };
   };
   const current = () => {
     const profile = activeProfileReader();
@@ -702,21 +672,15 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
     }
     const transitioning = snapshot.state === 'transitioning';
     const stack = stackSnapshot();
-    const heap = heapProjection(observation);
     for (const panel of panels) {
       panel.dataset.state = snapshot.state;
       panel.querySelector('[data-x43-state]').textContent = snapshot.state;
       const start = panel.querySelector('[data-x43-start]');
       const capture = panel.querySelector('[data-x43-capture]');
-      const heapSample = panel.querySelector('[data-x43-heap-sample]');
       start.disabled = transitioning || !observation || snapshot.state === 'observing';
       start.textContent = ['captured', 'invalidated'].includes(snapshot.state)
         ? 'Start new observation' : 'Start observation';
       capture.disabled = transitioning || !observation || snapshot.state !== 'observing';
-      heapSample.disabled = transitioning || !observation
-        || heap.profile?.state !== 'supported' || heapPending;
-      heapSample.textContent = heapPending ? 'Sampling bound worker…'
-        : heap.sample ? 'Sample heap frontier again' : 'Sample heap frontier';
       panel.querySelector('[data-x43-binding]').textContent = transitioning
         ? 'Awaiting one coherent AVR worker status; controls and values are unavailable during the atomic transition.'
         : snapshot.binding
@@ -742,25 +706,6 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
       const currentStack = panel.querySelector('[data-x43-stack-current]');
       const intervalStack = panel.querySelector('[data-x43-stack-interval]');
       const allTimeStack = panel.querySelector('[data-x43-stack-all-time]');
-      const heapFrontier = panel.querySelector('[data-x43-heap-frontier]');
-      const heapGap = panel.querySelector('[data-x43-heap-gap]');
-      const heapBoundary = panel.querySelector('[data-x43-heap-boundary]');
-      heapFrontier.dataset.status = heap.sample ? 'available' : 'unavailable';
-      heapGap.dataset.status = heap.sample ? 'available' : 'unavailable';
-      heapBoundary.dataset.status = heap.profile?.state === 'supported' ? 'available' : 'unavailable';
-      heapFrontier.textContent = heapPending
-        ? 'Sample requested · awaiting the exact bound worker acknowledgement.'
-        : heap.sample
-          ? `0x${heap.sample.frontier.toString(16).padStart(4, '0')} · ${heap.sample.allocatorExtended ? '__brkval extended' : 'heap-start basis; __brkval null'} · cycle ${heap.sample.cycle.toLocaleString('en-US')}`
-          : heap.profile?.state === 'supported'
-            ? 'Available on explicit request · no memory bytes or free-list nodes are exposed.'
-            : `Unavailable · ${heap.reason}.`;
-      heapGap.textContent = heap.sample
-        ? `${heap.sample.frontierToStackAddressGapBytes.toLocaleString('en-US')} B address gap to observed SP 0x${heap.sample.stackPointer.toString(16).padStart(4, '0')} · ${heap.sample.relation} · not free SRAM or allocatable RAM`
-        : 'Unavailable · requires one bound frontier sample; never inferred from source or a guessed address.';
-      heapBoundary.textContent = heap.profile?.state === 'supported'
-        ? `${heap.profile.allocator} · ELF ${heap.profile.elfSha256.slice(0, 12)}… · contents/live use/fragmentation/collision safety unavailable`
-        : 'Unavailable · allocator symbol set is absent or unsupported.';
       currentStack.dataset.status = stack?.current ? 'available' : 'unavailable';
       currentStack.textContent = stack?.current
         ? `SP 0x${stack.current.pointer.toString(16).padStart(4, '0')} · ${stack.current.depthBytes} B below reset top`
@@ -826,22 +771,6 @@ function installX43AvrObservationProfile(document, activeProfileReader) {
           clearStackAuthority();
           owner.invalidate(error.code ?? 'X43_CAPTURE_REJECTED');
         }
-      }
-      paint();
-    });
-    panel.querySelector('[data-x43-heap-sample]').addEventListener('click', () => {
-      const { observation, reason } = current();
-      const heap = heapProjection(observation);
-      if (!observation || heap.profile?.state !== 'supported') {
-        heapPending = false;
-        heapToken = null;
-        owner.invalidate(reason ?? heap.reason ?? 'X43_HEAP_SAMPLE_UNAVAILABLE');
-      } else {
-        heapToken = `x43-heap-${document.defaultView.crypto.randomUUID()}`;
-        heapPending = true;
-        document.dispatchEvent(new document.defaultView.CustomEvent('x43-heap-sample-request', {
-          detail: { token: heapToken },
-        }));
       }
       paint();
     });
@@ -1188,6 +1117,177 @@ function installX47PulsePreview(document, activeProfileReader) {
   });
   document.defaultView.__X47_PULSE_PREVIEW__ = api;
   paintSnapshot(currentSnapshot(), null);
+  void refresh();
+  return api;
+}
+
+const X47_REPEATABLE_DEFAULTS = Object.freeze({
+  ramp: '{"startTemperatureC":20,"endTemperatureC":40,"eventCount":5,"startOffsetCycles":16000,"stepCycles":16000}',
+  'seeded-noise': '{"centerTemperatureC":30,"amplitudeC":4,"eventCount":8,"startOffsetCycles":8000,"stepCycles":8000}',
+  recorded: '{"points":[{"offsetCycles":16000,"temperatureC":20},{"offsetCycles":32000,"temperatureC":30},{"offsetCycles":48000,"temperatureC":40}]}',
+});
+
+function createX47RepeatablePanel(document, ordinal) {
+  const panel = document.createElement('section');
+  panel.className = 'x47-repeatable-inputs';
+  panel.dataset.x47RepeatableInputs = '';
+  panel.setAttribute('aria-labelledby', `x47-repeatable-title-${ordinal}`);
+  panel.innerHTML = `
+    <div class="shared-instrument-tool-heading">
+      <strong id="x47-repeatable-title-${ordinal}">Repeatable A1 inputs</strong>
+      <span data-x47-repeatable-state>Checking</span>
+    </div>
+    <p class="x47-repeatable-boundary"><strong>Private candidate</strong> · finite data-only preview · not saved · no native execution claim.</p>
+    <div class="x47-repeatable-controls">
+      <label>Input family
+        <select data-x47-repeatable-family>
+          <option value="ramp">Temperature ramp</option>
+          <option value="seeded-noise">Seeded temperature noise</option>
+          <option value="recorded">Recorded temperature sequence</option>
+        </select>
+      </label>
+      <label data-x47-repeatable-seed-wrap hidden>Unsigned 32-bit seed
+        <input data-x47-repeatable-seed type="number" inputmode="numeric" min="0" max="4294967295" step="1" value="305419896">
+      </label>
+      <button type="button" data-x47-repeatable-preview disabled>Create finite preview</button>
+    </div>
+    <label class="x47-repeatable-parameters">Strict local JSON parameters
+      <textarea data-x47-repeatable-parameters rows="4" spellcheck="false">${X47_REPEATABLE_DEFAULTS.ramp}</textarea>
+    </label>
+    <p data-x47-repeatable-binding>Checking exact A1 temperature and D2 button wiring.</p>
+    <div class="x47-repeatable-output" data-x47-repeatable-output hidden>
+      <div><strong>Expanded schedule</strong><ol data-x47-repeatable-events></ol></div>
+      <details><summary>Canonical bounded record</summary><pre data-x47-repeatable-canonical></pre></details>
+    </div>
+    <div class="x47-repeatable-actions">
+      <button type="button" data-x47-repeatable-apply disabled>Apply to paused A1</button>
+    </div>
+    <p data-x47-repeatable-runtime>Build, Run, then explicitly Pause. Apply only queues the finite schedule; it never resumes execution.</p>`;
+  return panel;
+}
+
+function installX47RepeatableInputs(document, activeProfileReader) {
+  const panels = [...document.querySelectorAll('[data-shared-instrument-tools]')].map((tools, index) => {
+    const panel = createX47RepeatablePanel(document, index + 1);
+    tools.append(panel);
+    return panel;
+  });
+  let operation = 0;
+  let context = null;
+  let record = null;
+  let canonicalText = null;
+  let source = null;
+  let notice = null;
+  let draftChanged = false;
+  let integration = { phase: 'unavailable', reason: 'No current paused worker.' };
+  const state = () => document.defaultView?.__M6_STATE__ ?? null;
+  const sourceStillCurrent = () => source && source.profile === activeProfileReader()
+    && source.projectGeneration === state()?.lifecycle?.projectGeneration
+    && source.revision === state()?.revision
+    && source.graphJson === JSON.stringify(state()?.graph);
+  const snapshot = () => ({ state: record && sourceStillCurrent() ? 'preview' : 'unavailable',
+    reason: notice, context: context ? structuredClone(context) : null,
+    record: record ? structuredClone(record) : null, canonicalText });
+  const canApply = () => Boolean(record && !draftChanged && sourceStillCurrent()
+    && state()?.lifecycle?.phase === 'paused'
+    && ['await-pause', 'ready'].includes(integration.phase));
+  const paint = () => {
+    if (record && !sourceStillCurrent()) {
+      context = null; record = null; canonicalText = null;
+      notice = 'X47_REPEATABLE_BINDING_CHANGED';
+    }
+    for (const panel of panels) {
+      panel.dataset.state = record ? 'preview' : notice ? 'invalidated' : 'ready';
+      panel.querySelector('[data-x47-repeatable-state]').textContent = record && notice
+        ? `Rejected · previous preview retained · ${notice}`
+        : record && draftChanged ? 'Previous preview retained'
+          : record ? 'Preview ready' : notice ? `Rejected · ${notice}` : context ? 'Ready' : 'Unavailable';
+      panel.querySelector('[data-x47-repeatable-preview]').disabled = !context;
+      panel.querySelector('[data-x47-repeatable-apply]').disabled = !canApply();
+      panel.querySelector('[data-x47-repeatable-binding]').textContent = context
+        ? `Current ${context.target.componentId}: ${context.target.signalEndpoint} → ${context.target.inputEndpoint} · ${context.target.units} · revision ${context.sourceProjectRevision} · graph ${context.graphIdentity.slice(0, 19)}…`
+        : notice ?? 'Requires the exact AVR thermostat graph with A1 temperature sensor and D2 button.';
+      panel.querySelector('[data-x47-repeatable-output]').hidden = !record;
+      panel.querySelector('[data-x47-repeatable-canonical]').textContent = canonicalText ?? '';
+      const rows = record?.events.map((event) => {
+        const item = document.createElement('li');
+        item.textContent = `${event.offsetCycles.toLocaleString('en-US')} cycles · ${event.temperatureC} °C`;
+        return item;
+      }) ?? [];
+      panel.querySelector('[data-x47-repeatable-events]').replaceChildren(...rows);
+      panel.querySelector('[data-x47-repeatable-runtime]').textContent = integration.accepted
+        ? `${integration.accepted.events.length} events queued on the current paused worker; execution has not been resumed or claimed.`
+        : `${integration.reason ?? 'No current paused worker.'} Apply queues data only and never resumes execution.`;
+    }
+    return snapshot();
+  };
+  const refresh = async () => {
+    const ticket = ++operation;
+    const current = state();
+    const captured = { profile: activeProfileReader(),
+      projectGeneration: current?.lifecycle?.projectGeneration, revision: current?.revision,
+      graphJson: JSON.stringify(current?.graph), graph: structuredClone(current?.graph) };
+    try {
+      const next = await createX47RepeatableContext(captured.profile, captured.projectGeneration,
+        captured.revision, captured.graph);
+      if (ticket !== operation || captured.profile !== activeProfileReader()
+          || captured.projectGeneration !== state()?.lifecycle?.projectGeneration
+          || captured.revision !== state()?.revision
+          || captured.graphJson !== JSON.stringify(state()?.graph)) return snapshot();
+      source = { profile: captured.profile, projectGeneration: captured.projectGeneration,
+        revision: captured.revision, graphJson: captured.graphJson };
+      context = next; notice = null;
+    } catch (error) {
+      if (ticket !== operation) return snapshot();
+      source = null; context = null; record = null; canonicalText = null;
+      notice = error.code ?? error.message;
+    }
+    return paint();
+  };
+  const invalidate = (reason) => {
+    operation += 1; source = null; context = null; record = null; canonicalText = null; draftChanged = false;
+    notice = reason; integration = { phase: 'unavailable', reason };
+    return paint();
+  };
+  for (const panel of panels) {
+    const family = panel.querySelector('[data-x47-repeatable-family]');
+    const parameters = panel.querySelector('[data-x47-repeatable-parameters]');
+    const seedWrap = panel.querySelector('[data-x47-repeatable-seed-wrap]');
+    family.addEventListener('change', () => {
+      parameters.value = X47_REPEATABLE_DEFAULTS[family.value];
+      seedWrap.hidden = family.value !== 'seeded-noise';
+      record = null; canonicalText = null; notice = null; draftChanged = false; paint();
+    });
+    parameters.addEventListener('input', () => { draftChanged = Boolean(record); notice = null; paint(); });
+    panel.querySelector('[data-x47-repeatable-seed]').addEventListener('input', () => {
+      draftChanged = Boolean(record); notice = null; paint();
+    });
+    panel.querySelector('[data-x47-repeatable-preview]').addEventListener('click', () => {
+      try {
+        if (!context || !sourceStillCurrent()) throw new Error('X47_REPEATABLE_BINDING_CHANGED');
+        const parsed = parseStrictJson(parameters.value);
+        const seed = family.value === 'seeded-noise'
+          ? Number(panel.querySelector('[data-x47-repeatable-seed]').value) : null;
+        const next = createX47RepeatableRecord(family.value, parsed, context, seed);
+        record = next; canonicalText = canonicalX47RepeatableText(next, context);
+        notice = null; draftChanged = false; integration = { ...integration, accepted: null };
+      } catch (error) {
+        notice = error.code ?? error.message;
+      }
+      paint();
+    });
+    panel.querySelector('[data-x47-repeatable-apply]').addEventListener('click', () => {
+      if (!canApply()) return;
+      document.dispatchEvent(new CustomEvent('x47-repeatable-apply-request', { detail: {
+        context: structuredClone(context), record: structuredClone(record), canonicalText,
+      } }));
+    });
+  }
+  const api = Object.freeze({ refresh, invalidate, snapshot: () => paint(),
+    integration(value) { integration = structuredClone(value); return paint(); },
+    accepted(value) { integration = { ...integration, accepted: structuredClone(value),
+      phase: 'queued', reason: 'Finite schedule accepted while paused.' }; return paint(); } });
+  document.defaultView.__X47_REPEATABLE_INPUTS__ = api;
   void refresh();
   return api;
 }
@@ -1563,6 +1663,7 @@ export function mountSharedWorkbenchShell(document) {
   const x42 = installX42TriggerCapture(document, () => activeProfile);
   const x43 = installX43AvrObservationProfile(document, () => activeProfile);
   const x47 = installX47PulsePreview(document, () => activeProfile);
+  const x47Repeatable = installX47RepeatableInputs(document, () => activeProfile);
   const x49 = installX49OffsetComparison(document, () => activeProfile);
 
   const viewButtons = Object.freeze({
@@ -1614,7 +1715,9 @@ export function mountSharedWorkbenchShell(document) {
     returnFocus = requestedOpener ?? document.activeElement ?? popup.opener;
     popup.opener.setAttribute('aria-expanded', 'true');
     popup.dialog.showModal();
-    if (name === 'instruments') { x42.refresh(); x43.refresh(); void x47.refresh(); x49.refresh(); }
+    if (name === 'instruments') {
+      x42.refresh(); x43.refresh(); void x47.refresh(); void x47Repeatable.refresh(); x49.refresh();
+    }
     if (initialFocus) {
       const heading = popup.dialog.querySelector('h2');
       queueMicrotask(() => (heading ?? popupFocusable(popup.dialog)[0])?.focus({ preventScroll: true }));
@@ -1719,6 +1822,7 @@ export function mountSharedWorkbenchShell(document) {
         x42.invalidate('X42_PROFILE_CHANGED');
         x43.invalidate('X43_PROFILE_CHANGED');
         x47.invalidate('X47_PROFILE_CHANGED');
+        x47Repeatable.invalidate('X47_REPEATABLE_PROFILE_CHANGED');
         x49.invalidate('X49_PROFILE_CHANGED');
       }
       closePopup();

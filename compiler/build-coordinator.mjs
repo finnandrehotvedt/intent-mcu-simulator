@@ -18,7 +18,6 @@ import {
   validateCandidateCompileArtifact,
 } from './candidate-target-contract.mjs';
 import { retryAfterForCode } from '../src/retry-guidance.mjs';
-import { normalizeAvrAllocatorProvenance } from './avr-allocator-provenance.mjs';
 
 const TERMINAL = new Set(['succeeded', 'failed', 'cancelled', 'timeout']);
 const SHA256 = /^[0-9a-f]{64}$/u;
@@ -188,10 +187,6 @@ export class BuildCoordinator {
             throw new BrokerError('ARTIFACT_HASH_MISMATCH');
           }
           parseIntelHex(artifact.hex);
-          const trustedArtifact = Object.freeze({ ...artifact,
-            allocatorProvenance: normalizeAvrAllocatorProvenance(
-              artifact.allocatorProvenance, artifact.elfSha256,
-            ) });
           const result = {
             code: worker.code,
             inputIdentity: job.inputIdentity,
@@ -200,7 +195,7 @@ export class BuildCoordinator {
               hexSha256: artifact.hexSha256,
               elfSha256: artifact.elfSha256,
             })),
-            artifact: trustedArtifact,
+            artifact,
             diagnostics: worker.diagnostics ?? [],
             text: worker.text ?? '',
             isolation: worker.isolation,

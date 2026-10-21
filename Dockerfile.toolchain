@@ -52,22 +52,18 @@ COPY toolchain/manifest.json /opt/arduino/toolchain-manifest.json
 COPY toolchain/compile-fixtures.sh /usr/local/bin/compile-fixtures
 COPY toolchain/NOTICE.md /usr/share/teach-lab/NOTICE.md
 COPY toolchain/SOURCE-AND-RELINKING.md /usr/share/teach-lab/SOURCE-AND-RELINKING.md
-COPY src/build-limits.mjs /opt/src/build-limits.mjs
-COPY src/compile-targets.mjs /opt/src/compile-targets.mjs
-COPY compiler/candidate-target-contract.mjs /opt/teach-lab/candidate-target-contract.mjs
 COPY compiler/build-protocol.mjs /opt/teach-lab/build-protocol.mjs
-COPY compiler/avr-allocator-provenance.mjs /opt/teach-lab/avr-allocator-provenance.mjs
 COPY compiler/build-worker.mjs /opt/teach-lab/build-worker.mjs
 COPY fixtures /fixtures
 
 RUN chmod 0555 /usr/local/bin/compile-fixtures \
-    && chmod 0444 /opt/teach-lab/*.mjs /opt/src/*.mjs /usr/share/teach-lab/*.md \
+    && chmod 0444 /opt/teach-lab/*.mjs /usr/share/teach-lab/*.md \
     && useradd --create-home --uid 10001 compiler \
     && mkdir -p /build /out \
     && chown compiler:compiler /build /out \
-    && find /opt/arduino /opt/teach-lab /opt/src /usr/local/bin/arduino-cli -type f -exec sha256sum {} + \
+    && find /opt/arduino /opt/teach-lab /usr/local/bin/arduino-cli -type f -exec sha256sum {} + \
       | sort -k2 > /usr/share/teach-lab/toolchain-files.sha256 \
-    && chmod -R a-w /usr/share/teach-lab /opt/teach-lab /opt/src
+    && chmod -R a-w /usr/share/teach-lab /opt/teach-lab
 
 USER compiler
 WORKDIR /build
