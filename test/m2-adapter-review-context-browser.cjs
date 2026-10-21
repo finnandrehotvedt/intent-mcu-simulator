@@ -20,12 +20,13 @@ const base = process.env.M2_ADAPTER_TEST_URL || 'http://127.0.0.1:18766';
   });
   const page = await context.newPage();
   const buildRequests = [];
-  page.on('request', (request) => { if (new URL(request.url()).pathname === '/api/build') buildRequests.push(request.url()); });
+  context.on('request', (request) => { if (new URL(request.url()).pathname === '/api/build') buildRequests.push(request.url()); });
   try {
     await page.goto(base, { waitUntil: 'networkidle' });
     await page.waitForFunction(() => window.__M11_READY__ === true && Boolean(window.__PROJECT_PATCH__));
     const initial = await page.evaluate(browserContextSnapshot);
-    const guard = createExternalClientPageGuard({ page, expectedUrl: `${new URL(base).origin}/`,
+    const sessionHandle = await page.evaluateHandle(() => window);
+    const guard = createExternalClientPageGuard({ page, sessionHandle, expectedUrl: `${new URL(base).origin}/`,
       expectedSourceIdentity: initial.sourceIdentity });
     assert.deepEqual(await guard.snapshot({ requireIdle: true }), initial);
 
@@ -68,34 +69,89 @@ const base = process.env.M2_ADAPTER_TEST_URL || 'http://127.0.0.1:18766';
     assert.match(afterApply.review.status, /fresh Build/u);
 
     let active = 1;
-    const busyGuard = createExternalClientPageGuard({ page, expectedUrl: `${new URL(base).origin}/`,
+    let operationEpoch = 1;
+    const busyGuard = createExternalClientPageGuard({ page, sessionHandle,
+      expectedUrl: `${new URL(base).origin}/`, operationEpoch: () => operationEpoch,
       expectedSourceIdentity: initial.sourceIdentity, inFlight: () => active });
     await assert.rejects(() => busyGuard.snapshot({ requireIdle: true }), /CONTEXT_BUSY/u);
     active = 0;
     assert.equal((await busyGuard.snapshot({ requireIdle: true })).context.generation, afterApply.context.generation);
-    const driftGuard = createExternalClientPageGuard({ page, expectedUrl: `${new URL(base).origin}/`,
+
+    let releaseHeldRead; let heldReadStarted;
+    const heldRead = new Promise((resolve) => { releaseHeldRead = resolve; });
+    const heldStarted = new Promise((resolve) => { heldReadStarted = resolve; });
+    const heldSessionHandle = { evaluate: async (...args) => {
+      heldReadStarted(); await heldRead; return sessionHandle.evaluate(...args);
+    } };
+    const heldGuard = createExternalClientPageGuard({ page, sessionHandle: heldSessionHandle,
+      expectedUrl: `${new URL(base).origin}/`, operationEpoch: () => operationEpoch,
+      expectedSourceIdentity: initial.sourceIdentity, inFlight: () => active });
+    const overlappingRead = heldGuard.snapshot({ requireIdle: true });
+    await heldStarted;
+    active = 1; operationEpoch += 1; active = 0;
+    releaseHeldRead();
+    await assert.rejects(() => overlappingRead, /CONTEXT_BUSY/u);
+
+    active = 1; operationEpoch += 1;
+    assert.deepEqual(await busyGuard.evaluate(
+      (boundWindow, target) => boundWindow.__AGENT_ACTIONS__.cancel(target), 'm2-not-active-request',
+    ), { ok: false, code: 'ACTION_NOT_ACTIVE' });
+    active = 0;
+
+    const driftGuard = createExternalClientPageGuard({ page, sessionHandle,
+      expectedUrl: `${new URL(base).origin}/`,
       expectedSourceIdentity: { ...initial.sourceIdentity, version: 'drifted-version' } });
     await assert.rejects(() => driftGuard.snapshot(), /SOURCE_IDENTITY_DRIFT/u);
 
-    const replacement = await context.newPage();
-    await replacement.goto(base, { waitUntil: 'networkidle' });
-    await replacement.waitForFunction(() => window.__M11_READY__ === true);
-    const replacementInitial = await replacement.evaluate(browserContextSnapshot);
-    const replacementGuard = createExternalClientPageGuard({ page: replacement,
-      expectedUrl: `${new URL(base).origin}/`, expectedSourceIdentity: replacementInitial.sourceIdentity });
-    await replacement.goto('about:blank');
-    await assert.rejects(() => replacementGuard.snapshot(), /PAGE_REPLACED/u);
-    await replacement.close();
-    await assert.rejects(() => replacementGuard.snapshot(), /PAGE_CLOSED/u);
+    const reloadPage = await context.newPage();
+    await reloadPage.goto(base, { waitUntil: 'networkidle' });
+    await reloadPage.waitForFunction(() => window.__M11_READY__ === true);
+    const reloadInitial = await reloadPage.evaluate(browserContextSnapshot);
+    const reloadHandle = await reloadPage.evaluateHandle(() => window);
+    const reloadGuard = createExternalClientPageGuard({ page: reloadPage, sessionHandle: reloadHandle,
+      expectedUrl: `${new URL(base).origin}/`, expectedSourceIdentity: reloadInitial.sourceIdentity });
+    assert.equal((await reloadGuard.snapshot()).context.generation, reloadInitial.context.generation);
+    await reloadPage.reload({ waitUntil: 'networkidle' });
+    await reloadPage.waitForFunction(() => window.__M11_READY__ === true);
+    await assert.rejects(() => reloadGuard.snapshot(), /PAGE_REPLACED/u);
+    await assert.rejects(() => reloadGuard.snapshot(), /PAGE_REPLACED/u);
+    await assert.rejects(() => reloadGuard.evaluate((boundWindow) => {
+      boundWindow.__M2_OLD_SESSION_OPERATION__ = true; return boundWindow.__AGENT_ACTIONS__.context();
+    }), /PAGE_REPLACED/u);
+    assert.equal(await reloadPage.evaluate(() => Boolean(window.__M2_OLD_SESSION_OPERATION__)), false);
+    assert.equal((await reloadPage.evaluate(browserContextSnapshot)).context.generation,
+      reloadInitial.context.generation);
+
+    const backPage = await context.newPage();
+    await backPage.goto(base, { waitUntil: 'networkidle' });
+    await backPage.waitForFunction(() => window.__M11_READY__ === true);
+    const backInitial = await backPage.evaluate(browserContextSnapshot);
+    const backHandle = await backPage.evaluateHandle(() => window);
+    const backGuard = createExternalClientPageGuard({ page: backPage, sessionHandle: backHandle,
+      expectedUrl: `${new URL(base).origin}/`, expectedSourceIdentity: backInitial.sourceIdentity });
+    await backPage.goto('about:blank');
+    await backPage.goBack({ waitUntil: 'networkidle' });
+    await backPage.waitForFunction(() => window.__M11_READY__ === true);
+    await assert.rejects(() => backGuard.snapshot(), /PAGE_REPLACED/u);
+    await assert.rejects(() => backGuard.evaluate((boundWindow) => {
+      boundWindow.__M2_OLD_SESSION_OPERATION__ = true; return boundWindow.__AGENT_ACTIONS__.context();
+    }), /PAGE_REPLACED/u);
+    assert.equal(await backPage.evaluate(() => Boolean(window.__M2_OLD_SESSION_OPERATION__)), false);
+    assert.equal((await backPage.evaluate(browserContextSnapshot)).context.generation,
+      backInitial.context.generation);
+    await backPage.close();
+    await assert.rejects(() => backGuard.snapshot(), /PAGE_CLOSED/u);
 
     assert.equal(await page.evaluate(() => window.__M2_WORKER_COUNT__), 0);
+    assert.equal(await reloadPage.evaluate(() => window.__M2_WORKER_COUNT__), 0);
     assert.equal(buildRequests.length, 0);
     assert.equal(afterApply.actions.length, 7);
     assert.equal(afterApply.actions.includes('patch.apply'), false);
     process.stdout.write(`${JSON.stringify({ status: 'pass', syntheticApply: true,
       generationBefore: beforeReview.context.generation, generationAfter: afterApply.context.generation,
       actions: afterApply.actions.length, buildRequests: 0, runtimeWorkers: 0,
-      busyRejected: true, sourceDriftRejected: true,
-      replacementRejected: true, closedPageRejected: true })}\n`);
+      busyRejected: true, overlapRejected: true, cancelAllowedWhileActive: true, sourceDriftRejected: true,
+      sameUrlReloadRetired: true, awayBackRetired: true, replacementDispatches: 0,
+      closedPageRejected: true })}\n`);
   } finally { await context.close(); await browser.close(); }
 })().catch((error) => { console.error(error); process.exitCode = 1; });

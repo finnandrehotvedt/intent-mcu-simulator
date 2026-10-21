@@ -25,8 +25,12 @@ The client may refresh the same page's bounded context with:
 The strict read-only result contains only the current profile/generation,
 seven-action list, source identity and fixed review status/pending/enabled
 booleans. It accepts no selector, expression, function, click, paste or Apply
-input. Context fails closed while another page operation is in flight or when
-the page is closed, navigated/replaced, or its source identity drifts.
+input. Context fails closed when another page operation starts or remains in
+flight during the read, or when the page is closed, navigated/replaced, or its
+source identity drifts. The adapter binds every page operation to the initial
+document session. Any later main-frame navigation irreversibly retires that
+session, including reload at the same URL and navigation away followed by Back;
+matching URL, identity or generation never reacquires authority.
 
 Before choosing an action, a client may send the strict read-only discovery
 request below. The result reports the same four profiles, named pins, API and
@@ -44,7 +48,9 @@ journey and fail-closed unsupported examples.
 The client can request only `project.create`, `patch.propose`,
 `project.validate`, `firmware.build`, `runtime.run`, `result.read` and
 `project.export`. Existing profile, project-generation, TTL, replay,
-cancellation and size limits remain authoritative. The URL is not client
+cancellation and size limits remain authoritative. Cancellation remains
+available while an action is active, but it is bound to the same initial page
+session and cannot address a replacement document. The URL is not client
 selectable. There is no shell, eval, generic command, account, credential,
 server project or durable remote state.
 

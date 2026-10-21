@@ -23,7 +23,8 @@ only JSON-RPC messages on stdout.
 - `intent_mcu_context` sends a fresh strict read-only request to the same
   adapter-owned page and returns its fixed origin, active profile, current
   generation, source identity and bounded review-state snapshot. It does not
-  reuse startup context.
+  reuse startup context. A read is rejected if any page operation overlaps it,
+  even when that operation finishes before the browser read returns.
 - `intent_mcu_discover` forwards the canonical read-only discovery envelope.
 - `intent_mcu_action` forwards one exact bounded request for one of the seven
   existing actions.
@@ -33,6 +34,11 @@ only JSON-RPC messages on stdout.
 canonical request ID and invokes the existing cancellation control. Profile,
 generation, TTL, request-ID deduplication, result size, job expiry and refusal
 codes remain owned by the existing contracts.
+
+The child adapter binds all reads, actions, discovery and cancellation to the
+initial browser document. Reload, same-URL replacement, navigation away/Back
+or closure permanently retires that session; MCP cannot reacquire authority
+from a later document that happens to report matching identity or generation.
 
 There is no tool for patch Apply, shell/eval, arbitrary command, origin
 selection, account access, credentials, public listening, durable server
