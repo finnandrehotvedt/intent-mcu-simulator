@@ -852,6 +852,24 @@ function renderPicoQuickControls(state = picoPublicState) {
   elements.quickstop.title = 'Stop the browser worker and discard the current Pico artifact.';
 }
 
+function renderAvrQuickControls() {
+  elements.quickbuild.textContent = 'Build';
+  elements.quickrun.textContent = 'Run';
+  elements.quickpause.textContent = 'Pause';
+  elements.quickreset.textContent = 'Reset';
+  elements.quickstop.textContent = 'Stop unavailable';
+  elements.quickbuild.disabled = elements.build.disabled;
+  elements.quickrun.disabled = elements.run.disabled;
+  elements.quickpause.disabled = elements.pause.disabled;
+  elements.quickreset.disabled = elements.reset.disabled;
+  elements.quickstop.disabled = true;
+  elements.quickbuild.title = '';
+  elements.quickrun.title = '';
+  elements.quickpause.title = '';
+  elements.quickreset.title = '';
+  elements.quickstop.title = 'Stop is unavailable for the AVR browser runtime; use Pause or Reset.';
+}
+
 function renderC3QuickControls(state = c3PublicState) {
   if (selectedCompilerProfile !== ESP32C3_PROFILE || !state) return;
   elements.quickstate.textContent = `ESP32-C3 · ${state.phase} · ${state.circuitAccepted ? 'model wiring valid' : state.circuitCode}`;
@@ -6391,13 +6409,7 @@ function renderPublicControllerWorkbench() {
   if (pico) renderPicoQuickControls();
   if (c3) renderC3QuickControls();
   if (stm32) renderStm32QuickControls();
-  if (avr) {
-    elements.quickpause.title = '';
-    elements.quickreset.title = '';
-    elements.quickstop.disabled = true;
-    elements.quickstop.textContent = 'Stop unavailable';
-    elements.quickstop.title = 'Stop is unavailable for the AVR browser runtime; use Pause or Reset.';
-  }
+  if (avr) renderAvrQuickControls();
   window.__PUBLIC_CONTROLLER_PROJECTION__.selectedProfile = view.profile;
   window.__PUBLIC_CONTROLLER_PROJECTION__.selected = view;
   publish({

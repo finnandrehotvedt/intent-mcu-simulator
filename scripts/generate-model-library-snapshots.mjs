@@ -29,6 +29,9 @@ const PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 
 const stable = (value) => {
   if (Array.isArray(value)) return value.map(stable);
@@ -154,16 +157,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x55-resistor-appearance.1-current',
-  'intent-mcu-model-bundle-current-x55-resistor-appearance-1@8',
+  '2.0.0-x55-control-label-fix.1-current',
+  'intent-mcu-model-bundle-current-x55-control-label-fix-1@9',
   currentImplementation,
   {
-    priorVersion: PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'explicit-data-only-migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component semantics unchanged; AVR resistor appearance is finite visual-only project data',
-    presentationDisposition: 'two original resistor body presets; named pins, anchors, bands, nets, properties and runtime semantics unchanged',
-    baselineClosureDisposition: 'current closure adds the strict X55 appearance contract, persistence/editor owners and renderer/UI integration; rc.94 current remains migration-only',
+    semanticDisposition: 'component semantics unchanged; AVR resistor appearance remains finite visual-only project data',
+    presentationDisposition: 'AVR quick controls restore exact labels, titles and disabled state after every profile return; component rendering is unchanged',
+    baselineClosureDisposition: 'current closure adds the X55 profile-control correction; the prior rc.94 X55 appearance identity remains migration-only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -177,6 +180,7 @@ export const PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze($
 export const PRE_X47_UI_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_UI_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

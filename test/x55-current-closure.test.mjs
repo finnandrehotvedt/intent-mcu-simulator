@@ -8,9 +8,11 @@ import test from 'node:test';
 
 import {
   CURRENT_MODEL_LIBRARY_MANIFEST,
+  PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST,
 } from '../src/model-library-snapshots.mjs';
 import {
+  PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_CURRENT_MODEL_LIBRARY_LOCK,
   modelLibraryExecutionIdentity,
   modelLibraryMigrationPreview,
@@ -61,4 +63,19 @@ test('pre-X55 identity stays immutable and does not absorb X55 owners', () => {
   assert.equal(preview.migrationRequired, true);
   assert.deepEqual(preview.semanticChanges, []);
   assert.deepEqual(preview.rendererChanges, []);
+});
+
+test('prior X55 appearance identity is immutable migration-only data after the control fix', () => {
+  assert.equal(PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    '2.0.0-x55-resistor-appearance.1-current');
+  assert.equal(PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    '5e778f334ccae4ef914927d22675176315ac589a22695f7e500ee32c2f419806');
+  assert.equal(modelLibraryExecutionIdentity(PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_LOCK).code,
+    'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const preview = modelLibraryMigrationPreview(PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(preview.ok, true);
+  assert.equal(preview.migrationRequired, true);
+  assert.deepEqual(preview.semanticChanges, []);
+  assert.deepEqual(preview.rendererChanges, []);
+  assert.equal(preview.unchanged.length, 25);
 });
