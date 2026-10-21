@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
-import {
-  BOUNDED_ACTION_REQUEST_LIMIT, BOUNDED_ACTIONS, parseBoundedActionRequest,
-} from './bounded-action-contracts.mjs';
+import { BOUNDED_ACTION_REQUEST_LIMIT, parseBoundedActionRequest } from './bounded-action-contracts.mjs';
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
 import {
   CAPABILITY_DISCOVERY_REQUEST_SCHEMA, parseCapabilityDiscoveryRequest,
@@ -13,70 +11,10 @@ export const EXTERNAL_CLIENT_READY_SCHEMA = 'intent-mcu-external-client-ready@1'
 export const EXTERNAL_CLIENT_CANCEL_SCHEMA = 'intent-mcu-external-client-cancel@1';
 export const EXTERNAL_CLIENT_CONTROL_RESULT_SCHEMA = 'intent-mcu-external-client-control-result@1';
 export const EXTERNAL_CLIENT_JOB_REQUEST_SCHEMA = 'intent-mcu-external-client-job-request@1';
-export const EXTERNAL_CLIENT_CONTEXT_REQUEST_SCHEMA = 'intent-mcu-external-client-context-request@1';
-export const EXTERNAL_CLIENT_CONTEXT_RESULT_SCHEMA = 'intent-mcu-external-client-context-result@1';
 export const EXTERNAL_CLIENT_ERROR_SCHEMA = 'intent-mcu-external-client-error@1';
 export const EXTERNAL_CLIENT_ORIGIN = 'https://lab.teachthecompany.com';
 
 const REQUEST_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,95}$/u;
-const PROFILE = /^board\.[a-z0-9.-]+-v[0-9]+$/u;
-const REVIEW_STATUS_LIMIT = 512;
-
-const fail = (code) => Object.assign(new Error(code), { code });
-
-export function resolveExternalClientReviewMode(environment = process.env, platform = process.platform) {
-  const requested = environment.INTENT_MCU_ADAPTER_REVIEW_MODE;
-  if (requested === undefined || requested === '') {
-    return Object.freeze({ mode: 'headless', headless: true, humanReviewSurface: false });
-  }
-  if (requested !== 'visible') throw fail('EXTERNAL_CLIENT_REVIEW_MODE_INVALID');
-  if (platform === 'linux' && !environment.DISPLAY) throw fail('EXTERNAL_CLIENT_VISIBLE_DISPLAY_REQUIRED');
-  return Object.freeze({ mode: 'visible', headless: false, humanReviewSurface: true });
-}
-
-export function parseExternalClientContextSnapshot(value) {
-  if (!exactKeys(value, ['router', 'actions', 'context', 'sourceIdentity', 'review'])
-      || typeof value.router !== 'string'
-      || !Array.isArray(value.actions) || value.actions.length !== BOUNDED_ACTIONS.length
-      || !value.actions.every((action, index) => action === BOUNDED_ACTIONS[index])
-      || !exactKeys(value.context, ['profile', 'generation'])
-      || !PROFILE.test(value.context.profile)
-      || !Number.isSafeInteger(value.context.generation) || value.context.generation < 1
-      || !exactKeys(value.sourceIdentity, ['product', 'version', 'source', 'license', 'generated'])
-      || !['product', 'version', 'source', 'license'].every((key) => typeof value.sourceIdentity[key] === 'string'
-        && value.sourceIdentity[key].length > 0 && value.sourceIdentity[key].length <= 256)
-      || typeof value.sourceIdentity.generated !== 'boolean'
-      || !exactKeys(value.review, ['status', 'proposalPending', 'applyEnabled'])
-      || typeof value.review.status !== 'string' || value.review.status.length > REVIEW_STATUS_LIMIT
-      || typeof value.review.proposalPending !== 'boolean'
-      || typeof value.review.applyEnabled !== 'boolean') {
-    throw fail('EXTERNAL_CLIENT_CONTEXT_SNAPSHOT_INVALID');
-  }
-  return Object.freeze(structuredClone(value));
-}
-
-export function parseExternalClientContextResult(value, {
-  requestId = value?.requestId, sourceIdentity = value?.sourceIdentity, origin = value?.origin,
-} = {}) {
-  if (!exactKeys(value, ['schema', 'requestId', 'ok', 'code', 'executed', 'router', 'context',
-    'actions', 'sourceIdentity', 'review', 'origin', 'reviewMode', 'humanReviewSurface',
-    'applyAuthority', 'genericCommand', 'durableServerProject', 'publicEndpoint'])
-      || value.schema !== EXTERNAL_CLIENT_CONTEXT_RESULT_SCHEMA
-      || value.requestId !== requestId || !REQUEST_ID.test(value.requestId)
-      || value.ok !== true || value.code !== 'EXTERNAL_CLIENT_CONTEXT_READ' || value.executed !== false
-      || value.origin !== origin || !['headless', 'visible'].includes(value.reviewMode)
-      || value.humanReviewSurface !== (value.reviewMode === 'visible')
-      || value.applyAuthority !== false || value.genericCommand !== false
-      || value.durableServerProject !== false || value.publicEndpoint !== false) {
-    throw fail('EXTERNAL_CLIENT_CONTEXT_RESULT_INVALID');
-  }
-  const snapshot = parseExternalClientContextSnapshot({ router: value.router, actions: value.actions,
-    context: value.context, sourceIdentity: value.sourceIdentity, review: value.review });
-  if (!sameJson(snapshot.sourceIdentity, sourceIdentity)) throw fail('EXTERNAL_CLIENT_CONTEXT_SOURCE_IDENTITY');
-  return Object.freeze(structuredClone(value));
-}
-
-function sameJson(left, right) { return JSON.stringify(left) === JSON.stringify(right); }
 
 export function resolveExternalClientOrigin(environment = process.env) {
   const candidate = environment.INTENT_MCU_ADAPTER_TEST_ORIGIN;
@@ -113,12 +51,6 @@ export function parseExternalClientLine(line, now = Date.now()) {
     }
     return Object.freeze({ kind: 'job', value: structuredClone(value) });
   }
-  if (value?.schema === EXTERNAL_CLIENT_CONTEXT_REQUEST_SCHEMA) {
-    if (!exactKeys(value, ['schema', 'requestId']) || !REQUEST_ID.test(value.requestId)) {
-      throw fail('EXTERNAL_CLIENT_CONTEXT_REQUEST_SHAPE');
-    }
-    return Object.freeze({ kind: 'context', value: structuredClone(value) });
-  }
   return Object.freeze({ kind: 'action', value: parseBoundedActionRequest(line, now), source: line });
 }
 
@@ -129,8 +61,7 @@ export function externalClientLineAssociation(line) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
     return {
       requestId: value.requestId,
-      action: [CAPABILITY_DISCOVERY_REQUEST_SCHEMA, EXTERNAL_CLIENT_CONTEXT_REQUEST_SCHEMA]
-        .includes(value.schema) ? null : value.action,
+      action: value.schema === CAPABILITY_DISCOVERY_REQUEST_SCHEMA ? null : value.action,
       profile: value.profile,
       expectedGeneration: value.expectedGeneration,
     };

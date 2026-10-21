@@ -1,8 +1,15 @@
-# Migration to 1.1.0-rc.95
+# Migration to 1.1.0-rc.96
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.96 changes presentation, documentation and immutable model-library identity
+only. Recognized rc.95 files migrate data-only after complete validation,
+preserve all authored cells and clear executable/runtime authority. The
+ordinary Open chooser and cancellation path do not rewrite a learner-owned
+file. No project, package, compiler-artifact, cache or browser-storage schema
+requires conversion.
 
 Rc.95 adds one strictly bounded `appearance` field to current authored AVR
 project data. The accepted value is one of two project-owned fixed-resistor

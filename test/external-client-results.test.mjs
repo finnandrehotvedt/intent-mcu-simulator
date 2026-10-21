@@ -14,9 +14,6 @@ import {
   thermostatScenarioControls,
 } from '../src/thermostat-experiment-contract.mjs';
 import { completedExperimentOutcome } from '../src/experiment-outcomes.mjs';
-import {
-  savedM2NativeFailure, savedM2NativePass,
-} from './fixtures/m2-saved-native-failure.mjs';
 
 const association = {
   requestId: 'x11-result-request-01', action: 'result.read',
@@ -129,7 +126,6 @@ test('X11 fails closed for incomplete producer verdicts and retains complete fai
     action: 'runtime.run', executed: true,
     result: {
       ok: false, code: 'ACTION_TEST_EVALUATED',
-      artifactIdentity: 'a'.repeat(64), sourceIdentity: 'b'.repeat(64),
       testEvidence: {
         schema: 'intent-mcu-bounded-test-evidence@1', experimentId: observation.experimentId,
         status: 'failed', outcome: completeFailure.outcome,
@@ -147,53 +143,6 @@ test('X11 fails closed for incomplete producer verdicts and retains complete fai
     code: 'TEXT_ONLY', result: { status: 'failed' } }, association, identity);
   assert.equal(untrusted.category, 'success');
   assert.equal(untrusted.testVerdict, null);
-});
-
-test('M2 saved native suite joins four complete producer rows into the failed external verdict', () => {
-  const native = savedM2NativeFailure();
-  const projected = externalClientResult(native, { ...association, action: 'runtime.run' }, identity);
-  assert.equal(projected.category, 'test-failure');
-  assert.equal(projected.ok, false);
-  assert.equal(projected.jobStatus, 'completed');
-  assert.equal(projected.testVerdict.status, 'failed');
-  assert.equal(projected.testVerdict.outcome.evidenceStatus, 'complete');
-  assert.equal(projected.testVerdict.scenarioId, 'THERM-SCENARIO-EQUALITY-ENABLED');
-  assert.equal(projected.authoritativeResult.result.testEvidence.observations.length, 4);
-});
-
-test('M2 bounded suite completeness fails closed for missing, dropped, stale or malformed producer data', () => {
-  const mutations = [
-    ['missing input', (value) => { value.result.testEvidence.observations[0].observed.inputControls = []; }],
-    ['truncated serial', (value) => { value.result.testEvidence.observations[0].observed.serialText = ''; }],
-    ['dropped input', (value) => { value.result.testEvidence.observations[0].retention = {
-      inputEventsDropped: 1, serialEventsDropped: 0,
-    }; }],
-    ['out of window', (value) => { value.result.testEvidence.observations[0].checks.timeInWindow = false; }],
-    ['missing pin', (value) => { value.result.testEvidence.observations[0].observed.d13 = null; }],
-    ['identity mismatch', (value) => { value.result.artifactIdentity = 'f'.repeat(64); }],
-    ['generation missing', (value) => { delete value.result.testEvidence.runtimeGeneration; }],
-    ['row aggregate mismatch', (value) => { value.result.testEvidence.status = 'passed'; }],
-  ];
-  for (const [name, mutate] of mutations) {
-    const native = savedM2NativeFailure(); mutate(native);
-    const projected = externalClientResult(native, { ...association, action: 'runtime.run' }, identity);
-    assert.equal(projected.testVerdict.status, 'indeterminate', name);
-    assert.equal(projected.testVerdict.outcome.evidenceStatus, 'incomplete', name);
-    assert.ok(projected.testVerdict.outcome.reasons.includes('MEASUREMENT_COMPLETENESS_REQUIRED'), name);
-    assert.notEqual(projected.category, 'test-failure', name);
-  }
-});
-
-test('M2 complete passing suite and result.read preserve identical completed evidence', () => {
-  const native = savedM2NativePass();
-  const run = externalClientResult(native, { ...association, action: 'runtime.run' }, identity);
-  const readRaw = structuredClone(native); readRaw.action = 'result.read';
-  const read = externalClientResult(readRaw, { ...association, action: 'result.read' }, identity);
-  assert.equal(run.category, 'success'); assert.equal(run.testVerdict.status, 'passed');
-  assert.equal(run.jobStatus, 'completed'); assert.equal(read.jobStatus, 'completed');
-  assert.deepEqual(read.testVerdict, run.testVerdict);
-  assert.deepEqual(read.authoritativeResult.result.testEvidence,
-    run.authoritativeResult.result.testEvidence);
 });
 
 test('X91 external projection cannot expose pass when current measurement evidence is incomplete', () => {

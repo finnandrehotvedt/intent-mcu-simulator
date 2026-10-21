@@ -28,26 +28,26 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc94 to rc95 partial X55 release bytes', async () => {
+test('X88 owner binds canonical rc95 to rc96 reviewed UX release bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.95');
+  assert.equal(release.version, '1.1.0-rc.96');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
   assert(registry.ids.includes('X47'));
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.94', current: '1.1.0-rc.95' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.95', current: '1.1.0-rc.96' });
   assert.deepEqual(value.changes, [
     {
-      id: 'X55', classification: 'changed', capabilities: ['intent-mcu-component-appearance@1'],
-      contracts: ['x55-avr-fixed-resistor-appearance-v1'],
-      summary: 'Publishes two original visual body presets for fixed AVR resistors with strict A/B pin, named-net, resistance, model, position, rotation, source and runtime invariants; no arbitrary drawing, topology or physical claim is added.',
+      id: 'X59', classification: 'changed', capabilities: ['intent-mcu-shared-workbench-view@1'],
+      contracts: ['x59-four-profile-simple-advanced-view-v1'],
+      summary: 'Refines the reviewed four-profile workbench with readable pin labels, clearer local-file hierarchy, task-led Help, guide and example entry points, while preserving canonical project, compiler, runtime and authority boundaries.',
     },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records the reviewed rc.94 to rc.95 partial X55 release; the release packet reuses accepted native proof, adds no firmware Build, Run or scenario and grants no drawing, topology, physical or verdict authority.',
+      summary: 'Records the reviewed rc.95 to rc.96 presentation-only UX release; the release packet adds no firmware Build, Run or scenario and grants no new project, runtime, physical or verdict authority.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -110,7 +110,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.95');
+  assert.equal(discovery.identity.version, '1.1.0-rc.96');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

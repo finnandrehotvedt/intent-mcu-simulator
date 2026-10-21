@@ -59,7 +59,7 @@ test('top workbench exposes exactly seven accessible popup surfaces around one r
   assert.match(css, /max-height:\s*88vh/);
 });
 
-test('X59 keeps finite presentation-only view state inside the X48-owned shared UI module', async () => {
+test('X59 declares a finite presentation-only Simple and Advanced switch outside model data', async () => {
   assert.deepEqual(SHARED_WORKBENCH_VIEW_MODES, ['simple', 'advanced']);
   const [html, shell, css, modelGenerator] = await Promise.all([
     readFile(new URL('../staging/index.html', import.meta.url), 'utf8'),
@@ -76,7 +76,7 @@ test('X59 keeps finite presentation-only view state inside the X48-owned shared 
   assert.doesNotMatch(shell, /localStorage|sessionStorage|indexedDB/u);
   assert.match(css, /body\[data-workbench-view="simple"\][^}]+#regression-matrix/s);
   assert.doesNotMatch(css, /data-workbench-view="simple"[^}]+#firmware-open/s);
-  assert.match(modelGenerator, /shared-workbench-shell\.mjs/u);
+  assert.doesNotMatch(modelGenerator, /shared-workbench-shell\.mjs/u);
 });
 
 test('unsupported common controls carry profile-specific truthful reasons', () => {

@@ -9,29 +9,6 @@ Run `node examples/external-client-example.mjs` in the existing pinned browser
 acceptance environment. The example starts the adapter as a child process and
 consumes JSON Lines over stdin/stdout.
 
-The default browser remains headless. An operator who must perform the existing
-human Review/Apply gate in the adapter-owned page can start the process with
-`INTENT_MCU_ADAPTER_REVIEW_MODE=visible`. On Linux, visible mode requires an
-existing `DISPLAY`; absence fails with
-`EXTERNAL_CLIENT_VISIBLE_DISPLAY_REQUIRED` and never silently falls back to
-headless. This process option grants the client no browser-driving authority.
-
-The client may refresh the same page's bounded context with:
-
-```json
-{"schema":"intent-mcu-external-client-context-request@1","requestId":"client-context-0001"}
-```
-
-The strict read-only result contains only the current profile/generation,
-seven-action list, source identity and fixed review status/pending/enabled
-booleans. It accepts no selector, expression, function, click, paste or Apply
-input. Context fails closed when another page operation starts or remains in
-flight during the read, or when the page is closed, navigated/replaced, or its
-source identity drifts. The adapter binds every page operation to the initial
-document session. Any later main-frame navigation irreversibly retires that
-session, including reload at the same URL and navigation away followed by Back;
-matching URL, identity or generation never reacquires authority.
-
 Before choosing an action, a client may send the strict read-only discovery
 request below. The result reports the same four profiles, named pins, API and
 runtime limits, part support, quotas, schemas and version/source identity used
@@ -48,9 +25,7 @@ journey and fail-closed unsupported examples.
 The client can request only `project.create`, `patch.propose`,
 `project.validate`, `firmware.build`, `runtime.run`, `result.read` and
 `project.export`. Existing profile, project-generation, TTL, replay,
-cancellation and size limits remain authoritative. Cancellation remains
-available while an action is active, but it is bound to the same initial page
-session and cannot address a replacement document. The URL is not client
+cancellation and size limits remain authoritative. The URL is not client
 selectable. There is no shell, eval, generic command, account, credential,
 server project or durable remote state.
 
@@ -59,10 +34,9 @@ Unknown fields, unsupported versions and invented capabilities or actions are
 rejected; a status of `unavailable` is never promoted by the adapter.
 
 Patch proposals are data only. The adapter cannot apply them. Review remains
-non-mutating and Apply requires an explicit human action in the visible
-adapter-owned browser against the exact current base hash. A test harness may
-invoke the existing page gate to verify lifecycle behavior; this synthetic test
-authority must not be described as a human action or native acceptance.
+non-mutating and Apply requires a separate explicit browser-user action against
+the exact current base hash. The test harness may drive that visible button to
+verify the boundary; this is test authority, not client authority.
 
 Runtime evidence retains its producer limitations. AVR cycles are actual
 worker observations; other controller profiles retain their documented
@@ -88,10 +62,9 @@ out-of-window producer evidence is indeterminate, not a failed assertion. See
 The bounded thermostat acceptance uses the same seven actions. For the exact
 `avr-thermostat-boundary-v1` starter, `project.create` may select the approved
 `correct` or `known-bad-equality` firmware variant, and `runtime.run` may name
-that experiment. The resulting actual four-scenario verdict is available in
+that experiment. The resulting actual three-scenario verdict is available in
 `runtime.run` and `result.read`, associated with the compiler input hash,
-artifact hash, project/runtime generations and reset-isolated scenario
-observations. This is a
+artifact hash, project/runtime generations and scenario observation. This is a
 fixed test capability, not arbitrary source selection or a new action.
 
 Each action request is also a short-lived in-memory job. Its request ID is the

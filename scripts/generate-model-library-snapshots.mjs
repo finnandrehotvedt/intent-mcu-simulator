@@ -32,10 +32,8 @@ const PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
-const PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST = existingSnapshots.PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST
-  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
-const PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST =
-  existingSnapshots.PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST
+const PRE_UX_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_UX_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 
 const stable = (value) => {
@@ -86,9 +84,7 @@ const entries = COMPONENT_SUPPORT_CELLS.filter((cell) => cell.available)
 const CURRENT_CLOSURE = Object.freeze([
   '../src/component-catalog.mjs', '../src/circuit-engine.mjs', '../src/runtime-kernel.mjs',
   '../src/atmega328p-adapter.mjs', '../src/x47-runtime-transaction.mjs',
-  '../src/x48-ideal-room-plant.mjs',
   '../src/x47-ui-integration.mjs', '../src/strict-json.mjs',
-  '../src/shared-workbench-shell.mjs',
   '../src/component-appearance.mjs', '../src/project-v2.mjs', '../src/project-editor.mjs',
   '../src/lifecycle.mjs', '../staging/component-artwork.mjs',
   '../src/model-library.mjs', '../src/model-bundle-registry.mjs', '../src/project-envelope.mjs',
@@ -164,16 +160,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x48-authority-review.1-current',
-  'intent-mcu-model-bundle-current-x48-authority-review-1@11',
+  '2.0.0-ux-public-isolation.1-current',
+  'intent-mcu-model-bundle-current-ux-public-isolation-1@10',
   currentImplementation,
   {
-    priorVersion: PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_UX_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_UX_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'explicit-data-only-migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component semantics unchanged; X48 authority is bound to exact source, graph, plant, project, build, runtime, artifact and model identities',
-    presentationDisposition: 'X48 terminal reports are strictly parsed and independently recomputed before presentation',
-    baselineClosureDisposition: 'current closure adds epoch-owned X48 lifecycle isolation; the prior X48 candidate and rc.95 X55 identity remain immutable migration-only',
+    semanticDisposition: 'component, electrical and runtime semantics are unchanged from accepted public rc.95',
+    presentationDisposition: 'reviewed UX only: collision-free short pin labels, simpler local files, existing guide access and documentation navigation',
+    baselineClosureDisposition: 'current closure is accepted public rc.95 plus reviewed UX only; the exact rc.95 identity remains immutable migration-only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -188,8 +184,7 @@ export const PRE_X47_UI_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.st
 export const PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
-export const PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
-export const PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_UX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_UX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

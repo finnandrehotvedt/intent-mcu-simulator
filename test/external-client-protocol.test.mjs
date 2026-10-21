@@ -5,11 +5,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { boundedActionRequest } from '../src/bounded-action-contracts.mjs';
 import {
-  EXTERNAL_CLIENT_CANCEL_SCHEMA, EXTERNAL_CLIENT_CONTEXT_REQUEST_SCHEMA,
-  EXTERNAL_CLIENT_JOB_REQUEST_SCHEMA, EXTERNAL_CLIENT_ORIGIN,
-  externalClientLineAssociation, parseExternalClientContextResult,
-  parseExternalClientContextSnapshot, parseExternalClientLine, resolveExternalClientOrigin,
-  resolveExternalClientReviewMode,
+  EXTERNAL_CLIENT_CANCEL_SCHEMA, EXTERNAL_CLIENT_JOB_REQUEST_SCHEMA, EXTERNAL_CLIENT_ORIGIN,
+  externalClientLineAssociation, parseExternalClientLine, resolveExternalClientOrigin,
 } from '../src/external-client-protocol.mjs';
 import {
   CAPABILITY_DISCOVERY_REQUEST_SCHEMA, CAPABILITY_DISCOVERY_SCHEMA,
@@ -27,21 +24,6 @@ test('production origin is fixed and only a test-only loopback override is accep
   }
 });
 
-test('operator review mode defaults headless and visible mode requires a Linux display', () => {
-  assert.deepEqual(resolveExternalClientReviewMode({}, 'linux'), {
-    mode: 'headless', headless: true, humanReviewSurface: false,
-  });
-  assert.deepEqual(resolveExternalClientReviewMode({
-    INTENT_MCU_ADAPTER_REVIEW_MODE: 'visible', DISPLAY: ':91',
-  }, 'linux'), { mode: 'visible', headless: false, humanReviewSurface: true });
-  assert.throws(() => resolveExternalClientReviewMode({
-    INTENT_MCU_ADAPTER_REVIEW_MODE: 'visible',
-  }, 'linux'), /VISIBLE_DISPLAY_REQUIRED/u);
-  assert.throws(() => resolveExternalClientReviewMode({
-    INTENT_MCU_ADAPTER_REVIEW_MODE: 'auto', DISPLAY: ':91',
-  }, 'linux'), /REVIEW_MODE_INVALID/u);
-});
-
 test('transport accepts the existing action request, bounded cancel and read-only discovery envelope', () => {
   const source = boundedActionRequest('project.validate', profile, 3, {}, { now, ttlMs: 5_000, requestId: 'external-valid-request' });
   const action = parseExternalClientLine(source, now + 1);
@@ -55,42 +37,6 @@ test('transport accepts the existing action request, bounded cancel and read-onl
   const discovery = parseExternalClientLine(JSON.stringify({ schema: CAPABILITY_DISCOVERY_REQUEST_SCHEMA,
     requestId: 'external-discovery-request', acceptSchema: CAPABILITY_DISCOVERY_SCHEMA }), now);
   assert.equal(discovery.kind, 'discovery');
-  const context = parseExternalClientLine(JSON.stringify({ schema: EXTERNAL_CLIENT_CONTEXT_REQUEST_SCHEMA,
-    requestId: 'external-context-request' }), now);
-  assert.equal(context.kind, 'context');
-});
-
-test('dynamic context accepts only the fixed request and bounded allowlisted snapshot', () => {
-  for (const value of [
-    { schema: EXTERNAL_CLIENT_CONTEXT_REQUEST_SCHEMA, requestId: 'short' },
-    { schema: EXTERNAL_CLIENT_CONTEXT_REQUEST_SCHEMA, requestId: 'external-context-extra', selector: 'body' },
-    { schema: EXTERNAL_CLIENT_CONTEXT_REQUEST_SCHEMA, requestId: 'external-context-eval', eval: '1+1' },
-  ]) assert.throws(() => parseExternalClientLine(JSON.stringify(value), now), /CONTEXT_REQUEST_SHAPE/u);
-  const snapshot = {
-    router: 'intent-mcu-bounded-action-router@1',
-    actions: ['project.create', 'patch.propose', 'project.validate', 'firmware.build',
-      'runtime.run', 'result.read', 'project.export'],
-    context: { profile, generation: 3000004 },
-    sourceIdentity: { product: 'Intent MCU Simulator', version: '1.1.0-rc.95',
-      source: 'https://github.com/finnandrehotvedt/intent-mcu-simulator', license: 'Apache-2.0', generated: false },
-    review: { status: 'Reviewed patch applied. A fresh Build is required.',
-      proposalPending: false, applyEnabled: false },
-  };
-  assert.deepEqual(parseExternalClientContextSnapshot(snapshot), snapshot);
-  assert.throws(() => parseExternalClientContextSnapshot({ ...snapshot,
-    review: { ...snapshot.review, selector: '#project-patch-apply' } }), /SNAPSHOT_INVALID/u);
-  assert.throws(() => parseExternalClientContextSnapshot({ ...snapshot,
-    actions: [...snapshot.actions, 'patch.apply'] }), /SNAPSHOT_INVALID/u);
-  const result = { schema: 'intent-mcu-external-client-context-result@1',
-    requestId: 'external-context-result', ok: true, code: 'EXTERNAL_CLIENT_CONTEXT_READ', executed: false,
-    ...snapshot, origin: EXTERNAL_CLIENT_ORIGIN, reviewMode: 'visible', humanReviewSurface: true,
-    applyAuthority: false, genericCommand: false, durableServerProject: false, publicEndpoint: false };
-  assert.deepEqual(parseExternalClientContextResult(result), result);
-  assert.throws(() => parseExternalClientContextResult({ ...result, applyAuthority: true }), /RESULT_INVALID/u);
-  assert.throws(() => parseExternalClientContextResult({ ...result,
-    sourceIdentity: { ...result.sourceIdentity, version: 'drifted' } }, {
-    sourceIdentity: result.sourceIdentity,
-  }), /SOURCE_IDENTITY/u);
 });
 
 test('ephemeral job control is read/export only and adds no action or authority', () => {

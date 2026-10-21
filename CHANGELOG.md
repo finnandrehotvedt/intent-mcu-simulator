@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.96 — 2026-10-21
+
+- Refines the reviewed four-profile workbench with compact project-owned pin
+  labels while retaining full endpoint identity in accessible names and
+  tooltips.
+- Clarifies Project & files, keeps ordinary Download/Open primary, and adds
+  task-led Help, first-project guide, Examples and Support entry points without
+  replacing canonical project or runtime owners.
+- Preserves all compiler/runtime behavior and private X48/M2 work outside the
+  public tree. This release performs no Build, Run or scenario.
+- Status remains X **73 complete / 3 partial / 20 planned**, P1 **59/0/0**;
+  cumulative accepted producer accounting remains **21/24/0**.
+
 ## 1.1.0-rc.95 — 2026-10-21
 
 - Publishes the reviewed partial X55 AVR fixed-resistor appearance editor with

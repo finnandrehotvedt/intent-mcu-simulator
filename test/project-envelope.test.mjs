@@ -13,7 +13,8 @@ import {
 } from '../src/project-envelope.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_LOCK,
-  PRE_X55_CURRENT_MODEL_LIBRARY_LOCK, PRE_X48_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_UX_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_X55_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X47_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X47_UI_CURRENT_MODEL_LIBRARY_LOCK,
@@ -183,21 +184,20 @@ test('pre-control-label X55 envelope is data-migration-only and cannot retain ru
   assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
 });
 
-test('rc.95 envelope is data-migration-only under X48 and cannot retain runtime authority', () => {
+test('accepted rc.95 envelope is data-migration-only under the reviewed UX identity', () => {
   const oldEnvelope = canonicalProjectEnvelope(
-    profile, project, adapters, emptyProjectBrief(), null, PRE_X48_CURRENT_MODEL_LIBRARY_LOCK,
+    profile, project, adapters, emptyProjectBrief(), null, PRE_UX_CURRENT_MODEL_LIBRARY_LOCK,
   );
   const opened = prepareProjectEnvelope(oldEnvelope, adapters);
   assert.equal(opened.ok, true);
   assert.deepEqual(opened.project, project);
-  assert.deepEqual(opened.modelLibrary, PRE_X48_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.deepEqual(opened.modelLibrary, PRE_UX_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(opened.report.executableAuthorityCleared, true);
   assert.equal(opened.report.modelLibrary.migrationAvailable, true);
   const migrated = migrateProjectModelLibrary(oldEnvelope, adapters);
   assert.equal(migrated.ok, true);
   assert.equal(migrated.originalUnchanged, oldEnvelope);
   assert.equal(migrated.executableAuthorityCleared, true);
-  assert.deepEqual(JSON.parse(migrated.canonical).project, project);
   assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
 });
 

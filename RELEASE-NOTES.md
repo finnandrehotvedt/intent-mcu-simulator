@@ -1,4 +1,26 @@
-# Intent MCU Simulator 1.1.0-rc.95
+# Intent MCU Simulator 1.1.0-rc.96
+
+## Reviewed workbench navigation and pin-label presentation
+
+This release publishes the isolated, reviewed UX refinement on top of accepted
+rc.95. Four controller profiles retain their existing canonical project,
+compiler and runtime owners while the workbench presents shorter project-owned
+pin labels, clearer Project & files choices, task-led Help, the existing first
+project guide, and direct Examples and Support paths.
+
+Full component and endpoint identity remains available through keyboard focus,
+accessible names and tooltips. Ordinary Open invokes the browser file chooser;
+cancelling it changes no authored project data. Advanced recovery and native
+file actions remain available in their disclosure.
+
+Private X48 runtime/UI, M2 adapter/context and later measurement-classification
+work are not part of this release. Rc.96 performs no firmware Build, Run or
+scenario. Counts remain X **73 complete / 3 partial / 20 planned**, P1
+**59/0/0**, with cumulative accepted producer accounting **21/24/0**.
+
+---
+
+## 1.1.0-rc.95
 
 ## X55 partial AVR fixed-resistor appearance
 
