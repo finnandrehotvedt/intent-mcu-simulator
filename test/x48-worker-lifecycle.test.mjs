@@ -2,7 +2,9 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import assert from 'node:assert/strict';
+import { webcrypto } from 'node:crypto';
 import test from 'node:test';
+globalThis.crypto ??= webcrypto;
 import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
 import { MODEL_RUNTIME_BINDING_SCHEMA } from '../src/runtime-identity.mjs';
 import { createThermostatExperiment, openThermostatExperiment } from '../src/thermostat-experiment.mjs';
@@ -29,7 +31,7 @@ async function waitFrom(start, accept) {
     if (found) return found;
     await new Promise((resolve) => setTimeout(resolve, 1));
   }
-  throw new Error('X48_WORKER_TEST_TIMEOUT');
+  throw new Error(`X48_WORKER_TEST_TIMEOUT ${JSON.stringify(messages.slice(start))}`);
 }
 
 async function initialize(suffix = 'a') {

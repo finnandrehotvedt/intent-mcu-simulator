@@ -33,7 +33,7 @@ test('approved X48 worker increment preserves X49 runtime dependencies and priva
   const immutableRuntime = {
     'src/atmega328p-adapter.mjs': '65136d0b607336db992ba7dab81447813331b103136ec7c5348e6fc1ca9300de',
     'src/runtime-kernel.mjs': '8ae935906e1981916b7bc1ab7c2243c6624404b232d1844e1d690c632172bc6e',
-    'src/simulator.worker.mjs': '024f2c8bcb2993e48c8e17efa730e3bc2f5900dc20a2eb406d3902931800436a',
+    'src/simulator.worker.mjs': '697d3822edb6c7b95e84ad56d1f7c45bc21e9a07f72c0f9e94b7ad79bc85b08e',
   };
   for (const [path, hash] of Object.entries(immutableRuntime)) {
     const bytes = await readFile(new URL(`../${path}`, import.meta.url));

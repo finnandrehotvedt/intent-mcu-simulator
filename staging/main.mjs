@@ -13154,6 +13154,35 @@ async function loadArtifact(hex, artifactIdentity, {
       return;
     }
     try {
+      if (['x48-started', 'x48-progress', 'x48-complete', 'x48-indeterminate',
+        'x48-cancelled'].includes(data.kind)) {
+        const operation = x48Operation;
+        if (!operation || !x48EpochOwner.accepts(operation.epochTicket, data.result?.binding)) return;
+        if (!x48OperationCurrent(operation)) {
+          retireX48RoomLoop('X48_AUTHORITY_DRIFT', { command: 'x48-cancel' });
+          return;
+        }
+        validateX48Binding(data.result?.binding, identity, operation.authority);
+        const result = validateX48Result(data.result, operation.binding);
+        const acceptedMessage = applyLifecycle({ type: 'runtime.message', binding: runtimeBinding, message: data });
+        if (!acceptedMessage.accepted) {
+          retireX48RoomLoop('X48_LIFECYCLE_REJECTED', { command: 'x48-cancel' });
+          return;
+        }
+        const terminal = ['x48-complete', 'x48-indeterminate', 'x48-cancelled'].includes(data.kind);
+        operation.result = structuredClone(result);
+        x48RuntimeActive = !terminal;
+        if (terminal) {
+          if (!x48EpochOwner.complete(operation.epochTicket, result.binding)) return;
+          x48Operation = null;
+          x48Controls(false, operation.epoch, true);
+        } else x48Controls(true, operation.epoch);
+        publish({ runtime: { ...data, result } });
+        dispatchX48State({ ...data, result });
+        if (terminal) renderRuntime(data, { publishState: false });
+        else elements.workerstate.textContent = 'Plant running · ordinary runtime paused';
+        return;
+      }
       if (data.kind === 'x47-repeatable-accepted') {
         const pending = x47RepeatablePending;
         if (!pending || pending.worker !== loadWorker || pending.workerToken !== token

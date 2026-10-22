@@ -10,6 +10,12 @@ import {
 import { modelLibraryExecutionIdentity } from './model-library.mjs';
 import { exactKeys } from './strict-json.mjs';
 import { validateX47RepeatableApplyRequest } from './x47-repeatable-inputs.mjs';
+import {
+  X48_MAX_BOUNDARY_LATENESS_CYCLES, X48_NOMINAL_TICK_CYCLES, X48_SLICE_INSTRUCTIONS,
+  X48_TICK_COUNT, appendX48Observation, createX48RunState, finishX48Run,
+  indeterminateX48Run, validateX48Authority, validateX48Binding, validateX48Result,
+  validateX48ThermostatGraph, x48PlantStep, x48TemperaturePosition,
+} from './x48-ideal-room-plant.mjs';
 
 let kernel = null;
 let rp2040 = null;
@@ -21,6 +27,10 @@ let runtimeIdentity = null;
 let validatedModelExecutionContextSha256 = null;
 let x47RepeatableAuthority = null;
 let x47RepeatablePending = null;
+let x48CurrentModel = false;
+let x48TrustedAuthority = null;
+let x48Operation = null;
+let x48Epoch = 0;
 
 const identityFields = () => runtimeIdentity ? {
   runtimeIdentity: structuredClone(runtimeIdentity),

@@ -1799,6 +1799,7 @@ export function mountSharedWorkbenchShell(document) {
   const x43 = installX43AvrObservationProfile(document, () => activeProfile);
   const x47 = installX47PulsePreview(document, () => activeProfile);
   const x47Repeatable = installX47RepeatableInputs(document, () => activeProfile);
+  const x48 = installX48RoomLoop(document, () => activeProfile);
   const x49 = installX49OffsetComparison(document, () => activeProfile);
 
   const viewButtons = Object.freeze({
@@ -1851,7 +1852,7 @@ export function mountSharedWorkbenchShell(document) {
     popup.opener.setAttribute('aria-expanded', 'true');
     popup.dialog.showModal();
     if (name === 'instruments') {
-      x42.refresh(); x43.refresh(); void x47.refresh(); void x47Repeatable.refresh(); x49.refresh();
+      x42.refresh(); x43.refresh(); void x47.refresh(); void x47Repeatable.refresh(); x48.refresh(); x49.refresh();
     }
     if (initialFocus) {
       const heading = popup.dialog.querySelector('h2');
@@ -1958,6 +1959,7 @@ export function mountSharedWorkbenchShell(document) {
         x43.invalidate('X43_PROFILE_CHANGED');
         x47.invalidate('X47_PROFILE_CHANGED');
         x47Repeatable.invalidate('X47_REPEATABLE_PROFILE_CHANGED');
+        x48.invalidate('X48_PROFILE_CHANGED');
         x49.invalidate('X49_PROFILE_CHANGED');
       }
       closePopup();

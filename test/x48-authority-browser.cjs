@@ -39,13 +39,13 @@ function fakeWorkerInstaller() {
           status: 'running', reason: null, currentMilliC: 20000, rows: [], mismatches: 0,
           retention: { inputDrops: 0, logicDrops: 0, serialDrops: 0, adcDrops: 0,
             unsupportedDrops: 0 } };
-        setTimeout(() => this.dispatch({ kind: 'x48-started', result: this.runningResult,
-          runtimeIdentity: this.identity }), 0);
+        setTimeout(() => this.dispatch({ ...this.snapshot('x48-started'),
+          result: this.runningResult, runtimeIdentity: this.identity }), 0);
       }
     }
     emitHeldOldTerminal() {
       window.__X48_AUTHORITY_TEST__.lateMessages += 1;
-      this.dispatch({ kind: 'x48-complete', result: { ...clone(this.runningResult),
+      this.dispatch({ ...this.snapshot('x48-complete'), result: { ...clone(this.runningResult),
         status: 'indeterminate', reason: 'X48_USER_CANCELLED' }, runtimeIdentity: this.identity });
     }
     terminate() { this.terminated = true; }

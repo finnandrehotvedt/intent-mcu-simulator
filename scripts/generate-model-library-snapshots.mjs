@@ -112,6 +112,10 @@ const PRE_UX_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.PRE_X66_PUBLIC_THERMOSTAT_CREATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 
 const stable = (value) => {
   if (Array.isArray(value)) return value.map(stable);
@@ -169,6 +173,7 @@ const CURRENT_CLOSURE = Object.freeze([
   '../src/lifecycle.mjs', '../staging/component-artwork.mjs',
   '../src/model-library.mjs', '../src/model-bundle-registry.mjs', '../src/project-envelope.mjs',
   '../src/model-control-contracts.mjs', '../src/simulator.worker.mjs', '../staging/main.mjs',
+  '../src/x48-ideal-room-plant.mjs', '../src/shared-workbench-shell.mjs',
   '../src/rp2040-snapshot-pacer.mjs', '../src/rp2040-experimental-runtime.mjs',
   '../src/runtime-identity.mjs',
   '../src/candidate-project-session.mjs', '../src/candidate-spdt-runtime.mjs',
@@ -240,16 +245,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x66-public-thermostat-create-fix.1-current',
-  'intent-mcu-model-bundle-current-x66-public-thermostat-create-fix-1@35',
+  '2.0.0-x48-current-source-integration.1-current',
+  'intent-mcu-model-bundle-current-x48-current-source-integration-1@36',
   currentImplementation,
   {
-    priorVersion: PRE_X66_PUBLIC_THERMOSTAT_CREATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X66_PUBLIC_THERMOSTAT_CREATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'the finite nonnested resistor-plus-LED owner validates candidate graphs through the current locked candidate model bundle without admitting unknown component types; component electrical semantics and runtime authority are unchanged',
-    presentationDisposition: 'private X66 correction preserves canonical source, series, ground, resistor and led identifiers across default thermostat and v2 position, collapse and binding presentation paths',
-    baselineClosureDisposition: 'the public rc.108 identity and all earlier identities remain immutable and migration-only; X66 closure remains pending independent corrected-release acceptance',
+    semanticDisposition: 'component semantics remain unchanged; X48 adds one explicit bounded ideal-room control-loop owner bound to exact source, graph, plant, artifact, model and worker identities',
+    presentationDisposition: 'X48 terminal reports are strictly parsed and independently recomputed before presentation',
+    baselineClosureDisposition: 'public rc.111 and every earlier identity remain immutable and migration-only; this is a private source-integration candidate with zero native producer authority',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -266,6 +271,8 @@ export const PRE_X47_UI_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.st
 export const PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X55_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_UX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_UX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X47_REPEATABLE_REJECTION_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X47_REPEATABLE_REJECTION_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});

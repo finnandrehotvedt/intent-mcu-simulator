@@ -26,27 +26,27 @@ test('X48 current identity owns every newly executed path', async () => {
     assert.equal(createHash('sha256').update(bytes).digest('hex'), members.get(path), path);
   }
   assert.equal(CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    '2.0.0-x48-authority-review.1-current');
+    '2.0.0-x48-current-source-integration.1-current');
 });
 
-test('the first X48 candidate remains byte-exact migration-only', () => {
+test('the accepted rc.111 model identity remains migration-only through both X48 aliases', () => {
   assert.equal(PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    '2.0.0-x48-instruction-boundary-room.1-current');
+    '2.0.0-x66-public-thermostat-create-fix.1-current');
   assert.equal(PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
-    '52aea649e33bafdc3b4bdce31276529fa85400b1b00ccf983c611570eb5bebec');
+    'b44dc743404b378d5ce21266430c5c97aaafc931d33b00e4ca0bc441ef06f9d5');
   assert.equal(PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST.implementationSha256,
-    'a667601c353f8d9c3ed5846706925d6a0cbb6c04d260935883e7f850de3cd671');
+    '09e8288159971dc31d26e96e9f26c1fe7928f221cfcefef60a116d44e65302f4');
   assert.equal(modelLibraryExecutionIdentity(PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_LOCK).code,
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
 });
 
-test('rc.95 identity remains byte-exact migration-only and cannot execute', () => {
+test('rc.111 identity remains byte-exact migration-only and cannot execute as X48 current', () => {
   assert.equal(PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    '2.0.0-x55-control-label-fix.1-current');
+    '2.0.0-x66-public-thermostat-create-fix.1-current');
   assert.equal(PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
-    '92df2e0d8ab429a7baefd2b713ffbe52616f71bce63be030f416f490b80f23a1');
+    'b44dc743404b378d5ce21266430c5c97aaafc931d33b00e4ca0bc441ef06f9d5');
   assert.equal(PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST.implementationSha256,
-    '1d0d331e1724efc0cf2b783e09451cc19f6b81f2485a0c59f9dfed07870ef898');
+    '09e8288159971dc31d26e96e9f26c1fe7928f221cfcefef60a116d44e65302f4');
   assert.equal(modelLibraryExecutionIdentity(PRE_X48_CURRENT_MODEL_LIBRARY_LOCK).code,
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const preview = modelLibraryMigrationPreview(PRE_X48_CURRENT_MODEL_LIBRARY_LOCK);
