@@ -9670,9 +9670,47 @@ function clearExperimentPackageComparison() {
 let guidedReplayState = null;
 let guidedReplayIndex = 0;
 let guidedReplayGeneration = 0;
+let guidedReplayParentGeneration = 0;
+let recipientResponseGeneration = 0;
 let acceptedRecipientResponse = null;
-let responsePickerParentSha256 = null;
+let responsePickerOperation = null;
 const acceptedRecipientResponseHashes = new Set();
+
+function beginGuidedReplayOperation() {
+  return ++guidedReplayGeneration;
+}
+
+function guidedReplayOperationCurrent(generation) {
+  return generation === guidedReplayGeneration;
+}
+
+function beginRecipientResponseOperation(expectedParentSha256 = null) {
+  return Object.freeze({
+    generation: ++recipientResponseGeneration,
+    parentGeneration: guidedReplayParentGeneration,
+    parentSha256: guidedReplayState?.packageSha256 ?? null,
+    parentSource: guidedReplayState?.canonicalPackage ?? null,
+    expectedParentSha256,
+  });
+}
+
+function recipientResponseOperationCurrent(operation) {
+  return Boolean(operation)
+    && operation.generation === recipientResponseGeneration
+    && operation.parentGeneration === guidedReplayParentGeneration
+    && operation.parentSha256 === (guidedReplayState?.packageSha256 ?? null);
+}
+
+function invalidateGuidedReplayDialogOperations() {
+  guidedReplayGeneration += 1;
+  recipientResponseGeneration += 1;
+  responsePickerOperation = null;
+}
+
+function closeGuidedReplayDialog(returnValue = 'close') {
+  invalidateGuidedReplayDialogOperations();
+  if (elements.guidedreplaydialog.open) elements.guidedreplaydialog.close(returnValue);
+}
 
 function replayIdentityRows(replay) {
   const values = [
@@ -9738,10 +9776,12 @@ function renderGuidedReplayStep(index, focus = false) {
 }
 
 function renderGuidedReplay(result, fileName = 'local package') {
+  guidedReplayParentGeneration += 1;
+  recipientResponseGeneration += 1;
   guidedReplayState = result;
   guidedReplayIndex = 0;
   acceptedRecipientResponse = null;
-  responsePickerParentSha256 = null;
+  responsePickerOperation = null;
   elements.recipientchoicestatus.textContent = 'Review-only is selected. The active project is unchanged.';
   elements.recipientresponsestatus.textContent = 'No response created or opened.';
   elements.recipientresponserelationship.replaceChildren();
@@ -9752,16 +9792,15 @@ function renderGuidedReplay(result, fileName = 'local package') {
     return option;
   }));
   elements.guidedreplayselect.disabled = false;
-  elements.guidedreplaystatus.textContent = `${fileName} accepted locally · ${result.replay.steps.length} recorded scenarios · aggregate ${result.replay.recordedAggregate.academicStatus}. No project or runtime authority was imported.`;
+  elements.guidedreplaystatus.textContent = `${fileName} accepted locally · ${result.replay.steps.length} authored scenarios with recorded observations · aggregate ${result.replay.recordedAggregate.academicStatus}. No project or runtime authority was imported.`;
   renderGuidedReplayStep(0);
   if (!elements.guidedreplaydialog.open) elements.guidedreplaydialog.showModal();
   elements.guidedreplaytitle.focus();
 }
 
-async function openGuidedReplaySource(source, fileName = 'local package') {
-  const generation = ++guidedReplayGeneration;
+async function openGuidedReplaySourceForOperation(source, fileName, generation) {
   const result = await createGuidedExperimentReplay(source, commonProjectAdapters);
-  if (generation !== guidedReplayGeneration) return { ok: false, code: 'GUIDED_REPLAY_STALE_OPEN' };
+  if (!guidedReplayOperationCurrent(generation)) return { ok: false, code: 'GUIDED_REPLAY_STALE_OPEN' };
   if (!result.ok) {
     elements.guidedreplaystatus.textContent = `Replay rejected (${result.code}). The active project and prior accepted replay are unchanged.`;
     return result;
@@ -9770,19 +9809,26 @@ async function openGuidedReplaySource(source, fileName = 'local package') {
   return result;
 }
 
+async function openGuidedReplaySource(source, fileName = 'local package') {
+  const generation = beginGuidedReplayOperation();
+  return openGuidedReplaySourceForOperation(source, fileName, generation);
+}
+
 async function openGuidedReplayFile(file) {
+  const generation = beginGuidedReplayOperation();
   if (!file) return { ok: false, code: 'GUIDED_REPLAY_FILE_REQUIRED' };
   if (file.size > EXPERIMENT_PACKAGE_LIMIT) {
-    elements.guidedreplaystatus.textContent = 'Replay rejected (INPUT_LIMIT). The active project and prior accepted replay are unchanged.';
+    if (guidedReplayOperationCurrent(generation)) elements.guidedreplaystatus.textContent = 'Replay rejected (INPUT_LIMIT). The active project and prior accepted replay are unchanged.';
     return { ok: false, code: 'INPUT_LIMIT' };
   }
   let source;
   try { source = await file.text(); }
   catch {
-    elements.guidedreplaystatus.textContent = 'Replay rejected (GUIDED_REPLAY_READ_FAILED). The active project is unchanged.';
+    if (guidedReplayOperationCurrent(generation)) elements.guidedreplaystatus.textContent = 'Replay rejected (GUIDED_REPLAY_READ_FAILED). The active project is unchanged.';
     return { ok: false, code: 'GUIDED_REPLAY_READ_FAILED' };
   }
-  return openGuidedReplaySource(source, file.name);
+  if (!guidedReplayOperationCurrent(generation)) return { ok: false, code: 'GUIDED_REPLAY_STALE_OPEN' };
+  return openGuidedReplaySourceForOperation(source, file.name, generation);
 }
 
 function recipientArtifactStem() {
@@ -9810,7 +9856,7 @@ async function openRecipientPackagedProject() {
   const projectText = `${JSON.stringify(parsed.value.project, null, 2)}\n`;
   const file = new File([projectText], `${recipientArtifactStem()}.intent-mcu-project.json`,
     { type: 'application/json' });
-  elements.guidedreplaydialog.close('project-open');
+  closeGuidedReplayDialog('project-open');
   const result = await openCommonProjectFile(file);
   elements.recipientchoicestatus.textContent = result.pending
     ? 'Existing unsaved-change guard is waiting for your choice. Nothing has been replaced yet.'
@@ -9821,13 +9867,15 @@ async function openRecipientPackagedProject() {
 }
 
 async function createAndDownloadRecipientResponse() {
-  if (!guidedReplayState?.canonicalPackage) return { ok: false, code: 'RECIPIENT_HANDOVER_REQUIRED' };
+  const operation = beginRecipientResponseOperation();
+  if (!operation.parentSource) return { ok: false, code: 'RECIPIENT_HANDOVER_REQUIRED' };
   const result = await createRecipientResponse({
-    parentSource: guidedReplayState.canonicalPackage,
+    parentSource: operation.parentSource,
     adapters: commonProjectAdapters,
     disposition: elements.recipientresponsedisposition.value,
     note: elements.recipientresponsenote.value,
   });
+  if (!recipientResponseOperationCurrent(operation)) return { ok: false, code: 'RECIPIENT_RESPONSE_STALE_OPEN' };
   if (!result.ok) {
     elements.recipientresponsestatus.textContent = `Response rejected (${result.code}). Nothing was downloaded.`;
     return result;
@@ -9853,14 +9901,15 @@ function renderAcceptedRecipientResponse(result, fileName = 'local response') {
   elements.recipientresponsestatus.textContent = 'Response accepted as a local data-only child of the exact open handover. No change was applied.';
 }
 
-async function openRecipientResponseSource(source, fileName = 'local response', expectedParentSha256 = null) {
-  if (!guidedReplayState?.canonicalPackage) return { ok: false, code: 'RECIPIENT_HANDOVER_REQUIRED' };
+async function openRecipientResponseSourceForOperation(source, fileName, operation) {
+  if (!operation.parentSource) return { ok: false, code: 'RECIPIENT_HANDOVER_REQUIRED' };
   const result = await parseRecipientResponse(source, {
-    parentSource: guidedReplayState.canonicalPackage,
+    parentSource: operation.parentSource,
     adapters: commonProjectAdapters,
-    expectedParentSha256,
+    expectedParentSha256: operation.expectedParentSha256,
     seenResponseSha256: acceptedRecipientResponseHashes,
   });
+  if (!recipientResponseOperationCurrent(operation)) return { ok: false, code: 'RECIPIENT_RESPONSE_STALE_OPEN' };
   if (!result.ok) {
     elements.recipientresponsestatus.textContent = `Response rejected (${result.code}). The active project and accepted relationship are unchanged.`;
     return result;
@@ -9869,19 +9918,26 @@ async function openRecipientResponseSource(source, fileName = 'local response', 
   return result;
 }
 
-async function openRecipientResponseFile(file, expectedParentSha256 = null) {
+async function openRecipientResponseSource(source, fileName = 'local response', expectedParentSha256 = null) {
+  const operation = beginRecipientResponseOperation(expectedParentSha256);
+  return openRecipientResponseSourceForOperation(source, fileName, operation);
+}
+
+async function openRecipientResponseFile(file, expectedParentSha256 = null, selectedOperation = null) {
+  const operation = selectedOperation ?? beginRecipientResponseOperation(expectedParentSha256);
   if (!file) return { ok: false, code: 'RECIPIENT_RESPONSE_FILE_REQUIRED' };
   if (file.size > RECIPIENT_RESPONSE_LIMIT) {
-    elements.recipientresponsestatus.textContent = 'Response rejected (RECIPIENT_RESPONSE_LIMIT). Existing work is unchanged.';
+    if (recipientResponseOperationCurrent(operation)) elements.recipientresponsestatus.textContent = 'Response rejected (RECIPIENT_RESPONSE_LIMIT). Existing work is unchanged.';
     return { ok: false, code: 'RECIPIENT_RESPONSE_LIMIT' };
   }
   let source;
   try { source = await file.text(); }
   catch {
-    elements.recipientresponsestatus.textContent = 'Response rejected (RECIPIENT_RESPONSE_READ_FAILED). Existing work is unchanged.';
+    if (recipientResponseOperationCurrent(operation)) elements.recipientresponsestatus.textContent = 'Response rejected (RECIPIENT_RESPONSE_READ_FAILED). Existing work is unchanged.';
     return { ok: false, code: 'RECIPIENT_RESPONSE_READ_FAILED' };
   }
-  return openRecipientResponseSource(source, file.name, expectedParentSha256);
+  if (!recipientResponseOperationCurrent(operation)) return { ok: false, code: 'RECIPIENT_RESPONSE_STALE_OPEN' };
+  return openRecipientResponseSourceForOperation(source, file.name, operation);
 }
 
 function renderExpectationReference() {
@@ -10225,7 +10281,11 @@ elements.guidedreplayopen.addEventListener('click', () => {
 elements.guidedreplayinput.addEventListener('change', () => {
   void openGuidedReplayFile(elements.guidedreplayinput.files[0] ?? null);
 });
-elements.guidedreplayclose.addEventListener('click', () => elements.guidedreplaydialog.close('close'));
+elements.guidedreplayclose.addEventListener('click', () => closeGuidedReplayDialog('close'));
+elements.guidedreplaydialog.addEventListener('cancel', (event) => {
+  event.preventDefault();
+  closeGuidedReplayDialog('escape');
+});
 elements.guidedreplayselect.addEventListener('change', () => {
   renderGuidedReplayStep(Number(elements.guidedreplayselect.value), true);
 });
@@ -10238,14 +10298,16 @@ elements.recipientprojectopen.addEventListener('click', () => { void openRecipie
 elements.recipienthandoverdownload.addEventListener('click', downloadRecipientHandover);
 elements.recipientresponsedownload.addEventListener('click', () => { void createAndDownloadRecipientResponse(); });
 elements.recipientresponseopen.addEventListener('click', () => {
-  responsePickerParentSha256 = guidedReplayState?.packageSha256 ?? null;
+  responsePickerOperation = beginRecipientResponseOperation(guidedReplayState?.packageSha256 ?? null);
   elements.recipientresponseinput.value = '';
   elements.recipientresponseinput.click();
 });
 elements.recipientresponseinput.addEventListener('change', () => {
-  const expected = responsePickerParentSha256 ?? guidedReplayState?.packageSha256 ?? null;
-  responsePickerParentSha256 = null;
-  void openRecipientResponseFile(elements.recipientresponseinput.files[0] ?? null, expected);
+  const operation = responsePickerOperation
+    ?? beginRecipientResponseOperation(guidedReplayState?.packageSha256 ?? null);
+  responsePickerOperation = null;
+  void openRecipientResponseFile(elements.recipientresponseinput.files[0] ?? null,
+    operation.expectedParentSha256, operation);
 });
 elements.authoredchangereviewshowsource.addEventListener('click', () => {
   const first = elements.authoredchangereviewdiffs.querySelector('details');

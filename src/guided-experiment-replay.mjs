@@ -18,7 +18,7 @@ function deepFreeze(value) {
   return value;
 }
 
-function recordedInput(event) {
+function scheduledInput(event) {
   if (event.kind === 'input.temperature-c') return {
     id: event.id,
     at: event.atMilliseconds,
@@ -27,7 +27,7 @@ function recordedInput(event) {
     componentId: event.componentId,
     value: event.valueC,
     unit: '°C',
-    text: `${event.valueC} °C at ${event.atMilliseconds} virtual ms`,
+    text: `${event.valueC} °C scheduled at ${event.atMilliseconds} virtual ms`,
   };
   if (event.kind === 'input.button-pressed') return {
     id: event.id,
@@ -37,7 +37,7 @@ function recordedInput(event) {
     componentId: event.componentId,
     value: event.pressed,
     unit: null,
-    text: `${event.pressed ? 'pressed' : 'released'} at ${event.atMilliseconds} virtual ms`,
+    text: `${event.pressed ? 'pressed' : 'released'} scheduled at ${event.atMilliseconds} virtual ms`,
   };
   return null;
 }
@@ -67,7 +67,7 @@ export async function createGuidedExperimentReplay(source, adapters) {
   const steps = timeline.scenarios.map((scenario, index) => {
     const result = value.report.results[index];
     if (scenario.id !== result.scenarioId) return null;
-    const inputs = scenario.events.map(recordedInput).filter(Boolean);
+    const inputs = scenario.events.map(scheduledInput).filter(Boolean);
     if (!inputs.length) return null;
     return {
       index,

@@ -60,7 +60,7 @@ async function recipientJourney(browser, filePath, viewport, expected) {
   }
   await page.selectOption('#guided-replay-select', '1');
   assert.match(await page.locator('#guided-replay-scenario-id').textContent(), /THERM-SCENARIO-EQUALITY-ENABLED/u);
-  assert.match(await page.locator('#guided-replay-inputs').textContent(), /31 °C at 0 virtual ms/u);
+  assert.match(await page.locator('#guided-replay-inputs').textContent(), /31 °C scheduled at 0 virtual ms/u);
   assert.match(await page.locator('#guided-replay-observation').textContent(), expected.observation);
   assert.match(await page.locator('#guided-replay-explanation').textContent(), expected.explanation);
   await page.locator('#guided-replay-previous').focus();
