@@ -2,6 +2,23 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.109 — 2026-10-22
+
+- Corrects the independently reproduced default-thermostat X66 Create failure.
+  Candidate-v3 graphs now use their exact locked candidate graph validator
+  instead of falling through the narrower project-v2 component catalogue.
+- Adds only the two strict existing subcircuit editor transactions to candidate
+  sessions. Complete candidate-envelope validation still runs before commit,
+  and arbitrary unknown component types remain rejected.
+- Preserves the public rc.108 model identity as immutable migration-only data
+  and introduces the separately pinned current correction identity. Blink,
+  thermostat, all Save/recovery/history paths and published v1/v2 workspaces
+  pass without adding producer or runtime-worker authority.
+- With corrected public default-thermostat acceptance, X66 is complete only
+  against its original bounded readability criterion. X92 remains partial;
+  status is X **79 complete / 1 partial / 16 planned**, P1 **59/0/0**. Native
+  evidence remains **34 Build / 33 Run / 0 scenarios**.
+
 ## 1.1.0-rc.108 — 2026-10-22
 
 - Adds one strict finite AVR resistor-and-LED reusable subcircuit with explicit

@@ -1,10 +1,8 @@
 # X66 bounded reusable subcircuit contract
 
-Status: the first increment is public in `1.1.0-rc.108`, but X66 remains
-partial. Independent public acceptance found that the default thermostat
-candidate rejected Create before installation. The bounded correction must pass
-independent review and publication before the original readability criterion is
-closed; no general-purpose, nested or non-AVR subcircuit support is claimed.
+Status: corrected for public release in `1.1.0-rc.109`. Independent review and
+the actual default-thermostat journey close the original bounded readability
+criterion without claiming general-purpose, nested or non-AVR subcircuits.
 
 ## Finite slice
 

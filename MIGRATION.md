@@ -1,8 +1,15 @@
-# Migration to 1.1.0-rc.108
+# Migration to 1.1.0-rc.109
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.109 introduces a new current model-library identity for the corrected
+candidate-graph validation path. Rc.108 files remain immutable data-only
+migration inputs: authored source, candidate components, nets, layout and X66
+owner data are preserved, while executable/runtime/verdict authority is
+cleared and requires a fresh Build. Unknown or authority-bearing model data
+still fails closed.
 
 Rc.108 recognizes annotated-workspace v3 and its strict bounded subcircuit
 owner. Published v1 and pre-subcircuit v2 workspaces migrate through normal

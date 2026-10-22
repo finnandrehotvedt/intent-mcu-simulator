@@ -1,4 +1,28 @@
-# Intent MCU Simulator 1.1.0-rc.108
+# Intent MCU Simulator 1.1.0-rc.109
+
+## Corrected default-thermostat reusable stage
+
+Rc.109 fixes the independently reproduced X66 failure where the valid default
+thermostat candidate graph was sent through the narrower project-v2 catalogue
+and rejected as `UNKNOWN_COMPONENT_TYPE`. Candidate projects now select their
+exact locked candidate graph validator, retain complete candidate-envelope
+validation before commit, and still reject arbitrary unknown component types.
+
+The actual default thermostat journey uses `net-thermostat-heater-drive` and
+`net-thermostat-ground`, then proves create, explicit bindings, collapse/expand,
+move, delete/Undo, Download/Open, recovery, local history and graph-digest
+preservation. Blink and published v1/v2 paths remain regression-covered. No
+Build, Run, Scenario, producer or runtime-worker authority was added or used.
+
+This closes X66 only against its original bounded readability criterion after
+corrected public acceptance. It does not claim nested, arbitrary-topology,
+other-profile or physical-equivalence support. X92 remains partial. Canonical
+status is X **79/1/16**, P1 **59/0/0**, with cumulative native evidence still
+**34 Build / 33 Run / 0 scenarios**.
+
+---
+
+## 1.1.0-rc.108
 
 ## Bounded reusable AVR subcircuits
 

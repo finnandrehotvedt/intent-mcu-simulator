@@ -20,7 +20,7 @@ import { createStm32CircuitDraft } from '../src/stm32-public-circuit.mjs';
 
 const clone = (value) => structuredClone(value);
 const input = (profile, graph, name = 'X75 test project') => ({
-  productRelease: '1.1.0-rc.108',
+  productRelease: '1.1.0-rc.109',
   profile,
   projectName: name,
   graph,

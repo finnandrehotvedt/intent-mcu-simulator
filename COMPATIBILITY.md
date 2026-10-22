@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.108 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.109 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -22,6 +22,9 @@ without replacing the last accepted project. The finite AVR subcircuit owner
 admits only one non-nested resistor-and-LED series definition with explicit
 source and ground port bindings and deterministic expansion into the ordinary
 validated graph. It is not general-purpose or other-profile subcircuit support.
+The default thermostat candidate uses the exact locked candidate validator;
+unknown component types still fail closed and the runtime receives only the
+fully validated expanded ordinary graph.
 
 The presentation view is AVR-only and read-only. Each start captures one
 labelled observation snapshot; moving between steps never refreshes from live

@@ -4,18 +4,17 @@ Original criterion:
 
 > Grupper, notater, nettetiketter og underkretser gjør større oppsett lesbare uten å miste forbindelser.
 
-## Public increment in rc.108; closure withheld
+## Corrected public closure in rc.109
 
 Rc.106 introduced strict local non-electrical notes and visual component groups,
 and rc.107 added labels bound only to existing canonical nets. Rc.108 adds one
 finite non-nested AVR resistor-and-LED subcircuit with explicit source and
 ground ports and deterministic expansion into the ordinary validated graph.
-Independent public acceptance found that Create rejected the default thermostat
-candidate before installation. X66 therefore remains partial until the bounded
-correction passes independent review and publication. The intended journey
-preserves connectivity through move, collapse/expand, Save/Open, recovery,
-local history and atomic delete/Undo. This is not blanket subcircuit authority
-or equivalence for another controller profile.
+Rc.109 corrects the default-thermostat candidate Create path through the exact
+locked candidate validator. Independent review and the actual journey preserve
+connectivity through move, collapse/expand, Save/Open, recovery, local history
+and atomic delete/Undo. This closes only the original bounded X66 criterion;
+it is not blanket subcircuit authority or equivalence for another profile.
 
 ## Boundary: labels are not wires
 
@@ -67,8 +66,8 @@ Acceptance requires positive and adversarial schema tests, exact expansion-diges
 3. Specify and implement one finite, non-nested subcircuit instance over existing supported components.
 4. Close X66 only after both increments and the original connectivity-preservation journey are independently verified.
 
-The first three steps are public; step four remains pending independent
-acceptance of the corrected default thermostat journey. Labels remain
+All four steps are complete after corrected default-thermostat public
+acceptance. Labels remain
 presentation-only bindings to existing nets, while subcircuit connectivity is
 owned solely by the strict explicit-port document and deterministic validated
 expansion.
