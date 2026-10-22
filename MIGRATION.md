@@ -1,8 +1,14 @@
-# Migration to 1.1.0-rc.110
+# Migration to 1.1.0-rc.111
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.111 adds no project, browser-storage, runtime or model-library migration.
+X57 reports and trusted evidence are local review artifacts, never project or
+execution authority. X89 readiness reports are read-only configuration
+observations; reopening detects configuration drift and restores no service,
+compiler, image, runtime or physical authority.
 
 Rc.110 adds no durable project or browser-storage schema. X69 experiment
 packages and X74 response files are explicit learner-owned local data. Opening

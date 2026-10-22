@@ -77,6 +77,15 @@
       ]
     },
     {
+      "id": "X57",
+      "capabilities": [
+        "intent-mcu-contribution-review@1"
+      ],
+      "contracts": [
+        "x57-trusted-contribution-admission-v1"
+      ]
+    },
+    {
       "id": "X59",
       "capabilities": [
         "intent-mcu-shared-workbench-view@1"
@@ -180,6 +189,15 @@
       ],
       "contracts": [
         "x88-machine-readable-release-delta-v1"
+      ]
+    },
+    {
+      "id": "X89",
+      "capabilities": [
+        "intent-mcu-local-readiness-report@1"
+      ],
+      "contracts": [
+        "x89-local-readiness-assessment-v1"
       ]
     },
     {

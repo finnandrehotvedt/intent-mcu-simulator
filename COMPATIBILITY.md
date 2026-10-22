@@ -1,10 +1,18 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.110 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.111 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
 not complete electrical or cycle-perfect hardware replacements.
+
+X57 accepts only strict inert contribution manifests against current hashed
+bytes. A trusted maintainer must explicitly review every declared change class,
+and only three fixed project-owned conformance owners may run. Admission adds
+no registry entry and grants no execution, runtime, release or network
+authority. X89 assesses exact local configuration and pinned image identities
+without starting Docker; service health, compiler readiness, firmware execution
+and physical readiness remain separate and untested.
 
 The X69 recipient walkthrough accepts only canonical strict-v3 AVR thermostat
 experiment packages. It displays authored schedules and retained observations

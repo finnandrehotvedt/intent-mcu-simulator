@@ -1,4 +1,28 @@
-# Intent MCU Simulator 1.1.0-rc.110
+# Intent MCU Simulator 1.1.0-rc.111
+
+## Trusted contribution review and local readiness assessment
+
+Rc.111 publishes X57's bounded local contribution-review workflow and X89's
+read-only local worker-readiness assessment. X57 rehashes the current checkout,
+requires explicit trusted maintainer review of every declared change class and
+runs only fixed project-owned conformance owners. Candidate modules and
+submitted commands are never imported or executed; admission cannot add a
+registry entry or grant release, runtime, network or execution authority.
+
+X89 parses only the exact local-compiler Compose service and requires the
+assessed broker, runtime policy and lock contract to match the trusted
+implementation. It compares pinned image identities using strict data-only
+fixtures, but does not start Docker, inspect service health, build an image,
+run firmware or claim physical readiness.
+
+X57 and X89 are complete only against those bounded criteria. X92 remains
+partial. Canonical status is X **83/1/12**, P1 **59/0/0**. Rc.111 performs zero
+native Build, Run, Scenario or worker action; cumulative native evidence
+remains **34/33/0**.
+
+---
+
+## 1.1.0-rc.110
 
 ## Historical replay and explicit local-file handover
 

@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.111 — 2026-10-22
+
+- Adds X57 strict current-byte contribution review with explicit trusted
+  maintainer confirmation and fixed project-owned conformance tests.
+- Adds X89 read-only local configuration assessment over exact Compose,
+  trusted broker policy and pinned image locks. It does not claim service,
+  compiler runtime, firmware or physical readiness.
+- Candidate modules and submitted commands remain inert. Admission grants no
+  registry, release, runtime, network or execution authority.
+- X57 and X89 are complete only against these bounded criteria; X92 remains
+  partial. Status is X **83 complete / 1 partial / 12 planned**, P1
+  **59/0/0**. Native evidence remains **34 Build / 33 Run / 0 scenarios**.
+
 ## 1.1.0-rc.110 — 2026-10-22
 
 - Adds the reviewed X69 local historical recipient walkthrough over canonical

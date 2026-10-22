@@ -11,31 +11,20 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.109",
-    "current": "1.1.0-rc.110"
+    "previous": "1.1.0-rc.110",
+    "current": "1.1.0-rc.111"
   },
   "changes": [
     {
-      "id": "X69",
+      "id": "X57",
       "classification": "additive",
       "capabilities": [
-        "intent-mcu-guided-historical-replay@1"
+        "intent-mcu-contribution-review@1"
       ],
       "contracts": [
-        "x69-guided-experiment-replay-v1"
+        "x57-trusted-contribution-admission-v1"
       ],
-      "summary": "Adds a reviewed local historical walkthrough over strict experiment packages, separating authored input schedules from recorded observations and importing no current verdict or runtime authority."
-    },
-    {
-      "id": "X74",
-      "classification": "additive",
-      "capabilities": [
-        "intent-mcu-recipient-response@1"
-      ],
-      "contracts": [
-        "x74-explicit-local-file-handover-v1"
-      ],
-      "summary": "Adds a reviewed explicit local-file handover and bounded response relationship bound to exact parent bytes, with no hidden storage, upload, automatic Apply or execution authority."
+      "summary": "Adds inert contribution admission with current-byte hashing, explicit trusted maintainer review and fixed project-owned conformance tests; registry and release remain separate reviewed changes."
     },
     {
       "id": "X88",
@@ -46,7 +35,18 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records the reviewed rc.109 to rc.110 X69/X74 local recipient workflows, with X92 remaining partial and zero new native producer authority."
+      "summary": "Records the reviewed rc.110 to rc.111 X57/X89 local review and readiness tools, with X92 remaining partial and zero new native producer authority."
+    },
+    {
+      "id": "X89",
+      "classification": "additive",
+      "capabilities": [
+        "intent-mcu-local-readiness-report@1"
+      ],
+      "contracts": [
+        "x89-local-readiness-assessment-v1"
+      ],
+      "summary": "Adds read-only local configuration assessment over exact Compose, trusted broker policy and image locks; service health, compiler readiness and physical execution remain explicitly untested."
     }
   ],
   "migrationRequired": false,
