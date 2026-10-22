@@ -518,7 +518,7 @@ const elements = Object.fromEntries([
   'presentation-open', 'presentation-view-dialog', 'presentation-view-title', 'presentation-close',
   'presentation-setup', 'presentation-instruments', 'presentation-add-step', 'presentation-step-editors',
   'presentation-status', 'presentation-start', 'presentation-stage', 'presentation-step-title',
-  'presentation-step-count', 'presentation-step-text', 'presentation-instrument-cards',
+  'presentation-step-count', 'presentation-snapshot-status', 'presentation-step-text', 'presentation-instrument-cards',
   'presentation-previous', 'presentation-next', 'presentation-exit',
   'teaching-exercise-open', 'teaching-exercise-dialog', 'teaching-exercise-title', 'teaching-exercise-close',
   'teaching-exercise-instructions', 'teaching-exercise-download', 'teaching-exercise-import',
@@ -640,6 +640,7 @@ let x92IdentitySequence = 0;
 const presentationOwner = createPresentationViewOwner();
 let presentationStepSequence = 0;
 let presentationReturnFocus = null;
+let presentationObservation = null;
 let acceptedTeachingExercise = null;
 let teachingExerciseReturnFocus = null;
 let canvasAnnotations = null;
@@ -7424,6 +7425,7 @@ function presentationContextBinding() {
 }
 function closePresentationDialog({ restoreFocus = true, message = null } = {}) {
   presentationOwner.close();
+  presentationObservation = null;
   elements.presentationstage.hidden = true; elements.presentationsetup.hidden = false;
   if (message) elements.presentationstatus.textContent = message;
   if (elements.presentationviewdialog.open) elements.presentationviewdialog.close('close');
@@ -7470,36 +7472,51 @@ function presentationFact(label, value) {
   const detail = document.createElement('dd'); term.textContent = label; detail.textContent = value || 'Unavailable';
   row.append(term, detail); return row;
 }
+function presentationInstrumentFacts(id) {
+  if (id === 'recorded-evidence') return [
+    ['State', elements.instrumentevidencestate.textContent],
+    ['Profile', elements.instrumentevidenceprofile.textContent],
+    ['Artifact', elements.instrumentevidenceartifact.textContent],
+    ['Virtual time', elements.instrumentevidencetime.textContent],
+    ['Retention', elements.instrumentevidenceretention.textContent],
+  ];
+  if (id === 'serial-output') return [
+    ['Owner label', elements.serialprovenance.textContent], ['Observed text', elements.serialoutput.textContent],
+  ];
+  if (id === 'pin-inspector') return [
+    ['Pin', elements.pinselect.value], ['Mode', elements.pinmode.textContent],
+    ['Level', elements.pinlevel.textContent], ['Detail', elements.pindetail.textContent],
+    ['Diagnostic', elements.pindiagnostic.textContent], ['Cycle', elements.pincycle.textContent],
+  ];
+  if (id === 'logic-analyser') return [
+    ['Transitions', elements.logiccount.textContent], ['Cursor', elements.logiccursor.textContent],
+    ['Owner rows', [...elements.logicoutput.children].map(({ textContent }) => textContent).join('\n')],
+  ];
+  return [];
+}
+function capturePresentationObservation() {
+  const runtime = window.__M6_STATE__.runtime;
+  const identity = runtime?.runtimeIdentity;
+  const ownerIdentity = identity
+    ? [identity.artifactIdentity, `project ${identity.projectGeneration}`, `runtime ${identity.runtimeGeneration}`]
+      .filter(Boolean).join(' · ')
+    : 'No current runtime owner';
+  const virtualCycle = Number.isSafeInteger(runtime?.cycle) && runtime.cycle >= 0 ? runtime.cycle : null;
+  return Object.freeze({ capturedAt: new Date().toISOString(), virtualCycle, ownerIdentity,
+    cards: Object.freeze(Object.fromEntries(PRESENTATION_INSTRUMENTS.map(({ id }) =>
+      [id, Object.freeze(presentationInstrumentFacts(id).map(([label, value]) => Object.freeze({ label, value })))]))) });
+}
 function presentationInstrumentCard(id) {
   const definition = PRESENTATION_INSTRUMENTS.find((item) => item.id === id);
   const card = document.createElement('article'); card.className = 'presentation-instrument-card'; card.dataset.instrumentId = id;
   const title = document.createElement('h4'); title.textContent = definition?.label ?? id;
   const facts = document.createElement('dl');
-  if (id === 'recorded-evidence') facts.append(
-    presentationFact('State', elements.instrumentevidencestate.textContent),
-    presentationFact('Profile', elements.instrumentevidenceprofile.textContent),
-    presentationFact('Artifact', elements.instrumentevidenceartifact.textContent),
-    presentationFact('Virtual time', elements.instrumentevidencetime.textContent),
-    presentationFact('Retention', elements.instrumentevidenceretention.textContent),
-  );
-  if (id === 'serial-output') facts.append(
-    presentationFact('Owner label', elements.serialprovenance.textContent),
-    presentationFact('Observed text', elements.serialoutput.textContent),
-  );
-  if (id === 'pin-inspector') facts.append(
-    presentationFact('Pin', elements.pinselect.value), presentationFact('Mode', elements.pinmode.textContent),
-    presentationFact('Level', elements.pinlevel.textContent), presentationFact('Detail', elements.pindetail.textContent),
-    presentationFact('Diagnostic', elements.pindiagnostic.textContent), presentationFact('Cycle', elements.pincycle.textContent),
-  );
-  if (id === 'logic-analyser') facts.append(
-    presentationFact('Transitions', elements.logiccount.textContent),
-    presentationFact('Cursor', elements.logiccursor.textContent),
-    presentationFact('Owner rows', [...elements.logicoutput.children].map(({ textContent }) => textContent).join('\n')),
-  );
+  facts.append(...(presentationObservation?.cards[id] ?? []).map(({ label, value }) => presentationFact(label, value)));
   card.append(title, facts); return card;
 }
 function renderPresentationStage() {
   const state = presentationOwner.snapshot(); if (!state.active) return;
+  elements.presentationsnapshotstatus.textContent = `Frozen snapshot · captured ${presentationObservation.capturedAt} · virtual cycle ${presentationObservation.virtualCycle ?? 'unavailable'} · owner ${presentationObservation.ownerIdentity}. Restart the presentation to capture newer values.`;
   elements.presentationsteptitle.textContent = state.step.title;
   elements.presentationsteptext.textContent = state.step.text;
   elements.presentationstepcount.textContent = `${state.selectedStep + 1} / ${state.draft.steps.length}`;
@@ -8745,7 +8762,9 @@ elements.presentationstart.addEventListener('click', () => {
   try {
     if (!thermostatProjectActive()) throw Object.assign(new Error('PRESENTATION_THERMOSTAT_REQUIRED'),
       { code: 'PRESENTATION_THERMOSTAT_REQUIRED' });
+    const observation = capturePresentationObservation();
     presentationOwner.open(presentationDraftFromUi(), presentationContextBinding());
+    presentationObservation = observation;
     elements.presentationsetup.hidden = true; elements.presentationstage.hidden = false;
     elements.presentationstatus.textContent = 'Presentation opened without changing the project or experiment.';
     renderPresentationStage(); queueMicrotask(() => elements.presentationsteptitle.focus());
@@ -8756,7 +8775,7 @@ elements.presentationstart.addEventListener('click', () => {
 elements.presentationprevious.addEventListener('click', () => { presentationOwner.previous(); renderPresentationStage(); });
 elements.presentationnext.addEventListener('click', () => { presentationOwner.next(); renderPresentationStage(); });
 elements.presentationexit.addEventListener('click', () => {
-  presentationOwner.close(); elements.presentationstage.hidden = true; elements.presentationsetup.hidden = false;
+  presentationOwner.close(); presentationObservation = null; elements.presentationstage.hidden = true; elements.presentationsetup.hidden = false;
   elements.presentationstatus.textContent = 'Presentation ended. The project, runtime and budget were unchanged.';
   queueMicrotask(() => elements.presentationstart.focus());
 });
@@ -8765,6 +8784,7 @@ window.__X68_PRESENTATION_VIEW__ = Object.freeze({
   limits: Object.freeze({ ...PRESENTATION_LIMITS }),
   available: () => thermostatProjectActive(),
   snapshot: () => structuredClone(presentationOwner.snapshot()),
+  observation: () => presentationObservation ? structuredClone(presentationObservation) : null,
   authority: Object.freeze({ apply: false, build: false, run: false, scenario: false, runtime: false, verdict: false }),
   persistence: false,
 });

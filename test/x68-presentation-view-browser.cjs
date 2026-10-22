@@ -67,12 +67,25 @@ const productState = () => ({
     assert.equal(await page.locator('.presentation-instrument-card[data-instrument-id="recorded-evidence"]').getByText('No recorded evidence').count() > 0, true);
     assert.equal(await page.locator('.presentation-instrument-card[data-instrument-id="serial-output"]').getByText(/No recorded USART0 evidence/u).count() > 0, true);
     assert(Object.values(await page.evaluate(() => window.__X68_PRESENTATION_VIEW__.snapshot().authority)).every((value) => value === false));
+    const observation = await page.evaluate(() => window.__X68_PRESENTATION_VIEW__.observation());
+    assert.match(observation.capturedAt, /^\d{4}-\d{2}-\d{2}T/u);
+    assert.equal(observation.virtualCycle, null); assert.equal(observation.ownerIdentity, 'No current runtime owner');
+    assert.match(await page.locator('#presentation-snapshot-status').textContent(), /Frozen snapshot.*virtual cycle unavailable.*No current runtime owner/u);
+    await page.evaluate(() => {
+      document.querySelector('#instrument-evidence-state').textContent = 'Synthetic later runtime evidence';
+      document.querySelector('#serial-output').textContent = 'SYNTHETIC LATER OUTPUT';
+      document.querySelector('#pin-cycle').textContent = '999999';
+      document.querySelector('#logic-count').textContent = '99 transitions';
+    });
 
     const wide = path.join(output, 'x68-presentation-1366x768.png');
     await page.locator('#presentation-view-dialog').screenshot({ path: wide });
     assert((await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 1);
     await page.click('#presentation-next');
     assert.equal(await page.locator('#presentation-step-count').textContent(), '2 / 3');
+    assert.equal(await page.locator('.presentation-instrument-card').getByText('Synthetic later runtime evidence').count(), 0);
+    assert.equal(await page.locator('.presentation-instrument-card').getByText('SYNTHETIC LATER OUTPUT').count(), 0);
+    assert.deepEqual(await page.evaluate(() => window.__X68_PRESENTATION_VIEW__.observation()), observation);
     await page.click('#presentation-next');
     assert.equal(await page.locator('#presentation-step-title').textContent(), 'Explain the model limit');
     assert.equal(await page.locator('#presentation-step-text').textContent(), 'Explain that the ideal sensor is a bounded teaching model.');
@@ -101,6 +114,7 @@ const productState = () => ({
     assert.deepEqual(producers, []); assert.deepEqual(mutations, []); assert.deepEqual(outside, []);
     assert.deepEqual(errors, []); assert.equal((await context.cookies()).length, 0);
     const result = { result: 'pass', profile: before.profile, steps: 3, instruments: 4,
+      frozenObservationSnapshot: true, capturedAtLabel: true, syntheticLaterObservationExcluded: true,
       projectStateUnchangedDuringPresentation: true, lifecycleClose: true, producers: 0, mutations: 0,
       outsideRequests: 0, cookies: 0, screenshots: [wide, tall] };
     fs.writeFileSync(path.join(output, 'x68-presentation-view.json'), `${JSON.stringify(result, null, 2)}\n`);
