@@ -22,6 +22,9 @@ const PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_X66_BOUNDED_SUBCIRCUITS_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X66_BOUNDED_SUBCIRCUITS_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_TEACHING_BATCH_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_TEACHING_BATCH_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -148,7 +151,7 @@ const entries = COMPONENT_SUPPORT_CELLS.filter((cell) => cell.available)
 
 const CURRENT_CLOSURE = Object.freeze([
   '../src/component-catalog.mjs', '../src/circuit-engine.mjs', '../src/runtime-kernel.mjs',
-  '../src/canvas-annotations.mjs',
+  '../src/canvas-annotations.mjs', '../src/bounded-subcircuits.mjs',
   '../src/atmega328p-adapter.mjs', '../src/x43-avr-stack-profile.mjs',
   '../src/x47-runtime-transaction.mjs',
   '../src/x47-ui-integration.mjs', '../src/strict-json.mjs',
@@ -228,16 +231,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x66-legacy-open-review-fix.1-current',
-  'intent-mcu-model-bundle-current-x66-legacy-open-review-fix-1@32',
+  '2.0.0-x66-bounded-subcircuits.1-current',
+  'intent-mcu-model-bundle-current-x66-bounded-subcircuits-1@33',
   currentImplementation,
   {
-    priorVersion: PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X66_BOUNDED_SUBCIRCUITS_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X66_BOUNDED_SUBCIRCUITS_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component electrical semantics, connectivity, runtime behavior, and verdict authority are unchanged; every historical non-retained lock is migration-only',
-    presentationDisposition: 'private review correction routes published annotated-workspace v1 through its strict migrator and renders the canonical bound net ID as real visible text',
-    baselineClosureDisposition: 'the prior private X66 net-label identity and all earlier identities remain immutable and migration-only',
+    semanticDisposition: 'one finite nonnested resistor-plus-LED owner expands deterministically into the existing validated AVR graph; component electrical semantics and runtime authority are unchanged; every historical non-retained lock is migration-only',
+    presentationDisposition: 'private X66 adds explicit source and ground bindings plus inert instance collapse and position metadata in annotated-workspace v3',
+    baselineClosureDisposition: 'the reviewed rc.107 identity and all earlier identities remain immutable and migration-only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -275,6 +278,7 @@ export const PRE_TEACHING_BATCH_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze($
 export const PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X66_BOUNDED_SUBCIRCUITS_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X66_BOUNDED_SUBCIRCUITS_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);
