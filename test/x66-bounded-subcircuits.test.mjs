@@ -97,6 +97,27 @@ test('X66 strict owner rejects nesting, hidden authority, limits, unresolved por
   assert.throws(() => parseSubcircuits(JSON.stringify({ ...valid, authority: { build: true } })));
 });
 
+test('X66 finite grammar rejects renamed local component and internal net identifiers', () => {
+  const renamed = owner(instance('stage-one'));
+  const definitionValue = renamed.definitions[0];
+  const componentIds = new Map([['led', 'light'], ['resistor', 'res']]);
+  const netIds = new Map([['ground', 'return'], ['series', 'current'], ['source', 'drive']]);
+  definitionValue.components = definitionValue.components.map((component) => ({
+    ...component, id: componentIds.get(component.id),
+  }));
+  definitionValue.nets = definitionValue.nets.map((net) => ({
+    ...net, id: netIds.get(net.id), endpoints: net.endpoints.map((endpoint) => ({
+      ...endpoint, component: componentIds.get(endpoint.component),
+    })),
+  }));
+  definitionValue.ports = definitionValue.ports.map((port) => ({
+    ...port, netId: netIds.get(port.netId),
+  }));
+  assert.throws(() => normalizeSubcircuits(renamed), {
+    code: 'SUBCIRCUIT_DEFINITION_IDENTIFIERS',
+  });
+});
+
 test('X66 expansion rejects missing external nets, component collisions and tampered saved expansion', () => {
   const missing = owner(instance('stage-one', 'missing')); assert.throws(() => expandSubcircuits(DEFAULT_CIRCUIT, missing), { code: 'SUBCIRCUIT_EXTERNAL_NET_MISSING' });
   const collisionGraph = clone(DEFAULT_CIRCUIT); collisionGraph.components.push({

@@ -25,6 +25,9 @@ const PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_X66_BOUNDED_SUBCIRCUITS_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X66_BOUNDED_SUBCIRCUITS_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_X66_SUBCIRCUIT_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X66_SUBCIRCUIT_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_TEACHING_BATCH_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_TEACHING_BATCH_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -231,16 +234,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x66-bounded-subcircuits.1-current',
-  'intent-mcu-model-bundle-current-x66-bounded-subcircuits-1@33',
+  '2.0.0-x66-subcircuit-review-fix.1-current',
+  'intent-mcu-model-bundle-current-x66-subcircuit-review-fix-1@34',
   currentImplementation,
   {
-    priorVersion: PRE_X66_BOUNDED_SUBCIRCUITS_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X66_BOUNDED_SUBCIRCUITS_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X66_SUBCIRCUIT_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X66_SUBCIRCUIT_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'one finite nonnested resistor-plus-LED owner expands deterministically into the existing validated AVR graph; component electrical semantics and runtime authority are unchanged; every historical non-retained lock is migration-only',
-    presentationDisposition: 'private X66 adds explicit source and ground bindings plus inert instance collapse and position metadata in annotated-workspace v3',
-    baselineClosureDisposition: 'the reviewed rc.107 identity and all earlier identities remain immutable and migration-only',
+    semanticDisposition: 'the finite nonnested resistor-plus-LED owner now rejects renamed local aliases before expansion; component electrical semantics and runtime authority are unchanged; every historical non-retained lock is migration-only',
+    presentationDisposition: 'private X66 preserves canonical source, series, ground, resistor and led identifiers across position, collapse and binding presentation paths',
+    baselineClosureDisposition: 'the first private bounded-subcircuit identity, reviewed rc.107 identity and all earlier identities remain immutable and migration-only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -279,6 +282,7 @@ export const PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.fre
 export const PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X66_BOUNDED_SUBCIRCUITS_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X66_BOUNDED_SUBCIRCUITS_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X66_SUBCIRCUIT_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X66_SUBCIRCUIT_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

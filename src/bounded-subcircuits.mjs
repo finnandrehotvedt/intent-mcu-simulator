@@ -105,9 +105,15 @@ function normalizeDefinition(value, path) {
   }).sort((a, b) => a.id.localeCompare(b.id));
   const led = components.find(({ type }) => type === 'led.basic-v1').id;
   const resistor = components.find(({ type }) => type === 'resistor.fixed-v1').id;
+  if (led !== 'led' || resistor !== 'resistor') fail('SUBCIRCUIT_DEFINITION_IDENTIFIERS', [path]);
   const signature = (net) => net.endpoints.map(endpointKey).join('|');
   const expected = new Set([`${resistor}.A`, [`${resistor}.B`, `${led}.ANODE`].sort().join('|'), `${led}.CATHODE`]);
   if (new Set(nets.map(signature)).size !== 3 || nets.some((net) => !expected.has(signature(net)))) fail('SUBCIRCUIT_TOPOLOGY', [path]);
+  const canonicalNetId = new Map([[`${resistor}.A`, 'source'],
+    [[`${resistor}.B`, `${led}.ANODE`].sort().join('|'), 'series'], [`${led}.CATHODE`, 'ground']]);
+  if (nets.some((net) => net.id !== canonicalNetId.get(signature(net)))) {
+    fail('SUBCIRCUIT_DEFINITION_IDENTIFIERS', [path]);
+  }
   const singletonBySignature = new Map(nets.filter((net) => net.endpoints.length === 1).map((net) => [signature(net), net.id]));
   const ports = value.ports.map((port, index) => {
     const itemPath = `${path}.ports[${index}]`;

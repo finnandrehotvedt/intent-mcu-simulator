@@ -8007,7 +8007,9 @@ async function inspectStoredHistoryRecord(record) {
   return inspectHistoryRecord(record, {
     prepare: (source) => {
       const prepared = prepareAuthoredProjectEnvelope(source);
-      if (!prepared.ok || detectedAnnotatedWorkspaceSchema(source) !== LEGACY_ANNOTATED_WORKSPACE_SCHEMA) return prepared;
+      const annotatedSchema = detectedAnnotatedWorkspaceSchema(source);
+      if (!prepared.ok || ![LEGACY_ANNOTATED_WORKSPACE_SCHEMA,
+        PRE_SUBCIRCUIT_ANNOTATED_WORKSPACE_SCHEMA].includes(annotatedSchema)) return prepared;
       let sourceModelLibrary = null;
       try { sourceModelLibrary = JSON.parse(source)?.project?.modelLibrary ?? null; } catch { return prepared; }
       return JSON.stringify(sourceModelLibrary) === JSON.stringify(record?.modelLibrary)
