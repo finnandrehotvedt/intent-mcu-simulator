@@ -265,6 +265,11 @@
               <section aria-labelledby="experiment-package-comparison-results-title"><h5 id="experiment-package-comparison-results-title">Results</h5><div id="experiment-package-comparison-results"></div></section>
             </div>
           </details>
+          <div class="experiment-package-recipient-actions">
+            <button id="guided-replay-open" type="button">Open guided replay</button>
+            <input id="guided-replay-input" class="sr-only" type="file" accept="application/json,.json,.intent-mcu-experiment.json" aria-label="Open experiment package for guided historical replay">
+            <span>Review a strict local package without Build, Run or project changes.</span>
+          </div>
         </section>
         <label>Requested change<textarea id="project-patch-description" rows="3" maxlength="2000" placeholder="Move the LED, route its cable clearly, and update main.c to drive the reviewed pin."></textarea></label>
         <div class="project-patch-actions"><button id="project-patch-generate" type="button">Generate patch prompt</button><button id="project-patch-copy" type="button" disabled>Copy prompt</button></div>
@@ -1074,6 +1079,25 @@
       <fieldset><legend>Choose one start project</legend><div id="teaching-exercise-variants" class="teaching-exercise-variants"></div></fieldset>
       <button id="teaching-exercise-install" type="button">Open selected project</button>
       <p class="teaching-exercise-boundary">Opening is an explicit authored-project replacement. It restores no firmware, runtime, result or verdict and requires a fresh manual Build.</p>
+    </div>
+  </dialog>
+  <dialog id="guided-replay-dialog" class="guided-replay-dialog" aria-labelledby="guided-replay-title" aria-describedby="guided-replay-status">
+    <header><div><p class="eyebrow">X69 · HISTORICAL RECIPIENT VIEW</p><h2 id="guided-replay-title" tabindex="-1">Guided experiment replay</h2></div><button id="guided-replay-close" type="button">Close</button></header>
+    <div class="guided-replay-layout">
+      <p class="guided-replay-boundary"><strong>Recorded evidence—not a current verdict.</strong> This view never builds, runs, reconstructs or changes the active project.</p>
+      <p id="guided-replay-status" class="truth" role="status">Choose a strict v3 experiment package.</p>
+      <section aria-labelledby="guided-replay-identity-title"><h3 id="guided-replay-identity-title">Package identity and limits</h3><dl id="guided-replay-identities" class="guided-replay-identities"></dl></section>
+      <section class="guided-replay-stage" aria-labelledby="guided-replay-step-title">
+        <div class="guided-replay-step-heading"><div><p id="guided-replay-position" class="eyebrow">No step</p><h3 id="guided-replay-step-title" tabindex="-1">Open a package to begin</h3></div><label>Recorded scenario<select id="guided-replay-select" disabled></select></label></div>
+        <p id="guided-replay-scenario-id" class="guided-replay-code"></p>
+        <div class="guided-replay-cards">
+          <section><h4>Recorded inputs</h4><ol id="guided-replay-inputs"></ol></section>
+          <section><h4>D13 observation</h4><dl id="guided-replay-observation"></dl></section>
+        </div>
+        <p id="guided-replay-explanation" class="guided-replay-explanation">No recorded observation loaded.</p>
+        <div class="guided-replay-actions"><button id="guided-replay-previous" type="button" disabled>Previous</button><button id="guided-replay-next" type="button" disabled>Next</button></div>
+      </section>
+      <p class="guided-replay-limit">Capture wall-clock time is shown as unavailable when the source package did not record it. Requirement IDs are never inferred from scenario names.</p>
     </div>
   </dialog>
   <dialog id="canvas-annotations-dialog" class="canvas-annotations-dialog" aria-labelledby="canvas-annotations-title">

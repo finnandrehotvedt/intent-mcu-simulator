@@ -1,0 +1,1034 @@
+{
+  "schema": "intent-mcu-experiment-package@3",
+  "profile": "board.atmega328p-16mhz-v1",
+  "experimentId": "avr-thermostat-boundary-v1",
+  "project": {
+    "schema": "intent-mcu-project-envelope@8",
+    "profile": "board.atmega328p-16mhz-v1",
+    "modelLibrary": {
+      "schema": "intent-mcu-model-library-lock@2",
+      "libraryId": "intent-mcu-public-models",
+      "version": "2.0.0-x56-current",
+      "manifestSha256": "5c94ce070526d2e7e417fed0cb152fc28bdea24ee9beb52c65488328d41eac0b",
+      "implementationSha256": "4e0fc926236de5edda6b3e85c3770b709a4ae3643d47b8cd9b3138c4c1b61633"
+    },
+    "brief": {
+      "schema": "intent-mcu-project-brief@4",
+      "purpose": "",
+      "inputs": [],
+      "outputs": [],
+      "boundaryCases": [],
+      "acceptanceCriteria": [],
+      "openAssumptions": [],
+      "requiredCapabilities": []
+    },
+    "scenarioTimeline": {
+      "schema": "intent-mcu-scenario-timeline@1",
+      "profile": "board.atmega328p-16mhz-v1",
+      "experimentId": "avr-thermostat-boundary-v1",
+      "scenarios": [
+        {
+          "id": "THERM-SCENARIO-BELOW-ENABLED",
+          "name": "Below · enabled",
+          "events": [
+            {
+              "id": "THERM-SCENARIO-BELOW-ENABLED-TEMP",
+              "atMilliseconds": 0,
+              "kind": "input.temperature-c",
+              "componentId": "temperature-sensor-1",
+              "valueC": 30
+            },
+            {
+              "id": "THERM-SCENARIO-BELOW-ENABLED-BUTTON",
+              "atMilliseconds": 0,
+              "kind": "input.button-pressed",
+              "componentId": "enable-button-1",
+              "pressed": true
+            },
+            {
+              "id": "THERM-SCENARIO-BELOW-ENABLED-D13",
+              "atMilliseconds": 160,
+              "kind": "expect.pin-level",
+              "throughMilliseconds": 350,
+              "pin": "D13",
+              "level": true
+            }
+          ]
+        },
+        {
+          "id": "THERM-SCENARIO-EQUALITY-ENABLED",
+          "name": "Equality · enabled",
+          "events": [
+            {
+              "id": "THERM-SCENARIO-EQUALITY-ENABLED-TEMP",
+              "atMilliseconds": 0,
+              "kind": "input.temperature-c",
+              "componentId": "temperature-sensor-1",
+              "valueC": 31
+            },
+            {
+              "id": "THERM-SCENARIO-EQUALITY-ENABLED-BUTTON",
+              "atMilliseconds": 0,
+              "kind": "input.button-pressed",
+              "componentId": "enable-button-1",
+              "pressed": true
+            },
+            {
+              "id": "THERM-SCENARIO-EQUALITY-ENABLED-D13",
+              "atMilliseconds": 160,
+              "kind": "expect.pin-level",
+              "throughMilliseconds": 350,
+              "pin": "D13",
+              "level": false
+            }
+          ]
+        },
+        {
+          "id": "THERM-SCENARIO-ABOVE-ENABLED",
+          "name": "Above · enabled",
+          "events": [
+            {
+              "id": "THERM-SCENARIO-ABOVE-ENABLED-TEMP",
+              "atMilliseconds": 0,
+              "kind": "input.temperature-c",
+              "componentId": "temperature-sensor-1",
+              "valueC": 32
+            },
+            {
+              "id": "THERM-SCENARIO-ABOVE-ENABLED-BUTTON",
+              "atMilliseconds": 0,
+              "kind": "input.button-pressed",
+              "componentId": "enable-button-1",
+              "pressed": true
+            },
+            {
+              "id": "THERM-SCENARIO-ABOVE-ENABLED-D13",
+              "atMilliseconds": 160,
+              "kind": "expect.pin-level",
+              "throughMilliseconds": 350,
+              "pin": "D13",
+              "level": false
+            }
+          ]
+        },
+        {
+          "id": "THERM-SCENARIO-BELOW-DISABLED",
+          "name": "Below · disabled",
+          "events": [
+            {
+              "id": "THERM-SCENARIO-BELOW-DISABLED-TEMP",
+              "atMilliseconds": 0,
+              "kind": "input.temperature-c",
+              "componentId": "temperature-sensor-1",
+              "valueC": 30
+            },
+            {
+              "id": "THERM-SCENARIO-BELOW-DISABLED-BUTTON",
+              "atMilliseconds": 0,
+              "kind": "input.button-pressed",
+              "componentId": "enable-button-1",
+              "pressed": false
+            },
+            {
+              "id": "THERM-SCENARIO-BELOW-DISABLED-D13",
+              "atMilliseconds": 160,
+              "kind": "expect.pin-level",
+              "throughMilliseconds": 350,
+              "pin": "D13",
+              "level": false
+            }
+          ]
+        }
+      ]
+    },
+    "project": {
+      "schema": "intent-mcu-project-contact-persistence@1",
+      "project": {
+        "schema": "intent-mcu-project@3",
+        "metadata": {
+          "name": "Thermostat boundary test"
+        },
+        "catalogue": {
+          "schema": "intent-mcu-catalogue-ref@1",
+          "version": "intent-mcu-catalogue@2"
+        },
+        "controller": {
+          "profile": "board.atmega328p-16mhz-v1",
+          "adapterContract": "intent-mcu-controller-adapter@1",
+          "status": "simulated",
+          "capabilities": [
+            {
+              "id": "gpio",
+              "status": "simulated"
+            },
+            {
+              "id": "adc",
+              "status": "simulated"
+            },
+            {
+              "id": "pwm",
+              "status": "simulated"
+            },
+            {
+              "id": "uart0",
+              "status": "simulated"
+            },
+            {
+              "id": "timers",
+              "status": "partial"
+            },
+            {
+              "id": "interrupts",
+              "status": "partial"
+            },
+            {
+              "id": "spi",
+              "status": "unsupported"
+            },
+            {
+              "id": "i2c",
+              "status": "unsupported"
+            },
+            {
+              "id": "eeprom",
+              "status": "unsupported"
+            },
+            {
+              "id": "watchdog",
+              "status": "unsupported"
+            }
+          ]
+        },
+        "source": {
+          "files": [
+            {
+              "name": "main.ino",
+              "content": "// Intent MCU experiment: avr-thermostat-boundary-v1\n// The module control is quantized by the tested 10-bit AVR ADC model.\nconst byte TEMP_PIN = A1;\nconst byte ENABLE_BUTTON_PIN = 2;\nconst byte HEATER_LED_PIN = 13;\nconst int SETPOINT_C = 30;\n\nvoid setup() {\n  pinMode(ENABLE_BUTTON_PIN, INPUT_PULLUP);\n  pinMode(HEATER_LED_PIN, OUTPUT);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  int raw = analogRead(TEMP_PIN);\n  int temperatureC = (int)((raw * 200L) / 1024L) - 50;\n  bool enabled = digitalRead(ENABLE_BUTTON_PIN) == LOW;\n  bool heating = enabled && temperatureC < SETPOINT_C;\n  digitalWrite(HEATER_LED_PIN, heating ? HIGH : LOW);\n\n  Serial.print(\"TEMP_C=\"); Serial.print(temperatureC);\n  Serial.print(\" BUTTON=\"); Serial.print(enabled ? \"PRESSED\" : \"RELEASED\");\n  Serial.print(\" HEATER=\"); Serial.print(heating ? \"ON\" : \"OFF\");\n  Serial.print(\" STATE=\"); Serial.println(!enabled ? \"OFF\" : heating ? \"HEAT\" : \"HOLD\");\n  delay(100);\n}\n"
+            }
+          ]
+        },
+        "circuit": {
+          "schema": "teach-lab-circuit@2",
+          "components": [
+            {
+              "id": "board-1",
+              "type": "board.atmega328p-16mhz-v1",
+              "label": "ATmega328P thermostat controller",
+              "properties": {},
+              "controls": {}
+            },
+            {
+              "id": "enable-button-1",
+              "type": "button.momentary-v1",
+              "label": "Enable heating button",
+              "properties": {
+                "normallyOpen": true
+              },
+              "controls": {
+                "pressed": false
+              }
+            },
+            {
+              "id": "heater-led-1",
+              "type": "led.basic-v1",
+              "label": "Heater command indicator",
+              "properties": {
+                "color": "red"
+              },
+              "controls": {}
+            },
+            {
+              "id": "temperature-sensor-1",
+              "type": "potentiometer.linear-v1",
+              "label": "Ideal room-temperature input",
+              "properties": {
+                "ohms": 10000,
+                "taper": "linear"
+              },
+              "controls": {
+                "position": 0.4
+              }
+            },
+            {
+              "id": "heater-resistor-1",
+              "type": "resistor.fixed-v1",
+              "label": "Heater indicator 220 Ω",
+              "properties": {
+                "ohms": 220
+              },
+              "controls": {}
+            }
+          ],
+          "nets": [
+            {
+              "id": "net-thermostat-5v",
+              "endpoints": [
+                {
+                  "component": "board-1",
+                  "pin": "5V"
+                },
+                {
+                  "component": "temperature-sensor-1",
+                  "pin": "HIGH"
+                }
+              ]
+            },
+            {
+              "id": "net-thermostat-enable",
+              "endpoints": [
+                {
+                  "component": "board-1",
+                  "pin": "D2"
+                },
+                {
+                  "component": "enable-button-1",
+                  "pin": "A"
+                }
+              ]
+            },
+            {
+              "id": "net-thermostat-ground",
+              "endpoints": [
+                {
+                  "component": "board-1",
+                  "pin": "GND1"
+                },
+                {
+                  "component": "enable-button-1",
+                  "pin": "B"
+                },
+                {
+                  "component": "heater-led-1",
+                  "pin": "CATHODE"
+                },
+                {
+                  "component": "temperature-sensor-1",
+                  "pin": "LOW"
+                }
+              ]
+            },
+            {
+              "id": "net-thermostat-heater-drive",
+              "endpoints": [
+                {
+                  "component": "board-1",
+                  "pin": "D13"
+                },
+                {
+                  "component": "heater-resistor-1",
+                  "pin": "A"
+                }
+              ]
+            },
+            {
+              "id": "net-thermostat-heater-led",
+              "endpoints": [
+                {
+                  "component": "heater-led-1",
+                  "pin": "ANODE"
+                },
+                {
+                  "component": "heater-resistor-1",
+                  "pin": "B"
+                }
+              ]
+            },
+            {
+              "id": "net-thermostat-temperature",
+              "endpoints": [
+                {
+                  "component": "board-1",
+                  "pin": "A1"
+                },
+                {
+                  "component": "temperature-sensor-1",
+                  "pin": "WIPER"
+                }
+              ]
+            }
+          ],
+          "junctions": [
+            {
+              "id": "junction-thermostat-ground-button",
+              "net": "net-thermostat-ground"
+            },
+            {
+              "id": "junction-thermostat-ground-sensor",
+              "net": "net-thermostat-ground"
+            }
+          ]
+        },
+        "layout": {
+          "positions": {
+            "board-1": {
+              "x": 0.3,
+              "y": 0.46,
+              "rotation": 0
+            },
+            "enable-button-1": {
+              "x": 0.58,
+              "y": 0.78,
+              "rotation": 0
+            },
+            "heater-led-1": {
+              "x": 0.83,
+              "y": 0.28,
+              "rotation": 0
+            },
+            "heater-resistor-1": {
+              "x": 0.62,
+              "y": 0.27,
+              "rotation": 0
+            },
+            "temperature-sensor-1": {
+              "x": 0.14,
+              "y": 0.8,
+              "rotation": 0
+            }
+          },
+          "wireRoutes": {},
+          "wireStyles": {
+            "net-thermostat-5v": {
+              "color": "#f04f5f"
+            },
+            "net-thermostat-enable": {
+              "color": "#39dff2"
+            },
+            "net-thermostat-ground": {
+              "color": "#303943"
+            },
+            "net-thermostat-heater-drive": {
+              "color": "#39dff2"
+            },
+            "net-thermostat-heater-led": {
+              "color": "#39dff2"
+            },
+            "net-thermostat-temperature": {
+              "color": "#a8ff3f"
+            }
+          },
+          "viewport": {
+            "zoom": 0.95,
+            "panX": 0,
+            "panY": 0
+          }
+        },
+        "instruments": {
+          "logicChannels": [
+            "D2",
+            "D13"
+          ],
+          "selectedPin": "D13",
+          "serial": {
+            "baud": 9600,
+            "encoding": "utf-8",
+            "historyLimit": 512
+          }
+        },
+        "artifact": {
+          "schema": "intent-mcu-project-artifact-ref@1",
+          "status": "dirty",
+          "profile": null,
+          "inputIdentitySha256": null,
+          "artifactIdentitySha256": null
+        }
+      },
+      "candidateCircuit": {
+        "schema": "teach-lab-circuit@2",
+        "components": [
+          {
+            "id": "board-1",
+            "type": "board.atmega328p-16mhz-v1",
+            "label": "ATmega328P thermostat controller",
+            "properties": {},
+            "controls": {}
+          },
+          {
+            "id": "enable-button-1",
+            "type": "button.momentary-v1",
+            "label": "Enable heating button",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "heater-led-1",
+            "type": "led.basic-v1",
+            "label": "Heater command indicator",
+            "properties": {
+              "color": "red"
+            },
+            "controls": {}
+          },
+          {
+            "id": "heater-resistor-1",
+            "type": "resistor.fixed-v1",
+            "label": "Heater indicator 220 Ω",
+            "properties": {
+              "ohms": 220
+            },
+            "controls": {}
+          },
+          {
+            "id": "temperature-sensor-1",
+            "type": "sensor.temperature-analogue-v1",
+            "label": "Ideal room-temperature input",
+            "properties": {},
+            "controls": {
+              "temperatureC": 30
+            }
+          }
+        ],
+        "nets": [
+          {
+            "id": "net-thermostat-5v",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "5V"
+              },
+              {
+                "component": "temperature-sensor-1",
+                "pin": "VCC"
+              }
+            ]
+          },
+          {
+            "id": "net-thermostat-enable",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D2"
+              },
+              {
+                "component": "enable-button-1",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-thermostat-ground",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "GND1"
+              },
+              {
+                "component": "enable-button-1",
+                "pin": "B"
+              },
+              {
+                "component": "heater-led-1",
+                "pin": "CATHODE"
+              },
+              {
+                "component": "temperature-sensor-1",
+                "pin": "GND"
+              }
+            ]
+          },
+          {
+            "id": "net-thermostat-heater-drive",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D13"
+              },
+              {
+                "component": "heater-resistor-1",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-thermostat-heater-led",
+            "endpoints": [
+              {
+                "component": "heater-led-1",
+                "pin": "ANODE"
+              },
+              {
+                "component": "heater-resistor-1",
+                "pin": "B"
+              }
+            ]
+          },
+          {
+            "id": "net-thermostat-temperature",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "A1"
+              },
+              {
+                "component": "temperature-sensor-1",
+                "pin": "AOUT"
+              }
+            ]
+          }
+        ],
+        "junctions": [
+          {
+            "id": "junction-thermostat-ground-button",
+            "net": "net-thermostat-ground"
+          },
+          {
+            "id": "junction-thermostat-ground-sensor",
+            "net": "net-thermostat-ground"
+          }
+        ]
+      },
+      "candidateLayout": {
+        "schema": "intent-mcu-candidate-layout@1",
+        "positions": {
+          "board-1": {
+            "x": 0.3,
+            "y": 0.46,
+            "rotation": 0
+          },
+          "enable-button-1": {
+            "x": 0.58,
+            "y": 0.78,
+            "rotation": 0
+          },
+          "heater-led-1": {
+            "x": 0.83,
+            "y": 0.28,
+            "rotation": 0
+          },
+          "heater-resistor-1": {
+            "x": 0.62,
+            "y": 0.27,
+            "rotation": 0
+          },
+          "temperature-sensor-1": {
+            "x": 0.14,
+            "y": 0.8,
+            "rotation": 0
+          }
+        },
+        "wireRoutes": {},
+        "viewport": {
+          "zoom": 0.95,
+          "panX": 0,
+          "panY": 0
+        }
+      },
+      "compiledFixture": {
+        "schema": "intent-mcu-compiled-fixture-ref@1",
+        "id": "button-pullup",
+        "profile": "board.atmega328p-16mhz-v1",
+        "toolchainImageId": "sha256:f04aa7a8c37699d16a965fb374870ff147ca776ba6386f81e7700e350ed3d89f",
+        "source": {
+          "sha256": "84ceea4f298483f4696a3672ac1fff97b046b9e35c65aaa6155b20140a66f518",
+          "bytes": 209
+        },
+        "executable": {
+          "format": "intel-hex",
+          "sha256": "247f94bb051e9eebb4dfe8099278d810e04ccbf097f1b3ddb53b904e26ea8ebc",
+          "bytes": 2525
+        },
+        "debug": {
+          "format": "elf",
+          "sha256": "23a37eff7f7c5b1d0626e12a3f31e00d9b79466eab374cd0d74c46e3667150bd",
+          "bytes": 14632
+        },
+        "artifactIdentitySha256": "69ad0bc87ba02a2d33ac4c5ba1d9bd07e28636b631cd007f4b9423889e76bd3b"
+      }
+    }
+  },
+  "expectation": {
+    "schema": "intent-mcu-expectation-reference@1",
+    "profile": "board.atmega328p-16mhz-v1",
+    "experimentId": "avr-thermostat-boundary-v1",
+    "originProjectSha256": "de6dcc0d95a432dad5fafada993dc7ab5e32e75771395f101a942c02f9ce38a5",
+    "acceptanceCriteria": [],
+    "boundaryCases": [],
+    "scenarioTimeline": {
+      "schema": "intent-mcu-scenario-timeline@1",
+      "profile": "board.atmega328p-16mhz-v1",
+      "experimentId": "avr-thermostat-boundary-v1",
+      "scenarios": [
+        {
+          "id": "THERM-SCENARIO-BELOW-ENABLED",
+          "name": "Below · enabled",
+          "events": [
+            {
+              "id": "THERM-SCENARIO-BELOW-ENABLED-TEMP",
+              "atMilliseconds": 0,
+              "kind": "input.temperature-c",
+              "componentId": "temperature-sensor-1",
+              "valueC": 30
+            },
+            {
+              "id": "THERM-SCENARIO-BELOW-ENABLED-BUTTON",
+              "atMilliseconds": 0,
+              "kind": "input.button-pressed",
+              "componentId": "enable-button-1",
+              "pressed": true
+            },
+            {
+              "id": "THERM-SCENARIO-BELOW-ENABLED-D13",
+              "atMilliseconds": 160,
+              "kind": "expect.pin-level",
+              "throughMilliseconds": 350,
+              "pin": "D13",
+              "level": true
+            }
+          ]
+        },
+        {
+          "id": "THERM-SCENARIO-EQUALITY-ENABLED",
+          "name": "Equality · enabled",
+          "events": [
+            {
+              "id": "THERM-SCENARIO-EQUALITY-ENABLED-TEMP",
+              "atMilliseconds": 0,
+              "kind": "input.temperature-c",
+              "componentId": "temperature-sensor-1",
+              "valueC": 31
+            },
+            {
+              "id": "THERM-SCENARIO-EQUALITY-ENABLED-BUTTON",
+              "atMilliseconds": 0,
+              "kind": "input.button-pressed",
+              "componentId": "enable-button-1",
+              "pressed": true
+            },
+            {
+              "id": "THERM-SCENARIO-EQUALITY-ENABLED-D13",
+              "atMilliseconds": 160,
+              "kind": "expect.pin-level",
+              "throughMilliseconds": 350,
+              "pin": "D13",
+              "level": false
+            }
+          ]
+        },
+        {
+          "id": "THERM-SCENARIO-ABOVE-ENABLED",
+          "name": "Above · enabled",
+          "events": [
+            {
+              "id": "THERM-SCENARIO-ABOVE-ENABLED-TEMP",
+              "atMilliseconds": 0,
+              "kind": "input.temperature-c",
+              "componentId": "temperature-sensor-1",
+              "valueC": 32
+            },
+            {
+              "id": "THERM-SCENARIO-ABOVE-ENABLED-BUTTON",
+              "atMilliseconds": 0,
+              "kind": "input.button-pressed",
+              "componentId": "enable-button-1",
+              "pressed": true
+            },
+            {
+              "id": "THERM-SCENARIO-ABOVE-ENABLED-D13",
+              "atMilliseconds": 160,
+              "kind": "expect.pin-level",
+              "throughMilliseconds": 350,
+              "pin": "D13",
+              "level": false
+            }
+          ]
+        },
+        {
+          "id": "THERM-SCENARIO-BELOW-DISABLED",
+          "name": "Below · disabled",
+          "events": [
+            {
+              "id": "THERM-SCENARIO-BELOW-DISABLED-TEMP",
+              "atMilliseconds": 0,
+              "kind": "input.temperature-c",
+              "componentId": "temperature-sensor-1",
+              "valueC": 30
+            },
+            {
+              "id": "THERM-SCENARIO-BELOW-DISABLED-BUTTON",
+              "atMilliseconds": 0,
+              "kind": "input.button-pressed",
+              "componentId": "enable-button-1",
+              "pressed": false
+            },
+            {
+              "id": "THERM-SCENARIO-BELOW-DISABLED-D13",
+              "atMilliseconds": 160,
+              "kind": "expect.pin-level",
+              "throughMilliseconds": 350,
+              "pin": "D13",
+              "level": false
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "report": {
+    "schema": "intent-mcu-authored-scenario-report@1",
+    "profile": "board.atmega328p-16mhz-v1",
+    "experimentId": "avr-thermostat-boundary-v1",
+    "projectSha256": "de6dcc0d95a432dad5fafada993dc7ab5e32e75771395f101a942c02f9ce38a5",
+    "expectationSha256": "23e2eb7f145576991129a9e08480e00b58db5ef7d1a45d80c87486571c1a0e8e",
+    "artifactIdentitySha256": "1501248cde92e96d417ae24a6f9e9a5a82faa057dabfdd97fbe5bc922b42100c",
+    "sourceVariant": "correct",
+    "resultCount": 4,
+    "aggregate": {
+      "academicStatus": "passed",
+      "jobStatus": "completed",
+      "evidenceStatus": "complete",
+      "reasons": []
+    },
+    "results": [
+      {
+        "scenarioId": "THERM-SCENARIO-BELOW-ENABLED",
+        "academicStatus": "passed",
+        "jobStatus": "completed",
+        "evidenceStatus": "complete",
+        "reasons": [],
+        "virtualMilliseconds": 250.7388125,
+        "expected": {
+          "pin": "D13",
+          "level": true,
+          "windowStartMilliseconds": 160,
+          "windowEndMilliseconds": 350
+        },
+        "observed": {
+          "pin": "D13",
+          "mode": "OUTPUT",
+          "level": true,
+          "windowStartMilliseconds": 160,
+          "windowEndMilliseconds": 350
+        },
+        "checks": {
+          "timeInWindow": true,
+          "inputsComplete": true,
+          "pinObserved": true,
+          "primaryExecutedPin": true,
+          "faultRequestsComplete": true,
+          "faultProducerEvidenceComplete": true,
+          "faultBehaviorMatched": true
+        },
+        "retention": {
+          "inputEventsDropped": 0,
+          "serialEventsDropped": 0
+        }
+      },
+      {
+        "scenarioId": "THERM-SCENARIO-EQUALITY-ENABLED",
+        "academicStatus": "passed",
+        "jobStatus": "completed",
+        "evidenceStatus": "complete",
+        "reasons": [],
+        "virtualMilliseconds": 250.750875,
+        "expected": {
+          "pin": "D13",
+          "level": false,
+          "windowStartMilliseconds": 160,
+          "windowEndMilliseconds": 350
+        },
+        "observed": {
+          "pin": "D13",
+          "mode": "OUTPUT",
+          "level": false,
+          "windowStartMilliseconds": 160,
+          "windowEndMilliseconds": 350
+        },
+        "checks": {
+          "timeInWindow": true,
+          "inputsComplete": true,
+          "pinObserved": true,
+          "primaryExecutedPin": true,
+          "faultRequestsComplete": true,
+          "faultProducerEvidenceComplete": true,
+          "faultBehaviorMatched": true
+        },
+        "retention": {
+          "inputEventsDropped": 0,
+          "serialEventsDropped": 0
+        }
+      },
+      {
+        "scenarioId": "THERM-SCENARIO-ABOVE-ENABLED",
+        "academicStatus": "passed",
+        "jobStatus": "completed",
+        "evidenceStatus": "complete",
+        "reasons": [],
+        "virtualMilliseconds": 226.4881875,
+        "expected": {
+          "pin": "D13",
+          "level": false,
+          "windowStartMilliseconds": 160,
+          "windowEndMilliseconds": 350
+        },
+        "observed": {
+          "pin": "D13",
+          "mode": "OUTPUT",
+          "level": false,
+          "windowStartMilliseconds": 160,
+          "windowEndMilliseconds": 350
+        },
+        "checks": {
+          "timeInWindow": true,
+          "inputsComplete": true,
+          "pinObserved": true,
+          "primaryExecutedPin": true,
+          "faultRequestsComplete": true,
+          "faultProducerEvidenceComplete": true,
+          "faultBehaviorMatched": true
+        },
+        "retention": {
+          "inputEventsDropped": 0,
+          "serialEventsDropped": 0
+        }
+      },
+      {
+        "scenarioId": "THERM-SCENARIO-BELOW-DISABLED",
+        "academicStatus": "passed",
+        "jobStatus": "completed",
+        "evidenceStatus": "complete",
+        "reasons": [],
+        "virtualMilliseconds": 242.662625,
+        "expected": {
+          "pin": "D13",
+          "level": false,
+          "windowStartMilliseconds": 160,
+          "windowEndMilliseconds": 350
+        },
+        "observed": {
+          "pin": "D13",
+          "mode": "OUTPUT",
+          "level": false,
+          "windowStartMilliseconds": 160,
+          "windowEndMilliseconds": 350
+        },
+        "checks": {
+          "timeInWindow": true,
+          "inputsComplete": true,
+          "pinObserved": true,
+          "primaryExecutedPin": true,
+          "faultRequestsComplete": true,
+          "faultProducerEvidenceComplete": true,
+          "faultBehaviorMatched": true
+        },
+        "retention": {
+          "inputEventsDropped": 0,
+          "serialEventsDropped": 0
+        }
+      }
+    ],
+    "completeness": {
+      "scenariosExpected": 4,
+      "scenariosReported": 4,
+      "allEvidenceComplete": true,
+      "anyDataLoss": false,
+      "observedFromMilliseconds": 160,
+      "observedThroughMilliseconds": 350
+    },
+    "authority": {
+      "executable": false,
+      "runtime": false,
+      "verdict": false
+    }
+  },
+  "manifest": {
+    "schema": "intent-mcu-experiment-manifest@2",
+    "sourceSha256": "69440c9b823162ecd3d23f53cc7e8e4f7ad1bd1861a7a7aa693dff65570efccb",
+    "circuitSha256": "133b37325c7c612af63e2e5848af339f4e708b03588d1b03febedeb57829d2f0",
+    "scenarioSha256": "b62f748403dc422efbb0e3253e174a655640b88357b8598418f780abd00d1d06",
+    "testSha256": "23e2eb7f145576991129a9e08480e00b58db5ef7d1a45d80c87486571c1a0e8e",
+    "artifactSha256": "1501248cde92e96d417ae24a6f9e9a5a82faa057dabfdd97fbe5bc922b42100c",
+    "models": [
+      {
+        "componentType": "board.atmega328p-16mhz-v1",
+        "componentVersion": 1,
+        "modelId": "model.atmega328p-board-v1",
+        "modelVersion": 1
+      },
+      {
+        "componentType": "button.momentary-v1",
+        "componentVersion": 1,
+        "modelId": "model.button-momentary-no-v1",
+        "modelVersion": 1
+      },
+      {
+        "componentType": "led.basic-v1",
+        "componentVersion": 1,
+        "modelId": "model.led-current-v1",
+        "modelVersion": 1
+      },
+      {
+        "componentType": "potentiometer.linear-v1",
+        "componentVersion": 1,
+        "modelId": "model.pot-divider-v1",
+        "modelVersion": 1
+      },
+      {
+        "componentType": "resistor.fixed-v1",
+        "componentVersion": 1,
+        "modelId": "model.resistor-fixed-v1",
+        "modelVersion": 1
+      }
+    ],
+    "modelsSha256": "4b21921404d045342a04c9eb7d4e8af13e927b88639cd4640b5edfcaf3e57c74",
+    "tools": {
+      "compiler": {
+        "profile": "board.atmega328p-16mhz-v1",
+        "imageId": "sha256:62e4324594b63e88b17052a17eb9edf52593aff7d907647bc1e9c2fd809fbc74",
+        "manifestSha256": "098e57cc2da7f46f0abea657a33473ef7c2a3c2f556152640fb4862ad4de53d2",
+        "versions": [
+          {
+            "id": "arduino-cli",
+            "version": "1.5.1",
+            "role": "compiler-driver",
+            "sourceSha256": "28a8e119c498a25607821c36cb2dc49e8463941b261a0d99091baa7bc692dd2b"
+          },
+          {
+            "id": "arduino-avr-core",
+            "version": "1.8.8",
+            "role": "framework",
+            "sourceSha256": "a234c2a43dcd01ce54be665806f183b8e6ec4e966d2e3e0c3358b63023d6390c"
+          },
+          {
+            "id": "avr-gcc",
+            "version": "7.3.0-atmel3.6.1-arduino7",
+            "role": "compiler",
+            "sourceSha256": "bd8c37f6952a2130ac9ee32c53f6a660feb79bee8353c8e289eb60fdcefed91e"
+          }
+        ]
+      },
+      "runtime": {
+        "id": "avr8js",
+        "version": "0.21.1",
+        "role": "runtime",
+        "identitySchema": "intent-mcu-worker-runtime-identity@2"
+      }
+    },
+    "toolsSha256": "62054b0f4af3fadb4b7311eea041c31b8c08ca5a4f57372ce93acd52cf4818ad",
+    "modelLibrary": {
+      "schema": "intent-mcu-model-library-lock@2",
+      "libraryId": "intent-mcu-public-models",
+      "version": "2.0.0-x56-current",
+      "manifestSha256": "5c94ce070526d2e7e417fed0cb152fc28bdea24ee9beb52c65488328d41eac0b",
+      "implementationSha256": "4e0fc926236de5edda6b3e85c3770b709a4ae3643d47b8cd9b3138c4c1b61633"
+    },
+    "modelExecutionContextSha256": "a6cfeb4af11c60a0fc80a044ac14144bd8c0d7ca75b99ae11d3e0462536a084b",
+    "manifestSha256": "573037019b9a9c81e8165e591dbbc4d7da5561bb3177d181305d2c0d91c92e5d"
+  },
+  "bindings": {
+    "projectSha256": "de6dcc0d95a432dad5fafada993dc7ab5e32e75771395f101a942c02f9ce38a5",
+    "expectationSha256": "23e2eb7f145576991129a9e08480e00b58db5ef7d1a45d80c87486571c1a0e8e",
+    "reportSha256": "b5c35e30b9ceb344466968c888482d8e55ac2a67dba86dfd9d32204ad42b96b7",
+    "manifestSha256": "573037019b9a9c81e8165e591dbbc4d7da5561bb3177d181305d2c0d91c92e5d"
+  },
+  "limitations": [
+    "Automatic executable, runtime, capability, session, file-handle and credential fields are excluded; human-authored source and descriptions still require the user to review their own text for sensitive content.",
+    "This file is created as a local browser download. The package feature does not upload or store it on the server.",
+    "SHA-256 values bind member bytes for identity and integrity; they do not prove that a measurement or claim is true.",
+    "The report is review evidence only. It cannot restore firmware, a runtime, a green state or a requirement verdict.",
+    "Version 2 supports only the current AVR thermostat authored-scenario workflow and binds seven identity classes in its manifest."
+  ]
+}

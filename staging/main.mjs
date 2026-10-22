@@ -365,6 +365,10 @@ import {
   createExperimentPackage,
   parseExperimentPackage,
 } from '../src/experiment-package.mjs';
+import {
+  GUIDED_EXPERIMENT_REPLAY_SCHEMA,
+  createGuidedExperimentReplay,
+} from '../src/guided-experiment-replay.mjs';
 import { compareDesignAlternatives, DESIGN_COMPARISON_SCHEMA } from '../src/design-comparison.mjs';
 import {
   DOMAIN_REQUEST_SCHEMA,
@@ -519,6 +523,11 @@ const elements = Object.fromEntries([
   'experiment-package-comparison-status', 'experiment-package-comparison-review',
   'experiment-package-comparison-identities', 'experiment-package-comparison-source',
   'experiment-package-comparison-circuit', 'experiment-package-comparison-results',
+  'guided-replay-open', 'guided-replay-input', 'guided-replay-dialog', 'guided-replay-title',
+  'guided-replay-close', 'guided-replay-status', 'guided-replay-identities',
+  'guided-replay-position', 'guided-replay-step-title', 'guided-replay-select',
+  'guided-replay-scenario-id', 'guided-replay-inputs', 'guided-replay-observation',
+  'guided-replay-explanation', 'guided-replay-previous', 'guided-replay-next',
   'design-comparison-create', 'design-comparison-summary', 'design-comparison-status',
   'design-comparison-alternatives', 'design-comparison-differences',
   'shared-domain-engine-inspect', 'shared-domain-engine-summary', 'shared-domain-engine-status',
@@ -9647,6 +9656,117 @@ function clearExperimentPackageComparison() {
   clearAcceptedExperimentPackageComparison();
   renderExperimentPackageComparisonSlotState();
 }
+
+let guidedReplayState = null;
+let guidedReplayIndex = 0;
+let guidedReplayGeneration = 0;
+
+function replayIdentityRows(replay) {
+  const values = [
+    ['Package SHA-256', replay.packageSha256],
+    ['Profile', replay.profile],
+    ['Experiment', replay.experimentId],
+    ['Source variant', replay.sourceVariant],
+    ['Project', `${replay.projectName} · ${replay.identities.projectSha256}`],
+    ['Source SHA-256', replay.identities.sourceSha256],
+    ['Circuit SHA-256', replay.identities.circuitSha256],
+    ['Model library', `${replay.identities.modelLibrary.version} · ${replay.identities.modelLibrary.manifestSha256}`],
+    ['Capture time', replay.capture.capturedAt ?? 'Unavailable — not recorded by this package version'],
+    ['Time basis', 'Virtual milliseconds'],
+    ['Completeness', replay.capture.completeness.allEvidenceComplete
+      ? `${replay.capture.completeness.scenariosReported}/${replay.capture.completeness.scenariosExpected} scenarios · complete`
+      : 'Indeterminate or incomplete'],
+  ];
+  return values.flatMap(([label, value]) => {
+    const term = document.createElement('dt'); term.textContent = label;
+    const definition = document.createElement('dd'); definition.textContent = String(value);
+    return [term, definition];
+  });
+}
+
+function replayObservationRows(step) {
+  const level = (value) => value ? 'HIGH' : 'LOW';
+  const values = [
+    ['Requirement IDs', step.requirementIds.length ? step.requirementIds.join(', ') : 'Unavailable — none recorded'],
+    ['Expected', `${step.expected.pin} ${level(step.expected.level)}`],
+    ['Observed', `${step.observed.pin} ${level(step.observed.level)} · ${step.observed.mode}`],
+    ['Observed at', `${step.observedAt} virtual ms`],
+    ['Window', `${step.expected.windowStartMilliseconds}–${step.expected.windowEndMilliseconds} virtual ms`],
+    ['Recorded outcome', step.recordedOutcome],
+    ['Evidence', step.evidenceStatus],
+  ];
+  return values.flatMap(([label, value]) => {
+    const term = document.createElement('dt'); term.textContent = label;
+    const definition = document.createElement('dd'); definition.textContent = String(value);
+    return [term, definition];
+  });
+}
+
+function renderGuidedReplayStep(index, focus = false) {
+  if (!guidedReplayState) return;
+  const steps = guidedReplayState.replay.steps;
+  guidedReplayIndex = Math.max(0, Math.min(index, steps.length - 1));
+  const step = steps[guidedReplayIndex];
+  elements.guidedreplayposition.textContent = `${step.beginning ? 'Beginning · ' : ''}Step ${step.number} of ${step.total}${step.end ? ' · End' : ''}`;
+  elements.guidedreplaysteptitle.textContent = step.scenarioName;
+  elements.guidedreplayscenarioid.textContent = `Scenario ID: ${step.scenarioId}`;
+  elements.guidedreplayselect.value = String(guidedReplayIndex);
+  elements.guidedreplayinputs.replaceChildren(...step.inputs.map((input) => {
+    const item = document.createElement('li');
+    item.textContent = `${input.id} · ${input.componentId} · ${input.text}`;
+    return item;
+  }));
+  elements.guidedreplayobservation.replaceChildren(...replayObservationRows(step));
+  elements.guidedreplayexplanation.dataset.outcome = step.recordedOutcome;
+  elements.guidedreplayexplanation.textContent = step.explanation;
+  elements.guidedreplayprevious.disabled = step.beginning;
+  elements.guidedreplaynext.disabled = step.end;
+  if (focus) elements.guidedreplaysteptitle.focus();
+}
+
+function renderGuidedReplay(result, fileName = 'local package') {
+  guidedReplayState = result;
+  guidedReplayIndex = 0;
+  elements.guidedreplayidentities.replaceChildren(...replayIdentityRows(result.replay));
+  elements.guidedreplayselect.replaceChildren(...result.replay.steps.map((step) => {
+    const option = document.createElement('option');
+    option.value = String(step.index); option.textContent = `${step.number}. ${step.scenarioName}`;
+    return option;
+  }));
+  elements.guidedreplayselect.disabled = false;
+  elements.guidedreplaystatus.textContent = `${fileName} accepted locally · ${result.replay.steps.length} recorded scenarios · aggregate ${result.replay.recordedAggregate.academicStatus}. No project or runtime authority was imported.`;
+  renderGuidedReplayStep(0);
+  if (!elements.guidedreplaydialog.open) elements.guidedreplaydialog.showModal();
+  elements.guidedreplaytitle.focus();
+}
+
+async function openGuidedReplaySource(source, fileName = 'local package') {
+  const generation = ++guidedReplayGeneration;
+  const result = await createGuidedExperimentReplay(source, commonProjectAdapters);
+  if (generation !== guidedReplayGeneration) return { ok: false, code: 'GUIDED_REPLAY_STALE_OPEN' };
+  if (!result.ok) {
+    elements.guidedreplaystatus.textContent = `Replay rejected (${result.code}). The active project and prior accepted replay are unchanged.`;
+    return result;
+  }
+  renderGuidedReplay(result, fileName);
+  return result;
+}
+
+async function openGuidedReplayFile(file) {
+  if (!file) return { ok: false, code: 'GUIDED_REPLAY_FILE_REQUIRED' };
+  if (file.size > EXPERIMENT_PACKAGE_LIMIT) {
+    elements.guidedreplaystatus.textContent = 'Replay rejected (INPUT_LIMIT). The active project and prior accepted replay are unchanged.';
+    return { ok: false, code: 'INPUT_LIMIT' };
+  }
+  let source;
+  try { source = await file.text(); }
+  catch {
+    elements.guidedreplaystatus.textContent = 'Replay rejected (GUIDED_REPLAY_READ_FAILED). The active project is unchanged.';
+    return { ok: false, code: 'GUIDED_REPLAY_READ_FAILED' };
+  }
+  return openGuidedReplaySource(source, file.name);
+}
+
 function renderExpectationReference() {
   const supported = selectedCompilerProfile === AVR_PROFILE && thermostatProjectActive()
     && Boolean(scenarioTimelineEditor?.timeline);
@@ -9981,6 +10101,19 @@ elements.experimentpackageafterinput.addEventListener('change', () => {
 });
 elements.experimentpackagecompare.addEventListener('click', () => { void compareSelectedExperimentPackages(); });
 elements.experimentpackagecomparisonclear.addEventListener('click', clearExperimentPackageComparison);
+elements.guidedreplayopen.addEventListener('click', () => {
+  elements.guidedreplayinput.value = '';
+  elements.guidedreplayinput.click();
+});
+elements.guidedreplayinput.addEventListener('change', () => {
+  void openGuidedReplayFile(elements.guidedreplayinput.files[0] ?? null);
+});
+elements.guidedreplayclose.addEventListener('click', () => elements.guidedreplaydialog.close('close'));
+elements.guidedreplayselect.addEventListener('change', () => {
+  renderGuidedReplayStep(Number(elements.guidedreplayselect.value), true);
+});
+elements.guidedreplayprevious.addEventListener('click', () => renderGuidedReplayStep(guidedReplayIndex - 1, true));
+elements.guidedreplaynext.addEventListener('click', () => renderGuidedReplayStep(guidedReplayIndex + 1, true));
 elements.authoredchangereviewshowsource.addEventListener('click', () => {
   const first = elements.authoredchangereviewdiffs.querySelector('details');
   if (!first) return;
@@ -10036,6 +10169,16 @@ window.__EXPERIMENT_PACKAGE_COMPARISON__ = Object.freeze({
   }),
 });
 clearExperimentPackageComparison();
+window.__X69_GUIDED_REPLAY__ = Object.freeze({
+  schema: GUIDED_EXPERIMENT_REPLAY_SCHEMA,
+  openText: (source, fileName = 'local package') => openGuidedReplaySource(source, fileName),
+  select: (index) => { renderGuidedReplayStep(index); return guidedReplayIndex; },
+  state: () => guidedReplayState ? {
+    replay: structuredClone(guidedReplayState.replay),
+    index: guidedReplayIndex,
+    dialogOpen: elements.guidedreplaydialog.open,
+  } : null,
+});
 window.__AUTHORED_CHANGE_REVIEW__ = Object.freeze({
   schema: AUTHORED_CHANGE_REVIEW_SCHEMA,
   state: () => pendingAuthoredChangeReview ? structuredClone(pendingAuthoredChangeReview) : null,

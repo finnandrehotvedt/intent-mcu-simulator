@@ -91,6 +91,8 @@
     "test:x56:browser": "node test/x56-model-library-browser.cjs",
     "test:x67": "node --test --test-concurrency=1 test/x67-experiment-package.test.mjs test/scenario-timeline.test.mjs test/expectation-reference.test.mjs test/project-envelope.test.mjs",
     "test:x67:browser": "node test/x67-experiment-package-browser.cjs",
+    "test:x69": "node --test --test-concurrency=1 test/x69-guided-experiment-replay.test.mjs test/x67-experiment-package.test.mjs",
+    "test:x69:browser": "node test/x69-guided-experiment-replay-browser.cjs",
     "test:x85": "node --test --test-concurrency=1 test/x85-no-shared-artifact-cache.test.mjs test/external-client-jobs.test.mjs test/gateway-unit.test.mjs",
     "test:x85:browser": "node test/x85-no-shared-artifact-cache-browser.cjs",
     "test:x83": "node --test --test-concurrency=1 test/x83-fair-access-retry.test.mjs test/external-client-results.test.mjs test/gateway-unit.test.mjs",
