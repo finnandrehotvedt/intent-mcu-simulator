@@ -536,7 +536,7 @@ export function createX92BudgetedExecutor({
     runtimeBoundary = boundary;
     boundary.promise = Promise.resolve().then(() => quiesceRuntime({
       request: clone(request), dispatchToken: gate.token, reservation: clone(reference),
-      identity: clone(reference.binding), reason,
+      identity: clone(reference.binding), reason, deadlineAt: gate.deadlineAt,
     })).then((ack) => {
       if (!validQuiescenceAck(ack, request, reference.binding, reason, gate)) {
         boundary.status = 'blocked'; boundary.code = 'X92_RUNTIME_QUIESCENCE_ACK_INVALID';
@@ -582,7 +582,7 @@ export function createX92BudgetedExecutor({
     }
     if (!budget.active()) return downstream.execute(source);
     if (!['firmware.build', 'runtime.run'].includes(request.action)) return downstream.execute(source);
-    if (request.action === 'runtime.run' && request.profile !== 'board.atmega328p-16mhz-v1') {
+    if (request.action === 'runtime.run' && !['board.atmega328p-16mhz-v1', 'board.rp2040-pico-v1'].includes(request.profile)) {
       return { ok: false, schema: X92_RESULT_SCHEMA, code: 'X92_RUNTIME_QUIESCENCE_UNPROVEN_PROFILE',
         executed: false, authority: clone(X92_NO_AUTHORITY), profile: request.profile };
     }
@@ -622,6 +622,7 @@ export function createX92BudgetedExecutor({
       }
       gate.status = 'producer-active'; gate.code = 'X92_DISPATCH_ACTIVE';
       started = now();
+      gate.deadlineAt = started + reserved.deadlineAfterMs;
       downstreamPromise = Promise.resolve().then(() => downstream.execute(source));
       timer = schedule(() => {
       deadlineTriggered = true;

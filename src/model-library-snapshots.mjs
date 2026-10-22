@@ -97885,7 +97885,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "7b4e159f0a17701b897c770093a974d88c59465a23bdad99efac79c0253f64ad"
+      "sha256": "cba654d52bd40ec835817698a7f58368a6cdb769d90f15e6f337ed0c7fa18afe"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -97933,7 +97933,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/rp2040-public-workbench.mjs",
-      "sha256": "236d85f799407d973f38c4c375c498a4d302bacc607077883310c2374f608483"
+      "sha256": "0405ed75177980e86b2b709dc80a0b4db6649c518d516ad96e450944fb154e44"
     },
     {
       "path": "src/esp32c3-public-workbench.mjs",
@@ -98016,7 +98016,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "4185a932910979fc255b93e6d4d0b5d02bc30a0da963ff290f034e128971f8f9"
     }
   ],
-  "implementationSha256": "468fa16f86a379badca3b25ffb5f9385e54fbfeb5d29d04d3e3466c347a5f89e",
+  "implementationSha256": "1926bd68b5477abb04f191b807a1e7b0e6d0023d3f8bffb8a923f8af788dc096",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.111 and every earlier identity remain immutable and migration-only; this is a private source-integration candidate with zero native producer authority",
@@ -98026,7 +98026,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x66-public-thermostat-create-fix.1-current",
     "semanticDisposition": "component semantics remain unchanged; X48 adds one explicit bounded ideal-room control-loop owner bound to exact source, graph, plant, artifact, model and worker identities"
   },
-  "manifestSha256": "06132eb96862ae5b58279c9d7ed3add641dfa11c7ade6716a84ceb8a25540b5f",
+  "manifestSha256": "e904a7bb74935fc319781fd9f829505a1461eb20aeaa6249200c7ad812e5e233",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

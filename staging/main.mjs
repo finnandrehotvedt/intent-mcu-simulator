@@ -8698,7 +8698,7 @@ function x92RuntimeQuiescenceAck(request, dispatchToken, identity, producerState
     evidence: structuredClone(evidence),
   };
 }
-async function quiesceX92Runtime({ request, dispatchToken, identity, reason }) {
+async function quiesceX92Runtime({ request, dispatchToken, identity, reason, deadlineAt }) {
   const profile = request.profile;
   if (profile === AVR_PROFILE) {
     const targetWorker = worker;
@@ -8754,13 +8754,11 @@ async function quiesceX92Runtime({ request, dispatchToken, identity, reason }) {
     });
   }
   if (profile === RP2040_PROFILE) {
-    picoPublicWorkbench.pause();
-    const state = await waitForActionEvidence(() => {
-      const candidate = picoPublicWorkbench.snapshot();
-      return candidate.runtime?.paused === true ? candidate : null;
-    }, new AbortController().signal, 2_000);
+    const proof = await picoPublicWorkbench.pauseForBudget({
+      deadlineAt, requestId: request.requestId, dispatchToken,
+    });
     return x92RuntimeQuiescenceAck(request, dispatchToken, identity, 'paused', {
-      reason, revision: state.revision, cycleAfter: state.runtime?.cycle ?? null,
+      reason, ownerProof: proof,
     });
   }
   if (profile === ESP32C3_PROFILE) {
