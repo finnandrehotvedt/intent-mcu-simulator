@@ -25,6 +25,7 @@ import {
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X92_DISPATCH_GATE_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X92_RUNTIME_LIFETIME_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X92_REVIEW_FIX_CURRENT_MODEL_LIBRARY_LOCK,
@@ -174,7 +175,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
   for (const [lock, expected] of [
     [RETAINED_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-retained-rc72@2'],
     [CURRENT_MODEL_LIBRARY_LOCK,
-      'intent-mcu-model-bundle-current-x92-dispatch-gate-fix-1@28'],
+      'intent-mcu-model-bundle-current-x66-existing-net-labels-1@31'],
   ]) {
     const avr = validateCircuit(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
     assert.equal(avr.ok, true);
@@ -199,7 +200,11 @@ test('production electrical and runtime paths dispatch through the exact selecte
 
 test('prior current locks remain exact and data-migratable but cannot authorize execution', () => {
   const historical = historicalModelLibraryManifests();
-  assert.equal(historical.length, 25);
+  assert.equal(historical.length, 26);
+  assert.equal(normalizeModelLibraryLock(PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
+  assert.equal(modelLibraryExecutionIdentity(
+    PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_LOCK,
+  ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
   assert.equal(normalizeModelLibraryLock(PRE_X92_DISPATCH_GATE_FIX_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
   assert.equal(modelLibraryExecutionIdentity(
     PRE_X92_DISPATCH_GATE_FIX_CURRENT_MODEL_LIBRARY_LOCK,
@@ -285,7 +290,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(repeatableMigration.semanticChanges.length, 0);
   assert.equal(repeatableMigration.rendererChanges.length, 0);
   assert.equal(repeatableMigration.unchanged.length, 25);
-  const preHotpath = historical[6];
+  const preHotpath = historical[7];
   assert.equal(preHotpath.version, '2.0.0-x43-observed-stack-candidate.1-current');
   assert.equal(normalizeModelLibraryLock(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
   assert.equal(modelLibraryExecutionIdentity(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_LOCK).code,
@@ -296,7 +301,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(hotpathMigration.rendererChanges.length, 0);
   assert.equal(hotpathMigration.unchanged.length, 25);
 
-  const preStack = historical[7];
+  const preStack = historical[8];
   assert.equal(preStack.version, '2.0.0-ux-public-isolation.1-current');
   assert.equal(normalizeModelLibraryLock(PRE_X43_STACK_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
   assert.equal(modelLibraryExecutionIdentity(PRE_X43_STACK_CURRENT_MODEL_LIBRARY_LOCK).code,
@@ -307,7 +312,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(stackMigration.rendererChanges.length, 0);
   assert.equal(stackMigration.unchanged.length, 25);
 
-  const preControlLabel = historical[8];
+  const preControlLabel = historical[9];
   assert.equal(preControlLabel.version, '2.0.0-x55-resistor-appearance.1-current');
   assert.equal(preControlLabel.manifestSha256,
     '5e778f334ccae4ef914927d22675176315ac589a22695f7e500ee32c2f419806');
@@ -322,7 +327,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(controlLabelMigration.rendererChanges.length, 0);
   assert.equal(controlLabelMigration.unchanged.length, 25);
 
-  const preX55 = historical[9];
+  const preX55 = historical[10];
   assert.equal(preX55.version, '2.0.0-x47-ui-async-epoch.1-current');
   assert.equal(normalizeModelLibraryLock(PRE_X55_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
   assert.equal(modelLibraryExecutionIdentity(PRE_X55_CURRENT_MODEL_LIBRARY_LOCK).code,
@@ -333,7 +338,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(x55Migration.rendererChanges.length, 0);
   assert.equal(x55Migration.unchanged.length, 25);
 
-  const prior = historical[10];
+  const prior = historical[11];
   assert.equal(prior.version, '2.0.0-x56-current');
   assert.equal(prior.manifestSha256, '5c94ce070526d2e7e417fed0cb152fc28bdea24ee9beb52c65488328d41eac0b');
   assert.equal(prior.implementationSha256, '4e0fc926236de5edda6b3e85c3770b709a4ae3643d47b8cd9b3138c4c1b61633');
@@ -347,7 +352,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(migration.rendererChanges.length, 0);
   assert.equal(migration.unchanged.length, 25);
 
-  const preX47 = historical[11];
+  const preX47 = historical[12];
   assert.equal(preX47.version, '2.0.0-pico-presentation.1-current');
   assert.equal(preX47.manifestSha256,
     '567aebbbf1885d31f9401fa3cf1ae98b7263d1b32f22a6b7886ec686b3c0dac3');
@@ -363,7 +368,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(x47Migration.rendererChanges.length, 0);
   assert.equal(x47Migration.unchanged.length, 25);
 
-  const preValidation = historical[12];
+  const preValidation = historical[13];
   assert.equal(preValidation.version, '2.0.0-x47-runtime-contract.1-current');
   assert.equal(preValidation.manifestSha256,
     '5e72951afde80c8f0217b6486c7ff2c2ca235dbe34b937a3170597e92cbb8f75');
@@ -378,7 +383,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(validationMigration.rendererChanges.length, 0);
   assert.equal(validationMigration.unchanged.length, 25);
 
-  const preUi = historical[13];
+  const preUi = historical[14];
   assert.equal(preUi.version, '2.0.0-x47-receipt-validation.1-current');
   assert.equal(preUi.manifestSha256,
     '49792e65a899ee8cb44818ecf2cbcccf5deb86153ac391d9a0600b6c96cd9756');
@@ -393,7 +398,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(uiMigration.rendererChanges.length, 0);
   assert.equal(uiMigration.unchanged.length, 25);
 
-  const preAsync = historical[14];
+  const preAsync = historical[15];
   assert.equal(preAsync.version, '2.0.0-x47-ui-integration.1-current');
   assert.equal(preAsync.manifestSha256,
     '3d3c5f0e53bc3f1c55c6fd5d84c9b8a73bd7444603c5fc0ff9cbdb00d76340d6');
@@ -408,7 +413,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(asyncMigration.rendererChanges.length, 0);
   assert.equal(asyncMigration.unchanged.length, 25);
 
-  const preUx = historical[15];
+  const preUx = historical[16];
   assert.equal(preUx.version, '2.0.0-x55-control-label-fix.1-current');
   assert.equal(preUx.manifestSha256,
     '92df2e0d8ab429a7baefd2b713ffbe52616f71bce63be030f416f490b80f23a1');

@@ -8,6 +8,7 @@ import test from 'node:test';
 
 import {
   CURRENT_MODEL_LIBRARY_MANIFEST,
+  PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X92_BUDGET_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X55_MODEL_COPY_FIX_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X55_SPLIT_EDITOR_CURRENT_MODEL_LIBRARY_MANIFEST,
@@ -23,12 +24,14 @@ import {
   PRE_X55_BODY_LEAD_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_LOCK,
   modelLibraryExecutionIdentity,
   modelLibraryMigrationPreview,
 } from '../src/model-library.mjs';
 
 const requiredOwners = [
   'src/component-appearance.mjs',
+  'src/canvas-annotations.mjs',
   'src/project-v2.mjs',
   'src/project-editor.mjs',
   'src/lifecycle.mjs',
@@ -38,7 +41,7 @@ const requiredOwners = [
   'staging/main.mjs',
 ];
 
-test('X92 current identity explicitly owns every previously accepted appearance path', async () => {
+test('X66 current identity explicitly owns every accepted presentation-data path', async () => {
   const members = new Map(CURRENT_MODEL_LIBRARY_MANIFEST.implementationMembers.map(
     (member) => [member.path, member.sha256],
   ));
@@ -59,6 +62,22 @@ test('X92 current identity explicitly owns every previously accepted appearance 
     const source = await readFile(new URL(`../${path}`, import.meta.url), 'utf8');
     assert.match(source, /component-appearance\.mjs/u, `${path} hides its X55 dependency`);
   }
+});
+
+test('pre-X66 teaching-review identity is immutable migration-only data', () => {
+  assert.equal(PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    '2.0.0-teaching-review-fix.1-current');
+  assert.equal(PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    'b715166034fca8e41af31f24826a65aff85757e1d00935838dca5303dd8da453');
+  assert.equal(modelLibraryExecutionIdentity(
+    PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_LOCK,
+  ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const preview = modelLibraryMigrationPreview(PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(preview.ok, true);
+  assert.equal(preview.migrationRequired, true);
+  assert.deepEqual(preview.semanticChanges, []);
+  assert.deepEqual(preview.rendererChanges, []);
+  assert.equal(preview.unchanged.length, 25);
 });
 
 test('private split-editor identity is immutable migration-only after model copy correction', () => {

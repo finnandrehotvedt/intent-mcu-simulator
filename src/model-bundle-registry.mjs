@@ -3,6 +3,7 @@
 
 import {
   CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   PRE_X92_DISPATCH_GATE_FIX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   PRE_X92_RUNTIME_LIFETIME_FIX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   PRE_X92_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
@@ -36,6 +37,9 @@ import { RETAINED_MODEL_LIBRARY_IMPLEMENTATION } from './model-library-retained-
 // complete allowlisted lock, then selects one of these finite static imports.
 export function productionModelBundle(role) {
   if (role === 'retained') return RETAINED_MODEL_LIBRARY_IMPLEMENTATION;
+  if (role === 'pre-x66-net-labels-current-migration') {
+    return PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION;
+  }
   if (role === 'pre-x92-dispatch-gate-fix-current-migration') {
     return PRE_X92_DISPATCH_GATE_FIX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION;
   }

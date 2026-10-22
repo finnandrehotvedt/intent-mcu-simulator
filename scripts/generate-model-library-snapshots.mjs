@@ -16,6 +16,9 @@ const { RETAINED_MODEL_LIBRARY_MANIFEST } = existingSnapshots;
 const PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_TEACHING_BATCH_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_TEACHING_BATCH_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -142,6 +145,7 @@ const entries = COMPONENT_SUPPORT_CELLS.filter((cell) => cell.available)
 
 const CURRENT_CLOSURE = Object.freeze([
   '../src/component-catalog.mjs', '../src/circuit-engine.mjs', '../src/runtime-kernel.mjs',
+  '../src/canvas-annotations.mjs',
   '../src/atmega328p-adapter.mjs', '../src/x43-avr-stack-profile.mjs',
   '../src/x47-runtime-transaction.mjs',
   '../src/x47-ui-integration.mjs', '../src/strict-json.mjs',
@@ -221,16 +225,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-teaching-review-fix.1-current',
-  'intent-mcu-model-bundle-current-teaching-review-fix-1@30',
+  '2.0.0-x66-existing-net-labels.1-current',
+  'intent-mcu-model-bundle-current-x66-existing-net-labels-1@31',
   currentImplementation,
   {
-    priorVersion: PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
-    compatibility: 'explicit-data-only-migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component electrical semantics are unchanged; annotation integrity, frozen presentation provenance, and parser-bound synthetic proof add no model or runtime authority',
-    presentationDisposition: 'private review fixes annotation persistence and histories, labels one frozen presentation snapshot, and narrows X92 test claims',
-    baselineClosureDisposition: 'the prior private teaching-batch identity and all earlier public identities remain immutable and migration-only',
+    priorVersion: PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
+    semanticDisposition: 'component electrical semantics, connectivity, runtime behavior, and verdict authority are unchanged; net labels bind only existing canonical net IDs',
+    presentationDisposition: 'private X66 adds inert existing-net label data and rendering; equal label text never merges, splits, connects, or retargets nets',
+    baselineClosureDisposition: 'the prior private teaching-review identity and all earlier identities remain immutable and migration-only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -266,6 +270,7 @@ export const PRE_X92_RUNTIME_LIFETIME_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Objec
 export const PRE_X92_DISPATCH_GATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X92_DISPATCH_GATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_TEACHING_BATCH_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_TEACHING_BATCH_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);
