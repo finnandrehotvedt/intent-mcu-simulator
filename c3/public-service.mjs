@@ -212,8 +212,10 @@ function wipeArtifact(session) {
   session.marker = null;
   session.gpioSource = null;
 }
-function ownedOperation(session, controller) {
+function ownedOperation(session, controller, { transportAuthenticated = false } = {}) {
   session.operationOutcome = null;
+  session.operationSequence += 1;
+  const operationId = `c3-operation-${session.operationSequence}`;
   let finished = false;
   let finish;
   const owner = {
@@ -226,6 +228,8 @@ function ownedOperation(session, controller) {
         processExited: error === null || error?.cleanupConfirmed === true,
         cleanupConfirmed: error === null || error?.cleanupConfirmed === true,
         code: error?.code ?? 'OPERATION_COMPLETE',
+        operationId,
+        transportAuthenticated,
       });
       session.operationOutcome = outcome;
       finish(outcome);
@@ -393,7 +397,8 @@ export function createC3PublicService({
     }
     const sourceSha256 = sha256(Buffer.from(parsed.source, 'utf8'));
     const controller = new AbortController();
-    const operation = ownedOperation(session, controller);
+    const operation = ownedOperation(session, controller,
+      { transportAuthenticated: builder === null });
     metrics.builds += 1;
     metrics.buildInFlight += 1;
     let output;
@@ -478,7 +483,8 @@ export function createC3PublicService({
     const generation = session.generation;
     const descriptor = session.descriptor;
     const controller = new AbortController();
-    const operation = ownedOperation(session, controller);
+    const operation = ownedOperation(session, controller,
+      { transportAuthenticated: runtime === null });
     session.state = 'running';
     metrics.runtimeInFlight += 1;
     metrics.runtimes += 1;
@@ -530,7 +536,8 @@ export function createC3PublicService({
         }
         const session = { id: token(12), capability: token(), origin, generation: 0,
           state: 'editing', flash: null, descriptor: null, sourceSha256: null,
-          gpioSource: null, marker: null, operation: null, operationOutcome: null, lastAccess: now() };
+          gpioSource: null, marker: null, operation: null, operationOutcome: null,
+          operationSequence: 0, lastAccess: now() };
         sessions.set(session.id, session);
         responseJson(response, 201, { ...publicState(session), capability: session.capability });
         return true;
@@ -580,10 +587,32 @@ export function createC3PublicService({
         const command = await bodyJson(request, limits.requestBytes);
         if (!exactKeys(command, ['schema', 'command', 'generation', 'profile', 'fqbn',
           'sourceSha256', 'artifactSha256', 'circuit']) || command.schema !== COMMAND_SCHEMA
-          || !['run', 'invalidate', 'dispose'].includes(command.command)
+          || !['run', 'quiesce', 'invalidate', 'dispose'].includes(command.command)
           || command.generation !== session.generation) throw fault('RUNTIME_COMMAND_INVALID');
         if (command.command === 'run') {
           responseJson(response, 200, await run(session, command));
+          return true;
+        }
+        if (command.command === 'quiesce') {
+          if (!session.flash || !session.descriptor
+              || command.sourceSha256 !== session.sourceSha256
+              || command.artifactSha256 !== session.descriptor.flash.sha256) {
+            throw fault('QUIESCENCE_IDENTITY_MISMATCH', 409);
+          }
+          const outcome = await retireOperation(session);
+          if (outcome.code === 'NO_OPERATION_OWNED' || outcome.transportAuthenticated !== true
+              || typeof outcome.operationId !== 'string') {
+            throw fault('OPERATION_RETIREMENT_UNPROVEN', 502);
+          }
+          session.operationOutcome = null;
+          session.state = 'quiescent';
+          responseJson(response, 200, {
+            schema: 'intent-mcu-c3-quiescence@1', sessionId: session.id,
+            generation: session.generation, sourceSha256: session.sourceSha256,
+            artifactSha256: session.descriptor.flash.sha256, operationId: outcome.operationId,
+            state: 'quiescent', retainedBytes: session.flash.length, artifactPreserved: true,
+            processExited: outcome.processExited, operationRetired: outcome.cleanupConfirmed,
+          });
           return true;
         }
         if (command.command === 'dispose') {

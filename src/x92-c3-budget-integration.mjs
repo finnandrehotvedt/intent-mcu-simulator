@@ -6,7 +6,7 @@ import { exactKeys } from './strict-json.mjs';
 
 export const X92_C3_BINDING_SCHEMA = 'intent-mcu-x92-c3-execution-binding@1';
 export const X92_C3_RESULT_SCHEMA = 'intent-mcu-x92-c3-private-result@1';
-export const X92_C3_RETIREMENT_SCHEMA = 'intent-mcu-c3-retirement@1';
+export const X92_C3_QUIESCENCE_SCHEMA = 'intent-mcu-c3-quiescence@1';
 const PROFILE = 'board.esp32-c3-devmodule-v1';
 const HASH = /^sha256:[a-f0-9]{64}$/u;
 const RAW_HASH = /^[a-f0-9]{64}$/u;
@@ -40,28 +40,30 @@ export function x92IdentityFromC3Binding(value) {
     graphIdentity: binding.graphIdentity });
 }
 
-function validRetirement(value, binding) {
+function validQuiescence(value, binding) {
   return value && typeof value === 'object' && !Array.isArray(value)
     && exactKeys(value, ['schema', 'sessionId', 'generation', 'sourceSha256', 'artifactSha256',
-      'state', 'retainedBytes', 'processExited', 'operationRetired'])
-    && value.schema === X92_C3_RETIREMENT_SCHEMA && value.sessionId === binding.sessionId
+      'operationId', 'state', 'retainedBytes', 'artifactPreserved', 'processExited', 'operationRetired'])
+    && value.schema === X92_C3_QUIESCENCE_SCHEMA && value.sessionId === binding.sessionId
     && value.generation === binding.generation
     && value.sourceSha256 === binding.sourceIdentity.slice(7)
     && value.artifactSha256 === binding.flashIdentity.slice(7)
     && RAW_HASH.test(value.sourceSha256) && RAW_HASH.test(value.artifactSha256)
-    && value.state === 'disposed' && value.retainedBytes === 0
+    && /^c3-operation-[1-9][0-9]*$/u.test(value.operationId ?? '')
+    && value.state === 'quiescent' && Number.isSafeInteger(value.retainedBytes) && value.retainedBytes > 0
+    && value.artifactPreserved === true
     && value.processExited === true && value.operationRetired === true;
 }
 
 function validResult(value, binding) {
   try {
     return value && typeof value === 'object' && !Array.isArray(value)
-    && exactKeys(value, ['schema', 'ok', 'code', 'executed', 'executionIdentity', 'uart', 'retirement'])
+    && exactKeys(value, ['schema', 'ok', 'code', 'executed', 'executionIdentity', 'uart', 'quiescence'])
     && value.schema === X92_C3_RESULT_SCHEMA && value.ok === true && value.executed === true
     && typeof value.code === 'string' && same(normalizeX92C3Binding(value.executionIdentity), binding)
     && value.uart && exactKeys(value.uart, ['exactText', 'finalLf'])
     && typeof value.uart.exactText === 'string' && value.uart.exactText.endsWith('\n')
-    && value.uart.finalLf === true && validRetirement(value.retirement, binding);
+    && value.uart.finalLf === true && validQuiescence(value.quiescence, binding);
   } catch { return false; }
 }
 
@@ -131,8 +133,11 @@ export function createX92C3BudgetIntegration({ budget, currentBinding, retireCur
     const owner = claim('budget', request.requestId);
     if (!owner) return block(tombstone ? 'X92_C3_RETIREMENT_TOMBSTONE' : 'X92_C3_SHARED_GATE_BLOCKED');
     let reference = null;
+    let reserved = null;
+    let started = null;
     let timer = null;
     let settled = false;
+    let cancelRequested = false;
     let resolveDeadline;
     const deadline = new Promise((resolve) => { resolveDeadline = resolve; });
     const finish = (kind, elapsed = null) => {
@@ -140,16 +145,33 @@ export function createX92C3BudgetIntegration({ budget, currentBinding, retireCur
       settled = true;
       return terminal(reference, kind, elapsed);
     };
+    const deadlineReached = () => {
+      const value = now();
+      return !Number.isFinite(value) || value >= started + reserved.deadlineAfterMs;
+    };
+    const requestCancel = () => {
+      if (cancelRequested) return;
+      cancelRequested = true;
+      try { cancelBudgetProducer(request.requestId); } catch { /* fail closed */ }
+    };
+    const expire = (code) => {
+      requestCancel();
+      markTombstone(owner, code);
+      const accounting = finish('timeout');
+      return block('X92_DEADLINE_EXCEEDED', { executed: true,
+        experimentBudget: accounting?.terminal ?? null });
+    };
     try {
       const binding = normalizeX92C3Binding(await currentBinding());
       if (binding.projectGeneration !== request.expectedGeneration) return block('ACTION_STALE_GENERATION');
-      const reserved = budget.reserve(request, x92IdentityFromC3Binding(binding), { unresolvedProblems });
+      reserved = budget.reserve(request, x92IdentityFromC3Binding(binding), { unresolvedProblems });
       if (!reserved.ok || !reserved.budgeted) return reserved;
       reference = reserved.reservation;
-      const started = now();
+      started = now();
+      if (!Number.isFinite(started)) fail('X92_C3_MONOTONIC_CLOCK_INVALID');
       timer = schedule(() => {
         resolveDeadline({ deadline: true });
-        try { cancelBudgetProducer(request.requestId); } catch { /* fail closed below */ }
+        requestCancel();
       }, reserved.deadlineAfterMs);
       owner.phase = 'retiring-current-owner';
       const retirement = await Promise.race([
@@ -157,11 +179,10 @@ export function createX92C3BudgetIntegration({ budget, currentBinding, retireCur
           dispatchToken: owner.token, deadlineAt: started + reserved.deadlineAfterMs })), deadline,
       ]);
       if (retirement?.deadline === true) {
-        markTombstone(owner, 'X92_C3_DEADLINE_RETIREMENT_UNPROVEN');
-        const accounting = finish('timeout');
-        return block('X92_DEADLINE_EXCEEDED', { executed: true, experimentBudget: accounting?.terminal ?? null });
+        return expire('X92_C3_DEADLINE_RETIREMENT_UNPROVEN');
       }
-      if (!validRetirement(retirement, binding)) {
+      if (deadlineReached()) return expire('X92_C3_DEADLINE_AFTER_RETIREMENT');
+      if (!validQuiescence(retirement, binding)) {
         markTombstone(owner, 'X92_C3_RETIREMENT_ACK_INVALID');
         const accounting = finish('quiescence-failed');
         return block('X92_C3_RETIREMENT_UNPROVEN', { experimentBudget: accounting?.terminal ?? null });
@@ -173,10 +194,9 @@ export function createX92C3BudgetIntegration({ budget, currentBinding, retireCur
           deadlineAt: started + reserved.deadlineAfterMs })), deadline,
       ]);
       if (prepared?.deadline === true) {
-        markTombstone(owner, 'X92_C3_DEADLINE_PREPARATION_UNPROVEN');
-        const accounting = finish('timeout');
-        return block('X92_DEADLINE_EXCEEDED', { executed: true, experimentBudget: accounting?.terminal ?? null });
+        return expire('X92_C3_DEADLINE_PREPARATION_UNPROVEN');
       }
+      if (deadlineReached()) return expire('X92_C3_DEADLINE_AFTER_PREPARATION');
       const candidate = normalizeX92C3Binding(prepared);
       for (const key of ['profile', 'projectGeneration', 'sourceIdentity', 'graphIdentity', 'flashIdentity']) {
         if (candidate[key] !== binding[key]) fail('X92_C3_PREPARED_IDENTITY_MISMATCH');
@@ -184,22 +204,23 @@ export function createX92C3BudgetIntegration({ budget, currentBinding, retireCur
       if (!same(candidate.compiler, binding.compiler) || !same(candidate.runtime, binding.runtime)) {
         fail('X92_C3_PREPARED_IDENTITY_MISMATCH');
       }
+      if (deadlineReached()) return expire('X92_C3_DEADLINE_BEFORE_PERMIT');
       authorize(owner, candidate);
+      if (deadlineReached()) return expire('X92_C3_DEADLINE_BEFORE_DISPATCH');
       const result = await Promise.race([
         Promise.resolve().then(() => executeBudgetProducer(source, owner.permit, clone(candidate))), deadline,
       ]);
       if (result?.deadline === true) {
-        markTombstone(owner, 'X92_C3_DEADLINE_PRODUCER_UNPROVEN');
-        const accounting = finish('timeout');
-        return block('X92_DEADLINE_EXCEEDED', { executed: true, experimentBudget: accounting?.terminal ?? null });
+        return expire('X92_C3_DEADLINE_PRODUCER_UNPROVEN');
       }
+      if (deadlineReached()) return expire('X92_C3_DEADLINE_AFTER_PRODUCER');
       if (!validResult(result, candidate)) {
         markTombstone(owner, 'X92_C3_RESULT_OR_RETIREMENT_INVALID');
         const accounting = finish('quiescence-failed');
         return block('X92_C3_RESULT_UNPROVEN', { executed: true, experimentBudget: accounting?.terminal ?? null });
       }
       const elapsed = Math.max(0, Math.ceil(now() - started));
-      if (!Number.isSafeInteger(elapsed) || elapsed > reserved.deadlineAfterMs) {
+      if (!Number.isSafeInteger(elapsed) || elapsed >= reserved.deadlineAfterMs) {
         markTombstone(owner, 'X92_C3_DEADLINE_ACCOUNTING_INVALID');
         const accounting = finish('timeout');
         return block('X92_DEADLINE_EXCEEDED', { executed: true, experimentBudget: accounting?.terminal ?? null });

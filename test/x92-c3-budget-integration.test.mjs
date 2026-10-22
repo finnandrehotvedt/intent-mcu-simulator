@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createX92ExperimentBudget } from '../src/x92-experiment-budget.mjs';
 import {
-  X92_C3_BINDING_SCHEMA, X92_C3_RESULT_SCHEMA, X92_C3_RETIREMENT_SCHEMA,
+  X92_C3_BINDING_SCHEMA, X92_C3_RESULT_SCHEMA, X92_C3_QUIESCENCE_SCHEMA,
   createX92C3BudgetIntegration, x92IdentityFromC3Binding,
 } from '../src/x92-c3-budget-integration.mjs';
 
@@ -17,15 +17,16 @@ const binding = Object.freeze({
   compiler: { imageIdentity: h('d'), toolchainIdentity: h('e') },
   runtime: { imageIdentity: h('f'), binaryIdentity: h('1') },
 });
-const retirement = (overrides = {}) => ({
-  schema: X92_C3_RETIREMENT_SCHEMA, sessionId: binding.sessionId, generation: binding.generation,
+const quiescence = (overrides = {}) => ({
+  schema: X92_C3_QUIESCENCE_SCHEMA, sessionId: binding.sessionId, generation: binding.generation,
   sourceSha256: binding.sourceIdentity.slice(7), artifactSha256: binding.flashIdentity.slice(7),
-  state: 'disposed', retainedBytes: 0, processExited: true, operationRetired: true, ...overrides,
+  operationId: 'c3-operation-1', state: 'quiescent', retainedBytes: 4 * 1024 * 1024,
+  artifactPreserved: true, processExited: true, operationRetired: true, ...overrides,
 });
 const result = (overrides = {}) => ({
   schema: X92_C3_RESULT_SCHEMA, ok: true, code: 'C3_SYNTHETIC_COMPLETE', executed: true,
   executionIdentity: structuredClone(binding),
-  uart: { exactText: 'INTENT-C3-BUDGET:4E6F\n', finalLf: true }, retirement: retirement(), ...overrides,
+  uart: { exactText: 'INTENT-C3-BUDGET:4E6F\n', finalLf: true }, quiescence: quiescence(), ...overrides,
 });
 const request = (requestId = 'x92-c3-budget-run-001') => JSON.stringify({
   schema: 'intent-mcu-bounded-action-request@1', action: 'runtime.run', requestId, profile,
@@ -43,7 +44,7 @@ function integration(overrides = {}) {
   let instance;
   const configured = createX92C3BudgetIntegration({ budget,
     currentBinding: async () => binding,
-    retireCurrentOwner: async () => retirement(),
+    retireCurrentOwner: async () => quiescence(),
     executeBudgetProducer: async (source, permit, exactBinding) => {
       assert.equal(instance.advancingBoundary(permit, exactBinding).ok, true);
       clock = 31;
@@ -81,7 +82,7 @@ test('manual and budget paths share one gate and an opaque permit cannot cross b
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal((await subject.executeManual(async () => ({ ok: true }))).code, 'X92_C3_SHARED_GATE_BLOCKED');
   assert.equal(subject.advancingBoundary({}, binding).code, 'X92_C3_SHARED_GATE_BLOCKED');
-  releaseRetirement(retirement());
+  releaseRetirement(quiescence());
   assert.equal((await pending).ok, true);
   assert.equal((await subject.executeManual(async () => ({ ok: true, code: 'MANUAL_COMPLETE' }))).code,
     'MANUAL_COMPLETE');
@@ -90,7 +91,7 @@ test('manual and budget paths share one gate and an opaque permit cannot cross b
 test('malformed or wrong-owner retirement creates a persistent full-charge tombstone', async () => {
   const budget = owner();
   const { integration: subject } = integration({ budget,
-    retireCurrentOwner: async () => retirement({ generation: binding.generation + 1 }) });
+    retireCurrentOwner: async () => quiescence({ generation: binding.generation + 1 }) });
   const first = await subject.executeBudgeted(request('x92-c3-wrong-ack-001'));
   assert.equal(first.code, 'X92_C3_RETIREMENT_UNPROVEN');
   assert.equal(first.experimentBudget.charged.wallClockMs, 30_000);
@@ -116,17 +117,74 @@ test('deadline covers retirement and charges once even when late owner acknowled
   assert.equal(output.experimentBudget.charged.wallClockMs, 30_000);
   assert.equal(cancelCalls, 1);
   const usage = structuredClone(budget.snapshot().consumed);
-  releaseRetirement(retirement()); await new Promise((resolve) => setImmediate(resolve));
+  releaseRetirement(quiescence()); await new Promise((resolve) => setImmediate(resolve));
   assert.deepEqual(budget.snapshot().consumed, usage);
   assert.equal((await subject.executeBudgeted(request('x92-c3-deadline-later'))).code,
     'X92_C3_RETIREMENT_TOMBSTONE');
+});
+
+test('absolute deadline blocks delayed retirement continuation even when the timer callback never fires', async () => {
+  let clock = 0; let releaseRetirement; let prepareCalls = 0; let producerCalls = 0; let cancelCalls = 0;
+  const held = new Promise((resolve) => { releaseRetirement = resolve; });
+  const budget = owner();
+  const { integration: subject } = integration({ budget, now: () => clock,
+    retireCurrentOwner: () => held,
+    prepareBudgetProducer: async ({ retiredBinding }) => { prepareCalls += 1; return retiredBinding; },
+    executeBudgetProducer: async () => { producerCalls += 1; return result(); },
+    cancelBudgetProducer: () => { cancelCalls += 1; return { ok: true }; },
+    schedule: () => 17, unschedule: () => {} });
+  const pending = subject.executeBudgeted(request('x92-c3-absolute-deadline'));
+  await new Promise((resolve) => setImmediate(resolve));
+  clock = 30_000;
+  releaseRetirement(quiescence());
+  const output = await pending;
+  assert.equal(output.code, 'X92_DEADLINE_EXCEEDED');
+  assert.equal(output.experimentBudget.charged.wallClockMs, 30_000);
+  assert.equal(prepareCalls, 0); assert.equal(producerCalls, 0); assert.equal(cancelCalls, 1);
+  assert.equal(subject.status().tombstone.code, 'X92_C3_DEADLINE_AFTER_RETIREMENT');
+  assert.deepEqual(budget.snapshot().consumed, { builds: 0, runs: 1, scenarios: 0, wallClockMs: 30_000 });
+});
+
+test('absolute deadline blocks permit and producer after delayed preparation without a timer callback', async () => {
+  let clock = 0; let releasePreparation; let producerCalls = 0;
+  const held = new Promise((resolve) => { releasePreparation = resolve; });
+  const budget = owner();
+  const { integration: subject } = integration({ budget, now: () => clock,
+    prepareBudgetProducer: () => held,
+    executeBudgetProducer: async () => { producerCalls += 1; return result(); },
+    schedule: () => 18, unschedule: () => {} });
+  const pending = subject.executeBudgeted(request('x92-c3-delayed-preparation'));
+  await new Promise((resolve) => setImmediate(resolve));
+  clock = 30_001; releasePreparation(binding);
+  const output = await pending;
+  assert.equal(output.code, 'X92_DEADLINE_EXCEEDED'); assert.equal(producerCalls, 0);
+  assert.equal(output.experimentBudget.charged.wallClockMs, 30_000);
+  assert.equal(subject.status().tombstone.code, 'X92_C3_DEADLINE_AFTER_PREPARATION');
+});
+
+test('absolute deadline rejects a late producer result before validation or successful settlement', async () => {
+  let clock = 0; let releaseProducer; let producerCalls = 0;
+  const held = new Promise((resolve) => { releaseProducer = resolve; });
+  const budget = owner();
+  const { integration: subject } = integration({ budget, now: () => clock,
+    executeBudgetProducer: async () => { producerCalls += 1; return held; },
+    schedule: () => 19, unschedule: () => {} });
+  const pending = subject.executeBudgeted(request('x92-c3-delayed-result'));
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(producerCalls, 1);
+  clock = 30_000; releaseProducer(result());
+  const output = await pending;
+  assert.equal(output.code, 'X92_DEADLINE_EXCEEDED');
+  assert.equal(output.experimentBudget.charged.wallClockMs, 30_000);
+  assert.equal(subject.status().tombstone.code, 'X92_C3_DEADLINE_AFTER_PRODUCER');
+  assert.equal(budget.snapshot().terminal.length, 1);
 });
 
 test('swapped result identity or missing final LF is unproven and permanently blocks dispatch', async () => {
   let instance;
   const budget = owner();
   instance = createX92C3BudgetIntegration({ budget, currentBinding: async () => binding,
-    retireCurrentOwner: async () => retirement(),
+    retireCurrentOwner: async () => quiescence(),
     executeBudgetProducer: async (source, permit, exactBinding) => {
       assert.equal(instance.advancingBoundary(permit, exactBinding).ok, true);
       return result({ uart: { exactText: 'NO-LF', finalLf: false } });
