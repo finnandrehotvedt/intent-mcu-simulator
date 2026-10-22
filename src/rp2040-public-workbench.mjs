@@ -559,6 +559,9 @@ export class Rp2040PublicWorkbench {
 
   finishPauseProof(operation, second, endedAt) {
     if (operation.settled || this.pauseProofOperation !== operation) return;
+    if (!Number.isFinite(endedAt) || endedAt >= operation.deadlineAt) {
+      this.rejectPauseProof('RP2040_BUDGET_PAUSE_DEADLINE', operation); return;
+    }
     if (endedAt - operation.first.acceptedAt < this.pauseProofMinimumMs) {
       this.rejectPauseProof('RP2040_BUDGET_PAUSE_INTERVAL_SHORT', operation); return;
     }
@@ -606,6 +609,9 @@ export class Rp2040PublicWorkbench {
     try { projection = projectRp2040PausedAck(message, operation.artifactSha256); }
     catch (error) { this.rejectPauseProof(error.code ?? 'RP2040_BUDGET_PAUSE_ACK_INVALID', operation); return false; }
     const acceptedAt = this.pauseProofNow();
+    if (!Number.isFinite(acceptedAt) || acceptedAt >= operation.deadlineAt) {
+      this.rejectPauseProof('RP2040_BUDGET_PAUSE_DEADLINE', operation); return true;
+    }
     const accepted = freeze({ presentationGeneration: waiting.generation,
       presentationSequence: message.presentation.sequence, acceptedAt, projection });
     operation.waiting = null;

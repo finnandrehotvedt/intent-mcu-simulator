@@ -79,6 +79,8 @@ function manualClock() {
     schedule(callback, delay) { const id = ++sequence; timers.set(id, { at: value + delay, callback }); return id; },
     unschedule(id) { timers.delete(id); },
     advance(ms) { value += ms; runDue(); },
+    elapse(ms) { value += ms; },
+    runDue,
     pending: () => timers.size,
   };
 }
@@ -253,4 +255,35 @@ test('budget pause cancellation and deadline reject once and late ACK cannot rev
   await assert.rejects(timed, /RP2040_BUDGET_PAUSE_DEADLINE/u);
   assert.equal(workbench.pauseProofOperation, null);
   assert.equal(clock.pending(), 0);
+});
+
+test('budget pause checks monotonic deadline at each ACK even when timer callbacks are delayed', async () => {
+  const firstClock = manualClock();
+  const firstWorkbench = preparedWorkbench({ now: firstClock.now, schedule: firstClock.schedule,
+    unschedule: firstClock.unschedule, minimumMs: 250, timeoutMs: 1_000 });
+  await firstWorkbench.run();
+  const firstWorker = WorkerFixture.instances.at(-1); firstWorker.emit(ready());
+  const beforeFirst = firstWorkbench.pauseForBudget({ deadlineAt: 100,
+    requestId: 'req-overdue-first', dispatchToken: 'dispatch-overdue-first' });
+  const firstPause = firstWorker.messages.findLast((message) => message.command === 'pause');
+  firstClock.elapse(100);
+  firstWorker.emit(paced('paused', firstPause.presentationGeneration, 1, { paused: true, cycle: 500 }));
+  await assert.rejects(beforeFirst, /RP2040_BUDGET_PAUSE_DEADLINE/u);
+  assert.equal(firstClock.pending(), 0);
+
+  const secondClock = manualClock();
+  const secondWorkbench = preparedWorkbench({ now: secondClock.now, schedule: secondClock.schedule,
+    unschedule: secondClock.unschedule, minimumMs: 250, timeoutMs: 1_000 });
+  await secondWorkbench.run();
+  const secondWorker = WorkerFixture.instances.at(-1); secondWorker.emit(ready());
+  const beforeSecond = secondWorkbench.pauseForBudget({ deadlineAt: 300,
+    requestId: 'req-overdue-second', dispatchToken: 'dispatch-overdue-second' });
+  const ackOne = secondWorker.messages.findLast((message) => message.command === 'pause');
+  secondWorker.emit(paced('paused', ackOne.presentationGeneration, 1, { paused: true, cycle: 500 }));
+  secondClock.advance(250);
+  const ackTwo = secondWorker.messages.findLast((message) => message.command === 'pause');
+  secondClock.elapse(50);
+  secondWorker.emit(paced('paused', ackTwo.presentationGeneration, 1, { paused: true, cycle: 500 }));
+  await assert.rejects(beforeSecond, /RP2040_BUDGET_PAUSE_DEADLINE/u);
+  assert.equal(secondClock.pending(), 0);
 });

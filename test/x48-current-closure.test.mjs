@@ -7,11 +7,13 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   CURRENT_MODEL_LIBRARY_MANIFEST, RC111_CURRENT_MODEL_LIBRARY_MANIFEST,
+  RC112_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST,
 } from '../src/model-library-snapshots.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, RC111_CURRENT_MODEL_LIBRARY_LOCK,
+  RC112_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X48_CURRENT_MODEL_LIBRARY_LOCK, PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_LOCK,
   modelLibraryExecutionIdentity,
   modelLibraryMigrationPreview,
@@ -29,7 +31,7 @@ test('X48 current identity owns every newly executed path', async () => {
     assert.equal(createHash('sha256').update(bytes).digest('hex'), members.get(path), path);
   }
   assert.equal(CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    '2.0.0-x48-current-source-integration.1-current');
+    '2.0.0-x92-pico-owner-proof.1-current');
 });
 
 test('current resolver manifest and admitted execution identity use one exact implementation ID', () => {
@@ -54,6 +56,26 @@ test('accepted public rc.111 manifest is preserved byte-for-byte as migration-on
   assert.equal(modelLibraryExecutionIdentity(RC111_CURRENT_MODEL_LIBRARY_LOCK).code,
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const preview = modelLibraryMigrationPreview(RC111_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(preview.ok, true);
+  assert.equal(preview.migrationRequired, true);
+  assert.deepEqual(preview.semanticChanges, []);
+  assert.deepEqual(preview.rendererChanges, []);
+  assert.equal(preview.unchanged.length, 25);
+});
+
+test('accepted public rc.112 current object is complete, immutable and migration-only', async () => {
+  const source = await readFile(new URL('../src/model-bundles/rc112-current-manifest.json', import.meta.url));
+  const fixture = JSON.parse(source);
+  assert.equal(createHash('sha256').update(source).digest('hex'),
+    'b491c79714b28c3c45111dfa77d3b1e0e36a713d208f272ca8f689dafe0246c5');
+  assert.deepEqual(RC112_CURRENT_MODEL_LIBRARY_MANIFEST, fixture);
+  assert.equal(fixture.manifestSha256,
+    '06132eb96862ae5b58279c9d7ed3add641dfa11c7ade6716a84ceb8a25540b5f');
+  assert.equal(fixture.implementationSha256,
+    '468fa16f86a379badca3b25ffb5f9385e54fbfeb5d29d04d3e3466c347a5f89e');
+  assert.equal(modelLibraryExecutionIdentity(RC112_CURRENT_MODEL_LIBRARY_LOCK).code,
+    'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const preview = modelLibraryMigrationPreview(RC112_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
   assert.equal(preview.migrationRequired, true);
   assert.deepEqual(preview.semanticChanges, []);

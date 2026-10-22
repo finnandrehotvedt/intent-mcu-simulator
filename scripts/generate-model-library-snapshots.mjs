@@ -15,6 +15,8 @@ import * as existingSnapshots from '../src/model-library-snapshots.mjs';
 const { RETAINED_MODEL_LIBRARY_MANIFEST } = existingSnapshots;
 const RC111_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
   '../src/model-bundles/rc111-current-manifest.json', import.meta.url), 'utf8'));
+const RC112_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
+  '../src/model-bundles/rc112-current-manifest.json', import.meta.url), 'utf8'));
 const PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -247,16 +249,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x48-current-source-integration.1-current',
-  'intent-mcu-model-bundle-current-x48-current-source-integration-1@36',
+  '2.0.0-x92-pico-owner-proof.1-current',
+  'intent-mcu-model-bundle-current-x92-pico-owner-proof-1@37',
   currentImplementation,
   {
-    priorVersion: PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: RC112_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: RC112_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component semantics remain unchanged; X48 adds one explicit bounded ideal-room control-loop owner bound to exact source, graph, plant, artifact, model and worker identities',
-    presentationDisposition: 'X48 terminal reports are strictly parsed and independently recomputed before presentation',
-    baselineClosureDisposition: 'public rc.111 and every earlier identity remain immutable and migration-only; this is a private source-integration candidate with zero native producer authority',
+    semanticDisposition: 'component semantics remain unchanged; X92 adds a Pico-only owner-bound two-fresh-final-paused-ACK quiescence proof',
+    presentationDisposition: 'the proof exposes only an immutable bounded counter, GPIO, UART and virtual-time projection',
+    baselineClosureDisposition: 'public rc.112 and every earlier identity remain immutable and migration-only; this private candidate has zero native producer authority',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -265,6 +267,7 @@ const output = `// SPDX-License-Identifier: Apache-2.0
 
 export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(retained, null, 2)});
 export const RC111_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC111_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const RC112_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC112_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
