@@ -2,6 +2,22 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.113 — 2026-10-22
+
+- Publishes the reviewed bounded RP2040 Pico owner-proof slice from retained,
+  checksum-pinned native evidence: one Build, one Run, one Worker and two fresh
+  stable Pause acknowledgements 260.2 ms apart.
+- Records stable CPU/GPIO/UART evidence, GPIO0 output/HIGH, exact source-derived
+  `PICO PUBLIC\n` including byte 10, zero drops, and independent UF2/compiler,
+  source/graph/model, request, dispatch and accounting joins.
+- Corrects the budget help text: bounded AVR and Pico have reviewed owner-proof;
+  ESP32-C3 and STM32 budgeted Run remain rejected before producer dispatch.
+- Preserves the original failed receipt unchanged and publishes only the
+  separate offline validation provenance. X92 remains partial. Status remains
+  X **84 complete / 1 partial / 11 planned**, P1 **59/0/0**. Cumulative native
+  evidence is **38 Build / 36 Run / 0 scenarios**; this release performs no new
+  firmware producer action.
+
 ## 1.1.0-rc.112 — 2026-10-22
 
 - Adds X48's bounded AVR ideal-room loop: one current thermostat source,

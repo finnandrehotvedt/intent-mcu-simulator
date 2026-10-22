@@ -13,6 +13,7 @@ import {
 } from '../src/project-envelope.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, RC111_CURRENT_MODEL_LIBRARY_LOCK,
+  RC112_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_ALL_PROFILE_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_MODEL_COPY_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_SPLIT_EDITOR_CURRENT_MODEL_LIBRARY_LOCK,
@@ -167,6 +168,25 @@ test('accepted public rc.111 envelope reopens and migrates without changing save
   assert.equal(opened.ok, true);
   assert.deepEqual(opened.project, project);
   assert.deepEqual(opened.modelLibrary, RC111_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(opened.report.executableAuthorityCleared, true);
+  assert.equal(opened.report.modelLibrary.migrationAvailable, true);
+  const migrated = migrateProjectModelLibrary(oldEnvelope, adapters);
+  assert.equal(migrated.ok, true);
+  assert.equal(migrated.originalUnchanged, oldEnvelope);
+  assert.equal(migrated.executableAuthorityCleared, true);
+  assert.deepEqual(migrated.preview.semanticChanges, []);
+  assert.deepEqual(migrated.preview.rendererChanges, []);
+  assert.equal(migrated.preview.unchanged.length, 25);
+  assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
+});
+
+test('accepted public rc.112 envelope normalizes, reopens and migrates without changing saved bytes', () => {
+  const oldEnvelope = canonicalProjectEnvelope(
+    profile, project, adapters, emptyProjectBrief(), null, RC112_CURRENT_MODEL_LIBRARY_LOCK,
+  );
+  const opened = prepareProjectEnvelope(oldEnvelope, adapters);
+  assert.equal(opened.ok, true);
+  assert.deepEqual(opened.modelLibrary, RC112_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(opened.report.executableAuthorityCleared, true);
   assert.equal(opened.report.modelLibrary.migrationAvailable, true);
   const migrated = migrateProjectModelLibrary(oldEnvelope, adapters);

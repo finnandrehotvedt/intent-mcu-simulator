@@ -2,6 +2,7 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   X92_DEFAULT_LIMITS,
@@ -13,6 +14,14 @@ import {
 import { boundedActionRequest, parseBoundedActionRequest } from '../src/bounded-action-contracts.mjs';
 
 const profile = 'board.atmega328p-16mhz-v1';
+
+test('public budget copy names reviewed AVR and Pico scope and rejects C3/STM32', async () => {
+  const html = await readFile(new URL('../staging/index.html', import.meta.url), 'utf8');
+  assert.match(html, /reviewed owner-quiescence evidence for the generic AVR and bounded RP2040 Pico profiles/u);
+  assert.match(html, /ESP32-C3 and STM32[^.]+reject budgeted Run before producer dispatch/u);
+  assert.doesNotMatch(html, /producer-quiescence evidence only for the generic AVR profile/u);
+});
+
 const identity = (generation = 1, hash = 'a', targetProfile = profile) => ({
   schema: 'intent-mcu-experiment-budget-identity@1',
   profile: targetProfile,
@@ -438,6 +447,8 @@ test('invalid quiescence acknowledgement is inert, fully charged and review-pars
   assert.equal(result.experimentBudget.outcome, 'indeterminate');
   assert.equal(result.experimentBudget.charged.wallClockMs, 30_000);
   assert.equal(executor.runtimeBoundary().status, 'blocked');
+  assert.equal(executor.advancingBoundary().code, 'X92_RUNTIME_BOUNDARY_BLOCKED');
+  assert.equal(executor.advancingBoundary().dispatchGate.status, 'blocked');
   assert.equal(parseX92ReviewProjection(owner.reviewText()).code, 'X92_REVIEW_INERT');
   const blocked = await executor.execute(JSON.stringify(request('firmware.build', 'x92-after-invalid-ack-build')));
   assert.equal(blocked.code, 'X92_RUNTIME_BOUNDARY_BLOCKED');
@@ -643,9 +654,9 @@ test('late acknowledgement carrying an old owner token cannot release the curren
   assert.equal(executor.runtimeBoundary().requestId, 'x92-old-token-second');
 });
 
-test('non-AVR budgeted Run fails before identity or producer while inactive manual paths stay unchanged', async () => {
+test('C3 and STM32 budgeted Run fail before identity or producer while inactive manual paths stay unchanged', async () => {
   for (const targetProfile of [
-    'board.rp2040-pico-v1', 'board.esp32-c3-devmodule-v1', 'board.stm32f429zi-nucleo144-v1',
+    'board.esp32-c3-devmodule-v1', 'board.stm32f429zi-nucleo144-v1',
   ]) {
     const owner = budget(); owner.start(identity(1, 'a', targetProfile), { humanInitiated: true });
     let identityCalls = 0; let dispatches = 0;
@@ -669,6 +680,29 @@ test('non-AVR budgeted Run fails before identity or producer while inactive manu
     assert.equal((await manual.execute(source)).code, 'MANUAL_UNCHANGED');
     assert.equal(dispatches, 1);
   }
+});
+
+test('Pico budgeted Run is admitted only through the exact owner quiescence gate', async () => {
+  const targetProfile = 'board.rp2040-pico-v1';
+  const owner = budget(); owner.start(identity(1, 'a', targetProfile), { humanInitiated: true });
+  let identityCalls = 0; let dispatches = 0; let quiescence;
+  const executor = createX92BudgetedExecutor({ budget: owner,
+    downstream: { execute: async () => { dispatches += 1;
+      return { ok: true, code: 'ACTION_RUN_EVIDENCE_READY', executed: true }; }, cancel: () => ({ ok: true }) },
+    currentIdentity: async () => { identityCalls += 1; return identity(1, 'a', targetProfile); },
+    parseRequest: (source) => JSON.parse(source),
+    quiesceRuntime: async (context) => { quiescence = context; return acknowledgedQuiescence(context); },
+    measurementSource: 'test.monotonic-wall-clock',
+  });
+  const source = JSON.stringify({ ...request('runtime.run', 'x92-pico-owner-run'), profile: targetProfile });
+  const result = await executor.execute(source);
+  assert.equal(result.ok, true);
+  assert.equal(identityCalls, 1); assert.equal(dispatches, 1);
+  assert.equal(quiescence.request.profile, targetProfile);
+  assert(Number.isFinite(quiescence.deadlineAt));
+  assert.equal(result.runtimeQuiescence.profile, targetProfile);
+  assert.equal(executor.dispatchGate().status, 'idle');
+  assert.equal(executor.runtimeBoundary().status, 'idle');
 });
 
 test('thermostat experiment reserves four scenarios and cannot normalize virtual controller time', () => {

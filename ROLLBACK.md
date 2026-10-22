@@ -1,8 +1,19 @@
-# Rollback basis for 1.1.0-rc.112
+# Rollback basis for 1.1.0-rc.113
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
+
+Retain exact public rc.112 source commit
+`7019cbf49aeb5a801e7f1083a4d0132f6b89bc43` and VM103 image
+`sha256:5be8a79691c624f4dd92fabd2b45883d4a1024f60b9243272be5e104c4c64837`
+as the pre-rc.113 app-only recovery basis. If acceptance fails, restore that
+exact app image and release directory, recreate only the Lab container and
+verify readiness plus the existing Teach-domain URLs.
+
+Rollback removes the reviewed Pico budget copy and current Pico owner-proof
+implementation. It does not alter the immutable native evidence, learner-owned
+files or the rc.112 migration identity.
 
 Retain exact public rc.111 source commit
 `4df2a9d1c91ba508e1dc51e81a2e5e589db72cad` and VM103 image

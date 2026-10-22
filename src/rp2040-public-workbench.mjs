@@ -45,6 +45,54 @@ export function describeRp2040PublicSource(source) {
 const exactKeys = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
 const clone = (value) => structuredClone(value);
+const freeze = (value) => {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    for (const child of Object.values(value)) freeze(child);
+    Object.freeze(value);
+  }
+  return value;
+};
+
+function ownerError(code) { return Object.assign(new Error(code), { code }); }
+function requiredCounter(value, code) {
+  if (!Number.isSafeInteger(value) || value < 0) throw ownerError(code);
+  return value;
+}
+function optionalFinite(value) { return Number.isFinite(value) ? value : null; }
+
+export function projectRp2040PausedAck(message, artifactIdentity) {
+  if (message?.kind !== 'paused' || message.paused !== true || message.presentation?.final !== true
+      || message.presentation?.artifactIdentity !== artifactIdentity) throw ownerError('RP2040_BUDGET_PAUSE_ACK_INVALID');
+  const serial = message.instruments?.serial;
+  if (!serial || typeof serial.text !== 'string' || !Array.isArray(serial.records)) {
+    throw ownerError('RP2040_BUDGET_PAUSE_SERIAL_INVALID');
+  }
+  const gpio0 = message.experimental?.gpio0;
+  if (!gpio0 || typeof gpio0.mode !== 'string' || typeof gpio0.level !== 'boolean') {
+    throw ownerError('RP2040_BUDGET_PAUSE_GPIO_INVALID');
+  }
+  return freeze({
+    cycle: requiredCounter(message.cycle, 'RP2040_BUDGET_PAUSE_CYCLE_INVALID'),
+    instructions: requiredCounter(message.instructions, 'RP2040_BUDGET_PAUSE_INSTRUCTIONS_INVALID'),
+    gpio0: { mode: gpio0.mode, level: gpio0.level },
+    pins: message.pins && typeof message.pins === 'object' && !Array.isArray(message.pins) ? clone(message.pins) : null,
+    uart: {
+      text: serial.text, records: clone(serial.records), count: serial.records.length,
+      retained: requiredCounter(serial.retained, 'RP2040_BUDGET_PAUSE_UART_RETAINED_INVALID'),
+      dropped: requiredCounter(serial.dropped, 'RP2040_BUDGET_PAUSE_UART_DROPPED_INVALID'),
+    },
+    virtualTime: {
+      nanoseconds: optionalFinite(message.virtualNanoseconds),
+      microseconds: optionalFinite(message.virtualMicroseconds),
+      milliseconds: optionalFinite(message.virtualMilliseconds),
+    },
+    artifactIdentity,
+  });
+}
+
+function stablePausedProjection(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
 
 async function sha256(value) {
   const bytes = typeof value === 'string' ? new TextEncoder().encode(value) : value;
@@ -103,12 +151,14 @@ function download(name, text) {
 }
 
 export class Rp2040PublicWorkbench {
-  constructor({ elements, onState = () => {}, onDiagnostics = () => {}, onSave = null, onOpen = null } = {}) {
+  constructor({ elements, onState = () => {}, onDiagnostics = () => {}, onSave = null, onOpen = null,
+    pauseProof = {}, advanceGuard = () => ({ ok: true, code: 'RP2040_ADVANCE_ALLOWED' }) } = {}) {
     this.elements = elements;
     this.onState = onState;
     this.onDiagnostics = onDiagnostics;
     this.onSave = onSave;
     this.onOpen = onOpen;
+    this.advanceGuard = advanceGuard;
     this.project = defaultProject();
     this.modelLibraryLock = clone(CURRENT_MODEL_LIBRARY_LOCK);
     this.modelLibraryImplementation = resolveModelLibrary(this.modelLibraryLock).implementation;
@@ -127,8 +177,25 @@ export class Rp2040PublicWorkbench {
     this.active = false;
     this.lastRuntime = null;
     this.diagnostics = [];
+    this.pauseProofNow = pauseProof.now ?? (() => performance.now());
+    this.pauseProofSchedule = pauseProof.schedule ?? ((callback, delay) => setTimeout(callback, delay));
+    this.pauseProofUnschedule = pauseProof.unschedule ?? ((timer) => clearTimeout(timer));
+    this.pauseProofMinimumMs = pauseProof.minimumMs ?? 250;
+    this.pauseProofTimeoutMs = pauseProof.timeoutMs ?? 2_000;
+    this.pauseProofSequence = 0;
+    this.pauseProofOperation = null;
     this.bind();
     this.render();
+  }
+
+  advancingBlocked(action, advancePermit = null) {
+    let result;
+    try { result = this.advanceGuard(action, advancePermit); }
+    catch { result = { ok: false, code: 'RP2040_ADVANCE_GUARD_FAILED' }; }
+    if (!result || result.ok !== false) return null;
+    this.message = `${action} blocked (${result.code}). The prior budgeted producer must acknowledge pause or retirement first.`;
+    this.render();
+    return { ...clone(result), ok: false };
   }
 
   bind() {
@@ -223,6 +290,7 @@ export class Rp2040PublicWorkbench {
   }
 
   terminateWorker() {
+    this.rejectPauseProof('RP2040_BUDGET_PAUSE_WORKER_RETIRED');
     this.workerGeneration += 1;
     this.presentationGeneration += 1;
     this.acceptedPresentationSequence = 0;
@@ -311,7 +379,9 @@ export class Rp2040PublicWorkbench {
     return null;
   }
 
-  async build() {
+  async build({ advancePermit = null } = {}) {
+    const boundary = this.advancingBlocked('Build', advancePermit); if (boundary) return boundary;
+    if (this.pauseProofOperation) return { ok: false, code: 'RP2040_BUDGET_PAUSE_BUSY' };
     if (!this.active || this.phase === 'building') return { ok: false, code: 'RP2040_BUILD_UNAVAILABLE' };
     if (this.circuitEditor.snapshot().wireDraft.mode !== 'none') {
       this.phase = 'blocked';
@@ -376,7 +446,9 @@ export class Rp2040PublicWorkbench {
     }
   }
 
-  async run() {
+  async run({ advancePermit = null } = {}) {
+    const boundary = this.advancingBlocked('Run', advancePermit); if (boundary) return boundary;
+    if (this.pauseProofOperation) return { ok: false, code: 'RP2040_BUDGET_PAUSE_BUSY' };
     const circuit = this.modelLibraryImplementation.validateProfile(
       RP2040_PICO_PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
     );
@@ -421,6 +493,7 @@ export class Rp2040PublicWorkbench {
       })) return;
       if (ack) this.acceptedPresentationSequence = ack.sequence;
       this.lastRuntime = data;
+      if (ack) this.acceptPauseProofMessage(data, worker, generation);
       if (data.kind === 'ready') {
         if (this.phase === 'starting') {
           this.phase = 'running';
@@ -437,6 +510,7 @@ export class Rp2040PublicWorkbench {
     });
     worker.addEventListener('error', (event) => {
       if (generation !== this.workerGeneration) return;
+      this.rejectPauseProof('RP2040_BUDGET_PAUSE_WORKER_ERROR');
       this.phase = 'failed';
       this.message = `Runtime worker failed (${event.message}).`;
       this.terminateWorker();
@@ -450,6 +524,7 @@ export class Rp2040PublicWorkbench {
   }
 
   pause() {
+    if (this.pauseProofOperation) return { ok: false, code: 'RP2040_BUDGET_PAUSE_BUSY' };
     if (!this.worker) return { ok: false, code: 'RUNTIME_NOT_ACTIVE' };
     this.worker.postMessage({ command: 'pause',
       presentationGeneration: this.beginPresentationGeneration() });
@@ -459,7 +534,9 @@ export class Rp2040PublicWorkbench {
     return { ok: true, code: 'OK' };
   }
 
-  reset() {
+  reset({ advancePermit = null } = {}) {
+    const boundary = this.advancingBlocked('Reset', advancePermit); if (boundary) return boundary;
+    if (this.pauseProofOperation) return { ok: false, code: 'RP2040_BUDGET_PAUSE_BUSY' };
     if (!this.worker) return { ok: false, code: 'RUNTIME_NOT_ACTIVE' };
     this.lastRuntime = null;
     this.worker.postMessage({ command: 'reset',
@@ -471,6 +548,7 @@ export class Rp2040PublicWorkbench {
   }
 
   stop() {
+    this.rejectPauseProof('RP2040_BUDGET_PAUSE_STOPPED');
     this.abort?.abort();
     this.abort = null;
     this.terminateWorker();
@@ -482,6 +560,121 @@ export class Rp2040PublicWorkbench {
     return { ok: true, code: 'OK' };
   }
 
+  rejectPauseProof(code, operation = this.pauseProofOperation) {
+    if (!operation || operation.settled) return false;
+    operation.settled = true;
+    if (operation.timer !== null) this.pauseProofUnschedule(operation.timer);
+    if (operation.deadlineTimer !== null) this.pauseProofUnschedule(operation.deadlineTimer);
+    operation.signal?.removeEventListener('abort', operation.onAbort);
+    if (this.pauseProofOperation === operation) this.pauseProofOperation = null;
+    operation.reject(ownerError(code));
+    return true;
+  }
+
+  finishPauseProof(operation, second, endedAt) {
+    if (operation.settled || this.pauseProofOperation !== operation) return;
+    if (!Number.isFinite(endedAt) || endedAt >= operation.deadlineAt) {
+      this.rejectPauseProof('RP2040_BUDGET_PAUSE_DEADLINE', operation); return;
+    }
+    if (endedAt - operation.first.acceptedAt < this.pauseProofMinimumMs) {
+      this.rejectPauseProof('RP2040_BUDGET_PAUSE_INTERVAL_SHORT', operation); return;
+    }
+    if (!stablePausedProjection(operation.first.projection, second.projection)) {
+      this.rejectPauseProof('RP2040_BUDGET_PAUSE_STATE_CHANGED', operation); return;
+    }
+    operation.settled = true;
+    if (operation.timer !== null) this.pauseProofUnschedule(operation.timer);
+    if (operation.deadlineTimer !== null) this.pauseProofUnschedule(operation.deadlineTimer);
+    operation.signal?.removeEventListener('abort', operation.onAbort);
+    this.pauseProofOperation = null;
+    operation.resolve(freeze({
+      schema: 'intent-mcu-rp2040-owner-pause-proof@1', requestId: operation.requestId,
+      dispatchToken: operation.dispatchToken, operationId: operation.operationId,
+      workerGeneration: operation.workerGeneration, sourceSha256: operation.sourceSha256,
+      artifactSha256: operation.artifactSha256, revision: operation.revision,
+      startedAt: operation.startedAt, endedAt, durationMs: endedAt - operation.startedAt,
+      first: operation.first, second, producerState: 'paused',
+    }));
+  }
+
+  issueOwnedPause(operation, stage) {
+    if (this.pauseProofOperation !== operation || operation.settled) return;
+    if (this.pauseProofNow() >= operation.deadlineAt) {
+      this.rejectPauseProof('RP2040_BUDGET_PAUSE_DEADLINE', operation); return;
+    }
+    const generation = this.beginPresentationGeneration();
+    operation.waiting = { stage, generation };
+    operation.worker.postMessage({ command: 'pause', presentationGeneration: generation });
+    this.phase = 'pausing';
+    this.message = 'Budget owner requested a fresh final Pause acknowledgement.';
+    this.render();
+  }
+
+  acceptPauseProofMessage(message, worker, workerGeneration) {
+    const operation = this.pauseProofOperation;
+    if (!operation || operation.settled || worker !== operation.worker
+        || workerGeneration !== operation.workerGeneration || this.worker !== operation.worker
+        || this.artifact?.uf2Sha256 !== operation.artifactSha256 || this.revision !== operation.revision) return false;
+    const waiting = operation.waiting;
+    if (!waiting || message.presentation?.generation !== waiting.generation
+        || message.presentation?.sequence !== this.acceptedPresentationSequence) return false;
+    if (message.kind !== 'paused' || message.paused !== true || message.presentation.final !== true) return false;
+    let projection;
+    try { projection = projectRp2040PausedAck(message, operation.artifactSha256); }
+    catch (error) { this.rejectPauseProof(error.code ?? 'RP2040_BUDGET_PAUSE_ACK_INVALID', operation); return false; }
+    const acceptedAt = this.pauseProofNow();
+    if (!Number.isFinite(acceptedAt) || acceptedAt >= operation.deadlineAt) {
+      this.rejectPauseProof('RP2040_BUDGET_PAUSE_DEADLINE', operation); return true;
+    }
+    const accepted = freeze({ presentationGeneration: waiting.generation,
+      presentationSequence: message.presentation.sequence, acceptedAt, projection });
+    operation.waiting = null;
+    if (waiting.stage === 'first') {
+      operation.first = accepted;
+      const remaining = operation.deadlineAt - acceptedAt;
+      const delay = this.pauseProofMinimumMs;
+      if (remaining <= delay) { this.rejectPauseProof('RP2040_BUDGET_PAUSE_DEADLINE', operation); return true; }
+      operation.timer = this.pauseProofSchedule(() => {
+        operation.timer = null;
+        this.issueOwnedPause(operation, 'second');
+      }, delay);
+    } else this.finishPauseProof(operation, accepted, acceptedAt);
+    return true;
+  }
+
+  pauseForBudget({ signal = null, deadlineAt, requestId, dispatchToken } = {}) {
+    const ownerKey = `${requestId}\u0000${dispatchToken}`;
+    if (this.pauseProofOperation) {
+      if (this.pauseProofOperation.ownerKey === ownerKey) return this.pauseProofOperation.promise;
+      return Promise.reject(ownerError('RP2040_BUDGET_PAUSE_OWNER_CONFLICT'));
+    }
+    const now = this.pauseProofNow();
+    if (signal?.aborted) return Promise.reject(ownerError('RP2040_BUDGET_PAUSE_CANCELLED'));
+    if (!Number.isFinite(deadlineAt) || deadlineAt <= now) return Promise.reject(ownerError('RP2040_BUDGET_PAUSE_DEADLINE'));
+    if (!this.active || !this.worker || !this.artifact || this.artifactRevision !== this.revision
+        || typeof this.artifact.sourceSha256 !== 'string' || typeof this.artifact.uf2Sha256 !== 'string') {
+      return Promise.reject(ownerError('RP2040_BUDGET_PAUSE_AUTHORITY_UNAVAILABLE'));
+    }
+    let resolve; let reject;
+    const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+    const operation = {
+      ownerKey, requestId, dispatchToken, operationId: `rp2040-pause-owner-${++this.pauseProofSequence}`,
+      worker: this.worker, workerGeneration: this.workerGeneration, artifactSha256: this.artifact.uf2Sha256,
+      sourceSha256: this.artifact.sourceSha256, revision: this.revision, startedAt: now,
+      deadlineAt: Math.min(deadlineAt, now + this.pauseProofTimeoutMs), signal, timer: null, deadlineTimer: null,
+      waiting: null, first: null, settled: false, resolve, reject, promise,
+    };
+    operation.onAbort = () => this.rejectPauseProof('RP2040_BUDGET_PAUSE_CANCELLED', operation);
+    signal?.addEventListener('abort', operation.onAbort, { once: true });
+    this.pauseProofOperation = operation;
+    operation.deadlineTimer = this.pauseProofSchedule(() => {
+      operation.deadlineTimer = null;
+      this.rejectPauseProof('RP2040_BUDGET_PAUSE_DEADLINE', operation);
+    }, operation.deadlineAt - now);
+    this.issueOwnedPause(operation, 'first');
+    return promise;
+  }
+
   selectCircuit(selection) {
     const result = this.circuitEditor.select(selection);
     this.render();
@@ -489,6 +682,7 @@ export class Rp2040PublicWorkbench {
   }
 
   editCircuit(operation, ...args) {
+    if (this.pauseProofOperation) this.rejectPauseProof('RP2040_BUDGET_PAUSE_CIRCUIT_CHANGED');
     if (!['deleteSelected', 'undo', 'redo', 'moveComponent', 'rotateComponent',
       'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint',
       'addMissingComponent', 'setComponentProperty', 'setComponentAppearance', 'setComponentAppearanceEdit',

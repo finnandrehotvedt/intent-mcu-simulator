@@ -1,8 +1,14 @@
-# Migration to 1.1.0-rc.112
+# Migration to 1.1.0-rc.113
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.113 changes release presentation and the transient X92 bounded Pico
+owner-proof closure only. Rc.112 project bytes and model identity remain
+immutable migration-only input; opening them grants no Build, Run, budget,
+runtime or verdict authority. Active X92 sessions and retained proof reports
+are never restored from project data.
 
 Rc.112 preserves accepted rc.111 project bytes and model identity as
 migration-only data. Opening an rc.111 project performs the existing explicit

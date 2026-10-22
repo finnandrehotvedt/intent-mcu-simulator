@@ -490,6 +490,7 @@ export function createX92BudgetedExecutor({
     dispatchSequence += 1;
     const gate = {
       token: `x92-dispatch-${dispatchSequence}`,
+      dispatchPermit: Object.freeze({}),
       requestId: request.requestId,
       action: request.action,
       fingerprint: requestFingerprint(request),
@@ -536,7 +537,7 @@ export function createX92BudgetedExecutor({
     runtimeBoundary = boundary;
     boundary.promise = Promise.resolve().then(() => quiesceRuntime({
       request: clone(request), dispatchToken: gate.token, reservation: clone(reference),
-      identity: clone(reference.binding), reason,
+      identity: clone(reference.binding), reason, deadlineAt: gate.deadlineAt,
     })).then((ack) => {
       if (!validQuiescenceAck(ack, request, reference.binding, reason, gate)) {
         boundary.status = 'blocked'; boundary.code = 'X92_RUNTIME_QUIESCENCE_ACK_INVALID';
@@ -554,6 +555,25 @@ export function createX92BudgetedExecutor({
         detail: caught?.code ?? caught?.message ?? 'unknown' };
     });
     return boundary;
+  }
+
+  function advancingBoundary(dispatchPermit = null) {
+    const boundary = boundaryProjection();
+    if (dispatchGate && dispatchPermit === dispatchGate.dispatchPermit) {
+      return { ok: true, code: 'X92_OWNED_ADVANCING_CONTROL_ALLOWED', runtimeBoundary: boundary,
+        dispatchGate: gateProjection() };
+    }
+    if (boundary.status !== 'idle') {
+      return { ok: false, code: 'X92_RUNTIME_BOUNDARY_BLOCKED', runtimeBoundary: boundary,
+        dispatchGate: gateProjection() };
+    }
+    const gate = gateProjection();
+    if (gate.status !== 'idle') {
+      return { ok: false, code: 'X92_DISPATCH_GATE_BLOCKED', runtimeBoundary: boundary,
+        dispatchGate: gate };
+    }
+    return { ok: true, code: 'X92_ADVANCING_CONTROL_ALLOWED', runtimeBoundary: boundary,
+      dispatchGate: gate };
   }
 
   async function execute(source, { unresolvedProblems = [] } = {}) {
@@ -582,7 +602,7 @@ export function createX92BudgetedExecutor({
     }
     if (!budget.active()) return downstream.execute(source);
     if (!['firmware.build', 'runtime.run'].includes(request.action)) return downstream.execute(source);
-    if (request.action === 'runtime.run' && request.profile !== 'board.atmega328p-16mhz-v1') {
+    if (request.action === 'runtime.run' && !['board.atmega328p-16mhz-v1', 'board.rp2040-pico-v1'].includes(request.profile)) {
       return { ok: false, schema: X92_RESULT_SCHEMA, code: 'X92_RUNTIME_QUIESCENCE_UNPROVEN_PROFILE',
         executed: false, authority: clone(X92_NO_AUTHORITY), profile: request.profile };
     }
@@ -622,7 +642,8 @@ export function createX92BudgetedExecutor({
       }
       gate.status = 'producer-active'; gate.code = 'X92_DISPATCH_ACTIVE';
       started = now();
-      downstreamPromise = Promise.resolve().then(() => downstream.execute(source));
+      gate.deadlineAt = started + reserved.deadlineAfterMs;
+      downstreamPromise = Promise.resolve().then(() => downstream.execute(source, gate.dispatchPermit));
       timer = schedule(() => {
       deadlineTriggered = true;
       resolveDeadline({ x92Deadline: true });
@@ -712,5 +733,6 @@ export function createX92BudgetedExecutor({
     },
     runtimeBoundary: boundaryProjection,
     dispatchGate: gateProjection,
+    advancingBoundary,
   });
 }

@@ -1,4 +1,35 @@
-# Intent MCU Simulator 1.1.0-rc.112
+# Intent MCU Simulator 1.1.0-rc.113
+
+## Reviewed RP2040 Pico owner proof
+
+Rc.113 publishes X92's reviewed bounded Pico budgeted-Run slice. One retained
+fixed-toolchain native execution completed one Build, one Pico Run, one Worker
+and two fresh owner-bound Pause acknowledgements 260.2 ms apart. The retained
+CPU, GPIO0 and UART projections were stable; GPIO0 was output/HIGH and UART
+contained the exact source-derived 12 bytes `PICO PUBLIC\n` with zero drops.
+
+UF2-byte identity joins Worker, workbench and owner proof independently from
+the compiler artifact identity joining Build, workbench and bounded Run.
+Source, graph, model, request, dispatch and accounting identities also join.
+The original one-shot harness receipt remains immutable and failed on its stale
+11-byte UART expectation; a separate checksum-pinned offline validation passed
+all remaining checks without relabeling that receipt or running firmware again.
+
+Budgeted Run is now described accurately as reviewed for bounded AVR and Pico.
+ESP32-C3 and STM32 still reject budgeted Run before producer dispatch, and X92
+remains partial. Status remains X **84/1/11**, P1 **59/0/0**. Cumulative native
+evidence is **38 Build / 36 Run / 0 scenarios**. This release itself performs
+zero new firmware Build, Run, Worker or Scenario actions.
+
+The native evidence is pinned to source
+`8e4828126b02b07e54517f78300284e494c325e0`, raw proof SHA-256
+`ab1015202371bd42dfbeab8768de8dea7d779e472e1575993b77c64cc74bbff9`
+and derived validation SHA-256
+`72b45076ab610576c2f0beceb07ae1ac48d8ef4bcf164e55bfafc139fa372fc8`.
+
+---
+
+## 1.1.0-rc.112
 
 ## Bounded AVR ideal-room control loop
 
