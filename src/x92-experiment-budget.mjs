@@ -470,19 +470,51 @@ export function createX92BudgetedExecutor({
   }
 
   let runtimeBoundary = null;
+  let dispatchGate = null;
+  let dispatchSequence = 0;
   const boundaryProjection = () => runtimeBoundary ? Object.freeze({
     status: runtimeBoundary.status,
     requestId: runtimeBoundary.requestId,
     reason: runtimeBoundary.reason,
     code: runtimeBoundary.code,
   }) : Object.freeze({ status: 'idle', requestId: null, reason: null, code: 'X92_RUNTIME_QUIESCENT' });
+  const gateProjection = () => dispatchGate ? Object.freeze({
+    status: dispatchGate.status,
+    requestId: dispatchGate.requestId,
+    action: dispatchGate.action,
+    code: dispatchGate.code,
+  }) : Object.freeze({ status: 'idle', requestId: null, action: null, code: 'X92_DISPATCH_IDLE' });
 
-  function validQuiescenceAck(value, request, binding, reason) {
+  function claimDispatchGate(request) {
+    if (dispatchGate) return null;
+    dispatchSequence += 1;
+    const gate = {
+      token: `x92-dispatch-${dispatchSequence}`,
+      requestId: request.requestId,
+      action: request.action,
+      fingerprint: requestFingerprint(request),
+      cancelRequested: false,
+      status: 'identity-check',
+      code: 'X92_DISPATCH_IDENTITY_CHECK',
+      sessionId: budget.sessionId(),
+    };
+    dispatchGate = gate;
+    return gate;
+  }
+
+  function releaseDispatchGate(gate) {
+    if (dispatchGate !== gate) return false;
+    dispatchGate = null;
+    return true;
+  }
+
+  function validQuiescenceAck(value, request, binding, reason, gate) {
     if (!value || typeof value !== 'object' || Array.isArray(value)
-        || !exactKeys(value, ['schema', 'requestId', 'profile', 'identity', 'producerState',
-          'acknowledged', 'evidence'])
+        || !exactKeys(value, ['schema', 'requestId', 'dispatchToken', 'profile', 'identity',
+          'producerState', 'acknowledged', 'evidence'])
         || value.schema !== X92_RUNTIME_QUIESCENCE_ACK_SCHEMA
-        || value.requestId !== request.requestId || value.profile !== request.profile
+        || value.requestId !== request.requestId || value.dispatchToken !== gate.token
+        || value.profile !== request.profile
         || value.acknowledged !== true || !['paused', 'retired'].includes(value.producerState)
         || !value.evidence || typeof value.evidence !== 'object' || Array.isArray(value.evidence)
         || value.evidence.reason !== reason) return false;
@@ -490,29 +522,34 @@ export function createX92BudgetedExecutor({
     catch { return false; }
   }
 
-  function beginRuntimeQuiescence(request, reference, reason) {
+  function beginRuntimeQuiescence(request, reference, reason, gate) {
     if (request.action !== 'runtime.run') return null;
-    if (runtimeBoundary?.requestId === request.requestId && runtimeBoundary.status !== 'running') {
+    if (runtimeBoundary?.owner === gate && runtimeBoundary.status !== 'running') {
       return runtimeBoundary;
     }
-    const boundary = runtimeBoundary?.requestId === request.requestId ? runtimeBoundary : {
-      requestId: request.requestId, promise: null, ack: null,
+    if (runtimeBoundary && runtimeBoundary.owner !== gate) return null;
+    const boundary = runtimeBoundary?.owner === gate ? runtimeBoundary : {
+      owner: gate, requestId: request.requestId, promise: null, ack: null,
     };
     boundary.status = 'pending'; boundary.reason = reason;
     boundary.code = 'X92_RUNTIME_QUIESCENCE_PENDING';
     runtimeBoundary = boundary;
     boundary.promise = Promise.resolve().then(() => quiesceRuntime({
-      request: clone(request), reservation: clone(reference), identity: clone(reference.binding), reason,
+      request: clone(request), dispatchToken: gate.token, reservation: clone(reference),
+      identity: clone(reference.binding), reason,
     })).then((ack) => {
-      if (!validQuiescenceAck(ack, request, reference.binding, reason)) {
+      if (!validQuiescenceAck(ack, request, reference.binding, reason, gate)) {
         boundary.status = 'blocked'; boundary.code = 'X92_RUNTIME_QUIESCENCE_ACK_INVALID';
+        gate.status = 'blocked'; gate.code = boundary.code;
         return { ok: false, code: boundary.code, ack: null };
       }
       boundary.status = 'quiescent'; boundary.code = 'X92_RUNTIME_QUIESCENT'; boundary.ack = clone(ack);
       if (runtimeBoundary === boundary) runtimeBoundary = null;
+      releaseDispatchGate(gate);
       return { ok: true, code: 'X92_RUNTIME_QUIESCENT', ack: clone(ack) };
     }).catch((caught) => {
       boundary.status = 'blocked'; boundary.code = 'X92_RUNTIME_QUIESCENCE_ACK_MISSING';
+      gate.status = 'blocked'; gate.code = boundary.code;
       return { ok: false, code: boundary.code, ack: null,
         detail: caught?.code ?? caught?.message ?? 'unknown' };
     });
@@ -524,34 +561,81 @@ export function createX92BudgetedExecutor({
       return { ok: false, schema: X92_RESULT_SCHEMA, code: 'X92_RUNTIME_BOUNDARY_BLOCKED',
         executed: false, authority: clone(X92_NO_AUTHORITY), runtimeBoundary: boundaryProjection() };
     }
-    if (!budget.active()) return downstream.execute(source);
     let request;
     try { request = parseRequest(source); }
-    catch { return downstream.execute(source); }
-    const identity = await currentIdentity();
-    const reserved = budget.reserve(request, identity, { unresolvedProblems });
-    if (!reserved.ok || !reserved.budgeted) {
-      if (!reserved.ok) return reserved;
+    catch {
+      if (dispatchGate) {
+        return { ok: false, schema: X92_RESULT_SCHEMA, code: 'X92_DISPATCH_GATE_BLOCKED',
+          executed: false, authority: clone(X92_NO_AUTHORITY), dispatchGate: gateProjection() };
+      }
       return downstream.execute(source);
     }
-    const reference = reserved.reservation;
-    if (request.action === 'runtime.run') {
-      runtimeBoundary = { status: 'running', requestId: request.requestId,
-        reason: 'producer-active', code: 'X92_RUNTIME_ACTIVE', promise: null, ack: null };
+    if (dispatchGate) {
+      if (dispatchGate.requestId === request.requestId) {
+        return { ok: false, schema: X92_RESULT_SCHEMA,
+          code: dispatchGate.fingerprint === requestFingerprint(request)
+            ? 'X92_REQUEST_DUPLICATE_PENDING' : 'X92_REQUEST_ID_CONFLICT',
+          executed: false, authority: clone(X92_NO_AUTHORITY), dispatchGate: gateProjection() };
+      }
+      return { ok: false, schema: X92_RESULT_SCHEMA, code: 'X92_DISPATCH_GATE_BLOCKED',
+        executed: false, authority: clone(X92_NO_AUTHORITY), dispatchGate: gateProjection() };
     }
+    if (!budget.active()) return downstream.execute(source);
+    if (!['firmware.build', 'runtime.run'].includes(request.action)) return downstream.execute(source);
+    if (request.action === 'runtime.run' && request.profile !== 'board.atmega328p-16mhz-v1') {
+      return { ok: false, schema: X92_RESULT_SCHEMA, code: 'X92_RUNTIME_QUIESCENCE_UNPROVEN_PROFILE',
+        executed: false, authority: clone(X92_NO_AUTHORITY), profile: request.profile };
+    }
+    const gate = claimDispatchGate(request);
+    if (!gate) error('X92_DISPATCH_GATE_CLAIM');
+    let releaseGateOnExit = true;
+    let reference = null;
+    let downstreamPromise = null;
     let deadlineTriggered = false;
-    const started = now();
+    let started = null;
     let resolveDeadline;
     const deadline = new Promise((resolve) => { resolveDeadline = resolve; });
-    const timer = schedule(() => {
+    let timer = null;
+    try {
+      const identity = await currentIdentity();
+      const currentReview = budget.snapshot();
+      if (dispatchGate !== gate || !budget.active() || budget.sessionId() !== gate.sessionId
+          || !currentReview || !identityEqual(normalizeX92Identity(identity), currentReview.identity)) {
+        return { ok: false, schema: X92_RESULT_SCHEMA, code: 'X92_SESSION_CHANGED_BEFORE_DISPATCH',
+          executed: false, authority: clone(X92_NO_AUTHORITY), dispatchGate: gateProjection() };
+      }
+      if (gate.cancelRequested) {
+        return { ok: false, schema: X92_RESULT_SCHEMA, code: 'X92_ACTION_CANCELLED_BEFORE_DISPATCH',
+          executed: false, authority: clone(X92_NO_AUTHORITY) };
+      }
+      const reserved = budget.reserve(request, identity, { unresolvedProblems });
+      if (!reserved.ok || !reserved.budgeted) {
+        if (!reserved.ok) return reserved;
+        return { ok: false, schema: X92_RESULT_SCHEMA, code: 'X92_DISPATCH_NOT_BUDGETED',
+          executed: false, authority: clone(X92_NO_AUTHORITY) };
+      }
+      reference = reserved.reservation;
+      gate.status = 'reserved'; gate.code = 'X92_DISPATCH_RESERVED';
+      if (request.action === 'runtime.run') {
+        runtimeBoundary = { owner: gate, status: 'running', requestId: request.requestId,
+          reason: 'producer-active', code: 'X92_RUNTIME_ACTIVE', promise: null, ack: null };
+      }
+      gate.status = 'producer-active'; gate.code = 'X92_DISPATCH_ACTIVE';
+      started = now();
+      downstreamPromise = Promise.resolve().then(() => downstream.execute(source));
+      timer = schedule(() => {
       deadlineTriggered = true;
       resolveDeadline({ x92Deadline: true });
       try { downstream.cancel(request.requestId); } catch { /* terminal accounting is already fail-closed */ }
-    }, reserved.deadlineAfterMs);
-    try {
-      const result = await Promise.race([downstream.execute(source), deadline]);
+      }, reserved.deadlineAfterMs);
+      const result = await Promise.race([downstreamPromise, deadline]);
       if (result?.x92Deadline === true) {
-        const boundary = beginRuntimeQuiescence(request, reference, 'deadline');
+        releaseGateOnExit = false;
+        gate.status = 'cancellation-pending'; gate.code = 'X92_DISPATCH_CANCELLATION_PENDING';
+        const boundary = beginRuntimeQuiescence(request, reference, 'deadline', gate);
+        if (!boundary) {
+          downstreamPromise.then(() => releaseDispatchGate(gate), () => releaseDispatchGate(gate));
+        }
         const accounting = budget.finalize(reference, { kind: 'timeout', authenticated: false,
           measuredWallClockMs: null, measurementSource: null });
         return { ok: false, schema: X92_RESULT_SCHEMA, code: 'X92_DEADLINE_EXCEEDED',
@@ -560,9 +644,13 @@ export function createX92BudgetedExecutor({
       }
       let runtimeQuiescence = null;
       if (request.action === 'runtime.run') {
-        const boundary = beginRuntimeQuiescence(request, reference, 'downstream-result');
+        const boundary = beginRuntimeQuiescence(request, reference, 'downstream-result', gate);
+        if (!boundary) throw Object.assign(new Error('X92_RUNTIME_BOUNDARY_OWNER_CONFLICT'),
+          { code: 'X92_RUNTIME_BOUNDARY_OWNER_CONFLICT' });
         const quiescence = await Promise.race([boundary.promise, deadline]);
         if (quiescence?.x92Deadline === true) {
+          releaseGateOnExit = false;
+          gate.status = 'cancellation-pending'; gate.code = 'X92_DISPATCH_CANCELLATION_PENDING';
           const accounting = budget.finalize(reference, { kind: 'timeout', authenticated: false,
             measuredWallClockMs: null, measurementSource: null });
           return { ok: false, schema: X92_RESULT_SCHEMA, code: 'X92_DEADLINE_EXCEEDED',
@@ -570,6 +658,7 @@ export function createX92BudgetedExecutor({
             runtimeBoundary: boundaryProjection() };
         }
         if (!quiescence?.ok) {
+          releaseGateOnExit = false;
           const accounting = budget.finalize(reference, { kind: 'quiescence-failed', authenticated: false,
             measuredWallClockMs: null, measurementSource: null });
           return { ok: false, schema: X92_RESULT_SCHEMA, code: 'X92_RUNTIME_QUIESCENCE_UNCONFIRMED',
@@ -592,22 +681,36 @@ export function createX92BudgetedExecutor({
       return { ...result, experimentBudget: accounting.terminal ?? null,
         ...(runtimeQuiescence ? { runtimeQuiescence } : {}) };
     } catch (caught) {
-      if (request.action === 'runtime.run') {
-        const boundary = beginRuntimeQuiescence(request, reference, 'downstream-crash');
-        await Promise.race([boundary.promise, deadline]);
+      if (request.action === 'runtime.run' && reference && downstreamPromise) {
+        const boundary = beginRuntimeQuiescence(request, reference, 'downstream-crash', gate);
+        if (boundary) {
+          const quiescence = await Promise.race([boundary.promise, deadline]);
+          if (!quiescence?.ok) releaseGateOnExit = false;
+        }
       }
-      budget.finalize(reference, { kind: 'crash', authenticated: false,
+      if (reference) budget.finalize(reference, { kind: 'crash', authenticated: false,
         measuredWallClockMs: null, measurementSource: null });
       return { ok: false, schema: X92_RESULT_SCHEMA, code: 'X92_DOWNSTREAM_CRASH',
         executed: false, authority: clone(X92_NO_AUTHORITY), details: [caught?.code ?? caught?.message ?? 'unknown'] };
     } finally {
-      unschedule(timer);
+      if (timer !== null) unschedule(timer);
+      if (releaseGateOnExit) releaseDispatchGate(gate);
     }
   }
 
   return Object.freeze({
     execute,
-    cancel: (requestId) => downstream.cancel(requestId),
+    cancel: (requestId) => {
+      if (dispatchGate?.requestId === requestId
+          && ['identity-check', 'reserved'].includes(dispatchGate.status)) {
+        dispatchGate.cancelRequested = true;
+        dispatchGate.status = 'cancellation-pending';
+        dispatchGate.code = 'X92_DISPATCH_CANCELLATION_PENDING';
+        return { ok: true, code: 'ACTION_CANCEL_REQUESTED' };
+      }
+      return downstream.cancel(requestId);
+    },
     runtimeBoundary: boundaryProjection,
+    dispatchGate: gateProjection,
   });
 }

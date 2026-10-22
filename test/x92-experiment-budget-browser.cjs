@@ -46,15 +46,19 @@ const outputDir = process.env.X92_OUTPUT || '/tmp/x92-private-evidence';
       pending: document.querySelector('#x92-budget-accounting').dataset.pending,
       indeterminate: document.querySelector('#x92-budget-accounting').dataset.indeterminate,
       runtimeBoundary: document.querySelector('#x92-budget-accounting').dataset.runtimeBoundary,
+      dispatchGate: document.querySelector('#x92-budget-accounting').dataset.dispatchGate,
     }));
     assert.deepEqual(visibleAccounting.builds, { consumed: 'Finalized: 0', reserved: 'Reserved: 0',
       remaining: 'Remaining: 2', limit: 'Limit: 2' });
     assert.deepEqual(visibleAccounting.wall, { consumed: 'Finalized: 0 ms', reserved: 'Reserved: 0 ms',
       remaining: 'Remaining: 120000 ms', limit: 'Limit: 120000 ms' });
     assert.deepEqual([visibleAccounting.pending, visibleAccounting.indeterminate,
-      visibleAccounting.runtimeBoundary], ['0', '0', 'idle']);
+      visibleAccounting.runtimeBoundary, visibleAccounting.dispatchGate], ['0', '0', 'idle', 'idle']);
     assert.deepEqual(await page.evaluate(() => window.__X92_EXPERIMENT_BUDGET__.runtimeBoundary()), {
       status: 'idle', requestId: null, reason: null, code: 'X92_RUNTIME_QUIESCENT',
+    });
+    assert.deepEqual(await page.evaluate(() => window.__X92_EXPERIMENT_BUDGET__.dispatchGate()), {
+      status: 'idle', requestId: null, action: null, code: 'X92_DISPATCH_IDLE',
     });
 
     const downloadPromise = page.waitForEvent('download');

@@ -7310,10 +7310,18 @@ function renderX92Budget(message = null, valid = true) {
   const runtimeBoundaryLabel = runtimeBoundary.status === 'idle' ? 'quiescent'
     : runtimeBoundary.status === 'running' ? 'producer active inside reservation'
     : runtimeBoundary.status === 'pending' ? 'pause/retire acknowledgement pending' : 'blocked';
-  elements.x92budgetaccounting.textContent = `Pending reservations: ${reservations.length} · Indeterminate terminal records: ${indeterminate} · Runtime boundary: ${runtimeBoundaryLabel}`;
+  const dispatchGate = x92BudgetExecutor?.dispatchGate?.()
+    ?? { status: 'idle', code: 'X92_DISPATCH_IDLE' };
+  const dispatchGateLabel = dispatchGate.status === 'idle' ? 'idle'
+    : dispatchGate.status === 'identity-check' ? 'checking identity'
+    : dispatchGate.status === 'reserved' ? 'reserved'
+    : dispatchGate.status === 'producer-active' ? 'producer active'
+    : dispatchGate.status === 'cancellation-pending' ? 'cancellation acknowledgement pending' : 'blocked';
+  elements.x92budgetaccounting.textContent = `Pending reservations: ${reservations.length} · Indeterminate terminal records: ${indeterminate} · Dispatch gate: ${dispatchGateLabel} · Runtime boundary: ${runtimeBoundaryLabel}`;
   elements.x92budgetaccounting.dataset.pending = String(reservations.length);
   elements.x92budgetaccounting.dataset.indeterminate = String(indeterminate);
   elements.x92budgetaccounting.dataset.runtimeBoundary = runtimeBoundary.status;
+  elements.x92budgetaccounting.dataset.dispatchGate = dispatchGate.status;
   elements.x92budgetreservations.replaceChildren(...(reservations.length ? reservations.map((item) => {
     const row = document.createElement('li'); row.textContent = `${item.action} · ${item.requestId} · ${item.deadlineAfterMs} ms`; return row;
   }) : [Object.assign(document.createElement('li'), { textContent: 'None' })]));
@@ -8291,10 +8299,11 @@ async function runThermostatTestThroughUi(profile, signal) {
     };
   } finally { signal.removeEventListener('abort', cancel); }
 }
-function x92RuntimeQuiescenceAck(request, identity, producerState, evidence) {
+function x92RuntimeQuiescenceAck(request, dispatchToken, identity, producerState, evidence) {
   return {
     schema: X92_RUNTIME_QUIESCENCE_ACK_SCHEMA,
     requestId: request.requestId,
+    dispatchToken,
     profile: request.profile,
     identity: structuredClone(identity),
     producerState,
@@ -8302,14 +8311,14 @@ function x92RuntimeQuiescenceAck(request, identity, producerState, evidence) {
     evidence: structuredClone(evidence),
   };
 }
-async function quiesceX92Runtime({ request, identity, reason }) {
+async function quiesceX92Runtime({ request, dispatchToken, identity, reason }) {
   const profile = request.profile;
   if (profile === AVR_PROFILE) {
     const targetWorker = worker;
     const targetToken = workerToken;
     const before = window.__M6_STATE__.runtime;
     if (!targetWorker) {
-      return x92RuntimeQuiescenceAck(request, identity, 'retired', {
+      return x92RuntimeQuiescenceAck(request, dispatchToken, identity, 'retired', {
         reason, workerToken: targetToken, cycleBefore: before?.cycle ?? null,
         acknowledgedCycle: null, cycleAfter: before?.cycle ?? null,
       });
@@ -8351,7 +8360,7 @@ async function quiesceX92Runtime({ request, identity, reason }) {
       throw Object.assign(new Error('X92_RUNTIME_NOT_FROZEN_AFTER_ACK'),
         { code: 'X92_RUNTIME_NOT_FROZEN_AFTER_ACK' });
     }
-    return x92RuntimeQuiescenceAck(request, identity, 'paused', {
+    return x92RuntimeQuiescenceAck(request, dispatchToken, identity, 'paused', {
       reason, workerToken: targetToken, workerInstanceNonce: after.runtimeIdentity.workerInstanceNonce,
       cycleBefore: before?.cycle ?? null, acknowledgedCycle: acknowledged.cycle, cycleAfter: after.cycle,
       runtimeIdentity: structuredClone(after.runtimeIdentity),
@@ -8363,19 +8372,19 @@ async function quiesceX92Runtime({ request, identity, reason }) {
       const candidate = picoPublicWorkbench.snapshot();
       return candidate.runtime?.paused === true ? candidate : null;
     }, new AbortController().signal, 2_000);
-    return x92RuntimeQuiescenceAck(request, identity, 'paused', {
+    return x92RuntimeQuiescenceAck(request, dispatchToken, identity, 'paused', {
       reason, revision: state.revision, cycleAfter: state.runtime?.cycle ?? null,
     });
   }
   if (profile === ESP32C3_PROFILE) {
     await c3PublicWorkbench.dispose('X92 budgeted Run completed; transient QEMU producer retired.');
-    return x92RuntimeQuiescenceAck(request, identity, 'retired', {
+    return x92RuntimeQuiescenceAck(request, dispatchToken, identity, 'retired', {
       reason, phase: c3PublicWorkbench.snapshot().phase,
     });
   }
   if (profile === STM32F429ZI_PROFILE) {
     stm32PublicWorkbench.stop('X92 budgeted Run completed; transient Renode producer retired.');
-    return x92RuntimeQuiescenceAck(request, identity, 'retired', {
+    return x92RuntimeQuiescenceAck(request, dispatchToken, identity, 'retired', {
       reason, phase: stm32PublicWorkbench.snapshot().phase,
     });
   }
@@ -8469,6 +8478,7 @@ window.__AGENT_ACTIONS__ = Object.freeze({
   },
   cancel: (requestId) => x92BudgetExecutor.cancel(requestId),
   runtimeBoundary: () => x92BudgetExecutor.runtimeBoundary(),
+  dispatchGate: () => x92BudgetExecutor.dispatchGate(),
   state: () => lastBoundedAction ? structuredClone(lastBoundedAction) : null,
   externalEndpoint: false,
 });
@@ -8480,6 +8490,11 @@ elements.x92budgetstart.addEventListener('click', async (event) => {
     const runtimeBoundary = x92BudgetExecutor.runtimeBoundary();
     if (runtimeBoundary.status !== 'idle') {
       renderX92Budget(`Session was not started (${runtimeBoundary.code}). The old producer must acknowledge pause or retirement first.`, false);
+      return;
+    }
+    const dispatchGate = x92BudgetExecutor.dispatchGate();
+    if (dispatchGate.status !== 'idle') {
+      renderX92Budget(`Session was not started (${dispatchGate.code}). The active Build or Run must acknowledge completion first.`, false);
       return;
     }
     if (x92Budget.active()) {
@@ -8530,6 +8545,7 @@ window.__X92_EXPERIMENT_BUDGET__ = Object.freeze({
   parseReview: (source) => parseX92ReviewProjection(source),
   imported: () => x92ImportedReview ? structuredClone(x92ImportedReview) : null,
   runtimeBoundary: () => structuredClone(x92BudgetExecutor.runtimeBoundary()),
+  dispatchGate: () => structuredClone(x92BudgetExecutor.dispatchGate()),
   authority: Object.freeze({ start: 'trusted-human-ui-only', build: false, run: false, retry: false, verdict: false }),
 });
 renderX92Budget();
@@ -12216,6 +12232,11 @@ elements.run.addEventListener('click', () => {
   const x92Boundary = x92BudgetExecutor?.runtimeBoundary?.();
   if (x92Boundary && x92Boundary.status !== 'idle') {
     elements.projectmessage.textContent = `Run blocked (${x92Boundary.code}). The prior budgeted producer has not acknowledged pause or retirement.`;
+    return;
+  }
+  const x92Gate = x92BudgetExecutor?.dispatchGate?.();
+  if (x92Gate && x92Gate.status !== 'idle') {
+    elements.projectmessage.textContent = `Run blocked (${x92Gate.code}). The active budgeted action has not acknowledged completion.`;
     return;
   }
   if (x92Budget?.active()) {

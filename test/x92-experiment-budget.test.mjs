@@ -13,9 +13,9 @@ import {
 import { boundedActionRequest, parseBoundedActionRequest } from '../src/bounded-action-contracts.mjs';
 
 const profile = 'board.atmega328p-16mhz-v1';
-const identity = (generation = 1, hash = 'a') => ({
+const identity = (generation = 1, hash = 'a', targetProfile = profile) => ({
   schema: 'intent-mcu-experiment-budget-identity@1',
-  profile,
+  profile: targetProfile,
   projectGeneration: generation,
   sourceIdentity: `sha256:${hash.repeat(64)}`,
   graphIdentity: `sha256:${hash.repeat(64)}`,
@@ -24,9 +24,10 @@ const request = (action, requestId, payload = {}) => ({
   schema: 'intent-mcu-bounded-action-request@1', action, requestId, profile,
   expectedGeneration: 1, issuedAtMs: 1_000, expiresAtMs: 31_000, payload,
 });
-const acknowledgedQuiescence = async ({ request: value, identity: binding, reason }) => ({
+const acknowledgedQuiescence = async ({ request: value, dispatchToken, identity: binding, reason }) => ({
   schema: X92_RUNTIME_QUIESCENCE_ACK_SCHEMA,
   requestId: value.requestId,
+  dispatchToken,
   profile: value.profile,
   identity: structuredClone(binding),
   producerState: 'paused',
@@ -101,7 +102,7 @@ test('one immutable request key can reserve and dispatch only once while pending
     measurementSource: 'test.monotonic-wall-clock' });
   const original = request('firmware.build', 'x92-idempotent-build-request');
   const source = JSON.stringify(original);
-  const first = executor.execute(source); await Promise.resolve();
+  const first = executor.execute(source); await new Promise((resolve) => setImmediate(resolve));
   const pendingDuplicate = await executor.execute(source);
   assert.equal(pendingDuplicate.code, 'X92_REQUEST_DUPLICATE_PENDING'); assert.equal(dispatches, 1);
   finish({ ok: true, code: 'ACTION_BUILD_SUCCEEDED', executed: true });
@@ -318,7 +319,8 @@ test('runtime result stays reserved until delayed producer pause acknowledgement
       return new Promise((resolve) => { resolveAcknowledgement = () => {
         producer.running = false;
         resolve({ schema: X92_RUNTIME_QUIESCENCE_ACK_SCHEMA,
-          requestId: context.request.requestId, profile: context.request.profile,
+          requestId: context.request.requestId, dispatchToken: context.dispatchToken,
+          profile: context.request.profile,
           identity: context.identity, producerState: 'paused', acknowledged: true,
           evidence: { reason: context.reason, cycleBefore: 10,
             acknowledgedCycle: producer.cycle, cycleAfter: producer.cycle } });
@@ -396,14 +398,15 @@ test('explicit cancellation waits for pause acknowledgement before terminal acco
     quiesceRuntime: (value) => { context = value; return new Promise((resolve) => { acknowledge = resolve; }); },
   });
   const source = JSON.stringify(request('runtime.run', 'x92-explicit-cancel-run'));
-  const pending = executor.execute(source); await Promise.resolve();
+  const pending = executor.execute(source); await new Promise((resolve) => setImmediate(resolve));
   assert.equal(executor.cancel('x92-explicit-cancel-run').code, 'ACTION_CANCEL_REQUESTED');
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(owner.snapshot().terminal.length, 0);
   assert.equal(executor.runtimeBoundary().status, 'pending');
   monotonic = 75;
   acknowledge({ schema: X92_RUNTIME_QUIESCENCE_ACK_SCHEMA,
-    requestId: context.request.requestId, profile: context.request.profile,
+    requestId: context.request.requestId, dispatchToken: context.dispatchToken,
+    profile: context.request.profile,
     identity: context.identity, producerState: 'paused', acknowledged: true,
     evidence: { reason: context.reason, cycleBefore: 50, acknowledgedCycle: 55, cycleAfter: 55 } });
   const result = await pending;
@@ -456,7 +459,7 @@ test('identity retirement during delayed pause keeps full charge and ignores lat
     quiesceRuntime: (value) => { context = value; return new Promise((resolve) => { acknowledge = resolve; }); },
   });
   const source = JSON.stringify(request('runtime.run', 'x92-retired-late-run'));
-  const pending = executor.execute(source); await Promise.resolve();
+  const pending = executor.execute(source); await new Promise((resolve) => setImmediate(resolve));
   finish({ ok: true, code: 'ACTION_RUN_EVIDENCE_READY', executed: true });
   await new Promise((resolve) => setImmediate(resolve));
   current = identity(2, 'b');
@@ -465,7 +468,8 @@ test('identity retirement during delayed pause keeps full charge and ignores lat
   assert.equal(owner.snapshot().terminal[0].terminalKind, 'identity-change');
   assert.equal(owner.snapshot().terminal[0].outcome, 'indeterminate');
   acknowledge({ schema: X92_RUNTIME_QUIESCENCE_ACK_SCHEMA,
-    requestId: context.request.requestId, profile: context.request.profile,
+    requestId: context.request.requestId, dispatchToken: context.dispatchToken,
+    profile: context.request.profile,
     identity: context.identity, producerState: 'paused', acknowledged: true,
     evidence: { reason: context.reason, cycleBefore: 12, acknowledgedCycle: 12, cycleAfter: 12 } });
   const result = await pending;
@@ -476,6 +480,195 @@ test('identity retirement during delayed pause keeps full charge and ignores lat
   const duplicate = await executor.execute(source);
   assert.equal(duplicate.code, 'X92_REQUEST_DUPLICATE_TERMINAL');
   assert.equal(owner.snapshot().terminal.length, 1);
+});
+
+test('atomic gate admits at most one delayed-identity producer for run/run, run/build and build/run', async () => {
+  for (const [firstAction, secondAction] of [
+    ['runtime.run', 'runtime.run'],
+    ['runtime.run', 'firmware.build'],
+    ['firmware.build', 'runtime.run'],
+  ]) {
+    const owner = budget(); owner.start(identity(), { humanInitiated: true });
+    let resolveIdentity; let identityCalls = 0; let dispatches = 0; let quiescenceCalls = 0;
+    const executor = createX92BudgetedExecutor({
+      budget: owner,
+      downstream: {
+        execute: async () => { dispatches += 1;
+          return { ok: true, code: firstAction === 'runtime.run'
+            ? 'ACTION_RUN_EVIDENCE_READY' : 'ACTION_BUILD_SUCCEEDED', executed: true }; },
+        cancel: () => ({ ok: false, code: 'ACTION_NOT_ACTIVE' }),
+      },
+      currentIdentity: () => { identityCalls += 1;
+        return new Promise((resolve) => { resolveIdentity = resolve; }); },
+      now: () => 5, schedule: () => 1, unschedule: () => {},
+      parseRequest: (source) => JSON.parse(source), measurementSource: 'test.monotonic-wall-clock',
+      quiesceRuntime: async (context) => { quiescenceCalls += 1;
+        return acknowledgedQuiescence(context); },
+    });
+    const firstId = `x92-gate-${firstAction.replace('.', '-')}-first`;
+    const secondId = `x92-gate-${secondAction.replace('.', '-')}-second`;
+    const pending = executor.execute(JSON.stringify(request(firstAction, firstId)));
+    assert.equal(executor.dispatchGate().requestId, firstId);
+    assert.equal(executor.dispatchGate().status, 'identity-check');
+    const blocked = await executor.execute(JSON.stringify(request(secondAction, secondId)));
+    assert.equal(blocked.code, 'X92_DISPATCH_GATE_BLOCKED');
+    assert.equal(blocked.dispatchGate.requestId, firstId);
+    assert.equal(identityCalls, 1);
+    assert.equal(dispatches, 0);
+    resolveIdentity(identity());
+    const completed = await pending;
+    assert.equal(completed.ok, true);
+    assert.equal(dispatches, 1);
+    assert.equal(quiescenceCalls, firstAction === 'runtime.run' ? 1 : 0);
+    assert.equal(executor.dispatchGate().status, 'idle');
+    assert.equal(executor.runtimeBoundary().status, 'idle');
+  }
+});
+
+test('session or identity replacement during delayed lookup rejects before reservation and producer dispatch', async () => {
+  for (const mutation of ['new-session', 'source-edit', 'session-retired']) {
+    const owner = budget(); owner.start(identity(), { humanInitiated: true });
+    let resolveIdentity; let dispatches = 0;
+    const executor = createX92BudgetedExecutor({
+      budget: owner,
+      downstream: { execute: async () => { dispatches += 1; return { ok: true, executed: true }; },
+        cancel: () => ({ ok: false }) },
+      currentIdentity: () => new Promise((resolve) => { resolveIdentity = resolve; }),
+      parseRequest: (source) => JSON.parse(source), quiesceRuntime: acknowledgedQuiescence,
+      measurementSource: 'test.monotonic-wall-clock',
+    });
+    const pending = executor.execute(JSON.stringify(request('runtime.run', `x92-${mutation}-lookup`)));
+    if (mutation === 'new-session') owner.start(identity(2, 'b'), { humanInitiated: true });
+    else if (mutation === 'source-edit') owner.rebind(identity(2, 'b'), 'source-edited-during-lookup');
+    else owner.retire('project-open-during-lookup');
+    const blocked = await executor.execute(JSON.stringify(request('firmware.build', `x92-${mutation}-bypass`)));
+    assert.equal(blocked.code, 'X92_DISPATCH_GATE_BLOCKED');
+    resolveIdentity(identity());
+    const result = await pending;
+    assert.equal(result.code, 'X92_SESSION_CHANGED_BEFORE_DISPATCH');
+    assert.equal(dispatches, 0);
+    assert.equal(executor.dispatchGate().status, 'idle');
+    assert.equal(executor.runtimeBoundary().status, 'idle');
+  }
+});
+
+test('cancellation during delayed identity lookup prevents reservation and producer dispatch', async () => {
+  const owner = budget(); owner.start(identity(), { humanInitiated: true });
+  let resolveIdentity; let dispatches = 0;
+  const executor = createX92BudgetedExecutor({
+    budget: owner,
+    downstream: { execute: async () => { dispatches += 1; return { ok: true, executed: true }; },
+      cancel: () => ({ ok: false, code: 'ACTION_NOT_ACTIVE' }) },
+    currentIdentity: () => new Promise((resolve) => { resolveIdentity = resolve; }),
+    parseRequest: (source) => JSON.parse(source), quiesceRuntime: acknowledgedQuiescence,
+    measurementSource: 'test.monotonic-wall-clock',
+  });
+  const requestId = 'x92-cancel-during-identity';
+  const pending = executor.execute(JSON.stringify(request('runtime.run', requestId)));
+  assert.equal(executor.cancel(requestId).code, 'ACTION_CANCEL_REQUESTED');
+  assert.equal(executor.dispatchGate().status, 'cancellation-pending');
+  resolveIdentity(identity());
+  const cancelled = await pending;
+  assert.equal(cancelled.code, 'X92_ACTION_CANCELLED_BEFORE_DISPATCH');
+  assert.equal(dispatches, 0);
+  assert.equal(owner.snapshot().reservations.length, 0);
+  assert.equal(executor.dispatchGate().status, 'idle');
+});
+
+test('timed-out Build keeps its gate until the downstream cancellation completion arrives', async () => {
+  const owner = budget({ limits: { builds: 1, runs: 1, scenarios: 4, wallClockMs: 30_000 } });
+  owner.start(identity(), { humanInitiated: true });
+  let deadline; let completeBuild; let dispatches = 0;
+  const executor = createX92BudgetedExecutor({
+    budget: owner,
+    downstream: {
+      execute: () => { dispatches += 1; return new Promise((resolve) => { completeBuild = resolve; }); },
+      cancel: () => ({ ok: true, code: 'ACTION_CANCEL_REQUESTED' }),
+    },
+    currentIdentity: async () => identity(), now: () => 30_000,
+    schedule: (callback) => { deadline = callback; return 1; }, unschedule: () => {},
+    parseRequest: (source) => JSON.parse(source), quiesceRuntime: acknowledgedQuiescence,
+    measurementSource: 'test.monotonic-wall-clock',
+  });
+  const pending = executor.execute(JSON.stringify(request('firmware.build', 'x92-build-cancel-ack')));
+  await new Promise((resolve) => setImmediate(resolve)); deadline();
+  const timeout = await pending;
+  assert.equal(timeout.code, 'X92_DEADLINE_EXCEEDED');
+  assert.equal(executor.dispatchGate().status, 'cancellation-pending');
+  const blocked = await executor.execute(JSON.stringify(request('runtime.run', 'x92-run-before-build-ack')));
+  assert.equal(blocked.code, 'X92_DISPATCH_GATE_BLOCKED');
+  assert.equal(dispatches, 1);
+  completeBuild({ ok: false, code: 'ACTION_CANCELLED', executed: false });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(executor.dispatchGate().status, 'idle');
+});
+
+test('late acknowledgement carrying an old owner token cannot release the current gate', async () => {
+  const owner = budget(); owner.start(identity(), { humanInitiated: true });
+  const tokens = []; let acknowledgeSecond;
+  const executor = createX92BudgetedExecutor({
+    budget: owner,
+    downstream: { execute: async () => ({ ok: true, code: 'ACTION_RUN_EVIDENCE_READY', executed: true }),
+      cancel: () => ({ ok: false }) },
+    currentIdentity: async () => identity(), now: () => 10, schedule: () => 1, unschedule: () => {},
+    parseRequest: (source) => JSON.parse(source), measurementSource: 'test.monotonic-wall-clock',
+    quiesceRuntime: async (context) => {
+      tokens.push(context.dispatchToken);
+      if (tokens.length === 1) return acknowledgedQuiescence(context);
+      return new Promise((resolve) => { acknowledgeSecond = () => resolve({
+        ...(awaitableAck(context)), dispatchToken: tokens[0],
+      }); });
+    },
+  });
+  function awaitableAck(context) {
+    return {
+      schema: X92_RUNTIME_QUIESCENCE_ACK_SCHEMA,
+      requestId: context.request.requestId,
+      dispatchToken: context.dispatchToken,
+      profile: context.request.profile,
+      identity: structuredClone(context.identity),
+      producerState: 'paused', acknowledged: true,
+      evidence: { reason: context.reason, cycleBefore: 1, acknowledgedCycle: 1, cycleAfter: 1 },
+    };
+  }
+  assert.equal((await executor.execute(JSON.stringify(request('runtime.run', 'x92-old-token-first')))).ok, true);
+  const second = executor.execute(JSON.stringify(request('runtime.run', 'x92-old-token-second')));
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.notEqual(tokens[0], tokens[1]);
+  acknowledgeSecond();
+  const rejected = await second;
+  assert.equal(rejected.code, 'X92_RUNTIME_QUIESCENCE_UNCONFIRMED');
+  assert.equal(executor.dispatchGate().requestId, 'x92-old-token-second');
+  assert.equal(executor.dispatchGate().status, 'blocked');
+  assert.equal(executor.runtimeBoundary().requestId, 'x92-old-token-second');
+});
+
+test('non-AVR budgeted Run fails before identity or producer while inactive manual paths stay unchanged', async () => {
+  for (const targetProfile of [
+    'board.rp2040-pico-v1', 'board.esp32-c3-devmodule-v1', 'board.stm32f429zi-nucleo144-v1',
+  ]) {
+    const owner = budget(); owner.start(identity(1, 'a', targetProfile), { humanInitiated: true });
+    let identityCalls = 0; let dispatches = 0;
+    const downstream = { execute: async () => { dispatches += 1;
+      return { ok: true, code: 'MANUAL_UNCHANGED', executed: true }; }, cancel: () => ({ ok: false }) };
+    const executor = createX92BudgetedExecutor({ budget: owner, downstream,
+      currentIdentity: async () => { identityCalls += 1; return identity(1, 'a', targetProfile); },
+      parseRequest: (source) => JSON.parse(source), quiesceRuntime: acknowledgedQuiescence,
+      measurementSource: 'test.monotonic-wall-clock' });
+    const source = JSON.stringify({ ...request('runtime.run', `x92-unproven-${targetProfile}`),
+      profile: targetProfile });
+    const rejected = await executor.execute(source);
+    assert.equal(rejected.code, 'X92_RUNTIME_QUIESCENCE_UNPROVEN_PROFILE');
+    assert.equal(identityCalls, 0); assert.equal(dispatches, 0);
+
+    const manualOwner = budget();
+    const manual = createX92BudgetedExecutor({ budget: manualOwner, downstream,
+      currentIdentity: async () => identity(1, 'a', targetProfile),
+      parseRequest: (value) => JSON.parse(value), quiesceRuntime: acknowledgedQuiescence,
+      measurementSource: 'test.monotonic-wall-clock' });
+    assert.equal((await manual.execute(source)).code, 'MANUAL_UNCHANGED');
+    assert.equal(dispatches, 1);
+  }
 });
 
 test('thermostat experiment reserves four scenarios and cannot normalize virtual controller time', () => {
