@@ -13,6 +13,9 @@ import { controlContractsFor } from '../src/model-control-contracts.mjs';
 import * as existingSnapshots from '../src/model-library-snapshots.mjs';
 
 const { RETAINED_MODEL_LIBRARY_MANIFEST } = existingSnapshots;
+const PRE_TEACHING_BATCH_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_TEACHING_BATCH_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_X92_DISPATCH_GATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X92_DISPATCH_GATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -215,16 +218,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x92-dispatch-gate-fix.1-current',
-  'intent-mcu-model-bundle-current-x92-dispatch-gate-fix-1@28',
+  '2.0.0-teaching-batch.1-current',
+  'intent-mcu-model-bundle-current-teaching-batch-1@29',
   currentImplementation,
   {
-    priorVersion: PRE_X92_DISPATCH_GATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X92_DISPATCH_GATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_TEACHING_BATCH_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_TEACHING_BATCH_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'explicit-data-only-migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component electrical semantics are unchanged; one owner-bound gate now serializes budgeted Build and AVR Run across asynchronous identity and producer lifetime',
-    presentationDisposition: 'private review exposes read-only dispatch and runtime boundaries, and labels non-AVR budgeted Run unavailable without changing manual controls',
-    baselineClosureDisposition: 'the prior X92 runtime-lifetime identity and all earlier public identities remain immutable and migration-only',
+    semanticDisposition: 'component electrical semantics are unchanged; private X92 proof and teaching, presentation, and annotation owners add no model or runtime authority',
+    presentationDisposition: 'private review adds presentation view, local teaching exercise bundles, and local visual notes and groups',
+    baselineClosureDisposition: 'the accepted rc.105 X92 dispatch-gate identity and all earlier public identities remain immutable and migration-only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -258,6 +261,7 @@ export const PRE_X92_BUDGET_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSO
 export const PRE_X92_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X92_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X92_RUNTIME_LIFETIME_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X92_RUNTIME_LIFETIME_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X92_DISPATCH_GATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X92_DISPATCH_GATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_TEACHING_BATCH_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_TEACHING_BATCH_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);
