@@ -1,8 +1,14 @@
-# Migration to 1.1.0-rc.109
+# Migration to 1.1.0-rc.110
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.110 adds no durable project or browser-storage schema. X69 experiment
+packages and X74 response files are explicit learner-owned local data. Opening
+them restores no Build, Run, runtime, verdict, budget, account, upload or
+automatic Apply authority. Older releases may reject these newer bounded files;
+they must never infer missing relationships or execution authority.
 
 Rc.109 introduces a new current model-library identity for the corrected
 candidate-graph validation path. Rc.108 files remain immutable data-only

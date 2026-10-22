@@ -28,9 +28,9 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc108 to rc109 reviewed X66 thermostat correction bytes', async () => {
+test('X88 owner binds canonical rc109 to rc110 reviewed X69 X74 recipient bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.109');
+  assert.equal(release.version, '1.1.0-rc.110');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
@@ -38,18 +38,24 @@ test('X88 owner binds canonical rc108 to rc109 reviewed X66 thermostat correctio
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
   assert(registry.ids.includes('X92'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.108', current: '1.1.0-rc.109' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.109', current: '1.1.0-rc.110' });
   assert.deepEqual(value.changes, [
     {
-      id: 'X66', classification: 'changed',
-      capabilities: ['intent-mcu-annotated-workspace@2', 'intent-mcu-canvas-annotations@2', 'intent-mcu-net-labels@1', 'intent-mcu-subcircuit-definition@1', 'intent-mcu-subcircuit-instance@1', 'intent-mcu-subcircuits@1'],
-      contracts: ['x66-bounded-reusable-subcircuit-v1', 'x66-existing-canonical-net-labels-v1', 'x66-non-electrical-canvas-annotations-v1'],
-      summary: 'Corrects the reviewed bounded X66 default-thermostat Create journey by validating candidate graphs through the exact locked candidate model bundle while retaining strict unknown-type rejection.',
+      id: 'X69', classification: 'additive',
+      capabilities: ['intent-mcu-guided-historical-replay@1'],
+      contracts: ['x69-guided-experiment-replay-v1'],
+      summary: 'Adds a reviewed local historical walkthrough over strict experiment packages, separating authored input schedules from recorded observations and importing no current verdict or runtime authority.',
+    },
+    {
+      id: 'X74', classification: 'additive',
+      capabilities: ['intent-mcu-recipient-response@1'],
+      contracts: ['x74-explicit-local-file-handover-v1'],
+      summary: 'Adds a reviewed explicit local-file handover and bounded response relationship bound to exact parent bytes, with no hidden storage, upload, automatic Apply or execution authority.',
     },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records the reviewed rc.108 to rc.109 default-thermostat correction and bounded X66 original-criterion closure, with X92 remaining partial and zero new native producer authority.',
+      summary: 'Records the reviewed rc.109 to rc.110 X69/X74 local recipient workflows, with X92 remaining partial and zero new native producer authority.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -112,7 +118,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.109');
+  assert.equal(discovery.identity.version, '1.1.0-rc.110');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

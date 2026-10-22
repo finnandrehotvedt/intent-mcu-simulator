@@ -27,8 +27,8 @@ expected values or UART text.
 
 The two test fixtures are byte-identical retained producer exports. Their
 lineage and hashes are documented in `test/fixtures/X69-PROVENANCE.md`.
-Evidence is provided by `test/x69-guided-experiment-replay.test.mjs` and
-`test/x69-guided-experiment-replay-browser.cjs`. Status remains
-`implemented/tested_private` pending the later reviewed public release and
-independent public verification required by the release packet.
-
+Evidence is provided by `test/x69-guided-experiment-replay.test.mjs`,
+`test/x69-guided-experiment-replay-browser.cjs` and the deferred read/hash race
+regression. Public rc.110 acceptance traverses both retained fixtures and
+manual navigation. Status is complete only against the bounded original
+criterion above; it is not automatic replay or fresh execution authority.

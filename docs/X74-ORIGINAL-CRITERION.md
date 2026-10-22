@@ -31,9 +31,8 @@ no upload, account, repository, email, endpoint or server-storage request.
 Digest integrity binds exact bytes only; it does not establish sender identity
 or the truth of claims.
 
-Evidence is provided by `test/x74-recipient-file-exchange.test.mjs` and the
-two-context actual-download journey in
-`test/x74-recipient-file-exchange-browser.cjs`. Status remains
-`implemented/tested_private` pending the later reviewed public release and
-independent public verification required by the release packet.
-
+Evidence is provided by `test/x74-recipient-file-exchange.test.mjs`, the
+two-context actual-download journey and the deferred response/parent race
+regression. Public rc.110 acceptance repeats the actual local download/Open
+loop. Status is complete only against the bounded original criterion above;
+it is not an account, repository service, upload or hidden storage claim.

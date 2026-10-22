@@ -111,6 +111,15 @@
       ]
     },
     {
+      "id": "X69",
+      "capabilities": [
+        "intent-mcu-guided-historical-replay@1"
+      ],
+      "contracts": [
+        "x69-guided-experiment-replay-v1"
+      ]
+    },
+    {
       "id": "X70",
       "capabilities": [
         "intent-mcu-accessible-demonstration@1"
@@ -126,6 +135,15 @@
       ],
       "contracts": [
         "x71-local-avr-teaching-exercise-v1"
+      ]
+    },
+    {
+      "id": "X74",
+      "capabilities": [
+        "intent-mcu-recipient-response@1"
+      ],
+      "contracts": [
+        "x74-explicit-local-file-handover-v1"
       ]
     },
     {

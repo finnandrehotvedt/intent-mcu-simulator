@@ -1,4 +1,27 @@
-# Intent MCU Simulator 1.1.0-rc.109
+# Intent MCU Simulator 1.1.0-rc.110
+
+## Historical replay and explicit local-file handover
+
+Rc.110 publishes the reviewed X69 guided historical walkthrough and X74 local
+recipient exchange. A recipient can traverse authored scenario schedules and
+the package's retained D13 observations without rerunning firmware or turning
+historical evidence into a current verdict.
+
+Handover and response files move only when a user explicitly downloads and
+opens them. Responses are bounded data-only children of exact parent bytes;
+wrong, stale, duplicate, malformed or authority-bearing files fail closed.
+There is no account, upload, hidden storage, automatic Apply or sender-identity
+claim. Concurrent selections are latest-wins, and Close, Escape or parent
+replacement invalidates pending reads and hashes atomically.
+
+X69 and X74 are complete only against their original bounded criteria after
+reviewed public acceptance. X92 remains partial. Canonical status is X
+**81/1/14**, P1 **59/0/0**. Rc.110 performs zero native Build, Run, Scenario or
+worker action; cumulative native evidence remains **34/33/0**.
+
+---
+
+## 1.1.0-rc.109
 
 ## Corrected default-thermostat reusable stage
 

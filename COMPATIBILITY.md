@@ -1,10 +1,17 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.109 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.110 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
 not complete electrical or cycle-perfect hardware replacements.
+
+The X69 recipient walkthrough accepts only canonical strict-v3 AVR thermostat
+experiment packages. It displays authored schedules and retained observations
+as historical evidence, never as a fresh execution or current verdict. X74
+uses explicit local downloads and opens for one strict data-only response bound
+to exact parent bytes. Neither feature adds accounts, uploads, server project
+storage, automatic Apply, sender authentication, execution or runtime state.
 
 The optional current-tab experiment budget is complete only for its bounded AVR
 slice: trusted session start, fixed aggregate limits, atomic dispatch ownership,

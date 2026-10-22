@@ -2,6 +2,23 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.110 — 2026-10-22
+
+- Adds the reviewed X69 local historical recipient walkthrough over canonical
+  strict-v3 AVR thermostat experiment packages. Authored scheduled inputs are
+  shown separately from recorded D13 observations, outcomes and evidence.
+- Adds the reviewed X74 explicit local-file handover and bounded response file.
+  Exact parent digests bind the relationship; review-only, wrong-parent,
+  duplicate, stale and unsaved-cancel paths preserve active work.
+- Makes concurrent package and response selection latest-wins. Invalid newer
+  choices, Close, Escape and parent replacement invalidate pending reads and
+  hashes before accepted state, status or rendering can change.
+- Adds no account, upload, server project storage, automatic Apply, native
+  producer or runtime worker. X69 and X74 are complete only against their
+  original bounded criteria; X92 remains partial. Status is X **81 complete /
+  1 partial / 14 planned**, P1 **59/0/0**. Native evidence remains **34 Build /
+  33 Run / 0 scenarios**.
+
 ## 1.1.0-rc.109 — 2026-10-22
 
 - Corrects the independently reproduced default-thermostat X66 Create failure.
