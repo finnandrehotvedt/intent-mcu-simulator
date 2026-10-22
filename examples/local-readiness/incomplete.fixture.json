@@ -1,0 +1,5 @@
+{
+  "schema": "intent-mcu-local-readiness-fixture@1",
+  "runtime": "runtime-missing",
+  "installedImages": { "avr": null, "rp2040": null, "stm32Builder": null, "stm32Runtime": null }
+}

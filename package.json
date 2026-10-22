@@ -97,6 +97,8 @@
     "test:x74:browser": "node test/x74-recipient-file-exchange-browser.cjs",
     "test:x57": "node --test --test-concurrency=1 test/x57-contribution-review.test.mjs test/model-library.test.mjs test/component-support-matrix.test.mjs",
     "contribution:check": "node tools/contribution-review.mjs check",
+    "test:x89": "node --test --test-concurrency=1 test/x89-local-readiness.test.mjs",
+    "local:readiness": "node tools/local-readiness.mjs assess",
     "test:x85": "node --test --test-concurrency=1 test/x85-no-shared-artifact-cache.test.mjs test/external-client-jobs.test.mjs test/gateway-unit.test.mjs",
     "test:x85:browser": "node test/x85-no-shared-artifact-cache-browser.cjs",
     "test:x83": "node --test --test-concurrency=1 test/x83-fair-access-retry.test.mjs test/external-client-results.test.mjs test/gateway-unit.test.mjs",
