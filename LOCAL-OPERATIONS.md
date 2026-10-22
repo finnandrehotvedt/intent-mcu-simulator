@@ -6,6 +6,11 @@ archives. It does not
 use the hosted compiler and does not distribute the resulting toolchain images.
 Docker access is required, but privileged containers and root access are not.
 
+Before installing or starting anything, the read-only
+[local readiness assessment](LOCAL-READINESS.md) can compare this checkout's
+fixed recipes and image locks with an explicit local fixture. Assessment does
+not imply service health, compiler/runtime readiness or a firmware execution.
+
 ## Build and start
 
 Use Node.js 20.19.4 and npm 10.8.2, then run:

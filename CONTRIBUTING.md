@@ -9,6 +9,11 @@ Thank you for helping improve Intent MCU Simulator.
    `LOCAL-OPERATIONS.md`.
 4. Submit only work you have the right to license under Apache-2.0.
 
+Model, pin, parameter or model-version proposals must also follow the local
+[controlled contribution review](CONTRIBUTION-REVIEW.md). Its data-only checker
+binds source review and the project-owned conformance result to exact candidate
+bytes; it does not execute submitted modules or grant registry/release access.
+
 Do not copy another simulator's source, interface layout, screenshots, artwork,
 component graphics, schemas, private endpoints, documentation, logos, or
 branding. New dependencies require an exact version, source, purpose, licence,
