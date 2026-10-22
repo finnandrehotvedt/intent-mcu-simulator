@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   X92_DEFAULT_LIMITS,
+  X92_RUNTIME_QUIESCENCE_ACK_SCHEMA,
   createX92BudgetedExecutor,
   createX92ExperimentBudget,
   parseX92ReviewProjection,
@@ -22,6 +23,15 @@ const identity = (generation = 1, hash = 'a') => ({
 const request = (action, requestId, payload = {}) => ({
   schema: 'intent-mcu-bounded-action-request@1', action, requestId, profile,
   expectedGeneration: 1, issuedAtMs: 1_000, expiresAtMs: 31_000, payload,
+});
+const acknowledgedQuiescence = async ({ request: value, identity: binding, reason }) => ({
+  schema: X92_RUNTIME_QUIESCENCE_ACK_SCHEMA,
+  requestId: value.requestId,
+  profile: value.profile,
+  identity: structuredClone(binding),
+  producerState: 'paused',
+  acknowledged: true,
+  evidence: { reason, cycleBefore: 10, acknowledgedCycle: 10, cycleAfter: 10 },
 });
 
 function budget(options = {}) {
@@ -86,6 +96,7 @@ test('one immutable request key can reserve and dispatch only once while pending
   };
   const executor = createX92BudgetedExecutor({ budget: owner, downstream,
     currentIdentity: async () => identity(), now: () => 10,
+    quiesceRuntime: acknowledgedQuiescence,
     schedule: () => 1, unschedule: () => {}, parseRequest: (source) => JSON.parse(source),
     measurementSource: 'test.monotonic-wall-clock' });
   const original = request('firmware.build', 'x92-idempotent-build-request');
@@ -224,6 +235,7 @@ test('budgeted executor enforces a deadline, accounts cancellation once and neve
   };
   const executor = createX92BudgetedExecutor({ budget: owner, downstream,
     currentIdentity: async () => identity(), now: () => monotonic,
+    quiesceRuntime: acknowledgedQuiescence,
     schedule: (callback, delay) => { deadline = { callback, delay }; return 1; }, unschedule: () => {},
     parseRequest: (source) => parseBoundedActionRequest(source, 1_000),
     measurementSource: 'test.monotonic-wall-clock' });
@@ -248,6 +260,7 @@ test('deadline returns with full accounting even when producer cancellation is n
   const executor = createX92BudgetedExecutor({ budget: owner,
     downstream: { execute: () => new Promise(() => {}), cancel: () => { cancelCount += 1; return { ok: false }; } },
     currentIdentity: async () => identity(), now: () => 30_000,
+    quiesceRuntime: acknowledgedQuiescence,
     schedule: (callback) => { deadline = callback; return 1; }, unschedule: () => {},
     parseRequest: (source) => JSON.parse(source), measurementSource: 'test.monotonic-wall-clock' });
   const pending = executor.execute(JSON.stringify(request('firmware.build', 'x92-unconfirmed-cancel-request')));
@@ -267,6 +280,7 @@ test('downstream crash consumes the full reservation while inactive budget prese
   const inactive = budget();
   const plain = createX92BudgetedExecutor({ budget: inactive, downstream,
     currentIdentity: async () => identity(), parseRequest: (source) => JSON.parse(source),
+    quiesceRuntime: acknowledgedQuiescence,
     measurementSource: 'test.monotonic-wall-clock' });
   assert.equal((await plain.execute(JSON.stringify(request('firmware.build', 'x92-manual-build-request')))).code,
     'MANUAL_UNCHANGED');
@@ -277,12 +291,191 @@ test('downstream crash consumes the full reservation while inactive budget prese
   const crashing = createX92BudgetedExecutor({ budget: active,
     downstream: { execute: async () => { throw new Error('simulated worker loss'); }, cancel: downstream.cancel },
     currentIdentity: async () => identity(), parseRequest: (source) => JSON.parse(source),
+    quiesceRuntime: acknowledgedQuiescence,
     now: () => 0, schedule: () => 1, unschedule: () => {},
     measurementSource: 'test.monotonic-wall-clock' });
   const result = await crashing.execute(JSON.stringify(request('firmware.build', 'x92-crash-build-request')));
   assert.equal(result.code, 'X92_DOWNSTREAM_CRASH');
   assert.equal(active.snapshot().consumed.wallClockMs, 30_000);
   assert.equal(active.snapshot().terminal[0].outcome, 'indeterminate');
+});
+
+test('runtime result stays reserved until delayed producer pause acknowledgement and then freezes', async () => {
+  const owner = budget(); owner.start(identity(), { humanInitiated: true });
+  let monotonic = 0; let resolveAcknowledgement; let quiescenceContext; let dispatches = 0;
+  const producer = { running: true, cycle: 10 };
+  const executor = createX92BudgetedExecutor({
+    budget: owner,
+    downstream: {
+      execute: async () => { dispatches += 1; return { ok: true, code: 'ACTION_RUN_EVIDENCE_READY', executed: true }; },
+      cancel: () => ({ ok: false, code: 'ACTION_NOT_ACTIVE' }),
+    },
+    currentIdentity: async () => identity(), now: () => monotonic,
+    schedule: () => 1, unschedule: () => {}, parseRequest: (source) => JSON.parse(source),
+    measurementSource: 'test.monotonic-wall-clock',
+    quiesceRuntime: (context) => {
+      quiescenceContext = context;
+      return new Promise((resolve) => { resolveAcknowledgement = () => {
+        producer.running = false;
+        resolve({ schema: X92_RUNTIME_QUIESCENCE_ACK_SCHEMA,
+          requestId: context.request.requestId, profile: context.request.profile,
+          identity: context.identity, producerState: 'paused', acknowledged: true,
+          evidence: { reason: context.reason, cycleBefore: 10,
+            acknowledgedCycle: producer.cycle, cycleAfter: producer.cycle } });
+      }; });
+    },
+  });
+  const pending = executor.execute(JSON.stringify(request('runtime.run', 'x92-delayed-pause-run')));
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(executor.runtimeBoundary().status, 'pending');
+  assert.equal(owner.snapshot().reservations.length, 1);
+  assert.equal(owner.snapshot().terminal.length, 0);
+  producer.cycle = 25; monotonic = 250;
+  const blocked = await executor.execute(JSON.stringify(request('runtime.run', 'x92-blocked-second-run')));
+  assert.equal(blocked.code, 'X92_RUNTIME_BOUNDARY_BLOCKED');
+  assert.equal(dispatches, 1);
+  resolveAcknowledgement();
+  const result = await pending;
+  assert.equal(result.ok, true);
+  assert.equal(result.runtimeQuiescence.evidence.acknowledgedCycle, 25);
+  assert.equal(result.experimentBudget.charged.wallClockMs, 250);
+  assert.equal(owner.snapshot().reservations.length, 0);
+  assert.equal(owner.snapshot().terminal.length, 1);
+  if (producer.running) producer.cycle += 100;
+  assert.equal(producer.cycle, 25, 'producer advanced after terminal accounting');
+  assert.equal(quiescenceContext.reason, 'downstream-result');
+  assert.equal(executor.runtimeBoundary().status, 'idle');
+});
+
+test('deadline with lost pause acknowledgement fully charges and blocks every later dispatch', async () => {
+  const owner = budget({ limits: { builds: 1, runs: 1, scenarios: 4, wallClockMs: 30_000 } });
+  owner.start(identity(), { humanInitiated: true });
+  let deadline; let resolveQuiescence; let dispatches = 0; let cancelCount = 0;
+  const executor = createX92BudgetedExecutor({
+    budget: owner,
+    downstream: {
+      execute: () => { dispatches += 1; return new Promise(() => {}); },
+      cancel: () => { cancelCount += 1; return { ok: true, code: 'ACTION_CANCEL_REQUESTED' }; },
+    },
+    currentIdentity: async () => identity(), now: () => 30_000,
+    schedule: (callback) => { deadline = callback; return 1; }, unschedule: () => {},
+    parseRequest: (source) => JSON.parse(source), measurementSource: 'test.monotonic-wall-clock',
+    quiesceRuntime: () => new Promise((resolve) => { resolveQuiescence = resolve; }),
+  });
+  const pending = executor.execute(JSON.stringify(request('runtime.run', 'x92-lost-ack-run')));
+  await Promise.resolve(); deadline();
+  const result = await pending;
+  assert.equal(result.code, 'X92_DEADLINE_EXCEEDED');
+  assert.equal(result.experimentBudget.outcome, 'indeterminate');
+  assert.equal(result.experimentBudget.charged.wallClockMs, 30_000);
+  assert.equal(cancelCount, 1);
+  assert.equal(executor.runtimeBoundary().status, 'pending');
+  const blockedPending = await executor.execute(JSON.stringify(request('runtime.run', 'x92-after-lost-ack')));
+  assert.equal(blockedPending.code, 'X92_RUNTIME_BOUNDARY_BLOCKED');
+  resolveQuiescence({ acknowledged: false });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(executor.runtimeBoundary().status, 'blocked');
+  const blockedTerminal = await executor.execute(JSON.stringify(request('runtime.run', 'x92-after-invalid-ack')));
+  assert.equal(blockedTerminal.code, 'X92_RUNTIME_BOUNDARY_BLOCKED');
+  assert.equal(dispatches, 1);
+});
+
+test('explicit cancellation waits for pause acknowledgement before terminal accounting', async () => {
+  const owner = budget(); owner.start(identity(), { humanInitiated: true });
+  let finish; let acknowledge; let context; let monotonic = 25;
+  const executor = createX92BudgetedExecutor({
+    budget: owner,
+    downstream: {
+      execute: () => new Promise((resolve) => { finish = resolve; }),
+      cancel: () => { finish({ ok: false, code: 'ACTION_CANCELLED', executed: false });
+        return { ok: true, code: 'ACTION_CANCEL_REQUESTED' }; },
+    },
+    currentIdentity: async () => identity(), now: () => monotonic,
+    schedule: () => 1, unschedule: () => {}, parseRequest: (source) => JSON.parse(source),
+    measurementSource: 'test.monotonic-wall-clock',
+    quiesceRuntime: (value) => { context = value; return new Promise((resolve) => { acknowledge = resolve; }); },
+  });
+  const source = JSON.stringify(request('runtime.run', 'x92-explicit-cancel-run'));
+  const pending = executor.execute(source); await Promise.resolve();
+  assert.equal(executor.cancel('x92-explicit-cancel-run').code, 'ACTION_CANCEL_REQUESTED');
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(owner.snapshot().terminal.length, 0);
+  assert.equal(executor.runtimeBoundary().status, 'pending');
+  monotonic = 75;
+  acknowledge({ schema: X92_RUNTIME_QUIESCENCE_ACK_SCHEMA,
+    requestId: context.request.requestId, profile: context.request.profile,
+    identity: context.identity, producerState: 'paused', acknowledged: true,
+    evidence: { reason: context.reason, cycleBefore: 50, acknowledgedCycle: 55, cycleAfter: 55 } });
+  const result = await pending;
+  assert.equal(result.code, 'ACTION_CANCELLED');
+  assert.equal(result.experimentBudget.terminalKind, 'cancelled');
+  assert.equal(result.experimentBudget.outcome, 'complete');
+  assert.equal(result.experimentBudget.charged.wallClockMs, 50);
+  assert.equal(executor.runtimeBoundary().status, 'idle');
+});
+
+test('invalid quiescence acknowledgement is inert, fully charged and review-parseable', async () => {
+  const owner = budget(); owner.start(identity(), { humanInitiated: true });
+  let dispatches = 0;
+  const executor = createX92BudgetedExecutor({
+    budget: owner,
+    downstream: {
+      execute: async () => { dispatches += 1;
+        return { ok: true, code: 'ACTION_RUN_EVIDENCE_READY', executed: true }; },
+      cancel: () => ({ ok: false, code: 'ACTION_NOT_ACTIVE' }),
+    },
+    currentIdentity: async () => identity(), now: () => 10,
+    schedule: () => 1, unschedule: () => {}, parseRequest: (source) => JSON.parse(source),
+    measurementSource: 'test.monotonic-wall-clock',
+    quiesceRuntime: async () => ({ acknowledged: true }),
+  });
+  const result = await executor.execute(JSON.stringify(request('runtime.run', 'x92-invalid-ack-run')));
+  assert.equal(result.code, 'X92_RUNTIME_QUIESCENCE_UNCONFIRMED');
+  assert.equal(result.experimentBudget.terminalKind, 'quiescence-failed');
+  assert.equal(result.experimentBudget.outcome, 'indeterminate');
+  assert.equal(result.experimentBudget.charged.wallClockMs, 30_000);
+  assert.equal(executor.runtimeBoundary().status, 'blocked');
+  assert.equal(parseX92ReviewProjection(owner.reviewText()).code, 'X92_REVIEW_INERT');
+  const blocked = await executor.execute(JSON.stringify(request('firmware.build', 'x92-after-invalid-ack-build')));
+  assert.equal(blocked.code, 'X92_RUNTIME_BOUNDARY_BLOCKED');
+  assert.equal(dispatches, 1);
+});
+
+test('identity retirement during delayed pause keeps full charge and ignores late completion exactly once', async () => {
+  const owner = budget(); owner.start(identity(), { humanInitiated: true });
+  let current = identity(); let finish; let acknowledge; let context;
+  const executor = createX92BudgetedExecutor({
+    budget: owner,
+    downstream: {
+      execute: () => new Promise((resolve) => { finish = resolve; }),
+      cancel: () => ({ ok: true, code: 'ACTION_CANCEL_REQUESTED' }),
+    },
+    currentIdentity: async () => current, now: () => 100,
+    schedule: () => 1, unschedule: () => {}, parseRequest: (source) => JSON.parse(source),
+    measurementSource: 'test.monotonic-wall-clock',
+    quiesceRuntime: (value) => { context = value; return new Promise((resolve) => { acknowledge = resolve; }); },
+  });
+  const source = JSON.stringify(request('runtime.run', 'x92-retired-late-run'));
+  const pending = executor.execute(source); await Promise.resolve();
+  finish({ ok: true, code: 'ACTION_RUN_EVIDENCE_READY', executed: true });
+  await new Promise((resolve) => setImmediate(resolve));
+  current = identity(2, 'b');
+  const rebound = owner.rebind(current, 'source-edited');
+  assert.deepEqual(rebound.requestIds, ['x92-retired-late-run']);
+  assert.equal(owner.snapshot().terminal[0].terminalKind, 'identity-change');
+  assert.equal(owner.snapshot().terminal[0].outcome, 'indeterminate');
+  acknowledge({ schema: X92_RUNTIME_QUIESCENCE_ACK_SCHEMA,
+    requestId: context.request.requestId, profile: context.request.profile,
+    identity: context.identity, producerState: 'paused', acknowledged: true,
+    evidence: { reason: context.reason, cycleBefore: 12, acknowledgedCycle: 12, cycleAfter: 12 } });
+  const result = await pending;
+  assert.equal(result.experimentBudget.duplicate, true);
+  assert.deepEqual(owner.snapshot().consumed, { builds: 0, runs: 1, scenarios: 0, wallClockMs: 30_000 });
+  assert.equal(owner.snapshot().terminal.length, 1);
+  assert.equal(executor.runtimeBoundary().status, 'idle');
+  const duplicate = await executor.execute(source);
+  assert.equal(duplicate.code, 'X92_REQUEST_DUPLICATE_TERMINAL');
+  assert.equal(owner.snapshot().terminal.length, 1);
 });
 
 test('thermostat experiment reserves four scenarios and cannot normalize virtual controller time', () => {
@@ -308,6 +501,7 @@ test('existing bounded request builder remains compatible with inactive X92', as
     requestId: parseBoundedActionRequest(value, epoch).requestId }), cancel: () => ({ ok: false }) };
   const executor = createX92BudgetedExecutor({ budget: owner, downstream,
     currentIdentity: async () => identity(), parseRequest: (value) => parseBoundedActionRequest(value, epoch),
+    quiesceRuntime: acknowledgedQuiescence,
     measurementSource: 'test.monotonic-wall-clock' });
   const result = await executor.execute(source);
   assert.equal(result.code, 'UNCHANGED');

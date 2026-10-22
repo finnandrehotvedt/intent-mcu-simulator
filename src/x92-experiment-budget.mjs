@@ -7,6 +7,7 @@ import { parseBoundedActionRequest } from './bounded-action-contracts.mjs';
 export const X92_BUDGET_SCHEMA = 'intent-mcu-experiment-budget@1';
 export const X92_REVIEW_SCHEMA = 'intent-mcu-experiment-budget-review@1';
 export const X92_RESULT_SCHEMA = 'intent-mcu-experiment-budget-result@1';
+export const X92_RUNTIME_QUIESCENCE_ACK_SCHEMA = 'intent-mcu-x92-runtime-quiescence-ack@1';
 export const X92_REVIEW_LIMIT = 64 * 1024;
 export const X92_DEFAULT_LIMITS = Object.freeze({
   builds: 2,
@@ -32,7 +33,8 @@ const PROFILE = /^board\.[a-z0-9.-]+-v[0-9]+$/u;
 const SESSION_ID = /^x92-session-[A-Za-z0-9-]{8,96}$/u;
 const RESERVATION_ID = /^x92-reservation-[A-Za-z0-9-]{8,96}$/u;
 const REQUEST_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,95}$/u;
-const TERMINAL_KINDS = new Set(['success', 'failure', 'cancelled', 'timeout', 'crash', 'identity-change', 'session-retired']);
+const TERMINAL_KINDS = new Set(['success', 'failure', 'cancelled', 'timeout', 'crash',
+  'quiescence-failed', 'identity-change', 'session-retired']);
 const clone = (value) => structuredClone(value);
 const canonical = (value) => {
   if (Array.isArray(value)) return value.map(canonical);
@@ -454,6 +456,7 @@ export function createX92BudgetedExecutor({
   budget,
   downstream,
   currentIdentity,
+  quiesceRuntime,
   now = () => performance.now(),
   schedule = setTimeout,
   unschedule = clearTimeout,
@@ -462,9 +465,65 @@ export function createX92BudgetedExecutor({
 } = {}) {
   if (!budget || typeof budget.reserve !== 'function' || !downstream
       || typeof downstream.execute !== 'function' || typeof downstream.cancel !== 'function'
-      || typeof currentIdentity !== 'function') error('X92_EXECUTOR_CONFIGURATION');
+      || typeof currentIdentity !== 'function' || typeof quiesceRuntime !== 'function') {
+    error('X92_EXECUTOR_CONFIGURATION');
+  }
+
+  let runtimeBoundary = null;
+  const boundaryProjection = () => runtimeBoundary ? Object.freeze({
+    status: runtimeBoundary.status,
+    requestId: runtimeBoundary.requestId,
+    reason: runtimeBoundary.reason,
+    code: runtimeBoundary.code,
+  }) : Object.freeze({ status: 'idle', requestId: null, reason: null, code: 'X92_RUNTIME_QUIESCENT' });
+
+  function validQuiescenceAck(value, request, binding, reason) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)
+        || !exactKeys(value, ['schema', 'requestId', 'profile', 'identity', 'producerState',
+          'acknowledged', 'evidence'])
+        || value.schema !== X92_RUNTIME_QUIESCENCE_ACK_SCHEMA
+        || value.requestId !== request.requestId || value.profile !== request.profile
+        || value.acknowledged !== true || !['paused', 'retired'].includes(value.producerState)
+        || !value.evidence || typeof value.evidence !== 'object' || Array.isArray(value.evidence)
+        || value.evidence.reason !== reason) return false;
+    try { return identityEqual(normalizeX92Identity(value.identity), normalizeX92Identity(binding)); }
+    catch { return false; }
+  }
+
+  function beginRuntimeQuiescence(request, reference, reason) {
+    if (request.action !== 'runtime.run') return null;
+    if (runtimeBoundary?.requestId === request.requestId && runtimeBoundary.status !== 'running') {
+      return runtimeBoundary;
+    }
+    const boundary = runtimeBoundary?.requestId === request.requestId ? runtimeBoundary : {
+      requestId: request.requestId, promise: null, ack: null,
+    };
+    boundary.status = 'pending'; boundary.reason = reason;
+    boundary.code = 'X92_RUNTIME_QUIESCENCE_PENDING';
+    runtimeBoundary = boundary;
+    boundary.promise = Promise.resolve().then(() => quiesceRuntime({
+      request: clone(request), reservation: clone(reference), identity: clone(reference.binding), reason,
+    })).then((ack) => {
+      if (!validQuiescenceAck(ack, request, reference.binding, reason)) {
+        boundary.status = 'blocked'; boundary.code = 'X92_RUNTIME_QUIESCENCE_ACK_INVALID';
+        return { ok: false, code: boundary.code, ack: null };
+      }
+      boundary.status = 'quiescent'; boundary.code = 'X92_RUNTIME_QUIESCENT'; boundary.ack = clone(ack);
+      if (runtimeBoundary === boundary) runtimeBoundary = null;
+      return { ok: true, code: 'X92_RUNTIME_QUIESCENT', ack: clone(ack) };
+    }).catch((caught) => {
+      boundary.status = 'blocked'; boundary.code = 'X92_RUNTIME_QUIESCENCE_ACK_MISSING';
+      return { ok: false, code: boundary.code, ack: null,
+        detail: caught?.code ?? caught?.message ?? 'unknown' };
+    });
+    return boundary;
+  }
 
   async function execute(source, { unresolvedProblems = [] } = {}) {
+    if (runtimeBoundary) {
+      return { ok: false, schema: X92_RESULT_SCHEMA, code: 'X92_RUNTIME_BOUNDARY_BLOCKED',
+        executed: false, authority: clone(X92_NO_AUTHORITY), runtimeBoundary: boundaryProjection() };
+    }
     if (!budget.active()) return downstream.execute(source);
     let request;
     try { request = parseRequest(source); }
@@ -476,6 +535,10 @@ export function createX92BudgetedExecutor({
       return downstream.execute(source);
     }
     const reference = reserved.reservation;
+    if (request.action === 'runtime.run') {
+      runtimeBoundary = { status: 'running', requestId: request.requestId,
+        reason: 'producer-active', code: 'X92_RUNTIME_ACTIVE', promise: null, ack: null };
+    }
     let deadlineTriggered = false;
     const started = now();
     let resolveDeadline;
@@ -488,10 +551,32 @@ export function createX92BudgetedExecutor({
     try {
       const result = await Promise.race([downstream.execute(source), deadline]);
       if (result?.x92Deadline === true) {
+        const boundary = beginRuntimeQuiescence(request, reference, 'deadline');
         const accounting = budget.finalize(reference, { kind: 'timeout', authenticated: false,
           measuredWallClockMs: null, measurementSource: null });
         return { ok: false, schema: X92_RESULT_SCHEMA, code: 'X92_DEADLINE_EXCEEDED',
-          executed: true, authority: clone(X92_NO_AUTHORITY), experimentBudget: accounting.terminal ?? null };
+          executed: true, authority: clone(X92_NO_AUTHORITY), experimentBudget: accounting.terminal ?? null,
+          ...(boundary ? { runtimeBoundary: boundaryProjection() } : {}) };
+      }
+      let runtimeQuiescence = null;
+      if (request.action === 'runtime.run') {
+        const boundary = beginRuntimeQuiescence(request, reference, 'downstream-result');
+        const quiescence = await Promise.race([boundary.promise, deadline]);
+        if (quiescence?.x92Deadline === true) {
+          const accounting = budget.finalize(reference, { kind: 'timeout', authenticated: false,
+            measuredWallClockMs: null, measurementSource: null });
+          return { ok: false, schema: X92_RESULT_SCHEMA, code: 'X92_DEADLINE_EXCEEDED',
+            executed: true, authority: clone(X92_NO_AUTHORITY), experimentBudget: accounting.terminal ?? null,
+            runtimeBoundary: boundaryProjection() };
+        }
+        if (!quiescence?.ok) {
+          const accounting = budget.finalize(reference, { kind: 'quiescence-failed', authenticated: false,
+            measuredWallClockMs: null, measurementSource: null });
+          return { ok: false, schema: X92_RESULT_SCHEMA, code: 'X92_RUNTIME_QUIESCENCE_UNCONFIRMED',
+            executed: true, authority: clone(X92_NO_AUTHORITY), experimentBudget: accounting.terminal ?? null,
+            runtimeBoundary: boundaryProjection() };
+        }
+        runtimeQuiescence = quiescence.ack;
       }
       const elapsed = Math.max(0, Math.ceil(now() - started));
       const authenticated = Number.isSafeInteger(elapsed) && elapsed <= reserved.deadlineAfterMs
@@ -504,8 +589,13 @@ export function createX92BudgetedExecutor({
       const accounting = budget.finalize(reference, { kind: terminalKind, authenticated,
         measuredWallClockMs: authenticated ? elapsed : null,
         measurementSource: authenticated ? measurementSource : null });
-      return { ...result, experimentBudget: accounting.terminal ?? null };
+      return { ...result, experimentBudget: accounting.terminal ?? null,
+        ...(runtimeQuiescence ? { runtimeQuiescence } : {}) };
     } catch (caught) {
+      if (request.action === 'runtime.run') {
+        const boundary = beginRuntimeQuiescence(request, reference, 'downstream-crash');
+        await Promise.race([boundary.promise, deadline]);
+      }
       budget.finalize(reference, { kind: 'crash', authenticated: false,
         measuredWallClockMs: null, measurementSource: null });
       return { ok: false, schema: X92_RESULT_SCHEMA, code: 'X92_DOWNSTREAM_CRASH',
@@ -518,5 +608,6 @@ export function createX92BudgetedExecutor({
   return Object.freeze({
     execute,
     cancel: (requestId) => downstream.cancel(requestId),
+    runtimeBoundary: boundaryProjection,
   });
 }

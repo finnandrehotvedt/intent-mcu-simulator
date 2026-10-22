@@ -45,12 +45,17 @@ const outputDir = process.env.X92_OUTPUT || '/tmp/x92-private-evidence';
         .map((node) => [node.dataset.kind, node.textContent])),
       pending: document.querySelector('#x92-budget-accounting').dataset.pending,
       indeterminate: document.querySelector('#x92-budget-accounting').dataset.indeterminate,
+      runtimeBoundary: document.querySelector('#x92-budget-accounting').dataset.runtimeBoundary,
     }));
     assert.deepEqual(visibleAccounting.builds, { consumed: 'Finalized: 0', reserved: 'Reserved: 0',
       remaining: 'Remaining: 2', limit: 'Limit: 2' });
     assert.deepEqual(visibleAccounting.wall, { consumed: 'Finalized: 0 ms', reserved: 'Reserved: 0 ms',
       remaining: 'Remaining: 120000 ms', limit: 'Limit: 120000 ms' });
-    assert.deepEqual([visibleAccounting.pending, visibleAccounting.indeterminate], ['0', '0']);
+    assert.deepEqual([visibleAccounting.pending, visibleAccounting.indeterminate,
+      visibleAccounting.runtimeBoundary], ['0', '0', 'idle']);
+    assert.deepEqual(await page.evaluate(() => window.__X92_EXPERIMENT_BUDGET__.runtimeBoundary()), {
+      status: 'idle', requestId: null, reason: null, code: 'X92_RUNTIME_QUIESCENT',
+    });
 
     const downloadPromise = page.waitForEvent('download');
     await page.click('#x92-budget-download');

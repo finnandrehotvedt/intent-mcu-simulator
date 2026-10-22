@@ -309,6 +309,7 @@ import {
   X92_BUDGET_SCHEMA,
   X92_DEFAULT_LIMITS,
   X92_REVIEW_SCHEMA,
+  X92_RUNTIME_QUIESCENCE_ACK_SCHEMA,
   createX92BudgetedExecutor,
   createX92ExperimentBudget,
   parseX92ReviewProjection,
@@ -7304,9 +7305,15 @@ function renderX92Budget(message = null, valid = true) {
   }));
   const reservations = review?.reservations ?? [];
   const indeterminate = review?.terminal?.filter((item) => item.outcome === 'indeterminate').length ?? 0;
-  elements.x92budgetaccounting.textContent = `Pending reservations: ${reservations.length} · Indeterminate terminal records: ${indeterminate}`;
+  const runtimeBoundary = x92BudgetExecutor?.runtimeBoundary?.()
+    ?? { status: 'idle', code: 'X92_RUNTIME_QUIESCENT' };
+  const runtimeBoundaryLabel = runtimeBoundary.status === 'idle' ? 'quiescent'
+    : runtimeBoundary.status === 'running' ? 'producer active inside reservation'
+    : runtimeBoundary.status === 'pending' ? 'pause/retire acknowledgement pending' : 'blocked';
+  elements.x92budgetaccounting.textContent = `Pending reservations: ${reservations.length} · Indeterminate terminal records: ${indeterminate} · Runtime boundary: ${runtimeBoundaryLabel}`;
   elements.x92budgetaccounting.dataset.pending = String(reservations.length);
   elements.x92budgetaccounting.dataset.indeterminate = String(indeterminate);
+  elements.x92budgetaccounting.dataset.runtimeBoundary = runtimeBoundary.status;
   elements.x92budgetreservations.replaceChildren(...(reservations.length ? reservations.map((item) => {
     const row = document.createElement('li'); row.textContent = `${item.action} · ${item.requestId} · ${item.deadlineAfterMs} ms`; return row;
   }) : [Object.assign(document.createElement('li'), { textContent: 'None' })]));
@@ -8284,6 +8291,97 @@ async function runThermostatTestThroughUi(profile, signal) {
     };
   } finally { signal.removeEventListener('abort', cancel); }
 }
+function x92RuntimeQuiescenceAck(request, identity, producerState, evidence) {
+  return {
+    schema: X92_RUNTIME_QUIESCENCE_ACK_SCHEMA,
+    requestId: request.requestId,
+    profile: request.profile,
+    identity: structuredClone(identity),
+    producerState,
+    acknowledged: true,
+    evidence: structuredClone(evidence),
+  };
+}
+async function quiesceX92Runtime({ request, identity, reason }) {
+  const profile = request.profile;
+  if (profile === AVR_PROFILE) {
+    const targetWorker = worker;
+    const targetToken = workerToken;
+    const before = window.__M6_STATE__.runtime;
+    if (!targetWorker) {
+      return x92RuntimeQuiescenceAck(request, identity, 'retired', {
+        reason, workerToken: targetToken, cycleBefore: before?.cycle ?? null,
+        acknowledgedCycle: null, cycleAfter: before?.cycle ?? null,
+      });
+    }
+    const currentPaused = x47WorkerStatus?.worker === targetWorker
+      && x47WorkerStatus.workerToken === targetToken && x47WorkerStatus.paused === true
+      && ['ready', 'paused'].includes(x47WorkerStatus.kind);
+    const minimumSequence = x47WorkerStatusSequence;
+    if (!currentPaused) {
+      const paused = applyLifecycle({ type: 'runtime.pause' });
+      if (!paused.accepted && lifecycle.phase !== 'paused') {
+        throw Object.assign(new Error(paused.code), { code: 'X92_RUNTIME_PAUSE_REJECTED' });
+      }
+      targetWorker.postMessage({ command: 'pause' });
+    }
+    const acknowledged = currentPaused ? x47WorkerStatus : await new Promise((resolve, reject) => {
+      const started = performance.now();
+      const timer = setInterval(() => {
+        const status = x47WorkerStatus;
+        if (worker !== targetWorker || workerToken !== targetToken) {
+          clearInterval(timer); reject(Object.assign(new Error('X92_RUNTIME_WORKER_REPLACED'),
+            { code: 'X92_RUNTIME_WORKER_REPLACED' })); return;
+        }
+        if (status?.worker === targetWorker && status.workerToken === targetToken
+            && status.sequence > minimumSequence && status.kind === 'paused' && status.paused === true) {
+          clearInterval(timer); resolve(status); return;
+        }
+        if (performance.now() - started >= 2_000) {
+          clearInterval(timer); reject(Object.assign(new Error('X92_RUNTIME_PAUSE_ACK_TIMEOUT'),
+            { code: 'X92_RUNTIME_PAUSE_ACK_TIMEOUT' }));
+        }
+      }, 10);
+    });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const after = x47WorkerStatus;
+    if (worker !== targetWorker || workerToken !== targetToken || after?.worker !== targetWorker
+        || after.workerToken !== targetToken || after.paused !== true || after.kind !== acknowledged.kind
+        || after.cycle !== acknowledged.cycle || !sameRuntimeIdentity(after.runtimeIdentity, acknowledged.runtimeIdentity)) {
+      throw Object.assign(new Error('X92_RUNTIME_NOT_FROZEN_AFTER_ACK'),
+        { code: 'X92_RUNTIME_NOT_FROZEN_AFTER_ACK' });
+    }
+    return x92RuntimeQuiescenceAck(request, identity, 'paused', {
+      reason, workerToken: targetToken, workerInstanceNonce: after.runtimeIdentity.workerInstanceNonce,
+      cycleBefore: before?.cycle ?? null, acknowledgedCycle: acknowledged.cycle, cycleAfter: after.cycle,
+      runtimeIdentity: structuredClone(after.runtimeIdentity),
+    });
+  }
+  if (profile === RP2040_PROFILE) {
+    picoPublicWorkbench.pause();
+    const state = await waitForActionEvidence(() => {
+      const candidate = picoPublicWorkbench.snapshot();
+      return candidate.runtime?.paused === true ? candidate : null;
+    }, new AbortController().signal, 2_000);
+    return x92RuntimeQuiescenceAck(request, identity, 'paused', {
+      reason, revision: state.revision, cycleAfter: state.runtime?.cycle ?? null,
+    });
+  }
+  if (profile === ESP32C3_PROFILE) {
+    await c3PublicWorkbench.dispose('X92 budgeted Run completed; transient QEMU producer retired.');
+    return x92RuntimeQuiescenceAck(request, identity, 'retired', {
+      reason, phase: c3PublicWorkbench.snapshot().phase,
+    });
+  }
+  if (profile === STM32F429ZI_PROFILE) {
+    stm32PublicWorkbench.stop('X92 budgeted Run completed; transient Renode producer retired.');
+    return x92RuntimeQuiescenceAck(request, identity, 'retired', {
+      reason, phase: stm32PublicWorkbench.snapshot().phase,
+    });
+  }
+  throw Object.assign(new Error('X92_RUNTIME_QUIESCENCE_PROFILE_UNSUPPORTED'),
+    { code: 'X92_RUNTIME_QUIESCENCE_PROFILE_UNSUPPORTED' });
+}
 const boundedActionHandlers = Object.freeze({
   async 'project.create'({ starterId, firmwareVariant = 'correct' }, { signal, context }) {
     throwIfActionCancelled(signal);
@@ -8339,6 +8437,7 @@ x92BudgetExecutor = createX92BudgetedExecutor({
   budget: x92Budget,
   downstream: boundedActionRouter,
   currentIdentity: () => x92CurrentIdentity(),
+  quiesceRuntime: (context) => quiesceX92Runtime(context),
   measurementSource: 'browser.performance.now',
 });
 let lastBoundedAction = null;
@@ -8369,6 +8468,7 @@ window.__AGENT_ACTIONS__ = Object.freeze({
     const result = await x92BudgetExecutor.execute(source); renderBoundedAction(result); renderX92Budget(); return result;
   },
   cancel: (requestId) => x92BudgetExecutor.cancel(requestId),
+  runtimeBoundary: () => x92BudgetExecutor.runtimeBoundary(),
   state: () => lastBoundedAction ? structuredClone(lastBoundedAction) : null,
   externalEndpoint: false,
 });
@@ -8377,8 +8477,21 @@ elements.x92budgetstart.addEventListener('click', async (event) => {
     renderX92Budget('A trusted human UI action is required to start a new experiment session.', false); return;
   }
   try {
+    const runtimeBoundary = x92BudgetExecutor.runtimeBoundary();
+    if (runtimeBoundary.status !== 'idle') {
+      renderX92Budget(`Session was not started (${runtimeBoundary.code}). The old producer must acknowledge pause or retirement first.`, false);
+      return;
+    }
     if (x92Budget.active()) {
       const retired = x92Budget.retire('human-started-new-session'); cancelX92Requests(retired.requestIds);
+      if (retired.requestIds.length) {
+        renderX92Budget('The prior session was retired and fully charged. Start remains blocked until its producer acknowledges pause or retirement.', false);
+        return;
+      }
+      if (window.__M6_STATE__.runtime?.paused === false) {
+        renderX92Budget('Session was not started (X92_RUNTIME_NOT_QUIESCENT). Pause the current producer first.', false);
+        return;
+      }
     }
     const result = x92Budget.start(await x92CurrentIdentity(), { humanInitiated: true });
     renderX92Budget(result.ok
@@ -8416,6 +8529,7 @@ window.__X92_EXPERIMENT_BUDGET__ = Object.freeze({
   reviewText: () => x92Budget.reviewText(),
   parseReview: (source) => parseX92ReviewProjection(source),
   imported: () => x92ImportedReview ? structuredClone(x92ImportedReview) : null,
+  runtimeBoundary: () => structuredClone(x92BudgetExecutor.runtimeBoundary()),
   authority: Object.freeze({ start: 'trusted-human-ui-only', build: false, run: false, retry: false, verdict: false }),
 });
 renderX92Budget();
@@ -12099,6 +12213,16 @@ elements.cancel.addEventListener('click', () => {
   publish({ buildState: 'cancelled', artifactIdentity: null, inputIdentity: null, cacheHit: false });
 });
 elements.run.addEventListener('click', () => {
+  const x92Boundary = x92BudgetExecutor?.runtimeBoundary?.();
+  if (x92Boundary && x92Boundary.status !== 'idle') {
+    elements.projectmessage.textContent = `Run blocked (${x92Boundary.code}). The prior budgeted producer has not acknowledged pause or retirement.`;
+    return;
+  }
+  if (x92Budget?.active()) {
+    const retired = x92Budget.retire('explicit-manual-run-outside-budget');
+    cancelX92Requests(retired.requestIds);
+    renderX92Budget('The X92 review session was retired before this explicit manual Run. Manual controls remain outside experiment-budget authority.', true);
+  }
   if (x47UiOwner.snapshot().phase === 'resume-required') {
     elements.projectmessage.textContent = 'Use Resume explicitly in the D2 pulse panel after Apply.';
     return;

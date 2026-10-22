@@ -13,6 +13,9 @@ import { controlContractsFor } from '../src/model-control-contracts.mjs';
 import * as existingSnapshots from '../src/model-library-snapshots.mjs';
 
 const { RETAINED_MODEL_LIBRARY_MANIFEST } = existingSnapshots;
+const PRE_X92_RUNTIME_LIFETIME_FIX_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X92_RUNTIME_LIFETIME_FIX_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_X92_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X92_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -209,16 +212,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x92-review-fix.1-current',
-  'intent-mcu-model-bundle-current-x92-review-fix-1@26',
+  '2.0.0-x92-runtime-lifetime-fix.1-current',
+  'intent-mcu-model-bundle-current-x92-runtime-lifetime-fix-1@27',
   currentImplementation,
   {
-    priorVersion: PRE_X92_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X92_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X92_RUNTIME_LIFETIME_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X92_RUNTIME_LIFETIME_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'explicit-data-only-migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component electrical and runtime semantics are unchanged; no component, property, pin, net, geometry bound or execution contract is added',
-    presentationDisposition: 'private review makes finalized, reserved, remaining and indeterminate accounting explicit while retaining zero producer, runtime, retry or verdict authority',
-    baselineClosureDisposition: 'the first private X92 budget identity, accepted X55 model-copy identity and all earlier public identities remain immutable and migration-only',
+    semanticDisposition: 'component electrical semantics are unchanged; budgeted Run now remains reserved until its exact producer acknowledges pause or retirement',
+    presentationDisposition: 'private review exposes a read-only runtime-boundary status and retains zero producer, retry or verdict authority',
+    baselineClosureDisposition: 'the prior X92 review identity and all earlier public identities remain immutable and migration-only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -250,6 +253,7 @@ export const PRE_X55_SPLIT_EDITOR_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze
 export const PRE_X55_MODEL_COPY_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X55_MODEL_COPY_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X92_BUDGET_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X92_BUDGET_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X92_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X92_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X92_RUNTIME_LIFETIME_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X92_RUNTIME_LIFETIME_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);
