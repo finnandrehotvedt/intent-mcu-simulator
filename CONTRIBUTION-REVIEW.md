@@ -15,7 +15,10 @@ node tools/contribution-review.mjs check \
 
 A trusted maintainer must explicitly confirm review of every declared change
 class. The project-owned conformance runner then verifies the checked-in
-fixture. Both records are written only to the checkout's fixed, ignored
+fixture and records one candidate-bound pass/fail outcome for every fixed
+`requiredTests` ID. It refuses to issue a passing record if any outcome is
+absent or failed; candidate modules and commands remain inert. Both records
+are written only to the checkout's fixed, ignored
 `.intent-mcu/trusted-contribution-evidence` directory and are bound to the
 current candidate bytes, base commit, fixture, and runner:
 

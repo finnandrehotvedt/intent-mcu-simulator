@@ -5,6 +5,7 @@ import { constants as fsConstants } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { lstat, mkdir, open, readFile, realpath, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { runFixedContributionConformance } from './contribution-conformance-suite.mjs';
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
 
 export const CONTRIBUTION_MANIFEST_SCHEMA = 'intent-mcu-contribution-review@1';
@@ -20,14 +21,15 @@ const FILE_KEYS = ['path', 'bytes', 'sha256'];
 const AUTHORITY_KEYS = ['execute', 'registry', 'release', 'runtime', 'network'];
 const REVIEW_KEYS = ['schema', 'issuer', 'candidateSha256', 'baseCommit', 'reviewedFiles', 'reviewedChanges', 'completeness', 'reviewer', 'result'];
 const COMPLETENESS_KEYS = ['changedPaths', 'models', 'pins', 'parameters', 'versions'];
-const CONFORMANCE_KEYS = ['schema', 'issuer', 'candidateSha256', 'fixtureIdentity', 'fixtureSha256', 'runnerSha256', 'suite', 'result'];
+const CONFORMANCE_KEYS = ['schema', 'issuer', 'candidateSha256', 'fixtureIdentity', 'fixtureSha256', 'runnerSha256', 'suite', 'results', 'result'];
+const TEST_RESULT_KEYS = ['testId', 'result'];
 const FIXTURE_KEYS = ['schema', 'fixtureIdentity', 'contributionId', 'baseCommit', 'files', 'changes'];
 const HASH = /^[a-f0-9]{64}$/u; const COMMIT = /^[a-f0-9]{40}$/u;
 const ID = /^[a-z][a-z0-9-]{2,95}$/u;
 const LICENSES = new Set(['Apache-2.0', 'MIT', 'BSD-3-Clause', 'CC0-1.0']);
 const EVIDENCE_RELATIVE = '.intent-mcu/trusted-contribution-evidence';
 const FIXTURE_RELATIVE = 'examples/contribution-review/conformance-fixture.json';
-const RUNNER_RELATIVE = 'src/contribution-review.mjs';
+const RUNNER_RELATIVE = 'src/contribution-conformance-suite.mjs';
 const fail = (code, details = []) => { throw Object.assign(new Error(code), { code, details }); };
 const sha256 = (source) => createHash('sha256').update(source).digest('hex');
 const canonical = (value) => `${JSON.stringify(value, null, 2)}\n`;
@@ -165,9 +167,14 @@ export async function runProjectOwnedConformance(reportSource, checkoutRoot) {
       || fixture.fixtureIdentity !== report.manifest.fixtureIdentity || fixture.contributionId !== report.manifest.contributionId
       || fixture.baseCommit !== report.manifest.baseCommit || !same(fixture.files, report.files) || !same(fixture.changes, report.manifest.changes)) fail('CONFORMANCE_FIXTURE_MISMATCH');
   const runnerSource = await readFile(path.join(root, RUNNER_RELATIVE));
+  const installedRunnerSource = await readFile(new URL('./contribution-conformance-suite.mjs', import.meta.url));
+  if (sha256(runnerSource) !== sha256(installedRunnerSource)) fail('CONFORMANCE_RUNNER_UNTRUSTED');
+  const results = runFixedContributionConformance({ fixture, report });
+  if (results.length !== report.manifest.requiredTests.length
+      || results.some(({ result }) => result !== 'passed')) fail('CONFORMANCE_TEST_FAILED', results);
   const record = { schema: 'intent-mcu-project-conformance-result@1', issuer: 'project-owned-x57-runner',
     candidateSha256: report.candidateSha256, fixtureIdentity: fixture.fixtureIdentity, fixtureSha256: sha256(fixtureSource),
-    runnerSha256: sha256(runnerSource), suite: 'project-owned-x57-v1', result: 'passed' };
+    runnerSha256: sha256(runnerSource), suite: 'project-owned-x57-v1', results, result: 'passed' };
   const paths = evidencePaths(await evidenceDirectory(checkoutRoot), report.candidateSha256);
   await writeFile(paths.conformance, canonical(record), { flag: 'wx', mode: 0o600 });
   return record;
@@ -189,7 +196,11 @@ export async function assessContributionAdmission(reportSource, checkoutRoot) {
   if (!exactKeys(conformance, CONFORMANCE_KEYS) || conformance.schema !== 'intent-mcu-project-conformance-result@1'
       || conformance.issuer !== 'project-owned-x57-runner' || conformance.candidateSha256 !== report.candidateSha256
       || conformance.fixtureIdentity !== report.manifest.fixtureIdentity || conformance.suite !== 'project-owned-x57-v1'
-      || !HASH.test(conformance.fixtureSha256) || !HASH.test(conformance.runnerSha256) || conformance.result !== 'passed') fail('CONFORMANCE_RESULT_INVALID');
+      || !HASH.test(conformance.fixtureSha256) || !HASH.test(conformance.runnerSha256)
+      || !Array.isArray(conformance.results) || conformance.results.length !== report.manifest.requiredTests.length
+      || conformance.results.some((item, index) => !exactKeys(item, TEST_RESULT_KEYS)
+        || item.testId !== report.manifest.requiredTests[index] || item.result !== 'passed')
+      || conformance.result !== 'passed') fail('CONFORMANCE_RESULT_INVALID');
   const fixtureSource = await readFile(path.join(root, FIXTURE_RELATIVE), 'utf8'); const runnerSource = await readFile(path.join(root, RUNNER_RELATIVE));
   if (sha256(fixtureSource) !== conformance.fixtureSha256 || sha256(runnerSource) !== conformance.runnerSha256) fail('CONFORMANCE_RESULT_STALE');
   return Object.freeze({ schema: CONTRIBUTION_ADMISSION_SCHEMA, candidateSha256: report.candidateSha256, admitted: true,

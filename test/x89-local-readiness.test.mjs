@@ -110,6 +110,23 @@ test('X89 broker consumes the same immutable child runtime policy assessed by re
   assert.deepEqual(expected.slice(expected.indexOf('--network'), expected.indexOf('--network') + 2), ['--network', 'none']);
 });
 
+test('X89 fails closed when the assessed target broker or runtime policy differs from trusted code', async () => {
+  for (const [file, from, to, blocker] of [
+    ['compiler/docker-broker.mjs', 'return dockerBuildRuntimeArguments(containerName, this.imageLock.image);',
+      "return ['run', '--network', 'host', this.imageLock.image];", 'LOCAL_TRUSTED_IMPLEMENTATION_MISMATCH:broker'],
+    ['compiler/docker-runtime-policy.mjs', "network: 'none'", "network: 'host'",
+      'LOCAL_TRUSTED_IMPLEMENTATION_MISMATCH:runtimePolicy'],
+    ['compiler/image-lock-contract.mjs', 'runtimeImageIds.length > 4', 'runtimeImageIds.length > 40',
+      'LOCAL_TRUSTED_IMPLEMENTATION_MISMATCH:lockContract'],
+  ]) {
+    const root = await preparedCheckout(); const target = path.join(root, file);
+    await writeFile(target, (await readFile(target, 'utf8')).replace(from, to));
+    const report = await assessLocalReadiness(root, fixture());
+    assert.equal(report.status.configurationAssessed, 'blocked');
+    assert(report.blockers.includes(blocker));
+  }
+});
+
 test('X89 applies actual broker lock semantics including manifest and runtime image pins', async () => {
   for (const mutation of [
     (value) => { delete value.toolchainManifestSha256; },

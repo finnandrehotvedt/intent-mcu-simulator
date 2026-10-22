@@ -20,7 +20,8 @@ async function checkout() {
   await mkdir(path.join(root, 'examples/contribution-review'), { recursive: true });
   await mkdir(path.join(root, 'src'), { recursive: true });
   for (const file of ['examples/contribution-review/simulated-thermistor-model.mjs',
-    'examples/contribution-review/conformance-fixture.json', 'src/contribution-review.mjs']) {
+    'examples/contribution-review/conformance-fixture.json', 'src/contribution-review.mjs',
+    'src/contribution-conformance-suite.mjs']) {
     await cp(path.join(sourceRoot, file), path.join(root, file));
   }
   return root;
@@ -50,6 +51,31 @@ test('X57 forged arbitrary records cannot substitute for fixed trusted evidence'
   await assert.rejects(assessContributionAdmission(reportSource, root), /SOURCE_REVIEW_MISSING_OR_FAILED/u);
   await recordTrustedSourceReview(reportSource, root, { reviewer: 'trusted-reviewer', confirmations });
   await assert.rejects(assessContributionAdmission(reportSource, root), /CONFORMANCE_MISSING_OR_FAILED/u);
+});
+
+test('X57 admission requires every candidate-bound fixed conformance outcome to remain present and passed', async () => {
+  for (const mutate of [
+    (record) => { record.results.pop(); },
+    (record) => { record.results[0].result = 'failed'; },
+  ]) {
+    const root = await checkout(); const report = await checkContributionManifest(sampleSource, root);
+    const source = await trustedPath(root, report);
+    const evidencePath = path.join(root, '.intent-mcu/trusted-contribution-evidence', `${report.candidateSha256}.conformance.json`);
+    const record = JSON.parse(await readFile(evidencePath, 'utf8')); mutate(record);
+    await writeFile(evidencePath, `${JSON.stringify(record)}\n`);
+    await assert.rejects(assessContributionAdmission(source, root), /CONFORMANCE_RESULT_INVALID/u);
+  }
+});
+
+test('X57 fixed project-owned runner refuses to issue passed when one required test outcome fails', async () => {
+  const root = await checkout(); const manifest = JSON.parse(sampleSource); manifest.changes.models = [];
+  const fixturePath = path.join(root, 'examples/contribution-review/conformance-fixture.json');
+  const fixedFixture = JSON.parse(await readFile(fixturePath, 'utf8')); fixedFixture.changes.models = [];
+  await writeFile(fixturePath, `${JSON.stringify(fixedFixture, null, 2)}\n`);
+  const report = await checkContributionManifest(JSON.stringify(manifest), root);
+  await assert.rejects(runProjectOwnedConformance(canonicalContributionReport(report), root),
+    (error) => error.code === 'CONFORMANCE_TEST_FAILED'
+      && error.details.some((result) => result.testId === 'model-library' && result.result === 'failed'));
 });
 
 test('X57 old saved report rejects after one-byte candidate mutation', async () => {

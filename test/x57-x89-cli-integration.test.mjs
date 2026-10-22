@@ -18,7 +18,8 @@ test('X57 to X89 actual-file CLI journey exports, reopens and remains local-only
   await mkdir(path.join(checkout, 'examples/contribution-review'), { recursive: true });
   await mkdir(path.join(checkout, 'src'), { recursive: true });
   for (const file of ['examples/contribution-review/simulated-thermistor-model.mjs',
-    'examples/contribution-review/conformance-fixture.json', 'src/contribution-review.mjs']) {
+    'examples/contribution-review/conformance-fixture.json', 'src/contribution-review.mjs',
+    'src/contribution-conformance-suite.mjs']) {
     await cp(path.join(root, file), path.join(checkout, file));
   }
   const reportPath = path.join(output, 'contribution-report.json');
@@ -33,6 +34,11 @@ test('X57 to X89 actual-file CLI journey exports, reopens and remains local-only
   const conformed = await run(process.execPath, ['tools/contribution-review.mjs', 'conform',
     '--report', reportPath, '--checkout', checkout], { cwd: root });
   assert.match(conformed.stdout, /^conformant [a-f0-9]{64} [a-f0-9]{64}/u);
+  const checkedReport = JSON.parse(await readFile(reportPath, 'utf8'));
+  const conformanceRecord = JSON.parse(await readFile(path.join(checkout, '.intent-mcu/trusted-contribution-evidence',
+    `${checkedReport.candidateSha256}.conformance.json`), 'utf8'));
+  assert.deepEqual(conformanceRecord.results, checkedReport.manifest.requiredTests
+    .map((testId) => ({ testId, result: 'passed' })));
   const admissionPath = path.join(output, 'admission.json');
   const admitted = await run(process.execPath, ['tools/contribution-review.mjs', 'admit',
     '--report', reportPath, '--checkout', checkout, '--out', admissionPath],

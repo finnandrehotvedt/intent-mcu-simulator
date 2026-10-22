@@ -126,6 +126,18 @@ export async function assessLocalReadiness(checkoutRoot, fixtureSource) {
   const compose = inspectCompose(composeSource);
   const broker = inspectBrokerPolicy();
   const blockers = [];
+  const trustedImplementation = await Promise.all([
+    readFile(new URL('../compiler/docker-broker.mjs', import.meta.url), 'utf8'),
+    readFile(new URL('../compiler/docker-runtime-policy.mjs', import.meta.url), 'utf8'),
+    readFile(new URL('../compiler/image-lock-contract.mjs', import.meta.url), 'utf8'),
+  ]);
+  for (const [name, targetSource, trustedSource] of [
+    ['broker', brokerSource, trustedImplementation[0]],
+    ['runtimePolicy', runtimePolicySource, trustedImplementation[1]],
+    ['lockContract', lockContractSource, trustedImplementation[2]],
+  ]) {
+    if (sha256(targetSource) !== sha256(trustedSource)) blockers.push(`LOCAL_TRUSTED_IMPLEMENTATION_MISMATCH:${name}`);
+  }
   if (!compose.profile || !compose.loopbackOnly) blockers.push('LOCAL_BIND_NOT_LOOPBACK');
   if (!compose.readOnly || !compose.restartDisabled || !compose.dockerSocketReadOnly) blockers.push('LOCAL_GATEWAY_BOUNDARY_INVALID');
   if (compose.gatewayLimits.cpus !== 2 || compose.gatewayLimits.memoryMiB !== 512 || compose.gatewayLimits.pids !== 128) blockers.push('LOCAL_GATEWAY_LIMIT_INVALID');
