@@ -101,6 +101,7 @@ export class Esp32C3PublicWorkbench {
     this.active = false;
     this.requestToken = 0;
     this.invalidationTimer = null;
+    this.retirementOwner = null;
     this.diagnostics = [];
     this.bind();
     this.render();
@@ -174,6 +175,10 @@ export class Esp32C3PublicWorkbench {
     this.modelLibraryImplementation = resolveModelLibrary(this.modelLibraryLock).implementation;
   }
   async ensureSession() {
+    if (this.retirementOwner?.status !== 'proven' && this.retirementOwner) {
+      throw new Error('C3_RETIREMENT_UNPROVEN');
+    }
+    if (this.retirementOwner?.status === 'proven') this.retirementOwner = null;
     if (this.sessionId) return true;
     const value = await this.response(await this.fetch(`${this.endpoint}/session`, {
       method: 'POST', headers: this.mutationHeaders(), body: '{}',
@@ -234,6 +239,12 @@ export class Esp32C3PublicWorkbench {
   }
   async build() {
     if (!this.active || this.phase === 'building') return { ok: false, code: 'C3_BUILD_UNAVAILABLE' };
+    if (this.retirementOwner && this.retirementOwner.status !== 'proven') {
+      this.phase = 'blocked';
+      this.message = 'Build blocked until the previous C3 process has authenticated retirement proof.';
+      this.render();
+      return { ok: false, code: 'C3_RETIREMENT_UNPROVEN' };
+    }
     if (this.circuitEditor.snapshot().wireDraft.mode !== 'none') {
       this.phase = 'blocked';
       this.message = 'Build blocked while a cable endpoint is being chosen. Finish the cable or press Escape, then build fresh flash.';
@@ -358,7 +369,8 @@ export class Esp32C3PublicWorkbench {
       return { ok: false, code: error.code ?? error.message, ...retryResultFields(error) };
     }
   }
-  async dispose(message = 'C3 session discarded.') {
+  async dispose(message = 'C3 session discarded.', { keepalive = false } = {}) {
+    if (this.retirementOwner) return this.retirementOwner.promise;
     this.requestToken += 1;
     clearTimeout(this.invalidationTimer);
     this.invalidationTimer = null;
@@ -370,6 +382,9 @@ export class Esp32C3PublicWorkbench {
     } : null;
     const headers = this.mutationHeaders();
     const body = sessionId ? JSON.stringify(this.commandBody('dispose')) : null;
+    if (!sessionId) return this.capability || this.artifact
+      ? { ok: false, code: 'C3_RETIREMENT_UNPROVEN' }
+      : { ok: true, code: 'C3_RETIREMENT_IDLE' };
     // Retire local executable authority before waiting for the disposal
     // acknowledgement. A slow or failed network response must never leave an
     // already-stopped flash artifact runnable in this browser.
@@ -384,27 +399,27 @@ export class Esp32C3PublicWorkbench {
     this.diagnostics = [];
     this.message = message;
     this.render();
-    try {
-      if (sessionId) {
+    const owner = { expected, status: 'pending', promise: null };
+    owner.promise = (async () => {
+      try {
         const retirement = await this.response(await this.fetch(
-        `${this.endpoint}/session/${sessionId}/command`,
-        { method: 'POST', headers, body },
+          `${this.endpoint}/session/${sessionId}/command`,
+          { method: 'POST', headers, body, ...(keepalive ? { keepalive: true } : {}) },
         ));
-        return validateEsp32C3Retirement(retirement, expected);
+        const result = validateEsp32C3Retirement(retirement, expected);
+        owner.status = 'proven';
+        return result;
+      } catch (error) {
+        owner.status = 'unproven';
+        return { ok: false, code: error.code ?? error.message ?? 'C3_RETIREMENT_UNPROVEN' };
       }
-    } catch (error) {
-      return { ok: false, code: error.code ?? error.message ?? 'C3_RETIREMENT_UNPROVEN' };
-    }
-    return { ok: true, code: 'C3_RETIREMENT_PROVEN' };
+    })();
+    this.retirementOwner = owner;
+    return owner.promise;
   }
   disposeForPageExit() {
     if (!this.sessionId || !this.capability) return;
-    void this.fetch(`${this.endpoint}/session/${this.sessionId}/command`, {
-      method: 'POST', headers: this.mutationHeaders(), body: JSON.stringify(this.commandBody('dispose')),
-      keepalive: true,
-    }).catch(() => {});
-    this.sessionId = null;
-    this.capability = null;
+    void this.dispose('C3 page-exit retirement pending.', { keepalive: true });
   }
 
   selectCircuit(selection) {

@@ -22,7 +22,9 @@ import {
   validateEsp32C3Circuit,
 } from '../src/esp32c3-public-circuit.mjs';
 import { createC3PublicService } from '../c3/public-service.mjs';
-import { validateEsp32C3Retirement } from '../src/esp32c3-public-workbench.mjs';
+import {
+  Esp32C3PublicWorkbench, validateEsp32C3Retirement,
+} from '../src/esp32c3-public-workbench.mjs';
 
 const imageLock = Object.freeze({
   image: 'local/not-used-in-unit-test:1', imageId: `sha256:${'a'.repeat(64)}`,
@@ -204,7 +206,9 @@ test('C3 disposal ACK waits for the owned operation exit and is exact, authentic
   const builder = ({ signal }) => new Promise((resolve, reject) => {
     signal.addEventListener('abort', () => setTimeout(() => {
       childExited = true;
-      reject(Object.assign(new Error('OPERATION_CANCELLED'), { code: 'OPERATION_CANCELLED' }));
+      reject(Object.assign(new Error('OPERATION_CANCELLED'), {
+        code: 'OPERATION_CANCELLED', cleanupConfirmed: true,
+      }));
     }, 20), { once: true });
   });
   const service = createC3PublicService({
@@ -265,4 +269,138 @@ test('C3 browser retirement proof rejects mismatched or incomplete ACKs', () => 
     { sessionId: 'B'.repeat(16) }, { generation: 5 }, { artifactSha256: 'c'.repeat(64) },
   ]) assert.throws(() => validateEsp32C3Retirement({ ...accepted, ...changed }, expected),
     /C3_RETIREMENT_ACK_INVALID/u);
+});
+
+test('C3 service retains an unproven tombstone when process cleanup is not confirmed', async (context) => {
+  const builder = ({ signal }) => new Promise((resolve, reject) => {
+    signal.addEventListener('abort', () => reject(Object.assign(
+      new Error('OPERATION_CLEANUP_FAILED'), { code: 'OPERATION_CLEANUP_FAILED' },
+    )), { once: true });
+  });
+  const service = createC3PublicService({ builderImageLock: imageLock, runtimeImageLock: imageLock, builder });
+  const server = http.createServer((request, response) => { void service.handle(request, response); });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  context.after(async () => {
+    await service.close();
+    await new Promise((resolve) => server.close(resolve));
+  });
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const mutation = { 'Content-Type': 'application/json', Origin: base, 'X-Intent-MCU-C3': '1' };
+  const created = await (await fetch(`${base}/api/c3/session`, {
+    method: 'POST', headers: mutation, body: '{}',
+  })).json();
+  const authorized = { ...mutation, Authorization: `Bearer ${created.capability}` };
+  await fetch(`${base}/api/c3/session/${created.sessionId}/build`, {
+    method: 'POST', headers: authorized,
+    body: JSON.stringify({ schema: BUILD_SCHEMA, profile: PROFILE, fqbn: FQBN,
+      source: sourceForGpio2('C3_UNPROVEN'), sourceRevision: 1 }),
+  });
+  const body = JSON.stringify({ schema: COMMAND_SCHEMA, command: 'dispose', generation: 1,
+    profile: PROFILE, fqbn: FQBN, sourceSha256: null, artifactSha256: null,
+    circuit: VALIDATED_LED_CIRCUIT });
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const response = await fetch(`${base}/api/c3/session/${created.sessionId}/command`, {
+      method: 'POST', headers: authorized, body,
+    });
+    assert.equal(response.status, 502);
+    assert.equal((await response.json()).code, 'OPERATION_RETIREMENT_UNPROVEN');
+    assert.equal(service.metrics().activeSessions, 1, 'failed cleanup retains the blocking tombstone');
+    assert.equal(service.metrics().disposed, 0);
+  }
+});
+
+function workbenchElements() {
+  const element = (extra = {}) => ({ value: '', textContent: '', disabled: false, dataset: {},
+    addEventListener() {}, setAttribute() {}, click() {}, ...extra });
+  return {
+    source: element(), name: element(), build: element(), run: element(), stop: element(),
+    save: element(), open: element(), openInput: element({ files: [] }), state: element(),
+    message: element(), terminal: element(), sourceHash: element(), flashHash: element(),
+    diagram: element(), led: element(), circuitState: element(),
+  };
+}
+function retirementResponse(value) {
+  return { ok: true, headers: { get: () => null }, json: async () => value };
+}
+function retirementAck(expected) {
+  return { schema: 'intent-mcu-c3-retirement@1', ...expected, state: 'disposed', retainedBytes: 0,
+    processExited: true, operationRetired: true };
+}
+function ownedWorkbench(fetchFn) {
+  const workbench = new Esp32C3PublicWorkbench({ elements: workbenchElements(), fetchFn });
+  workbench.active = true;
+  workbench.sessionId = 'S'.repeat(16);
+  workbench.capability = 'C'.repeat(32);
+  workbench.serverGeneration = 3;
+  workbench.artifact = { sourceSha256: 'a'.repeat(64), flashSha256: 'b'.repeat(64) };
+  workbench.artifactRevision = workbench.revision;
+  return workbench;
+}
+
+test('C3 browser concurrent disposal joins one exact pending owner and one request', async () => {
+  let release;
+  let requests = 0;
+  const held = new Promise((resolve) => { release = resolve; });
+  const workbench = ownedWorkbench(async () => { requests += 1; return held; });
+  const expected = { sessionId: 'S'.repeat(16), generation: 3,
+    sourceSha256: 'a'.repeat(64), artifactSha256: 'b'.repeat(64) };
+  let firstSettled = false;
+  let secondSettled = false;
+  const first = workbench.dispose().then((value) => { firstSettled = true; return value; });
+  const second = workbench.dispose().then((value) => { secondSettled = true; return value; });
+  await Promise.resolve();
+  assert.equal(firstSettled, false);
+  assert.equal(secondSettled, false);
+  assert.equal(requests, 1);
+  assert.equal(workbench.sessionId, null, 'local authority is revoked before ACK');
+  assert.equal((await workbench.build()).code, 'C3_RETIREMENT_UNPROVEN');
+  release(retirementResponse(retirementAck(expected)));
+  assert.deepEqual(await first, { ok: true, code: 'C3_RETIREMENT_PROVEN' });
+  assert.deepEqual(await second, { ok: true, code: 'C3_RETIREMENT_PROVEN' });
+  assert.equal(requests, 1);
+});
+
+test('C3 browser failed retirement stays unproven and cannot become idle success', async () => {
+  let requests = 0;
+  const workbench = ownedWorkbench(async () => {
+    requests += 1;
+    throw Object.assign(new Error('network lost'), { code: 'NETWORK_LOST' });
+  });
+  assert.deepEqual(await workbench.dispose(), { ok: false, code: 'NETWORK_LOST' });
+  assert.deepEqual(await workbench.dispose(), { ok: false, code: 'NETWORK_LOST' });
+  assert.equal(requests, 1);
+  assert.equal((await workbench.build()).code, 'C3_RETIREMENT_UNPROVEN');
+  await assert.rejects(() => workbench.ensureSession(), /C3_RETIREMENT_UNPROVEN/u);
+});
+
+test('C3 browser wrong-owner ACK remains blocked while genuine idle is distinct', async () => {
+  const workbench = ownedWorkbench(async () => retirementResponse(retirementAck({
+    sessionId: 'X'.repeat(16), generation: 3,
+    sourceSha256: 'a'.repeat(64), artifactSha256: 'b'.repeat(64),
+  })));
+  assert.deepEqual(await workbench.dispose(), { ok: false, code: 'C3_RETIREMENT_ACK_INVALID' });
+  assert.deepEqual(await workbench.dispose(), { ok: false, code: 'C3_RETIREMENT_ACK_INVALID' });
+  await assert.rejects(() => workbench.ensureSession(), /C3_RETIREMENT_UNPROVEN/u);
+
+  const idle = new Esp32C3PublicWorkbench({ elements: workbenchElements(),
+    fetchFn: async () => { throw new Error('must not fetch'); } });
+  assert.deepEqual(await idle.dispose(), { ok: true, code: 'C3_RETIREMENT_IDLE' });
+});
+
+test('C3 page-exit disposal keeps the same private owner and keepalive proof path', async () => {
+  let release;
+  let requestOptions;
+  const held = new Promise((resolve) => { release = resolve; });
+  const workbench = ownedWorkbench(async (url, options) => {
+    requestOptions = options;
+    return held;
+  });
+  workbench.disposeForPageExit();
+  await Promise.resolve();
+  assert.equal(requestOptions.keepalive, true);
+  assert.equal(workbench.sessionId, null);
+  assert.equal((await workbench.build()).code, 'C3_RETIREMENT_UNPROVEN');
+  release(retirementResponse(retirementAck({ sessionId: 'S'.repeat(16), generation: 3,
+    sourceSha256: 'a'.repeat(64), artifactSha256: 'b'.repeat(64) })));
+  assert.deepEqual(await workbench.dispose(), { ok: true, code: 'C3_RETIREMENT_PROVEN' });
 });

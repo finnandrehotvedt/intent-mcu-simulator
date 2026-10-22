@@ -147,15 +147,24 @@ async function childJson({ docker, args, input, timeoutMs, outputLimit, signal, 
       signal?.removeEventListener('abort', abort);
       try {
         await cleanupContainer(docker, containerName, reason !== null);
-        if (reason) throw fault(reason, reason === 'OPERATION_CANCELLED' ? 409 : 504);
+        if (reason) {
+          const error = fault(reason, reason === 'OPERATION_CANCELLED' ? 409 : 504);
+          error.cleanupConfirmed = true;
+          throw error;
+        }
         if (code !== 0) {
           const error = fault('OPERATION_CHILD_FAILED', 502);
+          error.cleanupConfirmed = true;
           error.details = { diagnostic: Buffer.concat(stderr).toString('utf8').slice(-1200) };
           throw error;
         }
         let value;
         try { value = JSON.parse(Buffer.concat(stdout).toString('utf8').trim()); }
-        catch { throw fault('OPERATION_RESULT_INVALID', 502); }
+        catch {
+          const error = fault('OPERATION_RESULT_INVALID', 502);
+          error.cleanupConfirmed = true;
+          throw error;
+        }
         resolve(value);
       } catch (error) { reject(error); }
     });
@@ -191,11 +200,23 @@ function wipeArtifact(session) {
   session.gpioSource = null;
 }
 function ownedOperation(session, controller) {
+  session.operationOutcome = null;
+  let finished = false;
   let finish;
   const owner = {
     abort: () => controller.abort(),
     settled: new Promise((resolve) => { finish = resolve; }),
-    finish: () => finish(),
+    finish: (error = null) => {
+      if (finished) return;
+      finished = true;
+      const outcome = Object.freeze({
+        processExited: error === null || error?.cleanupConfirmed === true,
+        cleanupConfirmed: error === null || error?.cleanupConfirmed === true,
+        code: error?.code ?? 'OPERATION_COMPLETE',
+      });
+      session.operationOutcome = outcome;
+      finish(outcome);
+    },
   };
   session.operation = owner;
   return owner;
@@ -203,10 +224,13 @@ function ownedOperation(session, controller) {
 function abortOperation(session) { session.operation?.abort(); }
 async function retireOperation(session) {
   const owner = session.operation;
-  if (!owner) return;
-  owner.abort();
-  await owner.settled;
-  if (session.operation === owner) session.operation = null;
+  if (owner) owner.abort();
+  const outcome = owner ? await owner.settled : session.operationOutcome;
+  if (owner && session.operation === owner) session.operation = null;
+  if (outcome && outcome.processExited === true && outcome.cleanupConfirmed === true) return outcome;
+  if (!owner && !outcome) return Object.freeze({ processExited: true,
+    cleanupConfirmed: true, code: 'NO_OPERATION_OWNED' });
+  throw fault('OPERATION_RETIREMENT_UNPROVEN', 502);
 }
 function dispose(session) {
   abortOperation(session);
@@ -355,12 +379,16 @@ export function createC3PublicService({
     metrics.builds += 1;
     metrics.buildInFlight += 1;
     let output;
+    let operationError = null;
     try {
       output = await (builder ?? executeBuild)({ source: parsed.source,
         marker: parsed.marker, sourceSha256, signal: controller.signal });
+    } catch (error) {
+      operationError = error;
+      throw error;
     } finally {
       metrics.buildInFlight -= 1;
-      operation.finish();
+      operation.finish(operationError);
       if (session.operation === operation) session.operation = null;
     }
     if (!sessions.has(session.id) || session.generation !== generation) {
@@ -437,12 +465,16 @@ export function createC3PublicService({
     metrics.runtimeInFlight += 1;
     metrics.runtimes += 1;
     let result;
+    let operationError = null;
     try {
       result = await (runtime ?? executeRuntime)({ flash: session.flash,
         descriptor, mode: 'run', signal: controller.signal });
+    } catch (error) {
+      operationError = error;
+      throw error;
     } finally {
       metrics.runtimeInFlight -= 1;
-      operation.finish();
+      operation.finish(operationError);
       if (session.operation === operation) session.operation = null;
     }
     if (!sessions.has(session.id) || session.generation !== generation) {
@@ -480,7 +512,7 @@ export function createC3PublicService({
         }
         const session = { id: token(12), capability: token(), origin, generation: 0,
           state: 'editing', flash: null, descriptor: null, sourceSha256: null,
-          gpioSource: null, marker: null, operation: null, lastAccess: now() };
+          gpioSource: null, marker: null, operation: null, operationOutcome: null, lastAccess: now() };
         sessions.set(session.id, session);
         responseJson(response, 201, { ...publicState(session), capability: session.capability });
         return true;
@@ -539,13 +571,19 @@ export function createC3PublicService({
             artifactSha256: session.descriptor?.flash.sha256 ?? null,
           };
           session.state = 'disposing';
-          await retireOperation(session);
+          let outcome;
+          try { outcome = await retireOperation(session); }
+          catch (error) {
+            wipeArtifact(session);
+            session.state = 'retirement-unproven';
+            throw error;
+          }
           wipeArtifact(session);
           session.state = 'disposed';
           sessions.delete(session.id);
           metrics.disposed += 1;
           responseJson(response, 200, { ...retirement, state: 'disposed', retainedBytes: 0,
-            processExited: true, operationRetired: true });
+            processExited: outcome.processExited, operationRetired: outcome.cleanupConfirmed });
           return true;
         }
         await retireOperation(session);
