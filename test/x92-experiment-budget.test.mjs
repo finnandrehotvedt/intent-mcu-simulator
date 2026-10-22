@@ -438,6 +438,8 @@ test('invalid quiescence acknowledgement is inert, fully charged and review-pars
   assert.equal(result.experimentBudget.outcome, 'indeterminate');
   assert.equal(result.experimentBudget.charged.wallClockMs, 30_000);
   assert.equal(executor.runtimeBoundary().status, 'blocked');
+  assert.equal(executor.advancingBoundary().code, 'X92_RUNTIME_BOUNDARY_BLOCKED');
+  assert.equal(executor.advancingBoundary().dispatchGate.status, 'blocked');
   assert.equal(parseX92ReviewProjection(owner.reviewText()).code, 'X92_REVIEW_INERT');
   const blocked = await executor.execute(JSON.stringify(request('firmware.build', 'x92-after-invalid-ack-build')));
   assert.equal(blocked.code, 'X92_RUNTIME_BOUNDARY_BLOCKED');

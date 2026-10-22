@@ -177,7 +177,7 @@ const CURRENT_CLOSURE = Object.freeze([
   '../src/lifecycle.mjs', '../staging/component-artwork.mjs',
   '../src/model-library.mjs', '../src/model-bundle-registry.mjs', '../src/project-envelope.mjs',
   '../src/model-control-contracts.mjs', '../src/simulator.worker.mjs', '../staging/main.mjs',
-  '../src/x48-ideal-room-plant.mjs', '../src/shared-workbench-shell.mjs',
+  '../src/x48-ideal-room-plant.mjs', '../src/x92-experiment-budget.mjs', '../src/shared-workbench-shell.mjs',
   '../src/rp2040-snapshot-pacer.mjs', '../src/rp2040-experimental-runtime.mjs',
   '../src/runtime-identity.mjs',
   '../src/candidate-project-session.mjs', '../src/candidate-spdt-runtime.mjs',

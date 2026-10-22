@@ -680,6 +680,8 @@ let runtimeWorkerCreations = 0;
 let selectedCompilerProfile = AVR_PROFILE;
 let x92Budget = null;
 let x92BudgetExecutor = null;
+const x92AdvancingBoundary = () => x92BudgetExecutor?.advancingBoundary?.()
+  ?? { ok: true, code: 'X92_ADVANCING_CONTROL_ALLOWED' };
 let x92ImportedReview = null;
 let x92IdentitySequence = 0;
 const presentationOwner = createPresentationViewOwner();
@@ -2387,6 +2389,7 @@ const picoPublicWorkbench = new Rp2040PublicWorkbench({
   }),
   onSave: () => saveCommonProject(RP2040_PROFILE),
   onOpen: (file) => openCommonProjectFile(file),
+  advanceGuard: () => x92AdvancingBoundary(),
 });
 window.__RP2040_PUBLIC_WORKBENCH__ = {
   state: () => picoPublicWorkbench.snapshot(),

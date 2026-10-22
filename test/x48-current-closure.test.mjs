@@ -25,7 +25,8 @@ test('X48 current identity owns every newly executed path', async () => {
     (member) => [member.path, member.sha256],
   ));
   for (const path of ['src/x48-ideal-room-plant.mjs', 'src/runtime-kernel.mjs',
-    'src/simulator.worker.mjs', 'src/shared-workbench-shell.mjs', 'staging/main.mjs']) {
+    'src/x92-experiment-budget.mjs', 'src/simulator.worker.mjs',
+    'src/shared-workbench-shell.mjs', 'staging/main.mjs']) {
     assert.equal(members.has(path), true, path);
     const bytes = await readFile(new URL(`../${path}`, import.meta.url));
     assert.equal(createHash('sha256').update(bytes).digest('hex'), members.get(path), path);

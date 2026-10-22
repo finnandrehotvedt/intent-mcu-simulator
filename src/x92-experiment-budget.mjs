@@ -556,6 +556,21 @@ export function createX92BudgetedExecutor({
     return boundary;
   }
 
+  function advancingBoundary() {
+    const boundary = boundaryProjection();
+    if (boundary.status !== 'idle') {
+      return { ok: false, code: 'X92_RUNTIME_BOUNDARY_BLOCKED', runtimeBoundary: boundary,
+        dispatchGate: gateProjection() };
+    }
+    const gate = gateProjection();
+    if (gate.status !== 'idle') {
+      return { ok: false, code: 'X92_DISPATCH_GATE_BLOCKED', runtimeBoundary: boundary,
+        dispatchGate: gate };
+    }
+    return { ok: true, code: 'X92_ADVANCING_CONTROL_ALLOWED', runtimeBoundary: boundary,
+      dispatchGate: gate };
+  }
+
   async function execute(source, { unresolvedProblems = [] } = {}) {
     if (runtimeBoundary) {
       return { ok: false, schema: X92_RESULT_SCHEMA, code: 'X92_RUNTIME_BOUNDARY_BLOCKED',
@@ -713,5 +728,6 @@ export function createX92BudgetedExecutor({
     },
     runtimeBoundary: boundaryProjection,
     dispatchGate: gateProjection,
+    advancingBoundary,
   });
 }

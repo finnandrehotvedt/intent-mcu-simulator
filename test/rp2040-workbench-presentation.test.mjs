@@ -52,10 +52,10 @@ function paced(kind, generation, sequence, { paused = false, cycle = 500 } = {})
       generation, sequence, final: paused } };
 }
 
-function preparedWorkbench(pauseProof = {}) {
+function preparedWorkbench(pauseProof = {}, options = {}) {
   WorkerFixture.instances.length = 0;
   globalThis.Worker = WorkerFixture;
-  const workbench = new Rp2040PublicWorkbench({ elements: elements(), pauseProof });
+  const workbench = new Rp2040PublicWorkbench({ elements: elements(), pauseProof, ...options });
   workbench.activate();
   workbench.artifact = { uf2Sha256: ARTIFACT, sourceSha256: 'b'.repeat(64), artifactIdentity: ARTIFACT };
   workbench.artifactBytes = new Uint8Array([1, 2, 3]);
@@ -286,4 +286,38 @@ test('budget pause checks monotonic deadline at each ACK even when timer callbac
   secondWorker.emit(paced('paused', ackTwo.presentationGeneration, 1, { paused: true, cycle: 500 }));
   await assert.rejects(beforeSecond, /RP2040_BUDGET_PAUSE_DEADLINE/u);
   assert.equal(secondClock.pending(), 0);
+});
+
+test('blocked X92 boundary guards actual Pico UI Build Run and Reset after rejected owner proof', async () => {
+  const clock = manualClock();
+  let boundary = { ok: true, code: 'X92_ADVANCING_CONTROL_ALLOWED' };
+  const workbench = preparedWorkbench({ now: clock.now, schedule: clock.schedule,
+    unschedule: clock.unschedule, minimumMs: 250, timeoutMs: 1_000 },
+  { advanceGuard: () => boundary });
+  await workbench.run();
+  const worker = WorkerFixture.instances.at(-1); worker.emit(ready());
+  const proof = workbench.pauseForBudget({ deadlineAt: 900,
+    requestId: 'req-boundary', dispatchToken: 'dispatch-boundary' });
+  const ownedPause = worker.messages.findLast((message) => message.command === 'pause');
+  const invalid = paced('paused', ownedPause.presentationGeneration, 1, { paused: true, cycle: 500 });
+  invalid.instructions = -1;
+  worker.emit(invalid);
+  await assert.rejects(proof, /RP2040_BUDGET_PAUSE_INSTRUCTIONS_INVALID/u);
+  assert.equal(workbench.pauseProofOperation, null);
+
+  boundary = { ok: false, code: 'X92_RUNTIME_BOUNDARY_BLOCKED',
+    runtimeBoundary: { status: 'blocked' }, dispatchGate: { status: 'blocked' } };
+  const before = worker.messages.length;
+  workbench.elements.run.listeners.get('click')();
+  workbench.elements.reset.listeners.get('click')();
+  workbench.elements.build.listeners.get('click')();
+  await Promise.resolve();
+  assert.equal(worker.messages.length, before);
+  assert.equal(worker.messages.slice(before).some((message) => ['run', 'reset'].includes(message.command)), false);
+  assert.match(workbench.message, /X92_RUNTIME_BOUNDARY_BLOCKED/u);
+
+  workbench.elements.pause.listeners.get('click')();
+  assert.equal(worker.messages.at(-1).command, 'pause');
+  workbench.elements.stop.listeners.get('click')();
+  assert.equal(worker.terminated, true);
 });

@@ -152,12 +152,13 @@ function download(name, text) {
 
 export class Rp2040PublicWorkbench {
   constructor({ elements, onState = () => {}, onDiagnostics = () => {}, onSave = null, onOpen = null,
-    pauseProof = {} } = {}) {
+    pauseProof = {}, advanceGuard = () => ({ ok: true, code: 'RP2040_ADVANCE_ALLOWED' }) } = {}) {
     this.elements = elements;
     this.onState = onState;
     this.onDiagnostics = onDiagnostics;
     this.onSave = onSave;
     this.onOpen = onOpen;
+    this.advanceGuard = advanceGuard;
     this.project = defaultProject();
     this.modelLibraryLock = clone(CURRENT_MODEL_LIBRARY_LOCK);
     this.modelLibraryImplementation = resolveModelLibrary(this.modelLibraryLock).implementation;
@@ -185,6 +186,16 @@ export class Rp2040PublicWorkbench {
     this.pauseProofOperation = null;
     this.bind();
     this.render();
+  }
+
+  advancingBlocked(action) {
+    let result;
+    try { result = this.advanceGuard(action); }
+    catch { result = { ok: false, code: 'RP2040_ADVANCE_GUARD_FAILED' }; }
+    if (!result || result.ok !== false) return null;
+    this.message = `${action} blocked (${result.code}). The prior budgeted producer must acknowledge pause or retirement first.`;
+    this.render();
+    return { ...clone(result), ok: false };
   }
 
   bind() {
@@ -369,6 +380,7 @@ export class Rp2040PublicWorkbench {
   }
 
   async build() {
+    const boundary = this.advancingBlocked('Build'); if (boundary) return boundary;
     if (this.pauseProofOperation) return { ok: false, code: 'RP2040_BUDGET_PAUSE_BUSY' };
     if (!this.active || this.phase === 'building') return { ok: false, code: 'RP2040_BUILD_UNAVAILABLE' };
     if (this.circuitEditor.snapshot().wireDraft.mode !== 'none') {
@@ -435,6 +447,7 @@ export class Rp2040PublicWorkbench {
   }
 
   async run() {
+    const boundary = this.advancingBlocked('Run'); if (boundary) return boundary;
     if (this.pauseProofOperation) return { ok: false, code: 'RP2040_BUDGET_PAUSE_BUSY' };
     const circuit = this.modelLibraryImplementation.validateProfile(
       RP2040_PICO_PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
@@ -522,6 +535,7 @@ export class Rp2040PublicWorkbench {
   }
 
   reset() {
+    const boundary = this.advancingBlocked('Reset'); if (boundary) return boundary;
     if (this.pauseProofOperation) return { ok: false, code: 'RP2040_BUDGET_PAUSE_BUSY' };
     if (!this.worker) return { ok: false, code: 'RUNTIME_NOT_ACTIVE' };
     this.lastRuntime = null;
