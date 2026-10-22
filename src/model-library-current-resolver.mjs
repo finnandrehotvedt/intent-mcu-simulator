@@ -32,7 +32,7 @@ const exactInput = (value, keys) => value && typeof value === 'object' && !Array
 // Current behavior is separately owned so future current changes cannot mutate
 // the retained pre-X56 implementation by alias or shared constant.
 export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
-  id: 'intent-mcu-model-bundle-current-x66-public-thermostat-create-fix-1@35',
+  id: 'intent-mcu-model-bundle-current-x48-current-source-integration-1@36',
   manifestVersion: CURRENT_MODEL_LIBRARY_MANIFEST.version,
   definition(profile, componentType) {
     const entry = entries.get(`${profile}\u0000${componentType}`);

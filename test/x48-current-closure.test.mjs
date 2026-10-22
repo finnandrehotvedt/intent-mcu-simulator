@@ -10,10 +10,12 @@ import {
   PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST,
 } from '../src/model-library-snapshots.mjs';
 import {
+  CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X48_CURRENT_MODEL_LIBRARY_LOCK, PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_LOCK,
   modelLibraryExecutionIdentity,
   modelLibraryMigrationPreview,
 } from '../src/model-library.mjs';
+import { CURRENT_MODEL_LIBRARY_IMPLEMENTATION } from '../src/model-library-current-resolver.mjs';
 
 test('X48 current identity owns every newly executed path', async () => {
   const members = new Map(CURRENT_MODEL_LIBRARY_MANIFEST.implementationMembers.map(
@@ -27,6 +29,14 @@ test('X48 current identity owns every newly executed path', async () => {
   }
   assert.equal(CURRENT_MODEL_LIBRARY_MANIFEST.version,
     '2.0.0-x48-current-source-integration.1-current');
+});
+
+test('current resolver manifest and admitted execution identity use one exact implementation ID', () => {
+  const execution = modelLibraryExecutionIdentity(CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(execution.ok, true);
+  assert.equal(CURRENT_MODEL_LIBRARY_IMPLEMENTATION.id, CURRENT_MODEL_LIBRARY_MANIFEST.implementationId);
+  assert.equal(execution.identity.implementationId, CURRENT_MODEL_LIBRARY_MANIFEST.implementationId);
+  assert.equal(execution.implementation.id, CURRENT_MODEL_LIBRARY_MANIFEST.implementationId);
 });
 
 test('the accepted rc.111 model identity remains migration-only through both X48 aliases', () => {

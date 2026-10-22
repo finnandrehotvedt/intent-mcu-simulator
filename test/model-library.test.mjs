@@ -181,7 +181,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
   for (const [lock, expected] of [
     [RETAINED_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-retained-rc72@2'],
     [CURRENT_MODEL_LIBRARY_LOCK,
-      'intent-mcu-model-bundle-current-x66-public-thermostat-create-fix-1@35'],
+      'intent-mcu-model-bundle-current-x48-current-source-integration-1@36'],
   ]) {
     const avr = validateCircuit(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
     assert.equal(avr.ok, true);
