@@ -35,6 +35,9 @@ function syntheticResult() {
   };
 }
 
+const dispatchState = (page, detail) => page.evaluate((value) => document.dispatchEvent(
+  new CustomEvent('x48-state', { detail: value })), detail);
+
 (async () => {
   fs.mkdirSync(output, { recursive: true });
   const browser = await chromium.launch({ headless: true });
@@ -104,9 +107,31 @@ function syntheticResult() {
       assert(state.smallestText >= 10.8, JSON.stringify(state));
       assert.deepEqual({ workers: after.workers - before.workers,
         storageWrites: after.storageWrites - before.storageWrites }, { workers: 0, storageWrites: 0 });
+
+      const passedResult = { ...syntheticResult(), status: 'passed', reason: null };
+      await dispatchState(page, { kind: 'x48-complete', result: passedResult });
+      const passed = await panel.evaluate((root) => ({ state: root.dataset.state,
+        message: root.querySelector('[data-x48-message]').textContent,
+        result: root.querySelector('[data-x48-result]').textContent }));
+      assert.deepEqual(passed, { state: 'passed',
+        message: 'Loop complete: all 32/32 retained rows matched.', result: 'passed · 32/32 rows' });
+      assert.doesNotMatch(passed.message, /without complete evidence/u);
+
+      const failedResult = { ...syntheticResult(), status: 'failed', reason: 'X48_OUTPUT_MISMATCH' };
+      await dispatchState(page, { kind: 'x48-complete', result: failedResult });
+      assert.equal(await panel.locator('[data-x48-message]').textContent(), 'X48_OUTPUT_MISMATCH');
+      assert.match(await panel.locator('[data-x48-result]').textContent(), /failed · 32\/32 rows · X48_OUTPUT_MISMATCH/u);
+
+      const cancelledResult = { ...syntheticResult(), status: 'indeterminate', reason: 'X48_USER_CANCELLED' };
+      await dispatchState(page, { kind: 'x48-cancelled', result: cancelledResult });
+      assert.equal(await panel.locator('[data-x48-message]').textContent(), 'X48_USER_CANCELLED');
+      assert.match(await panel.locator('[data-x48-result]').textContent(), /indeterminate · 32\/32 rows · X48_USER_CANCELLED/u);
+
+      await dispatchState(page, { kind: 'x48-complete', result: passedResult });
       await page.screenshot({ path: path.join(output,
         `x48-synthetic-presentation-${viewport.width}x${viewport.height}.png`), animations: 'disabled' });
-      report.cases.push({ viewport, state, activityDelta: {
+      report.cases.push({ viewport, state, messages: { passed: passed.message,
+        failed: 'X48_OUTPUT_MISMATCH', cancelled: 'X48_USER_CANCELLED' }, activityDelta: {
         workers: after.workers - before.workers, storageWrites: after.storageWrites - before.storageWrites,
       } });
       await context.close();

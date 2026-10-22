@@ -1428,7 +1428,8 @@ function installX48RoomLoop(document, activeProfileReader) {
           : 'indeterminate';
     state = { phase, message: detail.message ?? (phase === 'running'
       ? `Executing bounded worker slices; ${detail.result?.rows?.length ?? 0}/${X48_TICK_COUNT} rows retained.`
-      : detail.result?.reason ?? 'Loop ended without complete evidence.'),
+      : phase === 'passed' ? `Loop complete: all ${detail.result?.rows?.length ?? 0}/${X48_TICK_COUNT} retained rows matched.`
+        : detail.result?.reason ?? 'Loop ended without complete evidence.'),
     result: detail.result ? structuredClone(detail.result) : null };
     paint();
   });

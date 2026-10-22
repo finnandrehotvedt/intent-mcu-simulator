@@ -97893,7 +97893,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/shared-workbench-shell.mjs",
-      "sha256": "9565266520657a6fa2f0729bfab0d9559c2983952b9cb51723e4fef752d2650f"
+      "sha256": "d13589d2499f445303619d0b5e7ceba2ecec68376d44132c628a865915ac79c0"
     },
     {
       "path": "src/rp2040-snapshot-pacer.mjs",
@@ -98016,7 +98016,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "4185a932910979fc255b93e6d4d0b5d02bc30a0da963ff290f034e128971f8f9"
     }
   ],
-  "implementationSha256": "ed535066c9a747c74e409603d02ca3d8c09c600c72585c357a222ba87d82cd64",
+  "implementationSha256": "468fa16f86a379badca3b25ffb5f9385e54fbfeb5d29d04d3e3466c347a5f89e",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.111 and every earlier identity remain immutable and migration-only; this is a private source-integration candidate with zero native producer authority",
@@ -98026,7 +98026,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x66-public-thermostat-create-fix.1-current",
     "semanticDisposition": "component semantics remain unchanged; X48 adds one explicit bounded ideal-room control-loop owner bound to exact source, graph, plant, artifact, model and worker identities"
   },
-  "manifestSha256": "69bcbb807350a7080905a331b7556f8eaf88c6ce6d23bec5e6f1b28a480225f3",
+  "manifestSha256": "06132eb96862ae5b58279c9d7ed3add641dfa11c7ade6716a84ceb8a25540b5f",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",
