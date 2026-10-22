@@ -1,6 +1,7 @@
 {
   "schema": "intent-mcu-contribution-review@1",
   "contributionId": "simulated-thermistor-model",
+  "baseCommit": "a37c8915a5ade9b5c46aba9d14060934f8ae3ccb",
   "description": "Simulated external submission used only to demonstrate deterministic source review.",
   "provenance": { "license": "Apache-2.0", "origin": "original project-owned simulated contribution" },
   "changes": {

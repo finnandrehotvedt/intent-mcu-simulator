@@ -4,6 +4,8 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { DOCKER_BUILD_RUNTIME_POLICY } from '../compiler/docker-runtime-policy.mjs';
+import { parseCompilerImageLock } from '../compiler/image-lock-contract.mjs';
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
 
 export const LOCAL_READINESS_FIXTURE_SCHEMA = 'intent-mcu-local-readiness-fixture@1';
@@ -13,6 +15,7 @@ const IMAGE_KEYS = ['avr', 'rp2040', 'stm32Builder', 'stm32Runtime'];
 const HASH = /^sha256:[a-f0-9]{64}$/u;
 const FILES = Object.freeze({
   compose: 'compose.yaml', package: 'package.json', broker: 'compiler/docker-broker.mjs',
+  runtimePolicy: 'compiler/docker-runtime-policy.mjs', lockContract: 'compiler/image-lock-contract.mjs',
   avr: 'compiler/local-image-lock.json', rp2040: 'compiler/local-rp2040-image-lock.json',
   stm32Builder: 'stm32/builder-image-lock.json', stm32Runtime: 'stm32/runtime-image-lock.json',
 });
@@ -32,45 +35,76 @@ function parseFixture(source) {
 }
 
 function inspectCompose(source) {
-  const local = source.match(/\n  local-compiler:\n([\s\S]*)$/u)?.[1] || '';
-  const value = (expression) => expression.test(local);
-  const host = /STAGING_HOST:\s*([^\n]+)/u.exec(local)?.[1]?.replaceAll('"', '').trim() || null;
+  if (source.includes('\t')) fail('LOCAL_READINESS_COMPOSE_AMBIGUOUS');
+  const lines = source.split(/\r?\n/u);
+  if (lines.filter((line) => line === 'services:').length !== 1) fail('LOCAL_READINESS_COMPOSE_AMBIGUOUS');
+  const starts = lines.flatMap((line, index) => line === '  local-compiler:' ? [index] : []);
+  if (starts.length !== 1) fail('LOCAL_READINESS_COMPOSE_AMBIGUOUS');
+  const start = starts[0];
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (lines[index].trim() && !lines[index].startsWith('    ')) { end = index; break; }
+  }
+  const local = lines.slice(start + 1, end);
+  const direct = new Map();
+  const sections = new Map();
+  let section = null;
+  for (const line of local) {
+    if (!line.trim() || line.trimStart().startsWith('#')) continue;
+    const directMatch = /^    ([A-Za-z0-9_]+):(?: (.*))?$/u.exec(line);
+    if (directMatch) {
+      const [, key, value = ''] = directMatch;
+      if (direct.has(key)) fail('LOCAL_READINESS_COMPOSE_AMBIGUOUS');
+      direct.set(key, value.trim()); section = value.trim() ? null : key;
+      if (section) sections.set(section, []);
+      continue;
+    }
+    if (!section || !line.startsWith('      ')) fail('LOCAL_READINESS_COMPOSE_AMBIGUOUS');
+    sections.get(section).push(line.slice(6));
+  }
+  const environment = new Map();
+  for (const line of sections.get('environment') || []) {
+    const match = /^([A-Z0-9_]+): (.+)$/u.exec(line);
+    if (!match || environment.has(match[1])) fail('LOCAL_READINESS_COMPOSE_AMBIGUOUS');
+    environment.set(match[1], match[2].replace(/^"|"$/gu, ''));
+  }
+  const host = environment.get('STAGING_HOST') || null;
+  const exactNumber = (key, expression) => expression.test(direct.get(key) || '') ? Number(direct.get(key).replace(/m$/u, '')) : null;
   return {
-    profile: value(/profiles:\s*\["local-compiler"\]/u),
+    profile: direct.get('profiles') === '["local-compiler"]',
     loopbackOnly: host === '127.0.0.1', host,
-    readOnly: value(/\n    read_only:\s*true/u), restartDisabled: value(/\n    restart:\s*"no"/u),
-    dockerSocketReadOnly: value(/\/var\/run\/docker\.sock:\/var\/run\/docker\.sock:ro/u),
+    readOnly: direct.get('read_only') === 'true', restartDisabled: direct.get('restart') === '"no"',
+    dockerSocketReadOnly: (sections.get('volumes') || []).filter((line) => line === '- /var/run/docker.sock:/var/run/docker.sock:ro').length === 1,
     gatewayLimits: {
-      cpus: /\n    cpus:\s*2\.0/u.test(local) ? 2 : null,
-      memoryMiB: /\n    mem_limit:\s*512m/u.test(local) ? 512 : null,
-      pids: /\n    pids_limit:\s*128/u.test(local) ? 128 : null,
+      cpus: exactNumber('cpus', /^2\.0$/u), memoryMiB: exactNumber('mem_limit', /^512m$/u),
+      pids: exactNumber('pids_limit', /^128$/u),
     },
     lockBindings: {
-      avr: /COMPILER_IMAGE_LOCK:\s*\/workspace\/compiler\/local-image-lock\.json/u.test(local),
-      rp2040: /RP2040_COMPILER_IMAGE_LOCK:\s*\/workspace\/compiler\/local-rp2040-image-lock\.json/u.test(local),
-      stm32Builder: /STM32_BUILDER_IMAGE_LOCK:\s*\/workspace\/stm32\/builder-image-lock\.json/u.test(local),
-      stm32Runtime: /STM32_RUNTIME_IMAGE_LOCK:\s*\/workspace\/stm32\/runtime-image-lock\.json/u.test(local),
+      avr: environment.get('COMPILER_IMAGE_LOCK') === '/workspace/compiler/local-image-lock.json',
+      rp2040: environment.get('RP2040_COMPILER_IMAGE_LOCK') === '/workspace/compiler/local-rp2040-image-lock.json',
+      stm32Builder: environment.get('STM32_BUILDER_IMAGE_LOCK') === '/workspace/stm32/builder-image-lock.json',
+      stm32Runtime: environment.get('STM32_RUNTIME_IMAGE_LOCK') === '/workspace/stm32/runtime-image-lock.json',
     },
   };
 }
 
-function inspectBroker(source) {
+function inspectBrokerPolicy() {
+  const policy = DOCKER_BUILD_RUNTIME_POLICY;
   return {
-    networkNone: source.includes("'--network', 'none'"), readOnly: source.includes("'--read-only'"),
-    noPrivileges: source.includes("'no-new-privileges:true'"), capabilitiesDropped: source.includes("'--cap-drop', 'ALL'"),
-    pids: source.includes("'--pids-limit', '64'") ? 64 : null,
-    memoryMiB: source.includes("'--memory', '256m'") && source.includes("'--memory-swap', '256m'") ? 256 : null,
-    cpus: source.includes("'--cpus', '1.0'") ? 1 : null,
-    ephemeralWrites: source.includes("'--tmpfs', '/workspace:rw,noexec,nosuid,nodev,size=32m")
-      && source.includes("'--tmpfs', '/tmp:rw,noexec,nosuid,nodev,size=16m"),
+    networkNone: policy.network === 'none', readOnly: policy.readOnly,
+    noPrivileges: policy.noNewPrivileges, capabilitiesDropped: policy.capabilities.length === 0,
+    pids: policy.pids, memoryMiB: policy.memoryMiB === policy.memorySwapMiB ? policy.memoryMiB : null,
+    cpus: policy.cpus,
+    ephemeralWrites: policy.tmpfs.length === 2 && policy.tmpfs.some((value) => value.startsWith('/workspace:rw,noexec,nosuid,nodev,size=32m,'))
+      && policy.tmpfs.some((value) => value.startsWith('/tmp:rw,noexec,nosuid,nodev,size=16m,')),
   };
 }
 
 function parseLock(source, name) {
-  const value = parseStrictJson(source, 16 * 1024);
-  if (!value || value.schema !== 'teach-lab-compiler-image-lock@1' || !HASH.test(value.imageId)
-      || typeof value.image !== 'string' || !value.image) fail('LOCAL_READINESS_LOCK_INVALID', [name]);
-  return { image: value.image, imageId: value.imageId };
+  try {
+    const value = parseCompilerImageLock(source);
+    return { image: value.image, imageId: value.imageId };
+  } catch { return fail('LOCAL_READINESS_LOCK_INVALID', [name]); }
 }
 
 async function optionalRead(filename) {
@@ -83,13 +117,14 @@ async function optionalRead(filename) {
 export async function assessLocalReadiness(checkoutRoot, fixtureSource) {
   const fixture = parseFixture(fixtureSource);
   const root = path.resolve(checkoutRoot);
-  const [composeSource, packageSource, brokerSource] = await Promise.all([
+  const [composeSource, packageSource, brokerSource, runtimePolicySource, lockContractSource] = await Promise.all([
     readFile(path.join(root, FILES.compose), 'utf8'), readFile(path.join(root, FILES.package), 'utf8'),
-    readFile(path.join(root, FILES.broker), 'utf8'),
+    readFile(path.join(root, FILES.broker), 'utf8'), readFile(path.join(root, FILES.runtimePolicy), 'utf8'),
+    readFile(path.join(root, FILES.lockContract), 'utf8'),
   ]);
   const packageValue = parseStrictJson(packageSource, 512 * 1024);
   const compose = inspectCompose(composeSource);
-  const broker = inspectBroker(brokerSource);
+  const broker = inspectBrokerPolicy();
   const blockers = [];
   if (!compose.profile || !compose.loopbackOnly) blockers.push('LOCAL_BIND_NOT_LOOPBACK');
   if (!compose.readOnly || !compose.restartDisabled || !compose.dockerSocketReadOnly) blockers.push('LOCAL_GATEWAY_BOUNDARY_INVALID');
@@ -120,12 +155,14 @@ export async function assessLocalReadiness(checkoutRoot, fixtureSource) {
   }
   if (fixture.runtime !== 'docker-available') blockers.push('LOCAL_RUNTIME_MISSING:docker');
   const configurationSha256 = sha256(canonical({
-    compose: sha256(composeSource), package: sha256(packageSource), broker: sha256(brokerSource), locks: lockHashes,
+    compose: sha256(composeSource), package: sha256(packageSource), broker: sha256(brokerSource),
+    runtimePolicy: sha256(runtimePolicySource), lockContract: sha256(lockContractSource), locks: lockHashes,
   }));
   return Object.freeze({
     schema: LOCAL_READINESS_REPORT_SCHEMA, configurationSha256,
     source: Object.freeze({ composeSha256: sha256(composeSource), packageSha256: sha256(packageSource),
-      brokerSha256: sha256(brokerSource), lockSha256: Object.freeze(lockHashes) }),
+      brokerSha256: sha256(brokerSource), runtimePolicySha256: sha256(runtimePolicySource),
+      lockContractSha256: sha256(lockContractSource), lockSha256: Object.freeze(lockHashes) }),
     profiles: Object.freeze({ avr: locks.avr ? 'assessed' : 'unavailable', rp2040: locks.rp2040 ? 'assessed' : 'unavailable',
       stm32: locks.stm32Builder && locks.stm32Runtime ? 'assessed' : 'unavailable',
       esp32c3: 'unavailable-separate-licensed-images' }),

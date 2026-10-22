@@ -6,6 +6,8 @@ import { randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { BUILD_LIMITS, WORKER_JOB_SCHEMA, parseStrictJson, sourceDigest } from './build-protocol.mjs';
+import { parseCompilerImageLock } from './image-lock-contract.mjs';
+import { dockerBuildRuntimeArguments } from './docker-runtime-policy.mjs';
 
 const execFileAsync = promisify(execFile);
 const DEFAULT_LOCK = process.env.COMPILER_IMAGE_LOCK || new URL('./image-lock.json', import.meta.url);
@@ -19,19 +21,8 @@ export class BrokerError extends Error {
 }
 
 export async function loadImageLock(pathname = DEFAULT_LOCK) {
-  const lock = JSON.parse(await readFile(pathname, 'utf8'));
-  const runtimeImageIds = lock.runtimeImageIds ?? [];
-  if (lock.schema !== 'teach-lab-compiler-image-lock@1'
-      || !/^sha256:[0-9a-f]{64}$/.test(lock.imageId)
-      || !Array.isArray(runtimeImageIds)
-      || runtimeImageIds.length > 4
-      || runtimeImageIds.some((value) => !/^sha256:[0-9a-f]{64}$/.test(value))
-      || new Set([lock.imageId, ...runtimeImageIds]).size !== runtimeImageIds.length + 1
-      || !/^[0-9a-f]{64}$/.test(lock.toolchainManifestSha256)
-      || typeof lock.image !== 'string') {
-    throw new BrokerError('INVALID_IMAGE_LOCK');
-  }
-  return Object.freeze({ ...lock, runtimeImageIds: Object.freeze(runtimeImageIds) });
+  try { return parseCompilerImageLock(await readFile(pathname, 'utf8')); }
+  catch (error) { throw new BrokerError(error.code === 'INVALID_IMAGE_LOCK' ? error.code : 'INVALID_IMAGE_LOCK'); }
 }
 
 export function imageIdMatches(imageLock, observed) {
@@ -75,18 +66,7 @@ export class DockerBuildBroker {
   }
 
   runtimeArguments(containerName) {
-    return [
-      'run', '--rm', '--name', containerName,
-      '--label', 'com.intentforce.teach-lab.role=disposable-build-job',
-      '--network', 'none', '--read-only', '--user', '10001:10001',
-      '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges:true',
-      '--pids-limit', '64', '--memory', '256m', '--memory-swap', '256m', '--cpus', '1.0',
-      '--ipc', 'none', '--ulimit', 'nofile=128:128', '--ulimit', 'core=0:0',
-      '--tmpfs', '/workspace:rw,noexec,nosuid,nodev,size=32m,uid=10001,gid=10001,mode=0700',
-      '--tmpfs', '/tmp:rw,noexec,nosuid,nodev,size=16m,uid=10001,gid=10001,mode=0700',
-      '--env', 'HOME=/tmp/home', '--env', 'NO_UPDATE_NOTIFIER=1',
-      '-i', this.imageLock.image,
-    ];
+    return dockerBuildRuntimeArguments(containerName, this.imageLock.image);
   }
 
   async compile(request, { signal } = {}) {

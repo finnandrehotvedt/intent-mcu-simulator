@@ -2,5 +2,6 @@ node_modules/
 dist/
 compiler/local-image-lock.json
 compiler/local-rp2040-image-lock.json
+.intent-mcu/
 npm-debug.log*
 .DS_Store

@@ -1,0 +1,17 @@
+{
+  "schema": "intent-mcu-contribution-conformance-fixture@1",
+  "fixtureIdentity": "simulated-thermistor-reference-v1",
+  "contributionId": "simulated-thermistor-model",
+  "baseCommit": "a37c8915a5ade9b5c46aba9d14060934f8ae3ccb",
+  "files": [{
+    "path": "examples/contribution-review/simulated-thermistor-model.mjs",
+    "bytes": 263,
+    "sha256": "c4fa7f0f4200f9702f506dc108f112c4282010d79b26782158eeed41e979655f"
+  }],
+  "changes": {
+    "models": ["Adds simulated-thermistor-v1 as review material only"],
+    "pins": ["Declares signal and ground pin intent"],
+    "parameters": ["Declares bounded resistance parameter intent"],
+    "versions": ["Proposes model version 1 without registry authority"]
+  }
+}

@@ -13,15 +13,29 @@ node tools/contribution-review.mjs check \
   --checkout . --out contribution-report.json
 ```
 
-A trusted maintainer separately records an `intent-mcu-source-review@1`
-decision and a CI owner records an `intent-mcu-conformance-result@1` result for
-the exact report digest, fixture identity, and suite `project-owned-x57-v1`.
-The fixed admission command then combines those local files:
+A trusted maintainer must explicitly confirm review of every declared change
+class. The project-owned conformance runner then verifies the checked-in
+fixture. Both records are written only to the checkout's fixed, ignored
+`.intent-mcu/trusted-contribution-evidence` directory and are bound to the
+current candidate bytes, base commit, fixture, and runner:
+
+```sh
+node tools/contribution-review.mjs review \
+  --report contribution-report.json --checkout . \
+  --reviewer maintainer-name \
+  --confirm-changedPaths --confirm-models --confirm-pins \
+  --confirm-parameters --confirm-versions
+
+node tools/contribution-review.mjs conform \
+  --report contribution-report.json --checkout .
+```
+
+The fixed admission command rehashes the current checkout and revalidates the
+trusted records. It does not accept caller-selected evidence paths:
 
 ```sh
 node tools/contribution-review.mjs admit --report contribution-report.json \
-  --review source-review.json --conformance conformance-result.json \
-  --out admission.json
+  --checkout . --out admission.json
 ```
 
 Admission is evidence for a later normal pull request. It grants no execution,

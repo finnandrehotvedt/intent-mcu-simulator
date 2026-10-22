@@ -9,6 +9,8 @@ import path from 'node:path';
 import {
   assessLocalReadiness, canonicalLocalReadinessReport, reopenLocalReadinessReport,
 } from '../src/local-readiness-assessor.mjs';
+import { DockerBuildBroker } from '../compiler/docker-broker.mjs';
+import { dockerBuildRuntimeArguments } from '../compiler/docker-runtime-policy.mjs';
 
 const sourceRoot = new URL('../', import.meta.url).pathname;
 const imageIds = {
@@ -30,6 +32,7 @@ async function preparedCheckout() {
   await mkdir(path.join(root, 'compiler'), { recursive: true });
   await mkdir(path.join(root, 'stm32'), { recursive: true });
   for (const file of ['compose.yaml', 'package.json', 'compiler/docker-broker.mjs',
+    'compiler/docker-runtime-policy.mjs', 'compiler/image-lock-contract.mjs',
     'stm32/builder-image-lock.json', 'stm32/runtime-image-lock.json']) {
     await cp(path.join(sourceRoot, file), path.join(root, file));
   }
@@ -80,14 +83,45 @@ test('X89 fails closed for image mismatch, public bind, bad/missing limits, writ
   assert(composeReport.blockers.includes('LOCAL_BIND_NOT_LOOPBACK'));
   assert(composeReport.blockers.includes('LOCAL_GATEWAY_LIMIT_INVALID'));
 
-  const brokerRoot = await preparedCheckout();
-  const brokerPath = path.join(brokerRoot, 'compiler/docker-broker.mjs');
-  await writeFile(brokerPath, (await readFile(brokerPath, 'utf8')).replace("'--read-only'", "'--read-write'"));
-  assert((await assessLocalReadiness(brokerRoot, fixture())).blockers.includes('LOCAL_CHILD_BOUNDARY_INVALID'));
-
   const lockRoot = await preparedCheckout();
   await writeFile(path.join(lockRoot, 'compiler/local-image-lock.json'), '{}\n');
   await assert.rejects(assessLocalReadiness(lockRoot, fixture()), /LOCAL_READINESS_LOCK_INVALID/u);
+});
+
+test('X89 parses complete typed local-compiler scalars and ignores values in other services', async () => {
+  for (const [from, to] of [['pids_limit: 128', 'pids_limit: 1280'], ['cpus: 2.0', 'cpus: 2.01']]) {
+    const root = await preparedCheckout();
+    const composePath = path.join(root, 'compose.yaml');
+    await writeFile(composePath, (await readFile(composePath, 'utf8')).replace(from, to));
+    assert((await assessLocalReadiness(root, fixture())).blockers.includes('LOCAL_GATEWAY_LIMIT_INVALID'));
+  }
+  const root = await preparedCheckout();
+  const composePath = path.join(root, 'compose.yaml');
+  const source = (await readFile(composePath, 'utf8')).replace('pids_limit: 128', 'pids_limit: 1280');
+  await writeFile(composePath, `${source}\n  decoy:\n    pids_limit: 128\n    cpus: 2.0\n    mem_limit: 512m\n`);
+  assert((await assessLocalReadiness(root, fixture())).blockers.includes('LOCAL_GATEWAY_LIMIT_INVALID'));
+});
+
+test('X89 broker consumes the same immutable child runtime policy assessed by readiness', () => {
+  const expected = dockerBuildRuntimeArguments('job-fixed', 'local/image:fixed');
+  const broker = new DockerBuildBroker({ imageLock: { image: 'local/image:fixed' } });
+  assert.deepEqual(broker.runtimeArguments('job-fixed'), expected);
+  assert(expected.includes('--read-only'));
+  assert.deepEqual(expected.slice(expected.indexOf('--network'), expected.indexOf('--network') + 2), ['--network', 'none']);
+});
+
+test('X89 applies actual broker lock semantics including manifest and runtime image pins', async () => {
+  for (const mutation of [
+    (value) => { delete value.toolchainManifestSha256; },
+    (value) => { value.runtimeImageIds = ['not-an-image-id']; },
+    (value) => { value.runtimeImageIds = [value.imageId]; },
+  ]) {
+    const root = await preparedCheckout();
+    const lockPath = path.join(root, 'compiler/local-image-lock.json');
+    const value = JSON.parse(await readFile(lockPath, 'utf8')); mutation(value);
+    await writeFile(lockPath, `${JSON.stringify(value)}\n`);
+    await assert.rejects(assessLocalReadiness(root, fixture()), /LOCAL_READINESS_LOCK_INVALID/u);
+  }
 });
 
 test('X89 rejects unknown fixture fields and never interprets caller text as commands', async () => {
