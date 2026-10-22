@@ -1,8 +1,15 @@
-# Migration to 1.1.0-rc.103
+# Migration to 1.1.0-rc.104
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.104 recognizes the split-editor, no-op Apply and corrected model-copy
+identities. Rc.103 files validate and migrate as data only: authored
+components, bounded model values, Drawing values, pins, nets and source remain
+intact, while executable/runtime/verdict authority is cleared and requires a
+fresh Build. Uncommitted previews are transient and are never saved or
+restored. Unknown or authority-bearing fields continue to fail closed.
 
 Rc.103 recognizes the bounded body-geometry identity for the existing resistor
 and LED. Rc.102 files validate and migrate as data only; components, pins,

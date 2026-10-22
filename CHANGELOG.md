@@ -2,6 +2,24 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.104 — 2026-10-22
+
+- Separates the existing resistor and LED Inspector into explicit `Model
+  property` and `Drawing` workspaces on AVR, Pico, ESP32-C3 and STM32.
+- Keeps Preview non-mutating, Cancel atomic, unchanged-value Apply disabled,
+  stale previews rejected and each accepted Apply as one mode-scoped Undo/Redo
+  transaction. Closing the Inspector, Escape and profile switching discard
+  uncommitted previews.
+- Clarifies that model Preview changes no project/runtime state, while accepted
+  model Apply revalidates the property and circuit, retires current executable
+  and runtime evidence, and requires a fresh Build before Run. Drawing remains
+  layout-only and cannot change pins, anchors, named nets, source or runtime
+  semantics.
+- Reuses accepted 66/66 X55, 28/28 top-layout and four-profile browser evidence
+  with 0 firmware Build, Run, Scenario, producer request or runtime worker.
+  X55 remains partial at **75/1/20**; no general model/drawing editor or blanket
+  X55 closure is claimed.
+
 ## 1.1.0-rc.103 — 2026-10-21
 
 - Adds one coherent, bounded body editor for the existing resistor and LED

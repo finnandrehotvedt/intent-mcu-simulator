@@ -1,4 +1,30 @@
-# Intent MCU Simulator 1.1.0-rc.103
+# Intent MCU Simulator 1.1.0-rc.104
+
+## X55 partial split Model property and Drawing editor
+
+This release separates the existing resistor and LED Inspector into explicit
+`Model property` and `Drawing` workspaces on AVR, Pico, ESP32-C3 and STM32.
+Each mode has independent non-mutating Preview and Cancel behavior, disables
+Apply when unchanged, rejects stale previews and commits one mode-scoped
+Undo/Redo transaction. Closing the Inspector, Escape or profile switching
+discards uncommitted previews.
+
+The corrected model message distinguishes Preview from Apply: Preview changes
+no project or runtime state; accepted Apply revalidates the bounded model
+property and circuit, retires current executable/runtime evidence and requires
+a fresh Build before Run. Pins, anchors, named nets, Drawing and source remain
+unchanged. Drawing remains layout-only and cannot alter electrical/runtime
+semantics. No new component, property, arbitrary geometry, physical claim or
+general model/drawing editor is added.
+
+The reviewed candidate passed 66/66 focused X55 and 28/28 top-layout tests,
+plus four-profile split-editor and corrected-copy browser acceptance. Rc.104
+performs 0 firmware Build, 0 Run, 0 Scenario, 0 producer request and 0 runtime
+worker. Status remains X **75/1/20** and P1 **59/0/0**; X55 remains partial.
+
+---
+
+## 1.1.0-rc.103
 
 ## X55 partial bounded body geometry editor across four profiles
 

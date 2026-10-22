@@ -11,8 +11,8 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.102",
-    "current": "1.1.0-rc.103"
+    "previous": "1.1.0-rc.103",
+    "current": "1.1.0-rc.104"
   },
   "changes": [
     {
@@ -25,9 +25,11 @@
         "x55-all-profile-fixed-resistor-appearance-v1",
         "x55-all-profile-led-outline-appearance-v1",
         "x55-avr-fixed-resistor-appearance-v1",
-        "x55-bounded-body-geometry-editor-v1"
+        "x55-bounded-body-geometry-editor-v1",
+        "x55-model-drawing-split-editor-v1",
+        "x55-model-preview-apply-copy-v1"
       ],
-      "summary": "Adds bounded data-only width, height and corner controls for existing resistor and LED bodies across four profiles while electrical anchors, nets, properties, source, artifact and runtime authority remain unchanged."
+      "summary": "Separates resistor and LED Model property from Drawing across four profiles, disables no-op Apply, and distinguishes nonmutating Preview from Apply revalidation and executable/runtime-evidence retirement before a fresh Build."
     },
     {
       "id": "X88",
@@ -38,7 +40,7 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records the reviewed rc.102 to rc.103 partial X55 bounded-body editor across four profiles; it reuses accepted tests, performs no firmware Build, Run or Scenario and grants no arbitrary geometry, physical or verdict authority."
+      "summary": "Records the reviewed rc.103 to rc.104 partial X55 split-editor, no-op Apply and copy correction; it reuses accepted tests, performs no firmware Build, Run or Scenario and grants no new model, drawing or verdict authority."
     }
   ],
   "migrationRequired": false,
