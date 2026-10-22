@@ -11,21 +11,10 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.111",
-    "current": "1.1.0-rc.112"
+    "previous": "1.1.0-rc.112",
+    "current": "1.1.0-rc.113"
   },
   "changes": [
-    {
-      "id": "X48",
-      "classification": "additive",
-      "capabilities": [
-        "intent-mcu-x48-ideal-room-plant@2"
-      ],
-      "contracts": [
-        "x48-avr-ideal-room-instruction-boundary-v1"
-      ],
-      "summary": "Adds one bounded 32-tick AVR ideal-room loop with exact source, graph, artifact, model and worker joins, independently recomputed rows, HIGH/LOW coverage and zero-drop acceptance; it is not physical, wall-clock or safety evidence."
-    },
     {
       "id": "X88",
       "classification": "changed",
@@ -35,7 +24,21 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records the reviewed rc.111 to rc.112 X48 bounded ideal-room loop and its presentation-only success-copy correction, with X92 remaining partial and zero new release-time native producer authority."
+      "summary": "Records the reviewed rc.112 to rc.113 bounded Pico owner-proof slice, exact retained native provenance and corrected AVR/Pico budget presentation, with X92 remaining partial and zero new release-time firmware producer authority."
+    },
+    {
+      "id": "X92",
+      "classification": "changed",
+      "capabilities": [
+        "intent-mcu-experiment-budget-review@1",
+        "intent-mcu-experiment-budget@1",
+        "intent-mcu-x92-runtime-quiescence-ack@1"
+      ],
+      "contracts": [
+        "x92-bounded-avr-experiment-budget-v1",
+        "x92-bounded-pico-owner-proof-v1"
+      ],
+      "summary": "Adds reviewed bounded Pico owner proof with two stable Pause acknowledgements, exact UART bytes and independent identity joins; C3 and STM32 budgeted Run remain unsupported and X92 remains partial."
     }
   ],
   "migrationRequired": false,

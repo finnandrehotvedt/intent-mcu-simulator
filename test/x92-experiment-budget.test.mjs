@@ -2,6 +2,7 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   X92_DEFAULT_LIMITS,
@@ -13,6 +14,14 @@ import {
 import { boundedActionRequest, parseBoundedActionRequest } from '../src/bounded-action-contracts.mjs';
 
 const profile = 'board.atmega328p-16mhz-v1';
+
+test('public budget copy names reviewed AVR and Pico scope and rejects C3/STM32', async () => {
+  const html = await readFile(new URL('../staging/index.html', import.meta.url), 'utf8');
+  assert.match(html, /reviewed owner-quiescence evidence for the generic AVR and bounded RP2040 Pico profiles/u);
+  assert.match(html, /ESP32-C3 and STM32[^.]+reject budgeted Run before producer dispatch/u);
+  assert.doesNotMatch(html, /producer-quiescence evidence only for the generic AVR profile/u);
+});
+
 const identity = (generation = 1, hash = 'a', targetProfile = profile) => ({
   schema: 'intent-mcu-experiment-budget-identity@1',
   profile: targetProfile,

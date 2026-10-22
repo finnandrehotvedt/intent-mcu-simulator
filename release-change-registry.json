@@ -217,7 +217,8 @@
         "intent-mcu-x92-runtime-quiescence-ack@1"
       ],
       "contracts": [
-        "x92-bounded-avr-experiment-budget-v1"
+        "x92-bounded-avr-experiment-budget-v1",
+        "x92-bounded-pico-owner-proof-v1"
       ]
     }
   ]

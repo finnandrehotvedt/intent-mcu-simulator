@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.112 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.113 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -28,12 +28,13 @@ uses explicit local downloads and opens for one strict data-only response bound
 to exact parent bytes. Neither feature adds accounts, uploads, server project
 storage, automatic Apply, sender authentication, execution or runtime state.
 
-The optional current-tab experiment budget is complete only for its bounded AVR
-slice: trusted session start, fixed aggregate limits, atomic dispatch ownership,
-inert review files and owner-bound terminal Pause acknowledgement. Budgeted Run
-on Pico, ESP32-C3 and STM32 rejects before producer dispatch. Existing manual
-controls on all four profiles are unchanged; this does not provide a generic AI
-agent, remote scheduler, billing quota or cross-user budget.
+The optional current-tab experiment budget has reviewed native owner-quiescence
+evidence for its bounded AVR and RP2040 Pico slices: trusted session start,
+fixed aggregate limits, atomic dispatch ownership, inert review files and two
+fresh owner-bound Pico Pause acknowledgements. Budgeted Run on ESP32-C3 and
+STM32 rejects before producer dispatch. Existing manual controls on all four
+profiles are unchanged; this does not provide a generic AI agent, remote
+scheduler, billing quota or cross-user budget. X92 remains partial.
 
 Canvas annotations are local, non-electrical presentation data. Notes and
 groups cannot create components, pins, subcircuits or connectivity. Net labels
