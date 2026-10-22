@@ -6,11 +6,12 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
-  CURRENT_MODEL_LIBRARY_MANIFEST, PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST,
+  CURRENT_MODEL_LIBRARY_MANIFEST, RC111_CURRENT_MODEL_LIBRARY_MANIFEST,
+  PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST,
 } from '../src/model-library-snapshots.mjs';
 import {
-  CURRENT_MODEL_LIBRARY_LOCK,
+  CURRENT_MODEL_LIBRARY_LOCK, RC111_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X48_CURRENT_MODEL_LIBRARY_LOCK, PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_LOCK,
   modelLibraryExecutionIdentity,
   modelLibraryMigrationPreview,
@@ -39,7 +40,28 @@ test('current resolver manifest and admitted execution identity use one exact im
   assert.equal(execution.implementation.id, CURRENT_MODEL_LIBRARY_MANIFEST.implementationId);
 });
 
-test('the accepted rc.111 model identity remains migration-only through both X48 aliases', () => {
+test('accepted public rc.111 manifest is preserved byte-for-byte as migration-only data', async () => {
+  const fixture = JSON.parse(await readFile(new URL(
+    '../src/model-bundles/rc111-current-manifest.json', import.meta.url,
+  )));
+  assert.deepEqual(RC111_CURRENT_MODEL_LIBRARY_MANIFEST, fixture);
+  assert.equal(createHash('sha256').update(JSON.stringify(fixture)).digest('hex'),
+    'da0ac4b30326f5f4b9f4b9c437becf6af6ac30256d0d1cfb6a322ed1140aba7e');
+  assert.equal(fixture.manifestSha256,
+    '5117ad2fd7a975a050f37daa7d052bf7b137e023a2d8417ed7169e70d9183fbc');
+  assert.equal(fixture.implementationSha256,
+    'bf72d156c56609b9b628c005cffc6a87eeed796e7028fab8a2c6e8c0d0bb5d87');
+  assert.equal(modelLibraryExecutionIdentity(RC111_CURRENT_MODEL_LIBRARY_LOCK).code,
+    'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const preview = modelLibraryMigrationPreview(RC111_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(preview.ok, true);
+  assert.equal(preview.migrationRequired, true);
+  assert.deepEqual(preview.semanticChanges, []);
+  assert.deepEqual(preview.rendererChanges, []);
+  assert.equal(preview.unchanged.length, 25);
+});
+
+test('the older pre-X48 authority identity remains separately immutable and migration-only', () => {
   assert.equal(PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST.version,
     '2.0.0-x66-public-thermostat-create-fix.1-current');
   assert.equal(PRE_X48_AUTHORITY_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
@@ -50,7 +72,7 @@ test('the accepted rc.111 model identity remains migration-only through both X48
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
 });
 
-test('rc.111 identity remains byte-exact migration-only and cannot execute as X48 current', () => {
+test('the older pre-X48 current alias remains byte-exact and cannot execute as X48 current', () => {
   assert.equal(PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST.version,
     '2.0.0-x66-public-thermostat-create-fix.1-current');
   assert.equal(PRE_X48_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,

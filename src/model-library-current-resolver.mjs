@@ -407,3 +407,10 @@ export const PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Obje
   manifestVersion: '2.0.0-x47-ui-integration.1-current',
   migrationOnly: true,
 });
+
+export const RC111_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-x66-public-thermostat-create-fix-1@35',
+  manifestVersion: '2.0.0-x66-public-thermostat-create-fix.1-current',
+  migrationOnly: true,
+});

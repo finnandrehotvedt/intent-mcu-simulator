@@ -14,6 +14,8 @@ import {
   rawHistoryRecordToken,
   sortHistoryRecords,
 } from '../src/local-version-history.mjs';
+import { canonicalProjectEnvelope, emptyProjectBrief, prepareProjectEnvelope } from '../src/project-envelope.mjs';
+import { RC111_CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
 
 const PROFILE = 'board.atmega328p-16mhz-v1';
 const MODEL = Object.freeze({
@@ -98,4 +100,22 @@ test('X63 settings are exact and record ordering has a stable ID tie-breaker', a
   assert.deepEqual(sortHistoryRecords([corrupt, second, base]).slice(-1), [corrupt]);
   assert.equal(normalizeHistoryRecord({ ...base,
     modelLibrary: { ...MODEL, schema: 'intent-mcu-model-library-lock@1' } }), null);
+});
+
+test('accepted public rc.111 saved history remains inspectable without gaining runtime authority', async () => {
+  const rc111Project = { schema: 'history-example@1', profile: PROFILE, metadata: { name: 'rc.111' } };
+  const rc111Adapters = { [PROFILE]: { schemas: ['history-example@1'], prepare(value) {
+    return { project: structuredClone(value), prepared: { accepted: true } };
+  } } };
+  const rc111Envelope = canonicalProjectEnvelope(PROFILE, rc111Project, rc111Adapters,
+    emptyProjectBrief(), null, RC111_CURRENT_MODEL_LIBRARY_LOCK);
+  const created = await createHistoryRecord({ envelope: rc111Envelope, profile: PROFILE,
+    modelLibrary: RC111_CURRENT_MODEL_LIBRARY_LOCK, createdAt: '2026-10-22T00:00:00.000Z', hash });
+  assert.equal(created.ok, true);
+  const inspected = await inspectHistoryRecord(created.record, {
+    prepare: (value) => prepareProjectEnvelope(value, rc111Adapters), hash,
+  });
+  assert.equal(inspected.ok, true);
+  assert.deepEqual(inspected.prepared.modelLibrary, RC111_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(prepareProjectEnvelope(rc111Envelope, rc111Adapters).report.executableAuthorityCleared, true);
 });

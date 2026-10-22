@@ -13,6 +13,8 @@ import { controlContractsFor } from '../src/model-control-contracts.mjs';
 import * as existingSnapshots from '../src/model-library-snapshots.mjs';
 
 const { RETAINED_MODEL_LIBRARY_MANIFEST } = existingSnapshots;
+const RC111_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
+  '../src/model-bundles/rc111-current-manifest.json', import.meta.url), 'utf8'));
 const PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -262,6 +264,7 @@ const output = `// SPDX-License-Identifier: Apache-2.0
 // Generated immutable snapshots. Regenerate only through an explicitly reviewed library release.
 
 export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(retained, null, 2)});
+export const RC111_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC111_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
