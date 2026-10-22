@@ -26,6 +26,7 @@ const SOURCE_LINE_PATTERNS = Object.freeze([
   /^void loop\(\) \{$/u, /^  delay\(1000\);$/u, /^\}$/u, /^$/u,
 ]);
 const clone = (value) => structuredClone(value);
+const SHA256 = /^[0-9a-f]{64}$/u;
 const exactKeys = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
 
@@ -41,6 +42,21 @@ function defaultProject() {
     source: C3_PUBLIC_SOURCE,
     circuit: normalizeEsp32C3CircuitDraft(createEsp32C3CircuitDraft()),
   };
+}
+export function validateEsp32C3Retirement(value, expected) {
+  const hash = (actual, wanted) => actual === wanted
+    && (actual === null || SHA256.test(actual));
+  if (!exactKeys(value, ['schema', 'sessionId', 'generation', 'sourceSha256',
+    'artifactSha256', 'state', 'retainedBytes', 'processExited', 'operationRetired'])
+    || value.schema !== 'intent-mcu-c3-retirement@1'
+    || value.sessionId !== expected.sessionId || value.generation !== expected.generation
+    || !hash(value.sourceSha256, expected.sourceSha256)
+    || !hash(value.artifactSha256, expected.artifactSha256)
+    || value.state !== 'disposed' || value.retainedBytes !== 0
+    || value.processExited !== true || value.operationRetired !== true) {
+    throw new Error('C3_RETIREMENT_ACK_INVALID');
+  }
+  return { ok: true, code: 'C3_RETIREMENT_PROVEN' };
 }
 export function normalizeEsp32C3PublicProject(value) {
   if (!exactKeys(value, ['schema', 'name', 'profile', 'source', 'circuit'])
@@ -347,6 +363,11 @@ export class Esp32C3PublicWorkbench {
     clearTimeout(this.invalidationTimer);
     this.invalidationTimer = null;
     const sessionId = this.sessionId;
+    const expected = sessionId ? {
+      sessionId, generation: this.serverGeneration,
+      sourceSha256: this.artifact?.sourceSha256 ?? null,
+      artifactSha256: this.artifact?.flashSha256 ?? null,
+    } : null;
     const headers = this.mutationHeaders();
     const body = sessionId ? JSON.stringify(this.commandBody('dispose')) : null;
     // Retire local executable authority before waiting for the disposal
@@ -364,12 +385,17 @@ export class Esp32C3PublicWorkbench {
     this.message = message;
     this.render();
     try {
-      if (sessionId) await this.response(await this.fetch(
+      if (sessionId) {
+        const retirement = await this.response(await this.fetch(
         `${this.endpoint}/session/${sessionId}/command`,
         { method: 'POST', headers, body },
-      ));
-    } catch {}
-    return { ok: true, code: 'OK' };
+        ));
+        return validateEsp32C3Retirement(retirement, expected);
+      }
+    } catch (error) {
+      return { ok: false, code: error.code ?? error.message ?? 'C3_RETIREMENT_UNPROVEN' };
+    }
+    return { ok: true, code: 'C3_RETIREMENT_PROVEN' };
   }
   disposeForPageExit() {
     if (!this.sessionId || !this.capability) return;

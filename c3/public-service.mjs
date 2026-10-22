@@ -190,9 +190,23 @@ function wipeArtifact(session) {
   session.marker = null;
   session.gpioSource = null;
 }
-function abortOperation(session) {
-  session.operation?.abort();
-  session.operation = null;
+function ownedOperation(session, controller) {
+  let finish;
+  const owner = {
+    abort: () => controller.abort(),
+    settled: new Promise((resolve) => { finish = resolve; }),
+    finish: () => finish(),
+  };
+  session.operation = owner;
+  return owner;
+}
+function abortOperation(session) { session.operation?.abort(); }
+async function retireOperation(session) {
+  const owner = session.operation;
+  if (!owner) return;
+  owner.abort();
+  await owner.settled;
+  if (session.operation === owner) session.operation = null;
 }
 function dispose(session) {
   abortOperation(session);
@@ -322,7 +336,7 @@ export function createC3PublicService({
     }
     if (metrics.buildInFlight >= limits.concurrentBuilds) throw fault('BUILD_CONCURRENCY_LIMIT', 429,
       retryAfterForCode('BUILD_CONCURRENCY_LIMIT'));
-    abortOperation(session);
+    await retireOperation(session);
     wipeArtifact(session);
     session.generation += 1;
     const generation = session.generation;
@@ -337,7 +351,7 @@ export function createC3PublicService({
     }
     const sourceSha256 = sha256(Buffer.from(parsed.source, 'utf8'));
     const controller = new AbortController();
-    session.operation = controller;
+    const operation = ownedOperation(session, controller);
     metrics.builds += 1;
     metrics.buildInFlight += 1;
     let output;
@@ -346,7 +360,8 @@ export function createC3PublicService({
         marker: parsed.marker, sourceSha256, signal: controller.signal });
     } finally {
       metrics.buildInFlight -= 1;
-      if (session.operation === controller) session.operation = null;
+      operation.finish();
+      if (session.operation === operation) session.operation = null;
     }
     if (!sessions.has(session.id) || session.generation !== generation) {
       output.files?.mergedFlash?.fill(0);
@@ -417,7 +432,7 @@ export function createC3PublicService({
     const generation = session.generation;
     const descriptor = session.descriptor;
     const controller = new AbortController();
-    session.operation = controller;
+    const operation = ownedOperation(session, controller);
     session.state = 'running';
     metrics.runtimeInFlight += 1;
     metrics.runtimes += 1;
@@ -427,7 +442,8 @@ export function createC3PublicService({
         descriptor, mode: 'run', signal: controller.signal });
     } finally {
       metrics.runtimeInFlight -= 1;
-      if (session.operation === controller) session.operation = null;
+      operation.finish();
+      if (session.operation === operation) session.operation = null;
     }
     if (!sessions.has(session.id) || session.generation !== generation) {
       metrics.staleResults += 1;
@@ -517,13 +533,22 @@ export function createC3PublicService({
           return true;
         }
         if (command.command === 'dispose') {
-          dispose(session);
+          const retirement = {
+            schema: 'intent-mcu-c3-retirement@1', sessionId: session.id,
+            generation: session.generation, sourceSha256: session.sourceSha256,
+            artifactSha256: session.descriptor?.flash.sha256 ?? null,
+          };
+          session.state = 'disposing';
+          await retireOperation(session);
+          wipeArtifact(session);
+          session.state = 'disposed';
           sessions.delete(session.id);
           metrics.disposed += 1;
-          responseJson(response, 200, { schema: EDITOR_SCHEMA, state: 'disposed', retainedBytes: 0 });
+          responseJson(response, 200, { ...retirement, state: 'disposed', retainedBytes: 0,
+            processExited: true, operationRetired: true });
           return true;
         }
-        abortOperation(session);
+        await retireOperation(session);
         wipeArtifact(session);
         session.generation += 1;
         session.state = 'editing';

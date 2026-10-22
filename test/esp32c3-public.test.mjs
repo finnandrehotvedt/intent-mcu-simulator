@@ -22,6 +22,7 @@ import {
   validateEsp32C3Circuit,
 } from '../src/esp32c3-public-circuit.mjs';
 import { createC3PublicService } from '../c3/public-service.mjs';
+import { validateEsp32C3Retirement } from '../src/esp32c3-public-workbench.mjs';
 
 const imageLock = Object.freeze({
   image: 'local/not-used-in-unit-test:1', imageId: `sha256:${'a'.repeat(64)}`,
@@ -196,4 +197,72 @@ test('public C3 service rejects cross-context access, limits sessions and retire
   assert.equal(replacement.status, 201);
   assert.equal(service.metrics().activeSessions, 1);
   assert.equal(service.metrics().disposed, 1);
+});
+
+test('C3 disposal ACK waits for the owned operation exit and is exact, authenticated and idempotent', async (context) => {
+  let childExited = false;
+  const builder = ({ signal }) => new Promise((resolve, reject) => {
+    signal.addEventListener('abort', () => setTimeout(() => {
+      childExited = true;
+      reject(Object.assign(new Error('OPERATION_CANCELLED'), { code: 'OPERATION_CANCELLED' }));
+    }, 20), { once: true });
+  });
+  const service = createC3PublicService({
+    builderImageLock: imageLock, runtimeImageLock: imageLock, builder,
+  });
+  const server = http.createServer((request, response) => { void service.handle(request, response); });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  context.after(async () => {
+    await service.close();
+    await new Promise((resolve) => server.close(resolve));
+  });
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const mutation = { 'Content-Type': 'application/json', Origin: base, 'X-Intent-MCU-C3': '1' };
+  const created = await (await fetch(`${base}/api/c3/session`, {
+    method: 'POST', headers: mutation, body: '{}',
+  })).json();
+  const authorized = { ...mutation, Authorization: `Bearer ${created.capability}` };
+  const buildReceipt = await fetch(`${base}/api/c3/session/${created.sessionId}/build`, {
+    method: 'POST', headers: authorized,
+    body: JSON.stringify({ schema: BUILD_SCHEMA, profile: PROFILE, fqbn: FQBN,
+      source: sourceForGpio2('C3_RETIRE'), sourceRevision: 1 }),
+  });
+  assert.equal(buildReceipt.status, 202);
+  const disposeBody = JSON.stringify({ schema: COMMAND_SCHEMA, command: 'dispose', generation: 1,
+    profile: PROFILE, fqbn: FQBN, sourceSha256: null, artifactSha256: null,
+    circuit: VALIDATED_LED_CIRCUIT });
+  const disposedResponse = await fetch(`${base}/api/c3/session/${created.sessionId}/command`, {
+    method: 'POST', headers: authorized, body: disposeBody,
+  });
+  assert.equal(disposedResponse.status, 200);
+  assert.equal(childExited, true, 'ACK must follow the fake child exit');
+  const disposed = await disposedResponse.json();
+  assert.deepEqual(validateEsp32C3Retirement(disposed, {
+    sessionId: created.sessionId, generation: 1, sourceSha256: null, artifactSha256: null,
+  }), { ok: true, code: 'C3_RETIREMENT_PROVEN' });
+  assert.equal(disposed.processExited, true);
+  assert.equal(disposed.operationRetired, true);
+  assert.equal(disposed.retainedBytes, 0);
+  assert.equal('capability' in disposed, false);
+  assert.equal(service.metrics().activeSessions, 0);
+  assert.equal(service.metrics().disposed, 1);
+
+  const duplicate = await fetch(`${base}/api/c3/session/${created.sessionId}/command`, {
+    method: 'POST', headers: authorized, body: disposeBody,
+  });
+  assert.equal(duplicate.status, 404);
+  assert.equal(service.metrics().disposed, 1, 'retirement is charged exactly once');
+});
+
+test('C3 browser retirement proof rejects mismatched or incomplete ACKs', () => {
+  const expected = { sessionId: 'A'.repeat(16), generation: 4,
+    sourceSha256: 'a'.repeat(64), artifactSha256: 'b'.repeat(64) };
+  const accepted = { schema: 'intent-mcu-c3-retirement@1', ...expected,
+    state: 'disposed', retainedBytes: 0, processExited: true, operationRetired: true };
+  assert.equal(validateEsp32C3Retirement(accepted, expected).ok, true);
+  for (const changed of [
+    { processExited: false }, { operationRetired: false }, { retainedBytes: 1 },
+    { sessionId: 'B'.repeat(16) }, { generation: 5 }, { artifactSha256: 'c'.repeat(64) },
+  ]) assert.throws(() => validateEsp32C3Retirement({ ...accepted, ...changed }, expected),
+    /C3_RETIREMENT_ACK_INVALID/u);
 });
