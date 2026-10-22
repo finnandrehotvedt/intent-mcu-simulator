@@ -294,6 +294,22 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
   return { schema: CIRCUIT_SCHEMA, components, nets, junctions };
 }
 
+export function validateCandidateCircuitGraph(value, {
+  modelLibraryLock = CURRENT_MODEL_LIBRARY_LOCK, requireCandidate = false,
+} = {}) {
+  try {
+    const graph = normalizeCandidateCircuit(value, { requireCandidate });
+    const admission = validateProjectModelLibrary(modelLibraryLock, BOARD_TYPE,
+      { candidateCircuit: graph });
+    if (!admission.ok) return admission;
+    validateDraftElectricalSafety(graph);
+    return { ok: true, code: 'OK', graph, modelLibrary: clone(admission.lock) };
+  } catch (error) {
+    if (error instanceof ContactPersistenceError) return failResult(error.code, error.details);
+    return failResult('PROJECT_CONTACT_INVALID');
+  }
+}
+
 function normalizeCandidateLayout(value, graph) {
   const legacyShape = exactKeys(value, ['schema', 'positions', 'wireRoutes', 'viewport']);
   const currentShape = exactKeys(value,
@@ -740,14 +756,14 @@ export function validateContactPersistenceDraft(value, options = {}) {
     if (!validateFixtureReference(value.compiledFixture, projectResult.project.controller.profile)) {
       return failResult('PROJECT_CONTACT_FIXTURE');
     }
-    const candidateCircuit = normalizeCandidateCircuit(value.candidateCircuit, { requireCandidate: false });
     const modelLibraryLock = options.modelLibraryLock ?? CURRENT_MODEL_LIBRARY_LOCK;
-    const admission = validateProjectModelLibrary(modelLibraryLock, BOARD_TYPE,
-      { candidateCircuit });
-    if (!admission.ok) return admission;
+    const candidate = validateCandidateCircuitGraph(value.candidateCircuit, {
+      modelLibraryLock, requireCandidate: false,
+    });
+    if (!candidate.ok) return candidate;
+    const candidateCircuit = candidate.graph;
     const modelLibrary = modelLibraryExecutionIdentity(modelLibraryLock);
     if (!modelLibrary.ok) return modelLibrary;
-    validateDraftElectricalSafety(candidateCircuit);
     const { layout: candidateLayout, pinAnchors } = normalizeCandidateLayout(value.candidateLayout, candidateCircuit);
     const project = {
       schema: CONTACT_PERSISTENCE_SCHEMA,

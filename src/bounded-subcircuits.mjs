@@ -4,6 +4,7 @@
 import { normalizeCircuitStructure, validateCircuit } from './circuit-engine.mjs';
 import { CURRENT_MODEL_LIBRARY_LOCK } from './model-library.mjs';
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
+import { validateCandidateCircuitGraph } from '../expansion-drafts/project-v3-contact-persistence.mjs';
 
 export const SUBCIRCUITS_SCHEMA = 'intent-mcu-subcircuits@1';
 export const SUBCIRCUIT_DEFINITION_SCHEMA = 'intent-mcu-subcircuit-definition@1';
@@ -35,6 +36,32 @@ const generatedId = (instanceId, localId) => {
   if (value.length > 48) fail('SUBCIRCUIT_NAMESPACE_LIMIT', [instanceId, localId]);
   return value;
 };
+
+function normalizeOwnedGraph(value, owner, options) {
+  if (options.graphKind === undefined || options.graphKind === 'project-v2') {
+    return normalizeCircuitStructure(clone(value));
+  }
+  if (options.graphKind !== 'candidate-project-v3') fail('SUBCIRCUIT_GRAPH_KIND');
+  const result = validateCandidateCircuitGraph(value, {
+    modelLibraryLock: owner.modelLibrary, requireCandidate: true,
+  });
+  if (!result.ok) fail('SUBCIRCUIT_CANDIDATE_GRAPH_INVALID', [result.code, ...(result.details ?? [])]);
+  return result.graph;
+}
+
+function validateExpandedGraph(graph, owner, options) {
+  if (options.graphKind === 'candidate-project-v3') {
+    const result = validateCandidateCircuitGraph(graph, {
+      modelLibraryLock: owner.modelLibrary, requireCandidate: true,
+    });
+    if (!result.ok) fail('SUBCIRCUIT_EXPANSION_INVALID', [result.code, ...(result.details ?? [])]);
+    return { graph: result.graph, models: null };
+  }
+  if (options.graphKind !== undefined && options.graphKind !== 'project-v2') fail('SUBCIRCUIT_GRAPH_KIND');
+  const result = validateCircuit(graph, { modelLibraryLock: owner.modelLibrary });
+  if (!result.ok) fail('SUBCIRCUIT_EXPANSION_INVALID', [result.code]);
+  return result;
+}
 
 export function createSeriesLedDefinition({ id: definitionId = 'series-led-stage', ohms = 220,
   color = 'red', label: definitionLabel = 'Series LED stage' } = {}) {
@@ -167,7 +194,7 @@ export function parseSubcircuits(source, options) {
 
 export function expandSubcircuits(baseGraph, value, options = {}) {
   const owner = normalizeSubcircuits(value, options);
-  const graph = normalizeCircuitStructure(clone(baseGraph));
+  const graph = normalizeOwnedGraph(baseGraph, owner, options);
   const componentIds = new Set(graph.components.map(({ id: itemId }) => itemId));
   const netMap = new Map(graph.nets.map((net) => [net.id, net]));
   const definitionMap = new Map(owner.definitions.map((definition) => [definition.id, definition]));
@@ -191,8 +218,7 @@ export function expandSubcircuits(baseGraph, value, options = {}) {
       }
     }
   }
-  const result = validateCircuit(graph, { modelLibraryLock: owner.modelLibrary });
-  if (!result.ok) fail('SUBCIRCUIT_EXPANSION_INVALID', [result.code]);
+  const result = validateExpandedGraph(graph, owner, options);
   return { owner, graph: result.graph, models: result.models };
 }
 
@@ -205,7 +231,7 @@ export function contractSubcircuits(expandedGraph, value, options = {}) {
     const graph = clone(expandedGraph);
     return { owner, baseGraph: graph, graph: clone(graph) };
   }
-  const graph = normalizeCircuitStructure(clone(expandedGraph));
+  const graph = normalizeOwnedGraph(expandedGraph, owner, options);
   const definitionMap = new Map(owner.definitions.map((definition) => [definition.id, definition]));
   const generatedComponents = new Set(); const generatedNets = new Set();
   for (const instance of owner.instances) {
@@ -219,7 +245,7 @@ export function contractSubcircuits(expandedGraph, value, options = {}) {
       endpoints: net.endpoints.filter(({ component }) => !generatedComponents.has(component)) })),
     junctions: graph.junctions.filter(({ net }) => !generatedNets.has(net)),
   };
-  const normalizedBase = normalizeCircuitStructure(base);
+  const normalizedBase = normalizeOwnedGraph(base, owner, options);
   const rebuilt = expandSubcircuits(normalizedBase, owner, options).graph;
   if (!same(rebuilt, graph)) fail('SUBCIRCUIT_EXPANSION_MISMATCH');
   return { owner, baseGraph: normalizedBase, graph: rebuilt };

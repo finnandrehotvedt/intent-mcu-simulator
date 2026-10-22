@@ -44,12 +44,12 @@ test('X88 owner binds canonical rc107 to rc108 reviewed X66 subcircuit bytes', a
       id: 'X66', classification: 'changed',
       capabilities: ['intent-mcu-annotated-workspace@2', 'intent-mcu-canvas-annotations@2', 'intent-mcu-net-labels@1', 'intent-mcu-subcircuit-definition@1', 'intent-mcu-subcircuit-instance@1', 'intent-mcu-subcircuits@1'],
       contracts: ['x66-bounded-reusable-subcircuit-v1', 'x66-existing-canonical-net-labels-v1', 'x66-non-electrical-canvas-annotations-v1'],
-      summary: 'Adds one finite non-nested AVR resistor-and-LED subcircuit with explicit ports, deterministic expansion, atomic persistence/history and connectivity-preserving controls; closes only the bounded X66 readability criterion.',
+      summary: 'Publishes one finite non-nested AVR resistor-and-LED subcircuit increment, but independent default-thermostat Create acceptance failed; X66 remains partial pending a corrected independently reviewed release.',
     },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records the reviewed rc.107 to rc.108 bounded X66 subcircuit increment and original-criterion closure, with X92 remaining partial and zero new native producer authority.',
+      summary: 'Records the rc.107 to rc.108 bounded X66 subcircuit increment without claiming closure after the default-thermostat public acceptance failure; X66 and X92 remain partial with zero new native producer authority.',
     },
   ]);
   assert.equal(value.migrationRequired, false);

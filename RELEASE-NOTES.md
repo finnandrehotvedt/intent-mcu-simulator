@@ -15,11 +15,14 @@ v1 and pre-subcircuit v2 data migrate with an empty owner; malformed, stale,
 renamed or authority-bearing input fails without replacing the accepted file.
 
 Together with the previously published notes, groups and existing-net labels,
-this closes X66 only against its original bounded readability criterion. It is
-not nested, arbitrary-topology, other-profile or physical-equivalence support.
-X92 remains partial. Canonical status is X **79/1/16**, P1 **59/0/0**. Rc.108
-performs zero new firmware Build, Run, Scenario or worker action; cumulative
-native evidence remains **34 Build / 33 Run / 0 scenarios**.
+this is the intended bounded X66 increment. Independent public acceptance found
+that Create rejected the default thermostat candidate before installation, so
+X66 remains partial until the correction is independently reviewed and
+published. It is not nested, arbitrary-topology, other-profile or
+physical-equivalence support. X66 and X92 remain partial. Canonical status is X
+**78/2/16**, P1 **59/0/0**. Rc.108 performs zero new firmware Build, Run,
+Scenario or worker action; cumulative native evidence remains **34 Build / 33
+Run / 0 scenarios**.
 
 ---
 

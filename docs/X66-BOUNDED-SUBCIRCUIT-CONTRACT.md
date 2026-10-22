@@ -1,8 +1,10 @@
 # X66 bounded reusable subcircuit contract
 
-Status: public in `1.1.0-rc.108`. Together with the published notes, groups and
-existing-net labels, this finite contract closes the original X66 readability
-criterion without claiming general-purpose, nested or non-AVR subcircuits.
+Status: the first increment is public in `1.1.0-rc.108`, but X66 remains
+partial. Independent public acceptance found that the default thermostat
+candidate rejected Create before installation. The bounded correction must pass
+independent review and publication before the original readability criterion is
+closed; no general-purpose, nested or non-AVR subcircuit support is claimed.
 
 ## Finite slice
 
@@ -10,7 +12,7 @@ The first reusable definition is an AVR-only two-part series LED stage. It has o
 
 The owner schemas are `intent-mcu-subcircuits@1`, `intent-mcu-subcircuit-definition@1` and `intent-mcu-subcircuit-instance@1`. Each definition records an exact AVR profile, exact current model-library identity, stable local component/net IDs, and explicit port-to-internal-net mappings. This finite version admits only canonical local component IDs `resistor` and `led` and canonical local net IDs `source`, `series` and `ground`; renamed aliases fail closed so every renderer and presentation path addresses the same accepted grammar. Each instance records a stable ID, definition ID, one external existing canonical net ID per port, normalized position and collapsed presentation state.
 
-Expansion prefixes every private identity with the instance ID. The resistor and LED become ordinary supported components. The private series net becomes one ordinary canonical net. Port nets are not duplicated: their internal endpoints are appended to the already validated external nets named by the instance bindings. The expanded graph is then processed only by the existing circuit validator and runtime path.
+Expansion prefixes every private identity with the instance ID. The resistor and LED become ordinary supported components. The private series net becomes one ordinary canonical net. Port nets are not duplicated: their internal endpoints are appended to the already validated external nets named by the instance bindings. The expanded graph is processed only by the exact validator owned by the open project kind and its locked model bundle. Candidate projects do not fall back to the narrower v2 catalogue, and neither path admits arbitrary unknown component types. Runtime still receives only the validated expanded graph.
 
 Portable files retain the expanded canonical graph plus the strict owner document. Open strips only identities proven to belong to the declared instances, re-expands from the retained base graph, and requires exact canonical equality. It never repairs, retargets or guesses a mismatch. Earlier annotated-workspace versions migrate to an empty subcircuit owner.
 

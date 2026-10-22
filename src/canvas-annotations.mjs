@@ -160,7 +160,8 @@ export function normalizeAnnotatedWorkspace(value, validateProject) {
     ? normalizeSubcircuits(value.subcircuits, { profileId: value.profileId, modelLibraryLock: validated.modelLibrary })
     : emptySubcircuits(validated.modelLibrary);
   contractSubcircuits(validated.graph, subcircuits,
-    { profileId: value.profileId, modelLibraryLock: validated.modelLibrary });
+    { profileId: value.profileId, modelLibraryLock: validated.modelLibrary,
+      ...(validated.graphKind ? { graphKind: validated.graphKind } : {}) });
   return { workspace: { schema: ANNOTATED_WORKSPACE_SCHEMA, profileId: value.profileId, project: clone(validated.project),
     annotations: normalizeCanvasAnnotations(value.annotations, validated), subcircuits }, prepared: validated.prepared ?? null };
 }

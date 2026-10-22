@@ -13,6 +13,7 @@ import { DEFAULT_CIRCUIT } from '../src/default-circuit.mjs';
 import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
 import * as modelLibrary from '../src/model-library.mjs';
 import { ProjectEditorReducer, projectFromCircuit } from '../src/project-editor.mjs';
+import { createThermostatExperiment, openThermostatExperiment } from '../src/thermostat-experiment.mjs';
 
 const clone = structuredClone;
 const digest = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -149,6 +150,40 @@ test('X66 empty owner remains inert over an independently validated retained can
   assert.deepEqual(result.graph, candidateGraph);
   assert.deepEqual(result.baseGraph, candidateGraph);
   assert.notStrictEqual(result.graph, candidateGraph);
+});
+
+test('X66 current candidate validator accepts the default thermostat but still rejects unknown types', () => {
+  const opened = openThermostatExperiment(createThermostatExperiment().text);
+  assert.equal(opened.ok, true);
+  const graph = opened.session.project.circuit;
+  const thermostatInstance = instance('stage-one', 'net-thermostat-heater-drive', 'net-thermostat-ground');
+  const options = { graphKind: 'candidate-project-v3', modelLibraryLock: CURRENT_MODEL_LIBRARY_LOCK };
+  const expanded = expandSubcircuits(graph, owner(thermostatInstance), options);
+  assert(expanded.graph.components.some(({ id }) => id === 'temperature-sensor-1'));
+  assert(expanded.graph.components.some(({ id }) => id === 'stage-one-led'));
+
+  const positions = clone(opened.session.project.layout.positions);
+  positions['stage-one-resistor'] = { x: 0.50, y: 0.62, rotation: 0 };
+  positions['stage-one-led'] = { x: 0.62, y: 0.62, rotation: 0 };
+  const committed = opened.session.apply({ type: 'subcircuit.graph.replace', graph: expanded.graph,
+    positions, revision: opened.session.revision });
+  assert.equal(committed.ok, true);
+  assert.equal(committed.project.circuit.components.some(({ id }) => id === 'stage-one-led'), true);
+  const moved = opened.session.apply({ type: 'subcircuit.presentation.set',
+    positions: [{ componentId: 'stage-one-resistor', x: 0.60, y: 0.70 },
+      { componentId: 'stage-one-led', x: 0.72, y: 0.70 }], revision: opened.session.revision });
+  assert.equal(moved.ok, true);
+  assert.deepEqual(moved.project.circuit, committed.project.circuit);
+  const undone = opened.session.apply({ type: 'undo', revision: opened.session.revision });
+  assert.equal(undone.ok, true);
+  assert.deepEqual(undone.project.circuit, committed.project.circuit);
+
+  const unknown = clone(graph);
+  unknown.components.push({ id: 'foreign-part', type: 'vendor.unknown-v1', label: 'Foreign',
+    properties: {}, controls: {} });
+  assert.throws(() => expandSubcircuits(unknown, owner(thermostatInstance), options), {
+    code: 'SUBCIRCUIT_CANDIDATE_GRAPH_INVALID',
+  });
 });
 
 test('X66 project editor commits electrical replacement and presentation movement as atomic history', () => {

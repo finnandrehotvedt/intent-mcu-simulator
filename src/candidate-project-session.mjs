@@ -474,6 +474,48 @@ export class CandidateEditorSession {
           runtimeDirty = true;
           break;
         }
+        case 'subcircuit.graph.replace': {
+          if (!exactCommand(command, ['graph', 'positions']) || !command.graph
+              || !command.positions || typeof command.positions !== 'object'
+              || Array.isArray(command.positions)) {
+            return failure('EDITOR_COMMAND_SHAPE', this.revision);
+          }
+          const replacementIds = command.graph.components?.map(({ id }) => id).sort() ?? [];
+          if (Object.keys(command.positions).sort().join('|') !== replacementIds.join('|')
+              || replacementIds.some((componentId) => !validPoint(command.positions[componentId])
+                || ![0, 90, 180, 270].includes(command.positions[componentId].rotation ?? 0))) {
+            return failure('EDITOR_COMMAND_SHAPE', this.revision);
+          }
+          draft.candidateCircuit = clone(command.graph);
+          draft.candidateLayout.positions = clone(command.positions);
+          const netIds = new Set(command.graph.nets?.map(({ id }) => id) ?? []);
+          draft.candidateLayout.wireRoutes = Object.fromEntries(
+            Object.entries(draft.candidateLayout.wireRoutes).filter(([netId]) => netIds.has(netId)),
+          );
+          const componentIds = new Set(replacementIds);
+          if (draft.candidateLayout.componentAppearance) {
+            draft.candidateLayout.componentAppearance.components = Object.fromEntries(
+              Object.entries(draft.candidateLayout.componentAppearance.components)
+                .filter(([componentId]) => componentIds.has(componentId)),
+            );
+          }
+          runtimeDirty = true;
+          break;
+        }
+        case 'subcircuit.presentation.set': {
+          if (!exactCommand(command, ['positions']) || !Array.isArray(command.positions)
+              || !command.positions.length) return failure('EDITOR_COMMAND_SHAPE', this.revision);
+          for (const item of command.positions) {
+            if (!item || typeof item !== 'object' || Array.isArray(item)
+                || Object.keys(item).sort().join('|') !== 'componentId|x|y'
+                || !draft.candidateLayout.positions[item.componentId] || !validPoint(item)) {
+              return failure('EDITOR_COMMAND_SHAPE', this.revision);
+            }
+            draft.candidateLayout.positions[item.componentId].x = item.x;
+            draft.candidateLayout.positions[item.componentId].y = item.y;
+          }
+          break;
+        }
         case 'wire.create': {
           if (!exactCommand(command, ['net']) || !command.net
               || Object.keys(command.net).sort().join('|') !== 'endpoints|id'

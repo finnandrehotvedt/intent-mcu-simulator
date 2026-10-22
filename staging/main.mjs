@@ -8954,9 +8954,7 @@ function canvasReadabilitySnapshot() {
 function resetCanvasAnnotations(value = emptyCanvasAnnotations(), { baseline = true,
   subcircuits = emptySubcircuits(modelLibraryLockFor(AVR_PROFILE)) } = {}) {
   canvasAnnotations = new CanvasAnnotationReducer(value, annotationReferences());
-  boundedSubcircuits = contractSubcircuits(currentProject().circuit, subcircuits, {
-    profileId: AVR_PROFILE, modelLibraryLock: modelLibraryLockFor(AVR_PROFILE),
-  }).owner;
+  boundedSubcircuits = contractSubcircuits(currentProject().circuit, subcircuits, subcircuitOptions()).owner;
   selectedCanvasAnnotationGroup = null;
   annotationEditorPast.length = 0; annotationEditorFuture.length = 0;
   if (baseline) canvasAnnotationBaseline = canvasReadabilitySnapshot();
@@ -8966,7 +8964,8 @@ function canvasAnnotationsDirty() {
   return canvasReadabilitySnapshot() !== canvasAnnotationBaseline;
 }
 function subcircuitOptions() {
-  return { profileId: AVR_PROFILE, modelLibraryLock: modelLibraryLockFor(AVR_PROFILE) };
+  return { profileId: AVR_PROFILE, modelLibraryLock: modelLibraryLockFor(AVR_PROFILE),
+    graphKind: editor.kind === 'candidate-project-v3' ? 'candidate-project-v3' : 'project-v2' };
 }
 function generatedSubcircuitComponentIds(owner = boundedSubcircuits) {
   const definitions = new Map(owner.definitions.map((definition) => [definition.id, definition]));
@@ -9015,6 +9014,7 @@ function validateAnnotatedProject(value, profileId) {
   if (!prepared.ok || prepared.profile !== AVR_PROFILE) throw Object.assign(new Error(prepared.code ?? 'ANNOTATED_WORKSPACE_PROJECT'), prepared);
   return { project: JSON.parse(prepared.canonical), ...annotationReferences(prepared.project),
     graph: prepared.project.candidateCircuit ?? prepared.project.circuit,
+    graphKind: prepared.prepared?.kind === 'candidate-project-v3' ? 'candidate-project-v3' : 'project-v2',
     modelLibrary: prepared.modelLibrary, prepared };
 }
 function currentAnnotatedWorkspace() {
@@ -9059,9 +9059,7 @@ function applyAnnotationEditorMarker(marker, direction) {
   if (marker.subcircuits) {
     boundedSubcircuits = structuredClone(direction === 'undo'
       ? marker.subcircuits.before : marker.subcircuits.after);
-    contractSubcircuits(currentProject().circuit, boundedSubcircuits, {
-      profileId: AVR_PROFILE, modelLibraryLock: modelLibraryLockFor(AVR_PROFILE),
-    });
+    contractSubcircuits(currentProject().circuit, boundedSubcircuits, subcircuitOptions());
   }
   const current = ensureCanvasAnnotations().snapshot();
   const groups = new Map(current.groups.map((group) => [group.id, group]));
@@ -10639,9 +10637,17 @@ function applyEditor(command, message = command.type) {
       return rejected;
     }
     try {
-      const probe = new ProjectEditorReducer(currentProject());
+      const probe = editor.kind === 'candidate-project-v3'
+        ? parseEditorSource(editor.saveText(), {
+          modelLibraryLock: modelLibraryLockFor(AVR_PROFILE),
+          bundle: modelLibraryImplementationFor(AVR_PROFILE),
+        }).session
+        : new ProjectEditorReducer(currentProject());
       const checked = probe.apply({ ...command, revision: probe.revision }, { running });
-      if (checked.ok) contractSubcircuits(checked.project.circuit, boundedSubcircuits, subcircuitOptions());
+      if (checked.ok) contractSubcircuits(checked.project.circuit, boundedSubcircuits, {
+        ...subcircuitOptions(), graphKind: probe.kind === 'candidate-project-v3'
+          ? 'candidate-project-v3' : 'project-v2',
+      });
     } catch (error) {
       const rejected = { ok: false, code: error.code ?? 'SUBCIRCUIT_EXPANSION_MISMATCH', revision: editor.revision };
       showActionableError(elements.projectmessage, rejected.code,

@@ -14,11 +14,13 @@ All notable public source changes are recorded here.
 - Rejects nesting, unresolved ports, stale model identities, renamed local
   identifiers, unsupported topology and hidden execution authority. Runtime
   receives only the expanded ordinary graph; no producer or worker was added.
-- Closes X66 only against its original bounded notes, groups, existing-net
-  labels and subcircuits readability criterion. There is no blanket, nested,
-  other-profile or physical-equivalence claim. X92 remains partial; status is
-  X **79 complete / 1 partial / 16 planned**, P1 **59/0/0**. Native evidence
-  remains **34 Build / 33 Run / 0 scenarios**.
+- Publishes the bounded X66 increment, but independent public acceptance found
+  that the default thermostat candidate rejected Create before installation.
+  X66 therefore remains partial until the corrected default journey is
+  independently reviewed and published. There is no blanket, nested,
+  other-profile or physical-equivalence claim. X66 and X92 remain partial;
+  status is X **78 complete / 2 partial / 16 planned**, P1 **59/0/0**. Native
+  evidence remains **34 Build / 33 Run / 0 scenarios**.
 
 ## 1.1.0-rc.107 — 2026-10-22
 

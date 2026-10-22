@@ -32,7 +32,7 @@ const exactInput = (value, keys) => value && typeof value === 'object' && !Array
 // Current behavior is separately owned so future current changes cannot mutate
 // the retained pre-X56 implementation by alias or shared constant.
 export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
-  id: 'intent-mcu-model-bundle-current-x66-subcircuit-review-fix-1@34',
+  id: 'intent-mcu-model-bundle-current-x66-public-thermostat-create-fix-1@35',
   manifestVersion: CURRENT_MODEL_LIBRARY_MANIFEST.version,
   definition(profile, componentType) {
     const entry = entries.get(`${profile}\u0000${componentType}`);
@@ -185,6 +185,13 @@ export const PRE_X66_SUBCIRCUIT_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLE
   ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
   id: 'intent-mcu-model-bundle-current-x66-bounded-subcircuits-1@33',
   manifestVersion: '2.0.0-x66-bounded-subcircuits.1-current',
+  migrationOnly: true,
+});
+
+export const PRE_X66_PUBLIC_THERMOSTAT_CREATE_FIX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-x66-subcircuit-review-fix-1@34',
+  manifestVersion: '2.0.0-x66-subcircuit-review-fix.1-current',
   migrationOnly: true,
 });
 

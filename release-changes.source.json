@@ -31,7 +31,7 @@
         "x66-existing-canonical-net-labels-v1",
         "x66-non-electrical-canvas-annotations-v1"
       ],
-      "summary": "Adds one finite non-nested AVR resistor-and-LED subcircuit with explicit ports, deterministic expansion, atomic persistence/history and connectivity-preserving controls; closes only the bounded X66 readability criterion."
+      "summary": "Publishes one finite non-nested AVR resistor-and-LED subcircuit increment, but independent default-thermostat Create acceptance failed; X66 remains partial pending a corrected independently reviewed release."
     },
     {
       "id": "X88",
@@ -42,7 +42,7 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records the reviewed rc.107 to rc.108 bounded X66 subcircuit increment and original-criterion closure, with X92 remaining partial and zero new native producer authority."
+      "summary": "Records the rc.107 to rc.108 bounded X66 subcircuit increment without claiming closure after the default-thermostat public acceptance failure; X66 and X92 remain partial with zero new native producer authority."
     }
   ],
   "migrationRequired": false,
