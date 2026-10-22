@@ -50,6 +50,7 @@
           <button id="firmware-open" type="button" aria-haspopup="dialog" aria-controls="workbench-firmware-dialog">Firmware</button>
           <button id="brief-tests-open" type="button" aria-haspopup="dialog" aria-controls="workbench-brief-dialog">Brief &amp; tests</button>
           <button id="instruments-open" type="button" aria-haspopup="dialog" aria-controls="workbench-instruments-dialog">Instruments</button>
+          <button id="presentation-open" type="button" aria-haspopup="dialog" aria-controls="presentation-view-dialog">Present lesson</button>
           <button id="help-limits-open" type="button" aria-haspopup="dialog" aria-controls="workbench-help-dialog">Help &amp; limits</button>
           <button id="build-list-export" type="button">Export build list</button>
           <button id="accessible-svg-export" type="button">Export accessible SVG</button>
@@ -1033,6 +1034,31 @@
   <dialog id="workbench-firmware-dialog" class="workbench-popup-dialog workbench-popup-wide" aria-labelledby="workbench-firmware-dialog-title"><header><div><p class="eyebrow">SOURCE &amp; DIAGNOSTICS</p><h2 id="workbench-firmware-dialog-title" tabindex="-1">Firmware</h2></div><button type="button" class="workbench-popup-close" aria-label="Close Firmware">Close</button></header><div class="workbench-popup-mount" data-workbench-popup-mount="firmware"></div></dialog>
   <dialog id="workbench-brief-dialog" class="workbench-popup-dialog workbench-popup-wide" aria-labelledby="workbench-brief-dialog-title"><header><div><p class="eyebrow">PROJECT INTENT &amp; REVIEW</p><h2 id="workbench-brief-dialog-title" tabindex="-1">Brief &amp; tests</h2></div><button type="button" class="workbench-popup-close" aria-label="Close Brief and tests">Close</button></header><div class="workbench-popup-mount" data-workbench-popup-mount="brief"></div></dialog>
   <dialog id="workbench-instruments-dialog" class="workbench-popup-dialog workbench-popup-wide" aria-labelledby="workbench-instruments-dialog-title"><header><div><p class="eyebrow">CURRENT RUNTIME EVIDENCE</p><h2 id="workbench-instruments-dialog-title" tabindex="-1">Instruments</h2></div><button type="button" class="workbench-popup-close" aria-label="Close Instruments">Close</button></header><div class="workbench-popup-mount" data-workbench-popup-mount="instruments"></div></dialog>
+  <dialog id="presentation-view-dialog" class="presentation-view-dialog" aria-labelledby="presentation-view-title">
+    <header><div><p class="eyebrow">X68 · SESSION-ONLY TEACHING VIEW</p><h2 id="presentation-view-title" tabindex="-1">Present the thermostat lesson</h2></div><button id="presentation-close" type="button">Close</button></header>
+    <div class="presentation-layout">
+      <section id="presentation-setup" class="presentation-setup" aria-labelledby="presentation-setup-title">
+        <div><h3 id="presentation-setup-title">Choose evidence and write steps</h3><p>This view reads existing instrument owners. It cannot Build, Run, pause, reset, change the project or decide a result.</p></div>
+        <fieldset id="presentation-instruments"><legend>Instrument cards · choose up to four</legend>
+          <label><input type="checkbox" value="recorded-evidence" checked> Recorded evidence</label>
+          <label><input type="checkbox" value="serial-output" checked> Serial output</label>
+          <label><input type="checkbox" value="pin-inspector"> Pin inspector</label>
+          <label><input type="checkbox" value="logic-analyser"> Logic analyser</label>
+        </fieldset>
+        <div class="presentation-step-heading"><h3>Manual explanation steps</h3><button id="presentation-add-step" type="button">Add step</button></div>
+        <ol id="presentation-step-editors" class="presentation-step-editors"></ol>
+        <p id="presentation-status" class="truth" role="status">Available for the reviewed AVR thermostat project. Steps are plain text and stay in this browser session.</p>
+        <button id="presentation-start" type="button">Start presentation</button>
+      </section>
+      <section id="presentation-stage" class="presentation-stage" hidden aria-live="polite">
+        <div class="presentation-stage-heading"><div><p class="eyebrow">READ-ONLY PRESENTATION</p><h3 id="presentation-step-title" tabindex="-1">Step</h3></div><span id="presentation-step-count">1 / 1</span></div>
+        <p id="presentation-step-text" class="presentation-step-text"></p>
+        <div id="presentation-instrument-cards" class="presentation-instrument-cards"></div>
+        <div class="presentation-stage-actions"><button id="presentation-previous" type="button">Previous step</button><button id="presentation-next" type="button">Next step</button><button id="presentation-exit" type="button">Edit lesson</button></div>
+        <p class="truth">Manual progression only. Values retain the instrument owner's current, historical, not-run or unavailable label.</p>
+      </section>
+    </div>
+  </dialog>
   <dialog id="workbench-help-dialog" class="workbench-popup-dialog" aria-labelledby="workbench-help-dialog-title"><header><div><p class="eyebrow">TESTED PROFILE BOUNDARY</p><h2 id="workbench-help-dialog-title" tabindex="-1">Help &amp; limits</h2></div><button type="button" class="workbench-popup-close" aria-label="Close Help and limits">Close</button></header><div class="workbench-popup-mount" data-workbench-popup-mount="help"></div></dialog>
   <dialog id="walkthrough"><form method="dialog"><button class="dialog-close" aria-label="Close guide">×</button><p class="eyebrow">FIRST PROJECT · FOUR STEPS</p><h2>From circuit to evidence</h2><ol><li><strong>Open an example</strong><span>Choose an AVR starter here, or follow the exact <a href="/examples.html#narrow-controller-guides">Pico, ESP32-C3 or STM32 guide</a>.</span></li><li><strong>Inspect and wire</strong><span>Move parts, select named pins and check the electrical diagnostics. Missing narrow-profile parts return through Supported parts without inferred cables.</span></li><li><strong>Build, then run</strong><span>The isolated compiler creates the exact firmware executed by the selected bounded runtime.</span></li><li><strong>Save, reopen and read</strong><span>The local file keeps authored data but never executable authority. Open requires a fresh Build; then read the LED, UART and runtime evidence.</span></li></ol><button value="close">Start building</button></form></dialog>
   <dialog id="example-picker-dialog" class="example-picker-dialog" aria-labelledby="example-picker-title" aria-describedby="example-picker-description example-picker-status">

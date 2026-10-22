@@ -314,6 +314,14 @@ import {
   createX92ExperimentBudget,
   parseX92ReviewProjection,
 } from '../src/x92-experiment-budget.mjs';
+import {
+  PRESENTATION_DRAFT_SCHEMA,
+  PRESENTATION_INSTRUMENTS,
+  PRESENTATION_LIMITS,
+  PRESENTATION_PROFILE,
+  createPresentationViewOwner,
+  normalizePresentationDraft,
+} from '../src/presentation-view.mjs';
 import { AUTHORED_CHANGE_REVIEW_SCHEMA } from '../src/authored-change-review.mjs';
 import {
   EXPECTATION_REFERENCE_LIMIT,
@@ -489,6 +497,11 @@ const elements = Object.fromEntries([
   'x92-budget-start', 'x92-budget-download', 'x92-budget-open', 'x92-budget-open-input',
   'x92-budget-summary', 'x92-budget-status', 'x92-budget-metrics', 'x92-budget-reservations',
   'x92-budget-unresolved', 'x92-budget-imported', 'x92-budget-accounting', 'release-version',
+  'presentation-open', 'presentation-view-dialog', 'presentation-view-title', 'presentation-close',
+  'presentation-setup', 'presentation-instruments', 'presentation-add-step', 'presentation-step-editors',
+  'presentation-status', 'presentation-start', 'presentation-stage', 'presentation-step-title',
+  'presentation-step-count', 'presentation-step-text', 'presentation-instrument-cards',
+  'presentation-previous', 'presentation-next', 'presentation-exit',
   'regression-matrix', 'regression-matrix-state', 'regression-matrix-identity',
   'regression-matrix-selector', 'regression-matrix-run', 'regression-matrix-negative',
   'regression-matrix-export', 'regression-matrix-results', 'regression-matrix-summary',
@@ -597,6 +610,9 @@ let x92Budget = null;
 let x92BudgetExecutor = null;
 let x92ImportedReview = null;
 let x92IdentitySequence = 0;
+const presentationOwner = createPresentationViewOwner();
+let presentationStepSequence = 0;
+let presentationReturnFocus = null;
 let lastProfileMigrationReport = null;
 const projectBriefDrafts = new Map();
 const requirementResultLinks = new Map();
@@ -7350,6 +7366,95 @@ async function syncX92Identity(reason) {
     renderX92Budget(`Session retired because its current identity could not be authenticated (${error.code ?? error.message}).`, false);
   }
 }
+function presentationContextBinding() {
+  return JSON.stringify({ profile: selectedCompilerProfile, generation: lifecycle.projectGeneration,
+    revision: editor.revision, project: currentProjectText() });
+}
+function closePresentationDialog({ restoreFocus = true, message = null } = {}) {
+  presentationOwner.close();
+  elements.presentationstage.hidden = true; elements.presentationsetup.hidden = false;
+  if (message) elements.presentationstatus.textContent = message;
+  if (elements.presentationviewdialog.open) elements.presentationviewdialog.close('close');
+  const target = presentationReturnFocus; presentationReturnFocus = null;
+  if (restoreFocus) queueMicrotask(() => (target?.isConnected ? target : elements.presentationopen).focus());
+}
+function syncPresentationAvailability() {
+  const available = thermostatProjectActive();
+  elements.presentationopen.disabled = !available;
+  elements.presentationopen.title = available ? 'Open the session-only thermostat presentation view'
+    : 'Load the AVR Thermostat boundary test to present this lesson';
+  if (presentationOwner.snapshot().active && presentationOwner.invalidate(presentationContextBinding())) {
+    closePresentationDialog({ message: 'Presentation closed because the project, source or profile changed.' });
+  }
+  return available;
+}
+function addPresentationStepEditor({ title = '', text = '' } = {}) {
+  if (elements.presentationstepeditors.children.length >= PRESENTATION_LIMITS.steps) {
+    elements.presentationstatus.textContent = `At most ${PRESENTATION_LIMITS.steps} manual steps are supported.`; return null;
+  }
+  presentationStepSequence += 1;
+  const item = document.createElement('li'); item.className = 'presentation-step-editor';
+  item.dataset.stepId = `lesson-step-${presentationStepSequence}`;
+  const titleLabel = document.createElement('label'); titleLabel.textContent = 'Step title';
+  const titleInput = document.createElement('input'); titleInput.type = 'text';
+  titleInput.maxLength = PRESENTATION_LIMITS.title; titleInput.value = title;
+  const textLabel = document.createElement('label'); textLabel.textContent = 'Explanation';
+  const textInput = document.createElement('input'); textInput.type = 'text';
+  textInput.maxLength = PRESENTATION_LIMITS.text; textInput.value = text;
+  const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Remove';
+  remove.addEventListener('click', () => { item.remove(); elements.presentationstatus.textContent = 'Step removed. The experiment was unchanged.'; });
+  titleLabel.append(titleInput); textLabel.append(textInput); item.append(titleLabel, textLabel, remove);
+  elements.presentationstepeditors.append(item); return item;
+}
+function presentationDraftFromUi() {
+  return normalizePresentationDraft({ schema: PRESENTATION_DRAFT_SCHEMA, profileId: PRESENTATION_PROFILE,
+    selectedInstrumentIds: [...elements.presentationinstruments.querySelectorAll('input:checked')].map(({ value }) => value),
+    steps: [...elements.presentationstepeditors.children].map((item) => ({ id: item.dataset.stepId,
+      title: item.querySelectorAll('input')[0].value, text: item.querySelectorAll('input')[1].value })),
+  });
+}
+function presentationFact(label, value) {
+  const row = document.createElement('div'); const term = document.createElement('dt');
+  const detail = document.createElement('dd'); term.textContent = label; detail.textContent = value || 'Unavailable';
+  row.append(term, detail); return row;
+}
+function presentationInstrumentCard(id) {
+  const definition = PRESENTATION_INSTRUMENTS.find((item) => item.id === id);
+  const card = document.createElement('article'); card.className = 'presentation-instrument-card'; card.dataset.instrumentId = id;
+  const title = document.createElement('h4'); title.textContent = definition?.label ?? id;
+  const facts = document.createElement('dl');
+  if (id === 'recorded-evidence') facts.append(
+    presentationFact('State', elements.instrumentevidencestate.textContent),
+    presentationFact('Profile', elements.instrumentevidenceprofile.textContent),
+    presentationFact('Artifact', elements.instrumentevidenceartifact.textContent),
+    presentationFact('Virtual time', elements.instrumentevidencetime.textContent),
+    presentationFact('Retention', elements.instrumentevidenceretention.textContent),
+  );
+  if (id === 'serial-output') facts.append(
+    presentationFact('Owner label', elements.serialprovenance.textContent),
+    presentationFact('Observed text', elements.serialoutput.textContent),
+  );
+  if (id === 'pin-inspector') facts.append(
+    presentationFact('Pin', elements.pinselect.value), presentationFact('Mode', elements.pinmode.textContent),
+    presentationFact('Level', elements.pinlevel.textContent), presentationFact('Detail', elements.pindetail.textContent),
+    presentationFact('Diagnostic', elements.pindiagnostic.textContent), presentationFact('Cycle', elements.pincycle.textContent),
+  );
+  if (id === 'logic-analyser') facts.append(
+    presentationFact('Transitions', elements.logiccount.textContent),
+    presentationFact('Cursor', elements.logiccursor.textContent),
+    presentationFact('Owner rows', [...elements.logicoutput.children].map(({ textContent }) => textContent).join('\n')),
+  );
+  card.append(title, facts); return card;
+}
+function renderPresentationStage() {
+  const state = presentationOwner.snapshot(); if (!state.active) return;
+  elements.presentationsteptitle.textContent = state.step.title;
+  elements.presentationsteptext.textContent = state.step.text;
+  elements.presentationstepcount.textContent = `${state.selectedStep + 1} / ${state.draft.steps.length}`;
+  elements.presentationprevious.disabled = state.selectedStep === 0;
+  elements.presentationnext.disabled = state.selectedStep === state.draft.steps.length - 1;
+  elements.presentationinstrumentcards.replaceChildren(...state.draft.selectedInstrumentIds.map(presentationInstrumentCard));
+}
 function legacyProjectText(profile) {
   return `${JSON.stringify(profileProjectDocument(profile), null, 2)}\n`;
 }
@@ -8549,6 +8654,52 @@ window.__X92_EXPERIMENT_BUDGET__ = Object.freeze({
   authority: Object.freeze({ start: 'trusted-human-ui-only', build: false, run: false, retry: false, verdict: false }),
 });
 renderX92Budget();
+elements.presentationopen.addEventListener('click', () => {
+  if (!syncPresentationAvailability()) return;
+  presentationReturnFocus = document.activeElement;
+  if (!elements.presentationstepeditors.children.length) {
+    addPresentationStepEditor({ title: 'Observe the evidence boundary',
+      text: 'Read the selected instrument labels before explaining the thermostat result.' });
+    addPresentationStepEditor({ title: 'Compare the threshold',
+      text: 'Move forward manually and compare the equality case with the current owner-provided evidence.' });
+  }
+  elements.presentationstage.hidden = true; elements.presentationsetup.hidden = false;
+  elements.presentationstatus.textContent = 'Ready. No experiment action has run.';
+  elements.presentationviewdialog.showModal();
+  queueMicrotask(() => elements.presentationviewtitle.focus());
+});
+elements.presentationclose.addEventListener('click', () => closePresentationDialog());
+elements.presentationviewdialog.addEventListener('cancel', (event) => { event.preventDefault(); closePresentationDialog(); });
+elements.presentationaddstep.addEventListener('click', () => {
+  const item = addPresentationStepEditor(); item?.querySelector('input')?.focus();
+});
+elements.presentationstart.addEventListener('click', () => {
+  try {
+    if (!thermostatProjectActive()) throw Object.assign(new Error('PRESENTATION_THERMOSTAT_REQUIRED'),
+      { code: 'PRESENTATION_THERMOSTAT_REQUIRED' });
+    presentationOwner.open(presentationDraftFromUi(), presentationContextBinding());
+    elements.presentationsetup.hidden = true; elements.presentationstage.hidden = false;
+    elements.presentationstatus.textContent = 'Presentation opened without changing the project or experiment.';
+    renderPresentationStage(); queueMicrotask(() => elements.presentationsteptitle.focus());
+  } catch (error) {
+    elements.presentationstatus.textContent = `Presentation not started (${error.code ?? error.message}).`;
+  }
+});
+elements.presentationprevious.addEventListener('click', () => { presentationOwner.previous(); renderPresentationStage(); });
+elements.presentationnext.addEventListener('click', () => { presentationOwner.next(); renderPresentationStage(); });
+elements.presentationexit.addEventListener('click', () => {
+  presentationOwner.close(); elements.presentationstage.hidden = true; elements.presentationsetup.hidden = false;
+  elements.presentationstatus.textContent = 'Presentation ended. The project, runtime and budget were unchanged.';
+  queueMicrotask(() => elements.presentationstart.focus());
+});
+window.__X68_PRESENTATION_VIEW__ = Object.freeze({
+  schema: PRESENTATION_DRAFT_SCHEMA,
+  limits: Object.freeze({ ...PRESENTATION_LIMITS }),
+  available: () => thermostatProjectActive(),
+  snapshot: () => structuredClone(presentationOwner.snapshot()),
+  authority: Object.freeze({ apply: false, build: false, run: false, scenario: false, runtime: false, verdict: false }),
+  persistence: false,
+});
 window.__CAPABILITY_DISCOVERY__ = Object.freeze({
   schema: CAPABILITY_DISCOVERY_SCHEMA,
   requestSchema: CAPABILITY_DISCOVERY_REQUEST_SCHEMA,
@@ -11465,6 +11616,7 @@ function renderProject() {
   renderThermostatExperimentPanel();
   renderExpectationReference();
   renderProjectNavigation();
+  syncPresentationAvailability();
 }
 
 function svgNode(name, attributes = {}, text = null) {
