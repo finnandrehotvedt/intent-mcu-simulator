@@ -1,0 +1,16 @@
+{
+  "schema": "intent-mcu-contribution-review@1",
+  "contributionId": "simulated-thermistor-model",
+  "description": "Simulated external submission used only to demonstrate deterministic source review.",
+  "provenance": { "license": "Apache-2.0", "origin": "original project-owned simulated contribution" },
+  "changes": {
+    "models": ["Adds simulated-thermistor-v1 as review material only"],
+    "pins": ["Declares signal and ground pin intent"],
+    "parameters": ["Declares bounded resistance parameter intent"],
+    "versions": ["Proposes model version 1 without registry authority"]
+  },
+  "files": ["examples/contribution-review/simulated-thermistor-model.mjs"],
+  "requiredTests": ["model-library", "component-support-matrix", "contribution-review"],
+  "fixtureIdentity": "simulated-thermistor-reference-v1",
+  "authority": { "execute": false, "registry": false, "release": false, "runtime": false, "network": false }
+}
