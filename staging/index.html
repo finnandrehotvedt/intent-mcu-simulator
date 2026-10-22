@@ -91,6 +91,7 @@
         <button id="walkthrough-open" type="button">First project guide</button>
         <button id="undo" type="button" disabled>Undo</button><button id="redo" type="button" disabled>Redo</button>
         <button id="project-save" class="project-file-primary" type="button">Download copy</button><button id="project-open" class="project-file-primary" type="button">Open project</button>
+        <button id="teaching-exercise-open" type="button">Teaching exercise</button>
         <input id="project-open-input" class="sr-only" type="file" accept="application/json,.json" aria-label="Open project file">
         <details class="project-file-advanced">
           <summary>Advanced file &amp; recovery</summary>
@@ -1057,6 +1058,20 @@
         <div class="presentation-stage-actions"><button id="presentation-previous" type="button">Previous step</button><button id="presentation-next" type="button">Next step</button><button id="presentation-exit" type="button">Edit lesson</button></div>
         <p class="truth">Manual progression only. Values retain the instrument owner's current, historical, not-run or unavailable label.</p>
       </section>
+    </div>
+  </dialog>
+  <dialog id="teaching-exercise-dialog" class="teaching-exercise-dialog" aria-labelledby="teaching-exercise-title">
+    <header><div><p class="eyebrow">X71 · LOCAL START FILES</p><h2 id="teaching-exercise-title" tabindex="-1">Thermostat equality exercise</h2></div><button id="teaching-exercise-close" type="button">Close</button></header>
+    <div class="teaching-exercise-layout">
+      <section class="teaching-exercise-summary">
+        <p id="teaching-exercise-instructions"></p>
+        <div class="teaching-exercise-file-actions"><button id="teaching-exercise-download" type="button">Download lesson bundle</button><button id="teaching-exercise-import" type="button">Open local lesson bundle</button><input id="teaching-exercise-input" class="sr-only" type="file" accept="application/json,.json,.intent-mcu-exercise.json"></div>
+        <p id="teaching-exercise-status" class="truth" role="status">Built-in reviewed lesson ready. Files stay on this device; no student account is needed.</p>
+      </section>
+      <section aria-labelledby="teaching-exercise-requirements-title"><h3 id="teaching-exercise-requirements-title">Teacher requirements</h3><ul id="teaching-exercise-requirements"></ul></section>
+      <fieldset><legend>Choose one start project</legend><div id="teaching-exercise-variants" class="teaching-exercise-variants"></div></fieldset>
+      <button id="teaching-exercise-install" type="button">Open selected project</button>
+      <p class="teaching-exercise-boundary">Opening is an explicit authored-project replacement. It restores no firmware, runtime, result or verdict and requires a fresh manual Build.</p>
     </div>
   </dialog>
   <dialog id="workbench-help-dialog" class="workbench-popup-dialog" aria-labelledby="workbench-help-dialog-title"><header><div><p class="eyebrow">TESTED PROFILE BOUNDARY</p><h2 id="workbench-help-dialog-title" tabindex="-1">Help &amp; limits</h2></div><button type="button" class="workbench-popup-close" aria-label="Close Help and limits">Close</button></header><div class="workbench-popup-mount" data-workbench-popup-mount="help"></div></dialog>

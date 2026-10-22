@@ -322,6 +322,15 @@ import {
   createPresentationViewOwner,
   normalizePresentationDraft,
 } from '../src/presentation-view.mjs';
+import {
+  TEACHING_EXERCISE_PROFILE,
+  TEACHING_EXERCISE_SCHEMA,
+  TEACHING_EXERCISE_LIMITS,
+  canonicalTeachingExercise,
+  normalizeTeachingExercise,
+  parseTeachingExercise,
+  teachingExerciseAuthority,
+} from '../src/teaching-exercise-package.mjs';
 import { AUTHORED_CHANGE_REVIEW_SCHEMA } from '../src/authored-change-review.mjs';
 import {
   EXPECTATION_REFERENCE_LIMIT,
@@ -502,6 +511,10 @@ const elements = Object.fromEntries([
   'presentation-status', 'presentation-start', 'presentation-stage', 'presentation-step-title',
   'presentation-step-count', 'presentation-step-text', 'presentation-instrument-cards',
   'presentation-previous', 'presentation-next', 'presentation-exit',
+  'teaching-exercise-open', 'teaching-exercise-dialog', 'teaching-exercise-title', 'teaching-exercise-close',
+  'teaching-exercise-instructions', 'teaching-exercise-download', 'teaching-exercise-import',
+  'teaching-exercise-input', 'teaching-exercise-status', 'teaching-exercise-requirements',
+  'teaching-exercise-variants', 'teaching-exercise-install',
   'regression-matrix', 'regression-matrix-state', 'regression-matrix-identity',
   'regression-matrix-selector', 'regression-matrix-run', 'regression-matrix-negative',
   'regression-matrix-export', 'regression-matrix-results', 'regression-matrix-summary',
@@ -613,6 +626,8 @@ let x92IdentitySequence = 0;
 const presentationOwner = createPresentationViewOwner();
 let presentationStepSequence = 0;
 let presentationReturnFocus = null;
+let acceptedTeachingExercise = null;
+let teachingExerciseReturnFocus = null;
 let lastProfileMigrationReport = null;
 const projectBriefDrafts = new Map();
 const requirementResultLinks = new Map();
@@ -8699,6 +8714,108 @@ window.__X68_PRESENTATION_VIEW__ = Object.freeze({
   snapshot: () => structuredClone(presentationOwner.snapshot()),
   authority: Object.freeze({ apply: false, build: false, run: false, scenario: false, runtime: false, verdict: false }),
   persistence: false,
+});
+function normalizeTeachingExerciseProject(value, { variantId } = {}) {
+  const prepared = prepareProjectEnvelope(JSON.stringify(value), commonProjectAdapters);
+  if (!prepared.ok) throw Object.assign(new Error(prepared.code), prepared);
+  if (prepared.profile !== TEACHING_EXERCISE_PROFILE || !isThermostatExperimentProject(prepared.project)
+      || thermostatFirmwareVariant(prepared.project) !== variantId) {
+    throw Object.assign(new Error('TEACHING_EXERCISE_PROJECT_IDENTITY'), { code: 'TEACHING_EXERCISE_PROJECT_IDENTITY' });
+  }
+  return JSON.parse(prepared.canonical);
+}
+function builtInTeachingExercise() {
+  const project = (variantId) => JSON.parse(canonicalProjectEnvelope(TEACHING_EXERCISE_PROFILE,
+    createThermostatExperiment(variantId).project, commonProjectAdapters, emptyProjectBrief(),
+    defaultThermostatScenarioTimeline(), CURRENT_MODEL_LIBRARY_LOCK));
+  return normalizeTeachingExercise({
+    schema: TEACHING_EXERCISE_SCHEMA, exerciseId: 'thermostat-equality-lesson',
+    title: 'Find the thermostat equality fault', profileId: TEACHING_EXERCISE_PROFILE,
+    instructions: 'Choose a start project, inspect the exact 30 C threshold requirement, then Build manually. The known-bad answer is intentionally visible.',
+    requirements: [
+      { id: 'below-threshold', text: 'When enabled below 30 C, executed firmware must drive D13 HIGH.' },
+      { id: 'equality-boundary', text: 'When enabled at exactly 30 C, executed firmware must drive D13 LOW.' },
+      { id: 'evidence-boundary', text: 'A conclusion requires fresh executed D13 evidence; source text or Serial text alone is not a verdict.' },
+    ],
+    variants: [
+      { id: 'correct', label: 'Correct start project', knownFault: '', project: project('correct') },
+      { id: 'known-bad-equality', label: 'Known-bad equality project',
+        knownFault: 'Known fault: the heater condition uses <= 30 instead of < 30, so the equality requirement should fail.',
+        project: project('known-bad-equality') },
+    ],
+  }, normalizeTeachingExerciseProject);
+}
+function renderTeachingExercise(bundle, message = 'Lesson ready. No project has been opened.') {
+  acceptedTeachingExercise = structuredClone(bundle);
+  elements.teachingexercisetitle.textContent = bundle.title;
+  elements.teachingexerciseinstructions.textContent = bundle.instructions;
+  elements.teachingexerciserequirements.replaceChildren(...bundle.requirements.map((requirement) => {
+    const item = document.createElement('li'); item.textContent = `${requirement.id} · ${requirement.text}`; return item;
+  }));
+  elements.teachingexercisevariants.replaceChildren(...bundle.variants.map((variant, index) => {
+    const label = document.createElement('label'); label.className = 'teaching-exercise-variant';
+    label.dataset.knownFault = String(Boolean(variant.knownFault));
+    const input = document.createElement('input'); input.type = 'radio'; input.name = 'teaching-exercise-variant';
+    input.value = variant.id; input.checked = index === 0;
+    const title = document.createElement('strong'); title.textContent = variant.label;
+    const detail = document.createElement('span'); detail.textContent = variant.knownFault || 'Reviewed correct start project; no known fault is inserted.';
+    label.append(input, title, detail); return label;
+  }));
+  elements.teachingexercisestatus.textContent = message;
+}
+function closeTeachingExercise({ restoreFocus = true } = {}) {
+  if (elements.teachingexercisedialog.open) elements.teachingexercisedialog.close('close');
+  const target = teachingExerciseReturnFocus; teachingExerciseReturnFocus = null;
+  if (restoreFocus) queueMicrotask(() => (target?.isConnected ? target : elements.teachingexerciseopen).focus());
+}
+elements.teachingexerciseopen.addEventListener('click', () => {
+  teachingExerciseReturnFocus = document.activeElement;
+  try { renderTeachingExercise(builtInTeachingExercise(), 'Built-in reviewed lesson ready. No project has been opened.'); }
+  catch (error) { elements.teachingexercisestatus.textContent = `Lesson unavailable (${error.code ?? error.message}).`; return; }
+  elements.teachingexercisedialog.showModal(); queueMicrotask(() => elements.teachingexercisetitle.focus());
+});
+elements.teachingexerciseclose.addEventListener('click', () => closeTeachingExercise());
+elements.teachingexercisedialog.addEventListener('cancel', (event) => { event.preventDefault(); closeTeachingExercise(); });
+elements.teachingexercisedownload.addEventListener('click', () => {
+  try {
+    const source = canonicalTeachingExercise(acceptedTeachingExercise, normalizeTeachingExerciseProject);
+    downloadText('thermostat-equality.intent-mcu-exercise.json', source, 'application/json');
+    elements.teachingexercisestatus.textContent = 'Local lesson-bundle download requested. The browser chooses its destination.';
+  } catch (error) { elements.teachingexercisestatus.textContent = `Download rejected (${error.code ?? error.message}).`; }
+});
+elements.teachingexerciseimport.addEventListener('click', () => elements.teachingexerciseinput.click());
+elements.teachingexerciseinput.addEventListener('change', async () => {
+  const file = elements.teachingexerciseinput.files[0]; elements.teachingexerciseinput.value = '';
+  if (!file) return;
+  if (file.size > TEACHING_EXERCISE_LIMITS.bytes) {
+    elements.teachingexercisestatus.textContent = 'Local lesson rejected (INPUT_LIMIT). The accepted lesson and current project are unchanged.';
+    return;
+  }
+  try {
+    const parsed = parseTeachingExercise(await file.text(), normalizeTeachingExerciseProject);
+    renderTeachingExercise(parsed, `Local lesson bundle inspected: ${file.name}. Both start projects passed validation.`);
+  } catch (error) {
+    elements.teachingexercisestatus.textContent = `Local lesson rejected (${error.code ?? error.message}). The accepted lesson and current project are unchanged.`;
+  }
+});
+elements.teachingexerciseinstall.addEventListener('click', () => {
+  const variantId = elements.teachingexercisevariants.querySelector('input:checked')?.value;
+  const variant = acceptedTeachingExercise?.variants.find((item) => item.id === variantId);
+  if (!variant) { elements.teachingexercisestatus.textContent = 'Choose one validated start project.'; return; }
+  const prepared = prepareProjectEnvelope(JSON.stringify(variant.project), commonProjectAdapters);
+  if (!prepared.ok || prepared.profile !== TEACHING_EXERCISE_PROFILE) {
+    elements.teachingexercisestatus.textContent = `Open rejected (${prepared.code ?? 'TEACHING_EXERCISE_PROJECT'}).`; return;
+  }
+  const install = () => installPreparedProjectEnvelope(prepared, null);
+  closeTeachingExercise({ restoreFocus: false });
+  if (selectedCompilerProfile === prepared.profile && requestUnsavedChangeGuard({ profile: prepared.profile,
+    actionLabel: `opening ${variant.label}`, continueAction: install })) return;
+  install();
+});
+window.__X71_TEACHING_EXERCISE__ = Object.freeze({
+  schema: TEACHING_EXERCISE_SCHEMA, current: () => structuredClone(acceptedTeachingExercise),
+  parse: (source) => parseTeachingExercise(source, normalizeTeachingExerciseProject),
+  authority: teachingExerciseAuthority(), accounts: false, networkStorage: false,
 });
 window.__CAPABILITY_DISCOVERY__ = Object.freeze({
   schema: CAPABILITY_DISCOVERY_SCHEMA,
