@@ -2,6 +2,7 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
 import http from 'node:http';
 import test from 'node:test';
 
@@ -21,7 +22,7 @@ import {
   normalizeEsp32C3CircuitDraft,
   validateEsp32C3Circuit,
 } from '../src/esp32c3-public-circuit.mjs';
-import { createC3PublicService } from '../c3/public-service.mjs';
+import { childJson, cleanupContainer, createC3PublicService } from '../c3/public-service.mjs';
 import {
   Esp32C3PublicWorkbench, validateEsp32C3Retirement,
 } from '../src/esp32c3-public-workbench.mjs';
@@ -309,6 +310,62 @@ test('C3 service retains an unproven tombstone when process cleanup is not confi
   }
 });
 
+test('C3 cleanup requires a successful exact-name absence query', async () => {
+  const docker = '/fake/docker';
+  const name = 'intent-mcu-c3-runtime-proof';
+  const absent = async (binary, args) => ({ stdout: args.includes('ls') ? '' : '', stderr: '' });
+  await cleanupContainer(docker, name, false, absent);
+
+  for (const code of ['DAEMON_DOWN', 'INSPECT_TIMEOUT', 'PERMISSION_DENIED']) {
+    const unknown = async (binary, args) => {
+      if (args.includes('ls')) throw Object.assign(new Error(code), { code });
+      return { stdout: '', stderr: '' };
+    };
+    await assert.rejects(() => cleanupContainer(docker, name, false, unknown),
+      (error) => error.code === 'OPERATION_CLEANUP_UNPROVEN');
+  }
+
+  const present = async (binary, args) => ({ stdout: args.includes('ls') ? `${name}\n` : '', stderr: '' });
+  await assert.rejects(() => cleanupContainer(docker, name, false, present),
+    (error) => error.code === 'OPERATION_CLEANUP_FAILED');
+
+  let queries = 0;
+  const eventuallyAbsent = async (binary, args) => {
+    if (!args.includes('ls')) return { stdout: '', stderr: '' };
+    queries += 1;
+    return { stdout: queries === 1 ? `${name}\n` : '', stderr: '' };
+  };
+  await cleanupContainer(docker, name, false, eventuallyAbsent);
+  assert.equal(queries, 2);
+});
+
+test('C3 child owner cannot mark cancellation clean when exact absence query is unavailable', async () => {
+  const controller = new AbortController();
+  const spawnProcess = () => {
+    const child = new EventEmitter();
+    child.stdout = new EventEmitter();
+    child.stderr = new EventEmitter();
+    child.stdin = new EventEmitter();
+    child.stdin.end = () => {};
+    child.killed = false;
+    child.kill = () => {
+      child.killed = true;
+      queueMicrotask(() => child.emit('close', null));
+    };
+    return child;
+  };
+  const dockerCommand = async (binary, args) => {
+    if (args.includes('ls')) throw new Error('daemon unavailable');
+    return { stdout: '', stderr: '' };
+  };
+  const operation = childJson({ docker: '/fake/docker', args: ['run'], input: '{}',
+    timeoutMs: 1_000, outputLimit: 1024, signal: controller.signal,
+    containerName: 'intent-mcu-c3-runtime-proof', dockerCommand, spawnProcess });
+  controller.abort();
+  await assert.rejects(operation, (error) =>
+    error.code === 'OPERATION_CLEANUP_UNPROVEN' && error.cleanupConfirmed !== true);
+});
+
 function workbenchElements() {
   const element = (extra = {}) => ({ value: '', textContent: '', disabled: false, dataset: {},
     addEventListener() {}, setAttribute() {}, click() {}, ...extra });
@@ -346,6 +403,10 @@ test('C3 browser concurrent disposal joins one exact pending owner and one reque
     sourceSha256: 'a'.repeat(64), artifactSha256: 'b'.repeat(64) };
   let firstSettled = false;
   let secondSettled = false;
+  let reentrant = null;
+  workbench.onState = () => {
+    if (workbench.sessionId === null && !reentrant) reentrant = workbench.dispose();
+  };
   const first = workbench.dispose().then((value) => { firstSettled = true; return value; });
   const second = workbench.dispose().then((value) => { secondSettled = true; return value; });
   await Promise.resolve();
@@ -357,7 +418,27 @@ test('C3 browser concurrent disposal joins one exact pending owner and one reque
   release(retirementResponse(retirementAck(expected)));
   assert.deepEqual(await first, { ok: true, code: 'C3_RETIREMENT_PROVEN' });
   assert.deepEqual(await second, { ok: true, code: 'C3_RETIREMENT_PROVEN' });
+  assert.deepEqual(await reentrant, { ok: true, code: 'C3_RETIREMENT_PROVEN' });
   assert.equal(requests, 1);
+});
+
+test('C3 concurrent session creation joins one private creation owner', async () => {
+  let release;
+  let requests = 0;
+  const held = new Promise((resolve) => { release = resolve; });
+  const workbench = new Esp32C3PublicWorkbench({ elements: workbenchElements(), fetchFn: async () => {
+    requests += 1;
+    return held;
+  } });
+  workbench.active = true;
+  const first = workbench.ensureSession();
+  const second = workbench.ensureSession();
+  await Promise.resolve();
+  assert.equal(requests, 1);
+  release(retirementResponse({ sessionId: 'J'.repeat(16), capability: 'Q'.repeat(32), generation: 0 }));
+  assert.equal(await first, true);
+  assert.equal(await second, true);
+  assert.equal(workbench.sessionId, 'J'.repeat(16));
 });
 
 test('C3 browser failed retirement stays unproven and cannot become idle success', async () => {
@@ -403,4 +484,74 @@ test('C3 page-exit disposal keeps the same private owner and keepalive proof pat
   release(retirementResponse(retirementAck({ sessionId: 'S'.repeat(16), generation: 3,
     sourceSha256: 'a'.repeat(64), artifactSha256: 'b'.repeat(64) })));
   assert.deepEqual(await workbench.dispose(), { ok: true, code: 'C3_RETIREMENT_PROVEN' });
+});
+
+test('C3 held session creation is retired exactly once and never reaches Build', async () => {
+  let releaseCreation;
+  let sessionRequests = 0;
+  let buildRequests = 0;
+  let disposalRequests = 0;
+  const creation = new Promise((resolve) => { releaseCreation = resolve; });
+  const created = { sessionId: 'N'.repeat(16), capability: 'K'.repeat(32), generation: 0 };
+  const workbench = new Esp32C3PublicWorkbench({ elements: workbenchElements(), fetchFn: async (url) => {
+    if (url.endsWith('/session')) { sessionRequests += 1; return creation; }
+    if (url.endsWith('/build')) { buildRequests += 1; throw new Error('BUILD_MUST_NOT_POST'); }
+    if (url.endsWith(`/session/${created.sessionId}/command`)) {
+      disposalRequests += 1;
+      return retirementResponse(retirementAck({ sessionId: created.sessionId, generation: 0,
+        sourceSha256: null, artifactSha256: null }));
+    }
+    throw new Error(`UNEXPECTED_FETCH:${url}`);
+  } });
+  workbench.activate();
+  const building = workbench.build();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(sessionRequests, 1);
+  const retiring = workbench.deactivate();
+  assert.equal(workbench.retirementOwner.status, 'pending');
+  releaseCreation(retirementResponse(created));
+  assert.equal(await retiring, undefined);
+  assert.equal((await building).code, 'C3_BUILD_STALE');
+  assert.equal(buildRequests, 0);
+  assert.equal(disposalRequests, 1);
+  assert.equal(workbench.sessionId, null);
+  assert.equal(workbench.artifact, null);
+  assert.deepEqual(await workbench.dispose(), { ok: true, code: 'C3_RETIREMENT_PROVEN' });
+});
+
+test('C3 failed late-session retirement stays unproven and synchronous reentry starts no producer', async () => {
+  let releaseCreation;
+  let requests = 0;
+  const creation = new Promise((resolve) => { releaseCreation = resolve; });
+  const workbench = new Esp32C3PublicWorkbench({ elements: workbenchElements(), fetchFn: async (url) => {
+    requests += 1;
+    if (url.endsWith('/session')) return creation;
+    throw Object.assign(new Error('late retirement lost'), { code: 'NETWORK_LOST' });
+  } });
+  workbench.activate();
+  const building = workbench.build();
+  await Promise.resolve();
+  await Promise.resolve();
+  const retirement = workbench.deactivate();
+  releaseCreation(retirementResponse({ sessionId: 'L'.repeat(16),
+    capability: 'P'.repeat(32), generation: 0 }));
+  assert.deepEqual(await retirement, undefined);
+  assert.equal((await building).code, 'C3_BUILD_STALE');
+  assert.deepEqual(await workbench.dispose(), { ok: false, code: 'NETWORK_LOST' });
+  assert.equal(requests, 2);
+
+  let reentered = false;
+  let networkRequests = 0;
+  const synchronous = new Esp32C3PublicWorkbench({ elements: workbenchElements(),
+    fetchFn: async () => { networkRequests += 1; throw new Error('must not fetch'); } });
+  synchronous.active = true;
+  synchronous.onState = (state) => {
+    if (state.phase === 'building' && !reentered) {
+      reentered = true;
+      void synchronous.deactivate();
+    }
+  };
+  assert.equal((await synchronous.build()).code, 'C3_BUILD_STALE');
+  assert.equal(networkRequests, 0);
 });

@@ -102,6 +102,7 @@ export class Esp32C3PublicWorkbench {
     this.requestToken = 0;
     this.invalidationTimer = null;
     this.retirementOwner = null;
+    this.sessionCreationOwner = null;
     this.diagnostics = [];
     this.bind();
     this.render();
@@ -180,13 +181,52 @@ export class Esp32C3PublicWorkbench {
     }
     if (this.retirementOwner?.status === 'proven') this.retirementOwner = null;
     if (this.sessionId) return true;
-    const value = await this.response(await this.fetch(`${this.endpoint}/session`, {
-      method: 'POST', headers: this.mutationHeaders(), body: '{}',
-    }));
-    this.sessionId = value.sessionId;
-    this.capability = value.capability;
-    this.serverGeneration = value.generation;
+    if (!this.sessionCreationOwner) {
+      const ticket = {
+        token: this.requestToken, revision: this.revision, active: this.active, retiring: false,
+        circuit: this.modelLibraryImplementation.profileRuntimeCircuit(
+          PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
+        ), promise: null,
+      };
+      ticket.promise = Promise.resolve().then(async () => {
+        const value = await this.response(await this.fetch(`${this.endpoint}/session`, {
+          method: 'POST', headers: this.mutationHeaders(), body: '{}',
+        }));
+        const identity = { sessionId: value.sessionId, capability: value.capability,
+          generation: value.generation, sourceSha256: null, artifactSha256: null,
+          circuit: ticket.circuit };
+        if (ticket.retiring || ticket.token !== this.requestToken
+          || ticket.revision !== this.revision || ticket.active !== this.active || !this.active) {
+          return { installed: false, retirement: await this.retireCapturedSession(identity) };
+        }
+        this.sessionId = identity.sessionId;
+        this.capability = identity.capability;
+        this.serverGeneration = identity.generation;
+        return { installed: true, identity };
+      }).finally(() => {
+        if (this.sessionCreationOwner === ticket) this.sessionCreationOwner = null;
+      });
+      this.sessionCreationOwner = ticket;
+    }
+    const result = await this.sessionCreationOwner.promise;
+    if (!result.installed) throw Object.assign(new Error('C3_SESSION_CREATION_RETIRED'), result);
     return true;
+  }
+  async retireCapturedSession(identity, { keepalive = false } = {}) {
+    const expected = { sessionId: identity.sessionId, generation: identity.generation,
+      sourceSha256: identity.sourceSha256, artifactSha256: identity.artifactSha256 };
+    const body = JSON.stringify({ schema: COMMAND_SCHEMA, command: 'dispose',
+      generation: identity.generation, profile: PROFILE, fqbn: FQBN,
+      sourceSha256: identity.sourceSha256, artifactSha256: identity.artifactSha256,
+      circuit: identity.circuit });
+    const retirement = await this.response(await this.fetch(
+      `${this.endpoint}/session/${identity.sessionId}/command`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Intent-MCU-C3': '1',
+          Authorization: `Bearer ${identity.capability}` }, body,
+        ...(keepalive ? { keepalive: true } : {}),
+      },
+    ));
+    return validateEsp32C3Retirement(retirement, expected);
   }
   commandBody(command) {
     return {
@@ -284,9 +324,16 @@ export class Esp32C3PublicWorkbench {
     this.message = 'Compiling in the fixed network-disabled ESP32-C3 toolchain…';
     this.render();
     try {
+      if (token !== this.requestToken || revision !== this.revision || !this.active) {
+        return { ok: false, code: 'C3_BUILD_STALE' };
+      }
       await this.ensureSession();
+      const sessionId = this.sessionId;
+      if (token !== this.requestToken || revision !== this.revision || !this.active || !sessionId) {
+        return { ok: false, code: 'C3_BUILD_STALE' };
+      }
       const receipt = await this.response(await this.fetch(
-        `${this.endpoint}/session/${this.sessionId}/build`, {
+        `${this.endpoint}/session/${sessionId}/build`, {
           method: 'POST', headers: this.mutationHeaders(),
           body: JSON.stringify({ schema: BUILD_SCHEMA, profile: PROFILE, fqbn: FQBN,
             source: parsed.source, sourceRevision: revision }),
@@ -374,17 +421,62 @@ export class Esp32C3PublicWorkbench {
     this.requestToken += 1;
     clearTimeout(this.invalidationTimer);
     this.invalidationTimer = null;
+    const creation = this.sessionCreationOwner;
+    if (creation) {
+      creation.retiring = true;
+      const owner = { expected: null, status: 'pending', promise: null };
+      owner.promise = creation.promise.then((result) => {
+        if (!result.retirement?.ok) {
+          owner.status = 'unproven';
+          return { ok: false, code: 'C3_RETIREMENT_UNPROVEN' };
+        }
+        owner.status = 'proven';
+        return result.retirement;
+      }, (error) => {
+        owner.status = 'unproven';
+        return { ok: false, code: error.code ?? error.message ?? 'C3_RETIREMENT_UNPROVEN' };
+      });
+      this.retirementOwner = owner;
+      this.sessionId = null;
+      this.capability = null;
+      this.serverGeneration = 0;
+      this.artifact = null;
+      this.artifactRevision = null;
+      this.lastRuntime = null;
+      this.terminal = 'No QEMU UART output yet.';
+      this.phase = 'editing';
+      this.diagnostics = [];
+      this.message = message;
+      this.render();
+      return owner.promise;
+    }
     const sessionId = this.sessionId;
     const expected = sessionId ? {
       sessionId, generation: this.serverGeneration,
       sourceSha256: this.artifact?.sourceSha256 ?? null,
       artifactSha256: this.artifact?.flashSha256 ?? null,
     } : null;
-    const headers = this.mutationHeaders();
-    const body = sessionId ? JSON.stringify(this.commandBody('dispose')) : null;
     if (!sessionId) return this.capability || this.artifact
       ? { ok: false, code: 'C3_RETIREMENT_UNPROVEN' }
       : { ok: true, code: 'C3_RETIREMENT_IDLE' };
+    const identity = sessionId ? { ...expected, capability: this.capability,
+      circuit: this.modelLibraryImplementation.profileRuntimeCircuit(
+        PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
+      ) } : null;
+    const owner = identity ? { expected, status: 'pending', promise: null } : null;
+    if (owner) {
+      owner.promise = Promise.resolve().then(async () => {
+        try {
+          const result = await this.retireCapturedSession(identity, { keepalive });
+          owner.status = 'proven';
+          return result;
+        } catch (error) {
+          owner.status = 'unproven';
+          return { ok: false, code: error.code ?? error.message ?? 'C3_RETIREMENT_UNPROVEN' };
+        }
+      });
+      this.retirementOwner = owner;
+    }
     // Retire local executable authority before waiting for the disposal
     // acknowledgement. A slow or failed network response must never leave an
     // already-stopped flash artifact runnable in this browser.
@@ -399,26 +491,10 @@ export class Esp32C3PublicWorkbench {
     this.diagnostics = [];
     this.message = message;
     this.render();
-    const owner = { expected, status: 'pending', promise: null };
-    owner.promise = (async () => {
-      try {
-        const retirement = await this.response(await this.fetch(
-          `${this.endpoint}/session/${sessionId}/command`,
-          { method: 'POST', headers, body, ...(keepalive ? { keepalive: true } : {}) },
-        ));
-        const result = validateEsp32C3Retirement(retirement, expected);
-        owner.status = 'proven';
-        return result;
-      } catch (error) {
-        owner.status = 'unproven';
-        return { ok: false, code: error.code ?? error.message ?? 'C3_RETIREMENT_UNPROVEN' };
-      }
-    })();
-    this.retirementOwner = owner;
     return owner.promise;
   }
   disposeForPageExit() {
-    if (!this.sessionId || !this.capability) return;
+    if ((!this.sessionId || !this.capability) && !this.sessionCreationOwner) return;
     void this.dispose('C3 page-exit retirement pending.', { keepalive: true });
   }
 

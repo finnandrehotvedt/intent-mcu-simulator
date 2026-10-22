@@ -95,25 +95,38 @@ function requireMutationContext(request, publicOrigin) {
     throw fault('CONTENT_TYPE_REQUIRED', 415);
   }
 }
-async function ignoreDockerFailure(docker, args) {
-  try { await execFileAsync(docker, args, { timeout: 5_000 }); } catch { /* bounded cleanup */ }
+async function ignoreDockerFailure(docker, args, dockerCommand) {
+  try { await dockerCommand(docker, args, { timeout: 5_000 }); } catch { /* bounded cleanup */ }
 }
-async function cleanupContainer(docker, name, racedCreation) {
+async function exactContainerPresent(docker, name, dockerCommand) {
+  let stdout;
+  try {
+    ({ stdout } = await dockerCommand(docker, ['container', 'ls', '-a',
+      '--filter', `name=^/${name}$`, '--format', '{{.Names}}'], { timeout: 5_000 }));
+  } catch {
+    throw fault('OPERATION_CLEANUP_UNPROVEN', 502);
+  }
+  const names = stdout.trim() ? stdout.trim().split(/\r?\n/u) : [];
+  if (names.length === 0) return false;
+  if (names.length === 1 && names[0] === name) return true;
+  throw fault('OPERATION_CLEANUP_UNPROVEN', 502);
+}
+export async function cleanupContainer(docker, name, racedCreation,
+  dockerCommand = execFileAsync) {
   const attempts = racedCreation ? 60 : 1;
   for (let index = 0; index < attempts; index += 1) {
-    await ignoreDockerFailure(docker, ['rm', '-f', name]);
+    await ignoreDockerFailure(docker, ['rm', '-f', name], dockerCommand);
     if (racedCreation) await new Promise((resolve) => setTimeout(resolve, 50));
   }
-  try { await execFileAsync(docker, ['container', 'inspect', name], { timeout: 5_000 }); }
-  catch { return; }
-  await ignoreDockerFailure(docker, ['rm', '-f', name]);
-  try { await execFileAsync(docker, ['container', 'inspect', name], { timeout: 5_000 }); }
-  catch { return; }
+  if (!await exactContainerPresent(docker, name, dockerCommand)) return;
+  await ignoreDockerFailure(docker, ['rm', '-f', name], dockerCommand);
+  if (!await exactContainerPresent(docker, name, dockerCommand)) return;
   throw fault('OPERATION_CLEANUP_FAILED', 502);
 }
-async function childJson({ docker, args, input, timeoutMs, outputLimit, signal, containerName }) {
+export async function childJson({ docker, args, input, timeoutMs, outputLimit, signal, containerName,
+  dockerCommand = execFileAsync, spawnProcess = spawn }) {
   return new Promise((resolve, reject) => {
-    const child = spawn(docker, args, { shell: false, stdio: ['pipe', 'pipe', 'pipe'] });
+    const child = spawnProcess(docker, args, { shell: false, stdio: ['pipe', 'pipe', 'pipe'] });
     const stdout = [];
     const stderr = [];
     let stdoutBytes = 0;
@@ -122,7 +135,7 @@ async function childJson({ docker, args, input, timeoutMs, outputLimit, signal, 
     let settled = false;
     const terminate = (nextReason) => {
       if (!reason) reason = nextReason;
-      void ignoreDockerFailure(docker, ['kill', containerName]);
+      void ignoreDockerFailure(docker, ['kill', containerName], dockerCommand);
       if (!child.killed) child.kill('SIGKILL');
     };
     const abort = () => terminate('OPERATION_CANCELLED');
@@ -146,7 +159,7 @@ async function childJson({ docker, args, input, timeoutMs, outputLimit, signal, 
       clearTimeout(timer);
       signal?.removeEventListener('abort', abort);
       try {
-        await cleanupContainer(docker, containerName, reason !== null);
+        await cleanupContainer(docker, containerName, reason !== null, dockerCommand);
         if (reason) {
           const error = fault(reason, reason === 'OPERATION_CANCELLED' ? 409 : 504);
           error.cleanupConfirmed = true;
@@ -251,7 +264,7 @@ function acceptedRuntimeCircuit(value) {
 export function createC3PublicService({
   builderImageLock, runtimeImageLock, docker = '/usr/bin/docker', publicOrigin = null,
   trustProxy = false, now = () => Date.now(), limits = C3_LIMITS,
-  builder = null, runtime = null, testMode = false,
+  builder = null, runtime = null, testMode = false, dockerCommand = execFileAsync,
 } = {}) {
   if (!builderImageLock || !runtimeImageLock) throw new TypeError('C3_IMAGE_LOCKS_REQUIRED');
   const sessions = new Map();
@@ -263,7 +276,7 @@ export function createC3PublicService({
 
   async function verifyImages() {
     const inspect = async (lock) => {
-      const { stdout } = await execFileAsync(docker, [
+      const { stdout } = await dockerCommand(docker, [
         'image', 'inspect', '--format', '{{.Id}}', lock.image,
       ], { timeout: 5_000 });
       if (!imageIdMatches(lock, stdout.trim())) throw fault('C3_IMAGE_MISMATCH', 503);
@@ -291,7 +304,7 @@ export function createC3PublicService({
     const manifest = await childJson({
       docker, args, timeoutMs: limits.buildTimeoutMs,
       outputLimit: limits.compilerOutputBytes, signal, containerName,
-      input: JSON.stringify({ schema: 'intent-mcu-esp32c3-builder-job@1',
+      dockerCommand, input: JSON.stringify({ schema: 'intent-mcu-esp32c3-builder-job@1',
         profile: PROFILE, fqbn: FQBN, source, sourceSha256, marker }),
     });
     if (manifest.status !== 'succeeded') return { manifest, files: null };
@@ -317,7 +330,7 @@ export function createC3PublicService({
       sourceSha256: descriptor.sourceSha256, flashSha256: descriptor.flash.sha256,
       marker: descriptor.marker, flashBase64: flash.toString('base64'),
     });
-    return childJson({ docker, args, input, timeoutMs: limits.runtimeTimeoutMs,
+    return childJson({ docker, args, input, timeoutMs: limits.runtimeTimeoutMs, dockerCommand,
       outputLimit: limits.runtimeOutputBytes, signal, containerName });
   }
 
