@@ -129,6 +129,17 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ]
+    },
+    {
+      "id": "X92",
+      "capabilities": [
+        "intent-mcu-experiment-budget-review@1",
+        "intent-mcu-experiment-budget@1",
+        "intent-mcu-x92-runtime-quiescence-ack@1"
+      ],
+      "contracts": [
+        "x92-bounded-avr-experiment-budget-v1"
+      ]
     }
   ]
 }

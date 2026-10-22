@@ -1,8 +1,14 @@
-# Migration to 1.1.0-rc.104
+# Migration to 1.1.0-rc.105
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.105 adds no durable project or browser-storage schema. X92 sessions,
+reservations, dispatch ownership and runtime acknowledgements are transient
+current-tab authority and are never restored by project Open, browser reload or
+an inert review file. Recognized learner-owned project data remains unchanged;
+opening it grants no budget, Build, Run, retry or verdict authority.
 
 Rc.104 recognizes the split-editor, no-op Apply and corrected model-copy
 identities. Rc.103 files validate and migrate as data only: authored

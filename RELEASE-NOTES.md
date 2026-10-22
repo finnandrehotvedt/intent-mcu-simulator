@@ -1,4 +1,32 @@
-# Intent MCU Simulator 1.1.0-rc.104
+# Intent MCU Simulator 1.1.0-rc.105
+
+## Partial X92 bounded AVR experiment budget
+
+Rc.105 publishes a strict current-tab experiment budget around the existing
+bounded Build and Run route. A trusted human starts one session bound to the
+current profile, project generation, source and electrical graph. Fixed limits
+cover Build, Run, scenario and browser wall-clock use; reservation and dispatch
+ownership are atomic, terminal accounting is exact once, and requests that do
+not fit return deterministic unresolved work before producer contact.
+
+Downloaded reviews are inert data only. Opening one restores no active session,
+reservation, executable, runtime, permission or verdict. Source, graph and
+profile changes preserve consumption rather than replenishing it.
+
+For AVR, a budgeted Run remains owned until the exact worker acknowledges Pause
+with the matching request, dispatch token and identity. The accepted one-shot
+native proof observed cycle 91440 and 70000 instructions, then retained the
+complete runtime JSON—including GPIO and Serial—unchanged across observations
+305.3 ms apart. No new native action is performed by this release.
+
+Pico, ESP32-C3 and STM32 budgeted Run rejects before producer dispatch because
+profile-specific remote quiescence is not proven. Existing manual controls on
+all four profiles are unchanged. This is not a generic AI agent, distributed
+scheduler, billing system or full X92 closure.
+
+X55's independently accepted bounded completion is retained. Canonical status
+is X **76/1/19**, P1 **59/0/0**; X92 is the sole partial item. Cumulative native
+evidence remains **34 Build / 33 Run / 0 scenarios**.
 
 ## Post-release original-contract reconciliation
 

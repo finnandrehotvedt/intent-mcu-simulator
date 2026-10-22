@@ -2,6 +2,27 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.105 — 2026-10-22
+
+- Publishes the reviewed partial X92 bounded experiment budget for one trusted,
+  current project session. It enforces fixed aggregate Build, Run, scenario and
+  wall-clock limits with atomic pre-dispatch ownership, exact-once terminal
+  accounting and deterministic unresolved work when a request cannot fit.
+- Review downloads remain strict inert data. Open cannot restore a session,
+  reservation, executable, runtime, permission or verdict, and source, graph or
+  profile changes never replenish consumed budget.
+- Budgeted AVR Run returns only after an owner-bound pause acknowledgement for
+  the exact request, dispatch token, identity and worker. Accepted native proof
+  retained identical cycles, instructions, GPIO and Serial across two
+  post-terminal observations 305.3 ms apart.
+- Budgeted Run for Pico, ESP32-C3 and STM32 rejects before producer dispatch
+  because profile-specific remote quiescence is not proven. Existing manual
+  Build/Run controls remain unchanged on all four profiles.
+- X55's independently accepted bounded completion is retained. Status is X
+  **76 complete / 1 partial / 19 planned**, P1 **59/0/0**. This release performs
+  0 new firmware Build, Run or Scenario; cumulative native evidence remains
+  **34/33/0**. X92 is partial, not a generic AI agent or full closure.
+
 ## Post-rc.104 contract reconciliation — 2026-10-22
 
 - Desktop independently accepted X55 as complete against its exact original

@@ -28,26 +28,33 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc103 to rc104 partial X55 split-editor bytes', async () => {
+test('X88 owner binds canonical rc104 to rc105 partial X92 AVR budget bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.104');
+  assert.equal(release.version, '1.1.0-rc.105');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
   assert(registry.ids.includes('X47'));
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.103', current: '1.1.0-rc.104' });
+  assert(registry.ids.includes('X92'));
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.104', current: '1.1.0-rc.105' });
   assert.deepEqual(value.changes, [
     {
       id: 'X55', classification: 'changed', capabilities: ['intent-mcu-component-appearance@1'],
       contracts: ['x55-all-profile-fixed-resistor-appearance-v1', 'x55-all-profile-led-outline-appearance-v1', 'x55-avr-fixed-resistor-appearance-v1', 'x55-bounded-body-geometry-editor-v1', 'x55-model-drawing-split-editor-v1', 'x55-model-preview-apply-copy-v1'],
-      summary: 'Separates resistor and LED Model property from Drawing across four profiles, disables no-op Apply, and distinguishes nonmutating Preview from Apply revalidation and executable/runtime-evidence retirement before a fresh Build.',
+      summary: 'Records the independently accepted bounded X55 completion: the existing resistor and LED Model property and Drawing workspaces preserve electrical anchors and execution semantics across all four profiles.',
     },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records the reviewed rc.103 to rc.104 partial X55 split-editor, no-op Apply and copy correction; it reuses accepted tests, performs no firmware Build, Run or Scenario and grants no new model, drawing or verdict authority.',
+      summary: 'Records the reviewed rc.104 to rc.105 bounded X55 status reconciliation and partial X92 AVR experiment-budget release with no new firmware Build, Run, Scenario or verdict authority.',
+    },
+    {
+      id: 'X92', classification: 'additive',
+      capabilities: ['intent-mcu-experiment-budget-review@1', 'intent-mcu-experiment-budget@1', 'intent-mcu-x92-runtime-quiescence-ack@1'],
+      contracts: ['x92-bounded-avr-experiment-budget-v1'],
+      summary: 'Adds a trusted-session local quota for bounded Build and Run, inert review files, atomic dispatch ownership and owner-bound AVR pause acknowledgement; non-AVR budgeted Run fails before producer.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -110,7 +117,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.104');
+  assert.equal(discovery.identity.version, '1.1.0-rc.105');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

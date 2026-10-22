@@ -1,8 +1,20 @@
-# Rollback basis for 1.1.0-rc.104
+# Rollback basis for 1.1.0-rc.105
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
+
+Retain exact accepted rc.104 source commit
+`bb6e49f9fc72c36461434469db236f5e507648e1` and VM103 image
+`sha256:ae64726d75a0d71a4084a719a4c128a20839c511469fd864d6873cd9955db4f8`
+as the pre-rc.105 app-only recovery basis. If acceptance fails, restore that
+exact app image and release directory, recreate only the Lab container and
+verify readiness plus the existing Teach-domain URLs.
+
+Rc.105 publishes the partial bounded X92 AVR experiment budget. Rolling back
+removes its transient current-tab session UI and execution gate without
+rewriting learner-owned files. Inert X92 review downloads remain data only and
+must never be interpreted by rc.104 as runtime or action authority.
 
 Retain exact accepted rc.103 source commit
 `ab23ec70d478d02633254f10708357065b7ba7ab` and VM103 image
