@@ -1,8 +1,20 @@
-# Rollback basis for 1.1.0-rc.107
+# Rollback basis for 1.1.0-rc.108
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
+
+Retain exact accepted rc.107 source commit
+`7bf39458c24249ae1d74717864f4f35f9b3311e4` and VM103 image
+`sha256:9eae80137ab0dbcee9ec639bc4e1022ecbfebb686aaff29b7287e39e4ffac366`
+as the pre-rc.108 app-only recovery basis. If acceptance fails, restore that
+exact app image and release directory, recreate only the Lab container and
+verify readiness plus the existing Teach-domain URLs.
+
+Rc.108 publishes the bounded AVR subcircuit owner and X66 original-criterion
+closure. Rolling back removes subcircuit authoring but never rewrites
+learner-owned files. Rc.107 must reject or migrate newer data without inferring
+connectivity, runtime or execution authority.
 
 Retain exact accepted rc.106 source commit
 `5b8c19b0b460f3ef20685c34f171baabd44d871b` and VM103 image

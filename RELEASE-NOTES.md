@@ -1,4 +1,29 @@
-# Intent MCU Simulator 1.1.0-rc.107
+# Intent MCU Simulator 1.1.0-rc.108
+
+## Bounded reusable AVR subcircuits
+
+Rc.108 adds one finite, non-nested AVR resistor-and-LED series subcircuit.
+Every instance binds explicit `source` and `ground` ports to existing canonical
+nets, namespaces one resistor, one LED and one private series net, and expands
+deterministically into the same graph validator used by ordinary projects.
+
+Create and delete use the existing atomic electrical-history path. Move and
+collapse/expand change presentation only and preserve all endpoints and the
+canonical graph digest. Download/Open, browser recovery and local history
+round-trip the strict owner and expanded graph. Published annotated-workspace
+v1 and pre-subcircuit v2 data migrate with an empty owner; malformed, stale,
+renamed or authority-bearing input fails without replacing the accepted file.
+
+Together with the previously published notes, groups and existing-net labels,
+this closes X66 only against its original bounded readability criterion. It is
+not nested, arbitrary-topology, other-profile or physical-equivalence support.
+X92 remains partial. Canonical status is X **79/1/16**, P1 **59/0/0**. Rc.108
+performs zero new firmware Build, Run, Scenario or worker action; cumulative
+native evidence remains **34 Build / 33 Run / 0 scenarios**.
+
+---
+
+## 1.1.0-rc.107
 
 ## Existing canonical-net labels
 

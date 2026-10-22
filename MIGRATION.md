@@ -1,8 +1,15 @@
-# Migration to 1.1.0-rc.107
+# Migration to 1.1.0-rc.108
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.108 recognizes annotated-workspace v3 and its strict bounded subcircuit
+owner. Published v1 and pre-subcircuit v2 workspaces migrate through normal
+Open, recovery and local history with their notes, groups and existing-net
+labels preserved and an empty subcircuit owner. A saved expanded graph is
+accepted only when exact deterministic re-expansion matches it; malformed,
+stale or authority-bearing data fails atomically.
 
 Rc.107 recognizes annotated-workspace and canvas-annotation v2 plus strict
 existing-net labels. Published v1 annotated workspaces migrate through normal

@@ -2,6 +2,24 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.108 — 2026-10-22
+
+- Adds one strict finite AVR resistor-and-LED reusable subcircuit with explicit
+  source and ground ports. Stable instance IDs namespace generated components
+  and the private series net before the ordinary graph validator sees them.
+- Preserves exact connectivity and canonical graph digest through
+  collapse/expand and movement, with atomic create, delete and Undo/Redo.
+  Download/Open, browser recovery and local history retain the owner and exact
+  expanded graph; published v1 and v2 workspaces migrate with an empty owner.
+- Rejects nesting, unresolved ports, stale model identities, renamed local
+  identifiers, unsupported topology and hidden execution authority. Runtime
+  receives only the expanded ordinary graph; no producer or worker was added.
+- Closes X66 only against its original bounded notes, groups, existing-net
+  labels and subcircuits readability criterion. There is no blanket, nested,
+  other-profile or physical-equivalence claim. X92 remains partial; status is
+  X **79 complete / 1 partial / 16 planned**, P1 **59/0/0**. Native evidence
+  remains **34 Build / 33 Run / 0 scenarios**.
+
 ## 1.1.0-rc.107 — 2026-10-22
 
 - Adds strict X66 labels bound only to existing canonical net IDs. The bound

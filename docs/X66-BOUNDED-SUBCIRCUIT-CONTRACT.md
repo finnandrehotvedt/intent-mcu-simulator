@@ -1,6 +1,8 @@
 # X66 bounded reusable subcircuit contract
 
-Status: private implementation contract. This document does not close X66 or authorize publication.
+Status: public in `1.1.0-rc.108`. Together with the published notes, groups and
+existing-net labels, this finite contract closes the original X66 readability
+criterion without claiming general-purpose, nested or non-AVR subcircuits.
 
 ## Finite slice
 

@@ -28,9 +28,9 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc106 to rc107 reviewed X66 label bytes', async () => {
+test('X88 owner binds canonical rc107 to rc108 reviewed X66 subcircuit bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.107');
+  assert.equal(release.version, '1.1.0-rc.108');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
@@ -38,18 +38,18 @@ test('X88 owner binds canonical rc106 to rc107 reviewed X66 label bytes', async 
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
   assert(registry.ids.includes('X92'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.106', current: '1.1.0-rc.107' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.107', current: '1.1.0-rc.108' });
   assert.deepEqual(value.changes, [
     {
       id: 'X66', classification: 'changed',
-      capabilities: ['intent-mcu-annotated-workspace@2', 'intent-mcu-canvas-annotations@2', 'intent-mcu-net-labels@1'],
-      contracts: ['x66-existing-canonical-net-labels-v1', 'x66-non-electrical-canvas-annotations-v1'],
-      summary: 'Adds strict labels bound only to existing canonical net IDs, preserves all save and history paths, and migrates published annotated-workspace v1 data without connectivity authority; deterministic reusable subcircuits remain unavailable.',
+      capabilities: ['intent-mcu-annotated-workspace@2', 'intent-mcu-canvas-annotations@2', 'intent-mcu-net-labels@1', 'intent-mcu-subcircuit-definition@1', 'intent-mcu-subcircuit-instance@1', 'intent-mcu-subcircuits@1'],
+      contracts: ['x66-bounded-reusable-subcircuit-v1', 'x66-existing-canonical-net-labels-v1', 'x66-non-electrical-canvas-annotations-v1'],
+      summary: 'Adds one finite non-nested AVR resistor-and-LED subcircuit with explicit ports, deterministic expansion, atomic persistence/history and connectivity-preserving controls; closes only the bounded X66 readability criterion.',
     },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records the reviewed rc.106 to rc.107 X66 existing-net-label increment and legacy compatibility correction with X66 and X92 remaining partial and zero new native producer authority.',
+      summary: 'Records the reviewed rc.107 to rc.108 bounded X66 subcircuit increment and original-criterion closure, with X92 remaining partial and zero new native producer authority.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -112,7 +112,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.107');
+  assert.equal(discovery.identity.version, '1.1.0-rc.108');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

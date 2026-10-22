@@ -4,9 +4,16 @@ Original criterion:
 
 > Grupper, notater, nettetiketter og underkretser gjør større oppsett lesbare uten å miste forbindelser.
 
-## Current accepted slice
+## Public closure in rc.108
 
-Rc.106 provides strict local non-electrical notes and visual component groups. They survive validated Save/Open, browser recovery and atomic Undo/Redo without changing the electrical graph. This proves the groups and notes clauses only. X66 remains partial because named electrical net labels and subcircuits are absent.
+Rc.106 introduced strict local non-electrical notes and visual component groups,
+and rc.107 added labels bound only to existing canonical nets. Rc.108 adds one
+finite non-nested AVR resistor-and-LED subcircuit with explicit source and
+ground ports and deterministic expansion into the ordinary validated graph.
+Together the independently reviewed increments satisfy the original bounded
+X66 criterion while preserving connectivity through move, collapse/expand,
+Save/Open, recovery, local history and atomic delete/Undo. This is not blanket
+subcircuit authority or equivalence for another controller profile.
 
 ## Boundary: labels are not wires
 
@@ -35,7 +42,7 @@ Required invariants:
 
 Acceptance requires unit tests for all invariants and a browser journey that labels two distinct nets with identical text, moves components and wires, roundtrips the project, and proves the canonical connectivity digest is unchanged.
 
-## Subcircuits are a separate later increment
+## Bounded subcircuit increment
 
 A subcircuit is not a visual group. The minimum honest implementation needs a versioned project-owned subcircuit definition with explicit ports, stable internal component/net identities and deterministic instance expansion into the existing validator/runtime graph.
 
@@ -51,11 +58,14 @@ Required invariants:
 
 Acceptance requires positive and adversarial schema tests, exact expansion-digest tests, roundtrip and Undo/Redo tests, and a browser journey where collapse/expand/move preserve all external and internal connections.
 
-## Recommended sequence
+## Completed sequence
 
 1. Implement existing-net labels as the first private, no-producer increment.
 2. Independently review and publish that increment while X66 remains partial.
 3. Specify and implement one finite, non-nested subcircuit instance over existing supported components.
 4. Close X66 only after both increments and the original connectivity-preservation journey are independently verified.
 
-No visual-only net label is implemented by this proposal. That avoids a misleading intermediate control and preserves the distinction between annotation and electrical truth.
+The sequence is complete for the original bounded criterion. Labels remain
+presentation-only bindings to existing nets, while subcircuit connectivity is
+owned solely by the strict explicit-port document and deterministic validated
+expansion.
