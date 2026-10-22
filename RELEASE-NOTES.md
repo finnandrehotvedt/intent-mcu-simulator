@@ -1,5 +1,19 @@
 # Intent MCU Simulator 1.1.0-rc.104
 
+## Post-release original-contract reconciliation
+
+After independent Desktop review of the actual public rc.104 interface and its
+accepted evidence, X55 is complete against the exact original bounded title
+and criterion. The separate Model property and Drawing workspaces for the
+existing resistor and LED preserve electrical anchors and execution semantics
+across all four profiles. This does not claim arbitrary SVG/code, unrestricted
+component families, pin/net editing or a general-purpose editor.
+
+Canonical status is therefore X **76/0/20**, P1 **59/0/0**. Public rc.104,
+runtime locks and services are unchanged; this is taxonomy reconciliation, not
+a new release. X92 remains planned under the separate corrected private
+implementation contract.
+
 ## X55 partial split Model property and Drawing editor
 
 This release separates the existing resistor and LED Inspector into explicit

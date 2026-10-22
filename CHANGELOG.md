@@ -2,6 +2,23 @@
 
 All notable public source changes are recorded here.
 
+## Post-rc.104 contract reconciliation — 2026-10-22
+
+- Desktop independently accepted X55 as complete against its exact original
+  bounded title and criterion after reviewing the actual public rc.104 Model
+  property and Drawing workspaces for the existing resistor and LED across all
+  four profiles.
+- The accepted 66/66 focused, 28/28 top-layout and four-profile public-browser
+  evidence proves appearance changes preserve electrical anchors and execution
+  semantics. Arbitrary SVG/code, unrestricted component families, pin/net
+  editing and a general-purpose editor were not original X55 requirements and
+  are not inferred.
+- Canonical status is now X **76 complete / 0 partial / 20 planned**. This is a
+  documentation-only taxonomy reconciliation over unchanged public rc.104; it
+  is not a new product release or producer run.
+- Adds the corrected bounded private X92 implementation contract. X92 remains
+  planned and no X92 implementation or producer proof is claimed.
+
 ## 1.1.0-rc.104 — 2026-10-22
 
 - Separates the existing resistor and LED Inspector into explicit `Model
