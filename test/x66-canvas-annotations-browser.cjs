@@ -93,6 +93,8 @@ const electricalSnapshot = () => {
     ]);
     assert.equal(await page.locator('.canvas-net-label').count(), 2);
     assert.deepEqual((await page.locator('.canvas-net-label').evaluateAll((nodes) => nodes.map((node) => node.dataset.boundNetId))), netIds.slice(0, 2));
+    assert.deepEqual(await page.locator('.canvas-net-label-bound-id').allTextContents(),
+      netIds.slice(0, 2).map((netId) => `EXISTING NET · ${netId}`));
     const noteInput = page.locator('[data-annotation-editor="note-1"] input');
     await noteInput.fill('Equality boundary note edited safely.'); await page.locator('[data-annotation-editor="note-1"] button', { hasText: 'Save' }).click();
     await page.click('#canvas-annotations-undo');

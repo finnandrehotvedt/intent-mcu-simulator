@@ -333,6 +333,7 @@ import {
 } from '../src/teaching-exercise-package.mjs';
 import {
   ANNOTATED_WORKSPACE_SCHEMA,
+  LEGACY_ANNOTATED_WORKSPACE_SCHEMA,
   CANVAS_ANNOTATIONS_SCHEMA,
   CANVAS_ANNOTATION_LIMITS,
   NET_LABELS_SCHEMA,
@@ -7075,8 +7076,10 @@ const commonProjectAdapters = Object.freeze({
   [AVR_PROFILE]: Object.freeze({
     schemas: Object.freeze([PROJECT_SCHEMA, CONTACT_PERSISTENCE_SCHEMA]),
     prepare(value, context) {
+      const parsingLock = context.modelLibraryIdentity?.migrationOnly
+        ? CURRENT_MODEL_LIBRARY_LOCK : context.modelLibrary;
       const parsed = parseEditorSource(JSON.stringify(value), {
-        modelLibraryLock: context.modelLibrary,
+        modelLibraryLock: parsingLock,
         bundle: context.bundle,
       });
       if (!parsed.ok) throw Object.assign(new Error(parsed.code), { code: parsed.code, details: parsed.details ?? [] });
@@ -7121,9 +7124,14 @@ const commonProjectAdapters = Object.freeze({
         { modelLibraryLock: result.modelLibrary }),
   }),
 });
+function detectedAnnotatedWorkspaceSchema(source) {
+  try {
+    const schema = JSON.parse(source)?.schema;
+    return [ANNOTATED_WORKSPACE_SCHEMA, LEGACY_ANNOTATED_WORKSPACE_SCHEMA].includes(schema) ? schema : null;
+  } catch { return null; }
+}
 function prepareAuthoredProjectEnvelope(source) {
-  let annotatedSchema = false;
-  try { annotatedSchema = JSON.parse(source)?.schema === ANNOTATED_WORKSPACE_SCHEMA; } catch { /* bounded parsers below report malformed input */ }
+  const annotatedSchema = detectedAnnotatedWorkspaceSchema(source);
   if (annotatedSchema) {
     try {
       const opened = parseAnnotatedWorkspace(source, validateAnnotatedProject);
@@ -7798,8 +7806,7 @@ async function openCommonProjectFile(file, handle = null) {
     return { ok: false, code: 'PROJECT_READ_FAILED' };
   }
   let annotated = null;
-  let annotatedSchema = false;
-  try { annotatedSchema = JSON.parse(source)?.schema === ANNOTATED_WORKSPACE_SCHEMA; } catch { /* strict project parser reports malformed input */ }
+  const annotatedSchema = detectedAnnotatedWorkspaceSchema(source);
   if (annotatedSchema) {
     try { annotated = parseAnnotatedWorkspace(source, validateAnnotatedProject); }
     catch (error) {
@@ -7973,7 +7980,14 @@ function historyRecordFilename(record, raw = false) {
 
 async function inspectStoredHistoryRecord(record) {
   return inspectHistoryRecord(record, {
-    prepare: (source) => prepareAuthoredProjectEnvelope(source),
+    prepare: (source) => {
+      const prepared = prepareAuthoredProjectEnvelope(source);
+      if (!prepared.ok || detectedAnnotatedWorkspaceSchema(source) !== LEGACY_ANNOTATED_WORKSPACE_SCHEMA) return prepared;
+      let sourceModelLibrary = null;
+      try { sourceModelLibrary = JSON.parse(source)?.project?.modelLibrary ?? null; } catch { return prepared; }
+      return JSON.stringify(sourceModelLibrary) === JSON.stringify(record?.modelLibrary)
+        ? { ...prepared, canonical: source, modelLibrary: structuredClone(record.modelLibrary) } : prepared;
+    },
   });
 }
 
@@ -9023,7 +9037,11 @@ function renderCanvasAnnotationOverlay() {
     const point = screenPoint(label); const node = document.createElement('button'); node.type = 'button'; node.className = 'canvas-net-label';
     node.dataset.annotationNetLabel = label.id; node.dataset.boundNetId = label.netId;
     node.style.left = `${point.x * 100}%`; node.style.top = `${point.y * 100}%`;
-    node.textContent = label.text; node.setAttribute('aria-label', `Label existing net ${label.netId}: ${label.text}. This label does not connect nets.`);
+    const boundId = document.createElement('span'); boundId.className = 'canvas-net-label-bound-id';
+    boundId.textContent = `EXISTING NET · ${label.netId}`;
+    const text = document.createElement('span'); text.className = 'canvas-net-label-text'; text.textContent = label.text;
+    node.append(boundId, text);
+    node.setAttribute('aria-label', `Label existing net ${label.netId}: ${label.text}. This label does not connect nets.`);
     node.addEventListener('pointerdown', (event) => event.stopPropagation());
     node.addEventListener('click', (event) => { event.stopPropagation(); selectNet(label.netId); drawCircuitWires(); });
     nodes.push(node);

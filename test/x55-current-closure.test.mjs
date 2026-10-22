@@ -8,6 +8,7 @@ import test from 'node:test';
 
 import {
   CURRENT_MODEL_LIBRARY_MANIFEST,
+  PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X92_BUDGET_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X55_MODEL_COPY_FIX_CURRENT_MODEL_LIBRARY_MANIFEST,
@@ -24,6 +25,7 @@ import {
   PRE_X55_BODY_LEAD_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_LOCK,
   modelLibraryExecutionIdentity,
   modelLibraryMigrationPreview,
@@ -62,6 +64,23 @@ test('X66 current identity explicitly owns every accepted presentation-data path
     const source = await readFile(new URL(`../${path}`, import.meta.url), 'utf8');
     assert.match(source, /component-appearance\.mjs/u, `${path} hides its X55 dependency`);
   }
+});
+
+test('pre-review X66 net-label identity is immutable migration-only data', () => {
+  assert.equal(PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    '2.0.0-x66-existing-net-labels.1-current');
+  assert.equal(PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    'a0dacec845386b905e7b7ac3b07e97390f428c59fc0bd0c6a21feb1b346b5717');
+  assert.equal(modelLibraryExecutionIdentity(
+    PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_LOCK,
+  ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const preview = modelLibraryMigrationPreview(
+    PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_LOCK,
+  );
+  assert.equal(preview.ok, true);
+  assert.deepEqual(preview.semanticChanges, []);
+  assert.deepEqual(preview.rendererChanges, []);
+  assert.equal(preview.unchanged.length, 25);
 });
 
 test('pre-X66 teaching-review identity is immutable migration-only data', () => {

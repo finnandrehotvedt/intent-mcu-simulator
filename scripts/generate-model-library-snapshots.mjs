@@ -19,6 +19,9 @@ const PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_TEACHING_BATCH_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_TEACHING_BATCH_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -225,16 +228,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x66-existing-net-labels.1-current',
-  'intent-mcu-model-bundle-current-x66-existing-net-labels-1@31',
+  '2.0.0-x66-legacy-open-review-fix.1-current',
+  'intent-mcu-model-bundle-current-x66-legacy-open-review-fix-1@32',
   currentImplementation,
   {
-    priorVersion: PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component electrical semantics, connectivity, runtime behavior, and verdict authority are unchanged; net labels bind only existing canonical net IDs',
-    presentationDisposition: 'private X66 adds inert existing-net label data and rendering; equal label text never merges, splits, connects, or retargets nets',
-    baselineClosureDisposition: 'the prior private teaching-review identity and all earlier identities remain immutable and migration-only',
+    semanticDisposition: 'component electrical semantics, connectivity, runtime behavior, and verdict authority are unchanged; every historical non-retained lock is migration-only',
+    presentationDisposition: 'private review correction routes published annotated-workspace v1 through its strict migrator and renders the canonical bound net ID as real visible text',
+    baselineClosureDisposition: 'the prior private X66 net-label identity and all earlier identities remain immutable and migration-only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -271,6 +274,7 @@ export const PRE_X92_DISPATCH_GATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.f
 export const PRE_TEACHING_BATCH_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_TEACHING_BATCH_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

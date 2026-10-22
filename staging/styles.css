@@ -262,7 +262,8 @@ body[data-active-profile] .app-header .lede { max-width: 640px; overflow: hidden
 .canvas-visual-group { position: absolute; min-width: 70px; min-height: 54px; border: 2px dashed #9f8cff; border-radius: 12px; background: #7f67e50d; pointer-events: none; }
 .canvas-visual-group button { position: absolute; left: 6px; top: -13px; min-height: 24px; padding: 2px 7px; border-radius: 999px; color: #0a0d16; border-color: #b8aaff; background: #b8aaff; font-size: .58rem; font-weight: 900; white-space: nowrap; pointer-events: auto; }
 .canvas-net-label { position: absolute; min-height: 26px; max-width: 220px; padding: 3px 8px; transform: translate(-50%,-50%); border: 2px solid #4fe5ff; border-radius: 5px; color: #dffbff; background: #07212eee; box-shadow: 0 5px 14px #0009; font: 800 .65rem/1.2 ui-monospace,SFMono-Regular,Consolas,monospace; overflow-wrap: anywhere; pointer-events: auto; }
-.canvas-net-label::before { content: "EXISTING NET · " attr(data-bound-net-id); display: block; margin-bottom: 2px; color: #73edff; font-size: .48rem; letter-spacing: .06em; }
+.canvas-net-label-bound-id { display: block; margin-bottom: 2px; color: #73edff; font-size: .48rem; letter-spacing: .06em; }
+.canvas-net-label-text { display: block; }
 .circuit-component.annotation-highlight { outline: 4px solid #b8aaff; outline-offset: 6px; }
 @media (max-width: 760px) { #presentation-instruments, .presentation-instrument-cards, .teaching-exercise-variants, .canvas-net-label-create { grid-template-columns: 1fr; } .presentation-step-editor { grid-template-columns: 1fr; } .presentation-layout { padding: 12px; } }
 .workbench-popup-close { color: #06111a; background: var(--lime); border-color: var(--lime); }
