@@ -90106,7 +90106,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "5128f1ee808da8524a6566b18de6beb8e6ca4600074a8dc063c0b155191b23ad"
+      "sha256": "065018f69fa19d68f36d2d5aacae813a3e3ddc8864b625c178e01c650ae59bad"
     },
     {
       "path": "src/rp2040-snapshot-pacer.mjs",
@@ -90229,7 +90229,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "b72ab9818700e27d20cb68e3c33a698ef1dc3d7a0995d2fe15c35c2d41721dc0"
     }
   ],
-  "implementationSha256": "3b1dadbff8dd3e10c4cab8bbb77e47fa13cff48dc8b7ca2d679ab1070e530a34",
+  "implementationSha256": "3075e12454db70d8ef71bd6f52de50ecfe1468624f84c085a6c00e4cd0cf564a",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "the public rc.108 identity and all earlier identities remain immutable and migration-only; X66 closure remains pending independent corrected-release acceptance",
@@ -90239,7 +90239,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x66-subcircuit-review-fix.1-current",
     "semanticDisposition": "the finite nonnested resistor-plus-LED owner validates candidate graphs through the current locked candidate model bundle without admitting unknown component types; component electrical semantics and runtime authority are unchanged"
   },
-  "manifestSha256": "f2b45bc2b2931adee33bbdce898a20b699fe8bd10d5f16230af9b340c58b3bb0",
+  "manifestSha256": "bcdb960ad9b84991b446ceed0ea37add5e7c9b60078e7589693cfa98dac45847",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",
