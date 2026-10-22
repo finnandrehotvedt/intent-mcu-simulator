@@ -680,7 +680,7 @@ let runtimeWorkerCreations = 0;
 let selectedCompilerProfile = AVR_PROFILE;
 let x92Budget = null;
 let x92BudgetExecutor = null;
-const x92AdvancingBoundary = () => x92BudgetExecutor?.advancingBoundary?.()
+const x92AdvancingBoundary = (dispatchPermit = null) => x92BudgetExecutor?.advancingBoundary?.(dispatchPermit)
   ?? { ok: true, code: 'X92_ADVANCING_CONTROL_ALLOWED' };
 let x92ImportedReview = null;
 let x92IdentitySequence = 0;
@@ -2389,7 +2389,7 @@ const picoPublicWorkbench = new Rp2040PublicWorkbench({
   }),
   onSave: () => saveCommonProject(RP2040_PROFILE),
   onOpen: (file) => openCommonProjectFile(file),
-  advanceGuard: () => x92AdvancingBoundary(),
+  advanceGuard: (_action, dispatchPermit) => x92AdvancingBoundary(dispatchPermit),
 });
 window.__RP2040_PUBLIC_WORKBENCH__ = {
   state: () => picoPublicWorkbench.snapshot(),
@@ -8609,7 +8609,7 @@ function boundedRuntimeResult(profile = selectedCompilerProfile) {
     runtime: structuredClone(state.runtime), verdict: null,
   };
 }
-async function buildThroughActiveUi(profile, signal) {
+async function buildThroughActiveUi(profile, signal, advancePermit = null) {
   if (x48RuntimeActive || x48Operation) return { ok: false, code: 'X48_OPERATION_ACTIVE' };
   const cancel = () => {
     if (profile === AVR_PROFILE) elements.cancel.click();
@@ -8625,11 +8625,11 @@ async function buildThroughActiveUi(profile, signal) {
         ? { ok: true, code: 'ACTION_BUILD_SUCCEEDED', artifactIdentity: window.__M6_STATE__.artifactIdentity }
         : { ok: false, code: `ACTION_BUILD_${String(window.__M6_STATE__.buildState).toUpperCase()}` };
     }
-    const result = await actionWorkbench(profile).build(); throwIfActionCancelled(signal);
+    const result = await actionWorkbench(profile).build({ advancePermit }); throwIfActionCancelled(signal);
     return result.ok ? { ...result, code: 'ACTION_BUILD_SUCCEEDED' } : result;
   } finally { signal.removeEventListener('abort', cancel); }
 }
-async function runThroughActiveUi(profile, signal) {
+async function runThroughActiveUi(profile, signal, advancePermit = null) {
   if (x48RuntimeActive || x48Operation) return { ok: false, code: 'X48_OPERATION_ACTIVE' };
   const cancel = () => {
     if (profile === AVR_PROFILE) {
@@ -8652,7 +8652,7 @@ async function runThroughActiveUi(profile, signal) {
       }, signal);
     } else {
       const started = profile === STM32F429ZI_PROFILE
-        ? await stm32PublicWorkbench.run(false) : await actionWorkbench(profile).run();
+        ? await stm32PublicWorkbench.run(false) : await actionWorkbench(profile).run({ advancePermit });
       if (!started.ok) return started;
       await waitForActionEvidence(() => actionWorkbench(profile).snapshot().runtime, signal);
     }
@@ -8779,6 +8779,7 @@ async function quiesceX92Runtime({ request, dispatchToken, identity, reason, dea
   throw Object.assign(new Error('X92_RUNTIME_QUIESCENCE_PROFILE_UNSUPPORTED'),
     { code: 'X92_RUNTIME_QUIESCENCE_PROFILE_UNSUPPORTED' });
 }
+let x92OwnedDispatchPermit = null;
 const boundedActionHandlers = Object.freeze({
   async 'project.create'({ starterId, firmwareVariant = 'correct' }, { signal, context }) {
     throwIfActionCancelled(signal);
@@ -8812,9 +8813,11 @@ const boundedActionHandlers = Object.freeze({
     throwIfActionCancelled(signal);
     return result;
   },
-  'firmware.build': (_payload, { signal, context }) => buildThroughActiveUi(context.profile, signal),
+  'firmware.build': (_payload, { signal, context }) =>
+    buildThroughActiveUi(context.profile, signal, x92OwnedDispatchPermit),
   'runtime.run': (payload, { signal, context }) => payload.experimentId
-    ? runThermostatTestThroughUi(context.profile, signal) : runThroughActiveUi(context.profile, signal),
+    ? runThermostatTestThroughUi(context.profile, signal)
+    : runThroughActiveUi(context.profile, signal, x92OwnedDispatchPermit),
   async 'result.read'(_payload, { signal, context }) {
     throwIfActionCancelled(signal); return boundedRuntimeResult(context.profile);
   },
@@ -8829,10 +8832,19 @@ const boundedActionRouter = createBoundedActionRouter({
   handlers: boundedActionHandlers,
   currentContext: () => actionContext(),
 });
+const x92OwnedDownstream = Object.freeze({
+  async execute(source, dispatchPermit = null) {
+    if (x92OwnedDispatchPermit !== null) return { ok: false, code: 'ACTION_BUSY', executed: false };
+    x92OwnedDispatchPermit = dispatchPermit;
+    try { return await boundedActionRouter.execute(source); }
+    finally { if (x92OwnedDispatchPermit === dispatchPermit) x92OwnedDispatchPermit = null; }
+  },
+  cancel: (requestId) => boundedActionRouter.cancel(requestId),
+});
 x92Budget = createX92ExperimentBudget({ measurementSource: 'browser.performance.now' });
 x92BudgetExecutor = createX92BudgetedExecutor({
   budget: x92Budget,
-  downstream: boundedActionRouter,
+  downstream: x92OwnedDownstream,
   currentIdentity: () => x92CurrentIdentity(),
   quiesceRuntime: (context) => quiesceX92Runtime(context),
   measurementSource: 'browser.performance.now',

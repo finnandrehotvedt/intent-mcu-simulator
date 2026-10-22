@@ -490,6 +490,7 @@ export function createX92BudgetedExecutor({
     dispatchSequence += 1;
     const gate = {
       token: `x92-dispatch-${dispatchSequence}`,
+      dispatchPermit: Object.freeze({}),
       requestId: request.requestId,
       action: request.action,
       fingerprint: requestFingerprint(request),
@@ -556,8 +557,12 @@ export function createX92BudgetedExecutor({
     return boundary;
   }
 
-  function advancingBoundary() {
+  function advancingBoundary(dispatchPermit = null) {
     const boundary = boundaryProjection();
+    if (dispatchGate && dispatchPermit === dispatchGate.dispatchPermit) {
+      return { ok: true, code: 'X92_OWNED_ADVANCING_CONTROL_ALLOWED', runtimeBoundary: boundary,
+        dispatchGate: gateProjection() };
+    }
     if (boundary.status !== 'idle') {
       return { ok: false, code: 'X92_RUNTIME_BOUNDARY_BLOCKED', runtimeBoundary: boundary,
         dispatchGate: gateProjection() };
@@ -638,7 +643,7 @@ export function createX92BudgetedExecutor({
       gate.status = 'producer-active'; gate.code = 'X92_DISPATCH_ACTIVE';
       started = now();
       gate.deadlineAt = started + reserved.deadlineAfterMs;
-      downstreamPromise = Promise.resolve().then(() => downstream.execute(source));
+      downstreamPromise = Promise.resolve().then(() => downstream.execute(source, gate.dispatchPermit));
       timer = schedule(() => {
       deadlineTriggered = true;
       resolveDeadline({ x92Deadline: true });

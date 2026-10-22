@@ -100486,7 +100486,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "2d625d323a9471377848537deb23445f49eb9926a64836afbdee4b5341490d3d"
+      "sha256": "697f4555d7127a89a4d1dc58d91897bf145ec33e77ac76e7bd5d908d4859ee6d"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -100494,7 +100494,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/x92-experiment-budget.mjs",
-      "sha256": "44b04034afff0d8ddc94f4e01e6d05da3bea9460f8d8f5ad0d409aae9617833a"
+      "sha256": "7b3dd8c99dfde9697a1df8086899bb3ffc8857dda7dc1851720fce458d76868b"
     },
     {
       "path": "src/shared-workbench-shell.mjs",
@@ -100538,7 +100538,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/rp2040-public-workbench.mjs",
-      "sha256": "bd90960140e7b3ea68c4182134491fca720ed3b74cd612bf5b2dd8a669ce6cd6"
+      "sha256": "fc9298de1814ee01d3d922e17a457490ccbf897dcc72bb13a5708cc69fae3385"
     },
     {
       "path": "src/esp32c3-public-workbench.mjs",
@@ -100621,7 +100621,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "be00182f41189cd5e2cc751d043457070521e058f2b3a030884e111bdabe8b82"
     }
   ],
-  "implementationSha256": "814fb077debd2d7f02d1422b178bc16db48654fb2dca444a854393146dd093af",
+  "implementationSha256": "3b196e94757a845cdb2662a200087a1d61b8449ba483377752838094fe4a3b76",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.112 and every earlier identity remain immutable and migration-only; this private candidate has zero native producer authority",
@@ -100631,7 +100631,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x48-current-source-integration.1-current",
     "semanticDisposition": "component semantics remain unchanged; X92 adds a Pico-only owner-bound two-fresh-final-paused-ACK quiescence proof"
   },
-  "manifestSha256": "891c3ef439a62e3b5221fc9489161cf78c3cde9f481bf92c6f1aedff80eb321b",
+  "manifestSha256": "808135644cfc8cc03cb1cc3c0e34aa954e573e6c7b5d8b02a8f5bee5be99206a",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

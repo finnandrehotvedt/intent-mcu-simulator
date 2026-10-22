@@ -188,9 +188,9 @@ export class Rp2040PublicWorkbench {
     this.render();
   }
 
-  advancingBlocked(action) {
+  advancingBlocked(action, advancePermit = null) {
     let result;
-    try { result = this.advanceGuard(action); }
+    try { result = this.advanceGuard(action, advancePermit); }
     catch { result = { ok: false, code: 'RP2040_ADVANCE_GUARD_FAILED' }; }
     if (!result || result.ok !== false) return null;
     this.message = `${action} blocked (${result.code}). The prior budgeted producer must acknowledge pause or retirement first.`;
@@ -379,8 +379,8 @@ export class Rp2040PublicWorkbench {
     return null;
   }
 
-  async build() {
-    const boundary = this.advancingBlocked('Build'); if (boundary) return boundary;
+  async build({ advancePermit = null } = {}) {
+    const boundary = this.advancingBlocked('Build', advancePermit); if (boundary) return boundary;
     if (this.pauseProofOperation) return { ok: false, code: 'RP2040_BUDGET_PAUSE_BUSY' };
     if (!this.active || this.phase === 'building') return { ok: false, code: 'RP2040_BUILD_UNAVAILABLE' };
     if (this.circuitEditor.snapshot().wireDraft.mode !== 'none') {
@@ -446,8 +446,8 @@ export class Rp2040PublicWorkbench {
     }
   }
 
-  async run() {
-    const boundary = this.advancingBlocked('Run'); if (boundary) return boundary;
+  async run({ advancePermit = null } = {}) {
+    const boundary = this.advancingBlocked('Run', advancePermit); if (boundary) return boundary;
     if (this.pauseProofOperation) return { ok: false, code: 'RP2040_BUDGET_PAUSE_BUSY' };
     const circuit = this.modelLibraryImplementation.validateProfile(
       RP2040_PICO_PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
@@ -534,8 +534,8 @@ export class Rp2040PublicWorkbench {
     return { ok: true, code: 'OK' };
   }
 
-  reset() {
-    const boundary = this.advancingBlocked('Reset'); if (boundary) return boundary;
+  reset({ advancePermit = null } = {}) {
+    const boundary = this.advancingBlocked('Reset', advancePermit); if (boundary) return boundary;
     if (this.pauseProofOperation) return { ok: false, code: 'RP2040_BUDGET_PAUSE_BUSY' };
     if (!this.worker) return { ok: false, code: 'RUNTIME_NOT_ACTIVE' };
     this.lastRuntime = null;

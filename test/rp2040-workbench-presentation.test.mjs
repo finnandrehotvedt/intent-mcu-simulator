@@ -2,9 +2,13 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import test from 'node:test';
 import { Rp2040PublicWorkbench } from '../src/rp2040-public-workbench.mjs';
 import { RP2040_PRESENTATION_SCHEMA } from '../src/rp2040-snapshot-pacer.mjs';
+import {
+  X92_RUNTIME_QUIESCENCE_ACK_SCHEMA, createX92BudgetedExecutor, createX92ExperimentBudget,
+} from '../src/x92-experiment-budget.mjs';
 
 const ARTIFACT = 'a'.repeat(64);
 
@@ -25,7 +29,9 @@ class ElementFixture {
 
 class WorkerFixture {
   static instances = [];
-  constructor() { this.messages = []; this.listeners = new Map(); this.terminated = false; WorkerFixture.instances.push(this); }
+  static onCreate = null;
+  constructor() { this.messages = []; this.listeners = new Map(); this.terminated = false; WorkerFixture.instances.push(this);
+    WorkerFixture.onCreate?.(this); }
   addEventListener(type, listener) { this.listeners.set(type, listener); }
   postMessage(message) { this.messages.push(structuredClone(message)); this.onPost?.(structuredClone(message)); }
   terminate() { this.terminated = true; }
@@ -54,6 +60,7 @@ function paced(kind, generation, sequence, { paused = false, cycle = 500 } = {})
 
 function preparedWorkbench(pauseProof = {}, options = {}) {
   WorkerFixture.instances.length = 0;
+  WorkerFixture.onCreate = null;
   globalThis.Worker = WorkerFixture;
   const workbench = new Rp2040PublicWorkbench({ elements: elements(), pauseProof, ...options });
   workbench.activate();
@@ -320,4 +327,103 @@ test('blocked X92 boundary guards actual Pico UI Build Run and Reset after rejec
   assert.equal(worker.messages.at(-1).command, 'pause');
   workbench.elements.stop.listeners.get('click')();
   assert.equal(worker.terminated, true);
+});
+
+test('X92 private dispatch permit reaches real Pico Build Run and two-ACK owner proof only', async () => {
+  WorkerFixture.instances.length = 0; WorkerFixture.onCreate = null; globalThis.Worker = WorkerFixture;
+  const bytes = new Uint8Array([1, 2, 3]);
+  const uf2Sha256 = createHash('sha256').update(bytes).digest('hex');
+  const workbenchElements = elements();
+  let executor; let invalidPause = false; let buildRequests = 0; let quiesceError = null; const manualBlocks = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options = {}) => {
+    buildRequests += 1;
+    if (String(url) === '/api/build' && options.method === 'POST') {
+      return { ok: true, headers: new Headers(), json: async () => ({ jobId: 'job-1', capability: 'cap-1' }) };
+    }
+    return { ok: true, headers: new Headers(), json: async () => ({ status: 'succeeded', result: {
+      artifactIdentity: uf2Sha256,
+      artifact: { schema: 'intent-mcu-rp2040-compile-artifact@1', profile: 'board.rp2040-pico-v1',
+        sourceSha256: await createHash('sha256').update(workbench.project.source).digest('hex'),
+        compiler: { id: 'synthetic-fixed-test-toolchain' },
+        uf2: { base64: Buffer.from(bytes).toString('base64'), bytes: bytes.length, sha256: uf2Sha256 } },
+    } }) };
+  };
+  let proofNow = 0;
+  const workbench = new Rp2040PublicWorkbench({ elements: workbenchElements,
+    pauseProof: { now: () => proofNow, minimumMs: 250, timeoutMs: 1_000,
+      schedule: (callback, delay) => setTimeout(() => { proofNow += delay; callback(); }, delay >= 1_000 ? delay : 0),
+      unschedule: (timer) => clearTimeout(timer) },
+    advanceGuard: (_action, permit) => executor?.advancingBoundary(permit)
+      ?? { ok: true, code: 'X92_ADVANCING_CONTROL_ALLOWED' } });
+  workbench.activate();
+  const binding = { schema: 'intent-mcu-experiment-budget-identity@1', profile: 'board.rp2040-pico-v1',
+    projectGeneration: 1, sourceIdentity: `sha256:${'b'.repeat(64)}`, graphIdentity: `sha256:${'c'.repeat(64)}` };
+  let sequence = 0;
+  const budget = createX92ExperimentBudget({ measurementSource: 'test.monotonic-wall-clock',
+    randomId: () => `00000000-0000-4000-8000-${String(++sequence).padStart(12, '0')}` });
+  budget.start(binding, { humanInitiated: true });
+  const downstream = {
+    async execute(source, permit) {
+      const value = JSON.parse(source);
+      const before = workbench.worker?.messages.length ?? 0;
+      const manual = value.action === 'firmware.build' ? await workbench.build() : await workbench.run();
+      manualBlocks.push(manual.code);
+      assert.equal((workbench.worker?.messages.length ?? 0), before);
+      const result = value.action === 'firmware.build'
+        ? await workbench.build({ advancePermit: permit }) : await workbench.run({ advancePermit: permit });
+      return { ok: result.ok !== false, code: result.code, executed: true };
+    },
+    cancel: () => ({ ok: false, code: 'ACTION_NOT_ACTIVE' }),
+  };
+  executor = createX92BudgetedExecutor({ budget, downstream, currentIdentity: async () => binding,
+    parseRequest: (source) => JSON.parse(source), measurementSource: 'test.monotonic-wall-clock',
+    quiesceRuntime: async (context) => {
+      let proof;
+      try { proof = await workbench.pauseForBudget({ deadlineAt: context.deadlineAt,
+        requestId: context.request.requestId, dispatchToken: context.dispatchToken }); }
+      catch (error) { quiesceError = error.code ?? error.message; throw error; }
+      return { schema: X92_RUNTIME_QUIESCENCE_ACK_SCHEMA, requestId: context.request.requestId,
+        dispatchToken: context.dispatchToken, profile: context.request.profile,
+        identity: structuredClone(context.identity), producerState: 'paused', acknowledged: true,
+        evidence: { reason: context.reason, proof } };
+    } });
+  const request = (action, requestId) => JSON.stringify({ schema: 'intent-mcu-bounded-action-request@1',
+    action, requestId, profile: 'board.rp2040-pico-v1', expectedGeneration: 1,
+    issuedAtMs: 1, expiresAtMs: 30_001, payload: {} });
+  try {
+    const built = await executor.execute(request('firmware.build', 'owned-build'));
+    assert.equal(built.ok, true); assert.equal(buildRequests, 2);
+    WorkerFixture.onCreate = (created) => { created.onPost = (message) => {
+      if (message.command === 'init') created.emit({ ...ready(), artifactIdentity: uf2Sha256 });
+      if (message.command === 'pause') {
+        const ack = { ...ready(), kind: 'paused', paused: true, cycle: 500, instructions: invalidPause ? -1 : 1,
+          artifactIdentity: uf2Sha256, presentation: { schema: RP2040_PRESENTATION_SCHEMA,
+            artifactIdentity: uf2Sha256, generation: message.presentationGeneration, sequence: 1, final: true } };
+        created.emit(ack);
+      }
+    }; };
+    const workerRun = executor.execute(request('runtime.run', 'owned-run'));
+    const runResult = await workerRun;
+    const worker = WorkerFixture.instances.at(-1);
+    assert.equal(runResult.ok, true, `${quiesceError}:${JSON.stringify(runResult)}`);
+    assert.equal(worker.messages.filter((message) => message.command === 'pause').length, 2);
+    assert.deepEqual(manualBlocks, ['X92_DISPATCH_GATE_BLOCKED', 'X92_RUNTIME_BOUNDARY_BLOCKED']);
+
+    invalidPause = true;
+    const failedRun = executor.execute(request('runtime.run', 'owned-run-invalid'));
+    await new Promise((resolve) => setImmediate(resolve));
+    const invalidCommand = worker.messages.findLast((message) => message.command === 'pause');
+    const failed = await failedRun;
+    assert.equal(failed.code, 'X92_RUNTIME_QUIESCENCE_UNCONFIRMED');
+    const advancingBefore = worker.messages.filter((message) => ['run', 'reset'].includes(message.command)).length;
+    assert.equal((await workbench.run()).code, 'X92_RUNTIME_BOUNDARY_BLOCKED');
+    assert.equal(workbench.reset().code, 'X92_RUNTIME_BOUNDARY_BLOCKED');
+    worker.emit({ ...ready(), kind: 'paused', paused: true, cycle: 500, instructions: 1,
+      artifactIdentity: uf2Sha256, presentation: { schema: RP2040_PRESENTATION_SCHEMA,
+        artifactIdentity: uf2Sha256, generation: invalidCommand.presentationGeneration, sequence: 2, final: true } });
+    assert.equal(worker.messages.filter((message) => ['run', 'reset'].includes(message.command)).length,
+      advancingBefore);
+    assert.equal(executor.advancingBoundary().code, 'X92_RUNTIME_BOUNDARY_BLOCKED');
+  } finally { globalThis.fetch = originalFetch; }
 });
