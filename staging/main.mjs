@@ -331,6 +331,15 @@ import {
   parseTeachingExercise,
   teachingExerciseAuthority,
 } from '../src/teaching-exercise-package.mjs';
+import {
+  ANNOTATED_WORKSPACE_SCHEMA,
+  CANVAS_ANNOTATIONS_SCHEMA,
+  CANVAS_ANNOTATION_LIMITS,
+  CanvasAnnotationReducer,
+  canonicalAnnotatedWorkspace,
+  emptyCanvasAnnotations,
+  parseAnnotatedWorkspace,
+} from '../src/canvas-annotations.mjs';
 import { AUTHORED_CHANGE_REVIEW_SCHEMA } from '../src/authored-change-review.mjs';
 import {
   EXPECTATION_REFERENCE_LIMIT,
@@ -515,6 +524,11 @@ const elements = Object.fromEntries([
   'teaching-exercise-instructions', 'teaching-exercise-download', 'teaching-exercise-import',
   'teaching-exercise-input', 'teaching-exercise-status', 'teaching-exercise-requirements',
   'teaching-exercise-variants', 'teaching-exercise-install',
+  'canvas-annotations-open', 'canvas-annotations-dialog', 'canvas-annotations-title', 'canvas-annotations-close',
+  'canvas-note-text', 'canvas-note-x', 'canvas-note-y', 'canvas-note-add', 'canvas-group-label',
+  'canvas-group-components', 'canvas-group-add', 'canvas-annotations-undo', 'canvas-annotations-redo',
+  'canvas-annotations-download', 'canvas-annotations-import', 'canvas-annotations-input',
+  'canvas-annotations-status', 'canvas-annotations-list', 'canvas-annotation-layer',
   'regression-matrix', 'regression-matrix-state', 'regression-matrix-identity',
   'regression-matrix-selector', 'regression-matrix-run', 'regression-matrix-negative',
   'regression-matrix-export', 'regression-matrix-results', 'regression-matrix-summary',
@@ -628,6 +642,13 @@ let presentationStepSequence = 0;
 let presentationReturnFocus = null;
 let acceptedTeachingExercise = null;
 let teachingExerciseReturnFocus = null;
+let canvasAnnotations = null;
+let canvasAnnotationSequence = 0;
+let canvasAnnotationReturnFocus = null;
+let selectedCanvasAnnotationGroup = null;
+let canvasAnnotationBaseline = JSON.stringify(emptyCanvasAnnotations());
+const annotationEditorPast = [];
+const annotationEditorFuture = [];
 let lastProfileMigrationReport = null;
 const projectBriefDrafts = new Map();
 const requirementResultLinks = new Map();
@@ -6710,6 +6731,8 @@ function renderProfileMigrationExplanation() {
 }
 function renderCompilerTarget() {
   const target = currentCompilerTarget();
+  elements.canvasannotationsopen.disabled = target.profile !== AVR_PROFILE;
+  elements.canvasannotationsopen.title = target.profile === AVR_PROFILE ? 'Open non-electrical visual notes and groups' : 'Visual notes and groups are currently AVR-only';
   const view = publicControllerView(target.profile) ?? publicControllerView(AVR_PROFILE);
   const availabilityRows = [
     ['Compiler', target.availability.installedCompiler],
@@ -7605,9 +7628,11 @@ function safeHandleName(handle, profile) {
 }
 function saveCommonProject(profile) {
   try {
-    const text = commonProjectText(profile);
-    downloadText(commonProjectFilename(profile), text, 'application/json');
-    profileMessage(profile, 'Common data-only project download requested. Executable and runtime authority were excluded.');
+    const annotations = profile === AVR_PROFILE ? ensureCanvasAnnotations().snapshot() : emptyCanvasAnnotations();
+    const annotated = profile === AVR_PROFILE && (annotations.notes.length || annotations.groups.length);
+    const text = annotated ? canonicalCurrentAnnotatedWorkspace() : commonProjectText(profile);
+    downloadText(annotated ? 'intent-mcu-annotated-project.json' : commonProjectFilename(profile), text, 'application/json');
+    profileMessage(profile, `${annotated ? 'Annotated' : 'Common'} data-only project download requested. Executable and runtime authority were excluded.`);
     return { ok: true, code: 'OK', text };
   } catch (error) {
     profileMessage(profile, `Save rejected (${error.code ?? error.message}). The project is unchanged.`);
@@ -7631,11 +7656,12 @@ let pendingDestructiveProjectAction = null;
 let destructiveActionSequence = 0;
 function setProjectBaseline(profile) {
   projectBaselines.set(profile, commonProjectText(profile));
+  if (profile === AVR_PROFILE) canvasAnnotationBaseline = JSON.stringify(ensureCanvasAnnotations().snapshot());
 }
 function isProjectDirty(profile) {
   const baseline = projectBaselines.get(profile);
   if (baseline === undefined) return false;
-  try { return commonProjectText(profile) !== baseline; }
+  try { return commonProjectText(profile) !== baseline || (profile === AVR_PROFILE && canvasAnnotationsDirty()); }
   catch { return true; }
 }
 function authoredProjectFingerprint(profile) {
@@ -7678,7 +7704,7 @@ function requestUnsavedChangeGuard({ profile, actionLabel, continueAction }) {
   elements.unsavedkeep.focus();
   return true;
 }
-function installPreparedProjectEnvelope(result, handle = null, { preserveExpectationReference = false } = {}) {
+function installPreparedProjectEnvelope(result, handle = null, { preserveExpectationReference = false, annotations = null } = {}) {
   retireX92Budget('project.file-open');
   if (result.profile !== selectedCompilerProfile) {
     elements.boardselect.value = result.profile;
@@ -7699,6 +7725,7 @@ function installPreparedProjectEnvelope(result, handle = null, { preserveExpecta
     });
     selectedSourceFile = 'main.ino';
     persistProject(); markFileSaved('opened file current'); renderCatalog(); renderProject();
+    resetCanvasAnnotations(annotations ?? emptyCanvasAnnotations());
   } else if (result.profile === RP2040_PROFILE) picoPublicWorkbench.installPreparedProject(result.project);
   else if (result.profile === ESP32C3_PROFILE) c3PublicWorkbench.installPreparedProject(result.project);
   else if (result.profile === STM32F429ZI_PROFILE) stm32PublicWorkbench.installPreparedProject(result.project);
@@ -7726,7 +7753,7 @@ function installPreparedProjectEnvelope(result, handle = null, { preserveExpecta
 async function openCommonProjectFile(file, handle = null) {
   const activeBefore = selectedCompilerProfile;
   if (!file) return { ok: false, code: 'PROJECT_FILE_REQUIRED' };
-  if (file.size > PROJECT_ENVELOPE_LIMIT) {
+  if (file.size > CANVAS_ANNOTATION_LIMITS.bytes) {
     profileMessage(activeBefore, `Open rejected (INPUT_LIMIT). The current ${activeBefore} project is unchanged.`);
     return { ok: false, code: 'INPUT_LIMIT' };
   }
@@ -7736,7 +7763,17 @@ async function openCommonProjectFile(file, handle = null) {
     profileMessage(activeBefore, `Open rejected (PROJECT_READ_FAILED). ${error?.message ?? 'read failed'}`);
     return { ok: false, code: 'PROJECT_READ_FAILED' };
   }
-  const result = prepareProjectEnvelope(source, commonProjectAdapters);
+  let annotated = null;
+  let annotatedSchema = false;
+  try { annotatedSchema = JSON.parse(source)?.schema === ANNOTATED_WORKSPACE_SCHEMA; } catch { /* strict project parser reports malformed input */ }
+  if (annotatedSchema) {
+    try { annotated = parseAnnotatedWorkspace(source, validateAnnotatedProject); }
+    catch (error) {
+      profileMessage(activeBefore, `Open rejected (${error.code ?? error.message}). Profile, annotations and current project are unchanged.`);
+      return { ok: false, code: error.code ?? error.message };
+    }
+  }
+  const result = annotated?.prepared ?? prepareProjectEnvelope(source, commonProjectAdapters);
   if (!result.ok) {
     profileMessage(activeBefore, `Open rejected (${result.code}). Profile and current project are unchanged.`);
     return result;
@@ -7744,9 +7781,9 @@ async function openCommonProjectFile(file, handle = null) {
   if (result.profile === activeBefore && requestUnsavedChangeGuard({
     profile: activeBefore,
     actionLabel: 'opening this file',
-    continueAction: () => installPreparedProjectEnvelope(result, handle),
+    continueAction: () => installPreparedProjectEnvelope(result, handle, { annotations: annotated?.workspace.annotations ?? null }),
   })) return { ...result, pending: true };
-  return installPreparedProjectEnvelope(result, handle);
+  return installPreparedProjectEnvelope(result, handle, { annotations: annotated?.workspace.annotations ?? null });
 }
 async function openConnectedProject(profile) {
   if (!nativeFileCapabilities().open) {
@@ -8817,6 +8854,163 @@ window.__X71_TEACHING_EXERCISE__ = Object.freeze({
   parse: (source) => parseTeachingExercise(source, normalizeTeachingExerciseProject),
   authority: teachingExerciseAuthority(), accounts: false, networkStorage: false,
 });
+function annotationComponentIds(project = currentProject()) {
+  const graph = project?.candidateCircuit ?? project?.circuit;
+  return (graph?.components ?? []).map(({ id }) => id).sort();
+}
+function ensureCanvasAnnotations() {
+  if (!canvasAnnotations) canvasAnnotations = new CanvasAnnotationReducer(emptyCanvasAnnotations(), annotationComponentIds());
+  return canvasAnnotations;
+}
+function resetCanvasAnnotations(value = emptyCanvasAnnotations(), { baseline = true } = {}) {
+  canvasAnnotations = new CanvasAnnotationReducer(value, annotationComponentIds());
+  selectedCanvasAnnotationGroup = null;
+  annotationEditorPast.length = 0; annotationEditorFuture.length = 0;
+  if (baseline) canvasAnnotationBaseline = JSON.stringify(canvasAnnotations.snapshot());
+  renderCanvasAnnotationOverlay();
+}
+function canvasAnnotationsDirty() {
+  return JSON.stringify(ensureCanvasAnnotations().snapshot()) !== canvasAnnotationBaseline;
+}
+function validateAnnotatedProject(value, profileId) {
+  if (profileId !== AVR_PROFILE) throw Object.assign(new Error('ANNOTATED_WORKSPACE_PROFILE'), { code: 'ANNOTATED_WORKSPACE_PROFILE' });
+  const prepared = prepareProjectEnvelope(JSON.stringify(value), commonProjectAdapters);
+  if (!prepared.ok || prepared.profile !== AVR_PROFILE) throw Object.assign(new Error(prepared.code ?? 'ANNOTATED_WORKSPACE_PROJECT'), prepared);
+  return { project: JSON.parse(prepared.canonical), componentIds: annotationComponentIds(prepared.project), prepared };
+}
+function currentAnnotatedWorkspace() {
+  return { schema: ANNOTATED_WORKSPACE_SCHEMA, profileId: AVR_PROFILE,
+    project: JSON.parse(commonProjectText(AVR_PROFILE)), annotations: ensureCanvasAnnotations().snapshot() };
+}
+function canonicalCurrentAnnotatedWorkspace() {
+  return canonicalAnnotatedWorkspace(currentAnnotatedWorkspace(), validateAnnotatedProject);
+}
+function renderCanvasAnnotationOverlay() {
+  if (!elements.canvasannotationlayer || !editor || selectedCompilerProfile !== AVR_PROFILE) return;
+  const state = ensureCanvasAnnotations().snapshot();
+  const positions = currentProject().layout.positions;
+  const nodes = [];
+  for (const group of state.groups) {
+    const points = group.componentIds.map((id) => positions[id]).filter(Boolean).map(screenPoint);
+    if (!points.length) continue;
+    const left = Math.max(0, Math.min(...points.map(({ x }) => x)) - 0.09);
+    const right = Math.min(1, Math.max(...points.map(({ x }) => x)) + 0.09);
+    const top = Math.max(0, Math.min(...points.map(({ y }) => y)) - 0.09);
+    const bottom = Math.min(1, Math.max(...points.map(({ y }) => y)) + 0.09);
+    const node = document.createElement('div'); node.className = 'canvas-visual-group';
+    node.style.left = `${left * 100}%`; node.style.top = `${top * 100}%`;
+    node.style.width = `${(right - left) * 100}%`; node.style.height = `${(bottom - top) * 100}%`;
+    const label = document.createElement('button'); label.type = 'button'; label.dataset.annotationGroup = group.id;
+    label.textContent = `GROUP · ${group.label}`;
+    label.setAttribute('aria-label', `Visual group ${group.label}. Non-electrical. ${group.componentIds.join(', ')}`);
+    node.append(label);
+    label.addEventListener('pointerdown', (event) => event.stopPropagation());
+    label.addEventListener('click', (event) => {
+      event.stopPropagation();
+      selectedCanvasAnnotationGroup = group.id;
+      for (const card of elements.componentlayer.querySelectorAll('.circuit-component')) card.classList.toggle('annotation-highlight', group.componentIds.includes(card.dataset.componentId));
+      const first = elements.componentlayer.querySelector(`[data-component-id="${CSS.escape(group.componentIds[0])}"]`);
+      first?.focus({ preventScroll: true });
+    });
+    nodes.push(node);
+  }
+  for (const note of state.notes) {
+    const point = screenPoint(note); const node = document.createElement('button'); node.type = 'button'; node.className = 'canvas-visual-note';
+    node.dataset.annotationNote = note.id; node.style.left = `${point.x * 100}%`; node.style.top = `${point.y * 100}%`;
+    node.textContent = note.text; node.setAttribute('aria-label', `Visual note. Non-electrical. ${note.text}`);
+    node.addEventListener('pointerdown', (event) => event.stopPropagation());
+    node.addEventListener('click', (event) => { event.stopPropagation(); elements.canvasannotationsopen.click(); queueMicrotask(() => document.querySelector(`[data-annotation-editor="${CSS.escape(note.id)}"] input`)?.focus()); });
+    nodes.push(node);
+  }
+  elements.canvasannotationlayer.replaceChildren(...nodes);
+}
+function annotationCommand(command, message) {
+  try {
+    const result = ensureCanvasAnnotations().apply(command, annotationComponentIds());
+    renderCanvasAnnotationOverlay(); renderCanvasAnnotationsDialog();
+    elements.canvasannotationsstatus.textContent = result.changed ? `${message}. Electrical graph and source unchanged.` : 'No visual metadata changed.';
+    return result;
+  } catch (error) {
+    elements.canvasannotationsstatus.textContent = `Visual edit rejected (${error.code ?? error.message}). Project and electrical graph unchanged.`;
+    return { ok: false, code: error.code ?? error.message };
+  }
+}
+function renderCanvasAnnotationsDialog() {
+  if (!editor) return;
+  const state = ensureCanvasAnnotations().snapshot(); const history = ensureCanvasAnnotations().history();
+  elements.canvasannotationsundo.disabled = history.undo === 0; elements.canvasannotationsredo.disabled = history.redo === 0;
+  elements.canvasgroupcomponents.replaceChildren(...currentProject().circuit.components.map((component) => {
+    const label = document.createElement('label'); const input = document.createElement('input'); input.type = 'checkbox'; input.value = component.id;
+    label.append(input, document.createTextNode(component.label)); return label;
+  }));
+  const editors = [];
+  for (const note of state.notes) {
+    const row = document.createElement('article'); row.className = 'canvas-annotation-editor'; row.dataset.annotationEditor = note.id;
+    const label = document.createElement('label'); label.textContent = 'Note'; const input = document.createElement('input'); input.value = note.text; input.maxLength = 1000; label.append(input);
+    const save = document.createElement('button'); save.type = 'button'; save.textContent = 'Save'; save.addEventListener('click', () => annotationCommand({ type: 'note.edit', id: note.id, text: input.value.trim(), x: note.x, y: note.y }, `Updated ${note.id}`));
+    const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Delete'; remove.addEventListener('click', () => annotationCommand({ type: 'note.remove', id: note.id }, `Deleted ${note.id}`));
+    const meta = document.createElement('small'); meta.textContent = `NOTE · non-electrical · x ${note.x.toFixed(2)} · y ${note.y.toFixed(2)}`;
+    row.append(label, save, remove, meta); editors.push(row);
+  }
+  for (const group of state.groups) {
+    const row = document.createElement('article'); row.className = 'canvas-annotation-editor'; row.dataset.annotationEditor = group.id;
+    const label = document.createElement('label'); label.textContent = 'Group'; const input = document.createElement('input'); input.value = group.label; input.maxLength = 80; label.append(input);
+    const focus = document.createElement('button'); focus.type = 'button'; focus.textContent = 'Focus'; focus.addEventListener('click', () => { closeCanvasAnnotations(); queueMicrotask(() => elements.canvasannotationlayer.querySelector(`[data-annotation-group="${CSS.escape(group.id)}"]`)?.click()); });
+    const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Delete'; remove.addEventListener('click', () => annotationCommand({ type: 'group.remove', id: group.id }, `Deleted ${group.id}`));
+    const meta = document.createElement('small'); meta.textContent = `GROUP · non-electrical · ${group.componentIds.join(', ')}`;
+    input.addEventListener('change', () => annotationCommand({ type: 'group.edit', id: group.id, label: input.value.trim(), componentIds: group.componentIds }, `Updated ${group.id}`));
+    row.append(label, focus, remove, meta); editors.push(row);
+  }
+  elements.canvasannotationslist.replaceChildren(...editors);
+}
+function closeCanvasAnnotations({ restoreFocus = true } = {}) {
+  if (elements.canvasannotationsdialog.open) elements.canvasannotationsdialog.close('close');
+  const target = canvasAnnotationReturnFocus; canvasAnnotationReturnFocus = null;
+  if (restoreFocus) queueMicrotask(() => (target?.isConnected ? target : elements.canvasannotationsopen).focus());
+}
+elements.canvasannotationsopen.addEventListener('click', () => {
+  if (selectedCompilerProfile !== AVR_PROFILE) return;
+  canvasAnnotationReturnFocus = document.activeElement; renderCanvasAnnotationsDialog();
+  elements.canvasannotationsdialog.showModal(); queueMicrotask(() => elements.canvasannotationstitle.focus());
+});
+elements.canvasannotationsclose.addEventListener('click', () => closeCanvasAnnotations());
+elements.canvasannotationsdialog.addEventListener('cancel', (event) => { event.preventDefault(); closeCanvasAnnotations(); });
+elements.canvasnoteadd.addEventListener('click', () => {
+  canvasAnnotationSequence += 1;
+  const result = annotationCommand({ type: 'note.create', id: `note-${canvasAnnotationSequence}`, text: elements.canvasnotetext.value.trim(),
+    x: Number(elements.canvasnotex.value), y: Number(elements.canvasnotey.value) }, 'Added visual note');
+  if (result.ok) elements.canvasnotetext.value = '';
+});
+elements.canvasgroupadd.addEventListener('click', () => {
+  canvasAnnotationSequence += 1;
+  const members = [...elements.canvasgroupcomponents.querySelectorAll('input:checked')].map(({ value }) => value);
+  const result = annotationCommand({ type: 'group.create', id: `group-${canvasAnnotationSequence}`,
+    label: elements.canvasgrouplabel.value.trim(), componentIds: members }, 'Added visual group');
+  if (result.ok) elements.canvasgrouplabel.value = '';
+});
+elements.canvasannotationsundo.addEventListener('click', () => { ensureCanvasAnnotations().undo(annotationComponentIds()); renderCanvasAnnotationOverlay(); renderCanvasAnnotationsDialog(); elements.canvasannotationsstatus.textContent = 'Undid one visual metadata edit. Electrical graph unchanged.'; });
+elements.canvasannotationsredo.addEventListener('click', () => { ensureCanvasAnnotations().redo(annotationComponentIds()); renderCanvasAnnotationOverlay(); renderCanvasAnnotationsDialog(); elements.canvasannotationsstatus.textContent = 'Redid one visual metadata edit. Electrical graph unchanged.'; });
+elements.canvasannotationsdownload.addEventListener('click', () => {
+  try { downloadText('intent-mcu-annotated-project.json', canonicalCurrentAnnotatedWorkspace(), 'application/json'); canvasAnnotationBaseline = JSON.stringify(ensureCanvasAnnotations().snapshot()); elements.canvasannotationsstatus.textContent = 'Annotated project download requested locally.'; }
+  catch (error) { elements.canvasannotationsstatus.textContent = `Annotated project rejected (${error.code ?? error.message}).`; }
+});
+elements.canvasannotationsimport.addEventListener('click', () => elements.canvasannotationsinput.click());
+elements.canvasannotationsinput.addEventListener('change', async () => {
+  const file = elements.canvasannotationsinput.files[0]; elements.canvasannotationsinput.value = ''; if (!file) return;
+  if (file.size > CANVAS_ANNOTATION_LIMITS.bytes) { elements.canvasannotationsstatus.textContent = 'Annotated project rejected (INPUT_LIMIT).'; return; }
+  try {
+    const opened = parseAnnotatedWorkspace(await file.text(), validateAnnotatedProject);
+    const install = () => { installPreparedProjectEnvelope(opened.prepared, null, { annotations: opened.workspace.annotations }); };
+    closeCanvasAnnotations({ restoreFocus: false });
+    if (requestUnsavedChangeGuard({ profile: AVR_PROFILE, actionLabel: 'opening this annotated project', continueAction: install })) return;
+    install();
+  } catch (error) { elements.canvasannotationsstatus.textContent = `Annotated project rejected (${error.code ?? error.message}). Current document unchanged.`; }
+});
+window.__X66_CANVAS_ANNOTATIONS__ = Object.freeze({
+  schema: CANVAS_ANNOTATIONS_SCHEMA, workspaceSchema: ANNOTATED_WORKSPACE_SCHEMA,
+  snapshot: () => ensureCanvasAnnotations().snapshot(), workspaceText: () => canonicalCurrentAnnotatedWorkspace(),
+  authority: Object.freeze({ electrical: false, source: false, build: false, run: false, verdict: false }),
+});
 window.__CAPABILITY_DISCOVERY__ = Object.freeze({
   schema: CAPABILITY_DISCOVERY_SCHEMA,
   requestSchema: CAPABILITY_DISCOVERY_REQUEST_SCHEMA,
@@ -9663,10 +9857,14 @@ async function downloadMeasurementReport(report, filename) {
   return envelope;
 }
 function projectFilename() {
-  return commonProjectFilename(AVR_PROFILE);
+  const annotations = ensureCanvasAnnotations().snapshot();
+  return annotations.notes.length || annotations.groups.length
+    ? 'intent-mcu-annotated-project.json' : commonProjectFilename(AVR_PROFILE);
 }
 function boundedProjectText() {
-  const text = commonProjectText(AVR_PROFILE);
+  const annotations = ensureCanvasAnnotations().snapshot();
+  const text = annotations.notes.length || annotations.groups.length
+    ? canonicalCurrentAnnotatedWorkspace() : commonProjectText(AVR_PROFILE);
   if (new TextEncoder().encode(text).length > PROJECT_ENVELOPE_LIMIT) throw new Error('INPUT_LIMIT');
   return text;
 }
@@ -9681,6 +9879,7 @@ async function saveProjectFile() {
   catch (error) { showActionableError(elements.projectmessage, error.message, 'Project file was not saved.'); return; }
   const recoverySaved = persistProject();
   downloadText(projectFilename(), text, 'application/json');
+  canvasAnnotationBaseline = JSON.stringify(ensureCanvasAnnotations().snapshot());
   markFileSaved('download requested'); renderProject();
   elements.projectmessage.textContent = recoverySaved
     ? 'Project download requested. Your browser chooses the download location; browser recovery was updated separately.'
@@ -10118,6 +10317,7 @@ function installProjectGeneration({ empty, reason, runtimeMessage }) {
   savedRevision = null;
   savedProjectGeneration = null;
   setSelection({ kind: 'none' });
+  if (canvasAnnotations) resetCanvasAnnotations();
   pendingEndpoint = null;
   routeDrag = null;
   wireMode = 'connect';
@@ -10141,10 +10341,25 @@ function installProjectGeneration({ empty, reason, runtimeMessage }) {
 
 function applyEditor(command, message = command.type) {
   if (commandBuildRelevance(command.type) === 'build') retireX47Integration('X47_AUTHORED_INPUT_CHANGED');
+  const annotationBefore = canvasAnnotations ? canvasAnnotations.snapshot() : null;
   const result = editor.apply({ ...command, revision: editor.revision }, { running });
   if (!result.ok) {
     showActionableError(elements.projectmessage, result.code, `${message}\n${JSON.stringify(result.details ?? [])}`);
     return result;
+  }
+  if (canvasAnnotations) {
+    if (command.type === 'undo') {
+      const marker = annotationEditorPast.pop();
+      if (marker) { annotationEditorFuture.push(marker); canvasAnnotations.restore(marker.before, annotationComponentIds()); }
+    } else if (command.type === 'redo') {
+      const marker = annotationEditorFuture.pop();
+      if (marker) { annotationEditorPast.push(marker); canvasAnnotations.restore(marker.after, annotationComponentIds()); }
+    } else {
+      canvasAnnotations.apply({ type: 'components.reconcile' }, annotationComponentIds());
+      annotationEditorPast.push({ before: annotationBefore, after: canvasAnnotations.snapshot() });
+      if (annotationEditorPast.length > 100) annotationEditorPast.shift();
+      annotationEditorFuture.length = 0;
+    }
   }
   const relevance = result.changeRelevance ?? (result.buildRelevant ? 'build' : commandBuildRelevance(command.type));
   if (x40SharedTimeline && !x40TimelineRetainsForLifecycle({ type: 'project.edit', relevance })) {
@@ -10893,6 +11108,11 @@ function renderComponents() {
     return card;
   });
   elements.componentlayer.replaceChildren(...cards);
+  const annotationGroup = ensureCanvasAnnotations().snapshot().groups.find(({ id }) => id === selectedCanvasAnnotationGroup);
+  if (annotationGroup) for (const card of elements.componentlayer.querySelectorAll('.circuit-component')) {
+    card.classList.toggle('annotation-highlight', annotationGroup.componentIds.includes(card.dataset.componentId));
+  }
+  renderCanvasAnnotationOverlay();
   drawCircuitWires();
   if (currentProject().circuit.nets.length <= 64) {
     requestAnimationFrame(() => requestAnimationFrame(drawCircuitWires));
@@ -13869,6 +14089,7 @@ const recoveryRestored = recoveryStored ? parseAvrRecoverySource(recoveryStored)
 const currentRestored = stored ? parseAvrRecoverySource(stored) : null;
 const restored = recoveryRestored?.ok ? recoveryRestored : currentRestored;
 editor = restored?.ok ? restored.session : new ProjectEditorReducer(createEmptyProject());
+canvasAnnotations = new CanvasAnnotationReducer(emptyCanvasAnnotations(), annotationComponentIds());
 if (restored?.modelLibrary) projectModelLibraryLocks.set(AVR_PROFILE, structuredClone(restored.modelLibrary));
 scenarioTimelineEditor = restored?.scenarioTimeline
   ? new ScenarioTimelineEditor(restored.scenarioTimeline) : null;

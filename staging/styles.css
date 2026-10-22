@@ -125,7 +125,7 @@ h2 { font-size: 1.22rem; margin: 0; }
 .top-primary-controls .quick-controls { position: static; display: flex; width: auto; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; pointer-events: auto; }
 .top-primary-controls .quick-controls > span { display: none; }
 .top-primary-controls .quick-controls button { min-height: 32px; padding: 4px 8px; font-size: .7rem; white-space: nowrap; }
-.workbench-popup-controls { display: grid; grid-template-columns: repeat(11,minmax(0,1fr)); gap: 6px; }
+.workbench-popup-controls { display: grid; grid-template-columns: repeat(12,minmax(0,1fr)); gap: 6px; }
 .workbench-popup-controls button { min-height: 32px; padding: 4px 7px; overflow: hidden; font-size: .7rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .workbench-popup-controls button[aria-expanded="true"] { color: #06111a; background: var(--cyan); border-color: var(--cyan); }
 .workbench-popup-controls .workbench-get-started { color: #06111a; background: var(--lime); border-color: var(--lime); }
@@ -236,6 +236,30 @@ body[data-active-profile] .app-header .lede { max-width: 640px; overflow: hidden
 .teaching-exercise-variant span { color: var(--muted); font-size: .76rem; line-height: 1.45; }
 .teaching-exercise-variant[data-known-fault="true"] { border-color: var(--amber); }
 #teaching-exercise-install { min-height: 44px; color: #06111a; border-color: var(--lime); background: var(--lime); font-weight: 850; }
+.canvas-annotations-dialog { width: min(1100px,94vw); max-width: 94vw; max-height: 90vh; margin: auto; padding: 0; overflow: hidden; color: var(--text); border: 1px solid #665e9f; border-radius: 18px; background: #07151d; box-shadow: 0 28px 90px #000d; }
+.canvas-annotations-dialog::backdrop { background: #02070ddd; backdrop-filter: blur(5px); }
+.canvas-annotations-dialog > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 62px; padding: 12px 16px; border-bottom: 1px solid #514d7c; background: linear-gradient(100deg,#121c34,#172a2c); }
+.canvas-annotations-dialog h2, .canvas-annotations-dialog p { margin: 0; }
+.canvas-annotations-layout { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; max-height: calc(90vh - 63px); padding: 18px; overflow: auto; }
+.canvas-annotations-boundary, .canvas-annotations-actions, #canvas-annotations-status, .canvas-annotations-list { grid-column: 1 / -1; }
+.canvas-annotations-boundary { padding: 11px 13px; border-left: 4px solid #9f8cff; color: var(--muted); background: #171b30; line-height: 1.5; }
+.canvas-annotations-create { display: grid; grid-template-columns: minmax(0,1fr) 100px 100px; gap: 8px; align-content: start; padding: 13px; border: 1px solid #343f69; border-radius: 11px; background: #0a1c27; }
+.canvas-annotations-create label { display: grid; gap: 5px; color: var(--muted); font-size: .72rem; font-weight: 800; }
+.canvas-annotations-create button, .canvas-annotations-create fieldset { grid-column: 1 / -1; }
+.canvas-annotations-create fieldset { margin: 0; border: 1px solid #31536c; border-radius: 8px; }
+.canvas-group-components { display: flex; flex-wrap: wrap; gap: 7px; }
+.canvas-group-components label { display: flex; flex-direction: row; align-items: center; gap: 5px; padding: 5px 7px; border-radius: 7px; background: #102536; }
+.canvas-annotations-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.canvas-annotations-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.canvas-annotation-editor { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 8px; align-items: end; padding: 12px; border: 1px solid #31536c; border-radius: 10px; background: #091c29; }
+.canvas-annotation-editor label { display: grid; gap: 4px; color: var(--muted); font-size: .7rem; font-weight: 800; }
+.canvas-annotation-editor small { grid-column: 1 / -1; color: #9f8cff; }
+.canvas-annotation-layer { position: absolute; z-index: 7; inset: 0; pointer-events: none; }
+.canvas-visual-note { position: absolute; max-width: 220px; padding: 7px 9px; transform: translate(-50%,-50%); border: 1px solid #9f8cff; border-radius: 8px; color: #f1eeff; background: #17172ee8; box-shadow: 0 7px 18px #0008; font-size: .7rem; line-height: 1.35; overflow-wrap: anywhere; pointer-events: auto; }
+.canvas-visual-note::before { content: "NOTE · NON-ELECTRICAL"; display: block; margin-bottom: 3px; color: #b8aaff; font-size: .52rem; font-weight: 850; letter-spacing: .08em; }
+.canvas-visual-group { position: absolute; min-width: 70px; min-height: 54px; border: 2px dashed #9f8cff; border-radius: 12px; background: #7f67e50d; pointer-events: none; }
+.canvas-visual-group button { position: absolute; left: 6px; top: -13px; min-height: 24px; padding: 2px 7px; border-radius: 999px; color: #0a0d16; border-color: #b8aaff; background: #b8aaff; font-size: .58rem; font-weight: 900; white-space: nowrap; pointer-events: auto; }
+.circuit-component.annotation-highlight { outline: 4px solid #b8aaff; outline-offset: 6px; }
 @media (max-width: 760px) { #presentation-instruments, .presentation-instrument-cards, .teaching-exercise-variants { grid-template-columns: 1fr; } .presentation-step-editor { grid-template-columns: 1fr; } .presentation-layout { padding: 12px; } }
 .workbench-popup-close { color: #06111a; background: var(--lime); border-color: var(--lime); }
 .workbench-popup-mount { height: calc(100% - 58px); padding: 12px; overflow: auto; overscroll-behavior: contain; }
