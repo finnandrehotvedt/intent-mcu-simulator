@@ -15,6 +15,13 @@ async function ensureProjectFilesOpen(page) {
   const details = page.locator('#workbench-project-dialog details.project-file-advanced');
   if (!await details.evaluate((node) => node.open)) await details.locator('summary').click();
 }
+async function ensureInspectorOpen(page) {
+  if (!await page.locator('#selected-net').isVisible()) await page.click('#toggle-inspector');
+}
+async function closeInspector(page) {
+  const dialog = page.locator('#workbench-inspector-dialog');
+  if (await dialog.evaluate((node) => node.open)) await dialog.locator('.workbench-popup-close').click();
+}
 const electricalSnapshot = () => {
   const project = window.__M6_PROJECT__(); const canvas = document.querySelector('#circuit-canvas').getBoundingClientRect();
   return { source: project.project?.source ?? project.source, circuit: project.candidateCircuit ?? project.circuit,
@@ -60,6 +67,8 @@ const electricalSnapshot = () => {
     await page.click('.starter-card[data-example="avr-thermostat-boundary-v1"]');
     await page.waitForFunction(() => window.__M6_STATE__.thermostatExperiment?.active === true);
     const before = await page.evaluate(electricalSnapshot);
+    const netIds = await page.evaluate(() => (window.__M6_PROJECT__().candidateCircuit ?? window.__M6_PROJECT__().circuit).nets.map(({ id }) => id));
+    assert(netIds.length >= 2);
 
     await page.click('#canvas-annotations-open'); await page.waitForSelector('#canvas-annotations-dialog[open]');
     assert.equal(await page.evaluate(() => document.activeElement.id), 'canvas-annotations-title');
@@ -69,7 +78,21 @@ const electricalSnapshot = () => {
     await page.check('#canvas-group-components input[value="heater-resistor-1"]');
     await page.check('#canvas-group-components input[value="heater-led-1"]');
     await page.click('#canvas-group-add');
+    await page.selectOption('#canvas-net-label-net', netIds[0]);
+    await page.fill('#canvas-net-label-text', 'SHARED_SIGNAL');
+    await page.fill('#canvas-net-label-x', '0.46'); await page.fill('#canvas-net-label-y', '0.28');
+    await page.click('#canvas-net-label-add');
+    await page.selectOption('#canvas-net-label-net', netIds[1]);
+    await page.fill('#canvas-net-label-text', 'SHARED_SIGNAL');
+    await page.fill('#canvas-net-label-x', '0.62'); await page.fill('#canvas-net-label-y', '0.72');
+    await page.click('#canvas-net-label-add');
     assert.equal((await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot())).groups.length, 1);
+    const initialLabels = await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot().netLabels.labels);
+    assert.deepEqual(initialLabels.map(({ netId, text }) => ({ netId, text })), [
+      { netId: netIds[0], text: 'SHARED_SIGNAL' }, { netId: netIds[1], text: 'SHARED_SIGNAL' },
+    ]);
+    assert.equal(await page.locator('.canvas-net-label').count(), 2);
+    assert.deepEqual((await page.locator('.canvas-net-label').evaluateAll((nodes) => nodes.map((node) => node.dataset.boundNetId))), netIds.slice(0, 2));
     const noteInput = page.locator('[data-annotation-editor="note-1"] input');
     await noteInput.fill('Equality boundary note edited safely.'); await page.locator('[data-annotation-editor="note-1"] button', { hasText: 'Save' }).click();
     await page.click('#canvas-annotations-undo');
@@ -77,13 +100,31 @@ const electricalSnapshot = () => {
     await page.click('#canvas-annotations-redo');
     assert.match((await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot())).notes[0].text, /edited safely/u);
     await page.screenshot({ path: `${output}/x66-annotations-dialog-1366x768.png`, fullPage: false });
+    await page.click('#canvas-annotations-close');
+    await page.click('.circuit-component[data-component-id="heater-resistor-1"]');
+    await page.keyboard.press('ArrowRight');
+    await ensureInspectorOpen(page);
+    await page.selectOption('#selected-net', netIds[0]);
+    await page.selectOption('#wire-color', '#f28cf3');
+    await closeInspector(page);
+    const afterMovementAndWireStyle = await page.evaluate(electricalSnapshot);
+    assert.deepEqual(afterMovementAndWireStyle.source, before.source);
+    assert.deepEqual(afterMovementAndWireStyle.circuit, before.circuit);
+    assert.notDeepEqual(afterMovementAndWireStyle.layout, before.layout);
+    await page.click('#canvas-annotations-open');
 
     const [download] = await Promise.all([page.waitForEvent('download'), page.click('#canvas-annotations-download')]);
     const workspaceText = fs.readFileSync(await download.path(), 'utf8'); const workspace = JSON.parse(workspaceText);
-    assert.equal(workspace.schema, 'intent-mcu-annotated-workspace@1');
+    assert.equal(workspace.schema, 'intent-mcu-annotated-workspace@2');
+    assert.equal(workspace.annotations.schema, 'intent-mcu-canvas-annotations@2');
+    assert.equal(workspace.annotations.netLabels.schema, 'intent-mcu-net-labels@1');
     const accepted = await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot());
     const malformed = structuredClone(workspace); malformed.annotations.groups[0].componentIds.push('missing-component');
     await page.setInputFiles('#canvas-annotations-input', { name: 'dangling.intent-mcu-annotated.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(malformed)) });
+    await page.waitForFunction(() => document.querySelector('#canvas-annotations-status').textContent.includes('rejected'));
+    assert.deepEqual(await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot()), accepted);
+    const danglingNet = structuredClone(workspace); danglingNet.annotations.netLabels.labels[0].netId = 'missing-net';
+    await page.setInputFiles('#canvas-annotations-input', { name: 'dangling-net.intent-mcu-annotated.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(danglingNet)) });
     await page.waitForFunction(() => document.querySelector('#canvas-annotations-status').textContent.includes('rejected'));
     assert.deepEqual(await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot()), accepted);
 
@@ -125,12 +166,12 @@ const electricalSnapshot = () => {
     await page.waitForSelector('#unsaved-change-dialog[open]'); await page.click('#unsaved-discard');
     await page.waitForFunction(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot().groups.length === 1);
     assert.deepEqual(await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot()), importedWorkspace.annotations);
-    const after = await page.evaluate(electricalSnapshot); assert.deepEqual(after, before);
+    const after = await page.evaluate(electricalSnapshot); assert.deepEqual(after, afterMovementAndWireStyle);
 
     await page.click('#canvas-annotations-open');
     await page.fill('#canvas-note-text', 'Fresh ID after imported collisions.'); await page.click('#canvas-note-add');
-    assert.equal(await page.locator('[data-annotation-editor="note-4"]').count(), 1);
-    await page.locator('[data-annotation-editor="note-4"] button', { hasText: 'Delete' }).click();
+    assert.equal(await page.locator('[data-annotation-editor="note-5"]').count(), 1);
+    await page.locator('[data-annotation-editor="note-5"] button', { hasText: 'Delete' }).click();
     await page.click('#canvas-annotations-close');
 
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -139,7 +180,8 @@ const electricalSnapshot = () => {
     await page.screenshot({ path: `${output}/x66-annotations-canvas-1440x900.png`, fullPage: false });
 
     await page.click('.circuit-component[data-component-id="heater-led-1"]');
-    await page.click('#toggle-inspector'); await page.click('#delete-component');
+    await ensureInspectorOpen(page); await page.click('#delete-component');
+    await closeInspector(page);
     let state = await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot());
     assert.deepEqual(state.groups[0].componentIds, ['heater-resistor-1']);
     await page.click('#canvas-annotations-open'); await page.click('#canvas-annotations-undo');
@@ -159,12 +201,27 @@ const electricalSnapshot = () => {
     assert.equal(state.notes[0].text, 'Independent note edit after component deletion.');
     await page.keyboard.press('Control+z');
 
+    const labelsBeforeNetDelete = await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot().netLabels.labels);
+    await ensureInspectorOpen(page);
+    await page.selectOption('#selected-net', netIds[0]);
+    await page.click('#delete-wire');
+    await closeInspector(page);
+    assert.equal((await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot().netLabels.labels)).some(({ netId }) => netId === netIds[0]), false);
+    await page.keyboard.press('Control+z');
+    assert.deepEqual(await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot().netLabels.labels), labelsBeforeNetDelete);
+    await page.keyboard.press('Control+Shift+z');
+    assert.equal((await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot().netLabels.labels)).some(({ netId }) => netId === netIds[0]), false);
+    await page.keyboard.press('Control+z');
+    assert.deepEqual(await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot().netLabels.labels), labelsBeforeNetDelete);
+
     assert.deepEqual(producers, []); assert.deepEqual(mutations, []); assert.deepEqual(outside, []);
     assert.equal((await context.cookies()).length, 0); assert.deepEqual(errors, []);
-    const result = { result: 'pass', notes: 1, groups: 1, editUndoRedo: true, annotatedRoundtrip: true,
+    const result = { result: 'pass', notes: 1, groups: 1, netLabels: 2, sameTextDistinctNets: true,
+      boundNetIdVisible: true, movementAndWireStyleRoundtrip: true, graphDigestPreserved: true,
+      editUndoRedo: true, annotatedRoundtrip: true,
       allSaveRoundtrip: true, pendingSaveFingerprint: true, recoveryRoundtrip: true, collisionSafeIds: true,
       danglingAtomic: true, visualUndoAtomic: true, electricalInvariant: true, groupFocus: true,
-      deletionCleanupPairedUndoRedo: true, unrelatedNoteEditPreserved: true,
+      deletionCleanupPairedUndoRedo: true, danglingNetCleanupPairedUndoRedo: true, unrelatedNoteEditPreserved: true,
       producers: 0, mutations: 0, outsideRequests: 0, cookies: 0 };
     fs.writeFileSync(`${output}/x66-canvas-annotations.json`, `${JSON.stringify(result, null, 2)}\n`);
     process.stdout.write(`${JSON.stringify(result)}\n`);

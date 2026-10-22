@@ -8956,7 +8956,8 @@ function annotationEditorMarker(before, after) {
     return { id: group.id, before: structuredClone(group), afterExisted: Boolean(afterGroup),
       removed: group.componentIds.filter((member) => !afterGroup?.componentIds.includes(member)) };
   }).filter(({ removed, afterExisted }) => removed.length || !afterExisted),
-  labels: before.netLabels.labels.filter(({ id }) => !afterLabels.has(id)).map((label) => structuredClone(label)) };
+  labels: before.netLabels.labels.map((label, index) => ({ label: structuredClone(label), index }))
+    .filter(({ label }) => !afterLabels.has(label.id)) };
 }
 function applyAnnotationEditorMarker(marker, direction) {
   const current = ensureCanvasAnnotations().snapshot();
@@ -8972,12 +8973,13 @@ function applyAnnotationEditorMarker(marker, direction) {
     }
   }
   current.groups = [...groups.values()];
-  const labels = new Map(current.netLabels.labels.map((label) => [label.id, label]));
-  for (const label of marker.labels ?? []) {
-    if (direction === 'undo') labels.set(label.id, structuredClone(label));
-    else labels.delete(label.id);
+  const labels = [...current.netLabels.labels];
+  for (const change of marker.labels ?? []) {
+    const currentIndex = labels.findIndex(({ id }) => id === change.label.id);
+    if (direction === 'undo' && currentIndex < 0) labels.splice(Math.min(change.index, labels.length), 0, structuredClone(change.label));
+    else if (direction === 'redo' && currentIndex >= 0) labels.splice(currentIndex, 1);
   }
-  current.netLabels.labels = [...labels.values()];
+  current.netLabels.labels = labels;
   return ensureCanvasAnnotations().restore(current, annotationReferences());
 }
 function renderCanvasAnnotationOverlay() {
