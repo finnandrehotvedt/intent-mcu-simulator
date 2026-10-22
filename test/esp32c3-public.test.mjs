@@ -233,6 +233,8 @@ test('C3 disposal ACK waits for the owned operation exit and is exact, authentic
       source: sourceForGpio2('C3_RETIRE'), sourceRevision: 1 }),
   });
   assert.equal(buildReceipt.status, 202);
+  assert.equal((await buildReceipt.clone().json()).generation, 1,
+    'accepted Build receipt must expose the generation owned by its pending operation');
   const disposeBody = JSON.stringify({ schema: COMMAND_SCHEMA, command: 'dispose', generation: 1,
     profile: PROFILE, fqbn: FQBN, sourceSha256: null, artifactSha256: null,
     circuit: VALIDATED_LED_CIRCUIT });

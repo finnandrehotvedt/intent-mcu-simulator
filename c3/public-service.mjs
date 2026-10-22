@@ -365,15 +365,19 @@ export function createC3PublicService({
       generalEsp32Support: false, publicSupport: true, boundedPublicSupport: true,
     };
   }
-  async function build(session, request) {
+  function validateBuildRequest(request) {
     if (!exactKeys(request, ['schema', 'profile', 'fqbn', 'source', 'sourceRevision'])
       || request.schema !== BUILD_SCHEMA || request.profile !== PROFILE || request.fqbn !== FQBN
       || !Number.isSafeInteger(request.sourceRevision) || request.sourceRevision < 1) {
       throw fault('BUILD_REQUEST_INVALID');
     }
+  }
+
+  async function build(session, request, { operationRetired = false } = {}) {
+    validateBuildRequest(request);
     if (metrics.buildInFlight >= limits.concurrentBuilds) throw fault('BUILD_CONCURRENCY_LIMIT', 429,
       retryAfterForCode('BUILD_CONCURRENCY_LIMIT'));
-    await retireOperation(session);
+    if (!operationRetired) await retireOperation(session);
     wipeArtifact(session);
     session.generation += 1;
     const generation = session.generation;
@@ -538,9 +542,13 @@ export function createC3PublicService({
           throw fault('BUILD_CONCURRENCY_LIMIT', 429, retryAfterForCode('BUILD_CONCURRENCY_LIMIT'));
         }
         const buildRequest = await bodyJson(request, limits.requestBytes);
+        validateBuildRequest(buildRequest);
+        await retireOperation(session);
         const job = { id: token(8), status: 'pending', value: null, error: null };
         session.buildJob = job;
-        build(session, buildRequest).then((value) => {
+        const buildPromise = build(session, buildRequest, { operationRetired: true });
+        const acceptedGeneration = session.generation;
+        buildPromise.then((value) => {
           if (session.buildJob === job) { job.status = 'succeeded'; job.value = value; }
         }, (error) => {
           if (session.buildJob === job) {
@@ -549,7 +557,7 @@ export function createC3PublicService({
               ...(error?.details ?? {}) };
           }
         });
-        responseJson(response, 202, { ...publicState(session), buildJobId: job.id,
+        responseJson(response, 202, { ...publicState(session), generation: acceptedGeneration, buildJobId: job.id,
           buildStatus: job.status });
         return true;
       }
