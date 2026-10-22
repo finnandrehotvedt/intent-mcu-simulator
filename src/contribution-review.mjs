@@ -22,7 +22,7 @@ const AUTHORITY_KEYS = ['execute', 'registry', 'release', 'runtime', 'network'];
 const REVIEW_KEYS = ['schema', 'issuer', 'candidateSha256', 'baseCommit', 'reviewedFiles', 'reviewedChanges', 'completeness', 'reviewer', 'result'];
 const COMPLETENESS_KEYS = ['changedPaths', 'models', 'pins', 'parameters', 'versions'];
 const CONFORMANCE_KEYS = ['schema', 'issuer', 'candidateSha256', 'fixtureIdentity', 'fixtureSha256', 'runnerSha256', 'suite', 'results', 'result'];
-const TEST_RESULT_KEYS = ['testId', 'result'];
+const TEST_RESULT_KEYS = ['testId', 'testSourceSha256', 'outputSha256', 'tests', 'passed', 'failed', 'result'];
 const FIXTURE_KEYS = ['schema', 'fixtureIdentity', 'contributionId', 'baseCommit', 'files', 'changes'];
 const HASH = /^[a-f0-9]{64}$/u; const COMMIT = /^[a-f0-9]{40}$/u;
 const ID = /^[a-z][a-z0-9-]{2,95}$/u;
@@ -169,7 +169,7 @@ export async function runProjectOwnedConformance(reportSource, checkoutRoot) {
   const runnerSource = await readFile(path.join(root, RUNNER_RELATIVE));
   const installedRunnerSource = await readFile(new URL('./contribution-conformance-suite.mjs', import.meta.url));
   if (sha256(runnerSource) !== sha256(installedRunnerSource)) fail('CONFORMANCE_RUNNER_UNTRUSTED');
-  const results = runFixedContributionConformance({ fixture, report });
+  const results = await runFixedContributionConformance({ requiredTests: report.manifest.requiredTests });
   if (results.length !== report.manifest.requiredTests.length
       || results.some(({ result }) => result !== 'passed')) fail('CONFORMANCE_TEST_FAILED', results);
   const record = { schema: 'intent-mcu-project-conformance-result@1', issuer: 'project-owned-x57-runner',
@@ -199,7 +199,10 @@ export async function assessContributionAdmission(reportSource, checkoutRoot) {
       || !HASH.test(conformance.fixtureSha256) || !HASH.test(conformance.runnerSha256)
       || !Array.isArray(conformance.results) || conformance.results.length !== report.manifest.requiredTests.length
       || conformance.results.some((item, index) => !exactKeys(item, TEST_RESULT_KEYS)
-        || item.testId !== report.manifest.requiredTests[index] || item.result !== 'passed')
+        || item.testId !== report.manifest.requiredTests[index] || !HASH.test(item.testSourceSha256)
+        || !HASH.test(item.outputSha256) || !Number.isSafeInteger(item.tests) || item.tests < 1
+        || !Number.isSafeInteger(item.passed) || item.passed !== item.tests
+        || !Number.isSafeInteger(item.failed) || item.failed !== 0 || item.result !== 'passed')
       || conformance.result !== 'passed') fail('CONFORMANCE_RESULT_INVALID');
   const fixtureSource = await readFile(path.join(root, FIXTURE_RELATIVE), 'utf8'); const runnerSource = await readFile(path.join(root, RUNNER_RELATIVE));
   if (sha256(fixtureSource) !== conformance.fixtureSha256 || sha256(runnerSource) !== conformance.runnerSha256) fail('CONFORMANCE_RESULT_STALE');

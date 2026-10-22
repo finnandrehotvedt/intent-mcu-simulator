@@ -37,8 +37,15 @@ test('X57 to X89 actual-file CLI journey exports, reopens and remains local-only
   const checkedReport = JSON.parse(await readFile(reportPath, 'utf8'));
   const conformanceRecord = JSON.parse(await readFile(path.join(checkout, '.intent-mcu/trusted-contribution-evidence',
     `${checkedReport.candidateSha256}.conformance.json`), 'utf8'));
-  assert.deepEqual(conformanceRecord.results, checkedReport.manifest.requiredTests
-    .map((testId) => ({ testId, result: 'passed' })));
+  assert.deepEqual(conformanceRecord.results.map(({ testId, tests, passed, failed, result }) => (
+    { testId, tests, passed, failed, result }
+  )), checkedReport.manifest.requiredTests.map((testId) => ({
+    testId, tests: testId === 'model-library' ? 13 : testId === 'component-support-matrix' ? 5 : 2,
+    passed: testId === 'model-library' ? 13 : testId === 'component-support-matrix' ? 5 : 2,
+    failed: 0, result: 'passed',
+  })));
+  assert(conformanceRecord.results.every((result) => /^[a-f0-9]{64}$/u.test(result.testSourceSha256)
+    && /^[a-f0-9]{64}$/u.test(result.outputSha256)));
   const admissionPath = path.join(output, 'admission.json');
   const admitted = await run(process.execPath, ['tools/contribution-review.mjs', 'admit',
     '--report', reportPath, '--checkout', checkout, '--out', admissionPath],

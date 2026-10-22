@@ -10,6 +10,7 @@ import {
   assessContributionAdmission, canonicalContributionReport, checkContributionManifest,
   parseContributionManifest, recordTrustedSourceReview, runProjectOwnedConformance,
 } from '../src/contribution-review.mjs';
+import { runFixedContributionConformance } from '../src/contribution-conformance-suite.mjs';
 
 const sourceRoot = new URL('../', import.meta.url).pathname;
 const sampleSource = await readFile(new URL('../examples/contribution-review/manifest.json', import.meta.url), 'utf8');
@@ -67,15 +68,14 @@ test('X57 admission requires every candidate-bound fixed conformance outcome to 
   }
 });
 
-test('X57 fixed project-owned runner refuses to issue passed when one required test outcome fails', async () => {
-  const root = await checkout(); const manifest = JSON.parse(sampleSource); manifest.changes.models = [];
-  const fixturePath = path.join(root, 'examples/contribution-review/conformance-fixture.json');
-  const fixedFixture = JSON.parse(await readFile(fixturePath, 'utf8')); fixedFixture.changes.models = [];
-  await writeFile(fixturePath, `${JSON.stringify(fixedFixture, null, 2)}\n`);
-  const report = await checkContributionManifest(JSON.stringify(manifest), root);
-  await assert.rejects(runProjectOwnedConformance(canonicalContributionReport(report), root),
-    (error) => error.code === 'CONFORMANCE_TEST_FAILED'
-      && error.details.some((result) => result.testId === 'model-library' && result.result === 'failed'));
+test('X57 fixed project-owned runner reports actual known-bad model and support fixtures failed', async () => {
+  const [result] = await runFixedContributionConformance({
+    requiredTests: ['known-bad-real-model-support-fixture'],
+  });
+  assert.equal(result.result, 'failed');
+  assert.equal(result.tests, 2); assert.equal(result.passed, 0); assert.equal(result.failed, 2);
+  assert.match(result.testSourceSha256, /^[a-f0-9]{64}$/u);
+  assert.match(result.outputSha256, /^[a-f0-9]{64}$/u);
 });
 
 test('X57 old saved report rejects after one-byte candidate mutation', async () => {
