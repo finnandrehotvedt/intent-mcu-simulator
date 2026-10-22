@@ -86,12 +86,40 @@
       ]
     },
     {
+      "id": "X66",
+      "capabilities": [
+        "intent-mcu-annotated-workspace@1",
+        "intent-mcu-canvas-annotations@1"
+      ],
+      "contracts": [
+        "x66-non-electrical-canvas-annotations-v1"
+      ]
+    },
+    {
+      "id": "X68",
+      "capabilities": [
+        "intent-mcu-presentation-draft@1"
+      ],
+      "contracts": [
+        "x68-frozen-presentation-view-v1"
+      ]
+    },
+    {
       "id": "X70",
       "capabilities": [
         "intent-mcu-accessible-demonstration@1"
       ],
       "contracts": [
         "x70-canonical-authored-graph-svg-v1"
+      ]
+    },
+    {
+      "id": "X71",
+      "capabilities": [
+        "intent-mcu-teaching-exercise@1"
+      ],
+      "contracts": [
+        "x71-local-avr-teaching-exercise-v1"
       ]
     },
     {

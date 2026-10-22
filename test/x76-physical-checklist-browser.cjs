@@ -114,7 +114,7 @@ const workbenchState = () => ({
     await download.saveAs(downloadedPath);
     const downloadedText = fs.readFileSync(downloadedPath, 'utf8');
     const downloaded = JSON.parse(downloadedText);
-    assert.equal(downloaded.productRelease, '1.1.0-rc.105');
+    assert.equal(downloaded.productRelease, '1.1.0-rc.106');
     assert.equal(downloaded.evidenceBoundary.physicalEvidencePresent, true);
     assert.equal(downloaded.evidenceBoundary.independentlyVerified, false);
     assert(Object.values(downloaded.authority).every((value) => value === false));

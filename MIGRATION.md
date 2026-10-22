@@ -1,8 +1,15 @@
-# Migration to 1.1.0-rc.105
+# Migration to 1.1.0-rc.106
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.106 recognizes the current annotated-workspace and teaching-exercise data
+contracts plus the current model-library identity. Recognized authored data is
+fully validated and migrated data-only; executable, runtime, budget, verdict
+and presentation-capture authority are cleared. Legacy project export rejects
+when annotations would otherwise be silently lost. Presentation observations
+and active X92 budget state are transient and are never restored from a file.
 
 Rc.105 adds no durable project or browser-storage schema. X92 sessions,
 reservations, dispatch ownership and runtime acknowledgements are transient

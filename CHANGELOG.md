@@ -2,6 +2,24 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.106 — 2026-10-22
+
+- Publishes three reviewed local teaching surfaces: X66 non-electrical notes and
+  groups with annotation-safe Save/Open, recovery and atomic visual history;
+  X68 an AVR presentation over one frozen, provenance-labelled instrument
+  capture; and X71 one strict local AVR exercise with exactly the correct and
+  known-bad equality variants.
+- Retains X92's bounded AVR session quota and publishes only the corrected
+  parser/UI-bound synthetic fixed-default exhaustion proof. This is not a new
+  native producer, generic AI agent or full X92 closure.
+- Keeps each increment partial and explicit: X66 is not subcircuits or net
+  labels; X68 is captured, not live; X71 is the fixed AVR pair; X92 remains
+  bounded AVR plus synthetic proof. Canonical status is X **76 complete / 4
+  partial / 16 planned**, P1 **59/0/0**.
+- Performs zero new firmware Build, Run, Scenario or worker action and retains
+  cumulative accepted native evidence at **34/33/0**. DNS, Caddy, robots, CSP,
+  token/workflow and compiler/runtime locks are unchanged.
+
 ## 1.1.0-rc.105 — 2026-10-22
 
 - Publishes the reviewed partial X92 bounded experiment budget for one trusted,

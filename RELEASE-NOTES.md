@@ -1,4 +1,34 @@
-# Intent MCU Simulator 1.1.0-rc.105
+# Intent MCU Simulator 1.1.0-rc.106
+
+## Reviewed local teaching batch
+
+Rc.106 publishes four evidence-bounded partial items without adding a native
+producer. X66 adds local notes and visual groups that never change electrical
+identity. The annotated wrapper is validated on ordinary Download/Open,
+browser recovery, local history and native Save/Save copy, while rejected or
+dangling history operations remain atomic. It does not add subcircuits, named
+nets or electrical labels.
+
+X68 adds an AVR-only read-only presentation. Starting a presentation captures
+one provenance-labelled observation of the selected instrument facts; step
+navigation keeps those facts frozen even when the live workbench changes.
+Starting a new presentation is required to show newer observations. It is not
+a live dashboard or runtime authority.
+
+X71 adds one local AVR teaching exercise bundle with exactly two strict
+variants: correct and known-bad equality. Download/Open is learner-owned data,
+malformed input fails atomically, and only an explicit trusted-human UI action
+may open a contained project. It is not a general exercise marketplace or
+other-profile authoring format.
+
+X92 retains the rc.105 bounded AVR quota and adds corrected browser proof that
+fixed-default exhaustion travels through the real action parser and UI action
+boundary. The downstream actions remain synthetic and make no native-producer
+claim. X92 is not fully closed.
+
+Canonical status is X **76/4/16**, P1 **59/0/0**. X66, X68, X71 and X92 are
+partial. Rc.106 performs zero new firmware Build, Run, Scenario or worker
+action; cumulative native evidence remains **34 Build / 33 Run / 0 scenarios**.
 
 ## Partial X92 bounded AVR experiment budget
 
