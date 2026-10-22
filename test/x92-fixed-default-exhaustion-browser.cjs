@@ -64,6 +64,7 @@ window.__X92_PRIVATE_TEST_HARNESS__ = Object.freeze({
 
     const report = await page.evaluate(async () => {
       const module = await import('../src/x92-experiment-budget.mjs');
+      const actionModule = await import('../src/bounded-action-contracts.mjs');
       const assert = Object.assign((condition, message = 'assertion failed') => {
         if (!condition) throw new Error(message);
       }, {
@@ -92,18 +93,23 @@ window.__X92_PRIVATE_TEST_HARNESS__ = Object.freeze({
           randomId: () => `00000000-0000-4000-8000-${String(++idSequence).padStart(12, '0')}`,
         });
         budget.start(identity, { humanInitiated: true });
-        const downstream = {
-          execute: async (source) => {
-            const parsed = JSON.parse(source); calls.push(parsed.requestId); allCalls.push(`${name}:${parsed.requestId}`);
-            clock += actions.find((item) => item.request.requestId === parsed.requestId).elapsed;
-            return { ok: true, code: parsed.action === 'firmware.build'
-              ? 'ACTION_BUILD_SUCCEEDED' : 'ACTION_RUN_EVIDENCE_READY', executed: true };
-          },
-          cancel: () => ({ ok: false, code: 'ACTION_NOT_ACTIVE' }),
-        };
+        const handlers = Object.fromEntries(actionModule.BOUNDED_ACTIONS.map((action) => [action,
+          async (_payload, { request: parsed }) => {
+            const planned = actions.find((item) => item.request.requestId === parsed.requestId);
+            if (!planned || !['firmware.build', 'runtime.run'].includes(action)) {
+              return { ok: false, code: 'SYNTHETIC_ACTION_NOT_PLANNED' };
+            }
+            calls.push(parsed.requestId); allCalls.push(`${name}:${parsed.requestId}`); clock += planned.elapsed;
+            return { ok: true, code: action === 'firmware.build'
+              ? 'ACTION_BUILD_SUCCEEDED' : 'ACTION_RUN_EVIDENCE_READY' };
+          }]));
+        const downstream = actionModule.createBoundedActionRouter({ handlers,
+          currentContext: () => ({ profile: identity.profile, generation: identity.projectGeneration }),
+          now: () => 1000 });
         const executor = module.createX92BudgetedExecutor({ budget, downstream,
           currentIdentity: async () => structuredClone(identity), now: () => clock,
-          schedule: () => 1, unschedule: () => {}, parseRequest: (source) => JSON.parse(source),
+          schedule: () => 1, unschedule: () => {},
+          parseRequest: (source) => actionModule.parseBoundedActionRequest(source, 1000),
           measurementSource: 'synthetic-test.monotonic-wall-clock',
           quiesceRuntime: async ({ request: value, dispatchToken, identity: binding, reason }) => ({
             schema: module.X92_RUNTIME_QUIESCENCE_ACK_SCHEMA, requestId: value.requestId,
@@ -112,8 +118,9 @@ window.__X92_PRIVATE_TEST_HARNESS__ = Object.freeze({
             evidence: { reason, synthetic: true, clockMs: clock },
           }),
         });
+        window.__X92_PRIVATE_TEST_HARNESS__.install(budget, executor);
         for (const action of actions) {
-          const result = await executor.execute(JSON.stringify(action.request));
+          const result = await window.__AGENT_ACTIONS__.execute(JSON.stringify(action.request));
           if (!result.ok) throw new Error(`${name}:${action.request.requestId}:${result.code}`);
         }
         const before = calls.length;
@@ -144,7 +151,7 @@ window.__X92_PRIVATE_TEST_HARNESS__ = Object.freeze({
       const scenarioActions = [1, 2].map((number) => ({ elapsed: 100,
         request: request('runtime.run', `x92-synth-scenario-${number}`,
           { experimentId: 'avr-thermostat-boundary-v1' }) }));
-      await runCase('scenarios', scenarioActions, request('runtime.run', 'x92-synth-scenario-refused',
+      await runCase('scenarioSlots', scenarioActions, request('runtime.run', 'x92-synth-scenario-refused',
         { experimentId: 'avr-thermostat-boundary-v1' }));
 
       const runActions = [1, 2, 3, 4].map((number) => ({ elapsed: 100,
@@ -160,15 +167,20 @@ window.__X92_PRIVATE_TEST_HARNESS__ = Object.freeze({
       const wall = await runCase('wallClockMs', wallActions, request('runtime.run', 'x92-synth-wall-refused'));
 
       assert.deepEqual(cases.builds.result.exhaustedDimensions, ['builds']);
-      assert.deepEqual(cases.scenarios.result.exhaustedDimensions, ['scenarios']);
+      assert.deepEqual(cases.scenarioSlots.result.exhaustedDimensions, ['scenarios']);
       assert.deepEqual(cases.runs.result.exhaustedDimensions, ['runs']);
       assert.deepEqual(cases.wallClockMs.result.exhaustedDimensions, ['wallClockMs']);
       for (const item of Object.values(cases)) assert.deepEqual(item.review.limits, defaults);
 
-      window.__X92_PRIVATE_TEST_HARNESS__.install(wall.budget, wall.executor);
+      const callsBeforeParserRejection = allCalls.length;
+      const malformed = request('runtime.run', 'x92-synth-invalid-payload', { experimentId: 'not-approved' });
+      const parserRejection = await window.__AGENT_ACTIONS__.execute(JSON.stringify(malformed));
+      assert.equal(parserRejection.code, 'ACTION_RUN_PAYLOAD'); assert.equal(parserRejection.executed, false);
+      assert.equal(allCalls.length, callsBeforeParserRejection);
       window.__X92_PRIVATE_TEST_HARNESS__.render(cases.wallClockMs.result,
-        'Synthetic test evidence: wall-clock budget exhausted; no real Build, Run, scenario or worker was contacted.', false);
-      return { defaults, identity, allCalls, cases: Object.fromEntries(Object.entries(cases).map(([key, item]) =>
+        'Synthetic parser/UI-bound evidence: wall-clock budget exhausted; no real Build, Run, scenario or worker was contacted.', false);
+      return { defaults, identity, allCalls, parserRejection,
+        cases: Object.fromEntries(Object.entries(cases).map(([key, item]) =>
         [key, { exhaustedDimensions: item.result.exhaustedDimensions, unresolvedProblems: item.result.unresolvedProblems,
           calls: item.calls, review: item.review }])) };
     });
@@ -176,7 +188,8 @@ window.__X92_PRIVATE_TEST_HARNESS__ = Object.freeze({
     assert.deepEqual(report.defaults, { builds: 2, runs: 4, scenarios: 8, wallClockMs: 120000 });
     assert.equal(report.allCalls.length, 12);
     assert.equal(producerRequests.length, 0); assert.equal(mutations.length, 0);
-    assert.match(await page.locator('#x92-budget-status').textContent(), /Synthetic test evidence/iu);
+    assert.equal(report.parserRejection.code, 'ACTION_RUN_PAYLOAD');
+    assert.match(await page.locator('#x92-budget-status').textContent(), /Synthetic parser\/UI-bound evidence/iu);
     assert.deepEqual(await page.locator('#x92-budget-unresolved li').allTextContents(),
       ['Inspect exhausted dimension', 'Revise the experiment plan', 'Start no hidden retry']);
     assert.deepEqual(await page.locator('[data-dimension="wallClockMs"] [data-kind]').allTextContents(),
@@ -223,10 +236,12 @@ window.__X92_PRIVATE_TEST_HARNESS__ = Object.freeze({
 
     const result = { result: 'pass', defaults: report.defaults, independentDimensions: {
       builds: report.cases.builds.exhaustedDimensions,
-      scenarios: report.cases.scenarios.exhaustedDimensions,
+      scenarioSlots: { exhaustedDimensions: report.cases.scenarioSlots.exhaustedDimensions,
+        syntheticRequests: 2, reservedSlotsPerRequest: 4 },
       runs: report.cases.runs.exhaustedDimensions,
       wallClockMs: report.cases.wallClockMs.exhaustedDimensions,
-    }, syntheticAdapterCalls: report.allCalls, realProducerRequests: producerRequests,
+    }, realActionParserRejection: report.parserRejection.code, uiActionBoundary: true,
+    syntheticAdapterCalls: report.allCalls, realProducerRequests: producerRequests,
     mutatingRequests: mutations, importedAuthorityRestored: false, identityReplenished: false,
     newSessionFixedDefaults: true, screenshots: [desktop, narrow] };
     fs.writeFileSync(path.join(output, 'x92-fixed-default-exhaustion.json'), `${JSON.stringify(result, null, 2)}\n`);
