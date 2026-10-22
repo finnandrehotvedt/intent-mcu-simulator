@@ -1,6 +1,6 @@
 # X92 aggregate AI experiment budget — bounded private contract
 
-Status: approved implementation contract; not implemented. X92 remains planned.
+Status: approved private implementation contract; bounded browser-session slice implemented for review. X92 remains open and is not public-release authority.
 
 ## Original requirement
 
@@ -142,4 +142,3 @@ No paid AI API, new producer, worker type, service, scheduler, public endpoint,
 account, durable server storage, billing/token accounting, user-configurable
 quota, cross-user quota, cross-controller normalization, physical-device
 authority or public deployment belongs to this increment.
-

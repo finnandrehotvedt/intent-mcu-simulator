@@ -306,6 +306,26 @@
         <p>Create, propose, validate, Build, Run, read and export remain separate generation-bound actions. Project content cannot select an action or bypass the active controller model.</p>
         <ul id="bounded-actions-list" class="bounded-actions-list"></ul>
         <p id="bounded-actions-status" role="status">No programmatic action has run in this browser session.</p>
+        <section class="x92-budget" aria-labelledby="x92-budget-title">
+          <div class="requirement-trace-heading">
+            <div><p class="eyebrow">PRIVATE REVIEW · SESSION LOCAL</p><h4 id="x92-budget-title">Bounded experiment budget</h4></div>
+            <span id="x92-budget-summary">Inactive</span>
+          </div>
+          <p>One human-started browser session can reserve at most 2 Builds, 4 Runs, 8 scenarios and 120 seconds of measured wall-clock work. This review control adds no Build, Run, retry or verdict authority.</p>
+          <div class="x92-budget-actions">
+            <button id="x92-budget-start" type="button">Start new experiment session</button>
+            <button id="x92-budget-download" type="button" disabled>Download review</button>
+            <button id="x92-budget-open" type="button">Open review…</button>
+            <input id="x92-budget-open-input" type="file" accept="application/json,.json" hidden>
+          </div>
+          <p id="x92-budget-status" role="status">No experiment session is active. Existing manual controls are unchanged.</p>
+          <dl id="x92-budget-metrics" class="x92-budget-metrics" aria-label="Experiment budget usage"></dl>
+          <div class="x92-budget-review-grid">
+            <section><h5>Active reservations</h5><ol id="x92-budget-reservations"><li>None</li></ol></section>
+            <section><h5>Unresolved problems</h5><ol id="x92-budget-unresolved"><li>None</li></ol></section>
+          </div>
+          <p id="x92-budget-imported">No review file opened. Opened files are inert data and cannot restore a session, reservation, permission, runtime or verdict.</p>
+        </section>
       </section>
     </section>
 

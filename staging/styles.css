@@ -379,6 +379,24 @@ body[data-active-profile] .app-header .lede { max-width: 640px; overflow: hidden
 #bounded-actions-summary { color: var(--cyan); font: 700 .72rem ui-monospace, monospace; }
 #bounded-actions-status[data-valid="true"] { color: var(--lime); }
 #bounded-actions-status[data-valid="false"] { color: var(--danger); }
+.x92-budget { margin-top: 8px; padding: 14px; border: 1px solid #2d6078; border-radius: 12px; background: linear-gradient(145deg,#081b27,#0b2531); display: grid; gap: 10px; min-width: 0; }
+.x92-budget h4, .x92-budget h5 { margin: 0; }
+.x92-budget > p { margin: 0; color: var(--muted); font-size: .7rem; line-height: 1.5; overflow-wrap: anywhere; }
+#x92-budget-summary { color: var(--amber); font: 800 .72rem ui-monospace,monospace; }
+.x92-budget[data-active="true"] #x92-budget-summary { color: var(--lime); }
+.x92-budget-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.x92-budget-actions button:first-child { background: var(--lime); color: #06130c; }
+.x92-budget-metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 7px; margin: 0; }
+.x92-budget-metrics div { min-width: 0; padding: 9px; border: 1px solid #28566d; border-radius: 9px; background: #071722; }
+.x92-budget-metrics dt { color: var(--muted); font-size: .62rem; text-transform: uppercase; }
+.x92-budget-metrics dd { margin: 3px 0 0; color: var(--text); font: 800 .8rem ui-monospace,monospace; overflow-wrap: anywhere; }
+.x92-budget-review-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.x92-budget-review-grid section { min-width: 0; padding: 9px; border: 1px solid #26475b; border-radius: 9px; }
+.x92-budget-review-grid h5 { color: var(--cyan); font-size: .66rem; text-transform: uppercase; }
+.x92-budget-review-grid ol { margin: 7px 0 0; padding-left: 1.25rem; color: var(--muted); font-size: .65rem; overflow-wrap: anywhere; }
+#x92-budget-status[data-valid="true"] { color: var(--lime); }
+#x92-budget-status[data-valid="false"] { color: var(--danger); }
+@media (max-width: 700px) { .x92-budget-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } .x92-budget-review-grid { grid-template-columns: 1fr; } }
 @media (max-width: 900px) { .shared-domain-engine-stages { grid-template-columns: 1fr; } }
 .controller-workbench::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--lime); }
 .controller-workbench[data-mode="c3-preview"]::before,

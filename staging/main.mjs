@@ -305,6 +305,14 @@ import {
   projectTextSha256,
   reviewProjectPatch,
 } from '../src/project-patch.mjs';
+import {
+  X92_BUDGET_SCHEMA,
+  X92_DEFAULT_LIMITS,
+  X92_REVIEW_SCHEMA,
+  createX92BudgetedExecutor,
+  createX92ExperimentBudget,
+  parseX92ReviewProjection,
+} from '../src/x92-experiment-budget.mjs';
 import { AUTHORED_CHANGE_REVIEW_SCHEMA } from '../src/authored-change-review.mjs';
 import {
   EXPECTATION_REFERENCE_LIMIT,
@@ -476,7 +484,10 @@ const elements = Object.fromEntries([
   'design-comparison-alternatives', 'design-comparison-differences',
   'shared-domain-engine-inspect', 'shared-domain-engine-summary', 'shared-domain-engine-status',
   'shared-domain-engine-stages',
-  'bounded-actions-summary', 'bounded-actions-status', 'bounded-actions-list', 'release-version',
+  'bounded-actions-summary', 'bounded-actions-status', 'bounded-actions-list',
+  'x92-budget-start', 'x92-budget-download', 'x92-budget-open', 'x92-budget-open-input',
+  'x92-budget-summary', 'x92-budget-status', 'x92-budget-metrics', 'x92-budget-reservations',
+  'x92-budget-unresolved', 'x92-budget-imported', 'release-version',
   'regression-matrix', 'regression-matrix-state', 'regression-matrix-identity',
   'regression-matrix-selector', 'regression-matrix-run', 'regression-matrix-negative',
   'regression-matrix-export', 'regression-matrix-results', 'regression-matrix-summary',
@@ -581,6 +592,10 @@ let runtimeRenderTimer = null;
 let pendingRuntimeRender = null;
 let runtimeWorkerCreations = 0;
 let selectedCompilerProfile = AVR_PROFILE;
+let x92Budget = null;
+let x92BudgetExecutor = null;
+let x92ImportedReview = null;
+let x92IdentitySequence = 0;
 let lastProfileMigrationReport = null;
 const projectBriefDrafts = new Map();
 const requirementResultLinks = new Map();
@@ -2263,6 +2278,7 @@ const picoPublicWorkbench = new Rp2040PublicWorkbench({
     renderPicoQuickControls(state);
     renderPicoCircuitEditor(state);
     queueMicrotask(renderProjectNavigation);
+    void syncX92Identity('RP2040 source or electrical graph changed');
   },
   onDiagnostics: (snapshot) => renderProfileDiagnostics(snapshot, {
     textarea: elements.picosource, summary: elements.picodiagnostics,
@@ -2535,6 +2551,7 @@ const c3PublicWorkbench = new Esp32C3PublicWorkbench({
     renderC3QuickControls(state);
     renderC3CircuitEditor(state);
     queueMicrotask(renderProjectNavigation);
+    void syncX92Identity('ESP32-C3 source or electrical graph changed');
   },
   onDiagnostics: (snapshot) => renderProfileDiagnostics(snapshot, {
     textarea: elements.c3source, summary: elements.c3diagnostics,
@@ -2815,6 +2832,7 @@ const stm32PublicWorkbench = new Stm32PublicWorkbench({
     renderStm32QuickControls(state);
     renderStm32CircuitEditor(state);
     queueMicrotask(renderProjectNavigation);
+    void syncX92Identity('STM32 source or electrical graph changed');
   },
   onDiagnostics: (snapshot) => renderProfileDiagnostics(snapshot, {
     textarea: elements.stm32source, summary: elements.stm32diagnostics,
@@ -7230,6 +7248,81 @@ function commonProjectText(profile) {
     projectBriefForProfile(profile), profile === AVR_PROFILE ? scenarioTimelineEditor?.timeline ?? null : null,
     modelLibraryLockFor(profile));
 }
+function x92ElectricalGraph(circuit) {
+  const components = (circuit?.components ?? []).map((component) => ({
+    id: component.id, type: component.type, properties: component.properties ?? {},
+  })).sort((left, right) => left.id.localeCompare(right.id));
+  const nets = (circuit?.nets ?? []).map((net) => ({
+    id: net.id,
+    endpoints: (net.endpoints ?? []).map((endpoint) => ({
+      component: endpoint.component, pin: endpoint.pin,
+    })).sort((left, right) => `${left.component}.${left.pin}`.localeCompare(`${right.component}.${right.pin}`)),
+  })).sort((left, right) => left.id.localeCompare(right.id));
+  return { components, nets };
+}
+async function x92CurrentIdentity(profile = selectedCompilerProfile) {
+  const project = profileProjectDocument(profile);
+  const source = project.source ?? { files: [] };
+  const projectGeneration = profile === AVR_PROFILE ? lifecycle.projectGeneration : 1;
+  return {
+    schema: 'intent-mcu-experiment-budget-identity@1', profile, projectGeneration,
+    sourceIdentity: `sha256:${await projectTextSha256(JSON.stringify(source))}`,
+    graphIdentity: `sha256:${await projectTextSha256(JSON.stringify(x92ElectricalGraph(project.circuit)))}`,
+  };
+}
+function cancelX92Requests(requestIds = []) {
+  for (const requestId of requestIds) boundedActionRouter.cancel(requestId);
+}
+function renderX92Budget(message = null, valid = true) {
+  if (!elements.x92budgetsummary) return;
+  const review = x92Budget?.snapshot() ?? null;
+  const root = elements.x92budgetsummary.closest('.x92-budget');
+  root.dataset.active = String(Boolean(review?.active));
+  elements.x92budgetsummary.textContent = review?.active ? 'Active' : review ? 'Retired' : 'Inactive';
+  elements.x92budgetdownload.disabled = !review;
+  elements.x92budgetstatus.dataset.valid = String(valid);
+  elements.x92budgetstatus.textContent = message ?? (review?.active
+    ? 'Session bound to the current profile, source and electrical graph. Reservations are charged atomically.'
+    : review ? 'Session retired. Consumption remains visible; only a human action can start another session.'
+      : 'No experiment session is active. Existing manual controls are unchanged.');
+  const usage = review?.consumed ?? { builds: 0, runs: 0, scenarios: 0, wallClockMs: 0 };
+  const limits = review?.limits ?? X92_DEFAULT_LIMITS;
+  const rows = [['Builds', usage.builds, limits.builds], ['Runs', usage.runs, limits.runs],
+    ['Scenarios', usage.scenarios, limits.scenarios], ['Wall clock', `${usage.wallClockMs} ms`, `${limits.wallClockMs} ms`]];
+  elements.x92budgetmetrics.replaceChildren(...rows.map(([label, used, limit]) => {
+    const item = document.createElement('div'); const term = document.createElement('dt');
+    const value = document.createElement('dd'); term.textContent = label; value.textContent = `${used} / ${limit}`;
+    item.append(term, value); return item;
+  }));
+  const reservations = review?.reservations ?? [];
+  elements.x92budgetreservations.replaceChildren(...(reservations.length ? reservations.map((item) => {
+    const row = document.createElement('li'); row.textContent = `${item.action} · ${item.requestId} · ${item.deadlineAfterMs} ms`; return row;
+  }) : [Object.assign(document.createElement('li'), { textContent: 'None' })]));
+  const unresolved = review?.unresolvedProblems ?? [];
+  elements.x92budgetunresolved.replaceChildren(...(unresolved.length ? unresolved.map((problem) =>
+    Object.assign(document.createElement('li'), { textContent: problem }))
+    : [Object.assign(document.createElement('li'), { textContent: 'None' })]));
+}
+function retireX92Budget(reason) {
+  if (!x92Budget?.active()) return;
+  const result = x92Budget.retire(reason); cancelX92Requests(result.requestIds);
+  renderX92Budget(`Session retired: ${reason}. In-flight work was charged at its reserved upper bound.`, true);
+}
+async function syncX92Identity(reason) {
+  if (!x92Budget?.active()) return;
+  const sequence = ++x92IdentitySequence;
+  try {
+    const identity = await x92CurrentIdentity();
+    if (sequence !== x92IdentitySequence || !x92Budget.active()) return;
+    const result = x92Budget.rebind(identity, reason); cancelX92Requests(result.requestIds);
+    if (result.code === 'X92_IDENTITY_REBOUND') {
+      renderX92Budget(`Session rebound after ${reason}. In-flight work was charged at its reserved upper bound.`, true);
+    }
+  } catch (error) {
+    retireX92Budget('identity-read-failed');
+    renderX92Budget(`Session retired because its current identity could not be authenticated (${error.code ?? error.message}).`, false);
+  }
+}
 function legacyProjectText(profile) {
   return `${JSON.stringify(profileProjectDocument(profile), null, 2)}\n`;
 }
@@ -7439,6 +7532,7 @@ function requestUnsavedChangeGuard({ profile, actionLabel, continueAction }) {
   return true;
 }
 function installPreparedProjectEnvelope(result, handle = null, { preserveExpectationReference = false } = {}) {
+  retireX92Budget('project.file-open');
   if (result.profile !== selectedCompilerProfile) {
     elements.boardselect.value = result.profile;
     elements.boardselect.dispatchEvent(new Event('change', { bubbles: true }));
@@ -8228,6 +8322,13 @@ const boundedActionRouter = createBoundedActionRouter({
   handlers: boundedActionHandlers,
   currentContext: () => actionContext(),
 });
+x92Budget = createX92ExperimentBudget({ measurementSource: 'browser.performance.now' });
+x92BudgetExecutor = createX92BudgetedExecutor({
+  budget: x92Budget,
+  downstream: boundedActionRouter,
+  currentIdentity: () => x92CurrentIdentity(),
+  measurementSource: 'browser.performance.now',
+});
 let lastBoundedAction = null;
 function renderBoundedAction(result) {
   lastBoundedAction = structuredClone(result);
@@ -8252,11 +8353,60 @@ window.__AGENT_ACTIONS__ = Object.freeze({
   request: (action, payload = {}, options = {}) => boundedActionRequest(
     action, selectedCompilerProfile, actionContext().generation, payload, options,
   ),
-  execute: async (source) => { const result = await boundedActionRouter.execute(source); renderBoundedAction(result); return result; },
-  cancel: (requestId) => boundedActionRouter.cancel(requestId),
+  execute: async (source) => {
+    const result = await x92BudgetExecutor.execute(source); renderBoundedAction(result); renderX92Budget(); return result;
+  },
+  cancel: (requestId) => x92BudgetExecutor.cancel(requestId),
   state: () => lastBoundedAction ? structuredClone(lastBoundedAction) : null,
   externalEndpoint: false,
 });
+elements.x92budgetstart.addEventListener('click', async (event) => {
+  if (!event.isTrusted) {
+    renderX92Budget('A trusted human UI action is required to start a new experiment session.', false); return;
+  }
+  try {
+    if (x92Budget.active()) {
+      const retired = x92Budget.retire('human-started-new-session'); cancelX92Requests(retired.requestIds);
+    }
+    const result = x92Budget.start(await x92CurrentIdentity(), { humanInitiated: true });
+    renderX92Budget(result.ok
+      ? 'New session started by human action and bound to the current profile, source and electrical graph.'
+      : `Session was not started (${result.code}).`, result.ok);
+  } catch (error) {
+    renderX92Budget(`Session was not started (${error.code ?? error.message}).`, false);
+  }
+});
+elements.x92budgetdownload.addEventListener('click', () => {
+  const text = x92Budget.reviewText();
+  if (text) downloadText('intent-mcu-experiment-budget-review.json', text, 'application/json');
+});
+elements.x92budgetopen.addEventListener('click', () => elements.x92budgetopeninput.click());
+elements.x92budgetopeninput.addEventListener('change', async () => {
+  const file = elements.x92budgetopeninput.files[0]; elements.x92budgetopeninput.value = '';
+  if (!file) return;
+  if (file.size > 64 * 1024) {
+    elements.x92budgetimported.textContent = 'Review rejected: file exceeds the 64 KiB data-only limit.'; return;
+  }
+  try {
+    x92ImportedReview = parseX92ReviewProjection(await file.text()).review;
+    elements.x92budgetimported.textContent = `Inert review opened: ${x92ImportedReview.sessionId} · ${x92ImportedReview.active ? 'recorded active' : 'recorded retired'} · restored no session, runtime, reservation, permission, executable or verdict authority.`;
+  } catch (error) {
+    x92ImportedReview = null;
+    elements.x92budgetimported.textContent = `Review rejected (${error.code ?? error.message}). Live session state was unchanged.`;
+  }
+});
+window.__X92_EXPERIMENT_BUDGET__ = Object.freeze({
+  schema: X92_BUDGET_SCHEMA,
+  reviewSchema: X92_REVIEW_SCHEMA,
+  limits: Object.freeze({ ...X92_DEFAULT_LIMITS }),
+  active: () => x92Budget.active(),
+  snapshot: () => x92Budget.snapshot(),
+  reviewText: () => x92Budget.reviewText(),
+  parseReview: (source) => parseX92ReviewProjection(source),
+  imported: () => x92ImportedReview ? structuredClone(x92ImportedReview) : null,
+  authority: Object.freeze({ start: 'trusted-human-ui-only', build: false, run: false, retry: false, verdict: false }),
+});
+renderX92Budget();
 window.__CAPABILITY_DISCOVERY__ = Object.freeze({
   schema: CAPABILITY_DISCOVERY_SCHEMA,
   requestSchema: CAPABILITY_DISCOVERY_REQUEST_SCHEMA,
@@ -9548,6 +9698,7 @@ function detachOutstandingBuild() {
 }
 
 function installProjectGeneration({ empty, reason, runtimeMessage }) {
+  if (['project.new', 'project.reload', 'project.file-open'].includes(reason)) retireX92Budget(reason);
   retireX47Integration('X47_PROJECT_REPLACED');
   detachOutstandingBuild();
   stopRuntime(runtimeMessage, { updateLifecycle: false });
@@ -9573,6 +9724,9 @@ function installProjectGeneration({ empty, reason, runtimeMessage }) {
     selectedNetId: null, selectedRouteSegment: null, selection: { kind: 'none' },
   });
   clearTechnicalError();
+  if (!['project.new', 'project.reload', 'project.file-open'].includes(reason)) {
+    queueMicrotask(() => { void syncX92Identity(`project replaced: ${reason}`); });
+  }
 }
 
 function applyEditor(command, message = command.type) {
@@ -9587,6 +9741,7 @@ function applyEditor(command, message = command.type) {
     clearX40SharedTimeline('A non-visual project edit invalidated the prior shared timeline.');
   }
   if (relevance === 'build') {
+    void syncX92Identity('AVR source or electrical graph changed');
     const empty = result.project.circuit.components.length === 0;
     detachOutstandingBuild();
     stopRuntime('Circuit or source changed — rebuild required', { updateLifecycle: false });
@@ -12976,6 +13131,7 @@ elements.boardselect.addEventListener('change', () => {
   if (selectedCompilerProfile === RP2040_PROFILE) picoPublicWorkbench.render();
   if (selectedCompilerProfile === ESP32C3_PROFILE) c3PublicWorkbench.render();
   if (selectedCompilerProfile === STM32F429ZI_PROFILE) stm32PublicWorkbench.render();
+  void syncX92Identity('controller profile changed');
   renderProjectBrief();
   renderModelLibraryStatus();
 });

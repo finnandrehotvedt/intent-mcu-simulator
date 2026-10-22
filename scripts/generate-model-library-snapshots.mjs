@@ -13,6 +13,9 @@ import { controlContractsFor } from '../src/model-control-contracts.mjs';
 import * as existingSnapshots from '../src/model-library-snapshots.mjs';
 
 const { RETAINED_MODEL_LIBRARY_MANIFEST } = existingSnapshots;
+const PRE_X92_BUDGET_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X92_BUDGET_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_X47_REPEATABLE_REJECTION_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X47_REPEATABLE_REJECTION_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -203,16 +206,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x55-model-copy-fix.1-current',
-  'intent-mcu-model-bundle-current-x55-model-copy-fix-1@24',
+  '2.0.0-x92-private-budget.1-current',
+  'intent-mcu-model-bundle-current-x92-private-budget-1@25',
   currentImplementation,
   {
-    priorVersion: PRE_X55_MODEL_COPY_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X55_MODEL_COPY_FIX_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X92_BUDGET_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X92_BUDGET_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'explicit-data-only-migration; runtime-and-verdict-authority-cleared',
     semanticDisposition: 'component electrical and runtime semantics are unchanged; no component, property, pin, net, geometry bound or execution contract is added',
-    presentationDisposition: 'model preview copy now distinguishes nonmutating Preview from Apply, which revalidates and retires current executable/runtime evidence before a fresh Build; Drawing remains layout-only',
-    baselineClosureDisposition: 'the private split-editor identity, no-op Apply identity and accepted public rc.103 bounded-body identity remain immutable and migration-only',
+    presentationDisposition: 'private review adds a session-local experiment budget surface and inert review projection; it grants no producer, runtime, retry or verdict authority',
+    baselineClosureDisposition: 'the accepted X55 model-copy identity and all earlier public identities remain immutable and migration-only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -242,6 +245,7 @@ export const PRE_X55_BODY_LEAD_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freez
 export const PRE_X55_NOOP_APPLY_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X55_NOOP_APPLY_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X55_SPLIT_EDITOR_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X55_SPLIT_EDITOR_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X55_MODEL_COPY_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X55_MODEL_COPY_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X92_BUDGET_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X92_BUDGET_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

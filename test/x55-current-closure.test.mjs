@@ -8,6 +8,7 @@ import test from 'node:test';
 
 import {
   CURRENT_MODEL_LIBRARY_MANIFEST,
+  PRE_X92_BUDGET_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X55_MODEL_COPY_FIX_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X55_SPLIT_EDITOR_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X55_NOOP_APPLY_FIX_CURRENT_MODEL_LIBRARY_MANIFEST,
@@ -37,7 +38,7 @@ const requiredOwners = [
   'staging/main.mjs',
 ];
 
-test('X55 current identity explicitly owns every newly executed appearance path', async () => {
+test('X92 current identity explicitly owns every previously accepted appearance path', async () => {
   const members = new Map(CURRENT_MODEL_LIBRARY_MANIFEST.implementationMembers.map(
     (member) => [member.path, member.sha256],
   ));
@@ -46,6 +47,10 @@ test('X55 current identity explicitly owns every newly executed appearance path'
     const bytes = await readFile(new URL(`../${path}`, import.meta.url));
     assert.equal(createHash('sha256').update(bytes).digest('hex'), members.get(path), path);
   }
+  const accepted = new Map(PRE_X92_BUDGET_CURRENT_MODEL_LIBRARY_MANIFEST.implementationMembers.map(
+    (member) => [member.path, member.sha256]));
+  assert.equal(accepted.get('staging/main.mjs'),
+    '30544986081901e44b62f654d53a17330e0e2f3458c36bbd423df76cadc30f9b');
   for (const path of [
     'src/candidate-project-session.mjs',
     'expansion-drafts/project-v3-contact-persistence.mjs',
