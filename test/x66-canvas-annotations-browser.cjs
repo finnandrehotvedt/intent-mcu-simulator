@@ -117,7 +117,8 @@ const electricalSnapshot = () => {
 
     const [download] = await Promise.all([page.waitForEvent('download'), page.click('#canvas-annotations-download')]);
     const workspaceText = fs.readFileSync(await download.path(), 'utf8'); const workspace = JSON.parse(workspaceText);
-    assert.equal(workspace.schema, 'intent-mcu-annotated-workspace@2');
+    assert.equal(workspace.schema, 'intent-mcu-annotated-workspace@3');
+    assert.deepEqual(workspace.subcircuits.instances, []);
     assert.equal(workspace.annotations.schema, 'intent-mcu-canvas-annotations@2');
     assert.equal(workspace.annotations.netLabels.schema, 'intent-mcu-net-labels@1');
     const accepted = await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot());

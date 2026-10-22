@@ -68,7 +68,7 @@ export function projectChangeRelevance(commandType) {
     || commandType.startsWith('wire.reconnect')
     || commandType.startsWith('wire.delete')
     || commandType.startsWith('junction.')
-    || ['component.add', 'component.duplicate', 'component.remove', 'component.property.set', 'board.profile.set'].includes(commandType)
+    || ['component.add', 'component.duplicate', 'component.remove', 'component.property.set', 'board.profile.set', 'subcircuit.graph.replace'].includes(commandType)
   ) return 'build';
   if (
     commandType.startsWith('wire.route.')
@@ -80,6 +80,7 @@ export function projectChangeRelevance(commandType) {
     || commandType === 'component.appearance.edit'
     || commandType === 'project.rename'
     || commandType === 'viewport.set'
+    || commandType === 'subcircuit.presentation.set'
   ) return 'visual';
   if (commandType === 'component.control.set') return 'runtime';
   return 'build';

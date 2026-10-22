@@ -8,6 +8,9 @@ import {
   LEGACY_ANNOTATED_WORKSPACE_SCHEMA, LEGACY_CANVAS_ANNOTATIONS_SCHEMA, NET_LABELS_SCHEMA,
   canonicalAnnotatedWorkspace, emptyCanvasAnnotations, normalizeCanvasAnnotations, parseAnnotatedWorkspace,
 } from '../src/canvas-annotations.mjs';
+import { emptySubcircuits } from '../src/bounded-subcircuits.mjs';
+import { DEFAULT_CIRCUIT } from '../src/default-circuit.mjs';
+import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
 
 const components = ['board-1', 'led-1', 'resistor-1'];
 const nets = ['ground', 'indicator', 'supply'];
@@ -114,25 +117,29 @@ test('X66 net deletion deterministically removes labels and paired undo restores
 test('X66 legacy annotation/workspace data upgrades with an empty strict net-label owner', () => {
   const legacy = { schema: LEGACY_CANVAS_ANNOTATIONS_SCHEMA, notes: [], groups: [] };
   assert.deepEqual(normalizeCanvasAnnotations(legacy, references), emptyCanvasAnnotations());
-  const validator = (project) => ({ project, ...references });
+  const validator = (project) => ({ project, ...references, graph: DEFAULT_CIRCUIT,
+    modelLibrary: CURRENT_MODEL_LIBRARY_LOCK });
   const opened = parseAnnotatedWorkspace(JSON.stringify({ schema: LEGACY_ANNOTATED_WORKSPACE_SCHEMA,
     profileId: 'board.atmega328p-16mhz-v1', project: { schema: 'legacy-project' }, annotations: legacy }), validator);
   assert.equal(opened.workspace.schema, ANNOTATED_WORKSPACE_SCHEMA);
   assert.deepEqual(opened.workspace.annotations, emptyCanvasAnnotations());
+  assert.deepEqual(opened.workspace.subcircuits, emptySubcircuits());
 });
 
 test('X66 annotated workspace roundtrips only after project and references validate', () => {
   const validator = (project, profileId) => {
     assert.equal(profileId, 'board.atmega328p-16mhz-v1');
     if (project.schema !== 'project-envelope-test@1') throw new Error('PROJECT_INVALID');
-    return { project, componentIds: components, netIds: nets, prepared: { ok: true } };
+    return { project, componentIds: components, netIds: nets, graph: DEFAULT_CIRCUIT,
+      modelLibrary: CURRENT_MODEL_LIBRARY_LOCK, prepared: { ok: true } };
   };
   const value = { schema: ANNOTATED_WORKSPACE_SCHEMA, profileId: 'board.atmega328p-16mhz-v1',
     project: { schema: 'project-envelope-test@1' }, annotations: { schema: CANVAS_ANNOTATIONS_SCHEMA,
       notes: [{ id: 'note-one', text: 'Observe output', x: 0.7, y: 0.2 }],
       groups: [{ id: 'group-one', label: 'Output stage', componentIds: ['led-1', 'resistor-1'] }],
       netLabels: { schema: NET_LABELS_SCHEMA,
-        labels: [{ id: 'net-label-one', netId: 'indicator', text: 'OUTPUT', x: 0.6, y: 0.3 }] } } };
+        labels: [{ id: 'net-label-one', netId: 'indicator', text: 'OUTPUT', x: 0.6, y: 0.3 }] } },
+    subcircuits: emptySubcircuits() };
   const text = canonicalAnnotatedWorkspace(value, validator);
   assert.deepEqual(parseAnnotatedWorkspace(text, validator).workspace, value);
   const malformed = structuredClone(value); malformed.annotations.groups[0].componentIds.push('missing');

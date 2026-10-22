@@ -1077,7 +1077,7 @@
     </div>
   </dialog>
   <dialog id="canvas-annotations-dialog" class="canvas-annotations-dialog" aria-labelledby="canvas-annotations-title">
-    <header><div><p class="eyebrow">X66 · READABILITY LAYER</p><h2 id="canvas-annotations-title" tabindex="-1">Canvas labels, notes and groups</h2></div><button id="canvas-annotations-close" type="button">Close</button></header>
+    <header><div><p class="eyebrow">X66 · READABILITY LAYER</p><h2 id="canvas-annotations-title" tabindex="-1">Canvas labels, notes, groups and subcircuits</h2></div><button id="canvas-annotations-close" type="button">Close</button></header>
     <div class="canvas-annotations-layout">
       <p class="canvas-annotations-boundary">Notes and groups are non-electrical. A net label can identify only one existing canonical net ID: matching label text never creates, merges, splits or retargets a connection.</p>
       <section class="canvas-annotations-create" aria-label="Create visual annotation">
@@ -1099,8 +1099,19 @@
         <button id="canvas-net-label-add" type="button">Label existing net</button>
         <small>Choosing a net binds display metadata to that exact existing net ID. This control cannot connect anything.</small>
       </section>
+      <section class="canvas-annotations-create canvas-subcircuit-create" aria-label="Create bounded reusable subcircuit">
+        <h3>Reusable series LED stage</h3>
+        <p>One fixed resistor and one LED with explicit source and ground ports. Creation expands into ordinary validated components and nets.</p>
+        <label>Instance ID<input id="canvas-subcircuit-id" type="text" maxlength="31" value="stage-one"></label>
+        <label>Source port · existing net<select id="canvas-subcircuit-source"></select></label>
+        <label>Ground port · existing net<select id="canvas-subcircuit-ground"></select></label>
+        <label>X position<input id="canvas-subcircuit-x" type="number" min="0" max="1" step="0.01" value="0.58"></label>
+        <label>Y position<input id="canvas-subcircuit-y" type="number" min="0" max="1" step="0.01" value="0.42"></label>
+        <button id="canvas-subcircuit-add" type="button">Create validated instance</button>
+        <small>Creates one atomic electrical edit. It does not Build, Run or create a separate runtime.</small>
+      </section>
       <div class="canvas-annotations-actions"><button id="canvas-annotations-undo" type="button" disabled>Undo visual edit</button><button id="canvas-annotations-redo" type="button" disabled>Redo visual edit</button><button id="canvas-annotations-download" type="button">Download annotated project</button><button id="canvas-annotations-import" type="button">Open annotated project</button><input id="canvas-annotations-input" class="sr-only" type="file" accept="application/json,.json,.intent-mcu-annotated.json"></div>
-      <p id="canvas-annotations-status" class="truth" role="status">No canvas labels, notes or groups yet.</p>
+      <p id="canvas-annotations-status" class="truth" role="status">No canvas labels, notes, groups or subcircuits yet.</p>
       <div id="canvas-annotations-list" class="canvas-annotations-list"></div>
     </div>
   </dialog>

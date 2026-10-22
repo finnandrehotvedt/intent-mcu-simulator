@@ -6,12 +6,13 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import {
   BoundedSubcircuitReducer, SUBCIRCUIT_DEFINITION_SCHEMA, SUBCIRCUIT_INSTANCE_SCHEMA,
-  createSeriesLedDefinition, emptySubcircuits, expandSubcircuits, normalizeSubcircuits,
+  contractSubcircuits, createSeriesLedDefinition, emptySubcircuits, expandSubcircuits, normalizeSubcircuits,
   parseSubcircuits,
 } from '../src/bounded-subcircuits.mjs';
 import { DEFAULT_CIRCUIT } from '../src/default-circuit.mjs';
 import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
 import * as modelLibrary from '../src/model-library.mjs';
+import { ProjectEditorReducer, projectFromCircuit } from '../src/project-editor.mjs';
 
 const clone = structuredClone;
 const digest = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -117,4 +118,34 @@ test('X66 every exported historical trusted lock is rejected as stale owner iden
     if (JSON.stringify(lock) === JSON.stringify(CURRENT_MODEL_LIBRARY_LOCK)) assert.doesNotThrow(() => normalizeSubcircuits(value));
     else assert.throws(() => normalizeSubcircuits(value), { code: 'SUBCIRCUIT_OWNER_SHAPE' }, name);
   }
+});
+
+test('X66 empty owner remains inert over an independently validated retained candidate graph', () => {
+  const candidateGraph = { schema: 'teach-lab-circuit@1',
+    components: [{ id: 'retained-sensor', type: 'sensor.retained-candidate-v1', label: 'Retained sensor', properties: {}, controls: {} }],
+    nets: [], junctions: [] };
+  const result = contractSubcircuits(candidateGraph, emptySubcircuits());
+  assert.deepEqual(result.graph, candidateGraph);
+  assert.deepEqual(result.baseGraph, candidateGraph);
+  assert.notStrictEqual(result.graph, candidateGraph);
+});
+
+test('X66 project editor commits electrical replacement and presentation movement as atomic history', () => {
+  const session = new ProjectEditorReducer(projectFromCircuit(DEFAULT_CIRCUIT));
+  const before = clone(session.project);
+  const expanded = expandSubcircuits(DEFAULT_CIRCUIT, owner(instance('stage-one'))).graph;
+  const positions = clone(before.layout.positions);
+  positions['stage-one-resistor'] = { x: 0.56, y: 0.34, rotation: 0 };
+  positions['stage-one-led'] = { x: 0.68, y: 0.34, rotation: 0 };
+  const created = session.apply({ type: 'subcircuit.graph.replace', graph: expanded, positions, revision: 0 });
+  assert.equal(created.ok, true); assert.equal(created.buildRelevant, true);
+  const moved = session.apply({ type: 'subcircuit.presentation.set',
+    positions: [{ componentId: 'stage-one-resistor', x: 0.66, y: 0.54 },
+      { componentId: 'stage-one-led', x: 0.78, y: 0.54 }], revision: 1 });
+  assert.equal(moved.ok, true); assert.equal(moved.buildRelevant, false);
+  assert.deepEqual(moved.project.circuit, created.project.circuit);
+  const undoMove = session.apply({ type: 'undo', revision: 2 });
+  assert.deepEqual(undoMove.project.circuit, created.project.circuit);
+  const undoCreate = session.apply({ type: 'undo', revision: 3 });
+  assert.deepEqual(undoCreate.project.circuit, before.circuit);
 });

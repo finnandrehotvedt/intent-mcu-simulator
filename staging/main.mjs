@@ -334,6 +334,7 @@ import {
 import {
   ANNOTATED_WORKSPACE_SCHEMA,
   LEGACY_ANNOTATED_WORKSPACE_SCHEMA,
+  PRE_SUBCIRCUIT_ANNOTATED_WORKSPACE_SCHEMA,
   CANVAS_ANNOTATIONS_SCHEMA,
   CANVAS_ANNOTATION_LIMITS,
   NET_LABELS_SCHEMA,
@@ -342,6 +343,15 @@ import {
   emptyCanvasAnnotations,
   parseAnnotatedWorkspace,
 } from '../src/canvas-annotations.mjs';
+import {
+  BoundedSubcircuitReducer,
+  SUBCIRCUIT_INSTANCE_SCHEMA,
+  SUBCIRCUITS_SCHEMA,
+  contractSubcircuits,
+  createSeriesLedDefinition,
+  emptySubcircuits,
+  normalizeSubcircuits,
+} from '../src/bounded-subcircuits.mjs';
 import { AUTHORED_CHANGE_REVIEW_SCHEMA } from '../src/authored-change-review.mjs';
 import {
   EXPECTATION_REFERENCE_LIMIT,
@@ -530,6 +540,8 @@ const elements = Object.fromEntries([
   'canvas-note-text', 'canvas-note-x', 'canvas-note-y', 'canvas-note-add', 'canvas-group-label',
   'canvas-group-components', 'canvas-group-add', 'canvas-annotations-undo', 'canvas-annotations-redo',
   'canvas-net-label-text', 'canvas-net-label-net', 'canvas-net-label-x', 'canvas-net-label-y', 'canvas-net-label-add',
+  'canvas-subcircuit-id', 'canvas-subcircuit-source', 'canvas-subcircuit-ground',
+  'canvas-subcircuit-x', 'canvas-subcircuit-y', 'canvas-subcircuit-add',
   'canvas-annotations-download', 'canvas-annotations-import', 'canvas-annotations-input',
   'canvas-annotations-status', 'canvas-annotations-list', 'canvas-annotation-layer',
   'regression-matrix', 'regression-matrix-state', 'regression-matrix-identity',
@@ -647,10 +659,12 @@ let presentationObservation = null;
 let acceptedTeachingExercise = null;
 let teachingExerciseReturnFocus = null;
 let canvasAnnotations = null;
+let boundedSubcircuits = emptySubcircuits();
+let pendingSubcircuitTransition = null;
 let canvasAnnotationSequence = 0;
 let canvasAnnotationReturnFocus = null;
 let selectedCanvasAnnotationGroup = null;
-let canvasAnnotationBaseline = JSON.stringify(emptyCanvasAnnotations());
+let canvasAnnotationBaseline = JSON.stringify({ annotations: emptyCanvasAnnotations(), subcircuits: boundedSubcircuits });
 const annotationEditorPast = [];
 const annotationEditorFuture = [];
 let lastProfileMigrationReport = null;
@@ -7127,7 +7141,8 @@ const commonProjectAdapters = Object.freeze({
 function detectedAnnotatedWorkspaceSchema(source) {
   try {
     const schema = JSON.parse(source)?.schema;
-    return [ANNOTATED_WORKSPACE_SCHEMA, LEGACY_ANNOTATED_WORKSPACE_SCHEMA].includes(schema) ? schema : null;
+    return [ANNOTATED_WORKSPACE_SCHEMA, PRE_SUBCIRCUIT_ANNOTATED_WORKSPACE_SCHEMA,
+      LEGACY_ANNOTATED_WORKSPACE_SCHEMA].includes(schema) ? schema : null;
   } catch { return null; }
 }
 function prepareAuthoredProjectEnvelope(source) {
@@ -7137,7 +7152,7 @@ function prepareAuthoredProjectEnvelope(source) {
       const opened = parseAnnotatedWorkspace(source, validateAnnotatedProject);
       return { ...opened.prepared,
         canonical: canonicalAnnotatedWorkspace(opened.workspace, validateAnnotatedProject),
-        annotations: opened.workspace.annotations };
+        annotations: opened.workspace.annotations, subcircuits: opened.workspace.subcircuits };
     } catch (error) { return { ok: false, code: error.code ?? error.message }; }
   }
   return prepareProjectEnvelope(source, commonProjectAdapters);
@@ -7147,7 +7162,8 @@ function parseAvrRecoverySource(source) {
   if (common.ok && common.profile === AVR_PROFILE) {
     return { ok: true, code: common.code, session: common.prepared,
       scenarioTimeline: common.scenarioTimeline, modelLibrary: common.modelLibrary,
-      report: common.report, annotations: common.annotations ?? null };
+      report: common.report, annotations: common.annotations ?? null,
+      subcircuits: common.subcircuits ?? emptySubcircuits(common.modelLibrary) };
   }
   const retained = resolveModelLibrary(RETAINED_MODEL_LIBRARY_LOCK);
   if (!retained.ok) return retained;
@@ -7698,7 +7714,7 @@ let pendingDestructiveProjectAction = null;
 let destructiveActionSequence = 0;
 function setProjectBaseline(profile) {
   projectBaselines.set(profile, authoredProjectText(profile));
-  if (profile === AVR_PROFILE) canvasAnnotationBaseline = JSON.stringify(ensureCanvasAnnotations().snapshot());
+  if (profile === AVR_PROFILE) canvasAnnotationBaseline = canvasReadabilitySnapshot();
 }
 function isProjectDirty(profile) {
   const baseline = projectBaselines.get(profile);
@@ -7746,7 +7762,8 @@ function requestUnsavedChangeGuard({ profile, actionLabel, continueAction }) {
   elements.unsavedkeep.focus();
   return true;
 }
-function installPreparedProjectEnvelope(result, handle = null, { preserveExpectationReference = false, annotations = null } = {}) {
+function installPreparedProjectEnvelope(result, handle = null, { preserveExpectationReference = false,
+  annotations = null, subcircuits = null } = {}) {
   retireX92Budget('project.file-open');
   if (result.profile !== selectedCompilerProfile) {
     elements.boardselect.value = result.profile;
@@ -7766,7 +7783,9 @@ function installPreparedProjectEnvelope(result, handle = null, { preserveExpecta
       runtimeMessage: 'Opened project requires build',
     });
     selectedSourceFile = 'main.ino';
-    resetCanvasAnnotations(annotations ?? emptyCanvasAnnotations());
+    resetCanvasAnnotations(annotations ?? emptyCanvasAnnotations(), {
+      subcircuits: subcircuits ?? emptySubcircuits(result.modelLibrary),
+    });
     persistProject(); markFileSaved('opened file current'); renderCatalog(); renderProject();
   } else if (result.profile === RP2040_PROFILE) picoPublicWorkbench.installPreparedProject(result.project);
   else if (result.profile === ESP32C3_PROFILE) c3PublicWorkbench.installPreparedProject(result.project);
@@ -7822,9 +7841,15 @@ async function openCommonProjectFile(file, handle = null) {
   if (result.profile === activeBefore && requestUnsavedChangeGuard({
     profile: activeBefore,
     actionLabel: 'opening this file',
-    continueAction: () => installPreparedProjectEnvelope(result, handle, { annotations: annotated?.workspace.annotations ?? null }),
+    continueAction: () => installPreparedProjectEnvelope(result, handle, {
+      annotations: annotated?.workspace.annotations ?? null,
+      subcircuits: annotated?.workspace.subcircuits ?? null,
+    }),
   })) return { ...result, pending: true };
-  return installPreparedProjectEnvelope(result, handle, { annotations: annotated?.workspace.annotations ?? null });
+  return installPreparedProjectEnvelope(result, handle, {
+    annotations: annotated?.workspace.annotations ?? null,
+    subcircuits: annotated?.workspace.subcircuits ?? null,
+  });
 }
 async function openConnectedProject(profile) {
   if (!nativeFileCapabilities().open) {
@@ -8921,32 +8946,87 @@ function ensureCanvasAnnotations() {
   if (!canvasAnnotations) canvasAnnotations = new CanvasAnnotationReducer(emptyCanvasAnnotations(), annotationReferences());
   return canvasAnnotations;
 }
-function resetCanvasAnnotations(value = emptyCanvasAnnotations(), { baseline = true } = {}) {
+function canvasReadabilitySnapshot() {
+  return JSON.stringify({ annotations: ensureCanvasAnnotations().snapshot(), subcircuits: boundedSubcircuits });
+}
+function resetCanvasAnnotations(value = emptyCanvasAnnotations(), { baseline = true,
+  subcircuits = emptySubcircuits(modelLibraryLockFor(AVR_PROFILE)) } = {}) {
   canvasAnnotations = new CanvasAnnotationReducer(value, annotationReferences());
+  boundedSubcircuits = contractSubcircuits(currentProject().circuit, subcircuits, {
+    profileId: AVR_PROFILE, modelLibraryLock: modelLibraryLockFor(AVR_PROFILE),
+  }).owner;
   selectedCanvasAnnotationGroup = null;
   annotationEditorPast.length = 0; annotationEditorFuture.length = 0;
-  if (baseline) canvasAnnotationBaseline = JSON.stringify(canvasAnnotations.snapshot());
+  if (baseline) canvasAnnotationBaseline = canvasReadabilitySnapshot();
   renderCanvasAnnotationOverlay();
 }
 function canvasAnnotationsDirty() {
-  return JSON.stringify(ensureCanvasAnnotations().snapshot()) !== canvasAnnotationBaseline;
+  return canvasReadabilitySnapshot() !== canvasAnnotationBaseline;
+}
+function subcircuitOptions() {
+  return { profileId: AVR_PROFILE, modelLibraryLock: modelLibraryLockFor(AVR_PROFILE) };
+}
+function generatedSubcircuitComponentIds(owner = boundedSubcircuits) {
+  const definitions = new Map(owner.definitions.map((definition) => [definition.id, definition]));
+  return new Set(owner.instances.flatMap((instance) => (definitions.get(instance.definitionId)?.components ?? [])
+    .map((component) => `${instance.id}-${component.id}`)));
+}
+function subcircuitPositions(graph, owner) {
+  const prior = currentProject().layout.positions;
+  const positions = Object.fromEntries(graph.components.map((component) => [component.id,
+    structuredClone(prior[component.id] ?? { x: 0.5, y: 0.5, rotation: 0 })]));
+  for (const instance of owner.instances) {
+    if (positions[`${instance.id}-resistor`]) positions[`${instance.id}-resistor`] = {
+      x: Math.max(0.08, instance.x - 0.055), y: instance.y, rotation: 0,
+    };
+    if (positions[`${instance.id}-led`]) positions[`${instance.id}-led`] = {
+      x: Math.min(0.92, instance.x + 0.055), y: instance.y, rotation: 0,
+    };
+  }
+  return positions;
+}
+function applySubcircuitCommand(command, message) {
+  const before = structuredClone(boundedSubcircuits);
+  try {
+    const reducer = new BoundedSubcircuitReducer(currentProject().circuit, before, subcircuitOptions());
+    const result = reducer.apply(command);
+    if (!result.changed) return result;
+    pendingSubcircuitTransition = { before, after: structuredClone(result.owner) };
+    const electrical = ['instance.create', 'instance.remove'].includes(command.type);
+    const editorCommand = electrical
+      ? { type: 'subcircuit.graph.replace', graph: result.graph, positions: subcircuitPositions(result.graph, result.owner) }
+      : { type: 'subcircuit.presentation.set', positions: [...generatedSubcircuitComponentIds(result.owner)]
+        .map((componentId) => ({ componentId, x: subcircuitPositions(result.graph, result.owner)[componentId].x,
+          y: subcircuitPositions(result.graph, result.owner)[componentId].y })) };
+    const applied = applyEditor(editorCommand, message);
+    if (applied.ok) { renderCanvasAnnotationsDialog(); renderCanvasAnnotationOverlay(); }
+    return applied;
+  } catch (error) {
+    pendingSubcircuitTransition = null;
+    elements.canvasannotationsstatus.textContent = `Subcircuit edit rejected (${error.code ?? error.message}). Project and graph unchanged.`;
+    return { ok: false, code: error.code ?? error.message };
+  }
 }
 function validateAnnotatedProject(value, profileId) {
   if (profileId !== AVR_PROFILE) throw Object.assign(new Error('ANNOTATED_WORKSPACE_PROFILE'), { code: 'ANNOTATED_WORKSPACE_PROFILE' });
   const prepared = prepareProjectEnvelope(JSON.stringify(value), commonProjectAdapters);
   if (!prepared.ok || prepared.profile !== AVR_PROFILE) throw Object.assign(new Error(prepared.code ?? 'ANNOTATED_WORKSPACE_PROJECT'), prepared);
-  return { project: JSON.parse(prepared.canonical), ...annotationReferences(prepared.project), prepared };
+  return { project: JSON.parse(prepared.canonical), ...annotationReferences(prepared.project),
+    graph: prepared.project.candidateCircuit ?? prepared.project.circuit,
+    modelLibrary: prepared.modelLibrary, prepared };
 }
 function currentAnnotatedWorkspace() {
   return { schema: ANNOTATED_WORKSPACE_SCHEMA, profileId: AVR_PROFILE,
-    project: JSON.parse(commonProjectText(AVR_PROFILE)), annotations: ensureCanvasAnnotations().snapshot() };
+    project: JSON.parse(commonProjectText(AVR_PROFILE)), annotations: ensureCanvasAnnotations().snapshot(),
+    subcircuits: structuredClone(boundedSubcircuits) };
 }
 function canonicalCurrentAnnotatedWorkspace() {
   return canonicalAnnotatedWorkspace(currentAnnotatedWorkspace(), validateAnnotatedProject);
 }
 function canvasAnnotationsPresent() {
   const annotations = ensureCanvasAnnotations().snapshot();
-  return annotations.notes.length > 0 || annotations.groups.length > 0 || annotations.netLabels.labels.length > 0;
+  return annotations.notes.length > 0 || annotations.groups.length > 0 || annotations.netLabels.labels.length > 0
+    || boundedSubcircuits.instances.length > 0;
 }
 function authoredProjectText(profile = selectedCompilerProfile) {
   return profile === AVR_PROFILE && canvasAnnotationsPresent()
@@ -8962,7 +9042,7 @@ function nextCanvasAnnotationId(prefix) {
   do { canvasAnnotationSequence += 1; candidate = `${prefix}-${canvasAnnotationSequence}`; } while (used.has(candidate));
   return candidate;
 }
-function annotationEditorMarker(before, after) {
+function annotationEditorMarker(before, after, subcircuits = null) {
   const afterGroups = new Map(after.groups.map((group) => [group.id, group]));
   const afterLabels = new Map(after.netLabels.labels.map((label) => [label.id, label]));
   return { groups: before.groups.map((group) => {
@@ -8971,9 +9051,16 @@ function annotationEditorMarker(before, after) {
       removed: group.componentIds.filter((member) => !afterGroup?.componentIds.includes(member)) };
   }).filter(({ removed, afterExisted }) => removed.length || !afterExisted),
   labels: before.netLabels.labels.map((label, index) => ({ label: structuredClone(label), index }))
-    .filter(({ label }) => !afterLabels.has(label.id)) };
+    .filter(({ label }) => !afterLabels.has(label.id)), subcircuits };
 }
 function applyAnnotationEditorMarker(marker, direction) {
+  if (marker.subcircuits) {
+    boundedSubcircuits = structuredClone(direction === 'undo'
+      ? marker.subcircuits.before : marker.subcircuits.after);
+    contractSubcircuits(currentProject().circuit, boundedSubcircuits, {
+      profileId: AVR_PROFILE, modelLibraryLock: modelLibraryLockFor(AVR_PROFILE),
+    });
+  }
   const current = ensureCanvasAnnotations().snapshot();
   const groups = new Map(current.groups.map((group) => [group.id, group]));
   for (const change of marker.groups) {
@@ -9001,6 +9088,16 @@ function renderCanvasAnnotationOverlay() {
   const state = ensureCanvasAnnotations().snapshot();
   const positions = currentProject().layout.positions;
   const nodes = [];
+  for (const instance of boundedSubcircuits.instances) {
+    const point = screenPoint(instance); const node = document.createElement('button'); node.type = 'button';
+    node.className = `canvas-subcircuit-badge${instance.collapsed ? ' collapsed' : ''}`;
+    node.dataset.subcircuitBadge = instance.id; node.style.left = `${point.x * 100}%`; node.style.top = `${point.y * 100}%`;
+    node.textContent = `${instance.collapsed ? '▸' : '▾'} ${instance.id} · SERIES LED`;
+    node.setAttribute('aria-label', `${instance.id}, bounded reusable series LED stage, ${instance.collapsed ? 'collapsed' : 'expanded'}`);
+    node.addEventListener('click', () => applySubcircuitCommand({ type: 'instance.collapse', id: instance.id,
+      collapsed: !instance.collapsed }, `${instance.collapsed ? 'Expanded' : 'Collapsed'} ${instance.id}`));
+    nodes.push(node);
+  }
   for (const group of state.groups) {
     const points = group.componentIds.map((id) => positions[id]).filter(Boolean).map(screenPoint);
     if (!points.length) continue;
@@ -9082,6 +9179,10 @@ function renderCanvasAnnotationsDialog() {
     label.append(input, document.createTextNode(component.label)); return label;
   }));
   elements.canvasnetlabelnet.replaceChildren(...currentProject().circuit.nets.map((net) => new Option(net.id, net.id)));
+  const generatedNets = new Set(boundedSubcircuits.instances.map(({ id }) => `${id}-series`));
+  const bindableNets = currentProject().circuit.nets.filter(({ id }) => !generatedNets.has(id));
+  elements.canvassubcircuitsource.replaceChildren(...bindableNets.map((net) => new Option(net.id, net.id)));
+  elements.canvassubcircuitground.replaceChildren(...bindableNets.map((net) => new Option(net.id, net.id)));
   const editors = [];
   for (const note of state.notes) {
     const row = document.createElement('article'); row.className = 'canvas-annotation-editor'; row.dataset.annotationEditor = note.id;
@@ -9109,6 +9210,26 @@ function renderCanvasAnnotationsDialog() {
     input.addEventListener('change', () => annotationCommand({ type: 'net-label.edit', id: netLabel.id, netId: netLabel.netId,
       text: input.value.trim(), x: netLabel.x, y: netLabel.y }, `Updated ${netLabel.id}`));
     row.append(label, focus, remove, meta); editors.push(row);
+  }
+  for (const instance of boundedSubcircuits.instances) {
+    const row = document.createElement('article'); row.className = 'canvas-annotation-editor canvas-subcircuit-editor';
+    row.dataset.annotationEditor = instance.id;
+    const xLabel = document.createElement('label'); xLabel.textContent = 'X'; const x = document.createElement('input');
+    x.type = 'number'; x.min = '0'; x.max = '1'; x.step = '0.01'; x.value = String(instance.x); xLabel.append(x);
+    const yLabel = document.createElement('label'); yLabel.textContent = 'Y'; const y = document.createElement('input');
+    y.type = 'number'; y.min = '0'; y.max = '1'; y.step = '0.01'; y.value = String(instance.y); yLabel.append(y);
+    const move = document.createElement('button'); move.type = 'button'; move.textContent = 'Move';
+    move.addEventListener('click', () => applySubcircuitCommand({ type: 'instance.move', id: instance.id,
+      x: Number(x.value), y: Number(y.value) }, `Moved ${instance.id}`));
+    const collapse = document.createElement('button'); collapse.type = 'button'; collapse.textContent = instance.collapsed ? 'Expand' : 'Collapse';
+    collapse.addEventListener('click', () => applySubcircuitCommand({ type: 'instance.collapse', id: instance.id,
+      collapsed: !instance.collapsed }, `${instance.collapsed ? 'Expanded' : 'Collapsed'} ${instance.id}`));
+    const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Delete';
+    remove.addEventListener('click', () => applySubcircuitCommand({ type: 'instance.remove', id: instance.id }, `Deleted ${instance.id}`));
+    const bindings = Object.fromEntries(instance.bindings.map(({ portId, netId }) => [portId, netId]));
+    const meta = document.createElement('small');
+    meta.textContent = `BOUNDED ELECTRICAL · source → ${bindings.source} · ground → ${bindings.ground} · generated ${instance.id}-resistor, ${instance.id}-led`;
+    row.append(xLabel, yLabel, move, collapse, remove, meta); editors.push(row);
   }
   elements.canvasannotationslist.replaceChildren(...editors);
 }
@@ -9141,10 +9262,19 @@ elements.canvasnetlabeladd.addEventListener('click', () => {
     x: Number(elements.canvasnetlabelx.value), y: Number(elements.canvasnetlabely.value) }, 'Labelled existing net');
   if (result.ok) elements.canvasnetlabeltext.value = '';
 });
+elements.canvassubcircuitadd.addEventListener('click', () => {
+  const result = applySubcircuitCommand({ type: 'instance.create', id: elements.canvassubcircuitid.value.trim(),
+    definition: createSeriesLedDefinition(),
+    bindings: [{ portId: 'source', netId: elements.canvassubcircuitsource.value },
+      { portId: 'ground', netId: elements.canvassubcircuitground.value }],
+    x: Number(elements.canvassubcircuitx.value), y: Number(elements.canvassubcircuity.value) },
+  `Created ${elements.canvassubcircuitid.value.trim()}`);
+  if (result.ok) elements.canvassubcircuitid.value = `stage-${boundedSubcircuits.instances.length + 1}`;
+});
 elements.canvasannotationsundo.addEventListener('click', () => { annotationHistory('undo'); });
 elements.canvasannotationsredo.addEventListener('click', () => { annotationHistory('redo'); });
 elements.canvasannotationsdownload.addEventListener('click', () => {
-  try { downloadText('intent-mcu-annotated-project.json', canonicalCurrentAnnotatedWorkspace(), 'application/json'); canvasAnnotationBaseline = JSON.stringify(ensureCanvasAnnotations().snapshot()); elements.canvasannotationsstatus.textContent = 'Annotated project download requested locally.'; }
+  try { downloadText('intent-mcu-annotated-project.json', canonicalCurrentAnnotatedWorkspace(), 'application/json'); canvasAnnotationBaseline = canvasReadabilitySnapshot(); elements.canvasannotationsstatus.textContent = 'Annotated project download requested locally.'; }
   catch (error) { elements.canvasannotationsstatus.textContent = `Annotated project rejected (${error.code ?? error.message}).`; }
 });
 elements.canvasannotationsimport.addEventListener('click', () => elements.canvasannotationsinput.click());
@@ -9153,7 +9283,9 @@ elements.canvasannotationsinput.addEventListener('change', async () => {
   if (file.size > CANVAS_ANNOTATION_LIMITS.bytes) { elements.canvasannotationsstatus.textContent = 'Annotated project rejected (INPUT_LIMIT).'; return; }
   try {
     const opened = parseAnnotatedWorkspace(await file.text(), validateAnnotatedProject);
-    const install = () => { installPreparedProjectEnvelope(opened.prepared, null, { annotations: opened.workspace.annotations }); };
+    const install = () => { installPreparedProjectEnvelope(opened.prepared, null, {
+      annotations: opened.workspace.annotations, subcircuits: opened.workspace.subcircuits,
+    }); };
     closeCanvasAnnotations({ restoreFocus: false });
     if (requestUnsavedChangeGuard({ profile: AVR_PROFILE, actionLabel: 'opening this annotated project', continueAction: install })) return;
     install();
@@ -9163,6 +9295,11 @@ window.__X66_CANVAS_ANNOTATIONS__ = Object.freeze({
   schema: CANVAS_ANNOTATIONS_SCHEMA, netLabelsSchema: NET_LABELS_SCHEMA, workspaceSchema: ANNOTATED_WORKSPACE_SCHEMA,
   snapshot: () => ensureCanvasAnnotations().snapshot(), workspaceText: () => canonicalCurrentAnnotatedWorkspace(),
   authority: Object.freeze({ electrical: false, source: false, build: false, run: false, verdict: false }),
+});
+window.__X66_BOUNDED_SUBCIRCUITS__ = Object.freeze({
+  schema: SUBCIRCUITS_SCHEMA,
+  snapshot: () => structuredClone(boundedSubcircuits),
+  authority: Object.freeze({ build: false, run: false, runtime: false, worker: false, producer: false }),
 });
 window.__CAPABILITY_DISCOVERY__ = Object.freeze({
   schema: CAPABILITY_DISCOVERY_SCHEMA,
@@ -10029,7 +10166,7 @@ async function saveProjectFile() {
   catch (error) { showActionableError(elements.projectmessage, error.message, 'Project file was not saved.'); return; }
   const recoverySaved = persistProject();
   downloadText(projectFilename(), text, 'application/json');
-  canvasAnnotationBaseline = JSON.stringify(ensureCanvasAnnotations().snapshot());
+  canvasAnnotationBaseline = canvasReadabilitySnapshot();
   markFileSaved('download requested'); renderProject();
   elements.projectmessage.textContent = recoverySaved
     ? 'Project download requested. Your browser chooses the download location; browser recovery was updated separately.'
@@ -10490,13 +10627,37 @@ function installProjectGeneration({ empty, reason, runtimeMessage }) {
 }
 
 function applyEditor(command, message = command.type) {
+  if (boundedSubcircuits.instances.length && !command.type.startsWith('subcircuit.')
+      && !['undo', 'redo'].includes(command.type)) {
+    const generated = generatedSubcircuitComponentIds();
+    if (command.componentId && generated.has(command.componentId)) {
+      const rejected = { ok: false, code: 'SUBCIRCUIT_GENERATED_MEMBER_OWNED', revision: editor.revision };
+      showActionableError(elements.projectmessage, rejected.code,
+        'Use the reusable-stage controls to move or delete generated members atomically.');
+      return rejected;
+    }
+    try {
+      const probe = new ProjectEditorReducer(currentProject());
+      const checked = probe.apply({ ...command, revision: probe.revision }, { running });
+      if (checked.ok) contractSubcircuits(checked.project.circuit, boundedSubcircuits, subcircuitOptions());
+    } catch (error) {
+      const rejected = { ok: false, code: error.code ?? 'SUBCIRCUIT_EXPANSION_MISMATCH', revision: editor.revision };
+      showActionableError(elements.projectmessage, rejected.code,
+        'This edit would detach a generated member from its reusable stage. The project is unchanged.');
+      return rejected;
+    }
+  }
   if (commandBuildRelevance(command.type) === 'build') retireX47Integration('X47_AUTHORED_INPUT_CHANGED');
   const annotationBefore = canvasAnnotations ? canvasAnnotations.snapshot() : null;
+  const subcircuitTransition = pendingSubcircuitTransition;
   const result = editor.apply({ ...command, revision: editor.revision }, { running });
   if (!result.ok) {
+    pendingSubcircuitTransition = null;
     showActionableError(elements.projectmessage, result.code, `${message}\n${JSON.stringify(result.details ?? [])}`);
     return result;
   }
+  if (subcircuitTransition) boundedSubcircuits = structuredClone(subcircuitTransition.after);
+  pendingSubcircuitTransition = null;
   if (canvasAnnotations) {
     if (command.type === 'undo') {
       const marker = annotationEditorPast.pop();
@@ -10506,7 +10667,9 @@ function applyEditor(command, message = command.type) {
       if (marker) { applyAnnotationEditorMarker(marker, 'redo'); annotationEditorPast.push(marker); }
     } else {
       canvasAnnotations.apply({ type: 'references.reconcile' }, annotationReferences());
-      annotationEditorPast.push(annotationEditorMarker(annotationBefore, canvasAnnotations.snapshot()));
+      annotationEditorPast.push(annotationEditorMarker(annotationBefore, canvasAnnotations.snapshot(),
+        subcircuitTransition ? { before: structuredClone(subcircuitTransition.before),
+          after: structuredClone(subcircuitTransition.after) } : null));
       if (annotationEditorPast.length > 100) annotationEditorPast.shift();
       annotationEditorFuture.length = 0;
     }
@@ -11147,6 +11310,8 @@ function handlePin(endpoint, reconnect = false) {
 }
 
 function renderComponents() {
+  const collapsedGenerated = new Set(boundedSubcircuits.instances.filter(({ collapsed }) => collapsed)
+    .flatMap(({ id }) => [`${id}-resistor`, `${id}-led`]));
   const cards = currentProject().circuit.components.map((component) => {
     const definition = uiComponentCatalog[component.type];
     const position = screenPoint(currentProject().layout.positions[component.id]);
@@ -11154,6 +11319,7 @@ function renderComponents() {
     card.className = `circuit-component${selectedComponentId === component.id ? ' selected' : ''}`;
     card.dataset.componentId = component.id;
     card.dataset.componentType = component.type;
+    card.classList.toggle('subcircuit-collapsed-member', collapsedGenerated.has(component.id));
     card.tabIndex = 0;
     card.setAttribute('role', 'group');
     card.setAttribute('aria-label', `${component.label}, ${definition.displayName}`);
@@ -13968,7 +14134,9 @@ elements.projectreload.addEventListener('click', () => {
     runtimeMessage: 'Reloaded project requires build',
   });
   selectedSourceFile = 'main.ino';
-  resetCanvasAnnotations(parsed.annotations ?? emptyCanvasAnnotations());
+  resetCanvasAnnotations(parsed.annotations ?? emptyCanvasAnnotations(), {
+    subcircuits: parsed.subcircuits ?? emptySubcircuits(parsed.modelLibrary),
+  });
   savedRevision = editor.revision; savedProjectGeneration = lifecycle.projectGeneration;
   setProjectBaseline(AVR_PROFILE); renderCatalog(); renderProject(); elements.projectmessage.textContent = 'Restored and revalidated browser recovery, including visual annotations. Previous runtime output was cleared; save a project file for durable storage.';
 });
@@ -14242,6 +14410,10 @@ const restored = recoveryRestored?.ok ? recoveryRestored : currentRestored;
 editor = restored?.ok ? restored.session : new ProjectEditorReducer(createEmptyProject());
 canvasAnnotations = new CanvasAnnotationReducer(restored?.annotations ?? emptyCanvasAnnotations(), annotationReferences());
 if (restored?.modelLibrary) projectModelLibraryLocks.set(AVR_PROFILE, structuredClone(restored.modelLibrary));
+boundedSubcircuits = restored?.subcircuits
+  ? contractSubcircuits(currentProject().circuit, restored.subcircuits, subcircuitOptions()).owner
+  : emptySubcircuits(modelLibraryLockFor(AVR_PROFILE));
+canvasAnnotationBaseline = canvasReadabilitySnapshot();
 scenarioTimelineEditor = restored?.scenarioTimeline
   ? new ScenarioTimelineEditor(restored.scenarioTimeline) : null;
 authoredScenarioResults = [];

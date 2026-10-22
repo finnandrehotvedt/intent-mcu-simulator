@@ -175,6 +175,49 @@ function applyMutation(current, command) {
       runtimeDirty = true;
       break;
     }
+    case 'subcircuit.graph.replace': {
+      if (!exactCommand(command, ['graph', 'positions']) || !command.graph
+          || !command.positions || typeof command.positions !== 'object' || Array.isArray(command.positions)) {
+        throw new Error('EDITOR_COMMAND_SHAPE');
+      }
+      const replacement = normalizeCircuitStructure(command.graph, { allowDraft: true });
+      const replacementIds = replacement.components.map(({ id }) => id).sort();
+      if (Object.keys(command.positions).sort().join('|') !== replacementIds.join('|')
+          || replacementIds.some((componentId) => !validPoint(command.positions[componentId])
+            || ![0, 90, 180, 270].includes(command.positions[componentId].rotation ?? 0))) {
+        throw new Error('EDITOR_COMMAND_SHAPE');
+      }
+      graph.components = replacement.components;
+      graph.nets = replacement.nets;
+      graph.junctions = replacement.junctions;
+      next.layout.positions = clone(command.positions);
+      const netIds = new Set(replacement.nets.map(({ id }) => id));
+      next.layout.wireRoutes = Object.fromEntries(Object.entries(next.layout.wireRoutes)
+        .filter(([netId]) => netIds.has(netId)));
+      next.layout.wireStyles = Object.fromEntries(Object.entries(next.layout.wireStyles)
+        .filter(([netId]) => netIds.has(netId)));
+      const componentIds = new Set(replacementIds);
+      if (next.layout.componentAppearance) {
+        next.layout.componentAppearance.components = Object.fromEntries(
+          Object.entries(next.layout.componentAppearance.components).filter(([componentId]) => componentIds.has(componentId)),
+        );
+      }
+      runtimeDirty = true;
+      break;
+    }
+    case 'subcircuit.presentation.set': {
+      if (!exactCommand(command, ['positions']) || !Array.isArray(command.positions) || !command.positions.length) {
+        throw new Error('EDITOR_COMMAND_SHAPE');
+      }
+      for (const item of command.positions) {
+        if (!item || typeof item !== 'object' || Array.isArray(item)
+            || Object.keys(item).sort().join('|') !== 'componentId|x|y'
+            || !next.layout.positions[item.componentId] || !validPoint(item)) throw new Error('EDITOR_COMMAND_SHAPE');
+        next.layout.positions[item.componentId].x = item.x;
+        next.layout.positions[item.componentId].y = item.y;
+      }
+      break;
+    }
     case 'component.move': {
       if (!exactCommand(command, ['componentId', 'x', 'y']) || !validPoint(command)) throw new Error('EDITOR_COMMAND_SHAPE');
       if (!next.layout.positions[command.componentId]) throw new Error('EDITOR_COMPONENT_MISSING');

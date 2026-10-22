@@ -191,7 +191,15 @@ export function expandSubcircuits(baseGraph, value, options = {}) {
 }
 
 export function contractSubcircuits(expandedGraph, value, options = {}) {
-  const owner = normalizeSubcircuits(value, options); const graph = normalizeCircuitStructure(clone(expandedGraph));
+  const owner = normalizeSubcircuits(value, options);
+  // Empty ownership is valid inert metadata over any already-validated AVR
+  // project graph, including retained candidate-model projects. No X66
+  // expansion exists to revalidate or contract in this case.
+  if (!owner.instances.length) {
+    const graph = clone(expandedGraph);
+    return { owner, baseGraph: graph, graph: clone(graph) };
+  }
+  const graph = normalizeCircuitStructure(clone(expandedGraph));
   const definitionMap = new Map(owner.definitions.map((definition) => [definition.id, definition]));
   const generatedComponents = new Set(); const generatedNets = new Set();
   for (const instance of owner.instances) {

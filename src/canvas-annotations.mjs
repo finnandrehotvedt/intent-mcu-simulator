@@ -2,11 +2,13 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
+import { contractSubcircuits, emptySubcircuits, normalizeSubcircuits } from './bounded-subcircuits.mjs';
 
 export const CANVAS_ANNOTATIONS_SCHEMA = 'intent-mcu-canvas-annotations@2';
 export const LEGACY_CANVAS_ANNOTATIONS_SCHEMA = 'intent-mcu-canvas-annotations@1';
 export const NET_LABELS_SCHEMA = 'intent-mcu-net-labels@1';
-export const ANNOTATED_WORKSPACE_SCHEMA = 'intent-mcu-annotated-workspace@2';
+export const ANNOTATED_WORKSPACE_SCHEMA = 'intent-mcu-annotated-workspace@3';
+export const PRE_SUBCIRCUIT_ANNOTATED_WORKSPACE_SCHEMA = 'intent-mcu-annotated-workspace@2';
 export const LEGACY_ANNOTATED_WORKSPACE_SCHEMA = 'intent-mcu-annotated-workspace@1';
 export const CANVAS_ANNOTATION_LIMITS = Object.freeze({ bytes: 2 * 1024 * 1024, notes: 32, groups: 16,
   netLabels: 32, noteText: 1000, label: 80 });
@@ -145,12 +147,22 @@ export class CanvasAnnotationReducer {
 
 export function normalizeAnnotatedWorkspace(value, validateProject) {
   if (!value || typeof value !== 'object' || Array.isArray(value)
-      || ![ANNOTATED_WORKSPACE_SCHEMA, LEGACY_ANNOTATED_WORKSPACE_SCHEMA].includes(value.schema)) fail('ANNOTATED_WORKSPACE_NOT_MATCHED');
-  if (!exactKeys(value, ['schema', 'profileId', 'project', 'annotations']) || typeof validateProject !== 'function') fail('ANNOTATED_WORKSPACE_SHAPE');
+      || ![ANNOTATED_WORKSPACE_SCHEMA, PRE_SUBCIRCUIT_ANNOTATED_WORKSPACE_SCHEMA,
+        LEGACY_ANNOTATED_WORKSPACE_SCHEMA].includes(value.schema)) fail('ANNOTATED_WORKSPACE_NOT_MATCHED');
+  const expectedKeys = value.schema === ANNOTATED_WORKSPACE_SCHEMA
+    ? ['schema', 'profileId', 'project', 'annotations', 'subcircuits']
+    : ['schema', 'profileId', 'project', 'annotations'];
+  if (!exactKeys(value, expectedKeys) || typeof validateProject !== 'function') fail('ANNOTATED_WORKSPACE_SHAPE');
   const validated = validateProject(clone(value.project), value.profileId);
-  if (!validated?.project || !Array.isArray(validated.componentIds) || !Array.isArray(validated.netIds)) fail('ANNOTATED_WORKSPACE_PROJECT');
+  if (!validated?.project || !validated.graph || !validated.modelLibrary
+      || !Array.isArray(validated.componentIds) || !Array.isArray(validated.netIds)) fail('ANNOTATED_WORKSPACE_PROJECT');
+  const subcircuits = value.schema === ANNOTATED_WORKSPACE_SCHEMA
+    ? normalizeSubcircuits(value.subcircuits, { profileId: value.profileId, modelLibraryLock: validated.modelLibrary })
+    : emptySubcircuits(validated.modelLibrary);
+  contractSubcircuits(validated.graph, subcircuits,
+    { profileId: value.profileId, modelLibraryLock: validated.modelLibrary });
   return { workspace: { schema: ANNOTATED_WORKSPACE_SCHEMA, profileId: value.profileId, project: clone(validated.project),
-    annotations: normalizeCanvasAnnotations(value.annotations, validated) }, prepared: validated.prepared ?? null };
+    annotations: normalizeCanvasAnnotations(value.annotations, validated), subcircuits }, prepared: validated.prepared ?? null };
 }
 export function parseAnnotatedWorkspace(source, validateProject) {
   return normalizeAnnotatedWorkspace(parseStrictJson(source, CANVAS_ANNOTATION_LIMITS.bytes), validateProject);

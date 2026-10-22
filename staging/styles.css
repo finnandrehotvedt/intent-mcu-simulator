@@ -261,6 +261,14 @@ body[data-active-profile] .app-header .lede { max-width: 640px; overflow: hidden
 .canvas-visual-note::before { content: "NOTE · NON-ELECTRICAL"; display: block; margin-bottom: 3px; color: #b8aaff; font-size: .52rem; font-weight: 850; letter-spacing: .08em; }
 .canvas-visual-group { position: absolute; min-width: 70px; min-height: 54px; border: 2px dashed #9f8cff; border-radius: 12px; background: #7f67e50d; pointer-events: none; }
 .canvas-visual-group button { position: absolute; left: 6px; top: -13px; min-height: 24px; padding: 2px 7px; border-radius: 999px; color: #0a0d16; border-color: #b8aaff; background: #b8aaff; font-size: .58rem; font-weight: 900; white-space: nowrap; pointer-events: auto; }
+.canvas-subcircuit-create { border-color: #47d7ac; background: linear-gradient(145deg,#09232a,#0b1e2b); }
+.canvas-subcircuit-create h3, .canvas-subcircuit-create p { grid-column: 1 / -1; margin: 0; }
+.canvas-subcircuit-create h3 { color: #7dffd2; font-size: .95rem; }
+.canvas-subcircuit-create p { color: var(--muted); font-size: .74rem; line-height: 1.45; }
+.canvas-subcircuit-editor { grid-template-columns: minmax(72px,.5fr) minmax(72px,.5fr) auto auto auto; border-color: #338d79; }
+.canvas-subcircuit-badge { position: absolute; z-index: 3; transform: translate(-50%,-50%); min-height: 27px; padding: 4px 10px; border: 1px solid #63f5c2; border-radius: 999px; color: #051713; background: #63f5c2ed; box-shadow: 0 7px 20px #001b16aa; font-size: .58rem; font-weight: 900; letter-spacing: .05em; white-space: nowrap; pointer-events: auto; }
+.canvas-subcircuit-badge.collapsed { color: #dffdf3; background: #12392fef; }
+.circuit-component.subcircuit-collapsed-member { opacity: 0; pointer-events: none; }
 .canvas-net-label { position: absolute; min-height: 26px; max-width: 220px; padding: 3px 8px; transform: translate(-50%,-50%); border: 2px solid #4fe5ff; border-radius: 5px; color: #dffbff; background: #07212eee; box-shadow: 0 5px 14px #0009; font: 800 .65rem/1.2 ui-monospace,SFMono-Regular,Consolas,monospace; overflow-wrap: anywhere; pointer-events: auto; }
 .canvas-net-label-bound-id { display: block; margin-bottom: 2px; color: #73edff; font-size: .48rem; letter-spacing: .06em; }
 .canvas-net-label-text { display: block; }

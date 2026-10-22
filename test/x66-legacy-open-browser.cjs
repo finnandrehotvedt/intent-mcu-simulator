@@ -60,6 +60,7 @@ async function state(page) {
     const current = JSON.parse(fs.readFileSync(await download.path(), 'utf8'));
     const legacy = structuredClone(current);
     legacy.schema = 'intent-mcu-annotated-workspace@1';
+    delete legacy.subcircuits;
     legacy.project.modelLibrary = historicalLock;
     legacy.annotations = { schema: 'intent-mcu-canvas-annotations@1',
       notes: current.annotations.notes, groups: current.annotations.groups };
