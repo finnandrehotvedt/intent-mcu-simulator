@@ -84,12 +84,14 @@ export class CanvasAnnotationReducer {
   }
   undo(componentIds) {
     if (!this.#past.length) return { ok: true, changed: false, annotations: this.snapshot() };
-    const previous = this.#past.pop(); this.#future.push(this.snapshot()); this.#state = normalizeCanvasAnnotations(previous, componentIds);
+    const previous = normalizeCanvasAnnotations(this.#past.at(-1), componentIds);
+    this.#past.pop(); this.#future.push(this.snapshot()); this.#state = previous;
     return { ok: true, changed: true, annotations: this.snapshot() };
   }
   redo(componentIds) {
     if (!this.#future.length) return { ok: true, changed: false, annotations: this.snapshot() };
-    const next = this.#future.pop(); this.#past.push(this.snapshot()); this.#state = normalizeCanvasAnnotations(next, componentIds);
+    const next = normalizeCanvasAnnotations(this.#future.at(-1), componentIds);
+    this.#future.pop(); this.#past.push(this.snapshot()); this.#state = next;
     return { ok: true, changed: true, annotations: this.snapshot() };
   }
   history() { return Object.freeze({ undo: this.#past.length, redo: this.#future.length }); }

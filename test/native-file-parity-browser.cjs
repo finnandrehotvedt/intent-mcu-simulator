@@ -32,6 +32,9 @@ async function ensureProjectFilesOpen(page) {
   if (await page.locator('#workbench-project-dialog').getAttribute('open') === null) {
     await page.click('#project-files-open');
   }
+  for (const details of await page.locator('#workbench-project-dialog details.project-file-advanced').all()) {
+    if (!await details.evaluate((node) => node.open)) await details.locator('summary').click();
+  }
 }
 async function choose(page, profile) {
   await page.selectOption('#board-select', profile.option);

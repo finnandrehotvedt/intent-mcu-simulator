@@ -8,6 +8,13 @@ const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/
 
 const base = process.env.X66_URL || 'http://host.docker.internal:18898/dist/';
 const output = process.env.X66_OUTPUT || '/tmp/x66-canvas-annotations';
+async function ensureProjectFilesOpen(page) {
+  if (!await page.locator('#workbench-project-dialog').evaluate((node) => node.open)) {
+    await page.click('#project-files-open');
+  }
+  const details = page.locator('#workbench-project-dialog details.project-file-advanced');
+  if (!await details.evaluate((node) => node.open)) await details.locator('summary').click();
+}
 const electricalSnapshot = () => {
   const project = window.__M6_PROJECT__(); const canvas = document.querySelector('#circuit-canvas').getBoundingClientRect();
   return { source: project.project?.source ?? project.source, circuit: project.candidateCircuit ?? project.circuit,
@@ -23,6 +30,19 @@ const electricalSnapshot = () => {
   fs.mkdirSync(output, { recursive: true });
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1366, height: 768 }, acceptDownloads: true, serviceWorkers: 'block' });
+  await context.addInitScript(() => {
+    const state = { writes: [], deferred: false, resolve: null };
+    const handle = { name: 'annotated.intent-mcu.json', async createWritable() {
+      let text = '';
+      return { async write(blob) { text = await blob.text(); }, async close() { state.writes.push(text); }, async abort() {} };
+    } };
+    window.__X66_NATIVE_FILE__ = state;
+    window.showSaveFilePicker = async () => {
+      if (state.deferred) return new Promise((resolve) => { state.resolve = () => resolve(handle); });
+      return handle;
+    };
+    window.showOpenFilePicker = async () => [handle];
+  });
   const page = await context.newPage();
   const producers = []; const mutations = []; const outside = []; const errors = [];
   page.on('request', (request) => {
@@ -68,14 +88,53 @@ const electricalSnapshot = () => {
     assert.deepEqual(await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot()), accepted);
 
     await page.click('#canvas-annotations-close');
-    await page.setInputFiles('#project-open-input', { name: 'valid.intent-mcu-annotated.json', mimeType: 'application/json', buffer: Buffer.from(workspaceText) });
+    await page.click('#project-files-open');
+    const [projectDownload] = await Promise.all([page.waitForEvent('download'), page.click('#project-save')]);
+    const projectText = fs.readFileSync(await projectDownload.path(), 'utf8');
+    assert.deepEqual(JSON.parse(projectText).annotations, accepted);
+    await ensureProjectFilesOpen(page);
+    await page.click('#project-native-save-copy');
+    await page.waitForFunction(() => window.__X66_NATIVE_FILE__.writes.length === 1);
+    assert.equal(await page.evaluate(() => window.__X66_NATIVE_FILE__.writes[0]), projectText);
+
+    await page.evaluate(() => { window.__X66_NATIVE_FILE__.deferred = true; });
+    await ensureProjectFilesOpen(page);
+    await page.click('#project-native-save-copy');
+    await page.evaluate(() => { document.querySelector('#workbench-project-dialog').close(); document.querySelector('#canvas-annotations-open').click(); });
+    await page.fill('[data-annotation-editor="note-1"] input', 'Later visual edit must invalidate the pending save.');
+    await page.locator('[data-annotation-editor="note-1"] button', { hasText: 'Save' }).click();
+    await page.evaluate(() => { window.__X66_NATIVE_FILE__.resolve(); });
+    await page.waitForFunction(() => document.querySelector('#project-message').textContent.includes('active project changed'));
+    assert.equal(await page.evaluate(() => window.__X66_NATIVE_FILE__.writes.length), 1);
+    await page.click('#canvas-annotations-close');
+    await ensureProjectFilesOpen(page); await page.click('#project-reload');
+    await page.waitForFunction(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot().notes[0]?.text.includes('edited safely'));
+    await ensureProjectFilesOpen(page);
+    await page.evaluate(() => { document.querySelector('#recovery-export').disabled = false; });
+    const [recoveryDownload] = await Promise.all([page.waitForEvent('download'), page.click('#recovery-export')]);
+    assert.deepEqual(JSON.parse(fs.readFileSync(await recoveryDownload.path(), 'utf8')).annotations, accepted);
+    await page.evaluate(() => { document.querySelector('#workbench-project-dialog').close(); document.querySelector('#canvas-annotations-open').click(); });
+    await page.fill('[data-annotation-editor="note-1"] input', 'Dirty annotation before guarded Open.');
+    await page.locator('[data-annotation-editor="note-1"] button', { hasText: 'Save' }).click();
+    await page.click('#canvas-annotations-close');
+
+    const importedWorkspace = structuredClone(workspace);
+    importedWorkspace.annotations.notes[0].id = 'note-3'; importedWorkspace.annotations.groups[0].id = 'group-4';
+    const importedText = `${JSON.stringify(importedWorkspace, null, 2)}\n`;
+    await page.setInputFiles('#project-open-input', { name: 'valid.intent-mcu-annotated.json', mimeType: 'application/json', buffer: Buffer.from(importedText) });
     await page.waitForSelector('#unsaved-change-dialog[open]'); await page.click('#unsaved-discard');
     await page.waitForFunction(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot().groups.length === 1);
-    assert.deepEqual(await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot()), accepted);
+    assert.deepEqual(await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot()), importedWorkspace.annotations);
     const after = await page.evaluate(electricalSnapshot); assert.deepEqual(after, before);
 
+    await page.click('#canvas-annotations-open');
+    await page.fill('#canvas-note-text', 'Fresh ID after imported collisions.'); await page.click('#canvas-note-add');
+    assert.equal(await page.locator('[data-annotation-editor="note-4"]').count(), 1);
+    await page.locator('[data-annotation-editor="note-4"] button', { hasText: 'Delete' }).click();
+    await page.click('#canvas-annotations-close');
+
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.click('[data-annotation-group="group-2"]');
+    await page.click('[data-annotation-group="group-4"]');
     assert.equal(await page.locator('.circuit-component.annotation-highlight').count(), 2);
     await page.screenshot({ path: `${output}/x66-annotations-canvas-1440x900.png`, fullPage: false });
 
@@ -83,19 +142,29 @@ const electricalSnapshot = () => {
     await page.click('#toggle-inspector'); await page.click('#delete-component');
     let state = await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot());
     assert.deepEqual(state.groups[0].componentIds, ['heater-resistor-1']);
+    await page.click('#canvas-annotations-open'); await page.click('#canvas-annotations-undo');
+    await page.waitForFunction(() => document.querySelector('#canvas-annotations-status').textContent.includes('rejected'));
+    assert.deepEqual((await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot())).groups[0].componentIds, ['heater-resistor-1']);
+    await page.fill('[data-annotation-editor="note-3"] input', 'Independent note edit after component deletion.');
+    await page.locator('[data-annotation-editor="note-3"] button', { hasText: 'Save' }).click();
+    await page.click('#canvas-annotations-close');
     await page.keyboard.press('Control+z');
     state = await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot());
     assert.deepEqual(state.groups[0].componentIds, ['heater-led-1', 'heater-resistor-1']);
+    assert.equal(state.notes[0].text, 'Independent note edit after component deletion.');
     assert(await page.locator('.circuit-component[data-component-id="heater-led-1"]').count());
     await page.keyboard.press('Control+Shift+z');
     state = await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot());
     assert.deepEqual(state.groups[0].componentIds, ['heater-resistor-1']);
+    assert.equal(state.notes[0].text, 'Independent note edit after component deletion.');
     await page.keyboard.press('Control+z');
 
     assert.deepEqual(producers, []); assert.deepEqual(mutations, []); assert.deepEqual(outside, []);
     assert.equal((await context.cookies()).length, 0); assert.deepEqual(errors, []);
     const result = { result: 'pass', notes: 1, groups: 1, editUndoRedo: true, annotatedRoundtrip: true,
-      danglingAtomic: true, electricalInvariant: true, groupFocus: true, deletionCleanupPairedUndoRedo: true,
+      allSaveRoundtrip: true, pendingSaveFingerprint: true, recoveryRoundtrip: true, collisionSafeIds: true,
+      danglingAtomic: true, visualUndoAtomic: true, electricalInvariant: true, groupFocus: true,
+      deletionCleanupPairedUndoRedo: true, unrelatedNoteEditPreserved: true,
       producers: 0, mutations: 0, outsideRequests: 0, cookies: 0 };
     fs.writeFileSync(`${output}/x66-canvas-annotations.json`, `${JSON.stringify(result, null, 2)}\n`);
     process.stdout.write(`${JSON.stringify(result)}\n`);

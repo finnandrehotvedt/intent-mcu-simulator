@@ -37,6 +37,20 @@ test('X66 component deletion removes dangling membership atomically and restore 
   assert.deepEqual(owner.snapshot(), before);
 });
 
+test('X66 invalid undo or redo validates before consuming either history stack', () => {
+  const owner = new CanvasAnnotationReducer({ schema: CANVAS_ANNOTATIONS_SCHEMA, notes: [], groups: [
+    { id: 'group-output', label: 'Output', componentIds: ['led-1', 'resistor-1'] },
+  ] }, components);
+  owner.apply({ type: 'components.reconcile' }, ['board-1', 'resistor-1']);
+  const afterDelete = owner.snapshot(); const beforeRejectedUndo = owner.history();
+  assert.throws(() => owner.undo(['board-1', 'resistor-1']), { code: 'CANVAS_GROUP_DANGLING_COMPONENT' });
+  assert.deepEqual(owner.snapshot(), afterDelete); assert.deepEqual(owner.history(), beforeRejectedUndo);
+  owner.undo(components);
+  const beforeRejectedRedo = owner.history(); const restored = owner.snapshot();
+  assert.throws(() => owner.redo(['board-1']), { code: 'CANVAS_GROUP_DANGLING_COMPONENT' });
+  assert.deepEqual(owner.snapshot(), restored); assert.deepEqual(owner.history(), beforeRejectedRedo);
+});
+
 test('X66 strict validation rejects markup, unknown fields, bounds and dangling or duplicate members', () => {
   const valid = { schema: CANVAS_ANNOTATIONS_SCHEMA,
     notes: [{ id: 'note-one', text: 'Plain text', x: 0.1, y: 0.2 }],

@@ -7118,11 +7118,25 @@ const commonProjectAdapters = Object.freeze({
         { modelLibraryLock: result.modelLibrary }),
   }),
 });
+function prepareAuthoredProjectEnvelope(source) {
+  let annotatedSchema = false;
+  try { annotatedSchema = JSON.parse(source)?.schema === ANNOTATED_WORKSPACE_SCHEMA; } catch { /* bounded parsers below report malformed input */ }
+  if (annotatedSchema) {
+    try {
+      const opened = parseAnnotatedWorkspace(source, validateAnnotatedProject);
+      return { ...opened.prepared,
+        canonical: canonicalAnnotatedWorkspace(opened.workspace, validateAnnotatedProject),
+        annotations: opened.workspace.annotations };
+    } catch (error) { return { ok: false, code: error.code ?? error.message }; }
+  }
+  return prepareProjectEnvelope(source, commonProjectAdapters);
+}
 function parseAvrRecoverySource(source) {
-  const common = prepareProjectEnvelope(source, commonProjectAdapters);
+  const common = prepareAuthoredProjectEnvelope(source);
   if (common.ok && common.profile === AVR_PROFILE) {
     return { ok: true, code: common.code, session: common.prepared,
-      scenarioTimeline: common.scenarioTimeline, modelLibrary: common.modelLibrary, report: common.report };
+      scenarioTimeline: common.scenarioTimeline, modelLibrary: common.modelLibrary,
+      report: common.report, annotations: common.annotations ?? null };
   }
   const retained = resolveModelLibrary(RETAINED_MODEL_LIBRARY_LOCK);
   if (!retained.ok) return retained;
@@ -7628,9 +7642,8 @@ function safeHandleName(handle, profile) {
 }
 function saveCommonProject(profile) {
   try {
-    const annotations = profile === AVR_PROFILE ? ensureCanvasAnnotations().snapshot() : emptyCanvasAnnotations();
-    const annotated = profile === AVR_PROFILE && (annotations.notes.length || annotations.groups.length);
-    const text = annotated ? canonicalCurrentAnnotatedWorkspace() : commonProjectText(profile);
+    const annotated = profile === AVR_PROFILE && canvasAnnotationsPresent();
+    const text = authoredProjectText(profile);
     downloadText(annotated ? 'intent-mcu-annotated-project.json' : commonProjectFilename(profile), text, 'application/json');
     profileMessage(profile, `${annotated ? 'Annotated' : 'Common'} data-only project download requested. Executable and runtime authority were excluded.`);
     return { ok: true, code: 'OK', text };
@@ -7641,6 +7654,8 @@ function saveCommonProject(profile) {
 }
 function saveLegacyProject(profile) {
   try {
+    if (profile === AVR_PROFILE && canvasAnnotationsPresent()) throw Object.assign(
+      new Error('ANNOTATIONS_REQUIRE_CURRENT_PROJECT_FORMAT'), { code: 'ANNOTATIONS_REQUIRE_CURRENT_PROJECT_FORMAT' });
     const text = legacyProjectText(profile);
     const name = commonProjectFilename(profile).replace(/\.intent-mcu\.json$/u, '.legacy.intent-mcu.json');
     downloadText(name, text, 'application/json');
@@ -7655,17 +7670,17 @@ const projectBaselines = new Map();
 let pendingDestructiveProjectAction = null;
 let destructiveActionSequence = 0;
 function setProjectBaseline(profile) {
-  projectBaselines.set(profile, commonProjectText(profile));
+  projectBaselines.set(profile, authoredProjectText(profile));
   if (profile === AVR_PROFILE) canvasAnnotationBaseline = JSON.stringify(ensureCanvasAnnotations().snapshot());
 }
 function isProjectDirty(profile) {
   const baseline = projectBaselines.get(profile);
   if (baseline === undefined) return false;
-  try { return commonProjectText(profile) !== baseline || (profile === AVR_PROFILE && canvasAnnotationsDirty()); }
+  try { return authoredProjectText(profile) !== baseline; }
   catch { return true; }
 }
 function authoredProjectFingerprint(profile) {
-  try { return commonProjectText(profile); }
+  try { return authoredProjectText(profile); }
   catch {
     if (profile === AVR_PROFILE) return JSON.stringify({
       name: elements.projectname.value, source: elements.source.value, project: currentProject(),
@@ -7724,8 +7739,8 @@ function installPreparedProjectEnvelope(result, handle = null, { preserveExpecta
       runtimeMessage: 'Opened project requires build',
     });
     selectedSourceFile = 'main.ino';
-    persistProject(); markFileSaved('opened file current'); renderCatalog(); renderProject();
     resetCanvasAnnotations(annotations ?? emptyCanvasAnnotations());
+    persistProject(); markFileSaved('opened file current'); renderCatalog(); renderProject();
   } else if (result.profile === RP2040_PROFILE) picoPublicWorkbench.installPreparedProject(result.project);
   else if (result.profile === ESP32C3_PROFILE) c3PublicWorkbench.installPreparedProject(result.project);
   else if (result.profile === STM32F429ZI_PROFILE) stm32PublicWorkbench.installPreparedProject(result.project);
@@ -7827,7 +7842,7 @@ async function saveNativeProject(profile, { copy = false } = {}) {
     return;
   }
   let text;
-  try { text = commonProjectText(profile); }
+  try { text = authoredProjectText(profile); }
   catch (error) {
     profileMessage(profile, `Native Save rejected (${error.code ?? error.message}). The project and file connection are unchanged.`);
     return;
@@ -7838,7 +7853,7 @@ async function saveNativeProject(profile, { copy = false } = {}) {
   let writable = null;
   try {
     if (copy) handle = await window.showSaveFilePicker({
-      suggestedName: commonProjectFilename(profile),
+      suggestedName: profile === AVR_PROFILE ? projectFilename() : commonProjectFilename(profile),
       types: [{ description: 'Intent MCU project', accept: { 'application/json': ['.json'] } }],
     });
     if (!nativeFileIntentIsCurrent(operation)) {
@@ -7939,7 +7954,7 @@ function historyRecordFilename(record, raw = false) {
 
 async function inspectStoredHistoryRecord(record) {
   return inspectHistoryRecord(record, {
-    prepare: (source) => prepareProjectEnvelope(source, commonProjectAdapters),
+    prepare: (source) => prepareAuthoredProjectEnvelope(source),
   });
 }
 
@@ -7949,7 +7964,8 @@ async function installHistoryRecordIfCurrent(id, expectedHash) {
     if (!latest || latest.projectSha256 !== expectedHash) return historyFailure({ code: 'LOCAL_HISTORY_STALE_SELECTION' });
     const inspected = await inspectStoredHistoryRecord(latest);
     if (!inspected.ok) return historyFailure({ code: inspected.code });
-    installPreparedProjectEnvelope(inspected.prepared, null);
+    installPreparedProjectEnvelope(inspected.prepared, null,
+      { annotations: inspected.prepared.annotations ?? null });
     elements.localhistorystatus.textContent = `Opened local version ${expectedHash.slice(0, 12)}. File connection, history, artifact, runtime and result authority were cleared; Build fresh before Run.`;
     await refreshLocalHistory();
     return inspected;
@@ -8112,8 +8128,8 @@ async function saveLocalHistoryVersion(confirmation = null, candidate = null) {
     if (!localHistoryVault || !localHistorySettings.enabled) return historyFailure({ code: 'LOCAL_HISTORY_DISABLED' });
     let record = candidate;
     if (!record) {
-      const envelope = commonProjectText(selectedCompilerProfile);
-      const prepared = prepareProjectEnvelope(envelope, commonProjectAdapters);
+      const envelope = authoredProjectText(selectedCompilerProfile);
+      const prepared = prepareAuthoredProjectEnvelope(envelope);
       if (!prepared.ok || prepared.profile !== selectedCompilerProfile) return historyFailure({ code: prepared.code ?? 'LOCAL_HISTORY_PROJECT_INVALID' });
       const created = await createHistoryRecord({
         envelope, profile: prepared.profile, modelLibrary: prepared.modelLibrary,
@@ -8885,6 +8901,47 @@ function currentAnnotatedWorkspace() {
 function canonicalCurrentAnnotatedWorkspace() {
   return canonicalAnnotatedWorkspace(currentAnnotatedWorkspace(), validateAnnotatedProject);
 }
+function canvasAnnotationsPresent() {
+  const annotations = ensureCanvasAnnotations().snapshot();
+  return annotations.notes.length > 0 || annotations.groups.length > 0;
+}
+function authoredProjectText(profile = selectedCompilerProfile) {
+  return profile === AVR_PROFILE && canvasAnnotationsPresent()
+    ? canonicalCurrentAnnotatedWorkspace() : commonProjectText(profile);
+}
+function nextCanvasAnnotationId(prefix) {
+  const used = new Set([
+    ...ensureCanvasAnnotations().snapshot().notes.map(({ id }) => id),
+    ...ensureCanvasAnnotations().snapshot().groups.map(({ id }) => id),
+  ]);
+  let candidate;
+  do { canvasAnnotationSequence += 1; candidate = `${prefix}-${canvasAnnotationSequence}`; } while (used.has(candidate));
+  return candidate;
+}
+function annotationEditorMarker(before, after) {
+  const afterGroups = new Map(after.groups.map((group) => [group.id, group]));
+  return { groups: before.groups.map((group) => {
+    const afterGroup = afterGroups.get(group.id);
+    return { id: group.id, before: structuredClone(group), afterExisted: Boolean(afterGroup),
+      removed: group.componentIds.filter((member) => !afterGroup?.componentIds.includes(member)) };
+  }).filter(({ removed, afterExisted }) => removed.length || !afterExisted) };
+}
+function applyAnnotationEditorMarker(marker, direction) {
+  const current = ensureCanvasAnnotations().snapshot();
+  const groups = new Map(current.groups.map((group) => [group.id, group]));
+  for (const change of marker.groups) {
+    const group = groups.get(change.id);
+    if (direction === 'undo') {
+      if (group) group.componentIds = [...new Set([...group.componentIds, ...change.removed])].sort();
+      else if (!change.afterExisted) groups.set(change.id, structuredClone(change.before));
+    } else if (group) {
+      group.componentIds = group.componentIds.filter((member) => !change.removed.includes(member));
+      if (!group.componentIds.length) groups.delete(change.id);
+    }
+  }
+  current.groups = [...groups.values()];
+  return ensureCanvasAnnotations().restore(current, annotationComponentIds());
+}
 function renderCanvasAnnotationOverlay() {
   if (!elements.canvasannotationlayer || !editor || selectedCompilerProfile !== AVR_PROFILE) return;
   const state = ensureCanvasAnnotations().snapshot();
@@ -8935,6 +8992,20 @@ function annotationCommand(command, message) {
     return { ok: false, code: error.code ?? error.message };
   }
 }
+function annotationHistory(direction) {
+  try {
+    const result = ensureCanvasAnnotations()[direction](annotationComponentIds());
+    renderCanvasAnnotationOverlay(); renderCanvasAnnotationsDialog();
+    elements.canvasannotationsstatus.textContent = result.changed
+      ? `${direction === 'undo' ? 'Undid' : 'Redid'} one visual metadata edit. Electrical graph unchanged.`
+      : `Nothing to ${direction}.`;
+    return result;
+  } catch (error) {
+    renderCanvasAnnotationOverlay(); renderCanvasAnnotationsDialog();
+    elements.canvasannotationsstatus.textContent = `Visual ${direction} rejected (${error.code ?? error.message}). History and current metadata are unchanged.`;
+    return { ok: false, code: error.code ?? error.message };
+  }
+}
 function renderCanvasAnnotationsDialog() {
   if (!editor) return;
   const state = ensureCanvasAnnotations().snapshot(); const history = ensureCanvasAnnotations().history();
@@ -8976,20 +9047,18 @@ elements.canvasannotationsopen.addEventListener('click', () => {
 elements.canvasannotationsclose.addEventListener('click', () => closeCanvasAnnotations());
 elements.canvasannotationsdialog.addEventListener('cancel', (event) => { event.preventDefault(); closeCanvasAnnotations(); });
 elements.canvasnoteadd.addEventListener('click', () => {
-  canvasAnnotationSequence += 1;
-  const result = annotationCommand({ type: 'note.create', id: `note-${canvasAnnotationSequence}`, text: elements.canvasnotetext.value.trim(),
+  const result = annotationCommand({ type: 'note.create', id: nextCanvasAnnotationId('note'), text: elements.canvasnotetext.value.trim(),
     x: Number(elements.canvasnotex.value), y: Number(elements.canvasnotey.value) }, 'Added visual note');
   if (result.ok) elements.canvasnotetext.value = '';
 });
 elements.canvasgroupadd.addEventListener('click', () => {
-  canvasAnnotationSequence += 1;
   const members = [...elements.canvasgroupcomponents.querySelectorAll('input:checked')].map(({ value }) => value);
-  const result = annotationCommand({ type: 'group.create', id: `group-${canvasAnnotationSequence}`,
+  const result = annotationCommand({ type: 'group.create', id: nextCanvasAnnotationId('group'),
     label: elements.canvasgrouplabel.value.trim(), componentIds: members }, 'Added visual group');
   if (result.ok) elements.canvasgrouplabel.value = '';
 });
-elements.canvasannotationsundo.addEventListener('click', () => { ensureCanvasAnnotations().undo(annotationComponentIds()); renderCanvasAnnotationOverlay(); renderCanvasAnnotationsDialog(); elements.canvasannotationsstatus.textContent = 'Undid one visual metadata edit. Electrical graph unchanged.'; });
-elements.canvasannotationsredo.addEventListener('click', () => { ensureCanvasAnnotations().redo(annotationComponentIds()); renderCanvasAnnotationOverlay(); renderCanvasAnnotationsDialog(); elements.canvasannotationsstatus.textContent = 'Redid one visual metadata edit. Electrical graph unchanged.'; });
+elements.canvasannotationsundo.addEventListener('click', () => { annotationHistory('undo'); });
+elements.canvasannotationsredo.addEventListener('click', () => { annotationHistory('redo'); });
 elements.canvasannotationsdownload.addEventListener('click', () => {
   try { downloadText('intent-mcu-annotated-project.json', canonicalCurrentAnnotatedWorkspace(), 'application/json'); canvasAnnotationBaseline = JSON.stringify(ensureCanvasAnnotations().snapshot()); elements.canvasannotationsstatus.textContent = 'Annotated project download requested locally.'; }
   catch (error) { elements.canvasannotationsstatus.textContent = `Annotated project rejected (${error.code ?? error.message}).`; }
@@ -9829,7 +9898,7 @@ function toggleFavorite(type, { restoreFocus = false } = {}) {
 }
 function persistProject(message = null) {
   try {
-    const text = commonProjectText(AVR_PROFILE);
+    const text = authoredProjectText(AVR_PROFILE);
     if (new TextEncoder().encode(text).length > 4 * 1024 * 1024) throw new Error('STORAGE_PROJECT_LIMIT');
     localStorage.setItem(PROJECT_RECOVERY_KEY, text);
     localStorage.setItem(PROJECT_STORAGE_KEY, text);
@@ -9857,14 +9926,11 @@ async function downloadMeasurementReport(report, filename) {
   return envelope;
 }
 function projectFilename() {
-  const annotations = ensureCanvasAnnotations().snapshot();
-  return annotations.notes.length || annotations.groups.length
+  return canvasAnnotationsPresent()
     ? 'intent-mcu-annotated-project.json' : commonProjectFilename(AVR_PROFILE);
 }
 function boundedProjectText() {
-  const annotations = ensureCanvasAnnotations().snapshot();
-  const text = annotations.notes.length || annotations.groups.length
-    ? canonicalCurrentAnnotatedWorkspace() : commonProjectText(AVR_PROFILE);
+  const text = authoredProjectText(AVR_PROFILE);
   if (new TextEncoder().encode(text).length > PROJECT_ENVELOPE_LIMIT) throw new Error('INPUT_LIMIT');
   return text;
 }
@@ -10350,13 +10416,13 @@ function applyEditor(command, message = command.type) {
   if (canvasAnnotations) {
     if (command.type === 'undo') {
       const marker = annotationEditorPast.pop();
-      if (marker) { annotationEditorFuture.push(marker); canvasAnnotations.restore(marker.before, annotationComponentIds()); }
+      if (marker) { applyAnnotationEditorMarker(marker, 'undo'); annotationEditorFuture.push(marker); }
     } else if (command.type === 'redo') {
       const marker = annotationEditorFuture.pop();
-      if (marker) { annotationEditorPast.push(marker); canvasAnnotations.restore(marker.after, annotationComponentIds()); }
+      if (marker) { applyAnnotationEditorMarker(marker, 'redo'); annotationEditorPast.push(marker); }
     } else {
       canvasAnnotations.apply({ type: 'components.reconcile' }, annotationComponentIds());
-      annotationEditorPast.push({ before: annotationBefore, after: canvasAnnotations.snapshot() });
+      annotationEditorPast.push(annotationEditorMarker(annotationBefore, canvasAnnotations.snapshot()));
       if (annotationEditorPast.length > 100) annotationEditorPast.shift();
       annotationEditorFuture.length = 0;
     }
@@ -13803,7 +13869,7 @@ elements.projectname.addEventListener('change', () => {
   const result = applyEditor({ type: 'project.rename', name: elements.projectname.value }, 'Project renamed');
   if (!result.ok) elements.projectname.value = currentProject().metadata.name;
 });
-elements.recoveryexport.addEventListener('click', () => downloadText('intent-mcu-recovery.json', commonProjectText(AVR_PROFILE), 'application/json'));
+elements.recoveryexport.addEventListener('click', () => downloadText('intent-mcu-recovery.json', authoredProjectText(AVR_PROFILE), 'application/json'));
 elements.projectreload.addEventListener('click', () => {
   const recovery = localStorage.getItem(PROJECT_RECOVERY_KEY);
   const stored = recovery ?? localStorage.getItem(PROJECT_STORAGE_KEY); const parsed = stored ? parseAvrRecoverySource(stored) : { ok: false, code: 'NO_LOCAL_SAVE' };
@@ -13818,8 +13884,9 @@ elements.projectreload.addEventListener('click', () => {
     runtimeMessage: 'Reloaded project requires build',
   });
   selectedSourceFile = 'main.ino';
+  resetCanvasAnnotations(parsed.annotations ?? emptyCanvasAnnotations());
   savedRevision = editor.revision; savedProjectGeneration = lifecycle.projectGeneration;
-  renderCatalog(); renderProject(); elements.projectmessage.textContent = 'Restored and revalidated browser recovery. Previous runtime output was cleared; save a project file for durable storage.';
+  setProjectBaseline(AVR_PROFILE); renderCatalog(); renderProject(); elements.projectmessage.textContent = 'Restored and revalidated browser recovery, including visual annotations. Previous runtime output was cleared; save a project file for durable storage.';
 });
 elements.projectexport.addEventListener('click', () => saveLegacyProject(AVR_PROFILE));
 
@@ -14089,7 +14156,7 @@ const recoveryRestored = recoveryStored ? parseAvrRecoverySource(recoveryStored)
 const currentRestored = stored ? parseAvrRecoverySource(stored) : null;
 const restored = recoveryRestored?.ok ? recoveryRestored : currentRestored;
 editor = restored?.ok ? restored.session : new ProjectEditorReducer(createEmptyProject());
-canvasAnnotations = new CanvasAnnotationReducer(emptyCanvasAnnotations(), annotationComponentIds());
+canvasAnnotations = new CanvasAnnotationReducer(restored?.annotations ?? emptyCanvasAnnotations(), annotationComponentIds());
 if (restored?.modelLibrary) projectModelLibraryLocks.set(AVR_PROFILE, structuredClone(restored.modelLibrary));
 scenarioTimelineEditor = restored?.scenarioTimeline
   ? new ScenarioTimelineEditor(restored.scenarioTimeline) : null;
