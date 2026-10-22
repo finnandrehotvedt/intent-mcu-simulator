@@ -555,3 +555,95 @@ test('C3 failed late-session retirement stays unproven and synchronous reentry s
   assert.equal((await synchronous.build()).code, 'C3_BUILD_STALE');
   assert.equal(networkRequests, 0);
 });
+
+test('C3 source invalidation owns failed late-session retirement and blocks replacement Build', async () => {
+  let releaseCreation;
+  let sessionRequests = 0;
+  let buildRequests = 0;
+  let disposalRequests = 0;
+  const creation = new Promise((resolve) => { releaseCreation = resolve; });
+  const created = { sessionId: 'V'.repeat(16), capability: 'W'.repeat(32), generation: 0 };
+  const workbench = new Esp32C3PublicWorkbench({ elements: workbenchElements(), fetchFn: async (url) => {
+    if (url.endsWith('/session')) { sessionRequests += 1; return creation; }
+    if (url.endsWith('/build')) { buildRequests += 1; throw new Error('BUILD_MUST_NOT_POST'); }
+    if (url.endsWith(`/session/${created.sessionId}/command`)) {
+      disposalRequests += 1;
+      throw Object.assign(new Error('cleanup response lost'), { code: 'NETWORK_LOST' });
+    }
+    throw new Error(`UNEXPECTED_FETCH:${url}`);
+  } });
+  workbench.activate();
+  const firstBuild = workbench.build();
+  await Promise.resolve();
+  await Promise.resolve();
+  workbench.invalidate('Source changed during session creation.');
+  releaseCreation(retirementResponse(created));
+  assert.equal((await firstBuild).code, 'C3_BUILD_STALE');
+  assert.equal(workbench.retirementOwner.status, 'unproven');
+  assert.deepEqual(await workbench.dispose(), { ok: false, code: 'NETWORK_LOST' });
+  assert.equal((await workbench.build()).code, 'C3_RETIREMENT_UNPROVEN');
+  assert.equal(sessionRequests, 1);
+  assert.equal(disposalRequests, 1);
+  assert.equal(buildRequests, 0);
+  assert.equal(workbench.sessionId, null);
+});
+
+test('C3 source-invalidated late session rejects a wrong retirement ACK and stays blocked', async () => {
+  let releaseCreation;
+  let sessionRequests = 0;
+  let buildRequests = 0;
+  let disposalRequests = 0;
+  const creation = new Promise((resolve) => { releaseCreation = resolve; });
+  const created = { sessionId: 'A'.repeat(16), capability: 'B'.repeat(32), generation: 0 };
+  const workbench = new Esp32C3PublicWorkbench({ elements: workbenchElements(), fetchFn: async (url) => {
+    if (url.endsWith('/session')) { sessionRequests += 1; return creation; }
+    if (url.endsWith('/build')) { buildRequests += 1; throw new Error('BUILD_MUST_NOT_POST'); }
+    if (url.endsWith(`/session/${created.sessionId}/command`)) {
+      disposalRequests += 1;
+      return retirementResponse(retirementAck({ sessionId: 'X'.repeat(16), generation: 0,
+        sourceSha256: null, artifactSha256: null }));
+    }
+    throw new Error(`UNEXPECTED_FETCH:${url}`);
+  } });
+  workbench.active = true;
+  const pending = workbench.ensureSession();
+  await Promise.resolve();
+  workbench.invalidate('Source changed during session creation.');
+  releaseCreation(retirementResponse(created));
+  await assert.rejects(() => pending, /C3_SESSION_CREATION_RETIRED/u);
+  assert.equal(workbench.retirementOwner.status, 'unproven');
+  assert.deepEqual(await workbench.dispose(), { ok: false, code: 'C3_RETIREMENT_ACK_INVALID' });
+  assert.equal((await workbench.build()).code, 'C3_RETIREMENT_UNPROVEN');
+  assert.equal(sessionRequests, 1);
+  assert.equal(disposalRequests, 1);
+  assert.equal(buildRequests, 0);
+});
+
+test('C3 source-invalidated late session requires exact ACK before replacement is allowed', async () => {
+  let releaseCreation;
+  let sessionRequests = 0;
+  const creation = new Promise((resolve) => { releaseCreation = resolve; });
+  const firstCreated = { sessionId: 'Y'.repeat(16), capability: 'Z'.repeat(32), generation: 0 };
+  const nextCreated = { sessionId: 'R'.repeat(16), capability: 'T'.repeat(32), generation: 0 };
+  const workbench = new Esp32C3PublicWorkbench({ elements: workbenchElements(), fetchFn: async (url) => {
+    if (url.endsWith('/session')) {
+      sessionRequests += 1;
+      return sessionRequests === 1 ? creation : retirementResponse(nextCreated);
+    }
+    if (url.endsWith(`/session/${firstCreated.sessionId}/command`)) {
+      return retirementResponse(retirementAck({ sessionId: firstCreated.sessionId, generation: 0,
+        sourceSha256: null, artifactSha256: null }));
+    }
+    throw new Error(`UNEXPECTED_FETCH:${url}`);
+  } });
+  workbench.active = true;
+  const pending = workbench.ensureSession();
+  await Promise.resolve();
+  workbench.invalidate('Source changed during session creation.');
+  releaseCreation(retirementResponse(firstCreated));
+  await assert.rejects(() => pending, /C3_SESSION_CREATION_RETIRED/u);
+  assert.equal(workbench.retirementOwner.status, 'proven');
+  assert.equal(await workbench.ensureSession(), true);
+  assert.equal(workbench.sessionId, nextCreated.sessionId);
+  assert.equal(sessionRequests, 2);
+});

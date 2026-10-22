@@ -197,12 +197,19 @@ export class Esp32C3PublicWorkbench {
           circuit: ticket.circuit };
         if (ticket.retiring || ticket.token !== this.requestToken
           || ticket.revision !== this.revision || ticket.active !== this.active || !this.active) {
-          return { installed: false, retirement: await this.retireCapturedSession(identity) };
+          const owner = this.retirementOwner ?? this.createRetirementOwner();
+          if (!this.retirementOwner) this.retirementOwner = owner;
+          return { installed: false, retirement: await this.settleRetirementOwner(owner, identity) };
         }
         this.sessionId = identity.sessionId;
         this.capability = identity.capability;
         this.serverGeneration = identity.generation;
         return { installed: true, identity };
+      }).catch((error) => {
+        if (ticket.retiring && this.retirementOwner?.status === 'pending') {
+          this.failRetirementOwner(this.retirementOwner, error);
+        }
+        throw error;
       }).finally(() => {
         if (this.sessionCreationOwner === ticket) this.sessionCreationOwner = null;
       });
@@ -227,6 +234,28 @@ export class Esp32C3PublicWorkbench {
       },
     ));
     return validateEsp32C3Retirement(retirement, expected);
+  }
+  createRetirementOwner() {
+    let complete;
+    const promise = new Promise((resolve) => { complete = resolve; });
+    return { expected: null, status: 'pending', started: false, promise, resolve: complete };
+  }
+  failRetirementOwner(owner, error) {
+    if (owner.status !== 'pending') return owner.promise;
+    owner.status = 'unproven';
+    owner.resolve({ ok: false, code: error.code ?? error.message ?? 'C3_RETIREMENT_UNPROVEN' });
+    return owner.promise;
+  }
+  settleRetirementOwner(owner, identity, { keepalive = false } = {}) {
+    if (owner.started) return owner.promise;
+    owner.started = true;
+    owner.expected = { sessionId: identity.sessionId, generation: identity.generation,
+      sourceSha256: identity.sourceSha256, artifactSha256: identity.artifactSha256 };
+    void this.retireCapturedSession(identity, { keepalive }).then((result) => {
+      owner.status = 'proven';
+      owner.resolve(result);
+    }, (error) => { this.failRetirementOwner(owner, error); });
+    return owner.promise;
   }
   commandBody(command) {
     return {
@@ -424,18 +453,7 @@ export class Esp32C3PublicWorkbench {
     const creation = this.sessionCreationOwner;
     if (creation) {
       creation.retiring = true;
-      const owner = { expected: null, status: 'pending', promise: null };
-      owner.promise = creation.promise.then((result) => {
-        if (!result.retirement?.ok) {
-          owner.status = 'unproven';
-          return { ok: false, code: 'C3_RETIREMENT_UNPROVEN' };
-        }
-        owner.status = 'proven';
-        return result.retirement;
-      }, (error) => {
-        owner.status = 'unproven';
-        return { ok: false, code: error.code ?? error.message ?? 'C3_RETIREMENT_UNPROVEN' };
-      });
+      const owner = this.createRetirementOwner();
       this.retirementOwner = owner;
       this.sessionId = null;
       this.capability = null;
