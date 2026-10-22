@@ -28,9 +28,9 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc110 to rc111 reviewed X57 X89 bytes', async () => {
+test('X88 owner binds canonical rc111 to rc112 reviewed X48 bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.111');
+  assert.equal(release.version, '1.1.0-rc.112');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
@@ -38,24 +38,18 @@ test('X88 owner binds canonical rc110 to rc111 reviewed X57 X89 bytes', async ()
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
   assert(registry.ids.includes('X92'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.110', current: '1.1.0-rc.111' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.111', current: '1.1.0-rc.112' });
   assert.deepEqual(value.changes, [
     {
-      id: 'X57', classification: 'additive',
-      capabilities: ['intent-mcu-contribution-review@1'],
-      contracts: ['x57-trusted-contribution-admission-v1'],
-      summary: 'Adds inert contribution admission with current-byte hashing, explicit trusted maintainer review and fixed project-owned conformance tests; registry and release remain separate reviewed changes.',
+      id: 'X48', classification: 'additive',
+      capabilities: ['intent-mcu-x48-ideal-room-plant@2'],
+      contracts: ['x48-avr-ideal-room-instruction-boundary-v1'],
+      summary: 'Adds one bounded 32-tick AVR ideal-room loop with exact source, graph, artifact, model and worker joins, independently recomputed rows, HIGH/LOW coverage and zero-drop acceptance; it is not physical, wall-clock or safety evidence.',
     },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records the reviewed rc.110 to rc.111 X57/X89 local review and readiness tools, with X92 remaining partial and zero new native producer authority.',
-    },
-    {
-      id: 'X89', classification: 'additive',
-      capabilities: ['intent-mcu-local-readiness-report@1'],
-      contracts: ['x89-local-readiness-assessment-v1'],
-      summary: 'Adds read-only local configuration assessment over exact Compose, trusted broker policy and image locks; service health, compiler readiness and physical execution remain explicitly untested.',
+      summary: 'Records the reviewed rc.111 to rc.112 X48 bounded ideal-room loop and its presentation-only success-copy correction, with X92 remaining partial and zero new release-time native producer authority.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -118,7 +112,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.111');
+  assert.equal(discovery.identity.version, '1.1.0-rc.112');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

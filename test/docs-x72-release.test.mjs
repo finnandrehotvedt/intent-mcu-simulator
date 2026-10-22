@@ -20,12 +20,12 @@ test('public documentation facts derive from the current release and canonical c
     read('../staging/llms.txt'), read('../staging/sitemap.xml'),
   ]);
   const avrCount = exampleCatalog().length + 1 + 1 + avrReferenceStarterCatalog().length;
-  assert.equal(RELEASE_VERSION, '1.1.0-rc.111');
+  assert.equal(RELEASE_VERSION, '1.1.0-rc.112');
   assert.equal(avrCount, 15);
   assert.equal(THERMOSTAT_SCENARIOS.scenarios.length, 4);
   assert.match(THERMOSTAT_EXPERIMENT_CARD.outcome, /four reset-isolated/u);
   for (const page of [controllers, components, examples, support, llms]) {
-    assert.match(page, /1\.1\.0-rc\.111/u);
+    assert.match(page, /1\.1\.0-rc\.112/u);
     assert.doesNotMatch(page, /1\.1\.0-rc\.41/u);
   }
   assert.match(controllers, /four reset-isolated boundary scenarios/u);
@@ -34,7 +34,7 @@ test('public documentation facts derive from the current release and canonical c
   assert.match(llms, /four reset-isolated virtual-time scenarios/u);
   assert.match(llms, /finite resistor-and-LED reusable subcircuit/u);
   assert.match(support, /X66[^·]+complete only against their bounded original criteria/u);
-  assert.match(support, /X 83\/1\/12/u);
+  assert.match(support, /X 84\/1\/11/u);
   assert.match(support, /no account[^\n]+nested or general-purpose subcircuit authority/u);
   assert.match(sitemap, /<lastmod>2026-10-21<\/lastmod>/u);
 });

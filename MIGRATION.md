@@ -1,8 +1,13 @@
-# Migration to 1.1.0-rc.111
+# Migration to 1.1.0-rc.112
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.112 preserves accepted rc.111 project bytes and model identity as
+migration-only data. Opening an rc.111 project performs the existing explicit
+model-library migration without adding Build, Run, X48 or verdict authority.
+X48 results are transient and are not restored as a current execution.
 
 Rc.111 adds no project, browser-storage, runtime or model-library migration.
 X57 reports and trusted evidence are local review artifacts, never project or

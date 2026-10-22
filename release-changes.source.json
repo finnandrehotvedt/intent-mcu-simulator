@@ -11,20 +11,20 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.110",
-    "current": "1.1.0-rc.111"
+    "previous": "1.1.0-rc.111",
+    "current": "1.1.0-rc.112"
   },
   "changes": [
     {
-      "id": "X57",
+      "id": "X48",
       "classification": "additive",
       "capabilities": [
-        "intent-mcu-contribution-review@1"
+        "intent-mcu-x48-ideal-room-plant@2"
       ],
       "contracts": [
-        "x57-trusted-contribution-admission-v1"
+        "x48-avr-ideal-room-instruction-boundary-v1"
       ],
-      "summary": "Adds inert contribution admission with current-byte hashing, explicit trusted maintainer review and fixed project-owned conformance tests; registry and release remain separate reviewed changes."
+      "summary": "Adds one bounded 32-tick AVR ideal-room loop with exact source, graph, artifact, model and worker joins, independently recomputed rows, HIGH/LOW coverage and zero-drop acceptance; it is not physical, wall-clock or safety evidence."
     },
     {
       "id": "X88",
@@ -35,18 +35,7 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records the reviewed rc.110 to rc.111 X57/X89 local review and readiness tools, with X92 remaining partial and zero new native producer authority."
-    },
-    {
-      "id": "X89",
-      "classification": "additive",
-      "capabilities": [
-        "intent-mcu-local-readiness-report@1"
-      ],
-      "contracts": [
-        "x89-local-readiness-assessment-v1"
-      ],
-      "summary": "Adds read-only local configuration assessment over exact Compose, trusted broker policy and image locks; service health, compiler readiness and physical execution remain explicitly untested."
+      "summary": "Records the reviewed rc.111 to rc.112 X48 bounded ideal-room loop and its presentation-only success-copy correction, with X92 remaining partial and zero new release-time native producer authority."
     }
   ],
   "migrationRequired": false,

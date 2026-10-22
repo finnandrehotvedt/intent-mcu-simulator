@@ -1,4 +1,41 @@
-# Intent MCU Simulator 1.1.0-rc.111
+# Intent MCU Simulator 1.1.0-rc.112
+
+## Bounded AVR ideal-room control loop
+
+Rc.112 publishes X48's explicitly selected 32-tick ideal-room loop for the
+exact AVR thermostat starter. A fresh Build must leave one current worker
+paused at cycle zero. Source, authored graph, compiled artifact, current model
+implementation and worker identities must all join before Start becomes
+available; ordinary Run is not used.
+
+Each retained row separates its nominal 160 ms schedule from the first actual
+completed AVR instruction boundary, records cycle-zero input application,
+observed D13, expected integer-model output, next input and all drop counters.
+The strict parser independently recomputes all 32 rows and requires both HIGH
+and LOW phases. Stale, incomplete, ambiguous or dropped evidence cannot pass.
+
+This is one bounded discrete educational model. It is not physical thermal
+calibration, wall-clock timing, a continuous solver, general process-model
+support or safety evidence. X48 is complete only against that original bounded
+criterion; X92 remains partial. Canonical status is X **84/1/11**, P1
+**59/0/0**. Rc.112 performs zero new native Build, Run, Scenario or worker
+action; cumulative accepted native evidence is **36/34/0**.
+
+The accepted native proof remains pinned to source
+`bd641b8f97ec9199e4bce7126492bfb6a229e0d8`, manifest
+`69bcbb807350a7080905a331b7556f8eaf88c6ce6d23bec5e6f1b28a480225f3`
+and implementation
+`ed535066c9a747c74e409603d02ca3d8c09c600c72585c357a222ba87d82cd64`.
+The release presentation correction has current manifest
+`06132eb96862ae5b58279c9d7ed3add641dfa11c7ade6716a84ceb8a25540b5f`
+and implementation
+`468fa16f86a379badca3b25ffb5f9385e54fbfeb5d29d04d3e3466c347a5f89e`;
+it changes only the successful completion sentence and does not relabel the
+earlier producer evidence.
+
+---
+
+## 1.1.0-rc.111
 
 ## Trusted contribution review and local readiness assessment
 

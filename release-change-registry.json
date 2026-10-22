@@ -54,6 +54,15 @@
       ]
     },
     {
+      "id": "X48",
+      "capabilities": [
+        "intent-mcu-x48-ideal-room-plant@2"
+      ],
+      "contracts": [
+        "x48-avr-ideal-room-instruction-boundary-v1"
+      ]
+    },
+    {
       "id": "X49",
       "capabilities": [
         "intent-mcu-x49-public-runner@1"

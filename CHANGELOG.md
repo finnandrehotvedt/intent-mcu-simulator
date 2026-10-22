@@ -2,6 +2,22 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.112 — 2026-10-22
+
+- Adds X48's bounded AVR ideal-room loop: one current thermostat source,
+  authored graph, compiled artifact, exact model closure and one ready worker
+  are joined before the explicitly selected 32-tick run can begin.
+- Retains nominal and actual instruction-boundary cycles, cycle-zero inputs,
+  all 32 independently recomputable rows, HIGH/LOW phase coverage and explicit
+  retention counters. Ambiguous, stale, incomplete or dropped evidence cannot
+  pass.
+- This is one discrete educational process model, not physical thermal
+  calibration, wall-clock timing, a continuous solver or safety evidence.
+- Preserves the accepted rc.111 model manifest byte-for-byte as migration-only
+  data. X92 remains partial. Status is X **84 complete / 1 partial / 11
+  planned**, P1 **59/0/0**. This release performs zero new native producer
+  actions; cumulative accepted evidence is **36 Build / 34 Run / 0 scenarios**.
+
 ## 1.1.0-rc.111 — 2026-10-22
 
 - Adds X57 strict current-byte contribution review with explicit trusted

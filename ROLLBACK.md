@@ -1,8 +1,18 @@
-# Rollback basis for 1.1.0-rc.111
+# Rollback basis for 1.1.0-rc.112
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
+
+Retain exact public rc.111 source commit
+`4df2a9d1c91ba508e1dc51e81a2e5e589db72cad` and VM103 image
+`sha256:80daf713d345921abef35bd743fd342b7986c2b54d23764cffabf2508139f262`
+as the pre-rc.112 app-only recovery basis. If acceptance fails, restore that
+exact app image and release directory, recreate only the Lab container and
+verify readiness plus the existing Teach-domain URLs.
+
+Rollback removes the X48 public control and current presentation closure. It
+does not rewrite learner-owned files or reinterpret retained native evidence.
 
 Retain exact public rc.110 source commit
 `a37c8915a5ade9b5c46aba9d14060934f8ae3ccb` and VM103 image
