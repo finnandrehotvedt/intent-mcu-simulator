@@ -390,6 +390,10 @@ body[data-active-profile] .app-header .lede { max-width: 640px; overflow: hidden
 .x92-budget-metrics div { min-width: 0; padding: 9px; border: 1px solid #28566d; border-radius: 9px; background: #071722; }
 .x92-budget-metrics dt { color: var(--muted); font-size: .62rem; text-transform: uppercase; }
 .x92-budget-metrics dd { margin: 3px 0 0; color: var(--text); font: 800 .8rem ui-monospace,monospace; overflow-wrap: anywhere; }
+.x92-budget-metric-row { display: block; margin-top: 3px; color: var(--muted); font-size: .65rem; font-weight: 650; }
+.x92-budget-metric-row[data-kind="consumed"] { color: var(--text); }
+.x92-budget-metric-row[data-kind="remaining"] { color: var(--lime); }
+.x92-budget-accounting { padding: 8px; border-left: 3px solid var(--amber); background: #17190f; }
 .x92-budget-review-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
 .x92-budget-review-grid section { min-width: 0; padding: 9px; border: 1px solid #26475b; border-radius: 9px; }
 .x92-budget-review-grid h5 { color: var(--cyan); font-size: .66rem; text-transform: uppercase; }

@@ -487,7 +487,7 @@ const elements = Object.fromEntries([
   'bounded-actions-summary', 'bounded-actions-status', 'bounded-actions-list',
   'x92-budget-start', 'x92-budget-download', 'x92-budget-open', 'x92-budget-open-input',
   'x92-budget-summary', 'x92-budget-status', 'x92-budget-metrics', 'x92-budget-reservations',
-  'x92-budget-unresolved', 'x92-budget-imported', 'release-version',
+  'x92-budget-unresolved', 'x92-budget-imported', 'x92-budget-accounting', 'release-version',
   'regression-matrix', 'regression-matrix-state', 'regression-matrix-identity',
   'regression-matrix-selector', 'regression-matrix-run', 'regression-matrix-negative',
   'regression-matrix-export', 'regression-matrix-results', 'regression-matrix-summary',
@@ -7286,15 +7286,27 @@ function renderX92Budget(message = null, valid = true) {
     : review ? 'Session retired. Consumption remains visible; only a human action can start another session.'
       : 'No experiment session is active. Existing manual controls are unchanged.');
   const usage = review?.consumed ?? { builds: 0, runs: 0, scenarios: 0, wallClockMs: 0 };
+  const reserved = review?.reserved ?? { builds: 0, runs: 0, scenarios: 0, wallClockMs: 0 };
   const limits = review?.limits ?? X92_DEFAULT_LIMITS;
-  const rows = [['Builds', usage.builds, limits.builds], ['Runs', usage.runs, limits.runs],
-    ['Scenarios', usage.scenarios, limits.scenarios], ['Wall clock', `${usage.wallClockMs} ms`, `${limits.wallClockMs} ms`]];
-  elements.x92budgetmetrics.replaceChildren(...rows.map(([label, used, limit]) => {
+  const remaining = review?.remaining ?? { ...limits };
+  const rows = [['builds', 'Builds'], ['runs', 'Runs'], ['scenarios', 'Scenarios'], ['wallClockMs', 'Wall clock']];
+  const display = (dimension, value) => dimension === 'wallClockMs' ? `${value} ms` : String(value);
+  elements.x92budgetmetrics.replaceChildren(...rows.map(([dimension, label]) => {
     const item = document.createElement('div'); const term = document.createElement('dt');
-    const value = document.createElement('dd'); term.textContent = label; value.textContent = `${used} / ${limit}`;
+    const value = document.createElement('dd'); term.textContent = label; item.dataset.dimension = dimension;
+    const values = [['consumed', 'Finalized', usage[dimension]], ['reserved', 'Reserved', reserved[dimension]],
+      ['remaining', 'Remaining', remaining[dimension]], ['limit', 'Limit', limits[dimension]]];
+    value.replaceChildren(...values.map(([kind, title, amount]) => {
+      const row = document.createElement('span'); row.className = 'x92-budget-metric-row'; row.dataset.kind = kind;
+      row.textContent = `${title}: ${display(dimension, amount)}`; return row;
+    }));
     item.append(term, value); return item;
   }));
   const reservations = review?.reservations ?? [];
+  const indeterminate = review?.terminal?.filter((item) => item.outcome === 'indeterminate').length ?? 0;
+  elements.x92budgetaccounting.textContent = `Pending reservations: ${reservations.length} · Indeterminate terminal records: ${indeterminate}`;
+  elements.x92budgetaccounting.dataset.pending = String(reservations.length);
+  elements.x92budgetaccounting.dataset.indeterminate = String(indeterminate);
   elements.x92budgetreservations.replaceChildren(...(reservations.length ? reservations.map((item) => {
     const row = document.createElement('li'); row.textContent = `${item.action} · ${item.requestId} · ${item.deadlineAfterMs} ms`; return row;
   }) : [Object.assign(document.createElement('li'), { textContent: 'None' })]));

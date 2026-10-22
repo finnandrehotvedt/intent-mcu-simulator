@@ -31,8 +31,15 @@ const HASH = /^sha256:[a-f0-9]{64}$/u;
 const PROFILE = /^board\.[a-z0-9.-]+-v[0-9]+$/u;
 const SESSION_ID = /^x92-session-[A-Za-z0-9-]{8,96}$/u;
 const RESERVATION_ID = /^x92-reservation-[A-Za-z0-9-]{8,96}$/u;
+const REQUEST_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,95}$/u;
 const TERMINAL_KINDS = new Set(['success', 'failure', 'cancelled', 'timeout', 'crash', 'identity-change', 'session-retired']);
 const clone = (value) => structuredClone(value);
+const canonical = (value) => {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])]));
+};
+const requestFingerprint = (request) => JSON.stringify(canonical(request));
 
 function error(code, details = []) {
   throw Object.assign(new Error(code), { code, details });
@@ -181,6 +188,18 @@ function validateUsage(value, code) {
   };
 }
 
+function actionCompatibleUsage(action, usage, { terminal = false, indeterminate = false } = {}) {
+  const countCompatible = action === 'firmware.build'
+    ? usage.builds === 1 && usage.runs === 0 && usage.scenarios === 0
+    : action === 'runtime.run' && usage.builds === 0 && usage.runs === 1
+      && [0, 4].includes(usage.scenarios);
+  const wallCompatible = terminal
+    ? usage.wallClockMs <= X92_ACTION_WALL_LIMITS[action]
+      && (!indeterminate || usage.wallClockMs === X92_ACTION_WALL_LIMITS[action])
+    : usage.wallClockMs === X92_ACTION_WALL_LIMITS[action];
+  return countCompatible && wallCompatible;
+}
+
 export function parseX92ReviewProjection(source) {
   const value = typeof source === 'string' ? parseStrictJson(source, X92_REVIEW_LIMIT)
     : parseStrictJson(JSON.stringify(source), X92_REVIEW_LIMIT);
@@ -213,28 +232,36 @@ export function parseX92ReviewProjection(source) {
       || !exactKeys(value.restores, ['activeSession', 'runtime', 'reservation', 'permission',
         'executable', 'verdict', 'limits', 'consumption'])
       || Object.values(value.restores).some((item) => item !== false)) error('X92_REVIEW_AUTHORITY');
-  const reservationIds = new Set(); const reservationTotals = emptyUsage();
+  const reservationIds = new Set(); const requestIds = new Set(); const reservationTotals = emptyUsage();
   for (const row of value.reservations) {
     if (!exactKeys(row, ['reservationId', 'requestId', 'action', 'cost', 'deadlineAfterMs'])
-        || !RESERVATION_ID.test(row.reservationId ?? '') || typeof row.requestId !== 'string'
+        || !RESERVATION_ID.test(row.reservationId ?? '') || !REQUEST_ID.test(row.requestId ?? '')
         || !['firmware.build', 'runtime.run'].includes(row.action)
-        || row.deadlineAfterMs !== row.cost?.wallClockMs || reservationIds.has(row.reservationId)) {
+        || row.deadlineAfterMs !== row.cost?.wallClockMs || reservationIds.has(row.reservationId)
+        || requestIds.has(row.requestId)) {
       error('X92_REVIEW_RESERVATION');
     }
-    reservationIds.add(row.reservationId);
-    const cost = validateUsage(row.cost, 'X92_REVIEW_RESERVATION_COST'); addUsage(reservationTotals, cost);
+    reservationIds.add(row.reservationId); requestIds.add(row.requestId);
+    const cost = validateUsage(row.cost, 'X92_REVIEW_RESERVATION_COST');
+    if (!actionCompatibleUsage(row.action, cost)) error('X92_REVIEW_RESERVATION_COST');
+    addUsage(reservationTotals, cost);
   }
+  if (!value.active && value.reservations.length) error('X92_REVIEW_RETIRED_RESERVATION');
   if (Object.keys(reserved).some((key) => reserved[key] !== reservationTotals[key])) error('X92_REVIEW_RESERVED_TOTALS');
   const terminalIds = new Set(); const terminalTotals = emptyUsage();
   for (const row of value.terminal) {
     if (!exactKeys(row, ['reservationId', 'requestId', 'action', 'terminalKind', 'outcome', 'charged', 'measurement'])
         || !RESERVATION_ID.test(row.reservationId ?? '') || !TERMINAL_KINDS.has(row.terminalKind)
-        || typeof row.requestId !== 'string' || !['firmware.build', 'runtime.run'].includes(row.action)
-        || !['complete', 'indeterminate'].includes(row.outcome) || terminalIds.has(row.reservationId)) {
+        || !REQUEST_ID.test(row.requestId ?? '') || !['firmware.build', 'runtime.run'].includes(row.action)
+        || !['complete', 'indeterminate'].includes(row.outcome) || terminalIds.has(row.reservationId)
+        || reservationIds.has(row.reservationId) || requestIds.has(row.requestId)) {
       error('X92_REVIEW_TERMINAL');
     }
-    terminalIds.add(row.reservationId);
-    const charged = validateUsage(row.charged, 'X92_REVIEW_TERMINAL_CHARGE'); addUsage(terminalTotals, charged);
+    terminalIds.add(row.reservationId); requestIds.add(row.requestId);
+    const charged = validateUsage(row.charged, 'X92_REVIEW_TERMINAL_CHARGE');
+    if (!actionCompatibleUsage(row.action, charged,
+      { terminal: true, indeterminate: row.outcome === 'indeterminate' })) error('X92_REVIEW_TERMINAL_CHARGE');
+    addUsage(terminalTotals, charged);
     const complete = row.outcome === 'complete';
     const measurementKeys = complete ? ['source', 'unit', 'value', 'complete']
       : ['source', 'unit', 'value', 'complete', 'chargedUpperBoundMs'];
@@ -282,6 +309,7 @@ export function createX92ExperimentBudget({
       consumed: emptyUsage(),
       reservations: new Map(),
       terminal: new Map(),
+      requests: new Map(),
       unresolvedProblems: [],
       measurementSource,
       retiredReason: null,
@@ -296,6 +324,20 @@ export function createX92ExperimentBudget({
     if (!identityEqual(current, session.identity)) return { ok: false, code: 'X92_IDENTITY_STALE', budgeted: false };
     const cost = actionCost(request);
     if (!cost) return { ok: true, code: 'X92_NO_RESOURCE_COST', budgeted: false };
+    if (!REQUEST_ID.test(request.requestId ?? '')) error('X92_REQUEST_ID');
+    const fingerprint = requestFingerprint(request);
+    const priorRequest = session.requests.get(request.requestId);
+    if (priorRequest) {
+      if (priorRequest.fingerprint !== fingerprint) {
+        return { ok: false, budgeted: true, code: 'X92_REQUEST_ID_CONFLICT', executed: false,
+          authority: clone(X92_NO_AUTHORITY), review: snapshot() };
+      }
+      const priorTerminal = session.terminal.get(priorRequest.reservationId);
+      return { ok: false, budgeted: true,
+        code: priorRequest.status === 'pending' ? 'X92_REQUEST_DUPLICATE_PENDING' : 'X92_REQUEST_DUPLICATE_TERMINAL',
+        executed: false, authority: clone(X92_NO_AUTHORITY),
+        ...(priorTerminal ? { terminal: terminalSnapshot(priorTerminal, true) } : {}), review: snapshot() };
+    }
     const unresolved = normalizeUnresolved(unresolvedProblems);
     session.unresolvedProblems = unresolved;
     const reserved = reservationUsage(session.reservations);
@@ -316,6 +358,7 @@ export function createX92ExperimentBudget({
       action: request.action, cost: clone(cost), binding: clone(session.identity),
     };
     session.reservations.set(reservationId, reservation);
+    session.requests.set(request.requestId, { fingerprint, reservationId, status: 'pending' });
     return { ok: true, code: 'X92_RESERVED', budgeted: true,
       reservation: Object.freeze(clone(reservation)), deadlineAfterMs: cost.wallClockMs, review: snapshot() };
   }
@@ -355,6 +398,8 @@ export function createX92ExperimentBudget({
           chargedUpperBoundMs: reservation.cost.wallClockMs },
     };
     session.terminal.set(reference.reservationId, item);
+    const requestRecord = session.requests.get(reference.requestId);
+    if (requestRecord?.reservationId === reference.reservationId) requestRecord.status = 'terminal';
     if (session.terminal.size > 64) session.terminal.delete(session.terminal.keys().next().value);
     return { ok: true, code: authenticated ? 'X92_TERMINAL_ACCOUNTED' : 'X92_TERMINAL_INDETERMINATE',
       terminal: terminalSnapshot(item), review: snapshot() };

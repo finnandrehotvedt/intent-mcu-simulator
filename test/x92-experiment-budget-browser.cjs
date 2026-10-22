@@ -38,6 +38,19 @@ const outputDir = process.env.X92_OUTPUT || '/tmp/x92-private-evidence';
     assert.deepEqual(started.limits, { builds: 2, runs: 4, scenarios: 8, wallClockMs: 120000 });
     assert.deepEqual(started.consumed, { builds: 0, runs: 0, scenarios: 0, wallClockMs: 0 });
     assert.equal(started.authority.build, false); assert.equal(started.authority.run, false);
+    const visibleAccounting = await page.evaluate(() => ({
+      builds: Object.fromEntries([...document.querySelectorAll('[data-dimension="builds"] [data-kind]')]
+        .map((node) => [node.dataset.kind, node.textContent])),
+      wall: Object.fromEntries([...document.querySelectorAll('[data-dimension="wallClockMs"] [data-kind]')]
+        .map((node) => [node.dataset.kind, node.textContent])),
+      pending: document.querySelector('#x92-budget-accounting').dataset.pending,
+      indeterminate: document.querySelector('#x92-budget-accounting').dataset.indeterminate,
+    }));
+    assert.deepEqual(visibleAccounting.builds, { consumed: 'Finalized: 0', reserved: 'Reserved: 0',
+      remaining: 'Remaining: 2', limit: 'Limit: 2' });
+    assert.deepEqual(visibleAccounting.wall, { consumed: 'Finalized: 0 ms', reserved: 'Reserved: 0 ms',
+      remaining: 'Remaining: 120000 ms', limit: 'Limit: 120000 ms' });
+    assert.deepEqual([visibleAccounting.pending, visibleAccounting.indeterminate], ['0', '0']);
 
     const downloadPromise = page.waitForEvent('download');
     await page.click('#x92-budget-download');
@@ -92,11 +105,15 @@ const outputDir = process.env.X92_OUTPUT || '/tmp/x92-private-evidence';
         .slice(0, 8).map((node) => ({ id: node.id, className: String(node.className), right: node.getBoundingClientRect().right })),
     }));
     assert(narrowOverflow.delta <= 1, JSON.stringify(narrowOverflow));
+    const narrowScreenshot = path.join(outputDir, 'x92-private-budget-narrow.png');
+    await page.locator('.x92-budget').screenshot({ path: narrowScreenshot });
     assert.equal(producerRequests.length, 0); assert.equal(mutatingRequests.length, 0);
     fs.writeFileSync(path.join(outputDir, 'x92-browser.json'), `${JSON.stringify({
       result: 'pass', producerRequests, mutatingRequests, started: started.sessionId,
-      importedAuthorityRestored: false, sourceRebound: true, profileRebound: true, screenshot,
+      importedAuthorityRestored: false, sourceRebound: true, profileRebound: true,
+      accountingVisible: true, screenshots: [screenshot, narrowScreenshot],
     }, null, 2)}\n`);
-    process.stdout.write(`${JSON.stringify({ result: 'pass', producerActivity: [0, 0, 0, 0], screenshot })}\n`);
+    process.stdout.write(`${JSON.stringify({ result: 'pass', producerActivity: [0, 0, 0, 0],
+      screenshots: [screenshot, narrowScreenshot] })}\n`);
   } finally { await browser.close(); }
 })().catch((error) => { console.error(error); process.exitCode = 1; });

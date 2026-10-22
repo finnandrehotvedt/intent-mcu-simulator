@@ -77,6 +77,70 @@ test('atomic reservation rejects the second build and returns unresolved work in
   assert(Object.values(second.authority).every((value) => value === false));
 });
 
+test('one immutable request key can reserve and dispatch only once while pending or terminal', async () => {
+  const owner = budget(); owner.start(identity(), { humanInitiated: true });
+  let dispatches = 0; let finish;
+  const downstream = {
+    execute: () => { dispatches += 1; return new Promise((resolve) => { finish = resolve; }); },
+    cancel: () => ({ ok: true }),
+  };
+  const executor = createX92BudgetedExecutor({ budget: owner, downstream,
+    currentIdentity: async () => identity(), now: () => 10,
+    schedule: () => 1, unschedule: () => {}, parseRequest: (source) => JSON.parse(source),
+    measurementSource: 'test.monotonic-wall-clock' });
+  const original = request('firmware.build', 'x92-idempotent-build-request');
+  const source = JSON.stringify(original);
+  const first = executor.execute(source); await Promise.resolve();
+  const pendingDuplicate = await executor.execute(source);
+  assert.equal(pendingDuplicate.code, 'X92_REQUEST_DUPLICATE_PENDING'); assert.equal(dispatches, 1);
+  finish({ ok: true, code: 'ACTION_BUILD_SUCCEEDED', executed: true });
+  const completed = await first; assert.equal(completed.ok, true);
+  const usage = structuredClone(owner.snapshot().consumed);
+  const terminalDuplicate = await executor.execute(source);
+  assert.equal(terminalDuplicate.code, 'X92_REQUEST_DUPLICATE_TERMINAL'); assert.equal(dispatches, 1);
+  assert.deepEqual(owner.snapshot().consumed, usage);
+
+  const conflict = { ...original, expiresAtMs: original.expiresAtMs - 1 };
+  const conflictingDuplicate = await executor.execute(JSON.stringify(conflict));
+  assert.equal(conflictingDuplicate.code, 'X92_REQUEST_ID_CONFLICT'); assert.equal(dispatches, 1);
+  const reference = owner.snapshot().terminal[0];
+  const late = owner.finalize({ sessionId: owner.sessionId(), reservationId: reference.reservationId,
+    requestId: reference.requestId }, { kind: 'success', authenticated: true,
+    measuredWallClockMs: 1, measurementSource: 'test.monotonic-wall-clock' });
+  assert.equal(late.code, 'X92_TERMINAL_DUPLICATE');
+  assert.deepEqual(owner.snapshot().consumed, usage);
+});
+
+test('strict review rejects overlapping identities, duplicate request keys and action-incompatible costs', () => {
+  const owner = budget(); owner.start(identity(), { humanInitiated: true });
+  owner.reserve(request('firmware.build', 'x92-review-build-request'), identity());
+  owner.reserve(request('runtime.run', 'x92-review-run-request'), identity());
+  const review = owner.snapshot();
+
+  const duplicateRequest = structuredClone(review);
+  duplicateRequest.reservations[1].requestId = duplicateRequest.reservations[0].requestId;
+  assert.throws(() => parseX92ReviewProjection(JSON.stringify(duplicateRequest)), /X92_REVIEW_RESERVATION/u);
+
+  const incompatible = structuredClone(review);
+  incompatible.reservations[0].cost.scenarios = 1; incompatible.reserved.scenarios = 1;
+  incompatible.remaining.scenarios = incompatible.limits.scenarios - 1;
+  assert.throws(() => parseX92ReviewProjection(JSON.stringify(incompatible)), /X92_REVIEW_RESERVATION_COST/u);
+
+  const overlap = structuredClone(review); const row = overlap.reservations[0];
+  overlap.terminal.push({ reservationId: row.reservationId, requestId: row.requestId, action: row.action,
+    terminalKind: 'session-retired', outcome: 'indeterminate', charged: structuredClone(row.cost),
+    measurement: { source: overlap.measurement.source, unit: 'wall-clock-ms', value: null,
+      complete: false, chargedUpperBoundMs: row.cost.wallClockMs } });
+  overlap.consumed = structuredClone(row.cost);
+  for (const key of Object.keys(overlap.remaining)) {
+    overlap.remaining[key] = overlap.limits[key] - overlap.consumed[key] - overlap.reserved[key];
+  }
+  assert.throws(() => parseX92ReviewProjection(JSON.stringify(overlap)), /X92_REVIEW_TERMINAL/u);
+
+  const retiredPending = structuredClone(review); retiredPending.active = false;
+  assert.throws(() => parseX92ReviewProjection(JSON.stringify(retiredPending)), /X92_REVIEW_RETIRED_RESERVATION/u);
+});
+
 test('terminal accounting is exact-once and duplicate or late callbacks cannot change capacity', () => {
   const owner = budget(); owner.start(identity(), { humanInitiated: true });
   const reserved = owner.reserve(request('runtime.run', 'x92-run-terminal-request'), identity());
