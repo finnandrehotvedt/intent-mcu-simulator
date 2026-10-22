@@ -389,11 +389,12 @@ body[data-active-profile] .app-header .lede { max-width: 640px; overflow: hidden
 .experiment-package-comparison-source-diff pre { max-height: 300px; margin: 7px 0 0; padding: 8px; overflow: auto; white-space: pre; color: #d8e8ef; background: #010609; font: .65rem/1.45 ui-monospace, monospace; }
 .experiment-package-recipient-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
 .experiment-package-recipient-actions span { color: var(--muted); font-size: .68rem; }
-.guided-replay-dialog { width: min(1040px, calc(100% - 32px)); max-height: calc(100vh - 32px); padding: 0; color: var(--text); background: #071521; border: 1px solid #34809a; border-radius: 14px; }
+.guided-replay-dialog { box-sizing: border-box; width: min(1040px, calc(100% - 32px)); max-width: calc(100% - 32px); max-height: calc(100vh - 32px); padding: 0; overflow: hidden; color: var(--text); background: #071521; border: 1px solid #34809a; border-radius: 14px; }
 .guided-replay-dialog::backdrop { background: #01070bd9; }
 .guided-replay-dialog > header { display: flex; justify-content: space-between; gap: 18px; align-items: center; padding: 20px 24px; border-bottom: 1px solid #26475b; background: #091b2a; }
 .guided-replay-dialog h2, .guided-replay-dialog h3, .guided-replay-dialog h4, .guided-replay-dialog p { margin-top: 0; }
-.guided-replay-layout { display: grid; gap: 14px; max-height: calc(100vh - 112px); padding: 20px 24px 24px; overflow: auto; }
+.guided-replay-layout { box-sizing: border-box; display: grid; gap: 14px; width: 100%; min-width: 0; max-height: calc(100vh - 112px); padding: 20px 24px 24px; overflow: auto; overflow-x: hidden; }
+.guided-replay-layout > *, .guided-replay-stage, .recipient-exchange { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; }
 .guided-replay-boundary, .guided-replay-limit { margin-bottom: 0; padding: 10px 12px; border: 1px solid #34809a; border-radius: 8px; color: var(--muted); background: #04111b; }
 .guided-replay-boundary strong { color: var(--cyan); }
 .guided-replay-identities { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 5px 12px; margin: 0; }
@@ -401,10 +402,12 @@ body[data-active-profile] .app-header .lede { max-width: 640px; overflow: hidden
 .guided-replay-identities dd { min-width: 0; margin: 0; overflow-wrap: anywhere; font: .72rem/1.45 ui-monospace, monospace; }
 .guided-replay-stage { padding: 16px; border: 1px solid #34809a; border-radius: 10px; background: #04111b; }
 .guided-replay-step-heading { display: flex; justify-content: space-between; align-items: end; gap: 18px; }
+.guided-replay-step-heading > * { min-width: 0; }
 .guided-replay-step-heading label { display: grid; gap: 5px; min-width: min(360px, 45%); color: var(--muted); }
+.guided-replay-step-heading select, .recipient-response-grid select, .recipient-response-grid textarea { box-sizing: border-box; min-width: 0; max-width: 100%; }
 .guided-replay-code { color: var(--cyan); overflow-wrap: anywhere; font: .72rem/1.45 ui-monospace, monospace; }
 .guided-replay-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.guided-replay-cards > section { padding: 12px; border: 1px solid #26475b; border-radius: 8px; background: #061824; }
+.guided-replay-cards > section { min-width: 0; padding: 12px; border: 1px solid #26475b; border-radius: 8px; background: #061824; }
 .guided-replay-cards ol { margin-bottom: 0; padding-left: 22px; }
 .guided-replay-cards li + li { margin-top: 7px; }
 .guided-replay-cards dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; margin: 0; }
@@ -417,11 +420,13 @@ body[data-active-profile] .app-header .lede { max-width: 640px; overflow: hidden
 .recipient-choice-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .recipient-response-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .recipient-response-grid > section { display: grid; align-content: start; gap: 9px; min-width: 0; padding: 12px; border: 1px solid #355b43; border-radius: 8px; background: #06140d; }
+.recipient-response-grid > section > * { box-sizing: border-box; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
 .recipient-response-grid label { display: grid; gap: 5px; color: var(--muted); }
 .recipient-response-grid textarea { width: 100%; resize: vertical; color: var(--text); background: #03100a; border: 1px solid #41694e; border-radius: 7px; }
 .recipient-response-relationship { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 5px 10px; margin: 0; }
 .recipient-response-relationship dt { color: var(--muted); }
 .recipient-response-relationship dd { min-width: 0; margin: 0; overflow-wrap: anywhere; font: .7rem/1.4 ui-monospace, monospace; }
+.guided-replay-dialog .sr-only { display: none; }
 @media (max-width: 900px) {
   .experiment-package-comparison-actions { grid-template-columns: auto minmax(0,1fr); }
   .experiment-package-comparison-review { grid-template-columns: 1fr; }

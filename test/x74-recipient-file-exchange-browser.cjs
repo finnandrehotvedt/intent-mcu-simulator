@@ -41,6 +41,36 @@ async function invariant(page) {
   }));
 }
 
+async function assertDialogFits(page, viewport) {
+  await page.setViewportSize(viewport);
+  const fit = await page.locator('#guided-replay-dialog').evaluate((dialog) => {
+    const layout = dialog.querySelector('.guided-replay-layout');
+    const relationship = dialog.querySelector('#recipient-response-relationship');
+    const rect = dialog.getBoundingClientRect();
+    return {
+      viewportWidth: window.innerWidth,
+      left: rect.left,
+      right: rect.right,
+      dialogOverflow: dialog.scrollWidth - dialog.clientWidth,
+      layoutOverflow: layout.scrollWidth - layout.clientWidth,
+      relationshipOverflow: relationship.scrollWidth - relationship.clientWidth,
+      widest: [...layout.querySelectorAll('*')].map((node) => ({
+        id: node.id, className: node.className, tag: node.tagName,
+        text: node.textContent.slice(0, 80), clientWidth: node.clientWidth, scrollWidth: node.scrollWidth,
+        parentClientWidth: node.parentElement?.clientWidth,
+        overflow: node.scrollWidth - node.clientWidth,
+        right: node.getBoundingClientRect().right,
+      })).filter((item) => item.overflow > 1 || item.clientWidth > item.parentClientWidth || item.right > window.innerWidth + 1)
+        .sort((a, b) => b.overflow - a.overflow).slice(0, 8),
+    };
+  });
+  assert(fit.left >= -1, JSON.stringify(fit));
+  assert(fit.right <= fit.viewportWidth + 1, JSON.stringify(fit));
+  assert(fit.dialogOverflow <= 1, JSON.stringify(fit));
+  assert(fit.layoutOverflow <= 1, JSON.stringify(fit));
+  assert(fit.relationshipOverflow <= 1, JSON.stringify(fit));
+}
+
 let browser;
 (async () => {
   const correct = fs.readFileSync(correctPath);
@@ -100,6 +130,17 @@ let browser;
   assert.equal(relationship.acceptedResponse.parentPackageSha256, sha256(correct));
   assert.equal(relationship.acceptedResponse.relationship, 'exact-parent');
   assert.match(await sender.locator('#recipient-response-relationship').textContent(), /Exact parent package/u);
+  assert.match(await sender.locator('#recipient-response-relationship').textContent(), new RegExp(sha256(correct), 'u'));
+  assert.equal(await recipient.locator('#recipient-response-note').inputValue(),
+    'Please explain the equality boundary before the next review.');
+  for (const viewport of [
+    { width: 1366, height: 768 },
+    { width: 1440, height: 900 },
+    { width: 1905, height: 904 },
+  ]) {
+    await assertDialogFits(sender, viewport);
+    await assertDialogFits(recipient, viewport);
+  }
 
   // Duplicate, wrong-parent and stale-parent routes reject without active project mutation.
   await sender.setInputFiles('#recipient-response-input', {
@@ -165,4 +206,3 @@ let browser;
   await senderContext.close(); await recipientContext.close();
 })().catch((error) => { console.error(error.stack || String(error)); process.exitCode = 1; })
   .finally(async () => { if (browser) await browser.close(); });
-
