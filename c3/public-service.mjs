@@ -454,6 +454,10 @@ export function createC3PublicService({
       || result.engine?.actualExecution !== true || result.engine?.binarySha256 !== QEMU_BINARY_SHA256
       || result.rom?.sha256 !== ROM_SHA256 || result.mode !== 'run'
       || result.uart?.exactApplicationText !== descriptor.marker || result.uart?.markerCount !== 2
+      || !Number.isSafeInteger(result.uart?.serialBytes) || result.uart.serialBytes < 2
+      || !/^[a-f0-9]{64}$/u.test(result.uart?.sha256 ?? '') || result.uart?.finalLf !== true
+      || !Array.isArray(result.uart?.bootEpochs) || result.uart.bootEpochs.length !== 2
+      || result.uart.bootEpochs.some((epoch) => epoch?.marker !== descriptor.marker)
       || result.resetReplay !== true || result.watchdog !== false
       || result.lifecycle?.cpuPauseSupported !== false
       || result.isolation?.network !== 'none' || result.isolation?.durableSourceStorage !== false

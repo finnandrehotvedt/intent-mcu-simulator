@@ -55,15 +55,28 @@ function validQuiescence(value, binding) {
     && value.processExited === true && value.operationRetired === true;
 }
 
+export function normalizeX92C3Uart(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || !exactKeys(value, ['exactApplicationText', 'markerCount', 'serialBytes', 'sha256',
+      'bootEpochs', 'finalLf'])
+    || typeof value.exactApplicationText !== 'string'
+    || !/^[A-Z0-9][A-Z0-9:_-]{2,63}$/u.test(value.exactApplicationText)
+    || value.markerCount !== 2 || !Number.isSafeInteger(value.serialBytes) || value.serialBytes < 2
+    || !RAW_HASH.test(value.sha256) || value.finalLf !== true
+    || !Array.isArray(value.bootEpochs) || value.bootEpochs.length !== value.markerCount
+    || value.bootEpochs.some((epoch) => !epoch || typeof epoch !== 'object'
+      || epoch.marker !== value.exactApplicationText)) fail('X92_C3_UART_INVALID');
+  return Object.freeze(clone(value));
+}
+
 function validResult(value, binding) {
   try {
     return value && typeof value === 'object' && !Array.isArray(value)
     && exactKeys(value, ['schema', 'ok', 'code', 'executed', 'executionIdentity', 'uart', 'quiescence'])
     && value.schema === X92_C3_RESULT_SCHEMA && value.ok === true && value.executed === true
     && typeof value.code === 'string' && same(normalizeX92C3Binding(value.executionIdentity), binding)
-    && value.uart && exactKeys(value.uart, ['exactText', 'finalLf'])
-    && typeof value.uart.exactText === 'string' && value.uart.exactText.endsWith('\n')
-    && value.uart.finalLf === true && validQuiescence(value.quiescence, binding);
+    && same(normalizeX92C3Uart(value.uart), value.uart)
+    && validQuiescence(value.quiescence, binding);
   } catch { return false; }
 }
 

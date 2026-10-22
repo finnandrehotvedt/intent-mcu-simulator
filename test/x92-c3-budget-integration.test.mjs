@@ -6,7 +6,7 @@ import test from 'node:test';
 import { createX92ExperimentBudget } from '../src/x92-experiment-budget.mjs';
 import {
   X92_C3_BINDING_SCHEMA, X92_C3_RESULT_SCHEMA, X92_C3_QUIESCENCE_SCHEMA,
-  createX92C3BudgetIntegration, x92IdentityFromC3Binding,
+  createX92C3BudgetIntegration, normalizeX92C3Uart, x92IdentityFromC3Binding,
 } from '../src/x92-c3-budget-integration.mjs';
 
 const profile = 'board.esp32-c3-devmodule-v1';
@@ -23,10 +23,25 @@ const quiescence = (overrides = {}) => ({
   operationId: 'c3-operation-1', state: 'quiescent', retainedBytes: 4 * 1024 * 1024,
   artifactPreserved: true, processExited: true, operationRetired: true, ...overrides,
 });
+// Shape and identities retained from native raw response SHA-256
+// 88f0bb2477354b3c4c5a29596d74d4cc00c36de98dc7f8aad0dcef0975c23572.
+// finalLf is the new direct serial-byte observation and is not claimed for that historical response.
+const actualUart = (overrides = {}) => ({
+  exactApplicationText: 'C3_PUBLIC', markerCount: 2, serialBytes: 494,
+  sha256: 'ac17974791ce3ec74ab3b026830b316bfa30be78bf6c358786ef5b410ea9cb66',
+  bootEpochs: [
+    { version: 'esp32c3-api1-20210207', reset: '0x1 (POWERON)',
+      boot: '0x8 (SPI_FAST_FLASH_BOOT)', mode: 'DIO', entry: '0x403cbf10', marker: 'C3_PUBLIC' },
+    { version: 'esp32c3-api1-20210207', reset: '0x1 (POWERON)',
+      boot: '0x8 (SPI_FAST_FLASH_BOOT)', mode: 'DIO', entry: '0x403cbf10', marker: 'C3_PUBLIC' },
+  ],
+  finalLf: true,
+  ...overrides,
+});
 const result = (overrides = {}) => ({
   schema: X92_C3_RESULT_SCHEMA, ok: true, code: 'C3_SYNTHETIC_COMPLETE', executed: true,
   executionIdentity: structuredClone(binding),
-  uart: { exactText: 'INTENT-C3-BUDGET:4E6F\n', finalLf: true }, quiescence: quiescence(), ...overrides,
+  uart: actualUart(), quiescence: quiescence(), ...overrides,
 });
 const request = (requestId = 'x92-c3-budget-run-001') => JSON.stringify({
   schema: 'intent-mcu-bounded-action-request@1', action: 'runtime.run', requestId, profile,
@@ -62,12 +77,13 @@ function integration(overrides = {}) {
   return { budget, integration: configured };
 }
 
-test('private C3 slice binds retirement, six identity layers, permit, UART LF and exact accounting', async () => {
+test('private C3 slice binds retirement, identities, permit, actual UART evidence and accounting', async () => {
   const { budget, integration: subject } = integration();
   const output = await subject.executeBudgeted(request());
   assert.equal(output.ok, true);
   assert.equal(output.privatePermitAccepted, true);
-  assert.equal(output.uart.exactText.at(-1), '\n');
+  assert.equal(output.uart.exactApplicationText, 'C3_PUBLIC');
+  assert.equal(output.uart.finalLf, true);
   assert.equal(output.experimentBudget.charged.runs, 1);
   assert.equal(output.experimentBudget.charged.wallClockMs, 21);
   assert.deepEqual(subject.status(), { gate: null, tombstone: null });
@@ -180,14 +196,14 @@ test('absolute deadline rejects a late producer result before validation or succ
   assert.equal(budget.snapshot().terminal.length, 1);
 });
 
-test('swapped result identity or missing final LF is unproven and permanently blocks dispatch', async () => {
+test('missing final LF is unproven and permanently blocks dispatch', async () => {
   let instance;
   const budget = owner();
   instance = createX92C3BudgetIntegration({ budget, currentBinding: async () => binding,
     retireCurrentOwner: async () => quiescence(),
     executeBudgetProducer: async (source, permit, exactBinding) => {
       assert.equal(instance.advancingBoundary(permit, exactBinding).ok, true);
-      return result({ uart: { exactText: 'NO-LF', finalLf: false } });
+      return result({ uart: actualUart({ finalLf: false }) });
     },
     executeManualProducer: async () => ({ ok: true }), cancelBudgetProducer: () => ({ ok: true }),
     now: () => 5, schedule: () => 1, unschedule: () => {}, parseRequest: JSON.parse,
@@ -196,4 +212,17 @@ test('swapped result identity or missing final LF is unproven and permanently bl
   assert.equal(output.code, 'X92_C3_RESULT_UNPROVEN');
   assert.equal(output.experimentBudget.charged.wallClockMs, 30_000);
   assert.equal(instance.status().tombstone.code, 'X92_C3_RESULT_OR_RETIREMENT_INVALID');
+});
+
+test('actual UART projection rejects historical missing-LF, hash, count and marker drift', () => {
+  const historical = actualUart(); delete historical.finalLf;
+  for (const candidate of [
+    historical,
+    actualUart({ sha256: 'bad' }),
+    actualUart({ markerCount: 1 }),
+    actualUart({ bootEpochs: actualUart().bootEpochs.map((epoch, index) =>
+      index ? { ...epoch, marker: 'C3_DRIFT' } : epoch) }),
+    { exactText: 'C3_PUBLIC\n', finalLf: true },
+  ]) assert.throws(() => normalizeX92C3Uart(candidate), /X92_C3_UART_INVALID/u);
+  assert.deepEqual(normalizeX92C3Uart(actualUart()), actualUart());
 });
