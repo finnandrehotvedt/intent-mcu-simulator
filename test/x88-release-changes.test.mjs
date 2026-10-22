@@ -28,9 +28,9 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc105 to rc106 reviewed teaching batch bytes', async () => {
+test('X88 owner binds canonical rc106 to rc107 reviewed X66 label bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.106');
+  assert.equal(release.version, '1.1.0-rc.107');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
@@ -38,33 +38,18 @@ test('X88 owner binds canonical rc105 to rc106 reviewed teaching batch bytes', a
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
   assert(registry.ids.includes('X92'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.105', current: '1.1.0-rc.106' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.106', current: '1.1.0-rc.107' });
   assert.deepEqual(value.changes, [
     {
-      id: 'X66', classification: 'additive', capabilities: ['intent-mcu-annotated-workspace@1', 'intent-mcu-canvas-annotations@1'],
-      contracts: ['x66-non-electrical-canvas-annotations-v1'],
-      summary: 'Adds local non-electrical notes and groups with strict annotated Save/Open, recovery and atomic visual history; this is not subcircuit or net-label authority.',
-    },
-    {
-      id: 'X68', classification: 'additive', capabilities: ['intent-mcu-presentation-draft@1'],
-      contracts: ['x68-frozen-presentation-view-v1'],
-      summary: 'Adds a read-only AVR presentation view over one explicitly captured instrument snapshot; later live values require a new presentation capture.',
-    },
-    {
-      id: 'X71', classification: 'additive', capabilities: ['intent-mcu-teaching-exercise@1'],
-      contracts: ['x71-local-avr-teaching-exercise-v1'],
-      summary: 'Adds one strict local AVR teaching exercise bundle with exactly the correct and known-bad equality variants and trusted human Open only.',
+      id: 'X66', classification: 'changed',
+      capabilities: ['intent-mcu-annotated-workspace@2', 'intent-mcu-canvas-annotations@2', 'intent-mcu-net-labels@1'],
+      contracts: ['x66-existing-canonical-net-labels-v1', 'x66-non-electrical-canvas-annotations-v1'],
+      summary: 'Adds strict labels bound only to existing canonical net IDs, preserves all save and history paths, and migrates published annotated-workspace v1 data without connectivity authority; deterministic reusable subcircuits remain unavailable.',
     },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records the reviewed rc.105 to rc.106 teaching batch with X66, X68, X71 and X92 remaining evidence-bounded partial capabilities and zero new native producer authority.',
-    },
-    {
-      id: 'X92', classification: 'changed',
-      capabilities: ['intent-mcu-experiment-budget-review@1', 'intent-mcu-experiment-budget@1', 'intent-mcu-x92-runtime-quiescence-ack@1'],
-      contracts: ['x92-bounded-avr-experiment-budget-v1'],
-      summary: 'Retains the bounded AVR quota and adds truthful parser-bound synthetic default-exhaustion proof; this is not a new native producer or full X92 closure.',
+      summary: 'Records the reviewed rc.106 to rc.107 X66 existing-net-label increment and legacy compatibility correction with X66 and X92 remaining partial and zero new native producer authority.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -127,7 +112,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.106');
+  assert.equal(discovery.identity.version, '1.1.0-rc.107');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

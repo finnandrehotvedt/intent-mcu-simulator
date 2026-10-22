@@ -2,6 +2,24 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.107 — 2026-10-22
+
+- Adds strict X66 labels bound only to existing canonical net IDs. The bound
+  ID is visible in the canvas; equal text on separate nets never creates,
+  joins, splits or retargets connectivity.
+- Preserves labels through Download/Open, native Save/Save copy, browser
+  recovery, local history, dirty fingerprints and exact Undo/Redo. Dangling or
+  malformed data fails atomically, and net deletion cleans up its labels
+  deterministically.
+- Restores published annotated-workspace v1 compatibility through normal Open,
+  recovery and local history while preserving notes/groups and adding an empty
+  strict label owner. Every historical non-retained model lock remains
+  migration-only; retained execution semantics are unchanged.
+- Keeps X66 partial until deterministic reusable subcircuits exist. X92 also
+  remains partial; status is X **78 complete / 2 partial / 16 planned**, P1
+  **59/0/0**. This release performs zero new firmware Build, Run, Scenario or
+  worker action and retains cumulative native evidence at **34/33/0**.
+
 ## 1.1.0-rc.106 — 2026-10-22
 
 - Publishes three reviewed local teaching surfaces: X66 non-electrical notes and

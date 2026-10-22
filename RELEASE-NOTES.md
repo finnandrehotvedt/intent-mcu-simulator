@@ -1,4 +1,28 @@
-# Intent MCU Simulator 1.1.0-rc.106
+# Intent MCU Simulator 1.1.0-rc.107
+
+## Existing canonical-net labels
+
+Rc.107 adds electrically inert labels for existing canonical nets. Each label
+shows the bound net ID as visible text; matching label names on separate nets
+have no connectivity meaning. Labels are strict project-owned data and survive
+Download/Open, native Save/Save copy, browser recovery, local history, dirty
+fingerprints and exact Undo/Redo. Missing-net or malformed input fails without
+replacing the current project.
+
+Published annotated-workspace v1 files now migrate through normal Open,
+recovery and local history with notes and groups preserved and an empty v2
+label collection. Historical non-retained model identities are accepted only
+for data migration and cannot authorize execution. Retained execution behavior
+is unchanged.
+
+X66 remains partial because deterministic reusable subcircuits are not yet
+implemented. X92 remains partial. Canonical status is X **78/2/16**, P1
+**59/0/0**. Rc.107 performs zero new firmware Build, Run, Scenario or worker
+action; cumulative native evidence remains **34 Build / 33 Run / 0 scenarios**.
+
+---
+
+## 1.1.0-rc.106
 
 ## Reviewed local teaching batch
 

@@ -88,10 +88,12 @@
     {
       "id": "X66",
       "capabilities": [
-        "intent-mcu-annotated-workspace@1",
-        "intent-mcu-canvas-annotations@1"
+        "intent-mcu-annotated-workspace@2",
+        "intent-mcu-canvas-annotations@2",
+        "intent-mcu-net-labels@1"
       ],
       "contracts": [
+        "x66-existing-canonical-net-labels-v1",
         "x66-non-electrical-canvas-annotations-v1"
       ]
     },

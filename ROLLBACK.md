@@ -1,8 +1,20 @@
-# Rollback basis for 1.1.0-rc.106
+# Rollback basis for 1.1.0-rc.107
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
+
+Retain exact accepted rc.106 source commit
+`5b8c19b0b460f3ef20685c34f171baabd44d871b` and VM103 image
+`sha256:85def40775576cb96c3a53216e52dace0f28f70e0e42044395445649a7d5ff5a`
+as the pre-rc.107 app-only recovery basis. If acceptance fails, restore that
+exact app image and release directory, recreate only the Lab container and
+verify readiness plus the existing Teach-domain URLs.
+
+Rc.107 publishes existing-canonical-net labels and published-v1 annotation
+migration. Rolling back removes label UI but never rewrites learner-owned
+files. Rc.106 must not infer connectivity, runtime or execution authority from
+newer annotation or model-library identities.
 
 Retain exact accepted rc.105 source commit
 `9dc5b470e53171e7fa201741b1d66b9601ba3e9f` and VM103 image

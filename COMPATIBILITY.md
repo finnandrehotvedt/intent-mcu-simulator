@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.106 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.107 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -14,9 +14,12 @@ controls on all four profiles are unchanged; this does not provide a generic AI
 agent, remote scheduler, billing quota or cross-user budget.
 
 Canvas annotations are local, non-electrical presentation data. Notes and
-groups cannot create components, pins, subcircuits, named nets or connectivity.
-The annotated wrapper is strict and versioned; invalid or dangling references
-fail closed without replacing the last accepted project.
+groups cannot create components, pins, subcircuits or connectivity. Net labels
+bind only an existing canonical net ID, display that ID, and cannot create,
+merge, split or retarget a net even when label text matches. The annotated
+wrapper is strict and versioned; invalid or dangling references fail closed
+without replacing the last accepted project. Deterministic reusable
+subcircuits remain unavailable.
 
 The presentation view is AVR-only and read-only. Each start captures one
 labelled observation snapshot; moving between steps never refreshes from live

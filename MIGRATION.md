@@ -1,8 +1,16 @@
-# Migration to 1.1.0-rc.106
+# Migration to 1.1.0-rc.107
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.107 recognizes annotated-workspace and canvas-annotation v2 plus strict
+existing-net labels. Published v1 annotated workspaces migrate through normal
+Open, browser recovery and local history with notes/groups preserved and an
+empty label collection. Historical non-retained model identities are data-only
+migration inputs and cannot authorize execution; a fresh current identity is
+required before runtime use. Unknown, authority-bearing or dangling-net data
+continues to fail closed without replacing the current project.
 
 Rc.106 recognizes the current annotated-workspace and teaching-exercise data
 contracts plus the current model-library identity. Recognized authored data is

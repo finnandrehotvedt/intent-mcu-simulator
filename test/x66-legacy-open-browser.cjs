@@ -63,6 +63,7 @@ async function state(page) {
     legacy.project.modelLibrary = historicalLock;
     legacy.annotations = { schema: 'intent-mcu-canvas-annotations@1',
       notes: current.annotations.notes, groups: current.annotations.groups };
+    legacy.annotations.notes[0].text = 'Distinct published v1 fixture opened.';
     const legacyText = `${JSON.stringify(legacy, null, 2)}\n`;
     await page.click('#canvas-annotations-close');
 
@@ -71,7 +72,10 @@ async function state(page) {
     if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) {
       await page.click('#unsaved-discard');
     }
-    await page.waitForFunction(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot().notes[0]?.text.includes('Published v1'));
+    await page.waitForFunction(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot().notes[0]?.text
+      === 'Distinct published v1 fixture opened.');
+    await page.waitForFunction(() => document.querySelector('#project-message').textContent
+      .includes('Common project opened for'));
     let migrated = await page.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot());
     assert.equal(migrated.schema, 'intent-mcu-canvas-annotations@2');
     assert.equal(migrated.notes.length, 1); assert.equal(migrated.groups.length, 1);
@@ -118,6 +122,7 @@ async function state(page) {
     const recoveryPage = await recoveryContext.newPage(); await ready(recoveryPage);
     const recovered = await recoveryPage.evaluate(() => window.__X66_CANVAS_ANNOTATIONS__.snapshot());
     assert.equal(recovered.notes.length, 1); assert.equal(recovered.groups.length, 1);
+    assert.equal(recovered.notes[0].text, 'Distinct published v1 fixture opened.');
     assert.deepEqual(recovered.netLabels, { schema: 'intent-mcu-net-labels@1', labels: [] });
     assert.match(await recoveryPage.locator('#project-message').textContent(), /Recovered and revalidated/u);
     await recoveryContext.close();
