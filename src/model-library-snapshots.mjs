@@ -103102,6 +103102,10 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "7b3dd8c99dfde9697a1df8086899bb3ffc8857dda7dc1851720fce458d76868b"
     },
     {
+      "path": "src/x92-c3-budget-integration.mjs",
+      "sha256": "4a56bef475e4948eb0611a4e2f72638c01809570fd2a28eae94c321d2562b8da"
+    },
+    {
       "path": "src/shared-workbench-shell.mjs",
       "sha256": "d13589d2499f445303619d0b5e7ceba2ecec68376d44132c628a865915ac79c0"
     },
@@ -103155,7 +103159,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "c3/public-service.mjs",
-      "sha256": "65bb784cc1a6288f57e90600e1b039f2efe95636776fc3951eb5f6344b74e122"
+      "sha256": "cb218b68b8613b35bf97865654b6e6ab5f6ce3f1a9acebf0872296abea43d397"
     },
     {
       "path": "expansion-drafts/controller-runtime-bridge-v1.mjs",
@@ -103230,7 +103234,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "c044867348728ab803472041f26c5f44e0e887323f24c58fef0a02f869015ac0"
     }
   ],
-  "implementationSha256": "adde4084f85cd8307290a55858f86cb60d4eb31f8ab12de0ba7a6a3f748ccc00",
+  "implementationSha256": "97bb6f63c2c48d64905a198a989ac9c69c1f8776b03e0a71ae9623ac2a539639",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.113 and every earlier identity remain immutable and migration-only; this source candidate performs zero real build, run or deployment",
@@ -103240,7 +103244,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x92-pico-owner-proof.1-current",
     "semanticDisposition": "component semantics remain unchanged; X92 adds an authenticated exact ESP32-C3 session retirement ACK after owned child-process exit"
   },
-  "manifestSha256": "aacb6fb47b59e6f388cc29d0f579dc72e1b7ba4012a8c925cc26b760bf070f0e",
+  "manifestSha256": "918654b88c7946b6f60b78e697e003536a74a2a13578fdd2ce4ee5180febc448",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

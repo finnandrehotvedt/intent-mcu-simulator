@@ -265,6 +265,7 @@ export function createC3PublicService({
   builderImageLock, runtimeImageLock, docker = '/usr/bin/docker', publicOrigin = null,
   trustProxy = false, now = () => Date.now(), limits = C3_LIMITS,
   builder = null, runtime = null, testMode = false, dockerCommand = execFileAsync,
+  spawnProcess = spawn,
 } = {}) {
   if (!builderImageLock || !runtimeImageLock) throw new TypeError('C3_IMAGE_LOCKS_REQUIRED');
   const sessions = new Map();
@@ -304,7 +305,7 @@ export function createC3PublicService({
     const manifest = await childJson({
       docker, args, timeoutMs: limits.buildTimeoutMs,
       outputLimit: limits.compilerOutputBytes, signal, containerName,
-      dockerCommand, input: JSON.stringify({ schema: 'intent-mcu-esp32c3-builder-job@1',
+      dockerCommand, spawnProcess, input: JSON.stringify({ schema: 'intent-mcu-esp32c3-builder-job@1',
         profile: PROFILE, fqbn: FQBN, source, sourceSha256, marker }),
     });
     if (manifest.status !== 'succeeded') return { manifest, files: null };
@@ -330,7 +331,7 @@ export function createC3PublicService({
       sourceSha256: descriptor.sourceSha256, flashSha256: descriptor.flash.sha256,
       marker: descriptor.marker, flashBase64: flash.toString('base64'),
     });
-    return childJson({ docker, args, input, timeoutMs: limits.runtimeTimeoutMs, dockerCommand,
+    return childJson({ docker, args, input, timeoutMs: limits.runtimeTimeoutMs, dockerCommand, spawnProcess,
       outputLimit: limits.runtimeOutputBytes, signal, containerName });
   }
 
