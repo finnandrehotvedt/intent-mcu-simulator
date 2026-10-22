@@ -412,11 +412,22 @@ body[data-active-profile] .app-header .lede { max-width: 640px; overflow: hidden
 .guided-replay-explanation { margin: 14px 0; padding: 12px; border-left: 4px solid var(--lime); background: #0a2130; }
 .guided-replay-explanation[data-outcome="failed"] { border-color: var(--danger); }
 .guided-replay-actions { display: flex; justify-content: space-between; gap: 10px; }
+.recipient-exchange { display: grid; gap: 10px; padding: 16px; border: 1px solid #55722b; border-radius: 10px; background: #07180f; }
+.recipient-exchange > p { margin-bottom: 0; color: var(--muted); }
+.recipient-choice-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.recipient-response-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.recipient-response-grid > section { display: grid; align-content: start; gap: 9px; min-width: 0; padding: 12px; border: 1px solid #355b43; border-radius: 8px; background: #06140d; }
+.recipient-response-grid label { display: grid; gap: 5px; color: var(--muted); }
+.recipient-response-grid textarea { width: 100%; resize: vertical; color: var(--text); background: #03100a; border: 1px solid #41694e; border-radius: 7px; }
+.recipient-response-relationship { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 5px 10px; margin: 0; }
+.recipient-response-relationship dt { color: var(--muted); }
+.recipient-response-relationship dd { min-width: 0; margin: 0; overflow-wrap: anywhere; font: .7rem/1.4 ui-monospace, monospace; }
 @media (max-width: 900px) {
   .experiment-package-comparison-actions { grid-template-columns: auto minmax(0,1fr); }
   .experiment-package-comparison-review { grid-template-columns: 1fr; }
   .guided-replay-step-heading, .guided-replay-cards { display: grid; grid-template-columns: 1fr; }
   .guided-replay-step-heading label { min-width: 0; }
+  .recipient-response-grid { grid-template-columns: 1fr; }
 }
 .project-patch-diff-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .project-patch-diff-groups > section { min-width: 0; padding: 10px; border: 1px solid #26475b; border-radius: 9px; }

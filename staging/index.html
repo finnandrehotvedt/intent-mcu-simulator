@@ -1097,6 +1097,26 @@
         <p id="guided-replay-explanation" class="guided-replay-explanation">No recorded observation loaded.</p>
         <div class="guided-replay-actions"><button id="guided-replay-previous" type="button" disabled>Previous</button><button id="guided-replay-next" type="button" disabled>Next</button></div>
       </section>
+      <section class="recipient-exchange" aria-labelledby="recipient-exchange-title">
+        <div><p class="eyebrow">X74 · EXPLICIT LOCAL FILE HANDOVER</p><h3 id="recipient-exchange-title">Review, hand over and return</h3></div>
+        <p>Transfer files manually through a channel you choose. The Lab does not upload, send, retain or apply them.</p>
+        <div class="recipient-choice-actions"><button id="recipient-review-only" type="button">Keep review-only</button><button id="recipient-project-open" type="button">Open packaged project…</button><button id="recipient-handover-download" type="button">Download handover copy</button></div>
+        <p id="recipient-choice-status" class="truth" role="status">Review-only is selected. The active project is unchanged.</p>
+        <div class="recipient-response-grid">
+          <section aria-labelledby="recipient-response-create-title"><h4 id="recipient-response-create-title">Recipient response</h4>
+            <label>Disposition<select id="recipient-response-disposition"><option value="reviewed">Reviewed</option><option value="changes-requested">Changes requested</option></select></label>
+            <label>Data-only note<textarea id="recipient-response-note" rows="4" maxlength="2000" placeholder="Write a bounded plain-text review note."></textarea></label>
+            <button id="recipient-response-download" type="button">Download response</button>
+          </section>
+          <section aria-labelledby="recipient-response-open-title"><h4 id="recipient-response-open-title">Sender relationship check</h4>
+            <p>First open the original handover above, then explicitly open its returned response.</p>
+            <button id="recipient-response-open" type="button">Open response</button>
+            <input id="recipient-response-input" class="sr-only" type="file" accept="application/json,.json,.intent-mcu-response.json" aria-label="Open local recipient response">
+            <p id="recipient-response-status" class="truth" role="status">No response created or opened.</p>
+            <dl id="recipient-response-relationship" class="recipient-response-relationship"></dl>
+          </section>
+        </div>
+      </section>
       <p class="guided-replay-limit">Capture wall-clock time is shown as unavailable when the source package did not record it. Requirement IDs are never inferred from scenario names.</p>
     </div>
   </dialog>

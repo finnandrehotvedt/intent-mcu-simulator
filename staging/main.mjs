@@ -369,6 +369,12 @@ import {
   GUIDED_EXPERIMENT_REPLAY_SCHEMA,
   createGuidedExperimentReplay,
 } from '../src/guided-experiment-replay.mjs';
+import {
+  RECIPIENT_RESPONSE_LIMIT,
+  RECIPIENT_RESPONSE_SCHEMA,
+  createRecipientResponse,
+  parseRecipientResponse,
+} from '../src/recipient-file-exchange.mjs';
 import { compareDesignAlternatives, DESIGN_COMPARISON_SCHEMA } from '../src/design-comparison.mjs';
 import {
   DOMAIN_REQUEST_SCHEMA,
@@ -528,6 +534,10 @@ const elements = Object.fromEntries([
   'guided-replay-position', 'guided-replay-step-title', 'guided-replay-select',
   'guided-replay-scenario-id', 'guided-replay-inputs', 'guided-replay-observation',
   'guided-replay-explanation', 'guided-replay-previous', 'guided-replay-next',
+  'recipient-review-only', 'recipient-project-open', 'recipient-handover-download',
+  'recipient-choice-status', 'recipient-response-disposition', 'recipient-response-note',
+  'recipient-response-download', 'recipient-response-open', 'recipient-response-input',
+  'recipient-response-status', 'recipient-response-relationship',
   'design-comparison-create', 'design-comparison-summary', 'design-comparison-status',
   'design-comparison-alternatives', 'design-comparison-differences',
   'shared-domain-engine-inspect', 'shared-domain-engine-summary', 'shared-domain-engine-status',
@@ -9660,6 +9670,9 @@ function clearExperimentPackageComparison() {
 let guidedReplayState = null;
 let guidedReplayIndex = 0;
 let guidedReplayGeneration = 0;
+let acceptedRecipientResponse = null;
+let responsePickerParentSha256 = null;
+const acceptedRecipientResponseHashes = new Set();
 
 function replayIdentityRows(replay) {
   const values = [
@@ -9727,6 +9740,11 @@ function renderGuidedReplayStep(index, focus = false) {
 function renderGuidedReplay(result, fileName = 'local package') {
   guidedReplayState = result;
   guidedReplayIndex = 0;
+  acceptedRecipientResponse = null;
+  responsePickerParentSha256 = null;
+  elements.recipientchoicestatus.textContent = 'Review-only is selected. The active project is unchanged.';
+  elements.recipientresponsestatus.textContent = 'No response created or opened.';
+  elements.recipientresponserelationship.replaceChildren();
   elements.guidedreplayidentities.replaceChildren(...replayIdentityRows(result.replay));
   elements.guidedreplayselect.replaceChildren(...result.replay.steps.map((step) => {
     const option = document.createElement('option');
@@ -9765,6 +9783,105 @@ async function openGuidedReplayFile(file) {
     return { ok: false, code: 'GUIDED_REPLAY_READ_FAILED' };
   }
   return openGuidedReplaySource(source, file.name);
+}
+
+function recipientArtifactStem() {
+  return (guidedReplayState?.replay.projectName ?? 'experiment').normalize('NFKD')
+    .replace(/[^A-Za-z0-9 _.-]/gu, '').trim().replace(/\s+/gu, '-').slice(0, 64)
+    || 'experiment';
+}
+
+function downloadRecipientHandover() {
+  if (!guidedReplayState?.canonicalPackage) return { ok: false, code: 'RECIPIENT_HANDOVER_REQUIRED' };
+  downloadText(`${recipientArtifactStem()}.intent-mcu-handover.json`,
+    guidedReplayState.canonicalPackage, 'application/json');
+  elements.recipientchoicestatus.textContent = `Handover copy requested · parent SHA-256 ${guidedReplayState.packageSha256}. Transfer it manually through a channel you choose.`;
+  return { ok: true, code: 'RECIPIENT_HANDOVER_DOWNLOADED',
+    canonical: guidedReplayState.canonicalPackage, sha256: guidedReplayState.packageSha256 };
+}
+
+async function openRecipientPackagedProject() {
+  if (!guidedReplayState?.canonicalPackage) return { ok: false, code: 'RECIPIENT_HANDOVER_REQUIRED' };
+  const parsed = await parseExperimentPackage(guidedReplayState.canonicalPackage, commonProjectAdapters);
+  if (!parsed.ok || parsed.sha256 !== guidedReplayState.packageSha256) {
+    elements.recipientchoicestatus.textContent = `Project Open rejected (${parsed.code ?? 'RECIPIENT_HANDOVER_STALE'}). The active project is unchanged.`;
+    return { ok: false, code: parsed.code ?? 'RECIPIENT_HANDOVER_STALE' };
+  }
+  const projectText = `${JSON.stringify(parsed.value.project, null, 2)}\n`;
+  const file = new File([projectText], `${recipientArtifactStem()}.intent-mcu-project.json`,
+    { type: 'application/json' });
+  elements.guidedreplaydialog.close('project-open');
+  const result = await openCommonProjectFile(file);
+  elements.recipientchoicestatus.textContent = result.pending
+    ? 'Existing unsaved-change guard is waiting for your choice. Nothing has been replaced yet.'
+    : result.ok
+      ? 'Packaged authored project opened explicitly. Firmware, runtime, result and verdict authority were not restored.'
+      : `Project Open rejected (${result.code}). Existing work is unchanged.`;
+  return result;
+}
+
+async function createAndDownloadRecipientResponse() {
+  if (!guidedReplayState?.canonicalPackage) return { ok: false, code: 'RECIPIENT_HANDOVER_REQUIRED' };
+  const result = await createRecipientResponse({
+    parentSource: guidedReplayState.canonicalPackage,
+    adapters: commonProjectAdapters,
+    disposition: elements.recipientresponsedisposition.value,
+    note: elements.recipientresponsenote.value,
+  });
+  if (!result.ok) {
+    elements.recipientresponsestatus.textContent = `Response rejected (${result.code}). Nothing was downloaded.`;
+    return result;
+  }
+  downloadText(`${recipientArtifactStem()}.intent-mcu-response.json`, result.canonical, 'application/json');
+  elements.recipientresponsestatus.textContent = `Local response downloaded · SHA-256 ${result.sha256} · parent ${result.parentPackageSha256}. It will not apply itself.`;
+  return result;
+}
+
+function renderAcceptedRecipientResponse(result, fileName = 'local response') {
+  acceptedRecipientResponse = result;
+  acceptedRecipientResponseHashes.add(result.sha256);
+  const values = [
+    ['File', fileName], ['Relationship', 'Exact parent package'],
+    ['Response SHA-256', result.sha256], ['Parent SHA-256', result.parentPackageSha256],
+    ['Disposition', result.value.review.disposition], ['Note', result.value.review.note],
+  ];
+  elements.recipientresponserelationship.replaceChildren(...values.flatMap(([label, value]) => {
+    const term = document.createElement('dt'); term.textContent = label;
+    const definition = document.createElement('dd'); definition.textContent = value;
+    return [term, definition];
+  }));
+  elements.recipientresponsestatus.textContent = 'Response accepted as a local data-only child of the exact open handover. No change was applied.';
+}
+
+async function openRecipientResponseSource(source, fileName = 'local response', expectedParentSha256 = null) {
+  if (!guidedReplayState?.canonicalPackage) return { ok: false, code: 'RECIPIENT_HANDOVER_REQUIRED' };
+  const result = await parseRecipientResponse(source, {
+    parentSource: guidedReplayState.canonicalPackage,
+    adapters: commonProjectAdapters,
+    expectedParentSha256,
+    seenResponseSha256: acceptedRecipientResponseHashes,
+  });
+  if (!result.ok) {
+    elements.recipientresponsestatus.textContent = `Response rejected (${result.code}). The active project and accepted relationship are unchanged.`;
+    return result;
+  }
+  renderAcceptedRecipientResponse(result, fileName);
+  return result;
+}
+
+async function openRecipientResponseFile(file, expectedParentSha256 = null) {
+  if (!file) return { ok: false, code: 'RECIPIENT_RESPONSE_FILE_REQUIRED' };
+  if (file.size > RECIPIENT_RESPONSE_LIMIT) {
+    elements.recipientresponsestatus.textContent = 'Response rejected (RECIPIENT_RESPONSE_LIMIT). Existing work is unchanged.';
+    return { ok: false, code: 'RECIPIENT_RESPONSE_LIMIT' };
+  }
+  let source;
+  try { source = await file.text(); }
+  catch {
+    elements.recipientresponsestatus.textContent = 'Response rejected (RECIPIENT_RESPONSE_READ_FAILED). Existing work is unchanged.';
+    return { ok: false, code: 'RECIPIENT_RESPONSE_READ_FAILED' };
+  }
+  return openRecipientResponseSource(source, file.name, expectedParentSha256);
 }
 
 function renderExpectationReference() {
@@ -10114,6 +10231,22 @@ elements.guidedreplayselect.addEventListener('change', () => {
 });
 elements.guidedreplayprevious.addEventListener('click', () => renderGuidedReplayStep(guidedReplayIndex - 1, true));
 elements.guidedreplaynext.addEventListener('click', () => renderGuidedReplayStep(guidedReplayIndex + 1, true));
+elements.recipientreviewonly.addEventListener('click', () => {
+  elements.recipientchoicestatus.textContent = 'Review-only selected explicitly. The active project, runtime, budget and history are unchanged.';
+});
+elements.recipientprojectopen.addEventListener('click', () => { void openRecipientPackagedProject(); });
+elements.recipienthandoverdownload.addEventListener('click', downloadRecipientHandover);
+elements.recipientresponsedownload.addEventListener('click', () => { void createAndDownloadRecipientResponse(); });
+elements.recipientresponseopen.addEventListener('click', () => {
+  responsePickerParentSha256 = guidedReplayState?.packageSha256 ?? null;
+  elements.recipientresponseinput.value = '';
+  elements.recipientresponseinput.click();
+});
+elements.recipientresponseinput.addEventListener('change', () => {
+  const expected = responsePickerParentSha256 ?? guidedReplayState?.packageSha256 ?? null;
+  responsePickerParentSha256 = null;
+  void openRecipientResponseFile(elements.recipientresponseinput.files[0] ?? null, expected);
+});
 elements.authoredchangereviewshowsource.addEventListener('click', () => {
   const first = elements.authoredchangereviewdiffs.querySelector('details');
   if (!first) return;
@@ -10178,6 +10311,26 @@ window.__X69_GUIDED_REPLAY__ = Object.freeze({
     index: guidedReplayIndex,
     dialogOpen: elements.guidedreplaydialog.open,
   } : null,
+});
+window.__X74_RECIPIENT_EXCHANGE__ = Object.freeze({
+  responseSchema: RECIPIENT_RESPONSE_SCHEMA,
+  handover: () => downloadRecipientHandover(),
+  openProject: () => openRecipientPackagedProject(),
+  createResponse: () => createAndDownloadRecipientResponse(),
+  openResponseText: (source, fileName = 'local response', expectedParentSha256 = null) =>
+    openRecipientResponseSource(source, fileName, expectedParentSha256),
+  state: () => ({
+    parentPackageSha256: guidedReplayState?.packageSha256 ?? null,
+    acceptedResponse: acceptedRecipientResponse ? {
+      sha256: acceptedRecipientResponse.sha256,
+      parentPackageSha256: acceptedRecipientResponse.parentPackageSha256,
+      relationship: acceptedRecipientResponse.relationship,
+      disposition: acceptedRecipientResponse.value.review.disposition,
+      note: acceptedRecipientResponse.value.review.note,
+    } : null,
+    serverStored: false,
+    automaticApply: false,
+  }),
 });
 window.__AUTHORED_CHANGE_REVIEW__ = Object.freeze({
   schema: AUTHORED_CHANGE_REVIEW_SCHEMA,
