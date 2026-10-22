@@ -335,6 +335,7 @@ import {
   ANNOTATED_WORKSPACE_SCHEMA,
   CANVAS_ANNOTATIONS_SCHEMA,
   CANVAS_ANNOTATION_LIMITS,
+  NET_LABELS_SCHEMA,
   CanvasAnnotationReducer,
   canonicalAnnotatedWorkspace,
   emptyCanvasAnnotations,
@@ -527,6 +528,7 @@ const elements = Object.fromEntries([
   'canvas-annotations-open', 'canvas-annotations-dialog', 'canvas-annotations-title', 'canvas-annotations-close',
   'canvas-note-text', 'canvas-note-x', 'canvas-note-y', 'canvas-note-add', 'canvas-group-label',
   'canvas-group-components', 'canvas-group-add', 'canvas-annotations-undo', 'canvas-annotations-redo',
+  'canvas-net-label-text', 'canvas-net-label-net', 'canvas-net-label-x', 'canvas-net-label-y', 'canvas-net-label-add',
   'canvas-annotations-download', 'canvas-annotations-import', 'canvas-annotations-input',
   'canvas-annotations-status', 'canvas-annotations-list', 'canvas-annotation-layer',
   'regression-matrix', 'regression-matrix-state', 'regression-matrix-identity',
@@ -6733,7 +6735,7 @@ function renderProfileMigrationExplanation() {
 function renderCompilerTarget() {
   const target = currentCompilerTarget();
   elements.canvasannotationsopen.disabled = target.profile !== AVR_PROFILE;
-  elements.canvasannotationsopen.title = target.profile === AVR_PROFILE ? 'Open non-electrical visual notes and groups' : 'Visual notes and groups are currently AVR-only';
+  elements.canvasannotationsopen.title = target.profile === AVR_PROFILE ? 'Open existing-net labels, visual notes and groups' : 'Canvas labels, notes and groups are currently AVR-only';
   const view = publicControllerView(target.profile) ?? publicControllerView(AVR_PROFILE);
   const availabilityRows = [
     ['Compiler', target.availability.installedCompiler],
@@ -8894,12 +8896,19 @@ function annotationComponentIds(project = currentProject()) {
   const graph = project?.candidateCircuit ?? project?.circuit;
   return (graph?.components ?? []).map(({ id }) => id).sort();
 }
+function annotationNetIds(project = currentProject()) {
+  const graph = project?.candidateCircuit ?? project?.circuit;
+  return (graph?.nets ?? []).map(({ id }) => id).sort();
+}
+function annotationReferences(project = currentProject()) {
+  return { componentIds: annotationComponentIds(project), netIds: annotationNetIds(project) };
+}
 function ensureCanvasAnnotations() {
-  if (!canvasAnnotations) canvasAnnotations = new CanvasAnnotationReducer(emptyCanvasAnnotations(), annotationComponentIds());
+  if (!canvasAnnotations) canvasAnnotations = new CanvasAnnotationReducer(emptyCanvasAnnotations(), annotationReferences());
   return canvasAnnotations;
 }
 function resetCanvasAnnotations(value = emptyCanvasAnnotations(), { baseline = true } = {}) {
-  canvasAnnotations = new CanvasAnnotationReducer(value, annotationComponentIds());
+  canvasAnnotations = new CanvasAnnotationReducer(value, annotationReferences());
   selectedCanvasAnnotationGroup = null;
   annotationEditorPast.length = 0; annotationEditorFuture.length = 0;
   if (baseline) canvasAnnotationBaseline = JSON.stringify(canvasAnnotations.snapshot());
@@ -8912,7 +8921,7 @@ function validateAnnotatedProject(value, profileId) {
   if (profileId !== AVR_PROFILE) throw Object.assign(new Error('ANNOTATED_WORKSPACE_PROFILE'), { code: 'ANNOTATED_WORKSPACE_PROFILE' });
   const prepared = prepareProjectEnvelope(JSON.stringify(value), commonProjectAdapters);
   if (!prepared.ok || prepared.profile !== AVR_PROFILE) throw Object.assign(new Error(prepared.code ?? 'ANNOTATED_WORKSPACE_PROJECT'), prepared);
-  return { project: JSON.parse(prepared.canonical), componentIds: annotationComponentIds(prepared.project), prepared };
+  return { project: JSON.parse(prepared.canonical), ...annotationReferences(prepared.project), prepared };
 }
 function currentAnnotatedWorkspace() {
   return { schema: ANNOTATED_WORKSPACE_SCHEMA, profileId: AVR_PROFILE,
@@ -8923,7 +8932,7 @@ function canonicalCurrentAnnotatedWorkspace() {
 }
 function canvasAnnotationsPresent() {
   const annotations = ensureCanvasAnnotations().snapshot();
-  return annotations.notes.length > 0 || annotations.groups.length > 0;
+  return annotations.notes.length > 0 || annotations.groups.length > 0 || annotations.netLabels.labels.length > 0;
 }
 function authoredProjectText(profile = selectedCompilerProfile) {
   return profile === AVR_PROFILE && canvasAnnotationsPresent()
@@ -8933,6 +8942,7 @@ function nextCanvasAnnotationId(prefix) {
   const used = new Set([
     ...ensureCanvasAnnotations().snapshot().notes.map(({ id }) => id),
     ...ensureCanvasAnnotations().snapshot().groups.map(({ id }) => id),
+    ...ensureCanvasAnnotations().snapshot().netLabels.labels.map(({ id }) => id),
   ]);
   let candidate;
   do { canvasAnnotationSequence += 1; candidate = `${prefix}-${canvasAnnotationSequence}`; } while (used.has(candidate));
@@ -8940,11 +8950,13 @@ function nextCanvasAnnotationId(prefix) {
 }
 function annotationEditorMarker(before, after) {
   const afterGroups = new Map(after.groups.map((group) => [group.id, group]));
+  const afterLabels = new Map(after.netLabels.labels.map((label) => [label.id, label]));
   return { groups: before.groups.map((group) => {
     const afterGroup = afterGroups.get(group.id);
     return { id: group.id, before: structuredClone(group), afterExisted: Boolean(afterGroup),
       removed: group.componentIds.filter((member) => !afterGroup?.componentIds.includes(member)) };
-  }).filter(({ removed, afterExisted }) => removed.length || !afterExisted) };
+  }).filter(({ removed, afterExisted }) => removed.length || !afterExisted),
+  labels: before.netLabels.labels.filter(({ id }) => !afterLabels.has(id)).map((label) => structuredClone(label)) };
 }
 function applyAnnotationEditorMarker(marker, direction) {
   const current = ensureCanvasAnnotations().snapshot();
@@ -8960,7 +8972,13 @@ function applyAnnotationEditorMarker(marker, direction) {
     }
   }
   current.groups = [...groups.values()];
-  return ensureCanvasAnnotations().restore(current, annotationComponentIds());
+  const labels = new Map(current.netLabels.labels.map((label) => [label.id, label]));
+  for (const label of marker.labels ?? []) {
+    if (direction === 'undo') labels.set(label.id, structuredClone(label));
+    else labels.delete(label.id);
+  }
+  current.netLabels.labels = [...labels.values()];
+  return ensureCanvasAnnotations().restore(current, annotationReferences());
 }
 function renderCanvasAnnotationOverlay() {
   if (!elements.canvasannotationlayer || !editor || selectedCompilerProfile !== AVR_PROFILE) return;
@@ -8999,11 +9017,20 @@ function renderCanvasAnnotationOverlay() {
     node.addEventListener('click', (event) => { event.stopPropagation(); elements.canvasannotationsopen.click(); queueMicrotask(() => document.querySelector(`[data-annotation-editor="${CSS.escape(note.id)}"] input`)?.focus()); });
     nodes.push(node);
   }
+  for (const label of state.netLabels.labels) {
+    const point = screenPoint(label); const node = document.createElement('button'); node.type = 'button'; node.className = 'canvas-net-label';
+    node.dataset.annotationNetLabel = label.id; node.dataset.boundNetId = label.netId;
+    node.style.left = `${point.x * 100}%`; node.style.top = `${point.y * 100}%`;
+    node.textContent = label.text; node.setAttribute('aria-label', `Label existing net ${label.netId}: ${label.text}. This label does not connect nets.`);
+    node.addEventListener('pointerdown', (event) => event.stopPropagation());
+    node.addEventListener('click', (event) => { event.stopPropagation(); selectNet(label.netId); drawCircuitWires(); });
+    nodes.push(node);
+  }
   elements.canvasannotationlayer.replaceChildren(...nodes);
 }
 function annotationCommand(command, message) {
   try {
-    const result = ensureCanvasAnnotations().apply(command, annotationComponentIds());
+    const result = ensureCanvasAnnotations().apply(command, annotationReferences());
     renderCanvasAnnotationOverlay(); renderCanvasAnnotationsDialog();
     elements.canvasannotationsstatus.textContent = result.changed ? `${message}. Electrical graph and source unchanged.` : 'No visual metadata changed.';
     return result;
@@ -9014,7 +9041,7 @@ function annotationCommand(command, message) {
 }
 function annotationHistory(direction) {
   try {
-    const result = ensureCanvasAnnotations()[direction](annotationComponentIds());
+    const result = ensureCanvasAnnotations()[direction](annotationReferences());
     renderCanvasAnnotationOverlay(); renderCanvasAnnotationsDialog();
     elements.canvasannotationsstatus.textContent = result.changed
       ? `${direction === 'undo' ? 'Undid' : 'Redid'} one visual metadata edit. Electrical graph unchanged.`
@@ -9034,6 +9061,7 @@ function renderCanvasAnnotationsDialog() {
     const label = document.createElement('label'); const input = document.createElement('input'); input.type = 'checkbox'; input.value = component.id;
     label.append(input, document.createTextNode(component.label)); return label;
   }));
+  elements.canvasnetlabelnet.replaceChildren(...currentProject().circuit.nets.map((net) => new Option(net.id, net.id)));
   const editors = [];
   for (const note of state.notes) {
     const row = document.createElement('article'); row.className = 'canvas-annotation-editor'; row.dataset.annotationEditor = note.id;
@@ -9050,6 +9078,16 @@ function renderCanvasAnnotationsDialog() {
     const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Delete'; remove.addEventListener('click', () => annotationCommand({ type: 'group.remove', id: group.id }, `Deleted ${group.id}`));
     const meta = document.createElement('small'); meta.textContent = `GROUP · non-electrical · ${group.componentIds.join(', ')}`;
     input.addEventListener('change', () => annotationCommand({ type: 'group.edit', id: group.id, label: input.value.trim(), componentIds: group.componentIds }, `Updated ${group.id}`));
+    row.append(label, focus, remove, meta); editors.push(row);
+  }
+  for (const netLabel of state.netLabels.labels) {
+    const row = document.createElement('article'); row.className = 'canvas-annotation-editor'; row.dataset.annotationEditor = netLabel.id;
+    const label = document.createElement('label'); label.textContent = 'Existing-net label'; const input = document.createElement('input'); input.value = netLabel.text; input.maxLength = 80; label.append(input);
+    const focus = document.createElement('button'); focus.type = 'button'; focus.textContent = 'Select net'; focus.addEventListener('click', () => { closeCanvasAnnotations(); selectNet(netLabel.netId); drawCircuitWires(); });
+    const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Delete'; remove.addEventListener('click', () => annotationCommand({ type: 'net-label.remove', id: netLabel.id }, `Deleted ${netLabel.id}`));
+    const meta = document.createElement('small'); meta.textContent = `LABEL EXISTING NET · ${netLabel.netId} · matching text never connects nets`;
+    input.addEventListener('change', () => annotationCommand({ type: 'net-label.edit', id: netLabel.id, netId: netLabel.netId,
+      text: input.value.trim(), x: netLabel.x, y: netLabel.y }, `Updated ${netLabel.id}`));
     row.append(label, focus, remove, meta); editors.push(row);
   }
   elements.canvasannotationslist.replaceChildren(...editors);
@@ -9077,6 +9115,12 @@ elements.canvasgroupadd.addEventListener('click', () => {
     label: elements.canvasgrouplabel.value.trim(), componentIds: members }, 'Added visual group');
   if (result.ok) elements.canvasgrouplabel.value = '';
 });
+elements.canvasnetlabeladd.addEventListener('click', () => {
+  const result = annotationCommand({ type: 'net-label.create', id: nextCanvasAnnotationId('net-label'),
+    netId: elements.canvasnetlabelnet.value, text: elements.canvasnetlabeltext.value.trim(),
+    x: Number(elements.canvasnetlabelx.value), y: Number(elements.canvasnetlabely.value) }, 'Labelled existing net');
+  if (result.ok) elements.canvasnetlabeltext.value = '';
+});
 elements.canvasannotationsundo.addEventListener('click', () => { annotationHistory('undo'); });
 elements.canvasannotationsredo.addEventListener('click', () => { annotationHistory('redo'); });
 elements.canvasannotationsdownload.addEventListener('click', () => {
@@ -9096,7 +9140,7 @@ elements.canvasannotationsinput.addEventListener('change', async () => {
   } catch (error) { elements.canvasannotationsstatus.textContent = `Annotated project rejected (${error.code ?? error.message}). Current document unchanged.`; }
 });
 window.__X66_CANVAS_ANNOTATIONS__ = Object.freeze({
-  schema: CANVAS_ANNOTATIONS_SCHEMA, workspaceSchema: ANNOTATED_WORKSPACE_SCHEMA,
+  schema: CANVAS_ANNOTATIONS_SCHEMA, netLabelsSchema: NET_LABELS_SCHEMA, workspaceSchema: ANNOTATED_WORKSPACE_SCHEMA,
   snapshot: () => ensureCanvasAnnotations().snapshot(), workspaceText: () => canonicalCurrentAnnotatedWorkspace(),
   authority: Object.freeze({ electrical: false, source: false, build: false, run: false, verdict: false }),
 });
@@ -10441,7 +10485,7 @@ function applyEditor(command, message = command.type) {
       const marker = annotationEditorFuture.pop();
       if (marker) { applyAnnotationEditorMarker(marker, 'redo'); annotationEditorPast.push(marker); }
     } else {
-      canvasAnnotations.apply({ type: 'components.reconcile' }, annotationComponentIds());
+      canvasAnnotations.apply({ type: 'references.reconcile' }, annotationReferences());
       annotationEditorPast.push(annotationEditorMarker(annotationBefore, canvasAnnotations.snapshot()));
       if (annotationEditorPast.length > 100) annotationEditorPast.shift();
       annotationEditorFuture.length = 0;
@@ -14176,7 +14220,7 @@ const recoveryRestored = recoveryStored ? parseAvrRecoverySource(recoveryStored)
 const currentRestored = stored ? parseAvrRecoverySource(stored) : null;
 const restored = recoveryRestored?.ok ? recoveryRestored : currentRestored;
 editor = restored?.ok ? restored.session : new ProjectEditorReducer(createEmptyProject());
-canvasAnnotations = new CanvasAnnotationReducer(restored?.annotations ?? emptyCanvasAnnotations(), annotationComponentIds());
+canvasAnnotations = new CanvasAnnotationReducer(restored?.annotations ?? emptyCanvasAnnotations(), annotationReferences());
 if (restored?.modelLibrary) projectModelLibraryLocks.set(AVR_PROFILE, structuredClone(restored.modelLibrary));
 scenarioTimelineEditor = restored?.scenarioTimeline
   ? new ScenarioTimelineEditor(restored.scenarioTimeline) : null;

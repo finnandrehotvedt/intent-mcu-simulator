@@ -51,7 +51,7 @@
           <button id="brief-tests-open" type="button" aria-haspopup="dialog" aria-controls="workbench-brief-dialog">Brief &amp; tests</button>
           <button id="instruments-open" type="button" aria-haspopup="dialog" aria-controls="workbench-instruments-dialog">Instruments</button>
           <button id="presentation-open" type="button" aria-haspopup="dialog" aria-controls="presentation-view-dialog">Present lesson</button>
-          <button id="canvas-annotations-open" type="button" aria-haspopup="dialog" aria-controls="canvas-annotations-dialog">Visual notes</button>
+          <button id="canvas-annotations-open" type="button" aria-haspopup="dialog" aria-controls="canvas-annotations-dialog">Canvas labels &amp; notes</button>
           <button id="help-limits-open" type="button" aria-haspopup="dialog" aria-controls="workbench-help-dialog">Help &amp; limits</button>
           <button id="build-list-export" type="button">Export build list</button>
           <button id="accessible-svg-export" type="button">Export accessible SVG</button>
@@ -615,7 +615,7 @@
           <span class="canvas-mode" role="group" aria-label="Canvas interaction mode"><button id="canvas-select-mode" type="button" aria-pressed="true">Select</button><button id="canvas-interact-mode" type="button" aria-pressed="false">Interact</button></span>
         </div>
         <div id="circuit-canvas" class="circuit-canvas" tabindex="0" aria-label="Manual circuit canvas. Click one pin and then another to connect them.">
-          <div id="canvas-transform" class="canvas-transform"><svg id="circuit-wires" class="circuit-wires" role="group" aria-label="Editable wire routes"></svg><div id="component-layer" class="component-layer"></div><div id="canvas-annotation-layer" class="canvas-annotation-layer" aria-label="Non-electrical visual notes and groups"></div></div>
+          <div id="canvas-transform" class="canvas-transform"><svg id="circuit-wires" class="circuit-wires" role="group" aria-label="Editable wire routes"></svg><div id="component-layer" class="component-layer"></div><div id="canvas-annotation-layer" class="canvas-annotation-layer" aria-label="Visual notes, groups and labels bound to existing nets"></div></div>
         </div>
         <p id="wire-state" class="truth" role="status">Select two named pins to create a wire. A branch creates an explicit junction; crossing routes remain separate.</p>
         <pre id="circuit-diagnostics" class="diagnostics">Add the supported controller to begin.</pre>
@@ -1077,9 +1077,9 @@
     </div>
   </dialog>
   <dialog id="canvas-annotations-dialog" class="canvas-annotations-dialog" aria-labelledby="canvas-annotations-title">
-    <header><div><p class="eyebrow">X66 · NON-ELECTRICAL CANVAS LAYER</p><h2 id="canvas-annotations-title" tabindex="-1">Visual notes and component groups</h2></div><button id="canvas-annotations-close" type="button">Close</button></header>
+    <header><div><p class="eyebrow">X66 · READABILITY LAYER</p><h2 id="canvas-annotations-title" tabindex="-1">Canvas labels, notes and groups</h2></div><button id="canvas-annotations-close" type="button">Close</button></header>
     <div class="canvas-annotations-layout">
-      <p class="canvas-annotations-boundary">Notes and groups improve navigation only. Matching names never connect nets, move parts, alter firmware or change electrical validation.</p>
+      <p class="canvas-annotations-boundary">Notes and groups are non-electrical. A net label can identify only one existing canonical net ID: matching label text never creates, merges, splits or retargets a connection.</p>
       <section class="canvas-annotations-create" aria-label="Create visual annotation">
         <label>Note text<input id="canvas-note-text" type="text" maxlength="1000" placeholder="Explain this area"></label>
         <label>X position<input id="canvas-note-x" type="number" min="0" max="1" step="0.01" value="0.50"></label>
@@ -1091,8 +1091,16 @@
         <fieldset><legend>Existing components</legend><div id="canvas-group-components" class="canvas-group-components"></div></fieldset>
         <button id="canvas-group-add" type="button">Add group</button>
       </section>
+      <section class="canvas-annotations-create canvas-net-label-create" aria-label="Label an existing net">
+        <label>Label text<input id="canvas-net-label-text" type="text" maxlength="80" placeholder="HEATER_CTRL"></label>
+        <label>Existing canonical net<select id="canvas-net-label-net"></select></label>
+        <label>X position<input id="canvas-net-label-x" type="number" min="0" max="1" step="0.01" value="0.55"></label>
+        <label>Y position<input id="canvas-net-label-y" type="number" min="0" max="1" step="0.01" value="0.35"></label>
+        <button id="canvas-net-label-add" type="button">Label existing net</button>
+        <small>Choosing a net binds display metadata to that exact existing net ID. This control cannot connect anything.</small>
+      </section>
       <div class="canvas-annotations-actions"><button id="canvas-annotations-undo" type="button" disabled>Undo visual edit</button><button id="canvas-annotations-redo" type="button" disabled>Redo visual edit</button><button id="canvas-annotations-download" type="button">Download annotated project</button><button id="canvas-annotations-import" type="button">Open annotated project</button><input id="canvas-annotations-input" class="sr-only" type="file" accept="application/json,.json,.intent-mcu-annotated.json"></div>
-      <p id="canvas-annotations-status" class="truth" role="status">No visual notes or groups yet.</p>
+      <p id="canvas-annotations-status" class="truth" role="status">No canvas labels, notes or groups yet.</p>
       <div id="canvas-annotations-list" class="canvas-annotations-list"></div>
     </div>
   </dialog>
