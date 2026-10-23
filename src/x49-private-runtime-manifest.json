@@ -13,11 +13,11 @@
     },
     {
       "path": "src/x49-private-runtime-contract.mjs",
-      "sha256": "1df4a9fb04ffd0a378aa856f9beda7369422b317990e1584ea591ca2a0081544"
+      "sha256": "94e1af24c6855c068bb3c2b069c46177e796f76aa3ab66594ce43f5192d646cd"
     },
     {
       "path": "src/atmega328p-adapter.mjs",
-      "sha256": "65136d0b607336db992ba7dab81447813331b103136ec7c5348e6fc1ca9300de"
+      "sha256": "3758ee6d7e3d93276a1743d6f34400703a2cf298d18604e9b27c022f837923a3"
     },
     {
       "path": "src/hex.mjs",
@@ -38,6 +38,10 @@
     {
       "path": "src/x35-causal-chain-contract.mjs",
       "sha256": "728b95727e658dcd01933f8619de47bbe052ef9153de0b29cda89852757d8e0e"
+    },
+    {
+      "path": "src/x46-usart-configuration-producer.mjs",
+      "sha256": "04d9fbf37e23613c24570d322792afc08238232657afaf0ae7dcead9fa9a0390"
     },
     {
       "path": "src/x49-instrumented-observer-core.mjs",
@@ -77,7 +81,7 @@
   "externalContracts": [
     "avr8js@0.21.1"
   ],
-  "implementationSha256": "29ba15295fa536220d78b0aa17416816851f6c53b9d337f562666d231c5594e0",
+  "implementationSha256": "2bbde343269ed14dc8150f74bc2e96e084757d50a14093fd7ab3057dd7d1a9ad",
   "evidenceToolSha256": "8fc7a44096b92aab6362c70367aad905274153f9da34dd236f9c187c03917306",
-  "semanticSha256": "9108c539742a40a28785dcd8e13e784305055be3d08926b8468de0b49ec3b16e"
+  "semanticSha256": "0084d59e015963acc58377f844d824739b34c51be88aa98f1fe63e4cb9e1005a"
 }

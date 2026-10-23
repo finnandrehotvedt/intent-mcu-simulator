@@ -21,6 +21,7 @@ import {
 import { X34PrecisionObserver } from './x34-precision-observer.mjs';
 import { X35CausalObserver } from './x35-causal-observer.mjs';
 import { parseIntelHex } from './hex.mjs';
+import { X46UsartConfigurationProducer } from './x46-usart-configuration-producer.mjs';
 
 export const CLOCK_HZ = 16_000_000;
 export const TRACE_LIMIT = 100_000;
@@ -83,6 +84,9 @@ export class Atmega328PAdapter {
     this.paused = true;
     this.x34Observer = options.x34Probe ? new X34PrecisionObserver(options.x34Probe) : null;
     this.x35Observer = options.x35Probe ? new X35CausalObserver(options.x35Probe) : null;
+    this.x46RuntimeIdentity = options.runtimeIdentity
+      ? structuredClone(options.runtimeIdentity) : null;
+    this.x46ResetEpoch = 0;
     this.#createMachine();
   }
 
@@ -101,6 +105,10 @@ export class Atmega328PAdapter {
     ];
     this.adc = new AVRADC(this.cpu, adcConfig);
     this.usart = new AVRUSART(this.cpu, usart0Config, CLOCK_HZ);
+    this.x46ResetEpoch += 1;
+    this.x46UsartConfiguration = this.x46RuntimeIdentity
+      ? new X46UsartConfigurationProducer(this.x46RuntimeIdentity, this.x46ResetEpoch)
+      : null;
     this.trace = [];
     this.serial = [];
     this.adcReads = [];
@@ -120,6 +128,7 @@ export class Atmega328PAdapter {
     this.#attachPortTrace('D');
     this.#attachAdcTrace();
     this.#attachUsartTrace();
+    this.#attachUsartConfigurationTrace();
     this.#attachUnsupportedMonitors();
     this.#attachUnsupportedModeMonitors();
     for (const [pin, level] of this.inputLevels) this.#setDigitalPinNow(pin, level, false);
@@ -179,6 +188,25 @@ export class Atmega328PAdapter {
         this.serial, { direction: 'rx-complete', cycle: this.cpu.cycles }, SERIAL_LIMIT,
       );
     };
+  }
+
+  #usartRegisters() {
+    return Object.fromEntries(['UCSRA', 'UCSRB', 'UCSRC', 'UBRRL', 'UBRRH']
+      .map((name) => [name, this.cpu.data[usart0Config[name]]]));
+  }
+
+  #attachUsartConfigurationTrace() {
+    if (!this.x46UsartConfiguration) return;
+    for (const register of ['UCSRA', 'UCSRB', 'UCSRC', 'UBRRL', 'UBRRH']) {
+      this.#wrapWrite(usart0Config[register], (value) => {
+        this.x46UsartConfiguration.observe({
+          cycle: this.cpu.cycles,
+          register,
+          value: this.cpu.data[usart0Config[register]],
+          registers: this.#usartRegisters(),
+        });
+      });
+    }
   }
 
   #attachUnsupportedMonitors() {
@@ -616,6 +644,9 @@ export class Atmega328PAdapter {
       faultEvents: this.faultEvents.map((entry) => ({ ...entry })),
       pins: this.pinSnapshot(),
       retentionDrops: { ...this.retentionDrops },
+      ...(this.x46UsartConfiguration ? {
+        usartConfiguration: this.x46UsartConfiguration.snapshot(),
+      } : {}),
       ...(this.x34Observer ? { x34Precision: this.x34Observer.snapshot() } : {}),
       ...(this.x35Observer ? { x35CausalChain: this.x35Observer.snapshot() } : {}),
     };
