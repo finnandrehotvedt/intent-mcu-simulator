@@ -56,6 +56,23 @@ export async function qualify(authorityPath, outputDirectory) {
     if (abort.signal.aborted || Date.now() >= deadline) throw Error('X81_DEADLINE');
   };
   try {
+    // Prove browser binary, self-contained entry bundle and model context before charging Build.
+    const require = createRequire(import.meta.url);
+    const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/runner/node_modules', 'playwright'));
+    const probe = await chromium.launch({ headless: true });
+    try {
+      const probePage = await probe.newPage();
+      const failures = [];
+      probePage.on('pageerror', (error) => failures.push(`page:${error.message}`));
+      probePage.on('requestfailed', (request) => failures.push(`request:${request.url()}`));
+      await probePage.addScriptTag({ path: path.join(root, 'dist/x81-worker-browser-entry.js'), type: 'module' });
+      const probeContext = await probePage.evaluate(() => globalThis.__X81_PRIVATE_WORKER__?.qualificationContext());
+      if (failures.length || probeContext?.modelLibraryLock?.implementationSha256 !== authority.modelImplementationSha256) {
+        throw Error(`X81_BROWSER_PREFLIGHT_INVALID:${failures.join('|')}`);
+      }
+      await checkpoint(outputDirectory, 'browser-preflight.json', { modelLibraryLock: probeContext.modelLibraryLock,
+        entrySha256: authority.files['dist/x81-worker-browser-entry.js'] });
+    } finally { await probe.close(); }
     await checkpoint(outputDirectory, 'authority.json', { authority, commit });
     const request = normalizeBuildRequestValue({ schema: BUILD_REQUEST_SCHEMA, board: BOARD_PROFILE,
       files: [{ name: 'main.ino', content: SOURCE }] });
@@ -70,8 +87,6 @@ export async function qualify(authorityPath, outputDirectory) {
     // Pin actual image identity as emitted by the existing fixed compiler contract.
     if (artifact.toolchainImageId !== authority.compilerImageId
         || artifact.toolchainIdentitySha256 !== authority.toolchainManifestSha256) throw Error('X81_COMPILER_IMAGE_JOIN_REQUIRED');
-    const require = createRequire(import.meta.url);
-    const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/runner/node_modules', 'playwright'));
     // Expose only the frozen dist, no product app or endpoints and no public port.
     const dist = path.join(root, 'dist');
     server = createServer(async (req, res) => {
