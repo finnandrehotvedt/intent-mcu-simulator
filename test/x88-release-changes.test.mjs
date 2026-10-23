@@ -28,9 +28,9 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X46 and X88 owners bind the rc125 release to coherent rc126 bytes', async () => {
+test('X46 and X88 owners bind the rc126 release to coherent rc127 bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.126');
+  assert.equal(release.version, '1.1.0-rc.127');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
@@ -38,18 +38,18 @@ test('X46 and X88 owners bind the rc125 release to coherent rc126 bytes', async 
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
   assert(registry.ids.includes('X92'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.125', current: '1.1.0-rc.126' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.126', current: '1.1.0-rc.127' });
   assert.deepEqual(value.changes, [
     {
       id: 'X46', classification: 'additive',
       capabilities: ['intent-mcu-x46-uart-panel@1'],
       contracts: ['x46-avr-usart0-tx-byte-events-v1'],
-      summary: 'Adds an identity-bound AVR USART configuration producer to current-worker TX evidence; RX, parity analysis, physical signals, I2C, SPI and full X46 closure remain unavailable.',
+      summary: 'Adds bounded model-derived AVR USART0 8-N-1 framing to the existing read-only current-worker panel; RX, parity modes, physical signals, I2C, SPI and full X46 closure remain unavailable.',
     },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records rc.125 to rc.126 as a bounded USART configuration-producer increment while preserving the aggregate page-view counter and runtime authority boundaries.',
+      summary: 'Records rc.126 to rc.127 as the reviewed bounded framing contract and existing-panel integration; rc.126 was never deployed and public rollback remains rc.125.',
     },
   ]);
   assert.equal(value.migrationRequired, true);
@@ -112,7 +112,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.126');
+  assert.equal(discovery.identity.version, '1.1.0-rc.127');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

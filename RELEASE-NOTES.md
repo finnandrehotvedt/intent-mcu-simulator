@@ -1,4 +1,27 @@
-# Intent MCU Simulator 1.1.0-rc.126
+# Intent MCU Simulator 1.1.0-rc.127
+
+## Bounded model-derived USART0 framing
+
+Rc.127 adds a compact expandable framing section to the existing read-only
+UART TX panel. For one complete, explicitly paused, identity-bound current AVR
+worker snapshot, it shows completed 8-N-1 frames as start 0, eight LSB-first
+data bits and stop 1. A final in-flight TX record is counted separately and is
+not presented as completed framing.
+
+This is pinned-emulator teaching evidence, not a measured voltage waveform or
+physical serial-line proof. Same-cycle configuration ambiguity, overlap,
+retention loss, stale identity and timing conflicts fail closed. Run, Reset,
+Edit, Open, profile change and worker retirement clear framing; no Apply,
+Build, Run or verdict authority is added.
+
+X46 remains partial. RX, parity modes, physical signal/noise, I2C and SPI are
+still unavailable. Rc.126 was source-complete but never publicly deployed.
+Exact public rc.125 remains the app-only rollback basis, including its
+persistent aggregate counter volume.
+
+---
+
+## 1.1.0-rc.126
 
 ## Identity-bound USART configuration evidence
 

@@ -2,6 +2,17 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.127 — 2026-10-23
+
+- Adds bounded model-derived AVR USART0 8-N-1 framing inside the existing
+  read-only UART panel, with completed and in-flight counts.
+- Fails closed on stale identity, retention loss, same-cycle configuration,
+  overlap and timing conflict; lifecycle retirement clears all framing rows.
+- Keeps framing explicitly non-physical and X46 partial. RX, parity modes,
+  physical signal/noise, I2C and SPI remain unavailable.
+- Records that rc.126 was never deployed and retains exact public rc.125 plus
+  its persistent aggregate counter volume as rollback.
+
 ## 1.1.0-rc.126 — 2026-10-23
 
 - Adds an identity-bound AVR USART configuration producer for the actual
