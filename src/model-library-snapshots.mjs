@@ -103091,7 +103091,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "697f4555d7127a89a4d1dc58d91897bf145ec33e77ac76e7bd5d908d4859ee6d"
+      "sha256": "8508d235749ada7c1b137f1bb36343eb7f8c1dbf66eae1f827dcafa705b41a99"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -103103,7 +103103,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/x92-c3-budget-integration.mjs",
-      "sha256": "094673667816ca86e5dd59ac04c66e635e549ad2d5777f637a79a843ae54eed1"
+      "sha256": "6f1ab304655313d23cf82e04bc6302a06179cd300001fdd11ec050d2084da562"
     },
     {
       "path": "src/shared-workbench-shell.mjs",
@@ -103151,7 +103151,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/esp32c3-public-workbench.mjs",
-      "sha256": "f284943276b7c9c1da7e4acbeb76e08bf78832732748686a67ecb695e29986ed"
+      "sha256": "86c16b83be9e0aad85091c99ffb13752397d0474e5f904f7f59c84594a2214a2"
     },
     {
       "path": "src/stm32-public-workbench.mjs",
@@ -103234,7 +103234,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "c044867348728ab803472041f26c5f44e0e887323f24c58fef0a02f869015ac0"
     }
   ],
-  "implementationSha256": "a2e675ee82b6838f78d0a0b7b35ff5cfad1186222cfcf200ce39a779ce36c2c3",
+  "implementationSha256": "c78b84a671bf05c626c9e3ce6d4ecaebb2423f85fef758758a21acbe5ac12d50",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.113 and every earlier identity remain immutable and migration-only; this source candidate performs zero real build, run or deployment",
@@ -103244,7 +103244,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x92-pico-owner-proof.1-current",
     "semanticDisposition": "component semantics remain unchanged; X92 adds an authenticated exact ESP32-C3 session retirement ACK after owned child-process exit"
   },
-  "manifestSha256": "290adf066af2df8ce1c6d5c83eac81f178b0cd3cc70bfe32c578df113d974b11",
+  "manifestSha256": "aa090cdfd7e21d252a38cd5baeade68741ac8f363d5abaf92f6fed0179477045",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",
