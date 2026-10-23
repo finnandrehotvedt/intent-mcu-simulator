@@ -2,6 +2,7 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import { validateX46UsartConfigurationSource } from './x46-usart-configuration-producer.mjs';
+import { validateX46UsartRxSnapshotCompatibility } from './x46-usart-rx-contract.mjs';
 
 const SNAPSHOT_KINDS = new Set(['ready', 'status', 'paused', 'reset', 'step']);
 
@@ -24,5 +25,8 @@ export function acceptX46UsartRuntimeSnapshot(message, { currentModel = false } 
     runtimeIdentity: message.runtimeIdentity,
     resetEpoch: message.usartConfiguration.resetEpoch,
   }, { requireRecords: false });
+  if (currentModel && message.serial !== undefined) {
+    validateX46UsartRxSnapshotCompatibility({ ...message, usartConfiguration: source });
+  }
   return structuredClone({ ...message, usartConfiguration: source });
 }

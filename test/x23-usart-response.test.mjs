@@ -112,3 +112,16 @@ test('X23 delayed USART response is scheduled immediately and retained as proven
   assert.deepEqual(kernel.snapshot().eventLog.pending, [event]);
   assert.throws(() => kernel.queueUartRxAfterCycles(0x41, 0), /UART delay/u);
 });
+
+test('richer X46 RX producer records preserve the exact legacy X23 evidence projection', () => {
+  const request = { direction: 'rx-request', cycle: 1671, targetCycle: 1671, value: 0x41,
+    accepted: true, immediate: false, transferId: 'rx:1:1', resetEpoch: 1,
+    baud: 9_615, frameCycles: 16_640, scheduledCompletionCycle: 18_311 };
+  const completion = { direction: 'rx-complete', cycle: 18_311, transferId: 'rx:1:1',
+    resetEpoch: 1, value: 0x41, startCycle: 1671, scheduledCompletionCycle: 18_311,
+    observationLatenessCycles: 0 };
+  assert.deepEqual({ value: request.value, cycle: request.cycle,
+    targetCycle: request.targetCycle, accepted: request.accepted },
+  { value: 0x41, cycle: 1671, targetCycle: 1671, accepted: true });
+  assert.deepEqual({ cycle: completion.cycle }, { cycle: 18_311 });
+});
