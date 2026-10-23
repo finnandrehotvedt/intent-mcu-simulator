@@ -5,7 +5,7 @@
 Canonical application: https://lab.teachthecompany.com/
 Source and setup: https://github.com/finnandrehotvedt/intent-mcu-simulator
 Licence: Apache-2.0 for project-owned source; third-party components keep their own terms.
-Current public version: 1.1.0-rc.120
+Current public version: 1.1.0-rc.121
 Machine-readable release changes: /release-changes.json (strict static
 intent-mcu-release-changes@1 metadata; no Apply, Build, Run, replay or verdict authority).
 Offline support matrix: /offline-support-matrix.json (strict static
@@ -40,6 +40,9 @@ board or parts as interchangeable with another profile.
 - Edit source and compile it through the isolated, fixed AVR toolchain.
 - Load and run the accepted artifact in the deterministic virtual MCU worker.
 - Inspect GPIO, LEDs, buttons, potentiometers, serial bytes, logic traces, and pin state.
+- On the AVR profile, inspect complete current-paused-worker USART0 TX byte
+  events with cycle, byte, integer model baud and exact frame duration. This
+  read-only X46 slice does not prove framing, RX, physical signals, I2C or SPI.
 - Save and reopen a project file on the learner's computer; browser recovery is separate.
 - Optionally enable first-party local version history and explicitly retain up to 3 or 10 canonical project files across all four profiles. It is off by default, never auto-captures source, never uploads a version and never restores file, build, runtime or result authority; it is convenience rather than backup.
 - Build submits only the active profile's bounded source to this Lab's same-origin isolated compiler for one temporary job. Successful user firmware is returned only through that short-lived private job and is not retained in a shared artifact cache; an identical later Build compiles again. Pinned tool images and curated public examples remain reusable and separate. This is not cloud project storage: there is no account or durable server project, and temporary source/output follows the bounded cleanup lifecycle.

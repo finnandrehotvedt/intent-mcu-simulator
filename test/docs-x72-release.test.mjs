@@ -20,12 +20,12 @@ test('public documentation facts derive from the current release and canonical c
     read('../staging/llms.txt'), read('../staging/sitemap.xml'),
   ]);
   const avrCount = exampleCatalog().length + 1 + 1 + avrReferenceStarterCatalog().length;
-  assert.equal(RELEASE_VERSION, '1.1.0-rc.120');
+  assert.equal(RELEASE_VERSION, '1.1.0-rc.121');
   assert.equal(avrCount, 15);
   assert.equal(THERMOSTAT_SCENARIOS.scenarios.length, 4);
   assert.match(THERMOSTAT_EXPERIMENT_CARD.outcome, /four reset-isolated/u);
   for (const page of [controllers, components, examples, support, llms]) {
-    assert.match(page, /1\.1\.0-rc\.120/u);
+    assert.match(page, /1\.1\.0-rc\.121/u);
     assert.doesNotMatch(page, /1\.1\.0-rc\.41/u);
   }
   assert.match(controllers, /four reset-isolated boundary scenarios/u);
@@ -34,7 +34,8 @@ test('public documentation facts derive from the current release and canonical c
   assert.match(llms, /four reset-isolated virtual-time scenarios/u);
   assert.match(llms, /finite resistor-and-LED reusable subcircuit/u);
   assert.match(support, /X66[^·]+complete only against their bounded original criteria/u);
-  assert.match(support, /X 85\/1\/10/u);
+  assert.match(support, /X46 and X92 are partial within their stated limits/u);
+  assert.match(support, /X 85\/2\/9/u);
   assert.match(support, /no account[^\n]+nested or general-purpose subcircuit authority/u);
   assert.match(sitemap, /<lastmod>2026-10-21<\/lastmod>/u);
 });
@@ -59,6 +60,8 @@ test('docs preserve canonical runtime/model boundaries and explain the Build pri
   assert.match(support, /no project-selected command, package, hook or network download/u);
   assert.match(support, /Older recognized files map to the finite retained pre-X56 model resolver only after complete validation/u);
   assert.match(support, /explicit preview-and-download action that creates a new data-only copy and never overwrites the open original/u);
+  assert.match(support, /complete retained USART0 TX byte records/u);
+  assert.match(support, /UART framing bits, RX traffic, a physical voltage waveform, noise, I2C or SPI/u);
   assert.match(support, /Search current project/u);
   assert.match(support, /query and results are not saved or sent to a search service/u);
   assert.match(support, /profile, generation, revision or graph changed/u);

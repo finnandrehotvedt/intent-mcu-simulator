@@ -1,4 +1,35 @@
-# Intent MCU Simulator 1.1.0-rc.120
+# Intent MCU Simulator 1.1.0-rc.121
+
+## Bounded AVR USART0 TX byte events
+
+Rc.121 adds a read-only UART TX byte-event table to the existing Instruments
+dialog for one exact source: complete records from the current identity-bound,
+paused AVR worker. Each accepted row shows its one-based order, cycle, cycle
+delta, byte value, escaped or printable text, model-recorded baud and exact
+frame duration.
+
+The analyzer follows avr8js 0.21.1 exactly. Its integer baud is valid only when
+it equals `Math.floor(16,000,000 × 10 / frameCycles)`; the frame duration stays
+separate and unchanged. Missing records, loss, malformed values, wrong
+quantization, stale workers, other profiles and non-paused lifecycle state do
+not produce accepted rows.
+
+This is deliberately a partial X46 increment. Byte events do not prove UART
+framing bits, a physical voltage waveform, noise, RX traffic, I2C or SPI. The
+panel is observational and has no Apply, Build, Run or verdict authority.
+
+Rc.120's exact model manifest remains a recognized migration-only snapshot.
+Opening an rc.120 saved project clears executable authority and preserves the
+existing explicit preview-and-download migration flow. The original file is
+never overwritten. X46 is therefore partial/public_verified and status is X
+**85/2/9**, P1 **59/0/0**.
+
+This release performs no owner firmware Build, worker, Run, retry or scenario,
+creates at most one application image and retains exact rc.120 rollback.
+
+---
+
+## 1.1.0-rc.120
 
 ## Explicit retained-model recovery
 

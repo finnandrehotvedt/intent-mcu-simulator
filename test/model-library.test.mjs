@@ -27,6 +27,7 @@ import {
   CURRENT_MODEL_LIBRARY_LOCK, PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_LOCK,
   RC113_CURRENT_MODEL_LIBRARY_LOCK,
+  RC120_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X66_PUBLIC_THERMOSTAT_CREATE_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X66_SUBCIRCUIT_REVIEW_FIX_CURRENT_MODEL_LIBRARY_LOCK,
@@ -209,7 +210,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
 
 test('prior current locks remain exact and data-migratable but cannot authorize execution', () => {
   const historical = historicalModelLibraryManifests();
-  assert.equal(historical.length, 36);
+  assert.equal(historical.length, 37);
   for (const manifest of historical.slice(1)) {
     const lock = { schema: 'intent-mcu-model-library-lock@2', libraryId: manifest.libraryId,
       version: manifest.version, manifestSha256: manifest.manifestSha256,
@@ -221,6 +222,12 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   assert.equal(normalizeModelLibraryLock(RC113_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
   assert.equal(modelLibraryExecutionIdentity(
     RC113_CURRENT_MODEL_LIBRARY_LOCK,
+  ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  assert.equal(normalizeModelLibraryLock(RC120_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
+  assert.equal(resolveModelLibrary(RC120_CURRENT_MODEL_LIBRARY_LOCK).role,
+    'rc120-current-migration');
+  assert.equal(modelLibraryExecutionIdentity(
+    RC120_CURRENT_MODEL_LIBRARY_LOCK,
   ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
   assert.equal(normalizeModelLibraryLock(PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
   assert.equal(modelLibraryExecutionIdentity(

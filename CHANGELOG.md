@@ -2,6 +2,25 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.121 — 2026-10-23
+
+- Adds one read-only X46 Instruments panel for complete, identity-bound AVR
+  USART0 TX byte events from the current paused worker. It shows byte order,
+  cycle and cycle delta, byte value/text, model baud and exact frame cycles.
+- Reconciles avr8js 0.21.1 integer baud through its exact documented floor
+  quantization while preserving frame duration as separate evidence. Wrong
+  baud/frame boundaries, retention loss and stale identity remain fail-closed.
+- Keeps framing configuration, RX decoding, physical voltage/noise, I2C and
+  SPI unavailable. The panel cannot Apply, Build, Run or decide a verdict.
+- Retains the exact rc.120 model manifest as migration-only trusted data, so an
+  rc.120 saved project remains openable and may create an explicit data-only
+  current copy without restoring executable authority.
+- Marks X46 partial/public_verified for the bounded USART0 TX increment only.
+  Status is now X **85 complete / 2 partial / 9 planned**, P1 **59/0/0**.
+- Performs no owner firmware Build, worker, Run, retry or scenario and creates
+  at most one application image. Public usability and the exact rc.120
+  rollback remain release gates.
+
 ## 1.1.0-rc.120 — 2026-10-23
 
 - Stops a recovered historical model project before compiler dispatch and

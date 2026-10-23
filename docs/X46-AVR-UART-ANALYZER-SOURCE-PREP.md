@@ -1,6 +1,7 @@
 # X46 AVR UART protocol-analyser source prep
 
-Status: private source prep; no UI, native firmware action, image or release.
+Status: bounded USART0 TX increment prepared for rc.121 public verification;
+the complete UART/I2C/SPI criterion remains partial.
 
 ## Why X46 is next
 
@@ -29,12 +30,13 @@ voltage waveform, line-noise measurement, framing configuration, general baud
 recovery, RX analysis, I²C or SPI support. Those states remain explicitly
 unavailable.
 
-## Required next implementation receipt
+## Implemented bounded increment
 
-The next receipt may wire this pure decoder to a private read-only Instruments
-panel and synthetic retained fixtures only. It starts with zero Build, zero Run,
-zero scenario, zero worker creation and zero image. A later independently
-approved native acceptance may use one existing supported AVR project solely
-to compare the panel with the same current-worker records. X46 remains planned
-until the full original UART/I²C/SPI criterion is either proved or separately
-reconciled without broadening this increment.
+The pure decoder is wired to a read-only Instruments panel. Source tests replay
+the exact retained native TX records without changing their integer baud or
+frame duration, and the panel rejects stale identity, loss and malformed data.
+The public release owner performs no firmware Build, Run, scenario or worker.
+
+Independent public acceptance may count this exact USART0 TX slice as
+partial/public_verified. X46 cannot become complete until the original broader
+UART/I2C/SPI criterion is independently proved or explicitly reconciled.

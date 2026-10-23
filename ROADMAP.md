@@ -14,6 +14,17 @@ predetermined end state. Contributions are welcome, but this roadmap does not
 promise that every proposal will be accepted or that maintenance will continue
 forever.
 
+## Keep the working path usable while expanding
+
+The complete approved roadmap remains active, but every increment must protect
+the last verified public version. The shared four-controller shell, Build and
+Run, named-pin wiring, Save/Open, explicit migration and clear failures are the
+stable learner path. Complex extensions stay private or isolated until their
+contract, tests and one coherent integrated journey pass; incomplete features
+remain visibly partial or unavailable. This is prioritization, not permanent
+removal, a completion percentage or a delivery deadline. Physical-hardware
+actions still require separate exact local consent.
+
 ## Near-term source quality
 
 - Improve keyboard and screen-reader workflows for the manual circuit editor.

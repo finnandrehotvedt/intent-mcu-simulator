@@ -28,9 +28,9 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X81 and X88 owners bind canonical rc119 to retained-model rc120 release bytes', async () => {
+test('X46 and X88 owners bind canonical rc120 to bounded UART rc121 release bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.120');
+  assert.equal(release.version, '1.1.0-rc.121');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
@@ -38,19 +38,18 @@ test('X81 and X88 owners bind canonical rc119 to retained-model rc120 release by
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
   assert(registry.ids.includes('X92'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.119', current: '1.1.0-rc.120' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.120', current: '1.1.0-rc.121' });
   assert.deepEqual(value.changes, [
     {
-      id: 'X81', classification: 'changed',
-      capabilities: ['intent-mcu-x81-local-assessment-envelope@1',
-        'intent-mcu-x81-reproducibility-status@1', 'intent-mcu-x81-source-evidence@1'],
-      contracts: ['x81-retained-reproducibility-assessment-v1'],
-      summary: 'Marks the bounded local X81 assessment complete after independent public reopen of the actual saved envelope reproduced the verified observations and explicit not-checked rebuild-byte axis without Build or Run.',
+      id: 'X46', classification: 'additive',
+      capabilities: ['intent-mcu-x46-uart-panel@1'],
+      contracts: ['x46-avr-usart0-tx-byte-events-v1'],
+      summary: 'Publishes a read-only AVR USART0 TX byte-event panel over complete current-worker records with exact baud quantization; framing, RX, physical signals, I2C and SPI remain unavailable.',
     },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records rc.119 to rc.120 as the retained-model recovery correction: migration-only projects block before compiler dispatch, retire prior Run authority and expose explicit data-only migration.',
+      summary: 'Records rc.120 to rc.121 as the bounded X46 USART0 TX-byte release with exact rc.120 model migration and no additional protocol or producer authority.',
     },
   ]);
   assert.equal(value.migrationRequired, true);
@@ -113,7 +112,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.120');
+  assert.equal(discovery.identity.version, '1.1.0-rc.121');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

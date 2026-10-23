@@ -1,10 +1,17 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.120 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.121 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
 not complete electrical or cycle-perfect hardware replacements.
+
+X46 currently supports only read-only AVR USART0 TX byte events retained by
+the current identity-bound paused worker. It validates complete ordered
+records, exact avr8js integer-baud quantization and exact model frame cycles,
+then shows byte values, text and cycle deltas. It does not infer UART framing,
+RX data, physical voltage/noise, I2C or SPI and grants no Apply, Build, Run or
+verdict authority. X46 remains partial.
 
 X48 adds one bounded discrete ideal-room loop for the exact AVR thermostat
 starter. It requires one fresh paused cycle-zero worker and exact source,

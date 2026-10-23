@@ -181,6 +181,13 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
   },
 });
 
+export const RC120_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-retained-build-guard-1@41',
+  manifestVersion: '2.0.0-retained-build-guard.1-current',
+  migrationOnly: true,
+});
+
 export const PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
   ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
   id: 'intent-mcu-model-bundle-current-runtime-ready-deadline-1@40',

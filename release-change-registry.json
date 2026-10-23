@@ -42,6 +42,15 @@
       ]
     },
     {
+      "id": "X46",
+      "capabilities": [
+        "intent-mcu-x46-uart-panel@1"
+      ],
+      "contracts": [
+        "x46-avr-usart0-tx-byte-events-v1"
+      ]
+    },
+    {
       "id": "X47",
       "capabilities": [
         "intent-mcu-x47-avr-d2-pulse@1",
