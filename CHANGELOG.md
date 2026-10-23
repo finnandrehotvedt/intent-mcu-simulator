@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.123 — 2026-10-23
+
+- Restores visible Serial access through the canonical Instruments popup and
+  keeps its heading below the sticky popup header at supported desktop widths.
+- Keeps Pause and Reset readable at their truthful runtime gates and moves the
+  dense X26–X36 regression matrix behind a closed-by-default Advanced testing
+  disclosure without removing any control.
+- Adds integrated desktop browser acceptance at 1920×911 and 1440×900 with
+  popup close/reopen, focus restoration, scrolling, zero workers and zero API
+  requests.
+- Changes presentation only: model, firmware, runtime, compiler and producer
+  authority remain unchanged. Exact public rc.122 is retained as rollback.
+
 ## 1.1.0-rc.122 — 2026-10-23
 
 - Contains the X46 UART grid item to the Instruments surface and keeps the

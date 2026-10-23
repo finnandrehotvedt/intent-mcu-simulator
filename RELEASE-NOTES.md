@@ -1,4 +1,21 @@
-# Intent MCU Simulator 1.1.0-rc.122
+# Intent MCU Simulator 1.1.0-rc.123
+
+## Runtime controls and Serial access
+
+Rc.123 restores Serial through the canonical Instruments popup, keeps its
+heading clear of the sticky popup header, and preserves focus on close and
+Escape. Pause and Reset retain truthful runtime gating with readable desktop
+geometry. The dense X26–X36 regression controls remain available under one
+closed-by-default Advanced testing disclosure.
+
+Integrated browser acceptance covers 1920×911 and 1440×900, repeated popup
+open/close and scrolling, with zero workers and zero API requests. This is a
+presentation-only release: model, firmware, runtime, compiler and producer
+authority are unchanged. Exact public rc.122 remains the rollback basis.
+
+---
+
+## 1.1.0-rc.122
 
 ## Contained AVR UART evidence table
 
