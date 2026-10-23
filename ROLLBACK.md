@@ -1,4 +1,4 @@
-# Rollback basis for 1.1.0-rc.121
+# Rollback basis for 1.1.0-rc.122
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
@@ -7,14 +7,14 @@ unchanged.
 Retain exact public rc.120 source commit
 `bcb2aceff9a72afb073ec46c647b92b96fa0b87d` and VM103 image
 `sha256:7e5e7da0b077f5fcd455f33075e175972e48fd5f1e2235e44c17df902729d4c5`
-as the pre-rc.121 app-only recovery basis. If acceptance fails, restore that
+as the pre-rc.122 app-only recovery basis. If acceptance fails, restore that
 exact app image and release directory, recreate only the Lab container and
 verify readiness plus the existing Teach-domain URLs.
 
-Rollback removes the X46 read-only UART TX panel and its rc.121 release
+Rollback removes the X46 read-only UART TX panel and its rc.122 release
 metadata. It does not alter learner-owned files. Projects saved under rc.120
-remain native to rc.120; a copy explicitly migrated under rc.121 must remain
-with rc.121 or later.
+remain native to rc.120; a copy explicitly migrated under rc.122 must remain
+with rc.122 or later. The unaccepted rc.121 image is not a rollback target.
 
 The older recovery history below remains preserved.
 

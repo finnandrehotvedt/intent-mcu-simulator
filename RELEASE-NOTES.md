@@ -1,4 +1,36 @@
-# Intent MCU Simulator 1.1.0-rc.121
+# Intent MCU Simulator 1.1.0-rc.122
+
+## Contained AVR UART evidence table
+
+Rc.122 keeps the bounded X46 USART0 TX view from the rc.121 candidate but
+contains its grid item to the existing Instruments surface. The 760 px table
+now scrolls inside its own wrapper at constrained desktop widths and cannot
+expand the application document or displace the established controller and
+primary controls.
+
+The integrated browser gate uses the real application shell and displays all
+23 retained historical TX rows at 1440 px and 780 px. Existing top-control
+geometry stays unchanged at full desktop width; the constrained desktop page
+has no document overflow while the table has its own horizontal scroller.
+Workers and producer requests remain zero.
+
+Rc.121 was never accepted publicly: it was rolled back to rc.120 after a
+broader 390 px check found 681 px document width. Mobile/tablet product
+development is deferred and is not a release gate for rc.122; the containment
+itself remains cheap and coherent.
+
+The current model manifest and implementation hashes remain byte-identical to
+rc.121 because the correction changes only CSS, release metadata and the
+browser regression. Rc.120 remains recognized migration-only data. X46 stays
+pending independent public acceptance, so canonical status remains X
+**85/1/10**, P1 **59/0/0**.
+
+This release performs no owner firmware Build, worker, Run, retry or scenario,
+creates at most one application image and retains exact rc.120 rollback.
+
+---
+
+## 1.1.0-rc.121 candidate
 
 ## Bounded AVR USART0 TX byte events
 
@@ -21,8 +53,8 @@ panel is observational and has no Apply, Build, Run or verdict authority.
 Rc.120's exact model manifest remains a recognized migration-only snapshot.
 Opening an rc.120 saved project clears executable authority and preserves the
 existing explicit preview-and-download migration flow. The original file is
-never overwritten. X46 is therefore partial/public_verified and status is X
-**85/2/9**, P1 **59/0/0**.
+never overwritten. Rc.121 did not pass responsive acceptance and was rolled
+back, so it made no canonical X-status change.
 
 This release performs no owner firmware Build, worker, Run, retry or scenario,
 creates at most one application image and retains exact rc.120 rollback.

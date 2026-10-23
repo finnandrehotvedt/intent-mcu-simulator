@@ -11,8 +11,8 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.120",
-    "current": "1.1.0-rc.121"
+    "previous": "1.1.0-rc.121",
+    "current": "1.1.0-rc.122"
   },
   "changes": [
     {
@@ -35,7 +35,7 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records rc.120 to rc.121 as the bounded X46 USART0 TX-byte release with exact rc.120 model migration and no additional protocol or producer authority."
+      "summary": "Records rc.121 to rc.122 as the X46 grid-containment correction with unchanged model, protocol and producer authority."
     }
   ],
   "migrationRequired": true,

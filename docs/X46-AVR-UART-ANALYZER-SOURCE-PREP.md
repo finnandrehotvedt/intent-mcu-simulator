@@ -1,6 +1,6 @@
 # X46 AVR UART protocol-analyser source prep
 
-Status: bounded USART0 TX increment prepared for rc.121 public verification;
+Status: bounded USART0 TX increment prepared for rc.122 public verification;
 the complete UART/I2C/SPI criterion remains partial.
 
 ## Why X46 is next

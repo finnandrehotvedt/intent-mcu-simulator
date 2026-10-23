@@ -2,6 +2,28 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.122 — 2026-10-23
+
+- Contains the X46 UART grid item to the Instruments surface and keeps the
+  760 px evidence table inside its own horizontal scroller. Populated rows no
+  longer expand or displace the existing desktop workbench controls.
+- Adds an integrated real-app-shell desktop regression at 1440 px and a
+  constrained 780 px desktop viewport. Both render the 23 retained historical
+  TX rows with zero workers or producer requests; the constrained table owns
+  its overflow and the document remains contained.
+- Supersedes unaccepted rc.121, which passed desktop evidence but was rolled
+  back after its broader 390 px check found 681 px document width.
+  Mobile/tablet product development is deferred; this is only the cheap,
+  coherent grid-containment correction.
+- Preserves rc.121's exact current model manifest and implementation hashes.
+  This CSS-only correction changes no model, firmware or runtime semantics.
+- X46 remains pending independent public acceptance and is partial only for
+  the bounded USART0 TX slice when accepted; framing, RX, physical signals,
+  I2C and SPI remain unavailable. Canonical status stays X **85 complete /
+  1 partial / 10 planned**, P1 **59/0/0**.
+- Performs no owner firmware Build, worker, Run, retry or scenario and creates
+  at most one application image. Exact public rc.120 remains the rollback.
+
 ## 1.1.0-rc.121 — 2026-10-23
 
 - Adds one read-only X46 Instruments panel for complete, identity-bound AVR
@@ -15,8 +37,9 @@ All notable public source changes are recorded here.
 - Retains the exact rc.120 model manifest as migration-only trusted data, so an
   rc.120 saved project remains openable and may create an explicit data-only
   current copy without restoring executable authority.
-- Marks X46 partial/public_verified for the bounded USART0 TX increment only.
-  Status is now X **85 complete / 2 partial / 9 planned**, P1 **59/0/0**.
+- Prepared X46 for the bounded USART0 TX increment, but responsive acceptance
+  failed and the candidate was rolled back. No canonical status changed; X
+  remained **85 complete / 1 partial / 10 planned**, P1 **59/0/0**.
 - Performs no owner firmware Build, worker, Run, retry or scenario and creates
   at most one application image. Public usability and the exact rc.120
   rollback remain release gates.

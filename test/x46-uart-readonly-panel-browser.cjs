@@ -134,6 +134,11 @@ async function activityPage(browser, url, viewport) {
     assert.equal(app.errors.length, 0);
 
     const historical = historicalReplayFixture();
+    const shellBeforeRows = await app.page.evaluate(() => ({
+      pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      controller: document.querySelector('#top-controller-controls').getBoundingClientRect().toJSON(),
+      primary: document.querySelector('#top-primary-controls').getBoundingClientRect().toJSON(),
+    }));
     const replay = await app.page.evaluate(async (input) => {
       const [{ assessX46UartReadonlyPanel }, { renderX46UartReadonlyPanel }] =
         await Promise.all([
@@ -165,9 +170,59 @@ async function activityPage(browser, url, viewport) {
     assert.equal(await app.page.evaluate(() => window.__X46_UART_READONLY_PANEL__.state),
       'unavailable');
     assert.equal(await app.page.evaluate(() => window.__X46_ACTIVITY__.workers), 0);
+    const shellAfterRows = await app.page.evaluate(() => ({
+      pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      controller: document.querySelector('#top-controller-controls').getBoundingClientRect().toJSON(),
+      primary: document.querySelector('#top-primary-controls').getBoundingClientRect().toJSON(),
+    }));
+    assert.deepEqual(shellAfterRows, shellBeforeRows);
     assert.equal(app.requests.length, 0);
     assert.equal(app.errors.length, 0);
     await app.page.close();
+
+    const constrained = await activityPage(browser, base, { width: 780, height: 900 });
+    await constrained.page.waitForFunction(() =>
+      window.__M11_READY__ === true && window.__X46_UART_READONLY_PANEL__);
+    await constrained.page.click('#instruments-open');
+    const constrainedPanel = constrained.page.locator(
+      '#workbench-instruments-dialog #x46-uart-panel',
+    );
+    await constrainedPanel.waitFor({ state: 'visible' });
+    assert.equal(await constrained.page.evaluate(async (input) => {
+      const [{ assessX46UartReadonlyPanel }, { renderX46UartReadonlyPanel }] =
+        await Promise.all([
+          import('/src/x46-uart-readonly-panel.mjs'),
+          import('/src/x46-uart-readonly-panel-view.mjs'),
+        ]);
+      const assessment = assessX46UartReadonlyPanel(input);
+      renderX46UartReadonlyPanel(document.querySelector('#x46-uart-panel'), assessment,
+        { evidenceKind: 'historical-replay-fixture' });
+      return assessment.frames.length;
+    }, historical), 23);
+    const constrainedLayout = await constrained.page.evaluate(() => ({
+      pageOverflow: document.documentElement.scrollWidth
+        - document.documentElement.clientWidth,
+      tableOwnScroll: document.querySelector('.x46-uart-table-wrap').scrollWidth
+        > document.querySelector('.x46-uart-table-wrap').clientWidth,
+      panelWidth: document.querySelector('#x46-uart-panel').getBoundingClientRect().width,
+      popupWidth: document.querySelector(
+        '#workbench-instruments-dialog [data-workbench-popup-mount="instruments"]',
+      ).getBoundingClientRect().width,
+      controllerRight: document.querySelector('#top-controller-controls')
+        .getBoundingClientRect().right,
+      primaryRight: document.querySelector('#top-primary-controls')
+        .getBoundingClientRect().right,
+    }));
+    assert(constrainedLayout.pageOverflow <= 1,
+      `integrated page overflow ${constrainedLayout.pageOverflow}`);
+    assert.equal(constrainedLayout.tableOwnScroll, true);
+    assert(constrainedLayout.panelWidth <= constrainedLayout.popupWidth + 1);
+    assert(constrainedLayout.controllerRight <= 781);
+    assert(constrainedLayout.primaryRight <= 781);
+    assert.equal(await constrained.page.evaluate(() => window.__X46_ACTIVITY__.workers), 0);
+    assert.equal(constrained.requests.length, 0);
+    assert.equal(constrained.errors.length, 0);
+    await constrained.page.close();
 
     for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
       const review = await activityPage(browser, `${base}/fixture`, viewport);
@@ -219,7 +274,7 @@ async function activityPage(browser, url, viewport) {
     }
     process.stdout.write(`${JSON.stringify({ status: 'pass', appWorkers: 0,
       producerRequests: 0, historicalReplayRows: 23, states: 7,
-      viewports: [1440, 390] })}\n`);
+      viewports: [1440, 780, 390] })}\n`);
   } finally {
     await browser.close();
     await new Promise((resolve) => http.close(resolve));
