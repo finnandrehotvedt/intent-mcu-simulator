@@ -2,6 +2,8 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 const assert = require('node:assert/strict');
+const { createHash } = require('node:crypto');
+const { readFileSync } = require('node:fs');
 const { createServer } = require('node:http');
 const { mkdir, readFile } = require('node:fs/promises');
 const path = require('node:path');
@@ -9,13 +11,17 @@ const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/
 
 const repository = path.resolve(__dirname, '..');
 const evidenceDir = process.env.X46_EVIDENCE_DIR || '';
+const actualRawBytes = readFileSync(path.join(
+  repository, 'test/fixtures/x46-worker-004-paused-raw.json',
+));
+const actualPausedRaw = JSON.parse(actualRawBytes);
 const mime = { '.css': 'text/css', '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png' };
 
 const fixtureHtml = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="stylesheet" href="/styles.css"><title>X46 synthetic UI review fixture</title></head><body><main style="max-width:1180px;margin:24px auto;padding:12px"><section id="fixture-panel" class="x46-uart-panel" aria-label="Read-only UART transmit byte-event analysis"></section></main><script type="module">
 import { assessX46UartReadonlyPanel } from '/src/x46-uart-readonly-panel.mjs';
 import { renderX46UartReadonlyPanel } from '/src/x46-uart-readonly-panel-view.mjs';
 const root = document.querySelector('#fixture-panel');
-window.__X46_FIXTURE__ = Object.freeze({ render(input) { const value = assessX46UartReadonlyPanel(input); renderX46UartReadonlyPanel(root, value, { evidenceKind: 'synthetic-review-fixture' }); return value; } });
+window.__X46_FIXTURE__ = Object.freeze({ render(input, evidenceKind = 'synthetic-review-fixture') { const value = assessX46UartReadonlyPanel(input); renderX46UartReadonlyPanel(root, value, { evidenceKind }); return value; } });
 window.__X46_FIXTURE_READY__ = true;
 </script></body></html>`;
 
@@ -41,6 +47,24 @@ function fixture() {
     runtimeSnapshot: { paused: true, runtimeIdentity: structuredClone(identity),
       modelExecutionContextSha256: identity.modelExecutionContextSha256,
       instruments: { serial: { records, retained: records.length, dropped: 0 } } },
+  };
+}
+
+function historicalReplayFixture() {
+  const current = actualPausedRaw.runtimeIdentity;
+  return {
+    schema: 'intent-mcu-x46-uart-panel-input@1',
+    profile: 'board.atmega328p-16mhz-v1',
+    lifecyclePhase: 'paused',
+    buildArtifactIdentity: current.artifactIdentity,
+    lifecycleRuntimeBinding: {
+      projectGeneration: current.projectGeneration,
+      runtimeGeneration: current.runtimeGeneration,
+      artifactIdentity: current.artifactIdentity,
+    },
+    trustedCurrentWorker: true,
+    currentWorkerIdentity: structuredClone(current),
+    runtimeSnapshot: structuredClone(actualPausedRaw),
   };
 }
 
@@ -86,6 +110,8 @@ async function activityPage(browser, url, viewport) {
 }
 
 (async () => {
+  assert.equal(createHash('sha256').update(actualRawBytes).digest('hex'),
+    '547ea71d3f1ecf5d887880e2ed3bebec7c958ee1d259b3586e03d0ac09b06058');
   if (evidenceDir) await mkdir(evidenceDir, { recursive: true });
   const http = server();
   await new Promise((resolve) => http.listen(0, '127.0.0.1', resolve));
@@ -103,6 +129,41 @@ async function activityPage(browser, url, viewport) {
     assert.equal(await live.locator('button,input,select').count(), 0);
     assert.deepEqual(await app.page.evaluate(() => window.__X46_UART_READONLY_PANEL__.authority),
       { apply: false, build: false, run: false, verdict: false });
+    assert.equal(await app.page.evaluate(() => window.__X46_ACTIVITY__.workers), 0);
+    assert.equal(app.requests.length, 0);
+    assert.equal(app.errors.length, 0);
+
+    const historical = historicalReplayFixture();
+    const replay = await app.page.evaluate(async (input) => {
+      const [{ assessX46UartReadonlyPanel }, { renderX46UartReadonlyPanel }] =
+        await Promise.all([
+          import('/src/x46-uart-readonly-panel.mjs'),
+          import('/src/x46-uart-readonly-panel-view.mjs'),
+        ]);
+      const assessment = assessX46UartReadonlyPanel(input);
+      renderX46UartReadonlyPanel(document.querySelector('#x46-uart-panel'), assessment,
+        { evidenceKind: 'historical-replay-fixture' });
+      return assessment;
+    }, historical);
+    assert.equal(replay.state, 'current');
+    assert.equal(replay.reason, 'current-paused-worker-complete');
+    assert.equal(replay.frames.length, 23);
+    assert.equal(replay.identity.artifactIdentity,
+      actualPausedRaw.runtimeIdentity.artifactIdentity);
+    assert.equal(await live.getAttribute('data-evidence-kind'), 'historical-replay-fixture');
+    assert.match(await live.locator('.shared-instrument-tool-heading span').textContent(),
+      /Accepted historical replay/u);
+    assert.match(await live.locator('.x46-uart-boundary').textContent(),
+      /Historical raw-evidence replay.*not a fresh current worker/u);
+    assert.equal(await live.locator('[data-x46-rows] tr').count(), 23);
+    assert.deepEqual(await live.locator('[data-x46-rows] tr').first().locator('td').allTextContents(),
+      ['1', '6,279', '—', '0x54', 'T', '9,615', '16,640']);
+    assert.deepEqual(await live.locator('[data-x46-rows] tr').last().locator('td').allTextContents(),
+      ['23', '373,840', '16,706', '0x53', 'S', '9,615', '16,640']);
+    assert.deepEqual(replay.authority,
+      { apply: false, build: false, run: false, verdict: false });
+    assert.equal(await app.page.evaluate(() => window.__X46_UART_READONLY_PANEL__.state),
+      'unavailable');
     assert.equal(await app.page.evaluate(() => window.__X46_ACTIVITY__.workers), 0);
     assert.equal(app.requests.length, 0);
     assert.equal(app.errors.length, 0);
@@ -156,7 +217,9 @@ async function activityPage(browser, url, viewport) {
       if (evidenceDir && viewport.width === 1440) await panel.screenshot({ path: path.join(evidenceDir, 'x46-readonly-uart-panel-synthetic-review.png') });
       await review.page.close();
     }
-    process.stdout.write(`${JSON.stringify({ status: 'pass', appWorkers: 0, producerRequests: 0, states: 7, viewports: [1440, 390] })}\n`);
+    process.stdout.write(`${JSON.stringify({ status: 'pass', appWorkers: 0,
+      producerRequests: 0, historicalReplayRows: 23, states: 7,
+      viewports: [1440, 390] })}\n`);
   } finally {
     await browser.close();
     await new Promise((resolve) => http.close(resolve));

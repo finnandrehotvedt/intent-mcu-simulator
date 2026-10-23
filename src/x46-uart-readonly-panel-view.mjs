@@ -20,7 +20,13 @@ function displayByte(value) {
   return `\\x${value.toString(16).padStart(2, '0')}`;
 }
 
-function stateText(assessment) {
+function stateText(assessment, evidenceKind) {
+  if (assessment.state === 'current' && evidenceKind === 'historical-replay-fixture') {
+    return 'Accepted historical replay';
+  }
+  if (assessment.state === 'current' && evidenceKind !== 'current-worker') {
+    return 'Accepted synthetic fixture';
+  }
   return ({
     current: 'Current paused worker',
     empty: 'Current · no TX bytes',
@@ -52,11 +58,15 @@ export function renderX46UartReadonlyPanel(root, assessment, { evidenceKind = 'c
   root.replaceChildren();
 
   const heading = node(document, 'div', '', 'shared-instrument-tool-heading');
-  heading.append(node(document, 'strong', 'UART TX byte events'), node(document, 'span', stateText(assessment)));
+  heading.append(node(document, 'strong', 'UART TX byte events'),
+    node(document, 'span', stateText(assessment, evidenceKind)));
+  const boundaryText = evidenceKind === 'current-worker'
+    ? 'Read-only current-worker projection · no Build, Run, input, Apply or verdict authority.'
+    : evidenceKind === 'historical-replay-fixture'
+      ? 'Historical raw-evidence replay · offline contract test only · not a fresh current worker or firmware run.'
+      : 'Synthetic review fixture · presentation test only · not current-worker or firmware evidence.';
   const boundary = node(document, 'p',
-    evidenceKind === 'current-worker'
-      ? 'Read-only current-worker projection · no Build, Run, input, Apply or verdict authority.'
-      : 'Synthetic review fixture · presentation test only · not current-worker or firmware evidence.',
+    boundaryText,
     'x46-uart-boundary');
   const summary = node(document, 'p', detailText(assessment), 'x46-uart-summary');
   summary.dataset.x46Summary = '';

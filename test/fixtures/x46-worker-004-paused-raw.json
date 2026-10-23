@@ -1,0 +1,709 @@
+{
+  "kind": "paused",
+  "cycle": 390185,
+  "pc": 215,
+  "instructions": 300000,
+  "paused": true,
+  "speed": 1,
+  "led": false,
+  "digitalPins": {
+    "D0": false,
+    "D1": false,
+    "D2": true,
+    "D3": false,
+    "D4": false,
+    "D5": false,
+    "D6": false,
+    "D7": false,
+    "D8": false,
+    "D9": false,
+    "D10": false,
+    "D11": false,
+    "D12": false,
+    "D13": false
+  },
+  "trace": [
+    {
+      "cycle": 2068,
+      "pin": 2,
+      "level": true
+    }
+  ],
+  "serial": [
+    {
+      "direction": "tx",
+      "cycle": 6279,
+      "value": 84,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 22993,
+      "value": 69,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 39700,
+      "value": 77,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 56407,
+      "value": 80,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 73114,
+      "value": 95,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 89821,
+      "value": 67,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 106533,
+      "value": 61,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 123240,
+      "value": 50,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 139947,
+      "value": 57,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 156654,
+      "value": 32,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 173361,
+      "value": 66,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 190068,
+      "value": 85,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 206775,
+      "value": 84,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 223481,
+      "value": 84,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 240187,
+      "value": 79,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 256893,
+      "value": 78,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 273599,
+      "value": 61,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 290305,
+      "value": 82,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 307012,
+      "value": 69,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 323719,
+      "value": 76,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 340426,
+      "value": 69,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 357134,
+      "value": 65,
+      "baud": 9615,
+      "frameCycles": 16640
+    },
+    {
+      "direction": "tx",
+      "cycle": 373840,
+      "value": 83,
+      "baud": 9615,
+      "frameCycles": 16640
+    }
+  ],
+  "adcReads": [
+    {
+      "channel": 1,
+      "startCycle": 2188,
+      "sampleCycles": 3200,
+      "completionCycle": 5388,
+      "value": 409
+    }
+  ],
+  "unsupported": [],
+  "faultEvents": [],
+  "pins": [
+    {
+      "pin": "D0",
+      "mode": "INPUT",
+      "level": false,
+      "externalDrive": "RELEASED",
+      "pwm": null,
+      "diagnostic": "OK"
+    },
+    {
+      "pin": "D1",
+      "mode": "INPUT",
+      "level": false,
+      "externalDrive": "RELEASED",
+      "pwm": null,
+      "diagnostic": "OK"
+    },
+    {
+      "pin": "D2",
+      "mode": "INPUT_PULLUP",
+      "level": true,
+      "externalDrive": "HIGH",
+      "pwm": null,
+      "diagnostic": "OK"
+    },
+    {
+      "pin": "D3",
+      "mode": "INPUT",
+      "level": false,
+      "externalDrive": "RELEASED",
+      "pwm": null,
+      "diagnostic": "OK"
+    },
+    {
+      "pin": "D4",
+      "mode": "INPUT",
+      "level": false,
+      "externalDrive": "RELEASED",
+      "pwm": null,
+      "diagnostic": "OK"
+    },
+    {
+      "pin": "D5",
+      "mode": "INPUT",
+      "level": false,
+      "externalDrive": "RELEASED",
+      "pwm": null,
+      "diagnostic": "OK"
+    },
+    {
+      "pin": "D6",
+      "mode": "INPUT",
+      "level": false,
+      "externalDrive": "RELEASED",
+      "pwm": null,
+      "diagnostic": "OK"
+    },
+    {
+      "pin": "D7",
+      "mode": "INPUT",
+      "level": false,
+      "externalDrive": "RELEASED",
+      "pwm": null,
+      "diagnostic": "OK"
+    },
+    {
+      "pin": "D8",
+      "mode": "INPUT",
+      "level": false,
+      "externalDrive": "RELEASED",
+      "pwm": null,
+      "diagnostic": "OK"
+    },
+    {
+      "pin": "D9",
+      "mode": "INPUT",
+      "level": false,
+      "externalDrive": "RELEASED",
+      "pwm": null,
+      "diagnostic": "OK"
+    },
+    {
+      "pin": "D10",
+      "mode": "INPUT",
+      "level": false,
+      "externalDrive": "RELEASED",
+      "pwm": null,
+      "diagnostic": "OK"
+    },
+    {
+      "pin": "D11",
+      "mode": "INPUT",
+      "level": false,
+      "externalDrive": "RELEASED",
+      "pwm": null,
+      "diagnostic": "OK"
+    },
+    {
+      "pin": "D12",
+      "mode": "INPUT",
+      "level": false,
+      "externalDrive": "RELEASED",
+      "pwm": null,
+      "diagnostic": "OK"
+    },
+    {
+      "pin": "D13",
+      "mode": "OUTPUT",
+      "level": false,
+      "externalDrive": "RELEASED",
+      "pwm": null,
+      "diagnostic": "OK"
+    },
+    {
+      "pin": "A0",
+      "mode": "INPUT",
+      "level": false,
+      "voltage": 0,
+      "faultState": "NONE",
+      "adc": null,
+      "sampleCycle": null,
+      "diagnostic": "OK"
+    },
+    {
+      "pin": "A1",
+      "mode": "ANALOG_INPUT",
+      "level": false,
+      "voltage": 2,
+      "faultState": "NONE",
+      "adc": 409,
+      "sampleCycle": 5388,
+      "diagnostic": "OK"
+    },
+    {
+      "pin": "A2",
+      "mode": "INPUT",
+      "level": false,
+      "voltage": 0,
+      "faultState": "NONE",
+      "adc": null,
+      "sampleCycle": null,
+      "diagnostic": "OK"
+    },
+    {
+      "pin": "A3",
+      "mode": "INPUT",
+      "level": false,
+      "voltage": 0,
+      "faultState": "NONE",
+      "adc": null,
+      "sampleCycle": null,
+      "diagnostic": "OK"
+    },
+    {
+      "pin": "A4",
+      "mode": "INPUT",
+      "level": false,
+      "voltage": 0,
+      "faultState": "NONE",
+      "adc": null,
+      "sampleCycle": null,
+      "diagnostic": "OK"
+    },
+    {
+      "pin": "A5",
+      "mode": "INPUT",
+      "level": false,
+      "voltage": 0,
+      "faultState": "NONE",
+      "adc": null,
+      "sampleCycle": null,
+      "diagnostic": "OK"
+    }
+  ],
+  "retentionDrops": {
+    "logic": 0,
+    "serial": 0,
+    "adc": 0,
+    "unsupported": 0
+  },
+  "circuit": {
+    "leds": [
+      {
+        "componentId": "heater-led-1",
+        "on": false,
+        "currentAmps": 0,
+        "brightness": 0,
+        "color": "red"
+      }
+    ],
+    "controls": {
+      "board-1": {},
+      "enable-button-1": {
+        "pressed": false
+      },
+      "heater-led-1": {},
+      "temperature-sensor-1": {
+        "position": 0.4
+      },
+      "heater-resistor-1": {}
+    },
+    "analogue": [
+      {
+        "componentId": "temperature-sensor-1",
+        "boardPin": "A1",
+        "voltage": 2
+      }
+    ],
+    "resolvedNets": [
+      {
+        "netId": "net-thermostat-5v",
+        "resolution": "HIGH_Z"
+      },
+      {
+        "netId": "net-thermostat-enable",
+        "resolution": "HIGH_Z"
+      },
+      {
+        "netId": "net-thermostat-ground",
+        "resolution": "HIGH_Z"
+      },
+      {
+        "netId": "net-thermostat-heater-drive",
+        "resolution": "HIGH_Z"
+      },
+      {
+        "netId": "net-thermostat-heater-led",
+        "resolution": "HIGH_Z"
+      },
+      {
+        "netId": "net-thermostat-temperature",
+        "resolution": "HIGH_Z"
+      }
+    ]
+  },
+  "eventLog": {
+    "pending": [],
+    "log": [],
+    "applied": [],
+    "dropped": 0,
+    "retention": {
+      "limit": 10000,
+      "requested": {
+        "retained": 0,
+        "dropped": 0
+      },
+      "applied": {
+        "retained": 0,
+        "dropped": 0
+      }
+    }
+  },
+  "instruments": {
+    "serial": {
+      "records": [
+        {
+          "direction": "tx",
+          "cycle": 6279,
+          "value": 84,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 0.3924375,
+          "text": "T"
+        },
+        {
+          "direction": "tx",
+          "cycle": 22993,
+          "value": 69,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 1.4370625,
+          "text": "E"
+        },
+        {
+          "direction": "tx",
+          "cycle": 39700,
+          "value": 77,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 2.48125,
+          "text": "M"
+        },
+        {
+          "direction": "tx",
+          "cycle": 56407,
+          "value": 80,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 3.5254375,
+          "text": "P"
+        },
+        {
+          "direction": "tx",
+          "cycle": 73114,
+          "value": 95,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 4.569625,
+          "text": "_"
+        },
+        {
+          "direction": "tx",
+          "cycle": 89821,
+          "value": 67,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 5.6138125,
+          "text": "C"
+        },
+        {
+          "direction": "tx",
+          "cycle": 106533,
+          "value": 61,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 6.6583125,
+          "text": "="
+        },
+        {
+          "direction": "tx",
+          "cycle": 123240,
+          "value": 50,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 7.7025,
+          "text": "2"
+        },
+        {
+          "direction": "tx",
+          "cycle": 139947,
+          "value": 57,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 8.7466875,
+          "text": "9"
+        },
+        {
+          "direction": "tx",
+          "cycle": 156654,
+          "value": 32,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 9.790875,
+          "text": " "
+        },
+        {
+          "direction": "tx",
+          "cycle": 173361,
+          "value": 66,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 10.8350625,
+          "text": "B"
+        },
+        {
+          "direction": "tx",
+          "cycle": 190068,
+          "value": 85,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 11.87925,
+          "text": "U"
+        },
+        {
+          "direction": "tx",
+          "cycle": 206775,
+          "value": 84,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 12.9234375,
+          "text": "T"
+        },
+        {
+          "direction": "tx",
+          "cycle": 223481,
+          "value": 84,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 13.9675625,
+          "text": "T"
+        },
+        {
+          "direction": "tx",
+          "cycle": 240187,
+          "value": 79,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 15.0116875,
+          "text": "O"
+        },
+        {
+          "direction": "tx",
+          "cycle": 256893,
+          "value": 78,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 16.0558125,
+          "text": "N"
+        },
+        {
+          "direction": "tx",
+          "cycle": 273599,
+          "value": 61,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 17.0999375,
+          "text": "="
+        },
+        {
+          "direction": "tx",
+          "cycle": 290305,
+          "value": 82,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 18.1440625,
+          "text": "R"
+        },
+        {
+          "direction": "tx",
+          "cycle": 307012,
+          "value": 69,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 19.18825,
+          "text": "E"
+        },
+        {
+          "direction": "tx",
+          "cycle": 323719,
+          "value": 76,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 20.2324375,
+          "text": "L"
+        },
+        {
+          "direction": "tx",
+          "cycle": 340426,
+          "value": 69,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 21.276625,
+          "text": "E"
+        },
+        {
+          "direction": "tx",
+          "cycle": 357134,
+          "value": 65,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 22.320875,
+          "text": "A"
+        },
+        {
+          "direction": "tx",
+          "cycle": 373840,
+          "value": 83,
+          "baud": 9615,
+          "frameCycles": 16640,
+          "virtualMilliseconds": 23.365,
+          "text": "S"
+        }
+      ],
+      "text": "TEMP_C=29 BUTTON=RELEAS",
+      "retained": 23,
+      "dropped": 0,
+      "machineDropped": 0,
+      "viewDropped": 0
+    },
+    "logic": {
+      "channels": [
+        "D2",
+        "D13"
+      ],
+      "transitions": [
+        {
+          "cycle": 2068,
+          "pin": "D2",
+          "level": true
+        }
+      ],
+      "dropped": 0
+    },
+    "pin": {
+      "pin": "D13",
+      "mode": "OUTPUT",
+      "level": false,
+      "externalDrive": "RELEASED",
+      "pwm": null,
+      "diagnostic": "OK"
+    }
+  },
+  "runtimeIdentity": {
+    "schema": "intent-mcu-worker-runtime-identity@2",
+    "projectGeneration": 3,
+    "runtimeGeneration": 5,
+    "artifactIdentity": "1501248cde92e96d417ae24a6f9e9a5a82faa057dabfdd97fbe5bc922b42100c",
+    "modelImplementationSha256": "75122b1ac20815fd848243270da601a219b668de1ab73207366b1effbbe1be58",
+    "modelExecutionContextSha256": "13084dfcf0d1091f7046af5274fcf1cc2c5d473f3484138c7bf5a49d5089756d",
+    "workerInitialization": 2,
+    "workerInstanceNonce": "884038888ca6c6eb8187cf119014808c"
+  },
+  "modelExecutionContextSha256": "13084dfcf0d1091f7046af5274fcf1cc2c5d473f3484138c7bf5a49d5089756d"
+}

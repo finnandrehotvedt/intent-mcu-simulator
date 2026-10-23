@@ -10,6 +10,8 @@ const HASH = /^[0-9a-f]{64}$/u;
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u;
 const CLOCK_HERTZ = 16_000_000;
 const MAX_RECORDS = 4_096;
+const UART_FRAME_SYMBOLS = 10;
+const PRECISE_PRODUCT_TOLERANCE = 1;
 
 function fail(code) {
   const error = new Error(code);
@@ -31,6 +33,15 @@ function displayByte(value) {
   if (value === 13) return '\r';
   if (value >= 32 && value <= 126) return String.fromCharCode(value);
   return `\\x${value.toString(16).padStart(2, '0')}`;
+}
+
+function validModelBaud(baud, frameCycles) {
+  const clockProduct = CLOCK_HERTZ * UART_FRAME_SYMBOLS;
+  const exactBaud = clockProduct / frameCycles;
+  // avr8js@0.21.1 AVRUSART.baudRate is explicitly Math.floor(freq / divisor).
+  // Keep that model-recorded integer separate from the exact frame duration.
+  if (Number.isInteger(baud)) return baud === Math.floor(exactBaud);
+  return Math.abs((baud * frameCycles) - clockProduct) <= PRECISE_PRODUCT_TOLERANCE;
 }
 
 function validateSource(source) {
@@ -73,7 +84,7 @@ function validateSource(source) {
         || !finite(record.virtualMilliseconds)
         || record.virtualMilliseconds !== record.cycle / 16_000
         || record.text !== displayByte(record.value)
-        || Math.abs((record.baud * record.frameCycles) - (CLOCK_HERTZ * 10)) > 1) {
+        || !validModelBaud(record.baud, record.frameCycles)) {
       fail('X46_UART_RECORD_INVALID');
     }
     previousCycle = record.cycle;
