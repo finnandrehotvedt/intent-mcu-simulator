@@ -7,6 +7,7 @@ import {
   X46_UART_SOURCE_SCHEMA,
   analyzeAvrUsart0,
 } from './x46-uart-protocol-analyzer.mjs';
+import { deriveX46UsartFramingFromPausedSnapshot } from './x46-usart-framing-contract.mjs';
 
 export const X46_UART_PANEL_SCHEMA = 'intent-mcu-x46-uart-panel@1';
 export const X46_UART_PANEL_INPUT_SCHEMA = 'intent-mcu-x46-uart-panel-input@1';
@@ -20,6 +21,15 @@ const SUPPORT = Object.freeze({
   signalLevel: 'unavailable — no physical voltage waveform or line-noise measurement',
   i2c: 'unavailable — no supported I2C signal producer',
   spi: 'unavailable — no supported SPI signal producer',
+});
+const EMPTY_FRAMING = Object.freeze({
+  state: 'unavailable',
+  reason: 'no-current-complete-framing',
+  completed: 0,
+  inFlight: 0,
+  frames: Object.freeze([]),
+  modelDerived: true,
+  physicalSignal: false,
 });
 
 function exactKeys(value, keys) {
@@ -56,6 +66,7 @@ function result(state, reason, extras = {}) {
     retention: Object.freeze({ retainedTx: 0, retainedAll: 0, dropped: 0, truncated: false }),
     support: SUPPORT,
     authority: AUTHORITY,
+    framing: EMPTY_FRAMING,
     ...extras,
   });
 }
@@ -148,10 +159,30 @@ export function assessX46UartReadonlyPanel(input) {
       });
   }
   if (analysis.schema !== X46_UART_ANALYSIS_SCHEMA) return invalid('X46_UART_ANALYSIS_INVALID');
+  let framing = EMPTY_FRAMING;
+  try {
+    const derived = deriveX46UsartFramingFromPausedSnapshot(input.runtimeSnapshot);
+    framing = Object.freeze({
+      state: 'current',
+      reason: 'same-paused-worker-model-derived',
+      completed: derived.completeness.framedRecords,
+      inFlight: derived.completeness.inFlightRecords,
+      frames: Object.freeze(derived.frames.map((frame) => Object.freeze(structuredClone(frame)))),
+      modelDerived: true,
+      physicalSignal: false,
+    });
+  } catch (error) {
+    framing = Object.freeze({ ...EMPTY_FRAMING, reason: error.code ?? 'X46_USART_FRAMING_REJECTED' });
+  }
   return result('current', 'current-paused-worker-complete', {
     frames: Object.freeze(analysis.frames.map((frame) => Object.freeze(structuredClone(frame)))),
     displayText: analysis.displayText,
     identity: identityResult(identity),
     retention,
+    framing,
+    support: framing.state === 'current' ? Object.freeze({
+      ...SUPPORT,
+      framing: 'bounded model-derived asynchronous 8-N-1 framing from the same paused worker snapshot',
+    }) : SUPPORT,
   });
 }
