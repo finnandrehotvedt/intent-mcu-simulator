@@ -15332,7 +15332,7 @@ fetch('/api/page-views', { method: 'GET', cache: 'no-store', credentials: 'same-
   .then((response) => response.ok ? response.json() : Promise.reject(new Error('PAGE_VIEW_UNAVAILABLE')))
   .then((value) => {
     pageViewCount.textContent = `Page views today: ${value.today.toLocaleString('en-GB')} · total since ${new Date(value.startedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: value.timeZone })}: ${value.total.toLocaleString('en-GB')}`;
-    pageViewCount.title = `UTC count day ${value.dayUtc}; display dates use ${value.timeZone}. Reloads count as page views, not unique visitors.`;
+    pageViewCount.title = `Calendar day ${value.dayEuropeOslo} in ${value.timeZone}. Reloads count as page views, not unique visitors.`;
   })
   .catch(() => { pageViewCount.textContent = 'Page views unavailable'; });
 window.__UNSAVED_CHANGE_GUARD__ = Object.freeze({
