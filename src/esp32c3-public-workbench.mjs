@@ -15,6 +15,7 @@ import {
   CURRENT_MODEL_LIBRARY_LOCK, modelLibraryExecutionIdentity, normalizeModelLibraryLock,
   resolveModelLibrary,
 } from './model-library.mjs';
+import { ESP32C3_EXECUTION_IDENTITIES } from './esp32c3-execution-identities.mjs';
 
 export const C3_PUBLIC_PROJECT_SCHEMA = 'intent-mcu-esp32c3-public-project@1';
 export const C3_PUBLIC_SOURCE = sourceForGpio2('C3_PUBLIC', 'OUTPUT', 'HIGH');
@@ -76,7 +77,8 @@ function download(name, text) {
 
 export class Esp32C3PublicWorkbench {
   constructor({ elements, endpoint = '/api/c3', fetchFn = globalThis.fetch,
-    onState = () => {}, onDiagnostics = () => {}, onSave = null, onOpen = null } = {}) {
+    onState = () => {}, onDiagnostics = () => {}, onSave = null, onOpen = null,
+    dispatchAction = (_action, task) => task(), advanceGuard = () => ({ ok: true }) } = {}) {
     this.elements = elements;
     this.endpoint = endpoint.replace(/\/$/u, '');
     this.fetch = fetchFn.bind(globalThis);
@@ -84,6 +86,8 @@ export class Esp32C3PublicWorkbench {
     this.onDiagnostics = onDiagnostics;
     this.onSave = onSave;
     this.onOpen = onOpen;
+    this.dispatchAction = dispatchAction;
+    this.advanceGuard = advanceGuard;
     this.project = defaultProject();
     this.modelLibraryLock = clone(CURRENT_MODEL_LIBRARY_LOCK);
     this.modelLibraryImplementation = resolveModelLibrary(this.modelLibraryLock).implementation;
@@ -135,8 +139,10 @@ export class Esp32C3PublicWorkbench {
       if (!validName(this.elements.name.value)) this.elements.name.value = this.project.name;
       else { this.project.name = this.elements.name.value.trim(); this.render(); }
     });
-    this.elements.build.addEventListener('click', () => { void this.build(); });
-    this.elements.run.addEventListener('click', () => { void this.run(); });
+    this.elements.build.addEventListener('click', () => { void this.dispatchAction('firmware.build',
+      (permit) => this.build({ advancePermit: permit })); });
+    this.elements.run.addEventListener('click', () => { void this.dispatchAction('runtime.run',
+      (permit) => this.run({ advancePermit: permit })); });
     this.elements.stop.addEventListener('click', () => { void this.dispose('C3 session discarded.'); });
     this.elements.save.addEventListener('click', () => this.onSave ? this.onSave() : this.save());
     this.elements.open.addEventListener('click', () => this.elements.openInput.click());
@@ -169,6 +175,31 @@ export class Esp32C3PublicWorkbench {
     };
   }
   publish() { const state = this.snapshot(); this.onState(state); return state; }
+  x92Binding({ projectGeneration, graphIdentity } = {}) {
+    if (!this.sessionId || !this.artifact || this.artifactRevision !== this.revision
+        || !Number.isSafeInteger(projectGeneration) || projectGeneration < 1
+        || !/^sha256:[a-f0-9]{64}$/u.test(graphIdentity ?? '')) {
+      throw Object.assign(new Error('X92_C3_BINDING_UNAVAILABLE'), { code: 'X92_C3_BINDING_UNAVAILABLE' });
+    }
+    return Object.freeze({
+      schema: 'intent-mcu-x92-c3-execution-binding@1', profile: PROFILE,
+      sessionId: this.sessionId, generation: this.serverGeneration, projectGeneration,
+      sourceIdentity: `sha256:${this.artifact.sourceSha256}`,
+      graphIdentity, flashIdentity: `sha256:${this.artifact.flashSha256}`,
+      compiler: { imageIdentity: ESP32C3_EXECUTION_IDENTITIES.compilerImageIdentity,
+        toolchainIdentity: ESP32C3_EXECUTION_IDENTITIES.compilerToolchainIdentity },
+      runtime: { imageIdentity: ESP32C3_EXECUTION_IDENTITIES.runtimeImageIdentity,
+        binaryIdentity: ESP32C3_EXECUTION_IDENTITIES.runtimeBinaryIdentity },
+    });
+  }
+  async quiesceForX92(binding) {
+    const current = this.x92Binding({ projectGeneration: binding.projectGeneration,
+      graphIdentity: binding.graphIdentity });
+    if (JSON.stringify(current) !== JSON.stringify(binding)) {
+      throw Object.assign(new Error('X92_C3_BINDING_STALE'), { code: 'X92_C3_BINDING_STALE' });
+    }
+    return this.command('quiesce');
+  }
   setModelLibraryLock(lock) {
     const normalized = normalizeModelLibraryLock(lock);
     if (!normalized.ok) throw Object.assign(new Error(normalized.code), normalized);
@@ -306,7 +337,9 @@ export class Esp32C3PublicWorkbench {
     }
     this.render();
   }
-  async build() {
+  async build({ advancePermit = null } = {}) {
+    const advance = this.advanceGuard('firmware.build', advancePermit, null);
+    if (!advance?.ok) return { ok: false, code: advance?.code ?? 'X92_C3_SHARED_GATE_BLOCKED' };
     if (!this.active || this.phase === 'building') return { ok: false, code: 'C3_BUILD_UNAVAILABLE' };
     if (this.retirementOwner && this.retirementOwner.status !== 'proven') {
       this.phase = 'blocked';
@@ -410,7 +443,9 @@ export class Esp32C3PublicWorkbench {
       return { ok: false, code: error.code ?? error.message, ...retryResultFields(error) };
     }
   }
-  async run() {
+  async run({ advancePermit = null, x92Binding = null } = {}) {
+    const advance = this.advanceGuard('runtime.run', advancePermit, x92Binding);
+    if (!advance?.ok) return { ok: false, code: advance?.code ?? 'X92_C3_SHARED_GATE_BLOCKED' };
     const circuit = this.modelLibraryImplementation.validateProfile(
       PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
     );
@@ -436,6 +471,12 @@ export class Esp32C3PublicWorkbench {
         ? 'Actual QEMU CPU/UART complete. LED result comes from the separately labelled IntentForce GPIO2 register model.'
         : 'Actual QEMU CPU/UART complete. LED model stayed off because the local wire is disconnected.';
       this.render();
+      if (x92Binding) {
+        const quiescence = await this.quiesceForX92(x92Binding);
+        return { schema: 'intent-mcu-x92-c3-private-result@1', ok: true,
+          code: 'C3_PRIVATE_PRODUCT_COMPLETE', executed: true,
+          executionIdentity: clone(x92Binding), uart: clone(value.runtime.uart), quiescence };
+      }
       return { ok: true, code: 'OK', runtime: clone(value.runtime) };
     } catch (error) {
       if (token !== this.requestToken) return { ok: false, code: 'C3_RUNTIME_STALE' };

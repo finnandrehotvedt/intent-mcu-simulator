@@ -16,10 +16,11 @@ import { boundedActionRequest, parseBoundedActionRequest } from '../src/bounded-
 
 const profile = 'board.atmega328p-16mhz-v1';
 
-test('public budget copy names reviewed AVR and Pico scope and rejects C3/STM32', async () => {
+test('private candidate copy distinguishes reviewed AVR/Pico from exact-identity C3 and rejects STM32', async () => {
   const html = await readFile(new URL('../staging/index.html', import.meta.url), 'utf8');
   assert.match(html, /reviewed owner-quiescence evidence for the generic AVR and bounded RP2040 Pico profiles/u);
-  assert.match(html, /ESP32-C3 and STM32[^.]+reject budgeted Run before producer dispatch/u);
+  assert.match(html, /private candidate also wires the bounded ESP32-C3 profile through exact source, flash, compiler, runtime and retirement identities/u);
+  assert.match(html, /STM32[^.]+rejects budgeted Run before producer dispatch/u);
   assert.doesNotMatch(html, /producer-quiescence evidence only for the generic AVR profile/u);
 });
 

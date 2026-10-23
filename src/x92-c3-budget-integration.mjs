@@ -102,13 +102,13 @@ export function createX92C3BudgetIntegration({ budget, currentBinding, retireCur
   function block(code, extra = {}) {
     return { ok: false, code, executed: false, ...extra, integration: projection() };
   }
-  function claim(owner, requestId) {
+  function claim(owner, requestId, action = 'runtime.run') {
     if (tombstone) return null;
     if (gate) return null;
     sequence += 1;
     const permit = Object.freeze({});
-    gate = { owner, requestId, phase: 'claimed', token: `x92-c3-dispatch-${sequence}`, permit };
-    permits.set(permit, { owner, requestId, token: gate.token, binding: null });
+    gate = { owner, requestId, action, phase: 'claimed', token: `x92-c3-dispatch-${sequence}`, permit };
+    permits.set(permit, { owner, requestId, action, token: gate.token, binding: null });
     return gate;
   }
   function release(owner) { if (gate === owner) gate = null; }
@@ -122,10 +122,14 @@ export function createX92C3BudgetIntegration({ budget, currentBinding, retireCur
     record.binding = binding;
     owner.phase = 'authorized';
   }
-  function advancingBoundary(permit, binding) {
+  function advancingBoundary(permit, binding = null, action = 'runtime.run') {
     const record = permits.get(permit);
     if (!gate || permit !== gate.permit || !record || record.token !== gate.token
-        || gate.phase !== 'authorized' || !record.binding) return block('X92_C3_SHARED_GATE_BLOCKED');
+        || gate.phase !== 'authorized' || record.action !== action) return block('X92_C3_SHARED_GATE_BLOCKED');
+    if (action === 'firmware.build' && binding === null && record.binding === null) {
+      return { ok: true, code: 'X92_C3_PRIVATE_PERMIT_ACCEPTED', token: record.token };
+    }
+    if (!record.binding) return block('X92_C3_SHARED_GATE_BLOCKED');
     try {
       if (!same(record.binding, normalizeX92C3Binding(binding))) return block('X92_C3_PERMIT_BINDING_MISMATCH');
     } catch { return block('X92_C3_PERMIT_BINDING_MISMATCH'); }
@@ -143,7 +147,7 @@ export function createX92C3BudgetIntegration({ budget, currentBinding, retireCur
     if (request.action !== 'runtime.run' || request.profile !== PROFILE) return block('X92_C3_PRIVATE_SCOPE');
     if (!budget.active()) return block('X92_SESSION_INACTIVE');
     if (tombstone) return block('X92_C3_RETIREMENT_TOMBSTONE');
-    const owner = claim('budget', request.requestId);
+    const owner = claim('budget', request.requestId, request.action);
     if (!owner) return block(tombstone ? 'X92_C3_RETIREMENT_TOMBSTONE' : 'X92_C3_SHARED_GATE_BLOCKED');
     let reference = null;
     let reserved = null;
@@ -254,17 +258,26 @@ export function createX92C3BudgetIntegration({ budget, currentBinding, retireCur
     }
   }
 
-  async function executeManual(task) {
+  async function executeManual(task, { action = 'runtime.run', requestId = `manual-${action}` } = {}) {
     if (typeof task !== 'function') fail('X92_C3_MANUAL_TASK');
+    if (!['firmware.build', 'runtime.run'].includes(action)) fail('X92_C3_MANUAL_ACTION');
     if (tombstone) return block('X92_C3_RETIREMENT_TOMBSTONE');
-    const owner = claim('manual', 'manual-route');
+    const owner = claim('manual', requestId, action);
     if (!owner) return block('X92_C3_SHARED_GATE_BLOCKED');
     try {
-      const binding = normalizeX92C3Binding(await currentBinding());
+      const binding = action === 'runtime.run' ? normalizeX92C3Binding(await currentBinding()) : null;
       authorize(owner, binding);
-      return await executeManualProducer(task, owner.permit, clone(binding));
+      return await executeManualProducer(task, owner.permit, binding ? clone(binding) : null, action);
     } finally { release(owner); }
   }
 
-  return Object.freeze({ executeBudgeted, executeManual, advancingBoundary, status: projection });
+  return Object.freeze({ executeBudgeted, executeManual, advancingBoundary, status: projection,
+    cancel: (requestId) => {
+      if (!gate || gate.owner !== 'budget' || gate.requestId !== requestId) {
+        return { ok: false, code: 'ACTION_NOT_ACTIVE' };
+      }
+      try { cancelBudgetProducer(requestId); } catch { /* active owner remains fail-closed */ }
+      return { ok: true, code: 'ACTION_CANCEL_REQUESTED' };
+    },
+  });
 }
