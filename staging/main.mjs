@@ -13208,8 +13208,13 @@ function renderRuntime(message, { publishState = true } = {}) {
   for (const led of circuitLeds) {
     const visual = elements.componentlayer.querySelector(`[data-led-id="${led.componentId}"]`);
     if (!visual) continue;
-    visual.classList.toggle('on', led.on);
-    visual.setAttribute('aria-label', `${led.componentId} is ${led.on ? 'on' : 'off'} at ${(led.currentAmps * 1_000).toFixed(2)} mA`);
+    const brightness = Number.isFinite(led.brightness) ? Math.max(0, Math.min(1, led.brightness)) : 0;
+    visual.classList.toggle('on', brightness > 0);
+    visual.dataset.brightness = brightness.toFixed(3);
+    visual.style.opacity = String(0.28 + brightness * 0.72);
+    visual.style.filter = brightness > 0
+      ? `drop-shadow(0 0 ${2 + brightness * 6}px currentColor)` : '';
+    visual.setAttribute('aria-label', `${led.componentId} is ${led.on ? 'on' : 'off'} at ${(led.currentAmps * 1_000).toFixed(2)} mA, ${(brightness * 100).toFixed(1)} percent ideal relative brightness`);
   }
   renderRgbLedRuntime(message);
   renderActiveBuzzerRuntime(message);

@@ -417,6 +417,17 @@ test('button and potentiometer controls feed the runtime without changing topolo
   const observed = runtime.observe({ digitalPins: { D13: true } });
   assert.equal(observed.leds.length, 2);
   assert.equal(observed.leds.every((led) => led.on && led.currentAmps > 0), true);
+  const pwm = runtime.observe({
+    digitalPins: { D13: false },
+    pins: [{ pin: 'D13', mode: 'DIGITAL_PWM', level: false, pwm: { duty: 0.25 } }],
+  });
+  const full = observed.leds.find((led) => led.componentId === 'led-1');
+  const quarter = pwm.leds.find((led) => led.componentId === 'led-1');
+  assert.equal(quarter.on, true);
+  assert.ok(Math.abs(quarter.brightness - full.brightness * 0.25) < 1e-12);
+  assert.ok(Math.abs(quarter.currentAmps - full.currentAmps * 0.25) < 1e-12);
+  const reset = runtime.observe({ digitalPins: { D13: false }, pins: [] });
+  assert.equal(reset.leds.find((led) => led.componentId === 'led-1').brightness, 0);
 });
 
 test('strict circuit import rejects duplicate and prototype keys', () => {
@@ -838,6 +849,12 @@ test('receipt14 C16/C17 default routing chooses a body-free outer channel withou
     { component: 'led-1', left: 0.4, right: 0.6, top: 0.34, bottom: 0.58 },
   ];
   const family = materializeRouteFamily(net, null, anchors, obstacles);
+  const automaticLength = routeFamilyPaths(family, anchors).reduce((total, branch) => total
+    + branch.points.slice(1).reduce((length, point, index) => length
+      + Math.abs(point.x - branch.points[index].x)
+      + Math.abs(point.y - branch.points[index].y), 0), 0);
+  assert.ok(automaticLength < 0.9,
+    `automatic route did not choose the short safe interior channel: ${automaticLength}`);
   const before = clone(net);
   const segmentHits = (start, end, box) => {
     const orientation = routeSegmentOrientation(start, end);

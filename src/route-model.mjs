@@ -259,12 +259,16 @@ function obstacleSafeDefaultFamily(net, anchors, obstacles) {
   const escapes = net.endpoints.map((endpoint) => anchors[endpointKey(endpoint)]?.escape);
   if (escapes.some((escape) => !finitePoint(escape))) return null;
   const margin = ROUTE_GRID * 3;
+  const horizontalCoordinates = [...escapes.map((point) => point.y),
+    ...obstacles.flatMap((item) => [item.top - margin, item.bottom + margin])];
+  const verticalCoordinates = [...escapes.map((point) => point.x),
+    ...obstacles.flatMap((item) => [item.left - margin, item.right + margin])];
   const channels = [
-    { axis: 'horizontal', coordinate: Math.max(-1, Math.min(...obstacles.map((item) => item.top)) - margin) },
-    { axis: 'horizontal', coordinate: Math.min(2, Math.max(...obstacles.map((item) => item.bottom)) + margin) },
-    { axis: 'vertical', coordinate: Math.max(-1, Math.min(...obstacles.map((item) => item.left)) - margin) },
-    { axis: 'vertical', coordinate: Math.min(2, Math.max(...obstacles.map((item) => item.right)) + margin) },
-  ];
+    ...horizontalCoordinates.map((coordinate) => ({ axis: 'horizontal', coordinate })),
+    ...verticalCoordinates.map((coordinate) => ({ axis: 'vertical', coordinate })),
+  ].filter((channel, index, all) => channel.coordinate >= -1 && channel.coordinate <= 2
+    && all.findIndex((candidate) => candidate.axis === channel.axis
+      && Math.abs(candidate.coordinate - channel.coordinate) < EPSILON) === index);
   const candidates = [];
   for (const channel of channels) {
     const hub = cleanPoint(channel.axis === 'horizontal'

@@ -461,12 +461,17 @@ export class CircuitRuntime {
 
   observe(snapshot) {
     const leds = this.models.leds.map((model) => {
-      const on = Boolean(snapshot.digitalPins?.[model.sourcePin]);
+      const pin = Array.isArray(snapshot.pins)
+        ? snapshot.pins.find((entry) => entry.pin === model.sourcePin) : null;
+      const duty = Number.isFinite(pin?.pwm?.duty)
+        ? Math.max(0, Math.min(1, pin.pwm.duty))
+        : Number(Boolean(snapshot.digitalPins?.[model.sourcePin]));
+      const on = duty > 0;
       return {
         componentId: model.componentId,
         on,
-        currentAmps: on ? model.currentAmps : 0,
-        brightness: on ? model.brightness : 0,
+        currentAmps: model.currentAmps * duty,
+        brightness: model.brightness * duty,
         color: model.color,
       };
     });
