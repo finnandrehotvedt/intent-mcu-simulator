@@ -73,6 +73,7 @@ import {
 import {
   createX47WorkerBinding, X47_RUNTIME_AUTHORITY_SCHEMA, validateX47CancelReceipt,
 } from '../src/x47-runtime-transaction.mjs';
+import { acceptX46UsartRuntimeSnapshot } from '../src/x46-usart-runtime-boundary.mjs';
 import { createX47UiOwner } from '../src/x47-ui-integration.mjs';
 import {
   captureX47PulseSource, createX47PulseContextFromSource,
@@ -13320,6 +13321,8 @@ async function loadArtifact(hex, artifactIdentity, {
   const runtimeProject = structuredClone(currentRuntimeProject());
   const project = structuredClone(currentProject());
   const modelLibraryLock = structuredClone(modelLibraryLockFor(AVR_PROFILE));
+  const x46CurrentModel = modelLibraryLock.implementationSha256
+    === CURRENT_MODEL_LIBRARY_LOCK.implementationSha256;
   const token = ++workerToken;
   const frozen = {
     loadTicket: ++x47LoadTicket,
@@ -13510,6 +13513,7 @@ async function loadArtifact(hex, artifactIdentity, {
         stopRuntime(stopped.reason, { preserveX47Terminal: true });
         return;
       }
+      data = acceptX46UsartRuntimeSnapshot(data, { currentModel: x46CurrentModel });
     } catch (error) {
       retireX47Integration(error.code ?? error.message ?? 'X47_UI_MESSAGE_REJECTED');
       terminateOwnedWorker(); running = false;
