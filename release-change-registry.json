@@ -218,6 +218,7 @@
       ],
       "contracts": [
         "x92-bounded-avr-experiment-budget-v1",
+        "x92-bounded-esp32c3-owner-proof-v1",
         "x92-bounded-pico-owner-proof-v1"
       ]
     }

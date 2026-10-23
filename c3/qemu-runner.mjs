@@ -139,7 +139,8 @@ async function run(mode, sourceSha256, flashSha256, marker, flash) {
           machine: 'esp32c3', binarySha256: QEMU_BINARY_SHA256, actualExecution: true },
         rom: { version: ROM_VERSION, sha256: ROM_SHA256 }, mode,
         uart: { exactApplicationText: marker, markerCount: 2,
-          serialBytes: serial.length, sha256: digest(serial), bootEpochs: epochs },
+          serialBytes: serial.length, sha256: digest(serial), bootEpochs: epochs,
+          finalLf: serial.at(-1) === 0x0a },
         gpio: {
           cpuExecution: observation.cpuExecution,
           executedWrites: observation.events.length,
@@ -199,7 +200,8 @@ async function run(mode, sourceSha256, flashSha256, marker, flash) {
         machine: 'esp32c3', binarySha256: QEMU_BINARY_SHA256, actualExecution: true },
       rom: { version: ROM_VERSION, sha256: ROM_SHA256 }, mode,
       uart: { exactApplicationText: marker, markerCount: expected,
-        serialBytes: serial.length, sha256: digest(serial), bootEpochs: epochs },
+        serialBytes: serial.length, sha256: digest(serial), bootEpochs: epochs,
+        finalLf: serial.at(-1) === 0x0a },
       resetReplay: mode === 'run', watchdog,
       lifecycle: { cpuPauseSupported: false, serialPlaybackPauseSupported: true },
       isolation: { network: 'none', durableSourceStorage: false },
@@ -240,14 +242,18 @@ async function readJob() {
   return { ...job, flash };
 }
 
-try {
-  const job = await readJob();
+export async function main() {
   try {
-    process.stdout.write(`${JSON.stringify(await run(
-      job.mode, job.sourceSha256, job.flashSha256, job.marker, job.flash,
-    ))}\n`);
-  } finally { job.flash.fill(0); }
-} catch (error) {
-  process.stderr.write(`${JSON.stringify({ error: error.message })}\n`);
-  process.exitCode = 1;
+    const job = await readJob();
+    try {
+      process.stdout.write(`${JSON.stringify(await run(
+        job.mode, job.sourceSha256, job.flashSha256, job.marker, job.flash,
+      ))}\n`);
+    } finally { job.flash.fill(0); }
+  } catch (error) {
+    process.stderr.write(`${JSON.stringify({ error: error.message })}\n`);
+    process.exitCode = 1;
+  }
 }
+
+if (process.env.INTENT_MCU_C3_IMPORT_CHECK !== '1') await main();

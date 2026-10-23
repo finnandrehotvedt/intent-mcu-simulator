@@ -11,8 +11,8 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.112",
-    "current": "1.1.0-rc.113"
+    "previous": "1.1.0-rc.113",
+    "current": "1.1.0-rc.114"
   },
   "changes": [
     {
@@ -24,7 +24,7 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records the reviewed rc.112 to rc.113 bounded Pico owner-proof slice, exact retained native provenance and corrected AVR/Pico budget presentation, with X92 remaining partial and zero new release-time firmware producer authority."
+      "summary": "Records rc.113 to rc.114 reviewed bounded ESP32-C3 owner proof, retained native provenance and truthful QEMU CPU/UART versus modeled GPIO presentation; X92 stays partial with zero release-time firmware producer authority."
     },
     {
       "id": "X92",
@@ -36,9 +36,10 @@
       ],
       "contracts": [
         "x92-bounded-avr-experiment-budget-v1",
+        "x92-bounded-esp32c3-owner-proof-v1",
         "x92-bounded-pico-owner-proof-v1"
       ],
-      "summary": "Adds reviewed bounded Pico owner proof with two stable Pause acknowledgements, exact UART bytes and independent identity joins; C3 and STM32 budgeted Run remain unsupported and X92 remains partial."
+      "summary": "Adds reviewed bounded ESP32-C3 owner proof with exact source, flash, compiler, runtime, retirement and UART joins; GPIO2 remains a separately labelled project-owned model, STM32 budgeted Run remains unsupported and X92 remains partial."
     }
   ],
   "migrationRequired": false,

@@ -17,6 +17,8 @@ const RC111_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
   '../src/model-bundles/rc111-current-manifest.json', import.meta.url), 'utf8'));
 const RC112_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
   '../src/model-bundles/rc112-current-manifest.json', import.meta.url), 'utf8'));
+const RC113_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
+  '../src/model-bundles/rc113-current-manifest.json', import.meta.url), 'utf8'));
 const PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -177,14 +179,15 @@ const CURRENT_CLOSURE = Object.freeze([
   '../src/lifecycle.mjs', '../staging/component-artwork.mjs',
   '../src/model-library.mjs', '../src/model-bundle-registry.mjs', '../src/project-envelope.mjs',
   '../src/model-control-contracts.mjs', '../src/simulator.worker.mjs', '../staging/main.mjs',
-  '../src/x48-ideal-room-plant.mjs', '../src/x92-experiment-budget.mjs', '../src/shared-workbench-shell.mjs',
+  '../src/x48-ideal-room-plant.mjs', '../src/x92-experiment-budget.mjs',
+  '../src/x92-c3-budget-integration.mjs', '../src/shared-workbench-shell.mjs',
   '../src/rp2040-snapshot-pacer.mjs', '../src/rp2040-experimental-runtime.mjs',
   '../src/runtime-identity.mjs',
   '../src/candidate-project-session.mjs', '../src/candidate-spdt-runtime.mjs',
   '../src/candidate-existing-ui-adapter.mjs', '../src/rp2040-pico-circuit.mjs',
   '../src/esp32c3-public-circuit.mjs', '../src/stm32-public-circuit.mjs',
   '../src/rp2040-public-workbench.mjs', '../src/esp32c3-public-workbench.mjs',
-  '../src/stm32-public-workbench.mjs',
+  '../src/stm32-public-workbench.mjs', '../c3/public-service.mjs',
   '../expansion-drafts/controller-runtime-bridge-v1.mjs',
   '../expansion-drafts/rp2040-runtime-bridge-adapter-v1.mjs',
   '../expansion-drafts/rp2040-conformance-fixtures-v1.mjs',
@@ -249,16 +252,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x92-pico-owner-proof.1-current',
-  'intent-mcu-model-bundle-current-x92-pico-owner-proof-1@37',
+  '2.0.0-x92-c3-retirement-proof.1-current',
+  'intent-mcu-model-bundle-current-x92-c3-retirement-proof-1@38',
   currentImplementation,
   {
-    priorVersion: RC112_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: RC112_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: RC113_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: RC113_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component semantics remain unchanged; X92 adds a Pico-only owner-bound two-fresh-final-paused-ACK quiescence proof',
-    presentationDisposition: 'the proof exposes only an immutable bounded counter, GPIO, UART and virtual-time projection',
-    baselineClosureDisposition: 'public rc.112 and every earlier identity remain immutable and migration-only; this private candidate has zero native producer authority',
+    semanticDisposition: 'component semantics remain unchanged; X92 adds an authenticated exact ESP32-C3 session retirement ACK after owned child-process exit',
+    presentationDisposition: 'local executable authority is revoked early; no capability is exposed by the retirement proof',
+    baselineClosureDisposition: 'public rc.113 and every earlier identity remain immutable and migration-only; this source candidate performs zero real build, run or deployment',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -268,6 +271,7 @@ const output = `// SPDX-License-Identifier: Apache-2.0
 export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(retained, null, 2)});
 export const RC111_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC111_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const RC112_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC112_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const RC113_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC113_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});

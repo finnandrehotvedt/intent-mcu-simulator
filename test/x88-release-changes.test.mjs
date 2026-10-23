@@ -28,9 +28,9 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc112 to rc113 reviewed X92 Pico bytes', async () => {
+test('X88 owner binds canonical rc113 to rc114 reviewed X92 C3 bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.113');
+  assert.equal(release.version, '1.1.0-rc.114');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
@@ -38,19 +38,20 @@ test('X88 owner binds canonical rc112 to rc113 reviewed X92 Pico bytes', async (
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
   assert(registry.ids.includes('X92'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.112', current: '1.1.0-rc.113' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.113', current: '1.1.0-rc.114' });
   assert.deepEqual(value.changes, [
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records the reviewed rc.112 to rc.113 bounded Pico owner-proof slice, exact retained native provenance and corrected AVR/Pico budget presentation, with X92 remaining partial and zero new release-time firmware producer authority.',
+      summary: 'Records rc.113 to rc.114 reviewed bounded ESP32-C3 owner proof, retained native provenance and truthful QEMU CPU/UART versus modeled GPIO presentation; X92 stays partial with zero release-time firmware producer authority.',
     },
     {
       id: 'X92', classification: 'changed',
       capabilities: ['intent-mcu-experiment-budget-review@1', 'intent-mcu-experiment-budget@1',
         'intent-mcu-x92-runtime-quiescence-ack@1'],
-      contracts: ['x92-bounded-avr-experiment-budget-v1', 'x92-bounded-pico-owner-proof-v1'],
-      summary: 'Adds reviewed bounded Pico owner proof with two stable Pause acknowledgements, exact UART bytes and independent identity joins; C3 and STM32 budgeted Run remain unsupported and X92 remains partial.',
+      contracts: ['x92-bounded-avr-experiment-budget-v1',
+        'x92-bounded-esp32c3-owner-proof-v1', 'x92-bounded-pico-owner-proof-v1'],
+      summary: 'Adds reviewed bounded ESP32-C3 owner proof with exact source, flash, compiler, runtime, retirement and UART joins; GPIO2 remains a separately labelled project-owned model, STM32 budgeted Run remains unsupported and X92 remains partial.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -113,7 +114,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.113');
+  assert.equal(discovery.identity.version, '1.1.0-rc.114');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

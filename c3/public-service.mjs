@@ -95,25 +95,38 @@ function requireMutationContext(request, publicOrigin) {
     throw fault('CONTENT_TYPE_REQUIRED', 415);
   }
 }
-async function ignoreDockerFailure(docker, args) {
-  try { await execFileAsync(docker, args, { timeout: 5_000 }); } catch { /* bounded cleanup */ }
+async function ignoreDockerFailure(docker, args, dockerCommand) {
+  try { await dockerCommand(docker, args, { timeout: 5_000 }); } catch { /* bounded cleanup */ }
 }
-async function cleanupContainer(docker, name, racedCreation) {
+async function exactContainerPresent(docker, name, dockerCommand) {
+  let stdout;
+  try {
+    ({ stdout } = await dockerCommand(docker, ['container', 'ls', '-a',
+      '--filter', `name=^/${name}$`, '--format', '{{.Names}}'], { timeout: 5_000 }));
+  } catch {
+    throw fault('OPERATION_CLEANUP_UNPROVEN', 502);
+  }
+  const names = stdout.trim() ? stdout.trim().split(/\r?\n/u) : [];
+  if (names.length === 0) return false;
+  if (names.length === 1 && names[0] === name) return true;
+  throw fault('OPERATION_CLEANUP_UNPROVEN', 502);
+}
+export async function cleanupContainer(docker, name, racedCreation,
+  dockerCommand = execFileAsync) {
   const attempts = racedCreation ? 60 : 1;
   for (let index = 0; index < attempts; index += 1) {
-    await ignoreDockerFailure(docker, ['rm', '-f', name]);
+    await ignoreDockerFailure(docker, ['rm', '-f', name], dockerCommand);
     if (racedCreation) await new Promise((resolve) => setTimeout(resolve, 50));
   }
-  try { await execFileAsync(docker, ['container', 'inspect', name], { timeout: 5_000 }); }
-  catch { return; }
-  await ignoreDockerFailure(docker, ['rm', '-f', name]);
-  try { await execFileAsync(docker, ['container', 'inspect', name], { timeout: 5_000 }); }
-  catch { return; }
+  if (!await exactContainerPresent(docker, name, dockerCommand)) return;
+  await ignoreDockerFailure(docker, ['rm', '-f', name], dockerCommand);
+  if (!await exactContainerPresent(docker, name, dockerCommand)) return;
   throw fault('OPERATION_CLEANUP_FAILED', 502);
 }
-async function childJson({ docker, args, input, timeoutMs, outputLimit, signal, containerName }) {
+export async function childJson({ docker, args, input, timeoutMs, outputLimit, signal, containerName,
+  dockerCommand = execFileAsync, spawnProcess = spawn }) {
   return new Promise((resolve, reject) => {
-    const child = spawn(docker, args, { shell: false, stdio: ['pipe', 'pipe', 'pipe'] });
+    const child = spawnProcess(docker, args, { shell: false, stdio: ['pipe', 'pipe', 'pipe'] });
     const stdout = [];
     const stderr = [];
     let stdoutBytes = 0;
@@ -122,7 +135,7 @@ async function childJson({ docker, args, input, timeoutMs, outputLimit, signal, 
     let settled = false;
     const terminate = (nextReason) => {
       if (!reason) reason = nextReason;
-      void ignoreDockerFailure(docker, ['kill', containerName]);
+      void ignoreDockerFailure(docker, ['kill', containerName], dockerCommand);
       if (!child.killed) child.kill('SIGKILL');
     };
     const abort = () => terminate('OPERATION_CANCELLED');
@@ -146,16 +159,25 @@ async function childJson({ docker, args, input, timeoutMs, outputLimit, signal, 
       clearTimeout(timer);
       signal?.removeEventListener('abort', abort);
       try {
-        await cleanupContainer(docker, containerName, reason !== null);
-        if (reason) throw fault(reason, reason === 'OPERATION_CANCELLED' ? 409 : 504);
+        await cleanupContainer(docker, containerName, reason !== null, dockerCommand);
+        if (reason) {
+          const error = fault(reason, reason === 'OPERATION_CANCELLED' ? 409 : 504);
+          error.cleanupConfirmed = true;
+          throw error;
+        }
         if (code !== 0) {
           const error = fault('OPERATION_CHILD_FAILED', 502);
+          error.cleanupConfirmed = true;
           error.details = { diagnostic: Buffer.concat(stderr).toString('utf8').slice(-1200) };
           throw error;
         }
         let value;
         try { value = JSON.parse(Buffer.concat(stdout).toString('utf8').trim()); }
-        catch { throw fault('OPERATION_RESULT_INVALID', 502); }
+        catch {
+          const error = fault('OPERATION_RESULT_INVALID', 502);
+          error.cleanupConfirmed = true;
+          throw error;
+        }
         resolve(value);
       } catch (error) { reject(error); }
     });
@@ -190,9 +212,42 @@ function wipeArtifact(session) {
   session.marker = null;
   session.gpioSource = null;
 }
-function abortOperation(session) {
-  session.operation?.abort();
-  session.operation = null;
+function ownedOperation(session, controller, { transportAuthenticated = false } = {}) {
+  session.operationOutcome = null;
+  session.operationSequence += 1;
+  const operationId = `c3-operation-${session.operationSequence}`;
+  let finished = false;
+  let finish;
+  const owner = {
+    abort: () => controller.abort(),
+    settled: new Promise((resolve) => { finish = resolve; }),
+    finish: (error = null) => {
+      if (finished) return;
+      finished = true;
+      const outcome = Object.freeze({
+        processExited: error === null || error?.cleanupConfirmed === true,
+        cleanupConfirmed: error === null || error?.cleanupConfirmed === true,
+        code: error?.code ?? 'OPERATION_COMPLETE',
+        operationId,
+        transportAuthenticated,
+      });
+      session.operationOutcome = outcome;
+      finish(outcome);
+    },
+  };
+  session.operation = owner;
+  return owner;
+}
+function abortOperation(session) { session.operation?.abort(); }
+async function retireOperation(session) {
+  const owner = session.operation;
+  if (owner) owner.abort();
+  const outcome = owner ? await owner.settled : session.operationOutcome;
+  if (owner && session.operation === owner) session.operation = null;
+  if (outcome && outcome.processExited === true && outcome.cleanupConfirmed === true) return outcome;
+  if (!owner && !outcome) return Object.freeze({ processExited: true,
+    cleanupConfirmed: true, code: 'NO_OPERATION_OWNED' });
+  throw fault('OPERATION_RETIREMENT_UNPROVEN', 502);
 }
 function dispose(session) {
   abortOperation(session);
@@ -213,7 +268,8 @@ function acceptedRuntimeCircuit(value) {
 export function createC3PublicService({
   builderImageLock, runtimeImageLock, docker = '/usr/bin/docker', publicOrigin = null,
   trustProxy = false, now = () => Date.now(), limits = C3_LIMITS,
-  builder = null, runtime = null, testMode = false,
+  builder = null, runtime = null, testMode = false, dockerCommand = execFileAsync,
+  spawnProcess = spawn,
 } = {}) {
   if (!builderImageLock || !runtimeImageLock) throw new TypeError('C3_IMAGE_LOCKS_REQUIRED');
   const sessions = new Map();
@@ -225,7 +281,7 @@ export function createC3PublicService({
 
   async function verifyImages() {
     const inspect = async (lock) => {
-      const { stdout } = await execFileAsync(docker, [
+      const { stdout } = await dockerCommand(docker, [
         'image', 'inspect', '--format', '{{.Id}}', lock.image,
       ], { timeout: 5_000 });
       if (!imageIdMatches(lock, stdout.trim())) throw fault('C3_IMAGE_MISMATCH', 503);
@@ -253,7 +309,7 @@ export function createC3PublicService({
     const manifest = await childJson({
       docker, args, timeoutMs: limits.buildTimeoutMs,
       outputLimit: limits.compilerOutputBytes, signal, containerName,
-      input: JSON.stringify({ schema: 'intent-mcu-esp32c3-builder-job@1',
+      dockerCommand, spawnProcess, input: JSON.stringify({ schema: 'intent-mcu-esp32c3-builder-job@1',
         profile: PROFILE, fqbn: FQBN, source, sourceSha256, marker }),
     });
     if (manifest.status !== 'succeeded') return { manifest, files: null };
@@ -279,7 +335,7 @@ export function createC3PublicService({
       sourceSha256: descriptor.sourceSha256, flashSha256: descriptor.flash.sha256,
       marker: descriptor.marker, flashBase64: flash.toString('base64'),
     });
-    return childJson({ docker, args, input, timeoutMs: limits.runtimeTimeoutMs,
+    return childJson({ docker, args, input, timeoutMs: limits.runtimeTimeoutMs, dockerCommand, spawnProcess,
       outputLimit: limits.runtimeOutputBytes, signal, containerName });
   }
 
@@ -314,15 +370,19 @@ export function createC3PublicService({
       generalEsp32Support: false, publicSupport: true, boundedPublicSupport: true,
     };
   }
-  async function build(session, request) {
+  function validateBuildRequest(request) {
     if (!exactKeys(request, ['schema', 'profile', 'fqbn', 'source', 'sourceRevision'])
       || request.schema !== BUILD_SCHEMA || request.profile !== PROFILE || request.fqbn !== FQBN
       || !Number.isSafeInteger(request.sourceRevision) || request.sourceRevision < 1) {
       throw fault('BUILD_REQUEST_INVALID');
     }
+  }
+
+  async function build(session, request, { operationRetired = false } = {}) {
+    validateBuildRequest(request);
     if (metrics.buildInFlight >= limits.concurrentBuilds) throw fault('BUILD_CONCURRENCY_LIMIT', 429,
       retryAfterForCode('BUILD_CONCURRENCY_LIMIT'));
-    abortOperation(session);
+    if (!operationRetired) await retireOperation(session);
     wipeArtifact(session);
     session.generation += 1;
     const generation = session.generation;
@@ -337,16 +397,22 @@ export function createC3PublicService({
     }
     const sourceSha256 = sha256(Buffer.from(parsed.source, 'utf8'));
     const controller = new AbortController();
-    session.operation = controller;
+    const operation = ownedOperation(session, controller,
+      { transportAuthenticated: builder === null });
     metrics.builds += 1;
     metrics.buildInFlight += 1;
     let output;
+    let operationError = null;
     try {
       output = await (builder ?? executeBuild)({ source: parsed.source,
         marker: parsed.marker, sourceSha256, signal: controller.signal });
+    } catch (error) {
+      operationError = error;
+      throw error;
     } finally {
       metrics.buildInFlight -= 1;
-      if (session.operation === controller) session.operation = null;
+      operation.finish(operationError);
+      if (session.operation === operation) session.operation = null;
     }
     if (!sessions.has(session.id) || session.generation !== generation) {
       output.files?.mergedFlash?.fill(0);
@@ -388,6 +454,10 @@ export function createC3PublicService({
       || result.engine?.actualExecution !== true || result.engine?.binarySha256 !== QEMU_BINARY_SHA256
       || result.rom?.sha256 !== ROM_SHA256 || result.mode !== 'run'
       || result.uart?.exactApplicationText !== descriptor.marker || result.uart?.markerCount !== 2
+      || !Number.isSafeInteger(result.uart?.serialBytes) || result.uart.serialBytes < 2
+      || !/^[a-f0-9]{64}$/u.test(result.uart?.sha256 ?? '') || result.uart?.finalLf !== true
+      || !Array.isArray(result.uart?.bootEpochs) || result.uart.bootEpochs.length !== 2
+      || result.uart.bootEpochs.some((epoch) => epoch?.marker !== descriptor.marker)
       || result.resetReplay !== true || result.watchdog !== false
       || result.lifecycle?.cpuPauseSupported !== false
       || result.isolation?.network !== 'none' || result.isolation?.durableSourceStorage !== false
@@ -417,17 +487,23 @@ export function createC3PublicService({
     const generation = session.generation;
     const descriptor = session.descriptor;
     const controller = new AbortController();
-    session.operation = controller;
+    const operation = ownedOperation(session, controller,
+      { transportAuthenticated: runtime === null });
     session.state = 'running';
     metrics.runtimeInFlight += 1;
     metrics.runtimes += 1;
     let result;
+    let operationError = null;
     try {
       result = await (runtime ?? executeRuntime)({ flash: session.flash,
         descriptor, mode: 'run', signal: controller.signal });
+    } catch (error) {
+      operationError = error;
+      throw error;
     } finally {
       metrics.runtimeInFlight -= 1;
-      if (session.operation === controller) session.operation = null;
+      operation.finish(operationError);
+      if (session.operation === operation) session.operation = null;
     }
     if (!sessions.has(session.id) || session.generation !== generation) {
       metrics.staleResults += 1;
@@ -464,7 +540,8 @@ export function createC3PublicService({
         }
         const session = { id: token(12), capability: token(), origin, generation: 0,
           state: 'editing', flash: null, descriptor: null, sourceSha256: null,
-          gpioSource: null, marker: null, operation: null, lastAccess: now() };
+          gpioSource: null, marker: null, operation: null, operationOutcome: null,
+          operationSequence: 0, lastAccess: now() };
         sessions.set(session.id, session);
         responseJson(response, 201, { ...publicState(session), capability: session.capability });
         return true;
@@ -477,9 +554,13 @@ export function createC3PublicService({
           throw fault('BUILD_CONCURRENCY_LIMIT', 429, retryAfterForCode('BUILD_CONCURRENCY_LIMIT'));
         }
         const buildRequest = await bodyJson(request, limits.requestBytes);
+        validateBuildRequest(buildRequest);
+        await retireOperation(session);
         const job = { id: token(8), status: 'pending', value: null, error: null };
         session.buildJob = job;
-        build(session, buildRequest).then((value) => {
+        const buildPromise = build(session, buildRequest, { operationRetired: true });
+        const acceptedGeneration = session.generation;
+        buildPromise.then((value) => {
           if (session.buildJob === job) { job.status = 'succeeded'; job.value = value; }
         }, (error) => {
           if (session.buildJob === job) {
@@ -488,7 +569,7 @@ export function createC3PublicService({
               ...(error?.details ?? {}) };
           }
         });
-        responseJson(response, 202, { ...publicState(session), buildJobId: job.id,
+        responseJson(response, 202, { ...publicState(session), generation: acceptedGeneration, buildJobId: job.id,
           buildStatus: job.status });
         return true;
       }
@@ -510,20 +591,57 @@ export function createC3PublicService({
         const command = await bodyJson(request, limits.requestBytes);
         if (!exactKeys(command, ['schema', 'command', 'generation', 'profile', 'fqbn',
           'sourceSha256', 'artifactSha256', 'circuit']) || command.schema !== COMMAND_SCHEMA
-          || !['run', 'invalidate', 'dispose'].includes(command.command)
+          || !['run', 'quiesce', 'invalidate', 'dispose'].includes(command.command)
           || command.generation !== session.generation) throw fault('RUNTIME_COMMAND_INVALID');
         if (command.command === 'run') {
           responseJson(response, 200, await run(session, command));
           return true;
         }
-        if (command.command === 'dispose') {
-          dispose(session);
-          sessions.delete(session.id);
-          metrics.disposed += 1;
-          responseJson(response, 200, { schema: EDITOR_SCHEMA, state: 'disposed', retainedBytes: 0 });
+        if (command.command === 'quiesce') {
+          if (!session.flash || !session.descriptor
+              || command.sourceSha256 !== session.sourceSha256
+              || command.artifactSha256 !== session.descriptor.flash.sha256) {
+            throw fault('QUIESCENCE_IDENTITY_MISMATCH', 409);
+          }
+          const outcome = await retireOperation(session);
+          if (outcome.code === 'NO_OPERATION_OWNED' || outcome.transportAuthenticated !== true
+              || typeof outcome.operationId !== 'string') {
+            throw fault('OPERATION_RETIREMENT_UNPROVEN', 502);
+          }
+          session.operationOutcome = null;
+          session.state = 'quiescent';
+          responseJson(response, 200, {
+            schema: 'intent-mcu-c3-quiescence@1', sessionId: session.id,
+            generation: session.generation, sourceSha256: session.sourceSha256,
+            artifactSha256: session.descriptor.flash.sha256, operationId: outcome.operationId,
+            state: 'quiescent', retainedBytes: session.flash.length, artifactPreserved: true,
+            processExited: outcome.processExited, operationRetired: outcome.cleanupConfirmed,
+          });
           return true;
         }
-        abortOperation(session);
+        if (command.command === 'dispose') {
+          const retirement = {
+            schema: 'intent-mcu-c3-retirement@1', sessionId: session.id,
+            generation: session.generation, sourceSha256: session.sourceSha256,
+            artifactSha256: session.descriptor?.flash.sha256 ?? null,
+          };
+          session.state = 'disposing';
+          let outcome;
+          try { outcome = await retireOperation(session); }
+          catch (error) {
+            wipeArtifact(session);
+            session.state = 'retirement-unproven';
+            throw error;
+          }
+          wipeArtifact(session);
+          session.state = 'disposed';
+          sessions.delete(session.id);
+          metrics.disposed += 1;
+          responseJson(response, 200, { ...retirement, state: 'disposed', retainedBytes: 0,
+            processExited: outcome.processExited, operationRetired: outcome.cleanupConfirmed });
+          return true;
+        }
+        await retireOperation(session);
         wipeArtifact(session);
         session.generation += 1;
         session.state = 'editing';

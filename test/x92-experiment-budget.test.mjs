@@ -4,6 +4,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import './x92-c3-budget-integration.test.mjs';
 import {
   X92_DEFAULT_LIMITS,
   X92_RUNTIME_QUIESCENCE_ACK_SCHEMA,
@@ -15,10 +16,11 @@ import { boundedActionRequest, parseBoundedActionRequest } from '../src/bounded-
 
 const profile = 'board.atmega328p-16mhz-v1';
 
-test('public budget copy names reviewed AVR and Pico scope and rejects C3/STM32', async () => {
+test('public copy distinguishes reviewed AVR/Pico/C3 from rejected STM32 budgeted Run', async () => {
   const html = await readFile(new URL('../staging/index.html', import.meta.url), 'utf8');
-  assert.match(html, /reviewed owner-quiescence evidence for the generic AVR and bounded RP2040 Pico profiles/u);
-  assert.match(html, /ESP32-C3 and STM32[^.]+reject budgeted Run before producer dispatch/u);
+  assert.match(html, /reviewed owner-quiescence evidence for the generic AVR, bounded RP2040 Pico and bounded ESP32-C3 profiles/u);
+  assert.match(html, /ESP32-C3 is joined through exact source, flash, compiler, runtime and retirement identities/u);
+  assert.match(html, /STM32[^.]+rejects budgeted Run before producer dispatch/u);
   assert.doesNotMatch(html, /producer-quiescence evidence only for the generic AVR profile/u);
 });
 

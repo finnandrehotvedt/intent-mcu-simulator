@@ -1,4 +1,37 @@
-# Intent MCU Simulator 1.1.0-rc.113
+# Intent MCU Simulator 1.1.0-rc.114
+
+## Reviewed bounded ESP32-C3 owner proof
+
+Rc.114 publishes X92's reviewed bounded ESP32-C3 budgeted-Run slice. The
+retained fixed-toolchain proof used exact source, flash, compiler and rc.7
+runtime identities, one actual Espressif QEMU 9.2.2 Run, two distinct
+artifact-preserving quiescence acknowledgements and authenticated final
+process retirement. Direct UART evidence contains two `C3_PUBLIC` boot epochs,
+494 bytes, final LF and full-stream SHA-256
+`ac17974791ce3ec74ab3b026830b316bfa30be78bf6c358786ef5b410ea9cb66`.
+
+Actual execution is limited to QEMU CPU/UART. QEMU GPIO pin state is not
+claimed; the visible GPIO2/LED outcome remains a separately labelled
+project-owned executed-register-write model. Manual, Quick and bounded Agent
+API Build/Run share one exact owner gate. Missing, stale or mismatched binding,
+unproven cleanup and deadline paths fail before a Run or remain fully charged
+as appropriate. STM32 budgeted Run remains rejected before producer dispatch.
+
+X92 remains partial. Status stays X **84/1/11**, P1 **59/0/0**. Cumulative
+accepted native evidence is **41 Build / 39 Run / 0 scenarios** and existing
+application-image accounting is **2**. This release performs zero firmware
+Build, Run or Scenario actions and creates only its separately counted normal
+application release image.
+
+The accepted native proof is pinned to product source
+`27c7bb16e09bc1a2dddbe58a8ff68c94cc6ddc18`, compiler image
+`sha256:5b2105f4689d21c797cc631421bccbe25b9095d4a6500657dca0ece5dfc801e3`
+and runtime image
+`sha256:b79eb6d9e3504b81e1c90648bf5f4f7b43588fc33ba0ee91d3dc6468c4f9df25`.
+
+---
+
+## 1.1.0-rc.113
 
 ## Reviewed RP2040 Pico owner proof
 

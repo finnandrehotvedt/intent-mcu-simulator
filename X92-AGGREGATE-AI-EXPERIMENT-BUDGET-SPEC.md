@@ -1,6 +1,15 @@
 # X92 aggregate AI experiment budget — bounded private contract
 
-Status: approved private implementation contract; bounded browser-session slice implemented for review. X92 remains open and is not public-release authority.
+Status: approved private implementation contract; bounded browser-session slice and private ESP32-C3 product wiring candidate implemented for review. X92 remains open and is not public-release authority.
+
+The private C3 candidate routes manual, Quick and bounded-action Build/Run
+through one product-owned gate. Budgeted Run additionally binds the exact
+session, generation, source, flash, compiler image/toolchain and runtime
+image/binary identities, with authenticated artifact-preserving quiescence
+before and after dispatch. Its UART evidence comes from actual Espressif QEMU
+CPU execution; GPIO2/LED remains explicitly a separate project-owned register
+and electrical model, not observed QEMU pin state or physical hardware. This
+candidate does not change the current public release or admit STM32.
 
 ## Original requirement
 
