@@ -142,7 +142,7 @@ export class Esp32C3PublicWorkbench {
     this.elements.build.addEventListener('click', () => { void this.dispatchAction('firmware.build',
       (permit) => this.build({ advancePermit: permit })); });
     this.elements.run.addEventListener('click', () => { void this.dispatchAction('runtime.run',
-      (permit) => this.run({ advancePermit: permit })); });
+      (permit, binding) => this.run({ advancePermit: permit, x92Binding: binding })); });
     this.elements.stop.addEventListener('click', () => { void this.dispose('C3 session discarded.'); });
     this.elements.save.addEventListener('click', () => this.onSave ? this.onSave() : this.save());
     this.elements.open.addEventListener('click', () => this.elements.openInput.click());
@@ -443,7 +443,7 @@ export class Esp32C3PublicWorkbench {
       return { ok: false, code: error.code ?? error.message, ...retryResultFields(error) };
     }
   }
-  async run({ advancePermit = null, x92Binding = null } = {}) {
+  async run({ advancePermit = null, x92Binding = null, x92PrivateResult = false } = {}) {
     const advance = this.advanceGuard('runtime.run', advancePermit, x92Binding);
     if (!advance?.ok) return { ok: false, code: advance?.code ?? 'X92_C3_SHARED_GATE_BLOCKED' };
     const circuit = this.modelLibraryImplementation.validateProfile(
@@ -471,7 +471,8 @@ export class Esp32C3PublicWorkbench {
         ? 'Actual QEMU CPU/UART complete. LED result comes from the separately labelled IntentForce GPIO2 register model.'
         : 'Actual QEMU CPU/UART complete. LED model stayed off because the local wire is disconnected.';
       this.render();
-      if (x92Binding) {
+      if (x92PrivateResult) {
+        if (!x92Binding) return { ok: false, code: 'X92_C3_BINDING_REQUIRED' };
         const quiescence = await this.quiesceForX92(x92Binding);
         return { schema: 'intent-mcu-x92-c3-private-result@1', ok: true,
           code: 'C3_PRIVATE_PRODUCT_COMPLETE', executed: true,

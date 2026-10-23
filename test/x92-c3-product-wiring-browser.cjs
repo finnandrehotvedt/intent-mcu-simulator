@@ -83,7 +83,7 @@ function installFakeC3(page, mode = 'positive') {
   return { calls, release: () => releaseHeld?.() };
 }
 
-async function readyPage(browser, base, mode) {
+async function readyPage(browser, base, mode, { startBudget = true } = {}) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   if (mode === 'deadline') await page.addInitScript(() => {
     window.__x92FakeClock = 10;
@@ -96,9 +96,11 @@ async function readyPage(browser, base, mode) {
   await page.waitForFunction(() => window.__ESP32C3_PUBLIC_WORKBENCH__?.state().active === true);
   await page.click('#quick-build');
   await page.waitForFunction(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state().phase === 'built');
-  await page.click('#brief-tests-open'); await page.waitForSelector('#workbench-brief-dialog[open]');
-  await page.click('#x92-budget-start');
-  await page.waitForFunction(() => window.__X92_EXPERIMENT_BUDGET__.active());
+  if (startBudget) {
+    await page.click('#brief-tests-open'); await page.waitForSelector('#workbench-brief-dialog[open]');
+    await page.click('#x92-budget-start');
+    await page.waitForFunction(() => window.__X92_EXPERIMENT_BUDGET__.active());
+  }
   return { page, fake };
 }
 
@@ -119,6 +121,33 @@ async function executeRun(page, requestId, generationOffset = 0) {
   const browser = await chromium.launch({ headless: true });
   const report = { schema: 'intent-mcu-x92-c3-product-wiring-browser@1', classification: 'full-rendered-product-fake-process-only', scenarios: {} };
   try {
+    {
+      const { page, fake } = await readyPage(browser, base, 'positive', { startBudget: false });
+      await page.click('#quick-run');
+      await page.waitForFunction(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state().phase === 'complete');
+      const state = await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state());
+      assert.equal(state.runtime.uart.finalLf, true);
+      assert.deepEqual(fake.calls, { sessions: 1, builds: 1, runs: 1, quiesce: 0, dispose: 0 });
+      report.scenarios.manualQuickRun = { code: 'OK', calls: fake.calls }; await page.close();
+    }
+    {
+      const { page, fake } = await readyPage(browser, base, 'positive', { startBudget: false });
+      const result = await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.run());
+      assert.equal(result.ok, true); assert.equal(result.code, 'OK'); assert.equal(result.runtime.uart.finalLf, true);
+      assert.equal(result.schema, undefined); assert.equal(result.quiescence, undefined);
+      assert.deepEqual(fake.calls, { sessions: 1, builds: 1, runs: 1, quiesce: 0, dispose: 0 });
+      report.scenarios.manualWorkbenchRun = { code: result.code, calls: fake.calls }; await page.close();
+    }
+    {
+      const { page, fake } = await readyPage(browser, base, 'positive', { startBudget: false });
+      const result = await executeRun(page, 'x92-c3-product-manual-agent');
+      assert.equal(result.ok, true); assert.equal(result.schema, 'intent-mcu-bounded-action-result@1');
+      assert.equal(result.result.code, 'OK');
+      assert.equal(result.result.runtime.uart.finalLf, true);
+      assert.equal(result.result.quiescence, undefined);
+      assert.deepEqual(fake.calls, { sessions: 1, builds: 1, runs: 1, quiesce: 0, dispose: 0 });
+      report.scenarios.manualAgentRun = { code: result.code, calls: fake.calls }; await page.close();
+    }
     {
       const { page, fake } = await readyPage(browser, base, 'positive');
       const result = await executeRun(page, 'x92-c3-product-positive');

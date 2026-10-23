@@ -686,6 +686,7 @@ let x92BudgetExecutor = null;
 let x92C3Integration = null;
 let x92C3OwnedDispatchPermit = null;
 let x92C3OwnedBinding = null;
+let x92C3OwnedPrivateResult = false;
 const x92AdvancingBoundary = (dispatchPermit = null) => x92BudgetExecutor?.advancingBoundary?.(dispatchPermit)
   ?? { ok: true, code: 'X92_ADVANCING_CONTROL_ALLOWED' };
 let x92ImportedReview = null;
@@ -2678,7 +2679,7 @@ window.__ESP32C3_PUBLIC_WORKBENCH__ = {
   build: () => executeC3ManualAction('firmware.build',
     (permit) => c3PublicWorkbench.build({ advancePermit: permit })),
   run: () => executeC3ManualAction('runtime.run',
-    (permit) => c3PublicWorkbench.run({ advancePermit: permit })),
+    (permit, binding) => c3PublicWorkbench.run({ advancePermit: permit, x92Binding: binding })),
   dispose: () => c3PublicWorkbench.dispose(),
   selectCircuit: (selection) => c3PublicWorkbench.selectCircuit(selection),
   deleteSelected: () => c3PublicWorkbench.editCircuit('deleteSelected'),
@@ -5536,7 +5537,7 @@ async function executeC3RegressionCell(cell, fixture, started) {
     (permit) => c3PublicWorkbench.build({ advancePermit: permit }));
   if (!built.ok || built.artifact.sourceSha256 !== cell.sourceSha256) throw Object.assign(new Error(built.code), { code: built.code });
   const run = await executeC3ManualAction('runtime.run',
-    (permit) => c3PublicWorkbench.run({ advancePermit: permit }));
+    (permit, binding) => c3PublicWorkbench.run({ advancePermit: permit, x92Binding: binding }));
   if (!run.ok) throw Object.assign(new Error(run.code), { code: run.code });
   const runtime = run.runtime;
   const actual = {
@@ -8645,7 +8646,8 @@ async function buildThroughActiveUi(profile, signal, advancePermit = null) {
     return result.ok ? { ...result, code: 'ACTION_BUILD_SUCCEEDED' } : result;
   } finally { signal.removeEventListener('abort', cancel); }
 }
-async function runThroughActiveUi(profile, signal, advancePermit = null, c3Binding = null) {
+async function runThroughActiveUi(profile, signal, advancePermit = null, c3Binding = null,
+  c3PrivateResult = false) {
   if (x48RuntimeActive || x48Operation) return { ok: false, code: 'X48_OPERATION_ACTIVE' };
   const cancel = () => {
     if (profile === AVR_PROFILE) {
@@ -8669,7 +8671,8 @@ async function runThroughActiveUi(profile, signal, advancePermit = null, c3Bindi
     } else {
       const started = profile === STM32F429ZI_PROFILE
         ? await stm32PublicWorkbench.run(false) : profile === ESP32C3_PROFILE
-          ? await c3PublicWorkbench.run({ advancePermit, x92Binding: c3Binding })
+          ? await c3PublicWorkbench.run({ advancePermit, x92Binding: c3Binding,
+            x92PrivateResult: c3PrivateResult })
           : await actionWorkbench(profile).run({ advancePermit });
       if (!started.ok) return started;
       if (profile === ESP32C3_PROFILE && c3Binding) return started;
@@ -8839,7 +8842,8 @@ const boundedActionHandlers = Object.freeze({
     ? runThermostatTestThroughUi(context.profile, signal)
     : runThroughActiveUi(context.profile, signal,
       context.profile === ESP32C3_PROFILE ? x92C3OwnedDispatchPermit : x92OwnedDispatchPermit,
-      context.profile === ESP32C3_PROFILE ? x92C3OwnedBinding : null),
+      context.profile === ESP32C3_PROFILE ? x92C3OwnedBinding : null,
+      context.profile === ESP32C3_PROFILE ? x92C3OwnedPrivateResult : false),
   async 'result.read'(_payload, { signal, context }) {
     throwIfActionCancelled(signal); return boundedRuntimeResult(context.profile);
   },
@@ -8876,15 +8880,17 @@ async function currentX92C3Binding() {
   return c3PublicWorkbench.x92Binding({ projectGeneration: identity.projectGeneration,
     graphIdentity: identity.graphIdentity });
 }
-async function withX92C3Permit(task, permit, binding = null) {
+async function withX92C3Permit(task, permit, binding = null, privateResult = false) {
   if (x92C3OwnedDispatchPermit !== null) return { ok: false, code: 'X92_C3_SHARED_GATE_BLOCKED', executed: false };
   x92C3OwnedDispatchPermit = permit;
   x92C3OwnedBinding = binding;
+  x92C3OwnedPrivateResult = privateResult;
   try { return await task(); }
   finally {
     if (x92C3OwnedDispatchPermit === permit) {
       x92C3OwnedDispatchPermit = null;
       x92C3OwnedBinding = null;
+      x92C3OwnedPrivateResult = false;
     }
   }
 }
@@ -8894,17 +8900,18 @@ x92C3Integration = createX92C3BudgetIntegration({
   retireCurrentOwner: ({ binding }) => c3PublicWorkbench.quiesceForX92(binding),
   prepareBudgetProducer: ({ retiredBinding }) => retiredBinding,
   executeBudgetProducer: async (source, permit, binding) => {
-    const routed = await withX92C3Permit(() => boundedActionRouter.execute(source), permit, binding);
+    const routed = await withX92C3Permit(() => boundedActionRouter.execute(source), permit, binding, true);
     if (!routed?.ok) throw Object.assign(new Error(routed?.code ?? 'X92_C3_ROUTER_REJECTED'),
       { code: routed?.code ?? 'X92_C3_ROUTER_REJECTED' });
     return routed.result;
   },
-  executeManualProducer: (task, permit) => withX92C3Permit(() => task(permit), permit),
+  executeManualProducer: (task, permit, binding) =>
+    withX92C3Permit(() => task(permit, binding), permit, binding),
   cancelBudgetProducer: (requestId) => boundedActionRouter.cancel(requestId),
   measurementSource: 'browser.performance.now',
 });
 function executeC3ManualAction(action, task) {
-  return x92C3Integration.executeManual((permit) => task(permit), { action });
+  return x92C3Integration.executeManual((permit, binding) => task(permit, binding), { action });
 }
 async function executeX92ProductAction(source) {
   let request = null;
@@ -14841,7 +14848,7 @@ elements.quickbuild.addEventListener('click', () => {
 });
 elements.quickrun.addEventListener('click', () => {
   if (selectedCompilerProfile === ESP32C3_PROFILE) void executeC3ManualAction('runtime.run',
-    (permit) => c3PublicWorkbench.run({ advancePermit: permit }));
+    (permit, binding) => c3PublicWorkbench.run({ advancePermit: permit, x92Binding: binding }));
   else if (selectedCompilerProfile === RP2040_PROFILE) void picoPublicWorkbench.run();
   else if (selectedCompilerProfile === STM32F429ZI_PROFILE) void stm32PublicWorkbench.run(false);
   else elements.run.click();

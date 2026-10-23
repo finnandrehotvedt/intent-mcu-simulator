@@ -103091,7 +103091,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "8508d235749ada7c1b137f1bb36343eb7f8c1dbf66eae1f827dcafa705b41a99"
+      "sha256": "444747f199301ce5a94d55d32a97a43774d28005fccb5817a18deaf8fe5f4035"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -103151,7 +103151,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/esp32c3-public-workbench.mjs",
-      "sha256": "86c16b83be9e0aad85091c99ffb13752397d0474e5f904f7f59c84594a2214a2"
+      "sha256": "6a79d53c89bb96b410af07f2f2993cbf68244e482e418c27e9e44b27b9a22a84"
     },
     {
       "path": "src/stm32-public-workbench.mjs",
@@ -103234,7 +103234,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "c044867348728ab803472041f26c5f44e0e887323f24c58fef0a02f869015ac0"
     }
   ],
-  "implementationSha256": "c78b84a671bf05c626c9e3ce6d4ecaebb2423f85fef758758a21acbe5ac12d50",
+  "implementationSha256": "1fc77b4d6785ef93297499c4e90b8a49274112c23740dfda31d7e43be61154bb",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.113 and every earlier identity remain immutable and migration-only; this source candidate performs zero real build, run or deployment",
@@ -103244,7 +103244,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x92-pico-owner-proof.1-current",
     "semanticDisposition": "component semantics remain unchanged; X92 adds an authenticated exact ESP32-C3 session retirement ACK after owned child-process exit"
   },
-  "manifestSha256": "aa090cdfd7e21d252a38cd5baeade68741ac8f363d5abaf92f6fed0179477045",
+  "manifestSha256": "d5716a652852281fdfbbc559d9cd39802fb8e010823b35ff93029759fec8e3a3",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

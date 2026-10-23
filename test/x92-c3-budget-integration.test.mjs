@@ -67,7 +67,7 @@ function integration(overrides = {}) {
     },
     executeManualProducer: async (task, permit, exactBinding) => {
       assert.equal(instance.advancingBoundary(permit, exactBinding).ok, true);
-      return task();
+      return task(permit, exactBinding);
     },
     cancelBudgetProducer: () => ({ ok: true }), now: () => clock,
     schedule: () => 1, unschedule: () => {}, parseRequest: JSON.parse,
@@ -100,8 +100,18 @@ test('manual and budget paths share one gate and an opaque permit cannot cross b
   assert.equal(subject.advancingBoundary({}, binding).code, 'X92_C3_SHARED_GATE_BLOCKED');
   releaseRetirement(quiescence());
   assert.equal((await pending).ok, true);
-  assert.equal((await subject.executeManual(async () => ({ ok: true, code: 'MANUAL_COMPLETE' }))).code,
-    'MANUAL_COMPLETE');
+  let manualRuns = 0;
+  const manual = await subject.executeManual(async (permit, exactBinding) => {
+    assert.deepEqual(exactBinding, binding);
+    assert.equal(subject.advancingBoundary(permit, { ...binding,
+      generation: binding.generation + 1 }).code, 'X92_C3_PERMIT_BINDING_MISMATCH');
+    assert.equal(manualRuns, 0);
+    assert.equal(subject.advancingBoundary(permit, exactBinding).ok, true);
+    manualRuns += 1;
+    return { ok: true, code: 'MANUAL_COMPLETE' };
+  });
+  assert.equal(manual.code, 'MANUAL_COMPLETE');
+  assert.equal(manualRuns, 1);
 });
 
 test('malformed or wrong-owner retirement creates a persistent full-charge tombstone', async () => {

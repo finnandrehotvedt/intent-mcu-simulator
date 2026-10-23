@@ -24,6 +24,9 @@ test('rendered main owns C3 manual, Quick and API Build/Run through one product 
   assert.match(source, /dispatchAction: \(action, task\) => executeC3ManualAction\(action, task\)/u);
   assert.match(source, /executeC3ManualAction\('firmware\.build'/u);
   assert.match(source, /executeC3ManualAction\('runtime\.run'/u);
+  assert.match(source, /task\(permit, binding\)/u);
+  assert.match(source, /x92Binding: binding/u);
+  assert.match(source, /x92C3OwnedPrivateResult/u);
   assert.match(source, /const result = await x92C3Integration\.executeBudgeted\(source\)/u);
   assert.match(source, /return x92C3Integration\.executeManual\(\(\) => x92BudgetExecutor\.execute\(source\)/u);
   assert.doesNotMatch(source, /__X92_C3_REHEARSAL__|candidate-src/u);
