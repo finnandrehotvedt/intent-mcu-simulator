@@ -10921,7 +10921,12 @@ function clearRuntimePresentation() {
   elements.logicwaveform.replaceChildren();
   elements.pinmode.textContent = '—'; elements.pinlevel.textContent = '—'; elements.pindetail.textContent = '—';
   elements.pindiagnostic.textContent = '—'; elements.pincycle.textContent = '0';
-  for (const visual of elements.componentlayer.querySelectorAll('.component-led.on')) visual.classList.remove('on');
+  for (const visual of elements.componentlayer.querySelectorAll('.component-led')) {
+    visual.classList.remove('on');
+    delete visual.dataset.brightness;
+    visual.style.removeProperty('opacity');
+    visual.style.removeProperty('filter');
+  }
   for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key="output-rgb-led-common-cathode"]')) {
     artwork.dataset.rDuty = '0'; artwork.dataset.gDuty = '0'; artwork.dataset.bDuty = '0';
     artwork.querySelector('.rgb-led-mix')?.setAttribute('fill', 'rgb(0 0 0)');

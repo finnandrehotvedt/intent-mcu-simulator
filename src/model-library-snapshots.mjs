@@ -118769,7 +118769,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "9a3f48f255c8846efd62cceea2328be18d8da66416ea8938b9904e78df19368f"
+      "sha256": "9860c488e7a6a445f1d3abe474047918b3f64f98a546749b7de45eff2c72ff7c"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -118912,7 +118912,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "785b2ff5ec95e6f3b9f0f0364ba8fb8ffd3d522027574fc1a0dfa95fe579ad84"
     }
   ],
-  "implementationSha256": "23dde5a4679687e122f66b0aea4b98b95a51d574c09e5956d22abe15466c796b",
+  "implementationSha256": "31613553d024e84e3ea14cfc12ed98441f70d8a410a3eddb755cb69830d2c06c",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.123 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, actual worker, run, image build or deployment",
@@ -118922,7 +118922,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-runtime-controls-serial-ui.1-current",
     "semanticDisposition": "actual AVR PWM duty scales the existing project-owned ideal LED current and relative-brightness observation; digital outputs retain exact off/on behavior"
   },
-  "manifestSha256": "9222f9badd759ebd1fe92e4571b04bbd87d1437f6b776ee524731c2a6247cec1",
+  "manifestSha256": "0907503c8a77e0ec7eda48079b138c23da2ba02be6f3ac2878ec1d64e64eacee",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

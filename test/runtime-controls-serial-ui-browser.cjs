@@ -72,6 +72,40 @@ async function layout(page) {
       });
       await page.goto(`http://127.0.0.1:${app.address().port}`, { waitUntil: 'networkidle' });
       await page.waitForFunction(() => window.__M11_READY__ === true);
+      await page.evaluate(() => document.querySelector('#project-demo').click());
+      await page.evaluate(() => document.querySelector('[data-example="pwm"]').click());
+      const pwmLifecycle = await page.evaluate(() => {
+        const visual = document.querySelector('#component-layer [data-led-id]');
+        const componentId = visual.dataset.ledId;
+        const message = {
+          kind: 'snapshot', paused: true, cycle: 256, instructions: 64, speed: 1,
+          circuit: { leds: [{ componentId, on: true, currentAmps: 0.003, brightness: 0.25, color: 'red' }] },
+          trace: [], pins: [], retentionDrops: { serial: 0, logic: 0 },
+          instruments: { serial: { records: [], dropped: 0 },
+            logic: { channels: [], transitions: [], dropped: 0 } },
+        };
+        window.__M6_STATE__.runtime = structuredClone(message);
+        document.querySelector('#logic-window').dispatchEvent(new Event('change', { bubbles: true }));
+        const projected = { brightness: visual.dataset.brightness, opacity: visual.style.opacity,
+          filter: visual.style.filter, on: visual.classList.contains('on') };
+        document.querySelector('#logic-window').dispatchEvent(new Event('change', { bubbles: true }));
+        const paused = { brightness: visual.dataset.brightness, opacity: visual.style.opacity,
+          filter: visual.style.filter, on: visual.classList.contains('on') };
+        const source = document.querySelector('#source');
+        source.value += ' ';
+        source.dispatchEvent(new Event('input', { bubbles: true }));
+        return { projected, paused, retired: { hasBrightness: 'brightness' in visual.dataset,
+          opacity: visual.style.opacity, filter: visual.style.filter,
+          on: visual.classList.contains('on') }, runtime: window.__M6_STATE__.runtime };
+      });
+      assert.deepEqual(pwmLifecycle.projected, pwmLifecycle.paused);
+      assert.equal(pwmLifecycle.projected.brightness, '0.250');
+      assert.equal(pwmLifecycle.projected.opacity, '0.46');
+      assert.match(pwmLifecycle.projected.filter, /drop-shadow/iu);
+      assert.equal(pwmLifecycle.projected.on, true);
+      assert.deepEqual(pwmLifecycle.retired,
+        { hasBrightness: false, opacity: '', filter: '', on: false });
+      assert.equal(pwmLifecycle.runtime, null);
       assert.equal(await page.locator('#regression-matrix').getAttribute('open'), null);
       assert.equal(await page.locator('#regression-matrix-results').isVisible(), false);
       if (output) await page.screenshot({ path: path.join(output,
