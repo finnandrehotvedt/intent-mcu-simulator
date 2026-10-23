@@ -2,6 +2,23 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.119 — 2026-10-23
+
+- Adds one finite five-second AVR worker-ready deadline and explicit
+  `loading`, `ready` and `failed` startup states.
+- Retires stale or failed worker authority, keeps Run disabled and shows one
+  actionable error instead of leaving the interface indefinitely on
+  `Loading verified artifact…`.
+- Pins the exact project-owned 7,418-byte thermostat compiler artifact in the
+  regression. Current and retained actual workers reach Paused with Run
+  enabled under the exact production CSP; a silent worker fails visibly.
+- Records one earlier isolated CT109 diagnostic compile separately. Rc.119
+  itself performs no firmware Build, Run, retry or scenario and creates at
+  most one application image.
+- Keeps X81 planned pending Desktop's one fresh public Build, one short Run and
+  saved-file reopen. Status remains X **84 complete / 1 partial / 11 planned**,
+  P1 **59/0/0**.
+
 ## 1.1.0-rc.118 — 2026-10-23
 
 - Supersedes rejected rc.117 after its fresh public Chromium check found one

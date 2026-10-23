@@ -28,9 +28,9 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc117 to CSP-corrected rc118 release bytes', async () => {
+test('X88 owner binds canonical rc118 to bounded startup rc119 release bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.118');
+  assert.equal(release.version, '1.1.0-rc.119');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
@@ -38,12 +38,12 @@ test('X88 owner binds canonical rc117 to CSP-corrected rc118 release bytes', asy
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
   assert(registry.ids.includes('X92'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.117', current: '1.1.0-rc.118' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.118', current: '1.1.0-rc.119' });
   assert.deepEqual(value.changes, [
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records rc.117 to rc.118 as the CSP-corrected release: the X81 evidence context keeps identical presentation through self-hosted CSS, the public style policy stays strict, and the AVR ready-state correction remains unchanged.',
+      summary: 'Records rc.118 to rc.119 as the bounded AVR worker-startup release: successful retained/current artifacts reach Paused, while stalled or stale startup fails visibly after a finite deadline without enabling Run.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -106,7 +106,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.118');
+  assert.equal(discovery.identity.version, '1.1.0-rc.119');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

@@ -1,4 +1,37 @@
-# Intent MCU Simulator 1.1.0-rc.118
+# Intent MCU Simulator 1.1.0-rc.119
+
+## Bounded AVR worker startup
+
+Rc.119 adds an explicit finite boundary around the AVR artifact-to-worker
+startup path. A successful ready event still moves the workbench to Paused and
+enables Run. A stale identity, worker startup error or missing ready event now
+retires the owned worker, keeps Run disabled and presents an actionable error;
+a missing ready event has a five-second deadline.
+
+The browser release gate now uses the exact project-owned 7,418-byte retained
+thermostat Intel HEX artifact rather than an inert EOF-only fixture. Under the
+exact production CSP, both current and retained model paths reach Paused with
+Run enabled. A silent worker reaches the visible
+`RUNTIME_WORKER_READY_TIMEOUT` state with Run disabled. The gate issues zero
+compiler producer requests and zero firmware Runs.
+
+Before this correction, the retained-artifact diagnosis was completed first.
+One later isolated CT109-only compile reproduced the same thermostat Intel HEX
+SHA-256,
+`15e063cfc10eb127fae0cb87ea57037a388a98db08b099fc7f8da061ed0b0505`,
+and its disposable compiler container was removed. That diagnostic compile is
+counted separately; rc.119 itself performs no firmware Build, Run, retry or
+scenario and creates at most one application image.
+
+The controlled paths reached ready in approximately 100 ms, but this does not
+override the earlier independent report of a sustained public failure.
+Desktop retains the final acceptance authority for one fresh public Build, one
+short Run and the actual X81 saved-file reopen after deployment. X81 therefore
+remains planned at X **84/1/11**, P1 **59/0/0**.
+
+---
+
+## 1.1.0-rc.118
 
 ## CSP-corrected X81 presentation
 

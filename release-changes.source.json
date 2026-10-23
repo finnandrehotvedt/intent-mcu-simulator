@@ -11,8 +11,8 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.117",
-    "current": "1.1.0-rc.118"
+    "previous": "1.1.0-rc.118",
+    "current": "1.1.0-rc.119"
   },
   "changes": [
     {
@@ -24,7 +24,7 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records rc.117 to rc.118 as the CSP-corrected release: the X81 evidence context keeps identical presentation through self-hosted CSS, the public style policy stays strict, and the AVR ready-state correction remains unchanged."
+      "summary": "Records rc.118 to rc.119 as the bounded AVR worker-startup release: successful retained/current artifacts reach Paused, while stalled or stale startup fails visibly after a finite deadline without enabling Run."
     }
   ],
   "migrationRequired": false,
