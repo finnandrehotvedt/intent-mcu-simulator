@@ -193,6 +193,7 @@ const CURRENT_CLOSURE = Object.freeze([
   '../src/canvas-annotations.mjs', '../src/bounded-subcircuits.mjs',
   '../src/atmega328p-adapter.mjs', '../src/x43-avr-stack-profile.mjs',
   '../src/x46-usart-configuration-producer.mjs',
+  '../src/x46-usart-runtime-boundary.mjs',
   '../src/x47-runtime-transaction.mjs',
   '../src/x47-ui-integration.mjs', '../src/strict-json.mjs',
   '../src/x47-repeatable-inputs.mjs',
