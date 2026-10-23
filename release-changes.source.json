@@ -11,8 +11,8 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.113",
-    "current": "1.1.0-rc.114"
+    "previous": "1.1.0-rc.114",
+    "current": "1.1.0-rc.115"
   },
   "changes": [
     {
@@ -24,7 +24,7 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records rc.113 to rc.114 reviewed bounded ESP32-C3 owner proof, retained native provenance and truthful QEMU CPU/UART versus modeled GPIO presentation; X92 stays partial with zero release-time firmware producer authority."
+      "summary": "Records rc.114 to rc.115 reviewed bounded STM32 owner proof, retained native provenance and truthful Renode PB0/USART3 versus ideal LED presentation; X92 stays partial with zero release-time firmware producer authority."
     },
     {
       "id": "X92",
@@ -32,14 +32,16 @@
       "capabilities": [
         "intent-mcu-experiment-budget-review@1",
         "intent-mcu-experiment-budget@1",
-        "intent-mcu-x92-runtime-quiescence-ack@1"
+        "intent-mcu-x92-runtime-quiescence-ack@1",
+        "intent-mcu-x92-stm32-owner-proof@1"
       ],
       "contracts": [
         "x92-bounded-avr-experiment-budget-v1",
         "x92-bounded-esp32c3-owner-proof-v1",
-        "x92-bounded-pico-owner-proof-v1"
+        "x92-bounded-pico-owner-proof-v1",
+        "x92-bounded-stm32-owner-proof-v1"
       ],
-      "summary": "Adds reviewed bounded ESP32-C3 owner proof with exact source, flash, compiler, runtime, retirement and UART joins; GPIO2 remains a separately labelled project-owned model, STM32 budgeted Run remains unsupported and X92 remains partial."
+      "summary": "Adds reviewed bounded STM32 owner proof joining request, source, graph, ELF, model, compiler, runtime and natural completion; Renode observes final PB0 and USART3 in instruction order, the LED remains ideal, and X92 remains partial."
     }
   ],
   "migrationRequired": false,

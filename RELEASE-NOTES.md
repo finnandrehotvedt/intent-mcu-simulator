@@ -1,4 +1,34 @@
-# Intent MCU Simulator 1.1.0-rc.114
+# Intent MCU Simulator 1.1.0-rc.115
+
+## Reviewed bounded STM32 owner proof
+
+Rc.115 publishes X92's reviewed bounded STM32 budgeted-Run slice. The retained
+proof binds one exact request, source, graph, strict ELF32 artifact, model,
+Arm GNU 14.3.1 compiler identity and Renode 1.17.0 runtime identity. Success
+requires authenticated natural child completion, exact daemon-container absence
+and a one-use quiescence acknowledgement; stale, disconnect, deadline and
+unconfirmed-cleanup paths fail closed and remain fully charged after dispatch.
+
+The compiler-generated ELF produced final PB0 HIGH and exact USART3 text
+`STM32 PUBLIC\n` in two matching reset-replay boot epochs. Its ordering values
+are Renode instruction ordinals, not physical cycles or timing. The external
+LED is still a separate ideal teaching rendering; no physical pin, analogue,
+broad STM32/HAL or hardware-equivalence claim is made.
+
+X92 remains partial. Status stays X **84/1/11**, P1 **59/0/0**. Cumulative
+accepted native evidence is **44 Build / 41 Run / 0 scenarios**. Rc.115 itself
+performs zero firmware Build, Run or Scenario actions and may create at most
+one separately counted normal application release image.
+
+The accepted proof is pinned to source
+`0ef7f3f8f25a3debb7e405c3976345bed3fcaa19`, strict ELF SHA-256
+`fee199b2ee74c72185769cbf1af4ed0c18353fa83d5d92e21385575f16037820`
+and current model identity
+`2e77c8b63f7be76ab5730f9b4a82e01a4ebf527c75c40c37b44a9084f358f01e`.
+
+---
+
+## 1.1.0-rc.114
 
 ## Reviewed bounded ESP32-C3 owner proof
 

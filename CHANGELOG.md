@@ -2,16 +2,22 @@
 
 All notable public source changes are recorded here.
 
-## Post-rc.114 private source candidate — not released
+## 1.1.0-rc.115 — 2026-10-23
 
-- Adds the source/mock STM32 X92 integration through the real parser, budget
+- Publishes the reviewed bounded STM32 X92 integration through the real parser, budget
   executor, action router, profile adapter and manual/Quick API owner gate.
 - Binds exact request, source, graph, ELF, model, compiler and runtime identity.
   Only a signed one-use completion receipt proving natural child close and
   exact Docker-container absence permits successful accounting.
+- Retained native proof runs the compiler-generated ELF in actual Renode 1.17.0,
+  observes final PB0 and `STM32 PUBLIC\n` across reset replay, and records
+  instruction ordinals rather than physical cycles or time. The external LED
+  remains an ideal teaching rendering, not physical pin or board evidence.
 - Disconnect, deadline, stale identity, overlap and unconfirmed cleanup fail
-  closed with full charging where a reservation was dispatched. No native
-  Build/Run, image build, deployment or public capability change is included.
+  closed with full charging where a reservation was dispatched. X92 remains
+  partial. Status stays X **84 complete / 1 partial / 11 planned**, P1
+  **59/0/0**. Cumulative native evidence is **44 Build / 41 Run / 0 scenarios**;
+  the release performs no new firmware producer action.
 
 ## 1.1.0-rc.114 — 2026-10-23
 

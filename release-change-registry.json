@@ -214,12 +214,14 @@
       "capabilities": [
         "intent-mcu-experiment-budget-review@1",
         "intent-mcu-experiment-budget@1",
-        "intent-mcu-x92-runtime-quiescence-ack@1"
+        "intent-mcu-x92-runtime-quiescence-ack@1",
+        "intent-mcu-x92-stm32-owner-proof@1"
       ],
       "contracts": [
         "x92-bounded-avr-experiment-budget-v1",
         "x92-bounded-esp32c3-owner-proof-v1",
-        "x92-bounded-pico-owner-proof-v1"
+        "x92-bounded-pico-owner-proof-v1",
+        "x92-bounded-stm32-owner-proof-v1"
       ]
     }
   ]

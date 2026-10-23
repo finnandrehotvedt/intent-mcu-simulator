@@ -1,8 +1,9 @@
-# X92 aggregate AI experiment budget — bounded private contract
+# X92 aggregate AI experiment budget — bounded contract
 
-Status: approved private implementation contract; bounded browser-session,
-ESP32-C3 and source/mock STM32 product-wiring candidates are implemented for
-review. X92 remains open and this is not public-release or native authority.
+Status: approved bounded implementation contract. Reviewed owner proofs now
+cover AVR, RP2040 Pico, ESP32-C3 and STM32 product wiring. X92 remains open:
+the aggregate budget is still a finite current-tab session guard, not a generic
+AI agent, remote scheduler, billing quota or cross-user budget.
 
 The private C3 candidate routes manual, Quick and bounded-action Build/Run
 through one product-owned gate. Budgeted Run additionally binds the exact
@@ -13,17 +14,21 @@ CPU execution; GPIO2/LED remains explicitly a separate project-owned register
 and electrical model, not observed QEMU pin state or physical hardware. This
 candidate does not change the current public release or admit STM32.
 
-The later STM32 source candidate routes manual, Quick and bounded-action
+The reviewed STM32 slice routes manual, Quick and bounded-action
 Build/Run through its own shared owner gate. Budgeted Run binds the request
 nonce, source, graph, ELF, model, compiler image/toolchain and runtime
 image/binary identities. Success is accepted only after the existing service
 returns an authenticated completion receipt proving natural child completion
 and exact daemon-container absence, then authenticates that same receipt on a
-one-use quiescence request. Cancellation requests, browser disconnect,
+one-use quiescence request. Accepted native evidence executes the compiler-
+generated ELF in Renode 1.17.0, observes final PB0 and USART3 across reset
+replay, and records instruction ordinals rather than physical cycles or time.
+The external LED remains a separate ideal teaching rendering. Cancellation requests, browser disconnect,
 deadline, stale identity and unconfirmed cleanup never use `AbortError` as
 proof: they remain blocked and consume the full reservation. The accepted ELF
-is preserved on the natural completion path. This candidate uses fake-process
-acceptance only and keeps public STM32 budgeted Run rejected.
+is preserved on the natural completion path. These claims do not establish
+physical-board equivalence, analogue behavior, broad STM32/HAL support,
+wall-clock timing or LED pin readback from real hardware.
 
 ## Original requirement
 
