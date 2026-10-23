@@ -139,6 +139,7 @@ async function layout(page) {
       assert(open.dock.width >= Math.min(600, viewport.width - 80), JSON.stringify(open));
       assert(open.dock.height > 300, JSON.stringify(open));
       assert(open.dock.top >= 0 && open.dock.bottom <= viewport.height, JSON.stringify(open));
+      assert(open.dock.top >= open.dialog.top + 58, JSON.stringify(open));
       assert(open.dock.left >= open.dialog.left && open.dock.right <= open.dialog.right + 1,
         JSON.stringify(open));
       assert(open.overflow <= 1, JSON.stringify(open));

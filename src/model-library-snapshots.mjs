@@ -116172,7 +116172,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/shared-workbench-shell.mjs",
-      "sha256": "7edd88ab8b9bc5f70a38be127c9f7ae672dd7d5d8ad54dc8c072b25f8b3ada82"
+      "sha256": "47001494fe0e771daa9997229dd9b1df73fd85dc3175b39eaca565f77e25c097"
     },
     {
       "path": "src/rp2040-snapshot-pacer.mjs",
@@ -116299,7 +116299,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "d9edcf46497f5980e55b91096737f9ca177d6dfcfeec73c3549355da78ffac5b"
     }
   ],
-  "implementationSha256": "e3c0cff6f9d437cb8a64b41fc7349d9a7226a4a56dde37d734dfbf21385388b9",
+  "implementationSha256": "7698f837e406cac9d2edb5461e3030d9b30435b90dc52fd486a80e38fefc227b",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.122 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, actual worker, run, image build or deployment",
@@ -116309,7 +116309,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-retained-build-guard.1-current",
     "semanticDisposition": "component, firmware, electrical and runtime control authority remain unchanged"
   },
-  "manifestSha256": "c9e0351a70c4727da0d4f2cc7e8018cef7c084d328803cf761094dbc71f71091",
+  "manifestSha256": "8cecde23844a4dddfad2951233695fcbb156bc9b5394521f601c6f7e3962ca68",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

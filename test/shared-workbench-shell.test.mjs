@@ -59,7 +59,7 @@ test('top workbench exposes exactly seven accessible popup surfaces around one r
   assert.match(shell, /if \(serial\) serial\.hidden = true/);
   assert.match(shell, /serialTab\.setAttribute\('aria-expanded', 'true'\)/);
   assert.match(shell, /serialTab\.setAttribute\('aria-expanded', 'false'\)/);
-  assert.match(shell, /serial\.scrollIntoView\(\{ block: 'start', inline: 'nearest' \}\)/);
+  assert.match(shell, /mount\.scrollTop = Math\.max\(0, serial\.offsetTop - 12\)/);
   assert.match(css, /height:\s*max\(560px,\s*calc\(100vh - 200px\)\)/);
   assert.match(css, /max-height:\s*88vh/);
   assert.match(css, /#quick-pause,[\s\S]+#quick-reset\s*\{\s*min-width:\s*64px;/u);

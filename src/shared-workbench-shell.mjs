@@ -2005,7 +2005,8 @@ export function mountSharedWorkbenchShell(document) {
       if (drawer) drawer.open = true;
       serial.setAttribute('tabindex', '-1');
       serial.focus({ preventScroll: true });
-      serial.scrollIntoView({ block: 'start', inline: 'nearest' });
+      const mount = serial.closest('.workbench-popup-mount');
+      if (mount) mount.scrollTop = Math.max(0, serial.offsetTop - 12);
       return true;
     },
     activeDialog() { return activePopup; },
