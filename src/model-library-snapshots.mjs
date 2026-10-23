@@ -110930,7 +110930,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "f3ca7ec213ca3b8f947cd60bf090d52bee8c832705b4201e9e212c711cc81b4a"
+      "sha256": "a6fa095c2d1a11f5ddad6a30bc67f69152978499ccd0b2961554f96dbddc6f96"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -111073,7 +111073,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "2e9e5b57073bcb810206a6b114da155db23036c0e3e468bd8fc897e559aa7dad"
     }
   ],
-  "implementationSha256": "ad69a749ec1e6a4b1b607f3364ab3bff636c31abe007adb2fed53fe87e787f21",
+  "implementationSha256": "cbc42010cdc09204d6f131c84d8464800e47287bbbf383e2ba32b901a07c214c",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.119 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, run, image build or deployment",
@@ -111083,7 +111083,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-runtime-ready-deadline.1-current",
     "semanticDisposition": "component and firmware semantics remain unchanged; migration-only saved projects are blocked before compiler dispatch and retain zero runtime authority"
   },
-  "manifestSha256": "2e6070a5be208890c2874a2ef3e98b334b2cc8f1d17941cb0789eaa6e6688d5e",
+  "manifestSha256": "486ee3f5324dee1e118819070686521d37b6bff60c6924b199df46a09827be3a",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

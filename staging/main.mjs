@@ -86,6 +86,10 @@ import {
   sharedInstrumentSummary, sharedInstrumentView,
 } from '../src/instrument-capabilities.mjs';
 import {
+  X46_UART_PANEL_INPUT_SCHEMA, assessX46UartReadonlyPanel,
+} from '../src/x46-uart-readonly-panel.mjs';
+import { renderX46UartReadonlyPanel } from '../src/x46-uart-readonly-panel-view.mjs';
+import {
   completenessAcademicStatus, createMeasurementReportEnvelope, measurementCompletenessDisclosure,
   measurementRequirementStatus, validateMeasurementReportEnvelope,
 } from '../src/measurement-completeness.mjs';
@@ -504,6 +508,7 @@ const elements = Object.fromEntries([
   'serial-text-mode', 'serial-event-mode', 'serial-export', 'serial-newline', 'logic-waveform', 'logic-cursor-a', 'logic-cursor-b',
   'serial-provenance', 'instrument-evidence', 'instrument-evidence-state', 'instrument-evidence-profile',
   'instrument-evidence-artifact', 'instrument-evidence-time', 'instrument-evidence-retention',
+  'x46-uart-panel',
   'control-runtime-evidence-body',
   'serial-tab', 'serial-dock', 'serial-close', 'serial-resizer', 'serial-resume', 'serial-new-output',
   'canvas-select-mode', 'canvas-interact-mode',
@@ -10964,6 +10969,19 @@ function renderInstrumentEvidence(runtime = null) {
   renderSharedInstrumentSummary(AVR_PROFILE, {
     ...window.__M6_STATE__, runtime, project: currentProject(),
   });
+  const x46Assessment = assessX46UartReadonlyPanel({
+    schema: X46_UART_PANEL_INPUT_SCHEMA,
+    profile: selectedCompilerProfile,
+    lifecyclePhase: lifecycle.phase,
+    buildArtifactIdentity: lifecycle.artifact?.artifactIdentity ?? null,
+    lifecycleRuntimeBinding: lifecycle.runtimeBinding ? structuredClone(lifecycle.runtimeBinding) : null,
+    trustedCurrentWorker: Boolean(worker && currentRuntimeWorkerIdentity && runtime?.runtimeIdentity),
+    currentWorkerIdentity: currentRuntimeWorkerIdentity
+      ? structuredClone(currentRuntimeWorkerIdentity) : null,
+    runtimeSnapshot: runtime ? structuredClone(runtime) : null,
+  });
+  window.__X46_UART_READONLY_PANEL__ = structuredClone(x46Assessment);
+  renderX46UartReadonlyPanel(elements.x46uartpanel, x46Assessment);
 }
 
 function instrumentSummaryLine(channel) {

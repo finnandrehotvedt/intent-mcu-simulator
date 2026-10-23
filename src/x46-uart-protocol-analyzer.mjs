@@ -84,6 +84,7 @@ export function analyzeAvrUsart0(source) {
   validateSource(source);
   const frames = source.records.map((record, index) => ({
     index,
+    ordinal: index + 1,
     cycle: record.cycle,
     cycleDelta: index === 0 ? null : record.cycle - source.records[index - 1].cycle,
     virtualMilliseconds: record.virtualMilliseconds,

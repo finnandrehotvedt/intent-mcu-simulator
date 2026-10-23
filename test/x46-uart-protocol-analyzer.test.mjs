@@ -47,11 +47,25 @@ test('decodes complete AVR USART0 TX records without creating runtime authority'
     { cycle: 31_000, cycleDelta: null, value: 65 },
     { cycle: 47_640, cycleDelta: 16_640, value: 10 },
   ]);
+  assert.deepEqual(result.frames.map(({ index, ordinal }) => ({ index, ordinal })), [
+    { index: 0, ordinal: 1 }, { index: 1, ordinal: 2 },
+  ]);
   assert.deepEqual(result.authority, { apply: false, build: false, run: false, verdict: false });
   assert.match(result.support.signalLevel, /^unavailable/u);
   assert.match(result.support.framing, /^unavailable/u);
   assert.match(result.support.i2c, /^unavailable/u);
   assert.match(result.support.spi, /^unavailable/u);
+});
+
+test('first frame may start at cycle zero and always receives an integer one-based ordinal', () => {
+  const value = source();
+  value.records = [record(0, 0)];
+  value.retention.retained = 1;
+  const [first] = analyzeAvrUsart0(value).frames;
+  assert.equal(first.cycle, 0);
+  assert.equal(first.cycleDelta, null);
+  assert.equal(first.ordinal, 1);
+  assert.equal(Number.isSafeInteger(first.ordinal), true);
 });
 
 test('fails closed when retained evidence is incomplete', () => {
