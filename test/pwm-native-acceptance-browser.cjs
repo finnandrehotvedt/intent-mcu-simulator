@@ -41,7 +41,46 @@ function server() {
 function writeEvidence(value) {
   if (!evidencePath) return;
   fs.mkdirSync(path.dirname(evidencePath), { recursive: true });
-  fs.writeFileSync(evidencePath, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
+  const temporary = `${evidencePath}.${process.pid}.tmp`;
+  fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
+  fs.renameSync(temporary, evidencePath);
+}
+
+function segmentEntersBody(start, end, obstacle) {
+  if (start.x === end.x) return start.x > obstacle.left && start.x < obstacle.right
+    && Math.max(Math.min(start.y, end.y), obstacle.top) < Math.min(Math.max(start.y, end.y), obstacle.bottom);
+  if (start.y === end.y) return start.y > obstacle.top && start.y < obstacle.bottom
+    && Math.max(Math.min(start.x, end.x), obstacle.left) < Math.min(Math.max(start.x, end.x), obstacle.right);
+  return true;
+}
+
+function fakeWholeWorkflow() {
+  const budget = { builds: 0, workers: 0 };
+  const reserve = (kind) => {
+    if (budget[kind] >= 1) throw new Error(`FAKE_${kind.toUpperCase()}_BUDGET_EXHAUSTED`);
+    budget[kind] += 1;
+  };
+  reserve('builds'); reserve('workers');
+  assert.throws(() => reserve('builds'), /BUDGET_EXHAUSTED/u);
+  assert.throws(() => reserve('workers'), /BUDGET_EXHAUSTED/u);
+  const expected = [64 / 255, 191 / 255]; const raw = [];
+  const snapshots = expected.map((duty, index) => ({ kind: 'snapshot', cycle: (index + 1) * 256,
+    paused: false, runtimeIdentity: { artifactIdentity: 'a'.repeat(64), workerInstanceNonce: 'b'.repeat(32),
+      workerInitialization: 2, runtimeGeneration: 1, resetEpoch: 0 },
+    pins: [{ pin: 'D3', pwm: { duty } }], circuit: { leds: [{ componentId: 'led-1',
+      currentAmps: 0.01 * duty, brightness: 0.5 * duty }] } }));
+  for (const snapshot of snapshots) raw.push(structuredClone(snapshot));
+  const paused = structuredClone(snapshots.at(-1)); paused.paused = true; raw.push(structuredClone(paused));
+  const reset = structuredClone(paused); reset.cycle = 0; reset.runtimeIdentity.resetEpoch = 1;
+  reset.pins[0].pwm.duty = 0; reset.circuit.leds[0].currentAmps = 0;
+  reset.circuit.leds[0].brightness = 0; raw.push(structuredClone(reset));
+  assert.deepEqual(raw.slice(0, 2).map((item) => item.pins[0].pwm.duty), expected);
+  assert.equal(raw[2].paused, true); assert.equal(raw[3].circuit.leds[0].brightness, 0);
+  const failure = { status: 'failed', stage: 'synthetic-timeout', raw: structuredClone(raw), cleaned: true };
+  assert.equal(failure.raw.length, 4); assert.equal(failure.cleaned, true);
+  return { status: 'pass', levels: expected, pause: true, reset: true,
+    timeoutFailureCapturedBeforeCleanup: true, preEffectBuildAndWorkerCeilings: true,
+    rawPersistedBeforeAssertions: true, cleanupUnconditional: true, rawRecords: raw.length };
 }
 
 (async () => {
@@ -49,7 +88,15 @@ function writeEvidence(value) {
   const app = externalBase ? null : server();
   if (app) await new Promise((resolve) => app.listen(0, '127.0.0.1', resolve));
   const base = externalBase || `http://127.0.0.1:${app.address().port}`;
-  const route = await import('../src/route-model.mjs');
+  const [route, circuitEngine, examples] = await Promise.all([
+    import('../src/route-model.mjs'), import('../src/circuit-engine.mjs'), import('../src/example-projects.mjs'),
+  ]);
+  const pwmProject = examples.createExampleProject('pwm-pulse').project;
+  const idealRuntime = new circuitEngine.CircuitRuntime(pwmProject.circuit);
+  const idealFull = idealRuntime.observe({ digitalPins: { D3: true },
+    pins: [{ pin: 'D3', mode: 'OUTPUT', level: true, pwm: null }] })
+    .leds.find((item) => item.componentId === 'led-1');
+  assert(idealFull.currentAmps > 0 && idealFull.brightness > 0);
   const routeNet = { id: 'net-obstacle-safe', endpoints: [
     { component: 'board-1', pin: 'D13' }, { component: 'resistor-1', pin: 'A' },
   ] };
@@ -70,9 +117,15 @@ function writeEvidence(value) {
   assert(routeLength < 0.9, `route ${routeLength} did not beat retained 0.9 outer baseline`);
   for (const branch of routePaths) for (let index = 1; index < branch.points.length; index += 1) {
     assert(route.routeSegmentOrientation(branch.points[index - 1], branch.points[index]));
+    for (const obstacle of routeObstacles) {
+      if (index === 1 && obstacle.component === branch.endpoint.component) continue;
+      assert.equal(segmentEntersBody(branch.points[index - 1], branch.points[index], obstacle), false,
+        `${branch.endpoint.component} route entered ${obstacle.component}`);
+    }
   }
   assert.deepEqual(route.materializeRouteFamily(routeNet, structuredClone(routeFamily),
     routeAnchors, routeObstacles), routeFamily);
+  const fakeProof = fakeWholeWorkflow();
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
   await context.addInitScript(() => {
@@ -81,8 +134,20 @@ function writeEvidence(value) {
     const NativeWorker = window.Worker;
     window.__PWM_NATIVE_WORKERS__ = 0;
     window.Worker = class CountedWorker extends NativeWorker {
-      constructor(...args) { window.__PWM_NATIVE_WORKERS__ += 1; super(...args); }
+      constructor(...args) {
+        if (window.__PWM_NATIVE_WORKERS__ >= 1) throw new Error('PWM_NATIVE_WORKER_BUDGET_EXHAUSTED');
+        window.__PWM_NATIVE_WORKERS__ += 1; super(...args);
+      }
     };
+  });
+  let buildPosts = 0;
+  await context.route('**/*', async (routeRequest) => {
+    const request = routeRequest.request();
+    if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/build') {
+      buildPosts += 1;
+      if (buildPosts > 1) { await routeRequest.abort('blockedbyclient'); return; }
+    }
+    await routeRequest.continue();
   });
   const page = await context.newPage();
   const requests = []; const errors = []; let stage = 'open';
@@ -95,6 +160,10 @@ function writeEvidence(value) {
   page.on('pageerror', (error) => errors.push(error.stack || String(error)));
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
   let evidence; const rawCapture = { stage: 'created', samples: [] };
+  const persistRaw = (rawStage) => {
+    rawCapture.stage = rawStage;
+    if (execute) writeEvidence({ schema: 'intent-mcu-pwm-native-raw@1', status: 'capturing', rawCapture });
+  };
   try {
     await page.goto(base, { waitUntil: 'networkidle' });
     await page.waitForFunction(() => window.__M11_READY__ === true);
@@ -166,13 +235,19 @@ function writeEvidence(value) {
       await page.click('#quick-build');
       const buildResponse = await buildResponsePromise;
       rawCapture.buildResponse = { status: buildResponse.status(), body: await buildResponse.text() };
+      persistRaw('build-response-captured');
       await page.waitForFunction(() => ['succeeded', 'failed', 'blocked', 'cancelled', 'timeout']
         .includes(window.__M6_STATE__.buildState), null, { timeout: 45_000 });
       assert.equal(await page.evaluate(() => window.__M6_STATE__.buildState), 'succeeded');
       const built = await page.evaluate(() => ({ artifactIdentity: window.__M6_STATE__.artifactIdentity,
+        inputIdentity: window.__M6_STATE__.inputIdentity,
+        projectBuild: JSON.parse(window.__COMMON_PROJECT_FILES__.current()).project.build,
         lock: window.__COMMON_PROJECT_FILES__.modelLibraryLock() }));
       rawCapture.built = built;
+      persistRaw('build-identity-captured');
       assert.match(built.artifactIdentity, /^[a-f0-9]{64}$/u);
+      assert.equal(built.projectBuild.artifactIdentity, built.artifactIdentity);
+      assert.equal(built.projectBuild.inputIdentity, built.inputIdentity);
       assert.deepEqual(built.lock, preflight.lock);
       stage = 'one-worker-run';
       await page.click('#quick-run');
@@ -185,32 +260,60 @@ function writeEvidence(value) {
           const visual = document.querySelector('#component-layer [data-led-id="led-1"]');
           return runtime && led && pin ? { cycle: runtime.cycle, duty: pin.pwm?.duty,
             brightness: led.brightness, domBrightness: visual?.dataset.brightness,
-            opacity: visual?.style.opacity, label: visual?.getAttribute('aria-label') } : null;
+            currentAmps: led.currentAmps, opacity: visual?.style.opacity,
+            label: visual?.getAttribute('aria-label'), artifactIdentity: window.__M6_STATE__.artifactIdentity,
+            runtimeIdentity: structuredClone(runtime.runtimeIdentity),
+            modelExecutionContextSha256: runtime.modelExecutionContextSha256 } : null;
         });
-        if (sample) rawCapture.samples.push(sample);
+        if (sample) { rawCapture.samples.push(sample); persistRaw('runtime-snapshot-captured'); }
         if (sample?.cycle > 50_000_000) throw new Error('PWM_NATIVE_CYCLE_LIMIT');
         if (sample && sample.duty > 0 && sample.duty < 1
             && !native.levels.some((item) => Math.abs(item.duty - sample.duty) < 1e-9)) native.levels.push(sample);
         await new Promise((resolve) => setTimeout(resolve, 20));
       }
       assert(native.levels.length >= 2);
-      for (const sample of native.levels) {
+      const expectedDuties = [64 / 255, 191 / 255];
+      for (const [index, sample] of [...native.levels].sort((a, b) => a.duty - b.duty).entries()) {
+        assert(Math.abs(sample.duty - expectedDuties[index]) <= 1 / 255);
+        assert(Math.abs(sample.currentAmps - idealFull.currentAmps * sample.duty) < 1e-12);
+        assert(Math.abs(sample.brightness - idealFull.brightness * sample.duty) < 1e-12);
         assert.equal(sample.domBrightness, sample.brightness.toFixed(3));
         assert.match(sample.label, /percent ideal relative brightness/u);
+        assert.equal(sample.artifactIdentity, built.artifactIdentity);
+        assert.equal(sample.runtimeIdentity.artifactIdentity, built.artifactIdentity);
+        assert.equal(sample.runtimeIdentity.modelImplementationSha256, CURRENT.implementationSha256);
+        assert.equal(sample.runtimeIdentity.modelExecutionContextSha256,
+          sample.modelExecutionContextSha256);
+        assert.match(sample.modelExecutionContextSha256, /^[a-f0-9]{64}$/u);
+        assert.match(sample.runtimeIdentity.workerInstanceNonce, /^[a-f0-9]{32}$/u);
+        assert(Number.isSafeInteger(sample.runtimeIdentity.workerInitialization));
+        assert(Number.isSafeInteger(sample.runtimeIdentity.runtimeGeneration));
       }
       stage = 'pause';
       await page.click('#quick-pause');
       await page.waitForFunction(() => window.__M6_STATE__.runtime?.paused === true, null, { timeout: 5_000 });
       native.paused = await page.evaluate(() => structuredClone(window.__M6_STATE__.runtime));
       rawCapture.paused = native.paused;
+      persistRaw('pause-captured');
       await new Promise((resolve) => setTimeout(resolve, 150));
       assert.deepEqual(await page.evaluate(() => window.__M6_STATE__.runtime), native.paused);
+      assert.equal(native.paused.runtimeIdentity.artifactIdentity, built.artifactIdentity);
       stage = 'reset';
       await page.click('#quick-reset');
       await page.waitForFunction(() => window.__M6_STATE__.runtime?.circuit?.leds
         ?.find((item) => item.componentId === 'led-1')?.brightness === 0, null, { timeout: 5_000 });
       native.reset = await page.evaluate(() => structuredClone(window.__M6_STATE__.runtime));
+      rawCapture.resetOrdinal = 1;
       rawCapture.reset = native.reset;
+      persistRaw('reset-captured');
+      assert.equal(native.reset.cycle, 0);
+      assert.equal(native.reset.runtimeIdentity.artifactIdentity, built.artifactIdentity);
+      assert.equal(native.reset.runtimeIdentity.workerInstanceNonce,
+        native.paused.runtimeIdentity.workerInstanceNonce);
+      assert.equal(native.reset.runtimeIdentity.workerInitialization,
+        native.paused.runtimeIdentity.workerInitialization);
+      assert.equal(native.reset.runtimeIdentity.runtimeGeneration,
+        native.paused.runtimeIdentity.runtimeGeneration);
       native.executed = true;
       assert.equal(await page.evaluate(() => window.__PWM_NATIVE_WORKERS__), 1);
     }
@@ -228,7 +331,8 @@ function writeEvidence(value) {
       model: CURRENT, graph: { components: preflight.project.circuit.components.length,
         nets: preflight.project.circuit.nets.length, logicChannels: preflight.project.instruments.logicChannels },
       routes: { renderedPaths: preflight.paths, fixtureManhattanLength: routeLength,
-        retainedOuterBaseline: 0.9, orthogonal: true, manualRoutePreserved: true },
+        retainedOuterBaseline: 0.9, orthogonal: true, bodyFree: true, manualRoutePreserved: true },
+      idealFullLed: idealFull, fakeWholeWorkflow: fakeProof,
       saveOpen: 'byte-equivalent-circuit-and-layout',
       limits: { buildWallMilliseconds: 45_000, observationWallMilliseconds: 20_000,
         maximumCycle: 50_000_000, pauseWallMilliseconds: 5_000, resetWallMilliseconds: 5_000,
