@@ -16,7 +16,11 @@ const execute = process.env.PWM_NATIVE_EXECUTE === '1';
 const fakeExecute = process.env.PWM_FAKE_EXECUTE === '1';
 const activeExecution = execute || fakeExecute;
 const fakeForceTimeout = process.env.PWM_FAKE_FORCE_TIMEOUT === '1';
-const observationWallMilliseconds = fakeForceTimeout ? 500 : 20_000;
+const fakeMissing75 = process.env.PWM_FAKE_MISSING_75 === '1';
+const observationWallMilliseconds = (fakeForceTimeout || fakeMissing75) ? 500 : 20_000;
+const screenshotDirectory = process.env.PWM_NATIVE_SCREENSHOT_DIR || '';
+const expectedDuties = Object.freeze([64 / 255, 191 / 255]);
+const dutyTolerance = 1 / 255;
 const externalBase = process.env.PWM_NATIVE_URL || '';
 const evidencePath = process.env.PWM_NATIVE_EVIDENCE || '';
 const CURRENT = Object.freeze({
@@ -58,7 +62,14 @@ function segmentEntersBody(start, end, obstacle) {
   return true;
 }
 
-function fakeWorkerInstaller({ fullCurrent, fullBrightness, failRun }) {
+function commandedDutyBucket(duty) {
+  if (!Number.isFinite(duty)) return -1;
+  const matches = expectedDuties.map((target, index) => ({ index, distance: Math.abs(duty - target) }))
+    .filter((item) => item.distance <= dutyTolerance).sort((left, right) => left.distance - right.distance);
+  return matches.length === 1 ? matches[0].index : -1;
+}
+
+function fakeWorkerInstaller({ fullCurrent, fullBrightness, failRun, missing75 }) {
   window.__PWM_FAKE_CONTEXT_CLOSED__ = false;
   window.__PWM_NATIVE_WORKERS__ = 0;
   const clone = (value) => structuredClone(value);
@@ -91,7 +102,9 @@ function fakeWorkerInstaller({ fullCurrent, fullBrightness, failRun }) {
       } else if (data.command === 'run') {
         if (failRun) return;
         this.dispatch(this.snapshot('running', 64 / 255, false, 255), 20);
-        this.dispatch(this.snapshot('running', 191 / 255, false, 510), 250);
+        this.dispatch(this.snapshot('running', (64 / 255) - 0.000045, false, 510), 150);
+        this.dispatch(this.snapshot('running', (64 / 255) + 0.000038, false, 765), 280);
+        if (!missing75) this.dispatch(this.snapshot('running', 191 / 255, false, 1020), 430);
       } else if (data.command === 'pause') {
         this.dispatch(this.snapshot('paused', this.lastDuty, true, 510));
       } else if (data.command === 'reset') {
@@ -148,6 +161,14 @@ function fakeWorkerInstaller({ fullCurrent, fullBrightness, failRun }) {
   }
   assert.deepEqual(route.materializeRouteFamily(routeNet, structuredClone(routeFamily),
     routeAnchors, routeObstacles), routeFamily);
+  let offlineClassifier = null;
+  if (process.env.PWM_CLASSIFIER_RAW_EVIDENCE) {
+    const bytes = fs.readFileSync(process.env.PWM_CLASSIFIER_RAW_EVIDENCE);
+    const raw = JSON.parse(bytes);
+    const buckets = [...new Set((raw.rawCapture?.samples ?? [])
+      .map((sample) => commandedDutyBucket(sample.duty)).filter((bucket) => bucket >= 0))].sort();
+    offlineClassifier = { sha256: sha256(bytes), sampleCount: raw.rawCapture?.samples?.length ?? 0, buckets };
+  }
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
   await context.addInitScript(() => {
@@ -155,7 +176,8 @@ function fakeWorkerInstaller({ fullCurrent, fullBrightness, failRun }) {
     window.showSaveFilePicker = undefined;
   });
   if (fakeExecute) await context.addInitScript(fakeWorkerInstaller,
-    { fullCurrent: idealFull.currentAmps, fullBrightness: idealFull.brightness, failRun: fakeForceTimeout });
+    { fullCurrent: idealFull.currentAmps, fullBrightness: idealFull.brightness,
+      failRun: fakeForceTimeout, missing75: fakeMissing75 });
   else await context.addInitScript(() => {
     const NativeWorker = window.Worker;
     window.__PWM_NATIVE_WORKERS__ = 0;
@@ -303,7 +325,8 @@ function fakeWorkerInstaller({ fullCurrent, fullBrightness, failRun }) {
       stage = 'one-worker-run';
       await page.click('#quick-run');
       const deadline = Date.now() + observationWallMilliseconds;
-      while (Date.now() < deadline && native.levels.length < 2) {
+      const levelBuckets = new Map();
+      while (Date.now() < deadline && levelBuckets.size < 2) {
         const sample = await page.evaluate(() => {
           const runtime = window.__M6_STATE__.runtime;
           const led = runtime?.circuit?.leds?.find((item) => item.componentId === 'led-1');
@@ -319,14 +342,21 @@ function fakeWorkerInstaller({ fullCurrent, fullBrightness, failRun }) {
         if (sample) { rawCapture.samples.push(sample); persistRaw('runtime-snapshot-captured'); }
         if (sample?.cycle > 50_000_000) throw new Error('PWM_NATIVE_CYCLE_LIMIT');
         const domMatches = sample?.domBrightness === sample?.brightness?.toFixed(3);
-        if (sample && domMatches && sample.duty > 0 && sample.duty < 1
-            && !native.levels.some((item) => Math.abs(item.duty - sample.duty) < 1e-9)) native.levels.push(sample);
+        const bucket = commandedDutyBucket(sample?.duty);
+        if (sample && domMatches && bucket >= 0 && !levelBuckets.has(bucket)) {
+          levelBuckets.set(bucket, sample);
+          if (screenshotDirectory) {
+            fs.mkdirSync(screenshotDirectory, { recursive: true });
+            await page.screenshot({ path: path.join(screenshotDirectory, `level-${bucket === 0 ? '25' : '75'}.png`),
+              fullPage: false });
+          }
+        }
         await new Promise((resolve) => setTimeout(resolve, 20));
       }
+      native.levels = expectedDuties.map((_, index) => levelBuckets.get(index)).filter(Boolean);
       assert(native.levels.length >= 2);
-      const expectedDuties = [64 / 255, 191 / 255];
-      for (const [index, sample] of [...native.levels].sort((a, b) => a.duty - b.duty).entries()) {
-        assert(Math.abs(sample.duty - expectedDuties[index]) <= 1 / 255);
+      for (const [index, sample] of native.levels.entries()) {
+        assert.equal(commandedDutyBucket(sample.duty), index);
         assert(Math.abs(sample.currentAmps - idealFull.currentAmps * sample.duty) < 1e-12);
         assert(Math.abs(sample.brightness - idealFull.brightness * sample.duty) < 1e-12);
         assert.equal(sample.domBrightness, sample.brightness.toFixed(3));
@@ -347,6 +377,8 @@ function fakeWorkerInstaller({ fullCurrent, fullBrightness, failRun }) {
       native.paused = await page.evaluate(() => structuredClone(window.__M6_STATE__.runtime));
       rawCapture.paused = native.paused;
       persistRaw('pause-captured');
+      if (screenshotDirectory) await page.screenshot({ path: path.join(screenshotDirectory, 'pause.png'),
+        fullPage: false });
       await new Promise((resolve) => setTimeout(resolve, 150));
       assert.deepEqual(await page.evaluate(() => window.__M6_STATE__.runtime), native.paused);
       assert.equal(native.paused.runtimeIdentity.artifactIdentity, built.artifactIdentity);
@@ -386,6 +418,7 @@ function fakeWorkerInstaller({ fullCurrent, fullBrightness, failRun }) {
       routes: { renderedPaths: preflight.paths, fixtureManhattanLength: routeLength,
         retainedOuterBaseline: 0.9, orthogonal: true, bodyFree: true, manualRoutePreserved: true },
       idealFullLed: idealFull,
+      offlineClassifier,
       saveOpen: 'byte-equivalent-circuit-and-layout',
       limits: { buildWallMilliseconds: 45_000, observationWallMilliseconds,
         maximumCycle: 50_000_000, pauseWallMilliseconds: 5_000, resetWallMilliseconds: 5_000,
