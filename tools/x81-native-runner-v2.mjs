@@ -9,6 +9,7 @@ import { execFileSync } from 'node:child_process';
 import { normalizeBuildRequestValue, buildInputIdentity, BUILD_REQUEST_SCHEMA, BOARD_PROFILE } from '../compiler/build-protocol.mjs';
 import { compileHeadlessAvr } from '../src/headless-compiler-client.mjs';
 import { digest, validateX81CompilerResult, validateX81Pair } from './x81-native-contract.mjs';
+import { validateRetainedX81 } from './x81-retained-artifact.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE = 'void setup(){pinMode(13,OUTPUT);}void loop(){digitalWrite(13,HIGH);}';
@@ -24,9 +25,12 @@ async function checkpoint(directory, name, value) {
 
 export async function qualify(authorityPath, outputDirectory) {
   const authority = JSON.parse(await readFile(authorityPath, 'utf8'));
+  const retainedMode = authority.mode === 'retained-artifact';
+  if (authority.mode !== undefined && !retainedMode) throw Error('X81_MODE_INVALID');
+  const budget = { builds: retainedMode ? 0 : 1, workerExecutions: 2, scenarios: 0, retries: 0, images: 0 };
   if (authority.schema !== 'intent-mcu-x81-native-authority@1'
       || !/^desktop-[a-z0-9-]+$/u.test(authority.receiptId)
-      || !exact(authority.budget, { builds: 1, workerExecutions: 2, scenarios: 0, retries: 0, images: 0 })
+      || !exact(authority.budget, budget)
       || !Number.isSafeInteger(authority.expiresAt) || Date.now() >= authority.expiresAt
       || !Number.isSafeInteger(authority.timeoutMs) || authority.timeoutMs < 1000 || authority.timeoutMs > 180000
       || Object.keys(authority.files ?? {}).sort().join('\n') !== [...FILES].sort().join('\n')) throw Error('X81_AUTHORITY_INVALID');
@@ -34,6 +38,13 @@ export async function qualify(authorityPath, outputDirectory) {
   if (commit !== authority.gitCommit) throw Error('X81_SOURCE_MISMATCH');
   for (const file of FILES) {
     if (digest(await readFile(path.join(root, file))) !== authority.files[file]) throw Error(`X81_PIN_MISMATCH:${file}`);
+  }
+  // Validate retained bytes before consuming the new worker-only authority.
+  let retained = null;
+  if (retainedMode) {
+    if (!authority.retained || authority.retained.compilerImageId !== authority.compilerImageId
+        || authority.retained.toolchainManifestSha256 !== authority.toolchainManifestSha256) throw Error('X81_RETAINED_AUTHORITY_MISMATCH');
+    retained = await validateRetainedX81(authority.retained);
   }
   await mkdir(outputDirectory, { recursive: false, mode: 0o700 });
   // Authority consumption is permanent and shared across output directories.
@@ -49,7 +60,8 @@ export async function qualify(authorityPath, outputDirectory) {
   let browser, server;
   const admission = async (kind) => {
     if (abort.signal.aborted || Date.now() >= deadline) throw Error('X81_DEADLINE');
-    const limit = kind === 'builds' ? 1 : 2;
+    const limit = budget[kind];
+    if (!Number.isSafeInteger(limit)) throw Error('X81_RESERVATION_KIND_INVALID');
     if (usage[kind] >= limit) throw Error('X81_BUDGET_EXHAUSTED');
     usage[kind]++;
     await checkpoint(outputDirectory, `reservation-${kind}-${usage[kind]}.json`, { usage, deadline });
@@ -79,8 +91,24 @@ export async function qualify(authorityPath, outputDirectory) {
     const expectedInputIdentity = buildInputIdentity(request, { imageId: authority.compilerImageId,
       toolchainManifestSha256: authority.toolchainManifestSha256 });
     await checkpoint(outputDirectory, 'build-request.json', request);
-    await admission('builds');
-    const artifact = await compileHeadlessAvr(request, { signal: abort.signal });
+    let artifact;
+    if (retainedMode) {
+      // Re-read and revalidate immutable files, then bind to this exact fixed fixture.
+      // There is deliberately no compile fallback in this branch.
+      const [requestBytes, responseBytes] = await Promise.all([
+        readFile(authority.retained.requestPath), readFile(authority.retained.responsePath) ]);
+      if (digest(requestBytes) !== retained.requestFileSha256
+          || digest(responseBytes) !== retained.responseFileSha256) throw Error('X81_RETAINED_BYTES_CHANGED');
+      const retainedRequest = JSON.parse(requestBytes);
+      if (!exact(retainedRequest, request)) throw Error('X81_RETAINED_FIXED_FIXTURE_MISMATCH');
+      artifact = JSON.parse(responseBytes);
+      await checkpoint(outputDirectory, 'retained-provenance.json', {
+        priorReceiptId: 'desktop-etvt6l5-ct109-lab-x81-native-acceptance-20261023-001',
+        validated: retained, retainedRequest, buildUsageThisReceipt: 0 });
+    } else {
+      await admission('builds');
+      artifact = await compileHeadlessAvr(request, { signal: abort.signal });
+    }
     await checkpoint(outputDirectory, 'build-response.json', artifact);
     if (artifact.inputIdentity !== expectedInputIdentity) throw Error('X81_BUILD_INPUT_SUBSTITUTED');
     const domains = validateX81CompilerResult(artifact);
