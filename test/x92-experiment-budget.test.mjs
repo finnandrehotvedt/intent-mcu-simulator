@@ -88,6 +88,41 @@ test('X92 requires explicit human start and exports only strict inert review dat
   /DUPLICATE_KEY/u);
 });
 
+test('strict review rejects every unsupported numeric class across authoritative accounting fields', () => {
+  const pendingOwner = budget(); pendingOwner.start(identity(), { humanInitiated: true });
+  pendingOwner.reserve(request('firmware.build', 'x92-numeric-pending-build'), identity());
+  const pending = pendingOwner.snapshot();
+
+  const terminalOwner = budget(); terminalOwner.start(identity(), { humanInitiated: true });
+  const reserved = terminalOwner.reserve(request('runtime.run', 'x92-numeric-terminal-run'), identity());
+  terminalOwner.finalize(reserved.reservation, { kind: 'success', authenticated: true,
+    measuredWallClockMs: 125, measurementSource: 'test.monotonic-wall-clock' });
+  const terminal = terminalOwner.snapshot();
+
+  const classes = [
+    ['negative', -1],
+    ['fractional', 0.5],
+    ['non-finite', Number.POSITIVE_INFINITY],
+    ['safe-integer-overflow', Number.MAX_SAFE_INTEGER + 1],
+  ];
+  const fields = [
+    ['limits.builds', pending, (value, number) => { value.limits.builds = number; }],
+    ['consumed.builds', pending, (value, number) => { value.consumed.builds = number; }],
+    ['reserved.wallClockMs', pending, (value, number) => { value.reserved.wallClockMs = number; }],
+    ['remaining.runs', pending, (value, number) => { value.remaining.runs = number; }],
+    ['reservation.cost.builds', pending, (value, number) => { value.reservations[0].cost.builds = number; }],
+    ['terminal.charged.runs', terminal, (value, number) => { value.terminal[0].charged.runs = number; }],
+    ['terminal.measurement.value', terminal, (value, number) => { value.terminal[0].measurement.value = number; }],
+  ];
+
+  for (const [field, source, mutate] of fields) {
+    for (const [numericClass, number] of classes) {
+      const candidate = structuredClone(source); mutate(candidate, number);
+      assert.throws(() => parseX92ReviewProjection(candidate), undefined, `${field} accepted ${numericClass}`);
+    }
+  }
+});
+
 test('atomic reservation rejects the second build and returns unresolved work in stable order', () => {
   const owner = budget({ limits: { builds: 1, runs: 1, scenarios: 4, wallClockMs: 30_000 } });
   owner.start(identity(), { humanInitiated: true });
