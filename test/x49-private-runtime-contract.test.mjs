@@ -54,7 +54,7 @@ async function init(caseId = 'baseline-offset-0', runtimeGeneration = 10) {
 }
 
 test('private manifest and immutable init binding validate exactly', async () => {
-  assert.equal((await validateX49PrivateManifest(manifest, crypto, manifest)).runtimeMembers.length, 15);
+  assert.equal((await validateX49PrivateManifest(manifest, crypto, manifest)).runtimeMembers.length, 16);
   const accepted = await validateX49PrivateInit(await init(), crypto, manifest);
   assert.equal(accepted.expected.inputIdentity,
     '4300d360967677c0cd653cb7bf4cd93ab6d8e8235cb76a38d86ae5b43f25679b');

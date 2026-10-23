@@ -325,10 +325,10 @@ async function handleMessage(data) {
           ...(data.instruments ?? {}),
           modelLibraryLock: data.modelLibraryLock,
           modelExecutionContextSha256: data.modelExecutionContextSha256,
+          runtimeIdentity,
           ...(data.x34Probe ? { x34Probe: data.x34Probe } : {}),
           ...(data.x35Probe ? { x35Probe: data.x35Probe } : {}),
-          ...(data.x47RuntimeAuthority ? { x47RuntimeAuthority: data.x47RuntimeAuthority,
-            runtimeIdentity } : {}),
+          ...(data.x47RuntimeAuthority ? { x47RuntimeAuthority: data.x47RuntimeAuthority } : {}),
         });
         kernel = candidate;
         validatedModelExecutionContextSha256 = binding.modelExecutionContextSha256;
