@@ -275,7 +275,7 @@ Additional current limits:
   Pico GPIO0/UART0 source profile, one bounded ESP32-C3 GPIO2/UART profile and
   one bounded STM32F429ZI PB0/USART3/reset-replay profile;
 - no physical board connection, firmware upload, live AI call, account,
-  analytics, or cloud project store is included;
+  visitor analytics or cloud project store is included; the optional first-party footer counter keeps only aggregate page-view totals without cookies, IP addresses, identifiers, fingerprints, source or project content;
 - the CPU/peripheral profile is a tested educational subset, not a promise of
   complete hardware equivalence or physical/electrical safety;
 - the prompt bridge creates portable text and accepts only validated circuit

@@ -15,4 +15,7 @@ about unrelated systems in a public issue.
 Security fixes target the latest revision on the default branch. This release
 includes the project-owned isolated compiler gateway and local build recipe,
 but no prebuilt toolchain image, hosted deployment configuration, user
-accounts, analytics, physical-device access or live AI service.
+accounts, visitor analytics, physical-device access or live AI service. The optional
+first-party page-view counter persists aggregate UTC-day and all-time integers only;
+it receives no visitor payload and stores no cookies, IP addresses, user agents,
+referrers, identifiers, fingerprints, source or project content.
