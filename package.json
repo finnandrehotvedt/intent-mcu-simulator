@@ -133,6 +133,7 @@
     "test:x70:current:browser": "node test/x70-current-runtime-measurements-browser.cjs",
     "test:x86": "node --test --test-concurrency=1 test/x86-offline-support-matrix.test.mjs",
     "test:x86:browser": "node test/x86-offline-support-matrix-browser.cjs",
+    "test:avr-ready:browser": "node test/avr-ready-render-browser.cjs",
     "test:x59": "node --test --test-concurrency=1 test/shared-workbench-shell.test.mjs test/model-library.test.mjs",
     "test:x59:browser": "node test/x59-simple-advanced-view-browser.cjs",
     "test:docs-release": "node --test --test-concurrency=1 test/docs-x72-release.test.mjs test/x72-example-progression.test.mjs test/release-identity-copy.test.mjs test/public-release-projection.test.mjs",

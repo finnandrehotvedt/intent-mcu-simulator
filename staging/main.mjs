@@ -13021,13 +13021,13 @@ window.__M6_INSTRUMENT_RENDER_BENCHMARK__ = () => {
 
 function renderRgbLedRuntime(message) {
   if (editor.kind !== 'candidate-project-v3') return;
-  const pins = new Map((message.pins ?? []).map((pin) => [pin.pin, pin]));
+  const pins = new Map((Array.isArray(message.pins) ? message.pins : []).map((pin) => [pin.pin, pin]));
   const dutyForPin = (pinLabel) => {
     const pin = pins.get(pinLabel);
     if (Number.isFinite(pin?.pwm?.duty)) return Math.max(0, Math.min(1, pin.pwm.duty));
     return pin?.mode === 'OUTPUT' || pin?.mode === 'DIGITAL_PWM' ? Number(Boolean(pin.level)) : 0;
   };
-  for (const support of editor.runtimeSupport.filter(
+  for (const support of (Array.isArray(editor.runtimeSupport) ? editor.runtimeSupport : []).filter(
     (item) => item.type === COMMON_CATHODE_RGB_LED_TYPE && item.runtimeProjection,
   )) {
     const artwork = elements.componentlayer.querySelector(
@@ -13058,8 +13058,8 @@ function renderRgbLedRuntime(message) {
 
 function renderActiveBuzzerRuntime(message) {
   if (editor.kind !== 'candidate-project-v3') return;
-  const pins = new Map((message.pins ?? []).map((pin) => [pin.pin, pin]));
-  for (const support of editor.runtimeSupport.filter(
+  const pins = new Map((Array.isArray(message.pins) ? message.pins : []).map((pin) => [pin.pin, pin]));
+  for (const support of (Array.isArray(editor.runtimeSupport) ? editor.runtimeSupport : []).filter(
     (item) => item.type === ACTIVE_BUZZER_TYPE && item.runtimeProjection,
   )) {
     const artwork = elements.componentlayer.querySelector(
@@ -13084,8 +13084,8 @@ function renderActiveBuzzerRuntime(message) {
 
 function renderSevenSegmentRuntime(message) {
   if (editor.kind !== 'candidate-project-v3') return;
-  const pins = new Map((message.pins ?? []).map((pin) => [pin.pin, pin]));
-  for (const support of editor.runtimeSupport.filter(
+  const pins = new Map((Array.isArray(message.pins) ? message.pins : []).map((pin) => [pin.pin, pin]));
+  for (const support of (Array.isArray(editor.runtimeSupport) ? editor.runtimeSupport : []).filter(
     (item) => item.type === SEVEN_SEGMENT_TYPE && item.runtimeProjection,
   )) {
     const artwork = elements.componentlayer.querySelector(
@@ -13115,10 +13115,10 @@ function renderSevenSegmentRuntime(message) {
 
 function renderCharacterLcdRuntime(message) {
   if (editor.kind !== 'candidate-project-v3') return;
-  const pins = new Map((message.pins ?? []).map((pin) => [pin.pin, pin]));
+  const pins = new Map((Array.isArray(message.pins) ? message.pins : []).map((pin) => [pin.pin, pin]));
   const trace = Array.isArray(message.trace) ? message.trace : [];
   const published = [];
-  for (const support of editor.runtimeSupport.filter(
+  for (const support of (Array.isArray(editor.runtimeSupport) ? editor.runtimeSupport : []).filter(
     (item) => item.type === CHARACTER_LCD_TYPE && item.runtimeProjection,
   )) {
     const artwork = elements.componentlayer.querySelector(
@@ -13181,7 +13181,8 @@ function renderRuntime(message, { publishState = true } = {}) {
   }
   lastThroughputSample = { cycle: message.cycle, time: now };
   elements.requestedspeed.textContent = message.speed === 'maximum' ? 'Maximum' : `${message.speed ?? elements.speed.value}×`;
-  for (const led of message.circuit?.leds ?? []) {
+  const circuitLeds = Array.isArray(message.circuit?.leds) ? message.circuit.leds : [];
+  for (const led of circuitLeds) {
     const visual = elements.componentlayer.querySelector(`[data-led-id="${led.componentId}"]`);
     if (!visual) continue;
     visual.classList.toggle('on', led.on);
@@ -13191,25 +13192,38 @@ function renderRuntime(message, { publishState = true } = {}) {
   renderActiveBuzzerRuntime(message);
   renderSevenSegmentRuntime(message);
   renderCharacterLcdRuntime(message);
-  const transitions = message.trace.filter((entry) => entry.pin === 13).slice(-8).reverse();
+  const trace = Array.isArray(message.trace) ? message.trace : [];
+  const transitions = trace.filter((entry) => entry.pin === 13).slice(-8).reverse();
   elements.trace.replaceChildren(...(transitions.length ? transitions : [{ cycle: 0, level: false }]).map((entry) => {
     const item = document.createElement('li'); item.textContent = `${String(entry.cycle).padStart(10, '0')} · ${entry.level ? 'HIGH' : 'LOW'}`; return item;
   }));
-  const serial = message.instruments?.serial ?? { records: [], dropped: 0 };
+  const serialSource = message.instruments?.serial;
+  const serial = {
+    records: Array.isArray(serialSource?.records) ? serialSource.records : [],
+    dropped: Number.isSafeInteger(serialSource?.dropped) && serialSource.dropped >= 0
+      ? serialSource.dropped : 0,
+  };
   const textView = serialText(serial.records);
   elements.serialoutput.textContent = serialViewMode === 'events'
     ? (serial.records.length ? serialEventText(serial.records) : 'No serial events.')
     : (textView || 'No firmware bytes.');
   elements.serialcount.textContent = `${serial.records.length} records${serial.dropped ? ` · ${serial.dropped} dropped` : ''}`;
   updateSerialAutoscroll(serial);
-  const logic = message.instruments?.logic ?? { transitions: [], dropped: 0 };
+  const logicSource = message.instruments?.logic;
+  const logic = {
+    channels: Array.isArray(logicSource?.channels) ? logicSource.channels : [],
+    transitions: Array.isArray(logicSource?.transitions) ? logicSource.transitions : [],
+    dropped: Number.isSafeInteger(logicSource?.dropped) && logicSource.dropped >= 0
+      ? logicSource.dropped : 0,
+  };
   const recent = logic.transitions.slice(-Number(elements.logicwindow.value)).reverse();
   elements.logicoutput.replaceChildren(...(recent.length ? recent : [{ pin: '—', cycle: 0, level: false }]).map((entry) => {
     const item = document.createElement('li'); item.textContent = `${entry.pin} · ${String(entry.cycle).padStart(10, '0')} · ${entry.level ? 'HIGH' : 'LOW'}`; return item;
   }));
   elements.logiccount.textContent = `${logic.transitions.length} transitions${logic.dropped ? ` · ${logic.dropped} dropped` : ''}`;
   renderWaveform(logic);
-  const pin = message.pins?.find((entry) => entry.pin === elements.pinselect.value) ?? null;
+  const pins = Array.isArray(message.pins) ? message.pins : [];
+  const pin = pins.find((entry) => entry.pin === elements.pinselect.value) ?? null;
   elements.pinmode.textContent = pin?.mode ?? '—';
   elements.pinlevel.textContent = pin?.pin.startsWith('A') ? `${pin.voltage.toFixed(3)} V` : pin ? (pin.level ? 'HIGH' : 'LOW') : '—';
   elements.pindetail.textContent = pin?.pwm ? `${(pin.pwm.duty * 100).toFixed(1)}% · ${pin.pwm.periodCycles} cycles` : Number.isInteger(pin?.adc) ? `ADC ${pin.adc}` : '—';
