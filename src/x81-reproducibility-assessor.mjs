@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 export const X81_REPORT_SCHEMA = 'intent-mcu-x81-source-evidence@1';
 export const X81_RESULT_SCHEMA = 'intent-mcu-x81-reproducibility-status@1';
+export const X81_EXPORT_SCHEMA = 'intent-mcu-x81-local-assessment-envelope@1';
 const HASH = /^[a-f0-9]{64}$/u;
 const ID = /^[a-z0-9][a-z0-9._:-]{0,127}$/u;
 const PROFILES = new Set(['board.atmega328p-16mhz-v1','board.rp2040-pico-v1','board.esp32-c3-devmodule-v1','board.stm32f429zi-nucleo144-v1']);
@@ -37,7 +38,7 @@ async function build(v, expected) {
   if (!bytes.length || await hashBytes(bytes)!==v.artifactSha256) fail('X81_ARTIFACT_HASH_INVALID');
   return v;
 }
-export async function assessX81(input) {
+export async function assessX81(input, trusted = { receipts: new Set() }) {
   if (!keys(input, ['schema','evidenceId','context','runs','builds','historicalGaps','authority'])
       || input.schema !== X81_REPORT_SCHEMA || !ID.test(input.evidenceId)
       || !Array.isArray(input.runs) || !Array.isArray(input.builds)
@@ -50,15 +51,19 @@ export async function assessX81(input) {
   if (input.historicalGaps.length) Object.assign(observed,{reason:'missing-provenance',gaps:[...input.historicalGaps]});
   else if (runs.length === 2) {
     if (runs[0].runId === runs[1].runId || runs[0].workerNonce === runs[1].workerNonce || runs[0].provenance.receiptSha256===runs[1].provenance.receiptSha256 || runs[0].provenance.runRequestSha256===runs[1].provenance.runRequestSha256) fail('X81_RUNS_NOT_INDEPENDENT');
-    Object.assign(observed, runHashes[0] === runHashes[1] ? {status:'verified',reason:'same-observed-behavior'} : {status:'different',reason:'observations-differ'});
+    const trustedRuns=runs.every((x)=>trusted.receipts?.has(x.provenance.receiptSha256));
+    Object.assign(observed, !trustedRuns ? {status:'not-qualified',reason:'owner-provenance-untrusted'} : runHashes[0] === runHashes[1] ? {status:'verified',reason:'same-observed-behavior'} : {status:'different',reason:'observations-differ'});
   }
   const rebuild = { status:'not-checked', reason:'two-independent-builds-required' };
   if (builds.length === 2) {
     if (builds[0].buildId === builds[1].buildId || builds[0].provenance.receiptSha256===builds[1].provenance.receiptSha256 || builds[0].provenance.buildRequestSha256===builds[1].provenance.buildRequestSha256) fail('X81_BUILDS_NOT_INDEPENDENT');
-    Object.assign(rebuild, builds[0].artifactSha256 === builds[1].artifactSha256
+    const trustedBuilds=builds.every((x)=>trusted.receipts?.has(x.provenance.receiptSha256));
+    Object.assign(rebuild, !trustedBuilds ? {status:'not-qualified',reason:'owner-provenance-untrusted'} : builds[0].artifactSha256 === builds[1].artifactSha256
       ? {status:'verified',reason:'byte-identical-independent-builds'} : {status:'different',reason:'artifact-bytes-differ'});
   } else if (builds.length > 2) fail('X81_BUILD_COUNT_INVALID');
   const result = {schema:X81_RESULT_SCHEMA,evidenceId:input.evidenceId,context:c,observedBehavior:observed,independentRebuildBytes:rebuild,
     historical:input.historicalGaps.length>0,authority:{apply:false,build:false,run:false,verdict:false}};
   return {...result,resultSha256:await x81Hash(result)};
 }
+export async function createX81Export(sourceEvidence, trusted) { const derivedResult=await assessX81(sourceEvidence,trusted); return {schema:X81_EXPORT_SCHEMA,sourceEvidence:structuredClone(sourceEvidence),derivedResult}; }
+export async function reopenX81Export(value, trusted) { if(!keys(value,['schema','sourceEvidence','derivedResult'])||value.schema!==X81_EXPORT_SCHEMA) fail('X81_EXPORT_INVALID'); const recomputed=await assessX81(value.sourceEvidence,trusted); if(stableX81(recomputed)!==stableX81(value.derivedResult)) fail('X81_EXPORT_DERIVED_TAMPERED'); return {sourceEvidence:structuredClone(value.sourceEvidence),derivedResult:recomputed}; }
