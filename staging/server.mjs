@@ -10,6 +10,8 @@ import { createRequestHandler } from '../compiler/http-gateway.mjs';
 import { RP2040_BOARD_PROFILE } from '../compiler/build-protocol.mjs';
 import { createC3PublicService } from '../c3/public-service.mjs';
 import { createStm32PublicService } from '../stm32/public-service.mjs';
+import { createHash } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 
 if (!globalThis.crypto) Object.defineProperty(globalThis, 'crypto', { value: webcrypto });
 
@@ -100,6 +102,17 @@ setInterval(verifyCompiler, 5_000).unref();
 const handler = createRequestHandler({ coordinator, root, publicOrigin, trustProxy, deploymentScope, readiness: () => readiness });
 
 const server = http.createServer(async (request, response) => {
+  if (process.env.X92_STM32_PRIVATE_TARGET_NONCE
+      && request.method === 'GET' && request.url === '/__private/x92-stm32-target'
+      && request.headers['x-x92-stm32-target'] === process.env.X92_STM32_PRIVATE_TARGET_NONCE) {
+    const main = await readFile(path.join(root, 'main.js'));
+    const value = { schema: 'intent-mcu-x92-stm32-private-target@1',
+      gitCommit: process.env.X92_STM32_PRIVATE_TARGET_GIT,
+      distMainSha256: createHash('sha256').update(main).digest('hex'),
+      stm32Service: Boolean(stm32Service), defaultProviders: process.env.STM32_TEST_MODE !== '1' };
+    response.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    response.end(`${JSON.stringify(value)}\n`); return;
+  }
   if (c3Service && await c3Service.handle(request, response)) return;
   if (stm32Service && await stm32Service.handle(request, response)) return;
   await handler(request, response);

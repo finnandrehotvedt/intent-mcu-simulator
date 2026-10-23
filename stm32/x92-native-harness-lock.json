@@ -3,7 +3,7 @@
   "profile": "board.stm32f429zi-nucleo144-v1",
   "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
   "distMainSha256": "2b230082add79365207087e6e94bc1da3e4c41042e671252e3d93c6615e11d19",
-  "productOrigin": "https://lab.teachthecompany.com",
+  "productOrigin": "http://127.0.0.1:18766",
   "expectedGitCommit": null,
   "authoritySha256": null,
   "consumptionMarker": "/var/lib/intentforce/x92-stm32-native-proof/authority-consumed.json",

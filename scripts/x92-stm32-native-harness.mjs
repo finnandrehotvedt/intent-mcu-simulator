@@ -15,7 +15,7 @@ const lock = JSON.parse(await readFile(lockUrl, 'utf8'));
 const git = (await execute('git', ['rev-parse', 'HEAD'], { cwd: root })).stdout.trim();
 function fail(code) { throw Object.assign(new Error(code), { code }); }
 const exact = lock.schema === 'intent-mcu-x92-stm32-native-harness-lock@1'
-  && lock.productOrigin === 'https://lab.teachthecompany.com'
+  && lock.productOrigin === 'http://127.0.0.1:18766'
   && lock.sourceSha256 === hash(sourceForStm32('STM32 PUBLIC', true))
   && lock.distMainSha256 === hash(await readFile(new URL('../dist/main.js', import.meta.url)))
   && lock.compilerImageIdentity === STM32_EXECUTION_IDENTITIES.compilerImageIdentity
@@ -37,6 +37,7 @@ if (hash(authorityBytes) !== lock.authoritySha256 || authority.gitCommit !== git
     || authority.runs !== 1 || authority.scenarios !== 0 || authority.retries !== 0) {
   fail('X92_STM32_NATIVE_AUTHORITY_INVALID');
 }
+if (!/^[A-Za-z0-9_-]{32,96}$/u.test(authority.targetNonce ?? '')) fail('X92_STM32_NATIVE_AUTHORITY_INVALID');
 const evidence = process.env.X92_STM32_NATIVE_EVIDENCE;
 if (!evidence) fail('X92_STM32_NATIVE_EVIDENCE_REQUIRED');
 await mkdir(evidence, { recursive: false });
@@ -44,4 +45,5 @@ const marker = await open(lock.consumptionMarker, constants.O_CREAT | constants.
 await marker.writeFile(`${JSON.stringify({ authoritySha256: lock.authoritySha256, gitCommit: git })}\n`); await marker.close();
 await execute(process.execPath, ['test/x92-stm32-native-product-browser.cjs'], { cwd: root,
   env: { ...process.env, X92_STM32_NATIVE_ORIGIN: lock.productOrigin,
-    X92_STM32_NATIVE_EVIDENCE: evidence }, maxBuffer: 1024 * 1024 });
+    X92_STM32_NATIVE_EVIDENCE: evidence, X92_STM32_TARGET_NONCE: authority.targetNonce,
+    X92_STM32_EXPECTED_GIT: git, X92_STM32_EXPECTED_DIST: lock.distMainSha256 }, maxBuffer: 1024 * 1024 });
