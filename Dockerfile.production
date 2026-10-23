@@ -15,8 +15,12 @@ LABEL org.opencontainers.image.title="Intent MCU Simulator production" \
       org.opencontainers.image.licenses="Apache-2.0 AND MIT"
 
 USER root
+COPY --chown=node:node . /workspace/
 COPY --from=dockercli /usr/bin/docker /usr/bin/docker
-RUN test "$(docker --version)" = "Docker version 28.3.3, build 980b85681696fbd95927fd8ded8f6d91bdca95b0" \
+RUN cd /workspace \
+    && sha256sum -c SOURCE-MANIFEST.sha256 \
+    && npm run build \
+    && test "$(docker --version)" = "Docker version 28.3.3, build 980b85681696fbd95927fd8ded8f6d91bdca95b0" \
     && chmod 0555 /usr/bin/docker \
     && find /workspace/dist -type d -exec chmod 0555 {} + \
     && find /workspace/dist -type f -exec chmod 0444 {} + \
