@@ -8,6 +8,7 @@ import {
   analyzeAvrUsart0,
 } from './x46-uart-protocol-analyzer.mjs';
 import { deriveX46UsartFramingFromPausedSnapshot } from './x46-usart-framing-contract.mjs';
+import { deriveX46UsartRxFromPausedSnapshot } from './x46-usart-rx-contract.mjs';
 
 export const X46_UART_PANEL_SCHEMA = 'intent-mcu-x46-uart-panel@1';
 export const X46_UART_PANEL_INPUT_SCHEMA = 'intent-mcu-x46-uart-panel-input@1';
@@ -17,6 +18,7 @@ const NONCE = /^[0-9a-f]{32}$/u;
 const AUTHORITY = Object.freeze({ apply: false, build: false, run: false, verdict: false });
 const SUPPORT = Object.freeze({
   uart: 'AVR USART0 TX byte events from the current validated worker only',
+  rx: 'unavailable — no complete current paused-worker RX transfer',
   framing: 'unavailable — byte records do not independently prove data bits, parity or stop bits',
   signalLevel: 'unavailable — no physical voltage waveform or line-noise measurement',
   i2c: 'unavailable — no supported I2C signal producer',
@@ -30,6 +32,11 @@ const EMPTY_FRAMING = Object.freeze({
   frames: Object.freeze([]),
   modelDerived: true,
   physicalSignal: false,
+});
+const EMPTY_RX = Object.freeze({
+  state: 'unavailable', reason: 'no-current-complete-rx', completed: 0,
+  inFlight: 0, rejected: 0, transfers: Object.freeze([]),
+  modelDerived: true, physicalSignal: false,
 });
 
 function exactKeys(value, keys) {
@@ -67,6 +74,7 @@ function result(state, reason, extras = {}) {
     support: SUPPORT,
     authority: AUTHORITY,
     framing: EMPTY_FRAMING,
+    rx: EMPTY_RX,
     ...extras,
   });
 }
@@ -174,15 +182,36 @@ export function assessX46UartReadonlyPanel(input) {
   } catch (error) {
     framing = Object.freeze({ ...EMPTY_FRAMING, reason: error.code ?? 'X46_USART_FRAMING_REJECTED' });
   }
+  let rx = EMPTY_RX;
+  try {
+    const derived = deriveX46UsartRxFromPausedSnapshot(input.runtimeSnapshot);
+    rx = Object.freeze({
+      state: 'current', reason: 'same-paused-worker-model-derived',
+      completed: derived.completeness.completed,
+      inFlight: derived.completeness.inFlight,
+      rejected: derived.completeness.rejectedRequests,
+      transfers: Object.freeze(derived.transfers.map((transfer) =>
+        Object.freeze(structuredClone(transfer)))),
+      modelDerived: true, physicalSignal: false,
+    });
+  } catch (error) {
+    rx = Object.freeze({ ...EMPTY_RX, reason: error.code ?? 'X46_USART_RX_REJECTED' });
+  }
   return result('current', 'current-paused-worker-complete', {
     frames: Object.freeze(analysis.frames.map((frame) => Object.freeze(structuredClone(frame)))),
     displayText: analysis.displayText,
     identity: identityResult(identity),
     retention,
     framing,
-    support: framing.state === 'current' ? Object.freeze({
+    rx,
+    support: framing.state === 'current' || rx.state === 'current' ? Object.freeze({
       ...SUPPORT,
-      framing: 'bounded model-derived asynchronous 8-N-1 framing from the same paused worker snapshot',
+      ...(framing.state === 'current' ? {
+        framing: 'bounded model-derived asynchronous 8-N-1 framing from the same paused worker snapshot',
+      } : {}),
+      ...(rx.state === 'current' ? {
+        rx: 'bounded model-derived USART0 RX byte transfers from the same paused worker snapshot',
+      } : {}),
     }) : SUPPORT,
   });
 }

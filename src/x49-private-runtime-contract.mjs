@@ -34,6 +34,7 @@ export const X49_PRIVATE_RUNTIME_MEMBERS = Object.freeze([
   'src/x35-causal-observer.mjs',
   'src/x35-causal-chain-contract.mjs',
   'src/x46-usart-configuration-producer.mjs',
+  'src/x46-usart-rx-limits.mjs',
   'src/x49-instrumented-observer-core.mjs',
   'src/x49-instrumented-fixture-contract.mjs',
   'src/x49-sensor-offset.mjs',

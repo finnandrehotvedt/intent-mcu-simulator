@@ -144,13 +144,39 @@ export function renderX46UartReadonlyPanel(root, assessment, { evidenceKind = 'c
     framingDetails.append(list);
   }
 
+  const rx = assessment.rx ?? {
+    state: 'unavailable', completed: 0, inFlight: 0, rejected: 0,
+    transfers: [], reason: 'no-current-complete-rx', modelDerived: true, physicalSignal: false,
+  };
+  const rxDetails = node(document, 'details', '', 'x46-rx-details');
+  rxDetails.dataset.x46RxState = rx.state;
+  const rxSummary = node(document, 'summary', rx.state === 'current'
+    ? `Model-derived RX · ${rx.completed} completed · ${rx.inFlight} in flight · ${rx.rejected} rejected`
+    : 'Model-derived RX unavailable');
+  const rxBoundary = node(document, 'p', rx.state === 'current'
+    ? 'Decoded byte/peripheral-model evidence only—not D0 voltage edges, parity symbols, noise or physical signal evidence. I2C and SPI remain unavailable.'
+    : `No accepted RX projection (${rx.reason}). Missing transfers are never inferred.`,
+  'x46-rx-boundary');
+  rxDetails.append(rxSummary, rxBoundary);
+  if (rx.state === 'current') {
+    const list = node(document, 'ol', '', 'x46-rx-list');
+    for (const transfer of rx.transfers.slice(-DISPLAY_LIMIT)) {
+      list.append(node(document, 'li',
+        `0x${transfer.value.toString(16).padStart(2, '0').toUpperCase()} (${displayByte(transfer.value)}) · start ${transfer.startCycle.toLocaleString('en-US')} · expected ${transfer.scheduledCompletionCycle.toLocaleString('en-US')} · observed ${transfer.observedCompletionCycle.toLocaleString('en-US')} · lateness ${transfer.observationLatenessCycles.toLocaleString('en-US')} cycles`));
+    }
+    rxDetails.append(list);
+  }
+
   const shown = assessment.frames.length > DISPLAY_LIMIT
     ? `Showing the latest ${DISPLAY_LIMIT} of ${assessment.frames.length} complete TX rows. ` : '';
   const framingLimit = framing.state === 'current'
     ? 'Bounded model-derived 8-N-1 framing is shown above; it is not physical signal evidence.'
     : 'Framing configuration is unavailable and is not inferred.';
-  const limits = node(document, 'p', `${shown}Model-recorded byte events, baud and frame duration only. ${framingLimit} Physical voltage/noise, RX decoding, parity modes, I2C and SPI are unavailable.`, 'x46-uart-limits');
+  const rxLimit = rx.state === 'current'
+    ? 'Bounded model-derived RX byte transfers are shown above; D0 line signalling and parity/noise remain unavailable.'
+    : 'RX transfer evidence is unavailable and is not inferred.';
+  const limits = node(document, 'p', `${shown}Model-recorded byte events, baud and frame duration only. ${framingLimit} ${rxLimit} Physical voltage/noise, I2C and SPI are unavailable.`, 'x46-uart-limits');
   limits.dataset.x46Limits = '';
-  root.append(heading, boundary, summary, facts, tableWrap, framingDetails, limits);
+  root.append(heading, boundary, summary, facts, tableWrap, framingDetails, rxDetails, limits);
   return assessment;
 }
