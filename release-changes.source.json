@@ -11,8 +11,8 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.116",
-    "current": "1.1.0-rc.117"
+    "previous": "1.1.0-rc.117",
+    "current": "1.1.0-rc.118"
   },
   "changes": [
     {
@@ -24,7 +24,7 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records rc.116 to rc.117 as the corrected release after independent browser acceptance found the initial AVR ready view could still block Run; current and retained worker-ready paths now render truthfully without manufacturing observations."
+      "summary": "Records rc.117 to rc.118 as the CSP-corrected release: the X81 evidence context keeps identical presentation through self-hosted CSS, the public style policy stays strict, and the AVR ready-state correction remains unchanged."
     }
   ],
   "migrationRequired": false,

@@ -1,4 +1,32 @@
-# Intent MCU Simulator 1.1.0-rc.117
+# Intent MCU Simulator 1.1.0-rc.118
+
+## CSP-corrected X81 presentation
+
+Rc.118 supersedes rejected rc.117. Rc.117's application image and metadata
+passed deployment checks, but a fresh public Chromium load found one inline
+presentation rule in the X81 evidence context. The existing
+`style-src 'self'` policy correctly blocked that rule, so public Lab was rolled
+back to the exact rc.115 recovery image before this correction.
+
+The X81 context now receives the same `white-space` and `overflow-wrap`
+presentation from the self-hosted stylesheet. CSP is unchanged. A source gate
+forbids inline style attributes, and the retained assessment browser roundtrip
+runs under the exact production CSP and checks that the computed presentation
+is preserved without a policy violation.
+
+Rc.118 retains rc.117's two-case AVR ready-state correction unchanged. The
+current-model and retained partial-ready built-page/native-worker journeys both
+reach Paused with Run enabled, truthful empty-observation labels, zero compiler
+producer requests and zero firmware Runs.
+
+X81 stays planned until Desktop completes one fresh public AVR Build, one short
+Run and reopens the actually saved assessment file. Status remains X
+**84/1/11**, P1 **59/0/0**. Rc.118 creates at most one normal application image
+and performs zero owner firmware producer actions.
+
+---
+
+## 1.1.0-rc.117
 
 ## Corrected AVR ready transition
 

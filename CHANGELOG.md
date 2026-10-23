@@ -2,6 +2,22 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.118 — 2026-10-23
+
+- Supersedes rejected rc.117 after its fresh public Chromium check found one
+  inline presentation rule in the X81 evidence context that the unchanged
+  `style-src 'self'` policy correctly blocked.
+- Moves the same `white-space` and `overflow-wrap` presentation into the
+  self-hosted stylesheet without weakening CSP or changing X81 data,
+  assessment, firmware or runtime authority.
+- Adds a source gate that forbids inline style attributes and a browser
+  roundtrip under the exact production CSP. The existing two-case AVR
+  ready-state regression remains green with zero compiler requests and zero
+  firmware Runs.
+- Keeps X81 planned until independent public Build, short Run and saved-file
+  reopen complete. Status remains X **84 complete / 1 partial / 11 planned**,
+  P1 **59/0/0**.
+
 ## 1.1.0-rc.117 — 2026-10-23
 
 - Supersedes withdrawn rc.116 after independent public browser acceptance found
