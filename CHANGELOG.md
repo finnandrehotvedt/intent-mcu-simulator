@@ -2,6 +2,24 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.117 — 2026-10-23
+
+- Supersedes withdrawn rc.116 after independent public browser acceptance found
+  that a successful AVR Build could still leave Run disabled when the initial
+  worker-ready message omitted an optional Trace collection.
+- Normalizes every optional collection consumed by the initial AVR ready view,
+  including Trace, Pins, Circuit LEDs, Instruments and candidate runtime
+  support, without widening worker protocol or firmware authority.
+- Labels empty Trace and Logic views as no observations instead of presenting a
+  placeholder LOW value that was never measured.
+- Adds a real built-page/native-worker browser regression for both the unchanged
+  default current-model thermostat and the retained partial-ready project. Both
+  reach Paused with Run enabled, zero browser errors, zero compiler producer
+  requests and zero firmware Runs.
+- Retains the rc.116 X81 assessment unchanged and keeps X81 planned until
+  independent public Build/short Run and saved-assessment reopen complete.
+  Status remains X **84 complete / 1 partial / 11 planned**, P1 **59/0/0**.
+
 ## 1.1.0-rc.116 — 2026-10-23
 
 - Adds a public local, read-only X81 assessment disclosure for one reviewed

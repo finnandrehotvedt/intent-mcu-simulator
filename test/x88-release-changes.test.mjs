@@ -28,9 +28,9 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc115 to rc116 retained X81 assessment bytes', async () => {
+test('X88 owner binds canonical rc116 to corrected rc117 release bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.116');
+  assert.equal(release.version, '1.1.0-rc.117');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
@@ -38,20 +38,12 @@ test('X88 owner binds canonical rc115 to rc116 retained X81 assessment bytes', a
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
   assert(registry.ids.includes('X92'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.115', current: '1.1.0-rc.116' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.116', current: '1.1.0-rc.117' });
   assert.deepEqual(value.changes, [
-    {
-      id: 'X81', classification: 'additive', capabilities: [
-        'intent-mcu-x81-local-assessment-envelope@1',
-        'intent-mcu-x81-reproducibility-status@1',
-        'intent-mcu-x81-source-evidence@1',
-      ], contracts: ['x81-retained-reproducibility-assessment-v1'],
-      summary: 'Adds a local read-only retained AVR assessment for one reviewed fixture, two recorded workers and 512 paused instructions; observed behavior matches while independent rebuild bytes and physical equivalence remain unclaimed.',
-    },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records rc.115 to rc.116 retained X81 assessment publication and the AVR ready-state presentation correction; strict evidence parsing and export remain unchanged and the release performs no firmware producer action.',
+      summary: 'Records rc.116 to rc.117 as the corrected release after independent browser acceptance found the initial AVR ready view could still block Run; current and retained worker-ready paths now render truthfully without manufacturing observations.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -114,7 +106,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.116');
+  assert.equal(discovery.identity.version, '1.1.0-rc.117');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

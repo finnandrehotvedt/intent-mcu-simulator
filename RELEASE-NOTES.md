@@ -1,4 +1,33 @@
-# Intent MCU Simulator 1.1.0-rc.116
+# Intent MCU Simulator 1.1.0-rc.117
+
+## Corrected AVR ready transition
+
+Rc.117 supersedes withdrawn rc.116. Independent public browser acceptance of
+rc.116 proved that an AVR Build could succeed while Run stayed disabled because
+the initial worker-ready view assumed every optional runtime collection was
+present. Public Lab was rolled back to rc.115 before this correction.
+
+The ready view now treats absent Trace, Pins, Circuit LED, Instrument and
+candidate-support collections as explicitly empty presentation data. It reaches
+Paused and enables Run without changing strict worker parsing, firmware
+authority or electrical behavior. Empty Trace and Logic views say **No D13
+observations** and **No logic observations** rather than showing an invented
+LOW sample.
+
+The release gate exercises two real built-page/native-worker journeys: the
+unchanged default current-model AVR thermostat with its native ready event, and
+a retained model-library project with optional ready fields removed. Both are
+error-free and use no compiler producer or firmware Run.
+
+The local read-only X81 assessment from rc.116 is retained unchanged. X81 stays
+planned until Desktop completes one fresh public AVR Build, one short Run and
+reopens the actually saved assessment file. Status therefore remains X
+**84/1/11**, P1 **59/0/0**. Rc.117 creates at most one normal application
+image and performs zero owner firmware producer actions.
+
+---
+
+## 1.1.0-rc.116
 
 ## Retained AVR reproducibility assessment
 
