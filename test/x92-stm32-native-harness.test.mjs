@@ -19,7 +19,7 @@ test('native harness is immutable, exact and default-disarmed with zero producer
 
 test('execute mode rejects before network without a separately frozen authority', async () => {
   await assert.rejects(execute(process.execPath,
-    ['scripts/x92-stm32-native-harness.mjs', '--execute']), /X92_STM32_NATIVE_HARNESS_DISARMED/u);
+    ['scripts/x92-stm32-native-harness.mjs', '--execute']), /X92_STM32_NATIVE_AUTHORITY_REQUIRED/u);
 });
 
 test('native product path fixes loopback target and attests before producer controls', async () => {
@@ -30,4 +30,6 @@ test('native product path fixes loopback target and attests before producer cont
   assert.match(text, /finally \{ await Promise\.allSettled\(\[\.\.\.pendingRoutes\]\); save\(\); await browser\.close/u);
   assert(text.indexOf('recorder.attest') < text.indexOf("page.click('#quick-build')"));
   assert.match(text, /X92_STM32_EXPECTED_BROWSER/u);
+  assert.match(await readFile(new URL('../scripts/x92-stm32-native-harness.mjs', import.meta.url), 'utf8'),
+    /authority\.mode !== 'execute'/u);
 });

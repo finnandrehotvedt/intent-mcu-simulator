@@ -4,6 +4,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import './x92-stm32-native-authority.test.mjs';
 import './x92-c3-budget-integration.test.mjs';
 import {
   X92_DEFAULT_LIMITS,
