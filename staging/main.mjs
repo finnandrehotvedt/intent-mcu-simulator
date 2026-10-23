@@ -685,6 +685,8 @@ let currentRuntimeWorkerIdentity = null;
 let runtimeRenderTimer = null;
 let pendingRuntimeRender = null;
 let runtimeWorkerCreations = 0;
+let runtimeReadyDeadlineTimer = null;
+const RUNTIME_READY_DEADLINE_MS = 5_000;
 let selectedCompilerProfile = AVR_PROFILE;
 let x92Budget = null;
 let x92BudgetExecutor = null;
@@ -11245,6 +11247,8 @@ function stopRuntime(message = 'No current artifact loaded', {
     { clearResults: true, render: false },
   );
   workerToken += 1;
+  if (runtimeReadyDeadlineTimer !== null) clearTimeout(runtimeReadyDeadlineTimer);
+  runtimeReadyDeadlineTimer = null;
   worker?.terminate();
   worker = null;
   currentRuntimeWorkerIdentity = null;
@@ -13343,10 +13347,25 @@ async function loadArtifact(hex, artifactIdentity, {
   const loadWorker = new Worker('./simulator.worker.js', { type: 'module' });
   if (!x47LoadStillCurrent(frozen)) { loadWorker.terminate(); return; }
   worker = loadWorker;
+  let workerReady = false;
   const ownsWorker = () => token === workerToken && worker === loadWorker;
   const terminateOwnedWorker = () => {
+    if (runtimeReadyDeadlineTimer !== null) clearTimeout(runtimeReadyDeadlineTimer);
+    runtimeReadyDeadlineTimer = null;
     loadWorker.terminate();
     if (worker === loadWorker) { worker = null; currentRuntimeWorkerIdentity = null; }
+  };
+  const failRuntimeStartup = (code, message) => {
+    if (!ownsWorker()) return;
+    terminateOwnedWorker();
+    running = false;
+    setRuntimeEnabled(false);
+    const state = { kind: 'stopped-error', message, cycle: 0, instructions: 0, paused: true };
+    applyLifecycle({ type: 'runtime.message', binding: runtimeBinding, message: state });
+    publish({ runtime: state, runtimeLoadState: 'failed' });
+    cancelThermostatExperiment(`Experiment unresolved: ${message}. Nothing was marked passed.`, { clearResults: false });
+    elements.workerstate.textContent = 'Runtime failed to start — rebuild the current project';
+    showActionableError(elements.projectmessage, code, message);
   };
   loadWorker.addEventListener('message', async ({ data }) => {
     if (!ownsWorker()) return;
@@ -13356,9 +13375,8 @@ async function loadArtifact(hex, artifactIdentity, {
       workerInstanceNonce ??= identity.workerInstanceNonce;
       currentRuntimeWorkerIdentity = structuredClone(identity);
     } catch (error) {
-      terminateOwnedWorker(); running = false;
-      showActionableError(elements.projectmessage, error.code ?? 'RUNTIME_WORKER_IDENTITY_STALE',
-        'A stale or unbound runtime message was rejected. Build and run again.');
+      failRuntimeStartup(error.code ?? 'RUNTIME_WORKER_IDENTITY_STALE',
+        'A stale or unbound runtime startup message was rejected. Rebuild the current project.');
       return;
     }
     try {
@@ -13466,6 +13484,11 @@ async function loadArtifact(hex, artifactIdentity, {
     }
     const acceptedMessage = applyLifecycle({ type: 'runtime.message', binding: runtimeBinding, message: data });
     if (!acceptedMessage.accepted) return;
+    if (data.kind === 'error' || data.kind === 'stopped-error') {
+      if (runtimeReadyDeadlineTimer !== null) clearTimeout(runtimeReadyDeadlineTimer);
+      runtimeReadyDeadlineTimer = null;
+      publish({ runtimeLoadState: 'failed' });
+    }
     if (x40SharedTimeline && !x40TimelineRetainsForWorkerMessage(x40SharedTimeline, data)) {
       clearX40SharedTimeline('A later worker message invalidated the prior shared timeline.');
     }
@@ -13474,7 +13497,11 @@ async function loadArtifact(hex, artifactIdentity, {
       runtimeIdentity: structuredClone(identity), cycle: data.cycle, paused: data.paused,
       kind: data.kind, sequence: ++x47WorkerStatusSequence };
     if (data.kind === 'ready') {
+      workerReady = true;
+      if (runtimeReadyDeadlineTimer !== null) clearTimeout(runtimeReadyDeadlineTimer);
+      runtimeReadyDeadlineTimer = null;
       setRuntimeEnabled(true);
+      publish({ runtimeLoadState: 'ready' });
       if (authority) {
         x47WorkerIdentity = structuredClone(identity);
         renderX47Integration(x47UiOwner.bind({ authority,
@@ -13509,15 +13536,28 @@ async function loadArtifact(hex, artifactIdentity, {
     if (!ownsWorker()) return;
     retireX48RoomLoop('X48_WORKER_ERROR', { restoreControls: false });
     x48RuntimeAuthority = null;
-    running = false; const state = { kind: 'stopped-error', message: event.message };
+    const message = event.message || 'The runtime worker stopped.';
+    if (!workerReady) {
+      failRuntimeStartup('WORKER_ERROR', message);
+      return;
+    }
+    terminateOwnedWorker();
+    running = false;
+    setRuntimeEnabled(false);
+    const state = { kind: 'stopped-error', message, cycle: 0, instructions: 0, paused: true };
     applyLifecycle({ type: 'runtime.message', binding: runtimeBinding, message: state });
-    publish({ runtime: state });
-    cancelThermostatExperiment(`Experiment unresolved: ${event.message}. Nothing was marked passed.`, { clearResults: false });
-    showActionableError(elements.projectmessage, 'WORKER_ERROR', event.message);
+    publish({ runtime: state, runtimeLoadState: 'failed' });
+    cancelThermostatExperiment(`Experiment unresolved: ${message}. Nothing was marked passed.`, { clearResults: false });
+    showActionableError(elements.projectmessage, 'WORKER_ERROR', message);
     elements.workerstate.textContent = 'Stopped — rebuild the current project';
   });
   elements.artifact.textContent = artifactIdentity.slice(0, 12);
   if (!ownsWorker()) { terminateOwnedWorker(); return; }
+  publish({ runtimeLoadState: 'loading' });
+  runtimeReadyDeadlineTimer = setTimeout(() => {
+    failRuntimeStartup('RUNTIME_WORKER_READY_TIMEOUT',
+      `The runtime worker did not become ready within ${RUNTIME_READY_DEADLINE_MS / 1000} seconds.`);
+  }, RUNTIME_READY_DEADLINE_MS);
   loadWorker.postMessage({
     command: 'init', hex, circuit: frozen.runtimeCircuit,
     modelLibraryLock: frozen.modelLibraryLock,

@@ -4,6 +4,7 @@
 // producer and no firmware Run. Guards the complete initial-ready render path.
 
 const assert = require('node:assert/strict');
+const { createHash } = require('node:crypto');
 const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
@@ -14,6 +15,11 @@ const { chromium } = require(path.join(
 const root = path.resolve(__dirname, '..', 'dist');
 const artifactIdentity = 'a'.repeat(64);
 const inputIdentity = 'b'.repeat(64);
+const retainedHex = Buffer.from(fs.readFileSync(
+  path.join(__dirname, 'fixtures', 'avr-thermostat-retained.hex.base64'), 'utf8',
+).trim(), 'base64').toString('utf8');
+const retainedHexSha256 = '15e063cfc10eb127fae0cb87ea57037a388a98db08b099fc7f8da061ed0b0505';
+const productionCsp = "default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self'; form-action 'none'; frame-ancestors 'none'; img-src 'self'; object-src 'none'; script-src 'self' 'sha256-Ol4fhdsQWg9x10Ho2zA++OfTuRE50DQvqSmJ894ef4Y='; script-src-attr 'none'; style-src 'self'; worker-src 'self'; upgrade-insecure-requests";
 
 function contentType(file) {
   if (file.endsWith('.js')) return 'text/javascript';
@@ -24,6 +30,8 @@ function contentType(file) {
 }
 
 (async () => {
+  assert.equal(createHash('sha256').update(retainedHex).digest('hex'), retainedHexSha256,
+    'retained actual compiler bytes changed');
   let serverBuildRequests = 0;
   let buildSequence = 0;
   const server = http.createServer((request, response) => {
@@ -34,6 +42,7 @@ function contentType(file) {
       response.writeHead(404); response.end(); return;
     }
     response.setHeader('Content-Type', contentType(file));
+    response.setHeader('Content-Security-Policy', productionCsp);
     fs.createReadStream(file).pipe(response);
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -50,7 +59,8 @@ function contentType(file) {
       const request = route.request();
       intercepted.push(`${request.method()} ${new URL(request.url()).pathname}`);
       if (request.method() === 'POST') {
-        const jobId = buildSequence === 0 ? 'current-ready-render' : 'retained-ready-render';
+        const jobId = ['current-ready-render', 'retained-ready-render', 'stalled-ready-render'][buildSequence]
+          ?? `unexpected-ready-render-${buildSequence}`;
         buildSequence += 1;
         await route.fulfill({
           status: 202, contentType: 'application/json',
@@ -68,7 +78,7 @@ function contentType(file) {
           status: 'succeeded', cacheHit: false,
           result: {
             artifactIdentity, inputIdentity,
-            artifact: { hex: ':00000001FF' },
+            artifact: { hex: retainedHex, hexSha256: retainedHexSha256 },
             diagnostics: [],
           },
         }),
@@ -190,14 +200,40 @@ function contentType(file) {
     assert.equal(ready.serialText, 'No firmware bytes.');
     assert.equal(ready.workerState, 'Paused');
     assert.equal(page.workers().length, 1, 'actual retained-model simulator worker was not created');
+
+    await page.evaluate(() => {
+      window.Worker = class SilentRuntimeWorker {
+        addEventListener() {}
+        removeEventListener() {}
+        postMessage() {}
+        terminate() {}
+      };
+    });
+    await page.click('#quick-build');
+    await page.waitForFunction(() => window.__M6_STATE__?.buildState === 'succeeded');
+    await page.waitForFunction(() => window.__M6_STATE__?.runtimeLoadState === 'failed', null, { timeout: 7_000 });
+    const timeout = await page.evaluate(() => ({
+      workerState: document.querySelector('#worker-state').textContent,
+      projectMessage: document.querySelector('#project-message').textContent,
+      technical: document.querySelector('#technical-error-detail').textContent,
+      runDisabled: document.querySelector('#run').disabled,
+      quickRunDisabled: document.querySelector('#quick-run').disabled,
+    }));
+    assert.match(timeout.workerState, /Runtime failed to start/u);
+    assert.match(timeout.projectMessage, /did not start/u);
+    assert.match(timeout.technical, /RUNTIME_WORKER_READY_TIMEOUT/u);
+    assert.equal(timeout.runDisabled, true);
+    assert.equal(timeout.quickRunDisabled, true);
     assert.deepEqual(intercepted, [
       'POST /api/build', 'GET /api/build/current-ready-render',
       'POST /api/build', 'GET /api/build/retained-ready-render',
+      'POST /api/build', 'GET /api/build/stalled-ready-render',
     ]);
     assert.equal(serverBuildRequests, 0, 'a compiler producer request reached the server');
     assert.deepEqual(failures, []);
     process.stdout.write(`${JSON.stringify({
-      status: 'pass', scope: 'actual-worker-ready-render', current, retained: ready,
+      status: 'pass', scope: 'actual-worker-ready-render', current, retained: ready, timeout,
+      retainedHexSha256, productionCsp: true,
       compilerProducerRequests: 0, firmwareRuns: 0,
     })}\n`);
   } finally {

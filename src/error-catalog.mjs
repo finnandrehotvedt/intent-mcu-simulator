@@ -22,6 +22,8 @@ const CATALOG = Object.freeze({
   ADAPTER_EXECUTION_BLOCKED: 'This firmware compiled, but Run is unavailable because this controller has no verified runtime adapter.',
   WORKER_WATCHDOG: 'The virtual controller stopped responding. Reset it or rebuild the current project.',
   WORKER_ERROR: 'The virtual controller stopped. Rebuild the current project, then try Run again.',
+  RUNTIME_WORKER_READY_TIMEOUT: 'The virtual controller did not start. Rebuild the current project, then try Run again.',
+  RUNTIME_WORKER_IDENTITY_STALE: 'The virtual controller startup was rejected as stale. Rebuild the current project.',
   PROMPT_SOURCE_BOUNDARY: 'The proposal tried to change data outside the circuit. Generate a new wiring proposal and try again.',
 });
 
