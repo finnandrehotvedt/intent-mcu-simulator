@@ -3,6 +3,7 @@
 
 import {
   CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   RC113_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   RC112_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
@@ -47,6 +48,9 @@ import { RETAINED_MODEL_LIBRARY_IMPLEMENTATION } from './model-library-retained-
 // complete allowlisted lock, then selects one of these finite static imports.
 export function productionModelBundle(role) {
   if (role === 'retained') return RETAINED_MODEL_LIBRARY_IMPLEMENTATION;
+  if (role === 'pre-retained-build-guard-current-migration') {
+    return PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION;
+  }
   if (role === 'pre-x92-stm32-source-current-migration') {
     return PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION;
   }

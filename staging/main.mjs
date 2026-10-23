@@ -305,6 +305,7 @@ import {
 import {
   CURRENT_MODEL_LIBRARY_LOCK,
   RETAINED_MODEL_LIBRARY_LOCK,
+  modelLibraryExecutionIdentity,
   modelLibraryMigrationPreview,
   resolveModelLibrary,
 } from '../src/model-library.mjs';
@@ -13379,6 +13380,11 @@ async function loadArtifact(hex, artifactIdentity, {
         'A stale or unbound runtime startup message was rejected. Rebuild the current project.');
       return;
     }
+    if (!workerReady && (data.kind === 'error' || data.kind === 'stopped-error')) {
+      const code = /^[A-Z][A-Z0-9_]+$/u.test(data.message ?? '') ? data.message : 'WORKER_ERROR';
+      failRuntimeStartup(code, data.message || 'The runtime worker stopped during startup.');
+      return;
+    }
     try {
       if (['x48-started', 'x48-progress', 'x48-complete', 'x48-indeterminate',
         'x48-cancelled'].includes(data.kind)) {
@@ -13638,6 +13644,29 @@ async function build() {
       'Cancel the ideal room loop before starting a new Build.');
     return { ok: false, code: 'X48_OPERATION_ACTIVE' };
   }
+  const target = currentCompilerTarget();
+  const modelExecution = modelLibraryExecutionIdentity(modelLibraryLockFor(target.profile));
+  if (!modelExecution.ok) {
+    const message = modelExecution.code === 'MODEL_LIBRARY_MIGRATION_REQUIRED'
+      ? 'This retained model cannot authorize a new runtime. Open Model library, download the migrated copy, open that copy, then Build fresh.'
+      : `The selected model library cannot authorize this Build (${modelExecution.code}).`;
+    elements.buildstate.textContent = 'Model migration required';
+    renderBuildDiagnostics({ diagnostics: [{
+      file: 'model-library', line: 1, severity: 'error', message,
+    }] }, message);
+    showActionableError(elements.projectmessage, modelExecution.code, message);
+    elements.quickstate.textContent = `${currentProject().metadata.name} · model migration required`;
+    elements.modellibrarydetail.open = true;
+    sharedWorkbenchShell.openDialog('project', document.querySelector('#project-files-open'), {
+      initialFocus: false,
+    });
+    elements.modellibrarymigrate.focus({ preventScroll: true });
+    publish({
+      buildState: 'migration-required', artifactIdentity: null, inputIdentity: null,
+      artifactManifest: null, compileOnly: false, compilerRequestBlocked: true, cacheHit: false,
+    });
+    return { ok: false, code: modelExecution.code };
+  }
   retireX47Integration('X47_BUILD_STARTED');
   invalidateVersionRegressionReport('A new build cleared active comparison review authority.');
   invalidateFailureReplayReport('A new build retired the X36 replay workers and cleared export authority. Open the replay point again.');
@@ -13651,7 +13680,6 @@ async function build() {
   invalidateDigitalStateRuntimeReport('A new build cleared the prior X33 runtime report. Run the producer check again.');
   invalidatePrecisionCheckReport('A new build cleared the prior X34 report. Run the instrumented check again for current evidence.');
   invalidateCausalChainReport('A new build cleared the prior X35 report. Run the causal check again for current evidence.');
-  const target = currentCompilerTarget();
   if (!target.compileAvailable) {
     const missing = firstMissingTargetPrerequisite(target.profile);
     const view = publicControllerView(target.profile);

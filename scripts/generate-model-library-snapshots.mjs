@@ -13,6 +13,9 @@ import { controlContractsFor } from '../src/model-control-contracts.mjs';
 import * as existingSnapshots from '../src/model-library-snapshots.mjs';
 
 const { RETAINED_MODEL_LIBRARY_MANIFEST } = existingSnapshots;
+const PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_RUNTIME_READY_DEADLINE_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_RUNTIME_READY_DEADLINE_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -258,16 +261,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-runtime-ready-deadline.1-current',
-  'intent-mcu-model-bundle-current-runtime-ready-deadline-1@40',
+  '2.0.0-retained-build-guard.1-current',
+  'intent-mcu-model-bundle-current-retained-build-guard-1@41',
   currentImplementation,
   {
-    priorVersion: PRE_RUNTIME_READY_DEADLINE_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_RUNTIME_READY_DEADLINE_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component and firmware semantics remain unchanged; AVR runtime startup now has one finite ready deadline and explicit terminal failure state',
-    presentationDisposition: 'successful ready still enables Run; stalled or stale startup now shows one actionable error instead of indefinite Loading',
-    baselineClosureDisposition: 'public rc.118 and every earlier identity remain immutable and migration-only; this source candidate performs zero public build, run, image build or deployment',
+    semanticDisposition: 'component and firmware semantics remain unchanged; migration-only saved projects are blocked before compiler dispatch and retain zero runtime authority',
+    presentationDisposition: 'the Firmware card names the required data-only migration and opens the existing reviewed migration control before any Build request',
+    baselineClosureDisposition: 'public rc.119 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, run, image build or deployment',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -279,6 +282,7 @@ export const RC111_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringi
 export const RC112_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC112_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const RC113_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC113_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_RUNTIME_READY_DEADLINE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_RUNTIME_READY_DEADLINE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});

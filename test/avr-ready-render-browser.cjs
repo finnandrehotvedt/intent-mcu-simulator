@@ -8,6 +8,7 @@ const { createHash } = require('node:crypto');
 const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
+const { pathToFileURL } = require('node:url');
 const { chromium } = require(path.join(
   process.env.PLAYWRIGHT_NODE_MODULES || '/runner/node_modules', 'playwright',
 ));
@@ -30,6 +31,9 @@ function contentType(file) {
 }
 
 (async () => {
+  const { RC112_CURRENT_MODEL_LIBRARY_LOCK } = await import(pathToFileURL(
+    path.join(__dirname, '..', 'src', 'model-library.mjs'),
+  ).href);
   assert.equal(createHash('sha256').update(retainedHex).digest('hex'), retainedHexSha256,
     'retained actual compiler bytes changed');
   let serverBuildRequests = 0;
@@ -59,7 +63,10 @@ function contentType(file) {
       const request = route.request();
       intercepted.push(`${request.method()} ${new URL(request.url()).pathname}`);
       if (request.method() === 'POST') {
-        const jobId = ['current-ready-render', 'retained-ready-render', 'stalled-ready-render'][buildSequence]
+        const jobId = [
+          'current-ready-render', 'migrated-recovery-ready-render',
+          'retained-ready-render', 'stalled-ready-render',
+        ][buildSequence]
           ?? `unexpected-ready-render-${buildSequence}`;
         buildSequence += 1;
         await route.fulfill({
@@ -125,6 +132,83 @@ function contentType(file) {
     assert.equal(current.workerState, 'Paused');
     assert.equal(page.workers().length, 1, 'actual current-model simulator worker was not created');
 
+    const historicalRecovery = await page.evaluate((modelLibrary) => {
+      const value = JSON.parse(window.__COMMON_PROJECT_FILES__.current());
+      value.modelLibrary = modelLibrary;
+      return JSON.stringify(value);
+    }, RC112_CURRENT_MODEL_LIBRARY_LOCK);
+    await page.evaluate((source) => {
+      localStorage.setItem('teach-lab.simulator.project.v2', source);
+      localStorage.removeItem('teach-lab.simulator.project.recovery.v2');
+    }, historicalRecovery);
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForFunction(() => window.__M11_READY__ === true);
+    assert.match(await page.locator('#project-message').textContent(), /Reopened and revalidated/u);
+    assert.match(await page.locator('#model-library-summary').textContent(),
+      /2\.0\.0-x48-current-source-integration\.1-current.*retained/u);
+    const requestsBeforeMigrationGuard = intercepted.length;
+    await page.click('#quick-build');
+    await page.waitForFunction(() => window.__M6_STATE__?.buildState === 'migration-required');
+    const migrationGuard = await page.evaluate(() => ({
+      buildState: document.querySelector('#build-state').textContent,
+      projectMessage: document.querySelector('#project-message').textContent,
+      diagnostics: document.querySelector('#diagnostics').textContent,
+      technical: document.querySelector('#technical-error-detail').textContent,
+      modelDetailsOpen: document.querySelector('#model-library-detail').open,
+      runDisabled: document.querySelector('#run').disabled,
+      quickRunDisabled: document.querySelector('#quick-run').disabled,
+      workers: window.__M6_STATE__.runtimeWorkerCreations,
+    }));
+    assert.equal(intercepted.length, requestsBeforeMigrationGuard,
+      'migration-only recovery reached the compiler producer path');
+    assert.equal(migrationGuard.buildState, 'Model migration required');
+    assert.match(migrationGuard.projectMessage, /retained model version/u);
+    assert.match(migrationGuard.diagnostics, /download the migrated copy/u);
+    assert.match(migrationGuard.technical, /MODEL_LIBRARY_MIGRATION_REQUIRED/u);
+    assert.equal(migrationGuard.modelDetailsOpen, true);
+    assert.equal(migrationGuard.runDisabled, true);
+    assert.equal(migrationGuard.quickRunDisabled, true);
+    assert.equal(migrationGuard.workers, 0);
+
+    assert.equal(await page.locator('#model-library-migrate').isDisabled(), false);
+    const migratedDownloadPromise = page.waitForEvent('download', { timeout: 2_000 }).catch(() => null);
+    await page.click('#model-library-migrate');
+    const migratedDownload = await migratedDownloadPromise;
+    assert(migratedDownload, JSON.stringify(await page.evaluate(() => ({
+      projectMessage: document.querySelector('#project-message').textContent,
+      modelStatus: document.querySelector('#model-library-status').textContent,
+      modelButtonDisabled: document.querySelector('#model-library-migrate').disabled,
+    }))));
+    const migratedPath = await migratedDownload.path();
+    const migratedBytes = fs.readFileSync(migratedPath);
+    await page.setInputFiles('#project-open-input', {
+      name: 'recovered-thermostat.migrated.intent-mcu.json',
+      mimeType: 'application/json', buffer: migratedBytes,
+    });
+    await page.waitForTimeout(100);
+    if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) {
+      await page.click('#unsaved-discard');
+    }
+    await page.waitForFunction(() => document.querySelector('#model-library-summary').textContent.includes('current'));
+    await page.click('#quick-build');
+    await page.waitForFunction(() => window.__M6_STATE__?.buildState === 'succeeded');
+    await page.waitForFunction(() => window.__M6_STATE__?.runtime?.kind === 'ready');
+    await page.waitForFunction(() => document.querySelector('#worker-state').textContent === 'Paused');
+    const migrated = await page.evaluate(() => ({
+      model: document.querySelector('#model-library-summary').textContent,
+      workerState: document.querySelector('#worker-state').textContent,
+      runDisabled: document.querySelector('#run').disabled,
+      quickRunDisabled: document.querySelector('#quick-run').disabled,
+      cycle: window.__M6_STATE__.runtime.cycle,
+      instructions: window.__M6_STATE__.runtime.instructions,
+    }));
+    assert.match(migrated.model, /current/u);
+    assert.equal(migrated.workerState, 'Paused');
+    assert.equal(migrated.runDisabled, false);
+    assert.equal(migrated.quickRunDisabled, false);
+    assert.equal(migrated.cycle, 0);
+    assert.equal(migrated.instructions, 0);
+
     const retainedProject = await page.evaluate(() => {
       const value = JSON.parse(window.__COMMON_PROJECT_FILES__.current());
       value.schema = 'intent-mcu-project-envelope@6';
@@ -169,8 +253,10 @@ function contentType(file) {
       mimeType: 'application/json',
       buffer: Buffer.from(retainedProject),
     });
-    await page.waitForFunction(() => document.querySelector('#unsaved-change-dialog').open === true);
-    await page.click('#unsaved-discard');
+    await page.waitForTimeout(100);
+    if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) {
+      await page.click('#unsaved-discard');
+    }
     await page.waitForFunction(() => document.querySelector('#model-library-summary').textContent.includes('retained'));
     await page.click('#quick-build');
     await page.waitForFunction(() => window.__M6_STATE__?.buildState === 'succeeded');
@@ -226,13 +312,15 @@ function contentType(file) {
     assert.equal(timeout.quickRunDisabled, true);
     assert.deepEqual(intercepted, [
       'POST /api/build', 'GET /api/build/current-ready-render',
+      'POST /api/build', 'GET /api/build/migrated-recovery-ready-render',
       'POST /api/build', 'GET /api/build/retained-ready-render',
       'POST /api/build', 'GET /api/build/stalled-ready-render',
     ]);
     assert.equal(serverBuildRequests, 0, 'a compiler producer request reached the server');
     assert.deepEqual(failures, []);
     process.stdout.write(`${JSON.stringify({
-      status: 'pass', scope: 'actual-worker-ready-render', current, retained: ready, timeout,
+      status: 'pass', scope: 'actual-worker-ready-render', current, migrationGuard,
+      migratedRecovery: migrated, retained: ready, timeout,
       retainedHexSha256, productionCsp: true,
       compilerProducerRequests: 0, firmwareRuns: 0,
     })}\n`);

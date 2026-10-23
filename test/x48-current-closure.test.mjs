@@ -32,7 +32,7 @@ test('X48 current identity owns every newly executed path', async () => {
     assert.equal(createHash('sha256').update(bytes).digest('hex'), members.get(path), path);
   }
   assert.equal(CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    '2.0.0-x92-pico-owner-proof.1-current');
+    '2.0.0-retained-build-guard.1-current');
 });
 
 test('current resolver manifest and admitted execution identity use one exact implementation ID', () => {
