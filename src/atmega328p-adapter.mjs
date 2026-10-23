@@ -26,6 +26,7 @@ import { X46UsartConfigurationProducer } from './x46-usart-configuration-produce
 export const CLOCK_HZ = 16_000_000;
 export const TRACE_LIMIT = 100_000;
 export const SERIAL_LIMIT = 4_096;
+export const USART_RX_OBSERVATION_LATENESS_LIMIT = 4;
 const SAMPLE_LIMIT = 4_096;
 const UNSUPPORTED_LIMIT = 256;
 const X47_TRANSITION_LIMIT = 64;
@@ -111,6 +112,10 @@ export class Atmega328PAdapter {
       : null;
     this.trace = [];
     this.serial = [];
+    this.usartRxSequence = 0;
+    this.activeUsartRx = null;
+    this.pendingUsartRxCompletion = null;
+    this.recordingUsartRxRequest = false;
     this.adcReads = [];
     this.unsupported = [];
     this.x47DigitalTransitions = [];
@@ -184,9 +189,22 @@ export class Atmega328PAdapter {
       }, SERIAL_LIMIT);
     };
     this.usart.onRxComplete = () => {
-      this.retentionDrops.serial += boundedPush(
-        this.serial, { direction: 'rx-complete', cycle: this.cpu.cycles }, SERIAL_LIMIT,
-      );
+      const transfer = this.activeUsartRx;
+      const cycle = this.cpu.cycles;
+      const completion = {
+        direction: 'rx-complete', cycle,
+        ...(transfer ? {
+          transferId: transfer.transferId,
+          resetEpoch: transfer.resetEpoch,
+          value: transfer.value,
+          startCycle: transfer.startCycle,
+          scheduledCompletionCycle: transfer.scheduledCompletionCycle,
+          observationLatenessCycles: cycle - transfer.scheduledCompletionCycle,
+        } : {}),
+      };
+      if (this.recordingUsartRxRequest) this.pendingUsartRxCompletion = completion;
+      else this.retentionDrops.serial += boundedPush(this.serial, completion, SERIAL_LIMIT);
+      this.activeUsartRx = null;
     };
   }
 
@@ -340,11 +358,37 @@ export class Atmega328PAdapter {
           stuckValueC: event.stuckValueC, appliedVoltage });
       }
       if (event.type === 'uart-rx') {
+        const startCycle = this.cpu.cycles;
+        const frameCycles = this.usart.cyclesPerChar;
+        const transfer = {
+          transferId: `rx:${this.x46ResetEpoch}:${this.usartRxSequence += 1}`,
+          resetEpoch: this.x46ResetEpoch,
+          value: event.value,
+          startCycle,
+          scheduledCompletionCycle: startCycle + frameCycles,
+        };
+        const priorTransfer = this.activeUsartRx;
+        if (!priorTransfer) this.activeUsartRx = transfer;
+        this.recordingUsartRxRequest = true;
         const accepted = this.usart.writeByte(event.value, event.immediate ?? false);
+        this.recordingUsartRxRequest = false;
+        if (accepted === false) this.activeUsartRx = priorTransfer;
         this.retentionDrops.serial += boundedPush(this.serial, {
-          direction: 'rx-request', cycle: this.cpu.cycles, targetCycle: event.cycle,
+          direction: 'rx-request', cycle: startCycle, targetCycle: event.cycle,
+          startObservationLatenessCycles: startCycle - event.cycle,
           value: event.value, accepted: accepted !== false,
+          immediate: event.immediate === true,
+          transferId: transfer.transferId,
+          resetEpoch: transfer.resetEpoch,
+          baud: this.usart.baudRate,
+          frameCycles,
+          scheduledCompletionCycle: accepted === false ? null : transfer.scheduledCompletionCycle,
         }, SERIAL_LIMIT);
+        if (this.pendingUsartRxCompletion) {
+          this.retentionDrops.serial += boundedPush(this.serial,
+            this.pendingUsartRxCompletion, SERIAL_LIMIT);
+          this.pendingUsartRxCompletion = null;
+        }
       }
     }
   }

@@ -63,3 +63,37 @@ test('synthetic in-process worker binds empty configuration source and advances 
     { runtimeIdentity: reset.runtimeIdentity, resetEpoch: 2 },
   ), { code: 'X46_USART_CONFIG_SOURCE_STALE' });
 });
+
+test('synthetic in-process worker records disabled RX rejection without pretending firmware execution', async () => {
+  const binding = {
+    schema: MODEL_RUNTIME_BINDING_SCHEMA,
+    projectGeneration: 5,
+    runtimeGeneration: 10,
+    artifactIdentity: 'e'.repeat(64),
+    modelImplementationSha256: CURRENT_MODEL_LIBRARY_LOCK.implementationSha256,
+    modelExecutionContextSha256: 'f'.repeat(64),
+  };
+  const ready = await send({
+    command: 'init',
+    hex: ':00000001FF',
+    circuit: DEFAULT_CIRCUIT,
+    runtimeBinding: binding,
+    modelLibraryLock: CURRENT_MODEL_LIBRARY_LOCK,
+    modelImplementationSha256: CURRENT_MODEL_LIBRARY_LOCK.implementationSha256,
+    modelExecutionContextSha256: binding.modelExecutionContextSha256,
+  }, (message) => message.kind === 'ready' && message.runtimeIdentity?.runtimeGeneration === 10);
+  await send({ command: 'uart-rx', value: 0x41 },
+    (message) => message.kind === 'uart-rx' && message.runtimeIdentity?.runtimeGeneration === 10);
+  const status = await send({ command: 'step' },
+    (message) => message.kind === 'stepped' && message.runtimeIdentity?.runtimeGeneration === 10);
+  const request = status.serial.find((record) => record.direction === 'rx-request');
+  assert.equal(request.accepted, false);
+  assert.equal(request.scheduledCompletionCycle, null);
+  assert.equal(status.serial.some((record) => record.direction === 'rx-complete'), false);
+  assert.deepEqual(status.runtimeIdentity, ready.runtimeIdentity);
+
+  const reset = await send({ command: 'reset' },
+    (message) => message.kind === 'reset' && message.runtimeIdentity?.runtimeGeneration === 10);
+  assert.equal(reset.serial.length, 0);
+  assert.equal(reset.usartConfiguration.resetEpoch, ready.usartConfiguration.resetEpoch + 1);
+});

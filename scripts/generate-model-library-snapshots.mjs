@@ -25,6 +25,9 @@ const PRE_PWM_LED_SHORT_ROUTING_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_X46_USART_CONFIG_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_X46_USART_CONFIG_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_RUNTIME_READY_DEADLINE_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_RUNTIME_READY_DEADLINE_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -194,6 +197,7 @@ const CURRENT_CLOSURE = Object.freeze([
   '../src/atmega328p-adapter.mjs', '../src/x43-avr-stack-profile.mjs',
   '../src/x46-usart-configuration-producer.mjs',
   '../src/x46-usart-runtime-boundary.mjs',
+  '../src/x46-usart-rx-contract.mjs',
   '../src/x47-runtime-transaction.mjs',
   '../src/x47-ui-integration.mjs', '../src/strict-json.mjs',
   '../src/x47-repeatable-inputs.mjs',
@@ -274,15 +278,15 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x46-usart-config-producer.2-current',
-  'intent-mcu-model-bundle-current-x46-usart-config-producer-2@44',
+  '2.0.0-x46-usart-rx-producer.1-current',
+  'intent-mcu-model-bundle-current-x46-usart-rx-producer-1@45',
   currentImplementation,
   {
-    priorVersion: PRE_X46_USART_CONFIG_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X46_USART_CONFIG_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component, firmware and electrical semantics remain unchanged; a read-only AVR USART configuration observation producer is added',
-    presentationDisposition: 'no UI is added; configuration records remain private source evidence pending actual-data acceptance',
+    semanticDisposition: 'component, firmware and electrical semantics remain unchanged; paired read-only AVR USART0 RX peripheral-model events are added',
+    presentationDisposition: 'no UI is added; RX records remain private source evidence pending one bounded native fixture',
     baselineClosureDisposition: 'public rc.125 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, real worker, run, image build or deployment',
   },
 );
@@ -300,6 +304,7 @@ export const PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MANIFEST = Object.fr
 export const PRE_RUNTIME_CONTROLS_SERIAL_UI_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_RUNTIME_CONTROLS_SERIAL_UI_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_PWM_LED_SHORT_ROUTING_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_PWM_LED_SHORT_ROUTING_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X46_USART_CONFIG_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X46_USART_CONFIG_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_RUNTIME_READY_DEADLINE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_RUNTIME_READY_DEADLINE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
