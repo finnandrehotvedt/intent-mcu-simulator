@@ -8,6 +8,7 @@ const PROFILES = new Set(['board.atmega328p-16mhz-v1','board.rp2040-pico-v1','bo
 const keys = (v, expected) => v && typeof v === 'object' && !Array.isArray(v)
   && JSON.stringify(Object.keys(v).sort()) === JSON.stringify([...expected].sort());
 const fail = (code) => { throw Object.assign(new Error(code), { code }); };
+const trustedRegistries = new WeakSet();
 export function stableX81(value) {
   if (Array.isArray(value)) return `[${value.map(stableX81).join(',')}]`;
   if (value && typeof value === 'object') return `{${Object.keys(value).sort().map((k) => `${JSON.stringify(k)}:${stableX81(value[k])}`).join(',')}}`;
@@ -38,7 +39,32 @@ async function build(v, expected) {
   if (!bytes.length || await hashBytes(bytes)!==v.artifactSha256) fail('X81_ARTIFACT_HASH_INVALID');
   return v;
 }
-export async function assessX81(input, trusted = { receipts: new Set() }) {
+const registryKeys=['schema','role','ownerSchema','receiptSha256','evidenceSchema','profile','contextSha256','requestSha256','operationId','workerNonce','artifactPayloadSha256','observationsSha256','observationWindowSha256'];
+export function createTrustedX81OwnerRegistry(records) {
+  if(!Array.isArray(records)) fail('X81_TRUST_REGISTRY_INVALID');
+  const copy=records.map((v)=>{
+    if(!keys(v,registryKeys)||v.schema!=='intent-mcu-x81-owner-binding@1'||!['run','build'].includes(v.role)
+      ||!ID.test(v.ownerSchema)||!HASH.test(v.receiptSha256)||v.evidenceSchema!==X81_REPORT_SCHEMA
+      ||!PROFILES.has(v.profile)||!HASH.test(v.contextSha256)||!HASH.test(v.requestSha256)||!ID.test(v.operationId)
+      ||(v.role==='run'?(!ID.test(v.workerNonce)||v.artifactPayloadSha256!==null||!HASH.test(v.observationsSha256)||!HASH.test(v.observationWindowSha256))
+        :(v.workerNonce!==null||!HASH.test(v.artifactPayloadSha256)||v.observationsSha256!==null||v.observationWindowSha256!==null))) fail('X81_TRUST_REGISTRY_INVALID');
+    return Object.freeze(structuredClone(v));
+  });
+  if(new Set(copy.map((x)=>x.receiptSha256)).size!==copy.length) fail('X81_TRUST_REGISTRY_DUPLICATE');
+  const registry=Object.freeze({lookup(receiptSha256){return copy.find((x)=>x.receiptSha256===receiptSha256)??null;}});
+  trustedRegistries.add(registry); return registry;
+}
+async function ownerBinding(value, role, c, registry) {
+  if(!trustedRegistries.has(registry)) return false;
+  const p=value.provenance; const record=registry.lookup(p.receiptSha256); if(!record)return false;
+  const expected={schema:'intent-mcu-x81-owner-binding@1',role,ownerSchema:p.ownerSchema,receiptSha256:p.receiptSha256,
+    evidenceSchema:X81_REPORT_SCHEMA,profile:c.profile,contextSha256:await x81Hash(c),requestSha256:p[`${role}RequestSha256`],
+    operationId:value[`${role}Id`],workerNonce:role==='run'?value.workerNonce:null,
+    artifactPayloadSha256:role==='build'?value.artifactSha256:null,observationsSha256:role==='run'?value.observationsSha256:null,
+    observationWindowSha256:role==='run'?await x81Hash(value.observations.window):null};
+  return stableX81(record)===stableX81(expected);
+}
+export async function assessX81(input, trusted = null) {
   if (!keys(input, ['schema','evidenceId','context','runs','builds','historicalGaps','authority'])
       || input.schema !== X81_REPORT_SCHEMA || !ID.test(input.evidenceId)
       || !Array.isArray(input.runs) || !Array.isArray(input.builds)
@@ -51,13 +77,13 @@ export async function assessX81(input, trusted = { receipts: new Set() }) {
   if (input.historicalGaps.length) Object.assign(observed,{reason:'missing-provenance',gaps:[...input.historicalGaps]});
   else if (runs.length === 2) {
     if (runs[0].runId === runs[1].runId || runs[0].workerNonce === runs[1].workerNonce || runs[0].provenance.receiptSha256===runs[1].provenance.receiptSha256 || runs[0].provenance.runRequestSha256===runs[1].provenance.runRequestSha256) fail('X81_RUNS_NOT_INDEPENDENT');
-    const trustedRuns=runs.every((x)=>trusted.receipts?.has(x.provenance.receiptSha256));
+    const trustedRuns=(await Promise.all(runs.map((x)=>ownerBinding(x,'run',c,trusted)))).every(Boolean);
     Object.assign(observed, !trustedRuns ? {status:'not-qualified',reason:'owner-provenance-untrusted'} : runHashes[0] === runHashes[1] ? {status:'verified',reason:'same-observed-behavior'} : {status:'different',reason:'observations-differ'});
   }
   const rebuild = { status:'not-checked', reason:'two-independent-builds-required' };
   if (builds.length === 2) {
     if (builds[0].buildId === builds[1].buildId || builds[0].provenance.receiptSha256===builds[1].provenance.receiptSha256 || builds[0].provenance.buildRequestSha256===builds[1].provenance.buildRequestSha256) fail('X81_BUILDS_NOT_INDEPENDENT');
-    const trustedBuilds=builds.every((x)=>trusted.receipts?.has(x.provenance.receiptSha256));
+    const trustedBuilds=(await Promise.all(builds.map((x)=>ownerBinding(x,'build',c,trusted)))).every(Boolean);
     Object.assign(rebuild, !trustedBuilds ? {status:'not-qualified',reason:'owner-provenance-untrusted'} : builds[0].artifactSha256 === builds[1].artifactSha256
       ? {status:'verified',reason:'byte-identical-independent-builds'} : {status:'different',reason:'artifact-bytes-differ'});
   } else if (builds.length > 2) fail('X81_BUILD_COUNT_INVALID');
