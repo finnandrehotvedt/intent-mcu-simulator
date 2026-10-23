@@ -10,6 +10,6 @@
   "network": "none",
   "qemuPinStateObserved": false,
   "gpioPeripheralModel": "IntentForce project-owned GPIO2 register adapter",
-  "image": "local/intent-mcu-esp32c3-runtime:1.1.0-rc.5",
-  "imageId": "sha256:49dc1d67e6deea364f9504765ea137fdce32d2517c5dd531e64b24092c381356"
+  "image": "local/intent-mcu-esp32c3-runtime:1.1.0-rc.6",
+  "imageId": "sha256:a744202efee37a1969a496d096e9bd155c45e990493dc16becec7ef75213be47"
 }
