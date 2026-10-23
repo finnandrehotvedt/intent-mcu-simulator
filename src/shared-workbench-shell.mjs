@@ -1830,8 +1830,15 @@ export function mountSharedWorkbenchShell(document) {
   const closePopup = ({ restoreFocus = true } = {}) => {
     if (!activePopup) return false;
     const { dialog, opener } = popupByName.get(activePopup);
+    const closingInstruments = activePopup === 'instruments';
     const focus = returnFocus;
     opener.setAttribute('aria-expanded', 'false');
+    if (closingInstruments && activeProfile === AVR_PROFILE) {
+      const serial = document.querySelector('#serial-dock');
+      const serialTab = document.querySelector('#serial-tab');
+      if (serial) serial.hidden = true;
+      if (serialTab) serialTab.setAttribute('aria-expanded', 'false');
+    }
     if (dialog.open) dialog.close('close');
     restorePopupNodes();
     activePopup = null;
@@ -1848,6 +1855,12 @@ export function mountSharedWorkbenchShell(document) {
     if (activePopup) closePopup({ restoreFocus: false });
     const popup = popupByName.get(name);
     for (const node of profileNodes(activeProfile)[name]) popup.mount.append(node);
+    if (name === 'instruments' && activeProfile === AVR_PROFILE) {
+      const serial = document.querySelector('#serial-dock');
+      const serialTab = document.querySelector('#serial-tab');
+      if (serial) serial.hidden = false;
+      if (serialTab) serialTab.setAttribute('aria-expanded', 'true');
+    }
     activePopup = name;
     returnFocus = requestedOpener ?? document.activeElement ?? popup.opener;
     popup.opener.setAttribute('aria-expanded', 'true');
@@ -1992,6 +2005,7 @@ export function mountSharedWorkbenchShell(document) {
       if (drawer) drawer.open = true;
       serial.setAttribute('tabindex', '-1');
       serial.focus({ preventScroll: true });
+      serial.scrollIntoView({ block: 'start', inline: 'nearest' });
       return true;
     },
     activeDialog() { return activePopup; },

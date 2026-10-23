@@ -55,8 +55,17 @@ test('top workbench exposes exactly seven accessible popup surfaces around one r
   assert.match(shell, /target\.focus\(\{ preventScroll: true \}\)/);
   assert.match(shell, /resolvedProfileNodes/);
   assert.doesNotMatch(shell, /cloneNode/);
+  assert.match(shell, /if \(serial\) serial\.hidden = false/);
+  assert.match(shell, /if \(serial\) serial\.hidden = true/);
+  assert.match(shell, /serialTab\.setAttribute\('aria-expanded', 'true'\)/);
+  assert.match(shell, /serialTab\.setAttribute\('aria-expanded', 'false'\)/);
+  assert.match(shell, /serial\.scrollIntoView\(\{ block: 'start', inline: 'nearest' \}\)/);
   assert.match(css, /height:\s*max\(560px,\s*calc\(100vh - 200px\)\)/);
   assert.match(css, /max-height:\s*88vh/);
+  assert.match(css, /#quick-pause,[\s\S]+#quick-reset\s*\{\s*min-width:\s*64px;/u);
+  assert.match(html, /<details id="regression-matrix"[^>]*>[\s\S]+<summary class="advanced-testing-summary"/u);
+  assert.doesNotMatch(html, /<details id="regression-matrix"[^>]*\sopen(?:\s|>)/u);
+  assert.match(html, /Nothing here starts automatically/u);
 });
 
 test('X59 keeps finite presentation-only view state inside the X48-owned shared UI module', async () => {
@@ -106,6 +115,8 @@ test('browser entry point mounts the shared shell without replacing profile impl
   assert.match(shell, /\{ initialFocus = true \}/);
   assert.match(browser, /openDialog\('firmware',[^{]+\{ initialFocus: false \}\)/);
   assert.match(browser, /closeDialog\(\{ restoreFocus: false \}\)/);
+  assert.match(browser, /elements\.serialtab\.addEventListener\('click',[\s\S]+sharedWorkbenchShell\.openSerial\(\)/u);
+  assert.match(browser, /sharedWorkbenchShell\.activeDialog\(\) === 'instruments'/u);
   for (const prefix of ['pico', 'c3', 'stm32']) assert.match(html, new RegExp(`id="${prefix}-fullscreen"`));
   assert.match(shell, /requestFullscreen/);
   assert.match(shell, /FULLSCREEN_API_UNAVAILABLE/);

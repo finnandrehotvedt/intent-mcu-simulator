@@ -14284,14 +14284,15 @@ function setCanvasInteractionMode(mode) {
 }
 
 elements.serialtab.addEventListener('click', () => {
-  if (selectedCompilerProfile !== AVR_PROFILE) {
-    setSerialDock(false);
-    sharedWorkbenchShell.openSerial();
+  sharedWorkbenchShell.openSerial();
+});
+elements.serialclose.addEventListener('click', () => {
+  if (sharedWorkbenchShell.activeDialog() === 'instruments') {
+    sharedWorkbenchShell.closeDialog();
     return;
   }
-  setSerialDock(elements.serialtab.getAttribute('aria-expanded') !== 'true');
+  setSerialDock(false, { returnFocus: true });
 });
-elements.serialclose.addEventListener('click', () => setSerialDock(false, { returnFocus: true }));
 elements.serialresume.addEventListener('pointerdown', resumeSerialAutoscrollFromControl);
 elements.serialresume.addEventListener('click', resumeSerialAutoscrollFromControl);
 function pauseSerialAutoscroll() {

@@ -804,7 +804,9 @@
       <article class="instrument-card panel" aria-labelledby="pin-title"><div class="card-heading"><div><p class="eyebrow">SAME MACHINE STATE</p><h2 id="pin-title">Pin inspector</h2></div></div><label for="pin-select">Pin</label><select id="pin-select"><option>D0</option><option>D1</option><option>D2</option><option>D3</option><option>D4</option><option>D5</option><option>D6</option><option>D7</option><option>D8</option><option>D9</option><option>D10</option><option>D11</option><option>D12</option><option selected>D13</option><option>A0</option><option>A1</option><option>A2</option><option>A3</option><option>A4</option><option>A5</option></select><dl class="pin-readout"><div><dt>Mode</dt><dd id="pin-mode">—</dd></div><div><dt>Level</dt><dd id="pin-level">—</dd></div><div><dt>PWM / ADC</dt><dd id="pin-detail">—</dd></div><div><dt>Diagnostic</dt><dd id="pin-diagnostic">—</dd></div><div><dt>Cycle</dt><dd id="pin-cycle">0</dd></div></dl></article>
     </section></details>
 
-    <section id="regression-matrix" class="regression-matrix panel" aria-labelledby="regression-matrix-title">
+    <details id="regression-matrix" class="regression-matrix panel" aria-labelledby="advanced-testing-title">
+      <summary class="advanced-testing-summary"><span><span class="eyebrow">OPTIONAL REVIEW TOOLS</span><strong id="advanced-testing-title">Advanced testing</strong></span><span>Open X26–X36</span></summary>
+      <p class="advanced-testing-intro">Open this only when you want the full regression and evidence suite. Nothing here starts automatically; Build, Run and evidence actions still require an intentional click.</p>
       <div class="regression-matrix-heading">
         <div><p class="eyebrow">X26 · PROFILE-SPECIFIC REGRESSION</p><h2 id="regression-matrix-title">Run one requirement across four distinct machines</h2></div>
         <span id="regression-matrix-state" class="state">Not run</span>
@@ -1004,7 +1006,7 @@
       <div id="failure-replay-results" class="failure-replay-results" aria-live="polite"><p>No replay point is open. Full snapshot unavailable.</p></div>
       <p id="failure-replay-summary" class="truth" role="status">No memory snapshot is restored. Build, Reset, source/circuit change, Open, worker retirement and reload clear the transient recipe, workers and export authority.</p>
       <p class="regression-matrix-limit"><strong>Full snapshot unavailable:</strong> complete CPU registers/data, stack/status, pending CPU clock events, timer/ADC/UART internals and complete scheduler/peripheral object state are omitted. This is deterministic reset replay for one fixed AVR SPI fault—not restore, arbitrary seek, time travel, source stepping, compiler correctness, silicon or physical-hardware proof.</p>
-    </section>
+    </details>
 
     <section class="about panel" aria-labelledby="about-title">
       <div class="about-intro"><div><p class="eyebrow">OPEN SOURCE · VERIFIED BOUNDARIES</p><h2 id="about-title">What is Intent MCU Simulator?</h2></div><p>It is an original browser workbench that turns supported firmware into observable virtual hardware behaviour. Build a circuit by connecting named pins, compile edited source in an isolated fixed toolchain, then inspect GPIO, LEDs, inputs, serial bytes, and logic traces.</p></div>
