@@ -1,4 +1,26 @@
-# Intent MCU Simulator 1.1.0-rc.123
+# Intent MCU Simulator 1.1.0-rc.124
+
+## Emulator-driven PWM brightness and shorter automatic routes
+
+Rc.124 projects actual AVR emulator PWM duty through the existing project-
+owned ideal current-limited LED model. The LED's current, relative brightness,
+DOM intensity and accessible label use the same runtime snapshot; there is no
+independent animation timer. Pause freezes that snapshot and Reset clears the
+output.
+
+Automatic default routing now considers bounded interior endpoint and
+obstacle-edge channels. It selects a shorter body-free orthogonal route when
+one exists among those candidates. Stored manual routes, topology, IDs, Undo
+and Save/Open remain authoritative. This is not a globally shortest-path or
+physical LED/optical-accuracy claim.
+
+Native acceptance used one isolated AVR Build and one real browser worker to
+observe the PWM-pulse starter at both commanded duty windows, then Pause and
+Reset. Exact public rc.123 remains the rollback basis.
+
+---
+
+## 1.1.0-rc.123
 
 ## Runtime controls and Serial access
 

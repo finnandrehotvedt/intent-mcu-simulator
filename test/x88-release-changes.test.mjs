@@ -28,9 +28,9 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X46 and X88 owners bind the rc121 candidate to contained UART rc122 bytes', async () => {
+test('X46 and X88 owners bind the rc123 release to coherent rc124 bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.123');
+  assert.equal(release.version, '1.1.0-rc.124');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
@@ -38,7 +38,7 @@ test('X46 and X88 owners bind the rc121 candidate to contained UART rc122 bytes'
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
   assert(registry.ids.includes('X92'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.122', current: '1.1.0-rc.123' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.123', current: '1.1.0-rc.124' });
   assert.deepEqual(value.changes, [
     {
       id: 'X46', classification: 'additive',
@@ -49,7 +49,7 @@ test('X46 and X88 owners bind the rc121 candidate to contained UART rc122 bytes'
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records rc.122 to rc.123 as the runtime-control and Serial-access presentation correction with unchanged model, protocol and producer authority.',
+      summary: 'Records rc.123 to rc.124 as emulator-driven ideal PWM LED projection and shorter bounded body-free automatic routes, with manual route and project authority preserved.',
     },
   ]);
   assert.equal(value.migrationRequired, true);
@@ -112,7 +112,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.123');
+  assert.equal(discovery.identity.version, '1.1.0-rc.124');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

@@ -1,18 +1,18 @@
-# Rollback basis for 1.1.0-rc.123
+# Rollback basis for 1.1.0-rc.124
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
 
-Retain exact public rc.122 source commit
-`222c7cd67dc44878f6d1d007ff7eed16b07aa517` and VM103 image
-`sha256:073c0c754004e0d68af51acaca0cf7703a0dcafceb1d6fc2faa5e9f0f4232284`
-as the pre-rc.123 app-only recovery basis. If acceptance fails, restore that
+Retain exact public rc.123 source commit
+`a890fe2f13a1f046c9268fc8e352e7d6d4ce7bd1` and VM103 image
+`sha256:3e1b13d87d52083ee009f3deb973ef738a2394ee66a5207e0390afccb43029e0`
+as the pre-rc.124 app-only recovery basis. If acceptance fails, restore that
 exact app image and release directory, recreate only the Lab container and
 verify readiness plus the existing Teach-domain URLs.
 
-Rollback removes only the rc.123 runtime-control and Serial-access presentation
-correction. It does not alter learner-owned files or model/runtime authority.
+Rollback removes rc.124 PWM LED projection, its bounded shorter-route
+candidates and their acceptance harness. It does not alter learner-owned files.
 
 The older recovery history below remains preserved.
 

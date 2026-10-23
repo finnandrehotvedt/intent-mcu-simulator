@@ -11,8 +11,8 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.122",
-    "current": "1.1.0-rc.123"
+    "previous": "1.1.0-rc.123",
+    "current": "1.1.0-rc.124"
   },
   "changes": [
     {
@@ -35,7 +35,7 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records rc.122 to rc.123 as the runtime-control and Serial-access presentation correction with unchanged model, protocol and producer authority."
+      "summary": "Records rc.123 to rc.124 as emulator-driven ideal PWM LED projection and shorter bounded body-free automatic routes, with manual route and project authority preserved."
     }
   ],
   "migrationRequired": true,

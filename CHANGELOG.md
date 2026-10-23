@@ -2,6 +2,20 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.124 — 2026-10-23
+
+- Uses measured AVR PWM duty from the current worker snapshot to scale the
+  existing ideal LED current and relative-brightness observation. Digital
+  outputs retain exact off/on behavior and no independent timer is added.
+- Projects the same PWM observation into the visible LED, opacity and
+  accessible label; Pause freezes the snapshot and Reset clears presentation.
+- Extends bounded automatic routing with shorter valid interior endpoint and
+  obstacle-edge channels while preserving manual route bytes, topology, IDs,
+  Undo and Save/Open. The claim is bounded-candidate shortest, not global.
+- Adds source, fake-browser and one-Build/one-worker native acceptance for the
+  25%/75% PWM starter, formula identity, route body avoidance and lifecycle.
+- Retains exact public rc.123 as the app-only rollback basis.
+
 ## 1.1.0-rc.123 — 2026-10-23
 
 - Restores visible Serial access through the canonical Instruments popup and
