@@ -20,7 +20,7 @@ const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 test('generated private runtime and evidence-tool closures are exact and fresh', async () => {
   const { stdout } = await execute(process.execPath,
     ['scripts/generate-x49-private-runtime-manifest.mjs'], { cwd: repository });
-  const result = JSON.parse(stdout); assert.equal(result.runtimeMembers, 16);
+  const result = JSON.parse(stdout); assert.equal(result.runtimeMembers, 17);
   assert.equal(result.evidenceToolMembers, 2);
   assert.equal(result.trustAnchors, 1);
   const manifest = JSON.parse(await readFile(new URL('../src/x49-private-runtime-manifest.json', import.meta.url)));
@@ -31,7 +31,7 @@ test('generated private runtime and evidence-tool closures are exact and fresh',
 
 test('approved X48 worker increment preserves X49 runtime dependencies and private-owner isolation', async () => {
   const immutableRuntime = {
-    'src/atmega328p-adapter.mjs': '88572270329486c4dd2f6b077b2c194ed45b99b3437d409c4bb82505926fbc0f',
+    'src/atmega328p-adapter.mjs': '72ab12b05f5e17eff35de1f14495264cdb973ccde9012043da8e9e188e2c7b7f',
     'src/runtime-kernel.mjs': 'aea30ae6731e2801b520d29bc8b92002f55a4d1b2d57f2487a8c94b7da3bd74b',
     'src/simulator.worker.mjs': '060e64b11b30a61fc341a0b36d9c31ea2b1349d5811a9744d0aa34e5c1bc9485',
   };

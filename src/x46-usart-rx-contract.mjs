@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
-import { USART_RX_OBSERVATION_LATENESS_LIMIT } from './atmega328p-adapter.mjs';
+import { USART_RX_OBSERVATION_LATENESS_LIMIT } from './x46-usart-rx-limits.mjs';
 import { exactKeys } from './strict-json.mjs';
 import { validateX46UsartConfigurationSource } from './x46-usart-configuration-producer.mjs';
 

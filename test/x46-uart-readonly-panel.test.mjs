@@ -90,6 +90,25 @@ function framingFixture() {
   return value;
 }
 
+function rxFixture() {
+  const value = framingFixture();
+  const request = {
+    direction: 'rx-request', cycle: 21_000, targetCycle: 21_000,
+    startObservationLatenessCycles: 0, value: 0x41, accepted: true,
+    immediate: false, transferId: 'rx:1:1', resetEpoch: 1, baud: 9_615,
+    frameCycles: 16_640, scheduledCompletionCycle: 37_640,
+  };
+  const completion = {
+    direction: 'rx-complete', cycle: 37_640, transferId: 'rx:1:1', resetEpoch: 1,
+    value: 0x41, startCycle: 21_000, scheduledCompletionCycle: 37_640,
+    observationLatenessCycles: 0,
+  };
+  value.runtimeSnapshot.serial.push(request, completion);
+  value.runtimeSnapshot.instruments.serial.records.push(request, completion);
+  value.runtimeSnapshot.instruments.serial.retained = 3;
+  return value;
+}
+
 test('valid paused current worker produces complete read-only one-based rows', () => {
   const value = assessX46UartReadonlyPanel(fixture());
   assert.equal(value.state, 'current');
@@ -167,5 +186,31 @@ test('current paused producer adds model-derived framing and lifecycle retiremen
     assert.equal(result.framing.frames.length, 0);
     assert.equal(result.authority.run, false);
     assert.match(result.support.framing, /^unavailable/u);
+  }
+});
+
+test('current paused producer adds paired model-derived RX and lifecycle retirement clears it', () => {
+  const accepted = assessX46UartReadonlyPanel(rxFixture());
+  assert.deepEqual({ state: accepted.rx.state, completed: accepted.rx.completed,
+    inFlight: accepted.rx.inFlight, rejected: accepted.rx.rejected },
+  { state: 'current', completed: 1, inFlight: 0, rejected: 0 });
+  assert.deepEqual(accepted.rx.transfers[0], {
+    transferId: 'rx:1:1', value: 0x41, startCycle: 21_000,
+    scheduledCompletionCycle: 37_640, observedCompletionCycle: 37_640,
+    observationLatenessCycles: 0, frameCycles: 16_640, baud: 9_615,
+    configurationEpoch: 1,
+  });
+  assert.match(accepted.support.rx, /^bounded model-derived/u);
+  for (const mutate of [
+    (value) => { value.lifecyclePhase = 'running'; value.runtimeSnapshot.paused = false; },
+    (value) => { value.trustedCurrentWorker = false; },
+    (value) => { value.lifecycleRuntimeBinding.runtimeGeneration += 1; },
+    (value) => { value.profile = 'architecture.rp2040-v1'; },
+  ]) {
+    const retired = rxFixture(); mutate(retired);
+    const result = assessX46UartReadonlyPanel(retired);
+    assert.equal(result.rx.state, 'unavailable');
+    assert.equal(result.rx.transfers.length, 0);
+    assert.equal(result.authority.run, false);
   }
 });

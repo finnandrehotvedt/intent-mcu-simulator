@@ -22,11 +22,12 @@ import { X34PrecisionObserver } from './x34-precision-observer.mjs';
 import { X35CausalObserver } from './x35-causal-observer.mjs';
 import { parseIntelHex } from './hex.mjs';
 import { X46UsartConfigurationProducer } from './x46-usart-configuration-producer.mjs';
+import { USART_RX_OBSERVATION_LATENESS_LIMIT } from './x46-usart-rx-limits.mjs';
 
 export const CLOCK_HZ = 16_000_000;
 export const TRACE_LIMIT = 100_000;
 export const SERIAL_LIMIT = 4_096;
-export const USART_RX_OBSERVATION_LATENESS_LIMIT = 4;
+export { USART_RX_OBSERVATION_LATENESS_LIMIT };
 const SAMPLE_LIMIT = 4_096;
 const UNSUPPORTED_LIMIT = 256;
 const X47_TRANSITION_LIMIT = 64;

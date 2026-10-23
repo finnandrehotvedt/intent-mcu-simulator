@@ -123939,7 +123939,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/atmega328p-adapter.mjs",
-      "sha256": "88572270329486c4dd2f6b077b2c194ed45b99b3437d409c4bb82505926fbc0f"
+      "sha256": "72ab12b05f5e17eff35de1f14495264cdb973ccde9012043da8e9e188e2c7b7f"
     },
     {
       "path": "src/x43-avr-stack-profile.mjs",
@@ -123954,8 +123954,12 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "fea504bc5630059f39148602667e4b25724839bc2ad3707b0728f7ac190aa1f6"
     },
     {
+      "path": "src/x46-usart-rx-limits.mjs",
+      "sha256": "78e8e140106b0d22b2220613063a98a4b22c3d16d531a83334ccf51c3e5756a3"
+    },
+    {
       "path": "src/x46-usart-rx-contract.mjs",
-      "sha256": "ac7c5b53cb66d334bac0adef39783f35011a6df96ad2014f8f8446fcc3620239"
+      "sha256": "6b6ea3cc8c6800044ae9b82ab009f5d0d9d4d085b42e0afb555ac0ed1a13b7b3"
     },
     {
       "path": "src/x47-runtime-transaction.mjs",
@@ -124158,7 +124162,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "ed8333c284aaadf2ef93463bf5b2696ed6a7a9cf0cf818f1ec2010f0f9b44033"
     }
   ],
-  "implementationSha256": "d18602630ef23d5f387510aeddd33d06f809270484555e32e0e6d7184ac7d76b",
+  "implementationSha256": "1465df81ca551e26ddab7be2a8318b8101fd043386e056be561cb099adb24f2e",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.125 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, real worker, run, image build or deployment",
@@ -124168,7 +124172,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-config-producer.2-current",
     "semanticDisposition": "component, firmware and electrical semantics remain unchanged; paired read-only AVR USART0 RX peripheral-model events are added"
   },
-  "manifestSha256": "0c0ea181132bf67caf4bfaf4785ab8a67d15a6cf0c9b0041d594606f2acbf465",
+  "manifestSha256": "7fc0e1d77126793f0a7726754fd926a90679268640b4a3c0c906c0e064a0aacf",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

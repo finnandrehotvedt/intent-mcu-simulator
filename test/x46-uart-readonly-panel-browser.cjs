@@ -15,9 +15,12 @@ const actualRawBytes = readFileSync(path.join(
   repository, 'test/fixtures/x46-worker-004-paused-raw.json',
 ));
 const actualPausedRaw = JSON.parse(actualRawBytes);
+const rxNativeEvidencePath = process.env.X46_RX_NATIVE_EVIDENCE || '';
+const rxNativePaused = rxNativeEvidencePath
+  ? JSON.parse(readFileSync(rxNativeEvidencePath)).pausedRuntime : null;
 const mime = { '.css': 'text/css', '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png' };
 
-const fixtureHtml = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="stylesheet" href="/styles.css"><title>X46 synthetic UI review fixture</title></head><body><main style="max-width:1180px;margin:24px auto;padding:12px"><section id="fixture-panel" class="x46-uart-panel" aria-label="Read-only UART transmit byte-event analysis"></section></main><script type="module">
+const fixtureHtml = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="stylesheet" href="/styles.css"><title>X46 synthetic UI review fixture</title><script type="importmap">{"imports":{"avr8js":"/node_modules/avr8js/dist/esm/index.js"}}</script></head><body><main style="max-width:1180px;margin:24px auto;padding:12px"><section id="fixture-panel" class="x46-uart-panel" aria-label="Read-only UART transmit byte-event analysis"></section></main><script type="module">
 import { assessX46UartReadonlyPanel } from '/src/x46-uart-readonly-panel.mjs';
 import { renderX46UartReadonlyPanel } from '/src/x46-uart-readonly-panel-view.mjs';
 const root = document.querySelector('#fixture-panel');
@@ -98,6 +101,20 @@ function historicalReplayFixture() {
   };
 }
 
+function nativeRxReplayFixture() {
+  if (!rxNativePaused) return null;
+  const current = rxNativePaused.runtimeIdentity;
+  return {
+    schema: 'intent-mcu-x46-uart-panel-input@1',
+    profile: 'board.atmega328p-16mhz-v1', lifecyclePhase: 'paused',
+    buildArtifactIdentity: current.artifactIdentity,
+    lifecycleRuntimeBinding: { projectGeneration: current.projectGeneration,
+      runtimeGeneration: current.runtimeGeneration, artifactIdentity: current.artifactIdentity },
+    trustedCurrentWorker: true, currentWorkerIdentity: structuredClone(current),
+    runtimeSnapshot: structuredClone(rxNativePaused),
+  };
+}
+
 function server() {
   const counterStub = { get: 0, post: 0 };
   const app = createServer(async (request, response) => {
@@ -120,6 +137,7 @@ function server() {
       const relative = pathname === '/' ? 'dist/index.html'
         : pathname === '/styles.css' ? 'staging/styles.css'
           : pathname.startsWith('/src/') ? pathname.slice(1)
+            : pathname.startsWith('/node_modules/') ? pathname.slice(1)
             : `dist/${pathname.slice(1)}`;
       const resolved = path.resolve(repository, relative);
       if (!resolved.startsWith(`${repository}${path.sep}`)) throw new Error('PATH');
@@ -236,6 +254,37 @@ async function activityPage(browser, url, viewport) {
     assert.match(await disclosure.textContent(), /start 0 · data LSB 1 0 0 0 0 0 1 0 · stop 1/u);
     assert.match(framingAssessment.support.framing, /^bounded model-derived/u);
 
+    if (rxNativePaused) {
+      const nativeRx = nativeRxReplayFixture();
+      const rxAssessment = await app.page.evaluate(async (input) => {
+        const [{ assessX46UartReadonlyPanel }, { renderX46UartReadonlyPanel }] =
+          await Promise.all([
+            import('/src/x46-uart-readonly-panel.mjs'),
+            import('/src/x46-uart-readonly-panel-view.mjs'),
+          ]);
+        const assessment = assessX46UartReadonlyPanel(input);
+        renderX46UartReadonlyPanel(document.querySelector('#x46-uart-panel'), assessment,
+          { evidenceKind: 'historical-replay-fixture' });
+        return assessment;
+      }, nativeRx);
+      assert.deepEqual({ state: rxAssessment.rx.state, completed: rxAssessment.rx.completed,
+        inFlight: rxAssessment.rx.inFlight, rejected: rxAssessment.rx.rejected },
+      { state: 'current', completed: 1, inFlight: 0, rejected: 0 });
+      const rxDisclosure = live.locator('.x46-rx-details');
+      assert.equal(await rxDisclosure.getAttribute('open'), null);
+      assert.match(await rxDisclosure.locator('summary').textContent(),
+        /Model-derived RX · 1 completed · 0 in flight · 0 rejected/u);
+      await rxDisclosure.locator('summary').focus();
+      await app.page.keyboard.press('Enter');
+      assert.equal(await rxDisclosure.getAttribute('open'), '');
+      assert.match(await rxDisclosure.textContent(),
+        /0x41 \(A\).*start 574,091.*expected 590,731.*observed 590,731.*lateness 0 cycles/u);
+      assert.match(await live.locator('[data-x46-limits]').textContent(),
+        /D0 line signalling and parity\/noise remain unavailable/u);
+      if (evidenceDir) await live.screenshot({ path: path.join(evidenceDir,
+        'x46-rx-historical-native-replay.png') });
+    }
+
     for (const [name, mutate] of [
       ['Run', (value) => { value.lifecyclePhase = 'running'; value.runtimeSnapshot.paused = false; }],
       ['Reset', (value) => { value.trustedCurrentWorker = false; }],
@@ -254,10 +303,13 @@ async function activityPage(browser, url, viewport) {
         renderX46UartReadonlyPanel(document.querySelector('#x46-uart-panel'), assessment,
           { evidenceKind: 'synthetic-review-fixture' });
         return { panel: assessment.state, framing: assessment.framing.state,
-          frames: assessment.framing.frames.length, run: assessment.authority.run };
+          rx: assessment.rx.state, frames: assessment.framing.frames.length,
+          transfers: assessment.rx.transfers.length, run: assessment.authority.run };
       }, retired);
       assert.equal(state.framing, 'unavailable', name);
+      assert.equal(state.rx, 'unavailable', name);
       assert.equal(state.frames, 0, name);
+      assert.equal(state.transfers, 0, name);
       assert.equal(state.run, false, name);
     }
     await app.page.click('#workbench-instruments-dialog .workbench-popup-close');
