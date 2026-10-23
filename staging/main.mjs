@@ -83,7 +83,7 @@ import {
 import { mountSharedWorkbenchShell } from '../src/shared-workbench-shell.mjs';
 import {
   avrInstrumentPresentationEvidence, instrumentCapability, sharedInstrumentPresentationSummary,
-  sharedInstrumentView,
+  sharedInstrumentSummary, sharedInstrumentView,
 } from '../src/instrument-capabilities.mjs';
 import {
   completenessAcademicStatus, createMeasurementReportEnvelope, measurementCompletenessDisclosure,
