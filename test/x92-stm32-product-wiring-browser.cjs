@@ -88,7 +88,9 @@ async function ready(browser, base, mode, startBudget = true) {
   if (startBudget) {
     await page.click('#brief-tests-open'); await page.waitForSelector('#workbench-brief-dialog[open]');
     await page.click('#x92-budget-start');
-    await page.waitForFunction(() => window.__X92_EXPERIMENT_BUDGET__.active());
+    if (startBudget !== 'immediate') {
+      await page.waitForFunction(() => window.__X92_EXPERIMENT_BUDGET__.active());
+    }
   }
   return { page, fake };
 }
@@ -114,6 +116,15 @@ async function executeRun(page, id, generationOffset = 0) {
       await page.waitForFunction(() => window.__STM32_PUBLIC_WORKBENCH__.state().phase === 'completed');
       assert.deepEqual(fake.calls, { builds: 1, runs: 1, quiescence: 0 });
       report.scenarios.manualQuick = { calls: fake.calls }; await page.close();
+    }
+    {
+      const { page, fake } = await ready(browser, base, 'positive', 'immediate');
+      const result = await executeRun(page, 'x92-stm32-product-immediate-admission');
+      assert.equal(result.ok, true, JSON.stringify(result));
+      assert.equal(result.privatePermitAccepted, true);
+      assert.notEqual(result.code, 'X92_RUNTIME_QUIESCENCE_UNPROVEN_PROFILE');
+      assert.deepEqual(fake.calls, { builds: 1, runs: 1, quiescence: 1 });
+      report.scenarios.immediateAdmission = { calls: fake.calls }; await page.close();
     }
     {
       const { page, fake } = await ready(browser, base, 'positive');

@@ -692,6 +692,7 @@ let x92Stm32Integration = null;
 let x92Stm32OwnedDispatchPermit = null;
 let x92Stm32OwnedBinding = null;
 let x92Stm32OwnedPrivateResult = false;
+let x92BudgetStartPending = null;
 const x92AdvancingBoundary = (dispatchPermit = null) => x92BudgetExecutor?.advancingBoundary?.(dispatchPermit)
   ?? { ok: true, code: 'X92_ADVANCING_CONTROL_ALLOWED' };
 let x92ImportedReview = null;
@@ -8975,6 +8976,10 @@ function executeStm32ManualAction(action, task) {
 async function executeX92ProductAction(source) {
   let request = null;
   try { request = parseBoundedActionRequest(source); } catch { /* canonical executor owns parse errors */ }
+  if (request?.profile === STM32F429ZI_PROFILE && request.action === 'runtime.run'
+      && x92BudgetStartPending) {
+    await x92BudgetStartPending;
+  }
   if (request?.profile === ESP32C3_PROFILE && ['firmware.build', 'runtime.run'].includes(request.action)) {
     if (request.action === 'runtime.run' && x92Budget.active()) {
       const result = await x92C3Integration.executeBudgeted(source);
@@ -9039,11 +9044,14 @@ window.__AGENT_ACTIONS__ = Object.freeze({
   state: () => lastBoundedAction ? structuredClone(lastBoundedAction) : null,
   externalEndpoint: false,
 });
-elements.x92budgetstart.addEventListener('click', async (event) => {
+elements.x92budgetstart.addEventListener('click', (event) => {
   if (!event.isTrusted) {
     renderX92Budget('A trusted human UI action is required to start a new experiment session.', false); return;
   }
-  try {
+  if (x92BudgetStartPending) {
+    renderX92Budget('Session start is already binding the current source and electrical graph.', false); return;
+  }
+  const pending = (async () => { try {
     const runtimeBoundary = x92BudgetExecutor.runtimeBoundary();
     if (runtimeBoundary.status !== 'idle') {
       renderX92Budget(`Session was not started (${runtimeBoundary.code}). The old producer must acknowledge pause or retirement first.`, false);
@@ -9071,7 +9079,11 @@ elements.x92budgetstart.addEventListener('click', async (event) => {
       : `Session was not started (${result.code}).`, result.ok);
   } catch (error) {
     renderX92Budget(`Session was not started (${error.code ?? error.message}).`, false);
-  }
+  } })();
+  x92BudgetStartPending = pending;
+  void pending.finally(() => {
+    if (x92BudgetStartPending === pending) x92BudgetStartPending = null;
+  });
 });
 elements.x92budgetdownload.addEventListener('click', () => {
   const text = x92Budget.reviewText();
