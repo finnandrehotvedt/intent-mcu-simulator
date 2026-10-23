@@ -17,11 +17,16 @@ import { boundedActionRequest, parseBoundedActionRequest } from '../src/bounded-
 
 const profile = 'board.atmega328p-16mhz-v1';
 
-test('public copy distinguishes reviewed AVR/Pico/C3 from rejected STM32 budgeted Run', async () => {
+test('public copy describes all four reviewed owner proofs without widening STM32 limits', async () => {
   const html = await readFile(new URL('../staging/index.html', import.meta.url), 'utf8');
-  assert.match(html, /reviewed owner-quiescence evidence for the generic AVR, bounded RP2040 Pico and bounded ESP32-C3 profiles/u);
-  assert.match(html, /ESP32-C3 is joined through exact source, flash, compiler, runtime and retirement identities/u);
-  assert.match(html, /STM32[^.]+rejects budgeted Run before producer dispatch/u);
+  assert.match(html, /reviewed owner-quiescence evidence for the generic AVR, bounded RP2040 Pico, bounded ESP32-C3 and bounded STM32F429ZI profiles/u);
+  assert.match(html, /ESP32-C3 joins exact source, flash, compiler, runtime and retirement identities/u);
+  assert.match(html, /bounded STM32F429ZI profiles/u);
+  assert.match(html, /STM32 joins request, source, graph, ELF, model, compiler and Renode runtime identities/u);
+  assert.match(html, /final PB0 and USART3 ordered by Renode instruction ordinal, not physical cycles or timing/u);
+  assert.match(html, /external LED remains an ideal teaching rendering/u);
+  assert.match(html, /X92 remains a finite current-tab budget, not a generic AI agent/u);
+  assert.doesNotMatch(html, /STM32[^.]+rejects budgeted Run before producer dispatch/u);
   assert.doesNotMatch(html, /producer-quiescence evidence only for the generic AVR profile/u);
 });
 
