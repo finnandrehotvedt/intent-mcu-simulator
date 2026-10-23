@@ -44,7 +44,8 @@ export async function runX81Worker({ hex, binding, workerUrl, endInstruction = 5
       modelExecutionContextSha256: binding.modelExecutionContextSha256,
       instruments: { logicChannels: ['D13'], serialHistoryLimit: 512 } }, 'ready');
     check(ready, 0);
-    if (ready.cycle !== 0 || ready.runtimeIdentity.workerInitialization !== 1) throw Error('X81_RESET_ORIGIN_INVALID');
+    // simulator.worker first init disposes empty runtime (++), then allocates init (++).
+    if (ready.cycle !== 0 || ready.runtimeIdentity.workerInitialization !== 2) throw Error('X81_RESET_ORIGIN_INVALID');
     const nonce = ready.runtimeIdentity.workerInstanceNonce;
     const records = [];
     for (let instruction = 1; instruction <= endInstruction; instruction++) {

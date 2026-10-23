@@ -14,7 +14,7 @@ export function validateX81CompilerResult(result) {
 }
 export function validateX81Pair(runs) {
   if (runs.length !== 2 || runs.some((r) => r.observations.records.length !== 512
-      || r.identity.workerInitialization !== 1 || !/^[a-f0-9]{32}$/u.test(r.identity.workerInstanceNonce))) throw Error('X81_PAIR_INVALID');
+      || r.identity.workerInitialization !== 2 || !/^[a-f0-9]{32}$/u.test(r.identity.workerInstanceNonce))) throw Error('X81_PAIR_INVALID');
   if (runs[0].identity.workerInstanceNonce === runs[1].identity.workerInstanceNonce
       || runs[0].identity.runtimeGeneration === runs[1].identity.runtimeGeneration) throw Error('X81_PAIR_NOT_FRESH');
   if (JSON.stringify(runs[0].observations) !== JSON.stringify(runs[1].observations)) throw Error('X81_BEHAVIOR_DIFFERS');

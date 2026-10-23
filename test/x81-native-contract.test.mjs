@@ -18,10 +18,10 @@ test('compiler metadata identity is deliberately distinct from executable payloa
   assert.equal(validateX81CompilerResult(result).artifactIdentity, result.artifactIdentity);
   result.artifact.hex += 'x'; assert.throws(() => validateX81CompilerResult(result), /PAYLOAD/);
 });
-test('fresh worker initialization is one for each fresh worker, not different counters', () => {
+test('fresh worker initialization is two after empty dispose plus first init, not different counters', () => {
   const observations = { records: Array.from({ length: 512 }, (_, i) => ({ instruction: i + 1 })) };
   const runs = [1, 2].map((n) => ({ identity: { workerInstanceNonce: String(n).repeat(32),
-    workerInitialization: 1, runtimeGeneration: n }, observations }));
+    workerInitialization: 2, runtimeGeneration: n }, observations }));
   assert.equal(validateX81Pair(runs), true);
   runs[1].identity.workerInstanceNonce = runs[0].identity.workerInstanceNonce;
   assert.throws(() => validateX81Pair(runs), /FRESH/);
