@@ -33,3 +33,12 @@ test('native product path fixes loopback target and attests before producer cont
   assert.match(await readFile(new URL('../scripts/x92-stm32-native-harness.mjs', import.meta.url), 'utf8'),
     /authority\.mode !== 'execute'/u);
 });
+
+test('ordinary STM32 runtime schema is wrapped into the exact private result before admission validates it', async () => {
+  const workbench = await readFile(new URL('../src/stm32-public-workbench.mjs', import.meta.url), 'utf8');
+  const integration = await readFile(new URL('../src/x92-stm32-budget-integration.mjs', import.meta.url), 'utf8');
+  assert.match(workbench, /value\.schema !== STM32_RUN_RESPONSE_SCHEMA/u);
+  assert.match(workbench, /runtime: clone\(value\), completion: clone\(value\.completion\)/u);
+  assert.match(integration, /exactKeys\(value, \['schema', 'ok', 'code', 'executed', 'executionIdentity',[\s\S]*'runtime', 'completion'\]\)/u);
+  assert.match(integration, /value\.runtime\?\.engine\?\.id === 'renode'/u);
+});

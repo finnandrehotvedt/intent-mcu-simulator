@@ -46,7 +46,7 @@ function installFakeStm32(page, mode = 'positive') {
     if (pathname.endsWith('/run')) {
       calls.runs += 1; operation += 1;
       if (mode === 'overlap') await new Promise((resolve) => { releaseHeld = resolve; });
-      if (mode === 'disconnect') return route.abort('connectionfailed');
+      if (['disconnect', 'preflight-no-result'].includes(mode)) return route.abort('connectionfailed');
       if (mode === 'deadline') await page.evaluate(() => { window.__x92Stm32Clock = 30020; });
       const completion = { schema: 'intent-mcu-x92-stm32-completion@1',
         operationId: `stm32-operation-${operation}`, binding: body.x92Binding,
@@ -125,6 +125,17 @@ async function executeRun(page, id, generationOffset = 0) {
       assert.notEqual(result.code, 'X92_RUNTIME_QUIESCENCE_UNPROVEN_PROFILE');
       assert.deepEqual(fake.calls, { builds: 1, runs: 1, quiescence: 1 });
       report.scenarios.immediateAdmission = { calls: fake.calls }; await page.close();
+    }
+    {
+      const { page, fake } = await ready(browser, base, 'preflight-no-result', 'immediate');
+      const result = await executeRun(page, 'x92-stm32-source-bound-preflight');
+      assert.equal(result.ok, false);
+      assert.notEqual(result.code, 'X92_RUNTIME_QUIESCENCE_UNPROVEN_PROFILE');
+      assert.deepEqual(fake.calls, { builds: 1, runs: 1, quiescence: 0 });
+      report.scenarios.sourceBoundPreflight = { code: result.code,
+        retainedOfflineElfSetup: true, nativeBuildClaimed: false,
+        successfulProducerResult: false, calls: fake.calls };
+      await page.close();
     }
     {
       const { page, fake } = await ready(browser, base, 'positive');

@@ -22,7 +22,8 @@ const harnessSha256 = hash(await readFile(new URL('./x92-stm32-native-harness.mj
 const browserSha256 = hash(await readFile(new URL('../test/x92-stm32-native-product-browser.cjs', import.meta.url)));
 const authorityValidatorSha256 = hash(await readFile(new URL('./x92-stm32-native-authority.mjs', import.meta.url)));
 function fail(code) { throw Object.assign(new Error(code), { code }); }
-const exact = lock.schema === 'intent-mcu-x92-stm32-native-harness-lock@1'
+const exact = lock.schema === 'intent-mcu-x92-stm32-native-harness-lock@2'
+  && lock.preparationId === 'x92-stm32-native-refreeze-20261023-v1'
   && lock.productOrigin === 'http://127.0.0.1:18766'
   && lock.sourceSha256 === hash(sourceForStm32('STM32 PUBLIC', true))
   && lock.distMainSha256 === hash(await readFile(new URL('../dist/main.js', import.meta.url)))
@@ -36,6 +37,8 @@ const exact = lock.schema === 'intent-mcu-x92-stm32-native-harness-lock@1'
   && lock.compilerToolchainIdentity === STM32_EXECUTION_IDENTITIES.compilerToolchainIdentity
   && lock.runtimeImageIdentity === STM32_EXECUTION_IDENTITIES.runtimeImageIdentity
   && lock.runtimeBinaryIdentity === STM32_EXECUTION_IDENTITIES.runtimeBinaryIdentity
+  && lock.consumptionRoot === '/var/lib/intentforce/x92-stm32-native-proof/preparations'
+  && lock.legacyConsumptionMarker === '/var/lib/intentforce/x92-stm32-native-proof/authority-consumed.json'
   && JSON.stringify(lock.allowance) === JSON.stringify({ builds: 1, runs: 1, scenarios: 0, retries: 0 });
 if (!exact) fail('X92_STM32_NATIVE_HARNESS_LOCK_MISMATCH');
 const state = { schema: lock.schema, status: 'ready-not-armed',
@@ -50,10 +53,11 @@ if (!authorityPath || !receiptId) fail('X92_STM32_NATIVE_AUTHORITY_REQUIRED');
 if (gitStatus.length !== 0 || lock.defaultArmed !== false || lock.expectedGitCommit !== null
     || lock.authoritySha256 !== null) fail('X92_STM32_NATIVE_HARNESS_DISARMED');
 const preparationLockSha256 = hash(await readFile(lockUrl));
-const { authority, authoritySha256 } = await validateExternalAuthority({ authorityPath, receiptId,
-  productRoot: fileURLToPath(root), preparationGitCommit: git, preparationLockSha256,
+const { authority, authoritySha256, consumptionMarker } = await validateExternalAuthority({ authorityPath, receiptId,
+  productRoot: fileURLToPath(root), preparationId: lock.preparationId,
+  preparationGitCommit: git, preparationLockSha256,
   harnessSha256, browserSha256, productOrigin: lock.productOrigin,
-  consumptionMarker: lock.consumptionMarker });
+  consumptionRoot: lock.consumptionRoot });
 if (preflightRequested) {
   process.stdout.write(`${JSON.stringify({ ...state, status: 'authority-valid', receiptId,
     authoritySha256, consumptionMarkerCreated: false })}\n`); process.exit(0);
@@ -62,9 +66,10 @@ if (authority.mode !== 'execute') fail('X92_STM32_NATIVE_EXECUTION_NOT_AUTHORIZE
 const evidence = process.env.X92_STM32_NATIVE_EVIDENCE;
 if (!evidence) fail('X92_STM32_NATIVE_EVIDENCE_REQUIRED');
 await mkdir(evidence, { recursive: false });
-const marker = await open(lock.consumptionMarker, constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY, 0o600);
+await mkdir(path.dirname(consumptionMarker), { recursive: true, mode: 0o700 });
+const marker = await open(consumptionMarker, constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY, 0o600);
 await marker.writeFile(`${JSON.stringify({ receiptId, authoritySha256, gitCommit: git,
-  preparationLockSha256 })}\n`); await marker.close();
+  preparationId: lock.preparationId, preparationLockSha256 })}\n`); await marker.close();
 await execute(process.execPath, ['test/x92-stm32-native-product-browser.cjs'], { cwd: root,
   env: { ...process.env, X92_STM32_NATIVE_ORIGIN: lock.productOrigin,
     X92_STM32_NATIVE_EVIDENCE: evidence, X92_STM32_TARGET_NONCE: authority.targetNonce,

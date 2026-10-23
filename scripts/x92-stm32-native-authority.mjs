@@ -10,10 +10,11 @@ const GIT_SHA = /^[a-f0-9]{40}$/u;
 const RECEIPT = /^desktop-[a-z0-9](?:[a-z0-9-]{0,190}[a-z0-9])?$/u;
 const NONCE = /^[A-Za-z0-9_-]{32,96}$/u;
 const AUTHORITY_KEYS = Object.freeze([
-  'schema', 'mode', 'receiptId', 'receiverStationId', 'preparationGitCommit',
+  'schema', 'mode', 'receiptId', 'receiverStationId', 'preparationId', 'preparationGitCommit',
   'preparationLockSha256', 'harnessSha256', 'browserSha256', 'productOrigin',
   'builds', 'runs', 'scenarios', 'retries', 'targetNonce',
 ]);
+const PREPARATION = /^x92-stm32-[a-z0-9-]{8,96}$/u;
 
 function fail(code) { throw Object.assign(new Error(code), { code }); }
 function exactKeys(value, keys) {
@@ -22,8 +23,8 @@ function exactKeys(value, keys) {
 }
 
 export async function validateExternalAuthority({ authorityPath, receiptId, productRoot,
-  preparationGitCommit, preparationLockSha256, harnessSha256, browserSha256,
-  productOrigin, consumptionMarker }) {
+  preparationId, preparationGitCommit, preparationLockSha256, harnessSha256, browserSha256,
+  productOrigin, consumptionRoot }) {
   if (!path.isAbsolute(authorityPath ?? '') || !RECEIPT.test(receiptId ?? '')) {
     fail('X92_STM32_NATIVE_AUTHORITY_PATH_INVALID');
   }
@@ -41,9 +42,10 @@ export async function validateExternalAuthority({ authorityPath, receiptId, prod
   let authority;
   try { authority = JSON.parse(bytes); } catch { fail('X92_STM32_NATIVE_AUTHORITY_INVALID'); }
   const valid = exactKeys(authority, AUTHORITY_KEYS)
-    && authority.schema === 'intent-mcu-x92-stm32-external-authority@1'
+    && authority.schema === 'intent-mcu-x92-stm32-external-authority@2'
     && (authority.mode === 'preflight-only' || authority.mode === 'execute')
     && authority.receiptId === receiptId && authority.receiverStationId === 'intentforce-ct109'
+    && PREPARATION.test(authority.preparationId ?? '') && authority.preparationId === preparationId
     && GIT_SHA.test(authority.preparationGitCommit ?? '')
     && authority.preparationGitCommit === preparationGitCommit
     && SHA256.test(authority.preparationLockSha256 ?? '')
@@ -52,8 +54,12 @@ export async function validateExternalAuthority({ authorityPath, receiptId, prod
     && authority.productOrigin === productOrigin && authority.builds === 1 && authority.runs === 1
     && authority.scenarios === 0 && authority.retries === 0 && NONCE.test(authority.targetNonce ?? '');
   if (!valid) fail('X92_STM32_NATIVE_AUTHORITY_INVALID');
+  if (!path.isAbsolute(consumptionRoot ?? '')) fail('X92_STM32_NATIVE_CONSUMPTION_ROOT_INVALID');
+  const consumptionKey = createHash('sha256')
+    .update(`${preparationId}\0${preparationGitCommit}\0${receiptId}`, 'utf8').digest('hex');
+  const consumptionMarker = path.join(consumptionRoot, preparationId, `${consumptionKey}.json`);
   try { await access(consumptionMarker, constants.F_OK); fail('X92_STM32_NATIVE_AUTHORITY_ALREADY_CONSUMED'); }
   catch (error) { if (error?.code !== 'ENOENT') throw error; }
-  return Object.freeze({ authority,
+  return Object.freeze({ authority, consumptionMarker,
     authoritySha256: createHash('sha256').update(bytes).digest('hex') });
 }
