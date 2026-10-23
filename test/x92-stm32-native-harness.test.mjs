@@ -6,6 +6,7 @@ import { execFile } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import test from 'node:test';
+import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
 
 const execute = promisify(execFile);
 
@@ -41,4 +42,9 @@ test('ordinary STM32 runtime schema is wrapped into the exact private result bef
   assert.match(workbench, /runtime: clone\(value\), completion: clone\(value\.completion\)/u);
   assert.match(integration, /exactKeys\(value, \['schema', 'ok', 'code', 'executed', 'executionIdentity',[\s\S]*'runtime', 'completion'\]\)/u);
   assert.match(integration, /value\.runtime\?\.engine\?\.id === 'renode'/u);
+});
+
+test('built browser and service source share the exact current model implementation identity', async () => {
+  const bundle = await readFile(new URL('../dist/main.js', import.meta.url), 'utf8');
+  assert.match(bundle, new RegExp(CURRENT_MODEL_LIBRARY_LOCK.implementationSha256, 'u'));
 });

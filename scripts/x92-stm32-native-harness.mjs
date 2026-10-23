@@ -23,7 +23,7 @@ const browserSha256 = hash(await readFile(new URL('../test/x92-stm32-native-prod
 const authorityValidatorSha256 = hash(await readFile(new URL('./x92-stm32-native-authority.mjs', import.meta.url)));
 function fail(code) { throw Object.assign(new Error(code), { code }); }
 const exact = lock.schema === 'intent-mcu-x92-stm32-native-harness-lock@2'
-  && lock.preparationId === 'x92-stm32-native-refreeze-20261023-v1'
+  && lock.preparationId === 'x92-stm32-binding-join-fix-20261023-v1'
   && lock.productOrigin === 'http://127.0.0.1:18766'
   && lock.sourceSha256 === hash(sourceForStm32('STM32 PUBLIC', true))
   && lock.distMainSha256 === hash(await readFile(new URL('../dist/main.js', import.meta.url)))
