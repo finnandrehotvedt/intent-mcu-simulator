@@ -41,7 +41,7 @@
     },
     {
       "path": "src/x46-usart-configuration-producer.mjs",
-      "sha256": "da447001b7152d27f752516753c01b3c31043a2722ee5ecdb67396cb445fcef7"
+      "sha256": "04d9fbf37e23613c24570d322792afc08238232657afaf0ae7dcead9fa9a0390"
     },
     {
       "path": "src/x49-instrumented-observer-core.mjs",
@@ -81,7 +81,7 @@
   "externalContracts": [
     "avr8js@0.21.1"
   ],
-  "implementationSha256": "e311171f7fe498216989ecc0cced1adbc73fc3e93c914ce4cd39c6192d068600",
+  "implementationSha256": "2bbde343269ed14dc8150f74bc2e96e084757d50a14093fd7ab3057dd7d1a9ad",
   "evidenceToolSha256": "8fc7a44096b92aab6362c70367aad905274153f9da34dd236f9c187c03917306",
-  "semanticSha256": "08ccf930bfcfd96e17001314515d5278151684494e7c726f0522ba03ed9d7462"
+  "semanticSha256": "0084d59e015963acc58377f844d824739b34c51be88aa98f1fe63e4cb9e1005a"
 }

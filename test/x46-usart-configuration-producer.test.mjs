@@ -82,6 +82,40 @@ test('synthetic producer emits identity-bound ordered AVR USART configuration ep
   assert.equal(accepted.records[1].configuration.supported, false);
 });
 
+test('supported 8-N-1 rates exactly match adapter frame-cycle boundaries', () => {
+  const runtimeIdentity = identity();
+  const supported = [
+    { UCSRA: 0x00, UBRRL: 103, frameCycles: 16_640 },
+    { UCSRA: 0x00, UBRRL: 51, frameCycles: 8_320 },
+    { UCSRA: 0x00, UBRRL: 25, frameCycles: 4_160 },
+    { UCSRA: 0x00, UBRRL: 16, frameCycles: 2_720 },
+    { UCSRA: 0x02, UBRRL: 16, frameCycles: 1_360 },
+  ];
+  for (const [index, expected] of supported.entries()) {
+    const producer = new X46UsartConfigurationProducer(runtimeIdentity, 1);
+    producer.observe({
+      cycle: index,
+      register: 'UBRRL',
+      value: expected.UBRRL,
+      registers: registers({ UCSRA: expected.UCSRA, UBRRL: expected.UBRRL }),
+    });
+    const configuration = producer.snapshot().records[0].configuration;
+    assert.equal(configuration.frameCycles, expected.frameCycles);
+    assert.equal(configuration.supported, true);
+  }
+
+  for (const values of [
+    { UCSRA: 0x00, UBRRL: 0 },
+    { UCSRA: 0x02, UBRRL: 7 },
+    { UCSRA: 0x00, UBRRL: 104 },
+  ]) {
+    const producer = new X46UsartConfigurationProducer(runtimeIdentity, 1);
+    producer.observe({ cycle: 0, register: 'UBRRL', value: values.UBRRL,
+      registers: registers(values) });
+    assert.equal(producer.snapshot().records[0].configuration.supported, false);
+  }
+});
+
 test('synthetic producer suppresses duplicate semantic writes and bounds retention', () => {
   const runtimeIdentity = identity();
   const producer = new X46UsartConfigurationProducer(runtimeIdentity, 1);
@@ -120,6 +154,11 @@ test('synthetic validation fails closed on missing, stale, reordered, conflictin
   const reordered = structuredClone(source);
   reordered.records.reverse();
   assert.throws(() => validateX46UsartConfigurationSource(reordered, expected),
+    { code: 'X46_USART_CONFIG_RECORD_INVALID' });
+
+  const negativeFirstCycle = structuredClone(source);
+  negativeFirstCycle.records[0].cycle = -1;
+  assert.throws(() => validateX46UsartConfigurationSource(negativeFirstCycle, expected),
     { code: 'X46_USART_CONFIG_RECORD_INVALID' });
 
   const conflicting = structuredClone(source);

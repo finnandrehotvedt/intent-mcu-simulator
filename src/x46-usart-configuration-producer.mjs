@@ -15,6 +15,7 @@ const PROFILE = 'board.atmega328p-16mhz-v1';
 const CLOCK_HERTZ = 16_000_000;
 const REGISTERS = Object.freeze(['UCSRA', 'UCSRB', 'UCSRC', 'UBRRL', 'UBRRH']);
 const REGISTER_SET = new Set(REGISTERS);
+const SUPPORTED_8N1_FRAME_CYCLES = new Set([16_640, 8_320, 4_160, 2_720, 1_360]);
 
 function reject(code) {
   throw Object.assign(new Error(code), { code });
@@ -76,7 +77,7 @@ function decodeRegisters(registers) {
     receiverEnabled: Boolean(registers.UCSRB & 0x10),
     transmitterEnabled: Boolean(registers.UCSRB & 0x08),
     supported: mode === 'asynchronous' && dataBits === 8 && parity === 'none'
-      && stopBits === 1,
+      && stopBits === 1 && SUPPORTED_8N1_FRAME_CYCLES.has(frameCycles),
   };
 }
 
@@ -99,7 +100,8 @@ function validateRecord(record, context, expectedEpoch, previousCycle) {
   if (!exactKeys(record, [
     'epoch', 'cycle', 'resetEpoch', 'trigger', 'registers', 'configuration',
   ]) || record.epoch !== expectedEpoch || record.resetEpoch !== context.resetEpoch
-      || !Number.isSafeInteger(record.cycle) || record.cycle < previousCycle
+      || !Number.isSafeInteger(record.cycle) || record.cycle < 0
+      || record.cycle < previousCycle
       || !exactKeys(record.trigger, ['register', 'value'])
       || !REGISTER_SET.has(record.trigger.register)
       || !Number.isInteger(record.trigger.value) || record.trigger.value < 0

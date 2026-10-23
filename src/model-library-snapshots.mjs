@@ -121326,7 +121326,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/x46-usart-configuration-producer.mjs",
-      "sha256": "da447001b7152d27f752516753c01b3c31043a2722ee5ecdb67396cb445fcef7"
+      "sha256": "04d9fbf37e23613c24570d322792afc08238232657afaf0ae7dcead9fa9a0390"
     },
     {
       "path": "src/x47-runtime-transaction.mjs",
@@ -121529,7 +121529,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "0fcb967e447356d76f4fcba8806daee5f0353da8eccf245d281a10989f1e8b74"
     }
   ],
-  "implementationSha256": "76b6af560587a289a16428d09de2e2ec231abf33353ed4c4d0b2508257aa2a91",
+  "implementationSha256": "39c9dd676ebcbf610b9712a34e03aecd70e5334cd71ccf37a7b0f0fad89f9b5d",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.125 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, real worker, run, image build or deployment",
@@ -121539,7 +121539,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-pwm-led-short-routing.1-current",
     "semanticDisposition": "component, firmware and electrical semantics remain unchanged; a read-only AVR USART configuration observation producer is added"
   },
-  "manifestSha256": "d9cde6605e3142c6ebf4ea2fe897f92cb867cb214c20604c0caafb140b38fb25",
+  "manifestSha256": "352f71949d977a168b911e4d34555d911bb4d83bd9f0d418248bdd9231eb1cf2",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",
