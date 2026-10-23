@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
-import { normalizeBuildRequestValue, BUILD_REQUEST_SCHEMA, BOARD_PROFILE } from '../compiler/build-protocol.mjs';
+import { normalizeBuildRequestValue, buildInputIdentity, BUILD_REQUEST_SCHEMA, BOARD_PROFILE } from '../compiler/build-protocol.mjs';
 import { compileHeadlessAvr } from '../src/headless-compiler-client.mjs';
 import { digest, validateX81CompilerResult, validateX81Pair } from './x81-native-contract.mjs';
 
@@ -59,10 +59,13 @@ export async function qualify(authorityPath, outputDirectory) {
     await checkpoint(outputDirectory, 'authority.json', { authority, commit });
     const request = normalizeBuildRequestValue({ schema: BUILD_REQUEST_SCHEMA, board: BOARD_PROFILE,
       files: [{ name: 'main.ino', content: SOURCE }] });
+    const expectedInputIdentity = buildInputIdentity(request, { imageId: authority.compilerImageId,
+      toolchainManifestSha256: authority.toolchainManifestSha256 });
     await checkpoint(outputDirectory, 'build-request.json', request);
     await admission('builds');
     const artifact = await compileHeadlessAvr(request, { signal: abort.signal });
     await checkpoint(outputDirectory, 'build-response.json', artifact);
+    if (artifact.inputIdentity !== expectedInputIdentity) throw Error('X81_BUILD_INPUT_SUBSTITUTED');
     const domains = validateX81CompilerResult(artifact);
     // Pin actual image identity as emitted by the existing fixed compiler contract.
     if (artifact.toolchainImageId !== authority.compilerImageId
