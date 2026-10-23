@@ -3,22 +3,24 @@
 const assert = require('node:assert/strict'); const crypto = require('node:crypto');
 const fs = require('node:fs'); const path = require('node:path');
 const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/runner/node_modules', 'playwright'));
+const { createRecorder } = require('./x92-stm32-native-recording.cjs');
 const origin = process.env.X92_STM32_NATIVE_ORIGIN; const evidence = process.env.X92_STM32_NATIVE_EVIDENCE;
-assert.equal(origin, 'http://127.0.0.1:18766'); assert(evidence); const raw = []; const counts = { build: 0, run: 0, quiescence: 0 };
-const save = () => fs.writeFileSync(path.join(evidence, 'raw-http.json'), `${JSON.stringify(raw, null, 2)}\n`, { mode: 0o600 });
+assert.equal(origin, 'http://127.0.0.1:18766'); assert(evidence); const recorder = createRecorder(path.join(evidence, 'raw-http.json'));
+const { raw, counts, save } = recorder;
 (async () => { const browser = await chromium.launch({ headless: true }); const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   await page.route('**/api/stm32/**', async (route) => { const name = new URL(route.request().url()).pathname.split('/').pop();
-    if (!(name in counts) || ++counts[name] > 1) { raw.push({ kind: 'blocked-extra-producer', name }); save(); return route.abort('blockedbyclient'); }
+    if (!recorder.admit(name)) return route.abort('blockedbyclient');
     try { const response = await route.fetch(); const body = (await response.body()).toString('utf8');
-      raw.push({ kind: 'http', name, status: response.status(), headers: response.headers(), body }); save();
-      await route.fulfill({ response, body });
-    } catch (error) { raw.push({ kind: 'transport-error', name, message: error.message }); save(); await route.abort('connectionfailed'); }
+      await recorder.checkpoint({ kind: 'http', name, status: response.status(), headers: response.headers(), body },
+        () => route.fulfill({ response, body }));
+    } catch (error) { await recorder.checkpoint({ kind: 'transport-error', name, message: error.message },
+      () => route.abort('connectionfailed')); }
   });
   try { const attested = await page.request.get(`${origin}/__private/x92-stm32-target`, { headers: { 'X-X92-STM32-Target': process.env.X92_STM32_TARGET_NONCE } });
     const targetText = await attested.text(); raw.push({ kind: 'target', status: attested.status(), body: targetText }); save();
     assert.equal(attested.status(), 200); const target = JSON.parse(targetText);
-    assert.equal(target.gitCommit, process.env.X92_STM32_EXPECTED_GIT); assert.equal(target.distMainSha256, process.env.X92_STM32_EXPECTED_DIST);
-    assert.equal(target.stm32Service, true); assert.equal(target.defaultProviders, true);
+    assert.equal(recorder.attest(target, { gitCommit: process.env.X92_STM32_EXPECTED_GIT,
+      distMainSha256: process.env.X92_STM32_EXPECTED_DIST }), true);
     const main = await page.request.get(`${origin}/main.js`); const mainBytes = await main.body();
     const downloaded = crypto.createHash('sha256').update(mainBytes).digest('hex');
     raw.push({ kind: 'downloaded-main', status: main.status(), sha256: downloaded }); save();
