@@ -12,6 +12,13 @@ import { createC3PublicService } from '../c3/public-service.mjs';
 import { createStm32PublicService } from '../stm32/public-service.mjs';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
+
+const execute = promisify(execFile);
+const candidateRoot = path.resolve(new URL('../', import.meta.url).pathname);
+const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
 if (!globalThis.crypto) Object.defineProperty(globalThis, 'crypto', { value: webcrypto });
 
@@ -105,11 +112,24 @@ const server = http.createServer(async (request, response) => {
   if (process.env.X92_STM32_PRIVATE_TARGET_NONCE
       && request.method === 'GET' && request.url === '/__private/x92-stm32-target'
       && request.headers['x-x92-stm32-target'] === process.env.X92_STM32_PRIVATE_TARGET_NONCE) {
-    const main = await readFile(path.join(root, 'main.js'));
+    const [main, serviceBytes, runnerBytes, harnessBytes, browserBytes, head, status] = await Promise.all([
+      readFile(path.join(root, 'main.js')),
+      readFile(path.join(candidateRoot, 'stm32/public-service.mjs')),
+      readFile(path.join(candidateRoot, 'stm32/renode-runner.py')),
+      readFile(path.join(candidateRoot, 'scripts/x92-stm32-native-harness.mjs')),
+      readFile(path.join(candidateRoot, 'test/x92-stm32-native-product-browser.cjs')),
+      execute('git', ['rev-parse', 'HEAD'], { cwd: candidateRoot }),
+      execute('git', ['status', '--porcelain=v1', '--untracked-files=all'], { cwd: candidateRoot }),
+    ]);
+    const service = stm32Service?.attestation();
+    const { schema: serviceSchema, ...serviceEvidence } = service ?? {};
     const value = { schema: 'intent-mcu-x92-stm32-private-target@1',
-      gitCommit: process.env.X92_STM32_PRIVATE_TARGET_GIT,
-      distMainSha256: createHash('sha256').update(main).digest('hex'),
-      stm32Service: Boolean(stm32Service), defaultProviders: process.env.STM32_TEST_MODE !== '1' };
+      gitCommit: head.stdout.trim(), gitClean: status.stdout.length === 0,
+      distMainSha256: sha256(main), modelIdentity: `sha256:${CURRENT_MODEL_LIBRARY_LOCK.implementationSha256}`,
+      serviceSourceSha256: sha256(serviceBytes), runnerSourceSha256: sha256(runnerBytes),
+      harnessSha256: sha256(harnessBytes), browserSha256: sha256(browserBytes),
+      stm32Service: Boolean(service), serviceSchema, ...serviceEvidence,
+      readiness: readiness.ready === true && readiness.code === 'READY' && service?.imagesVerified === true };
     response.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     response.end(`${JSON.stringify(value)}\n`); return;
   }

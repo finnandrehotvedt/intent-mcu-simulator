@@ -6,8 +6,21 @@ function createRecorder(file) {
   const save = () => fs.writeFileSync(file, `${JSON.stringify(raw, null, 2)}\n`, { mode: 0o600 });
   return { raw, counts, save,
     attest(target, expected) {
-      const ok = target.gitCommit === expected.gitCommit && target.distMainSha256 === expected.distMainSha256
-        && target.stm32Service === true && target.defaultProviders === true;
+      const ok = target.schema === 'intent-mcu-x92-stm32-private-target@1'
+        && target.serviceSchema === 'intent-mcu-stm32-service-attestation@1'
+        && target.gitCommit === expected.gitCommit && target.gitClean === true
+        && target.distMainSha256 === expected.distMainSha256
+        && target.modelIdentity === expected.modelIdentity
+        && target.serviceSourceSha256 === expected.serviceSourceSha256
+        && target.runnerSourceSha256 === expected.runnerSourceSha256
+        && target.harnessSha256 === expected.harnessSha256
+        && target.browserSha256 === expected.browserSha256
+        && target.stm32Service === true && target.defaultProviders === true
+        && target.imagesVerified === true && target.readiness === true
+        && target.compilerImageIdentity === expected.compilerImageIdentity
+        && target.compilerToolchainIdentity === expected.compilerToolchainIdentity
+        && target.runtimeImageIdentity === expected.runtimeImageIdentity
+        && target.runtimeBinaryIdentity === expected.runtimeBinaryIdentity;
       if (!ok) { raw.push({ kind: 'target-mismatch', target }); save(); }
       return ok;
     },

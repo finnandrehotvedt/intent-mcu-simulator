@@ -427,6 +427,17 @@ export function createStm32PublicService({
     completionSecret.fill(0);
     completions.clear();
   }
-  return { handle, verifyImages, close, metrics: () => structuredClone({ ...metrics,
+  function attestation() {
+    return structuredClone({
+      schema: 'intent-mcu-stm32-service-attestation@1',
+      defaultProviders: builder === null && runtime === null && testMode === false,
+      imagesVerified,
+      compilerImageIdentity: builderImageLock.imageId,
+      compilerToolchainIdentity: `sha256:${builderImageLock.toolchainManifestSha256}`,
+      runtimeImageIdentity: runtimeImageLock.imageId,
+      runtimeBinaryIdentity: `sha256:${STM32_EXECUTION_IDENTITIES.runtimeBinaryIdentity.replace(/^sha256:/u, '')}`,
+    });
+  }
+  return { handle, verifyImages, close, attestation, metrics: () => structuredClone({ ...metrics,
     buildInFlight, runtimeInFlight, retainedServerBytes: 0 }) };
 }

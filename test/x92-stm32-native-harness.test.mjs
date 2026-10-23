@@ -27,5 +27,7 @@ test('native product path fixes loopback target and attests before producer cont
   assert.match(text, /127\.0\.0\.1:18766/u);
   assert.doesNotMatch(text, /lab\.teachthecompany\.com/u);
   assert(text.indexOf('__private/x92-stm32-target') < text.indexOf("page.click('#quick-build')"));
-  assert.match(text, /finally \{ save\(\); await browser\.close/u);
+  assert.match(text, /finally \{ await Promise\.allSettled\(\[\.\.\.pendingRoutes\]\); save\(\); await browser\.close/u);
+  assert(text.indexOf('recorder.attest') < text.indexOf("page.click('#quick-build')"));
+  assert.match(text, /X92_STM32_EXPECTED_BROWSER/u);
 });
