@@ -1,4 +1,28 @@
-# Intent MCU Simulator 1.1.0-rc.127
+# Intent MCU Simulator 1.1.0-rc.128
+
+## Bounded USART0 RX evidence and cumulative pending release
+
+Rc.128 adds one collapsed RX section to the existing read-only UART panel. For
+an explicitly paused, identity-bound current AVR worker snapshot it separates
+completed, in-flight and rejected model-derived transfers and shows bounded
+byte, requested start, expected completion, observed completion and lateness
+details. The accepted native RX fixture and historical panel replay are reused;
+this release performs no new firmware Build, worker Run or native model claim.
+
+The RX observation lateness limit remains semantically unchanged at 4. Its
+browser-safe module is now an explicit member of the current-model and X49
+private closures. Lifecycle retirement clears RX evidence. Physical UART line,
+parity/noise, I2C and SPI evidence remain unavailable, and X46 remains partial.
+
+Rc.128 also carries the reviewed but never-deployed rc.126 configuration and
+rc.127 framing increments. X92 receives parser and desktop-restart boundary
+tests only; those tests add no runtime authority and do not close X92 publicly.
+Exact public rc.125 remains the app-only rollback basis and its private
+aggregate counter volume must be preserved unchanged.
+
+---
+
+## 1.1.0-rc.127
 
 ## Bounded model-derived USART0 framing
 

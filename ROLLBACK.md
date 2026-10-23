@@ -1,4 +1,4 @@
-# Rollback basis for 1.1.0-rc.127
+# Rollback basis for 1.1.0-rc.128
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
@@ -7,12 +7,12 @@ unchanged.
 Retain exact public rc.125 source commit
 `4ac9c93801f779451a30d901adb4383ee1f8a4e2` and VM103 image
 `sha256:12d4aac6336ce8604c4e7296aba7bf263fc2b30d611388ac9504b0d99542c20f`
-as the pre-rc.127 app-only recovery basis. Rc.126 was never deployed. If acceptance fails, restore that
+as the pre-rc.128 app-only recovery basis. Rc.126 and rc.127 were never deployed. If acceptance fails, restore that
 exact app image and release directory, recreate only the Lab container and
 verify readiness plus the existing Teach-domain URLs. Preserve the rc.125
 private aggregate counter volume unchanged.
 
-Rollback removes the rc.127 framing contract and panel increment. It does
+Rollback removes the rc.126 configuration, rc.127 framing and rc.128 RX panel increments. It does
 not alter counter data, learner-owned files or other services.
 
 The older recovery history below remains preserved.

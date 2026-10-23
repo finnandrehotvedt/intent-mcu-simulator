@@ -28,9 +28,9 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X46 and X88 owners bind the rc126 release to coherent rc127 bytes', async () => {
+test('X46, X88 and X92 owners bind the rc127 release to coherent rc128 bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.127');
+  assert.equal(release.version, '1.1.0-rc.128');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
@@ -38,18 +38,28 @@ test('X46 and X88 owners bind the rc126 release to coherent rc127 bytes', async 
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
   assert(registry.ids.includes('X92'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.126', current: '1.1.0-rc.127' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.127', current: '1.1.0-rc.128' });
   assert.deepEqual(value.changes, [
     {
       id: 'X46', classification: 'additive',
       capabilities: ['intent-mcu-x46-uart-panel@1'],
       contracts: ['x46-avr-usart0-tx-byte-events-v1'],
-      summary: 'Adds bounded model-derived AVR USART0 8-N-1 framing to the existing read-only current-worker panel; RX, parity modes, physical signals, I2C, SPI and full X46 closure remain unavailable.',
+      summary: 'Adds bounded model-derived AVR USART0 RX transfer evidence to the existing read-only current-worker panel; parity, physical signals, I2C, SPI and full X46 closure remain unavailable.',
     },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records rc.126 to rc.127 as the reviewed bounded framing contract and existing-panel integration; rc.126 was never deployed and public rollback remains rc.125.',
+      summary: 'Records rc.127 to rc.128 as the reviewed RX panel and test-only X92 boundary update; rc.126 and rc.127 were never deployed and public rollback remains rc.125.',
+    },
+    {
+      id: 'X92', classification: 'changed',
+      capabilities: ['intent-mcu-experiment-budget-review@1',
+        'intent-mcu-experiment-budget@1', 'intent-mcu-x92-runtime-quiescence-ack@1',
+        'intent-mcu-x92-stm32-owner-proof@1'],
+      contracts: ['x92-bounded-avr-experiment-budget-v1',
+        'x92-bounded-esp32c3-owner-proof-v1', 'x92-bounded-pico-owner-proof-v1',
+        'x92-bounded-stm32-owner-proof-v1'],
+      summary: 'Adds parser and desktop-restart boundary tests only; it grants no new runtime authority and does not close X92 publicly.',
     },
   ]);
   assert.equal(value.migrationRequired, true);
@@ -112,7 +122,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.127');
+  assert.equal(discovery.identity.version, '1.1.0-rc.128');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

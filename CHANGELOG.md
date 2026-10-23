@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.128 — 2026-10-24
+
+- Adds completed, in-flight and rejected model-derived AVR USART0 RX evidence
+  to the existing collapsed read-only panel with bounded timing details.
+- Keeps the lateness limit semantically unchanged at 4 while making its module
+  explicit in the current-model and X49 private runtime closures.
+- Carries the reviewed but never-deployed rc.126 configuration and rc.127
+  framing increments; X46 remains partial and claims no physical UART proof.
+- Adds only parser/restart boundary tests for X92; no new runtime authority or
+  public X92 closure is claimed.
+- Retains exact public rc.125 and its private aggregate counter volume as the
+  rollback basis.
+
 ## 1.1.0-rc.127 — 2026-10-23
 
 - Adds bounded model-derived AVR USART0 8-N-1 framing inside the existing
