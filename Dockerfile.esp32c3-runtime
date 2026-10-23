@@ -5,7 +5,11 @@ FROM mcr.microsoft.com/playwright@sha256:b27e719ecbfef153e13fd24e8341736733bf265
 COPY qemu-runtime/ /opt/qemu/
 COPY qemu-deps/ /opt/qemu/deps/
 COPY c3/artifact.mjs c3/flash-loader.mjs c3/flash-lock.json c3/gpio2-adapter.mjs c3/protocol.mjs c3/qemu-gpio-observer.mjs c3/qemu-runner.mjs c3/rsp-observer.mjs /rootfs/opt/intent-mcu/c3/
+COPY src/component-catalog.mjs /rootfs/opt/intent-mcu/src/component-catalog.mjs
+COPY scripts/check-c3-runtime-closure.mjs /tmp/check-c3-runtime-closure.mjs
 RUN set -eu; \
+    node /tmp/check-c3-runtime-closure.mjs --root /rootfs/opt/intent-mcu --entry c3/qemu-runner.mjs; \
+    INTENT_MCU_C3_IMPORT_CHECK=1 node -e "import('/rootfs/opt/intent-mcu/c3/qemu-runner.mjs')"; \
     mkdir -p /rootfs/usr/bin /rootfs/opt/qemu; \
     cp /usr/bin/node /rootfs/usr/bin/node; \
     cp -a /opt/qemu/. /rootfs/opt/qemu/; \

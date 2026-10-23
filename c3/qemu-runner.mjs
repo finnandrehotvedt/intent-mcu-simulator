@@ -242,14 +242,18 @@ async function readJob() {
   return { ...job, flash };
 }
 
-try {
-  const job = await readJob();
+export async function main() {
   try {
-    process.stdout.write(`${JSON.stringify(await run(
-      job.mode, job.sourceSha256, job.flashSha256, job.marker, job.flash,
-    ))}\n`);
-  } finally { job.flash.fill(0); }
-} catch (error) {
-  process.stderr.write(`${JSON.stringify({ error: error.message })}\n`);
-  process.exitCode = 1;
+    const job = await readJob();
+    try {
+      process.stdout.write(`${JSON.stringify(await run(
+        job.mode, job.sourceSha256, job.flashSha256, job.marker, job.flash,
+      ))}\n`);
+    } finally { job.flash.fill(0); }
+  } catch (error) {
+    process.stderr.write(`${JSON.stringify({ error: error.message })}\n`);
+    process.exitCode = 1;
+  }
 }
+
+if (process.env.INTENT_MCU_C3_IMPORT_CHECK !== '1') await main();
