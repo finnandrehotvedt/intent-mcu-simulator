@@ -1,4 +1,22 @@
-# Intent MCU Simulator 1.1.0-rc.125
+# Intent MCU Simulator 1.1.0-rc.126
+
+## Identity-bound USART configuration evidence
+
+Rc.126 adds a bounded producer that derives AVR USART configuration from the
+actual current worker state and binds the result to that exact runtime
+identity. The existing read-only TX evidence can therefore distinguish its
+recorded data size, stop-bit mode, baud and frame timing without granting the
+panel any Build, Run, Apply or verdict authority.
+
+This remains a partial X46 increment. It does not add RX decoding, parity
+analysis, physical voltage or noise evidence, I2C, SPI or a general protocol
+analyzer. Save/Open compatibility, PWM presentation, short-route behavior and
+the aggregate page-view counter are unchanged. Exact public rc.125 remains the
+app-only rollback basis and its persistent counter volume is preserved.
+
+---
+
+## 1.1.0-rc.125
 
 ## Privacy-preserving aggregate page views
 

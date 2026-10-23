@@ -11,8 +11,8 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.124",
-    "current": "1.1.0-rc.125"
+    "previous": "1.1.0-rc.125",
+    "current": "1.1.0-rc.126"
   },
   "changes": [
     {
@@ -24,7 +24,7 @@
       "contracts": [
         "x46-avr-usart0-tx-byte-events-v1"
       ],
-      "summary": "Publishes a read-only AVR USART0 TX byte-event panel over complete current-worker records with exact baud quantization; framing, RX, physical signals, I2C and SPI remain unavailable."
+      "summary": "Adds an identity-bound AVR USART configuration producer to current-worker TX evidence; RX, parity analysis, physical signals, I2C, SPI and full X46 closure remain unavailable."
     },
     {
       "id": "X88",
@@ -35,7 +35,7 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records rc.124 to rc.125 as a minimal first-party aggregate page-view counter with Europe/Oslo day totals, bounded atomic storage and no visitor identifiers."
+      "summary": "Records rc.125 to rc.126 as a bounded USART configuration-producer increment while preserving the aggregate page-view counter and runtime authority boundaries."
     }
   ],
   "migrationRequired": true,

@@ -2,6 +2,18 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.126 — 2026-10-23
+
+- Adds an identity-bound AVR USART configuration producer for the actual
+  current worker and its existing read-only TX evidence.
+- Keeps framing claims bounded to recorded data size, stop-bit mode, baud and
+  frame timing. RX, parity analysis, physical signals, I2C, SPI and full X46
+  closure remain unavailable.
+- Adds no Build, Run, Apply or verdict authority and preserves Save/Open, PWM,
+  routing and the aggregate page-view counter.
+- Retains exact public rc.125 source and app image as the rollback basis while
+  preserving its persistent counter volume.
+
 ## 1.1.0-rc.125 — 2026-10-23
 
 - Adds a minimal first-party aggregate page-view counter with all-time and
