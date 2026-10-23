@@ -97,6 +97,25 @@ test('stale identity rejects before producer dispatch', async () => {
   assert.equal(dispatched, 0);
 });
 
+test('acknowledged cancellation during deferred binding dispatches no producer and cannot release replacement', async () => {
+  let resolveBinding; let dispatched = 0;
+  const deferred = new Promise((resolve) => { resolveBinding = resolve; });
+  const { integration } = subject({ currentBinding: () => deferred,
+    executeBudgetProducer: async () => { dispatched += 1; return result(); } });
+  const pending = integration.executeBudgeted(request('x92-stm32-cancel-binding'));
+  await Promise.resolve();
+  assert.deepEqual(integration.cancel('x92-stm32-cancel-binding'),
+    { ok: true, code: 'ACTION_CANCEL_REQUESTED' });
+  resolveBinding(binding);
+  const output = await pending;
+  assert.equal(output.code, 'ACTION_CANCELLED');
+  assert.equal(dispatched, 0);
+  assert.deepEqual(integration.status(), { gate: null, tombstone: null });
+  const replacement = await integration.executeManual(async () => ({ ok: true }));
+  assert.equal(replacement.ok, true);
+  assert.equal(dispatched, 0);
+});
+
 test('unconfirmed daemon absence and disconnect fully charge and poison the shared gate', async () => {
   for (const mode of ['absence', 'disconnect']) {
     const options = mode === 'absence'

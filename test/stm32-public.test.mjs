@@ -3,7 +3,10 @@
 
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import http from 'node:http';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 
 import { loadStm32F429FirmwareArtifact } from '../stm32/artifact.mjs';
@@ -11,11 +14,12 @@ import {
   STM32_BUILD_SCHEMA, STM32_PROFILE, STM32_RUN_SCHEMA,
   sourceForStm32, validateStm32Source,
 } from '../stm32/protocol.mjs';
-import { createStm32PublicService } from '../stm32/public-service.mjs';
+import { childOutput, createStm32PublicService } from '../stm32/public-service.mjs';
 import {
   Stm32CircuitEditor, createStm32CircuitDraft, normalizeStm32CircuitDraft, validateStm32Circuit,
 } from '../src/stm32-public-circuit.mjs';
 import { STM32_EXECUTION_IDENTITIES } from '../src/stm32-execution-identities.mjs';
+import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
 
 const digest = (value) => createHash('sha256').update(value).digest('hex');
 const imageLock = Object.freeze({ image: 'local/not-used:1', imageId: `sha256:${'a'.repeat(64)}`,
@@ -90,6 +94,26 @@ test('bounded STM32 source accepts only PB0 level and uppercase USART3 marker', 
   ]) assert.throws(() => validateStm32Source(source), /SOURCE_POLICY_REJECTED/u);
 });
 
+test('late abort during fake child cleanup rejects natural completion after exact absence check', async (context) => {
+  const directory = await mkdtemp(join(tmpdir(), 'stm32-fake-docker-'));
+  const fakeDocker = join(directory, 'docker');
+  context.after(() => rm(directory, { recursive: true, force: true }));
+  await writeFile(fakeDocker, `#!/bin/sh
+case "$1" in
+  run) printf '{"ok":true}\\n'; exit 0 ;;
+  rm) sleep 0.08; exit 0 ;;
+  container) printf 'Error: No such container: fake\\n' >&2; exit 1 ;;
+  kill) exit 0 ;;
+esac
+exit 2
+`, { mode: 0o755 });
+  const controller = new AbortController();
+  const pending = childOutput({ docker: fakeDocker, args: ['run'], timeoutMs: 2_000,
+    outputLimit: 1024, signal: controller.signal, containerName: 'fake' });
+  setTimeout(() => controller.abort(), 20);
+  await assert.rejects(pending, /OPERATION_CANCELLED/u);
+});
+
 test('public STM32 service binds source to strict ELF and returns actual-runtime truth without retention', async (context) => {
   const fixture = strictFixture();
   let buildCalls = 0;
@@ -154,11 +178,29 @@ test('public STM32 service binds source to strict ELF and returns actual-runtime
   const x92Binding = { schema: 'intent-mcu-x92-stm32-execution-binding@1', profile: STM32_PROFILE,
     requestNonce: 'Stm32ServiceTest001', projectGeneration: 9,
     sourceIdentity: `sha256:${built.sourceSha256}`, graphIdentity: `sha256:${'c'.repeat(64)}`,
-    elfIdentity: `sha256:${built.artifact.sha256}`, modelIdentity: `sha256:${'d'.repeat(64)}`,
+    elfIdentity: `sha256:${built.artifact.sha256}`,
+    modelIdentity: `sha256:${CURRENT_MODEL_LIBRARY_LOCK.implementationSha256}`,
     compiler: { imageIdentity: STM32_EXECUTION_IDENTITIES.compilerImageIdentity,
       toolchainIdentity: STM32_EXECUTION_IDENTITIES.compilerToolchainIdentity },
     runtime: { imageIdentity: STM32_EXECUTION_IDENTITIES.runtimeImageIdentity,
       binaryIdentity: STM32_EXECUTION_IDENTITIES.runtimeBinaryIdentity } };
+  for (const rejectedBinding of [
+    { ...x92Binding, extra: true },
+    { ...x92Binding, sourceIdentity: `sha256:${'e'.repeat(64)}` },
+    { ...x92Binding, elfIdentity: `sha256:${'e'.repeat(64)}` },
+    { ...x92Binding, modelIdentity: `sha256:${'e'.repeat(64)}` },
+    { ...x92Binding, compiler: { ...x92Binding.compiler,
+      imageIdentity: `sha256:${'e'.repeat(64)}` } },
+    { ...x92Binding, runtime: { ...x92Binding.runtime,
+      binaryIdentity: `sha256:${'e'.repeat(64)}` } },
+  ]) {
+    const rejectedRun = await fetch(`${base}/api/stm32/run`, { method: 'POST', headers,
+      body: JSON.stringify({ schema: STM32_RUN_SCHEMA, profile: STM32_PROFILE,
+        sourceRevision: 2, source, sourceSha256: built.sourceSha256, artifact: built.artifact,
+        x92Binding: rejectedBinding }) });
+    assert.notEqual(rejectedRun.status, 200);
+    assert.equal(runCalls, 0);
+  }
   const runResponse = await fetch(`${base}/api/stm32/run`, { method: 'POST', headers,
     body: JSON.stringify({ schema: STM32_RUN_SCHEMA, profile: STM32_PROFILE,
       sourceRevision: 2, source, sourceSha256: built.sourceSha256, artifact: built.artifact,

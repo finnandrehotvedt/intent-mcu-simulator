@@ -18,6 +18,7 @@ import {
   X92_STM32_COMPLETION_SCHEMA, normalizeX92Stm32Binding,
 } from '../src/x92-stm32-budget-integration.mjs';
 import { STM32_EXECUTION_IDENTITIES } from '../src/stm32-execution-identities.mjs';
+import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
 
 const execFileAsync = promisify(execFile);
 const SHA256 = /^[0-9a-f]{64}$/u;
@@ -98,7 +99,7 @@ async function daemonContainerAbsent(docker, name) {
     return /No such (?:object|container)/iu.test(`${error?.stderr ?? ''}${error?.message ?? ''}`);
   }
 }
-async function childOutput({ docker, args, input = '', timeoutMs, outputLimit, signal, containerName }) {
+export async function childOutput({ docker, args, input = '', timeoutMs, outputLimit, signal, containerName }) {
   return new Promise((resolve, reject) => {
     const child = spawn(docker, args, { shell: false, stdio: ['pipe', 'pipe', 'pipe'] });
     const stdout = [];
@@ -129,10 +130,11 @@ async function childOutput({ docker, args, input = '', timeoutMs, outputLimit, s
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      signal?.removeEventListener('abort', abort);
       await cleanupContainer(docker, containerName);
       const containerAbsent = await daemonContainerAbsent(docker, containerName);
+      signal?.removeEventListener('abort', abort);
       if (reason) return reject(fault(reason, reason === 'OPERATION_CANCELLED' ? 409 : 504));
+      if (signal?.aborted) return reject(fault('OPERATION_CANCELLED', 409));
       if (!containerAbsent) return reject(fault('OPERATION_CONTAINER_RETIREMENT_UNPROVEN', 502));
       const output = Buffer.concat(stdout).toString('utf8').trim();
       if (code !== 0) {
@@ -284,14 +286,20 @@ export function createStm32PublicService({
     completions.delete(value.operationId);
     return expected;
   }
-  function abortFor(request) {
+  function abortFor(request, response) {
     const controller = new AbortController();
     const abort = () => controller.abort();
     request.once('aborted', abort);
+    response.once('close', abort);
+    if (request.aborted || response.destroyed) controller.abort();
     active.add(controller);
-    return { controller, done() { request.off('aborted', abort); active.delete(controller); } };
+    return { controller, done() {
+      request.off('aborted', abort);
+      response.off('close', abort);
+      active.delete(controller);
+    } };
   }
-  async function buildRequest(request) {
+  async function buildRequest(request, response) {
     const body = await bodyJson(request, limits.requestBytes);
     if (!exactKeys(body, ['schema', 'profile', 'sourceRevision', 'source'])
       || body.schema !== STM32_BUILD_SCHEMA || body.profile !== STM32_PROFILE
@@ -302,7 +310,8 @@ export function createStm32PublicService({
     if (buildInFlight >= limits.concurrentBuilds) throw fault('BUILD_CONCURRENCY_LIMIT', 429, '',
       retryAfterForCode('BUILD_CONCURRENCY_LIMIT'));
     const sourceSha256 = sha256(Buffer.from(source.source, 'utf8'));
-    const operation = abortFor(request);
+    const operation = abortFor(request, response);
+    if (operation.controller.signal.aborted) throw fault('OPERATION_CANCELLED', 409);
     buildInFlight += 1;
     metrics.builds += 1;
     try {
@@ -317,7 +326,7 @@ export function createStm32PublicService({
       };
     } finally { buildInFlight -= 1; operation.done(); }
   }
-  async function runRequest(request) {
+  async function runRequest(request, response) {
     const body = await bodyJson(request, limits.requestBytes);
     const keys = body?.x92Binding
       ? ['schema', 'profile', 'sourceRevision', 'source', 'sourceSha256', 'artifact', 'x92Binding']
@@ -330,13 +339,25 @@ export function createStm32PublicService({
     if (sha256(Buffer.from(source.source, 'utf8')) !== body.sourceSha256) {
       throw fault('RUN_SOURCE_IDENTITY_MISMATCH', 409);
     }
+    const binding = body.x92Binding ? normalizeX92Stm32Binding(body.x92Binding) : null;
+    if (binding && (binding.profile !== STM32_PROFILE
+      || binding.sourceIdentity !== `sha256:${body.sourceSha256}`
+      || binding.elfIdentity !== `sha256:${body.artifact?.sha256 ?? ''}`
+      || binding.modelIdentity !== `sha256:${CURRENT_MODEL_LIBRARY_LOCK.implementationSha256}`
+      || binding.compiler.imageIdentity !== STM32_EXECUTION_IDENTITIES.compilerImageIdentity
+      || binding.compiler.toolchainIdentity !== STM32_EXECUTION_IDENTITIES.compilerToolchainIdentity
+      || binding.runtime.imageIdentity !== STM32_EXECUTION_IDENTITIES.runtimeImageIdentity
+      || binding.runtime.binaryIdentity !== STM32_EXECUTION_IDENTITIES.runtimeBinaryIdentity)) {
+      throw fault('X92_STM32_BINDING_MISMATCH', 409);
+    }
     if (runtimeInFlight >= limits.concurrentRuntimes) throw fault('RUNTIME_CONCURRENCY_LIMIT', 429, '',
       retryAfterForCode('RUNTIME_CONCURRENCY_LIMIT'));
     const elf = decodeElf(body.artifact);
     try {
       loadStm32F429FirmwareArtifact({ profile: STM32_PROFILE, format: 'elf32', bytes: elf,
         expectedSha256: body.artifact.sha256 });
-      const operation = abortFor(request);
+      const operation = abortFor(request, response);
+      if (operation.controller.signal.aborted) throw fault('OPERATION_CANCELLED', 409);
       runtimeInFlight += 1;
       metrics.runs += 1;
       try {
@@ -347,16 +368,6 @@ export function createStm32PublicService({
         const value = execution?.value ?? execution;
         const lifecycle = execution?.lifecycle ?? (testMode
           ? { processExited: true, daemonContainerAbsent: true } : null);
-        const binding = body.x92Binding ? normalizeX92Stm32Binding(body.x92Binding) : null;
-        if (binding && (binding.profile !== STM32_PROFILE
-          || binding.sourceIdentity !== `sha256:${body.sourceSha256}`
-          || binding.elfIdentity !== `sha256:${body.artifact.sha256}`
-          || binding.compiler.imageIdentity !== STM32_EXECUTION_IDENTITIES.compilerImageIdentity
-          || binding.compiler.toolchainIdentity !== STM32_EXECUTION_IDENTITIES.compilerToolchainIdentity
-          || binding.runtime.imageIdentity !== STM32_EXECUTION_IDENTITIES.runtimeImageIdentity
-          || binding.runtime.binaryIdentity !== STM32_EXECUTION_IDENTITIES.runtimeBinaryIdentity)) {
-          throw fault('X92_STM32_BINDING_MISMATCH', 409);
-        }
         const response = {
           schema: STM32_RUN_RESPONSE_SCHEMA, profile: STM32_PROFILE,
           sourceRevision: body.sourceRevision, sourceSha256: body.sourceSha256,
@@ -384,8 +395,8 @@ export function createStm32PublicService({
       requireMutationContext(request, publicOrigin);
       rate(requestOrigin(request, trustProxy));
       let value;
-      if (url.pathname.endsWith('/build')) value = await buildRequest(request);
-      else if (url.pathname.endsWith('/run')) value = await runRequest(request);
+      if (url.pathname.endsWith('/build')) value = await buildRequest(request, response);
+      else if (url.pathname.endsWith('/run')) value = await runRequest(request, response);
       else {
         const body = await bodyJson(request, limits.requestBytes);
         if (!exactKeys(body, ['schema', 'binding', 'completion'])

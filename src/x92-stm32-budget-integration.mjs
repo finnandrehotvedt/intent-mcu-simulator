@@ -91,7 +91,7 @@ export function createX92Stm32BudgetIntegration({ budget, currentBinding,
   function claim(owner, requestId, action) {
     if (gate || tombstone) return null;
     const permit = Object.freeze({});
-    gate = { owner, requestId, action, phase: 'claimed',
+    gate = { owner, requestId, action, phase: 'claimed', cancelled: false,
       token: `x92-stm32-dispatch-${++sequence}`, permit };
     permits.set(permit, { token: gate.token, action, binding: null });
     return gate;
@@ -153,6 +153,7 @@ export function createX92Stm32BudgetIntegration({ budget, currentBinding,
     };
     try {
       const binding = normalizeX92Stm32Binding(await currentBinding(request));
+      if (owner.cancelled) return block('ACTION_CANCELLED');
       if (binding.projectGeneration !== request.expectedGeneration) return block('ACTION_STALE_GENERATION');
       reservation = budget.reserve(request, x92IdentityFromStm32Binding(binding), { unresolvedProblems });
       if (!reservation.ok || !reservation.budgeted) return reservation;
@@ -164,9 +165,19 @@ export function createX92Stm32BudgetIntegration({ budget, currentBinding,
         resolveDeadline({ deadline: true });
       }, reservation.deadlineAfterMs);
       authorize(owner, binding);
+      if (owner.cancelled) {
+        const accounting = finish('cancelled');
+        return block('ACTION_CANCELLED', { experimentBudget: accounting?.terminal ?? null });
+      }
       const result = await Promise.race([
         Promise.resolve().then(() => executeBudgetProducer(source, owner.permit, clone(binding))), deadline,
       ]);
+      if (owner.cancelled) {
+        poison(owner, 'X92_STM32_CANCELLED_AFTER_DISPATCH');
+        const accounting = finish('cancelled');
+        return block('ACTION_CANCELLED', { executed: true,
+          experimentBudget: accounting?.terminal ?? null });
+      }
       if (result?.deadline === true || !Number.isFinite(now())
           || now() >= started + reservation.deadlineAfterMs) return expire('X92_STM32_DEADLINE_UNCONFIRMED');
       if (!validResult(result, binding)) {
@@ -228,6 +239,7 @@ export function createX92Stm32BudgetIntegration({ budget, currentBinding,
       if (!gate || gate.owner !== 'budget' || gate.requestId !== requestId) {
         return { ok: false, code: 'ACTION_NOT_ACTIVE' };
       }
+      gate.cancelled = true;
       try { cancelBudgetProducer(requestId); } catch { /* gate remains owned */ }
       return { ok: true, code: 'ACTION_CANCEL_REQUESTED' };
     } });
