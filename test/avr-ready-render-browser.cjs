@@ -137,6 +137,42 @@ function contentType(file) {
       value.modelLibrary = modelLibrary;
       return JSON.stringify(value);
     }, RC112_CURRENT_MODEL_LIBRARY_LOCK);
+    const currentWorker = page.workers()[0];
+    const currentWorkerClosed = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('current runtime worker survived historical Open')), 2_000);
+      currentWorker.once('close', () => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+    const requestsBeforeHistoricalOpen = intercepted.length;
+    await page.setInputFiles('#project-open-input', {
+      name: 'historical-thermostat.intent-mcu.json',
+      mimeType: 'application/json', buffer: Buffer.from(historicalRecovery),
+    });
+    await page.waitForTimeout(100);
+    if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) {
+      await page.click('#unsaved-discard');
+    }
+    await currentWorkerClosed;
+    await page.waitForFunction(() => document.querySelector('#model-library-summary').textContent.includes(
+      '2.0.0-x48-current-source-integration.1-current',
+    ));
+    const historicalOpen = await page.evaluate(() => ({
+      model: document.querySelector('#model-library-summary').textContent,
+      workerState: document.querySelector('#worker-state').textContent,
+      runDisabled: document.querySelector('#run').disabled,
+      quickRunDisabled: document.querySelector('#quick-run').disabled,
+    }));
+    assert.equal(intercepted.length, requestsBeforeHistoricalOpen,
+      'opening the historical project reached the compiler producer path');
+    assert.match(historicalOpen.model, /2\.0\.0-x48-current-source-integration\.1-current.*retained/u);
+    assert.equal(historicalOpen.runDisabled, true,
+      'historical Open retained the prior current-model Run authority');
+    assert.equal(historicalOpen.quickRunDisabled, true,
+      'historical Open retained the prior current-model quick Run authority');
+    assert.equal(page.workers().length, 0, 'historical Open retained the prior runtime worker');
+
     await page.evaluate((source) => {
       localStorage.setItem('teach-lab.simulator.project.v2', source);
       localStorage.removeItem('teach-lab.simulator.project.recovery.v2');
@@ -319,7 +355,7 @@ function contentType(file) {
     assert.equal(serverBuildRequests, 0, 'a compiler producer request reached the server');
     assert.deepEqual(failures, []);
     process.stdout.write(`${JSON.stringify({
-      status: 'pass', scope: 'actual-worker-ready-render', current, migrationGuard,
+      status: 'pass', scope: 'actual-worker-ready-render', current, historicalOpen, migrationGuard,
       migratedRecovery: migrated, retained: ready, timeout,
       retainedHexSha256, productionCsp: true,
       compilerProducerRequests: 0, firmwareRuns: 0,
