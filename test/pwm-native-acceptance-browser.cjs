@@ -13,6 +13,10 @@ const { chromium } = require(path.join(
 const repository = path.resolve(__dirname, '..');
 const dist = path.join(repository, 'dist');
 const execute = process.env.PWM_NATIVE_EXECUTE === '1';
+const fakeExecute = process.env.PWM_FAKE_EXECUTE === '1';
+const activeExecution = execute || fakeExecute;
+const fakeForceTimeout = process.env.PWM_FAKE_FORCE_TIMEOUT === '1';
+const observationWallMilliseconds = fakeForceTimeout ? 500 : 20_000;
 const externalBase = process.env.PWM_NATIVE_URL || '';
 const evidencePath = process.env.PWM_NATIVE_EVIDENCE || '';
 const CURRENT = Object.freeze({
@@ -54,37 +58,56 @@ function segmentEntersBody(start, end, obstacle) {
   return true;
 }
 
-function fakeWholeWorkflow() {
-  const budget = { builds: 0, workers: 0 };
-  const reserve = (kind) => {
-    if (budget[kind] >= 1) throw new Error(`FAKE_${kind.toUpperCase()}_BUDGET_EXHAUSTED`);
-    budget[kind] += 1;
-  };
-  reserve('builds'); reserve('workers');
-  assert.throws(() => reserve('builds'), /BUDGET_EXHAUSTED/u);
-  assert.throws(() => reserve('workers'), /BUDGET_EXHAUSTED/u);
-  const expected = [64 / 255, 191 / 255]; const raw = [];
-  const snapshots = expected.map((duty, index) => ({ kind: 'snapshot', cycle: (index + 1) * 256,
-    paused: false, runtimeIdentity: { artifactIdentity: 'a'.repeat(64), workerInstanceNonce: 'b'.repeat(32),
-      workerInitialization: 2, runtimeGeneration: 1, resetEpoch: 0 },
-    pins: [{ pin: 'D3', pwm: { duty } }], circuit: { leds: [{ componentId: 'led-1',
-      currentAmps: 0.01 * duty, brightness: 0.5 * duty }] } }));
-  for (const snapshot of snapshots) raw.push(structuredClone(snapshot));
-  const paused = structuredClone(snapshots.at(-1)); paused.paused = true; raw.push(structuredClone(paused));
-  const reset = structuredClone(paused); reset.cycle = 0; reset.runtimeIdentity.resetEpoch = 1;
-  reset.pins[0].pwm.duty = 0; reset.circuit.leds[0].currentAmps = 0;
-  reset.circuit.leds[0].brightness = 0; raw.push(structuredClone(reset));
-  assert.deepEqual(raw.slice(0, 2).map((item) => item.pins[0].pwm.duty), expected);
-  assert.equal(raw[2].paused, true); assert.equal(raw[3].circuit.leds[0].brightness, 0);
-  const failure = { status: 'failed', stage: 'synthetic-timeout', raw: structuredClone(raw), cleaned: true };
-  assert.equal(failure.raw.length, 4); assert.equal(failure.cleaned, true);
-  return { status: 'pass', levels: expected, pause: true, reset: true,
-    timeoutFailureCapturedBeforeCleanup: true, preEffectBuildAndWorkerCeilings: true,
-    rawPersistedBeforeAssertions: true, cleanupUnconditional: true, rawRecords: raw.length };
+function fakeWorkerInstaller({ fullCurrent, fullBrightness, failRun }) {
+  window.__PWM_FAKE_CONTEXT_CLOSED__ = false;
+  window.__PWM_NATIVE_WORKERS__ = 0;
+  const clone = (value) => structuredClone(value);
+  class PwmWorker extends EventTarget {
+    constructor() {
+      super();
+      if (window.__PWM_NATIVE_WORKERS__ >= 1) throw new Error('PWM_NATIVE_WORKER_BUDGET_EXHAUSTED');
+      window.__PWM_NATIVE_WORKERS__ += 1; this.identity = null; this.lastDuty = 191 / 255;
+    }
+    dispatch(data, delay = 0) {
+      setTimeout(() => this.dispatchEvent(new MessageEvent('message', { data: clone(data) })), delay);
+    }
+    snapshot(kind, duty, paused, cycle) {
+      return { kind, paused, cycle, instructions: cycle, speed: 1, trace: [], retentionDrops: {},
+        runtimeIdentity: clone(this.identity), modelExecutionContextSha256: this.identity.modelExecutionContextSha256,
+        pins: [{ pin: 'D3', mode: duty ? 'DIGITAL_PWM' : 'OUTPUT', level: duty > 0,
+          externalDrive: 'RELEASED', diagnostic: 'OK', pwm: duty ? { periodCycles: 255,
+            highCycles: Math.round(duty * 255), duty } : null }],
+        circuit: { leds: [{ componentId: 'led-1', on: duty > 0,
+          currentAmps: fullCurrent * duty, brightness: fullBrightness * duty, color: 'red' }] },
+        instruments: { serial: { records: [], dropped: 0 },
+          logic: { channels: ['D3'], transitions: [], dropped: 0 }, pin: null },
+        eventLog: { log: [], pending: [], applied: [], dropped: 0 } };
+    }
+    postMessage(data) {
+      if (data.command === 'init') {
+        this.identity = { ...clone(data.runtimeBinding), schema: 'intent-mcu-worker-runtime-identity@2',
+          workerInitialization: 1, workerInstanceNonce: 'b'.repeat(32) };
+        this.dispatch(this.snapshot('ready', 0, true, 0));
+      } else if (data.command === 'run') {
+        if (failRun) return;
+        this.dispatch(this.snapshot('running', 64 / 255, false, 255), 20);
+        this.dispatch(this.snapshot('running', 191 / 255, false, 510), 250);
+      } else if (data.command === 'pause') {
+        this.dispatch(this.snapshot('paused', this.lastDuty, true, 510));
+      } else if (data.command === 'reset') {
+        this.dispatch(this.snapshot('reset', 0, true, 0));
+      } else if (data.command === 'dispose') {
+        this.dispatch({ ...this.snapshot('disposed', 0, true, 0), disposeToken: data.disposeToken });
+      }
+    }
+    terminate() { window.__PWM_FAKE_CONTEXT_CLOSED__ = true; }
+  }
+  window.Worker = PwmWorker;
 }
 
 (async () => {
   assert(!execute || externalBase, 'PWM_NATIVE_URL is required for an explicitly authorized native run');
+  assert(!(execute && fakeExecute), 'native and fake execution modes are mutually exclusive');
   const app = externalBase ? null : server();
   if (app) await new Promise((resolve) => app.listen(0, '127.0.0.1', resolve));
   const base = externalBase || `http://127.0.0.1:${app.address().port}`;
@@ -125,12 +148,15 @@ function fakeWholeWorkflow() {
   }
   assert.deepEqual(route.materializeRouteFamily(routeNet, structuredClone(routeFamily),
     routeAnchors, routeObstacles), routeFamily);
-  const fakeProof = fakeWholeWorkflow();
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
   await context.addInitScript(() => {
     window.showOpenFilePicker = undefined;
     window.showSaveFilePicker = undefined;
+  });
+  if (fakeExecute) await context.addInitScript(fakeWorkerInstaller,
+    { fullCurrent: idealFull.currentAmps, fullBrightness: idealFull.brightness, failRun: fakeForceTimeout });
+  else await context.addInitScript(() => {
     const NativeWorker = window.Worker;
     window.__PWM_NATIVE_WORKERS__ = 0;
     window.Worker = class CountedWorker extends NativeWorker {
@@ -143,9 +169,21 @@ function fakeWholeWorkflow() {
   let buildPosts = 0;
   await context.route('**/*', async (routeRequest) => {
     const request = routeRequest.request();
-    if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/build') {
+    const pathname = new URL(request.url()).pathname;
+    if (request.method() === 'POST' && pathname === '/api/build') {
       buildPosts += 1;
       if (buildPosts > 1) { await routeRequest.abort('blockedbyclient'); return; }
+      if (fakeExecute) {
+        await routeRequest.fulfill({ status: 202, contentType: 'application/json', body: JSON.stringify({
+          jobId: 'pwm-fake-build', capability: 'pwm-fake-capability',
+        }) }); return;
+      }
+    }
+    if (fakeExecute && request.method() === 'GET' && pathname === '/api/build/pwm-fake-build') {
+      await routeRequest.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+        status: 'succeeded', cacheHit: false, result: { artifactIdentity: 'a'.repeat(64),
+          inputIdentity: 'c'.repeat(64), artifact: { hex: ':00000001FF' }, diagnostics: [] },
+      }) }); return;
     }
     await routeRequest.continue();
   });
@@ -162,8 +200,16 @@ function fakeWholeWorkflow() {
   let evidence; const rawCapture = { stage: 'created', samples: [] };
   const persistRaw = (rawStage) => {
     rawCapture.stage = rawStage;
-    if (execute) writeEvidence({ schema: 'intent-mcu-pwm-native-raw@1', status: 'capturing', rawCapture });
+    if (activeExecution) writeEvidence({ schema: 'intent-mcu-pwm-native-raw@1', status: 'capturing', rawCapture });
   };
+  page.on('response', async (response) => {
+    if (!activeExecution || !new URL(response.url()).pathname.startsWith('/api/build')) return;
+    try {
+      rawCapture.compilerResponses ??= [];
+      rawCapture.compilerResponses.push({ url: response.url(), status: response.status(), body: await response.text() });
+      persistRaw('compiler-response-captured');
+    } catch (error) { rawCapture.compilerCaptureError = String(error); }
+  });
   try {
     await page.goto(base, { waitUntil: 'networkidle' });
     await page.waitForFunction(() => window.__M11_READY__ === true);
@@ -226,7 +272,7 @@ function fakeWholeWorkflow() {
     assert.deepEqual(reopened.project.layout, preflight.project.layout);
 
     const native = { executed: false, levels: [], paused: null, reset: null };
-    if (execute) {
+    if (activeExecution) {
       stage = 'one-build';
       const buildResponsePromise = page.waitForResponse((response) => {
         const request = response.request();
@@ -246,12 +292,17 @@ function fakeWholeWorkflow() {
       rawCapture.built = built;
       persistRaw('build-identity-captured');
       assert.match(built.artifactIdentity, /^[a-f0-9]{64}$/u);
-      assert.equal(built.projectBuild.artifactIdentity, built.artifactIdentity);
-      assert.equal(built.projectBuild.inputIdentity, built.inputIdentity);
+      assert.deepEqual(built.projectBuild, { status: 'dirty', inputIdentity: null, artifactIdentity: null });
+      const completedCompiler = rawCapture.compilerResponses.map((item) => {
+        try { return JSON.parse(item.body); } catch { return null; }
+      }).find((item) => item?.status === 'succeeded');
+      assert.equal(completedCompiler.result.artifactIdentity, built.artifactIdentity);
+      assert.equal(completedCompiler.result.inputIdentity, built.inputIdentity);
+      assert.equal(typeof completedCompiler.result.artifact.hex, 'string');
       assert.deepEqual(built.lock, preflight.lock);
       stage = 'one-worker-run';
       await page.click('#quick-run');
-      const deadline = Date.now() + 20_000;
+      const deadline = Date.now() + observationWallMilliseconds;
       while (Date.now() < deadline && native.levels.length < 2) {
         const sample = await page.evaluate(() => {
           const runtime = window.__M6_STATE__.runtime;
@@ -267,7 +318,8 @@ function fakeWholeWorkflow() {
         });
         if (sample) { rawCapture.samples.push(sample); persistRaw('runtime-snapshot-captured'); }
         if (sample?.cycle > 50_000_000) throw new Error('PWM_NATIVE_CYCLE_LIMIT');
-        if (sample && sample.duty > 0 && sample.duty < 1
+        const domMatches = sample?.domBrightness === sample?.brightness?.toFixed(3);
+        if (sample && domMatches && sample.duty > 0 && sample.duty < 1
             && !native.levels.some((item) => Math.abs(item.duty - sample.duty) < 1e-9)) native.levels.push(sample);
         await new Promise((resolve) => setTimeout(resolve, 20));
       }
@@ -319,36 +371,37 @@ function fakeWholeWorkflow() {
     }
 
     const finalWorkers = await page.evaluate(() => window.__PWM_NATIVE_WORKERS__);
-    if (!execute) {
+    if (!activeExecution) {
       assert.equal(finalWorkers, 0);
       assert.deepEqual(requests, []);
     } else {
       assert.equal(requests.filter((item) => item.path === '/api/build').length, 1);
     }
     assert.deepEqual(errors, []);
-    evidence = { schema: 'intent-mcu-pwm-native-acceptance@1', status: 'pass', mode: execute ? 'native' : 'preflight',
+    evidence = { schema: 'intent-mcu-pwm-native-acceptance@1', status: 'pass',
+      mode: execute ? 'native' : fakeExecute ? 'fake-browser' : 'preflight',
       sourceSha256: sha256(mainSource), projectSha256: sha256(preflight.projectText),
       model: CURRENT, graph: { components: preflight.project.circuit.components.length,
         nets: preflight.project.circuit.nets.length, logicChannels: preflight.project.instruments.logicChannels },
       routes: { renderedPaths: preflight.paths, fixtureManhattanLength: routeLength,
         retainedOuterBaseline: 0.9, orthogonal: true, bodyFree: true, manualRoutePreserved: true },
-      idealFullLed: idealFull, fakeWholeWorkflow: fakeProof,
+      idealFullLed: idealFull,
       saveOpen: 'byte-equivalent-circuit-and-layout',
-      limits: { buildWallMilliseconds: 45_000, observationWallMilliseconds: 20_000,
+      limits: { buildWallMilliseconds: 45_000, observationWallMilliseconds,
         maximumCycle: 50_000_000, pauseWallMilliseconds: 5_000, resetWallMilliseconds: 5_000,
         maximumBuilds: 1, maximumWorkers: 1 },
-      native, authority: { builds: execute ? 1 : 0, workers: finalWorkers, requests }, errors };
-    writeEvidence(evidence);
-    process.stdout.write(`${JSON.stringify(evidence)}\n`);
+      native, rawCapture: structuredClone(rawCapture),
+      authority: { builds: activeExecution ? 1 : 0, workers: finalWorkers, requests }, errors };
   } catch (error) {
-    const failure = { schema: 'intent-mcu-pwm-native-acceptance@1', status: 'failed', stage,
+    evidence = { schema: 'intent-mcu-pwm-native-acceptance@1', status: 'failed', stage,
       error: { message: error.message, stack: error.stack }, requests,
       workers: await page.evaluate(() => window.__PWM_NATIVE_WORKERS__).catch(() => null), rawCapture };
-    writeEvidence(failure);
-    process.stderr.write(`${JSON.stringify(failure)}\n`);
     process.exitCode = 1;
   } finally {
     await context.close(); await browser.close();
     if (app) await new Promise((resolve) => app.close(resolve));
+    evidence.cleanup = { contextClosed: true, browserClosed: true, serverClosed: true };
+    writeEvidence(evidence);
+    (evidence.status === 'pass' ? process.stdout : process.stderr).write(`${JSON.stringify(evidence)}\n`);
   }
 })();
