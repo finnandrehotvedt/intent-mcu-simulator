@@ -8,7 +8,8 @@ import {
   AVR_PROFILE, ESP32C3_PROFILE, RP2040_PROFILE, STM32F429ZI_PROFILE,
 } from '../src/compile-targets.mjs';
 import {
-  avrInstrumentEvidence, instrumentCapabilities, instrumentCapability, sharedInstrumentSummary,
+  avrInstrumentEvidence, avrInstrumentPresentationEvidence, instrumentCapabilities,
+  instrumentCapability, sharedInstrumentPresentationSummary, sharedInstrumentSummary,
   sharedInstrumentView, SHARED_INSTRUMENT_SUMMARY_SCHEMA, SHARED_INSTRUMENT_VIEW_SCHEMA,
 } from '../src/instrument-capabilities.mjs';
 import {
@@ -52,6 +53,21 @@ test('AVR evidence is absent until a source-bound worker snapshot exists', () =>
   assert.deepEqual(recorded.serial, { retained: 1, dropped: 2 });
   assert.deepEqual(recorded.logic.channels, ['D2', 'D13']);
   assert.equal(recorded.input.recorded, 1);
+});
+
+test('AVR presentation fails closed while a ready message is still partial', () => {
+  const partial = { cycle: 0, paused: true, instruments: {}, eventLog: {}, pins: [] };
+  assert.throws(() => avrInstrumentEvidence(partial, 'a'.repeat(64)), /INSTRUMENT_EVIDENCE_SHAPE/u);
+  const evidence = avrInstrumentPresentationEvidence(partial, 'a'.repeat(64));
+  assert.equal(evidence.state, 'no-recorded-runtime');
+  assert.equal(evidence.artifactIdentity, null);
+  const summary = sharedInstrumentPresentationSummary(AVR_PROFILE, {
+    lifecycle: { projectGeneration: 2 }, artifactIdentity: 'a'.repeat(64), runtime: partial,
+  });
+  assert.equal(summary.state, 'no-current-runtime');
+  assert.equal(summary.artifactIdentity, null);
+  assert.deepEqual(Object.values(summary.channels).map((channel) => channel.classification),
+    ['unavailable', 'unavailable', 'unavailable', 'unavailable']);
 });
 
 test('serial and logic retention limits keep the newest exact bounded history', () => {

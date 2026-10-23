@@ -49,6 +49,7 @@
           <button id="toggle-inspector" type="button" aria-haspopup="dialog" aria-controls="workbench-inspector-dialog">Inspector</button>
           <button id="firmware-open" type="button" aria-haspopup="dialog" aria-controls="workbench-firmware-dialog">Firmware</button>
           <button id="brief-tests-open" type="button" aria-haspopup="dialog" aria-controls="workbench-brief-dialog">Brief &amp; tests</button>
+          <button id="x81-assessment-open" type="button" aria-haspopup="dialog" aria-controls="x81-assessment-dialog">Reproducibility assessment</button>
           <button id="instruments-open" type="button" aria-haspopup="dialog" aria-controls="workbench-instruments-dialog">Instruments</button>
           <button id="presentation-open" type="button" aria-haspopup="dialog" aria-controls="presentation-view-dialog">Present lesson</button>
           <button id="canvas-annotations-open" type="button" aria-haspopup="dialog" aria-controls="canvas-annotations-dialog">Canvas labels &amp; notes</button>
@@ -1210,6 +1211,19 @@
       <p class="truth"><strong>Partial</strong> means a stated bounded model, not broad hardware support. Unavailable combinations fail closed.</p>
       <a class="matrix-doc-link" href="/components.html#compatibility-matrix">Open the crawlable full matrix</a>
     </div>
+  </dialog>
+  <dialog id="x81-assessment-dialog" class="workbench-popup-dialog workbench-popup-wide" aria-labelledby="x81-assessment-title">
+    <header><div><p class="eyebrow">RETAINED EVIDENCE</p><h2 id="x81-assessment-title" tabindex="-1">Reproducibility assessment</h2></div><button id="x81-assessment-close" type="button">Close</button></header>
+    <p>Observed behavior and independent rebuild bytes are assessed separately for the exact profile, context and observation window. Assessment files grant no project or runtime authority.</p>
+    <p><button id="x81-assessment-retained" type="button" disabled>Reviewed retained report unavailable</button></p>
+    <p><label>Open source evidence or saved assessment <input id="x81-assessment-file" type="file" accept=".json,application/json"></label></p>
+    <p id="x81-assessment-status" role="status" aria-live="polite">No evidence loaded.</p>
+    <h3>Same observed behavior</h3><p id="x81-observed-status">Not assessed</p>
+    <h3>Independent rebuild bytes</h3><p id="x81-rebuild-status">Not assessed</p>
+    <p>Instruction window: <span id="x81-assessment-window">No evidence loaded</span></p>
+    <ul id="x81-assessment-gaps"></ul>
+    <details><summary>Exact evidence context</summary><pre id="x81-assessment-context" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre></details>
+    <p><button id="x81-assessment-save" type="button" disabled>Save assessment</button> <button id="x81-assessment-clear" type="button">Clear assessment</button></p>
   </dialog>
   <script type="module" src="./main.js"></script>
 </body>

@@ -123,6 +123,20 @@ export function avrInstrumentEvidence(runtime, artifactIdentity) {
   };
 }
 
+/**
+ * Fail closed for the visible workbench when a partial worker message does not
+ * yet contain the complete instrument snapshot. The strict evidence parser
+ * above remains unchanged and continues to reject the same malformed shape.
+ */
+export function avrInstrumentPresentationEvidence(runtime, artifactIdentity) {
+  try {
+    return avrInstrumentEvidence(runtime, artifactIdentity);
+  } catch (error) {
+    if (error?.message !== 'INSTRUMENT_EVIDENCE_SHAPE') throw error;
+    return avrInstrumentEvidence(null, null);
+  }
+}
+
 const noValue = (provenance) => ({
   classification: 'unavailable', provenance,
   time: { basis: 'unavailable', cycle: null, virtualMilliseconds: null },
@@ -287,6 +301,16 @@ export function sharedInstrumentSummary(profile, state = {}) {
     input: noValue('No public STM32 runtime input evidence is available.'),
   };
   return summary;
+}
+
+/** Presentation-only fail-closed projection; it never turns partial data into evidence. */
+export function sharedInstrumentPresentationSummary(profile, state = {}) {
+  try {
+    return sharedInstrumentSummary(profile, state);
+  } catch (error) {
+    if (profile !== AVR_PROFILE || error?.message !== 'INSTRUMENT_EVIDENCE_SHAPE') throw error;
+    return sharedInstrumentSummary(profile, { ...state, runtime: null });
+  }
 }
 
 function serialOutput(value) {

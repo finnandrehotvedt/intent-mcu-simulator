@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
+import { installX81Assessment } from './x81-assessment-controller.mjs';
+import { X81_RETAINED_ASSESSMENT } from '../src/x81-retained-assessment.mjs';
+
 import {
   CATALOG_CATEGORIES,
   COMPONENT_CATALOG,
@@ -79,7 +82,8 @@ import {
 } from '../src/x47-repeatable-inputs.mjs';
 import { mountSharedWorkbenchShell } from '../src/shared-workbench-shell.mjs';
 import {
-  avrInstrumentEvidence, instrumentCapability, sharedInstrumentSummary, sharedInstrumentView,
+  avrInstrumentPresentationEvidence, instrumentCapability, sharedInstrumentPresentationSummary,
+  sharedInstrumentView,
 } from '../src/instrument-capabilities.mjs';
 import {
   completenessAcademicStatus, createMeasurementReportEnvelope, measurementCompletenessDisclosure,
@@ -10935,7 +10939,7 @@ function clearRuntimePresentation() {
 
 function renderInstrumentEvidence(runtime = null) {
   const artifactIdentity = currentProject().build?.artifactIdentity ?? null;
-  const evidence = avrInstrumentEvidence(runtime, artifactIdentity);
+  const evidence = avrInstrumentPresentationEvidence(runtime, artifactIdentity);
   const capability = instrumentCapability(AVR_PROFILE);
   const configuredSerialLimit = currentProject().instruments.serial.historyLimit;
   window.__INSTRUMENT_EVIDENCE__ = structuredClone(evidence);
@@ -11073,7 +11077,7 @@ function renderSharedInstrumentTools(root, view) {
 
 function renderSharedInstrumentSummary(profile, state) {
   if (profile !== selectedCompilerProfile) return null;
-  const summary = sharedInstrumentSummary(profile, state);
+  const summary = sharedInstrumentPresentationSummary(profile, state);
   if (!summary) return null;
   const previousSummary = sharedInstrumentSummaries.get(profile);
   const resultBecameStale = hasRequirementResultLinks(profile)
@@ -15205,4 +15209,10 @@ window.__UNSAVED_CHANGE_GUARD__ = Object.freeze({
   pending: () => pendingDestructiveProjectAction
     ? { token: pendingDestructiveProjectAction.token, profile: pendingDestructiveProjectAction.profile }
     : null,
+});
+
+installX81Assessment({
+  trustedRegistry: X81_RETAINED_ASSESSMENT?.trustedRegistry ?? null,
+  retainedEvidence: X81_RETAINED_ASSESSMENT?.sourceEvidence ?? null,
+  retainedLabel: X81_RETAINED_ASSESSMENT?.label ?? 'Reviewed retained report',
 });
