@@ -2,6 +2,22 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.114 — 2026-10-23
+
+- Publishes the reviewed bounded ESP32-C3 X92 owner-proof slice with exact
+  source, flash, compiler, rc.7 runtime, request, model and generation joins.
+- Records actual Espressif QEMU CPU/UART evidence with two `C3_PUBLIC` boot
+  epochs and final LF while keeping GPIO2/LED explicitly separate as the
+  project-owned executed-register-write model; no QEMU pin readback is claimed.
+- Routes manual, Quick and bounded Agent API Build/Run through one owner gate;
+  stale or mismatched bindings reject before Run, while only active-budget Run
+  receives the private result and post-run quiescence contract.
+- Keeps STM32 budgeted Run unsupported and X92 partial. Status remains X **84
+  complete / 1 partial / 11 planned**, P1 **59/0/0**. Cumulative native
+  evidence is **41 Build / 39 Run / 0 scenarios**; this release performs no new
+  firmware producer action and creates one separately counted app release
+  image.
+
 ## 1.1.0-rc.113 — 2026-10-22
 
 - Publishes the reviewed bounded RP2040 Pico owner-proof slice from retained,

@@ -123,6 +123,29 @@ async function executeRun(page, requestId, generationOffset = 0) {
   try {
     {
       const { page, fake } = await readyPage(browser, base, 'positive', { startBudget: false });
+      await page.evaluate(() => {
+        const name = document.querySelector('#c3-project-name');
+        name.value = 'C3 RC114 SAVE OPEN';
+        name.dispatchEvent(new Event('input', { bubbles: true }));
+        name.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      const saved = await page.evaluate((selectedProfile) =>
+        window.__COMMON_PROJECT_FILES__.current(selectedProfile), profile);
+      await page.setInputFiles('#project-open-input', { name: 'c3-rc114.intent-mcu.json',
+        mimeType: 'application/json', buffer: Buffer.from(saved) });
+      if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) {
+        await page.click('#unsaved-discard');
+      }
+      await page.waitForFunction(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state().phase === 'editing');
+      const reopened = await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state());
+      assert.equal(reopened.project.name, 'C3 RC114 SAVE OPEN');
+      assert.equal(reopened.artifact, null); assert.equal(reopened.runtime, null);
+      assert.equal(fake.calls.runs, 0);
+      report.scenarios.saveOpen = { code: 'DATA_ONLY_REOPENED', artifact: null, runtime: null,
+        calls: fake.calls }; await page.close();
+    }
+    {
+      const { page, fake } = await readyPage(browser, base, 'positive', { startBudget: false });
       await page.click('#quick-run');
       await page.waitForFunction(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state().phase === 'complete');
       const state = await page.evaluate(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state());

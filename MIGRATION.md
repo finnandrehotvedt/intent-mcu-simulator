@@ -1,8 +1,14 @@
-# Migration to 1.1.0-rc.113
+# Migration to 1.1.0-rc.114
 
 There is no account, cloud project database or server-side project migration.
 All project files remain learner-owned local files and browser recovery remains
 local and separately labelled.
+
+Rc.114 adds no project or browser-storage migration. The bounded ESP32-C3 X92
+owner proof is transient execution authority and is never restored by Open or
+local recovery. Rc.113 project bytes remain learner-owned data; source,
+topology or profile changes invalidate prior flash, runtime and budget binding
+and require a fresh fixed-toolchain Build.
 
 Rc.113 changes release presentation and the transient X92 bounded Pico
 owner-proof closure only. Rc.112 project bytes and model identity remain

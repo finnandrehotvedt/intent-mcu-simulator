@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.113 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.114 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -29,10 +29,11 @@ to exact parent bytes. Neither feature adds accounts, uploads, server project
 storage, automatic Apply, sender authentication, execution or runtime state.
 
 The optional current-tab experiment budget has reviewed native owner-quiescence
-evidence for its bounded AVR and RP2040 Pico slices: trusted session start,
-fixed aggregate limits, atomic dispatch ownership, inert review files and two
-fresh owner-bound Pico Pause acknowledgements. Budgeted Run on ESP32-C3 and
-STM32 rejects before producer dispatch. Existing manual controls on all four
+evidence for its bounded AVR, RP2040 Pico and ESP32-C3 slices: trusted session
+start, fixed aggregate limits, atomic dispatch ownership, inert review files,
+Pico Pause acknowledgements and exact C3 process-retirement proof. ESP32-C3
+CPU/UART is actual QEMU execution while GPIO2 remains a separately labelled
+project-owned model. Budgeted Run on STM32 rejects before producer dispatch. Existing manual controls on all four
 profiles are unchanged; this does not provide a generic AI agent, remote
 scheduler, billing quota or cross-user budget. X92 remains partial.
 
