@@ -15322,6 +15322,19 @@ if ((stored || recoveryStored) && !restored?.ok) elements.recoveryexport.disable
 for (const profile of [AVR_PROFILE, RP2040_PROFILE, ESP32C3_PROFILE, STM32F429ZI_PROFILE]) setProjectBaseline(profile);
 installNativeFileControls();
 installLocalHistoryControls();
+const pageViewCount = document.querySelector('#page-view-count');
+fetch('/api/page-views', { method: 'GET', cache: 'no-store', credentials: 'same-origin' })
+  .then((response) => response.ok ? response.json() : Promise.reject(new Error('PAGE_VIEW_DISABLED')))
+  .then((availability) => {
+    if (availability.status !== 'available') throw new Error('PAGE_VIEW_DISABLED');
+    return fetch('/api/page-views', { method: 'POST', cache: 'no-store', credentials: 'same-origin' });
+  })
+  .then((response) => response.ok ? response.json() : Promise.reject(new Error('PAGE_VIEW_UNAVAILABLE')))
+  .then((value) => {
+    pageViewCount.textContent = `Page views today: ${value.today.toLocaleString('en-GB')} · total since ${new Date(value.startedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: value.timeZone })}: ${value.total.toLocaleString('en-GB')}`;
+    pageViewCount.title = `Calendar day ${value.dayEuropeOslo} in ${value.timeZone}. Reloads count as page views, not unique visitors.`;
+  })
+  .catch(() => { pageViewCount.textContent = 'Page views unavailable'; });
 window.__UNSAVED_CHANGE_GUARD__ = Object.freeze({
   isDirty: (profile = selectedCompilerProfile) => isProjectDirty(profile),
   baseline: (profile = selectedCompilerProfile) => projectBaselines.get(profile),

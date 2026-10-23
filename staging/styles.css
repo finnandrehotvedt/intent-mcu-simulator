@@ -1666,6 +1666,7 @@ dialog li span { display: block; color: var(--muted); margin-top: 3px; line-heig
 .project-links a:hover, .project-links a:focus-visible { border-color: var(--cyan); color: var(--lime); }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 footer { text-align: center; font-size: .76rem; padding-top: 28px; }
+.page-view-count { color: var(--text); white-space: nowrap; }
 
 @media (max-width: 1120px) {
   .requirement-trace-row, .open-assumption-row, .feasibility-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }

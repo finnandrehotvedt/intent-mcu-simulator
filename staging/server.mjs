@@ -15,6 +15,7 @@ import { readFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
+import { AggregatePageViewCounter, createPageViewHandler } from '../src/page-view-counter.mjs';
 
 const execute = promisify(execFile);
 const candidateRoot = path.resolve(new URL('../', import.meta.url).pathname);
@@ -107,6 +108,9 @@ async function verifyCompiler() {
 await verifyCompiler();
 setInterval(verifyCompiler, 5_000).unref();
 const handler = createRequestHandler({ coordinator, root, publicOrigin, trustProxy, deploymentScope, readiness: () => readiness });
+const pageViewStore = process.env.PAGE_VIEW_STORE_PATH
+  ? new AggregatePageViewCounter({ file: path.resolve(process.env.PAGE_VIEW_STORE_PATH) }) : null;
+const pageViewHandler = pageViewStore ? createPageViewHandler(pageViewStore, { publicOrigin }) : null;
 
 const server = http.createServer(async (request, response) => {
   if (process.env.X92_STM32_PRIVATE_TARGET_NONCE
@@ -135,6 +139,7 @@ const server = http.createServer(async (request, response) => {
   }
   if (c3Service && await c3Service.handle(request, response)) return;
   if (stm32Service && await stm32Service.handle(request, response)) return;
+  if (pageViewHandler && await pageViewHandler(request, response)) return;
   await handler(request, response);
 });
 
