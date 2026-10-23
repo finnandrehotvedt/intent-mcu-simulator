@@ -1,11 +1,12 @@
 // Copyright 2026 IntentForce
 // SPDX-License-Identifier: Apache-2.0
 import assert from 'node:assert/strict';
-import { chmod, mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { validateExternalAuthority } from '../scripts/x92-stm32-native-authority.mjs';
+import { consumeExternalAuthority,
+  validateExternalAuthority } from '../scripts/x92-stm32-native-authority.mjs';
 
 const receiptId = 'desktop-etvt6l5-ct109-lab-x92-stm32-native-proof-20990101-001';
 const gitCommit = 'a'.repeat(40);
@@ -70,4 +71,25 @@ test('old schema and another preparation fail closed before consumption lookup',
   await writeFile(value.authorityPath, `${JSON.stringify({ ...value.authority,
     preparationId: 'x92-stm32-another-preparation-v1' })}\n`); await chmod(value.authorityPath, 0o600);
   await assert.rejects(validateExternalAuthority(options(value)), /X92_STM32_NATIVE_AUTHORITY_INVALID/u);
+});
+
+test('actual temporary consumption setup creates one exact marker before any browser or network', async (context) => {
+  const value = await fixture(context);
+  const legacyMarker = path.join(value.root, 'legacy-consumed.json');
+  await writeFile(legacyMarker, 'legacy-immutable\n');
+  const validated = await validateExternalAuthority(options(value));
+  const consumed = await consumeExternalAuthority({ consumptionMarker: validated.consumptionMarker,
+    receiptId, authoritySha256: validated.authoritySha256, preparationId,
+    preparationGitCommit: gitCommit, preparationLockSha256: lockSha256 });
+  assert.equal(consumed.created, true);
+  assert.deepEqual(JSON.parse(await readFile(validated.consumptionMarker, 'utf8')), {
+    receiptId, authoritySha256: validated.authoritySha256, gitCommit,
+    preparationId, preparationLockSha256: lockSha256,
+  });
+  await assert.rejects(consumeExternalAuthority({ consumptionMarker: validated.consumptionMarker,
+    receiptId, authoritySha256: validated.authoritySha256, preparationId,
+    preparationGitCommit: gitCommit, preparationLockSha256: lockSha256 }), { code: 'EEXIST' });
+  await assert.rejects(validateExternalAuthority(options(value)),
+    /X92_STM32_NATIVE_AUTHORITY_ALREADY_CONSUMED/u);
+  assert.equal(await readFile(legacyMarker, 'utf8'), 'legacy-immutable\n');
 });

@@ -3,7 +3,7 @@
 import path from 'node:path';
 import { constants } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { access, lstat, readFile, realpath } from 'node:fs/promises';
+import { access, lstat, mkdir, open, readFile, realpath } from 'node:fs/promises';
 
 const SHA256 = /^[a-f0-9]{64}$/u;
 const GIT_SHA = /^[a-f0-9]{40}$/u;
@@ -62,4 +62,21 @@ export async function validateExternalAuthority({ authorityPath, receiptId, prod
   catch (error) { if (error?.code !== 'ENOENT') throw error; }
   return Object.freeze({ authority, consumptionMarker,
     authoritySha256: createHash('sha256').update(bytes).digest('hex') });
+}
+
+export async function consumeExternalAuthority({ consumptionMarker, receiptId, authoritySha256,
+  preparationId, preparationGitCommit, preparationLockSha256 }) {
+  if (!path.isAbsolute(consumptionMarker ?? '') || !RECEIPT.test(receiptId ?? '')
+      || !SHA256.test(authoritySha256 ?? '') || !PREPARATION.test(preparationId ?? '')
+      || !GIT_SHA.test(preparationGitCommit ?? '') || !SHA256.test(preparationLockSha256 ?? '')) {
+    fail('X92_STM32_NATIVE_CONSUMPTION_INVALID');
+  }
+  await mkdir(path.dirname(consumptionMarker), { recursive: true, mode: 0o700 });
+  const marker = await open(consumptionMarker,
+    constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY, 0o600);
+  try {
+    await marker.writeFile(`${JSON.stringify({ receiptId, authoritySha256,
+      gitCommit: preparationGitCommit, preparationId, preparationLockSha256 })}\n`);
+  } finally { await marker.close(); }
+  return Object.freeze({ consumptionMarker, created: true });
 }

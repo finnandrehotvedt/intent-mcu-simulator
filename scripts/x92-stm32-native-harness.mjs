@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { constants } from 'node:fs';
-import { mkdir, open, readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { mkdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { sourceForStm32 } from '../stm32/protocol.mjs';
 import { STM32_EXECUTION_IDENTITIES } from '../src/stm32-execution-identities.mjs';
 import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
-import { validateExternalAuthority } from './x92-stm32-native-authority.mjs';
+import { consumeExternalAuthority, validateExternalAuthority } from './x92-stm32-native-authority.mjs';
 const execute = promisify(execFile); const root = new URL('../', import.meta.url);
 const lockUrl = new URL('../stm32/x92-native-harness-lock.json', import.meta.url);
 const hash = (value) => createHash('sha256').update(value).digest('hex');
@@ -66,10 +66,9 @@ if (authority.mode !== 'execute') fail('X92_STM32_NATIVE_EXECUTION_NOT_AUTHORIZE
 const evidence = process.env.X92_STM32_NATIVE_EVIDENCE;
 if (!evidence) fail('X92_STM32_NATIVE_EVIDENCE_REQUIRED');
 await mkdir(evidence, { recursive: false });
-await mkdir(path.dirname(consumptionMarker), { recursive: true, mode: 0o700 });
-const marker = await open(consumptionMarker, constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY, 0o600);
-await marker.writeFile(`${JSON.stringify({ receiptId, authoritySha256, gitCommit: git,
-  preparationId: lock.preparationId, preparationLockSha256 })}\n`); await marker.close();
+if (!path.isAbsolute(consumptionMarker)) fail('X92_STM32_NATIVE_CONSUMPTION_ROOT_INVALID');
+await consumeExternalAuthority({ consumptionMarker, receiptId, authoritySha256,
+  preparationId: lock.preparationId, preparationGitCommit: git, preparationLockSha256 });
 await execute(process.execPath, ['test/x92-stm32-native-product-browser.cjs'], { cwd: root,
   env: { ...process.env, X92_STM32_NATIVE_ORIGIN: lock.productOrigin,
     X92_STM32_NATIVE_EVIDENCE: evidence, X92_STM32_TARGET_NONCE: authority.targetNonce,
