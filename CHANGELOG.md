@@ -2,6 +2,25 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.116 — 2026-10-23
+
+- Adds a public local, read-only X81 assessment disclosure for one reviewed
+  retained AVR fixture. It strictly reopens release-owned evidence from two
+  recorded workers and recomputes the first 512 paused instructions without a
+  Build, Run, upload, project mutation or live service request.
+- Reports the bounded result truthfully: the ideal CPU/GPIO/UART observations
+  match, both UART streams are empty, independent rebuild-byte equality is not
+  checked and physical-board equivalence is not claimed. Imported evidence has
+  no Build, Run, project, runtime or verdict authority.
+- Corrects AVR ready-state presentation so a partial instrument snapshot is
+  shown as unavailable instead of blocking Run. The strict evidence parser and
+  accessible export remain unchanged.
+- Keeps X81 planned until independent public verification completes. Status
+  therefore remains X **84 complete / 1 partial / 11 planned**, P1 **59/0/0**.
+  Cumulative native evidence remains **44 Build / 41 Run / 0 scenarios**; this
+  release performs zero firmware producer actions and creates at most one
+  normal application image.
+
 ## 1.1.0-rc.115 — 2026-10-23
 
 - Publishes the reviewed bounded STM32 X92 integration through the real parser, budget

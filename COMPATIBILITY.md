@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.114 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.116 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -12,6 +12,13 @@ graph, artifact and model joins. Its 32 instruction-boundary observations are
 independently recomputed and require HIGH/LOW phase coverage with zero drops.
 It is not physical thermal calibration, wall-clock timing, a continuous solver,
 general process-model support or safety evidence.
+
+The X81 disclosure is a local, read-only assessment of one reviewed retained
+AVR fixture. It recomputes the release-owned envelope for two recorded workers
+and the first 512 paused instructions. Matching ideal CPU/GPIO/UART observations
+do not establish independent rebuild-byte equality or physical equivalence.
+Import and reopen add no Build, Run, project, runtime or verdict authority.
+X81 remains planned until independent public verification is complete.
 
 X57 accepts only strict inert contribution manifests against current hashed
 bytes. A trusted maintainer must explicitly review every declared change class,

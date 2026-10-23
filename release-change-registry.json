@@ -183,6 +183,17 @@
       ]
     },
     {
+      "id": "X81",
+      "capabilities": [
+        "intent-mcu-x81-local-assessment-envelope@1",
+        "intent-mcu-x81-reproducibility-status@1",
+        "intent-mcu-x81-source-evidence@1"
+      ],
+      "contracts": [
+        "x81-retained-reproducibility-assessment-v1"
+      ]
+    },
+    {
       "id": "X86",
       "capabilities": [
         "intent-mcu-offline-support-matrix@1"

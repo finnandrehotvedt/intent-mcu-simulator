@@ -1,4 +1,32 @@
-# Intent MCU Simulator 1.1.0-rc.115
+# Intent MCU Simulator 1.1.0-rc.116
+
+## Retained AVR reproducibility assessment
+
+Rc.116 adds a local, read-only X81 assessment disclosure to the existing
+workbench. It opens one reviewed, release-owned evidence envelope for one fixed
+AVR fixture and recomputes whether two already-recorded workers had the same
+observable behavior during their first 512 paused instructions. It performs no
+firmware Build or Run and makes no live service request.
+
+The retained ideal CPU, GPIO and UART observations match and both UART streams
+are empty. Independent rebuild-byte equality remains **not checked** and no
+physical-board equivalence is claimed. Import and reopen strictly reparse and
+recompute the envelope; they cannot grant Build, Run, project, runtime or
+verdict authority, and rejected input cannot replace the last accepted view.
+
+The release also corrects AVR ready-state presentation: incomplete instrument
+evidence is displayed as unavailable instead of throwing before a valid Run.
+The strict instrument evidence parser and accessible export projection are
+unchanged.
+
+X81 remains planned pending independent public verification, so status remains
+X **84/1/11**, P1 **59/0/0**. Cumulative accepted native evidence remains
+**44 Build / 41 Run / 0 scenarios**. Rc.116 performs zero firmware producer
+actions and creates at most one separately counted application release image.
+
+---
+
+## 1.1.0-rc.115
 
 ## Reviewed bounded STM32 owner proof
 
