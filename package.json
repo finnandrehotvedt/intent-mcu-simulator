@@ -32,7 +32,7 @@
     "test:x63:atomicity:browser": "node test/x63-local-history-atomicity-browser.cjs",
     "test:x07": "node --test --test-concurrency=1 test/shared-domain-engine.test.mjs",
     "test:x08": "node --test --test-concurrency=1 test/bounded-action-contracts.test.mjs",
-    "test:x92": "node --test --test-concurrency=1 test/x92-experiment-budget.test.mjs test/x92-c3-budget-integration.test.mjs test/x92-stm32-budget-integration.test.mjs test/bounded-action-contracts.test.mjs",
+    "test:x92": "node --test --test-concurrency=1 test/x92-experiment-budget.test.mjs test/x92-c3-budget-integration.test.mjs test/x92-stm32-budget-integration.test.mjs test/x92-stm32-native-harness.test.mjs test/bounded-action-contracts.test.mjs",
     "test:x92:browser": "node test/x92-experiment-budget-browser.cjs",
     "test:x92:stm32:browser": "node test/x92-stm32-product-wiring-browser.cjs",
     "test:external-client": "node --test --test-concurrency=1 test/external-client-protocol.test.mjs test/bounded-action-contracts.test.mjs",

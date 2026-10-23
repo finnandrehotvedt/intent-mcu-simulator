@@ -1,0 +1,19 @@
+{
+  "schema": "intent-mcu-x92-stm32-native-harness-lock@1",
+  "profile": "board.stm32f429zi-nucleo144-v1",
+  "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
+  "distMainSha256": "73fe1bdebd85c6ec309b7161d67da9a61cdbb174429aeba783cca90e80de1425",
+  "modelIdentity": "sha256:9cddb2eca4526b294835a167d395b961c64f64c719413f27f221e31a79cb0fcf",
+  "compilerImageIdentity": "sha256:a5ce68a44d599f77d67389db0c4eb3a3690af82ec71cd6a1f3edd5f92c1ec0ea",
+  "compilerToolchainIdentity": "sha256:fc238ac8d13b82c6f2b247e3e5e1d846235205c341bb5c52aa5de1070ab8761e",
+  "runtimeImageIdentity": "sha256:f52ebf0eac4ece7914de8bbde13233d263ec51a0395037e85ce83ccc7c103b18",
+  "runtimeBinaryIdentity": "sha256:4ba7c68b59e2447f188ef4b4b112fcccd2802582c460beedceb63b84e5605a5f",
+  "runner": { "id": "renode", "version": "1.17.0" },
+  "schemas": {
+    "build": "intent-mcu-stm32-public-build-request@1",
+    "run": "intent-mcu-stm32-public-run-request@1",
+    "quiescence": "intent-mcu-x92-stm32-quiescence-request@1"
+  },
+  "allowance": { "builds": 1, "runs": 1, "scenarios": 0, "retries": 0 },
+  "defaultArmed": false
+}

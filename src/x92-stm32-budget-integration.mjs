@@ -109,7 +109,7 @@ export function createX92Stm32BudgetIntegration({ budget, currentBinding,
   }
   function advancingBoundary(permit, binding = null, action = 'runtime.run') {
     const record = permits.get(permit);
-    if (!gate || gate.permit !== permit || gate.phase !== 'authorized' || !record
+    if (!gate || gate.permit !== permit || gate.phase !== 'authorized' || gate.cancelled || !record
         || record.token !== gate.token || record.action !== action) {
       return block('X92_STM32_SHARED_GATE_BLOCKED');
     }
@@ -170,8 +170,17 @@ export function createX92Stm32BudgetIntegration({ budget, currentBinding,
         return block('ACTION_CANCELLED', { experimentBudget: accounting?.terminal ?? null });
       }
       const result = await Promise.race([
-        Promise.resolve().then(() => executeBudgetProducer(source, owner.permit, clone(binding))), deadline,
+        Promise.resolve().then(() => {
+          if (gate !== owner || owner.cancelled || owner.phase !== 'authorized') {
+            return { cancelledBeforeDispatch: true };
+          }
+          return executeBudgetProducer(source, owner.permit, clone(binding));
+        }), deadline,
       ]);
+      if (result?.cancelledBeforeDispatch === true) {
+        const accounting = finish('cancelled');
+        return block('ACTION_CANCELLED', { experimentBudget: accounting?.terminal ?? null });
+      }
       if (owner.cancelled) {
         poison(owner, 'X92_STM32_CANCELLED_AFTER_DISPATCH');
         const accounting = finish('cancelled');

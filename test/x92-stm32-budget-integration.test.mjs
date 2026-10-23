@@ -116,6 +116,25 @@ test('acknowledged cancellation during deferred binding dispatches no producer a
   assert.equal(dispatched, 0);
 });
 
+test('scheduler microtask cancellation closes the final deferred producer window', async () => {
+  let dispatched = 0; let integration;
+  const setup = subject({ schedule: () => {
+    queueMicrotask(() => integration.cancel('x92-stm32-microtask-cancel'));
+    return 9;
+  }, unschedule: () => {}, executeBudgetProducer: async () => {
+    dispatched += 1;
+    return result();
+  } });
+  integration = setup.integration;
+  const output = await integration.executeBudgeted(request('x92-stm32-microtask-cancel'));
+  assert.equal(output.code, 'ACTION_CANCELLED');
+  assert.equal(dispatched, 0);
+  assert.equal(output.experimentBudget.terminalKind, 'cancelled');
+  assert.deepEqual(integration.status(), { gate: null, tombstone: null });
+  const replacement = await integration.executeManual(async () => ({ ok: true }));
+  assert.equal(replacement.ok, true);
+});
+
 test('unconfirmed daemon absence and disconnect fully charge and poison the shared gate', async () => {
   for (const mode of ['absence', 'disconnect']) {
     const options = mode === 'absence'
