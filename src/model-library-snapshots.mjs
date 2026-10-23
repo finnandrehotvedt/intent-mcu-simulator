@@ -105704,7 +105704,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "7be3f86e969e521ae5ca2ed91b339395c479c4f2b32e79baf625ed983edc64d8"
+      "sha256": "ebdbfb1c465a3c0511ce1c2ad0ce9864c6058165d360cbfff52f4c53f3c9fbb3"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -105847,7 +105847,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "fda47bd72d2947f9791a7b5b2347a24ed3731781f9b2881b182138d25836c799"
     }
   ],
-  "implementationSha256": "a0ba72d2a7f1e7d24c9e5ce8bfbb8fe2fef67c498fb9e102364459bdee7c53c2",
+  "implementationSha256": "1ccf70aa4e339def96578e0212a859f0140360486f3768d3d6d9b9d59a553793",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.114 and every earlier identity remain immutable and migration-only; this source candidate performs zero native build, run, image build or deployment",
@@ -105857,7 +105857,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x92-c3-retirement-proof.1-current",
     "semanticDisposition": "component semantics remain unchanged; X92 adds source/mock STM32 completion authentication after natural child close and exact daemon-container absence"
   },
-  "manifestSha256": "86a906887392cc47adcb082502c8de5a7353b9b67158758f02199a5da4ba8d07",
+  "manifestSha256": "b16b8e48eb431bea7d5d1e9cea56b5f8862d2f68dce042fa07f6eb88c839636d",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

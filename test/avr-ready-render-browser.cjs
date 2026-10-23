@@ -25,6 +25,7 @@ function contentType(file) {
 
 (async () => {
   let serverBuildRequests = 0;
+  let buildSequence = 0;
   const server = http.createServer((request, response) => {
     const pathname = new URL(request.url, 'http://127.0.0.1').pathname;
     if (pathname.startsWith('/api/build')) serverBuildRequests += 1;
@@ -49,9 +50,11 @@ function contentType(file) {
       const request = route.request();
       intercepted.push(`${request.method()} ${new URL(request.url()).pathname}`);
       if (request.method() === 'POST') {
+        const jobId = buildSequence === 0 ? 'current-ready-render' : 'retained-ready-render';
+        buildSequence += 1;
         await route.fulfill({
           status: 202, contentType: 'application/json',
-          body: JSON.stringify({ jobId: 'retained-ready-render', capability: 'retained-inert-artifact' }),
+          body: JSON.stringify({ jobId, capability: 'retained-inert-artifact' }),
         });
         return;
       }
@@ -76,6 +79,48 @@ function contentType(file) {
     if (await page.locator('#walkthrough').getAttribute('open') !== null) {
       await page.locator('#walkthrough button').last().click();
     }
+    await page.click('#project-files-open');
+    await page.click('#project-demo');
+    await page.click('.starter-card[data-example="avr-thermostat-boundary-v1"]');
+    await page.waitForFunction(() => window.__M6_STATE__.graph?.components?.some(
+      (component) => component.id === 'temperature-sensor-1',
+    ));
+    assert.match(await page.locator('#model-library-summary').textContent(), /current/u);
+    await page.click('#quick-build');
+    await page.waitForFunction(() => window.__M6_STATE__?.buildState === 'succeeded');
+    await page.waitForFunction(() => window.__M6_STATE__?.runtime?.kind === 'ready');
+    await page.waitForFunction(() => document.querySelector('#worker-state').textContent === 'Paused');
+    const current = await page.evaluate(() => ({
+      kind: window.__M6_STATE__.runtime.kind,
+      cycle: window.__M6_STATE__.runtime.cycle,
+      instructions: window.__M6_STATE__.runtime.instructions,
+      tracePresent: Array.isArray(window.__M6_STATE__.runtime.trace),
+      runDisabled: document.querySelector('#run').disabled,
+      quickRunDisabled: document.querySelector('#quick-run').disabled,
+      traceText: document.querySelector('#trace').textContent,
+      logicText: document.querySelector('#logic-output').textContent,
+      serialText: document.querySelector('#serial-output').textContent,
+      workerState: document.querySelector('#worker-state').textContent,
+    }));
+    assert.deepEqual(
+      { kind: current.kind, cycle: current.cycle, instructions: current.instructions },
+      { kind: 'ready', cycle: 0, instructions: 0 },
+    );
+    assert.equal(current.tracePresent, true, 'current-model case must retain the unmodified actual ready event');
+    assert.equal(current.runDisabled, false);
+    assert.equal(current.quickRunDisabled, false);
+    assert.equal(current.traceText, 'No D13 observations.');
+    assert.equal(current.logicText, 'No logic observations.');
+    assert.equal(current.serialText, 'No firmware bytes.');
+    assert.equal(current.workerState, 'Paused');
+    assert.equal(page.workers().length, 1, 'actual current-model simulator worker was not created');
+
+    const retainedProject = await page.evaluate(() => {
+      const value = JSON.parse(window.__COMMON_PROJECT_FILES__.current());
+      value.schema = 'intent-mcu-project-envelope@6';
+      delete value.modelLibrary;
+      return JSON.stringify(value);
+    });
     await page.evaluate(() => {
       const NativeWorker = window.Worker;
       window.Worker = class ActualPartialReadyWorker {
@@ -109,18 +154,6 @@ function contentType(file) {
         terminate() { this.native.terminate(); }
       };
     });
-    await page.click('#project-files-open');
-    await page.click('#project-demo');
-    await page.click('.starter-card[data-example="avr-thermostat-boundary-v1"]');
-    await page.waitForFunction(() => window.__M6_STATE__.graph?.components?.some(
-      (component) => component.id === 'temperature-sensor-1',
-    ));
-    const retainedProject = await page.evaluate(() => {
-      const value = JSON.parse(window.__COMMON_PROJECT_FILES__.current());
-      value.schema = 'intent-mcu-project-envelope@6';
-      delete value.modelLibrary;
-      return JSON.stringify(value);
-    });
     await page.setInputFiles('#project-open-input', {
       name: 'retained-avr-ready.intent-mcu.json',
       mimeType: 'application/json',
@@ -140,8 +173,8 @@ function contentType(file) {
       tracePresent: Array.isArray(window.__M6_STATE__.runtime.trace),
       runDisabled: document.querySelector('#run').disabled,
       quickRunDisabled: document.querySelector('#quick-run').disabled,
-      traceRows: document.querySelectorAll('#trace li').length,
-      logicRows: document.querySelectorAll('#logic-output li').length,
+      traceText: document.querySelector('#trace').textContent,
+      logicText: document.querySelector('#logic-output').textContent,
       serialText: document.querySelector('#serial-output').textContent,
       workerState: document.querySelector('#worker-state').textContent,
     }));
@@ -152,16 +185,19 @@ function contentType(file) {
     assert.equal(ready.tracePresent, false, 'fixture must exercise the accepted partial-ready projection');
     assert.equal(ready.runDisabled, false);
     assert.equal(ready.quickRunDisabled, false);
-    assert.equal(ready.traceRows, 1);
-    assert.equal(ready.logicRows, 1);
+    assert.equal(ready.traceText, 'No D13 observations.');
+    assert.equal(ready.logicText, 'No logic observations.');
     assert.equal(ready.serialText, 'No firmware bytes.');
     assert.equal(ready.workerState, 'Paused');
-    assert.equal(page.workers().length, 1, 'actual simulator worker was not created');
-    assert.deepEqual(intercepted, ['POST /api/build', 'GET /api/build/retained-ready-render']);
+    assert.equal(page.workers().length, 1, 'actual retained-model simulator worker was not created');
+    assert.deepEqual(intercepted, [
+      'POST /api/build', 'GET /api/build/current-ready-render',
+      'POST /api/build', 'GET /api/build/retained-ready-render',
+    ]);
     assert.equal(serverBuildRequests, 0, 'a compiler producer request reached the server');
     assert.deepEqual(failures, []);
     process.stdout.write(`${JSON.stringify({
-      status: 'pass', scope: 'actual-worker-ready-render', ready,
+      status: 'pass', scope: 'actual-worker-ready-render', current, retained: ready,
       compilerProducerRequests: 0, firmwareRuns: 0,
     })}\n`);
   } finally {

@@ -10899,7 +10899,7 @@ function clearRuntimePresentation() {
   elements.simulatedtime.textContent = '0.000 ms';
   elements.achievedspeed.textContent = '—';
   lastThroughputSample = null;
-  elements.trace.replaceChildren(Object.assign(document.createElement('li'), { textContent: '0000000000 · LOW' }));
+  elements.trace.replaceChildren(Object.assign(document.createElement('li'), { textContent: 'No D13 observations.' }));
   elements.serialoutput.textContent = 'No firmware bytes.';
   elements.serialcount.textContent = '0 records';
   renderInstrumentEvidence();
@@ -10907,7 +10907,7 @@ function clearRuntimePresentation() {
   serialScrollFrame = null;
   serialRenderedRecords = 0; serialUnreadRecords = 0; serialAutoscroll = true;
   elements.serialnewoutput.hidden = true; elements.serialresume.hidden = true;
-  elements.logicoutput.replaceChildren(Object.assign(document.createElement('li'), { textContent: '— · 0000000000 · LOW' }));
+  elements.logicoutput.replaceChildren(Object.assign(document.createElement('li'), { textContent: 'No logic observations.' }));
   elements.logiccount.textContent = '0 transitions';
   elements.logiccursor.textContent = 'Cursor Δ —';
   elements.logicwaveform.replaceChildren();
@@ -13194,8 +13194,12 @@ function renderRuntime(message, { publishState = true } = {}) {
   renderCharacterLcdRuntime(message);
   const trace = Array.isArray(message.trace) ? message.trace : [];
   const transitions = trace.filter((entry) => entry.pin === 13).slice(-8).reverse();
-  elements.trace.replaceChildren(...(transitions.length ? transitions : [{ cycle: 0, level: false }]).map((entry) => {
-    const item = document.createElement('li'); item.textContent = `${String(entry.cycle).padStart(10, '0')} · ${entry.level ? 'HIGH' : 'LOW'}`; return item;
+  elements.trace.replaceChildren(...(transitions.length ? transitions : [null]).map((entry) => {
+    const item = document.createElement('li');
+    item.textContent = entry
+      ? `${String(entry.cycle).padStart(10, '0')} · ${entry.level ? 'HIGH' : 'LOW'}`
+      : 'No D13 observations.';
+    return item;
   }));
   const serialSource = message.instruments?.serial;
   const serial = {
@@ -13217,8 +13221,12 @@ function renderRuntime(message, { publishState = true } = {}) {
       ? logicSource.dropped : 0,
   };
   const recent = logic.transitions.slice(-Number(elements.logicwindow.value)).reverse();
-  elements.logicoutput.replaceChildren(...(recent.length ? recent : [{ pin: '—', cycle: 0, level: false }]).map((entry) => {
-    const item = document.createElement('li'); item.textContent = `${entry.pin} · ${String(entry.cycle).padStart(10, '0')} · ${entry.level ? 'HIGH' : 'LOW'}`; return item;
+  elements.logicoutput.replaceChildren(...(recent.length ? recent : [null]).map((entry) => {
+    const item = document.createElement('li');
+    item.textContent = entry
+      ? `${entry.pin} · ${String(entry.cycle).padStart(10, '0')} · ${entry.level ? 'HIGH' : 'LOW'}`
+      : 'No logic observations.';
+    return item;
   }));
   elements.logiccount.textContent = `${logic.transitions.length} transitions${logic.dropped ? ` · ${logic.dropped} dropped` : ''}`;
   renderWaveform(logic);
