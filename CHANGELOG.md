@@ -2,6 +2,20 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.125 — 2026-10-23
+
+- Adds a minimal first-party aggregate page-view counter with all-time and
+  Europe/Oslo calendar-day totals. It stores no visitor identifiers, cookies,
+  IP addresses, user agents, referrers or page URLs.
+- Keeps reads non-counting and counts one empty same-origin POST per fresh
+  browser load. Counter unavailability never blocks the workbench.
+- Uses bounded validated storage, a cross-process lock and atomic rename on a
+  private persistent volume outside the read-only application root.
+- Starts production history at the real first deployment time with no
+  retroactive or invented totals. Reloads and bots are views, not unique users.
+- Retains exact public rc.124 and its app image as the app-only rollback basis;
+  rollback preserves the aggregate counter volume.
+
 ## 1.1.0-rc.124 — 2026-10-23
 
 - Uses measured AVR PWM duty from the current worker snapshot to scale the

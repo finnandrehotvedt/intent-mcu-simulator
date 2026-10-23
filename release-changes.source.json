@@ -11,8 +11,8 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.123",
-    "current": "1.1.0-rc.124"
+    "previous": "1.1.0-rc.124",
+    "current": "1.1.0-rc.125"
   },
   "changes": [
     {
@@ -35,7 +35,7 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records rc.123 to rc.124 as emulator-driven ideal PWM LED projection and shorter bounded body-free automatic routes, with manual route and project authority preserved."
+      "summary": "Records rc.124 to rc.125 as a minimal first-party aggregate page-view counter with Europe/Oslo day totals, bounded atomic storage and no visitor identifiers."
     }
   ],
   "migrationRequired": true,

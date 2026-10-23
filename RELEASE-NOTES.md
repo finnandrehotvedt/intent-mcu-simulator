@@ -1,4 +1,27 @@
-# Intent MCU Simulator 1.1.0-rc.124
+# Intent MCU Simulator 1.1.0-rc.125
+
+## Privacy-preserving aggregate page views
+
+Rc.125 adds a small first-party counter that reports all-time and
+Europe/Oslo calendar-day page-view totals. A fresh browser load sends one empty
+same-origin POST; GET requests only read the aggregate. Storage is bounded,
+validated, serialized across processes and replaced atomically on a private
+persistent volume outside the read-only application root.
+
+The counter stores no cookies, visitor identifiers, IP addresses, user agents,
+referrers, page URLs or source/project content. It starts at the real first
+production deployment with no invented history. Totals are page views rather
+than unique people, so reloads and automated clients can be included. If the
+counter is unavailable, the workbench remains usable and shows an unobtrusive
+unavailable state.
+
+This release performs no firmware Build, worker execution or scenario run.
+Exact public rc.124 remains the app-only rollback basis, and rollback preserves
+the aggregate counter volume.
+
+---
+
+## 1.1.0-rc.124
 
 ## Emulator-driven PWM brightness and shorter automatic routes
 
