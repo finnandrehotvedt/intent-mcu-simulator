@@ -2,6 +2,17 @@
 
 All notable public source changes are recorded here.
 
+## Post-rc.114 private source candidate — not released
+
+- Adds the source/mock STM32 X92 integration through the real parser, budget
+  executor, action router, profile adapter and manual/Quick API owner gate.
+- Binds exact request, source, graph, ELF, model, compiler and runtime identity.
+  Only a signed one-use completion receipt proving natural child close and
+  exact Docker-container absence permits successful accounting.
+- Disconnect, deadline, stale identity, overlap and unconfirmed cleanup fail
+  closed with full charging where a reservation was dispatched. No native
+  Build/Run, image build, deployment or public capability change is included.
+
 ## 1.1.0-rc.114 — 2026-10-23
 
 - Publishes the reviewed bounded ESP32-C3 X92 owner-proof slice with exact

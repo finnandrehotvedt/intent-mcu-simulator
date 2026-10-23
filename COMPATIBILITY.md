@@ -33,7 +33,10 @@ evidence for its bounded AVR, RP2040 Pico and ESP32-C3 slices: trusted session
 start, fixed aggregate limits, atomic dispatch ownership, inert review files,
 Pico Pause acknowledgements and exact C3 process-retirement proof. ESP32-C3
 CPU/UART is actual QEMU execution while GPIO2 remains a separately labelled
-project-owned model. Budgeted Run on STM32 rejects before producer dispatch. Existing manual controls on all four
+project-owned model. A post-rc.114 source/mock candidate now exercises STM32's
+shared gate and authenticated natural-completion/container-absence contract,
+but it carries no native or release authority. Public budgeted Run on STM32
+still rejects before producer dispatch. Existing manual controls on all four
 profiles are unchanged; this does not provide a generic AI agent, remote
 scheduler, billing quota or cross-user budget. X92 remains partial.
 

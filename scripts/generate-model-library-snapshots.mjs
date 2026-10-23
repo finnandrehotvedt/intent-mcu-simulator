@@ -13,6 +13,9 @@ import { controlContractsFor } from '../src/model-control-contracts.mjs';
 import * as existingSnapshots from '../src/model-library-snapshots.mjs';
 
 const { RETAINED_MODEL_LIBRARY_MANIFEST } = existingSnapshots;
+const PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const RC111_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
   '../src/model-bundles/rc111-current-manifest.json', import.meta.url), 'utf8'));
 const RC112_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
@@ -252,16 +255,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x92-c3-retirement-proof.1-current',
-  'intent-mcu-model-bundle-current-x92-c3-retirement-proof-1@38',
+  '2.0.0-x92-stm32-source-integration.1-current',
+  'intent-mcu-model-bundle-current-x92-stm32-source-integration-1@39',
   currentImplementation,
   {
-    priorVersion: RC113_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: RC113_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component semantics remain unchanged; X92 adds an authenticated exact ESP32-C3 session retirement ACK after owned child-process exit',
-    presentationDisposition: 'local executable authority is revoked early; no capability is exposed by the retirement proof',
-    baselineClosureDisposition: 'public rc.113 and every earlier identity remain immutable and migration-only; this source candidate performs zero real build, run or deployment',
+    semanticDisposition: 'component semantics remain unchanged; X92 adds source/mock STM32 completion authentication after natural child close and exact daemon-container absence',
+    presentationDisposition: 'manual, Quick and bounded STM32 actions share one gate; public STM32 budgeted Run remains rejected',
+    baselineClosureDisposition: 'public rc.114 and every earlier identity remain immutable and migration-only; this source candidate performs zero native build, run, image build or deployment',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -272,6 +275,7 @@ export const RETAINED_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(re
 export const RC111_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC111_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const RC112_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC112_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const RC113_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC113_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRIOR_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});

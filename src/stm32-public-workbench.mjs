@@ -15,6 +15,7 @@ import {
   CURRENT_MODEL_LIBRARY_LOCK, modelLibraryExecutionIdentity, normalizeModelLibraryLock,
   resolveModelLibrary,
 } from './model-library.mjs';
+import { STM32_EXECUTION_IDENTITIES } from './stm32-execution-identities.mjs';
 
 export const STM32_PUBLIC_SOURCE = sourceForStm32('STM32 PUBLIC', true);
 const SOURCE_LINE_PATTERNS = Object.freeze([
@@ -76,7 +77,8 @@ async function sha256(value) {
 
 export class Stm32PublicWorkbench {
   constructor({ elements, endpoint = '/api/stm32', fetchFn = globalThis.fetch,
-    onState = () => {}, onDiagnostics = () => {}, onSave = null, onOpen = null } = {}) {
+    onState = () => {}, onDiagnostics = () => {}, onSave = null, onOpen = null,
+    dispatchAction = (_action, task) => task(), advanceGuard = () => ({ ok: true }) } = {}) {
     this.elements = elements;
     this.endpoint = endpoint.replace(/\/$/u, '');
     this.fetch = fetchFn.bind(globalThis);
@@ -84,6 +86,8 @@ export class Stm32PublicWorkbench {
     this.onDiagnostics = onDiagnostics;
     this.onSave = onSave;
     this.onOpen = onOpen;
+    this.dispatchAction = dispatchAction;
+    this.advanceGuard = advanceGuard;
     this.project = defaultProject();
     this.modelLibraryLock = clone(CURRENT_MODEL_LIBRARY_LOCK);
     this.modelLibraryImplementation = resolveModelLibrary(this.modelLibraryLock).implementation;
@@ -99,6 +103,7 @@ export class Stm32PublicWorkbench {
     this.active = false;
     this.requestToken = 0;
     this.operation = null;
+    this.lastCompletion = null;
     this.diagnostics = [];
     this.bind();
     this.render();
@@ -127,9 +132,12 @@ export class Stm32PublicWorkbench {
       if (!validName(this.elements.name.value)) this.elements.name.value = this.project.name;
       else { this.project.name = this.elements.name.value.trim(); this.render(); }
     });
-    this.elements.build.addEventListener('click', () => { void this.build(); });
-    this.elements.run.addEventListener('click', () => { void this.run(false); });
-    this.elements.reset.addEventListener('click', () => { void this.run(true); });
+    this.elements.build.addEventListener('click', () => { void this.dispatchAction('firmware.build',
+      (permit) => this.build({ advancePermit: permit })); });
+    this.elements.run.addEventListener('click', () => { void this.dispatchAction('runtime.run',
+      (permit, binding) => this.run(false, { advancePermit: permit, x92Binding: binding })); });
+    this.elements.reset.addEventListener('click', () => { void this.dispatchAction('runtime.run',
+      (permit, binding) => this.run(true, { advancePermit: permit, x92Binding: binding })); });
     this.elements.stop.addEventListener('click', () => this.stop('STM32 executable discarded.'));
     this.elements.save.addEventListener('click', () => this.onSave ? this.onSave() : this.save());
     this.elements.open.addEventListener('click', () => this.elements.openInput.click());
@@ -145,6 +153,7 @@ export class Stm32PublicWorkbench {
     this.artifact = null;
     this.artifactRevision = null;
     this.result = null;
+    this.lastCompletion = null;
     this.terminal = 'No Renode execution yet.';
   }
   snapshot() {
@@ -168,6 +177,43 @@ export class Stm32PublicWorkbench {
     };
   }
   publish() { const state = this.snapshot(); this.onState(state); return state; }
+  x92Binding({ projectGeneration, graphIdentity, requestNonce = null } = {}) {
+    const model = modelLibraryExecutionIdentity(this.modelLibraryLock);
+    const nonce = requestNonce ?? (() => {
+      const bytes = crypto.getRandomValues(new Uint8Array(12));
+      return [...bytes].map((part) => part.toString(16).padStart(2, '0')).join('');
+    })();
+    if (!this.artifact || this.artifactRevision !== this.revision || !model.ok
+        || !Number.isSafeInteger(projectGeneration) || projectGeneration < 1
+        || !/^sha256:[a-f0-9]{64}$/u.test(graphIdentity ?? '')
+        || !/^[A-Za-z0-9_-]{16,64}$/u.test(nonce)) {
+      throw Object.assign(new Error('X92_STM32_BINDING_UNAVAILABLE'),
+        { code: 'X92_STM32_BINDING_UNAVAILABLE' });
+    }
+    return Object.freeze({ schema: 'intent-mcu-x92-stm32-execution-binding@1', profile: STM32_PROFILE,
+      requestNonce: nonce, projectGeneration,
+      sourceIdentity: `sha256:${this.artifact.sourceSha256}`, graphIdentity,
+      elfIdentity: `sha256:${this.artifact.sha256}`,
+      modelIdentity: `sha256:${model.identity.implementationSha256}`,
+      compiler: { imageIdentity: STM32_EXECUTION_IDENTITIES.compilerImageIdentity,
+        toolchainIdentity: STM32_EXECUTION_IDENTITIES.compilerToolchainIdentity },
+      runtime: { imageIdentity: STM32_EXECUTION_IDENTITIES.runtimeImageIdentity,
+        binaryIdentity: STM32_EXECUTION_IDENTITIES.runtimeBinaryIdentity } });
+  }
+  async quiesceForX92(binding, completion) {
+    const current = this.x92Binding({ projectGeneration: binding.projectGeneration,
+      graphIdentity: binding.graphIdentity, requestNonce: binding.requestNonce });
+    if (JSON.stringify(current) !== JSON.stringify(binding)
+        || JSON.stringify(completion?.binding) !== JSON.stringify(binding)) {
+      throw Object.assign(new Error('X92_STM32_BINDING_STALE'), { code: 'X92_STM32_BINDING_STALE' });
+    }
+    const value = await this.response(await this.fetch(`${this.endpoint}/quiescence`, {
+      method: 'POST', headers: this.headers(), body: JSON.stringify({
+        schema: 'intent-mcu-x92-stm32-quiescence-request@1', binding, completion,
+      }),
+    }));
+    return value.completion;
+  }
   setModelLibraryLock(lock) {
     const normalized = normalizeModelLibraryLock(lock);
     if (!normalized.ok) throw Object.assign(new Error(normalized.code), normalized);
@@ -196,7 +242,9 @@ export class Stm32PublicWorkbench {
     this.message = message;
     this.render();
   }
-  async build() {
+  async build({ advancePermit = null } = {}) {
+    const advance = this.advanceGuard('firmware.build', advancePermit, null);
+    if (!advance?.ok) return { ok: false, code: advance?.code ?? 'X92_STM32_SHARED_GATE_BLOCKED' };
     if (!this.active || ['building', 'running'].includes(this.phase)) {
       return { ok: false, code: 'STM32_BUILD_UNAVAILABLE' };
     }
@@ -289,7 +337,10 @@ export class Stm32PublicWorkbench {
       return { ok: false, code: error.code ?? error.message, ...retryResultFields(error) };
     } finally { if (this.operation === operation) this.operation = null; }
   }
-  async run(reset = false) {
+  async run(reset = false, { advancePermit = null, x92Binding = null,
+    x92PrivateResult = false } = {}) {
+    const advance = this.advanceGuard('runtime.run', advancePermit, x92Binding);
+    if (!advance?.ok) return { ok: false, code: advance?.code ?? 'X92_STM32_SHARED_GATE_BLOCKED' };
     const circuit = this.modelLibraryImplementation.validateProfile(
       STM32_PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
     );
@@ -329,7 +380,8 @@ export class Stm32PublicWorkbench {
         body: JSON.stringify({ schema: STM32_RUN_SCHEMA, profile: STM32_PROFILE,
           sourceRevision: revision, source: parsed.source, sourceSha256,
           artifact: { format: 'elf32', bytes: artifact.bytes,
-            sha256: artifact.sha256, base64: base64FromBytes(artifactBytes) } }),
+            sha256: artifact.sha256, base64: base64FromBytes(artifactBytes) },
+          ...(x92PrivateResult && x92Binding ? { x92Binding } : {}) }),
       }));
       if (token !== this.requestToken || this.artifactRevision !== revision) {
         return { ok: false, code: 'STM32_RUN_STALE' };
@@ -341,11 +393,18 @@ export class Stm32PublicWorkbench {
         throw new Error('STM32_RUNTIME_RESPONSE_INVALID');
       }
       this.result = clone(value);
+      this.lastCompletion = value.completion ? clone(value.completion) : null;
       this.phase = 'completed';
       const level = value.observed.pb0 ? 'HIGH' : 'LOW';
       this.message = `Actual Renode completed: PB0 ${level}; USART3 marker verified across two boot epochs.`;
       this.terminal = `ACTUAL RENODE ${value.engine.version}\nBOOT EPOCHS: 2 · RESET REPLAY VERIFIED\nPB0: ${level}\nUSART3> ${value.observed.uartText}`;
       this.render();
+      if (x92PrivateResult) {
+        if (!x92Binding || !value.completion) return { ok: false, code: 'X92_STM32_COMPLETION_REQUIRED' };
+        return { schema: 'intent-mcu-x92-stm32-private-result@1', ok: true,
+          code: 'STM32_PRIVATE_PRODUCT_COMPLETE', executed: true,
+          executionIdentity: clone(x92Binding), runtime: clone(value), completion: clone(value.completion) };
+      }
       return { ok: true, code: 'OK', result: clone(value) };
     } catch (error) {
       if (token !== this.requestToken) return { ok: false, code: 'STM32_RUN_STALE' };

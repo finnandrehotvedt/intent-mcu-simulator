@@ -15,6 +15,7 @@ import { createStm32PublicService } from '../stm32/public-service.mjs';
 import {
   Stm32CircuitEditor, createStm32CircuitDraft, normalizeStm32CircuitDraft, validateStm32Circuit,
 } from '../src/stm32-public-circuit.mjs';
+import { STM32_EXECUTION_IDENTITIES } from '../src/stm32-execution-identities.mjs';
 
 const digest = (value) => createHash('sha256').update(value).digest('hex');
 const imageLock = Object.freeze({ image: 'local/not-used:1', imageId: `sha256:${'a'.repeat(64)}`,
@@ -150,9 +151,18 @@ test('public STM32 service binds source to strict ELF and returns actual-runtime
   assert.equal(stale.status, 409);
   assert.equal(runCalls, 0);
 
+  const x92Binding = { schema: 'intent-mcu-x92-stm32-execution-binding@1', profile: STM32_PROFILE,
+    requestNonce: 'Stm32ServiceTest001', projectGeneration: 9,
+    sourceIdentity: `sha256:${built.sourceSha256}`, graphIdentity: `sha256:${'c'.repeat(64)}`,
+    elfIdentity: `sha256:${built.artifact.sha256}`, modelIdentity: `sha256:${'d'.repeat(64)}`,
+    compiler: { imageIdentity: STM32_EXECUTION_IDENTITIES.compilerImageIdentity,
+      toolchainIdentity: STM32_EXECUTION_IDENTITIES.compilerToolchainIdentity },
+    runtime: { imageIdentity: STM32_EXECUTION_IDENTITIES.runtimeImageIdentity,
+      binaryIdentity: STM32_EXECUTION_IDENTITIES.runtimeBinaryIdentity } };
   const runResponse = await fetch(`${base}/api/stm32/run`, { method: 'POST', headers,
     body: JSON.stringify({ schema: STM32_RUN_SCHEMA, profile: STM32_PROFILE,
-      sourceRevision: 2, source, sourceSha256: built.sourceSha256, artifact: built.artifact }) });
+      sourceRevision: 2, source, sourceSha256: built.sourceSha256, artifact: built.artifact,
+      x92Binding }) });
   assert.equal(runResponse.status, 200);
   const result = await runResponse.json();
   assert.deepEqual(result.observed, { pb0: true, uartText: 'STM32 HIGH\n' });
@@ -160,6 +170,18 @@ test('public STM32 service binds source to strict ELF and returns actual-runtime
   assert.equal(result.resetReplay, true);
   assert.equal(result.bootEpochs, 2);
   assert.equal(result.retainedServerBytes, 0);
+  assert.equal(result.completion.processExited, true);
+  assert.equal(result.completion.daemonContainerAbsent, true);
+  assert.deepEqual(result.completion.binding, x92Binding);
+  const quiescenceResponse = await fetch(`${base}/api/stm32/quiescence`, { method: 'POST', headers,
+    body: JSON.stringify({ schema: 'intent-mcu-x92-stm32-quiescence-request@1',
+      binding: x92Binding, completion: result.completion }) });
+  assert.equal(quiescenceResponse.status, 200);
+  assert.deepEqual((await quiescenceResponse.json()).completion, result.completion);
+  const replay = await fetch(`${base}/api/stm32/quiescence`, { method: 'POST', headers,
+    body: JSON.stringify({ schema: 'intent-mcu-x92-stm32-quiescence-request@1',
+      binding: x92Binding, completion: result.completion }) });
+  assert.equal(replay.status, 409);
   assert.equal(service.metrics().retainedServerBytes, 0);
   assert.equal(runCalls, 1);
 });

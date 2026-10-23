@@ -1,6 +1,8 @@
 # X92 aggregate AI experiment budget — bounded private contract
 
-Status: approved private implementation contract; bounded browser-session slice and private ESP32-C3 product wiring candidate implemented for review. X92 remains open and is not public-release authority.
+Status: approved private implementation contract; bounded browser-session,
+ESP32-C3 and source/mock STM32 product-wiring candidates are implemented for
+review. X92 remains open and this is not public-release or native authority.
 
 The private C3 candidate routes manual, Quick and bounded-action Build/Run
 through one product-owned gate. Budgeted Run additionally binds the exact
@@ -10,6 +12,18 @@ before and after dispatch. Its UART evidence comes from actual Espressif QEMU
 CPU execution; GPIO2/LED remains explicitly a separate project-owned register
 and electrical model, not observed QEMU pin state or physical hardware. This
 candidate does not change the current public release or admit STM32.
+
+The later STM32 source candidate routes manual, Quick and bounded-action
+Build/Run through its own shared owner gate. Budgeted Run binds the request
+nonce, source, graph, ELF, model, compiler image/toolchain and runtime
+image/binary identities. Success is accepted only after the existing service
+returns an authenticated completion receipt proving natural child completion
+and exact daemon-container absence, then authenticates that same receipt on a
+one-use quiescence request. Cancellation requests, browser disconnect,
+deadline, stale identity and unconfirmed cleanup never use `AbortError` as
+proof: they remain blocked and consume the full reservation. The accepted ELF
+is preserved on the natural completion path. This candidate uses fake-process
+acceptance only and keeps public STM32 budgeted Run rejected.
 
 ## Original requirement
 

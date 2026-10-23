@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { execFile, spawn } from 'node:child_process';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 
 import { imageIdMatches } from '../compiler/docker-broker.mjs';
@@ -14,6 +14,10 @@ import {
 } from './protocol.mjs';
 import { parseStm32RuntimeResult } from './runtime-result.mjs';
 import { retryAfterForCode, retryFields, retryHeaders } from '../src/retry-guidance.mjs';
+import {
+  X92_STM32_COMPLETION_SCHEMA, normalizeX92Stm32Binding,
+} from '../src/x92-stm32-budget-integration.mjs';
+import { STM32_EXECUTION_IDENTITIES } from '../src/stm32-execution-identities.mjs';
 
 const execFileAsync = promisify(execFile);
 const SHA256 = /^[0-9a-f]{64}$/u;
@@ -86,6 +90,14 @@ async function ignoreDockerFailure(docker, args) {
 async function cleanupContainer(docker, name) {
   await ignoreDockerFailure(docker, ['rm', '-f', name]);
 }
+async function daemonContainerAbsent(docker, name) {
+  try {
+    await execFileAsync(docker, ['container', 'inspect', '--format', '{{.Id}}', name], { timeout: 5_000 });
+    return false;
+  } catch (error) {
+    return /No such (?:object|container)/iu.test(`${error?.stderr ?? ''}${error?.message ?? ''}`);
+  }
+}
 async function childOutput({ docker, args, input = '', timeoutMs, outputLimit, signal, containerName }) {
   return new Promise((resolve, reject) => {
     const child = spawn(docker, args, { shell: false, stdio: ['pipe', 'pipe', 'pipe'] });
@@ -119,14 +131,16 @@ async function childOutput({ docker, args, input = '', timeoutMs, outputLimit, s
       clearTimeout(timer);
       signal?.removeEventListener('abort', abort);
       await cleanupContainer(docker, containerName);
+      const containerAbsent = await daemonContainerAbsent(docker, containerName);
       if (reason) return reject(fault(reason, reason === 'OPERATION_CANCELLED' ? 409 : 504));
+      if (!containerAbsent) return reject(fault('OPERATION_CONTAINER_RETIREMENT_UNPROVEN', 502));
       const output = Buffer.concat(stdout).toString('utf8').trim();
       if (code !== 0) {
         const error = fault('OPERATION_CHILD_FAILED', 502);
         error.detail = Buffer.concat(stderr).toString('utf8').slice(-1200);
         return reject(error);
       }
-      resolve(output);
+      resolve({ output, processExited: true, daemonContainerAbsent: true, containerName });
     });
   });
 }
@@ -156,6 +170,9 @@ export function createStm32PublicService({
   let imagesVerified = testMode;
   let buildInFlight = 0;
   let runtimeInFlight = 0;
+  let operationSequence = 0;
+  const completionSecret = randomBytes(32);
+  const completions = new Map();
   const active = new Set();
   const rates = new Map();
   const metrics = { builds: 0, runs: 0, failures: 0, cancelled: 0 };
@@ -194,12 +211,12 @@ export function createStm32PublicService({
       '--tmpfs', '/tmp:rw,noexec,nosuid,nodev,size=8m,uid=65534,gid=65534,mode=0700',
       '--env', 'HOME=/tmp', builderImageLock.image,
     ];
-    const output = await childOutput({ docker, args, timeoutMs: limits.buildTimeoutMs,
+    const execution = await childOutput({ docker, args, timeoutMs: limits.buildTimeoutMs,
       outputLimit: limits.compilerOutputBytes, signal, containerName,
       input: JSON.stringify({ schema: 'intent-mcu-stm32-builder-job@1',
         profile: STM32_PROFILE, source, sourceSha256 }) });
     let value;
-    try { value = parseStrictJson(output, limits.compilerOutputBytes); }
+    try { value = parseStrictJson(execution.output, limits.compilerOutputBytes); }
     catch { throw fault('BUILD_RESULT_INVALID', 502); }
     return value;
   }
@@ -234,9 +251,38 @@ export function createStm32PublicService({
       '--expected-sha256', expected.elfSha256, '--expected-pb0', expected.pb0 ? '1' : '0',
       '--expected-uart-base64', Buffer.from(expected.uartText, 'ascii').toString('base64'),
     ];
-    const output = await childOutput({ docker, args, timeoutMs: limits.runtimeTimeoutMs,
+    const execution = await childOutput({ docker, args, timeoutMs: limits.runtimeTimeoutMs,
       outputLimit: limits.runtimeOutputBytes, signal, containerName });
-    return parseStm32RuntimeResult(output, expected);
+    return { value: parseStm32RuntimeResult(execution.output, expected), lifecycle: execution };
+  }
+  function completionSignature(operationId, binding) {
+    return createHmac('sha256', completionSecret)
+      .update(`${operationId}\n${JSON.stringify(binding)}`, 'utf8').digest('hex');
+  }
+  function issueCompletion(binding, lifecycle) {
+    if (lifecycle?.processExited !== true || lifecycle?.daemonContainerAbsent !== true) {
+      throw fault('OPERATION_CONTAINER_RETIREMENT_UNPROVEN', 502);
+    }
+    const operationId = `stm32-operation-${++operationSequence}`;
+    const completion = Object.freeze({ schema: X92_STM32_COMPLETION_SCHEMA, operationId,
+      binding: structuredClone(binding), state: 'quiescent', processExited: true,
+      daemonContainerAbsent: true, artifactPreserved: true, completedNaturally: true,
+      signature: completionSignature(operationId, binding) });
+    completions.set(operationId, completion);
+    if (completions.size > 32) completions.delete(completions.keys().next().value);
+    return completion;
+  }
+  function verifyCompletion(value) {
+    const binding = normalizeX92Stm32Binding(value?.binding);
+    const expected = completions.get(value?.operationId);
+    const supplied = Buffer.from(value?.signature ?? '', 'hex');
+    const authentic = expected && supplied.byteLength === 32
+      && timingSafeEqual(supplied, Buffer.from(completionSignature(value.operationId, binding), 'hex'));
+    if (!authentic || JSON.stringify(expected) !== JSON.stringify(value)) {
+      throw fault('X92_STM32_COMPLETION_UNAUTHENTICATED', 409);
+    }
+    completions.delete(value.operationId);
+    return expected;
   }
   function abortFor(request) {
     const controller = new AbortController();
@@ -273,7 +319,10 @@ export function createStm32PublicService({
   }
   async function runRequest(request) {
     const body = await bodyJson(request, limits.requestBytes);
-    if (!exactKeys(body, ['schema', 'profile', 'sourceRevision', 'source', 'sourceSha256', 'artifact'])
+    const keys = body?.x92Binding
+      ? ['schema', 'profile', 'sourceRevision', 'source', 'sourceSha256', 'artifact', 'x92Binding']
+      : ['schema', 'profile', 'sourceRevision', 'source', 'sourceSha256', 'artifact'];
+    if (!exactKeys(body, keys)
       || body.schema !== STM32_RUN_SCHEMA || body.profile !== STM32_PROFILE
       || !Number.isSafeInteger(body.sourceRevision) || body.sourceRevision < 1
       || !SHA256.test(body.sourceSha256 ?? '')) throw fault('RUN_REQUEST_INVALID');
@@ -293,9 +342,22 @@ export function createStm32PublicService({
       try {
         const expected = { pb0: source.pb0, uartText: source.uartText,
           elfSha256: body.artifact.sha256, elfBytes: body.artifact.bytes };
-        const value = await (runtime ?? executeRuntime)({ elf, expected,
+        const execution = await (runtime ?? executeRuntime)({ elf, expected,
           signal: operation.controller.signal });
-        return {
+        const value = execution?.value ?? execution;
+        const lifecycle = execution?.lifecycle ?? (testMode
+          ? { processExited: true, daemonContainerAbsent: true } : null);
+        const binding = body.x92Binding ? normalizeX92Stm32Binding(body.x92Binding) : null;
+        if (binding && (binding.profile !== STM32_PROFILE
+          || binding.sourceIdentity !== `sha256:${body.sourceSha256}`
+          || binding.elfIdentity !== `sha256:${body.artifact.sha256}`
+          || binding.compiler.imageIdentity !== STM32_EXECUTION_IDENTITIES.compilerImageIdentity
+          || binding.compiler.toolchainIdentity !== STM32_EXECUTION_IDENTITIES.compilerToolchainIdentity
+          || binding.runtime.imageIdentity !== STM32_EXECUTION_IDENTITIES.runtimeImageIdentity
+          || binding.runtime.binaryIdentity !== STM32_EXECUTION_IDENTITIES.runtimeBinaryIdentity)) {
+          throw fault('X92_STM32_BINDING_MISMATCH', 409);
+        }
+        const response = {
           schema: STM32_RUN_RESPONSE_SCHEMA, profile: STM32_PROFILE,
           sourceRevision: body.sourceRevision, sourceSha256: body.sourceSha256,
           elfSha256: body.artifact.sha256,
@@ -305,6 +367,7 @@ export function createStm32PublicService({
           instructionOrdinalsNotPhysicalCycles: true, retainedServerBytes: 0,
           durableServerProject: false, boundedPublicSupport: true, fullStm32Support: false,
         };
+        return binding ? { ...response, completion: issueCompletion(binding, lifecycle) } : response;
       } finally { runtimeInFlight -= 1; operation.done(); }
     } finally { elf.fill(0); }
   }
@@ -314,13 +377,26 @@ export function createStm32PublicService({
     if (!url.pathname.startsWith('/api/stm32')) return false;
     try {
       if (!imagesVerified) throw fault('STM32_IMAGES_UNVERIFIED', 503);
-      if (request.method !== 'POST' || !['/api/stm32/build', '/api/stm32/run'].includes(url.pathname)) {
+      if (request.method !== 'POST'
+          || !['/api/stm32/build', '/api/stm32/run', '/api/stm32/quiescence'].includes(url.pathname)) {
         throw fault('ROUTE_NOT_FOUND', 404);
       }
       requireMutationContext(request, publicOrigin);
       rate(requestOrigin(request, trustProxy));
-      const value = url.pathname.endsWith('/build')
-        ? await buildRequest(request) : await runRequest(request);
+      let value;
+      if (url.pathname.endsWith('/build')) value = await buildRequest(request);
+      else if (url.pathname.endsWith('/run')) value = await runRequest(request);
+      else {
+        const body = await bodyJson(request, limits.requestBytes);
+        if (!exactKeys(body, ['schema', 'binding', 'completion'])
+            || body.schema !== 'intent-mcu-x92-stm32-quiescence-request@1'
+            || JSON.stringify(normalizeX92Stm32Binding(body.binding))
+              !== JSON.stringify(body.completion?.binding)) {
+          throw fault('X92_STM32_QUIESCENCE_REQUEST_INVALID', 422);
+        }
+        value = { schema: 'intent-mcu-x92-stm32-quiescence-response@1',
+          completion: verifyCompletion(body.completion) };
+      }
       responseJson(response, 200, value);
     } catch (error) {
       metrics.failures += 1;
@@ -337,6 +413,8 @@ export function createStm32PublicService({
   async function close() {
     for (const controller of active) controller.abort();
     active.clear();
+    completionSecret.fill(0);
+    completions.clear();
   }
   return { handle, verifyImages, close, metrics: () => structuredClone({ ...metrics,
     buildInFlight, runtimeInFlight, retainedServerBytes: 0 }) };
