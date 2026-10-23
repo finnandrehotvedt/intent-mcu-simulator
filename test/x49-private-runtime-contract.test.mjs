@@ -8,8 +8,9 @@ import test from 'node:test';
 import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
 import {
   validateX49PrivateInit, validateX49PrivateManifest, x49PrivateExecutionContext,
-  x49PrivateObservation, x49PrivateTerminal,
+  x49PrivateObservation, x49PrivateTerminal, X49_PRIVATE_RUNTIME_MEMBERS,
 } from '../src/x49-private-runtime-contract.mjs';
+import { USART_RX_OBSERVATION_LATENESS_LIMIT } from '../src/x46-usart-rx-limits.mjs';
 import {
   X49_ADC_SCHEMA, X49_CASE_SCHEMA, X49_EVIDENCE_STATE_SCHEMA,
   X49_EXPERIMENT_BINDING_SCHEMA, X49_FIRMWARE_PRODUCER_SCHEMA, X49_FIXTURE_CLASS,
@@ -54,7 +55,11 @@ async function init(caseId = 'baseline-offset-0', runtimeGeneration = 10) {
 }
 
 test('private manifest and immutable init binding validate exactly', async () => {
-  assert.equal((await validateX49PrivateManifest(manifest, crypto, manifest)).runtimeMembers.length, 16);
+  const validated = await validateX49PrivateManifest(manifest, crypto, manifest);
+  assert.equal(validated.runtimeMembers.length, 17);
+  assert.deepEqual(validated.runtimeMembers.map(({ path }) => path), [...X49_PRIVATE_RUNTIME_MEMBERS]);
+  assert.equal(validated.runtimeMembers[10].path, 'src/x46-usart-rx-limits.mjs');
+  assert.equal(USART_RX_OBSERVATION_LATENESS_LIMIT, 4);
   const accepted = await validateX49PrivateInit(await init(), crypto, manifest);
   assert.equal(accepted.expected.inputIdentity,
     '4300d360967677c0cd653cb7bf4cd93ab6d8e8235cb76a38d86ae5b43f25679b');
