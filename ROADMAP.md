@@ -23,6 +23,9 @@ forever.
   failures without hiding electrical assumptions.
 - Add source-level tests for more project import, migration, and rendering
   boundaries.
+- Design a release-stable model identity policy so presentation-only releases
+  do not repeatedly force data-only project migration; preserve explicit
+  migration whenever executable model semantics actually change.
 - Document the tested AVR CPU/peripheral subset in a public compatibility
   table without overstating physical equivalence.
 

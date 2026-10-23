@@ -1,4 +1,43 @@
-# Intent MCU Simulator 1.1.0-rc.119
+# Intent MCU Simulator 1.1.0-rc.120
+
+## Explicit retained-model recovery
+
+Rc.120 corrects the actual automatic-recovery path found during independent
+rc.119 acceptance. A recognized historical model lock remains trusted project
+data, but it is migration-only and cannot authorize a fresh runtime. Build now
+stops before compiler dispatch, labels Firmware **Model migration required**,
+shows the technical code and opens the existing Model library control at
+**Download migrated copy**.
+
+Migration is explicit and data-only. It downloads a new project copy bound to
+the current model; it never overwrites the open original or silently changes
+its semantics. The immediate pre-ready worker-error path also replaces stale
+project text with one visible actionable terminal error.
+
+The release regression first reaches Paused on a current model and enables
+Run, then opens the actual RC112 historical model project in the same page. The
+old worker closes and both Run controls become disabled without a compiler
+request. Automatic browser recovery of that same historical project then
+rejects Build before compiler or worker creation. The regression downloads and
+opens the migrated copy, loads the exact retained 7,418-byte artifact and
+reaches Paused at cycle and instruction zero. It performs no native firmware
+Build, Run, retry or scenario.
+
+Desktop separately reopened the actual saved public X81 assessment on rc.119
+and reproduced the same verified observation result, with independent
+rebuild-byte equality still explicitly `not-checked`. That completes X81's
+bounded local, read-only assessment criterion; an ordinary firmware Run was an
+unrelated gate and is not required by that criterion. Status is now X
+**85/1/10**, P1 **59/0/0**.
+
+Desktop retains final public authority for the recovered-project guard,
+explicit migrated-file open, one fresh Build and one short Run after rc.120 is
+deployed. Rc.120 creates at most one application image and leaves the compiler,
+runtime and toolchain images unchanged.
+
+---
+
+## 1.1.0-rc.119
 
 ## Bounded AVR worker startup
 

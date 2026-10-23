@@ -11,10 +11,23 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.118",
-    "current": "1.1.0-rc.119"
+    "previous": "1.1.0-rc.119",
+    "current": "1.1.0-rc.120"
   },
   "changes": [
+    {
+      "id": "X81",
+      "classification": "changed",
+      "capabilities": [
+        "intent-mcu-x81-local-assessment-envelope@1",
+        "intent-mcu-x81-reproducibility-status@1",
+        "intent-mcu-x81-source-evidence@1"
+      ],
+      "contracts": [
+        "x81-retained-reproducibility-assessment-v1"
+      ],
+      "summary": "Marks the bounded local X81 assessment complete after independent public reopen of the actual saved envelope reproduced the verified observations and explicit not-checked rebuild-byte axis without Build or Run."
+    },
     {
       "id": "X88",
       "classification": "changed",
@@ -24,10 +37,10 @@
       "contracts": [
         "x88-machine-readable-release-delta-v1"
       ],
-      "summary": "Records rc.118 to rc.119 as the bounded AVR worker-startup release: successful retained/current artifacts reach Paused, while stalled or stale startup fails visibly after a finite deadline without enabling Run."
+      "summary": "Records rc.119 to rc.120 as the retained-model recovery correction: migration-only projects block before compiler dispatch, retire prior Run authority and expose explicit data-only migration."
     }
   ],
-  "migrationRequired": false,
+  "migrationRequired": true,
   "breakingChangesPresent": false,
   "authority": {
     "apply": false,

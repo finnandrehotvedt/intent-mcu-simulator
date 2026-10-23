@@ -28,9 +28,9 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 owner binds canonical rc118 to bounded startup rc119 release bytes', async () => {
+test('X81 and X88 owners bind canonical rc119 to retained-model rc120 release bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.119');
+  assert.equal(release.version, '1.1.0-rc.120');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
@@ -38,15 +38,22 @@ test('X88 owner binds canonical rc118 to bounded startup rc119 release bytes', a
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
   assert(registry.ids.includes('X92'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.118', current: '1.1.0-rc.119' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.119', current: '1.1.0-rc.120' });
   assert.deepEqual(value.changes, [
+    {
+      id: 'X81', classification: 'changed',
+      capabilities: ['intent-mcu-x81-local-assessment-envelope@1',
+        'intent-mcu-x81-reproducibility-status@1', 'intent-mcu-x81-source-evidence@1'],
+      contracts: ['x81-retained-reproducibility-assessment-v1'],
+      summary: 'Marks the bounded local X81 assessment complete after independent public reopen of the actual saved envelope reproduced the verified observations and explicit not-checked rebuild-byte axis without Build or Run.',
+    },
     {
       id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
       contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records rc.118 to rc.119 as the bounded AVR worker-startup release: successful retained/current artifacts reach Paused, while stalled or stale startup fails visibly after a finite deadline without enabling Run.',
+      summary: 'Records rc.119 to rc.120 as the retained-model recovery correction: migration-only projects block before compiler dispatch, retire prior Run authority and expose explicit data-only migration.',
     },
   ]);
-  assert.equal(value.migrationRequired, false);
+  assert.equal(value.migrationRequired, true);
   assert.equal(value.breakingChangesPresent, false);
   assert.deepEqual(value.authority, { apply: false, build: false, run: false, replay: false, verdict: false });
   assert.equal(value.product.source.implementation.sha256, options.implementationSha256);
@@ -106,7 +113,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.119');
+  assert.equal(discovery.identity.version, '1.1.0-rc.120');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

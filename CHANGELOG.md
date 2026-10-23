@@ -2,6 +2,28 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.120 — 2026-10-23
+
+- Stops a recovered historical model project before compiler dispatch and
+  shows `Model migration required` instead of allowing the worker to reject
+  execution behind the stale reopened-project message.
+- Opens the existing Model library control for an explicit data-only migrated
+  download. The open original is never overwritten and no model semantics are
+  changed automatically.
+- Proves that opening the historical project retires an already-ready worker,
+  disables both Run controls, creates no replacement worker and makes no
+  compiler request. The downloaded migrated copy then opens, builds from the
+  retained exact artifact and reaches Paused in the browser regression.
+- Marks X81 complete against its bounded local assessment criterion after
+  Desktop independently reopened the actual saved public envelope and obtained
+  the same verified observation result with rebuild bytes still `not-checked`.
+  An ordinary firmware Run is outside that data-only criterion. Status is now
+  X **85 complete / 1 partial / 10 planned**, P1 **59/0/0**.
+- Performs no native firmware Build, Run, retry or scenario and creates at most
+  one application image. Desktop retains final public authority for the
+  recovered-project guard, migrated-file open, one fresh Build and one short
+  Run.
+
 ## 1.1.0-rc.119 — 2026-10-23
 
 - Adds one finite five-second AVR worker-ready deadline and explicit

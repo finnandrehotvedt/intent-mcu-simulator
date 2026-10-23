@@ -1,6 +1,6 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.119 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.120 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
@@ -18,7 +18,11 @@ AVR fixture. It recomputes the release-owned envelope for two recorded workers
 and the first 512 paused instructions. Matching ideal CPU/GPIO/UART observations
 do not establish independent rebuild-byte equality or physical equivalence.
 Import and reopen add no Build, Run, project, runtime or verdict authority.
-X81 remains planned until independent public verification is complete.
+X81 is complete against this bounded assessment criterion after independent
+public reopen of the actual saved envelope reproduced the verified observation
+result and explicit `not-checked` rebuild-byte axis. An ordinary firmware Run
+is outside this local data-only criterion; physical and rebuild-byte claims
+remain absent.
 
 X57 accepts only strict inert contribution manifests against current hashed
 bytes. A trusted maintainer must explicitly review every declared change class,

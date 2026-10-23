@@ -1,8 +1,22 @@
-# Rollback basis for 1.1.0-rc.119
+# Rollback basis for 1.1.0-rc.120
 
 Rollback is limited to the Lab application container. DNS, Caddy routing, the
 Teach apex, classroom, security lab, mail and unrelated containers remain
 unchanged.
+
+Retain exact public rc.119 source commit
+`615f00464b0704af875f713b3655a045c07d5a12` and VM103 image
+`sha256:a6392ebe605635bb880681a6f149a488cf8add058cd6506d0ca428aecdefe691`
+as the pre-rc.120 app-only recovery basis. If acceptance fails, restore that
+exact app image and release directory, recreate only the Lab container and
+verify readiness plus the existing Teach-domain URLs.
+
+Rollback removes the pre-compiler retained-model guard, visible migration
+direction and current `retained-build-guard` model identity. It never mutates
+learner-owned files. A copy explicitly migrated under rc.120 must be retained
+for rc.120 or later rather than represented as executable under rc.119.
+
+The older recovery history below remains preserved.
 
 Retain exact public rc.118 source commit
 `d45c07a4d46282f4d3f329ddd4240c73a4699703` and VM103 image
