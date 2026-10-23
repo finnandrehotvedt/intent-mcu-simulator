@@ -11,11 +11,13 @@ const context = { profile: 'board.atmega328p-16mhz-v1', ...Object.fromEntries(
     .map((name, index) => [name, String(index + 1).repeat(64)])) };
 const evidence = { schema: 'intent-mcu-x81-source-evidence@1', evidenceId: 'synthetic-unqualified-ui',
   context, runs: [], builds: [], historicalGaps: [], authority: { apply: false, build: false, run: false, verdict: false } };
+const productionCsp = "default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self'; form-action 'none'; frame-ancestors 'none'; img-src 'self'; object-src 'none'; script-src 'self' 'sha256-Ol4fhdsQWg9x10Ho2zA++OfTuRE50DQvqSmJ894ef4Y='; script-src-attr 'none'; style-src 'self'; worker-src 'self'; upgrade-insecure-requests";
 (async () => {
   const server = http.createServer((request, response) => {
     const name = new URL(request.url, 'http://127.0.0.1').pathname;
     const file = path.resolve(root, name === '/' ? 'index.html' : name.replace(/^\//u, ''));
     if (!file.startsWith(`${root}${path.sep}`) || !fs.existsSync(file)) { response.writeHead(404); response.end(); return; }
+    response.setHeader('Content-Security-Policy', productionCsp);
     response.setHeader('Content-Type', file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : 'text/html');
     fs.createReadStream(file).pipe(response);
   });
@@ -23,10 +25,16 @@ const evidence = { schema: 'intent-mcu-x81-source-evidence@1', evidenceId: 'synt
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
+    const cspViolations = [];
+    page.on('console', (message) => { if (/content security policy|violates.*style-src/iu.test(message.text())) cspViolations.push(message.text()); });
     let producers = 0;
     page.on('request', (request) => { if (request.method() === 'POST' && /\/(?:api|compile)(?:\/|$)/u.test(new URL(request.url()).pathname)) producers += 1; });
     await page.goto(`http://127.0.0.1:${server.address().port}/`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.__M11_READY__ === true);
+    assert.equal(await page.locator('#x81-assessment-context').getAttribute('style'), null);
+    assert.deepEqual(await page.locator('#x81-assessment-context').evaluate((element) => {
+      const style = getComputedStyle(element); return { whiteSpace: style.whiteSpace, overflowWrap: style.overflowWrap };
+    }), { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' });
     const before = producers; const workersBefore = page.workers().length;
     await page.click('#x81-assessment-open');
     assert.equal(await page.isDisabled('#x81-assessment-retained'), false);
@@ -68,6 +76,7 @@ const evidence = { schema: 'intent-mcu-x81-source-evidence@1', evidenceId: 'synt
     await page.evaluate(() => { document.getElementById('x81-assessment-clear').click(); window.__x81ReleaseFile(); });
     assert.equal(await page.textContent('#x81-observed-status'), 'Not assessed');
     assert.equal(await page.isDisabled('#x81-assessment-save'), true);
+    assert.deepEqual(cspViolations, []);
     assert.equal(producers, before); assert.equal(page.workers().length, workersBefore);
     process.stdout.write('{"status":"pass","scope":"shared-shell-reviewed-retained-roundtrip","native":false}\n');
   } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }
