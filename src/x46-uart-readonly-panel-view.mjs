@@ -50,6 +50,11 @@ function detailText(assessment) {
     : 'No current validated AVR worker snapshot is available.';
 }
 
+function frameBits(frame) {
+  return frame.symbols.filter((symbol) => symbol.kind === 'data')
+    .map((symbol) => symbol.value).join(' ');
+}
+
 export function renderX46UartReadonlyPanel(root, assessment, { evidenceKind = 'current-worker' } = {}) {
   if (!root || root.nodeType !== 1) throw new TypeError('X46_PANEL_ROOT_INVALID');
   const document = root.ownerDocument;
@@ -116,10 +121,36 @@ export function renderX46UartReadonlyPanel(root, assessment, { evidenceKind = 'c
   }
   table.append(head, body); tableWrap.append(table);
 
+  const framing = assessment.framing ?? {
+    state: 'unavailable', completed: 0, inFlight: 0, frames: [],
+    reason: 'no-current-complete-framing', modelDerived: true, physicalSignal: false,
+  };
+  const framingDetails = node(document, 'details', '', 'x46-framing-details');
+  framingDetails.dataset.x46FramingState = framing.state;
+  const framingSummary = node(document, 'summary', framing.state === 'current'
+    ? `Model-derived framing · ${framing.completed} completed · ${framing.inFlight} in flight`
+    : 'Model-derived framing unavailable');
+  const framingBoundary = node(document, 'p', framing.state === 'current'
+    ? 'Pinned emulator semantics only—not a measured voltage waveform. Start 0 · eight LSB-first data bits · stop 1. RX, parity modes, I2C and SPI remain unavailable.'
+    : `No accepted framing projection (${framing.reason}). Byte events remain read-only; missing framing is never inferred.`,
+  'x46-framing-boundary');
+  framingDetails.append(framingSummary, framingBoundary);
+  if (framing.state === 'current') {
+    const list = node(document, 'ol', '', 'x46-framing-list');
+    for (const frame of framing.frames.slice(-DISPLAY_LIMIT)) {
+      list.append(node(document, 'li',
+        `#${frame.ordinal} · 0x${frame.value.toString(16).padStart(2, '0').toUpperCase()} · start 0 · data LSB ${frameBits(frame)} · stop 1 · ${frame.cyclesPerSymbol.toLocaleString('en-US')} cycles/symbol`));
+    }
+    framingDetails.append(list);
+  }
+
   const shown = assessment.frames.length > DISPLAY_LIMIT
     ? `Showing the latest ${DISPLAY_LIMIT} of ${assessment.frames.length} complete TX rows. ` : '';
-  const limits = node(document, 'p', `${shown}Model-recorded byte events, baud and frame duration only. Framing configuration, physical voltage/noise, RX decoding, I2C and SPI are unavailable.`, 'x46-uart-limits');
+  const framingLimit = framing.state === 'current'
+    ? 'Bounded model-derived 8-N-1 framing is shown above; it is not physical signal evidence.'
+    : 'Framing configuration is unavailable and is not inferred.';
+  const limits = node(document, 'p', `${shown}Model-recorded byte events, baud and frame duration only. ${framingLimit} Physical voltage/noise, RX decoding, parity modes, I2C and SPI are unavailable.`, 'x46-uart-limits');
   limits.dataset.x46Limits = '';
-  root.append(heading, boundary, summary, facts, tableWrap, limits);
+  root.append(heading, boundary, summary, facts, tableWrap, framingDetails, limits);
   return assessment;
 }

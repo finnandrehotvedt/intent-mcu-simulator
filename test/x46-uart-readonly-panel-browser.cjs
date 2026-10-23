@@ -50,6 +50,36 @@ function fixture() {
   };
 }
 
+function framingFixture() {
+  const value = fixture();
+  const current = value.currentWorkerIdentity;
+  const records = [{ direction: 'tx', cycle: 20_000, value: 0x41,
+    baud: 9_615, frameCycles: 16_640, virtualMilliseconds: 1.25, text: 'A' }];
+  value.runtimeSnapshot = {
+    kind: 'paused', paused: true, cycle: 40_000,
+    runtimeIdentity: structuredClone(current),
+    modelExecutionContextSha256: current.modelExecutionContextSha256,
+    serial: records.map(({ direction, cycle, value: byte, baud, frameCycles }) =>
+      ({ direction, cycle, value: byte, baud, frameCycles })),
+    retentionDrops: { serial: 0 },
+    instruments: { serial: { records, retained: 1, dropped: 0 } },
+    usartConfiguration: {
+      schema: 'intent-mcu-usart-config@1', profile: 'board.atmega328p-16mhz-v1',
+      channel: 'USART0', clockHertz: 16_000_000,
+      runtimeIdentity: structuredClone(current), resetEpoch: 1,
+      records: [{ epoch: 1, cycle: 10, resetEpoch: 1,
+        trigger: { register: 'UBRRL', value: 103 },
+        registers: { UCSRA: 0, UCSRB: 0x18, UCSRC: 0x06, UBRRL: 103, UBRRH: 0 },
+        configuration: { dataBits: 8, parity: 'none', stopBits: 1,
+          mode: 'asynchronous', doubleSpeed: false, baud: 9_615,
+          frameCycles: 16_640, receiverEnabled: true, transmitterEnabled: true,
+          supported: true } }],
+      retention: { limit: 256, retained: 1, dropped: 0, truncated: false },
+    },
+  };
+  return value;
+}
+
 function historicalReplayFixture() {
   const current = actualPausedRaw.runtimeIdentity;
   return {
@@ -69,9 +99,20 @@ function historicalReplayFixture() {
 }
 
 function server() {
-  return createServer(async (request, response) => {
+  const counterStub = { get: 0, post: 0 };
+  const app = createServer(async (request, response) => {
     try {
       const pathname = new URL(request.url, 'http://127.0.0.1').pathname;
+      if (pathname === '/api/page-views' && ['GET', 'POST'].includes(request.method)) {
+        counterStub[request.method.toLowerCase()] += 1;
+        response.writeHead(200, { 'content-type': 'application/json; charset=utf-8',
+          'cache-control': 'no-store', 'x-intent-fixture': 'page-view-stub-not-public-proof' });
+        response.end(`${JSON.stringify({ status: 'available',
+          schema: 'intent-mcu-aggregate-page-views@1', dayEuropeOslo: '2026-10-23',
+          displayDay: '23 Oct 2026', timeZone: 'Europe/Oslo', today: 0, total: 0,
+          startedAt: '2026-10-23T00:00:00.000Z', uniqueVisitors: false })}\n`);
+        return;
+      }
       if (pathname === '/fixture') {
         response.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
         response.end(fixtureHtml); return;
@@ -89,6 +130,8 @@ function server() {
       response.writeHead(404); response.end('not found');
     }
   });
+  app.counterStub = counterStub;
+  return app;
 }
 
 async function activityPage(browser, url, viewport) {
@@ -167,6 +210,62 @@ async function activityPage(browser, url, viewport) {
       ['23', '373,840', '16,706', '0x53', 'S', '9,615', '16,640']);
     assert.deepEqual(replay.authority,
       { apply: false, build: false, run: false, verdict: false });
+    const framed = framingFixture();
+    const framingAssessment = await app.page.evaluate(async (input) => {
+      const [{ assessX46UartReadonlyPanel }, { renderX46UartReadonlyPanel }] =
+        await Promise.all([
+          import('/src/x46-uart-readonly-panel.mjs'),
+          import('/src/x46-uart-readonly-panel-view.mjs'),
+        ]);
+      const assessment = assessX46UartReadonlyPanel(input);
+      renderX46UartReadonlyPanel(document.querySelector('#x46-uart-panel'), assessment,
+        { evidenceKind: 'synthetic-review-fixture' });
+      return assessment;
+    }, framed);
+    assert.deepEqual({ state: framingAssessment.framing.state,
+      completed: framingAssessment.framing.completed,
+      inFlight: framingAssessment.framing.inFlight },
+    { state: 'current', completed: 1, inFlight: 0 });
+    const disclosure = live.locator('.x46-framing-details');
+    assert.equal(await disclosure.getAttribute('open'), null);
+    assert.match(await disclosure.locator('summary').textContent(),
+      /Model-derived framing · 1 completed · 0 in flight/u);
+    await disclosure.locator('summary').focus();
+    await app.page.keyboard.press('Enter');
+    assert.equal(await disclosure.getAttribute('open'), '');
+    assert.match(await disclosure.textContent(), /start 0 · data LSB 1 0 0 0 0 0 1 0 · stop 1/u);
+    assert.match(framingAssessment.support.framing, /^bounded model-derived/u);
+
+    for (const [name, mutate] of [
+      ['Run', (value) => { value.lifecyclePhase = 'running'; value.runtimeSnapshot.paused = false; }],
+      ['Reset', (value) => { value.trustedCurrentWorker = false; }],
+      ['Edit', (value) => { value.lifecycleRuntimeBinding.runtimeGeneration += 1; }],
+      ['Open', (value) => { value.trustedCurrentWorker = false; value.runtimeSnapshot = null; }],
+      ['profile', (value) => { value.profile = 'architecture.rp2040-v1'; }],
+    ]) {
+      const retired = structuredClone(framed); mutate(retired);
+      const state = await app.page.evaluate(async (input) => {
+        const [{ assessX46UartReadonlyPanel }, { renderX46UartReadonlyPanel }] =
+          await Promise.all([
+            import('/src/x46-uart-readonly-panel.mjs'),
+            import('/src/x46-uart-readonly-panel-view.mjs'),
+          ]);
+        const assessment = assessX46UartReadonlyPanel(input);
+        renderX46UartReadonlyPanel(document.querySelector('#x46-uart-panel'), assessment,
+          { evidenceKind: 'synthetic-review-fixture' });
+        return { panel: assessment.state, framing: assessment.framing.state,
+          frames: assessment.framing.frames.length, run: assessment.authority.run };
+      }, retired);
+      assert.equal(state.framing, 'unavailable', name);
+      assert.equal(state.frames, 0, name);
+      assert.equal(state.run, false, name);
+    }
+    await app.page.click('#workbench-instruments-dialog .workbench-popup-close');
+    await app.page.waitForFunction(() => !document.querySelector('#workbench-instruments-dialog').open);
+    assert.equal(await app.page.evaluate(() => document.activeElement === document.querySelector('#instruments-open')), true);
+    await app.page.locator('#instruments-open').focus();
+    await app.page.keyboard.press('Enter');
+    await app.page.waitForFunction(() => document.querySelector('#workbench-instruments-dialog').open);
     assert.equal(await app.page.evaluate(() => window.__X46_UART_READONLY_PANEL__.state),
       'unavailable');
     assert.equal(await app.page.evaluate(() => window.__X46_ACTIVITY__.workers), 0);
@@ -274,7 +373,7 @@ async function activityPage(browser, url, viewport) {
     }
     process.stdout.write(`${JSON.stringify({ status: 'pass', appWorkers: 0,
       producerRequests: 0, historicalReplayRows: 23, states: 7,
-      viewports: [1440, 780, 390] })}\n`);
+      counterStub: http.counterStub, viewports: [1440, 780, 390] })}\n`);
   } finally {
     await browser.close();
     await new Promise((resolve) => http.close(resolve));
