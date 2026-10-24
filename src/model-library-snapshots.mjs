@@ -129169,7 +129169,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/runtime-kernel.mjs",
-      "sha256": "aea30ae6731e2801b520d29bc8b92002f55a4d1b2d57f2487a8c94b7da3bd74b"
+      "sha256": "e8c5c7cbfa847a8ec48312d3a43f8ae20bb128963519cb66a7c0bbd238fd5e7c"
     },
     {
       "path": "src/canvas-annotations.mjs",
@@ -129181,7 +129181,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/atmega328p-adapter.mjs",
-      "sha256": "72ab12b05f5e17eff35de1f14495264cdb973ccde9012043da8e9e188e2c7b7f"
+      "sha256": "1163005129565c3312989662eada1eab865cb2da58d1eaeaac10651e6bb9f343"
     },
     {
       "path": "src/x43-avr-stack-profile.mjs",
@@ -129285,7 +129285,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/rp2040-experimental-runtime.mjs",
-      "sha256": "93463965a8f379afdea256f270f2efb2876d9ec8ddff7f9e9676d7a7ad82a10d"
+      "sha256": "d38657fcc0ac86a9b3af08a0155a32f3a4c840c14f35f1f97d32c343fe163e3f"
     },
     {
       "path": "src/runtime-identity.mjs",
@@ -129337,7 +129337,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/rp2040-runtime-bridge-adapter-v1.mjs",
-      "sha256": "4b7496cd38a995bcecfb3b3456edce10f0d671606f0fa3d6c36e99762ee2ac56"
+      "sha256": "8af9bdf32c465461cef4f338d7ae9f2884ba6f0d917f4d3734b4ddc9b8940a1b"
     },
     {
       "path": "expansion-drafts/rp2040-conformance-fixtures-v1.mjs",
@@ -129404,7 +129404,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "a60dd552da826bcf74e23eb7f8457de1ae1e8dd31f313536cb737f8a9d965507"
     }
   ],
-  "implementationSha256": "82782e4ee95e3f45d4f66e5173303875f4f4574d34634fe32f1ad8b1097ec2b7",
+  "implementationSha256": "8b14632c1c328d409718967b3cd608098dfbe985f42045eea68c3ef1b0030007",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.125 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, real worker, run, image build or deployment",
@@ -129414,7 +129414,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-config-producer.2-current",
     "semanticDisposition": "component, firmware and electrical semantics remain unchanged; paired read-only AVR USART0 RX peripheral-model events are added"
   },
-  "manifestSha256": "dc1e1bc83c0c04a4eeba9796ca90b63013a40b2c3ce6276c43b2d27d1932b9b0",
+  "manifestSha256": "e772de3fce22ee8d5f5e40de788a02aa3c64d0a878c2701e975203c7b6c79a14",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",
