@@ -1795,7 +1795,7 @@ export function mountSharedWorkbenchShell(document) {
   let activeCanvas = null;
   let activePopup = null;
   let returnFocus = null;
-  let viewMode = 'advanced';
+  let viewMode = 'simple';
   const x42 = installX42TriggerCapture(document, () => activeProfile);
   const x43 = installX43AvrObservationProfile(document, () => activeProfile);
   const x47 = installX47PulsePreview(document, () => activeProfile);
@@ -2014,7 +2014,7 @@ export function mountSharedWorkbenchShell(document) {
     setViewMode(mode, options = {}) { return setViewMode(mode, options); },
     adapter(profile = activeProfile) { return sharedWorkbenchAdapter(profile); },
   });
-  setViewMode('advanced');
+  setViewMode('simple');
   api.activate(AVR_PROFILE);
   return api;
 }

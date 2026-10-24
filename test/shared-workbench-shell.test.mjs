@@ -76,9 +76,11 @@ test('X59 keeps finite presentation-only view state inside the X48-owned shared 
     readFile(new URL('../staging/styles.css', import.meta.url), 'utf8'),
     readFile(new URL('../scripts/generate-model-library-snapshots.mjs', import.meta.url), 'utf8'),
   ]);
-  assert.match(html, /body data-workbench-view="advanced"/);
-  assert.match(html, /id="workbench-view-simple"[^>]+aria-pressed="false"/);
-  assert.match(html, /id="workbench-view-advanced"[^>]+aria-pressed="true"/);
+  assert.match(html, /body data-workbench-view="simple"/);
+  assert.match(html, /id="workbench-view-simple"[^>]+aria-pressed="true"/);
+  assert.match(html, /id="workbench-view-advanced"[^>]+aria-pressed="false"/);
+  assert.match(shell, /let viewMode = 'simple'/);
+  assert.match(shell, /setViewMode\('simple'\)/);
   assert.match(shell, /SHARED_WORKBENCH_VIEW_MODE_UNKNOWN/);
   assert.match(shell, /viewMode\(\) \{ return viewMode; \}/);
   assert.match(shell, /activePopup === 'brief'/);

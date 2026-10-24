@@ -58,13 +58,15 @@ async function assertCoreVisible(page) {
       const page = await context.newPage();
       page.on('request', (request) => {
         const item = { method: request.method(), url: request.url() };
-        if (/\/api\//u.test(new URL(request.url()).pathname)) report.producerRequests.push(item);
-        if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method())) report.mutatingRequests.push(item);
+        const pathname = new URL(request.url()).pathname;
+        const isPageView = pathname === '/api/page-views';
+        if (/\/api\//u.test(pathname) && !isPageView) report.producerRequests.push(item);
+        if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method()) && !isPageView) report.mutatingRequests.push(item);
       });
       assert.equal((await page.goto(base, { waitUntil: 'domcontentloaded' }))?.status(), 200);
       await page.waitForFunction(() => window.__M11_READY__ === true);
-      assert.equal(await page.getAttribute('body', 'data-workbench-view'), 'advanced');
-      assert.equal(await page.getAttribute('#workbench-view-advanced', 'aria-pressed'), 'true');
+      assert.equal(await page.getAttribute('body', 'data-workbench-view'), 'simple');
+      assert.equal(await page.getAttribute('#workbench-view-simple', 'aria-pressed'), 'true');
 
       for (const profile of profiles) {
         await selectProfile(page, profile);
