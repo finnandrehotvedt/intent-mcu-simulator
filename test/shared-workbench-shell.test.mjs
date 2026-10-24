@@ -53,6 +53,7 @@ test('top workbench exposes exactly seven accessible popup surfaces around one r
   assert.match(shell, /event\.key !== 'Tab'/);
   assert.match(shell, /addEventListener\('cancel'/);
   assert.match(shell, /target\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(shell, /profile === activeProfile && activeCanvas === nextCanvas/);
   assert.match(shell, /resolvedProfileNodes/);
   assert.doesNotMatch(shell, /cloneNode/);
   assert.match(shell, /if \(serial\) serial\.hidden = false/);
