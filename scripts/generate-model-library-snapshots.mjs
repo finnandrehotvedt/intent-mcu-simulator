@@ -13,6 +13,9 @@ import { controlContractsFor } from '../src/model-control-contracts.mjs';
 import * as existingSnapshots from '../src/model-library-snapshots.mjs';
 
 const { RETAINED_MODEL_LIBRARY_MANIFEST } = existingSnapshots;
+const PRE_X37_WORKBENCH_CANDIDATE_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X37_WORKBENCH_CANDIDATE_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -46,6 +49,12 @@ const RC124_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
   '../src/model-bundles/rc124-current-manifest.json', import.meta.url), 'utf8'));
 const RC128_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
   '../src/model-bundles/rc128-current-manifest.json', import.meta.url), 'utf8'));
+const RC129_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.RC129_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_X37_LEDGER_PROGRESS_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X37_LEDGER_PROGRESS_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -283,16 +292,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x46-usart-rx-producer.1-current',
-  'intent-mcu-model-bundle-current-x46-usart-rx-producer-1@45',
+  '2.0.0-x37-workbench-candidate.1-current',
+  'intent-mcu-model-bundle-current-x37-workbench-candidate-1@52',
   currentImplementation,
   {
-    priorVersion: PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X37_WORKBENCH_CANDIDATE_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X37_WORKBENCH_CANDIDATE_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component, firmware and electrical semantics remain unchanged; paired read-only AVR USART0 RX peripheral-model events are added',
-    presentationDisposition: 'no UI is added; RX records remain private source evidence pending one bounded native fixture',
-    baselineClosureDisposition: 'public rc.125 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, real worker, run, image build or deployment',
+    semanticDisposition: 'component and electrical semantics remain unchanged; a default-disarmed X37 candidate adds strict authored two-participant data, atomic coordinated lifecycle and a product adapter around the already reviewed scheduler without executing firmware',
+    presentationDisposition: 'candidate UI appears only with the explicit x37-candidate query flag; Build and Run remain capability-blocked and no public release is added',
+    baselineClosureDisposition: 'public rc.129 and every earlier identity remain immutable and migration-only; this private source identity carries no public or release authority',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -306,6 +315,9 @@ export const RC113_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringi
 export const RC120_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC120_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const RC124_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC124_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const RC128_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC128_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const RC129_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC129_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X37_WORKBENCH_CANDIDATE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X37_WORKBENCH_CANDIDATE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X37_LEDGER_PROGRESS_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X37_LEDGER_PROGRESS_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_RUNTIME_CONTROLS_SERIAL_UI_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_RUNTIME_CONTROLS_SERIAL_UI_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});

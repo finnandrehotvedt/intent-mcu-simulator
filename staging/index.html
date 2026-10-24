@@ -676,6 +676,7 @@
 
     <details id="firmware-drawer" class="workbench-drawer" open><summary>Firmware editor</summary><section class="editor-card panel" aria-labelledby="editor-title">
       <div class="card-heading"><div><p class="eyebrow">4 · FIRMWARE</p><h2 id="editor-title">main.ino</h2></div><span id="build-state" class="state" role="status">Build required</span></div>
+      <div id="x37-source-tabs" class="x37-source-tabs" role="tablist" aria-label="X37 participant source" hidden><button id="x37-source-avr" type="button" role="tab" aria-selected="true">AVR · main.ino</button><button id="x37-source-rp" type="button" role="tab" aria-selected="false">RP2040 · main.c</button></div>
       <div class="source-files" aria-label="Project source files">
         <div><label for="source-file">Open file</label><select id="source-file"></select></div>
         <div><label for="source-file-name">New local file</label><input id="source-file-name" type="text" maxlength="52" autocomplete="off" placeholder="helpers.h"></div>
@@ -684,6 +685,7 @@
       <div id="toolchain-boundary" class="toolchain-boundary"><strong>Compiler:</strong> Arduino AVR core 1.8.8 · avr-gcc 7.3.0-atmel3.6.1-arduino7. <strong>Simulation:</strong> only the <a href="#compatibility-note">documented MCU/peripheral subset</a>, not every library or device.</div>
       <div class="code-editor" id="code-editor"><pre id="source-lines" class="source-lines" aria-hidden="true">1</pre><pre id="source-highlight" class="source-highlight" aria-hidden="true"></pre><label class="sr-only" for="source">Firmware source</label><textarea id="source" spellcheck="false" placeholder="Write your sketch here. The project starts empty."></textarea></div>
       <div class="build-controls"><button id="build" type="button">Build isolated firmware</button><button id="cancel" type="button" disabled>Cancel build</button></div>
+      <p id="x37-candidate-status" class="truth" role="status" hidden></p>
       <div id="diagnostic-links" class="diagnostic-links" aria-label="Compiler diagnostics"></div><pre id="diagnostics" class="diagnostics" aria-live="polite">No build submitted.</pre>
       <details class="build-log"><summary>Full compiler log</summary><pre id="build-log">No build submitted.</pre></details>
     </section></details>
@@ -705,7 +707,7 @@
         <label for="speed">Execution speed</label><select id="speed" disabled><option value="0.1">0.1×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option><option value="maximum">Maximum</option></select>
         <div id="component-controls" class="component-runtime-controls"></div>
       </article>
-      <article class="trace-card panel"><div class="card-heading"><div><p class="eyebrow">GPIO PROVENANCE</p><h2>Recent D13 trace</h2></div></div><ul id="trace" class="trace"><li>0000000000 · LOW</li></ul><p class="truth">Behaviour covers the tested compatibility subset and may differ from physical hardware.</p></article>
+      <article class="trace-card panel"><div class="card-heading"><div><p class="eyebrow">GPIO PROVENANCE</p><h2 id="trace-title">Recent D13 trace</h2></div></div><ul id="trace" class="trace"><li>0000000000 · LOW</li></ul><p id="trace-boundary" class="truth">Behaviour covers the tested compatibility subset and may differ from physical hardware.</p></article>
     </section>
 
     <section id="thermostat-experiment" class="thermostat-experiment panel" aria-labelledby="thermostat-experiment-title" hidden>

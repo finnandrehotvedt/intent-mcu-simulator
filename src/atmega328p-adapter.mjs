@@ -31,6 +31,7 @@ export { USART_RX_OBSERVATION_LATENESS_LIMIT };
 const SAMPLE_LIMIT = 4_096;
 const UNSUPPORTED_LIMIT = 256;
 const X47_TRANSITION_LIMIT = 64;
+const X37_PROBE_TRANSITION_LIMIT = 64;
 const PIN_MAP = Object.freeze({
   0: ['D', 0], 1: ['D', 1], 2: ['D', 2], 3: ['D', 3],
   4: ['D', 4], 5: ['D', 5], 6: ['D', 6], 7: ['D', 7],
@@ -124,6 +125,7 @@ export class Atmega328PAdapter {
     this.stuckAnalogChannels = new Map();
     this.faultEvents = [];
     this.retentionDrops = { logic: 0, serial: 0, adc: 0, unsupported: 0 };
+    this.x37ProbePins = new Map();
     this.blocked = false;
     this.instructions = 0;
     this.x34Observer?.reset();
@@ -695,5 +697,25 @@ export class Atmega328PAdapter {
       ...(this.x34Observer ? { x34Precision: this.x34Observer.snapshot() } : {}),
       ...(this.x35Observer ? { x35CausalChain: this.x35Observer.snapshot() } : {}),
     };
+  }
+
+  x37ProbeSnapshot(pinLabel = 'D13') {
+    const pin = Number(pinLabel.slice(1)); const [port, bit] = PIN_MAP[pin];
+    const config = { B: portBConfig, C: portCConfig, D: portDConfig }[port]; const mask = 1 << bit;
+    const output = Boolean(this.cpu.data[config.DDR] & mask);
+    const current = { cycle: this.cpu.cycles, pin, mode: output ? 'OUTPUT' : 'INPUT',
+      level: Boolean(this.cpu.data[config.PIN] & mask) };
+    let probe = this.x37ProbePins.get(pinLabel);
+    if (!probe) {
+      probe = { prior: current, transitions: [], dropped: 0 };
+      this.x37ProbePins.set(pinLabel, probe);
+    } else if (probe.prior.mode !== current.mode || probe.prior.level !== current.level) {
+      probe.dropped += boundedPush(probe.transitions, current, X37_PROBE_TRANSITION_LIMIT);
+      probe.prior = current;
+    }
+    return { cycle: this.cpu.cycles, instructions: this.instructions,
+      pins: [{ pin: pinLabel, mode: current.mode, level: current.level }],
+      instruments: { logic: { transitions: probe.transitions.map((entry) => ({ ...entry })),
+        dropped: probe.dropped } } };
   }
 }

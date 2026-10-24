@@ -1,0 +1,10 @@
+{
+  "schema": "teach-lab-compiler-image-lock@1",
+  "image": "local/intent-mcu-rp2040-toolchain:x37-turnaround-7a01dfe",
+  "imageId": "sha256:a68a9e3616aa3f7b317525d0f7c0447c05717fac284e7b3d989a99329606f29b",
+  "runtimeImageIds": [],
+  "toolchainManifestSha256": "a4624137772c1d41442c32a7bf02bd3d59b219eaed0cd88bb9b3be3528445b47",
+  "toolchainFilesSha256": "a4624137772c1d41442c32a7bf02bd3d59b219eaed0cd88bb9b3be3528445b47",
+  "architecture": "linux/amd64",
+  "distribution": "private X37 open-drain turnaround candidate; not public"
+}
