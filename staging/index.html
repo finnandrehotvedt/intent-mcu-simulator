@@ -61,6 +61,12 @@
         <p id="accessible-svg-status" class="build-list-status" role="status">Accessible SVG: circuit, named pins, release and model limits; no current measurements.</p>
       </div>
       <section id="active-canvas-stage" class="active-canvas-stage" aria-label="Active controller circuit build surface">
+        <aside id="simple-parts-drawer" class="simple-parts-drawer" aria-labelledby="simple-parts-title">
+          <header><div><p class="eyebrow">PARTS</p><h3 id="simple-parts-title" tabindex="-1">Add a part</h3></div><span id="simple-parts-profile">Current controller</span></header>
+          <div id="simple-parts-mount" class="simple-parts-mount"></div>
+          <footer><button id="simple-parts-undo" type="button" disabled>Undo</button><button id="simple-parts-save" type="button">Save copy</button></footer>
+          <p id="simple-parts-status" role="status">Drag a supported card to the canvas, or activate its Add button.</p>
+        </aside>
         <div id="active-canvas-mount"></div>
         <div class="top-workbench-status" aria-label="Current workbench status">
           <strong id="top-stage-profile">ATmega328P</strong>
@@ -588,13 +594,6 @@
       <aside class="catalog panel" aria-labelledby="catalog-title">
         <p class="eyebrow">1 · COMPONENTS</p><h2 id="catalog-title">Add parts</h2>
         <label for="catalog-search">Search name, alias, function or part number</label><input id="catalog-search" type="search" autocomplete="off" placeholder="GPIO, 328P, indicator…">
-        <label for="catalog-category">Category</label>
-        <select id="catalog-category"><option value="all">All categories</option></select>
-        <label for="catalog-interface">Interface</label><select id="catalog-interface"><option value="all">All interfaces</option><option>GPIO</option><option>analogue</option><option>PWM</option><option>UART</option><option>I²C</option><option>SPI</option><option>passive</option></select>
-        <label for="catalog-status">Simulation support</label><select id="catalog-status"><option value="simulated">Simulated</option><option value="partial">Partial</option><option value="visual">Visual only</option><option value="all">All statuses</option></select>
-        <label for="catalog-supply-voltage">Operating supply</label><select id="catalog-supply-voltage"><option value="all">Any declared supply</option><option value="3.3">Supports 3.3 V</option><option value="5">Supports 5 V</option></select>
-        <label for="catalog-pin-voltage">Declared pin voltage limit</label><select id="catalog-pin-voltage"><option value="all">Any pin declaration</option><option value="3.3">Accepts a 3.3 V pin signal</option><option value="5">Accepts a 5 V pin signal</option><option value="undeclared">No declared pin voltage range</option></select>
-        <label class="check-row"><input id="catalog-favorites" type="checkbox"> Favourites only</label>
         <p id="catalog-count" class="catalog-count" aria-live="polite">0 parts</p>
         <div id="catalog-list" class="catalog-list"></div>
         <div id="catalog-empty" class="catalog-empty" hidden><strong>No parts match these filters.</strong><span>Clear the filters, or broaden supply, pin-limit, support, interface, or category choices.</span><button id="catalog-clear" type="button">Clear catalogue filters</button></div>
@@ -603,6 +602,14 @@
           <output id="catalog-page" aria-live="polite">No results</output>
           <button id="catalog-next" type="button" disabled>Next 80</button>
         </nav>
+        <details class="catalog-advanced-filters"><summary>Advanced filters</summary><div>
+          <label for="catalog-category">Category</label><select id="catalog-category"><option value="all">All categories</option></select>
+          <label for="catalog-interface">Interface</label><select id="catalog-interface"><option value="all">All interfaces</option><option>GPIO</option><option>analogue</option><option>PWM</option><option>UART</option><option>I²C</option><option>SPI</option><option>passive</option></select>
+          <label for="catalog-status">Simulation support</label><select id="catalog-status"><option value="simulated">Simulated</option><option value="partial">Partial</option><option value="visual">Visual only</option><option value="all">All statuses</option></select>
+          <label for="catalog-supply-voltage">Operating supply</label><select id="catalog-supply-voltage"><option value="all">Any declared supply</option><option value="3.3">Supports 3.3 V</option><option value="5">Supports 5 V</option></select>
+          <label for="catalog-pin-voltage">Declared pin voltage limit</label><select id="catalog-pin-voltage"><option value="all">Any pin declaration</option><option value="3.3">Accepts a 3.3 V pin signal</option><option value="5">Accepts a 5 V pin signal</option><option value="undeclared">No declared pin voltage range</option></select>
+          <label class="check-row"><input id="catalog-favorites" type="checkbox"> Favourites only</label>
+        </div></details>
         <section class="catalog-support-card" aria-labelledby="catalog-support-title">
           <p class="eyebrow">EXACT COMPATIBILITY</p>
           <h3 id="catalog-support-title">What works with each controller?</h3>

@@ -1810,9 +1810,21 @@ export function mountSharedWorkbenchShell(document) {
   const viewStatus = document.querySelector('#workbench-view-status');
   const more = document.querySelector('#workbench-more');
   const popupControls = document.querySelector('#workbench-popup-controls');
-  if (Object.values(viewButtons).some((node) => !node) || !viewStatus || !more || !popupControls) {
+  const simplePartsDrawer = document.querySelector('#simple-parts-drawer');
+  const simplePartsMount = document.querySelector('#simple-parts-mount');
+  const simplePartsProfile = document.querySelector('#simple-parts-profile');
+  const simplePartsUndo = document.querySelector('#simple-parts-undo');
+  const simplePartsSave = document.querySelector('#simple-parts-save');
+  if (Object.values(viewButtons).some((node) => !node) || !viewStatus || !more || !popupControls
+      || !simplePartsDrawer || !simplePartsMount || !simplePartsProfile || !simplePartsUndo || !simplePartsSave) {
     throw new Error('SHARED_WORKBENCH_VIEW_SWITCH_MISSING');
   }
+  const simpleActionSelectors = Object.freeze({
+    [AVR_PROFILE]: { undo: '#undo', save: '#project-save' },
+    [RP2040_PROFILE]: { undo: '#pico-undo', save: '#pico-save' },
+    [ESP32C3_PROFILE]: { undo: '#c3-undo', save: '#c3-save' },
+    [STM32F429ZI_PROFILE]: { undo: '#stm32-undo', save: '#stm32-save' },
+  });
   const advancedOnlySelector = [
     '#brief-tests-open', '#x81-assessment-open', '#presentation-open', '#canvas-annotations-open',
     '#build-list-export', '#accessible-svg-export',
@@ -1855,6 +1867,11 @@ export function mountSharedWorkbenchShell(document) {
   const openPopup = (name, requestedOpener = null, { initialFocus = true } = {}) => {
     if (!SHARED_WORKBENCH_DIALOGS.includes(name)) throw new Error('SHARED_WORKBENCH_DIALOG_UNKNOWN');
     if (viewMode === 'simple' && name === 'brief') return false;
+    if (viewMode === 'simple' && name === 'parts') {
+      simplePartsDrawer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      queueMicrotask(() => simplePartsDrawer.querySelector('input, button:not([disabled]), [tabindex="0"]')?.focus({ preventScroll: true }));
+      return true;
+    }
     if (activePopup) closePopup({ restoreFocus: false });
     const popup = popupByName.get(name);
     for (const node of profileNodes(activeProfile)[name]) popup.mount.append(node);
@@ -1878,6 +1895,40 @@ export function mountSharedWorkbenchShell(document) {
     return true;
   };
 
+  const syncSimplePartsActions = () => {
+    const selectors = simpleActionSelectors[activeProfile];
+    const undo = document.querySelector(selectors.undo);
+    const save = document.querySelector(selectors.save);
+    simplePartsProfile.textContent = adapterMap.get(activeProfile).groupLabel;
+    simplePartsUndo.disabled = !undo || undo.disabled;
+    simplePartsSave.disabled = !save || save.disabled;
+  };
+  const mountSimpleParts = () => {
+    if (viewMode !== 'simple') {
+      for (const node of [...simplePartsMount.children]) parking.append(node);
+      simplePartsDrawer.hidden = true;
+      return;
+    }
+    if (activePopup === 'parts') closePopup({ restoreFocus: false });
+    simplePartsDrawer.hidden = false;
+    const activeParts = new Set(profileNodes(activeProfile).parts);
+    for (const node of [...simplePartsMount.children]) if (!activeParts.has(node)) parking.append(node);
+    for (const node of activeParts) simplePartsMount.append(node);
+    syncSimplePartsActions();
+  };
+  simplePartsUndo.addEventListener('click', () => document.querySelector(simpleActionSelectors[activeProfile].undo)?.click());
+  simplePartsSave.addEventListener('click', () => document.querySelector(simpleActionSelectors[activeProfile].save)?.click());
+  const SimpleActionObserver = document.defaultView?.MutationObserver;
+  const simpleActionObserver = SimpleActionObserver ? new SimpleActionObserver(syncSimplePartsActions) : null;
+  if (simpleActionObserver) {
+    for (const selectors of Object.values(simpleActionSelectors)) {
+      for (const selector of Object.values(selectors)) {
+        const node = document.querySelector(selector);
+        if (node) simpleActionObserver.observe(node, { attributes: true, attributeFilter: ['disabled'] });
+      }
+    }
+  }
+
   const setViewMode = (nextMode, { focus = false } = {}) => {
     if (!SHARED_WORKBENCH_VIEW_MODES.includes(nextMode)) {
       throw new Error('SHARED_WORKBENCH_VIEW_MODE_UNKNOWN');
@@ -1890,6 +1941,7 @@ export function mountSharedWorkbenchShell(document) {
     if (nextMode === 'simple') popupControls.prepend(quickControls);
     else primaryMount.append(quickControls);
     document.body.dataset.workbenchView = viewMode;
+    mountSimpleParts();
     for (const [mode, button] of Object.entries(viewButtons)) {
       button.setAttribute('aria-pressed', String(mode === viewMode));
     }
@@ -1977,6 +2029,7 @@ export function mountSharedWorkbenchShell(document) {
       const nextCanvas = profileNodes(profile).canvas;
       if (profile === activeProfile && activeCanvas === nextCanvas) {
         syncStageStatus();
+        mountSimpleParts();
         return;
       }
       if (profile !== activeProfile) {
@@ -1994,6 +2047,7 @@ export function mountSharedWorkbenchShell(document) {
       activeCanvas = nextCanvas;
       canvasMount.append(activeCanvas);
       activeCanvas.removeAttribute('aria-hidden');
+      mountSimpleParts();
       syncStageStatus();
       document.defaultView?.requestAnimationFrame(() => {
         document.defaultView?.dispatchEvent(new document.defaultView.Event('resize'));
