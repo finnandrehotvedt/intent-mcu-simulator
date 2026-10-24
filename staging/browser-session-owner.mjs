@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
+import { validateCircuit } from '../src/circuit-engine.mjs';
+import { COMPONENT_CATALOG } from '../src/component-catalog.mjs';
+import { RP2040_PICO_COMPONENT_CATALOG, validateRp2040PicoCircuit } from '../src/rp2040-pico-circuit.mjs';
+import { ESP32C3_PUBLIC_COMPONENT_CATALOG, validateEsp32C3Circuit } from '../src/esp32c3-public-circuit.mjs';
+import { STM32_PUBLIC_COMPONENT_CATALOG, validateStm32Circuit } from '../src/stm32-public-circuit.mjs';
+
 const endpoint = '/api/session/v1';
 const makeId = (prefix) => `${prefix}-${crypto.randomUUID()}`;
 const post = async (operation, value = {}, capability = null) => {
@@ -39,10 +45,26 @@ function execute(request) {
           (point) => point.component === component.id && point.pin === node.dataset.endpoint.slice(component.id.length + 1))) }));
     return { status: 'accepted', code: 'API_COMPONENT_PINS_LISTED', component_id: component.id, pins };
   }
+  if (request.command === 'circuit.validate') {
+    const validators = { 'board.atmega328p-16mhz-v1': validateCircuit,
+      'board.rp2040-pico-v1': validateRp2040PicoCircuit,
+      'board.esp32-c3-devmodule-v1': validateEsp32C3Circuit,
+      'board.stm32f429zi-nucleo144-v1': validateStm32Circuit };
+    const validation = validators[current.profile]?.(current.project?.circuit);
+    return validation ? { status: 'accepted', code: 'API_VALIDATION_READ_ONLY', validation }
+      : { status: 'rejected', code: 'API_PROFILE_UNSUPPORTED' };
+  }
   if (request.command === 'capabilities.list') return { status: 'accepted', code: 'API_CAPABILITIES_LISTED',
-    commands: ['capabilities.list', 'components.catalog', 'project.inspect', 'components.list', 'component.pins', 'nets.list'],
+    commands: ['capabilities.list', 'components.catalog', 'project.inspect', 'components.list', 'component.pins', 'nets.list', 'circuit.validate'],
     profiles: ['board.atmega328p-16mhz-v1', 'board.rp2040-pico-v1', 'board.esp32-c3-devmodule-v1', 'board.stm32f429zi-nucleo144-v1'], scopes: ['discover', 'read_project'] };
-  if (request.command === 'components.catalog') return { status: 'accepted', code: 'API_CATALOG_LISTED', profile: current.profile };
+  if (request.command === 'components.catalog') {
+    const catalogues = { 'board.atmega328p-16mhz-v1': COMPONENT_CATALOG,
+      'board.rp2040-pico-v1': RP2040_PICO_COMPONENT_CATALOG,
+      'board.esp32-c3-devmodule-v1': ESP32C3_PUBLIC_COMPONENT_CATALOG,
+      'board.stm32f429zi-nucleo144-v1': STM32_PUBLIC_COMPONENT_CATALOG };
+    return { status: 'accepted', code: 'API_CATALOG_LISTED', profile: current.profile,
+      components: catalogues[current.profile] ?? {} };
+  }
   return { status: 'rejected', code: 'API_COMMAND_UNSUPPORTED' };
 }
 

@@ -14,7 +14,7 @@ export const BROWSER_SESSION_LIMITS = Object.freeze({
 });
 export const READ_ONLY_COMMANDS = Object.freeze([
   'capabilities.list', 'components.catalog', 'project.inspect', 'components.list',
-  'component.pins', 'nets.list',
+  'component.pins', 'nets.list', 'circuit.validate',
 ]);
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,95}$/u;
 const clone = (value) => structuredClone(value);
