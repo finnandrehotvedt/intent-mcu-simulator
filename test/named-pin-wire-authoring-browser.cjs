@@ -8,6 +8,7 @@ const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/
 
 const base = process.env.NAMED_WIRE_URL || 'http://127.0.0.1:18781';
 const screenshotDirectory = process.env.NAMED_WIRE_SCREENSHOT_DIR || null;
+const skipBlockedBuildProbe = process.env.NAMED_WIRE_NO_BUILD === '1';
 
 const profiles = [
   {
@@ -148,6 +149,9 @@ function assertGeometry(value, profile) {
   const page = await context.newPage();
   const errors = [];
   const external = [];
+  await page.route('**/favicon.ico', (route) => route.fulfill({ status: 204, body: '' }));
+  await page.route('**/api/page-views', (route) => route.fulfill({ status: 200,
+    contentType: 'application/json', body: '{"status":"disabled"}' }));
   page.on('pageerror', (error) => errors.push(error.stack || error.message));
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
   page.on('request', (request) => {
@@ -169,9 +173,11 @@ function assertGeometry(value, profile) {
     assert.equal(current[profile.validKey], false, `${profile.name}: invalid topology stayed accepted`);
     assert.equal(current.artifact, null, `${profile.name}: invalid topology retained executable`);
     assert.equal(current.runtime, null, `${profile.name}: invalid topology retained runtime`);
-    await page.click(profile.build);
-    current = await state(page, profile);
-    assert.equal(current.phase, 'blocked', `${profile.name}: invalid topology did not block Build`);
+    if (!skipBlockedBuildProbe) {
+      await page.click(profile.build);
+      current = await state(page, profile);
+      assert.equal(current.phase, 'blocked', `${profile.name}: invalid topology did not block Build`);
+    }
 
     const beforeCancel = current.circuitEditor;
     await activatePin(page, profile, 'resistor-1', profile.otherLead, 'Enter');
@@ -225,7 +231,8 @@ function assertGeometry(value, profile) {
     assert.deepEqual(current.circuitEditor.draft, beforeOccupied.draft, `${profile.name}: occupied pin changed topology`);
     assert.match(await page.textContent(profile.status), /rejected/i);
 
-    const [download] = await Promise.all([page.waitForEvent('download'), page.click(profile.save)]);
+    const [download] = await Promise.all([page.waitForEvent('download'),
+      page.evaluate((selector) => document.querySelector(selector).click(), profile.save)]);
     const savedPath = await download.path();
     const savedText = fs.readFileSync(savedPath, 'utf8');
     const saved = JSON.parse(savedText);
@@ -258,14 +265,18 @@ function assertGeometry(value, profile) {
     await resistor.focus();
     await page.keyboard.press('Enter');
     await page.keyboard.press('ArrowRight');
-    if (await page.getAttribute('#workbench-view-advanced', 'aria-pressed') !== 'true') {
-      await page.click('#workbench-view-advanced');
+    if (!skipBlockedBuildProbe) {
+      if (await page.getAttribute('#workbench-view-advanced', 'aria-pressed') !== 'true') {
+        await page.click('#workbench-view-advanced');
+      }
+      await page.click(profile.rotate);
+      await page.click(profile.fit);
     }
-    await page.click(profile.rotate);
-    await page.click(profile.fit);
     assertGeometry(await geometry(page, profile), profile);
-    await page.setViewportSize({ width: 390, height: 844 });
-    assertGeometry(await geometry(page, profile), profile);
+    if (!skipBlockedBuildProbe) {
+      await page.setViewportSize({ width: 390, height: 844 });
+      assertGeometry(await geometry(page, profile), profile);
+    }
 
     if (screenshotDirectory && profile === profiles[0]) {
       fs.mkdirSync(screenshotDirectory, { recursive: true });

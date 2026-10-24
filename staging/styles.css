@@ -176,16 +176,13 @@ body[data-workbench-view="simple"] #prompt-drawer,
 body[data-workbench-view="simple"] #thermostat-experiment,
 body[data-workbench-view="simple"] #regression-matrix { display: none !important; }
 body[data-workbench-view="simple"] #toggle-catalog,
-body[data-workbench-view="simple"] #pico-redo,
-body[data-workbench-view="simple"] #c3-redo,
-body[data-workbench-view="simple"] #stm32-redo,
 body[data-workbench-view="simple"] #pico-rotate, body[data-workbench-view="simple"] #c3-rotate, body[data-workbench-view="simple"] #stm32-rotate,
 body[data-workbench-view="simple"] #pico-zoom-out, body[data-workbench-view="simple"] #pico-zoom-value, body[data-workbench-view="simple"] #pico-zoom-in, body[data-workbench-view="simple"] #pico-fit, body[data-workbench-view="simple"] #pico-fullscreen,
 body[data-workbench-view="simple"] #c3-zoom-out, body[data-workbench-view="simple"] #c3-zoom-value, body[data-workbench-view="simple"] #c3-zoom-in, body[data-workbench-view="simple"] #c3-fit, body[data-workbench-view="simple"] #c3-fullscreen,
 body[data-workbench-view="simple"] #stm32-zoom-out, body[data-workbench-view="simple"] #stm32-zoom-value, body[data-workbench-view="simple"] #stm32-zoom-in, body[data-workbench-view="simple"] #stm32-fit, body[data-workbench-view="simple"] #stm32-fullscreen,
-body[data-workbench-view="simple"] #pico-reconnect, body[data-workbench-view="simple"] #pico-add-bend, body[data-workbench-view="simple"] #pico-route-back, body[data-workbench-view="simple"] #pico-route-forward, body[data-workbench-view="simple"] #pico-wire-color,
-body[data-workbench-view="simple"] #c3-reconnect, body[data-workbench-view="simple"] #c3-add-bend, body[data-workbench-view="simple"] #c3-route-back, body[data-workbench-view="simple"] #c3-route-forward, body[data-workbench-view="simple"] #c3-wire-color,
-body[data-workbench-view="simple"] #stm32-reconnect, body[data-workbench-view="simple"] #stm32-add-bend, body[data-workbench-view="simple"] #stm32-route-back, body[data-workbench-view="simple"] #stm32-route-forward, body[data-workbench-view="simple"] #stm32-wire-color { display: none !important; }
+body[data-workbench-view="simple"] #pico-add-bend, body[data-workbench-view="simple"] #pico-route-back, body[data-workbench-view="simple"] #pico-route-forward, body[data-workbench-view="simple"] #pico-wire-color,
+body[data-workbench-view="simple"] #c3-add-bend, body[data-workbench-view="simple"] #c3-route-back, body[data-workbench-view="simple"] #c3-route-forward, body[data-workbench-view="simple"] #c3-wire-color,
+body[data-workbench-view="simple"] #stm32-add-bend, body[data-workbench-view="simple"] #stm32-route-back, body[data-workbench-view="simple"] #stm32-route-forward, body[data-workbench-view="simple"] #stm32-wire-color { display: none !important; }
 body[data-workbench-view="advanced"] #beginner-primary { display: none; }
 body[data-workbench-view="advanced"] .workbench-more > summary { display: none; }
 body[data-workbench-view="advanced"] .workbench-more { display: contents; }
@@ -211,7 +208,7 @@ body[data-workbench-view="advanced"] .workbench-more { display: contents; }
 .simple-parts-mount .bounded-parts-panel > header { display: none; }
 .simple-parts-mount .catalog-list { max-height: 380px; }
 .simple-parts-mount .bounded-parts-list { grid-template-columns: 1fr; }
-.simple-parts-drawer > footer { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 10px; }
+.simple-parts-drawer > footer { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; margin-top: 10px; }
 .simple-parts-drawer > footer button { min-height: 34px; }
 .simple-parts-drawer > p { margin: 8px 0 0; color: var(--muted); font-size: .65rem; line-height: 1.35; }
 .catalog-advanced-filters { margin-top: 10px; border-top: 1px solid #29495b; }
@@ -236,7 +233,7 @@ body[data-workbench-view="advanced"] .top-workbench-status { grid-column: 1; }
 #active-canvas-mount .pico-editor-heading small { display: none; }
 #active-canvas-mount .pico-circuit-actions,
 #active-canvas-mount .c3-circuit-actions,
-#active-canvas-mount .stm32-circuit-actions { display: flex; flex-wrap: nowrap; gap: 4px; height: 32px; margin: 0; padding: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+#active-canvas-mount .stm32-circuit-actions { display: flex; flex-wrap: nowrap; gap: 4px; width: 100%; max-width: 100%; min-width: 0; height: 32px; margin: 0; padding: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
 #active-canvas-mount .pico-circuit-actions::-webkit-scrollbar,
 #active-canvas-mount .c3-circuit-actions::-webkit-scrollbar,
 #active-canvas-mount .stm32-circuit-actions::-webkit-scrollbar { display: none; }

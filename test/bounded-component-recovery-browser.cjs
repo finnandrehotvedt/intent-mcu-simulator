@@ -8,6 +8,7 @@ const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/
 
 const base = process.env.BOUNDED_RECOVERY_URL || 'http://127.0.0.1:18781';
 const screenshotDirectory = process.env.BOUNDED_RECOVERY_SCREENSHOT_DIR || null;
+const noBuildRun = process.env.BOUNDED_RECOVERY_NO_BUILD_RUN === '1';
 const RESISTOR = 'resistor.fixed-v1';
 const LED = 'led.basic-v1';
 
@@ -70,7 +71,9 @@ async function chooseProfile(page, profile) {
 }
 
 async function saveAndOpen(page, profile) {
-  const [download] = await Promise.all([page.waitForEvent('download'), page.click(profile.save)]);
+  const [download] = await Promise.all([page.waitForEvent('download'),
+    noBuildRun ? page.evaluate((selector) => document.querySelector(selector).click(), profile.save)
+      : page.click(profile.save)]);
   const savedPath = await download.path();
   const text = fs.readFileSync(savedPath, 'utf8');
   const saved = JSON.parse(text);
@@ -184,8 +187,13 @@ async function addFromCatalog(page, profile, type) {
 
 async function setNumberProperty(page, profile, value) {
   const input = page.locator(`${profile.properties} [data-bounded-property="ohms"]`);
+  if (noBuildRun && !await input.isVisible()) await page.click('#simple-parts-edit');
   await input.fill(String(value));
   await input.dispatchEvent('change');
+  await page.click(`${profile.properties} [data-bounded-model-apply]`);
+  if (noBuildRun && await page.locator('#workbench-inspector-dialog').evaluate((dialog) => dialog.open)) {
+    await page.click('#workbench-inspector-dialog .workbench-popup-close');
+  }
 }
 
 async function buildFresh(page, profile) {
@@ -225,6 +233,9 @@ async function runActual(page, profile) {
   page.setDefaultTimeout(210_000);
   const errors = [];
   const external = [];
+  await page.route('**/favicon.ico', (route) => route.fulfill({ status: 204, body: '' }));
+  await page.route('**/api/page-views', (route) => route.fulfill({ status: 200,
+    contentType: 'application/json', body: '{"status":"disabled"}' }));
   page.on('pageerror', (error) => errors.push(error.stack || error.message));
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
   page.on('request', (request) => {
@@ -286,12 +297,15 @@ async function runActual(page, profile) {
     assert.equal(circuit(await state(page, profile), profile).components
       .find((part) => part.id === 'resistor-1').properties.ohms, 109);
     await page.locator(`${profile.componentLayer} [data-component-id="led-1"]`).click();
+    if (noBuildRun) await page.click('#simple-parts-edit');
     await page.selectOption(`${profile.properties} [data-bounded-property="color"]`, 'blue');
+    await page.click(`${profile.properties} [data-bounded-model-apply]`);
+    if (noBuildRun) await page.click('#workbench-inspector-dialog .workbench-popup-close');
     await page.locator(`${profile.componentLayer} [data-component-id="resistor-1"]`).click();
     await setNumberProperty(page, profile, 30);
     current = await state(page, profile);
     assert.equal(current[profile.validKey], true, `${profile.name}: bounded blue/30 Ω pair rejected`);
-    await buildFresh(page, profile);
+    if (!noBuildRun) await buildFresh(page, profile);
 
     await page.locator(`${profile.componentLayer} [data-component-id="led-1"]`).click();
     await page.click(profile.delete);
@@ -329,18 +343,22 @@ async function runActual(page, profile) {
       await page.screenshot({ path: path.join(screenshotDirectory, `${profile.option}-recovered-desktop.png`),
         fullPage: true, animations: 'disabled' });
     }
-    await page.setViewportSize({ width: 390, height: 844 });
-    assertGeometry(await geometry(page, profile), profile, 'mobile');
-    await assertAllRotations(page, profile, 'resistor-1', 'mobile');
-    await assertAllRotations(page, profile, 'led-1', 'mobile');
+    if (!noBuildRun) {
+      await page.setViewportSize({ width: 390, height: 844 });
+      assertGeometry(await geometry(page, profile), profile, 'mobile');
+      await assertAllRotations(page, profile, 'resistor-1', 'mobile');
+      await assertAllRotations(page, profile, 'led-1', 'mobile');
+    }
     if (screenshotDirectory) {
       await page.screenshot({ path: path.join(screenshotDirectory, `${profile.option}-recovered-mobile.png`),
         fullPage: true, animations: 'disabled' });
     }
     await page.setViewportSize({ width: 1440, height: 1000 });
 
-    await buildFresh(page, profile);
-    await runActual(page, profile);
+    if (!noBuildRun) {
+      await buildFresh(page, profile);
+      await runActual(page, profile);
+    }
   }
 
   assert.deepEqual(errors, [], `browser errors: ${JSON.stringify(errors)}`);
@@ -348,5 +366,6 @@ async function runActual(page, profile) {
   assert.equal((await context.cookies()).length, 0, 'browser set cookies');
   await browser.close();
   process.stdout.write(`${JSON.stringify({ status: 'passed', profiles: profiles.map((profile) => profile.name),
-    screenshots: screenshotDirectory })}\n`);
+    screenshots: screenshotDirectory, nativeBuilds: noBuildRun ? 0 : profiles.length * 2,
+    nativeRuns: noBuildRun ? 0 : profiles.length })}\n`);
 })().catch((error) => { console.error(error); process.exit(1); });

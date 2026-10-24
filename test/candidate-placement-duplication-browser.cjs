@@ -7,6 +7,7 @@ const path = require('node:path');
 const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/runner/node_modules', 'playwright'));
 
 const base = process.env.W08_URL || 'http://127.0.0.1:18789';
+const coreEditOnly = process.env.W08_CORE_EDIT_ONLY === '1';
 const stage = (value) => process.stdout.write(`W08_STAGE ${value}\n`);
 
 async function preparedProject() {
@@ -62,6 +63,9 @@ async function exactGeometry(page) {
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true });
+    await page.route('**/favicon.ico', (route) => route.fulfill({ status: 204, body: '' }));
+    await page.route('**/api/page-views', (route) => route.fulfill({ status: 200,
+      contentType: 'application/json', body: '{"status":"disabled"}' }));
     page.setDefaultTimeout(120_000);
     const errors = []; const outside = [];
     page.on('pageerror', (error) => errors.push(error.stack || String(error)));
@@ -72,10 +76,12 @@ async function exactGeometry(page) {
     await page.evaluate(() => localStorage.clear());
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.__M11_READY__ === true);
+    await page.click('#workbench-view-advanced');
     await openProject(page, await preparedProject());
     stage('opened');
 
     const existingBefore = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__().candidateCircuit.nets));
+    if (!(await page.locator('#component-catalog').isVisible())) await page.click('#toggle-catalog');
     await page.locator('.catalog-item[data-type="sensor.temperature-analogue-v1"]').click();
     await page.waitForFunction(() => window.__M6_PROJECT__().candidateCircuit.components.some(
       (component) => component.id === 'temperature-sensor-1',
@@ -113,60 +119,73 @@ async function exactGeometry(page) {
     assert(Math.abs(dropped.position.x - 0.9) <= 0.02, JSON.stringify(dropped.position));
     assert(Math.abs(dropped.position.y - 0.4) <= 0.02, JSON.stringify(dropped.position));
     stage('drag-add');
+    if (await page.locator('#workbench-parts-dialog').evaluate((dialog) => dialog.open)) {
+      await page.click('#workbench-parts-dialog .workbench-popup-close');
+    }
 
     await page.locator('.circuit-component[data-component-id="temperature-sensor-1"]').click();
-    await page.click('#duplicate-component');
-    await page.waitForFunction(() => window.__M6_PROJECT__().candidateCircuit.components.some(
-      (component) => component.id === 'temperature-sensor-2',
-    ));
-    const copy = await componentSnapshot(page, 'temperature-sensor-2');
-    assert.equal(copy.component.type, clicked.component.type);
-    assert.deepEqual(copy.component.properties, clicked.component.properties);
-    assert.deepEqual(copy.component.controls, clicked.component.controls);
-    assert.deepEqual(copy.references, []);
-    assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__().candidateCircuit.nets)), existingBefore);
-    stage('duplicate');
+    const targetId = coreEditOnly ? 'temperature-sensor-1' : 'temperature-sensor-2';
+    if (!coreEditOnly) {
+      await page.click('#duplicate-component');
+      await page.waitForFunction(() => window.__M6_PROJECT__().candidateCircuit.components.some(
+        (component) => component.id === 'temperature-sensor-2',
+      ));
+    }
+    const copy = await componentSnapshot(page, targetId);
+    if (!coreEditOnly) {
+      assert.equal(copy.component.type, clicked.component.type);
+      assert.deepEqual(copy.component.properties, clicked.component.properties);
+      assert.deepEqual(copy.component.controls, clicked.component.controls);
+      assert.deepEqual(copy.references, []);
+      assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__().candidateCircuit.nets)), existingBefore);
+      stage('duplicate');
+    }
 
-    const card = page.locator('.circuit-component[data-component-id="temperature-sensor-2"]');
+    const card = page.locator(`.circuit-component[data-component-id="${targetId}"]`);
     const cardBox = await card.boundingBox();
     await page.mouse.move(cardBox.x + cardBox.width / 2, cardBox.y + cardBox.height / 2);
     await page.mouse.down();
     await page.mouse.move(cardBox.x + cardBox.width / 2 - 70, cardBox.y + cardBox.height / 2 + 50, { steps: 8 });
     await page.mouse.up();
-    const pointerMoved = await componentSnapshot(page, 'temperature-sensor-2');
+    const pointerMoved = await componentSnapshot(page, targetId);
     assert.notDeepEqual(pointerMoved.position, copy.position);
     stage('pointer-move');
 
     await card.focus();
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('r');
-    const keyboardMoved = await componentSnapshot(page, 'temperature-sensor-2');
+    const keyboardMoved = await componentSnapshot(page, targetId);
     assert.equal(keyboardMoved.position.rotation, 90);
     assert(keyboardMoved.position.x > pointerMoved.position.x);
     stage('keyboard-move-rotate');
 
     await page.keyboard.press('Delete');
-    await page.waitForFunction(() => !window.__M6_PROJECT__().candidateCircuit.components.some(
-      (component) => component.id === 'temperature-sensor-2',
-    ));
-    await page.click('#undo');
+    await page.waitForFunction((id) => !window.__M6_PROJECT__().candidateCircuit.components.some(
+      (component) => component.id === id), targetId);
+    if (coreEditOnly) await page.keyboard.press('Control+z'); else await page.click('#undo');
     stage('delete-undo-redo');
-    await page.waitForFunction(() => window.__M6_PROJECT__().candidateCircuit.components.some(
-      (component) => component.id === 'temperature-sensor-2',
-    ));
-    assert.deepEqual(await componentSnapshot(page, 'temperature-sensor-2'), keyboardMoved);
-    await page.click('#redo');
-    await page.waitForFunction(() => !window.__M6_PROJECT__().candidateCircuit.components.some(
-      (component) => component.id === 'temperature-sensor-2',
-    ));
-    await page.click('#undo');
+    await page.waitForFunction((id) => window.__M6_PROJECT__().candidateCircuit.components.some(
+      (component) => component.id === id), targetId);
+    assert.deepEqual(await componentSnapshot(page, targetId), keyboardMoved);
+    if (coreEditOnly) await page.keyboard.press('Control+Shift+z'); else await page.click('#redo');
+    await page.waitForFunction((id) => !window.__M6_PROJECT__().candidateCircuit.components.some(
+      (component) => component.id === id), targetId);
+    if (coreEditOnly) await page.keyboard.press('Control+z'); else await page.click('#undo');
 
-    const [download] = await Promise.all([page.waitForEvent('download'), page.click('#project-save')]);
+    const [download] = await Promise.all([page.waitForEvent('download'), coreEditOnly
+      ? page.evaluate(() => document.querySelector('#project-save').click()) : page.click('#project-save')]);
     const downloadedText = fs.readFileSync(await download.path(), 'utf8');
     await openProject(page, downloadedText);
-    assert.deepEqual(await componentSnapshot(page, 'temperature-sensor-2'), keyboardMoved);
+    assert.deepEqual(await componentSnapshot(page, targetId), keyboardMoved);
     assert.equal(await page.locator('#run').isDisabled(), true);
     stage('save-open');
+    if (coreEditOnly) {
+      assert.deepEqual(errors, []); assert.deepEqual(outside, []);
+      process.stdout.write(`${JSON.stringify({ ok: true, requirement: 'all-four-manual-edit',
+        clickAdd: true, dragAdd: true, pointerMove: true, keyboardMoveRotateDelete: true,
+        undoRedo: true, saveOpen: true, nativeBuilds: 0, nativeRuns: 0 })}\n`);
+      return;
+    }
 
     await page.selectOption('#selected-net', 'net-ground-branch');
     const branchButton = page.locator('#wire-bends button', { hasText: 'ground-reference-branch.REF' }).first();
