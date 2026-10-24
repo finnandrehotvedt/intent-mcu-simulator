@@ -132,7 +132,7 @@ export function installBrowserSessionOwner() {
       <ol class="api-pairing-steps" aria-label="Pairing workflow">
         <li><strong>Copy Codex instructions</strong><span>The prompt explains the public protocol, local client and secret boundary.</span></li>
         <li><strong>Create a pairing</strong><span>Read-only by default. AVR editing needs the separate checkbox.</span></li>
-        <li><strong>Enter the secret locally</strong><span>Never paste it into chat, a URL, a file or source control.</span></li>
+        <li><strong>Open the pairing ticket</strong><span>Download one short-lived ticket for the local client. Never share or commit it.</span></li>
       </ol>
       <section class="api-codex-prompt" aria-labelledby="api-codex-prompt-title">
         <div class="api-codex-prompt-heading"><div><p class="eyebrow">API ACCESS</p><h3 id="api-codex-prompt-title">Give these instructions to Codex</h3></div><button type="button" data-copy-instructions>Copy instructions</button></div>
@@ -144,7 +144,7 @@ export function installBrowserSessionOwner() {
         <p>Disabled by default. Pair one temporary client to this tab only.</p>
         <label class="api-edit-scope"><input type="checkbox" data-edit-scope><span>Grant circuit editing for this pairing <small>AVR only</small></span></label>
         <p data-status role="status">API access is off.</p>
-        <div class="build-controls"><button type="button" data-enable>Enable and create pairing</button><button type="button" data-revoke disabled>Revoke</button></div>
+        <div class="build-controls"><button type="button" data-enable>Enable and create pairing</button><button type="button" data-download-ticket disabled>Download pairing ticket</button><button type="button" data-revoke disabled>Revoke</button></div>
         <label class="api-secret-field">One-time pairing secret<input data-secret readonly value=""></label>
         <p data-ttl>No active capability. Closing the tab fails closed after the bounded owner lease expires.</p>
       </section>
@@ -152,6 +152,7 @@ export function installBrowserSessionOwner() {
   document.body.append(dialog);
   const status = dialog.querySelector('[data-status]'); const secretField = dialog.querySelector('[data-secret]');
   const ttl = dialog.querySelector('[data-ttl]'); const enable = dialog.querySelector('[data-enable]'); const revoke = dialog.querySelector('[data-revoke]');
+  const downloadTicket = dialog.querySelector('[data-download-ticket]');
   const editScope = dialog.querySelector('[data-edit-scope]');
   const instructions = dialog.querySelector('[data-codex-instructions]');
   const copyStatus = dialog.querySelector('[data-copy-status]');
@@ -165,13 +166,20 @@ export function installBrowserSessionOwner() {
       copyStatus.textContent = 'Clipboard access was unavailable. The instructions are selected for manual copy.';
     }
   });
-  let owner = null; let sessionId = null; let timer = null; let boundProjectId = null; let loopToken = 0;
-  const stop = () => { if (timer) clearTimeout(timer); timer = null; loopToken += 1; owner = null; sessionId = null; boundProjectId = null; secretField.value = ''; revoke.disabled = true; enable.disabled = false; editScope.disabled = false; ttl.textContent = 'No active capability. Closing the tab fails closed after the bounded owner lease expires.'; };
+  let owner = null; let sessionId = null; let timer = null; let boundProjectId = null; let loopToken = 0; let ticket = null;
+  const stop = () => { if (timer) clearTimeout(timer); timer = null; loopToken += 1; owner = null; sessionId = null; boundProjectId = null; ticket = null; secretField.value = ''; downloadTicket.disabled = true; revoke.disabled = true; enable.disabled = false; editScope.disabled = false; ttl.textContent = 'No active capability. Closing the tab fails closed after the bounded owner lease expires.'; };
   const revokeCurrent = async () => {
     const oldOwner = owner; const oldSession = sessionId; stop();
     if (oldOwner && oldSession) await post('owner.revoke', { sessionId: oldSession }, oldOwner).catch(() => null);
   };
   button.addEventListener('click', () => dialog.showModal()); dialog.querySelector('[data-close]').addEventListener('click', () => dialog.close());
+  downloadTicket.addEventListener('click', () => {
+    if (!ticket || Date.now() >= ticket.expires_at) { status.textContent = 'Pairing ticket expired. Create a fresh pairing.'; return; }
+    const url = URL.createObjectURL(new Blob([`${JSON.stringify(ticket)}\n`], { type: 'application/json' }));
+    const link = document.createElement('a'); link.href = url; link.download = 'intent-mcu-pairing.intentpair'; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+    status.textContent = 'Pairing ticket downloaded. Open it only with the local Lab client.';
+  });
   enable.addEventListener('click', async () => {
     enable.disabled = true; await revokeCurrent(); enable.disabled = true;
     const setupToken = ++loopToken;
@@ -192,6 +200,9 @@ export function installBrowserSessionOwner() {
     if (setupToken !== loopToken || owner !== createdOwner || sessionId !== createdSessionId) return;
     if (!pairing.ok) { status.textContent = `Pairing rejected: ${pairing.code}`; await revokeCurrent(); return; }
     secretField.value = pairing.pairingSecret; revoke.disabled = false;
+    ticket = { schema: 'intent-mcu-browser-session-pairing-ticket@1', origin: location.origin,
+      pairing_secret: pairing.pairingSecret, expires_at: pairing.expiresAt, scopes };
+    downloadTicket.disabled = false;
     status.textContent = editScope.checked ? 'Pairing ready. AVR circuit editing granted.' : 'Pairing ready. Read-only scopes only.';
     ttl.textContent = `One-time secret expires ${new Date(pairing.expiresAt).toLocaleTimeString()}.`;
     const token = setupToken; const projectId = initial.projectId;
@@ -212,6 +223,7 @@ export function installBrowserSessionOwner() {
       if (!contextLive()) return;
       if (!lease.ok) { status.textContent = 'Owner lease ended. Pair again.'; stop(); return; }
       if (lease.clientPaired) {
+        ticket = null; downloadTicket.disabled = true;
         secretField.value = '';
         status.textContent = editScope.checked ? 'One AVR editing client is paired.' : 'One read-only client is paired.';
         ttl.textContent = `Client expires no later than ${new Date(lease.clientExpiresAt).toLocaleTimeString()}.`;

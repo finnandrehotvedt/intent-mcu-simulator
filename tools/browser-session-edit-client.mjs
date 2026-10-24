@@ -3,12 +3,34 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, unlink } from 'node:fs/promises';
 import { createInterface } from 'node:readline';
 import { stdin, stderr, stdout } from 'node:process';
 
-const [origin, planPath] = process.argv.slice(2);
-if (!origin || process.argv.length > 4) { stderr.write('Usage: node client.mjs ORIGIN [NONSECRET_PLAN.json]\n'); process.exit(2); }
+const args = process.argv.slice(2);
+const ticketMode = args[0] === '--ticket';
+let [origin, planPath] = ticketMode ? [null, args[2]] : args;
+const ticketPath = ticketMode ? args[1] : null;
+if ((!ticketMode && (!origin || args.length > 2)) || (ticketMode && (!ticketPath || args.length > 3))) {
+  stderr.write('Usage: node client.mjs ORIGIN [NONSECRET_PLAN.json]\n       node client.mjs --ticket PAIRING.intentpair [NONSECRET_PLAN.json]\n'); process.exit(2);
+}
+let pairingSecret = null;
+let ticketScopes = null;
+if (ticketMode) {
+  const bytes = await readFile(ticketPath);
+  await unlink(ticketPath);
+  if (bytes.length > 4096) throw new Error('API_PAIRING_TICKET_LIMIT');
+  const ticket = JSON.parse(bytes.toString('utf8'));
+  const keys = Object.keys(ticket ?? {}).sort().join('|');
+  if (keys !== 'expires_at|origin|pairing_secret|schema|scopes'
+      || ticket.schema !== 'intent-mcu-browser-session-pairing-ticket@1'
+      || typeof ticket.origin !== 'string' || typeof ticket.pairing_secret !== 'string'
+      || !Number.isSafeInteger(ticket.expires_at) || ticket.expires_at <= Date.now()
+      || !Array.isArray(ticket.scopes) || ticket.scopes.some((scope) => typeof scope !== 'string')) {
+    throw new Error('API_PAIRING_TICKET_SHAPE');
+  }
+  origin = ticket.origin; pairingSecret = ticket.pairing_secret; ticketScopes = ticket.scopes;
+}
 const endpoint = new URL('/api/session/v1', origin);
 let pipedLines = null;
 if (!stdin.isTTY) pipedLines = createInterface({ input: stdin, crlfDelay: Infinity, terminal: false })[Symbol.asyncIterator]();
@@ -41,7 +63,7 @@ async function ordinaryLine(prompt) {
   try { return (await new Promise((resolve) => terminal.question(prompt, resolve))).trim(); }
   finally { terminal.close(); }
 }
-const pairingSecret = await hiddenLine('Pairing secret (hidden): ');
+if (!pairingSecret) pairingSecret = await hiddenLine('Pairing secret (hidden): ');
 if (!pairingSecret || pairingSecret.length > 256) throw new Error('API_PAIRING_INPUT_REQUIRED');
 let plan = null;
 if (planPath) {
@@ -60,6 +82,7 @@ const post = async (operation, value = {}, capability = null) => {
   return response.json();
 };
 const scopes = ['discover', 'read_project', ...(plan ? ['edit_circuit'] : [])];
+if (ticketScopes && scopes.some((scope) => !ticketScopes.includes(scope))) throw new Error('API_PAIRING_TICKET_SCOPE');
 const claim = await post('pairing.claim', { pairingSecret, scopes });
 if (!claim.ok) throw new Error(claim.code);
 let sequence = 1; let revision = claim.revision;

@@ -13,13 +13,13 @@ test('copyable Codex instructions are public, self-contained and secret-safe', (
   assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes(API_SESSION_PROTOCOL_URL));
   assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes(API_SESSION_CLIENT_URL));
   for (const required of ['discover before editing', 'named pins', 'atomic edit.batch', 'Undo',
-    'AVR', 'read-only', 'Build', 'Run', 'hidden terminal prompt', 'Never ask me to paste']) {
+    'AVR', 'read-only', 'Build', 'Run', '.intentpair', 'Never ask me to paste']) {
     assert.ok(CODEX_PAIRING_INSTRUCTIONS.toLowerCase().includes(required.toLowerCase()), required);
   }
   assert.doesNotMatch(CODEX_PAIRING_INSTRUCTIONS, /Bearer [A-Za-z0-9_-]{20,}/);
-  assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node .\\client.mjs https://lab.teachthecompany.com/ plan.json'));
-  assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node ./client.mjs https://lab.teachthecompany.com/ plan.json'));
-  assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node .\\client.mjs https://lab.teachthecompany.com/ .'));
+  assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node .\\client.mjs --ticket .\\intent-mcu-pairing.intentpair plan.json'));
+  assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node ./client.mjs --ticket ./intent-mcu-pairing.intentpair plan.json'));
+  assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node .\\client.mjs --ticket .\\intent-mcu-pairing.intentpair\n'));
   assert.match(CODEX_PAIRING_INSTRUCTIONS, /read-only client consumes its one-use pairing/);
   assert.doesNotMatch(CODEX_PAIRING_INSTRUCTIONS, /printf|PAIRING_SECRET=/);
   assert.match(CODEX_PAIRING_INSTRUCTIONS, /Never auto-undo/);
@@ -34,6 +34,8 @@ test('build exposes versioned protocol, complete client and exact metaprompt', a
   assert.match(protocol, /intent-mcu-browser-session-request@1/);
   assert.match(protocol, /API_STALE_REVISION/);
   assert.match(client, /pairing\.claim/);
+  assert.match(client, /intent-mcu-browser-session-pairing-ticket@1/);
+  assert.match(client, /await unlink\(ticketPath\)/);
   assert.match(client, /edit\.batch/);
   assert.match(client, /API_PLAN_REMOVAL_NOT_ALLOWED/);
   assert.doesNotMatch(client, /component\.remove.*before\.components/s);

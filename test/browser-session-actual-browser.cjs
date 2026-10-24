@@ -17,8 +17,8 @@ const profiles = [
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png',
   '.json': 'application/json; charset=utf-8', '.txt': 'text/plain; charset=utf-8' };
-const runCli = (origin, pairingSecret) => new Promise((resolve, reject) => {
-  const child = spawn(process.execPath, ['dist/api/session/v1/client.mjs', origin],
+const runCli = (ticketPath) => new Promise((resolve, reject) => {
+  const child = spawn(process.execPath, ['dist/api/session/v1/client.mjs', '--ticket', ticketPath],
     { stdio: ['pipe', 'pipe', 'pipe'] });
   let stdout = ''; let stderr = '';
   child.stdout.on('data', (value) => { stdout += value; });
@@ -26,7 +26,7 @@ const runCli = (origin, pairingSecret) => new Promise((resolve, reject) => {
   child.on('error', reject);
   child.on('close', (code) => code === 0 ? resolve(JSON.parse(stdout))
     : reject(new Error(`${stderr}\nexit ${code}`)));
-  child.stdin.end(`${pairingSecret}\n`);
+  child.stdin.end();
 });
 const post = async (origin, operation, value = {}, capability = null) => {
   const response = await fetch(`${origin}/api/session/v1`, { method: 'POST',
@@ -59,7 +59,7 @@ const post = async (origin, operation, value = {}, capability = null) => {
   const browserErrors = [];
   const project = (page) => page.evaluate(() => window.__M6_PROJECT__());
   const open = async (profile) => {
-    const context = await browser.newContext({ serviceWorkers: 'block' }); const page = await context.newPage();
+    const context = await browser.newContext({ serviceWorkers: 'block', acceptDownloads: true }); const page = await context.newPage();
     page.on('pageerror', (error) => browserErrors.push(error.message));
     await page.goto(origin, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.__M11_READY__ === true);
@@ -72,7 +72,10 @@ const post = async (origin, operation, value = {}, capability = null) => {
     await page.locator('#browser-session-api-dialog [data-enable]').click();
     await page.waitForFunction(() => document.querySelector('#browser-session-api-dialog [data-secret]').value.length > 20);
     const pairingSecret = await page.locator('#browser-session-api-dialog [data-secret]').inputValue();
-    return { context, page, pairingSecret };
+    const downloadEvent = page.waitForEvent('download');
+    await page.locator('#browser-session-api-dialog [data-download-ticket]').click();
+    const ticketPath = await (await downloadEvent).path();
+    return { context, page, pairingSecret, ticketPath };
   };
   try {
     const observed = [];
@@ -97,7 +100,7 @@ const post = async (origin, operation, value = {}, capability = null) => {
         ? window.__M6_PROJECT__() : selected === 'board.rp2040-pico-v1' ? window.__RP2040_PUBLIC_WORKBENCH__.state()
           : selected === 'board.esp32-c3-devmodule-v1' ? window.__ESP32C3_PUBLIC_WORKBENCH__.state()
             : window.__STM32_PUBLIC_WORKBENCH__.state()), profile);
-      const output = await runCli(origin, active.pairingSecret); const pins = output.discovery.pins[component.id];
+      const output = await runCli(active.ticketPath); const pins = output.discovery.pins[component.id];
       assert.equal(output.mode, 'read-only'); assert.deepEqual(pins.map((pin) => pin.id), ['ANODE', 'CATHODE']);
       assert(pins.every((pin) => Array.isArray(pin.capabilities) && pin.constraints));
       const afterRead = await active.page.evaluate((selected) => JSON.stringify(selected === 'board.atmega328p-16mhz-v1'
