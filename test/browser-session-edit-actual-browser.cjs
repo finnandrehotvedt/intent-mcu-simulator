@@ -4,7 +4,7 @@
 const assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
 const { createReadStream } = require('node:fs');
-const { stat } = require('node:fs/promises');
+const { copyFile, stat } = require('node:fs/promises');
 const { createServer } = require('node:http');
 const path = require('node:path');
 const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES
@@ -113,6 +113,9 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
     const downloadReady = page.waitForEvent('download');
     await page.evaluate(() => document.querySelector('#project-save').click());
     const download = await downloadReady; const savedPath = await download.path();
+    if (process.env.API03_PORTABLE_PROJECT) {
+      await copyFile(savedPath, process.env.API03_PORTABLE_PROJECT);
+    }
     if (process.env.API03_SCREENSHOT) await page.screenshot({ path: process.env.API03_SCREENSHOT, fullPage: false });
     const output = await editing;
     assert.equal(output.status, 'pass'); assert.equal(output.undo, 'API_TRANSACTION_UNDONE');
