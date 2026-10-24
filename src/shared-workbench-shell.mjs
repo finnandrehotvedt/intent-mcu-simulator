@@ -1812,7 +1812,8 @@ export function mountSharedWorkbenchShell(document) {
     throw new Error('SHARED_WORKBENCH_VIEW_SWITCH_MISSING');
   }
   const advancedOnlySelector = [
-    '#brief-tests-open', '#build-list-export', '#accessible-svg-export',
+    '#brief-tests-open', '#x81-assessment-open', '#presentation-open', '#canvas-annotations-open',
+    '#build-list-export', '#accessible-svg-export',
     '#build-list-status', '#accessible-svg-status', '#local-history',
     '#project-navigation', '#project-brief', '#prompt-drawer',
     '#thermostat-experiment', '#regression-matrix',

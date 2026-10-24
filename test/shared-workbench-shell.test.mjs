@@ -86,6 +86,9 @@ test('X59 keeps finite presentation-only view state inside the X48-owned shared 
   assert.match(shell, /activePopup === 'brief'/);
   assert.doesNotMatch(shell, /localStorage|sessionStorage|indexedDB/u);
   assert.match(css, /body\[data-workbench-view="simple"\][^}]+#regression-matrix/s);
+  assert.match(css, /body\[data-workbench-view="simple"\][^}]+#x81-assessment-open/s);
+  assert.match(css, /body\[data-workbench-view="simple"\][^}]+#presentation-open/s);
+  assert.match(css, /body\[data-workbench-view="simple"\][^}]+#canvas-annotations-open/s);
   assert.doesNotMatch(css, /data-workbench-view="simple"[^}]+#firmware-open/s);
   assert.match(modelGenerator, /shared-workbench-shell\.mjs/u);
 });

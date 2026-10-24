@@ -42,7 +42,8 @@ async function assertCoreVisible(page) {
     '#instruments-open', '#help-limits-open', '#quick-build', '#quick-run', '#top-stage-state', '#top-stage-detail']) {
     assert.equal(await page.locator(selector).isVisible(), true, `${selector} hidden in Simple view`);
   }
-  for (const selector of ['#brief-tests-open', '#build-list-export', '#accessible-svg-export', '#regression-matrix']) {
+  for (const selector of ['#brief-tests-open', '#x81-assessment-open', '#presentation-open',
+    '#canvas-annotations-open', '#build-list-export', '#accessible-svg-export', '#regression-matrix']) {
     assert.equal(await page.locator(selector).isVisible(), false, `${selector} visible in Simple view`);
   }
 }
