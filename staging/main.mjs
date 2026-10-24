@@ -702,6 +702,7 @@ const DRAFT_LEASE_PREFIX = 'intent-mcu.draft-lease.v1.';
 const DRAFT_REGISTRY_LIMIT = 12;
 const DRAFT_LEASE_MAX_AGE_MS = 15_000;
 const pageInstanceId = crypto.randomUUID();
+const corruptControllerDraftProfiles = new Set();
 let activeDraftId = null;
 try {
   activeDraftId = sessionStorage.getItem(TAB_DRAFT_ID_KEY);
@@ -718,7 +719,19 @@ try {
 const activeProjectStorageKey = activeDraftId ? `${PROJECT_STORAGE_KEY}.tab.${activeDraftId}` : PROJECT_STORAGE_KEY;
 const activeProjectRecoveryKey = activeDraftId ? `${PROJECT_RECOVERY_KEY}.tab.${activeDraftId}` : PROJECT_RECOVERY_KEY;
 const profileDraftStorageKey = (profile) => `intent-mcu.profile-draft.v1.${profile}.tab.${activeDraftId ?? 'fallback'}`;
+function reportControllerDraftFailure(profile, message) {
+  profileMessage(profile, message);
+  if (elements?.projectmessage) elements.projectmessage.textContent = message;
+  setTimeout(() => {
+    profileMessage(profile, message);
+    if (elements?.projectmessage) elements.projectmessage.textContent = message;
+  }, 0);
+}
 function persistControllerDraft(profile, workbench) {
+  if (corruptControllerDraftProfiles.has(profile)) {
+    reportControllerDraftFailure(profile, 'Browser draft was not replaced because its saved bytes are invalid. The original bytes remain untouched; use Download copy before leaving.');
+    return false;
+  }
   try {
     const inputs = {
       [RP2040_PROFILE]: [elements?.picosource, elements?.picoprojectname],
@@ -728,7 +741,12 @@ function persistControllerDraft(profile, workbench) {
     if (inputs?.[0]) workbench.project.source = inputs[0].value;
     if (inputs?.[1]?.value.trim()) workbench.project.name = inputs[1].value.trim();
     let prior = null;
-    try { prior = JSON.parse(localStorage.getItem(profileDraftStorageKey(profile)) ?? 'null'); } catch { /* replace corrupt draft */ }
+    try { prior = JSON.parse(localStorage.getItem(profileDraftStorageKey(profile)) ?? 'null'); }
+    catch {
+      corruptControllerDraftProfiles.add(profile);
+      reportControllerDraftFailure(profile, 'Browser draft was not replaced because its saved bytes are invalid. The original bytes remain untouched; use Download copy before leaving.');
+      return false;
+    }
     let validatedProject = prior?.schema === 'intent-mcu-profile-draft@1' ? prior.project : prior;
     try { validatedProject = workbench.projectDocument(); } catch { /* keep last validated install basis */ }
     if (!validatedProject) return false;
@@ -740,13 +758,19 @@ function persistControllerDraft(profile, workbench) {
       circuit,
     }));
     return true;
-  } catch { return false; }
+  } catch (error) {
+    reportControllerDraftFailure(profile, `Browser draft could not be saved (${error.name || error.message}). The in-memory project remains usable; use Download copy before leaving.`);
+    return false;
+  }
 }
 function readControllerDraft(profile) {
   try {
     const source = localStorage.getItem(profileDraftStorageKey(profile));
     return source ? JSON.parse(source) : null;
-  } catch { return null; }
+  } catch {
+    corruptControllerDraftProfiles.add(profile);
+    return null;
+  }
 }
 function restoreControllerDraft(profile, workbench, retained = readControllerDraft(profile)) {
   try {
