@@ -17,8 +17,8 @@ const profiles = [
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png',
   '.json': 'application/json; charset=utf-8', '.txt': 'text/plain; charset=utf-8' };
-const runCli = (origin, componentId, pairingSecret) => new Promise((resolve, reject) => {
-  const child = spawn(process.execPath, ['tools/browser-session-readonly-client.mjs', origin, componentId],
+const runCli = (origin, pairingSecret) => new Promise((resolve, reject) => {
+  const child = spawn(process.execPath, ['dist/api/session/v1/client.mjs', origin],
     { stdio: ['pipe', 'pipe', 'pipe'] });
   let stdout = ''; let stderr = '';
   child.stdout.on('data', (value) => { stdout += value; });
@@ -93,10 +93,18 @@ const post = async (origin, operation, value = {}, capability = null) => {
         return circuit.components.find((item) => item.type === 'led.basic-v1');
       }, profile);
       assert(component?.id, `${profile}: placed LED missing`);
-      const output = await runCli(origin, component.id, active.pairingSecret);
-      assert.deepEqual(output.pins.map((pin) => pin.id), ['ANODE', 'CATHODE']);
-      assert(output.pins.every((pin) => Array.isArray(pin.capabilities) && pin.constraints));
-      observed.push({ profile, componentId: component.id, pins: output.pins });
+      const beforeRead = await active.page.evaluate((selected) => JSON.stringify(selected === 'board.atmega328p-16mhz-v1'
+        ? window.__M6_PROJECT__() : selected === 'board.rp2040-pico-v1' ? window.__RP2040_PUBLIC_WORKBENCH__.state()
+          : selected === 'board.esp32-c3-devmodule-v1' ? window.__ESP32C3_PUBLIC_WORKBENCH__.state()
+            : window.__STM32_PUBLIC_WORKBENCH__.state()), profile);
+      const output = await runCli(origin, active.pairingSecret); const pins = output.discovery.pins[component.id];
+      assert.equal(output.mode, 'read-only'); assert.deepEqual(pins.map((pin) => pin.id), ['ANODE', 'CATHODE']);
+      assert(pins.every((pin) => Array.isArray(pin.capabilities) && pin.constraints));
+      const afterRead = await active.page.evaluate((selected) => JSON.stringify(selected === 'board.atmega328p-16mhz-v1'
+        ? window.__M6_PROJECT__() : selected === 'board.rp2040-pico-v1' ? window.__RP2040_PUBLIC_WORKBENCH__.state()
+          : selected === 'board.esp32-c3-devmodule-v1' ? window.__ESP32C3_PUBLIC_WORKBENCH__.state()
+            : window.__STM32_PUBLIC_WORKBENCH__.state()), profile);
+      assert.equal(afterRead, beforeRead); observed.push({ profile, componentId: component.id, pins });
       if (observed.length === 1 && process.env.API02_SCREENSHOT) {
         await active.page.waitForFunction(() => document.querySelector(
           '#browser-session-api-dialog [data-secret]').value === '');

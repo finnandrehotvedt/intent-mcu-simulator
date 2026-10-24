@@ -3,7 +3,7 @@
 
 import { build } from 'esbuild';
 import { createHash } from 'node:crypto';
-import { chmod, cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { chmod, cp, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import {
   canonicalReleaseChangesText,
   parseReleaseChangeRegistryText,
@@ -15,6 +15,7 @@ import {
   offlineSupportMatrixHtml,
 } from '../src/offline-support-matrix.mjs';
 import { RELEASE_VERSION } from '../src/release-metadata.mjs';
+import { CODEX_PAIRING_INSTRUCTIONS } from '../src/browser-session-codex-instructions.mjs';
 
 const dist = new URL('../dist/', import.meta.url);
 const [releaseChangesSource, releaseChangeRegistrySource, releaseChangesModuleSource] = await Promise.all([
@@ -37,6 +38,7 @@ if (supportSource.split(supportToken).length !== 2) throw new Error('OFFLINE_SUP
 const supportHtml = supportSource.replace(supportToken, offlineSupportMatrixHtml(OFFLINE_SUPPORT_MATRIX));
 await mkdir(dist, { recursive: true });
 for (const entry of await readdir(dist)) await rm(new URL(entry, dist), { recursive: true, force: true });
+await mkdir(new URL('api/session/v1/', dist), { recursive: true });
 await Promise.all([
   cp(new URL('../staging/index.html', import.meta.url), new URL('index.html', dist)),
   cp(new URL('../staging/styles.css', import.meta.url), new URL('styles.css', dist)),
@@ -50,6 +52,9 @@ await Promise.all([
   cp(new URL('../staging/examples.html', import.meta.url), new URL('examples.html', dist)),
   writeFile(new URL('support.html', dist), supportHtml),
   cp(new URL('../staging/physical-checklist.html', import.meta.url), new URL('physical-checklist.html', dist)),
+  cp(new URL('../docs/API-SESSION-V1-PUBLIC.txt', import.meta.url), new URL('api/session/v1/protocol.txt', dist)),
+  cp(new URL('../tools/browser-session-edit-client.mjs', import.meta.url), new URL('api/session/v1/client.mjs', dist)),
+  writeFile(new URL('api/session/v1/codex-instructions.txt', dist), `${CODEX_PAIRING_INSTRUCTIONS}\n`),
   writeFile(new URL('release-changes.json', dist), releaseChangesText),
   writeFile(new URL('offline-support-matrix.json', dist), offlineSupportMatrixText),
   build({ entryPoints: [new URL('../staging/main.mjs', import.meta.url).pathname], outfile: new URL('main.js', dist).pathname, bundle: true, format: 'esm', platform: 'browser', minifyWhitespace: true, legalComments: 'eof' }),
@@ -58,4 +63,7 @@ await Promise.all([
   build({ entryPoints: [new URL('../src/simulator.worker.mjs', import.meta.url).pathname], outfile: new URL('simulator.worker.js', dist).pathname, bundle: true, format: 'esm', platform: 'browser', minifyWhitespace: true, legalComments: 'eof' }),
   build({ entryPoints: [new URL('../src/x49-private.worker.mjs', import.meta.url).pathname], outfile: new URL('x49-offset.worker.js', dist).pathname, bundle: true, format: 'esm', platform: 'browser', minifyWhitespace: true, legalComments: 'eof' }),
 ]);
-await Promise.all((await readdir(dist)).map((entry) => chmod(new URL(entry, dist), 0o644)));
+await Promise.all((await readdir(dist, { recursive: true })).map(async (entry) => {
+  const target = new URL(entry, dist);
+  if ((await stat(target)).isFile()) await chmod(target, 0o644);
+}));

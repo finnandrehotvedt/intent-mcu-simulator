@@ -29,18 +29,22 @@ const resultFor = async (origin, claim, requestId) => {
   }
   throw new Error('API_RESULT_TIMEOUT');
 };
-const runEditor = (origin, secret) => new Promise((resolve, reject) => {
-  const child = spawn(process.execPath, ['tools/browser-session-edit-client.mjs', origin], {
-    stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, API03_PAUSE_BEFORE_UNDO_MS: '5000' },
+const runEditor = (origin, secret) => {
+  const child = spawn(process.execPath, ['dist/api/session/v1/client.mjs', origin,
+    'test/fixtures/api-client-add-led-plan.json'], {
+    stdio: ['pipe', 'pipe', 'pipe'], env: process.env,
   });
   let stdout = ''; let stderr = '';
   child.stdout.on('data', (value) => { stdout += value; });
   child.stderr.on('data', (value) => { stderr += value; });
-  child.on('error', reject);
-  child.on('close', (code) => code === 0 ? resolve(JSON.parse(stdout))
-    : reject(new Error(`${stderr}\nexit ${code}`)));
-  child.stdin.end(`${secret}\n`);
-});
+  const done = new Promise((resolve, reject) => {
+    child.on('error', reject);
+    child.on('close', (code) => code === 0 ? resolve(stdout.trim().split('\n').map(JSON.parse))
+      : reject(new Error(`${stderr}\nexit ${code}`)));
+  });
+  child.stdin.write(`${secret}\n`);
+  return { done, undo: () => child.stdin.end('UNDO\n') };
+};
 
 (async () => {
   const { createBrowserSessionRelay } = await import('../src/browser-session-relay.mjs');
@@ -105,7 +109,7 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
       buildStatus: window.__M6_PROJECT__().build.status,
       artifactIdentity: window.__M6_STATE__.artifactIdentity,
     }));
-    assert.deepEqual(visible.components, ['api-board-1', 'api-led-1', 'api-resistor-1']);
+    assert.deepEqual(visible.components, ['api-led-1', 'api-resistor-1']);
     assert.deepEqual(visible.wires, ['api-net-drive', 'api-net-ground', 'api-net-series']);
     assert.equal(visible.buildStatus, 'dirty'); assert.equal(visible.artifactIdentity, null);
     const assembledExact = await page.evaluate(() => structuredClone(window.__M6_PROJECT__()));
@@ -117,12 +121,14 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
       await copyFile(savedPath, process.env.API03_PORTABLE_PROJECT);
     }
     if (process.env.API03_SCREENSHOT) await page.screenshot({ path: process.env.API03_SCREENSHOT, fullPage: false });
-    const output = await editing;
-    assert.equal(output.status, 'pass'); assert.equal(output.undo, 'API_TRANSACTION_UNDONE');
-    assert.match(output.transaction_id, /^api-tx:session-/u);
-    assert.deepEqual(output.changes.map((change) => change.component_id ?? change.net_id).sort(),
-      ['api-board-1', 'api-led-1', 'api-net-drive', 'api-net-ground', 'api-net-series', 'api-resistor-1',
-        'board-1', 'led-1', 'resistor-1'].sort());
+    editing.undo(); const output = await editing.done;
+    assert.equal(output[0].mode, 'edited'); assert.equal(output[1].undo, 'API_TRANSACTION_UNDONE');
+    assert.match(output[0].transaction_id, /^api-tx:session-/u);
+    assert.deepEqual(output[0].changes.map((change) => change.component_id ?? change.net_id).sort(),
+      ['api-led-1', 'api-net-drive', 'api-net-ground', 'api-net-series', 'api-resistor-1'].sort());
+    assert.ok(output[0].discovery.components.length > 0);
+    assert.deepEqual(output[0].discovery.components.map((item) => item.id).sort(),
+      output[0].project.circuit.components.filter((item) => !item.id.startsWith('api-')).map((item) => item.id).sort());
     assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), before);
     assert.equal(await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations), workersBefore);
     assert.deepEqual(buildRequests, []); assert.deepEqual(browserErrors, []);
@@ -180,7 +186,7 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
     const invalidRequest = { schema: 'intent-mcu-browser-session-request@1', request_id: invalidId,
       session_id: claim.sessionId, project_id: claim.projectId, expected_revision: storageResult.revision_after,
       sequence: 2, command: 'edit.batch', arguments: {
-        commands: [{ command: 'component.remove', component_id: 'api-board-1' }] } };
+        commands: [{ command: 'component.remove', component_id: 'board-1' }] } };
     assert.equal((await post(origin, 'request.submit', { sessionId: claim.sessionId,
       request: invalidRequest }, claim.clientCapability)).code, 'API_REQUEST_QUEUED');
     assert.equal((await resultFor(origin, claim, invalidId)).status, 'rejected');

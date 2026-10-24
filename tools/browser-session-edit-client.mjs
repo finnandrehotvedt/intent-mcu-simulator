@@ -3,23 +3,64 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import { randomUUID } from 'node:crypto';
-import { stdin } from 'node:process';
+import { readFile } from 'node:fs/promises';
+import { createInterface } from 'node:readline';
+import { stdin, stderr, stdout } from 'node:process';
 
-const [origin] = process.argv.slice(2);
-if (!origin) { console.error('Usage: printf pairing-secret | browser-session-edit-client.mjs ORIGIN'); process.exit(2); }
-let secretText = ''; stdin.setEncoding('utf8');
-for await (const chunk of stdin) { secretText += chunk; if (secretText.length > 256) throw new Error('API_PAIRING_INPUT_LIMIT'); }
-const pairingSecret = secretText.trim(); secretText = '';
-if (!pairingSecret) throw new Error('API_PAIRING_INPUT_REQUIRED');
+const [origin, planPath] = process.argv.slice(2);
+if (!origin || process.argv.length > 4) { stderr.write('Usage: node client.mjs ORIGIN [NONSECRET_PLAN.json]\n'); process.exit(2); }
 const endpoint = new URL('/api/session/v1', origin);
+let pipedLines = null;
+if (!stdin.isTTY) pipedLines = createInterface({ input: stdin, crlfDelay: Infinity, terminal: false })[Symbol.asyncIterator]();
+async function hiddenLine(prompt) {
+  if (!stdin.isTTY) return String((await pipedLines.next()).value ?? '').trim();
+  stdin.setRawMode(true); stdin.resume();
+  return new Promise((resolve, reject) => {
+    let value = '';
+    const cleanup = () => { stdin.off('data', onData); process.off('SIGINT', onSigint);
+      stdin.setRawMode(false); stdin.pause(); stderr.write('\n'); };
+    const cancel = () => { cleanup(); reject(new Error('API_INPUT_CANCELLED')); };
+    const onSigint = () => cancel();
+    const finish = () => { cleanup(); resolve(value); };
+    const onData = (chunk) => {
+      for (const character of chunk.toString('utf8')) {
+        if (character === '\u0003') { cancel(); return; }
+        if (character === '\r' || character === '\n') { finish(); return; }
+        if (character === '\u007f' || character === '\b') { value = value.slice(0, -1); continue; }
+        if (value.length < 256) value += character;
+      }
+    };
+    process.once('SIGINT', onSigint);
+    stdin.on('data', onData);
+    stderr.write(prompt);
+  });
+}
+async function ordinaryLine(prompt) {
+  if (!stdin.isTTY) return String((await pipedLines.next()).value ?? '').trim();
+  const terminal = createInterface({ input: stdin, output: stderr, terminal: true });
+  try { return (await new Promise((resolve) => terminal.question(prompt, resolve))).trim(); }
+  finally { terminal.close(); }
+}
+const pairingSecret = await hiddenLine('Pairing secret (hidden): ');
+if (!pairingSecret || pairingSecret.length > 256) throw new Error('API_PAIRING_INPUT_REQUIRED');
+let plan = null;
+if (planPath) {
+  const bytes = await readFile(planPath);
+  if (bytes.length > 48 * 1024) throw new Error('API_PLAN_LIMIT');
+  plan = JSON.parse(bytes.toString('utf8'));
+  if (!plan || plan.schema !== 'intent-mcu-browser-session-plan@1' || !Array.isArray(plan.commands)
+      || plan.commands.length === 0 || plan.commands.length > 16
+      || Object.keys(plan).some((key) => !['schema', 'commands', 'allow_component_removal'].includes(key))) throw new Error('API_PLAN_SHAPE');
+  if (plan.commands.some((command) => command?.command === 'component.remove')
+      && plan.allow_component_removal !== true) throw new Error('API_PLAN_REMOVAL_NOT_ALLOWED');
+}
 const post = async (operation, value = {}, capability = null) => {
   const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json',
-    ...(capability ? { Authorization: `Bearer ${capability}` } : {}) },
-  body: JSON.stringify({ operation, ...value }) });
+    ...(capability ? { Authorization: `Bearer ${capability}` } : {}) }, body: JSON.stringify({ operation, ...value }) });
   return response.json();
 };
-const claim = await post('pairing.claim', { pairingSecret,
-  scopes: ['discover', 'read_project', 'edit_circuit'] });
+const scopes = ['discover', 'read_project', ...(plan ? ['edit_circuit'] : [])];
+const claim = await post('pairing.claim', { pairingSecret, scopes });
 if (!claim.ok) throw new Error(claim.code);
 let sequence = 1; let revision = claim.revision;
 async function execute(command, args = {}) {
@@ -31,45 +72,43 @@ async function execute(command, args = {}) {
   if (!queued.ok) throw new Error(queued.code);
   for (let attempt = 0; attempt < 120; attempt += 1) {
     const result = await post('result.read', { sessionId: claim.sessionId, requestId }, claim.clientCapability);
-    if (result.code !== 'API_RESULT_PENDING') {
-      if (Number.isInteger(result.revision_after)) revision = result.revision_after;
-      return result;
-    }
+    if (result.code !== 'API_RESULT_PENDING') { if (Number.isInteger(result.revision_after)) revision = result.revision_after; return result; }
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   throw new Error('API_TIMEOUT');
 }
-const before = await execute('components.list');
-if (before.status !== 'accepted') throw new Error(before.code);
-const operations = [
-  ...before.components.map((component) => ({ command: 'component.remove', component_id: component.id })),
-  { command: 'component.add', id: 'api-board-1', type: 'board.atmega328p-16mhz-v1',
-    position: { x: 0.18, y: 0.42, rotation: 0 } },
-  { command: 'component.add', id: 'api-resistor-1', type: 'resistor.fixed-v1',
-    position: { x: 0.5, y: 0.28, rotation: 0 } },
-  { command: 'component.add', id: 'api-led-1', type: 'led.basic-v1',
-    position: { x: 0.78, y: 0.4, rotation: 0 } },
-  { command: 'wire.connect', net_id: 'api-net-drive',
-    from: { component: 'api-board-1', pin: 'D13' }, to: { component: 'api-resistor-1', pin: 'A' } },
-  { command: 'wire.connect', net_id: 'api-net-series',
-    from: { component: 'api-resistor-1', pin: 'B' }, to: { component: 'api-led-1', pin: 'ANODE' } },
-  { command: 'wire.connect', net_id: 'api-net-ground',
-    from: { component: 'api-led-1', pin: 'CATHODE' }, to: { component: 'api-board-1', pin: 'GND1' } },
-];
-if (operations.length > 16) throw new Error('API_BATCH_LIMIT');
-const applied = await execute('edit.batch', { commands: operations });
-if (applied.status !== 'accepted') throw new Error(applied.code);
-const transactionId = applied.transaction_id;
-const components = await execute('components.list'); const nets = await execute('nets.list');
-const pins = await execute('component.pins', { component_id: 'api-led-1' });
-const holdMs = Number(process.env.API03_PAUSE_BEFORE_UNDO_MS ?? 0);
-if (Number.isInteger(holdMs) && holdMs > 0 && holdMs <= 10_000) {
-  await new Promise((resolve) => setTimeout(resolve, holdMs));
+const accepted = async (command, args = {}) => {
+  const result = await execute(command, args); if (result.status !== 'accepted') throw new Error(result.code); return result;
+};
+const capabilities = await accepted('capabilities.list');
+const project = await accepted('project.inspect');
+const catalog = await accepted('components.catalog');
+const components = await accepted('components.list');
+const nets = await accepted('nets.list');
+const componentPins = {};
+for (const component of components.components) componentPins[component.id] = (await accepted('component.pins', { component_id: component.id })).pins;
+const validation = await accepted('circuit.validate');
+const discovery = { profile: catalog.profile, project_id: claim.projectId, revision,
+  commands: capabilities.commands, components: components.components, nets: nets.nets,
+  pins: componentPins, validation: validation.validation };
+if (!plan) { stdout.write(`${JSON.stringify({ status: 'pass', mode: 'read-only', discovery })}\n`); process.exit(0); }
+if (catalog.profile !== 'board.atmega328p-16mhz-v1') throw new Error('API_PROFILE_READ_ONLY');
+const typeById = new Map(components.components.map((item) => [item.id, item.type]));
+for (const command of plan.commands) if (command?.command === 'component.add') typeById.set(command.id, command.type);
+for (const command of plan.commands) {
+  if (command?.command !== 'wire.connect') continue;
+  for (const endpointValue of [command.from, command.to]) {
+    const type = typeById.get(endpointValue?.component); const pins = catalog.components[type]?.pins;
+    if (!type || !pins?.some((pin) => pin.id === endpointValue?.pin)) throw new Error('API_PLAN_NAMED_PIN_UNKNOWN');
+  }
 }
-const undone = await execute('edit.undo', { transaction_id: transactionId });
-if (undone.status !== 'accepted') throw new Error(undone.code);
-const restored = await execute('project.inspect');
-process.stdout.write(`${JSON.stringify({ status: 'pass', transaction_id: transactionId, changes: applied.changes,
-  assembled: { components: components.components.map((item) => item.id),
-    nets: nets.nets.map((item) => item.id), pins: pins.pins },
-  undo: undone.code, restored_component_count: restored.project.circuit.components.length })}\n`);
+const applied = await accepted('edit.batch', { commands: plan.commands });
+const after = await accepted('project.inspect'); const afterNets = await accepted('nets.list');
+stdout.write(`${JSON.stringify({ status: 'pass', mode: 'edited', discovery, transaction_id: applied.transaction_id,
+  changes: applied.changes, revision_after: revision, project: after.project, nets: afterNets.nets })}\n`);
+stderr.write('Edit committed. Type UNDO to undo only this transaction, or press Enter to keep it.\n');
+if (await ordinaryLine('Action: ') !== 'UNDO') process.exit(0);
+const undone = await accepted('edit.undo', { transaction_id: applied.transaction_id });
+const restored = await accepted('project.inspect');
+stdout.write(`${JSON.stringify({ status: 'pass', mode: 'undone', transaction_id: applied.transaction_id,
+  undo: undone.code, revision_after: revision, project: restored.project })}\n`);

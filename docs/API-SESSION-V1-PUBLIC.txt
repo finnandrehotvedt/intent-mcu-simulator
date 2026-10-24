@@ -1,0 +1,131 @@
+Intent MCU Simulator browser-session API protocol
+Version: intent-mcu-browser-session-request@1
+Public Lab: https://lab.teachthecompany.com/
+Endpoint: POST https://lab.teachthecompany.com/api/session/v1
+Reference client: https://lab.teachthecompany.com/api/session/v1/client.mjs
+
+The API is off by default in every browser tab. The user opens API access and
+creates one temporary, one-use pairing. The secret must enter a local client
+through stdin and must never be put in a prompt, chat, URL, command argument,
+log, file, or source control.
+
+Transport operations
+owner.register, owner.heartbeat, pairing.create, pairing.claim,
+request.submit, owner.pull, owner.authorize, owner.complete, result.read,
+owner.revoke.
+
+Client transport examples
+Claim the one-use pairing (the secret belongs only in this HTTPS JSON body,
+supplied from hidden local input; never put it in a URL or file):
+POST /api/session/v1
+{"operation":"pairing.claim","pairingSecret":"<hidden local input>","scopes":["discover","read_project"]}
+Success returns {"ok":true,"code":"API_CLIENT_PAIRED","sessionId":"...",
+"projectId":"...","revision":0,"clientCapability":"...","scopes":[...] }.
+Keep clientCapability only in process memory and send it as
+Authorization: Bearer <clientCapability>.
+
+Queue one request:
+{"operation":"request.submit","sessionId":"<sessionId>","request":{
+"schema":"intent-mcu-browser-session-request@1","request_id":"unique-id",
+"session_id":"<sessionId>","project_id":"<projectId>",
+"expected_revision":0,"sequence":1,"command":"project.inspect",
+"arguments":{}}}
+Success returns {"ok":true,"code":"API_REQUEST_QUEUED","request_id":"..."}.
+
+Read its result:
+{"operation":"result.read","sessionId":"<sessionId>","requestId":"unique-id"}
+While pending the code is API_RESULT_PENDING. A terminal owner result includes
+schema intent-mcu-browser-session-result@1, the matching request_id, status,
+code, revision_before, revision_after and changes; command-specific fields are
+included alongside them. A terminal result is consumed once.
+
+Client request envelope
+{
+  "schema": "intent-mcu-browser-session-request@1",
+  "request_id": "unique client ID",
+  "session_id": "returned by pairing.claim",
+  "project_id": "returned by pairing.claim",
+  "expected_revision": 0,
+  "sequence": 1,
+  "command": "project.inspect",
+  "arguments": {}
+}
+
+Scopes
+discover and read_project are the default read-only scopes. edit_circuit is a
+separate user opt-in and is available only for board.atmega328p-16mhz-v1.
+board.rp2040-pico-v1, board.esp32-c3-devmodule-v1 and
+board.stm32f429zi-nucleo144-v1 are read-only.
+
+Discovery and read commands
+capabilities.list, components.catalog, project.inspect, components.list,
+component.pins, nets.list, circuit.validate.
+
+Edit commands
+edit.batch accepts exactly {"commands": [...]} and at most 16 operations.
+Supported operations are component.add, component.remove,
+component.property.set, wire.connect, and wire.disconnect. A wire.disconnect
+with only net_id removes the whole net; adding endpoint removes one branch.
+Connections use stable component IDs and named pins.
+The complete batch validates and commits as one transaction or changes
+nothing. edit.undo and edit.redo accept exactly the server-returned
+transaction_id and only operate when that transaction is still at the history
+head.
+
+Nonsecret reference-client plan
+Omitting a plan makes the client read-only. An edit plan is ordinary nonsecret
+JSON and contains no pairing secret or capability:
+{"schema":"intent-mcu-browser-session-plan@1","commands":[...]}
+The client rejects component.remove unless the top-level field
+"allow_component_removal":true is explicitly present. It never removes,
+replaces or resets a project by default and never automatically undoes.
+
+Exact batch operation shapes
+{"command":"component.add","id":"part-1","type":"led.basic-v1",
+ "position":{"x":0.7,"y":0.4,"rotation":0}}
+{"command":"component.remove","component_id":"part-1"}
+{"command":"component.property.set","component_id":"part-1",
+ "key":"resistance_ohms","value":220}
+{"command":"wire.connect","net_id":"signal-1",
+ "from":{"component":"board-1","pin":"D13"},
+ "to":{"component":"resistor-1","pin":"A"}}
+{"command":"wire.disconnect","net_id":"signal-1"}
+{"command":"wire.disconnect","net_id":"signal-1",
+ "endpoint":{"component":"resistor-1","pin":"A"}}
+
+The edit request uses command "edit.batch" and arguments
+{"commands":[<one to sixteen operations>]}. API_BATCH_COMMITTED returns the
+server transaction_id. A later, separate explicit Undo request uses command
+"edit.undo" and arguments {"transaction_id":"<server transaction_id>"} in
+the same live in-memory session. Enter keeps the change; only typing UNDO into
+the reference client sends that Undo request.
+
+Revision and concurrency rules
+Every command uses the current exact project_id, monotonically increasing
+sequence and latest expected_revision. Read the revision_after returned by each
+result before submitting the next request. API_STALE_REVISION,
+API_PROJECT_CHANGED and transaction conflicts require fresh discovery; never
+guess or silently retry a mutation. Reload, Open, New, profile change, revoke,
+expiry or project replacement removes the old authority.
+
+Stable result and error families
+API_AUTH_REQUIRED, API_SCOPE_REQUIRED, API_PROFILE_READ_ONLY,
+API_PAIRING_EXPIRED, API_CLIENT_GONE, API_OWNER_GONE, API_STALE_REVISION,
+API_PROJECT_CHANGED, API_COMMAND_UNSUPPORTED, API_BATCH_SHAPE,
+API_BATCH_COMMAND_SHAPE, API_BATCH_REJECTED, API_TRANSACTION_SHAPE,
+API_REQUEST_LIMIT, API_RATE_LIMIT, API_QUEUE_FULL, API_RESULT_PENDING,
+API_RESULT_EXPIRED, API_REQUEST_REPLAY, API_REQUEST_ID_CONFLICT and
+API_SEQUENCE_REQUIRED. Canonical editor validation or history conflicts may be
+returned unchanged in the result code. Other API_* codes fail closed. Stop and
+inspect the returned code; create a fresh pairing when the owner, client, or
+pairing is gone.
+
+Limits
+Request body 48 KiB; owner result 40 KiB; pairing 120 seconds; owner lease 130
+seconds; client idle 120 seconds; client absolute life 15 minutes; queued
+request 30 seconds; transient full result 5 seconds; queue depth 16; request
+ID/sequence capacity 64; rate 5 requests/second and 20 requests/10 seconds.
+
+Excluded authority
+No command can Build, Run, compile, upload, open a device, create a native
+runtime or worker, access files, deploy, or grant those capabilities.
