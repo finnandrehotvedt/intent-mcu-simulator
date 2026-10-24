@@ -11,10 +11,10 @@ const order = (left, right) => left.mappedTick - right.mappedTick
   || asciiOrder(left.participantId, right.participantId);
 
 export function runX37TurnaroundOrchestration({ seams, schedulerContract, net,
-  advanceWindow = 512, inputApplied }) {
+  advanceWindow = 512, inputApplied, onAcceptedObservation = () => {} }) {
   if (!seams?.avr || !seams?.rp || typeof inputApplied?.avr !== 'function'
       || typeof inputApplied?.rp !== 'function' || !Number.isSafeInteger(advanceWindow)
-      || advanceWindow < 1) fail('X37_TURNAROUND_ORCHESTRATOR_INVALID');
+      || advanceWindow < 1 || typeof onAcceptedObservation !== 'function') fail('X37_TURNAROUND_ORCHESTRATOR_INVALID');
   const clocks = Object.fromEntries(schedulerContract.participants.map((value) =>
     [value.participantId, value.localCyclesPerSchedulerTick]));
   const pending = []; const evidence = []; const deliveries = []; const applied = [];
@@ -32,7 +32,8 @@ export function runX37TurnaroundOrchestration({ seams, schedulerContract, net,
     if (resolved.state === 'CONFLICT' || resolved.state === 'HIGH_Z') {
       fail(`X37_TURNAROUND_${resolved.state}`);
     }
-    const item = { observation, resolved }; evidence.push(item); return item;
+    const item = { observation, resolved }; evidence.push(item);
+    onAcceptedObservation({ index: evidence.length, observation, resolved }); return item;
   };
   const deliver = (item, participantId) => {
     const decision = resolvedDeliveryDecision(item.resolved, item.observation);
@@ -49,6 +50,7 @@ export function runX37TurnaroundOrchestration({ seams, schedulerContract, net,
       targetCycle, advance, delivery };
     deliveries.push(record); return record;
   };
+  try {
   collectBoth();
   const initial = pending.filter((value) => value.mappedTick === 0);
   if (initial.length !== 2 || initial.some((value) => value.mode !== 'RELEASE')) {
@@ -78,7 +80,8 @@ export function runX37TurnaroundOrchestration({ seams, schedulerContract, net,
         }
         item = processOne(); break;
       }
-      seams[actor].advanceToLocalCycle(seams[actor].currentCycle() + advanceWindow);
+      const adaptiveWindow = Math.min(advanceWindow * (2 ** Math.min(attempt, 8)), 131_072);
+      seams[actor].advanceToLocalCycle(seams[actor].currentCycle() + adaptiveWindow);
       advanceCalls += 1; collect(actor);
     }
     if (!item) fail('X37_EXPECTED_FIRMWARE_OBSERVATION_MISSING');
@@ -93,4 +96,10 @@ export function runX37TurnaroundOrchestration({ seams, schedulerContract, net,
   }
   return { trace, evidence, deliveries, applied,
     acceptance: validateX37TurnaroundTrace(trace), advanceCalls };
+  } catch (error) {
+    error.x37Partial = { evidence: structuredClone(evidence), deliveries: structuredClone(deliveries),
+      applied: structuredClone(applied), pending: structuredClone(pending), advanceCalls,
+      seamLifecycle: { avr: seams.avr.lifecycle(), rp: seams.rp.lifecycle() }, net: net.snapshot() };
+    throw error;
+  }
 }

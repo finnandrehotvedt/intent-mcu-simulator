@@ -19,12 +19,12 @@ const observation = (participantId, watermark, localCycle, mode, level) => ({
 class RealisticApiDouble {
   constructor(participantId, batches) {
     this.participantId = participantId; this.cycle = 0; this.pending = [observation(participantId, 1, 0, 'RELEASE')];
-    this.batches = batches; this.batch = 0; this.received = []; this.applied = new Set();
+    this.batches = batches; this.batch = 0; this.received = []; this.applied = new Set(); this.advanceCalls = 0;
   }
   currentCycle() { return this.cycle; }
   observeFirmwareGpio() { const values = this.pending; this.pending = []; return values; }
   advanceToLocalCycle(targetCycle) {
-    assert(targetCycle >= this.cycle, 'no runtime rewind'); this.cycle = targetCycle;
+    assert(targetCycle >= this.cycle, 'no runtime rewind'); this.cycle = targetCycle; this.advanceCalls += 1;
     for (const record of this.received) this.applied.add(record);
     const next = this.batches[this.batch];
     if (typeof next === 'function') this.pending.push(...next(this));
@@ -34,6 +34,7 @@ class RealisticApiDouble {
     const record = { level, source, sequence: this.received.length + 1 };
     this.received.push(record); return { queued: [record] };
   }
+  lifecycle() { return { advanceCalls: this.advanceCalls, totalInstructions: this.advanceCalls, retired: false, disposed: false }; }
 }
 
 function fixture({ disconnect = false, conflict = false, earlyResponse = false, missingRelease = false } = {}) {
@@ -82,4 +83,25 @@ test('disconnect conflict missing release and response-before-input fail closed'
   assert.throws(() => runX37TurnaroundOrchestration(fixture({ conflict: true })), { code: 'X37_TURNAROUND_CONFLICT' });
   assert.throws(() => runX37TurnaroundOrchestration(fixture({ missingRelease: true })), { code: 'X37_EXPECTED_FIRMWARE_OBSERVATION_MISSING' });
   assert.throws(() => runX37TurnaroundOrchestration(fixture({ earlyResponse: true })), { code: 'X37_TURNAROUND_RESPONSE_BEFORE_INPUT' });
+});
+
+test('adaptive bounded advances cross a startup longer than 16384 cycles without raising call cap', () => {
+  const value = fixture();
+  value.seams.avr.batches = [() => [], () => [], () => [], () => [], () => [],
+    () => [observation('avr', 2, 20_000, 'DRIVE', false), observation('avr', 3, 21_000, 'RELEASE')],
+    () => [observation('avr', 4, 50_000, 'DRIVE', false), observation('avr', 5, 51_000, 'RELEASE')]];
+  value.seams.rp.batches = [() => [], () => [], () => [],
+    () => [observation('rp', 2, 40_000, 'DRIVE', false), observation('rp', 3, 41_000, 'RELEASE')]];
+  value.inputApplied = { avr: () => true, rp: () => true };
+  assert.equal(runX37TurnaroundOrchestration(value).acceptance.accepted, true);
+});
+
+test('missing output preserves partial lifecycle and budget evidence', () => {
+  const value = fixture(); value.seams.avr.batches = Array.from({ length: 32 }, () => () => []);
+  assert.throws(() => runX37TurnaroundOrchestration(value), (error) => {
+    assert(['X37_SEAM_INSTRUCTION_CAP', 'X37_SEAM_ADVANCE_CALL_CAP',
+      'X37_EXPECTED_FIRMWARE_OBSERVATION_MISSING'].includes(error.code));
+    assert.equal(error.x37Partial.evidence.length, 2);
+    assert(error.x37Partial.seamLifecycle.avr.advanceCalls > 0); return true;
+  });
 });

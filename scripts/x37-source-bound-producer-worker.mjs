@@ -24,6 +24,7 @@ import { runX37TurnaroundOrchestration } from '../src/x37-turnaround-orchestrato
 import { persistX37CompilerArtifact } from '../src/x37-producer-artifact-evidence.mjs';
 import { constructX37RuntimePair } from '../src/x37-producer-runtime-lifecycle.mjs';
 import { ensureX37WorkerEnvironment } from '../src/x37-worker-environment.mjs';
+import { createX37PrivateRuntimeJournal } from '../src/x37-private-runtime-journal.mjs';
 
 const workerEnvironment = await ensureX37WorkerEnvironment();
 
@@ -95,7 +96,9 @@ async function main() {
   let avr = null; let rp = null; let avrSeam = null; let rpSeam = null;
   const avrOwner = createLiveGenerationOwner('avr');
   const rpOwner = createLiveGenerationOwner('rp');
-  let result = null; let primaryError = null;
+  let result = null; let primaryError = null; const cleanupEvidence = [];
+  const journal = createX37PrivateRuntimeJournal(config.evidenceDirectory);
+  journal.append('environment', workerEnvironment);
   try {
     const runtimes = await constructX37RuntimePair({ activity,
       createAvr: () => new RuntimeKernel(avrArtifact.hex, DEFAULT_CIRCUIT, { logicChannels: ['D13', 'D2'] }),
@@ -120,15 +123,17 @@ async function main() {
         rp: (record) => rp.adapter.snapshot().events.some((event) =>
           event.type === 'digital-input-applied' && event.pin === 'GPIO1'
           && event.level === record.level && event.cycle >= record.targetCycle),
-      } });
-    activity.events = result.evidence.length;
-  } catch (error) { primaryError = error; }
+      }, onAcceptedObservation: (row) => { activity.events += 1; journal.append('observation', row); } });
+  } catch (error) { primaryError = error; journal.append('failure', { code: error.code ?? error.message,
+    partial: error.x37Partial ?? null, activity: { firmwareBuildAttempts: activity.firmwareBuildAttempts,
+      firmwareBuilds: activity.firmwareBuilds, runtimeInstances: activity.runtimeInstances,
+      coordinatedRuns: activity.coordinatedRuns, events: activity.events } }); }
   try {
     await verifiedCleanup([
-      avrSeam ? { cleanup: () => { avrSeam.retire(); avrOwner.retire(); avrSeam.dispose(); },
+      avrSeam ? { cleanup: () => { avrSeam.retire(); avrOwner.retire(); avrSeam.dispose(); cleanupEvidence.push({ participantId: 'avr', retired: true, disposed: true }); },
         verify: () => avrSeam.lifecycle().disposed && avrOwner.isRetired() }
         : avr ? { cleanup: () => { avr.pause(); avr.dispose?.(); }, verify: () => true } : null,
-      rpSeam ? { cleanup: () => { rpSeam.retire(); rpOwner.retire(); rpSeam.dispose(); },
+      rpSeam ? { cleanup: () => { rpSeam.retire(); rpOwner.retire(); rpSeam.dispose(); cleanupEvidence.push({ participantId: 'rp', retired: true, disposed: true }); },
         verify: () => rpSeam.lifecycle().disposed && rpOwner.isRetired() }
         : rp ? { cleanup: () => { rp.pause(); rp.dispose(); }, verify: () => rp.disposed === true } : null,
     ]);
@@ -136,8 +141,9 @@ async function main() {
     cleanupError.primaryFailureCode = primaryError?.code ?? null;
     throw cleanupError;
   }
+  journal.append('cleanup', { cleanupEvidence, journal: journal.snapshot() });
   if (primaryError) throw primaryError;
-  return result;
+  return { ...result, cleanupEvidence, journal: journal.snapshot() };
 }
 
 try {
@@ -147,5 +153,6 @@ try {
   terminal('failed', { code: error.code ?? 'X37_PRODUCER_FAILED',
     cleanupErrors: error.cleanupErrors ?? [], primaryFailureCode: error.primaryFailureCode ?? null,
     runtimeConstruction: error.runtimeConstruction ?? null,
+    partial: error.x37Partial ?? null,
     activity: { ...activity } });
 }

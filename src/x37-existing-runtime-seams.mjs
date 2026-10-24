@@ -95,7 +95,7 @@ function commonSeam({ runtime, identityOwner, schedulerContract, profile, output
     if (!Number.isSafeInteger(targetCycle) || targetCycle < before.cycle) reject('X37_SEAM_TARGET_INVALID');
     if (advanceCalls >= maxAdvanceCalls) reject('X37_SEAM_ADVANCE_CALL_CAP');
     advanceCalls += 1;
-    let steps = 0; let priorInstructions = before.instructions;
+    let steps = 0; let priorInstructions = before.instructions; let priorCycle = before.cycle;
     while (runtimeSnapshot(runtime).cycle < targetCycle) {
       if (steps >= maxSteps || totalInstructions >= maxTotalInstructions) {
         reject('X37_SEAM_INSTRUCTION_CAP');
@@ -103,8 +103,10 @@ function commonSeam({ runtime, identityOwner, schedulerContract, profile, output
       runtime.step(); steps += 1;
       const snapshot = runtimeSnapshot(runtime);
       const delta = snapshot.instructions - priorInstructions;
-      if (!Number.isSafeInteger(delta) || delta < 0) reject('X37_SEAM_INSTRUCTION_COUNTER_INVALID');
+      if (!Number.isSafeInteger(delta) || delta <= 0) reject('X37_SEAM_INSTRUCTION_COUNTER_INVALID');
+      if (snapshot.cycle <= priorCycle) reject('X37_SEAM_NO_PROGRESS');
       totalInstructions += delta; priorInstructions = snapshot.instructions;
+      priorCycle = snapshot.cycle;
       if (totalInstructions > maxTotalInstructions) reject('X37_SEAM_INSTRUCTION_CAP');
       sampleOutput(snapshot);
     }

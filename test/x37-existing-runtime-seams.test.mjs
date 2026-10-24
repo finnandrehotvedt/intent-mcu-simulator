@@ -170,6 +170,12 @@ test('advance reports overshoot and enforces total instruction and advance-call 
   assert.throws(() => seam.advanceToLocalCycle(6), { code: 'X37_SEAM_ADVANCE_CALL_CAP' });
 });
 
+test('a stepping runtime with no cycle progress fails immediately', () => {
+  const runtime = new SyntheticRealisticSchemaRuntime({ stepCycles: 0 });
+  const seam = createAvrX37RuntimeSeam({ runtime, ...seamOwner('avr') });
+  assert.throws(() => seam.advanceToLocalCycle(1), { code: 'X37_SEAM_NO_PROGRESS' });
+});
+
 test('firmware observations are capped at the shared 32-event ceiling', () => {
   const runtime = new SyntheticRealisticSchemaRuntime({ profile: 'rp2040', stepCycles: 1,
     states: [{ mode: 'OUTPUT', level: false }, { mode: 'OUTPUT', level: true }] });
