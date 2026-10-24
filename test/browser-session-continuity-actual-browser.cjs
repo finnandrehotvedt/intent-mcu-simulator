@@ -11,6 +11,10 @@ const path = require('node:path');
 const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES
   || '/root/.npm/_npx/fd3bca3c548369c0/node_modules', 'playwright'));
 const plan = require('./fixtures/api-client-add-led-plan.json');
+const continuityWaitMs = Number(process.env.API_SESSION_CONTINUITY_WAIT_MS ?? 10_100);
+if (!Number.isInteger(continuityWaitMs) || continuityWaitMs < 0 || continuityWaitMs > 180_000) {
+  throw new Error('API_SESSION_CONTINUITY_WAIT_INVALID');
+}
 
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png',
@@ -79,7 +83,7 @@ function sessionClient(ticketPath) {
     assert.equal(afterFirst.discovery.components.filter((item) => !item.id.startsWith('api-')).length, 3);
     const undoneFirst = await client.send({ command: 'undo', transaction_id: first.transaction_id });
     assert.equal(undoneFirst.mode, 'undone');
-    await new Promise((resolve) => setTimeout(resolve, 10_100));
+    await new Promise((resolve) => setTimeout(resolve, continuityWaitMs));
     const restoredFirst = await client.send({ command: 'inspect' });
     assert.equal(restoredFirst.discovery.components.length, 3); assert.equal(restoredFirst.discovery.nets.length, 3);
     const second = await client.send({ command: 'apply', plan }); assert.equal(second.mode, 'edited');
@@ -103,7 +107,7 @@ function sessionClient(ticketPath) {
     await assert.rejects(stat(ticketPath));
     process.stdout.write(`${JSON.stringify({ status: 'pass', pairingClaims: 1, initialComponents: 3, initialNets: 3,
       firstTransaction: first.transaction_id, secondTransaction: second.transaction_id,
-      revoked: revoked.code, ticketDeleted: true, buildRequests: 0, workerCreations: 0 })}\n`);
+      continuityWaitMs, revoked: revoked.code, ticketDeleted: true, buildRequests: 0, workerCreations: 0 })}\n`);
     await context.close();
   } finally {
     await browser.close(); await new Promise((resolve) => server.close(resolve));
