@@ -11,7 +11,8 @@ const copy = (value) => structuredClone(value);
 export function installX37WorkbenchCandidate({
   enabled = new URLSearchParams(location.search).get('x37-candidate') === '1',
   capability = X37_PUBLIC_CAPABILITY, compileParticipant = null, createRuntimePair = null,
-  createProductAdapter = null, disposeRuntimePair = null, requestUnsavedGuard = null, downloadText = null,
+  createProductAdapter = null, disposeRuntimePair = null, budgetOwner = null,
+  requestUnsavedGuard = null, downloadText = null,
 } = {}) {
   if (!enabled) return null;
   const source = byId('source'); const status = byId('x37-candidate-status');
@@ -22,8 +23,9 @@ export function installX37WorkbenchCandidate({
   const controls = { build: byId('quick-build'), run: byId('quick-run'), pause: byId('quick-pause'),
     stop: byId('quick-stop'), reset: byId('quick-reset') };
   let project = defaultX37WorkbenchProject(); let active = 'avr'; let dirty = false;
-  let lifecycle = createX37CoordinatedLifecycle(); const budget = createX37CandidateBudget();
-  let adapter = null; let operation = 0; let buildPending = false; let runtimePending = false;
+  let graphHistory = []; let selectedNet = false; const pendingEndpoints = new Set();
+  let lifecycle = createX37CoordinatedLifecycle(); const budget = budgetOwner ?? createX37CandidateBudget();
+  let adapter = null; let adapterOwner = 0; let operation = 0; let buildPending = false; let runtimePending = false;
   let pauseRequested = false;
   const participant = () => project.participants.find(({ id }) => id === active);
   const setStatus = (message) => { status.textContent = message; byId('quick-state').textContent = message; };
@@ -36,11 +38,25 @@ export function installX37WorkbenchCandidate({
       node.innerHTML = `<strong>${label}</strong>${pins.map((pin) => `<button type="button" data-x37-pin="${id}:${pin}" aria-label="${label} ${pin}">${pin}</button>`).join('')}`;
       layer.append(node);
     }
-    const wire = document.createElement('div'); wire.className = 'x37-canvas-wire';
-    wire.setAttribute('data-net-id', project.sharedDigitalNets[0].id); wire.setAttribute('aria-label', 'shared.digital.0 ideal pull-up');
-    layer.append(wire);
+    const net = project.sharedDigitalNets[0];
+    if (net.connected) {
+      const wire = document.createElement('button'); wire.type = 'button'; wire.className = 'x37-canvas-wire';
+      wire.setAttribute('data-net-id', net.id); wire.setAttribute('aria-label', 'Select shared.digital.0 ideal pull-up wire');
+      wire.setAttribute('aria-pressed', String(selectedNet)); wire.addEventListener('click', (event) => {
+        event.stopImmediatePropagation(); selectedNet = true; renderCanvas(); });
+      layer.append(wire);
+    }
+    for (const pin of layer.querySelectorAll('[data-x37-pin]')) pin.addEventListener('click', (event) => {
+      event.stopImmediatePropagation();
+      if (net.connected) return;
+      pendingEndpoints.add(pin.dataset.x37Pin.split(':')[0]); pin.setAttribute('aria-pressed', 'true');
+      if (pendingEndpoints.size === 2) updateGraph(true, 'Connected fixed shared.digital.0 named-pin net.');
+    });
     canvas.setAttribute('aria-label', 'X37 topology preview only: shared.digital.0 AVR D13/D2 to RP2040 GPIO0/GPIO1, ideal pull-up.');
-    byId('canvas-title').textContent = `${project.name} · topology preview`; byId('graph-state').textContent = '2 participants · 1 preview net';
+    byId('canvas-title').textContent = `${project.name} · bounded graph`; byId('graph-state').textContent = `2 participants · ${net.connected ? 1 : 0} connected nets`;
+    byId('delete-wire').disabled = !selectedNet || !net.connected; byId('undo').disabled = graphHistory.length === 0;
+    queueMicrotask(() => { byId('delete-wire').disabled = !selectedNet || !project.sharedDigitalNets[0].connected;
+      byId('undo').disabled = graphHistory.length === 0; });
   };
   const renderTrace = (rows = []) => {
     byId('trace-title').textContent = 'Combined shared-net trace';
@@ -63,10 +79,16 @@ export function installX37WorkbenchCandidate({
     byId('pause').disabled = controls.pause.disabled; byId('reset').disabled = controls.reset.disabled;
     setStatus(message); renderCanvas();
   };
-  const dispose = () => { const current = adapter; adapter = null; if (!current) return [];
+  const dispose = () => { const current = adapter; adapter = null; adapterOwner = 0; if (!current) return [];
     try { return current.dispose?.() ?? []; } catch (error) { return [{ code: error.code ?? error.message }]; } };
   const disposePair = (pair) => { if (!pair) return [];
     try { return disposeRuntimePair?.(pair) ?? []; } catch (error) { return [{ code: error.code ?? error.message }]; } };
+  function updateGraph(connected, message) {
+    const net = project.sharedDigitalNets[0]; if (net.connected === connected) return;
+    graphHistory.push(net.connected); net.connected = connected; selectedNet = false; pendingEndpoints.clear();
+    operation += 1; buildPending = false; runtimePending = false; dirty = true; dispose(); lifecycle.projectChanged();
+    renderTrace(); render(message, true);
+  }
   const commitSource = () => {
     const current = participant(); if (current.source === source.value) return;
     operation += 1; current.source = source.value; dirty = true; dispose(); lifecycle.projectChanged();
@@ -79,6 +101,8 @@ export function installX37WorkbenchCandidate({
   });
   const buildBoth = async () => {
     commitSource(); if (buildPending) return { ok: false, code: 'X37_BUILD_ALREADY_PENDING' };
+    if (!project.sharedDigitalNets[0].connected) { render('X37_SHARED_NET_DISCONNECTED · reconnect both named endpoints before Build.', true);
+      return { ok: false, code: 'X37_SHARED_NET_DISCONNECTED' }; }
     const reservation = budget.preflight(capability);
     if (!reservation.ok) { render(`${reservation.code} · no Build charged.`); return reservation; }
     const ownedOperation = ++operation; buildPending = true; render('Coordinated Build pending.');
@@ -99,33 +123,50 @@ export function installX37WorkbenchCandidate({
   };
   const run = async () => {
     const ownedOperation = ++operation; runtimePending = true; pauseRequested = false;
+    let ownedAdapter = null; let ownedPair = null;
     try {
-      if (typeof createRuntimePair !== 'function' || typeof createProductAdapter !== 'function') throw Object.assign(new Error('X37_RUNTIME_ADAPTER_REQUIRED'), { code: 'X37_RUNTIME_ADAPTER_REQUIRED' });
+      if (typeof createRuntimePair !== 'function' || typeof createProductAdapter !== 'function'
+          || typeof disposeRuntimePair !== 'function') throw Object.assign(new Error('X37_RUNTIME_ADAPTER_REQUIRED'), { code: 'X37_RUNTIME_ADAPTER_REQUIRED' });
       budget.chargeRun(); lifecycle.start({ avr: 'ordinary-avr-worker', rp: 'ordinary-rp-worker' }); render('Starting both ordinary workers…');
-      const state = lifecycle.snapshot(); const runtimePair = await createRuntimePair(copy(state.builds), state);
-      if (ownedOperation !== operation) { disposePair(runtimePair); return { ok: false, code: 'X37_RUNTIME_START_STALE' }; }
-      try { adapter = createProductAdapter({ builds: copy(state.builds), runtimePair, lifecycleOwner: () => lifecycle.snapshot() }); }
-      catch (error) { disposePair(error.partialRuntimePair ?? runtimePair); throw error; }
-      if (pauseRequested) { adapter.pause?.(); render('Both workers paused.'); return { ok: true, paused: true }; }
-      const result = await adapter.run(); const rows = result?.trace ?? [];
-      if (ownedOperation !== operation) return { ok: false, code: 'X37_RUN_RESULT_STALE' };
+      const state = lifecycle.snapshot(); ownedPair = await createRuntimePair(copy(state.builds), state);
+      if (ownedOperation !== operation) { disposePair(ownedPair); ownedPair = null; return { ok: false, code: 'X37_RUNTIME_START_STALE' }; }
+      try { ownedAdapter = createProductAdapter({ builds: copy(state.builds), runtimePair: ownedPair, lifecycleOwner: () => lifecycle.snapshot() }); }
+      catch (error) { disposePair(error.partialRuntimePair ?? ownedPair); ownedPair = null; throw error; }
+      adapter = ownedAdapter; adapterOwner = ownedOperation;
+      if (pauseRequested) { ownedAdapter.pause?.(); render('Both workers paused.'); return { ok: true, paused: true }; }
+      const result = await ownedAdapter.run(); const rows = result?.trace ?? [];
+      if (ownedOperation !== operation || adapterOwner !== ownedOperation) return { ok: false, code: 'X37_RUN_RESULT_STALE' };
       lifecycle.appendTrace(rows); renderTrace(rows); render('Coordinated runtime active.'); return { ok: true };
-    } catch (error) { disposePair(error.partialRuntimePair); dispose(); if (ownedOperation === operation) lifecycle.participantFailed();
-      render(`Run failed · ${error.code ?? error.message}`); return { ok: false, code: error.code ?? error.message };
+    } catch (error) { if (ownedAdapter) { try { ownedAdapter.dispose?.(); } catch {} }
+      else if (ownedPair) disposePair(error.partialRuntimePair ?? ownedPair);
+      if (adapterOwner === ownedOperation) { adapter = null; adapterOwner = 0; }
+      if (ownedOperation !== operation) return { ok: false, code: 'X37_RUN_RESULT_STALE' };
+      lifecycle.participantFailed(); render(`Run failed · ${error.code ?? error.message}`);
+      return { ok: false, code: error.code ?? error.message };
     } finally { if (ownedOperation === operation) { runtimePending = false; render(status.textContent, true); } }
   };
   const actions = {
     build: buildBoth, run,
     pause: () => { pauseRequested = true; const next = lifecycle.pause(); const failures = [];
       try { adapter?.pause?.(); } catch (error) { failures.push(error); } render(failures.length ? 'Paused with teardown errors.' : 'Both workers paused.'); return next; },
-    stop: () => { operation += 1; runtimePending = false; const failures = dispose(); let next;
+    stop: () => { operation += 1; buildPending = false; runtimePending = false; const failures = dispose(); let next;
       try { next = lifecycle.stop(); } finally { renderTrace(); render(failures.length ? 'Stopped with aggregated teardown errors.' : 'Both workers stopped.'); } return next; },
-    reset: () => { operation += 1; runtimePending = false; const failures = dispose(); let next;
+    reset: () => { operation += 1; buildPending = false; runtimePending = false; const failures = dispose(); let next;
       try { next = lifecycle.reset(); } finally { renderTrace(); render(failures.length ? 'Reset with aggregated teardown errors.' : 'Both workers reset; fresh Build required.'); } return next; },
   };
   for (const [name, button] of Object.entries(controls)) button.addEventListener('click', (event) => {
     event.stopImmediatePropagation(); void actions[name]();
   }, true);
+  byId('delete-wire').addEventListener('click', (event) => { event.stopImmediatePropagation();
+    if (selectedNet) updateGraph(false, 'Deleted shared.digital.0 · both participant builds retired.'); }, true);
+  document.addEventListener('keydown', (event) => { if (event.key !== 'Delete' || !selectedNet) return;
+    event.preventDefault(); event.stopImmediatePropagation(); updateGraph(false, 'Deleted shared.digital.0 · both participant builds retired.'); }, true);
+  const undoGraph = () => { if (!graphHistory.length) return; const previous = graphHistory.pop(); project.sharedDigitalNets[0].connected = previous;
+    operation += 1; buildPending = false; runtimePending = false; dirty = true; dispose(); lifecycle.projectChanged();
+    selectedNet = false; pendingEndpoints.clear(); render('Restored the prior shared-net graph state.', true); };
+  byId('undo').addEventListener('click', (event) => { event.stopImmediatePropagation(); undoGraph(); }, true);
+  document.addEventListener('keydown', (event) => { if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'z' || !graphHistory.length) return;
+    event.preventDefault(); event.stopImmediatePropagation(); undoGraph(); }, true);
   byId('build').addEventListener('click', (event) => { event.stopImmediatePropagation(); void buildBoth(); }, true);
   for (const name of ['run', 'pause', 'reset']) byId(name).addEventListener('click', (event) => {
     event.stopImmediatePropagation(); void actions[name]();
@@ -133,8 +174,8 @@ export function installX37WorkbenchCandidate({
   const download = () => { commitSource(); const text = serializeX37WorkbenchProject(project);
     downloadText?.('x37-two-controller-candidate.intent-mcu.json', text, 'application/json'); dirty = false;
     setStatus('Downloaded data-only project.'); return text; };
-  const openText = (text) => { const next = parseX37WorkbenchProject(text); operation += 1; dispose(); project = next;
-    active = 'avr'; dirty = false; lifecycle.opened(); renderTrace(); render('Opened atomically · fresh coordinated Build required.'); };
+  const openText = (text) => { const next = parseX37WorkbenchProject(text); operation += 1; buildPending = false; runtimePending = false; dispose(); project = next;
+    active = 'avr'; dirty = false; graphHistory = []; selectedNet = false; pendingEndpoints.clear(); lifecycle.opened(); renderTrace(); render('Opened atomically · fresh coordinated Build required.'); };
   const requestOpen = (continueAction) => requestUnsavedGuard?.({ isDirty: () => dirty,
     fingerprint: () => serializeX37WorkbenchProject(project), download, continueAction }) ?? continueAction();
   byId('project-save').addEventListener('click', (event) => { event.stopImmediatePropagation(); download(); }, true);

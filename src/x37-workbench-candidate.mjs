@@ -3,7 +3,8 @@
 
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
 
-export const X37_WORKBENCH_SCHEMA = 'intent-mcu-x37-workbench-project@2';
+export const X37_WORKBENCH_SCHEMA = 'intent-mcu-x37-workbench-project@3';
+export const X37_PREVIOUS_WORKBENCH_SCHEMA = 'intent-mcu-x37-workbench-project@2';
 export const X37_LEGACY_WORKBENCH_SCHEMA = 'intent-mcu-x37-workbench-project@1';
 export const X37_COORDINATED_LIFECYCLE_SCHEMA = 'intent-mcu-x37-coordinated-lifecycle@1';
 export const X37_PUBLIC_CAPABILITY = Object.freeze({
@@ -48,8 +49,9 @@ function normalized(value) {
     participant(value.participants[1], { id: 'rp', profile: 'rp2040', sourceFile: 'main.c' }),
   ];
   const net = value.sharedDigitalNets[0];
-  if (!exactKeys(net, ['id', 'kind', 'bias', 'endpoints']) || net.id !== 'shared.digital.0'
+  if (!exactKeys(net, ['id', 'kind', 'bias', 'connected', 'endpoints']) || net.id !== 'shared.digital.0'
       || net.kind !== 'ideal-boolean-open-drain' || net.bias !== 'pull-up'
+      || typeof net.connected !== 'boolean'
       || !Array.isArray(net.endpoints) || net.endpoints.length !== 2
       || !exactKeys(net.endpoints[0], ['participantId', 'pin'])
       || net.endpoints[0].participantId !== 'avr' || net.endpoints[0].pin !== 'D2/D13'
@@ -67,7 +69,7 @@ export function defaultX37WorkbenchProject() {
       { id: 'avr', profile: 'avr', sourceFile: 'main.ino', source: '// Candidate AVR turnaround source\n' },
       { id: 'rp', profile: 'rp2040', sourceFile: 'main.c', source: '/* Candidate RP2040 turnaround source */\n' },
     ],
-    sharedDigitalNets: [{ id: 'shared.digital.0', kind: 'ideal-boolean-open-drain', bias: 'pull-up',
+    sharedDigitalNets: [{ id: 'shared.digital.0', kind: 'ideal-boolean-open-drain', bias: 'pull-up', connected: true,
       endpoints: [{ participantId: 'avr', pin: 'D2/D13' }, { participantId: 'rp', pin: 'GPIO1/GPIO0' }] }],
   });
 }
@@ -83,8 +85,12 @@ export function parseX37WorkbenchProject(source) {
       { id: 'avr', profile: 'avr', sourceFile: 'main.ino', source: value.avrSource },
       { id: 'rp', profile: 'rp2040', sourceFile: 'main.c', source: value.rpSource },
     ];
-    value.sharedDigitalNets = [value.sharedWire];
+    value.sharedDigitalNets = [{ ...value.sharedWire, connected: true }];
     delete value.avrSource; delete value.rpSource; delete value.sharedWire;
+  }
+  if (value?.schema === X37_PREVIOUS_WORKBENCH_SCHEMA) {
+    value.schema = X37_WORKBENCH_SCHEMA;
+    value.sharedDigitalNets = value.sharedDigitalNets.map((net) => ({ ...net, connected: true }));
   }
   return normalized(value);
 }

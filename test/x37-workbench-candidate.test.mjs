@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-import { X37_LEGACY_WORKBENCH_SCHEMA, X37_PUBLIC_CAPABILITY,
+import { X37_LEGACY_WORKBENCH_SCHEMA, X37_PREVIOUS_WORKBENCH_SCHEMA, X37_PUBLIC_CAPABILITY,
   createX37CandidateBudget, createX37CoordinatedLifecycle,
   defaultX37WorkbenchProject, parseX37WorkbenchProject,
   serializeX37WorkbenchProject } from '../src/x37-workbench-candidate.mjs';
@@ -33,6 +33,9 @@ test('finite legacy shape migrates atomically and malformed legacy changes nothi
   const current = serializeX37WorkbenchProject(project);
   assert.throws(() => parseX37WorkbenchProject(JSON.stringify({ ...legacy, worker: {} })));
   assert.equal(serializeX37WorkbenchProject(project), current);
+  const previous = structuredClone(project); previous.schema = X37_PREVIOUS_WORKBENCH_SCHEMA;
+  delete previous.sharedDigitalNets[0].connected;
+  assert.deepEqual(parseX37WorkbenchProject(JSON.stringify(previous)), project);
 });
 
 test('capability preflight is truthful and charges no current-tab budget', () => {

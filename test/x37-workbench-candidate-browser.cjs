@@ -8,14 +8,15 @@ const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/
 
 const base = process.env.X37_CANDIDATE_URL || 'http://127.0.0.1:18893';
 const output = process.env.X37_CANDIDATE_OUTPUT || '/tmp/x37-workbench-candidate-review';
-const fixture = `<!doctype html><body><span id="quick-state"></span><nav><button id="quick-build">Build</button><button id="quick-run">Run</button><button id="quick-pause">Pause</button><button id="quick-stop">Stop</button><button id="quick-reset">Reset</button></nav><button id="project-save">Download</button><button id="project-open">Open</button><input id="project-open-input" type="file"><h2 id="canvas-title"></h2><span id="graph-state"></span><div id="circuit-canvas"><svg id="circuit-wires"></svg><div id="component-layer"></div></div><div id="x37-source-tabs" hidden><button id="x37-source-avr"></button><button id="x37-source-rp"></button></div><h2 id="editor-title"></h2><textarea id="source"></textarea><button id="build"></button><p id="x37-candidate-status" hidden></p><button id="run"></button><button id="pause"></button><button id="reset"></button><h2 id="trace-title"></h2><ul id="trace"></ul><p id="trace-boundary"></p></body>`;
+const fixture = `<!doctype html><body><span id="quick-state"></span><nav><button id="quick-build">Build</button><button id="quick-run">Run</button><button id="quick-pause">Pause</button><button id="quick-stop">Stop</button><button id="quick-reset">Reset</button></nav><button id="project-save">Download</button><button id="project-open">Open</button><input id="project-open-input" type="file"><button id="undo">Undo</button><button id="delete-wire">Delete wire</button><h2 id="canvas-title"></h2><span id="graph-state"></span><div id="circuit-canvas"><svg id="circuit-wires"></svg><div id="component-layer"></div></div><div id="x37-source-tabs" hidden><button id="x37-source-avr"></button><button id="x37-source-rp"></button></div><h2 id="editor-title"></h2><textarea id="source"></textarea><button id="build"></button><p id="x37-candidate-status" hidden></p><button id="run"></button><button id="pause"></button><button id="reset"></button><h2 id="trace-title"></h2><ul id="trace"></ul><p id="trace-boundary"></p></body>`;
 
 async function installReady(page, failure = 'none') {
+  page.setDefaultTimeout(5000);
   await page.goto(`${base}/`, { waitUntil: 'domcontentloaded' }); await page.setContent(fixture);
   await page.evaluate(async ({ baseUrl, failureMode }) => {
     const { installX37WorkbenchCandidate } = await import(`${baseUrl}/staging/x37-workbench-candidate-controller.mjs`);
     const hash = (value) => value.repeat(64);
-    document.body.dataset.compileCalls = '0'; document.body.dataset.disposals = '0';
+    document.body.dataset.compileCalls = '0'; document.body.dataset.disposals = '0'; document.body.dataset.adapters = '0'; document.body.dataset.newDisposed = '0';
     const controller = installX37WorkbenchCandidate({ enabled: true, capability: { enabled: true, message: 'Ready injected capability' },
       compileParticipant: async (participant, projectGeneration, runtimeGeneration) => {
         document.body.dataset.compileCalls = String(Number(document.body.dataset.compileCalls) + 1);
@@ -28,9 +29,12 @@ async function installReady(page, failure = 'none') {
       }, createRuntimePair: async () => { if (['startup-stop', 'open-pending'].includes(failureMode)) await new Promise((resolve) => setTimeout(resolve, 60));
         return { avr: { ordinary: true }, rp: { ordinary: true } }; },
       createProductAdapter: () => { if (failureMode === 'constructor') throw Object.assign(new Error('CONSTRUCTOR_FAIL'), { code: 'CONSTRUCTOR_FAIL' });
+        const number = Number(document.body.dataset.adapters) + 1; document.body.dataset.adapters = String(number);
+        if (failureMode === 'oldrun-race' && number === 1) return { run: async () => { await new Promise((resolve) => setTimeout(resolve, 100)); throw new Error('OLD_RUN_FAIL'); }, pause: () => {}, dispose: () => [] };
         return { run: async () => ({ trace: [{ participantId: 'avr', pin: 'D13', localCycle: 4, mappedTick: 1, level: 'LOW' }] }),
-        pause: () => ({ errors: [] }), dispose: () => [] };
+        pause: () => ({ errors: [] }), dispose: () => { if (failureMode === 'oldrun-race') document.body.dataset.newDisposed = '1'; return []; } };
       }, disposeRuntimePair: () => { document.body.dataset.disposals = String(Number(document.body.dataset.disposals) + 1); return []; },
+      budgetOwner: failureMode === 'oldrun-race' ? { preflight: () => ({ ok: true }), chargeBuild: () => {}, chargeRun: () => {}, cancel: () => {}, snapshot: () => ({}) } : null,
       requestUnsavedGuard: ({ continueAction }) => continueAction(), downloadText: () => {},
     });
     document.addEventListener('test-open', () => controller.openText(JSON.stringify(controller.project())));
@@ -43,6 +47,7 @@ async function installReady(page, failure = 'none') {
   try {
     for (const viewport of [{ width: 1366, height: 900 }, { width: 1440, height: 1000 }]) {
       const context = await browser.newContext({ viewport, serviceWorkers: 'block' }); const page = await context.newPage();
+      page.setDefaultTimeout(5000);
       const producers = []; page.on('request', (request) => { if (/\/api\/(?:build|runtime|compile)/u.test(request.url())) producers.push(request.url()); });
       assert.equal((await page.goto(`${base}/dist/?x37-candidate=1`, { waitUntil: 'domcontentloaded' }))?.status(), 200);
       await page.waitForFunction(() => !document.querySelector('#x37-source-tabs').hidden);
@@ -66,6 +71,9 @@ async function installReady(page, failure = 'none') {
     }
     for (const mode of ['success', 'failure', 'stale']) {
       const page = await browser.newPage(); await installReady(page, mode === 'success' ? 'none' : mode);
+      if (mode === 'success') { await page.click('[data-net-id="shared.digital.0"]'); await page.keyboard.press('Delete');
+        assert.equal(await page.locator('[data-net-id="shared.digital.0"]').count(), 0); await page.click('#undo');
+        assert.equal(await page.locator('[data-net-id="shared.digital.0"]').count(), 1); }
       await page.click('#quick-build');
       if (mode === 'success') {
         await page.waitForFunction(() => !document.querySelector('#quick-run').disabled); await page.click('#quick-run');
@@ -93,6 +101,16 @@ async function installReady(page, failure = 'none') {
         }
       }
       report.controllerJourneys.push({ mode, status: await page.textContent('#x37-candidate-status') }); await page.close();
+    }
+    {
+      const page = await browser.newPage(); await installReady(page, 'oldrun-race'); await page.click('#quick-build');
+      await page.waitForFunction(() => !document.querySelector('#quick-run').disabled); await page.click('#quick-run');
+      await page.click('#quick-stop'); await page.click('#quick-build');
+      await page.waitForFunction(() => !document.querySelector('#quick-run').disabled); await page.click('#quick-run');
+      await page.waitForFunction(() => document.querySelector('#x37-candidate-status').textContent.includes('runtime active'));
+      await page.waitForTimeout(140); assert.equal(await page.getAttribute('body', 'data-new-disposed'), '0');
+      assert.match(await page.textContent('#x37-candidate-status'), /runtime active/u); assert.match(await page.textContent('#trace'), /tick 1/u);
+      report.controllerJourneys.push({ mode: 'oldrun-race', status: await page.textContent('#x37-candidate-status') }); await page.close();
     }
     process.stdout.write(`${JSON.stringify(report)}\n`);
   } finally { await browser.close(); }
