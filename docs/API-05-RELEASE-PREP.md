@@ -2,9 +2,9 @@
 
 API-05 prepares the private browser-session API for independent release review.
 It does not publish or enable the API. The public release remains rc.133 until
-Desktop separately approves CI, review, merge and deployment. The planned
-release identity is rc.134; this preparation branch deliberately does not
-change product version metadata.
+Desktop separately approves CI, review, merge and deployment. This branch
+prepares the coherent rc.134 release identity without claiming it is merged or
+public.
 
 ## Exact release scope
 
@@ -80,5 +80,5 @@ Publication is eligible only after PR 42's exact head and hosted CI are green,
 Desktop independently opens the attached portable project and screenshot, and
 Desktop explicitly approves review, merge and deployment. The release must
 keep API access opt-in, disabled by default and paired per tab, with no new
-listener or infrastructure. Rollback is the release commit revert; rc.133 and
-the existing public runtime stay unchanged until that separate decision.
+listener or infrastructure. Rollback is the release commit revert; public
+rc.133 and the existing runtime stay unchanged until that separate decision.

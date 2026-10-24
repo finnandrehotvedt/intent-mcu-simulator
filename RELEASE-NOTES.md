@@ -1,4 +1,26 @@
-# Intent MCU Simulator 1.1.0-rc.133
+# Intent MCU Simulator 1.1.0-rc.134
+
+## Opt-in private browser-session API
+
+Rc.134 adds a same-origin, memory-only browser-session API that is disabled by
+default and requires explicit per-tab pairing. The AVR profile may grant
+canonical circuit editing; Pico, ESP32-C3 and STM32 remain read-only. Bounded
+atomic batches use the existing editor, electrical validation, persistence,
+rendering and Undo/Redo owners.
+
+The API cannot Build, Run, compile, upload, access devices or create firmware
+workers. Pairing, capabilities, queues, request IDs, rates, leases, expiry and
+response sizes are bounded. Reload, Open, New, profile change, revoke or expiry
+retires prior authority. Reference clients receive one-time secrets through
+standard input, and lost or oversized results reconcile without replay.
+
+This metadata increment performs no firmware Build, worker creation or native
+Run. Exact public rc.133 remains the app-only rollback basis until Desktop
+independently approves merge and deployment.
+
+---
+
+## 1.1.0-rc.133
 
 ## Clearer ordinary workbench actions
 

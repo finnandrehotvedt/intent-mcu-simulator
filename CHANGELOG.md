@@ -2,6 +2,18 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.134 — 2026-10-24
+
+- Adds an opt-in, disabled-by-default, per-tab private browser-session API.
+- Allows bounded canonical circuit edits only on AVR; Pico, ESP32-C3 and STM32
+  remain discover/read-only.
+- Commits validated edit batches atomically through existing editor owners and
+  preserves exact transaction-bound Undo/Redo.
+- Bounds pairing, scopes, leases, queues, request IDs, rates, payloads and
+  reconciliation while revoking authority on lifecycle replacement.
+- Adds no Build, Run, compile, upload, device, worker or native authority and
+  retains exact public rc.133 as the app-only rollback basis.
+
 ## 1.1.0-rc.133 — 2026-10-24
 
 - Simplifies ordinary parts, pin, example and project-file actions while
