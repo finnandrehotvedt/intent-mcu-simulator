@@ -27,6 +27,15 @@ const SOURCE_LINE_PATTERNS = Object.freeze([
   /^void loop\(\) \{$/u, /^  delay\(1000\);$/u, /^\}$/u, /^$/u,
 ]);
 const clone = (value) => structuredClone(value);
+function describeCircuitGap(code) {
+  return ({
+    C3_SERIES_RESISTOR_REQUIRED: 'Missing resistor: add the supported series resistor between GPIO2 and the LED anode path.',
+    C3_GROUND_REQUIRED: 'Missing ground: connect LED cathode to ESP32-C3 GND J1 pin 6.',
+    C3_LED_REVERSE_POLARITY: 'LED polarity is reversed: anode must face GPIO2 through the resistor; cathode must face GND.',
+    C3_LED_OVERCURRENT: 'LED current is above the teaching limit: increase the series resistance.',
+    C3_PATH_OPEN: 'Open LED path: complete GPIO2 J1 pin 4 → resistor → LED anode, then LED cathode → GND J1 pin 6.',
+  })[code] ?? `Circuit rejected (${code}). Inspect the highlighted supported parts and named pins.`;
+}
 const SHA256 = /^[0-9a-f]{64}$/u;
 const exactKeys = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
@@ -667,7 +676,7 @@ export class Esp32C3PublicWorkbench {
       ? 'Wiring in progress · flash and LED authority retired · finish or cancel before Build'
       : circuit.ok
       ? `Project model accepted · GPIO2 J1 pin 4 → ${circuit.model.resistorOhms} Ω → ${circuit.model.ledColor} LED → GND J1 pin 6 · ${led?.code ?? 'waiting for Run'}`
-      : `Project model rejected (${circuit.code}) · stale flash and LED authority retired`;
+      : `${describeCircuitGap(circuit.code)} Stale flash and LED authority was retired.`;
     this.onDiagnostics({ profile: PROFILE, revision: this.revision, source: this.project.source,
       file: 'sketch.ino', diagnostics: clone(this.diagnostics) });
     this.publish();
