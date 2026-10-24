@@ -8,6 +8,7 @@ const http = require('node:http');
 const path = require('node:path');
 const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/runner/node_modules', 'playwright'));
 const { verifyRuntimeCandidate } = require('./final-ux-runtime-binding.cjs');
+const { failureLedgerRecord, requestLedgerRecord, responseLedgerRecord } = require('./final-ux-runtime-route-ledger.cjs');
 
 const repository = path.resolve(__dirname, '..');
 const dist = path.join(repository, 'dist');
@@ -129,37 +130,48 @@ function fakeWorkerInstaller() {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, serviceWorkers: 'block' });
   await context.addInitScript((native) => { window.__FINAL_NATIVE__ = native; }, execute);
   await context.addInitScript(fakeWorkerInstaller);
-  let buildPosts = 0; const requests = []; const responses = []; const errors = [];
+  let buildPosts = 0; let routeFailure = null; const requests = []; const responses = []; const errors = [];
   await context.route('**/*', async (route) => {
     const request = route.request(); const url = new URL(request.url());
     if (url.pathname === '/api/page-views') return route.fulfill({ status: 200, contentType: 'application/json', body: '{"status":"disabled"}' });
     if (url.pathname.startsWith('/api/build')) {
       const browserHeaders = request.headers();
-      requests.push({ method: request.method(), path: url.pathname,
-        mutationHeader: browserHeaders['x-teach-lab-build'] === '1',
-        bearerCapability: /^Bearer [^ ]+$/u.test(browserHeaders.authorization || '') });
+      const postBody = request.method() === 'POST' ? request.postDataBuffer() : undefined;
+      requests.push(requestLedgerRecord({ method: request.method(), path: url.pathname,
+        headers: browserHeaders, body: postBody }));
       if (request.method() === 'POST') {
         buildPosts += 1; if (buildPosts > 1) return route.abort('blockedbyclient');
       }
       if (!execute) {
         if (request.method() === 'POST') {
           const body = '{"jobId":"final-ux-preflight","capability":"source-only"}';
-          responses.push({ path: url.pathname, status: 202, body });
+          responses.push(responseLedgerRecord({ path: url.pathname, status: 202, body }));
           return route.fulfill({ status: 202, contentType: 'application/json', body });
         }
         const body = JSON.stringify({ status: 'succeeded',
           cacheHit: false, result: { artifactIdentity: 'a'.repeat(64), inputIdentity: 'c'.repeat(64),
             artifact: { hex: retainedHex }, diagnostics: [] } });
-        responses.push({ path: url.pathname, status: 200, body });
+        responses.push(responseLedgerRecord({ path: url.pathname, status: 200, body }));
         return route.fulfill({ status: 200, contentType: 'application/json', body });
       }
       const upstream = `${compilerBase.replace(/\/$/u, '')}${url.pathname}`;
       const headers = { ...browserHeaders, origin: compilerBase.replace(/\/$/u, ''),
         referer: `${compilerBase.replace(/\/$/u, '')}/` };
       delete headers.host; delete headers['content-length'];
-      const upstreamResponse = await fetch(upstream, { method: request.method(), headers,
-        body: request.method() === 'POST' ? request.postDataBuffer() : undefined });
-      const body = await upstreamResponse.text(); responses.push({ path: url.pathname, status: upstreamResponse.status, body });
+      let upstreamResponse; let body;
+      try {
+        upstreamResponse = await fetch(upstream, { method: request.method(), headers, body: postBody });
+        body = await upstreamResponse.text();
+        responses.push(responseLedgerRecord({ path: url.pathname, status: upstreamResponse.status, body }));
+      } catch (error) {
+        routeFailure = failureLedgerRecord(error, {
+          method: request.method(), path: url.pathname, stage: 'upstream-fetch',
+        });
+        writeEvidence({ schema: 'intent-mcu-final-ux-runtime-raw@1', status: 'failed', stage: 'compiler-route',
+          commit: candidate.checkoutSha, assetManifestSha256: candidate.assetManifestSha256,
+          limits: { builds: 1, workers: 1, sessions: 1, retries: 0 }, requests, responses, routeFailure });
+        await route.abort('failed'); return;
+      }
       if (upstreamResponse.ok && request.method() === 'GET') {
         const terminal = JSON.parse(body); const hex = terminal?.result?.artifact?.hex;
         if (terminal?.status === 'succeeded') {
@@ -188,8 +200,19 @@ function fakeWorkerInstaller() {
       runtime: window.__M6_STATE__.runtime }; });
     assert.equal(tabB.workers, 0); assert.equal(tabB.runtime, null);
     await pageA.click('#beginner-run');
-    await pageA.waitForFunction(() => window.__M6_STATE__.runtime?.paused === false
-      && window.__M6_STATE__.runtimeWorkerCreations === 1, null, { timeout: execute ? 60_000 : 10_000 });
+    const runtimeDeadline = Date.now() + (execute ? 60_000 : 10_000);
+    while (true) {
+      if (routeFailure) throw Object.assign(new Error('FINAL_UX_COMPILER_ROUTE_FAILED'), { routeFailure });
+      const state = await pageA.evaluate(() => ({ running: window.__M6_STATE__.runtime?.paused === false
+        && window.__M6_STATE__.runtimeWorkerCreations === 1,
+      buildState: document.querySelector('#build-state')?.textContent ?? '' }));
+      if (state.running) break;
+      if (/failed|timed out|cancelled|unavailable/iu.test(state.buildState)) {
+        throw new Error(`FINAL_UX_BUILD_TERMINAL:${state.buildState}`);
+      }
+      if (Date.now() >= runtimeDeadline) throw new Error('FINAL_UX_RUNTIME_START_TIMEOUT');
+      await pageA.waitForTimeout(50);
+    }
     await pageA.waitForFunction(() => /is on/iu.test(document.querySelector('#component-layer [data-led-id="led-1"]')?.getAttribute('aria-label') || '')
       && /ON/u.test(document.querySelector('#serial-output')?.textContent || ''), null, { timeout: execute ? 20_000 : 10_000 });
     const running = await pageA.evaluate(() => ({ runtime: structuredClone(window.__M6_STATE__.runtime),
@@ -248,7 +271,8 @@ function fakeWorkerInstaller() {
       beginnerStatus: document.querySelector('#beginner-status')?.textContent, workerState: document.querySelector('#worker-state')?.textContent })).catch(() => null);
     evidence = { schema: 'intent-mcu-final-ux-runtime-acceptance@1', status: 'failed', mode: execute ? 'native' : 'source-only-preflight',
       commit: candidate.checkoutSha, assetManifestSha256: candidate.assetManifestSha256,
-      servedAssets: candidate.assets, error: { message: error.message, stack: error.stack }, browserState, requests, responses };
+      servedAssets: candidate.assets, error: { message: error.message, stack: error.stack },
+      routeFailure, browserState, requests, responses };
     writeEvidence(evidence); throw error;
   } finally { await context.close(); await browser.close(); await new Promise((resolve) => app.close(resolve)); }
   process.stdout.write(`${JSON.stringify(evidence)}\n`);
