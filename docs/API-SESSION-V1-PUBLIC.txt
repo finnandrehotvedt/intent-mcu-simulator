@@ -5,9 +5,11 @@ Endpoint: POST https://lab.teachthecompany.com/api/session/v1
 Reference client: https://lab.teachthecompany.com/api/session/v1/client.mjs
 
 The API is off by default in every browser tab. The user opens API access and
-creates one temporary, one-use pairing. The secret must enter a local client
-through stdin and must never be put in a prompt, chat, URL, command argument,
-log, file, or source control.
+creates one temporary, one-use pairing. The secret must never enter a prompt,
+chat, URL, command argument, log or source control. The Lab-generated local
+.intentpair ticket is the sole secret-bearing file exception: it is short-lived,
+one-use, must never be shared, and the reference client deletes it immediately
+after strict parsing. Hidden stdin remains a legacy local fallback.
 
 Transport operations
 owner.register, owner.heartbeat, pairing.create, pairing.claim,
@@ -16,7 +18,8 @@ owner.revoke.
 
 Client transport examples
 Claim the one-use pairing (the secret belongs only in this HTTPS JSON body,
-supplied from hidden local input; never put it in a URL or file):
+supplied from the deleted local ticket or hidden-input fallback; never put it
+in a URL, ordinary plan or log):
 POST /api/session/v1
 {"operation":"pairing.claim","pairingSecret":"<hidden local input>","scopes":["discover","read_project"]}
 Success returns {"ok":true,"code":"API_CLIENT_PAIRED","sessionId":"...",
@@ -79,6 +82,17 @@ JSON and contains no pairing secret or capability:
 The client rejects component.remove unless the top-level field
 "allow_component_removal":true is explicitly present. It never removes,
 replaces or resets a project by default and never automatically undoes.
+
+Optional same-process session
+Run `node client.mjs --session pairing.intentpair` to claim one ticket once and
+keep the resulting capability only in that live process. Send one nonsecret
+JSON object per line: `{"command":"inspect"}`,
+`{"command":"apply","plan":{...}}`,
+`{"command":"undo","transaction_id":"<exact server ID>"}`, or
+`{"command":"close"}`. The process may perform successive bounded plans
+without another pairing while the existing owner, scope, revision, rate, idle
+and absolute-lifetime rules remain valid. Process exit, reload, revoke, expiry
+or authority loss requires a fresh pairing; no capability is persisted.
 
 Exact batch operation shapes
 {"command":"component.add","id":"part-1","type":"led.basic-v1",

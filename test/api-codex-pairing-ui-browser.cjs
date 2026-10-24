@@ -70,7 +70,7 @@ const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
       assert.equal(metrics.secret, '');
       assert.match(metrics.copyStatus, /No pairing secret was included/);
       assert.equal(metrics.headerEyebrow, 'API ACCESS');
-      assert.deepEqual(metrics.steps, ['Copy Codex instructions', 'Create a pairing', 'Enter the secret locally']);
+      assert.deepEqual(metrics.steps, ['Copy Codex instructions', 'Create a pairing', 'Open the pairing ticket']);
       assert.deepEqual(metrics.links, [
         'https://lab.teachthecompany.com/api/session/v1/protocol.txt',
         'https://lab.teachthecompany.com/api/session/v1/client.mjs',
