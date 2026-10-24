@@ -26,7 +26,8 @@ test('real producer worker uses ordinary builders, runtimes, identity seams and 
   assert.doesNotMatch(source, /synthetic|mock|fixtureArtifact|constantfold/iu);
   assert.doesNotMatch(source, /deliverResolvedLevel\(true,/u);
   assert(source.indexOf('activity.firmwareBuildAttempts += 1') < source.indexOf('broker.compile(request)'));
-  assert(source.indexOf('await verifyShortPulseBeforeRuntime') < source.indexOf('constructX37RuntimePair'));
+  assert(source.indexOf('await verifyShortPulseBeforeRuntime')
+    < source.indexOf('const runtimes = await constructX37RuntimePair'));
   assert(source.lastIndexOf("terminal('passed'") > source.indexOf('await main()'));
 });
 
