@@ -65,13 +65,14 @@ test('real source snapshot and input envelopes match fixture fields without inst
   const avr = await readFile(new URL('../src/runtime-kernel.mjs', import.meta.url), 'utf8');
   const avrAdapter = await readFile(new URL('../src/atmega328p-adapter.mjs', import.meta.url), 'utf8');
   const rp = await readFile(new URL('../src/rp2040-experimental-runtime.mjs', import.meta.url), 'utf8');
+  const seams = await readFile(new URL('../src/x37-existing-runtime-seams.mjs', import.meta.url), 'utf8');
   const bridge = await readFile(new URL('../expansion-drafts/controller-runtime-bridge-v1.mjs', import.meta.url), 'utf8');
   assert.match(avr, /instruments:[\s\S]*logic:[\s\S]*transitions: logicTransitions,[\s\S]*dropped:/u);
   assert.match(avr, /const machine = this\.adapter\.snapshot\(\)/u);
   assert.match(avrAdapter, /pins: this\.pinSnapshot\(\)/u);
   assert.match(rp, /pins: \[/u);
   assert.match(rp, /instruments:[\s\S]*logic:[\s\S]*transitions:/u);
-  assert.match(rp, /this\.#command\('digital-input', \{ pin, level, targetCycle \}\)/u);
+  assert.match(seams, /createRuntimeCommand\(runtime\.requestId, 'digital-input'/u);
   assert.match(bridge, /exactKeys\(value, \['schema', 'requestId', 'type', 'pin', 'level', 'targetCycle'\]\)/u);
 });
 

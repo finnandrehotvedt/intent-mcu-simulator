@@ -9,8 +9,8 @@ const files = [
 const sources = await Promise.all(files.map((file) => readFile(file, 'utf8')));
 assert.match(sources[0], /step\(\)/u);
 assert.match(sources[0], /queueDigitalSequence\(events\)/u);
-assert.match(sources[1], /queueDigitalInput\(pin, level\)/u);
 assert.match(sources[1], /step\(\)/u);
+assert.match(sources[2], /createRuntimeCommand\(runtime\.requestId, 'digital-input'/u);
 assert.match(sources[2], /origin: 'executed-firmware-observation'/u);
 assert.match(sources[2], /exactCycleClaimed: false/u);
 assert.match(sources[2], /X37_SEAM_OBSERVATION_HISTORY_LOST/u);

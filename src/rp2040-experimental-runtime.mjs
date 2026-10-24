@@ -96,16 +96,6 @@ export class Rp2040ExperimentalRuntime {
     return this.snapshot('stepped');
   }
 
-  queueDigitalInput(pin, level) {
-    this.#ensureActive();
-    if (!/^GPIO(?:[0-9]|[12][0-9])$/u.test(pin) || typeof level !== 'boolean') {
-      throw errorWithCode('RUNTIME_COMMAND_INVALID');
-    }
-    const targetCycle = this.adapter.machineSnapshot().cycle;
-    this.#command('digital-input', { pin, level, targetCycle });
-    return { pin, level, requestedAtCycle: targetCycle };
-  }
-
   reset() {
     this.paused = true;
     this.#command('reset');

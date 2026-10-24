@@ -90,8 +90,9 @@ export async function staticPreflight() {
     rpBridgeMapsInputToMachinePin: runtimeBridge.includes('this.machine.gpio[pin].setInputValue(next.level)'),
     avrRuntimeApis: ['step()', 'queueDigitalSequence(events)', 'pause()', 'reset()']
       .every((value) => runtimeKernel.includes(value)),
-    rpRuntimeApis: ['step()', 'queueDigitalInput(pin, level)', 'pause()', 'reset()', 'dispose()']
-      .every((value) => rpRuntime.includes(value)),
+    rpRuntimeApis: ['step()', 'pause()', 'reset()', 'dispose()']
+      .every((value) => rpRuntime.includes(value))
+      && seams.includes("createRuntimeCommand(runtime.requestId, 'digital-input'"),
     seamLimits: ['maxTotalInstructions', 'maxAdvanceCalls', 'maxObservations',
       'X37_SEAM_CAUSAL_DELIVERY_INVALID'].every((value) => seams.includes(value)),
     killableWatchdog: runKillableWorker.toString().includes('worker.terminate()'),

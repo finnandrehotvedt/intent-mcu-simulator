@@ -4,6 +4,7 @@
 import {
   validateX37SharedSchedulerContract, x37SchedulerTick,
 } from './x37-shared-scheduler-contract.mjs';
+import { createRuntimeCommand } from '../expansion-drafts/controller-runtime-bridge-v1.mjs';
 
 const clone = (value) => structuredClone(value);
 const reject = (code) => { throw Object.assign(new Error(code), { code }); };
@@ -178,7 +179,11 @@ export function createAvrX37RuntimeSeam({ runtime, identityOwner, outputPin = 'D
 export function createRp2040X37RuntimeSeam({ runtime, identityOwner, outputPin = 'GPIO0',
   inputPin = 'GPIO1', schedulerContract, maxStepsPerAdvance = 1_000_000,
   maxTotalInstructions = 1_000_000, maxAdvanceCalls = 32, maxObservations = 32 }) {
-  if (typeof runtime?.step !== 'function' || typeof runtime?.queueDigitalInput !== 'function'
+  const hasPrivateInputBridge = typeof runtime?.queueDigitalInput === 'function'
+    || (typeof runtime?.adapter?.handle === 'function'
+      && typeof runtime?.adapter?.machineSnapshot === 'function'
+      && Number.isSafeInteger(runtime?.requestId));
+  if (typeof runtime?.step !== 'function' || !hasPrivateInputBridge
       || typeof runtime?.pause !== 'function' || typeof runtime?.reset !== 'function'
       || !/^GPIO(?:[0-9]|[12][0-9])$/u.test(outputPin)
       || !/^GPIO(?:[0-9]|[12][0-9])$/u.test(inputPin)) reject('X37_SEAM_RP2040_API_INVALID');
@@ -189,7 +194,17 @@ export function createRp2040X37RuntimeSeam({ runtime, identityOwner, outputPin =
     advanceToLocalCycle: (targetCycle) => seam.advanceByStepping(targetCycle, maxStepsPerAdvance),
     deliverResolvedLevel(level, sourceObservation) {
       return seam.causalDelivery(level, sourceObservation,
-        () => runtime.queueDigitalInput(inputPin, level));
+        () => {
+          if (typeof runtime.queueDigitalInput === 'function') {
+            return runtime.queueDigitalInput(inputPin, level);
+          }
+          const targetCycle = runtime.adapter.machineSnapshot().cycle;
+          runtime.requestId += 1;
+          runtime.adapter.handle(createRuntimeCommand(runtime.requestId, 'digital-input', {
+            pin: inputPin, level, targetCycle,
+          }));
+          return { pin: inputPin, level, requestedAtCycle: targetCycle };
+        });
     },
   });
 }
