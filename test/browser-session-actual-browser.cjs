@@ -152,6 +152,8 @@ const post = async (origin, operation, value = {}, capability = null) => {
     assert.equal(afterRefresh.code, 'API_AUTH_REQUIRED');
     assert.deepEqual(await project(third.page), thirdBefore);
     await second.page.locator('#browser-session-api-dialog [data-revoke]').click();
+    await second.page.waitForFunction(() => document.querySelector(
+      '#browser-session-api-dialog [data-status]')?.textContent === 'API access revoked.');
     const afterRevoke = await post(origin, 'request.submit', { sessionId: claimB.sessionId, request: {
       schema: 'intent-mcu-browser-session-request@1', request_id: 'revoke-read-0001',
       session_id: claimB.sessionId, project_id: claimB.projectId, expected_revision: claimB.revision,

@@ -41,7 +41,6 @@ async function execute(command, args = {}) {
 }
 const before = await execute('components.list');
 if (before.status !== 'accepted') throw new Error(before.code);
-const transactionId = `transaction-${randomUUID()}`;
 const operations = [
   ...before.components.map((component) => ({ command: 'component.remove', component_id: component.id })),
   { command: 'component.add', id: 'api-board-1', type: 'board.atmega328p-16mhz-v1',
@@ -58,8 +57,9 @@ const operations = [
     from: { component: 'api-led-1', pin: 'CATHODE' }, to: { component: 'api-board-1', pin: 'GND1' } },
 ];
 if (operations.length > 16) throw new Error('API_BATCH_LIMIT');
-const applied = await execute('edit.batch', { transaction_id: transactionId, commands: operations });
+const applied = await execute('edit.batch', { commands: operations });
 if (applied.status !== 'accepted') throw new Error(applied.code);
+const transactionId = applied.transaction_id;
 const components = await execute('components.list'); const nets = await execute('nets.list');
 const pins = await execute('component.pins', { component_id: 'api-led-1' });
 const holdMs = Number(process.env.API03_PAUSE_BEFORE_UNDO_MS ?? 0);
@@ -69,7 +69,7 @@ if (Number.isInteger(holdMs) && holdMs > 0 && holdMs <= 10_000) {
 const undone = await execute('edit.undo', { transaction_id: transactionId });
 if (undone.status !== 'accepted') throw new Error(undone.code);
 const restored = await execute('project.inspect');
-process.stdout.write(`${JSON.stringify({ status: 'pass', transaction_id: transactionId,
+process.stdout.write(`${JSON.stringify({ status: 'pass', transaction_id: transactionId, changes: applied.changes,
   assembled: { components: components.components.map((item) => item.id),
     nets: nets.nets.map((item) => item.id), pins: pins.pins },
   undo: undone.code, restored_component_count: restored.project.circuit.components.length })}\n`);

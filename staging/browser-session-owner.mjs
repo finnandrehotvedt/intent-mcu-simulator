@@ -6,7 +6,7 @@ import { COMPONENT_CATALOG } from '../src/component-catalog.mjs';
 import { RP2040_PICO_COMPONENT_CATALOG, validateRp2040PicoCircuit } from '../src/rp2040-pico-circuit.mjs';
 import { ESP32C3_PUBLIC_COMPONENT_CATALOG, validateEsp32C3Circuit } from '../src/esp32c3-public-circuit.mjs';
 import { STM32_PUBLIC_COMPONENT_CATALOG, validateStm32Circuit } from '../src/stm32-public-circuit.mjs';
-import { API03_PROFILE_MATRIX, prepareApiBatch } from '../src/browser-session-edit.mjs';
+import { API03_PROFILE_MATRIX, prepareApiBatch, summarizeApiChanges } from '../src/browser-session-edit.mjs';
 
 const endpoint = '/api/session/v1';
 const makeId = (prefix) => `${prefix}-${crypto.randomUUID()}`;
@@ -51,7 +51,7 @@ async function snapshot() {
     projectId: `project-${hash.slice(0, 32)}`, revision: Number.parseInt(hash.slice(0, 12), 16),
     supportsEdit: false };
 }
-function execute(request, current) {
+function execute(request, current, context) {
   if (request.expected_revision !== current.revision) return { status: 'rejected', code: 'API_STALE_REVISION' };
   const components = current.project?.circuit?.components ?? [];
   const nets = current.project?.circuit?.nets ?? [];
@@ -81,28 +81,36 @@ function execute(request, current) {
   }
   if (request.command === 'edit.batch') {
     if (!current.supportsEdit) return { status: 'rejected', code: 'API_PROFILE_READ_ONLY' };
+    if (!request.arguments || Object.keys(request.arguments).join('|') !== 'commands') {
+      return { status: 'rejected', code: 'API_BATCH_SHAPE' };
+    }
     let commands;
     try { commands = prepareApiBatch(current.project, request.arguments.commands); }
     catch (error) { return { status: 'rejected', code: error.code ?? 'API_BATCH_REJECTED' }; }
-    const result = window.__BROWSER_SESSION_CANONICAL_OWNER__.batch({ expectedRevision: request.expected_revision,
-      transactionId: request.arguments.transaction_id, commands });
+    const transactionId = `api-tx:${context.sessionId}:${request.request_id}`;
+    const result = window.__BROWSER_SESSION_CANONICAL_OWNER__.batch({ expectedProjectId: current.projectId,
+      expectedRevision: request.expected_revision, transactionId, commands });
     return result.ok ? { status: 'accepted', code: 'API_BATCH_COMMITTED',
-      transaction_id: request.arguments.transaction_id,
-      changes: request.arguments.commands.map((item) => item.command) }
+      transaction_id: transactionId, changes: summarizeApiChanges(request.arguments.commands) }
       : { status: 'rejected', code: result.code, details: result.details ?? [] };
   }
   if (request.command === 'edit.undo' || request.command === 'edit.redo') {
     if (!current.supportsEdit) return { status: 'rejected', code: 'API_PROFILE_READ_ONLY' };
+    if (!request.arguments || Object.keys(request.arguments).join('|') !== 'transaction_id'
+        || typeof request.arguments.transaction_id !== 'string') {
+      return { status: 'rejected', code: 'API_TRANSACTION_SHAPE' };
+    }
     const method = request.command === 'edit.undo' ? 'undo' : 'redo';
-    const result = window.__BROWSER_SESSION_CANONICAL_OWNER__[method]({ expectedRevision: request.expected_revision,
-      transactionId: request.arguments.transaction_id });
+    const result = window.__BROWSER_SESSION_CANONICAL_OWNER__[method]({ expectedProjectId: current.projectId,
+      expectedRevision: request.expected_revision, transactionId: request.arguments.transaction_id });
     return result.ok ? { status: 'accepted', code: request.command === 'edit.undo'
       ? 'API_TRANSACTION_UNDONE' : 'API_TRANSACTION_REDONE',
     transaction_id: request.arguments.transaction_id, changes: [request.command] }
       : { status: 'rejected', code: result.code, details: result.details ?? [] };
   }
   if (request.command === 'capabilities.list') return { status: 'accepted', code: 'API_CAPABILITIES_LISTED',
-    commands: ['capabilities.list', 'components.catalog', 'project.inspect', 'components.list', 'component.pins', 'nets.list', 'circuit.validate'],
+    commands: ['capabilities.list', 'components.catalog', 'project.inspect', 'components.list', 'component.pins',
+      'nets.list', 'circuit.validate', 'edit.batch', 'edit.undo', 'edit.redo'],
     profiles: ['board.atmega328p-16mhz-v1', 'board.rp2040-pico-v1', 'board.esp32-c3-devmodule-v1', 'board.stm32f429zi-nucleo144-v1'],
     scopes: ['discover', 'read_project', 'edit_circuit'], profile_matrix: API03_PROFILE_MATRIX };
   if (request.command === 'components.catalog') {
@@ -131,50 +139,74 @@ export function installBrowserSessionOwner() {
   button.addEventListener('click', () => dialog.showModal()); dialog.querySelector('[data-close]').addEventListener('click', () => dialog.close());
   enable.addEventListener('click', async () => {
     enable.disabled = true; await revokeCurrent(); enable.disabled = true;
+    const setupToken = ++loopToken;
     let initial;
     try { initial = await snapshot(); } catch { status.textContent = 'Canonical project is unavailable.'; stop(); return; }
+    if (setupToken !== loopToken) return;
     if (editScope.checked && !initial.supportsEdit) { status.textContent = 'Editing is unavailable for this profile or project.'; stop(); return; }
-    sessionId = makeId('session'); boundProjectId = initial.projectId; editScope.disabled = true;
-    const registered = await post('owner.register', { sessionId, projectId: initial.projectId,
+    const createdSessionId = makeId('session'); sessionId = createdSessionId;
+    boundProjectId = initial.projectId; editScope.disabled = true;
+    const registered = await post('owner.register', { sessionId: createdSessionId, projectId: initial.projectId,
       tabId: makeId('tab'), revision: initial.revision }).catch(() => ({ ok: false }));
+    if (setupToken !== loopToken || sessionId !== createdSessionId) return;
     if (!registered.ok) { status.textContent = 'Private API preview is unavailable on this server.'; stop(); return; }
-    owner = registered.ownerCapability;
+    const createdOwner = registered.ownerCapability; owner = createdOwner;
     const scopes = ['discover', 'read_project', ...(editScope.checked ? ['edit_circuit'] : [])];
-    const pairing = await post('pairing.create', { sessionId, scopes }, owner).catch(() => ({ ok: false,
+    const pairing = await post('pairing.create', { sessionId: createdSessionId, scopes }, createdOwner).catch(() => ({ ok: false,
       code: 'API_NETWORK_UNAVAILABLE' }));
+    if (setupToken !== loopToken || owner !== createdOwner || sessionId !== createdSessionId) return;
     if (!pairing.ok) { status.textContent = `Pairing rejected: ${pairing.code}`; await revokeCurrent(); return; }
     secretField.value = pairing.pairingSecret; revoke.disabled = false;
     status.textContent = editScope.checked ? 'Pairing ready. AVR circuit editing granted.' : 'Pairing ready. Read-only scopes only.';
     ttl.textContent = `One-time secret expires ${new Date(pairing.expiresAt).toLocaleTimeString()}.`;
-    const token = ++loopToken;
+    const token = setupToken; const projectId = initial.projectId;
+    const contextLive = () => token === loopToken && owner === createdOwner
+      && sessionId === createdSessionId && boundProjectId === projectId;
     const tick = async () => {
-      if (token !== loopToken || !owner) return;
+      if (!contextLive()) return;
       let current;
       try { current = await snapshot(); } catch { current = null; }
-      if (!current || current.projectId !== boundProjectId) {
-        const oldOwner = owner; const oldSession = sessionId; stop();
-        await post('owner.revoke', { sessionId: oldSession }, oldOwner).catch(() => null);
+      if (!contextLive()) return;
+      if (!current || current.projectId !== projectId) {
+        stop();
+        await post('owner.revoke', { sessionId: createdSessionId }, createdOwner).catch(() => null);
         status.textContent = 'Project content or board changed. Pair again.'; return;
       }
-      const lease = await post('owner.heartbeat', { sessionId, revision: current.revision }, owner).catch(() => ({ ok: false }));
+      const lease = await post('owner.heartbeat', { sessionId: createdSessionId,
+        revision: current.revision }, createdOwner).catch(() => ({ ok: false }));
+      if (!contextLive()) return;
       if (!lease.ok) { status.textContent = 'Owner lease ended. Pair again.'; stop(); return; }
       if (lease.clientPaired) {
         secretField.value = '';
-        status.textContent = 'One read-only client is paired.';
+        status.textContent = editScope.checked ? 'One AVR editing client is paired.' : 'One read-only client is paired.';
         ttl.textContent = `Client expires no later than ${new Date(lease.clientExpiresAt).toLocaleTimeString()}.`;
       }
-      const pulled = await post('owner.pull', { sessionId }, owner).catch(() => ({ ok: false }));
+      const pulled = await post('owner.pull', { sessionId: createdSessionId }, createdOwner).catch(() => ({ ok: false }));
+      if (!contextLive()) return;
       if (pulled.code === 'API_COMMAND_AVAILABLE') {
-        const before = current; const outcome = execute(pulled.request, before);
+        const before = await snapshot().catch(() => null);
+        if (!contextLive()) return;
+        if (!before || before.projectId !== projectId || pulled.request.project_id !== projectId) {
+          await post('owner.complete', { sessionId: createdSessionId, result: {
+            schema: 'intent-mcu-browser-session-result@1', request_id: pulled.request.request_id,
+            status: 'rejected', code: 'API_PROJECT_CHANGED', revision_before: before?.revision ?? current.revision,
+            revision_after: before?.revision ?? current.revision, changes: [],
+          } }, createdOwner).catch(() => null);
+          if (contextLive()) await revokeCurrent();
+          status.textContent = 'Project changed while waiting. Pair again.'; return;
+        }
+        const outcome = execute(pulled.request, before, { sessionId: createdSessionId });
         const after = await snapshot().catch(() => null);
-        const stable = after?.projectId === before.projectId;
-        await post('owner.complete', { sessionId, result: { schema: 'intent-mcu-browser-session-result@1',
+        if (!contextLive()) return;
+        const stable = after?.projectId === projectId;
+        await post('owner.complete', { sessionId: createdSessionId, result: { schema: 'intent-mcu-browser-session-result@1',
           request_id: pulled.request.request_id, ...(stable ? outcome
             : { status: 'rejected', code: 'API_PROJECT_CHANGED' }), revision_before: before.revision,
-          revision_after: after?.revision ?? before.revision, changes: outcome.changes ?? [] } }, owner).catch(() => null);
+          revision_after: after?.revision ?? before.revision, changes: outcome.changes ?? [] } }, createdOwner).catch(() => null);
+        if (!contextLive()) return;
         if (!stable) { status.textContent = 'Project changed while reading. Pair again.'; await revokeCurrent(); return; }
       }
-      if (token === loopToken) timer = setTimeout(tick, 250);
+      if (contextLive()) timer = setTimeout(tick, 250);
     };
     timer = setTimeout(tick, 0);
   });

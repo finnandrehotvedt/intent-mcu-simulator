@@ -33,6 +33,13 @@ and unsupported profiles reject before mutation. Manual browser edits win a
 race: a queued API edit with the old revision is rejected and the browser's
 canonical bytes remain unchanged.
 
+After every awaited heartbeat or pull, the owner rechecks its captured session,
+capability, loop epoch and project ID. It obtains a fresh canonical snapshot
+after pull and before synchronous execution. The canonical mutation owner then
+checks both expected project ID and revision immediately before applying the
+editor command. A delayed response from a revoked or replaced session cannot
+mutate a successor project or cross into a re-enabled session.
+
 ## Commands
 
 `edit.batch` accepts at most 16 named operations and commits them as one
@@ -47,6 +54,11 @@ The adapter translates these operations into the existing project-editor
 commands. The canonical electrical validator runs on the complete staged
 result before one commit. A failed operation or invalid final graph leaves
 project bytes, revision, persistence, history, and artifact state unchanged.
+
+The owner creates the authoritative transaction ID from the bound session and
+unique request ID, then returns it with the accepted result. A client cannot
+choose or reuse the canonical transaction identity. Undo and Redo accept only
+that returned ID.
 
 `edit.undo` and `edit.redo` require the exact transaction ID at the canonical
 history head. A manual edit or another transaction at the head causes a
@@ -67,4 +79,5 @@ LED connected by three named nets, reads the resulting canonical graph, and
 undoes the exact transaction. The real-browser test verifies the three visible
 components and routed wires before Undo, exact byte restoration afterward,
 atomic invalid-batch rejection, stale manual/API race handling, explicit scope,
-and zero Build requests or runtime-worker creation.
+delayed-pull containment across same-revision replacement/revoke/re-enable, and
+zero Build requests or runtime-worker creation.

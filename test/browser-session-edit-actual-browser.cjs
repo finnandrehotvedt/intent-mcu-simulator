@@ -63,6 +63,17 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
   try {
     const context = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 1440, height: 900 } });
     const page = await context.newPage(); const browserErrors = []; const buildRequests = [];
+    let holdPull = false; let releasePull = null; let observedPull = null;
+    await page.route('**/api/session/v1', async (route) => {
+      const body = route.request().postDataJSON?.();
+      if (holdPull && body?.operation === 'owner.pull') {
+        const response = await route.fetch();
+        observedPull?.();
+        await new Promise((resolve) => { releasePull = resolve; });
+        await route.fulfill({ response }); return;
+      }
+      await route.continue();
+    });
     page.on('pageerror', (error) => browserErrors.push(error.message));
     page.on('request', (request) => { if (/\/api\/build/u.test(request.url())) buildRequests.push(request.url()); });
     await page.goto(origin, { waitUntil: 'domcontentloaded' });
@@ -70,8 +81,8 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
       && window.__BROWSER_SESSION_CANONICAL_OWNER__?.snapshot?.().ok === true);
     const before = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
     const workersBefore = await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations);
-    await page.locator('#workbench-more > summary').click();
-    await page.locator('#workbench-popup-controls button', { hasText: 'API access' }).click();
+    await page.evaluate(() => [...document.querySelectorAll('#workbench-popup-controls button')]
+      .find((button) => button.textContent === 'API access').click());
     await page.locator('#browser-session-api-dialog [data-edit-scope]').check();
     await page.locator('#browser-session-api-dialog [data-enable]').click();
     await page.waitForFunction(() => document.querySelector('#browser-session-api-dialog [data-secret]').value.length > 20);
@@ -94,6 +105,10 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
     if (process.env.API03_SCREENSHOT) await page.screenshot({ path: process.env.API03_SCREENSHOT, fullPage: false });
     const output = await editing;
     assert.equal(output.status, 'pass'); assert.equal(output.undo, 'API_TRANSACTION_UNDONE');
+    assert.match(output.transaction_id, /^api-tx:session-/u);
+    assert.deepEqual(output.changes.map((change) => change.component_id ?? change.net_id).sort(),
+      ['api-board-1', 'api-led-1', 'api-net-drive', 'api-net-ground', 'api-net-series', 'api-resistor-1',
+        'board-1', 'led-1', 'resistor-1'].sort());
     assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), before);
     assert.equal(await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations), workersBefore);
     assert.deepEqual(buildRequests, []); assert.deepEqual(browserErrors, []);
@@ -120,7 +135,7 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
     const invalidId = 'invalid-batch-0001';
     const invalidRequest = { schema: 'intent-mcu-browser-session-request@1', request_id: invalidId,
       session_id: claim.sessionId, project_id: claim.projectId, expected_revision: claim.revision,
-      sequence: 1, command: 'edit.batch', arguments: { transaction_id: 'transaction-invalid-0001',
+      sequence: 1, command: 'edit.batch', arguments: {
         commands: [{ command: 'component.remove', component_id: 'board-1' }] } };
     assert.equal((await post(origin, 'request.submit', { sessionId: claim.sessionId,
       request: invalidRequest }, claim.clientCapability)).code, 'API_REQUEST_QUEUED');
@@ -137,9 +152,56 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
       request: staleRequest }, claim.clientCapability)).code, 'API_REQUEST_QUEUED');
     assert.equal((await resultFor(origin, claim, staleId)).code, 'API_STALE_REVISION');
     assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), manualWinner);
+
+    // A pulled command cannot cross actual same-revision replacement, revoke, or re-enable.
+    await page.locator('#browser-session-api-dialog [data-revoke]').click();
+    await page.locator('#browser-session-api-dialog [data-close]').click();
+    await page.evaluate(() => document.querySelector('#project-new').click());
+    await page.locator('#unsaved-discard').click();
+    await page.waitForFunction(() => window.__BROWSER_SESSION_CANONICAL_OWNER__.snapshot().revision === 0);
+    await page.evaluate(() => [...document.querySelectorAll('#workbench-popup-controls button')]
+      .find((button) => button.textContent === 'API access').click());
+    await page.locator('#browser-session-api-dialog [data-enable]').click();
+    await page.waitForFunction(() => document.querySelector('#browser-session-api-dialog [data-secret]').value.length > 20);
+    const raceSecret = await page.locator('#browser-session-api-dialog [data-secret]').inputValue();
+    const raceClaim = await post(origin, 'pairing.claim', { pairingSecret: raceSecret,
+      scopes: ['discover', 'read_project', 'edit_circuit'] });
+    const pullSeen = new Promise((resolve) => { observedPull = resolve; }); holdPull = true;
+    const raceId = 'delayed-pull-race-0001';
+    const raceRequest = { schema: 'intent-mcu-browser-session-request@1', request_id: raceId,
+      session_id: raceClaim.sessionId, project_id: raceClaim.projectId, expected_revision: 0,
+      sequence: 1, command: 'edit.batch', arguments: { commands: [{ command: 'component.add',
+        id: 'race-led-1', type: 'led.basic-v1', position: { x: 0.5, y: 0.5, rotation: 0 } }] } };
+    assert.equal((await post(origin, 'request.submit', { sessionId: raceClaim.sessionId,
+      request: raceRequest }, raceClaim.clientCapability)).code, 'API_REQUEST_QUEUED');
+    await pullSeen;
+    await page.locator('#browser-session-api-dialog [data-close]').click();
+    await page.evaluate(() => document.querySelector('#project-new').click());
+    if (await page.locator('#unsaved-discard').isVisible()) await page.locator('#unsaved-discard').click();
+    const replacement = await page.evaluate(() => ({ bytes: JSON.stringify(window.__M6_PROJECT__()),
+      snapshot: window.__BROWSER_SESSION_CANONICAL_OWNER__.snapshot() }));
+    assert.equal(replacement.snapshot.revision, 0); assert.notEqual(replacement.snapshot.projectId, raceClaim.projectId);
+    await page.evaluate(() => [...document.querySelectorAll('#workbench-popup-controls button')]
+      .find((button) => button.textContent === 'API access').click());
+    await page.locator('#browser-session-api-dialog [data-revoke]').click();
+    await page.locator('#browser-session-api-dialog [data-enable]').click();
+    await page.waitForFunction(() => document.querySelector('#browser-session-api-dialog [data-secret]').value.length > 20);
+    const successorSecret = await page.locator('#browser-session-api-dialog [data-secret]').inputValue();
+    const successor = await post(origin, 'pairing.claim', { pairingSecret: successorSecret,
+      scopes: ['discover', 'read_project', 'edit_circuit'] });
+    holdPull = false; releasePull(); await new Promise((resolve) => setTimeout(resolve, 500));
+    assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), replacement.bytes);
+    assert.equal(await page.locator('[data-component-id="race-led-1"]').count(), 0);
+    const successorId = 'successor-read-0001';
+    const successorRequest = { ...raceRequest, request_id: successorId, session_id: successor.sessionId,
+      project_id: successor.projectId, sequence: 1, command: 'components.list', arguments: {} };
+    assert.equal((await post(origin, 'request.submit', { sessionId: successor.sessionId,
+      request: successorRequest }, successor.clientCapability)).code, 'API_REQUEST_QUEUED');
+    assert.deepEqual((await resultFor(origin, successor, successorId)).components, []);
     await context.close();
     process.stdout.write(`${JSON.stringify({ status: 'pass', visible, restoredExactBytes: true,
       editScopeExplicit: true, invalidAtomic: true, manualRaceStale: true,
+      delayedPullContained: true, replacementSameRevision: true,
       buildRequests: 0, runtimeWorkers: workersBefore })}\n`);
   } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }
 })().catch((error) => { console.error(error); process.exitCode = 1; });

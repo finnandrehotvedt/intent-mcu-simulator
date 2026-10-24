@@ -14,12 +14,20 @@ const fail = (code) => { throw Object.assign(new Error(code), { code }); };
 
 export const API03_PROFILE_MATRIX = Object.freeze({
   'board.atmega328p-16mhz-v1': Object.freeze({ discover: true, read_project: true, edit_circuit: true,
-    commands: Object.freeze(['component.add', 'component.remove', 'component.property.set',
-      'wire.connect', 'wire.disconnect', 'edit.batch', 'edit.undo', 'edit.redo']) }),
+    commands: Object.freeze(['edit.batch', 'edit.undo', 'edit.redo']),
+    batchOperations: Object.freeze(['component.add', 'component.remove', 'component.property.set',
+      'wire.connect', 'wire.disconnect']) }),
   'board.rp2040-pico-v1': Object.freeze({ discover: true, read_project: true, edit_circuit: false, commands: Object.freeze([]) }),
   'board.esp32-c3-devmodule-v1': Object.freeze({ discover: true, read_project: true, edit_circuit: false, commands: Object.freeze([]) }),
   'board.stm32f429zi-nucleo144-v1': Object.freeze({ discover: true, read_project: true, edit_circuit: false, commands: Object.freeze([]) }),
 });
+
+export function summarizeApiChanges(operations) {
+  return operations.map((operation) => Object.freeze(operation.command.startsWith('component.')
+    ? { operation: operation.command, component_id: operation.id ?? operation.component_id }
+    : { operation: operation.command, net_id: operation.net_id,
+      ...(operation.endpoint ? { endpoint: structuredClone(operation.endpoint) } : {}) }));
+}
 
 export function prepareApiBatch(project, operations) {
   if (!project?.circuit || !Array.isArray(operations) || !operations.length || operations.length > 16) {

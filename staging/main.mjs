@@ -15691,22 +15691,31 @@ window.__BROWSER_SESSION_CANONICAL_OWNER__ = Object.freeze({
       revision: editor.revision, project: structuredClone(currentProject()),
       supportsEdit: editor instanceof ProjectEditorReducer && boundedSubcircuits.instances.length === 0 };
   },
-  batch: ({ expectedRevision, transactionId, commands }) => {
+  batch: ({ expectedProjectId, expectedRevision, transactionId, commands }) => {
     if (selectedCompilerProfile !== AVR_PROFILE || !(editor instanceof ProjectEditorReducer)
         || boundedSubcircuits.instances.length) return { ok: false, code: 'API_PROFILE_READ_ONLY' };
+    if (expectedProjectId !== `project-avr-${Math.max(1, lifecycle.projectGeneration)}`) {
+      return { ok: false, code: 'API_PROJECT_CHANGED' };
+    }
     if (expectedRevision !== editor.revision) return { ok: false, code: 'API_STALE_REVISION', revision: editor.revision };
     return applyEditor({ type: 'edit.batch', transactionId, commands }, 'API batch');
   },
-  undo: ({ expectedRevision, transactionId }) => {
+  undo: ({ expectedProjectId, expectedRevision, transactionId }) => {
     if (selectedCompilerProfile !== AVR_PROFILE || !(editor instanceof ProjectEditorReducer)) {
       return { ok: false, code: 'API_PROFILE_READ_ONLY' };
+    }
+    if (expectedProjectId !== `project-avr-${Math.max(1, lifecycle.projectGeneration)}`) {
+      return { ok: false, code: 'API_PROJECT_CHANGED' };
     }
     if (expectedRevision !== editor.revision) return { ok: false, code: 'API_STALE_REVISION', revision: editor.revision };
     return applyEditor({ type: 'edit.undo', transactionId }, 'API undo');
   },
-  redo: ({ expectedRevision, transactionId }) => {
+  redo: ({ expectedProjectId, expectedRevision, transactionId }) => {
     if (selectedCompilerProfile !== AVR_PROFILE || !(editor instanceof ProjectEditorReducer)) {
       return { ok: false, code: 'API_PROFILE_READ_ONLY' };
+    }
+    if (expectedProjectId !== `project-avr-${Math.max(1, lifecycle.projectGeneration)}`) {
+      return { ok: false, code: 'API_PROJECT_CHANGED' };
     }
     if (expectedRevision !== editor.revision) return { ok: false, code: 'API_STALE_REVISION', revision: editor.revision };
     return applyEditor({ type: 'edit.redo', transactionId }, 'API redo');
