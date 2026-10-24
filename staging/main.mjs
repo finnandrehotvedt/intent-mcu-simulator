@@ -15683,6 +15683,35 @@ window.__X70_ACCESSIBLE_DEMONSTRATION__ = Object.freeze({
 });
 window.__M6_CONNECT__ = (from, to) => { pendingEndpoint = parseEndpoint(from); handlePin(parseEndpoint(to)); };
 window.__M6_PROJECT__ = () => JSON.parse(currentProjectText());
+window.__BROWSER_SESSION_CANONICAL_OWNER__ = Object.freeze({
+  snapshot: () => {
+    if (selectedCompilerProfile !== AVR_PROFILE) return { ok: false, code: 'API_PROFILE_READ_ONLY' };
+    return { ok: true, profile: AVR_PROFILE,
+      projectId: `project-avr-${Math.max(1, lifecycle.projectGeneration)}`,
+      revision: editor.revision, project: structuredClone(currentProject()),
+      supportsEdit: editor instanceof ProjectEditorReducer && boundedSubcircuits.instances.length === 0 };
+  },
+  batch: ({ expectedRevision, transactionId, commands }) => {
+    if (selectedCompilerProfile !== AVR_PROFILE || !(editor instanceof ProjectEditorReducer)
+        || boundedSubcircuits.instances.length) return { ok: false, code: 'API_PROFILE_READ_ONLY' };
+    if (expectedRevision !== editor.revision) return { ok: false, code: 'API_STALE_REVISION', revision: editor.revision };
+    return applyEditor({ type: 'edit.batch', transactionId, commands }, 'API batch');
+  },
+  undo: ({ expectedRevision, transactionId }) => {
+    if (selectedCompilerProfile !== AVR_PROFILE || !(editor instanceof ProjectEditorReducer)) {
+      return { ok: false, code: 'API_PROFILE_READ_ONLY' };
+    }
+    if (expectedRevision !== editor.revision) return { ok: false, code: 'API_STALE_REVISION', revision: editor.revision };
+    return applyEditor({ type: 'edit.undo', transactionId }, 'API undo');
+  },
+  redo: ({ expectedRevision, transactionId }) => {
+    if (selectedCompilerProfile !== AVR_PROFILE || !(editor instanceof ProjectEditorReducer)) {
+      return { ok: false, code: 'API_PROFILE_READ_ONLY' };
+    }
+    if (expectedRevision !== editor.revision) return { ok: false, code: 'API_STALE_REVISION', revision: editor.revision };
+    return applyEditor({ type: 'edit.redo', transactionId }, 'API redo');
+  },
+});
 window.__M6_IMPORT__ = (source, mode = 'replace') => {
   const before = currentProjectText(); const result = editor.importText(source, mode, { running });
   if (result.ok) {

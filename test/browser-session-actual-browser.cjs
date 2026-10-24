@@ -125,11 +125,20 @@ const post = async (origin, operation, value = {}, capability = null) => {
       source.dispatchEvent(new Event('input', { bubbles: true }));
     });
     await first.page.waitForTimeout(500);
-    const afterReplacement = await post(origin, 'request.submit', { sessionId: claimA.sessionId, request: {
-      schema: 'intent-mcu-browser-session-request@1', request_id: 'replacement-read-0001',
+    const staleRequest = { schema: 'intent-mcu-browser-session-request@1', request_id: 'manual-race-read-0001',
       session_id: claimA.sessionId, project_id: claimA.projectId, expected_revision: claimA.revision,
-      sequence: 1, command: 'project.inspect', arguments: {} } }, claimA.clientCapability);
-    assert.equal(afterReplacement.code, 'API_AUTH_REQUIRED');
+      sequence: 1, command: 'project.inspect', arguments: {} };
+    const afterManualEdit = await post(origin, 'request.submit', { sessionId: claimA.sessionId, request: staleRequest },
+      claimA.clientCapability);
+    assert.equal(afterManualEdit.code, 'API_REQUEST_QUEUED');
+    let staleResult;
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      staleResult = await post(origin, 'result.read', { sessionId: claimA.sessionId,
+        requestId: staleRequest.request_id }, claimA.clientCapability);
+      if (staleResult.code !== 'API_RESULT_PENDING') break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    assert.equal(staleResult.code, 'API_STALE_REVISION');
 
     const third = await open(profiles[0]);
     const thirdBefore = await project(third.page);
@@ -152,7 +161,7 @@ const post = async (origin, operation, value = {}, capability = null) => {
     await first.context.close(); await second.context.close(); await third.context.close();
     assert.deepEqual(browserErrors, []);
     process.stdout.write(`${JSON.stringify({ status: 'pass', profiles: observed,
-      isolation: true, projectReplacementRevoked: true, refreshRevoked: true,
+      isolation: true, manualEditStale: true, refreshRevoked: true,
       explicitRevoke: true })}\n`);
   } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }
 })().catch((error) => { console.error(error); process.exitCode = 1; });

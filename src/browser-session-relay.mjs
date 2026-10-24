@@ -17,6 +17,7 @@ export const READ_ONLY_COMMANDS = Object.freeze([
   'capabilities.list', 'components.catalog', 'project.inspect', 'components.list',
   'component.pins', 'nets.list', 'circuit.validate',
 ]);
+export const EDIT_COMMANDS = Object.freeze(['edit.batch', 'edit.undo', 'edit.redo']);
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,95}$/u;
 const clone = (value) => structuredClone(value);
 const digest = (secret) => createHash('sha256').update(secret).digest();
@@ -101,16 +102,20 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
     return { ok: true, code: 'API_OWNER_LEASE_RENEWED', ownerLeaseExpiresAt: session.ownerLeaseExpiresAt,
       clientPaired: Boolean(session.client), clientExpiresAt: session.client?.absoluteExpiresAt ?? null };
   }
-  function createPairing({ sessionId, ownerCapability }) {
+  function createPairing({ sessionId, ownerCapability, scopes = ['discover', 'read_project'] }) {
     prune();
     const session = authorizeOwner(sessionId, ownerCapability);
     if (!session) return failure('API_OWNER_GONE');
     if (session.client) return failure('API_CLIENT_EXISTS');
+    if (!Array.isArray(scopes) || !scopes.length
+        || scopes.some((scope) => !['discover', 'read_project', 'edit_circuit'].includes(scope))) {
+      return failure('API_SCOPE_REQUIRED');
+    }
     if (session.pairingKey && pairings.has(session.pairingKey)) return failure('API_PAIRING_EXISTS');
     const pairingSecret = secret();
     session.pairingKey = digest(pairingSecret).toString('base64url');
     pairings.set(session.pairingKey, {
-      sessionId, expiresAt: now() + BROWSER_SESSION_LIMITS.pairingTtlMs,
+      sessionId, scopes: [...new Set(scopes)], expiresAt: now() + BROWSER_SESSION_LIMITS.pairingTtlMs,
     });
     return { ok: true, code: 'API_PAIRING_CREATED', pairingSecret,
       expiresAt: now() + BROWSER_SESSION_LIMITS.pairingTtlMs };
@@ -125,7 +130,7 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
     if (session) session.pairingKey = null;
     if (!live(session) || session.client) return failure('API_OWNER_GONE');
     if (!Array.isArray(scopes) || !scopes.length
-        || scopes.some((scope) => !['discover', 'read_project'].includes(scope))) {
+        || scopes.some((scope) => !pairing.scopes.includes(scope))) {
       return failure('API_SCOPE_REQUIRED');
     }
     const clientCapability = secret();
@@ -137,13 +142,14 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
       revision: session.revision, expiresAt: session.client.absoluteExpiresAt };
   }
   function submit({ sessionId, clientCapability, request }) {
-    const session = authorizeClient(sessionId, clientCapability,
-      request?.command === 'capabilities.list' || request?.command === 'components.catalog' ? 'discover' : 'read_project');
+    const requiredScope = request?.command === 'capabilities.list' || request?.command === 'components.catalog'
+      ? 'discover' : EDIT_COMMANDS.includes(request?.command) ? 'edit_circuit' : 'read_project';
+    const session = authorizeClient(sessionId, clientCapability, requiredScope);
     if (!session) return failure('API_AUTH_REQUIRED');
     if (!request || request.schema !== BROWSER_SESSION_REQUEST_SCHEMA || request.session_id !== session.id
         || request.project_id !== session.projectId || !ID.test(request.request_id)
         || !Number.isInteger(request.expected_revision) || !Number.isInteger(request.sequence)
-        || !READ_ONLY_COMMANDS.includes(request.command) || typeof request.arguments !== 'object'
+        || ![...READ_ONLY_COMMANDS, ...EDIT_COMMANDS].includes(request.command) || typeof request.arguments !== 'object'
         || Array.isArray(request.arguments)) return failure('API_ARGUMENTS_INVALID');
     if (!live(session) || !clientLive(session)) return failure('API_EXPIRED');
     const time = now();

@@ -128,3 +128,19 @@ test('expired client clears queued commands before owner pull', () => {
     ownerCapability: state.owner.ownerCapability }).code, 'API_CLIENT_GONE');
   assert.deepEqual(state.relay.inspect(), { sessions: 0, pairings: 0 });
 });
+
+test('edit scope requires explicit owner grant and remains request scoped', () => {
+  const relay = createBrowserSessionRelay(); const owner = relay.registerOwner(ids);
+  const readPairing = relay.createPairing({ sessionId: ids.sessionId,
+    ownerCapability: owner.ownerCapability });
+  assert.equal(relay.claimPairing({ pairingSecret: readPairing.pairingSecret,
+    scopes: ['discover', 'read_project', 'edit_circuit'] }).code, 'API_SCOPE_REQUIRED');
+  const editPairing = relay.createPairing({ sessionId: ids.sessionId,
+    ownerCapability: owner.ownerCapability, scopes: ['discover', 'read_project', 'edit_circuit'] });
+  const client = relay.claimPairing({ pairingSecret: editPairing.pairingSecret,
+    scopes: ['discover', 'read_project', 'edit_circuit'] });
+  const edit = request(1, 'request-edit-0001', 'edit.batch');
+  edit.arguments = { transaction_id: 'transaction-edit-0001', commands: [] };
+  assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
+    request: edit }).code, 'API_REQUEST_QUEUED');
+});

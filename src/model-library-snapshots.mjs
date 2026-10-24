@@ -129229,7 +129229,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/project-editor.mjs",
-      "sha256": "81ee0821d869256d4410fb6bd202c9a151fda126c2a63aef638f18b5ec76d943"
+      "sha256": "5ff152d2d14790eb975f279adbbdb2856d4ae7d8a97426d834537abb74f5010e"
     },
     {
       "path": "src/lifecycle.mjs",
@@ -129261,7 +129261,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "8c1ef1c51f4271afd5342e3055bc86cf9f7de5c1347c8ab50b3979e0310c301a"
+      "sha256": "bdd225811637009b0fe9612b11ca8e482ea615ad76a0e04413ff51bbb5884f74"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -129404,7 +129404,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "a60dd552da826bcf74e23eb7f8457de1ae1e8dd31f313536cb737f8a9d965507"
     }
   ],
-  "implementationSha256": "e7ed1241ea7ade87fe2787e369797270abf5c09d1d3bbbbc9c519747cae4126a",
+  "implementationSha256": "eca18f53210767d9a1d0e7bbbe948d0eec471982108c2cc2307f834ce64812b8",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.125 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, real worker, run, image build or deployment",
@@ -129414,7 +129414,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-config-producer.2-current",
     "semanticDisposition": "component, firmware and electrical semantics remain unchanged; paired read-only AVR USART0 RX peripheral-model events are added"
   },
-  "manifestSha256": "6588bfb67db7369a21d0a869a0ba5d45b61a838f8c7cd2db2d6c8123119f8fa2",
+  "manifestSha256": "270c6a91bb248d64e788be1a3475220590c3e13e30a4ca655968d48fc22b24fd",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",
