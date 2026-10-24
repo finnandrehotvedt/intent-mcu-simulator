@@ -11,8 +11,8 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.130",
-    "current": "1.1.0-rc.131"
+    "previous": "1.1.0-rc.131",
+    "current": "1.1.0-rc.132"
   },
   "changes": [
     {
@@ -24,7 +24,7 @@
       "contracts": [
         "x59-four-profile-simple-advanced-view-v1"
       ],
-      "summary": "Keeps the Firmware dialog, focus and caret stable during ordinary source editing and preserves authored source across reopen and reload without adding execution authority."
+      "summary": "Adds one persistent Simple-view Parts drawer with truthful per-profile cards, click and HTML5 drag placement, visible Undo and Save, while keeping expert geometry under Advanced without adding execution authority."
     }
   ],
   "migrationRequired": false,
