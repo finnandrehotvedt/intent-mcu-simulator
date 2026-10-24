@@ -1974,6 +1974,11 @@ export function mountSharedWorkbenchShell(document) {
   const api = Object.freeze({
     activate(profile) {
       if (!roots.has(profile)) throw new Error('SHARED_WORKBENCH_PROFILE_UNKNOWN');
+      const nextCanvas = profileNodes(profile).canvas;
+      if (profile === activeProfile && activeCanvas === nextCanvas) {
+        syncStageStatus();
+        return;
+      }
       if (profile !== activeProfile) {
         x42.invalidate('X42_PROFILE_CHANGED');
         x43.invalidate('X43_PROFILE_CHANGED');
@@ -1986,7 +1991,7 @@ export function mountSharedWorkbenchShell(document) {
       if (activeCanvas) parking.append(activeCanvas);
       activeProfile = profile;
       legacy.activate(profile);
-      activeCanvas = profileNodes(profile).canvas;
+      activeCanvas = nextCanvas;
       canvasMount.append(activeCanvas);
       activeCanvas.removeAttribute('aria-hidden');
       syncStageStatus();
