@@ -15,6 +15,7 @@ test('UX14 exposes a contextual Pause or Resume action without claiming AVR Stop
   assert.match(source, /source, wiring and current project are preserved/u);
   assert.match(source, /Stop is unavailable; use Pause or Reset/u);
   assert.match(source, /beginnerruntimetoggle\.dataset\.state === 'paused'\) elements\.quickrun\.click/u);
+  assert.match(source, /selectedCompilerProfile === AVR_PROFILE\) renderAvrQuickControls\(\)/u);
   assert.doesNotMatch(source, /beginnerruntimetoggle[^\n]+quickstop\.click/u);
 });
 

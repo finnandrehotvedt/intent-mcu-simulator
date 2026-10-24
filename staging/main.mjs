@@ -13553,6 +13553,7 @@ function renderRuntime(message, { publishState = true } = {}) {
   if (stopped) { elements.run.disabled = true; elements.pause.disabled = true; elements.step.disabled = true; }
   else { elements.run.disabled = !message.paused; elements.pause.disabled = message.paused; elements.step.disabled = !message.paused; }
   elements.quickrun.disabled = elements.run.disabled; elements.quickpause.disabled = elements.pause.disabled; elements.quickreset.disabled = elements.reset.disabled;
+  if (selectedCompilerProfile === AVR_PROFILE) renderAvrQuickControls();
   void advanceThermostatExperiment(message);
   renderThermostatExperimentPanel();
 }
