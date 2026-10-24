@@ -24,19 +24,23 @@ class RealisticApiDouble {
   }
   currentCycle() { return this.cycle; }
   observeFirmwareGpio() { const values = this.pending; this.pending = []; return values; }
-  advanceToLocalCycle(targetCycle) {
+  advanceToLocalCycle(targetCycle, { stopOnObservation = false } = {}) {
     assert(targetCycle >= this.cycle, 'no runtime rewind');
-    this.instructions += (targetCycle - this.cycle) * this.instructionMultiplier;
+    const nextEdge = stopOnObservation ? this.scheduled.find((edge) => edge.cycle > this.cycle
+      && edge.cycle <= targetCycle && this.applied.size >= (edge.minimumApplied ?? 0)) : null;
+    const reachedCycle = nextEdge?.cycle ?? targetCycle;
+    this.instructions += (reachedCycle - this.cycle) * this.instructionMultiplier;
     if (this.instructions > 1_000_000) throw Object.assign(new Error('X37_SEAM_INSTRUCTION_CAP'),
       { code: 'X37_SEAM_INSTRUCTION_CAP' });
-    this.cycle = targetCycle; this.advanceCalls += 1;
+    this.cycle = reachedCycle; this.advanceCalls += 1;
     for (const record of this.received) this.applied.add(record);
     while (this.scheduled.length && this.scheduled[0].cycle <= this.cycle
         && this.applied.size >= (this.scheduled[0].minimumApplied ?? 0)) {
       const next = this.scheduled.shift();
       this.pending.push(observation(this.participantId, next.watermark, next.cycle, next.mode, next.level));
     }
-    return { reachedCycle: this.cycle };
+    return { requestedBoundaryCycle: targetCycle, reachedCycle: this.cycle,
+      overshootCycles: Math.max(0, this.cycle - targetCycle), stoppedOnObservation: this.cycle < targetCycle };
   }
   deliverResolvedLevel(level, source) {
     const record = { level, source, sequence: this.received.length + 1 };
@@ -72,6 +76,23 @@ test('same worker orchestration preserves multi-phase batches and proves applied
   assert.deepEqual(value.trace.map(({ phase }) => phase),
     ['idle', 'request', 'request-release', 'ack', 'ack-release', 'confirm', 'confirm-release']);
   assert.equal(value.applied.filter(({ inputApplied }) => inputApplied).length, 2);
+});
+
+test('two source edges available inside one requested horizon stop and deliver chronologically', () => {
+  const value = fixture();
+  const result = runX37TurnaroundOrchestration({ ...value, advanceWindow: 64 });
+  const ack = result.deliveries.filter(({ source }) => source.participantId === 'rp');
+  assert.deepEqual(ack.slice(-2).map(({ source }) => source.localCycle), [30, 40]);
+  assert(ack.at(-1).targetCycle - ack.at(-2).targetCycle >= 10);
+  assert(value.seams.avr.received.indexOf(ack.at(-1).delivery.queued[0])
+    > value.seams.avr.received.indexOf(ack.at(-2).delivery.queued[0]));
+});
+
+test('delivery rejects when a peer has already crossed the source-edge boundary', () => {
+  const value = fixture();
+  value.seams.avr.cycle = 31;
+  assert.throws(() => runX37TurnaroundOrchestration(value),
+    { code: 'X37_TURNAROUND_CAUSALITY_LOST' });
 });
 
 test('initial peer release is sorted before later output and no target cycle rewinds', () => {

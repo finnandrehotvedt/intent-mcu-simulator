@@ -49,12 +49,18 @@ export function runX37TurnaroundOrchestration({ seams, schedulerContract, net,
     if (!decision.deliver) fail('X37_REQUIRED_DELIVERY_NOT_QUEUED');
     const seam = seams[participantId];
     const boundary = targetCycleAtOrAfterMappedTick(item.observation.mappedTick, clocks[participantId]);
-    const targetCycle = Math.max(seam.currentCycle(), boundary.cycle);
+    const targetCycle = boundary.cycle;
+    if (seam.currentCycle() > targetCycle) fail('X37_TURNAROUND_CAUSALITY_LOST');
     let advance = null;
     if (targetCycle > seam.currentCycle()) {
       onProgress({ kind: 'advance-begin', participantId, cycle: seam.currentCycle(), targetCycle, lifecycle: seam.lifecycle() });
-      advance = seam.advanceToLocalCycle(targetCycle); advanceCalls += 1; collect(participantId);
+      advance = seam.advanceToLocalCycle(targetCycle, { stopOnObservation: true });
+      advanceCalls += 1; collect(participantId);
       onProgress({ kind: 'advance-end', participantId, cycle: seam.currentCycle(), targetCycle, lifecycle: seam.lifecycle() });
+    }
+    if (seam.currentCycle() > targetCycle && (!advance
+        || seam.currentCycle() - targetCycle > advance.overshootCycles)) {
+      fail('X37_TURNAROUND_CAUSALITY_LOST');
     }
     const delivery = seam.deliverResolvedLevel(decision.level, item.observation);
     const record = { participantId, source: item.observation, level: decision.level,
@@ -67,7 +73,8 @@ export function runX37TurnaroundOrchestration({ seams, schedulerContract, net,
     if (boundary.cycle <= seam.currentCycle()) return null;
     onProgress({ kind: 'advance-begin', phase, participantId, cycle: seam.currentCycle(),
       targetCycle: boundary.cycle, mappedHorizon: horizon, lifecycle: seam.lifecycle() });
-    const advance = seam.advanceToLocalCycle(boundary.cycle); advanceCalls += 1; collect(participantId);
+    const advance = seam.advanceToLocalCycle(boundary.cycle, { stopOnObservation: true });
+    advanceCalls += 1; collect(participantId);
     onProgress({ kind: 'advance-end', phase, participantId, cycle: seam.currentCycle(),
       targetCycle: boundary.cycle, mappedHorizon: horizon, lifecycle: seam.lifecycle() });
     return advance;

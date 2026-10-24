@@ -86,15 +86,16 @@ function commonSeam({ runtime, identityOwner, schedulerContract, profile, output
     const next = outputModes.has(pin.mode)
       ? { mode: 'DRIVE', level: pin.level }
       : { mode: 'RELEASE' };
-    if (JSON.stringify(next) === JSON.stringify(priorOutput)) return;
+    if (JSON.stringify(next) === JSON.stringify(priorOutput)) return false;
     if (watermark >= maxObservations) reject('X37_SEAM_OBSERVATION_CAP');
     priorOutput = next; watermark += 1;
     const owner = liveIdentity(identityOwner);
     pending.push({ origin: 'executed-firmware-observation', participantId: owner.participantId,
       netId, runtimeEpoch: epoch, watermark, localCycle: snapshot.cycle,
       mode: next.mode, ...(next.mode === 'DRIVE' ? { level: next.level } : {}) });
+    return true;
   };
-  const advanceByStepping = (targetCycle, maxSteps) => {
+  const advanceByStepping = (targetCycle, maxSteps, { stopOnObservation = false } = {}) => {
     lifecycleGuard();
     const before = probeSnapshot();
     if (!Number.isSafeInteger(targetCycle) || targetCycle < before.cycle) reject('X37_SEAM_TARGET_INVALID');
@@ -114,7 +115,7 @@ function commonSeam({ runtime, identityOwner, schedulerContract, profile, output
       totalInstructions += delta; priorInstructions = snapshot.instructions;
       priorCycle = snapshot.cycle;
       if (totalInstructions > maxTotalInstructions) reject('X37_SEAM_INSTRUCTION_CAP');
-      sampleOutput(snapshot);
+      if (sampleOutput(snapshot) && stopOnObservation) break;
     }
     if (steps > 0 && typeof runtime.x37CommitAdvanceProgress === 'function') {
       runtime.x37CommitAdvanceProgress();
@@ -122,6 +123,7 @@ function commonSeam({ runtime, identityOwner, schedulerContract, profile, output
     const reachedCycle = probeSnapshot().cycle;
     return { requestedBoundaryCycle: targetCycle, reachedCycle, steps,
       exact: reachedCycle === targetCycle, overshootCycles: reachedCycle - targetCycle,
+      ...(stopOnObservation ? { stoppedOnObservation: reachedCycle < targetCycle } : {}),
       totalInstructions, advanceCalls };
   };
   sampleOutput(initial);
@@ -180,7 +182,8 @@ export function createAvrX37RuntimeSeam({ runtime, identityOwner, outputPin = 'D
     profile: 'avr', outputPin, inputPin,
     maxTotalInstructions, maxAdvanceCalls, maxObservations, abortFlag });
   return Object.freeze({ ...seam,
-    advanceToLocalCycle: (targetCycle) => seam.advanceByStepping(targetCycle, maxInstructionsPerAdvance),
+    advanceToLocalCycle: (targetCycle, options) => seam.advanceByStepping(targetCycle,
+      maxInstructionsPerAdvance, options),
     deliverResolvedLevel(level, sourceObservation) {
       return seam.causalDelivery(level, sourceObservation,
         () => runtime.queueDigitalSequence([{ offsetCycles: 1, pin: inputPin, level }]));
@@ -203,7 +206,8 @@ export function createRp2040X37RuntimeSeam({ runtime, identityOwner, outputPin =
     profile: 'rp2040', outputPin, inputPin,
     maxTotalInstructions, maxAdvanceCalls, maxObservations, abortFlag });
   return Object.freeze({ ...seam,
-    advanceToLocalCycle: (targetCycle) => seam.advanceByStepping(targetCycle, maxStepsPerAdvance),
+    advanceToLocalCycle: (targetCycle, options) => seam.advanceByStepping(targetCycle,
+      maxStepsPerAdvance, options),
     deliverResolvedLevel(level, sourceObservation) {
       return seam.causalDelivery(level, sourceObservation,
         () => {
