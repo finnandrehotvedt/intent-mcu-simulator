@@ -20,15 +20,33 @@ if (ticketMode) {
   const bytes = await readFile(ticketPath);
   await unlink(ticketPath);
   if (bytes.length > 4096) throw new Error('API_PAIRING_TICKET_LIMIT');
-  const ticket = JSON.parse(bytes.toString('utf8'));
+  let ticket;
+  try { ticket = JSON.parse(bytes.toString('utf8')); }
+  catch { throw new Error('API_PAIRING_TICKET_SHAPE'); }
   const keys = Object.keys(ticket ?? {}).sort().join('|');
+  let ticketUrl;
+  try { ticketUrl = new URL(ticket?.origin); }
+  catch { throw new Error('API_PAIRING_TICKET_ORIGIN'); }
+  const canonicalOrigin = ticketUrl.origin;
+  const productionOrigin = canonicalOrigin === 'https://lab.teachthecompany.com';
+  const loopbackPort = Number(ticketUrl.port);
+  const explicitLoopback = process.env.INTENT_MCU_ALLOW_LOOPBACK_TICKET === '1'
+    && ['127.0.0.1', 'localhost'].includes(ticketUrl.hostname)
+    && ['http:', 'https:'].includes(ticketUrl.protocol)
+    && Number.isInteger(loopbackPort) && loopbackPort >= 1024 && loopbackPort <= 65535;
   if (keys !== 'expires_at|origin|pairing_secret|schema|scopes'
       || ticket.schema !== 'intent-mcu-browser-session-pairing-ticket@1'
       || typeof ticket.origin !== 'string' || typeof ticket.pairing_secret !== 'string'
+      || ticket.pairing_secret.length === 0 || ticket.pairing_secret.length > 256
       || !Number.isSafeInteger(ticket.expires_at) || ticket.expires_at <= Date.now()
-      || !Array.isArray(ticket.scopes) || ticket.scopes.some((scope) => typeof scope !== 'string')) {
+      || !Array.isArray(ticket.scopes) || ticket.scopes.length === 0
+      || ticket.scopes.some((scope) => !['discover', 'read_project', 'edit_circuit'].includes(scope))
+      || new Set(ticket.scopes).size !== ticket.scopes.length) {
     throw new Error('API_PAIRING_TICKET_SHAPE');
   }
+  if (ticket.origin !== canonicalOrigin || ticketUrl.username || ticketUrl.password
+      || ticketUrl.pathname !== '/' || ticketUrl.search || ticketUrl.hash
+      || (!productionOrigin && !explicitLoopback)) throw new Error('API_PAIRING_TICKET_ORIGIN');
   origin = ticket.origin; pairingSecret = ticket.pairing_secret; ticketScopes = ticket.scopes;
 }
 const endpoint = new URL('/api/session/v1', origin);
@@ -77,7 +95,7 @@ if (planPath) {
       && plan.allow_component_removal !== true) throw new Error('API_PLAN_REMOVAL_NOT_ALLOWED');
 }
 const post = async (operation, value = {}, capability = null) => {
-  const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json',
+  const response = await fetch(endpoint, { method: 'POST', redirect: 'error', headers: { 'Content-Type': 'application/json',
     ...(capability ? { Authorization: `Bearer ${capability}` } : {}) }, body: JSON.stringify({ operation, ...value }) });
   return response.json();
 };

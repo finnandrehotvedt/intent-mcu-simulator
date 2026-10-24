@@ -19,7 +19,7 @@ const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
   '.json': 'application/json; charset=utf-8', '.txt': 'text/plain; charset=utf-8' };
 const runCli = (ticketPath) => new Promise((resolve, reject) => {
   const child = spawn(process.execPath, ['dist/api/session/v1/client.mjs', '--ticket', ticketPath],
-    { stdio: ['pipe', 'pipe', 'pipe'] });
+    { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, INTENT_MCU_ALLOW_LOOPBACK_TICKET: '1' } });
   let stdout = ''; let stderr = '';
   child.stdout.on('data', (value) => { stdout += value; });
   child.stderr.on('data', (value) => { stderr += value; });
