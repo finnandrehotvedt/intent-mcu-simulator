@@ -82,7 +82,7 @@ export class BuildCoordinator {
     this.rate.set(origin, events);
   }
 
-  submit(raw, origin) {
+  submit(raw, origin, { route = null } = {}) {
     this.prune();
     this.enforceRate(origin);
     if (this.jobs.size >= this.jobLimit) throw new BuildProtocolError('JOB_CAPACITY', 'Build job capacity reached', 429, retryAfterForCode('JOB_CAPACITY'));
@@ -90,11 +90,11 @@ export class BuildCoordinator {
     if (this.queue.length >= this.queueLimit) throw new BuildProtocolError('BUILD_QUEUE_FULL', 'Build queue is full', 429, retryAfterForCode('BUILD_QUEUE_FULL'));
     const jobId = randomBytes(12).toString('hex');
     const capability = randomBytes(32).toString('base64url');
-    const identityLock = this.identityLockFor(request.board);
+    const identityLock = this.identityLockFor(request.board, route);
     if (!identityLock) throw new BuildProtocolError('UNKNOWN_COMPILER_TARGET');
     const inputIdentity = buildInputIdentity(request, identityLock);
     const job = {
-      jobId, capability, origin, request, inputIdentity,
+      jobId, capability, origin, request, inputIdentity, route,
       status: 'building', phase: 'queued', submittedAt: this.now(), completedAt: null,
       cacheHit: false, result: null, error: null, controller: null,
     };
@@ -123,7 +123,8 @@ export class BuildCoordinator {
     job.phase = 'compiling';
     this.active.set(job.jobId, job);
     try {
-      const worker = await this.broker.compile(job.request, { signal: controller.signal });
+      const worker = await this.broker.compile(job.request, { signal: controller.signal,
+        ...(job.route ? { route: job.route } : {}) });
       if (job.status === 'cancelled') return;
       if (worker.status === 'failed') {
         job.status = 'failed';

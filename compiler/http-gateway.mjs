@@ -90,6 +90,7 @@ export function createRequestHandler({
   trustProxy = false,
   deploymentScope = 'non-public-m13',
   readiness = () => ({ ready: true, code: 'READY' }),
+  resolveBuildRoute = () => null,
 }) {
   const staticRoot = path.resolve(root);
   const configuredOrigin = normalizeConfiguredOrigin(publicOrigin);
@@ -106,7 +107,9 @@ export function createRequestHandler({
         if ((request.headers['content-type'] ?? '').split(';')[0].trim() !== 'application/json') {
           throw new BuildProtocolError('CONTENT_TYPE_REQUIRED', 'JSON content type required', 415);
         }
-        const submitted = coordinator.submit(await readBody(request), requestOrigin(request, trustProxy));
+        const submitted = coordinator.submit(await readBody(request), requestOrigin(request, trustProxy), {
+          route: resolveBuildRoute(request),
+        });
         json(response, 202, submitted);
         return;
       }

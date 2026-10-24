@@ -49,7 +49,7 @@ async function installReady(page, failure = 'none') {
 
 (async () => {
   fs.mkdirSync(output, { recursive: true }); const browser = await chromium.launch({ headless: true });
-  const report = { baselineBuilds: 0, baselineRuns: 0, controllerJourneys: [], viewports: [] };
+  const report = { baselineBuilds: 0, baselineRuns: 0, controllerJourneys: [], viewports: [], ordinaryRoute: null };
   try {
     for (const viewport of [{ width: 1366, height: 900 }, { width: 1440, height: 1000 }, { width: 1720, height: 1000 }]) {
       const context = await browser.newContext({ viewport, serviceWorkers: 'block' }); const page = await context.newPage();
@@ -125,6 +125,37 @@ async function installReady(page, failure = 'none') {
       await page.waitForTimeout(140); assert.equal(await page.getAttribute('body', 'data-new-disposed'), '0');
       assert.match(await page.textContent('#x37-candidate-status'), /runtime active/u); assert.match(await page.textContent('#trace'), /tick 1/u);
       report.controllerJourneys.push({ mode: 'oldrun-race', status: await page.textContent('#x37-candidate-status') }); await page.close();
+    }
+    {
+      const page = await browser.newPage(); await page.goto(`${base}/`, { waitUntil: 'domcontentloaded' }); await page.setContent(fixture);
+      await page.evaluate(async (baseUrl) => {
+        const { installReviewedX37PrivateCandidate } = await import(`${baseUrl}/staging/x37-private-candidate-entry.mjs`);
+        const hash = (value) => value.repeat(64); let job = 0; const results = new Map(); window.routeRequests = [];
+        const fetchImpl = async (url, options) => { window.routeRequests.push({ url, method: options.method,
+          body: options.body ? JSON.parse(options.body) : null, authorization: options.headers?.Authorization ?? null });
+          if (url === '/api/build') { const request = JSON.parse(options.body); const id = (++job).toString(16).padStart(24, '0'); const avr = request.schema === 'teach-lab-build-request@1';
+            results.set(id, { code: 'BUILD_OK', artifactIdentity: hash(avr ? 'a' : 'b'), toolchainIdentitySha256: hash('c'), artifact: avr
+              ? { hex: ':00000001FF\n', hexSha256: hash('d') }
+              : { schema: 'intent-mcu-rp2040-compile-artifact@1', uf2: { base64: 'AA==', sha256: hash('e') } } });
+            return { ok: true, json: async () => ({ jobId: id, capability: 'q'.repeat(40) }) }; }
+          return { ok: true, json: async () => ({ status: 'succeeded', result: results.get(url.split('/').at(-1)) }) };
+        };
+        class WorkerDouble { constructor() { this.listeners = new Map(); window.routeWorkers = (window.routeWorkers ?? 0) + 1; }
+          addEventListener(name, listener) { this.listeners.set(name, listener); }
+          postMessage(message) { queueMicrotask(() => this.listeners.get('message')?.({ data: { requestId: message.requestId, ok: true,
+            value: message.command === 'advance' ? { complete: true, observations: [{ participantId: message.participantId,
+              pin: message.participantId === 'avr' ? 'D13' : 'GPIO0', localCycle: 8, mappedTick: 1, mode: 'RELEASE' }] } : { accepted: true } } })); }
+          terminate() {} }
+        installReviewedX37PrivateCandidate({ fetchImpl, privateRouteCapability: 'r'.repeat(40), workerFactory: () => new WorkerDouble(),
+          requestUnsavedGuard: ({ continueAction }) => continueAction(), downloadText: () => {} });
+      }, base);
+      await page.click('#quick-build'); await page.waitForFunction(() => !document.querySelector('#quick-run').disabled);
+      await page.click('#quick-run'); await page.waitForFunction(() => document.querySelector('#x37-candidate-status').textContent.includes('runtime active'));
+      const route = await page.evaluate(() => ({ requests: window.routeRequests, workers: window.routeWorkers,
+        status: document.querySelector('#x37-candidate-status').textContent }));
+      assert.equal(route.requests.filter(({ url }) => url === '/api/build').length, 2);
+      assert(route.requests.filter(({ url }) => url !== '/api/build').every(({ authorization }) => /^Bearer q{40}$/u.test(authorization)));
+      assert.equal(route.workers, 2); report.ordinaryRoute = route; await page.close();
     }
     process.stdout.write(`${JSON.stringify(report)}\n`);
   } finally { await browser.close(); }

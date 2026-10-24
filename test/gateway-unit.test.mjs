@@ -99,6 +99,25 @@ test('compiler readiness is distinct from gateway liveness and exposes only stab
   }, { readiness: () => ({ ready: false, code: 'TOOLCHAIN_IMAGE_UNAVAILABLE' }) });
 });
 
+test('private compiler header maps to one bounded route without changing ordinary requests', async () => {
+  const routes = [];
+  const selected = { ...coordinator, submit(raw, origin, options) { routes.push(options.route); return coordinator.submit(raw, origin); } };
+  const server = http.createServer(createRequestHandler({ coordinator: selected,
+    root: new URL('../dist', import.meta.url).pathname,
+    resolveBuildRoute: (request) => request.headers['x-x37-compiler-route'] === 'r'.repeat(40) ? 'x37-reviewed' : null }));
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const body = JSON.stringify({ schema: 'intent-mcu-rp2040-source-build-request@1', board: 'board.rp2040-pico-v1', files: [] });
+  try {
+    for (const headers of [{}, { 'X-X37-Compiler-Route': 'r'.repeat(40) }]) {
+      const response = await fetch(`${base}/api/build`, { method: 'POST', body, headers: {
+        'Content-Type': 'application/json', 'X-Teach-Lab-Build': '1', Origin: base, ...headers } });
+      assert.equal(response.status, 202);
+    }
+    assert.deepEqual(routes, [null, 'x37-reviewed']);
+  } finally { await new Promise((resolve) => { server.close(resolve); server.closeAllConnections(); }); }
+});
+
 test('job capability and restrictive self-hosted headers protect status/cancel routes', async () => withServer(async (base) => {
   const missing = await fetch(`${base}/api/build/${'1'.repeat(24)}`);
   assert.equal(missing.status, 404);
