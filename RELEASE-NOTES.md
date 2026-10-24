@@ -1,4 +1,20 @@
-# Intent MCU Simulator 1.1.0-rc.130
+# Intent MCU Simulator 1.1.0-rc.131
+
+## Stable Firmware editing
+
+Rc.131 keeps the Firmware dialog open during ordinary source editing. Typing,
+spaces, new lines and pasted text retain the dialog, focus and caret; authored
+source remains available after closing and reopening the dialog and after a
+browser reload.
+
+This is a focused interface correction. It reuses the already accepted native
+compiler, worker, GPIO and visible-output evidence and performs no new firmware
+Build, worker creation, Run or native claim. Exact public rc.130 and its private
+aggregate counter volume are the app-only rollback basis.
+
+---
+
+## 1.1.0-rc.130
 
 ## A simpler first project
 

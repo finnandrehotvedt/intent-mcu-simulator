@@ -11,8 +11,8 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.129",
-    "current": "1.1.0-rc.130"
+    "previous": "1.1.0-rc.130",
+    "current": "1.1.0-rc.131"
   },
   "changes": [
     {
@@ -24,7 +24,7 @@
       "contracts": [
         "x59-four-profile-simple-advanced-view-v1"
       ],
-      "summary": "Makes the empty workbench the ordinary start, provides one clear controller action and groups canvas navigation under Visning without overwriting existing local projects or adding execution authority."
+      "summary": "Keeps the Firmware dialog, focus and caret stable during ordinary source editing and preserves authored source across reopen and reload without adding execution authority."
     }
   ],
   "migrationRequired": false,

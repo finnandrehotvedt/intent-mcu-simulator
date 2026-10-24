@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.131 — 2026-10-24
+
+- Keeps the Firmware dialog open while a learner types, inserts spaces, adds
+  new lines or pastes source text.
+- Preserves focus, caret position and authored source across dialog reopen and
+  browser reload.
+- Treats repeated activation of the already-active controller canvas as an
+  idempotent status refresh instead of closing its authoritative popup.
+- Reuses the accepted compiler and runtime evidence; this release performs no
+  new firmware Build, worker creation, Run or native claim.
+- Retains exact public rc.130 and its private aggregate counter volume as the
+  app-only rollback basis.
+
 ## 1.1.0-rc.130 — 2026-10-24
 
 - Makes a new project begin with an empty workbench and one clear
