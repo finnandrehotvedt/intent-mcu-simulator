@@ -13,16 +13,19 @@ const bearer = (request) => {
   return typeof value === 'string' && value.startsWith('Bearer ') ? value.slice(7) : null;
 };
 async function body(request) {
-  const chunks = []; let bytes = 0;
+  const chunks = []; let bytes = 0; let aggregate = null;
   try {
     for await (const chunk of request) {
       bytes += chunk.length;
       if (bytes > BROWSER_SESSION_LIMITS.bodyBytes) throw Object.assign(new Error('API_REQUEST_LIMIT'), { status: 413 });
       chunks.push(chunk);
     }
-    try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); }
+    aggregate = Buffer.alloc(bytes); let offset = 0;
+    for (const chunk of chunks) { chunk.copy(aggregate, offset); offset += chunk.length; }
+    try { return JSON.parse(aggregate.toString('utf8')); }
     catch { throw Object.assign(new Error('API_ARGUMENTS_INVALID'), { status: 400 }); }
   } finally {
+    aggregate?.fill(0);
     for (const chunk of chunks) chunk.fill(0);
   }
 }
@@ -52,7 +55,9 @@ export function createBrowserSessionHttpHandler(relay, { publicOrigin }) {
       else result = { ok: false, code: 'API_OPERATION_UNSUPPORTED' };
       json(response, result.ok ? 200 : 400, result); return true;
     } catch (error) {
-      json(response, error.status ?? 400, { ok: false, code: error.message ?? 'API_ARGUMENTS_INVALID' }); return true;
+      const code = ['API_REQUEST_LIMIT', 'API_ARGUMENTS_INVALID'].includes(error?.message)
+        ? error.message : 'API_ARGUMENTS_INVALID';
+      json(response, error?.status === 413 ? 413 : 400, { ok: false, code }); return true;
     }
   };
 }

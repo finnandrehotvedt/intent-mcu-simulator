@@ -27,6 +27,8 @@ test('pairing is one-shot, separates owner/client capabilities and excludes edit
   const clock = { value: 1_000 }; const relay = createBrowserSessionRelay({ now: () => clock.value });
   const owner = relay.registerOwner(ids);
   const pairing = relay.createPairing({ sessionId: ids.sessionId, ownerCapability: owner.ownerCapability });
+  assert.equal(relay.createPairing({ sessionId: ids.sessionId,
+    ownerCapability: owner.ownerCapability }).code, 'API_PAIRING_EXISTS');
   assert.equal(relay.claimPairing({ pairingSecret: pairing.pairingSecret, scopes: ['edit_circuit'] }).code, 'API_SCOPE_REQUIRED');
   assert.equal(relay.claimPairing({ pairingSecret: pairing.pairingSecret, scopes: ['read_project'] }).code, 'API_PAIRING_EXPIRED');
   const fresh = relay.createPairing({ sessionId: ids.sessionId, ownerCapability: owner.ownerCapability });
@@ -45,8 +47,9 @@ test('read-only request is correlated, transient and duplicate-safe', () => {
   assert.deepEqual(relay.readResult({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
     requestId: value.request_id }), result);
   assert.equal(relay.readResult({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
-    requestId: value.request_id }).code, 'API_RESULT_PENDING');
-  assert.deepEqual(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability, request: value }), result);
+    requestId: value.request_id }).code, 'API_REQUEST_RETIRED');
+  assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
+    request: value }).code, 'API_REQUEST_RETIRED');
   assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
     request: { ...value, expected_revision: 1 } }).code, 'API_REQUEST_ID_CONFLICT');
   clock.value += 5_001; relay.sweep();
@@ -73,8 +76,9 @@ test('wrong project, sequence, expired client, owner loss and revoke fail closed
 });
 
 test('bounded request tombstones never evict into re-execution', () => {
-  const { relay, owner, client } = paired();
+  const { relay, owner, client, clock } = paired();
   for (let sequence = 1; sequence <= 64; sequence += 1) {
+    clock.value += 501;
     const value = request(sequence);
     assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability, request: value }).ok, true);
     assert.equal(relay.pull({ sessionId: ids.sessionId, ownerCapability: owner.ownerCapability }).ok, true);
@@ -82,8 +86,45 @@ test('bounded request tombstones never evict into re-execution', () => {
       result: { schema: BROWSER_SESSION_RESULT_SCHEMA, request_id: value.request_id, status: 'accepted',
         code: 'API_READ', revision_before: 0, revision_after: 0, changes: [] } }).ok, true);
   }
+  clock.value += 10_001;
   assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
     request: request(65) }).code, 'API_SESSION_RENEW_REQUIRED');
   assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
-    request: request(1) }).code, 'API_READ');
+    request: request(1) }).code, 'API_REQUEST_RETIRED');
+});
+
+test('pairing, rate, queue TTL and retired session storage are bounded', () => {
+  const clock = { value: 1_000 }; const { relay, owner, client } = paired(clock);
+  assert.equal(relay.createPairing({ sessionId: ids.sessionId,
+    ownerCapability: owner.ownerCapability }).code, 'API_CLIENT_EXISTS');
+  for (let sequence = 1; sequence <= 5; sequence += 1) {
+    assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
+      request: request(sequence) }).ok, true);
+  }
+  assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
+    request: request(6) }).code, 'API_RATE_LIMIT');
+  clock.value += 30_001;
+  assert.equal(relay.pull({ sessionId: ids.sessionId, ownerCapability: owner.ownerCapability }).code,
+    'API_QUEUE_EMPTY');
+  assert.equal(relay.readResult({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
+    requestId: request(1).request_id }).code, 'API_REQUEST_EXPIRED');
+
+  relay.revoke({ sessionId: ids.sessionId, ownerCapability: owner.ownerCapability });
+  for (let index = 0; index < 40; index += 1) {
+    const sessionId = `session-prune-${String(index).padStart(3, '0')}`;
+    const value = relay.registerOwner({ sessionId, projectId: 'project-prune', tabId: 'tab-prune', revision: 0 });
+    assert.equal(value.ok, true);
+    assert.equal(relay.revoke({ sessionId, ownerCapability: value.ownerCapability }).ok, true);
+  }
+  assert.deepEqual(relay.inspect(), { sessions: 0, pairings: 0 });
+});
+
+test('expired client clears queued commands before owner pull', () => {
+  const state = paired();
+  assert.equal(state.relay.submit({ sessionId: ids.sessionId,
+    clientCapability: state.client.clientCapability, request: request() }).ok, true);
+  state.clock.value += 120_001;
+  assert.equal(state.relay.pull({ sessionId: ids.sessionId,
+    ownerCapability: state.owner.ownerCapability }).code, 'API_CLIENT_GONE');
+  assert.deepEqual(state.relay.inspect(), { sessions: 0, pairings: 0 });
 });

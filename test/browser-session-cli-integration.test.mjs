@@ -8,16 +8,17 @@ import test from 'node:test';
 import { createBrowserSessionHttpHandler } from '../src/browser-session-http.mjs';
 import { createBrowserSessionRelay } from '../src/browser-session-relay.mjs';
 
-const run = (command, args) => new Promise((resolve, reject) => {
-  const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+const run = (command, args, input) => new Promise((resolve, reject) => {
+  const child = spawn(command, args, { stdio: ['pipe', 'pipe', 'pipe'] });
   let stdout = ''; let stderr = '';
   child.stdout.on('data', (value) => { stdout += value; });
   child.stderr.on('data', (value) => { stderr += value; });
   child.on('error', reject);
   child.on('close', (code) => code === 0 ? resolve(stdout) : reject(new Error(`${stderr}\nexit ${code}`)));
+  child.stdin.end(input);
 });
 
-test('independent CLI discovers exact placed-component pins over HTTP', async (context) => {
+test('transport fixture correlates an independent CLI over real HTTP', async (context) => {
   const relay = createBrowserSessionRelay();
   let origin;
   const server = createServer(async (request, response) => {
@@ -49,7 +50,7 @@ test('independent CLI discovers exact placed-component pins over HTTP', async (c
   context.after(() => clearInterval(owner));
 
   const stdout = await run(process.execPath, ['tools/browser-session-readonly-client.mjs', origin,
-    pairing.pairingSecret, 'led-placed-1']);
+    'led-placed-1'], `${pairing.pairingSecret}\n`);
   const output = JSON.parse(stdout);
   assert.equal(output.status, 'pass');
   assert.equal(output.component_id, 'led-placed-1');

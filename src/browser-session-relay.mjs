@@ -9,7 +9,8 @@ export const BROWSER_SESSION_RESULT_SCHEMA = 'intent-mcu-browser-session-result@
 export const BROWSER_SESSION_LIMITS = Object.freeze({
   bodyBytes: 48 * 1024, responseBytes: 384 * 1024, pairingTtlMs: 120_000,
   ownerLeaseMs: 130_000, clientIdleTtlMs: 120_000, clientAbsoluteTtlMs: 900_000,
-  transientResultTtlMs: 5_000, queueDepth: 16, requestCapacity: 64,
+  requestTtlMs: 30_000, transientResultTtlMs: 5_000, queueDepth: 16, requestCapacity: 64,
+  rateWindowMs: 10_000, rateWindowCount: 20, burstWindowMs: 1_000, burstCount: 5,
   activeSessions: 32,
 });
 export const READ_ONLY_COMMANDS = Object.freeze([
@@ -51,22 +52,31 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
     session.requestIds.clear();
     session.client = null;
     for (const [key, pairing] of pairings) if (pairing.sessionId === session.id) pairings.delete(key);
+    sessions.delete(session.id);
+  }
+  function prune() {
+    const time = now();
+    for (const [key, pairing] of pairings) if (pairing.expiresAt <= time) pairings.delete(key);
+    for (const session of [...sessions.values()]) {
+      if (!live(session) || (session.client && !clientLive(session))) retire(session);
+    }
   }
   function authorizeOwner(sessionId, token) {
     const session = sessions.get(sessionId);
-    if (!live(session) || !equal(token, session.ownerHash)) return null;
+    if (!live(session) || !equal(token, session.ownerHash)) { if (session && !live(session)) retire(session); return null; }
     return session;
   }
   function authorizeClient(sessionId, token, scope) {
     const session = sessions.get(sessionId);
-    if (!clientLive(session) || !equal(token, session.client.hash)
-        || !session.client.scopes.includes(scope)) return null;
+    if (!clientLive(session)) { if (session?.client) retire(session); return null; }
+    if (!equal(token, session.client.hash) || !session.client.scopes.includes(scope)) return null;
     session.client.idleExpiresAt = Math.min(session.client.absoluteExpiresAt,
       now() + BROWSER_SESSION_LIMITS.clientIdleTtlMs);
     return session;
   }
 
   function registerOwner({ sessionId, projectId, tabId, revision = 0 }) {
+    prune();
     if (![sessionId, projectId, tabId].every((value) => ID.test(value))) return failure('API_ARGUMENTS_INVALID');
     if (!Number.isInteger(revision) || revision < 0) return failure('API_ARGUMENTS_INVALID');
     if (sessions.size >= BROWSER_SESSION_LIMITS.activeSessions) return failure('API_SESSION_LIMIT');
@@ -77,7 +87,7 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
       revision,
       ownerLeaseExpiresAt: now() + BROWSER_SESSION_LIMITS.ownerLeaseMs,
       client: null, revoked: false, commands: [], pending: new Map(), results: new Map(), outcomes: new Map(),
-      requestIds: new Set(), nextSequence: 1,
+      requestIds: new Set(), nextSequence: 1, pairingKey: null, requestTimes: [],
     });
     return { ok: true, code: 'API_OWNER_REGISTERED', schema: BROWSER_SESSION_SCHEMA,
       ownerCapability, ownerLeaseExpiresAt: sessions.get(sessionId).ownerLeaseExpiresAt };
@@ -92,11 +102,14 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
       clientPaired: Boolean(session.client), clientExpiresAt: session.client?.absoluteExpiresAt ?? null };
   }
   function createPairing({ sessionId, ownerCapability }) {
+    prune();
     const session = authorizeOwner(sessionId, ownerCapability);
     if (!session) return failure('API_OWNER_GONE');
     if (session.client) return failure('API_CLIENT_EXISTS');
+    if (session.pairingKey && pairings.has(session.pairingKey)) return failure('API_PAIRING_EXISTS');
     const pairingSecret = secret();
-    pairings.set(digest(pairingSecret).toString('base64url'), {
+    session.pairingKey = digest(pairingSecret).toString('base64url');
+    pairings.set(session.pairingKey, {
       sessionId, expiresAt: now() + BROWSER_SESSION_LIMITS.pairingTtlMs,
     });
     return { ok: true, code: 'API_PAIRING_CREATED', pairingSecret,
@@ -109,6 +122,7 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
     pairings.delete(pairingKey); // atomic one-shot, including failed/expired claims
     if (!pairing || pairing.expiresAt <= now()) return failure('API_PAIRING_EXPIRED');
     const session = sessions.get(pairing.sessionId);
+    if (session) session.pairingKey = null;
     if (!live(session) || session.client) return failure('API_OWNER_GONE');
     if (!Array.isArray(scopes) || !scopes.length
         || scopes.some((scope) => !['discover', 'read_project'].includes(scope))) {
@@ -132,25 +146,41 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
         || !READ_ONLY_COMMANDS.includes(request.command) || typeof request.arguments !== 'object'
         || Array.isArray(request.arguments)) return failure('API_ARGUMENTS_INVALID');
     if (!live(session) || !clientLive(session)) return failure('API_EXPIRED');
+    const time = now();
+    session.requestTimes = session.requestTimes.filter((value) => value > time - BROWSER_SESSION_LIMITS.rateWindowMs);
+    if (session.requestTimes.length >= BROWSER_SESSION_LIMITS.rateWindowCount
+        || session.requestTimes.filter((value) => value > time - BROWSER_SESSION_LIMITS.burstWindowMs).length
+          >= BROWSER_SESSION_LIMITS.burstCount) return failure('API_RATE_LIMIT');
     const canonical = JSON.stringify(request);
     if (session.outcomes.has(request.request_id)) {
       const prior = session.outcomes.get(request.request_id);
       if (prior.canonical !== canonical) return failure('API_REQUEST_ID_CONFLICT');
-      return prior.result ? clone(prior.result) : failure('API_REQUEST_RETIRED');
+      if (prior.result && prior.expiresAt <= now()) prior.result = null;
+      return prior.result ? clone(prior.result) : failure(prior.retiredCode ?? 'API_REQUEST_RETIRED');
     }
     if (session.requestIds.has(request.request_id)) return failure('API_REQUEST_REPLAY');
     if (session.requestIds.size >= BROWSER_SESSION_LIMITS.requestCapacity) return failure('API_SESSION_RENEW_REQUIRED');
     if (request.sequence !== session.nextSequence) return failure('API_SEQUENCE_REQUIRED');
     if (session.commands.length >= BROWSER_SESSION_LIMITS.queueDepth) return failure('API_QUEUE_FULL');
+    session.requestTimes.push(time);
     session.requestIds.add(request.request_id); session.nextSequence += 1;
-    session.commands.push({ request: clone(request), canonical, queuedAt: now() });
+    session.commands.push({ request: clone(request), canonical,
+      expiresAt: time + BROWSER_SESSION_LIMITS.requestTtlMs });
     return { ok: true, code: 'API_REQUEST_QUEUED', request_id: request.request_id };
   }
   function pull({ sessionId, ownerCapability }) {
     const session = authorizeOwner(sessionId, ownerCapability);
     if (!session) return failure('API_OWNER_GONE');
-    const item = session.commands.shift();
-    if (item) session.pending.set(item.request.request_id, item.canonical);
+    if (!session.client) return { ok: true, code: 'API_QUEUE_EMPTY' };
+    if (!clientLive(session)) { retire(session); return failure('API_CLIENT_GONE'); }
+    let item = session.commands.shift();
+    while (item && item.expiresAt <= now()) {
+      session.outcomes.set(item.request.request_id, { canonical: item.canonical, result: null,
+        retiredCode: 'API_REQUEST_EXPIRED', expiresAt: item.expiresAt });
+      item = session.commands.shift();
+    }
+    if (item) session.pending.set(item.request.request_id,
+      { canonical: item.canonical, expiresAt: item.expiresAt });
     return item ? { ok: true, code: 'API_COMMAND_AVAILABLE', request: item.request }
       : { ok: true, code: 'API_QUEUE_EMPTY' };
   }
@@ -160,14 +190,27 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
     if (!result || result.schema !== BROWSER_SESSION_RESULT_SCHEMA || !ID.test(result.request_id)) {
       return failure('API_ARGUMENTS_INVALID');
     }
-    const requestCanonical = session.pending.get(result.request_id);
-    if (!requestCanonical || session.outcomes.has(result.request_id)) return failure('API_REQUEST_REPLAY');
+    const pending = session.pending.get(result.request_id);
+    if (!pending || session.outcomes.has(result.request_id)) return failure('API_REQUEST_REPLAY');
     session.pending.delete(result.request_id);
+    if (pending.expiresAt <= now()) {
+      session.outcomes.set(result.request_id, { canonical: pending.canonical, result: null,
+        retiredCode: 'API_REQUEST_EXPIRED', expiresAt: pending.expiresAt });
+      return failure('API_REQUEST_EXPIRED');
+    }
     const publicResult = clone(result);
     const responseBytes = Buffer.byteLength(JSON.stringify(publicResult));
-    if (responseBytes > BROWSER_SESSION_LIMITS.responseBytes) return failure('API_RESPONSE_LIMIT');
-    session.outcomes.set(result.request_id, { canonical: requestCanonical, result: publicResult,
-      expiresAt: now() + BROWSER_SESSION_LIMITS.transientResultTtlMs });
+    if (responseBytes > BROWSER_SESSION_LIMITS.responseBytes) {
+      const rejected = { schema: BROWSER_SESSION_RESULT_SCHEMA, request_id: result.request_id,
+        status: 'rejected', code: 'API_RESPONSE_LIMIT' };
+      session.outcomes.set(result.request_id, { canonical: pending.canonical, result: rejected,
+        retiredCode: 'API_REQUEST_RETIRED', expiresAt: now() + BROWSER_SESSION_LIMITS.transientResultTtlMs });
+      session.results.set(result.request_id, { value: rejected,
+        expiresAt: now() + BROWSER_SESSION_LIMITS.transientResultTtlMs });
+      return failure('API_RESPONSE_LIMIT');
+    }
+    session.outcomes.set(result.request_id, { canonical: pending.canonical, result: publicResult,
+      retiredCode: 'API_REQUEST_RETIRED', expiresAt: now() + BROWSER_SESSION_LIMITS.transientResultTtlMs });
     session.results.set(result.request_id, { value: publicResult,
       expiresAt: now() + BROWSER_SESSION_LIMITS.transientResultTtlMs });
     return { ok: true, code: 'API_RESULT_ACCEPTED' };
@@ -177,9 +220,15 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
       ?? authorizeClient(sessionId, clientCapability, 'discover');
     if (!session) return failure('API_AUTH_REQUIRED');
     const item = session.results.get(requestId);
-    if (!item) return { ok: true, code: 'API_RESULT_PENDING' };
+    if (!item) {
+      const outcome = session.outcomes.get(requestId);
+      return outcome && !outcome.result ? failure(outcome.retiredCode ?? 'API_REQUEST_RETIRED')
+        : { ok: true, code: 'API_RESULT_PENDING' };
+    }
     session.results.delete(requestId);
     if (item.expiresAt <= now()) return failure('API_RESULT_EXPIRED');
+    const outcome = session.outcomes.get(requestId);
+    if (outcome) { outcome.result = null; outcome.retiredCode = 'API_REQUEST_RETIRED'; }
     return clone(item.value);
   }
   function revoke({ sessionId, ownerCapability }) {
@@ -189,10 +238,9 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
     return { ok: true, code: 'API_SESSION_REVOKED' };
   }
   function sweep() {
-    for (const [key, pairing] of pairings) if (pairing.expiresAt <= now()) pairings.delete(key);
+    prune();
     for (const session of sessions.values()) {
-      if (!live(session)) retire(session);
-      else {
+      if (live(session)) {
         for (const [id, value] of session.results) if (value.expiresAt <= now()) session.results.delete(id);
         for (const value of session.outcomes.values()) {
           if (value.result && value.expiresAt <= now()) value.result = null;
@@ -202,5 +250,5 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
   }
   return Object.freeze({ registerOwner, heartbeat, createPairing, claimPairing, submit, pull,
     complete, readResult, revoke, sweep,
-    inspect: () => ({ sessions: [...sessions.values()].filter(live).length, pairings: pairings.size }) });
+    inspect: () => ({ sessions: sessions.size, pairings: pairings.size }) });
 }

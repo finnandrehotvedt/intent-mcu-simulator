@@ -3,12 +3,21 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import { randomUUID } from 'node:crypto';
+import { stdin } from 'node:process';
 
-const [origin, pairingSecret, componentId] = process.argv.slice(2);
-if (!origin || !pairingSecret || !componentId) {
-  console.error('Usage: browser-session-readonly-client.mjs ORIGIN PAIRING_SECRET COMPONENT_ID');
+const [origin, componentId] = process.argv.slice(2);
+if (!origin || !componentId) {
+  console.error('Usage: printf pairing-secret | browser-session-readonly-client.mjs ORIGIN COMPONENT_ID');
   process.exit(2);
 }
+let secretBytes = '';
+stdin.setEncoding('utf8');
+for await (const chunk of stdin) {
+  secretBytes += chunk;
+  if (secretBytes.length > 256) throw new Error('API_PAIRING_INPUT_LIMIT');
+}
+const pairingSecret = secretBytes.trim(); secretBytes = '';
+if (!pairingSecret) throw new Error('API_PAIRING_INPUT_REQUIRED');
 const endpoint = new URL('/api/session/v1', origin);
 const post = async (operation, value = {}, capability = null) => {
   const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json',
