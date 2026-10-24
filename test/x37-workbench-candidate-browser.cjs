@@ -54,6 +54,14 @@ async function installReady(page, failure = 'none') {
       for (const id of ['quick-build', 'quick-run', 'quick-pause', 'quick-stop', 'quick-reset']) assert.equal(await page.isDisabled(`#${id}`), true);
       assert.equal(await page.locator('#source').count(), 1); assert.equal(await page.locator('.x37-canvas-node').count(), 2);
       assert.equal(await page.locator('[data-net-id="shared.digital.0"]').count(), 1);
+      await page.locator('#source').evaluate((node) => { node.focus(); node.value = 'AB'; node.setSelectionRange(1, 2); });
+      await page.keyboard.press('Delete'); assert.equal(await page.locator('[data-net-id="shared.digital.0"]').count(), 1);
+      assert.equal(await page.locator('.x37-svg-branch').count(), 6);
+      await page.locator('[data-net-id="shared.digital.0"]').click(); assert.equal(await page.locator('.x37-canvas-node').count(), 2);
+      await page.keyboard.press('Delete');
+      assert.equal(await page.locator('.x37-canvas-node').count(), 2); assert.equal(await page.locator('[data-net-id="shared.digital.0"]').count(), 0);
+      await page.keyboard.press('Control+z'); assert.equal(await page.locator('.x37-canvas-node').count(), 2);
+      assert.equal(await page.locator('[data-net-id="shared.digital.0"]').count(), 1);
       assert.match(await page.textContent('#x37-candidate-status'), /public RP2040 compiler grammar/u);
       assert.equal(await page.evaluate(() => window.__X37_CANDIDATE__), undefined);
       const caret = await page.locator('#source').evaluate((node) => { node.value = '// unsaved AVR candidate source\n';

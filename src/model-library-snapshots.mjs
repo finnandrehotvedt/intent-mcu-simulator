@@ -137148,7 +137148,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "a7131c94b772b7df85a947c4d127e16024488881209ef085f6bf4f0f12040e0a"
+      "sha256": "9a6eb4f78cb1d4da1714e0d068eef7104e8318b2ab59d1fe267e34ee28beba27"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -137291,7 +137291,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "6110bc88f2abb7b04fc683d19750ba5386408a7249a3f353c87291316c5bd796"
     }
   ],
-  "implementationSha256": "ff3d3be00271424f161116ed34ae80f507dc8f97efb8d7d63bd0a13f76289fbd",
+  "implementationSha256": "ecb28d0eca17452cb847a6c8d0b2d17ba3cd70477807f2800db61b34a9f0de9c",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.129 and every earlier identity remain immutable and migration-only; this private source identity carries no public or release authority",
@@ -137301,7 +137301,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x37-mixed-retained.1-current",
     "semanticDisposition": "component and electrical semantics remain unchanged; a default-disarmed X37 candidate adds strict authored two-participant data, atomic coordinated lifecycle and a product adapter around the already reviewed scheduler without executing firmware"
   },
-  "manifestSha256": "7c332ffd9933307b3140fc041f94a0c757f3e43d1595e15b9f4ed0f81da013e8",
+  "manifestSha256": "f47f637d35ae557aba428fd3f2deb4ba9a79b785b8bbc8f79da50a45f05aac2c",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

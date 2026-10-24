@@ -2471,6 +2471,7 @@ new ResizeObserver(() => requestAnimationFrame(() => {
   else requestAnimationFrame(drawPicoEditorWires);
 })).observe(elements.picodiagram);
 document.addEventListener('keydown', (event) => {
+  if (document.body.dataset.x37Candidate === 'true') return;
   if (selectedCompilerProfile !== RP2040_PROFILE || elements.picopublicworkbench.hidden || isTextEditingTarget(event.target)) return;
   const snapshot = picoPublicWorkbench.snapshot().circuitEditor;
   if (event.key === 'Escape' && snapshot.wireDraft.mode !== 'none') {
@@ -2747,6 +2748,7 @@ new ResizeObserver(() => requestAnimationFrame(() => {
   else requestAnimationFrame(drawC3EditorWires);
 })).observe(elements.c3diagram);
 document.addEventListener('keydown', (event) => {
+  if (document.body.dataset.x37Candidate === 'true') return;
   if (selectedCompilerProfile !== ESP32C3_PROFILE || elements.c3publicworkbench.hidden || isTextEditingTarget(event.target)) return;
   const snapshot = c3PublicWorkbench.snapshot().circuitEditor;
   if (event.key === 'Escape' && snapshot.wireDraft.mode !== 'none') {
@@ -3035,6 +3037,7 @@ new ResizeObserver(() => requestAnimationFrame(() => {
   else requestAnimationFrame(drawStm32EditorWires);
 })).observe(elements.stm32diagram);
 document.addEventListener('keydown', (event) => {
+  if (document.body.dataset.x37Candidate === 'true') return;
   if (selectedCompilerProfile !== STM32F429ZI_PROFILE || elements.stm32publicworkbench.hidden
       || isTextEditingTarget(event.target)) return;
   const snapshot = stm32PublicWorkbench.snapshot().circuitEditor;
@@ -15200,6 +15203,7 @@ function cancelPendingWiring() {
   return true;
 }
 document.addEventListener('keydown', (event) => {
+  if (document.body.dataset.x37Candidate === 'true' && !isTextEditingTarget(event.target)) return;
   if (event.key === 'Escape'
       && (cancelComponentDrag() || cancelRouteDrag() || releaseCanvasButton('Escape') || cancelCanvasPan() || cancelPendingWiring())) {
     event.preventDefault(); return;

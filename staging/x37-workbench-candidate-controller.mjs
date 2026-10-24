@@ -27,8 +27,22 @@ export function installX37WorkbenchCandidate({
   let lifecycle = createX37CoordinatedLifecycle(); const budget = budgetOwner ?? createX37CandidateBudget();
   let adapter = null; let adapterOwner = 0; let operation = 0; let buildPending = false; let runtimePending = false;
   let pauseRequested = false;
+  document.addEventListener('click', (event) => {
+    const target = event.target instanceof Element ? event.target.closest('[data-net-id], [data-x37-pin]') : null;
+    if (!target) return; event.preventDefault(); event.stopImmediatePropagation();
+    if (target.hasAttribute('data-net-id')) { selectedNet = true; renderCanvas(); return; }
+    const net = project.sharedDigitalNets[0]; if (net.connected) return;
+    pendingEndpoints.add(target.dataset.x37Pin.split(':')[0]); target.setAttribute('aria-pressed', 'true');
+    if (pendingEndpoints.size === 2) updateGraph(true, 'Connected fixed shared.digital.0 named-pin net.');
+  }, true);
+  document.addEventListener('pointerdown', (event) => {
+    if (!(event.target instanceof Element) || !event.target.closest('[data-net-id], [data-x37-pin]')) return;
+    event.preventDefault(); event.stopImmediatePropagation();
+  }, true);
   const participant = () => project.participants.find(({ id }) => id === active);
-  const setStatus = (message) => { status.textContent = message; byId('quick-state').textContent = message; };
+  const setStatus = (message) => { const value = capability.enabled || message.includes(capability.message)
+    ? message : `${message} · ${capability.message}`;
+    status.textContent = value; byId('quick-state').textContent = value; };
   const renderCanvas = () => {
     layer.replaceChildren(); wires.replaceChildren();
     for (const [id, label, left, pins] of [['avr', 'AVR participant', 18, ['D13', 'D2']],
@@ -40,11 +54,21 @@ export function installX37WorkbenchCandidate({
     }
     const net = project.sharedDigitalNets[0];
     if (net.connected) {
-      const wire = document.createElement('button'); wire.type = 'button'; wire.className = 'x37-canvas-wire';
-      wire.setAttribute('data-net-id', net.id); wire.setAttribute('aria-label', 'Select shared.digital.0 ideal pull-up wire');
-      wire.setAttribute('aria-pressed', String(selectedNet)); wire.addEventListener('click', (event) => {
-        event.stopImmediatePropagation(); selectedNet = true; renderCanvas(); });
-      layer.append(wire);
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('class', 'x37-wire-svg'); svg.setAttribute('viewBox', '0 0 1000 500');
+      svg.setAttribute('aria-label', 'shared.digital.0 four named-pin branches with explicit ideal pull-up');
+      for (const d of ['M320 205 H400 V250', 'M320 295 H400 V250', 'M680 205 H600 V250',
+        'M680 295 H600 V250', 'M400 250 H600', 'M500 250 V170 L485 155 L515 140 L485 125 L515 110 L500 95 V65']) {
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', d); path.setAttribute('class', 'x37-svg-branch'); svg.append(path);
+      }
+      const label = document.createElementNS('http://www.w3.org/2000/svg', 'text'); label.setAttribute('x', '520');
+      label.setAttribute('y', '85'); label.textContent = 'IDEAL PULL-UP'; svg.append(label);
+      const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path'); hit.setAttribute('d', 'M320 205 H400 V250 H600 V205 H680 M320 295 H400 M600 250 V295 H680');
+      hit.setAttribute('class', 'x37-svg-hit'); hit.setAttribute('data-net-id', net.id); hit.setAttribute('tabindex', '0');
+      hit.setAttribute('role', 'button'); hit.setAttribute('aria-label', 'Select shared.digital.0 ideal pull-up wire');
+      hit.setAttribute('aria-pressed', String(selectedNet)); hit.addEventListener('click', (event) => {
+        event.stopImmediatePropagation(); selectedNet = true; renderCanvas(); }); svg.append(hit); layer.append(svg);
     }
     for (const pin of layer.querySelectorAll('[data-x37-pin]')) pin.addEventListener('click', (event) => {
       event.stopImmediatePropagation();
