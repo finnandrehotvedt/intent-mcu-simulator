@@ -6,7 +6,7 @@ import { X37_LEGACY_WORKBENCH_SCHEMA, X37_PUBLIC_CAPABILITY,
   createX37CandidateBudget, createX37CoordinatedLifecycle,
   defaultX37WorkbenchProject, parseX37WorkbenchProject,
   serializeX37WorkbenchProject } from '../src/x37-workbench-candidate.mjs';
-import { createX37ProductAdapter } from '../src/x37-product-adapter.mjs';
+import { createX37ProductAdapter, teardownX37Pair } from '../src/x37-product-adapter.mjs';
 
 test('strict candidate project roundtrips only two participants and one ideal pull-up net', () => {
   const project = defaultX37WorkbenchProject();
@@ -72,11 +72,23 @@ test('participant failure stop source edit topology edit and Open all retire bot
 });
 
 test('product adapter rejects stale ordinary builds before touching a runtime', () => {
-  assert.throws(() => createX37ProductAdapter({ schedulerContract: {},
-    identities: { avr: { projectGeneration: 2 }, rp: { projectGeneration: 2 } },
-    artifacts: { avr: { projectGeneration: 1, artifactIdentity: 'a' },
-      rp: { projectGeneration: 2, artifactIdentity: 'r' } },
-    runtimes: { avr: {}, rp: {} } }), { code: 'X37_PRODUCT_ADAPTER_STALE_BUILD' });
+  const build = (participantId, profile) => ({ participantId, profile, projectGeneration: 2,
+    runtimeGeneration: 3, artifactIdentity: 'a'.repeat(64), modelLibrarySha256: 'b'.repeat(64),
+    toolchainSha256: 'c'.repeat(64) });
+  const builds = { avr: build('avr', 'avr'), rp: build('rp', 'rp2040') };
+  assert.throws(() => createX37ProductAdapter({ schedulerContract: {}, builds,
+    lifecycleOwner: () => ({ projectGeneration: 2, runtimeGeneration: 3, builds }),
+    validateBuild: () => false, runtimePair: { avr: {}, rp: {} } }),
+  { code: 'X37_PRODUCT_ADAPTER_STALE_BUILD' });
+});
+
+test('pair teardown always attempts both ordinary workers and aggregates failures', () => {
+  const calls = [];
+  const result = teardownX37Pair({ avr: { dispose() { calls.push('avr'); throw Object.assign(new Error('AVR_FAIL'), { code: 'AVR_FAIL' }); } },
+    rp: { dispose() { calls.push('rp'); return { disposed: true }; } } }, 'dispose');
+  assert.deepEqual(calls, ['avr', 'rp']);
+  assert.deepEqual(result.errors, [{ participantId: 'avr', code: 'AVR_FAIL' }]);
+  assert.deepEqual(result.results, [{ disposed: true }]);
 });
 
 test('public candidate bundle entry imports no private producer or retained evidence loader', async () => {

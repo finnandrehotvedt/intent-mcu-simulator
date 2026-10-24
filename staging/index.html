@@ -155,18 +155,6 @@
       <button id="quick-stop" type="button" disabled title="Stop is unavailable for the AVR browser runtime; use Pause or Reset.">Stop unavailable</button>
     </nav>
 
-    <section id="x37-workbench-candidate" class="x37-candidate panel" aria-labelledby="x37-candidate-title" hidden>
-      <header class="x37-candidate-header"><div><p class="eyebrow">PRIVATE CANDIDATE · DEFAULT DISARMED</p><h2 id="x37-candidate-title">Two-controller shared-wire lesson</h2><p id="x37-candidate-project-name">Two-controller turnaround</p></div><span class="controller-badge">X37 planned</span></header>
-      <p class="truth">One ideal Boolean open-drain net with an explicit pull-up. Mapped ticks express deterministic model ordering—not voltage, propagation delay, wall time or physical synchronisation.</p>
-      <div class="x37-candidate-grid">
-        <section class="x37-candidate-sources" aria-label="Participant source files"><div class="x37-source-tabs" role="tablist" aria-label="Participant source"><button id="x37-source-avr" type="button" role="tab" aria-selected="true">AVR · main.ino</button><button id="x37-source-rp" type="button" role="tab" aria-selected="false">RP2040 · main.c</button></div><label for="x37-candidate-source">Authored source</label><textarea id="x37-candidate-source" rows="12" spellcheck="false"></textarea></section>
-        <section class="x37-candidate-canvas" aria-label="Named shared-wire topology"><article><strong>AVR</strong><span>Output D13</span><span>Input D2</span></article><div class="x37-shared-wire"><span>shared.digital.0</span><b>Ideal pull-up</b></div><article><strong>RP2040</strong><span>Output GPIO0</span><span>Input GPIO1</span></article></section>
-      </div>
-      <nav class="x37-candidate-controls" aria-label="Coordinated candidate controls"><button id="x37-candidate-build" type="button" disabled>Build both</button><button id="x37-candidate-run" type="button" disabled>Run</button><button id="x37-candidate-pause" type="button" disabled>Pause</button><button id="x37-candidate-stop" type="button" disabled>Stop</button><button id="x37-candidate-reset" type="button" disabled>Reset</button><button id="x37-candidate-download" type="button">Download copy</button><button id="x37-candidate-open" type="button">Open project</button><input id="x37-candidate-open-input" class="sr-only" type="file" accept="application/json,.json"></nav>
-      <p id="x37-candidate-status" class="truth" role="status"></p>
-      <section class="x37-candidate-trace" aria-labelledby="x37-candidate-trace-title"><h3 id="x37-candidate-trace-title">Combined shared-net trace</h3><div class="x37-trace-head"><span>Participant</span><span>Named pin</span><span>Local cycle</span><span>Mapped tick</span><span>State</span></div><p>No current trace. Open and source edits restore authored data only; a fresh supported coordinated Build would be required.</p></section>
-    </section>
-
     <details id="project-navigation" class="project-navigation panel">
       <summary>Find in this project</summary>
       <label for="project-navigation-query">Component, named pin, net, file, source line or saved test</label>
@@ -688,6 +676,7 @@
 
     <details id="firmware-drawer" class="workbench-drawer" open><summary>Firmware editor</summary><section class="editor-card panel" aria-labelledby="editor-title">
       <div class="card-heading"><div><p class="eyebrow">4 · FIRMWARE</p><h2 id="editor-title">main.ino</h2></div><span id="build-state" class="state" role="status">Build required</span></div>
+      <div id="x37-source-tabs" class="x37-source-tabs" role="tablist" aria-label="X37 participant source" hidden><button id="x37-source-avr" type="button" role="tab" aria-selected="true">AVR · main.ino</button><button id="x37-source-rp" type="button" role="tab" aria-selected="false">RP2040 · main.c</button></div>
       <div class="source-files" aria-label="Project source files">
         <div><label for="source-file">Open file</label><select id="source-file"></select></div>
         <div><label for="source-file-name">New local file</label><input id="source-file-name" type="text" maxlength="52" autocomplete="off" placeholder="helpers.h"></div>
@@ -696,6 +685,7 @@
       <div id="toolchain-boundary" class="toolchain-boundary"><strong>Compiler:</strong> Arduino AVR core 1.8.8 · avr-gcc 7.3.0-atmel3.6.1-arduino7. <strong>Simulation:</strong> only the <a href="#compatibility-note">documented MCU/peripheral subset</a>, not every library or device.</div>
       <div class="code-editor" id="code-editor"><pre id="source-lines" class="source-lines" aria-hidden="true">1</pre><pre id="source-highlight" class="source-highlight" aria-hidden="true"></pre><label class="sr-only" for="source">Firmware source</label><textarea id="source" spellcheck="false" placeholder="Write your sketch here. The project starts empty."></textarea></div>
       <div class="build-controls"><button id="build" type="button">Build isolated firmware</button><button id="cancel" type="button" disabled>Cancel build</button></div>
+      <p id="x37-candidate-status" class="truth" role="status" hidden></p>
       <div id="diagnostic-links" class="diagnostic-links" aria-label="Compiler diagnostics"></div><pre id="diagnostics" class="diagnostics" aria-live="polite">No build submitted.</pre>
       <details class="build-log"><summary>Full compiler log</summary><pre id="build-log">No build submitted.</pre></details>
     </section></details>
@@ -717,7 +707,7 @@
         <label for="speed">Execution speed</label><select id="speed" disabled><option value="0.1">0.1×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option><option value="maximum">Maximum</option></select>
         <div id="component-controls" class="component-runtime-controls"></div>
       </article>
-      <article class="trace-card panel"><div class="card-heading"><div><p class="eyebrow">GPIO PROVENANCE</p><h2>Recent D13 trace</h2></div></div><ul id="trace" class="trace"><li>0000000000 · LOW</li></ul><p class="truth">Behaviour covers the tested compatibility subset and may differ from physical hardware.</p></article>
+      <article class="trace-card panel"><div class="card-heading"><div><p class="eyebrow">GPIO PROVENANCE</p><h2 id="trace-title">Recent D13 trace</h2></div></div><ul id="trace" class="trace"><li>0000000000 · LOW</li></ul><p id="trace-boundary" class="truth">Behaviour covers the tested compatibility subset and may differ from physical hardware.</p></article>
     </section>
 
     <section id="thermostat-experiment" class="thermostat-experiment panel" aria-labelledby="thermostat-experiment-title" hidden>

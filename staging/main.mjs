@@ -7960,6 +7960,21 @@ function requestUnsavedChangeGuard({ profile, actionLabel, continueAction }) {
   elements.unsavedkeep.focus();
   return true;
 }
+function requestX37UnsavedChangeGuard({ isDirty, fingerprint, download, continueAction }) {
+  if (typeof isDirty !== 'function' || !isDirty()) { continueAction(); return false; }
+  if (pendingDestructiveProjectAction || elements.unsavedchangedialog.open) {
+    elements.unsavedchangestatus.textContent = 'Finish the current decision first. No additional action was queued.';
+    return true;
+  }
+  const token = ++destructiveActionSequence;
+  pendingDestructiveProjectAction = { token, profile: 'x37-candidate', continueAction,
+    fingerprint: fingerprint(), fingerprintOwner: fingerprint, downloadAction: download,
+    returnFocus: document.activeElement };
+  elements.unsavedchangetitle.textContent = 'Keep the X37 candidate before Open project?';
+  elements.unsavedchangedescription.textContent = 'Open project will replace both authored participant sources and the shared-net plan.';
+  elements.unsavedchangestatus.textContent = 'Choose Keep editing, download a data-only copy, or discard the changes.';
+  elements.unsavedchangedialog.showModal(); elements.unsavedkeep.focus(); return true;
+}
 function installPreparedProjectEnvelope(result, handle = null, { preserveExpectationReference = false,
   annotations = null, subcircuits = null } = {}) {
   retireX92Budget('project.file-open');
@@ -15036,7 +15051,8 @@ elements.unsavedchangedialog.addEventListener('click', (event) => {
 elements.unsaveddownload.addEventListener('click', () => {
   const pending = pendingDestructiveProjectAction;
   if (!pending) return;
-  const result = saveCommonProject(pending.profile);
+  const result = pending.downloadAction ? { ok: Boolean(pending.downloadAction()) }
+    : saveCommonProject(pending.profile);
   elements.unsavedchangestatus.textContent = result.ok
     ? 'Download requested. Your browser or operating system decides whether and where it is stored. Choose Keep editing or Discard and continue.'
     : 'Download could not be requested. Your project is unchanged; choose Keep editing or try again.';
@@ -15044,8 +15060,10 @@ elements.unsaveddownload.addEventListener('click', () => {
 elements.unsaveddiscard.addEventListener('click', () => {
   const pending = pendingDestructiveProjectAction;
   if (!pending) return;
-  if (selectedCompilerProfile !== pending.profile
-    || authoredProjectFingerprint(pending.profile) !== pending.fingerprint) {
+  const changed = pending.fingerprintOwner
+    ? pending.fingerprintOwner() !== pending.fingerprint
+    : selectedCompilerProfile !== pending.profile || authoredProjectFingerprint(pending.profile) !== pending.fingerprint;
+  if (changed) {
     closeUnsavedChangeGuard();
     profileMessage(pending.profile, 'The project changed while the decision was open. The older action was cancelled; your newer draft is unchanged.');
     return;
@@ -15353,4 +15371,4 @@ installX81Assessment({
   retainedEvidence: X81_RETAINED_ASSESSMENT?.sourceEvidence ?? null,
   retainedLabel: X81_RETAINED_ASSESSMENT?.label ?? 'Reviewed retained report',
 });
-installX37WorkbenchCandidate();
+installX37WorkbenchCandidate({ requestUnsavedGuard: requestX37UnsavedChangeGuard, downloadText });
