@@ -1,18 +1,19 @@
 # API-05 release preparation
 
-API-05 prepares the private browser-session API for independent release review.
-It does not publish or enable the API. The public release remains rc.133 until
-Desktop separately approves CI, review, merge and deployment. This branch
-prepares the coherent rc.134 release identity without claiming it is merged or
-public.
+API-05 records the pre-release review contract used before the browser-session
+API was merged. Deployment status is deliberately not embedded in this source
+document; the owning release checkpoint records whether a reviewed commit is
+actually running.
 
 ## Exact release scope
 
-The endpoint is same-origin `POST /api/session/v1`. It is disabled by default
-and exists only while a user explicitly enables one temporary pairing in one
-browser tab. The relay is ephemeral memory, not a project authority or store.
-Secrets enter the reference clients on standard input and are never placed in
-arguments, URLs, files or output.
+The endpoint is same-origin `POST /api/session/v1`. A deployment may enable the
+route, but an unpaired request has no project access. Each browser tab starts
+with API access off; the user must explicitly enable the tab and create one
+temporary pairing. Read-only scopes are the default, and AVR edit scope needs
+a separate explicit checkbox. The relay is ephemeral memory, not a project
+authority or store. Secrets enter the reference clients on standard input and
+are never placed in arguments, URLs, files or output.
 
 The protocol has ten transport operations: `owner.register`,
 `owner.heartbeat`, `pairing.create`, `pairing.claim`, `request.submit`,
@@ -76,9 +77,10 @@ cross-use capabilities.
 
 ## Release gate and rollback
 
-Publication is eligible only after PR 42's exact head and hosted CI are green,
-Desktop independently opens the attached portable project and screenshot, and
-Desktop explicitly approves review, merge and deployment. The release must
-keep API access opt-in, disabled by default and paired per tab, with no new
-listener or infrastructure. Rollback is the release commit revert; public
-rc.133 and the existing runtime stay unchanged until that separate decision.
+The completed pre-release gate required the implementation head and hosted CI
+to be green, an independent actual-file review, and explicit release approval.
+Any deployment must keep project access opt-in, off by default in every tab,
+read-only by default and separately paired, with no new listener or
+infrastructure. Rollback is the release commit revert. Actual deployment and
+rollback state belongs to the release checkpoint, not this immutable source
+copy.
