@@ -43,6 +43,27 @@ export function installX37WorkbenchCandidate({
   const setStatus = (message) => { const value = capability.enabled || message.includes(capability.message)
     ? message : `${message} · ${capability.message}`;
     status.textContent = value; byId('quick-state').textContent = value; };
+  const drawSvgRoutes = () => {
+    const svg = layer.querySelector('.x37-wire-svg'); if (!svg || !svg.getScreenCTM()) return;
+    svg.replaceChildren(); const pointFor = (selector, side) => { const rect = layer.querySelector(selector).getBoundingClientRect();
+      const point = svg.createSVGPoint(); point.x = side === 'right' ? rect.right : rect.left; point.y = rect.top + rect.height / 2;
+      return point.matrixTransform(svg.getScreenCTM().inverse()); };
+    const anchors = { avrD13: pointFor('[data-x37-pin="avr:D13"]', 'right'), avrD2: pointFor('[data-x37-pin="avr:D2"]', 'right'),
+      rpGPIO0: pointFor('[data-x37-pin="rp:GPIO0"]', 'left'), rpGPIO1: pointFor('[data-x37-pin="rp:GPIO1"]', 'left') };
+    const leftLane = Math.max(anchors.avrD13.x, anchors.avrD2.x) + 55; const rightLane = Math.min(anchors.rpGPIO0.x, anchors.rpGPIO1.x) - 55;
+    const trunkY = (Math.max(anchors.avrD13.y, anchors.rpGPIO0.y) + Math.min(anchors.avrD2.y, anchors.rpGPIO1.y)) / 2;
+    const routes = [['avr:D13', anchors.avrD13, `H${leftLane} V${trunkY}`], ['avr:D2', anchors.avrD2, `H${leftLane} V${trunkY}`],
+      ['rp:GPIO0', anchors.rpGPIO0, `H${rightLane} V${trunkY}`], ['rp:GPIO1', anchors.rpGPIO1, `H${rightLane} V${trunkY}`]];
+    for (const [pin, anchor, tail] of routes) { const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', `M${anchor.x} ${anchor.y} ${tail}`); path.setAttribute('class', 'x37-svg-branch'); path.dataset.pin = pin; svg.append(path); }
+    const trunk = document.createElementNS('http://www.w3.org/2000/svg', 'path'); trunk.setAttribute('d', `M${leftLane} ${trunkY} H${rightLane}`); trunk.setAttribute('class', 'x37-svg-branch'); svg.append(trunk);
+    const mid = (leftLane + rightLane) / 2; const top = Math.max(32, Math.min(...Object.values(anchors).map((item) => item.y)) - 125);
+    const pull = document.createElementNS('http://www.w3.org/2000/svg', 'path'); pull.setAttribute('d', `M${mid} ${trunkY} V${top + 70} l-15 -15 l30 -15 l-30 -15 l30 -15 l-15 -10 V${top}`); pull.setAttribute('class', 'x37-svg-branch'); svg.append(pull);
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text'); label.setAttribute('x', String(mid + 22)); label.setAttribute('y', String(top + 12)); label.textContent = 'IDEAL PULL-UP'; svg.append(label);
+    const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path'); hit.setAttribute('d', `M${leftLane} ${trunkY} H${rightLane}`);
+    hit.setAttribute('class', 'x37-svg-hit'); hit.setAttribute('data-net-id', 'shared.digital.0'); hit.setAttribute('tabindex', '0'); hit.setAttribute('role', 'button');
+    hit.setAttribute('aria-label', 'Select shared.digital.0 ideal pull-up wire'); hit.setAttribute('aria-pressed', String(selectedNet)); svg.append(hit);
+  };
   const renderCanvas = () => {
     layer.replaceChildren(); wires.replaceChildren();
     for (const [id, label, left, pins] of [['avr', 'AVR participant', 18, ['D13', 'D2']],
@@ -55,20 +76,9 @@ export function installX37WorkbenchCandidate({
     const net = project.sharedDigitalNets[0];
     if (net.connected) {
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('class', 'x37-wire-svg'); svg.setAttribute('viewBox', '0 0 1000 500');
+      svg.setAttribute('class', 'x37-wire-svg'); svg.setAttribute('viewBox', '0 0 1000 500'); svg.setAttribute('preserveAspectRatio', 'none');
       svg.setAttribute('aria-label', 'shared.digital.0 four named-pin branches with explicit ideal pull-up');
-      for (const d of ['M320 205 H400 V250', 'M320 295 H400 V250', 'M680 205 H600 V250',
-        'M680 295 H600 V250', 'M400 250 H600', 'M500 250 V170 L485 155 L515 140 L485 125 L515 110 L500 95 V65']) {
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', d); path.setAttribute('class', 'x37-svg-branch'); svg.append(path);
-      }
-      const label = document.createElementNS('http://www.w3.org/2000/svg', 'text'); label.setAttribute('x', '520');
-      label.setAttribute('y', '85'); label.textContent = 'IDEAL PULL-UP'; svg.append(label);
-      const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path'); hit.setAttribute('d', 'M320 205 H400 V250 H600 V205 H680 M320 295 H400 M600 250 V295 H680');
-      hit.setAttribute('class', 'x37-svg-hit'); hit.setAttribute('data-net-id', net.id); hit.setAttribute('tabindex', '0');
-      hit.setAttribute('role', 'button'); hit.setAttribute('aria-label', 'Select shared.digital.0 ideal pull-up wire');
-      hit.setAttribute('aria-pressed', String(selectedNet)); hit.addEventListener('click', (event) => {
-        event.stopImmediatePropagation(); selectedNet = true; renderCanvas(); }); svg.append(hit); layer.append(svg);
+      layer.append(svg); requestAnimationFrame(drawSvgRoutes);
     }
     for (const pin of layer.querySelectorAll('[data-x37-pin]')) pin.addEventListener('click', (event) => {
       event.stopImmediatePropagation();
@@ -82,6 +92,7 @@ export function installX37WorkbenchCandidate({
     queueMicrotask(() => { byId('delete-wire').disabled = !selectedNet || !project.sharedDigitalNets[0].connected;
       byId('undo').disabled = graphHistory.length === 0; });
   };
+  new ResizeObserver(() => requestAnimationFrame(drawSvgRoutes)).observe(canvas);
   const renderTrace = (rows = []) => {
     byId('trace-title').textContent = 'Combined shared-net trace';
     byId('trace-boundary').textContent = 'Mapped ticks are deterministic model order, not physical timing.';
@@ -101,6 +112,8 @@ export function installX37WorkbenchCandidate({
     controls.reset.disabled = !ready || !['running', 'paused', 'stopped'].includes(phase);
     byId('build').disabled = controls.build.disabled; byId('run').disabled = controls.run.disabled;
     byId('pause').disabled = controls.pause.disabled; byId('reset').disabled = controls.reset.disabled;
+    controls.stop.textContent = 'Stop'; controls.stop.title = 'Stop both coordinated candidate workers.';
+    byId('circuit-diagnostics').textContent = 'X37 bounded graph · two fixed participants · one ideal open-drain net with explicit pull-up.';
     setStatus(message); renderCanvas();
   };
   const dispose = () => { const current = adapter; adapter = null; adapterOwner = 0; if (!current) return [];
@@ -183,14 +196,19 @@ export function installX37WorkbenchCandidate({
   }, true);
   byId('delete-wire').addEventListener('click', (event) => { event.stopImmediatePropagation();
     if (selectedNet) updateGraph(false, 'Deleted shared.digital.0 · both participant builds retired.'); }, true);
-  document.addEventListener('keydown', (event) => { if (event.key !== 'Delete' || !selectedNet) return;
-    event.preventDefault(); event.stopImmediatePropagation(); updateGraph(false, 'Deleted shared.digital.0 · both participant builds retired.'); }, true);
   const undoGraph = () => { if (!graphHistory.length) return; const previous = graphHistory.pop(); project.sharedDigitalNets[0].connected = previous;
     operation += 1; buildPending = false; runtimePending = false; dirty = true; dispose(); lifecycle.projectChanged();
     selectedNet = false; pendingEndpoints.clear(); render('Restored the prior shared-net graph state.', true); };
   byId('undo').addEventListener('click', (event) => { event.stopImmediatePropagation(); undoGraph(); }, true);
-  document.addEventListener('keydown', (event) => { if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'z' || !graphHistory.length) return;
-    event.preventDefault(); event.stopImmediatePropagation(); undoGraph(); }, true);
+  window.addEventListener('keydown', (event) => { const target = event.target;
+    if (target instanceof Element && (target.matches('textarea,input,[contenteditable="true"]') || target.closest('[contenteditable="true"]'))) return;
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && graphHistory.length) {
+      event.preventDefault(); event.stopImmediatePropagation(); undoGraph(); return;
+    }
+    if (['Delete', 'Backspace'].includes(event.key) && selectedNet) {
+      event.preventDefault(); event.stopImmediatePropagation(); updateGraph(false, 'Deleted shared.digital.0 · both participant builds retired.');
+    }
+  }, true);
   byId('build').addEventListener('click', (event) => { event.stopImmediatePropagation(); void buildBoth(); }, true);
   for (const name of ['run', 'pause', 'reset']) byId(name).addEventListener('click', (event) => {
     event.stopImmediatePropagation(); void actions[name]();

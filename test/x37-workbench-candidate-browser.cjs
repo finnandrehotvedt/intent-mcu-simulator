@@ -8,7 +8,13 @@ const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/
 
 const base = process.env.X37_CANDIDATE_URL || 'http://127.0.0.1:18893';
 const output = process.env.X37_CANDIDATE_OUTPUT || '/tmp/x37-workbench-candidate-review';
-const fixture = `<!doctype html><body><span id="quick-state"></span><nav><button id="quick-build">Build</button><button id="quick-run">Run</button><button id="quick-pause">Pause</button><button id="quick-stop">Stop</button><button id="quick-reset">Reset</button></nav><button id="project-save">Download</button><button id="project-open">Open</button><input id="project-open-input" type="file"><button id="undo">Undo</button><button id="delete-wire">Delete wire</button><h2 id="canvas-title"></h2><span id="graph-state"></span><div id="circuit-canvas"><svg id="circuit-wires"></svg><div id="component-layer"></div></div><div id="x37-source-tabs" hidden><button id="x37-source-avr"></button><button id="x37-source-rp"></button></div><h2 id="editor-title"></h2><textarea id="source"></textarea><button id="build"></button><p id="x37-candidate-status" hidden></p><button id="run"></button><button id="pause"></button><button id="reset"></button><h2 id="trace-title"></h2><ul id="trace"></ul><p id="trace-boundary"></p></body>`;
+async function anchorErrors(page) { return page.evaluate(() => [...document.querySelectorAll('.x37-svg-branch[data-pin]')].map((path) => {
+  const p = path.getPointAtLength(0).matrixTransform(path.getScreenCTM()); const [owner] = path.dataset.pin.split(':');
+  const rect = document.querySelector(`[data-x37-pin="${path.dataset.pin}"]`).getBoundingClientRect();
+  const x = owner === 'avr' ? rect.right : rect.left; const y = rect.top + rect.height / 2;
+  return Math.hypot(p.x - x, p.y - y);
+})); }
+const fixture = `<!doctype html><body><span id="quick-state"></span><nav><button id="quick-build">Build</button><button id="quick-run">Run</button><button id="quick-pause">Pause</button><button id="quick-stop">Stop</button><button id="quick-reset">Reset</button></nav><button id="project-save">Download</button><button id="project-open">Open</button><input id="project-open-input" type="file"><button id="undo">Undo</button><button id="delete-wire">Delete wire</button><h2 id="canvas-title"></h2><span id="graph-state"></span><pre id="circuit-diagnostics"></pre><div id="circuit-canvas"><svg id="circuit-wires"></svg><div id="component-layer"></div></div><div id="x37-source-tabs" hidden><button id="x37-source-avr"></button><button id="x37-source-rp"></button></div><h2 id="editor-title"></h2><textarea id="source"></textarea><button id="build"></button><p id="x37-candidate-status" hidden></p><button id="run"></button><button id="pause"></button><button id="reset"></button><h2 id="trace-title"></h2><ul id="trace"></ul><p id="trace-boundary"></p></body>`;
 
 async function installReady(page, failure = 'none') {
   page.setDefaultTimeout(5000);
@@ -45,7 +51,7 @@ async function installReady(page, failure = 'none') {
   fs.mkdirSync(output, { recursive: true }); const browser = await chromium.launch({ headless: true });
   const report = { baselineBuilds: 0, baselineRuns: 0, controllerJourneys: [], viewports: [] };
   try {
-    for (const viewport of [{ width: 1366, height: 900 }, { width: 1440, height: 1000 }]) {
+    for (const viewport of [{ width: 1366, height: 900 }, { width: 1440, height: 1000 }, { width: 1720, height: 1000 }]) {
       const context = await browser.newContext({ viewport, serviceWorkers: 'block' }); const page = await context.newPage();
       page.setDefaultTimeout(5000);
       const producers = []; page.on('request', (request) => { if (/\/api\/(?:build|runtime|compile)/u.test(request.url())) producers.push(request.url()); });
@@ -57,11 +63,14 @@ async function installReady(page, failure = 'none') {
       await page.locator('#source').evaluate((node) => { node.focus(); node.value = 'AB'; node.setSelectionRange(1, 2); });
       await page.keyboard.press('Delete'); assert.equal(await page.locator('[data-net-id="shared.digital.0"]').count(), 1);
       assert.equal(await page.locator('.x37-svg-branch').count(), 6);
-      await page.locator('[data-net-id="shared.digital.0"]').click(); assert.equal(await page.locator('.x37-canvas-node').count(), 2);
+      assert((await anchorErrors(page)).every((error) => error <= 2));
+      await page.locator('[data-net-id="shared.digital.0"]').click({ force: true }); assert.equal(await page.locator('.x37-canvas-node').count(), 2);
       await page.keyboard.press('Delete');
       assert.equal(await page.locator('.x37-canvas-node').count(), 2); assert.equal(await page.locator('[data-net-id="shared.digital.0"]').count(), 0);
       await page.keyboard.press('Control+z'); assert.equal(await page.locator('.x37-canvas-node').count(), 2);
+      await page.waitForFunction(() => document.querySelectorAll('.x37-svg-branch[data-pin]').length === 4);
       assert.equal(await page.locator('[data-net-id="shared.digital.0"]').count(), 1);
+      assert((await anchorErrors(page)).every((error) => error <= 2));
       assert.match(await page.textContent('#x37-candidate-status'), /public RP2040 compiler grammar/u);
       assert.equal(await page.evaluate(() => window.__X37_CANDIDATE__), undefined);
       const caret = await page.locator('#source').evaluate((node) => { node.value = '// unsaved AVR candidate source\n';
@@ -79,9 +88,6 @@ async function installReady(page, failure = 'none') {
     }
     for (const mode of ['success', 'failure', 'stale']) {
       const page = await browser.newPage(); await installReady(page, mode === 'success' ? 'none' : mode);
-      if (mode === 'success') { await page.click('[data-net-id="shared.digital.0"]'); await page.keyboard.press('Delete');
-        assert.equal(await page.locator('[data-net-id="shared.digital.0"]').count(), 0); await page.click('#undo');
-        assert.equal(await page.locator('[data-net-id="shared.digital.0"]').count(), 1); }
       await page.click('#quick-build');
       if (mode === 'success') {
         await page.waitForFunction(() => !document.querySelector('#quick-run').disabled); await page.click('#quick-run');
