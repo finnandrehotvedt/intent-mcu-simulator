@@ -133,6 +133,8 @@ h2 { font-size: 1.22rem; margin: 0; }
 .beginner-run { min-height: 44px; padding: 8px 22px; color: #06111a; background: var(--lime); border-color: var(--lime); font-size: 1rem; font-weight: 900; }
 .beginner-secondary { display: flex; gap: 5px; }
 .beginner-secondary button { min-height: 32px; padding: 4px 8px; font-size: .7rem; }
+.beginner-secondary .beginner-runtime-toggle { color: #06111a; background: var(--amber); border-color: var(--amber); font-weight: 900; }
+.beginner-secondary .beginner-runtime-toggle[data-state="paused"] { background: var(--cyan); border-color: var(--cyan); }
 .beginner-primary > span { grid-column: 1 / -1; max-width: 390px; color: var(--muted); font-size: .67rem; }
 .workbench-more { grid-column: 1 / -1; }
 .workbench-more > summary { width: max-content; min-width: 84px; padding: 7px 12px; border: 1px solid #315c72; border-radius: 8px; color: var(--text); background: #0b2130; cursor: pointer; font-weight: 850; list-style-position: inside; }
