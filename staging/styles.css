@@ -160,6 +160,17 @@ body[data-workbench-view="simple"] #project-brief,
 body[data-workbench-view="simple"] #prompt-drawer,
 body[data-workbench-view="simple"] #thermostat-experiment,
 body[data-workbench-view="simple"] #regression-matrix { display: none !important; }
+body[data-workbench-view="simple"] #toggle-catalog,
+body[data-workbench-view="simple"] #pico-redo,
+body[data-workbench-view="simple"] #c3-redo,
+body[data-workbench-view="simple"] #stm32-redo,
+body[data-workbench-view="simple"] #pico-rotate, body[data-workbench-view="simple"] #c3-rotate, body[data-workbench-view="simple"] #stm32-rotate,
+body[data-workbench-view="simple"] #pico-zoom-out, body[data-workbench-view="simple"] #pico-zoom-value, body[data-workbench-view="simple"] #pico-zoom-in, body[data-workbench-view="simple"] #pico-fit, body[data-workbench-view="simple"] #pico-fullscreen,
+body[data-workbench-view="simple"] #c3-zoom-out, body[data-workbench-view="simple"] #c3-zoom-value, body[data-workbench-view="simple"] #c3-zoom-in, body[data-workbench-view="simple"] #c3-fit, body[data-workbench-view="simple"] #c3-fullscreen,
+body[data-workbench-view="simple"] #stm32-zoom-out, body[data-workbench-view="simple"] #stm32-zoom-value, body[data-workbench-view="simple"] #stm32-zoom-in, body[data-workbench-view="simple"] #stm32-fit, body[data-workbench-view="simple"] #stm32-fullscreen,
+body[data-workbench-view="simple"] #pico-reconnect, body[data-workbench-view="simple"] #pico-add-bend, body[data-workbench-view="simple"] #pico-route-back, body[data-workbench-view="simple"] #pico-route-forward, body[data-workbench-view="simple"] #pico-wire-color,
+body[data-workbench-view="simple"] #c3-reconnect, body[data-workbench-view="simple"] #c3-add-bend, body[data-workbench-view="simple"] #c3-route-back, body[data-workbench-view="simple"] #c3-route-forward, body[data-workbench-view="simple"] #c3-wire-color,
+body[data-workbench-view="simple"] #stm32-reconnect, body[data-workbench-view="simple"] #stm32-add-bend, body[data-workbench-view="simple"] #stm32-route-back, body[data-workbench-view="simple"] #stm32-route-forward, body[data-workbench-view="simple"] #stm32-wire-color { display: none !important; }
 body[data-workbench-view="advanced"] #beginner-primary { display: none; }
 body[data-workbench-view="advanced"] .workbench-more > summary { display: none; }
 body[data-workbench-view="advanced"] .workbench-more { display: contents; }
@@ -171,8 +182,29 @@ body[data-workbench-view="advanced"] .workbench-more { display: contents; }
   .beginner-secondary button { flex: 1 1 130px; }
   .beginner-primary > span { grid-column: 1; }
 }
-.active-canvas-stage { min-width: 0; border: 1px solid #315c72; border-radius: 14px; background: #07141f; box-shadow: 0 18px 50px #0006; overflow: hidden; }
-#active-canvas-mount { min-width: 0; }
+.active-canvas-stage { display: grid; grid-template-columns: minmax(236px,286px) minmax(0,1fr); min-width: 0; border: 1px solid #315c72; border-radius: 14px; background: #07141f; box-shadow: 0 18px 50px #0006; overflow: hidden; }
+#active-canvas-mount { grid-column: 2; min-width: 0; }
+.simple-parts-drawer { grid-column: 1; grid-row: 1 / span 2; min-width: 0; padding: 10px; overflow: auto; border-right: 1px solid #31536c; background: linear-gradient(180deg,#0a1c29,#07141f); }
+.simple-parts-drawer[hidden] { display: none; }
+.simple-parts-drawer > header { display: flex; align-items: start; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
+.simple-parts-drawer > header h3 { margin: 0; font-size: .94rem; }
+.simple-parts-drawer > header > span { max-width: 120px; color: var(--muted); font: 700 .6rem/1.3 ui-monospace,monospace; text-align: right; }
+.simple-parts-mount > .catalog,
+.simple-parts-mount > .shared-parts-surface { position: static; width: 100%; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.simple-parts-mount .catalog > .eyebrow,
+.simple-parts-mount .catalog > h2,
+.simple-parts-mount .bounded-parts-panel > header { display: none; }
+.simple-parts-mount .catalog-list { max-height: 380px; }
+.simple-parts-mount .bounded-parts-list { grid-template-columns: 1fr; }
+.simple-parts-drawer > footer { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 10px; }
+.simple-parts-drawer > footer button { min-height: 34px; }
+.simple-parts-drawer > p { margin: 8px 0 0; color: var(--muted); font-size: .65rem; line-height: 1.35; }
+.catalog-advanced-filters { margin-top: 10px; border-top: 1px solid #29495b; }
+.catalog-advanced-filters > summary { padding: 9px 0 5px; color: var(--muted); cursor: pointer; font-size: .7rem; font-weight: 850; }
+.catalog-advanced-filters > div { display: grid; gap: 5px; }
+body[data-workbench-view="advanced"] .active-canvas-stage { grid-template-columns: minmax(0,1fr); }
+body[data-workbench-view="advanced"] #active-canvas-mount,
+body[data-workbench-view="advanced"] .top-workbench-status { grid-column: 1; }
 #active-canvas-mount > [data-shared-surface="canvas"],
 #active-canvas-mount > .board-card { width: 100%; margin: 0; padding: 8px; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
 #active-canvas-mount > .board-card .card-heading { display: none; }
@@ -203,7 +235,7 @@ body[data-workbench-view="advanced"] .workbench-more { display: contents; }
 #active-canvas-mount .pico-circuit-state,
 #active-canvas-mount .truth:not(.named-wire-state),
 #active-canvas-mount .diagnostics { margin: 4px 0 0; font-size: .65rem; line-height: 1.3; }
-.top-workbench-status { display: grid; grid-template-columns: auto minmax(160px,.45fr) minmax(260px,1fr); gap: 8px; align-items: center; min-height: 30px; padding: 5px 10px; border-top: 1px solid #26475b; color: var(--muted); font-size: .65rem; }
+.top-workbench-status { grid-column: 2; display: grid; grid-template-columns: auto minmax(160px,.45fr) minmax(260px,1fr); gap: 8px; align-items: center; min-height: 30px; padding: 5px 10px; border-top: 1px solid #26475b; color: var(--muted); font-size: .65rem; }
 .top-workbench-status strong { color: var(--lime); }
 .top-workbench-status span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .shared-parking-root { display: none !important; }

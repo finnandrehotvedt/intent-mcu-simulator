@@ -1332,6 +1332,7 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
     const row = document.createElement('article');
     row.className = 'bounded-part-card'; row.dataset.type = part.type;
     row.dataset.present = String(part.present); row.setAttribute('role', 'listitem');
+    row.draggable = part.addable;
     const name = document.createElement('strong'); name.textContent = part.displayName;
     const summary = document.createElement('small'); summary.textContent = boundedPartSummary(part, component);
     const id = document.createElement('code'); id.textContent = component?.id ?? part.id;
@@ -1342,7 +1343,13 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
     action.setAttribute('aria-label', part.fixed
       ? `${part.displayName} is fixed for this profile`
       : part.present ? `${part.displayName} is already present` : `Add missing ${part.displayName}`);
-    if (part.addable) action.addEventListener('click', () => editCircuit('addMissingComponent', part.type));
+    if (part.addable) {
+      action.addEventListener('click', () => editCircuit('addMissingComponent', part.type));
+      row.addEventListener('dragstart', (event) => {
+        event.dataTransfer.effectAllowed = 'copy';
+        event.dataTransfer.setData('application/x-intent-component', JSON.stringify({ profile, type: part.type }));
+      });
+    }
     row.title = part.limitation;
     row.append(name, summary, id, action);
     return row;
@@ -1496,6 +1503,34 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
   const actions = document.createElement('div'); actions.className = 'appearance-actions'; actions.append(cancel, apply);
   appearanceLabel.append(appearanceSelect, status); appearance.append(appearanceLabel, bodyControls, preview, actions);
   properties.replaceChildren(createComponentEditorSplit({ profile, component: selected, modelPanel, drawingPanel: appearance }));
+}
+
+function installBoundedPartsDrop(profile, workbench, diagram) {
+  const mime = 'application/x-intent-component';
+  diagram.addEventListener('dragover', (event) => {
+    if (![...event.dataTransfer.types].includes(mime)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+  });
+  diagram.addEventListener('drop', (event) => {
+    const raw = event.dataTransfer.getData(mime);
+    if (!raw) return;
+    event.preventDefault();
+    let payload;
+    try { payload = JSON.parse(raw); } catch { return; }
+    if (payload?.profile !== profile || typeof payload.type !== 'string') return;
+    const box = diagram.getBoundingClientRect();
+    if (!box.width || !box.height) return;
+    const position = {
+      x: Math.max(0.08, Math.min(0.92, (event.clientX - box.left) / box.width)),
+      y: Math.max(0.1, Math.min(0.9, (event.clientY - box.top) / box.height)),
+    };
+    const result = workbench.editCircuit('addMissingComponent', payload.type, position);
+    const status = document.querySelector('#simple-parts-status');
+    if (status && selectedCompilerProfile === profile) status.textContent = result.ok
+      ? `Added ${result.componentId} at the dropped canvas position. Undo is available.`
+      : `Drop rejected (${result.code}). Project data was not changed.`;
+  });
 }
 
 function accessibleValidation(result) {
@@ -3161,6 +3196,9 @@ window.__STM32_PUBLIC_WORKBENCH__ = {
   setWireColor: (color) => setBoundedWireColor('stm32', color),
   setWireRoute: (netId, route) => stm32PublicWorkbench.editCircuit('setWireRoute', netId, route),
 };
+installBoundedPartsDrop(RP2040_PROFILE, picoPublicWorkbench, elements.picodiagram);
+installBoundedPartsDrop(ESP32C3_PROFILE, c3PublicWorkbench, elements.c3diagram);
+installBoundedPartsDrop(STM32F429ZI_PROFILE, stm32PublicWorkbench, elements.stm32diagram);
 renderProfileExampleCards(STM32F429ZI_PROFILE, elements.stm32profileexamples, stm32PublicWorkbench);
 elements.stm32delete.addEventListener('click', () => stm32PublicWorkbench.editCircuit('deleteSelected'));
 elements.stm32undo.addEventListener('click', () => stm32PublicWorkbench.editCircuit('undo'));

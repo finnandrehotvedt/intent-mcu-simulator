@@ -48,12 +48,17 @@ for (const profile of profiles) {
       const reopened = new profile.Editor(structuredClone(deleted.draft));
       assert.equal(reopened.snapshot().canUndo, false);
       assert.equal(reopened.snapshot().catalog.parts.find((part) => part.type === type).addable, true);
-      const added = reopened.addMissingComponent(type);
+      const beforeAdd = reopened.snapshot();
+      assert.equal(reopened.addMissingComponent(type, { x: Number.NaN, y: 0.4 }).code,
+        `${profile.prefix}_COMPONENT_ADD_POSITION_INVALID`);
+      assert.deepEqual(reopened.snapshot(), beforeAdd);
+      const added = reopened.addMissingComponent(type, { x: 0.73, y: 0.61 });
       assert.equal(added.ok, true);
       assert.equal(added.componentId, id);
       assert.equal(added.draft.components.filter((component) => component.type === type).length, 1);
       assert.equal(added.draft.nets.some((net) => net.endpoints.some((endpoint) => endpoint.component === id)), false);
       assert.equal(added.selection.id, id);
+      assert.deepEqual(added.draft.layout.positions[id], { x: 0.73, y: 0.61, rotation: 0 });
       assert.equal(added.canUndo, true);
       assert.equal(reopened.addMissingComponent(type).code, `${profile.prefix}_COMPONENT_EXISTS`);
       assert.equal(reopened.undo().draft.components.some((component) => component.type === type), false);

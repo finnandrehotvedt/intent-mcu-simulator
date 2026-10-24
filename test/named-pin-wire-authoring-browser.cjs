@@ -258,6 +258,9 @@ function assertGeometry(value, profile) {
     await resistor.focus();
     await page.keyboard.press('Enter');
     await page.keyboard.press('ArrowRight');
+    if (await page.getAttribute('#workbench-view-advanced', 'aria-pressed') !== 'true') {
+      await page.click('#workbench-view-advanced');
+    }
     await page.click(profile.rotate);
     await page.click(profile.fit);
     assertGeometry(await geometry(page, profile), profile);

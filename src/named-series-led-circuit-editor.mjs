@@ -228,19 +228,26 @@ export class NamedSeriesLedCircuitEditor {
       : { ok: false, currentAmps, forwardVolts };
   }
 
-  addMissingComponent(type) {
+  addMissingComponent(type, position = null) {
     if (type === this.componentPolicy.board.type) return this.fail('BOARD_FIXED');
     const policy = this.componentPolicy.parts.find((part) => part.type === type);
     if (!policy) return this.fail('COMPONENT_UNSUPPORTED', { type });
     if (this.draft.components.some((component) => component.type === type)) {
       return this.fail('COMPONENT_EXISTS', { type });
     }
+    if (position !== null && (!position || !Number.isFinite(position.x) || !Number.isFinite(position.y))) {
+      return this.fail('COMPONENT_ADD_POSITION_INVALID', { type });
+    }
     const next = clone(this.draft);
     next.components.push({
       id: policy.id, type: policy.type, label: policy.label,
       properties: clone(policy.properties), controls: {},
     });
-    next.layout.positions[policy.id] = clone(policy.position);
+    next.layout.positions[policy.id] = position === null ? clone(policy.position) : {
+      x: Math.max(0.08, Math.min(0.92, position.x)),
+      y: Math.max(0.1, Math.min(0.9, position.y)),
+      rotation: policy.position.rotation,
+    };
     const electrical = this.validatePropertyPair(next);
     if (!electrical.ok) {
       return this.fail('COMPONENT_PROPERTY_ELECTRICAL_LIMIT', {
