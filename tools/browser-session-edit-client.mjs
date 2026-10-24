@@ -4,7 +4,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { createInterface, emitKeypressEvents } from 'node:readline';
+import { createInterface } from 'node:readline';
 import { stdin, stderr, stdout } from 'node:process';
 
 const [origin, planPath] = process.argv.slice(2);
@@ -14,17 +14,25 @@ let pipedLines = null;
 if (!stdin.isTTY) pipedLines = createInterface({ input: stdin, crlfDelay: Infinity, terminal: false })[Symbol.asyncIterator]();
 async function hiddenLine(prompt) {
   if (!stdin.isTTY) return String((await pipedLines.next()).value ?? '').trim();
-  stderr.write(prompt); emitKeypressEvents(stdin); stdin.setRawMode(true); stdin.resume();
+  stdin.setRawMode(true); stdin.resume();
   return new Promise((resolve, reject) => {
     let value = '';
-    const finish = () => { stdin.off('keypress', onKey); stdin.setRawMode(false); stdin.pause(); stderr.write('\n'); resolve(value); };
-    const onKey = (text, key) => {
-      if (key?.ctrl && key.name === 'c') { stdin.setRawMode(false); reject(new Error('API_INPUT_CANCELLED')); return; }
-      if (key?.name === 'return' || key?.name === 'enter') { finish(); return; }
-      if (key?.name === 'backspace') { value = value.slice(0, -1); return; }
-      if (text && !key?.ctrl && value.length < 256) value += text;
+    const cleanup = () => { stdin.off('data', onData); process.off('SIGINT', onSigint);
+      stdin.setRawMode(false); stdin.pause(); stderr.write('\n'); };
+    const cancel = () => { cleanup(); reject(new Error('API_INPUT_CANCELLED')); };
+    const onSigint = () => cancel();
+    const finish = () => { cleanup(); resolve(value); };
+    const onData = (chunk) => {
+      for (const character of chunk.toString('utf8')) {
+        if (character === '\u0003') { cancel(); return; }
+        if (character === '\r' || character === '\n') { finish(); return; }
+        if (character === '\u007f' || character === '\b') { value = value.slice(0, -1); continue; }
+        if (value.length < 256) value += character;
+      }
     };
-    stdin.on('keypress', onKey);
+    process.once('SIGINT', onSigint);
+    stdin.on('data', onData);
+    stderr.write(prompt);
   });
 }
 async function ordinaryLine(prompt) {

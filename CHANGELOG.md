@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.135 — 2026-10-24
+
+- Adds copyable task-driven Codex instructions, a versioned public protocol and
+  a downloadable dependency-free browser-session client.
+- Makes reference-client use read-only by default across all four profiles and
+  requires a separate AVR edit pairing plus an explicit nonsecret plan.
+- Preserves unrelated project content, rejects component removal by default
+  and performs transaction Undo only after a separate human `UNDO` action.
+- Keeps pairing secrets and client capabilities out of copied prompts,
+  arguments, URLs, files, logs and source control.
+- Adds no Build, Run, compiler, native runtime, worker, image or deployment
+  authority and retains rc.134 as the prior app-only rollback basis.
+
 ## 1.1.0-rc.134 — 2026-10-24
 
 - Adds an opt-in, disabled-by-default, per-tab private browser-session API.

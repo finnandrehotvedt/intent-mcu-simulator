@@ -20,12 +20,12 @@ test('public documentation facts derive from the current release and canonical c
     read('../staging/llms.txt'), read('../staging/sitemap.xml'),
   ]);
   const avrCount = exampleCatalog().length + 1 + 1 + avrReferenceStarterCatalog().length;
-  assert.equal(RELEASE_VERSION, '1.1.0-rc.134');
+  assert.equal(RELEASE_VERSION, '1.1.0-rc.135');
   assert.equal(avrCount, 15);
   assert.equal(THERMOSTAT_SCENARIOS.scenarios.length, 4);
   assert.match(THERMOSTAT_EXPERIMENT_CARD.outcome, /four reset-isolated/u);
   for (const page of [controllers, components, examples, support, llms]) {
-    assert.match(page, /1\.1\.0-rc\.134/u);
+    assert.match(page, /1\.1\.0-rc\.135/u);
     assert.doesNotMatch(page, /1\.1\.0-rc\.41/u);
   }
   assert.match(controllers, /four reset-isolated boundary scenarios/u);
@@ -80,7 +80,7 @@ test('release copy reports its own version without embedding deployment state', 
     read('../docs/API-05-RELEASE-PREP.md'), read('../staging/server.mjs'),
     read('../RELEASE-NOTES.md'), read('../CHANGELOG.md'),
   ]);
-  assert.match(llms, new RegExp(`Current release: ${RELEASE_VERSION.replaceAll('.', '\\.')}`, 'u'));
+  assert.match(llms, new RegExp(`Current source release: ${RELEASE_VERSION.replaceAll('.', '\\.')}`, 'u'));
   assert.doesNotMatch(llms, /public deployment remains|until approved/iu);
   assert.match(support, new RegExp(`Intent MCU Simulator ${RELEASE_VERSION.replaceAll('.', '\\.')}`, 'u'));
   assert.doesNotMatch(support, /release candidate/iu);

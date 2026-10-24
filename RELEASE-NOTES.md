@@ -1,4 +1,25 @@
-# Intent MCU Simulator 1.1.0-rc.134
+# Intent MCU Simulator 1.1.0-rc.135
+
+## Task-driven Codex API pairing
+
+Rc.135 adds a prominent copyable Codex workflow beside API access, a versioned
+public protocol document and a downloadable dependency-free Node client. The
+client performs read-only discovery by default on all four profiles. An AVR
+edit requires a separate edit-enabled pairing and an explicit nonsecret plan;
+it preserves unrelated project content, rejects component removal by default
+and never automatically undoes. Exact transaction Undo requires a separate
+human `UNDO` action while the same temporary in-memory session remains open.
+
+The pairing secret is entered through the client's hidden local terminal
+prompt and is not placed in copied instructions, arguments, URLs, files, logs
+or source control. This source-metadata increment performs no Build, Run,
+compiler, native runtime, worker, image or deployment action. Rc.134 is the
+prior app-only rollback basis. The owning deployment checkpoint records which
+reviewed version is currently public.
+
+---
+
+## 1.1.0-rc.134
 
 ## Opt-in private browser-session API
 

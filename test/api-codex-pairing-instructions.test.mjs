@@ -17,8 +17,10 @@ test('copyable Codex instructions are public, self-contained and secret-safe', (
     assert.ok(CODEX_PAIRING_INSTRUCTIONS.toLowerCase().includes(required.toLowerCase()), required);
   }
   assert.doesNotMatch(CODEX_PAIRING_INSTRUCTIONS, /Bearer [A-Za-z0-9_-]{20,}/);
-  assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node .\\client.mjs https://lab.teachthecompany.com/ [plan.json]'));
-  assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node ./client.mjs https://lab.teachthecompany.com/ [plan.json]'));
+  assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node .\\client.mjs https://lab.teachthecompany.com/ plan.json'));
+  assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node ./client.mjs https://lab.teachthecompany.com/ plan.json'));
+  assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node .\\client.mjs https://lab.teachthecompany.com/ .'));
+  assert.match(CODEX_PAIRING_INSTRUCTIONS, /read-only client consumes its one-use pairing/);
   assert.doesNotMatch(CODEX_PAIRING_INSTRUCTIONS, /printf|PAIRING_SECRET=/);
   assert.match(CODEX_PAIRING_INSTRUCTIONS, /Never auto-undo/);
 });
@@ -36,5 +38,7 @@ test('build exposes versioned protocol, complete client and exact metaprompt', a
   assert.match(client, /API_PLAN_REMOVAL_NOT_ALLOWED/);
   assert.doesNotMatch(client, /component\.remove.*before\.components/s);
   assert.match(client, /if \(!plan\).*mode: 'read-only'/s);
+  assert.match(client, /stdin\.off\('data', onData\); process\.off\('SIGINT', onSigint\);/);
+  assert.match(client, /stdin\.setRawMode\(false\); stdin\.pause\(\)/);
   assert.equal(prompt, `${CODEX_PAIRING_INSTRUCTIONS}\n`);
 });
