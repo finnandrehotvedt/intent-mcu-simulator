@@ -28,5 +28,7 @@ test('UX07 and UX13 keep one primary Open action and move teaching tools under D
   assert.match(html, /<summary>View<\/summary>/u);
   assert.match(html, /project-file-advanced-actions[^]*id="walkthrough-open"[^]*id="teaching-exercise-open"/u);
   assert.match(source, /profile === selectedCompilerProfile/u);
-  assert.match(source, /JSON\.parse\(JSON\.stringify\(workbench\.circuitEditor\.snapshot\(\)\.draft\)\)/u);
+  assert.match(source, /structuredClone\(workbench\.circuitEditor\.snapshot\(\)\.draft\)/u);
+  assert.equal(source.match(/queueMicrotask\(\(\) => persistControllerDraft\([^\n]+PublicWorkbench\)\)/gu)?.length, 3,
+    'initial and authored profile persistence must wait until each workbench assignment is complete');
 });

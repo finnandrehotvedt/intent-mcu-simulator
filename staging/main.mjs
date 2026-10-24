@@ -751,7 +751,7 @@ function persistControllerDraft(profile, workbench) {
     let validatedProject = prior?.schema === 'intent-mcu-profile-draft@1' ? prior.project : prior;
     try { validatedProject = workbench.projectDocument(); } catch { /* keep last validated install basis */ }
     if (!validatedProject) return false;
-    const circuit = JSON.parse(JSON.stringify(workbench.circuitEditor.snapshot().draft));
+    const circuit = structuredClone(workbench.circuitEditor.snapshot().draft);
     localStorage.setItem(profileDraftStorageKey(profile), JSON.stringify({
       schema: 'intent-mcu-profile-draft@1', profile, project: validatedProject,
       authoredSource: inputs?.[0]?.value ?? workbench.project.source,
@@ -2591,7 +2591,7 @@ const picoPublicWorkbench = new Rp2040PublicWorkbench({
     renderPicoCircuitEditor(state);
     queueMicrotask(renderProjectNavigation);
     void syncX92Identity('RP2040 source or electrical graph changed');
-    persistControllerDraft(RP2040_PROFILE, picoPublicWorkbench);
+    queueMicrotask(() => persistControllerDraft(RP2040_PROFILE, picoPublicWorkbench));
   },
   onDiagnostics: (snapshot) => renderProfileDiagnostics(snapshot, {
     textarea: elements.picosource, summary: elements.picodiagnostics,
@@ -2869,7 +2869,7 @@ const c3PublicWorkbench = new Esp32C3PublicWorkbench({
     renderC3CircuitEditor(state);
     queueMicrotask(renderProjectNavigation);
     void syncX92Identity('ESP32-C3 source or electrical graph changed');
-    persistControllerDraft(ESP32C3_PROFILE, c3PublicWorkbench);
+    queueMicrotask(() => persistControllerDraft(ESP32C3_PROFILE, c3PublicWorkbench));
   },
   onDiagnostics: (snapshot) => renderProfileDiagnostics(snapshot, {
     textarea: elements.c3source, summary: elements.c3diagnostics,
@@ -3159,7 +3159,7 @@ const stm32PublicWorkbench = new Stm32PublicWorkbench({
     renderStm32CircuitEditor(state);
     queueMicrotask(renderProjectNavigation);
     void syncX92Identity('STM32 source or electrical graph changed');
-    persistControllerDraft(STM32F429ZI_PROFILE, stm32PublicWorkbench);
+    queueMicrotask(() => persistControllerDraft(STM32F429ZI_PROFILE, stm32PublicWorkbench));
   },
   onDiagnostics: (snapshot) => renderProfileDiagnostics(snapshot, {
     textarea: elements.stm32source, summary: elements.stm32diagnostics,
