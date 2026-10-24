@@ -97,7 +97,7 @@ export async function staticPreflight() {
       'X37_SEAM_CAUSAL_DELIVERY_INVALID'].every((value) => seams.includes(value)),
     killableWatchdog: runKillableWorker.toString().includes('worker.terminate()'),
     realProducerWorker: ['DockerBuildBroker', 'RuntimeKernel', 'Rp2040ExperimentalRuntime.create',
-      'createObservedDigitalNetResolver', 'deliverResolvedLevel', 'finally']
+      'createObservedDigitalNetResolver', 'resolvedDeliveryDecision', 'verifiedCleanup']
       .every((value) => producerWorker.includes(value)),
   };
   let rpSourceAccepted = false; let rpSourceError = null;

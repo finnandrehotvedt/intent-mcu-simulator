@@ -84,7 +84,7 @@
     "test:x36": "node --test --test-concurrency=1 test/x36-failure-replay.test.mjs test/runtime-identity.test.mjs test/runtime-worker-identity.test.mjs",
     "test:x36:browser": "node test/x36-failure-replay-browser.cjs",
     "test:x37": "node --test --test-concurrency=1 test/x37-shared-scheduler-contract.test.mjs",
-    "test:x37:candidate": "node --test --test-concurrency=1 test/x37-shared-scheduler-contract.test.mjs test/x37-private-runtime-adapter.test.mjs test/x37-existing-runtime-seams.test.mjs test/x37-rp2040-input-extension.test.mjs test/x37-source-bound-producer-harness.test.mjs test/x37-producer-watchdog.test.mjs test/x37-producer-worker-static.test.mjs",
+    "test:x37:candidate": "node --test --test-concurrency=1 test/x37-shared-scheduler-contract.test.mjs test/x37-private-runtime-adapter.test.mjs test/x37-existing-runtime-seams.test.mjs test/x37-rp2040-input-extension.test.mjs test/x37-source-bound-producer-harness.test.mjs test/x37-producer-watchdog.test.mjs test/x37-producer-orchestration.test.mjs test/x37-producer-api-contract.test.mjs test/x37-producer-worker-static.test.mjs",
     "test:x39": "node --test --test-concurrency=1 test/x39-failure-navigation.test.mjs test/thermostat-experiment-contract.test.mjs test/thermostat-experiment.test.mjs test/lifecycle.test.mjs",
     "test:x39:browser": "node test/x39-failure-navigation-browser.cjs && node test/x39-failure-navigation-new-browser.cjs",
     "test:x72": "node --test --test-concurrency=1 test/x72-example-progression.test.mjs",

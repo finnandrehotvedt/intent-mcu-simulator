@@ -16,10 +16,14 @@ test('real producer worker uses ordinary builders, runtimes, identity seams and 
   for (const expected of ['DockerBuildBroker', 'loadImageLock', 'normalizeBuildRequestValue',
     'new RuntimeKernel', 'Rp2040ExperimentalRuntime.create', 'createAvrX37RuntimeSeam',
     'createRp2040X37RuntimeSeam', 'createObservedDigitalNetResolver',
-    'mapX37RuntimeObservation', 'finally', 'avrSeam?.dispose()', 'rpSeam?.dispose()']) {
+    'mapX37RuntimeObservation', 'createBoundedObservationFifo',
+    'resolvedDeliveryDecision', 'verifiedCleanup', 'avrSeam.retire()', 'rpSeam.retire()']) {
     assert(source.includes(expected), expected);
   }
   assert.doesNotMatch(source, /synthetic|mock|fixtureArtifact|constantfold/iu);
+  assert.doesNotMatch(source, /deliverResolvedLevel\(true,/u);
+  assert(source.indexOf('activity.firmwareBuildAttempts += 1') < source.indexOf('broker.compile(request)'));
+  assert(source.lastIndexOf("terminal('passed'") > source.indexOf('await main()'));
 });
 
 test('candidate image setup is private, one-image and never overwrites public lock', async () => {

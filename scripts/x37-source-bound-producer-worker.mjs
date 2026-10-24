@@ -17,9 +17,14 @@ import {
   createAvrX37RuntimeSeam, createObservedDigitalNetResolver,
   createRp2040X37RuntimeSeam, mapX37RuntimeObservation,
 } from '../src/x37-existing-runtime-seams.mjs';
+import {
+  createBoundedObservationFifo, createLiveGenerationOwner, resolvedDeliveryDecision,
+  targetCycleAtOrAfterMappedTick, verifiedCleanup,
+} from '../src/x37-producer-orchestration.mjs';
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
-const activity = { firmwareBuilds: 0, runtimeInstances: 0, coordinatedRuns: 0, events: 0 };
+const activity = { firmwareBuildAttempts: 0, firmwareBuilds: 0, runtimeInstances: 0,
+  coordinatedRuns: 0, events: 0, buildRecords: [] };
 const terminal = (status, value) => parentPort.postMessage({
   schema: 'x37-producer-worker-result@1', status, ...value,
 });
@@ -34,12 +39,22 @@ function validateConfiguration(value) {
   return value;
 }
 
-async function compileOne(lock, request) {
+async function compileOne(participantId, lock, request) {
+  const record = { participantId, requestSha256: sha256(JSON.stringify(request)),
+    sourceSha256: sha256(request.files[0].content), imageId: lock.imageId,
+    toolchainManifestSha256: lock.toolchainManifestSha256, status: 'attempted' };
+  activity.firmwareBuildAttempts += 1; activity.buildRecords.push(record);
   const broker = new DockerBuildBroker({ imageLock: lock, deadlineMs: 20_000 });
-  const result = await broker.compile(request);
+  let result;
+  try { result = await broker.compile(request); }
+  catch (error) { record.failureCode = error.code ?? 'X37_BUILD_BROKER_FAILED'; throw error; }
   if (result.status !== 'succeeded' || result.imageId !== lock.imageId) {
+    record.failureCode = 'X37_BUILD_FAILED';
     throw Object.assign(new Error('X37_BUILD_FAILED'), { code: 'X37_BUILD_FAILED' });
   }
+  record.status = 'succeeded'; record.artifactSha256 = result.artifact.artifactSha256
+    ?? result.artifact.hexSha256 ?? result.artifact.uf2?.sha256 ?? null;
+  activity.firmwareBuilds += 1;
   return result.artifact;
 }
 
@@ -54,9 +69,6 @@ const schedulerContract = {
   sharedNet: { netId: 'shared.digital.0', driverParticipantIds: ['avr', 'rp'], readerParticipantIds: ['avr', 'rp'] },
   limits: { eventLimit: 32, traceLimit: 32 },
 };
-const owner = (participantId) => () => ({ participantId, projectGeneration: 1, runtimeGeneration: 1 });
-const targetCycle = (tick, clock) => Math.ceil(tick * clock.numerator / clock.denominator);
-
 async function main() {
   const config = validateConfiguration(workerData);
   const [avrLock, rpLock, avrSource, rpSource] = await Promise.all([
@@ -67,54 +79,87 @@ async function main() {
     files: [{ name: 'main.ino', content: avrSource }] });
   const rpRequest = normalizeBuildRequestValue({ schema: RP2040_BUILD_REQUEST_SCHEMA, board: RP2040_BOARD_PROFILE,
     files: [{ name: 'main.c', content: rpSource }] });
-  const avrArtifact = await compileOne(avrLock, avrRequest);
-  activity.firmwareBuilds += 1;
-  const rpArtifact = await compileOne(rpLock, rpRequest);
-  activity.firmwareBuilds += 1;
+  const avrArtifact = await compileOne('avr', avrLock, avrRequest);
+  const rpArtifact = await compileOne('rp', rpLock, rpRequest);
   if (sha256(avrArtifact.hex) !== avrArtifact.hexSha256
       || sha256(Buffer.from(rpArtifact.uf2.base64, 'base64')) !== rpArtifact.uf2.sha256) {
     throw Object.assign(new Error('X37_ARTIFACT_IDENTITY_INVALID'), { code: 'X37_ARTIFACT_IDENTITY_INVALID' });
   }
   let avr = null; let rp = null; let avrSeam = null; let rpSeam = null;
+  const avrOwner = createLiveGenerationOwner('avr');
+  const rpOwner = createLiveGenerationOwner('rp');
+  let result = null; let primaryError = null;
   try {
     avr = new RuntimeKernel(avrArtifact.hex, DEFAULT_CIRCUIT, { logicChannels: ['D13', 'D2'] });
     rp = await Rp2040ExperimentalRuntime.create({ format: 'uf2',
       bytes: new Uint8Array(Buffer.from(rpArtifact.uf2.base64, 'base64')),
       expectedSha256: rpArtifact.uf2.sha256 });
     activity.runtimeInstances = 2; activity.coordinatedRuns = 1;
-    avrSeam = createAvrX37RuntimeSeam({ runtime: avr, identityOwner: owner('avr'), schedulerContract });
-    rpSeam = createRp2040X37RuntimeSeam({ runtime: rp, identityOwner: owner('rp'), schedulerContract });
+    avrSeam = createAvrX37RuntimeSeam({ runtime: avr, identityOwner: avrOwner.snapshot, schedulerContract });
+    rpSeam = createRp2040X37RuntimeSeam({ runtime: rp, identityOwner: rpOwner.snapshot, schedulerContract });
     const net = createObservedDigitalNetResolver({ netId: 'shared.digital.0', driverParticipantIds: ['avr', 'rp'] });
-    const evidence = []; let events = 0;
+    const fifo = createBoundedObservationFifo(32); const evidence = []; let events = 0;
     const nextDrive = (seam, level, window) => {
       for (let call = 0; call < 32; call += 1) {
         seam.advanceToLocalCycle(seam.currentCycle() + window);
-        for (const observation of seam.observeFirmwareGpio()) {
+        fifo.enqueue(seam.observeFirmwareGpio()); let matching = null;
+        fifo.drain((observation) => {
           events += 1; activity.events = events;
-          if (events > 32) throw Object.assign(new Error('X37_EVENT_LIMIT'), { code: 'X37_EVENT_LIMIT' });
           const mapped = mapX37RuntimeObservation(observation, schedulerContract);
           const resolved = net.apply([mapped]); evidence.push({ observation: mapped, resolved });
-          if (observation.mode === 'DRIVE' && observation.level === level) return mapped;
-        }
+          if (!matching && observation.mode === 'DRIVE' && observation.level === level) {
+            matching = { observation: mapped, resolved };
+          }
+          return resolved;
+        });
+        if (matching) return matching;
       }
       throw Object.assign(new Error('X37_EXPECTED_FIRMWARE_OBSERVATION_MISSING'), { code: 'X37_EXPECTED_FIRMWARE_OBSERVATION_MISSING' });
     };
+    const deliver = (resolvedObservation, targetSeam, clock) => {
+      const decision = resolvedDeliveryDecision(resolvedObservation.resolved,
+        resolvedObservation.observation);
+      if (!decision.deliver) return { ...decision, queued: false };
+      const boundary = targetCycleAtOrAfterMappedTick(
+        decision.sourceObservation.mappedTick, clock);
+      const advance = targetSeam.advanceToLocalCycle(boundary.cycle);
+      const delivery = targetSeam.deliverResolvedLevel(decision.level, decision.sourceObservation);
+      return { ...decision, boundary, advance, delivery, queued: true };
+    };
     const avrHigh = nextDrive(avrSeam, true, 20_000);
-    rpSeam.advanceToLocalCycle(targetCycle(avrHigh.mappedTick, { numerator: 1, denominator: 8 }));
-    rpSeam.deliverResolvedLevel(true, avrHigh);
+    const avrToRp = deliver(avrHigh, rpSeam, { numerator: 1, denominator: 8 });
     const rpHigh = nextDrive(rpSeam, true, 20_000);
-    avrSeam.advanceToLocalCycle(targetCycle(rpHigh.mappedTick, { numerator: 1, denominator: 125 }));
-    avrSeam.deliverResolvedLevel(true, rpHigh);
+    const rpToAvr = deliver(rpHigh, avrSeam, { numerator: 1, denominator: 125 });
     const avrLow = nextDrive(avrSeam, false, 20_000);
-    terminal('passed', { evidence, observations: { avrHigh, rpHigh, avrLow },
-      activity: { ...activity } });
-  } finally {
-    try { avr?.pause(); } catch { /* bounded cleanup */ }
-    try { rp?.pause(); } catch { /* bounded cleanup */ }
-    try { avrSeam?.dispose(); } catch { /* bounded cleanup */ }
-    try { rpSeam?.dispose(); } catch { /* bounded cleanup */ }
+    const conflictDecision = resolvedDeliveryDecision(avrLow.resolved, avrLow.observation);
+    if (conflictDecision.deliver || conflictDecision.state !== 'CONFLICT') {
+      throw Object.assign(new Error('X37_EXPECTED_CONFLICT_MISSING'), { code: 'X37_EXPECTED_CONFLICT_MISSING' });
+    }
+    result = { evidence, observations: { avrHigh, rpHigh, avrLow },
+      deliveries: { avrToRp, rpToAvr, conflictDecision }, fifo: fifo.snapshot() };
+  } catch (error) { primaryError = error; }
+  try {
+    await verifiedCleanup([
+      avrSeam ? { cleanup: () => { avrSeam.retire(); avrOwner.retire(); avrSeam.dispose(); },
+        verify: () => avrSeam.lifecycle().disposed && avrOwner.isRetired() }
+        : avr ? { cleanup: () => { avr.pause(); avr.dispose?.(); }, verify: () => true } : null,
+      rpSeam ? { cleanup: () => { rpSeam.retire(); rpOwner.retire(); rpSeam.dispose(); },
+        verify: () => rpSeam.lifecycle().disposed && rpOwner.isRetired() }
+        : rp ? { cleanup: () => { rp.pause(); rp.dispose(); }, verify: () => rp.disposed === true } : null,
+    ]);
+  } catch (cleanupError) {
+    cleanupError.primaryFailureCode = primaryError?.code ?? null;
+    throw cleanupError;
   }
+  if (primaryError) throw primaryError;
+  return result;
 }
 
-try { await main(); }
-catch (error) { terminal('failed', { code: error.code ?? 'X37_PRODUCER_FAILED', activity: { ...activity } }); }
+try {
+  const result = await main();
+  terminal('passed', { ...result, activity: { ...activity } });
+} catch (error) {
+  terminal('failed', { code: error.code ?? 'X37_PRODUCER_FAILED',
+    cleanupErrors: error.cleanupErrors ?? [], primaryFailureCode: error.primaryFailureCode ?? null,
+    activity: { ...activity } });
+}
