@@ -31,6 +31,12 @@ main { width: calc(100% - 32px); margin: 0 auto; padding: 18px 0 36px; }
 body.serial-dock-open main,
 body:has(> .serial-dock:not([hidden])) main { width: calc(100% - var(--serial-width) - 40px); margin-left: 16px; margin-right: auto; }
 .app-header { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 12px; padding: 0 4px; }
+.app-introduction { width: min(660px, 58vw); }
+.app-introduction .lede { margin: 0; max-width: none; }
+.app-introduction .lede strong { color: var(--text); font-size: 1.05rem; }
+.app-introduction details { margin-top: 5px; color: var(--muted); font-size: .66rem; }
+.app-introduction summary { width: max-content; cursor: pointer; color: var(--cyan); font-weight: 800; }
+.app-introduction details p { margin: 5px 0 0; line-height: 1.4; }
 .eyebrow { color: var(--lime); font-size: .7rem; font-weight: 800; letter-spacing: .15em; margin: 0 0 9px; }
 h1 { font-size: clamp(1.55rem, 3vw, 2.3rem); letter-spacing: -.035em; line-height: 1; margin: 0; }
 h2 { font-size: 1.22rem; margin: 0; }
@@ -80,17 +86,24 @@ h2 { font-size: 1.22rem; margin: 0; }
 .starter-launch button { color: #06111a; background: var(--lime); border-color: var(--lime); font-weight: 850; }
 .starter-launch button span { font-size: .7rem; }
 .starter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-top: 14px; }
-.starter-card { min-height: 176px; display: flex; flex-direction: column; align-items: flex-start; gap: 7px; padding: 14px; text-align: left; background: linear-gradient(145deg, #102d41, #091a28); }
+.starter-card { min-height: 176px; display: flex; flex-direction: column; align-items: stretch; gap: 7px; padding: 14px; border: 1px solid #31536c; border-radius: 10px; text-align: left; background: linear-gradient(145deg, #102d41, #091a28); }
 .starter-card strong { color: var(--text); font-size: 1rem; }
+.starter-visual { position: relative; display: block; height: 62px; overflow: hidden; border: 1px solid #31536c; border-radius: 8px; background: radial-gradient(circle at 77% 48%,#ff5b65 0 5px,#6e1e2a 6px 10px,transparent 11px),linear-gradient(90deg,transparent 15%,#39dff2 15% 17%,transparent 17% 56%,#a8ff3f 56% 58%,transparent 58%),linear-gradient(145deg,#06131e,#0d2d3f); }
+.starter-visual::before { content: ''; position: absolute; left: 18px; top: 16px; width: 72px; height: 31px; border: 2px solid #40b9b0; border-radius: 5px; background: #176e67; box-shadow: inset 0 0 0 6px #176e67,inset 0 0 0 8px #b9c7c7; }
+.starter-visual::after { content: ''; position: absolute; left: 92px; top: 29px; width: 78px; height: 3px; background: var(--cyan); box-shadow: 68px 0 0 var(--cyan); }
+.starter-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.starter-difficulty { padding: 3px 7px; border: 1px solid #477089; border-radius: 999px; color: #d8eaf2; font-size: .62rem; font-weight: 800; }
 .starter-focus { color: var(--lime); font-size: .65rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
 .starter-description, .starter-outcome { color: var(--muted); font-size: .75rem; line-height: 1.42; }
 .starter-parts { color: var(--cyan); font: 650 .69rem ui-monospace, monospace; }
-.starter-learning-grid { display: grid; gap: 5px; width: 100%; margin: 3px 0 2px; padding-top: 8px; border-top: 1px solid #2a4659; }
+.starter-teaching { width: 100%; border-top: 1px solid #2a4659; }
+.starter-teaching > summary { padding: 7px 0 2px; cursor: pointer; color: var(--cyan); font-size: .68rem; font-weight: 800; }
+.starter-learning-grid { display: grid; gap: 5px; width: 100%; margin: 3px 0 2px; }
 .starter-learning-grid > span { display: grid; grid-template-columns: 52px 1fr; gap: 7px; color: var(--muted); font-size: .68rem; line-height: 1.35; }
 .starter-learning-grid > span:last-child { margin-top: 2px; padding-top: 6px; border-top: 1px dashed #31536c; color: #cde6f4; }
 .starter-learning-grid b { color: var(--text); font-size: .65rem; letter-spacing: .04em; text-transform: uppercase; }
-.starter-action { margin-top: auto; color: var(--text); font-size: .75rem; font-weight: 800; }
-.starter-card:hover .starter-action, .starter-card:focus-visible .starter-action { color: var(--lime); }
+.starter-action { width: 100%; margin-top: auto; color: #06111a; background: var(--lime); border-color: var(--lime); font-size: .75rem; font-weight: 900; }
+.starter-card:hover, .starter-card:focus-within { border-color: var(--cyan); }
 .profile-example-picker { margin: 12px 0; padding: 12px; border: 1px solid #29465d; border-radius: 10px; background: #081722; }
 .profile-example-picker h3, .profile-example-picker p { margin: 0 0 8px; }
 .profile-example-picker p { color: var(--muted); font-size: .82rem; }
@@ -1058,6 +1071,10 @@ button:disabled, select:disabled { opacity: .42; }
 .component-wire-overlay-path.proposal { stroke-width: 5; opacity: 1; filter: drop-shadow(0 0 5px #a8ff3f88); }
 .pin-anchor { position: absolute; left: calc(var(--pin-x) * 100%); top: calc(var(--pin-y) * 100%); width: 30px; min-height: 30px; padding: 0; transform: translate(-50%, -50%); border: 2px solid transparent; border-radius: 50%; background: transparent; color: transparent; font-size: 0; z-index: 2; }
 .pin-anchor:hover, .pin-anchor:focus-visible, .pin-anchor.available { border-color: #39dff2cc; background: #39dff228; }
+.pin-anchor.compatible { border-color: #a8ff3fcc; background: #a8ff3f20; box-shadow: 0 0 0 3px #a8ff3f12; }
+.pin-anchor.incompatible { opacity: .38; }
+.pin-anchor[data-pin-role="ground"] { border-color: #dce7f288; background: #dce7f21f; }
+.pin-anchor[data-pin-role="ground"] .pin-anchor-label { border-color: #dce7f2; color: #fff; background: #07111af7; }
 .pin-anchor.pending { border-color: var(--lime); background: #a8ff3f3b; box-shadow: 0 0 0 4px #a8ff3f24; }
 .pin-anchor-label { position: absolute; left: 50%; bottom: calc(100% + 5px); transform: translateX(-50%); display: none; width: max-content; max-width: 120px; padding: 4px 7px; border: 1px solid #35667d; border-radius: 5px; background: #06111aee; color: var(--text); font: 650 .66rem ui-monospace, monospace; white-space: nowrap; pointer-events: none; }
 .pin-anchor:hover .pin-anchor-label, .pin-anchor:focus-visible .pin-anchor-label, .pin-anchor.pending .pin-anchor-label, .show-pin-labels .pin-anchor-label { display: block; }
