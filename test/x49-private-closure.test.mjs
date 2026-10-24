@@ -31,8 +31,8 @@ test('generated private runtime and evidence-tool closures are exact and fresh',
 
 test('approved X48 worker increment preserves X49 runtime dependencies and private-owner isolation', async () => {
   const immutableRuntime = {
-    'src/atmega328p-adapter.mjs': '1163005129565c3312989662eada1eab865cb2da58d1eaeaac10651e6bb9f343',
-    'src/runtime-kernel.mjs': 'e8c5c7cbfa847a8ec48312d3a43f8ae20bb128963519cb66a7c0bbd238fd5e7c',
+    'src/atmega328p-adapter.mjs': '7f785fe380fe2ba6b34db2413e051f8357a79c47a3bdadb844cc792516290325',
+    'src/runtime-kernel.mjs': 'e740f940d6269db23c1abfd23cfe125793fdc78ccf0c3522eecd1533134c057a',
     'src/simulator.worker.mjs': '060e64b11b30a61fc341a0b36d9c31ea2b1349d5811a9744d0aa34e5c1bc9485',
   };
   for (const [path, hash] of Object.entries(immutableRuntime)) {

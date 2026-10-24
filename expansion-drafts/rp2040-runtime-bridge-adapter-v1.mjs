@@ -29,6 +29,7 @@ const PWM_BASE = 0x40050000;
 const PWM_CHANNEL_BYTES = 0x14;
 const PWM_CSR_OFFSET = 0x00;
 const PWM_ENABLE = 1;
+const X37_GPIO_HISTORY_LIMIT = 64;
 const TRUSTED_GPIO_UART_ARTIFACTS = new Set([
   'a6d160c486a21994c58b1b44bc4883e90d5c3102ced62cd5e3eb9e7367835fdc',
   '6ca94212620f0b1b2ae1726af3ffa36c5163cb0f73a84af792f0f9e167b5d47b',
@@ -203,6 +204,8 @@ export class Rp2040RuntimeBridgeAdapter {
     this.machineEvents = [];
     this.machineEventOrder = 0;
     this.gpioHistory = [];
+    this.x37Gpio0History = [];
+    this.x37Gpio0HistoryDrops = 0;
     this.uartHistory = [];
     this.pwmHistory = [];
     this.adcHistory = [];
@@ -220,9 +223,16 @@ export class Rp2040RuntimeBridgeAdapter {
           fields: pinEvent(pin.index, state),
         };
         this.machineEvents.push(event);
-        this.gpioHistory.push({
-          cycle: event.cycle, virtualNanos: event.virtualNanos, ...event.fields,
-        });
+        const historyEvent = { cycle: event.cycle, virtualNanos: event.virtualNanos, ...event.fields };
+        this.gpioHistory.push(historyEvent);
+        if (historyEvent.pin === 'GPIO0') {
+          this.x37Gpio0History.push(historyEvent);
+          if (this.x37Gpio0History.length > X37_GPIO_HISTORY_LIMIT) {
+            const dropped = this.x37Gpio0History.length - X37_GPIO_HISTORY_LIMIT;
+            this.x37Gpio0History.splice(0, dropped);
+            this.x37Gpio0HistoryDrops += dropped;
+          }
+        }
       });
     }
     this.machine.uart[0].onByte = (value) => {
@@ -493,7 +503,7 @@ export class Rp2040RuntimeBridgeAdapter {
   }
 
   x37ProbeSnapshot() {
-    const status = this.machineStatus(); const gpio = this.gpioHistory.filter((event) => event.pin === 'GPIO0');
-    return { ...status, gpio: structuredClone(gpio) };
+    return { ...this.machineStatus(), gpio: structuredClone(this.x37Gpio0History),
+      gpioDropped: this.x37Gpio0HistoryDrops };
   }
 }

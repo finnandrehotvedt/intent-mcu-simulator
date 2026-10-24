@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { portBConfig } from 'avr8js';
 
+import { Atmega328PAdapter } from '../src/atmega328p-adapter.mjs';
 import {
   createAvrX37RuntimeSeam, createObservedDigitalNetResolver, createRp2040X37RuntimeSeam,
   mapX37RuntimeObservation,
 } from '../src/x37-existing-runtime-seams.mjs';
+import { Rp2040ExperimentalRuntime } from '../src/rp2040-experimental-runtime.mjs';
 
 const owner = (participantId) => {
   const value = { participantId, projectGeneration: 1, runtimeGeneration: 1 };
@@ -40,6 +43,11 @@ class SyntheticRealisticSchemaRuntime {
     this.cycle += this.stepCycles; this.instructions += 1;
     if (this.states[this.index]) this.output = { ...this.states[this.index++] };
     return this.snapshot();
+  }
+  x37Step() {
+    this.cycle += this.stepCycles; this.instructions += 1;
+    if (this.states[this.index]) this.output = { ...this.states[this.index++] };
+    return { cycle: this.cycle, instructions: this.instructions };
   }
   queueDigitalSequence(events) { this.queued.push(...events); return structuredClone(events); }
   queueDigitalInput(pin, level) {
@@ -135,8 +143,8 @@ test('same-length retained-ring rollover fails closed from dropped watermark', (
   const runtime = new SyntheticRealisticSchemaRuntime({ states: [{ mode: 'OUTPUT', level: true }] });
   runtime.transitions = [{ pin: 'D13', level: false, cycle: 1 }, { pin: 'D13', level: true, cycle: 2 }];
   const seam = createAvrX37RuntimeSeam({ runtime, ...seamOwner('avr') });
-  const originalStep = runtime.step.bind(runtime);
-  runtime.step = () => { const value = originalStep(); runtime.dropped = 3; return value; };
+  const originalStep = runtime.x37Step.bind(runtime);
+  runtime.x37Step = () => { const value = originalStep(); runtime.dropped = 3; return value; };
   assert.throws(() => seam.advanceToLocalCycle(3), { code: 'X37_SEAM_OBSERVATION_HISTORY_LOST' });
 });
 
@@ -183,7 +191,73 @@ test('low-cost probe avoids rebuilding large full snapshots while preserving tra
   runtime.x37ProbeSnapshot = () => original(); runtime.snapshot = () => { fullSnapshots += 1; return original(); };
   const seam = createAvrX37RuntimeSeam({ runtime, ...seamOwner('avr') });
   seam.advanceToLocalCycle(3);
-  assert.equal(fullSnapshots, 1); assert(seam.observeFirmwareGpio().length >= 1);
+  assert.equal(fullSnapshots, 0); assert(seam.observeFirmwareGpio().length >= 1);
+});
+
+test('lean stepping observes output-to-input release without calling public step or full snapshot', () => {
+  const runtime = new SyntheticRealisticSchemaRuntime({ states: [
+    { mode: 'OUTPUT', level: false }, { mode: 'INPUT', level: false },
+  ] });
+  let publicSteps = 0; let fullSnapshots = 0; const original = runtime.snapshot.bind(runtime);
+  runtime.step = () => { publicSteps += 1; return original(); };
+  runtime.x37ProbeSnapshot = () => ({ cycle: runtime.cycle, instructions: runtime.instructions,
+    pins: [{ pin: 'D13', ...runtime.output }], instruments: { logic: { transitions: [], dropped: 0 } } });
+  runtime.snapshot = () => { fullSnapshots += 1; return original(); };
+  const seam = createAvrX37RuntimeSeam({ runtime, ...seamOwner('avr') });
+  seam.advanceToLocalCycle(6);
+  assert.equal(publicSteps, 0); assert.equal(fullSnapshots, 0);
+  assert.deepEqual(seam.observeFirmwareGpio().map(({ mode }) => mode), ['RELEASE', 'DRIVE', 'RELEASE']);
+});
+
+test('RP lean step avoids public snapshots and preserves bounded-ring drop authority and mode', () => {
+  const adapter = {
+    cycle: 0, instructions: 0, handleCalls: 0,
+    snapshot: () => ({ descriptor: { capabilities: ['gpio'] } }),
+    handleWithoutSnapshot(command) {
+      assert.equal(command.type, 'advance'); this.handleCalls += 1;
+      this.cycle += 2; this.instructions += 1;
+    },
+    machineStatus() { return { cycle: this.cycle, instructions: this.instructions, blocked: false }; },
+    x37ProbeSnapshot() {
+      return { cycle: this.cycle, instructions: this.instructions, blocked: false,
+        gpio: [{ cycle: this.cycle, pin: 'GPIO0', mode: 'input', level: false }], gpioDropped: 7 };
+    },
+  };
+  const runtime = new Rp2040ExperimentalRuntime(adapter, {
+    artifactIdentity: 'a'.repeat(64), firmwareFormat: 'uf2', firmwareOrigin: 'test',
+  });
+  assert.deepEqual(runtime.x37Step(), { cycle: 2, instructions: 1 });
+  const probe = runtime.x37ProbeSnapshot();
+  assert.equal(adapter.handleCalls, 1); assert.equal(probe.instruments.logic.dropped, 7);
+  assert.deepEqual(probe.pins[0], { pin: 'GPIO0', mode: 'INPUT', level: false });
+  assert.equal(probe.instruments.logic.transitions[0].mode, 'input');
+});
+
+test('large lean-step interval has linear bounded probes and zero public snapshot projections', () => {
+  const steps = 20_000; const runtime = new SyntheticRealisticSchemaRuntime({ stepCycles: 1 });
+  let probes = 0; let snapshots = 0;
+  runtime.x37ProbeSnapshot = () => { probes += 1; return { cycle: runtime.cycle,
+    instructions: runtime.instructions, pins: [{ pin: 'D13', ...runtime.output }],
+    instruments: { logic: { transitions: [], dropped: 0 } } }; };
+  runtime.snapshot = () => { snapshots += 1; throw new Error('PUBLIC_SNAPSHOT_FORBIDDEN'); };
+  const seam = createAvrX37RuntimeSeam({ runtime, ...seamOwner('avr'),
+    maxInstructionsPerAdvance: steps, maxTotalInstructions: steps });
+  assert.equal(seam.advanceToLocalCycle(steps).steps, steps);
+  assert.equal(snapshots, 0); assert.equal(probes, steps * 2 + 4);
+});
+
+test('actual AVR X37 pin probe retains a fixed ring and reports exact rollover drops', () => {
+  const adapter = new Atmega328PAdapter(':00000001FF'); const mask = 1 << 5;
+  adapter.x37ProbeSnapshot('D13');
+  for (let index = 0; index < 65; index += 1) {
+    adapter.cpu.cycles += 1;
+    adapter.cpu.data[portBConfig.DDR] = index % 2 === 0
+      ? adapter.cpu.data[portBConfig.DDR] | mask : adapter.cpu.data[portBConfig.DDR] & ~mask;
+    adapter.x37ProbeSnapshot('D13');
+  }
+  const probe = adapter.x37ProbeSnapshot('D13');
+  assert.equal(probe.instruments.logic.transitions.length, 64);
+  assert.equal(probe.instruments.logic.dropped, 1);
 });
 
 test('firmware observations are capped at the shared 32-event ceiling', () => {

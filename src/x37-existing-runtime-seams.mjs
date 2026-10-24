@@ -60,6 +60,8 @@ function commonSeam({ runtime, identityOwner, schedulerContract, profile, output
   let totalInstructions = 0; let advanceCalls = 0;
   const probeSnapshot = () => typeof runtime.x37ProbeSnapshot === 'function'
     ? runtime.x37ProbeSnapshot(outputPin) : runtimeSnapshot(runtime);
+  const stepRuntime = () => typeof runtime.x37Step === 'function'
+    ? runtime.x37Step() : runtime.step();
   const initial = probeSnapshot();
   const netId = contract.sharedNet.netId;
   let historyCursor = initial.instruments.logic.dropped
@@ -104,7 +106,7 @@ function commonSeam({ runtime, identityOwner, schedulerContract, profile, output
       if (steps >= maxSteps || totalInstructions >= maxTotalInstructions) {
         reject('X37_SEAM_INSTRUCTION_CAP');
       }
-      runtime.step(); steps += 1;
+      stepRuntime(); steps += 1;
       const snapshot = probeSnapshot();
       const delta = snapshot.instructions - priorInstructions;
       if (!Number.isSafeInteger(delta) || delta <= 0) reject('X37_SEAM_INSTRUCTION_COUNTER_INVALID');

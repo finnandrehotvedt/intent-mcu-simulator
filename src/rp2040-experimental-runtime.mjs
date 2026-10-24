@@ -96,12 +96,22 @@ export class Rp2040ExperimentalRuntime {
     return this.snapshot('stepped');
   }
 
+  x37Step() {
+    this.#ensureActive(); this.paused = true;
+    const command = createRuntimeCommand(++this.requestId, 'advance', { budgetCycles: 1 });
+    this.adapter.handleWithoutSnapshot(command);
+    const machine = this.adapter.machineStatus();
+    if (machine.blocked) throw errorWithCode(machine.blockedCode ?? 'RUNTIME_CAPABILITY_UNSUPPORTED');
+    return { cycle: machine.cycle, instructions: machine.instructions };
+  }
+
   x37ProbeSnapshot() {
     this.#ensureActive(); const machine = this.adapter.x37ProbeSnapshot();
     const output = machine.gpio.at(-1) ?? { mode: 'input', level: false };
     return { cycle: machine.cycle, instructions: machine.instructions,
       pins: [{ pin: 'GPIO0', mode: output.mode === 'output' ? 'OUTPUT' : 'INPUT', level: output.level }],
-      instruments: { logic: { transitions: machine.gpio.map(({ cycle, level }) => ({ cycle, pin: 'GPIO0', level })), dropped: 0 } } };
+      instruments: { logic: { transitions: machine.gpio.map(({ cycle, mode, level }) =>
+        ({ cycle, pin: 'GPIO0', mode, level })), dropped: machine.gpioDropped } } };
   }
 
   reset() {

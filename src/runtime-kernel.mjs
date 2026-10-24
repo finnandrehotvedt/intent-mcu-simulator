@@ -493,6 +493,11 @@ export class RuntimeKernel {
     return this.#stepAndProjectX35();
   }
 
+  x37Step() {
+    this.#flushInputs();
+    return this.#stepAndProjectX35();
+  }
+
   x37ProbeSnapshot(outputPin = 'D13') { return this.adapter.x37ProbeSnapshot(outputPin); }
 
   #stepAndProjectX35() {

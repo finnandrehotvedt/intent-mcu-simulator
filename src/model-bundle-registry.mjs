@@ -3,6 +3,7 @@
 
 import {
   CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  RC129_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   RC124_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   RC128_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
@@ -52,6 +53,9 @@ import { RETAINED_MODEL_LIBRARY_IMPLEMENTATION } from './model-library-retained-
 // complete allowlisted lock, then selects one of these finite static imports.
 export function productionModelBundle(role) {
   if (role === 'retained') return RETAINED_MODEL_LIBRARY_IMPLEMENTATION;
+  if (role === 'rc129-current-migration') {
+    return RC129_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION;
+  }
   if (role === 'pre-x46-usart-rx-current-migration') {
     return PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION;
   }

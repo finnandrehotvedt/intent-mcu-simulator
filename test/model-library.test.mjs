@@ -28,6 +28,7 @@ import {
   PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_LOCK,
   RC113_CURRENT_MODEL_LIBRARY_LOCK,
   RC120_CURRENT_MODEL_LIBRARY_LOCK,
+  RC129_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X66_PUBLIC_THERMOSTAT_CREATE_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X66_SUBCIRCUIT_REVIEW_FIX_CURRENT_MODEL_LIBRARY_LOCK,
@@ -185,7 +186,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
   for (const [lock, expected] of [
     [RETAINED_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-retained-rc72@2'],
     [CURRENT_MODEL_LIBRARY_LOCK,
-      'intent-mcu-model-bundle-current-x46-usart-rx-producer-1@45'],
+      'intent-mcu-model-bundle-current-x37-step-hotpath-1@46'],
   ]) {
     const avr = validateCircuit(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
     assert.equal(avr.ok, true);
@@ -210,7 +211,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
 
 test('prior current locks remain exact and data-migratable but cannot authorize execution', () => {
   const historical = historicalModelLibraryManifests();
-  assert.equal(historical.length, 38);
+  assert.equal(historical.length, 39);
   for (const manifest of historical.slice(1)) {
     const lock = { schema: 'intent-mcu-model-library-lock@2', libraryId: manifest.libraryId,
       version: manifest.version, manifestSha256: manifest.manifestSha256,
@@ -228,6 +229,12 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'rc120-current-migration');
   assert.equal(modelLibraryExecutionIdentity(
     RC120_CURRENT_MODEL_LIBRARY_LOCK,
+  ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  assert.equal(normalizeModelLibraryLock(RC129_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
+  assert.equal(resolveModelLibrary(RC129_CURRENT_MODEL_LIBRARY_LOCK).role,
+    'rc129-current-migration');
+  assert.equal(modelLibraryExecutionIdentity(
+    RC129_CURRENT_MODEL_LIBRARY_LOCK,
   ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
   assert.equal(normalizeModelLibraryLock(PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
   assert.equal(modelLibraryExecutionIdentity(
