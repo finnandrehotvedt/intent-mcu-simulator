@@ -177,6 +177,9 @@ body[data-workbench-view="advanced"] .workbench-more { display: contents; }
 #active-canvas-mount > .board-card { width: 100%; margin: 0; padding: 8px; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
 #active-canvas-mount > .board-card .card-heading { display: none; }
 #active-canvas-mount .canvas-tools { margin: 0 0 5px; gap: 4px; }
+.canvas-view-tools { margin: 0 0 5px; }
+.canvas-view-tools > summary { width: max-content; padding: 5px 9px; border: 1px solid #315c72; border-radius: 7px; color: var(--muted); background: #081925; cursor: pointer; font-size: .68rem; font-weight: 850; }
+.canvas-view-tools[open] > summary { margin-bottom: 5px; color: #06111a; background: var(--cyan); border-color: var(--cyan); }
 #active-canvas-mount .canvas-tools button,
 #active-canvas-mount .bounded-circuit-actions button { min-height: 30px; }
 #active-canvas-mount .pico-circuit-pane,

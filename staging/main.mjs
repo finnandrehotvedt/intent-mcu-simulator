@@ -13134,6 +13134,18 @@ function renderProject() {
   const saveState = fileSaved ? fileSaveState : browserRecoveryCurrent ? 'browser recovery current · not saved to file' : 'not saved to file';
   elements.projectstate.textContent = `${project.metadata.name} · ${lifecycle.phase} · revision ${editor.revision} · ${saveState}`;
   elements.canvastitle.textContent = `${project.metadata.name} circuit`;
+  if (!beginnerRunIntent && !running) {
+    const empty = project.circuit.components.length === 0;
+    const types = project.circuit.components.map((component) => component.type).sort();
+    const blink = project.metadata.name === 'Blink demo'
+      && JSON.stringify(types) === JSON.stringify(['board.atmega328p-16mhz-v1', 'led.basic-v1', 'resistor.fixed-v1'].sort());
+    elements.beginnerrun.textContent = empty ? 'Legg til kontroller' : blink ? 'Kjør LED-eksempelet' : 'Kjør prosjektet';
+    elements.beginnerstatus.textContent = empty
+      ? 'Tomt prosjekt · legg til en kontroller og deler før du bygger.'
+      : blink
+        ? 'Ferdig koblet LED-eksempel · bygges ferskt når du trykker Kjør.'
+        : `${project.metadata.name} · bygges ferskt når du trykker Kjør.`;
+  }
   elements.undo.disabled = !editor.undoStack.length; elements.redo.disabled = !editor.redoStack.length;
   elements.zoomvalue.value = `${Math.round(project.layout.viewport.zoom * 100)}%`;
   for (const option of elements.logicchannels.options) option.selected = project.instruments.logicChannels.includes(option.value);
@@ -13710,9 +13722,10 @@ async function loadArtifact(hex, artifactIdentity, {
       if (beginnerRunIntent
           && beginnerRunIntent.projectGeneration === lifecycle.projectGeneration
           && beginnerRunIntent.inputIdentity === buildInputIdentity()) {
+        const projectLabel = beginnerRunIntent.projectLabel;
         beginnerRunIntent = null;
         elements.beginnerrun.disabled = false;
-        elements.beginnerstatus.textContent = 'LED-eksempelet kjører. Åpne Mer for Pause, Reset og instrumenter.';
+        elements.beginnerstatus.textContent = `${projectLabel} kjører. Åpne Mer for Pause, Reset og instrumenter.`;
         queueMicrotask(() => elements.run.click());
       }
       if (authority) {
@@ -15058,14 +15071,8 @@ async function runBeginnerProject() {
     return;
   }
   if (currentProject().circuit.components.length === 0) {
-    const install = () => {
-      const loaded = loadExampleProject('blink', 'project.beginner-run');
-      if (loaded?.ok) queueMicrotask(() => { void runBeginnerProject(); });
-      return loaded;
-    };
-    if (requestUnsavedChangeGuard({ profile: AVR_PROFILE, actionLabel: 'loading the LED example', continueAction: install })) return;
-    const loaded = install();
-    if (!loaded?.ok) return;
+    elements.beginnerstatus.textContent = 'Tomt prosjekt · velg en kontroller og deler. Ingenting ble erstattet.';
+    sharedWorkbenchShell.openDialog('parts', elements.beginnerrun);
     return;
   }
   elements.beginnerrun.disabled = true;
@@ -15078,6 +15085,7 @@ async function runBeginnerProject() {
   beginnerRunIntent = {
     projectGeneration: lifecycle.projectGeneration,
     inputIdentity: buildInputIdentity(),
+    projectLabel: currentProject().metadata.name === 'Blink demo' ? 'LED-eksempelet' : currentProject().metadata.name,
   };
   elements.beginnerstatus.textContent = 'Bygger fersk firmware i den isolerte kompilatoren…';
   const result = await build();

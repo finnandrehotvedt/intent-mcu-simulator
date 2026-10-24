@@ -44,9 +44,21 @@ const base = process.env.BEGINNER_START_URL || 'http://127.0.0.1:18932';
       await page.click('#beginner-scratch');
       await page.waitForFunction(() => window.__M6_PROJECT__().circuit.components.length === 0);
       assert.match(await page.textContent('#beginner-status'), /Tomt prosjekt/u);
+      assert.equal(await page.textContent('#beginner-run'), 'Legg til kontroller');
       assert.equal(await page.locator('#workbench-parts-dialog').evaluate((node) => node.open), true);
       await page.keyboard.press('Escape');
 
+      await page.click('#beginner-run');
+      assert.equal(await page.locator('#workbench-parts-dialog').evaluate((node) => node.open), true);
+      assert.equal(buildRequests, 0);
+      assert.equal((await page.evaluate(() => window.__M6_PROJECT__().metadata.name)), 'Untitled project');
+      assert.match(await page.textContent('#beginner-status'), /Ingenting ble erstattet/u);
+      await page.keyboard.press('Escape');
+
+      await page.click('#beginner-examples');
+      await page.click('.starter-card[data-example="blink"]');
+      if (await page.locator('#unsaved-change-dialog').isVisible()) await page.click('#unsaved-discard');
+      assert.equal(await page.textContent('#beginner-run'), 'Kjør LED-eksempelet');
       await page.click('#beginner-run');
       await page.waitForFunction(() => document.querySelector('#beginner-status').textContent.includes('kunne ikke startes'));
       assert.equal(buildRequests, 1);
