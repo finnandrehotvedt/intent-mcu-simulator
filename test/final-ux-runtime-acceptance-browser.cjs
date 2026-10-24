@@ -7,6 +7,7 @@ const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/runner/node_modules', 'playwright'));
+const { verifyRuntimeCandidate } = require('./final-ux-runtime-binding.cjs');
 
 const repository = path.resolve(__dirname, '..');
 const dist = path.join(repository, 'dist');
@@ -15,22 +16,21 @@ const compilerBase = process.env.FINAL_UX_COMPILER_BASE || '';
 const evidencePath = process.env.FINAL_UX_RUNTIME_EVIDENCE || '';
 const retainedHexPath = process.env.FINAL_UX_RETAINED_HEX || '';
 const retainedHex = !execute && retainedHexPath ? fs.readFileSync(retainedHexPath, 'utf8') : ':00000001FF';
-const expectedCommit = '544fac449bac5f9b070d4baf8f8a2fa84c068f2e';
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml',
   '.png': 'image/png', '.json': 'application/json' };
 
-function staticServer() {
+function staticServer(candidate) {
   return http.createServer((request, response) => {
     const pathname = new URL(request.url, 'http://127.0.0.1').pathname;
     const relative = pathname === '/' ? 'index.html' : pathname.slice(1);
-    const file = path.resolve(dist, relative);
-    if (!file.startsWith(`${dist}${path.sep}`) || !fs.existsSync(file)) {
+    const file = path.resolve(dist, relative); const bytes = candidate.files.get(relative);
+    if (!file.startsWith(`${dist}${path.sep}`) || !bytes) {
       response.writeHead(404); response.end('not found'); return;
     }
     response.writeHead(200, { 'content-type': mime[path.extname(file)] || 'application/octet-stream',
       'cache-control': 'no-store' });
-    fs.createReadStream(file).pipe(response);
+    response.end(bytes);
   });
 }
 
@@ -41,6 +41,14 @@ function writeEvidence(value) {
   fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
   fs.renameSync(temporary, evidencePath);
   fs.chmodSync(evidencePath, 0o600);
+}
+
+function writePrivateHex(value) {
+  if (!retainedHexPath) return;
+  fs.mkdirSync(path.dirname(retainedHexPath), { recursive: true });
+  const temporary = `${retainedHexPath}.${process.pid}.tmp`;
+  fs.writeFileSync(temporary, value, { mode: 0o600 });
+  fs.renameSync(temporary, retainedHexPath); fs.chmodSync(retainedHexPath, 0o600);
 }
 
 function fakeWorkerInstaller() {
@@ -68,7 +76,11 @@ function fakeWorkerInstaller() {
         pins: [{ pin: 'D13', mode: 'OUTPUT', level, externalDrive: 'RELEASED', diagnostic: 'OK', pwm: null }],
         circuit: { leds: [{ componentId: 'led-1', on: level, currentAmps: level ? 0.0136 : 0,
           brightness: level ? 0.68 : 0, color: 'red' }] },
-        instruments: { serial: { records: [], dropped: 0 }, logic: { channels: ['D13'], transitions: [], dropped: 0 }, pin: null },
+        instruments: { serial: { records: [
+          { direction: 'tx', value: 49, cycle: 100 }, { direction: 'tx', value: 32, cycle: 101 },
+          { direction: 'tx', value: 79, cycle: 102 }, { direction: 'tx', value: 78, cycle: 103 },
+          { direction: 'tx', value: 10, cycle: 104 },
+        ], dropped: 0 }, logic: { channels: ['D13'], transitions: [], dropped: 0 }, pin: null },
         eventLog: { log: [], pending: [], applied: [], dropped: 0 } };
     }
     emit(value, delay = 0) { setTimeout(() => this.dispatchEvent(new MessageEvent('message', { data: clone(value) })), delay); }
@@ -105,8 +117,13 @@ function fakeWorkerInstaller() {
 }
 
 (async () => {
+  const candidate = verifyRuntimeCandidate({ repository, dist,
+    exactSourceSha: process.env.FINAL_UX_EXACT_SOURCE_SHA,
+    exactAssetManifestSha256: process.env.FINAL_UX_ASSET_MANIFEST_SHA256 });
   assert(!execute || compilerBase, 'FINAL_UX_COMPILER_BASE is required for the authorized execution');
-  const app = staticServer(); await new Promise((resolve) => app.listen(0, '127.0.0.1', resolve));
+  assert(!execute || evidencePath, 'FINAL_UX_RUNTIME_EVIDENCE is required for the authorized execution');
+  assert(!execute || retainedHexPath, 'FINAL_UX_RETAINED_HEX is required for the authorized execution');
+  const app = staticServer(candidate); await new Promise((resolve) => app.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${app.address().port}`;
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, serviceWorkers: 'block' });
@@ -117,26 +134,41 @@ function fakeWorkerInstaller() {
     const request = route.request(); const url = new URL(request.url());
     if (url.pathname === '/api/page-views') return route.fulfill({ status: 200, contentType: 'application/json', body: '{"status":"disabled"}' });
     if (url.pathname.startsWith('/api/build')) {
-      requests.push({ method: request.method(), path: url.pathname });
+      const browserHeaders = request.headers();
+      requests.push({ method: request.method(), path: url.pathname,
+        mutationHeader: browserHeaders['x-teach-lab-build'] === '1',
+        bearerCapability: /^Bearer [^ ]+$/u.test(browserHeaders.authorization || '') });
       if (request.method() === 'POST') {
         buildPosts += 1; if (buildPosts > 1) return route.abort('blockedbyclient');
       }
       if (!execute) {
-        if (request.method() === 'POST') return route.fulfill({ status: 202, contentType: 'application/json',
-          body: '{"jobId":"final-ux-preflight","capability":"source-only"}' });
-        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: 'succeeded',
+        if (request.method() === 'POST') {
+          const body = '{"jobId":"final-ux-preflight","capability":"source-only"}';
+          responses.push({ path: url.pathname, status: 202, body });
+          return route.fulfill({ status: 202, contentType: 'application/json', body });
+        }
+        const body = JSON.stringify({ status: 'succeeded',
           cacheHit: false, result: { artifactIdentity: 'a'.repeat(64), inputIdentity: 'c'.repeat(64),
-            artifact: { hex: retainedHex }, diagnostics: [] } }) });
+            artifact: { hex: retainedHex }, diagnostics: [] } });
+        responses.push({ path: url.pathname, status: 200, body });
+        return route.fulfill({ status: 200, contentType: 'application/json', body });
       }
       const upstream = `${compilerBase.replace(/\/$/u, '')}${url.pathname}`;
-      const headers = { ...request.headers(), origin: compilerBase.replace(/\/$/u, ''),
+      const headers = { ...browserHeaders, origin: compilerBase.replace(/\/$/u, ''),
         referer: `${compilerBase.replace(/\/$/u, '')}/` };
       delete headers.host; delete headers['content-length'];
       const upstreamResponse = await fetch(upstream, { method: request.method(), headers,
         body: request.method() === 'POST' ? request.postDataBuffer() : undefined });
       const body = await upstreamResponse.text(); responses.push({ path: url.pathname, status: upstreamResponse.status, body });
+      if (upstreamResponse.ok && request.method() === 'GET') {
+        const terminal = JSON.parse(body); const hex = terminal?.result?.artifact?.hex;
+        if (terminal?.status === 'succeeded') {
+          assert.equal(typeof hex, 'string', 'FINAL_UX_PRIVATE_HEX_MISSING'); writePrivateHex(hex);
+        }
+      }
       writeEvidence({ schema: 'intent-mcu-final-ux-runtime-raw@1', status: 'capturing', stage: 'compiler-response',
-        commit: expectedCommit, limits: { builds: 1, workers: 1, sessions: 1, retries: 0 }, requests, responses });
+        commit: candidate.checkoutSha, assetManifestSha256: candidate.assetManifestSha256,
+        limits: { builds: 1, workers: 1, sessions: 1, retries: 0 }, requests, responses });
       return route.fulfill({ status: upstreamResponse.status, contentType: upstreamResponse.headers.get('content-type') || 'application/json', body });
     }
     return route.continue();
@@ -158,12 +190,19 @@ function fakeWorkerInstaller() {
     await pageA.click('#beginner-run');
     await pageA.waitForFunction(() => window.__M6_STATE__.runtime?.paused === false
       && window.__M6_STATE__.runtimeWorkerCreations === 1, null, { timeout: execute ? 60_000 : 10_000 });
+    await pageA.waitForFunction(() => /is on/iu.test(document.querySelector('#component-layer [data-led-id="led-1"]')?.getAttribute('aria-label') || '')
+      && /ON/u.test(document.querySelector('#serial-output')?.textContent || ''), null, { timeout: execute ? 20_000 : 10_000 });
     const running = await pageA.evaluate(() => ({ runtime: structuredClone(window.__M6_STATE__.runtime),
       artifact: window.__M6_STATE__.artifactIdentity, workers: window.__M6_STATE__.runtimeWorkerCreations,
       led: document.querySelector('#component-layer [data-led-id="led-1"]')?.getAttribute('aria-label'),
       serial: document.querySelector('#serial-output')?.textContent,
       authored: (() => { const { build: _build, ...authored } = window.__M6_PROJECT__(); return JSON.stringify(authored); })() }));
-    assert.equal(running.workers, 1); assert.match(running.artifact, /^[a-f0-9]{64}$/u); assert.match(running.led, /LED|percent|on|off/iu);
+    assert.equal(running.workers, 1); assert.match(running.artifact, /^[a-f0-9]{64}$/u); assert.match(running.led, /is on/iu);
+    assert.match(running.serial, /ON/u);
+    const compilerTerminal = JSON.parse(responses.at(-1).body);
+    assert.equal(compilerTerminal.status, 'succeeded');
+    assert.equal(running.artifact, compilerTerminal.result.artifactIdentity);
+    assert.equal(running.runtime.runtimeIdentity.artifactIdentity, running.artifact);
     assert.equal(running.authored, before.authored); assert.equal(await pageA.locator('#beginner-runtime-toggle').innerText(), 'Pause');
     await pageA.click('#beginner-runtime-toggle');
     await pageA.waitForFunction(() => window.__M6_STATE__.runtime?.paused === true);
@@ -193,7 +232,8 @@ function fakeWorkerInstaller() {
     assert.equal(refreshed.runDisabled, true);
     assert.equal(buildPosts, 1); assert.deepEqual(errors, []);
     evidence = { schema: 'intent-mcu-final-ux-runtime-acceptance@1', status: 'pass', mode: execute ? 'native' : 'source-only-preflight',
-      commit: expectedCommit, identities: { sourceSha256: sha256(before.source), graphSha256: sha256(before.graph),
+      commit: candidate.checkoutSha, assetManifestSha256: candidate.assetManifestSha256,
+      servedAssets: candidate.assets, identities: { sourceSha256: sha256(before.source), graphSha256: sha256(before.graph),
         projectSha256: sha256(before.authored), artifactIdentity: running.artifact,
         workerInstanceNonce: paused.runtimeIdentity.workerInstanceNonce },
       limits: { maximumBuilds: 1, maximumWorkers: 1, maximumSessions: 1, retries: 0, nonAvrProducers: 0, images: 0, deploys: 0 },
@@ -207,7 +247,8 @@ function fakeWorkerInstaller() {
     const browserState = await pageA.evaluate(() => ({ state: window.__M6_STATE__, projectMessage: document.querySelector('#project-message')?.textContent,
       beginnerStatus: document.querySelector('#beginner-status')?.textContent, workerState: document.querySelector('#worker-state')?.textContent })).catch(() => null);
     evidence = { schema: 'intent-mcu-final-ux-runtime-acceptance@1', status: 'failed', mode: execute ? 'native' : 'source-only-preflight',
-      commit: expectedCommit, error: { message: error.message, stack: error.stack }, browserState, requests, responses };
+      commit: candidate.checkoutSha, assetManifestSha256: candidate.assetManifestSha256,
+      servedAssets: candidate.assets, error: { message: error.message, stack: error.stack }, browserState, requests, responses };
     writeEvidence(evidence); throw error;
   } finally { await context.close(); await browser.close(); await new Promise((resolve) => app.close(resolve)); }
   process.stdout.write(`${JSON.stringify(evidence)}\n`);
