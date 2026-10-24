@@ -70,6 +70,13 @@ test('initial peer release is sorted before later output and no target cycle rew
   assert(value.deliveries.every(({ targetCycle, source }) => targetCycle >= source.mappedTick));
 });
 
+test('orchestration source uses locale-independent ASCII participant ordering', async () => {
+  const source = await import('node:fs/promises').then(({ readFile }) =>
+    readFile(new URL('../src/x37-turnaround-orchestrator.mjs', import.meta.url), 'utf8'));
+  assert.match(source, /left < right \? -1 : 1/u);
+  assert.doesNotMatch(source, /localeCompare/u);
+});
+
 test('disconnect conflict missing release and response-before-input fail closed', () => {
   assert.throws(() => runX37TurnaroundOrchestration(fixture({ disconnect: true })), { code: 'X37_TURNAROUND_HIGH_Z' });
   assert.throws(() => runX37TurnaroundOrchestration(fixture({ conflict: true })), { code: 'X37_TURNAROUND_CONFLICT' });

@@ -6,8 +6,9 @@ import { resolvedDeliveryDecision, targetCycleAtOrAfterMappedTick } from './x37-
 import { X37_TURNAROUND_BUDGET, validateX37TurnaroundTrace } from './x37-turnaround-protocol.mjs';
 
 const fail = (code) => { throw Object.assign(new Error(code), { code }); };
+const asciiOrder = (left, right) => left === right ? 0 : left < right ? -1 : 1;
 const order = (left, right) => left.mappedTick - right.mappedTick
-  || left.participantId.localeCompare(right.participantId, 'en-US');
+  || asciiOrder(left.participantId, right.participantId);
 
 export function runX37TurnaroundOrchestration({ seams, schedulerContract, net,
   advanceWindow = 512, inputApplied }) {
