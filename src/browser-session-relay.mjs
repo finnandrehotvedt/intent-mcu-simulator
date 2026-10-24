@@ -28,6 +28,15 @@ const equal = (candidate, expected) => {
   return value.length === expected.length && timingSafeEqual(value, expected);
 };
 const failure = (code) => ({ ok: false, code });
+const RETIRED_REQUEST_BITS = 4096;
+const requestDigestIndexes = (id) => {
+  const bytes = createHash('sha256').update(id).digest();
+  return [bytes.readUInt32BE(0) % RETIRED_REQUEST_BITS, bytes.readUInt32BE(4) % RETIRED_REQUEST_BITS];
+};
+const retiredHas = (session, id) => requestDigestIndexes(id)
+  .every((bit) => (session.retiredRequestBits[bit >>> 5] & (1 << (bit & 31))) !== 0);
+const retiredAdd = (session, id) => requestDigestIndexes(id)
+  .forEach((bit) => { session.retiredRequestBits[bit >>> 5] |= 1 << (bit & 31); });
 
 export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
   const sessions = new Map();
@@ -89,6 +98,7 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
       ownerLeaseExpiresAt: now() + BROWSER_SESSION_LIMITS.ownerLeaseMs,
       client: null, revoked: false, commands: [], pending: new Map(), results: new Map(), outcomes: new Map(),
       requestIds: new Set(), nextSequence: 1, pairingKey: null, requestTimes: [],
+      retiredRequestBits: new Uint32Array(RETIRED_REQUEST_BITS / 32),
     });
     return { ok: true, code: 'API_OWNER_REGISTERED', schema: BROWSER_SESSION_SCHEMA,
       ownerCapability, ownerLeaseExpiresAt: sessions.get(sessionId).ownerLeaseExpiresAt };
@@ -179,8 +189,18 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
         reconciliation: clone(prior.reconciliation) }
         : failure(prior.retiredCode ?? 'API_REQUEST_RETIRED');
     }
+    if (retiredHas(session, request.request_id)) return failure('API_REQUEST_REPLAY');
     if (session.requestIds.has(request.request_id)) return failure('API_REQUEST_REPLAY');
-    if (session.requestIds.size >= BROWSER_SESSION_LIMITS.requestCapacity) return failure('API_SESSION_RENEW_REQUIRED');
+    while (session.requestIds.size >= BROWSER_SESSION_LIMITS.requestCapacity) {
+      const oldest = session.requestIds.values().next().value;
+      const outcome = session.outcomes.get(oldest);
+      const active = session.commands.some((item) => item.request.request_id === oldest)
+        || session.pending.has(oldest) || session.results.has(oldest);
+      if (!outcome || active) return failure('API_SESSION_BUSY');
+      retiredAdd(session, oldest);
+      session.requestIds.delete(oldest);
+      session.outcomes.delete(oldest);
+    }
     if (request.sequence !== session.nextSequence) return failure('API_SEQUENCE_REQUIRED');
     if (session.commands.length >= BROWSER_SESSION_LIMITS.queueDepth) return failure('API_QUEUE_FULL');
     session.requestTimes.push(time);

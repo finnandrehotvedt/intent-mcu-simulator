@@ -577,7 +577,7 @@ export class Esp32C3PublicWorkbench {
     if (!['deleteSelected', 'undo', 'redo', 'moveComponent', 'rotateComponent',
       'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint',
       'addMissingComponent', 'setComponentProperty', 'setComponentAppearance', 'setComponentAppearanceEdit',
-      'setWireColor', 'setWireRoute'].includes(operation)) {
+      'setWireColor', 'setWireRoute', 'applyApiBatch', 'undoApi', 'redoApi'].includes(operation)) {
       return { ok: false, code: 'C3_CIRCUIT_OPERATION_INVALID' };
     }
     const revision = this.circuitEditor.revision;

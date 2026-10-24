@@ -19,6 +19,11 @@ const post = async (operation, value = {}, capability = null) => {
   return response.json();
 };
 const active = () => document.querySelector('#board-select')?.value ?? null;
+const workbenchFor = (profile) => ({
+  'board.rp2040-pico-v1': window.__RP2040_PUBLIC_WORKBENCH__,
+  'board.esp32-c3-devmodule-v1': window.__ESP32C3_PUBLIC_WORKBENCH__,
+  'board.stm32f429zi-nucleo144-v1': window.__STM32_PUBLIC_WORKBENCH__,
+})[profile] ?? null;
 const catalogueFor = (profile) => ({
   'board.atmega328p-16mhz-v1': COMPONENT_CATALOG,
   'board.rp2040-pico-v1': { ...COMPONENT_CATALOG, ...RP2040_PICO_COMPONENT_CATALOG },
@@ -46,12 +51,13 @@ async function snapshot() {
       source: state.source, circuit: state.circuit ?? state.circuitEditor?.draft } : null);
   }
   if (!profile || !project) throw new Error('API_PROJECT_UNAVAILABLE');
-  const bytes = new TextEncoder().encode(JSON.stringify(project));
+  const bytes = new TextEncoder().encode(JSON.stringify({ profile, name: project.name, source: project.source }));
   const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))]
     .map((value) => value.toString(16).padStart(2, '0')).join('');
+  const editorState = workbenchFor(profile)?.state?.()?.circuitEditor;
   return { profile, project, fingerprint: hash,
-    projectId: `project-${hash.slice(0, 32)}`, revision: Number.parseInt(hash.slice(0, 12), 16),
-    supportsEdit: false };
+    projectId: `project-${hash.slice(0, 32)}`, revision: editorState?.revision ?? 0,
+    supportsEdit: Boolean(editorState && editorState.wireDraft?.mode === 'none') };
 }
 function execute(request, current, context) {
   if (request.expected_revision !== current.revision) return { status: 'rejected', code: 'API_STALE_REVISION' };
@@ -86,12 +92,16 @@ function execute(request, current, context) {
     if (!request.arguments || Object.keys(request.arguments).join('|') !== 'commands') {
       return { status: 'rejected', code: 'API_BATCH_SHAPE' };
     }
-    let commands;
-    try { commands = prepareApiBatch(current.project, request.arguments.commands); }
-    catch (error) { return { status: 'rejected', code: error.code ?? 'API_BATCH_REJECTED' }; }
     const transactionId = `api-tx:${context.sessionId}:${request.request_id}`;
-    const result = window.__BROWSER_SESSION_CANONICAL_OWNER__.batch({ expectedProjectId: current.projectId,
-      expectedRevision: request.expected_revision, transactionId, commands });
+    let result;
+    if (current.profile === 'board.atmega328p-16mhz-v1') {
+      let commands;
+      try { commands = prepareApiBatch(current.project, request.arguments.commands); }
+      catch (error) { return { status: 'rejected', code: error.code ?? 'API_BATCH_REJECTED' }; }
+      result = window.__BROWSER_SESSION_CANONICAL_OWNER__.batch({ expectedProjectId: current.projectId,
+        expectedRevision: request.expected_revision, transactionId, commands });
+    } else result = workbenchFor(current.profile)?.apiBatch?.(request.arguments.commands, transactionId)
+      ?? { ok: false, code: 'API_PROFILE_UNSUPPORTED' };
     return result.ok ? { status: 'accepted', code: 'API_BATCH_COMMITTED',
       transaction_id: transactionId, changes: summarizeApiChanges(request.arguments.commands) }
       : { status: 'rejected', code: result.code, details: result.details ?? [] };
@@ -103,8 +113,11 @@ function execute(request, current, context) {
       return { status: 'rejected', code: 'API_TRANSACTION_SHAPE' };
     }
     const method = request.command === 'edit.undo' ? 'undo' : 'redo';
-    const result = window.__BROWSER_SESSION_CANONICAL_OWNER__[method]({ expectedProjectId: current.projectId,
-      expectedRevision: request.expected_revision, transactionId: request.arguments.transaction_id });
+    const result = current.profile === 'board.atmega328p-16mhz-v1'
+      ? window.__BROWSER_SESSION_CANONICAL_OWNER__[method]({ expectedProjectId: current.projectId,
+        expectedRevision: request.expected_revision, transactionId: request.arguments.transaction_id })
+      : workbenchFor(current.profile)?.[request.command === 'edit.undo' ? 'apiUndo' : 'apiRedo']?.(
+        request.arguments.transaction_id) ?? { ok: false, code: 'API_PROFILE_UNSUPPORTED' };
     return result.ok ? { status: 'accepted', code: request.command === 'edit.undo'
       ? 'API_TRANSACTION_UNDONE' : 'API_TRANSACTION_REDONE',
     transaction_id: request.arguments.transaction_id, changes: [request.command] }
@@ -131,7 +144,7 @@ export function installBrowserSessionOwner() {
     <div class="api-pairing-body">
       <ol class="api-pairing-steps" aria-label="Pairing workflow">
         <li><strong>Copy Codex instructions</strong><span>The prompt explains the public protocol, local client and secret boundary.</span></li>
-        <li><strong>Create a pairing</strong><span>Read-only by default. AVR editing needs the separate checkbox.</span></li>
+        <li><strong>Create a pairing</strong><span>Read-only by default. Circuit editing needs the separate checkbox.</span></li>
         <li><strong>Open the pairing ticket</strong><span>Download one short-lived ticket for the local client. Never share or commit it.</span></li>
       </ol>
       <section class="api-codex-prompt" aria-labelledby="api-codex-prompt-title">
@@ -142,7 +155,7 @@ export function installBrowserSessionOwner() {
       </section>
       <section class="api-pairing-controls" aria-label="Temporary API pairing">
         <p>Disabled by default. Pair one temporary client to this tab only.</p>
-        <label class="api-edit-scope"><input type="checkbox" data-edit-scope><span>Grant circuit editing for this pairing <small>AVR only</small></span></label>
+        <label class="api-edit-scope"><input type="checkbox" data-edit-scope><span>Grant circuit editing for this pairing <small>selected canonical profile</small></span></label>
         <p data-status role="status">API access is off.</p>
         <div class="build-controls"><button type="button" data-enable>Enable and create pairing</button><button type="button" data-download-ticket disabled>Download pairing ticket</button><button type="button" data-revoke disabled>Revoke</button></div>
         <label class="api-secret-field">One-time pairing secret<input data-secret readonly value=""></label>
@@ -203,7 +216,7 @@ export function installBrowserSessionOwner() {
     ticket = { schema: 'intent-mcu-browser-session-pairing-ticket@1', origin: location.origin,
       pairing_secret: pairing.pairingSecret, expires_at: pairing.expiresAt, scopes };
     downloadTicket.disabled = false;
-    status.textContent = editScope.checked ? 'Pairing ready. AVR circuit editing granted.' : 'Pairing ready. Read-only scopes only.';
+    status.textContent = editScope.checked ? 'Pairing ready. Canonical circuit editing granted.' : 'Pairing ready. Read-only scopes only.';
     ttl.textContent = `One-time secret expires ${new Date(pairing.expiresAt).toLocaleTimeString()}.`;
     const token = setupToken; const projectId = initial.projectId;
     const contextLive = () => token === loopToken && owner === createdOwner
@@ -225,7 +238,7 @@ export function installBrowserSessionOwner() {
       if (lease.clientPaired) {
         ticket = null; downloadTicket.disabled = true;
         secretField.value = '';
-        status.textContent = editScope.checked ? 'One AVR editing client is paired.' : 'One read-only client is paired.';
+        status.textContent = editScope.checked ? 'One circuit-editing client is paired.' : 'One read-only client is paired.';
         ttl.textContent = `Client expires no later than ${new Date(lease.clientExpiresAt).toLocaleTimeString()}.`;
       }
       const pulled = await post('owner.pull', { sessionId: createdSessionId }, createdOwner).catch(() => ({ ok: false }));

@@ -124,6 +124,8 @@ export class NamedSeriesLedCircuitEditor {
     this.historyKinds = [];
     this.futureKinds = [];
     this.revision = 0;
+    this.apiTransactionHead = null;
+    this.apiRedoTransaction = null;
   }
 
   code(suffix) { return `${this.codePrefix}_${suffix}`; }
@@ -171,7 +173,86 @@ export class NamedSeriesLedCircuitEditor {
     this.selection = clone(selection);
     this.wireDraft = { mode: 'none' };
     this.revision += 1;
+    this.apiTransactionHead = null;
+    this.apiRedoTransaction = null;
     return { ...this.snapshot(), changeKind };
+  }
+
+  applyApiBatch(operations, transactionId) {
+    if (!Array.isArray(operations) || !operations.length || operations.length > 16
+        || typeof transactionId !== 'string' || !transactionId) return this.fail('API_BATCH_INVALID');
+    const next = clone(this.draft);
+    const endpointKnown = (point) => {
+      const component = next.components.find((item) => item.id === point?.component);
+      if (!component || typeof point?.pin !== 'string') return false;
+      const defaults = this.createDefault();
+      const types = new Map(defaults.components.map((item) => [item.id, item.type]));
+      return defaults.nets.some((net) => net.endpoints.some((candidate) =>
+        types.get(candidate.component) === component.type && candidate.pin === point.pin));
+    };
+    const connected = (point) => next.nets.some((net) => net.endpoints.some((item) => sameEndpoint(item, point)));
+    try {
+      for (const operation of operations) {
+        if (!operation || typeof operation !== 'object' || Array.isArray(operation)) throw new Error('SHAPE');
+        if (operation.command === 'component.add') {
+          const policy = this.componentPolicy.parts.find((part) => part.type === operation.type);
+          if (!policy || operation.id !== policy.id || next.components.some((item) => item.id === operation.id)
+              || !operation.position || !Number.isFinite(operation.position.x) || !Number.isFinite(operation.position.y)
+              || !Number.isFinite(operation.position.rotation)) throw new Error('COMPONENT_ADD_INVALID');
+          next.components.push({ id: policy.id, type: policy.type, label: policy.label,
+            properties: clone(policy.properties), controls: {} });
+          next.layout.positions[policy.id] = clone(operation.position);
+        } else if (operation.command === 'component.remove') {
+          const target = next.components.find((item) => item.id === operation.component_id);
+          if (!target || target.type === this.fixedComponentType) throw new Error('COMPONENT_REMOVE_INVALID');
+          next.components = next.components.filter((item) => item.id !== target.id);
+          next.nets = next.nets.filter((net) => !net.endpoints.some((point) => point.component === target.id));
+          delete next.layout.positions[target.id];
+        } else if (operation.command === 'component.property.set') {
+          const target = next.components.find((item) => item.id === operation.component_id);
+          const policy = target && this.componentPolicy.parts.find((part) => part.type === target.type);
+          const contract = policy?.supportedProperties[operation.key];
+          if (!contract || contract.kind === 'number' && (typeof operation.value !== 'number'
+              || !Number.isFinite(operation.value) || operation.value < contract.minimum || operation.value > contract.maximum)
+              || contract.kind === 'enum' && !contract.values.includes(operation.value)) throw new Error('PROPERTY_INVALID');
+          target.properties[operation.key] = clone(operation.value);
+        } else if (operation.command === 'wire.connect') {
+          if (!endpointKnown(operation.from) || !endpointKnown(operation.to) || connected(operation.from) || connected(operation.to)
+              || this.resolveNetId(next, operation.from, operation.to) !== operation.net_id
+              || next.nets.some((net) => net.id === operation.net_id)) throw new Error('WIRE_CONNECT_INVALID');
+          next.nets.push({ id: operation.net_id, endpoints: [clone(operation.from), clone(operation.to)] });
+          next.layout.wireStyles[operation.net_id] = this.createDefault().layout.wireStyles[operation.net_id] ?? '#39dff2';
+        } else if (operation.command === 'wire.disconnect') {
+          if (operation.endpoint !== undefined) throw new Error('WIRE_BRANCH_UNSUPPORTED');
+          if (!next.nets.some((net) => net.id === operation.net_id)) throw new Error('WIRE_MISSING');
+          next.nets = next.nets.filter((net) => net.id !== operation.net_id);
+          delete next.layout.wireStyles[operation.net_id];
+          delete next.layout.wireRoutes?.[operation.net_id];
+        } else throw new Error('COMMAND_UNSUPPORTED');
+      }
+      if (!this.validatePropertyPair(next).ok) throw new Error('ELECTRICAL_LIMIT');
+      const validation = this.validate(next);
+      if (!validation?.ok) throw new Error('VALIDATION_FAILED');
+      const result = this.commit(next);
+      this.apiTransactionHead = transactionId;
+      return { ok: true, code: this.code('API_BATCH_COMMITTED'), transactionId, ...result };
+    } catch (error) {
+      return this.fail(`API_${error.message}`);
+    }
+  }
+
+  undoApi(transactionId) {
+    if (this.apiTransactionHead !== transactionId) return this.fail('API_TRANSACTION_CONFLICT');
+    const result = this.undo();
+    if (result.ok) this.apiRedoTransaction = transactionId;
+    return result;
+  }
+
+  redoApi(transactionId) {
+    if (this.apiRedoTransaction !== transactionId) return this.fail('API_TRANSACTION_CONFLICT');
+    const result = this.redo();
+    if (result.ok) this.apiTransactionHead = transactionId;
+    return result;
   }
 
   deleteSelected() {
@@ -476,6 +557,8 @@ export class NamedSeriesLedCircuitEditor {
     this.selection = { kind: 'none' };
     this.wireDraft = { mode: 'none' };
     this.revision += 1;
+    this.apiTransactionHead = null;
+    this.apiRedoTransaction = null;
     return { ok: true, code: this.code('UNDONE'), changeKind, ...this.snapshot() };
   }
 
@@ -489,6 +572,8 @@ export class NamedSeriesLedCircuitEditor {
     this.selection = { kind: 'none' };
     this.wireDraft = { mode: 'none' };
     this.revision += 1;
+    this.apiTransactionHead = null;
+    this.apiRedoTransaction = null;
     return { ok: true, code: this.code('REDONE'), changeKind, ...this.snapshot() };
   }
 

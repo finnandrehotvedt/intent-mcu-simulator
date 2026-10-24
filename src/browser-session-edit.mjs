@@ -17,9 +17,13 @@ export const API03_PROFILE_MATRIX = Object.freeze({
     commands: Object.freeze(['edit.batch', 'edit.undo', 'edit.redo']),
     batchOperations: Object.freeze(['component.add', 'component.remove', 'component.property.set',
       'wire.connect', 'wire.disconnect']) }),
-  'board.rp2040-pico-v1': Object.freeze({ discover: true, read_project: true, edit_circuit: false, commands: Object.freeze([]) }),
-  'board.esp32-c3-devmodule-v1': Object.freeze({ discover: true, read_project: true, edit_circuit: false, commands: Object.freeze([]) }),
-  'board.stm32f429zi-nucleo144-v1': Object.freeze({ discover: true, read_project: true, edit_circuit: false, commands: Object.freeze([]) }),
+  ...Object.fromEntries(['board.rp2040-pico-v1', 'board.esp32-c3-devmodule-v1',
+    'board.stm32f429zi-nucleo144-v1'].map((profile) => [profile, Object.freeze({
+    discover: true, read_project: true, edit_circuit: true,
+    commands: Object.freeze(['edit.batch', 'edit.undo', 'edit.redo']),
+    batchOperations: Object.freeze(['component.add', 'component.remove', 'component.property.set',
+      'wire.connect', 'wire.disconnect']),
+  })])),
 });
 
 export function summarizeApiChanges(operations) {

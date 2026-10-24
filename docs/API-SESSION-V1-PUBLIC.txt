@@ -56,9 +56,10 @@ Client request envelope
 
 Scopes
 discover and read_project are the default read-only scopes. edit_circuit is a
-separate user opt-in and is available only for board.atmega328p-16mhz-v1.
-board.rp2040-pico-v1, board.esp32-c3-devmodule-v1 and
-board.stm32f429zi-nucleo144-v1 are read-only.
+separate user opt-in for the selected canonical profile. The ATmega328P uses
+its canonical editor. RP2040 Pico, ESP32-C3 and STM32F429ZI accept only their
+existing bounded series-LED models, exact named pins and profile validators.
+No support is inferred across profiles.
 
 Discovery and read commands
 capabilities.list, components.catalog, project.inspect, components.list,
@@ -98,7 +99,9 @@ retain its process/session handle across later AI chat turns. A detached command
 with closed stdin fails with API_SESSION_STDIN_REQUIRED before the ticket is
 read or deleted. Wait for the first `mode:"session"` JSON line, then send every
 later command through that exact process handle; never relaunch the consumed
-ticket. Session mode sends a quiet authenticated client heartbeat every 60
+ticket. For ongoing Codex work, launch session mode through exec_command with
+tty:true, retain its session_id, and send later JSONL commands through
+write_stdin. Do not fall back to one-shot ticket commands. Session mode sends a quiet authenticated client heartbeat every 60
 seconds. It renews the 120-second idle lease and bounded 15-minute renewal
 horizon only while the original browser owner tab is independently alive and
 heartbeating. Closing the process, closing or reloading the tab, Revoke, two
@@ -148,8 +151,9 @@ pairing is gone.
 Limits
 Request body 48 KiB; owner result 40 KiB; pairing 120 seconds; owner lease 130
 seconds; client idle 120 seconds; client absolute life 15 minutes; queued
-request 30 seconds; transient full result 5 seconds; queue depth 16; request
-ID/sequence capacity 64; rate 5 requests/second and 20 requests/10 seconds.
+request 30 seconds; transient full result 5 seconds; queue depth 16; active
+request/result ledger capacity 64 with fixed-memory replay tombstones and
+monotonic sequence rollover; rate 5 requests/second and 20 requests/10 seconds.
 
 Excluded authority
 No command can Build, Run, compile, upload, open a device, create a native

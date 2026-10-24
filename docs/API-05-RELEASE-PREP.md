@@ -26,8 +26,9 @@ The protocol has ten transport operations: `owner.register`,
 `components.list`, `component.pins`, `nets.list`, and `circuit.validate`—plus
 three edit commands: `edit.batch`, `edit.undo`, and `edit.redo`.
 
-Only the ATmega328P 16 MHz profile may claim `edit_circuit`. RP2040 Pico,
-ESP32-C3 and STM32F429ZI remain discover/read-only. No operation can Build,
+All four canonical profiles may claim `edit_circuit`. RP2040 Pico, ESP32-C3
+and STM32F429ZI remain bounded to their existing series-LED models, exact
+named pins and profile validators. No operation can Build,
 Run, compile, upload, open a device, create a runtime worker, invoke native
 execution, or grant file authority.
 
@@ -54,7 +55,8 @@ revoke, expiry or project replacement removes the old authority.
 - pairing: 120 seconds; owner lease: 130 seconds;
 - client idle: 120 seconds; client absolute life: 15 minutes;
 - queued request: 30 seconds; transient full result: 5 seconds;
-- queue depth: 16; request-ID/sequence capacity: 64;
+- queue depth: 16; active request/result ledger capacity: 64 with fixed-memory
+  replay tombstones and monotonic sequence rollover;
 - rate: 5 requests/second and 20 requests/10 seconds;
 - active relay sessions: 32.
 
