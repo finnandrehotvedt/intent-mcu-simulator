@@ -21,10 +21,15 @@ import {
   createLiveGenerationOwner, verifiedCleanup,
 } from '../src/x37-producer-orchestration.mjs';
 import { runX37TurnaroundOrchestration } from '../src/x37-turnaround-orchestrator.mjs';
+import { persistX37CompilerArtifact } from '../src/x37-producer-artifact-evidence.mjs';
+import { constructX37RuntimePair } from '../src/x37-producer-runtime-lifecycle.mjs';
+import { ensureX37WorkerEnvironment } from '../src/x37-worker-environment.mjs';
+
+const workerEnvironment = await ensureX37WorkerEnvironment();
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const activity = { firmwareBuildAttempts: 0, firmwareBuilds: 0, runtimeInstances: 0,
-  coordinatedRuns: 0, events: 0, buildRecords: [] };
+  coordinatedRuns: 0, events: 0, buildRecords: [], workerEnvironment };
 const terminal = (status, value) => parentPort.postMessage({
   schema: 'x37-producer-worker-result@1', status, ...value,
 });
@@ -32,14 +37,14 @@ const exact = (value, keys) => value && typeof value === 'object' && !Array.isAr
   && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
 
 function validateConfiguration(value) {
-  if (!exact(value, ['avrLockPath', 'rp2040LockPath', 'avrSourcePath', 'rp2040SourcePath'])
+  if (!exact(value, ['avrLockPath', 'rp2040LockPath', 'avrSourcePath', 'rp2040SourcePath', 'evidenceDirectory'])
       || Object.values(value).some((item) => typeof item !== 'string' || !item.startsWith('/'))) {
     throw Object.assign(new Error('X37_PRODUCER_CONFIGURATION_INVALID'), { code: 'X37_PRODUCER_CONFIGURATION_INVALID' });
   }
   return value;
 }
 
-async function compileOne(participantId, lock, request) {
+async function compileOne(participantId, lock, request, evidenceDirectory) {
   const record = { participantId, requestSha256: sha256(JSON.stringify(request)),
     sourceSha256: sha256(request.files[0].content), imageId: lock.imageId,
     toolchainManifestSha256: lock.toolchainManifestSha256, status: 'attempted' };
@@ -55,6 +60,8 @@ async function compileOne(participantId, lock, request) {
   record.status = 'succeeded'; record.artifactSha256 = result.artifact.artifactSha256
     ?? result.artifact.hexSha256 ?? result.artifact.uf2?.sha256 ?? null;
   activity.firmwareBuilds += 1;
+  record.persistedEvidence = await persistX37CompilerArtifact({ evidenceDirectory,
+    participantId, artifact: result.artifact, buildRecord: record });
   return result.artifact;
 }
 
@@ -79,8 +86,8 @@ async function main() {
     files: [{ name: 'main.ino', content: avrSource }] });
   const rpRequest = normalizeBuildRequestValue({ schema: RP2040_BUILD_REQUEST_SCHEMA, board: RP2040_BOARD_PROFILE,
     files: [{ name: 'main.c', content: rpSource }] });
-  const avrArtifact = await compileOne('avr', avrLock, avrRequest);
-  const rpArtifact = await compileOne('rp', rpLock, rpRequest);
+  const avrArtifact = await compileOne('avr', avrLock, avrRequest, config.evidenceDirectory);
+  const rpArtifact = await compileOne('rp', rpLock, rpRequest, config.evidenceDirectory);
   if (sha256(avrArtifact.hex) !== avrArtifact.hexSha256
       || sha256(Buffer.from(rpArtifact.uf2.base64, 'base64')) !== rpArtifact.uf2.sha256) {
     throw Object.assign(new Error('X37_ARTIFACT_IDENTITY_INVALID'), { code: 'X37_ARTIFACT_IDENTITY_INVALID' });
@@ -90,11 +97,15 @@ async function main() {
   const rpOwner = createLiveGenerationOwner('rp');
   let result = null; let primaryError = null;
   try {
-    avr = new RuntimeKernel(avrArtifact.hex, DEFAULT_CIRCUIT, { logicChannels: ['D13', 'D2'] });
-    rp = await Rp2040ExperimentalRuntime.create({ format: 'uf2',
-      bytes: new Uint8Array(Buffer.from(rpArtifact.uf2.base64, 'base64')),
-      expectedSha256: rpArtifact.uf2.sha256 });
-    activity.runtimeInstances = 2; activity.coordinatedRuns = 1;
+    const runtimes = await constructX37RuntimePair({ activity,
+      createAvr: () => new RuntimeKernel(avrArtifact.hex, DEFAULT_CIRCUIT, { logicChannels: ['D13', 'D2'] }),
+      createRp: () => Rp2040ExperimentalRuntime.create({ format: 'uf2',
+        bytes: new Uint8Array(Buffer.from(rpArtifact.uf2.base64, 'base64')),
+        expectedSha256: rpArtifact.uf2.sha256 }),
+      cleanupAvr: (runtime) => { runtime.pause(); },
+      cleanupRp: (runtime) => { runtime.pause(); runtime.dispose(); },
+    });
+    avr = runtimes.avr; rp = runtimes.rp; activity.coordinatedRuns = 1;
     avrSeam = createAvrX37RuntimeSeam({ runtime: avr, identityOwner: avrOwner.snapshot, schedulerContract });
     rpSeam = createRp2040X37RuntimeSeam({ runtime: rp, identityOwner: rpOwner.snapshot, schedulerContract });
     const net = createObservedDigitalNetResolver({ netId: 'shared.digital.0',
@@ -135,5 +146,6 @@ try {
 } catch (error) {
   terminal('failed', { code: error.code ?? 'X37_PRODUCER_FAILED',
     cleanupErrors: error.cleanupErrors ?? [], primaryFailureCode: error.primaryFailureCode ?? null,
+    runtimeConstruction: error.runtimeConstruction ?? null,
     activity: { ...activity } });
 }

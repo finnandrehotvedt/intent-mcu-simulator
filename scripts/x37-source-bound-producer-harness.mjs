@@ -23,7 +23,9 @@ export const X37_PRODUCER_WORKER = new URL('./x37-source-bound-producer-worker.m
 export async function runKillableWorker(moduleUrl, workerData, timeoutMilliseconds = 75_000) {
   if (!(moduleUrl instanceof URL) || !Number.isSafeInteger(timeoutMilliseconds)
       || timeoutMilliseconds < 1 || timeoutMilliseconds > 75_000) throw new Error('X37_WATCHDOG_CONFIGURATION');
-  const worker = new Worker(moduleUrl, { workerData, type: 'module' });
+  const execArgv = process.execArgv.filter((value) => value !== '--input-type=module'
+    && value !== '--input-type=commonjs' && !value.startsWith('--input-type='));
+  const worker = new Worker(moduleUrl, { workerData, type: 'module', execArgv });
   return new Promise((resolve, reject) => {
     let settled = false; let terminating = false; let terminal = null;
     const finish = (callback, value) => { if (settled) return; settled = true; clearTimeout(timer); callback(value); };
@@ -102,7 +104,8 @@ export async function staticPreflight() {
       'X37_SEAM_CAUSAL_DELIVERY_INVALID'].every((value) => seams.includes(value)),
     killableWatchdog: runKillableWorker.toString().includes('worker.terminate()'),
     realProducerWorker: ['DockerBuildBroker', 'RuntimeKernel', 'Rp2040ExperimentalRuntime.create',
-      'createObservedDigitalNetResolver', 'runX37TurnaroundOrchestration', 'verifiedCleanup']
+      'createObservedDigitalNetResolver', 'runX37TurnaroundOrchestration', 'verifiedCleanup',
+      'persistX37CompilerArtifact', 'constructX37RuntimePair', 'ensureX37WorkerEnvironment']
       .every((value) => producerWorker.includes(value)),
   };
   let rpSourceAccepted = false; let rpSourceError = null;

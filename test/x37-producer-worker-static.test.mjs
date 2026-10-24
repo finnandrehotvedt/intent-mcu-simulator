@@ -16,7 +16,8 @@ test('real producer worker uses ordinary builders, runtimes, identity seams and 
   for (const expected of ['DockerBuildBroker', 'loadImageLock', 'normalizeBuildRequestValue',
     'new RuntimeKernel', 'Rp2040ExperimentalRuntime.create', 'createAvrX37RuntimeSeam',
     'createRp2040X37RuntimeSeam', 'createObservedDigitalNetResolver',
-    'runX37TurnaroundOrchestration', 'verifiedCleanup', 'idleLevel: true',
+    'runX37TurnaroundOrchestration', 'persistX37CompilerArtifact',
+    'constructX37RuntimePair', 'ensureX37WorkerEnvironment', 'verifiedCleanup', 'idleLevel: true',
     'avrSeam.retire()', 'rpSeam.retire()']) {
     assert(source.includes(expected), expected);
   }
