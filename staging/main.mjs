@@ -525,7 +525,7 @@ const elements = Object.fromEntries([
   'counterexample-reduce', 'counterexample-reduction-summary',
   'fault-suite-load', 'fault-suite-replay', 'fault-suite-summary',
   'starter-examples', 'starter-gallery', 'quick-controls', 'workbench-workspace', 'project-bar',
-  'beginner-primary', 'beginner-run', 'beginner-examples', 'beginner-scratch', 'beginner-status', 'workbench-more',
+  'beginner-primary', 'beginner-run', 'beginner-examples', 'beginner-scratch', 'beginner-source', 'beginner-status', 'workbench-more',
   'build-list-export', 'build-list-status', 'accessible-svg-export', 'accessible-svg-status',
   'project-navigation', 'project-navigation-query', 'project-navigation-status', 'project-navigation-results',
   'family-select', 'board-select', 'controller-status', 'toolchain-boundary',
@@ -13198,15 +13198,24 @@ function renderProject() {
   elements.canvastitle.textContent = `${project.metadata.name} circuit`;
   if (!beginnerRunIntent && !running) {
     const empty = project.circuit.components.length === 0;
+    const sourceEmpty = project.source.files.every((file) => !file.content.trim());
     const types = project.circuit.components.map((component) => component.type).sort();
     const blink = project.metadata.name === 'Blink demo'
       && JSON.stringify(types) === JSON.stringify(['board.atmega328p-16mhz-v1', 'led.basic-v1', 'resistor.fixed-v1'].sort());
-    elements.beginnerrun.textContent = empty ? 'Legg til kontroller' : blink ? 'Kjør LED-eksempelet' : 'Kjør prosjektet';
-    elements.beginnerstatus.textContent = empty
-      ? 'Tomt prosjekt · legg til en kontroller og deler før du bygger.'
-      : blink
-        ? 'Ferdig koblet LED-eksempel · bygges ferskt når du trykker Kjør.'
-        : `${project.metadata.name} · bygges ferskt når du trykker Kjør.`;
+    elements.beginnersource.hidden = selectedCompilerProfile !== AVR_PROFILE || !empty || !sourceEmpty;
+    if (selectedCompilerProfile !== AVR_PROFILE) {
+      const [label, status] = beginnerProfileLabels[selectedCompilerProfile]
+        ?? ['Fortsett med valgt kort', 'Valgt profil bruker sine egne synlige kontroller.'];
+      elements.beginnerrun.textContent = label;
+      elements.beginnerstatus.textContent = status;
+    } else {
+      elements.beginnerrun.textContent = empty ? 'Legg til deler' : blink ? 'Kjør LED-eksempelet' : 'Kjør prosjektet';
+      elements.beginnerstatus.textContent = empty
+        ? `Tomt prosjekt · 1 Deler → 2 Koble pinner → 3 ${sourceEmpty ? 'Skriv kode' : 'Kode klar'} → 4 Kjør.`
+        : blink
+          ? 'Ferdig koblet LED-eksempel · bygges ferskt når du trykker Kjør.'
+          : `${project.metadata.name} · bygges ferskt når du trykker Kjør.`;
+    }
   }
   elements.undo.disabled = !editor.undoStack.length; elements.redo.disabled = !editor.redoStack.length;
   elements.zoomvalue.value = `${Math.round(project.layout.viewport.zoom * 100)}%`;
@@ -15118,7 +15127,7 @@ function openExamplePicker() {
 function startFromScratch() {
   const createScratch = () => {
     createNewAvrProject();
-    elements.beginnerstatus.textContent = 'Tomt prosjekt opprettet. Åpne Mer → Deler og legg til en kontroller som første steg.';
+    elements.beginnerstatus.textContent = 'Tomt prosjekt · 1 Deler → 2 Koble pinner → 3 Skriv kode → 4 Kjør. Velg minimal LED-kode bare hvis du vil bruke startkoden.';
     sharedWorkbenchShell.openDialog('parts', elements.beginnerscratch);
   };
   if (requestUnsavedChangeGuard({
@@ -15126,10 +15135,42 @@ function startFromScratch() {
   })) return;
   createScratch();
 }
+const MINIMAL_LED_SOURCE = `void setup() {
+  pinMode(13, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(13, HIGH);
+  delay(500);
+  digitalWrite(13, LOW);
+  delay(500);
+}
+`;
+function useMinimalLedSource() {
+  if (selectedCompilerProfile !== AVR_PROFILE) return;
+  const source = currentProject().source.files.find((file) => file.name === 'main.ino');
+  if (!source || source.content.trim()) {
+    elements.beginnerstatus.textContent = 'Eksisterende kode ble beholdt. Minimal startkode kan bare legges inn i en tom main.ino.';
+    return;
+  }
+  const result = applyEditor({ type: 'source.set', name: 'main.ino', content: MINIMAL_LED_SOURCE }, 'Minimal LED starter selected');
+  if (result.ok) elements.beginnerstatus.textContent = 'Minimal LED-kode lagt inn · neste: legg til deler, koble D13 gjennom motstand og LED til GND, og velg deretter Kjør.';
+}
+const beginnerProfileLabels = Object.freeze({
+  [RP2040_PROFILE]: ['Fortsett med Pico', 'Pico er valgt · bruk de synlige Pico-kontrollene for Build og Run når koblingen er gyldig.'],
+  [ESP32C3_PROFILE]: ['Fortsett med ESP32-C3', 'ESP32-C3 er valgt · bruk de synlige ESP32-C3-kontrollene for Build og Run når koblingen er gyldig.'],
+  [STM32F429ZI_PROFILE]: ['Fortsett med STM32', 'STM32 er valgt · bruk de synlige STM32-kontrollene for Build og Run når koblingen er gyldig.'],
+});
+function focusActiveProfileControls() {
+  const stage = document.querySelector('#active-canvas-stage');
+  stage?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  queueMicrotask(() => document.querySelector('#active-canvas-mount button:not([disabled]), #active-canvas-mount textarea, #active-canvas-mount input')?.focus({ preventScroll: true }));
+}
 async function runBeginnerProject() {
   if (selectedCompilerProfile !== AVR_PROFILE) {
-    elements.beginnerstatus.textContent = 'Kjør-hurtigstarten gjelder LED-eksempelet på AVR. Velg AVR, eller åpne Mer for kontrollene til valgt kort.';
-    sharedWorkbenchShell.openDialog('help', elements.beginnerrun);
+    elements.beginnerstatus.textContent = beginnerProfileLabels[selectedCompilerProfile]?.[1]
+      ?? 'Valgt profil har egne synlige kontroller. Ingen firmwarehandling ble startet.';
+    focusActiveProfileControls();
     return;
   }
   if (currentProject().circuit.components.length === 0) {
@@ -15159,6 +15200,7 @@ async function runBeginnerProject() {
 }
 elements.beginnerexamples.addEventListener('click', openExamplePicker);
 elements.beginnerscratch.addEventListener('click', startFromScratch);
+elements.beginnersource.addEventListener('click', useMinimalLedSource);
 elements.beginnerrun.addEventListener('click', () => { void runBeginnerProject(); });
 elements.projectdemo.addEventListener('click', openExamplePicker);
 elements.examplepickerclose.addEventListener('click', () => closeExamplePicker());

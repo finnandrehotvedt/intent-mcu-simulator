@@ -44,9 +44,22 @@ const base = process.env.BEGINNER_START_URL || 'http://127.0.0.1:18932';
       await page.click('#beginner-scratch');
       await page.waitForFunction(() => window.__M6_PROJECT__().circuit.components.length === 0);
       assert.match(await page.textContent('#beginner-status'), /Tomt prosjekt/u);
-      assert.equal(await page.textContent('#beginner-run'), 'Legg til kontroller');
+      assert.equal(await page.textContent('#beginner-run'), 'Legg til deler');
       assert.equal(await page.locator('#simple-parts-drawer').isVisible(), true);
       assert.equal(await page.locator('#workbench-parts-dialog').evaluate((node) => node.open), false);
+      assert.equal(await page.locator('#beginner-source').isVisible(), true);
+      await page.click('#beginner-source');
+      const starterSource = await page.evaluate(() => window.__M6_PROJECT__().source.files[0].content);
+      assert.match(starterSource, /pinMode\(13, OUTPUT\)/u);
+      assert.match(await page.textContent('#beginner-status'), /Minimal LED-kode lagt inn/u);
+      await page.click('#workbench-more > summary');
+      await page.click('#firmware-open');
+      await page.fill('#source', '// authored source must stay');
+      await page.dispatchEvent('#source', 'input');
+      await page.locator('#workbench-firmware-dialog .workbench-popup-close').click();
+      await page.evaluate(() => document.querySelector('#beginner-source').click());
+      assert.equal(await page.evaluate(() => window.__M6_PROJECT__().source.files[0].content), '// authored source must stay');
+      assert.match(await page.textContent('#beginner-status'), /Eksisterende kode ble beholdt/u);
 
       await page.click('#beginner-run');
       assert.equal(await page.locator('#simple-parts-drawer').isVisible(), true);
@@ -54,6 +67,20 @@ const base = process.env.BEGINNER_START_URL || 'http://127.0.0.1:18932';
       assert.equal(buildRequests, 0);
       assert.equal((await page.evaluate(() => window.__M6_PROJECT__().metadata.name)), 'Untitled project');
       assert.match(await page.textContent('#beginner-status'), /Ingenting ble erstattet/u);
+
+      for (const [profile, label] of [
+        ['board.rp2040-pico-v1', 'Fortsett med Pico'],
+        ['board.esp32-c3-devmodule-v1', 'Fortsett med ESP32-C3'],
+        ['board.stm32f429zi-nucleo144-v1', 'Fortsett med STM32'],
+      ]) {
+        await page.selectOption('#board-select', profile);
+        assert.equal(await page.textContent('#beginner-run'), label);
+        await page.click('#beginner-run');
+        assert.equal(await page.locator('#workbench-help-dialog').evaluate((node) => node.open), false);
+        assert.match(await page.textContent('#beginner-status'), /synlige .*kontrollene/u);
+        assert.equal(buildRequests, 0);
+      }
+      await page.selectOption('#board-select', 'board.atmega328p-16mhz-v1');
 
       await page.click('#beginner-examples');
       await page.click('.starter-card[data-example="blink"]');
@@ -65,7 +92,7 @@ const base = process.env.BEGINNER_START_URL || 'http://127.0.0.1:18932';
       assert.equal((await page.evaluate(() => window.__M6_PROJECT__().metadata.name)), 'Blink demo');
       assert.match(await page.textContent('#beginner-status'), /prøv Kjør igjen/u);
 
-      await page.click('#workbench-more > summary');
+      if (!await page.locator('#workbench-more').evaluate((node) => node.open)) await page.click('#workbench-more > summary');
       for (const selector of ['#quick-build', '#quick-run', '#quick-pause', '#quick-reset', '#project-files-open', '#firmware-open']) {
         assert.equal(await page.locator(selector).isVisible(), true, `${selector} missing below More`);
       }

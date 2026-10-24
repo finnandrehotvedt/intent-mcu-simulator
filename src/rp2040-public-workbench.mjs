@@ -45,6 +45,15 @@ export function describeRp2040PublicSource(source) {
 const exactKeys = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
 const clone = (value) => structuredClone(value);
+function describeCircuitGap(code) {
+  return ({
+    RP2040_SERIES_RESISTOR_REQUIRED: 'Missing resistor: add the supported series resistor between GP0 and the LED anode path.',
+    RP2040_GROUND_REQUIRED: 'Missing ground: connect LED cathode to Pico GND pin 3.',
+    RP2040_LED_REVERSE_POLARITY: 'LED polarity is reversed: anode must face GP0 through the resistor; cathode must face GND.',
+    RP2040_LED_OVERCURRENT: 'LED current is above the teaching limit: increase the series resistance.',
+    RP2040_PATH_OPEN: 'Open LED path: complete GP0 → resistor → LED anode, then LED cathode → GND pin 3.',
+  })[code] ?? `Circuit rejected (${code}). Inspect the highlighted supported parts and named pins.`;
+}
 const freeze = (value) => {
   if (value && typeof value === 'object' && !Object.isFrozen(value)) {
     for (const child of Object.values(value)) freeze(child);
@@ -787,7 +796,7 @@ export class Rp2040PublicWorkbench {
       ? 'Wiring in progress · executable and LED authority retired · finish or cancel before Build'
       : circuit.ok
       ? `Validated: GP0 pin 1 → ${circuit.model.resistorOhms} Ω → ${circuit.model.ledColor} LED anode/cathode → GND pin 3`
-      : `Disconnected / rejected: ${circuit.code}`;
+      : describeCircuitGap(circuit.code);
     this.elements.externalLed?.classList.toggle('on', Boolean(runtimeCircuit.on));
     this.elements.externalLed?.setAttribute('aria-label', `External LED is ${runtimeCircuit.on ? 'on' : 'off'}`);
     const serial = this.lastRuntime?.instruments?.serial;

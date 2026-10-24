@@ -8,9 +8,9 @@ const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/
 
 const base = process.env.SIMPLE_PARTS_URL || 'http://127.0.0.1:18935';
 const profiles = [
-  { id: 'board.rp2040-pico-v1', global: '__RP2040_PUBLIC_WORKBENCH__', diagram: '#pico-diagram' },
-  { id: 'board.esp32-c3-devmodule-v1', global: '__ESP32C3_PUBLIC_WORKBENCH__', diagram: '#c3-diagram' },
-  { id: 'board.stm32f429zi-nucleo144-v1', global: '__STM32_PUBLIC_WORKBENCH__', diagram: '#stm32-diagram' },
+  { id: 'board.rp2040-pico-v1', global: '__RP2040_PUBLIC_WORKBENCH__', diagram: '#pico-diagram', state: '#pico-circuit-state', gap: /GP0.*resistor.*LED anode.*GND pin 3/u },
+  { id: 'board.esp32-c3-devmodule-v1', global: '__ESP32C3_PUBLIC_WORKBENCH__', diagram: '#c3-diagram', state: '#c3-circuit-state', gap: /GPIO2 J1 pin 4.*resistor.*LED anode.*GND J1 pin 6/u },
+  { id: 'board.stm32f429zi-nucleo144-v1', global: '__STM32_PUBLIC_WORKBENCH__', diagram: '#stm32-diagram', state: '#stm32-circuit-state', gap: /PB0 CN11 pin 34.*resistor.*LED anode.*GND CN11 pin 35/u },
 ];
 
 (async () => {
@@ -77,6 +77,7 @@ const profiles = [
           const deleted = api.deleteSelected();
           if (!deleted.ok) throw new Error(deleted.code);
         }, profile.global);
+        assert.match(await page.textContent(profile.state), profile.gap);
         const beforeProfile = await page.evaluate((name) => JSON.stringify(window[name].state().circuitEditor.draft), profile.global);
         const card = page.locator('#simple-parts-mount .bounded-part-card[data-type="led.basic-v1"][draggable="true"]');
         await card.waitFor({ state: 'visible' });

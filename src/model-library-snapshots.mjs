@@ -129261,7 +129261,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "3fe50ab663a872b25ec3e7ae1cc36a2e7bf1a12fca8594177e7007501e1ae83f"
+      "sha256": "50e73425f9665f85c6288b837c4eb40762d16448f166f1576a4f04e274847d41"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -129317,15 +129317,15 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/rp2040-public-workbench.mjs",
-      "sha256": "fc9298de1814ee01d3d922e17a457490ccbf897dcc72bb13a5708cc69fae3385"
+      "sha256": "8cc77526b2e3d10dd84013af7fbe5c3d5b15589e3878e13fa56c6f1ec6d25c93"
     },
     {
       "path": "src/esp32c3-public-workbench.mjs",
-      "sha256": "6a79d53c89bb96b410af07f2f2993cbf68244e482e418c27e9e44b27b9a22a84"
+      "sha256": "c6309155aaeee381a463681b5e838d396ad904e1d43f0e03a42609c1b9bf4e60"
     },
     {
       "path": "src/stm32-public-workbench.mjs",
-      "sha256": "a7f7e4a012d3b8c036884cb13a37fabc4f908970c5aeaea52155f4a48fd668e4"
+      "sha256": "778cbfe76cb9fc8ddf3c87f59953417cfa0e4344395510696c71d48fbd370db5"
     },
     {
       "path": "c3/public-service.mjs",
@@ -129404,7 +129404,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "a60dd552da826bcf74e23eb7f8457de1ae1e8dd31f313536cb737f8a9d965507"
     }
   ],
-  "implementationSha256": "bb14ade86c55f51a38edc15badc8b5a8e4434a1be9c505224984400e8c8472fa",
+  "implementationSha256": "902eb2d65990b7057b8e05c34f170734397b701be1e0066bb70ce681f068a8b9",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.125 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, real worker, run, image build or deployment",
@@ -129414,7 +129414,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-config-producer.2-current",
     "semanticDisposition": "component, firmware and electrical semantics remain unchanged; paired read-only AVR USART0 RX peripheral-model events are added"
   },
-  "manifestSha256": "2fe64c38911459f4cc985d5cced862812c1306e2c9c2d5f267b6b7c9b3eced9a",
+  "manifestSha256": "ba4ff470355c401a864d83cf5658a6443f814885f7905f0e7c9f063c5969bdee",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

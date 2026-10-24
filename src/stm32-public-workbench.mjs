@@ -25,6 +25,15 @@ const SOURCE_LINE_PATTERNS = Object.freeze([
 ]);
 export const STM32_EDITABLE_PROJECT_SCHEMA = 'intent-mcu-stm32-public-project@2';
 const clone = (value) => value === null || value === undefined ? value : structuredClone(value);
+function describeCircuitGap(code) {
+  return ({
+    STM32_SERIES_RESISTOR_REQUIRED: 'Missing resistor: add the supported series resistor between PB0 and the LED anode path.',
+    STM32_GROUND_REQUIRED: 'Missing ground: connect LED cathode to STM32 GND CN11 pin 35.',
+    STM32_LED_REVERSE_POLARITY: 'LED polarity is reversed: anode must face PB0 through the resistor; cathode must face GND.',
+    STM32_LED_OVERCURRENT: 'LED current is above the teaching limit: increase the series resistance.',
+    STM32_PATH_OPEN: 'Open LED path: complete PB0 CN11 pin 34 → resistor → LED anode, then LED cathode → GND CN11 pin 35.',
+  })[code] ?? `Circuit rejected (${code}). Inspect the highlighted supported parts and named pins.`;
+}
 
 function validName(value) {
   return typeof value === 'string' && value.trim().length > 0 && value.trim().length <= 80
@@ -542,7 +551,7 @@ export class Stm32PublicWorkbench {
     this.elements.circuitState.textContent = !wiringReady
       ? 'Wiring in progress · ELF and LED authority retired · finish or cancel before Build'
       : !circuit.ok
-      ? `Teaching circuit rejected (${circuit.code}) · stale ELF and LED authority retired`
+      ? `${describeCircuitGap(circuit.code)} Stale ELF and LED authority was retired.`
       : this.result
         ? `Renode observed PB0 ${on ? 'HIGH' : 'LOW'} · ideal ${circuit.model.resistorOhms} Ω / ${circuit.model.ledColor} LED teaching path renders ${on ? 'ON' : 'OFF'}`
         : `Named path: PB0 CN11 pin 34 → ${circuit.model.resistorOhms} Ω → ${circuit.model.ledColor} LED → GND CN11 pin 35 · awaiting actual Renode observation`;
