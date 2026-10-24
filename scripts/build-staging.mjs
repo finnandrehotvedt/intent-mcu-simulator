@@ -53,6 +53,7 @@ await Promise.all([
   writeFile(new URL('release-changes.json', dist), releaseChangesText),
   writeFile(new URL('offline-support-matrix.json', dist), offlineSupportMatrixText),
   build({ entryPoints: [new URL('../staging/main.mjs', import.meta.url).pathname], outfile: new URL('main.js', dist).pathname, bundle: true, format: 'esm', platform: 'browser', minifyWhitespace: true, legalComments: 'eof' }),
+  build({ entryPoints: [new URL('../staging/browser-session-owner.mjs', import.meta.url).pathname], outfile: new URL('browser-session-owner.js', dist).pathname, bundle: true, format: 'esm', platform: 'browser', minifyWhitespace: true, legalComments: 'eof' }),
   build({ entryPoints: [new URL('../staging/physical-checklist-page.mjs', import.meta.url).pathname], outfile: new URL('physical-checklist.js', dist).pathname, bundle: true, format: 'esm', platform: 'browser', minifyWhitespace: true, legalComments: 'eof' }),
   build({ entryPoints: [new URL('../src/simulator.worker.mjs', import.meta.url).pathname], outfile: new URL('simulator.worker.js', dist).pathname, bundle: true, format: 'esm', platform: 'browser', minifyWhitespace: true, legalComments: 'eof' }),
   build({ entryPoints: [new URL('../src/x49-private.worker.mjs', import.meta.url).pathname], outfile: new URL('x49-offset.worker.js', dist).pathname, bundle: true, format: 'esm', platform: 'browser', minifyWhitespace: true, legalComments: 'eof' }),

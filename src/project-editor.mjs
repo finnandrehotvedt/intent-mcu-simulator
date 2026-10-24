@@ -533,12 +533,18 @@ export class ProjectEditorReducer {
     this.historyLimit = historyLimit;
     this.undoStack = [];
     this.redoStack = [];
+    this.undoTransactions = [];
+    this.redoTransactions = [];
   }
 
-  #commit(project, code, { running = false, runtimeDirty = true, report = null } = {}) {
+  #commit(project, code, { running = false, runtimeDirty = true, report = null,
+    transactionId = null } = {}) {
     this.undoStack.push(this.project);
+    this.undoTransactions.push(transactionId);
     if (this.undoStack.length > this.historyLimit) this.undoStack.shift();
+    if (this.undoTransactions.length > this.historyLimit) this.undoTransactions.shift();
     this.redoStack = [];
+    this.redoTransactions = [];
     this.project = normalizeProject(project);
     this.revision += 1;
     const circuit = validateCircuit(this.project.circuit);
@@ -554,6 +560,10 @@ export class ProjectEditorReducer {
       return resultError('EDITOR_STALE_REVISION', this.revision);
     }
     if (command.type === 'undo' || command.type === 'redo') return this.#travel(command, running);
+    if (command.type === 'edit.batch') return this.#batch(command, running);
+    if (command.type === 'edit.undo' || command.type === 'edit.redo') {
+      return this.#apiTravel(command, running);
+    }
     try {
       const next = applyMutation(this.project, command);
       return this.#commit(next.project, 'EDITOR_COMMITTED', { running, runtimeDirty: next.runtimeDirty });
@@ -563,6 +573,44 @@ export class ProjectEditorReducer {
       }
       throw error;
     }
+  }
+
+  #batch(command, running) {
+    if (!exactCommand(command, ['commands', 'transactionId']) || !Array.isArray(command.commands)
+        || !command.commands.length || command.commands.length > 16
+        || typeof command.transactionId !== 'string') {
+      return resultError('API_BATCH_SHAPE', this.revision);
+    }
+    try {
+      let staged = this.project; let runtimeDirty = false;
+      for (const item of command.commands) {
+        if (!item || typeof item !== 'object' || Array.isArray(item) || Object.hasOwn(item, 'revision')) {
+          throw Object.assign(new Error('API_BATCH_COMMAND_SHAPE'), { code: 'API_BATCH_COMMAND_SHAPE' });
+        }
+        const next = applyMutation(staged, { ...clone(item), revision: this.revision });
+        staged = next.project; runtimeDirty ||= next.runtimeDirty;
+      }
+      const validation = validateCircuit(staged.circuit);
+      if (!validation.ok) return resultError(validation.code, this.revision, validation.diagnostics);
+      return this.#commit(staged, 'API_BATCH_COMMITTED', { running, runtimeDirty,
+        transactionId: command.transactionId,
+        report: { transactionId: command.transactionId, commandCount: command.commands.length } });
+    } catch (error) {
+      return resultError(error.code ?? error.message ?? 'API_BATCH_REJECTED', this.revision,
+        error.details ?? error.diagnostics ?? []);
+    }
+  }
+
+  #apiTravel(command, running) {
+    if (!exactCommand(command, ['transactionId']) || typeof command.transactionId !== 'string') {
+      return resultError('API_TRANSACTION_SHAPE', this.revision);
+    }
+    const undo = command.type === 'edit.undo';
+    const transactions = undo ? this.undoTransactions : this.redoTransactions;
+    if (transactions.at(-1) !== command.transactionId) {
+      return resultError(undo ? 'API_UNDO_CONFLICT' : 'API_REDO_CONFLICT', this.revision);
+    }
+    return this.#travel({ type: undo ? 'undo' : 'redo', revision: command.revision }, running);
   }
 
   importProject(candidateValue, mode, { circuitOnly = false, running = false, requireRunnable = false } = {}) {
@@ -609,10 +657,14 @@ export class ProjectEditorReducer {
     const undo = command.type === 'undo';
     const source = undo ? this.undoStack : this.redoStack;
     const target = undo ? this.redoStack : this.undoStack;
+    const sourceTransactions = undo ? this.undoTransactions : this.redoTransactions;
+    const targetTransactions = undo ? this.redoTransactions : this.undoTransactions;
     if (!source.length) return resultError(undo ? 'EDITOR_UNDO_EMPTY' : 'EDITOR_REDO_EMPTY', this.revision);
     const before = this.project;
     target.push(before);
+    targetTransactions.push(sourceTransactions.pop() ?? null);
     if (target.length > this.historyLimit) target.shift();
+    if (targetTransactions.length > this.historyLimit) targetTransactions.shift();
     this.project = source.pop();
     const runtimeDirty = buildInputSignature(before) !== buildInputSignature(this.project);
     if (runtimeDirty) dirtyBuild(this.project);
