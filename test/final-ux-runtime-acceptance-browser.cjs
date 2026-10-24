@@ -129,8 +129,11 @@ function fakeWorkerInstaller() {
             artifact: { hex: retainedHex }, diagnostics: [] } }) });
       }
       const upstream = `${compilerBase.replace(/\/$/u, '')}${url.pathname}`;
-      const upstreamResponse = await fetch(upstream, { method: request.method(), headers: { 'content-type': 'application/json' },
-        body: request.method() === 'POST' ? request.postData() : undefined });
+      const headers = { ...request.headers(), origin: compilerBase.replace(/\/$/u, ''),
+        referer: `${compilerBase.replace(/\/$/u, '')}/` };
+      delete headers.host; delete headers['content-length'];
+      const upstreamResponse = await fetch(upstream, { method: request.method(), headers,
+        body: request.method() === 'POST' ? request.postDataBuffer() : undefined });
       const body = await upstreamResponse.text(); responses.push({ path: url.pathname, status: upstreamResponse.status, body });
       writeEvidence({ schema: 'intent-mcu-final-ux-runtime-raw@1', status: 'capturing', stage: 'compiler-response',
         commit: expectedCommit, limits: { builds: 1, workers: 1, sessions: 1, retries: 0 }, requests, responses });
