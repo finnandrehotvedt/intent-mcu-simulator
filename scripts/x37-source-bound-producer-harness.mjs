@@ -20,11 +20,22 @@ export const X37_PRODUCER_BUDGET = Object.freeze({ firmwareBuildsMax: 2, partici
 
 export const X37_PRODUCER_WORKER = new URL('./x37-source-bound-producer-worker.mjs', import.meta.url);
 
+export function x37WorkerExecArgv(values = process.execArgv) {
+  const result = [];
+  for (let index = 0; index < values.length; index += 1) {
+    const value = values[index];
+    if (['--input-type', '--eval', '-e', '--print', '-p'].includes(value)) { index += 1; continue; }
+    if (value.startsWith('--input-type=') || value.startsWith('--eval=')
+        || value.startsWith('--print=')) continue;
+    result.push(value);
+  }
+  return result;
+}
+
 export async function runKillableWorker(moduleUrl, workerData, timeoutMilliseconds = 75_000) {
   if (!(moduleUrl instanceof URL) || !Number.isSafeInteger(timeoutMilliseconds)
       || timeoutMilliseconds < 1 || timeoutMilliseconds > 75_000) throw new Error('X37_WATCHDOG_CONFIGURATION');
-  const execArgv = process.execArgv.filter((value) => value !== '--input-type=module'
-    && value !== '--input-type=commonjs' && !value.startsWith('--input-type='));
+  const execArgv = x37WorkerExecArgv();
   const worker = new Worker(moduleUrl, { workerData, type: 'module', execArgv });
   return new Promise((resolve, reject) => {
     let settled = false; let terminating = false; let terminal = null;

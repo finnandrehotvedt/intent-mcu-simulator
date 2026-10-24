@@ -34,7 +34,7 @@ test('watchdog explicitly strips inherited input-type before file-backed worker 
     ['--input-type=module', '--eval', script], { timeout: 5_000 });
   const evidence = JSON.parse(stdout);
   assert.equal(evidence.webCryptoSubtle, true);
-  assert.deepEqual(evidence.execArgv.filter((value) => value.startsWith('--input-type')), []);
+  assert.deepEqual(evidence.execArgv, []);
 });
 
 test('successful fake compiler artifacts persist mode-0600 before RP construction failure', async () => {
