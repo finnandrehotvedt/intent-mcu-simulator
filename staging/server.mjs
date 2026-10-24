@@ -16,6 +16,8 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
 import { AggregatePageViewCounter, createPageViewHandler } from '../src/page-view-counter.mjs';
+import { createBrowserSessionRelay } from '../src/browser-session-relay.mjs';
+import { createBrowserSessionHttpHandler } from '../src/browser-session-http.mjs';
 
 const execute = promisify(execFile);
 const candidateRoot = path.resolve(new URL('../', import.meta.url).pathname);
@@ -111,6 +113,11 @@ const handler = createRequestHandler({ coordinator, root, publicOrigin, trustPro
 const pageViewStore = process.env.PAGE_VIEW_STORE_PATH
   ? new AggregatePageViewCounter({ file: path.resolve(process.env.PAGE_VIEW_STORE_PATH) }) : null;
 const pageViewHandler = pageViewStore ? createPageViewHandler(pageViewStore, { publicOrigin }) : null;
+const browserSessionRelay = process.env.ENABLE_BROWSER_SESSION_API === '1'
+  ? createBrowserSessionRelay() : null;
+const browserSessionHandler = browserSessionRelay
+  ? createBrowserSessionHttpHandler(browserSessionRelay, { publicOrigin }) : null;
+if (browserSessionRelay) setInterval(() => browserSessionRelay.sweep(), 5_000).unref();
 
 const server = http.createServer(async (request, response) => {
   if (process.env.X92_STM32_PRIVATE_TARGET_NONCE
@@ -139,6 +146,7 @@ const server = http.createServer(async (request, response) => {
   }
   if (c3Service && await c3Service.handle(request, response)) return;
   if (stm32Service && await stm32Service.handle(request, response)) return;
+  if (browserSessionHandler && await browserSessionHandler(request, response)) return;
   if (pageViewHandler && await pageViewHandler(request, response)) return;
   await handler(request, response);
 });

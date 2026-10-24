@@ -14,6 +14,7 @@
     "release:check": "node scripts/sync-release-version.mjs --check",
     "prebuild": "npm run release:check",
     "test:release-identity": "node --test --test-concurrency=1 test/release-identity-copy.test.mjs test/capability-discovery.test.mjs",
+    "test:api02": "node --test --test-concurrency=1 test/browser-session-relay.test.mjs test/browser-session-cli-integration.test.mjs",
     "test:top-layout": "node --test --test-concurrency=1 test/shared-workbench-shell.test.mjs test/named-pin-wire-authoring.test.mjs test/rp2040-pico-circuit.test.mjs test/esp32c3-public.test.mjs test/stm32-public.test.mjs",
     "test:top-layout:browser": "node test/top-workbench-popup-layout-browser.cjs",
     "test:runtime-controls-ui:browser": "node test/runtime-controls-serial-ui-browser.cjs",
