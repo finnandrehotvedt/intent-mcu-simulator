@@ -49,6 +49,9 @@ const RC128_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
 const RC129_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.RC129_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_X37_LEDGER_PROGRESS_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_X37_LEDGER_PROGRESS_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -286,12 +289,12 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x37-step-hotpath.1-current',
-  'intent-mcu-model-bundle-current-x37-step-hotpath-1@46',
+  '2.0.0-x37-ledger-progress.1-current',
+  'intent-mcu-model-bundle-current-x37-ledger-progress-1@47',
   currentImplementation,
   {
-    priorVersion: RC129_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: RC129_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_X37_LEDGER_PROGRESS_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_X37_LEDGER_PROGRESS_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
     semanticDisposition: 'component, firmware and electrical semantics remain unchanged; private X37 stepping gains bounded pin observation and no executable authority',
     presentationDisposition: 'no UI or public release is added; the source candidate remains private pending bounded native evidence',
@@ -310,6 +313,7 @@ export const RC120_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringi
 export const RC124_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC124_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const RC128_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC128_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const RC129_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC129_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_X37_LEDGER_PROGRESS_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X37_LEDGER_PROGRESS_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_RUNTIME_CONTROLS_SERIAL_UI_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_RUNTIME_CONTROLS_SERIAL_UI_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});

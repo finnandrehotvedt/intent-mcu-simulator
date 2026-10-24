@@ -99,10 +99,15 @@ export class Rp2040ExperimentalRuntime {
   x37Step() {
     this.#ensureActive(); this.paused = true;
     const command = createRuntimeCommand(++this.requestId, 'advance', { budgetCycles: 1 });
-    this.adapter.handleWithoutSnapshot(command);
+    this.adapter.handleX37Step(command);
     const machine = this.adapter.machineStatus();
     if (machine.blocked) throw errorWithCode(machine.blockedCode ?? 'RUNTIME_CAPABILITY_UNSUPPORTED');
     return { cycle: machine.cycle, instructions: machine.instructions };
+  }
+
+  x37CommitAdvanceProgress() {
+    this.#ensureActive();
+    return this.adapter.commitX37AdvanceProgress();
   }
 
   x37ProbeSnapshot() {

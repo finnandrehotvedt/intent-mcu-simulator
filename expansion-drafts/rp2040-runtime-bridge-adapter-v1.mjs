@@ -417,7 +417,7 @@ export class Rp2040RuntimeBridgeAdapter {
     }
   }
 
-  handle(command, { includeSnapshot = true } = {}) {
+  handle(command, { includeSnapshot = true, recordProgress = true } = {}) {
     if (!validateRuntimeCommand(command) || command.requestId !== this.lastRequestId + 1) {
       throw errorWithCode('RUNTIME_COMMAND_INVALID');
     }
@@ -461,7 +461,7 @@ export class Rp2040RuntimeBridgeAdapter {
     if (!Number.isSafeInteger(targetCycle)) throw errorWithCode('RUNTIME_COMMAND_INVALID');
     this.#applyDueInputs(targetCycle);
     if (!this.blocked) this.#runTo(targetCycle);
-    if (!this.blocked) {
+    if (!this.blocked && recordProgress) {
       this.#emit('progress', { instructions: this.epochInstructions });
     }
     return includeSnapshot ? this.snapshot() : null;
@@ -470,6 +470,20 @@ export class Rp2040RuntimeBridgeAdapter {
   handleWithoutSnapshot(command) {
     if (command?.type !== 'advance') throw errorWithCode('RUNTIME_COMMAND_INVALID');
     return this.handle(command, { includeSnapshot: false });
+  }
+
+  handleX37Step(command) {
+    if (command?.type !== 'advance' || command.budgetCycles !== 1) {
+      throw errorWithCode('RUNTIME_COMMAND_INVALID');
+    }
+    return this.handle(command, { includeSnapshot: false, recordProgress: false });
+  }
+
+  commitX37AdvanceProgress() {
+    if (this.stopped) throw errorWithCode('RUNTIME_PROCESS_EXITED');
+    if (this.blocked) throw errorWithCode(this.blockedCode ?? 'RUNTIME_CAPABILITY_UNSUPPORTED');
+    this.#emit('progress', { instructions: this.epochInstructions });
+    return this.machineStatus();
   }
 
   snapshot() {

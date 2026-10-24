@@ -116,6 +116,9 @@ function commonSeam({ runtime, identityOwner, schedulerContract, profile, output
       if (totalInstructions > maxTotalInstructions) reject('X37_SEAM_INSTRUCTION_CAP');
       sampleOutput(snapshot);
     }
+    if (steps > 0 && typeof runtime.x37CommitAdvanceProgress === 'function') {
+      runtime.x37CommitAdvanceProgress();
+    }
     const reachedCycle = probeSnapshot().cycle;
     return { requestedBoundaryCycle: targetCycle, reachedCycle, steps,
       exact: reachedCycle === targetCycle, overshootCycles: reachedCycle - targetCycle,

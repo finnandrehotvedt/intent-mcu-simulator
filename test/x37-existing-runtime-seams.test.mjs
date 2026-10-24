@@ -211,12 +211,13 @@ test('lean stepping observes output-to-input release without calling public step
 
 test('RP lean step avoids public snapshots and preserves bounded-ring drop authority and mode', () => {
   const adapter = {
-    cycle: 0, instructions: 0, handleCalls: 0,
+    cycle: 0, instructions: 0, handleCalls: 0, commits: 0,
     snapshot: () => ({ descriptor: { capabilities: ['gpio'] } }),
-    handleWithoutSnapshot(command) {
+    handleX37Step(command) {
       assert.equal(command.type, 'advance'); this.handleCalls += 1;
       this.cycle += 2; this.instructions += 1;
     },
+    commitX37AdvanceProgress() { this.commits += 1; return this.machineStatus(); },
     machineStatus() { return { cycle: this.cycle, instructions: this.instructions, blocked: false }; },
     x37ProbeSnapshot() {
       return { cycle: this.cycle, instructions: this.instructions, blocked: false,
@@ -227,8 +228,10 @@ test('RP lean step avoids public snapshots and preserves bounded-ring drop autho
     artifactIdentity: 'a'.repeat(64), firmwareFormat: 'uf2', firmwareOrigin: 'test',
   });
   assert.deepEqual(runtime.x37Step(), { cycle: 2, instructions: 1 });
+  runtime.x37CommitAdvanceProgress();
   const probe = runtime.x37ProbeSnapshot();
-  assert.equal(adapter.handleCalls, 1); assert.equal(probe.instruments.logic.dropped, 7);
+  assert.equal(adapter.handleCalls, 1); assert.equal(adapter.commits, 1);
+  assert.equal(probe.instruments.logic.dropped, 7);
   assert.deepEqual(probe.pins[0], { pin: 'GPIO0', mode: 'INPUT', level: false });
   assert.equal(probe.instruments.logic.transitions[0].mode, 'input');
 });
@@ -258,6 +261,61 @@ test('actual AVR X37 pin probe retains a fixed ring and reports exact rollover d
   const probe = adapter.x37ProbeSnapshot('D13');
   assert.equal(probe.instruments.logic.transitions.length, 64);
   assert.equal(probe.instruments.logic.dropped, 1);
+});
+
+test('RP lean-step ledger double crosses 100k instructions with one boundary progress and all non-progress events', () => {
+  const adapter = {
+    cycle: 0, instructions: 0, records: [],
+    snapshot: () => ({ descriptor: { capabilities: ['gpio', 'uart'] } }),
+    handleX37Step() {
+      this.cycle += 1; this.instructions += 1;
+      if (this.instructions === 25_000) this.records.push({ type: 'digital-input-applied', cycle: this.cycle });
+      if (this.instructions === 50_000) this.records.push({ type: 'gpio', cycle: this.cycle });
+      if (this.instructions === 75_000) this.records.push({ type: 'uart-tx', cycle: this.cycle });
+    },
+    commitX37AdvanceProgress() {
+      this.records.push({ type: 'progress', cycle: this.cycle, instructions: this.instructions });
+      return this.machineStatus();
+    },
+    handle() { throw new Error('NOT_USED'); },
+    machineSnapshot() { return { cycle: this.cycle }; },
+    machineStatus() { return { cycle: this.cycle, instructions: this.instructions, blocked: false }; },
+    x37ProbeSnapshot() { return { ...this.machineStatus(), gpio: [], gpioDropped: 0 }; },
+  };
+  const runtime = new Rp2040ExperimentalRuntime(adapter, {
+    artifactIdentity: 'a'.repeat(64), firmwareFormat: 'uf2', firmwareOrigin: 'test',
+  });
+  const seam = createRp2040X37RuntimeSeam({ runtime, ...seamOwner('rp'),
+    maxStepsPerAdvance: 100_001, maxTotalInstructions: 100_001 });
+  const result = seam.advanceToLocalCycle(100_001);
+  assert.equal(result.steps, 100_001); assert.equal(result.totalInstructions, 100_001);
+  assert.deepEqual(adapter.records.map(({ type }) => type),
+    ['digital-input-applied', 'gpio', 'uart-tx', 'progress']);
+  assert.deepEqual(adapter.records.at(-1), { type: 'progress', cycle: 100_001, instructions: 100_001 });
+});
+
+test('RP lean-step double retains injected unsupported error and stops before boundary progress', () => {
+  const failure = Object.assign(new Error('RUNTIME_CAPABILITY_UNSUPPORTED'),
+    { code: 'RUNTIME_CAPABILITY_UNSUPPORTED' });
+  const adapter = {
+    cycle: 0, instructions: 0, records: [],
+    snapshot: () => ({ descriptor: { capabilities: ['gpio'] } }),
+    handleX37Step() {
+      this.cycle += 1; this.instructions += 1;
+      if (this.instructions === 3) { this.records.push({ type: 'error', cycle: 3 }); throw failure; }
+    },
+    commitX37AdvanceProgress() { this.records.push({ type: 'progress' }); },
+    handle() { throw new Error('NOT_USED'); },
+    machineSnapshot() { return { cycle: this.cycle }; },
+    machineStatus() { return { cycle: this.cycle, instructions: this.instructions, blocked: false }; },
+    x37ProbeSnapshot() { return { ...this.machineStatus(), gpio: [], gpioDropped: 0 }; },
+  };
+  const runtime = new Rp2040ExperimentalRuntime(adapter, {
+    artifactIdentity: 'a'.repeat(64), firmwareFormat: 'uf2', firmwareOrigin: 'test',
+  });
+  const seam = createRp2040X37RuntimeSeam({ runtime, ...seamOwner('rp') });
+  assert.throws(() => seam.advanceToLocalCycle(10), { code: 'RUNTIME_CAPABILITY_UNSUPPORTED' });
+  assert.deepEqual(adapter.records, [{ type: 'error', cycle: 3 }]);
 });
 
 test('firmware observations are capped at the shared 32-event ceiling', () => {
