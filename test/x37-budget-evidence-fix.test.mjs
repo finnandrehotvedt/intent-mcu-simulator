@@ -35,10 +35,13 @@ test('retained artifact continuation accepts only exact private evidence identit
     await persistX37CompilerArtifact({ evidenceDirectory: directory, participantId: 'rp',
       artifact: { uf2: { base64: rp.toString('base64'), sha256: sha256(rp) } }, buildRecord: identity });
     const loaded = await loadX37RetainedArtifacts({ evidenceDirectory: directory,
-      expected: { avr: identity, rp: identity } });
+      expected: { avr: identity, rp: identity }, expectedBytes: { avr: avr.length, rp: rp.length },
+      expectedSha256: { avr: sha256(avr), rp: sha256(rp) } });
     assert.equal(loaded.avr.hexSha256, sha256(avr)); assert.equal(loaded.rp.uf2.sha256, sha256(rp));
     await assert.rejects(loadX37RetainedArtifacts({ evidenceDirectory: directory,
-      expected: { avr: { ...identity, sourceSha256: '5'.repeat(64) }, rp: identity } }),
+      expected: { avr: { ...identity, sourceSha256: '5'.repeat(64) }, rp: identity },
+      expectedBytes: { avr: avr.length, rp: rp.length },
+      expectedSha256: { avr: sha256(avr), rp: sha256(rp) } }),
     { code: 'X37_RETAINED_ARTIFACT_IDENTITY' });
   } finally { await rm(directory, { recursive: true, force: true }); }
 });

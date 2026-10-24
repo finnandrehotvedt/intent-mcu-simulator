@@ -25,6 +25,8 @@ import { persistX37CompilerArtifact } from '../src/x37-producer-artifact-evidenc
 import { constructX37RuntimePair } from '../src/x37-producer-runtime-lifecycle.mjs';
 import { ensureX37WorkerEnvironment } from '../src/x37-worker-environment.mjs';
 import { createX37PrivateRuntimeJournal } from '../src/x37-private-runtime-journal.mjs';
+import { loadX37RetainedArtifacts } from '../src/x37-retained-artifact-loader.mjs';
+import { resolveX37ProducerArtifacts } from '../src/x37-producer-artifact-source.mjs';
 
 const workerEnvironment = await ensureX37WorkerEnvironment();
 
@@ -38,8 +40,10 @@ const exact = (value, keys) => value && typeof value === 'object' && !Array.isAr
   && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
 
 function validateConfiguration(value) {
-  if (!exact(value, ['avrLockPath', 'rp2040LockPath', 'avrSourcePath', 'rp2040SourcePath', 'evidenceDirectory'])
-      || Object.values(value).some((item) => typeof item !== 'string' || !item.startsWith('/'))) {
+  if (!exact(value, ['mode', 'avrLockPath', 'rp2040LockPath', 'avrSourcePath', 'rp2040SourcePath',
+    'evidenceDirectory', 'retainedEvidenceDirectory']) || !['compile', 'retained'].includes(value.mode)
+      || Object.entries(value).some(([key, item]) => key !== 'mode'
+        && (typeof item !== 'string' || !item.startsWith('/')))) {
     throw Object.assign(new Error('X37_PRODUCER_CONFIGURATION_INVALID'), { code: 'X37_PRODUCER_CONFIGURATION_INVALID' });
   }
   return value;
@@ -87,8 +91,24 @@ async function main() {
     files: [{ name: 'main.ino', content: avrSource }] });
   const rpRequest = normalizeBuildRequestValue({ schema: RP2040_BUILD_REQUEST_SCHEMA, board: RP2040_BOARD_PROFILE,
     files: [{ name: 'main.c', content: rpSource }] });
-  const avrArtifact = await compileOne('avr', avrLock, avrRequest, config.evidenceDirectory);
-  const rpArtifact = await compileOne('rp', rpLock, rpRequest, config.evidenceDirectory);
+  const avrIdentity = { requestSha256: sha256(JSON.stringify(avrRequest)), sourceSha256: sha256(avrSource),
+    imageId: avrLock.imageId, toolchainManifestSha256: avrLock.toolchainManifestSha256 };
+  const rpIdentity = { requestSha256: sha256(JSON.stringify(rpRequest)), sourceSha256: sha256(rpSource),
+    imageId: rpLock.imageId, toolchainManifestSha256: rpLock.toolchainManifestSha256 };
+  const selected = await resolveX37ProducerArtifacts({ mode: config.mode,
+    compile: async () => ({
+      avr: await compileOne('avr', avrLock, avrRequest, config.evidenceDirectory),
+      rp: await compileOne('rp', rpLock, rpRequest, config.evidenceDirectory),
+    }),
+    loadRetained: () => loadX37RetainedArtifacts({ evidenceDirectory: config.retainedEvidenceDirectory,
+      expected: { avr: avrIdentity, rp: rpIdentity }, expectedBytes: { avr: 2836, rp: 1024 },
+      expectedSha256: { avr: '83f70cfebdd8f05cb1045a25b7e64e3319d35ae562e15011c4ca35b4aa8164c3',
+        rp: '05cdf8cc232a72cb1181bded3c65a60b41e419cc6eb396fc1b89f39aea21b2dc' } }),
+  });
+  const avrArtifact = selected.artifacts.avr; const rpArtifact = selected.artifacts.rp;
+  if (selected.mode === 'retained') activity.buildRecords.push(
+    { participantId: 'avr', ...avrIdentity, status: 'retained-verified', artifactSha256: avrArtifact.hexSha256 },
+    { participantId: 'rp', ...rpIdentity, status: 'retained-verified', artifactSha256: rpArtifact.uf2.sha256 });
   if (sha256(avrArtifact.hex) !== avrArtifact.hexSha256
       || sha256(Buffer.from(rpArtifact.uf2.base64, 'base64')) !== rpArtifact.uf2.sha256) {
     throw Object.assign(new Error('X37_ARTIFACT_IDENTITY_INVALID'), { code: 'X37_ARTIFACT_IDENTITY_INVALID' });

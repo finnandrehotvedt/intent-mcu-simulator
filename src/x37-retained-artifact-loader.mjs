@@ -7,9 +7,10 @@ import { readFile, stat } from 'node:fs/promises';
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const fail = (code) => { throw Object.assign(new Error(code), { code }); };
 
-export async function loadX37RetainedArtifacts({ evidenceDirectory, expected }) {
+export async function loadX37RetainedArtifacts({ evidenceDirectory, expected, expectedBytes, expectedSha256 }) {
   if (typeof evidenceDirectory !== 'string' || !evidenceDirectory.startsWith('/')
-      || !expected || Object.keys(expected).sort().join(',') !== 'avr,rp') fail('X37_RETAINED_ARTIFACT_CONFIGURATION');
+      || !expected || Object.keys(expected).sort().join(',') !== 'avr,rp'
+      || !expectedBytes || !expectedSha256) fail('X37_RETAINED_ARTIFACT_CONFIGURATION');
   const result = {};
   for (const participantId of ['avr', 'rp']) {
     const bytesPath = `${evidenceDirectory}/${participantId}.firmware.bin`;
@@ -21,7 +22,8 @@ export async function loadX37RetainedArtifacts({ evidenceDirectory, expected }) 
     if ((bytesStat.mode & 0o777) !== 0o600 || (metadataStat.mode & 0o777) !== 0o600
         || metadata.schema !== 'intent-mcu-x37-private-artifact-evidence@1'
         || metadata.participantId !== participantId || metadata.bytes !== bytes.length
-        || metadata.sha256 !== sha256(bytes)
+        || bytes.length !== expectedBytes[participantId] || metadata.sha256 !== sha256(bytes)
+        || metadata.sha256 !== expectedSha256[participantId]
         || ['requestSha256', 'sourceSha256', 'imageId', 'toolchainManifestSha256']
           .some((key) => metadata[key] !== wanted[key])) fail('X37_RETAINED_ARTIFACT_IDENTITY');
     result[participantId] = participantId === 'avr'
