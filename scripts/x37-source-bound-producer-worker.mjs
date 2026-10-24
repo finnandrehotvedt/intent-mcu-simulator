@@ -41,9 +41,10 @@ const exact = (value, keys) => value && typeof value === 'object' && !Array.isAr
 
 function validateConfiguration(value) {
   if (!exact(value, ['mode', 'avrLockPath', 'rp2040LockPath', 'avrSourcePath', 'rp2040SourcePath',
-    'evidenceDirectory', 'retainedEvidenceDirectory']) || !['compile', 'retained'].includes(value.mode)
+    'evidenceDirectory', 'retainedEvidenceDirectory', 'abortBuffer']) || !['compile', 'retained'].includes(value.mode)
+      || !(value.abortBuffer instanceof SharedArrayBuffer)
       || Object.entries(value).some(([key, item]) => key !== 'mode'
-        && (typeof item !== 'string' || !item.startsWith('/')))) {
+        && key !== 'abortBuffer' && (typeof item !== 'string' || !item.startsWith('/')))) {
     throw Object.assign(new Error('X37_PRODUCER_CONFIGURATION_INVALID'), { code: 'X37_PRODUCER_CONFIGURATION_INVALID' });
   }
   return value;
@@ -129,8 +130,10 @@ async function main() {
       cleanupRp: (runtime) => { runtime.pause(); runtime.dispose(); },
     });
     avr = runtimes.avr; rp = runtimes.rp; activity.coordinatedRuns = 1;
-    avrSeam = createAvrX37RuntimeSeam({ runtime: avr, identityOwner: avrOwner.snapshot, schedulerContract });
-    rpSeam = createRp2040X37RuntimeSeam({ runtime: rp, identityOwner: rpOwner.snapshot, schedulerContract });
+    avrSeam = createAvrX37RuntimeSeam({ runtime: avr, identityOwner: avrOwner.snapshot, schedulerContract,
+      abortFlag: new Int32Array(config.abortBuffer) });
+    rpSeam = createRp2040X37RuntimeSeam({ runtime: rp, identityOwner: rpOwner.snapshot, schedulerContract,
+      abortFlag: new Int32Array(config.abortBuffer) });
     const net = createObservedDigitalNetResolver({ netId: 'shared.digital.0',
       driverParticipantIds: ['avr', 'rp'], idleLevel: true });
     result = runX37TurnaroundOrchestration({ seams: { avr: avrSeam, rp: rpSeam },
@@ -143,7 +146,8 @@ async function main() {
         rp: (record) => rp.adapter.snapshot().events.some((event) =>
           event.type === 'digital-input-applied' && event.pin === 'GPIO1'
           && event.level === record.level && event.cycle >= record.targetCycle),
-      }, onAcceptedObservation: (row) => { activity.events += 1; journal.append('observation', row); } });
+      }, onAcceptedObservation: (row) => { activity.events += 1; journal.append('observation', row); },
+      onProgress: (row) => journal.append('progress', row) });
   } catch (error) { primaryError = error; journal.append('failure', { code: error.code ?? error.message,
     partial: error.x37Partial ?? null, activity: { firmwareBuildAttempts: activity.firmwareBuildAttempts,
       firmwareBuilds: activity.firmwareBuilds, runtimeInstances: activity.runtimeInstances,

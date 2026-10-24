@@ -491,4 +491,9 @@ export class Rp2040RuntimeBridgeAdapter {
       blockedPeripheral: this.blockedPeripheral,
     };
   }
+
+  x37ProbeSnapshot() {
+    const status = this.machineStatus(); const gpio = this.gpioHistory.filter((event) => event.pin === 'GPIO0');
+    return { ...status, gpio: structuredClone(gpio) };
+  }
 }

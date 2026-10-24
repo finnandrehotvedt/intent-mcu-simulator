@@ -696,4 +696,14 @@ export class Atmega328PAdapter {
       ...(this.x35Observer ? { x35CausalChain: this.x35Observer.snapshot() } : {}),
     };
   }
+
+  x37ProbeSnapshot(pinLabel = 'D13') {
+    const pin = Number(pinLabel.slice(1)); const [port, bit] = PIN_MAP[pin];
+    const config = { B: portBConfig, C: portCConfig, D: portDConfig }[port]; const mask = 1 << bit;
+    const output = Boolean(this.cpu.data[config.DDR] & mask);
+    return { cycle: this.cpu.cycles, instructions: this.instructions,
+      pins: [{ pin: pinLabel, mode: output ? 'OUTPUT' : 'INPUT', level: Boolean(this.cpu.data[config.PIN] & mask) }],
+      instruments: { logic: { transitions: this.trace.filter((entry) => entry.pin === pin),
+        dropped: this.retentionDrops.logic } } };
+  }
 }

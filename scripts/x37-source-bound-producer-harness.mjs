@@ -36,17 +36,20 @@ export async function runKillableWorker(moduleUrl, workerData, timeoutMillisecon
   if (!(moduleUrl instanceof URL) || !Number.isSafeInteger(timeoutMilliseconds)
       || timeoutMilliseconds < 1 || timeoutMilliseconds > 75_000) throw new Error('X37_WATCHDOG_CONFIGURATION');
   const execArgv = x37WorkerExecArgv();
-  const worker = new Worker(moduleUrl, { workerData, type: 'module', execArgv });
+  const abortBuffer = new SharedArrayBuffer(4); const abortFlag = new Int32Array(abortBuffer);
+  const worker = new Worker(moduleUrl, { workerData: { ...workerData, abortBuffer }, type: 'module', execArgv });
   return new Promise((resolve, reject) => {
     let settled = false; let terminating = false; let terminal = null;
-    const finish = (callback, value) => { if (settled) return; settled = true; clearTimeout(timer); callback(value); };
+    const finish = (callback, value) => { if (settled) return; settled = true;
+      clearTimeout(abortTimer); clearTimeout(hardTimer); callback(value); };
     const killAndReject = async (error) => {
       if (settled) return;
       terminating = true;
       await worker.terminate();
       finish(reject, error);
     };
-    const timer = setTimeout(async () => {
+    const abortTimer = setTimeout(() => { Atomics.store(abortFlag, 0, 1); }, Math.max(1, timeoutMilliseconds - 10_000));
+    const hardTimer = setTimeout(async () => {
       terminating = true;
       const exitCode = await worker.terminate();
       finish(reject, Object.assign(new Error('X37_WALL_TIMEOUT'), { code: 'X37_WALL_TIMEOUT', exitCode }));

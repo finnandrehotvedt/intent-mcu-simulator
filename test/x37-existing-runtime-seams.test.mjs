@@ -176,6 +176,16 @@ test('a stepping runtime with no cycle progress fails immediately', () => {
   assert.throws(() => seam.advanceToLocalCycle(1), { code: 'X37_SEAM_NO_PROGRESS' });
 });
 
+test('low-cost probe avoids rebuilding large full snapshots while preserving transitions', () => {
+  const runtime = new SyntheticRealisticSchemaRuntime({ states: [{ mode: 'OUTPUT', level: false }] });
+  runtime.transitions = Array.from({ length: 10_000 }, (_, cycle) => ({ pin: 'D13', level: Boolean(cycle % 2), cycle }));
+  let fullSnapshots = 0; const original = runtime.snapshot.bind(runtime);
+  runtime.x37ProbeSnapshot = () => original(); runtime.snapshot = () => { fullSnapshots += 1; return original(); };
+  const seam = createAvrX37RuntimeSeam({ runtime, ...seamOwner('avr') });
+  seam.advanceToLocalCycle(3);
+  assert.equal(fullSnapshots, 1); assert(seam.observeFirmwareGpio().length >= 1);
+});
+
 test('firmware observations are capped at the shared 32-event ceiling', () => {
   const runtime = new SyntheticRealisticSchemaRuntime({ profile: 'rp2040', stepCycles: 1,
     states: [{ mode: 'OUTPUT', level: false }, { mode: 'OUTPUT', level: true }] });

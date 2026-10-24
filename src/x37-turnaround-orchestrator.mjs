@@ -11,10 +11,11 @@ const order = (left, right) => left.mappedTick - right.mappedTick
   || asciiOrder(left.participantId, right.participantId);
 
 export function runX37TurnaroundOrchestration({ seams, schedulerContract, net,
-  advanceWindow = 512, inputApplied, onAcceptedObservation = () => {} }) {
+  advanceWindow = 512, inputApplied, onAcceptedObservation = () => {}, onProgress = () => {} }) {
   if (!seams?.avr || !seams?.rp || typeof inputApplied?.avr !== 'function'
       || typeof inputApplied?.rp !== 'function' || !Number.isSafeInteger(advanceWindow)
-      || advanceWindow < 1 || typeof onAcceptedObservation !== 'function') fail('X37_TURNAROUND_ORCHESTRATOR_INVALID');
+      || advanceWindow < 1 || typeof onAcceptedObservation !== 'function'
+      || typeof onProgress !== 'function') fail('X37_TURNAROUND_ORCHESTRATOR_INVALID');
   const clocks = Object.fromEntries(schedulerContract.participants.map((value) =>
     [value.participantId, value.localCyclesPerSchedulerTick]));
   const pending = []; const evidence = []; const deliveries = []; const applied = [];
@@ -43,7 +44,9 @@ export function runX37TurnaroundOrchestration({ seams, schedulerContract, net,
     const targetCycle = Math.max(seam.currentCycle(), boundary.cycle);
     let advance = null;
     if (targetCycle > seam.currentCycle()) {
+      onProgress({ kind: 'advance-begin', participantId, cycle: seam.currentCycle(), targetCycle, lifecycle: seam.lifecycle() });
       advance = seam.advanceToLocalCycle(targetCycle); advanceCalls += 1; collect(participantId);
+      onProgress({ kind: 'advance-end', participantId, cycle: seam.currentCycle(), targetCycle, lifecycle: seam.lifecycle() });
     }
     const delivery = seam.deliverResolvedLevel(decision.level, item.observation);
     const record = { participantId, source: item.observation, level: decision.level,
@@ -81,8 +84,12 @@ export function runX37TurnaroundOrchestration({ seams, schedulerContract, net,
         item = processOne(); break;
       }
       const adaptiveWindow = Math.min(advanceWindow * (2 ** Math.min(attempt, 8)), 131_072);
+      onProgress({ kind: 'advance-begin', phase, participantId: actor, cycle: seams[actor].currentCycle(),
+        targetCycle: seams[actor].currentCycle() + adaptiveWindow, lifecycle: seams[actor].lifecycle() });
       seams[actor].advanceToLocalCycle(seams[actor].currentCycle() + adaptiveWindow);
       advanceCalls += 1; collect(actor);
+      onProgress({ kind: 'advance-end', phase, participantId: actor, cycle: seams[actor].currentCycle(),
+        lifecycle: seams[actor].lifecycle() });
     }
     if (!item) fail('X37_EXPECTED_FIRMWARE_OBSERVATION_MISSING');
     if ((phase === 'ack' || phase === 'confirm')

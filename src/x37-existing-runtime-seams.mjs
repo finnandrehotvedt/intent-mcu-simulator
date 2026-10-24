@@ -43,7 +43,7 @@ export function mapX37RuntimeObservation(observation, contractValue) {
 }
 
 function commonSeam({ runtime, identityOwner, schedulerContract, profile, outputPin, inputPin,
-  maxTotalInstructions, maxAdvanceCalls, maxObservations }) {
+  maxTotalInstructions, maxAdvanceCalls, maxObservations, abortFlag }) {
   const contract = validateX37SharedSchedulerContract(schedulerContract);
   const configuredOwner = liveIdentity(identityOwner);
   const participant = contract.participants.find((candidate) =>
@@ -53,11 +53,14 @@ function commonSeam({ runtime, identityOwner, schedulerContract, profile, output
   if (!participant || !Number.isSafeInteger(maxTotalInstructions)
       || maxTotalInstructions < 1 || !Number.isSafeInteger(maxAdvanceCalls)
       || maxAdvanceCalls < 1 || maxAdvanceCalls > 32 || !Number.isSafeInteger(maxObservations)
-      || maxObservations < 1 || maxObservations > 32) reject('X37_SEAM_LIMIT_INVALID');
+      || maxObservations < 1 || maxObservations > 32
+      || (abortFlag !== undefined && !(abortFlag instanceof Int32Array))) reject('X37_SEAM_LIMIT_INVALID');
   let retired = false; let disposed = false; let epoch = 0;
   let watermark = 0; let pending = []; let priorOutput = null;
   let totalInstructions = 0; let advanceCalls = 0;
-  const initial = runtimeSnapshot(runtime);
+  const probeSnapshot = () => typeof runtime.x37ProbeSnapshot === 'function'
+    ? runtime.x37ProbeSnapshot(outputPin) : runtimeSnapshot(runtime);
+  const initial = probeSnapshot();
   const netId = contract.sharedNet.netId;
   let historyCursor = initial.instruments.logic.dropped
     + initial.instruments.logic.transitions.length;
@@ -91,17 +94,18 @@ function commonSeam({ runtime, identityOwner, schedulerContract, profile, output
   };
   const advanceByStepping = (targetCycle, maxSteps) => {
     lifecycleGuard();
-    const before = runtimeSnapshot(runtime);
+    const before = probeSnapshot();
     if (!Number.isSafeInteger(targetCycle) || targetCycle < before.cycle) reject('X37_SEAM_TARGET_INVALID');
     if (advanceCalls >= maxAdvanceCalls) reject('X37_SEAM_ADVANCE_CALL_CAP');
     advanceCalls += 1;
     let steps = 0; let priorInstructions = before.instructions; let priorCycle = before.cycle;
-    while (runtimeSnapshot(runtime).cycle < targetCycle) {
+    while (probeSnapshot().cycle < targetCycle) {
+      if (abortFlag && steps % 256 === 0 && Atomics.load(abortFlag, 0) === 1) reject('X37_COOPERATIVE_ABORT');
       if (steps >= maxSteps || totalInstructions >= maxTotalInstructions) {
         reject('X37_SEAM_INSTRUCTION_CAP');
       }
       runtime.step(); steps += 1;
-      const snapshot = runtimeSnapshot(runtime);
+      const snapshot = probeSnapshot();
       const delta = snapshot.instructions - priorInstructions;
       if (!Number.isSafeInteger(delta) || delta <= 0) reject('X37_SEAM_INSTRUCTION_COUNTER_INVALID');
       if (snapshot.cycle <= priorCycle) reject('X37_SEAM_NO_PROGRESS');
@@ -110,7 +114,7 @@ function commonSeam({ runtime, identityOwner, schedulerContract, profile, output
       if (totalInstructions > maxTotalInstructions) reject('X37_SEAM_INSTRUCTION_CAP');
       sampleOutput(snapshot);
     }
-    const reachedCycle = runtimeSnapshot(runtime).cycle;
+    const reachedCycle = probeSnapshot().cycle;
     return { requestedBoundaryCycle: targetCycle, reachedCycle, steps,
       exact: reachedCycle === targetCycle, overshootCycles: reachedCycle - targetCycle,
       totalInstructions, advanceCalls };
@@ -118,14 +122,14 @@ function commonSeam({ runtime, identityOwner, schedulerContract, profile, output
   sampleOutput(initial);
   return {
     identity: () => liveIdentity(identityOwner),
-    currentCycle: () => runtimeSnapshot(runtime).cycle,
+    currentCycle: () => probeSnapshot().cycle,
     observeFirmwareGpio: () => { lifecycleGuard(); const result = pending.map(clone); pending = []; return result; },
     advanceByStepping,
     causalDelivery(level, sourceObservation, queue) {
       lifecycleGuard();
       if (typeof level !== 'boolean') reject('X37_SEAM_CAUSAL_DELIVERY_INVALID');
       const mapped = mapX37RuntimeObservation(sourceObservation, contract);
-      const currentMappedTick = x37SchedulerTick(runtimeSnapshot(runtime).cycle,
+      const currentMappedTick = x37SchedulerTick(probeSnapshot().cycle,
         participant.localCyclesPerSchedulerTick);
       if (currentMappedTick < mapped.mappedTick) {
         reject('X37_SEAM_CAUSAL_DELIVERY_INVALID');
@@ -162,14 +166,14 @@ function commonSeam({ runtime, identityOwner, schedulerContract, profile, output
 
 export function createAvrX37RuntimeSeam({ runtime, identityOwner, outputPin = 'D13', inputPin = 2,
   schedulerContract, maxInstructionsPerAdvance = 1_000_000,
-  maxTotalInstructions = 1_000_000, maxAdvanceCalls = 32, maxObservations = 32 }) {
+  maxTotalInstructions = 1_000_000, maxAdvanceCalls = 32, maxObservations = 32, abortFlag }) {
   if (typeof runtime?.step !== 'function' || typeof runtime?.queueDigitalSequence !== 'function'
       || typeof runtime?.pause !== 'function' || typeof runtime?.reset !== 'function'
       || !/^D(?:[0-9]|1[0-3])$/u.test(outputPin) || !Number.isInteger(inputPin)
       || inputPin < 0 || inputPin > 13) reject('X37_SEAM_AVR_API_INVALID');
   const seam = commonSeam({ runtime, identityOwner, schedulerContract,
     profile: 'avr', outputPin, inputPin,
-    maxTotalInstructions, maxAdvanceCalls, maxObservations });
+    maxTotalInstructions, maxAdvanceCalls, maxObservations, abortFlag });
   return Object.freeze({ ...seam,
     advanceToLocalCycle: (targetCycle) => seam.advanceByStepping(targetCycle, maxInstructionsPerAdvance),
     deliverResolvedLevel(level, sourceObservation) {
@@ -181,7 +185,7 @@ export function createAvrX37RuntimeSeam({ runtime, identityOwner, outputPin = 'D
 
 export function createRp2040X37RuntimeSeam({ runtime, identityOwner, outputPin = 'GPIO0',
   inputPin = 'GPIO1', schedulerContract, maxStepsPerAdvance = 1_000_000,
-  maxTotalInstructions = 1_000_000, maxAdvanceCalls = 32, maxObservations = 32 }) {
+  maxTotalInstructions = 1_000_000, maxAdvanceCalls = 32, maxObservations = 32, abortFlag }) {
   const hasPrivateInputBridge = typeof runtime?.queueDigitalInput === 'function'
     || (typeof runtime?.adapter?.handle === 'function'
       && typeof runtime?.adapter?.machineSnapshot === 'function'
@@ -192,7 +196,7 @@ export function createRp2040X37RuntimeSeam({ runtime, identityOwner, outputPin =
       || !/^GPIO(?:[0-9]|[12][0-9])$/u.test(inputPin)) reject('X37_SEAM_RP2040_API_INVALID');
   const seam = commonSeam({ runtime, identityOwner, schedulerContract,
     profile: 'rp2040', outputPin, inputPin,
-    maxTotalInstructions, maxAdvanceCalls, maxObservations });
+    maxTotalInstructions, maxAdvanceCalls, maxObservations, abortFlag });
   return Object.freeze({ ...seam,
     advanceToLocalCycle: (targetCycle) => seam.advanceByStepping(targetCycle, maxStepsPerAdvance),
     deliverResolvedLevel(level, sourceObservation) {

@@ -11,7 +11,7 @@ export function createX37PrivateRuntimeJournal(evidenceDirectory) {
   const descriptor = openSync(path, 'wx', 0o600); closeSync(descriptor); chmodSync(path, 0o600);
   let rows = 0;
   return Object.freeze({ path, append(type, value) {
-    if (rows >= 64 || !['environment', 'observation', 'failure', 'cleanup'].includes(type)) {
+    if (rows >= 160 || !['environment', 'observation', 'progress', 'failure', 'cleanup'].includes(type)) {
       throw Object.assign(new Error('X37_JOURNAL_LIMIT'), { code: 'X37_JOURNAL_LIMIT' });
     }
     const row = { schema: 'intent-mcu-x37-private-runtime-journal@1', row: ++rows, type, value };
