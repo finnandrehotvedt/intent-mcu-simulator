@@ -11,7 +11,9 @@ All notable public source changes are recorded here.
 - Keeps unknown, neighboring, forged and self-rehashed locks atomically
   rejected without replacing the current project.
 - Retains exact public rc.128 and its private aggregate counter volume as the
-  app-only rollback basis; X92 remains 85 complete, 2 active and 9 remaining.
+  app-only rollback basis. Post-release independent actual-file acceptance
+  closes X92 only within its reviewed twelve-criterion current-tab boundary;
+  canonical status is 86 complete, 1 partial and 9 planned.
 
 ## 1.1.0-rc.128 — 2026-10-24
 

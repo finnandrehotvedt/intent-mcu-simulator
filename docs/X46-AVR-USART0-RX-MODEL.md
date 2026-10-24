@@ -22,7 +22,7 @@ serial drops are truthfully reported; strict derivation still rejects it.
 This is peripheral-model byte evidence, not a physical UART line capture. It
 does not prove D0 voltage edges, noise, parity symbols or errors, I2C, or SPI,
 and grants no Apply, Build, Run or verdict authority. X46 therefore remains a
-partial criterion at public count `85/2/9` until separately reviewed evidence
+partial criterion at public count `86/1/9` until separately reviewed evidence
 covers the remaining scope.
 
 The next proposed evidence step is one fixture against the exact current model

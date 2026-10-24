@@ -25,7 +25,7 @@ test('public documentation facts derive from the current release and canonical c
   assert.equal(THERMOSTAT_SCENARIOS.scenarios.length, 4);
   assert.match(THERMOSTAT_EXPERIMENT_CARD.outcome, /four reset-isolated/u);
   for (const page of [controllers, components, examples, support, llms]) {
-    assert.match(page, /1\.1\.0-rc\.125/u);
+    assert.match(page, /1\.1\.0-rc\.129/u);
     assert.doesNotMatch(page, /1\.1\.0-rc\.41/u);
   }
   assert.match(controllers, /four reset-isolated boundary scenarios/u);
@@ -35,7 +35,7 @@ test('public documentation facts derive from the current release and canonical c
   assert.match(llms, /finite resistor-and-LED reusable subcircuit/u);
   assert.match(support, /X66[^·]+complete only against their bounded original criteria/u);
   assert.match(support, /X46 remains partial beyond this bounded USART0 TX increment/u);
-  assert.match(support, /X 85\/2\/9/u);
+  assert.match(support, /X 86\/1\/9/u);
   assert.match(support, /no account[^\n]+nested or general-purpose subcircuit authority/u);
   assert.match(sitemap, /<lastmod>2026-10-21<\/lastmod>/u);
 });

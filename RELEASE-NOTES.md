@@ -11,8 +11,15 @@ Build before Run.
 
 The allowlist remains finite: unknown, neighboring, forged and self-rehashed
 locks reject atomically without replacing the open project. This release adds
-no firmware execution, native evidence or X92 completion claim. Exact public
-rc.128 and its persistent aggregate counter volume are the rollback basis.
+no firmware execution or native producer activity. After release, Desktop
+independently opened the original 3,804-byte PWM-pulse file and accepted the
+last gate in X92's reviewed twelve-criterion current-tab boundary: authored
+source/circuit stayed intact, the historical lock remained retained, a fresh
+Build was required, Run was disabled and no Build was submitted. X92 closure
+does not claim a generic AI agent, remote scheduler, billing/quota system,
+mobile workbench or physical equivalence. Canonical status is X **86/1/9**.
+Exact public rc.128 and its persistent aggregate counter volume remain the
+rollback basis.
 
 ---
 
