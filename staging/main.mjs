@@ -25,6 +25,7 @@ import {
 import { createProjectNavigationView, searchProjectNavigation } from '../src/project-navigation.mjs';
 import { CIRCUIT_SCHEMA, validateCircuit } from '../src/circuit-engine.mjs';
 import { DEFAULT_CIRCUIT } from '../src/default-circuit.mjs';
+import { pinTargetGuidance } from '../src/pin-target-guidance.mjs';
 import { RELEASE_VERSION } from '../src/release-metadata.mjs';
 import { isRetryableCapacityCode, retryGuidanceFromResponse, retryMessage, retryResultFields } from '../src/retry-guidance.mjs';
 import {
@@ -12296,15 +12297,13 @@ function renderComponents() {
       else if (pendingEndpoint) {
         const sourceComponent = currentProject().circuit.components.find(({ id }) => id === pendingEndpoint.component);
         const sourcePin = uiComponentCatalog[sourceComponent?.type]?.pins.find(({ id }) => id === pendingEndpoint.pin);
-        const sourceGround = sourcePin?.role === 'ground';
-        const targetGround = pin.role === 'ground';
-        const sourcePower = sourcePin?.role?.startsWith('power-');
-        const targetPower = pin.role?.startsWith('power-');
-        const compatible = (sourceGround && targetGround)
-          || (sourcePower && targetPower && sourcePin.role !== pin.role)
-          || (!sourceGround && !targetGround && !sourcePower && !targetPower);
-        anchor.classList.add(compatible ? 'compatible' : 'incompatible');
-        if (compatible) anchor.setAttribute('aria-description', 'Compatible destination for the selected pin; final electrical validation still applies.');
+        const guidance = pinTargetGuidance(sourcePin?.role, pin.role);
+        anchor.classList.add(`${guidance}-target`);
+        anchor.setAttribute('aria-description', guidance === 'recommended'
+          ? 'Recommended named-pin target; final electrical validation still applies.'
+          : guidance === 'blocked'
+            ? 'Known output conflict; choose another named pin.'
+            : 'Possible named-pin target; final electrical validation decides whether the connection is accepted.');
       }
       anchor.addEventListener('click', (event) => {
         event.stopPropagation();

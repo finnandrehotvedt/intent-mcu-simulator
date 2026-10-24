@@ -1071,8 +1071,9 @@ button:disabled, select:disabled { opacity: .42; }
 .component-wire-overlay-path.proposal { stroke-width: 5; opacity: 1; filter: drop-shadow(0 0 5px #a8ff3f88); }
 .pin-anchor { position: absolute; left: calc(var(--pin-x) * 100%); top: calc(var(--pin-y) * 100%); width: 30px; min-height: 30px; padding: 0; transform: translate(-50%, -50%); border: 2px solid transparent; border-radius: 50%; background: transparent; color: transparent; font-size: 0; z-index: 2; }
 .pin-anchor:hover, .pin-anchor:focus-visible, .pin-anchor.available { border-color: #39dff2cc; background: #39dff228; }
-.pin-anchor.compatible { border-color: #a8ff3fcc; background: #a8ff3f20; box-shadow: 0 0 0 3px #a8ff3f12; }
-.pin-anchor.incompatible { opacity: .38; }
+.pin-anchor.recommended-target { border-color: #a8ff3fcc; background: #a8ff3f20; box-shadow: 0 0 0 3px #a8ff3f12; }
+.pin-anchor.possible-target { border-color: #39dff2cc; background: #39dff21c; }
+.pin-anchor.blocked-target { opacity: .42; border-color: #ff806f88; }
 .pin-anchor[data-pin-role="ground"] { border-color: #dce7f288; background: #dce7f21f; }
 .pin-anchor[data-pin-role="ground"] .pin-anchor-label { border-color: #dce7f2; color: #fff; background: #07111af7; }
 .pin-anchor.pending { border-color: var(--lime); background: #a8ff3f3b; box-shadow: 0 0 0 4px #a8ff3f24; }
