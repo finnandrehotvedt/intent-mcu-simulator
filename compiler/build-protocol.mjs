@@ -24,7 +24,17 @@ export const FIXED_BUILD_FLAGS = Object.freeze([
 ]);
 const FORBIDDEN_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
 const FILE_NAME = /^(?:main\.ino|[A-Za-z][A-Za-z0-9_-]{0,47}\.(?:h|hpp|c|cpp))$/;
-const RP2040_SOURCE_PATTERN = /^\/\* Intent MCU Simulator public RP2040 source v1 \*\/\nint main\(void\)\n\{\n  intent_gpio0_output\(([01])u\);\n  intent_uart0_text\("([A-Z0-9 _-]{1,24})"\);\n  intent_halt\(\);\n\}\n$/u;
+const RP2040_CONSTANT_SOURCE_PATTERN = /^\/\* Intent MCU Simulator public RP2040 source v1 \*\/\nint main\(void\)\n\{\n  intent_gpio0_output\(([01])u\);\n  intent_uart0_text\("([A-Z0-9 _-]{1,24})"\);\n  intent_halt\(\);\n\}\n$/u;
+const RP2040_X37_REFLECT_SOURCE = `/* Intent MCU Simulator private X37 RP2040 reflect source v1 */
+int main(void)
+{
+  intent_gpio0_reflect_gpio1_4096();
+  intent_uart0_text("X37 REFLECT");
+  intent_halt();
+}
+`;
+const validRp2040Source = (source) => RP2040_CONSTANT_SOURCE_PATTERN.test(source)
+  || source === RP2040_X37_REFLECT_SOURCE;
 const INCLUDE_DIRECTIVE = /^\s*#\s*(include|include_next)\s+(.+?)\s*$/gm;
 const COMMON_SYSTEM_HEADERS = new Set([
   'Arduino.h', 'stdint.h', 'stddef.h', 'stdbool.h', 'stdint.h', 'limits.h',
@@ -224,8 +234,8 @@ export function normalizeBuildRequestValue(value) {
   if (board === RP2040_BOARD_PROFILE) {
     if (files.length !== 1 || files[0].name !== 'main.c') throw new BuildProtocolError('RP2040_MAIN_FILE_REQUIRED');
     if (sourceBytes > 4096) throw new BuildProtocolError('SOURCE_LIMIT');
-    if (!RP2040_SOURCE_PATTERN.test(files[0].content)) {
-      throw new BuildProtocolError('SOURCE_POLICY_REJECTED', 'Use only the three documented bounded Pico calls.');
+    if (!validRp2040Source(files[0].content)) {
+      throw new BuildProtocolError('SOURCE_POLICY_REJECTED', 'Use one exact bounded Pico source form.');
     }
   } else if (!seen.has('main.ino')) throw new BuildProtocolError('MAIN_FILE_REQUIRED');
   if (sourceBytes > BUILD_LIMITS.sourceBytes) throw new BuildProtocolError('SOURCE_LIMIT');

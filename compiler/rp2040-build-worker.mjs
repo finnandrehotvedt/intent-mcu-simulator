@@ -24,7 +24,16 @@ const UF2_MAGIC_END = 0x0ab16f30;
 const UF2_FAMILY_FLAG = 0x00002000;
 const UF2_FAMILY_ID = 0xe48bff56;
 const FLASH_START = 0x10000000;
-const SOURCE_PATTERN = /^\/\* Intent MCU Simulator public RP2040 source v1 \*\/\nint main\(void\)\n\{\n  intent_gpio0_output\(([01])u\);\n  intent_uart0_text\("([A-Z0-9 _-]{1,24})"\);\n  intent_halt\(\);\n\}\n$/u;
+const CONSTANT_SOURCE_PATTERN = /^\/\* Intent MCU Simulator public RP2040 source v1 \*\/\nint main\(void\)\n\{\n  intent_gpio0_output\(([01])u\);\n  intent_uart0_text\("([A-Z0-9 _-]{1,24})"\);\n  intent_halt\(\);\n\}\n$/u;
+const X37_REFLECT_SOURCE = `/* Intent MCU Simulator private X37 RP2040 reflect source v1 */
+int main(void)
+{
+  intent_gpio0_reflect_gpio1_4096();
+  intent_uart0_text("X37 REFLECT");
+  intent_halt();
+}
+`;
+const validSource = (source) => CONSTANT_SOURCE_PATTERN.test(source) || source === X37_REFLECT_SOURCE;
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const exactKeys = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
@@ -61,7 +70,7 @@ function validateJob(value) {
     throw Object.assign(new Error('source identity mismatch'), { code: 'SOURCE_IDENTITY_MISMATCH' });
   }
   const source = value.request.files[0].content;
-  if (Buffer.byteLength(source, 'utf8') > 4096 || !SOURCE_PATTERN.test(source)) {
+  if (Buffer.byteLength(source, 'utf8') > 4096 || !validSource(source)) {
     throw Object.assign(new Error('bounded source policy rejected input'), { code: 'SOURCE_POLICY_REJECTED' });
   }
   return { source, sourceSha256: sha256(source) };
