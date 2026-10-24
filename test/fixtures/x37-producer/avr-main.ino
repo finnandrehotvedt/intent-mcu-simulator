@@ -26,8 +26,8 @@ void loop() {
   if (completed) return;
   completed = true;
   if (!waitLevel(HIGH, 8192)) return;
-  driveLow(4096);
+  driveLow(64);
   if (!waitLevel(LOW, 8192)) return;
   if (!waitLevel(HIGH, 8192)) return;
-  driveLow(4096);
+  driveLow(64);
 }

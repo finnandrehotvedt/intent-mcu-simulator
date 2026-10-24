@@ -132056,13 +132056,13 @@ export const PRE_X66_PUBLIC_THERMOSTAT_CREATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
   "entries": [
     {
-      "behaviorContractSha256": "1e0a40cd7d0740edb4a87033904a6e125e66ff77228234f7b8d399cd0be86928",
+      "behaviorContractSha256": "977935f29e4717ee870bc28d608f4830dedc7a1e729ce28c87ee0d9197ecc262",
       "componentType": "board.atmega328p-16mhz-v1",
       "componentVersion": 1,
       "modelId": "model.atmega328p-board-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "board.atmega328p-16mhz-v1-state-v1",
         "pipelineId": "avr-base-circuit-runtime-v1"
       },
@@ -132382,13 +132382,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "3e1e257d275e580b25335fcc66856044ebed2610eed8bbe68a0161fa79a67ca4",
+      "behaviorContractSha256": "e696c195675ff3e1f98c67822c806bbbc71020db63e7ff61836d449722482723",
       "componentType": "button.momentary-v1",
       "componentVersion": 1,
       "modelId": "model.button-momentary-no-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "button.momentary-v1-state-v1",
         "pipelineId": "avr-base-circuit-runtime-v1"
       },
@@ -132480,13 +132480,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "330ba504c41e9a2091615a1d13a435d4f7512452ec3e89b7110965e9cfbec742",
+      "behaviorContractSha256": "0fecb72852ef1b2ce686bdf1998bb8a73a4f70e9d986e3a3833f47b310e8e276",
       "componentType": "input.rotary-encoder-quadrature-v1",
       "componentVersion": 1,
       "modelId": "model.rotary-encoder-quadrature-ideal-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "input.rotary-encoder-quadrature-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -132585,13 +132585,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "ca13e29ce4d484ec54d4fb6746ac4e42900d8e47be7ea0e91fa444e4025544f3",
+      "behaviorContractSha256": "893f93cda356c253685c2d6c9707e64b6459c522228d5d3aa3b7891e8b68a6b9",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "led.basic-v1-state-v1",
         "pipelineId": "avr-base-circuit-runtime-v1"
       },
@@ -132660,13 +132660,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "91af2b6561ce6a91e05cbc39650ac50ae624ca3dadd8befebb1c4f932cd8e801",
+      "behaviorContractSha256": "b4cce636b974ac69c791e3be5685da34b4b135e8bdc8a075ad0b495bc5bc19d0",
       "componentType": "output.active-buzzer-module-v1",
       "componentVersion": 1,
       "modelId": "model.active-buzzer-logical-enable-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "output.active-buzzer-module-v1-observer-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -132738,13 +132738,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "fa4c17336af00c7c972c8e439029f21f101af910e265caaf4c9a9402215a0afb",
+      "behaviorContractSha256": "020a3c6519cdb57f55a3a99566f73dd08207a4571c0e374276acbca5f1d00640",
       "componentType": "output.character-lcd-16x2-4bit-v1",
       "componentVersion": 1,
       "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "output.character-lcd-16x2-4bit-v1-observer-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -132886,13 +132886,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "804153c54de853a346c788d76373a3c4442a8be85105ad604dbedbe5f38f67b7",
+      "behaviorContractSha256": "1d77beef716b14da63c5e703df30ebe1027d6ac5a7accd3136bea807ea7e5cf1",
       "componentType": "output.rgb-led-common-cathode-v1",
       "componentVersion": 1,
       "modelId": "model.rgb-led-common-cathode-ideal-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "output.rgb-led-common-cathode-v1-observer-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -132979,13 +132979,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "b4da4e471932332096abd7f31a10fbc30f4f740efe48121b74d099a3b33f708c",
+      "behaviorContractSha256": "7b51b168eaafdf621a236a5468e21ec6b012b2595f024f7199fd941629a1b20b",
       "componentType": "output.seven-segment-common-cathode-v1",
       "componentVersion": 1,
       "modelId": "model.seven-segment-common-cathode-ideal-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "output.seven-segment-common-cathode-v1-observer-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -133120,13 +133120,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "740d7ec6148d44dd3d834cc3b032ba3bdcf29230c4e1fe4b588beac9db9e66c6",
+      "behaviorContractSha256": "a1e16c0ad7dc2f463839971627ac0335084d5207e7d8a514b4ae412af6d9f6e7",
       "componentType": "potentiometer.linear-v1",
       "componentVersion": 1,
       "modelId": "model.pot-divider-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "potentiometer.linear-v1-state-v1",
         "pipelineId": "avr-base-circuit-runtime-v1"
       },
@@ -133212,13 +133212,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "3112e958a1c9577bce63827e9e2dc8548ce7920887cfab93ed2d8d3e976f31ca",
+      "behaviorContractSha256": "f609e7d75ea529d95c1de0a93cb1061489d99bd606c53c0861429356e43128df",
       "componentType": "reference.ground-v1",
       "componentVersion": 1,
       "modelId": "model.ground-reference-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "reference.ground-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -133276,13 +133276,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "a089d3df06c5597ef87879f40630dbbebbb9f8e60b84a2b363c559ffb7f48eef",
+      "behaviorContractSha256": "1ce4ae5d5f0df0e08fe0c064271ccc621066beecbb5a6057014c0995415570b1",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "resistor.fixed-v1-state-v1",
         "pipelineId": "avr-base-circuit-runtime-v1"
       },
@@ -133344,13 +133344,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "ec1fdc95cf9723a5a3e215530338c86030f1b214194fb83977cbc701b7aa18c6",
+      "behaviorContractSha256": "8ba1dec5bd4587074b2319bc791246bcfe215b011ef412912a83d046de8053e1",
       "componentType": "sensor.light-analogue-v1",
       "componentVersion": 1,
       "modelId": "model.light-analogue-ideal-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "sensor.light-analogue-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -133430,13 +133430,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "d242869aa0c42e26c6543b09ffb215ed371b3b6881e569dd71bb9b4d0c256600",
+      "behaviorContractSha256": "3681382dd5807506c6364d79e389efa2022aa054f607ec3709e053e94e9b0a2b",
       "componentType": "sensor.light-threshold-digital-v1",
       "componentVersion": 1,
       "modelId": "model.light-threshold-digital-ideal-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "sensor.light-threshold-digital-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -133538,13 +133538,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "840d605ecad526cf0760e7cb63f4e48fe257b638c9c22934593709b654a6b62e",
+      "behaviorContractSha256": "17175d257e8fc2d80cbb3f1de016480afda13a8294341d819feaebe43d016b2d",
       "componentType": "sensor.temperature-analogue-v1",
       "componentVersion": 1,
       "modelId": "model.temperature-analogue-ideal-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "sensor.temperature-analogue-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -133624,13 +133624,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "ae9f3039810748af130800d64129b07a744a9b828a369fafd7d1a1ecd432ba98",
+      "behaviorContractSha256": "a23179aadf3a47d84900fadb8d055547dea9168e609fb10b759084bfdf66b738",
       "componentType": "switch.changeover-spdt-v1",
       "componentVersion": 1,
       "modelId": "model.switch-changeover-spdt-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "switch.changeover-spdt-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -133706,13 +133706,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "ba5ff8c5cb6e557712637b39f7651bc3ff7ecfed8fd426dd3f7aadb61a27d4a0",
+      "behaviorContractSha256": "427aa2a2afc4df878d1295045a505830b98af5b7d75ca2db1b4897a15fc1bd16",
       "componentType": "switch.toggle-spst-v1",
       "componentVersion": 1,
       "modelId": "model.switch-toggle-spst-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "switch.toggle-spst-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -133779,13 +133779,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "0cedfddd4a9874f86c852617662c108964e79b32d0642a2bb6f80292cc0745d0",
+      "behaviorContractSha256": "bd83bffa5a7b1de6ce5c9bbd3f936648268eb680010e4fb7c8e68d5cf150aef4",
       "componentType": "board.esp32-c3-devmodule-v1",
       "componentVersion": 1,
       "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "board.esp32-c3-devmodule-v1-state-v1",
         "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
       },
@@ -133849,13 +133849,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "b438d192a61e833bb55df879811c29d486cfd98c8419a2d10e04f1cbf26db962",
+      "behaviorContractSha256": "e0bc563e32f92c35da614ed5f1e509864459289e5e0de9651ba151a488a73cd2",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "led.basic-v1-state-v1",
         "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
       },
@@ -133924,13 +133924,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "5771ad1cf6c095e5ce2c962cec0fc2cd86ff6757d95fbf7d4facca12a28748d9",
+      "behaviorContractSha256": "d87e59e95d5eda7d1af24a6f0f9987b99196db9a677f166f813fa949997fb215",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "resistor.fixed-v1-state-v1",
         "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
       },
@@ -133992,13 +133992,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "d70e00bfb74c29e739845d8753ab72cdb9cde6509f74e96f3549344ef15d77e6",
+      "behaviorContractSha256": "bece22b07e033ba23ee1adc3a85c0e62d7e87bc86d745fcc52ddd0640594ea06",
       "componentType": "board.rp2040-pico-v1",
       "componentVersion": 1,
       "modelId": "model.rp2040-pico-gpio0-public-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "board.rp2040-pico-v1-state-v1",
         "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
       },
@@ -134060,13 +134060,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "b4b5a47f17a3aba7d256b26736d619d639d52cc04554d5a082dcf6edb33be759",
+      "behaviorContractSha256": "9fe63e67d8d4bc2003702fdf308cd9fd27771585bd004f10f41583299ab9bc7d",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "led.basic-v1-state-v1",
         "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
       },
@@ -134135,13 +134135,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "a7cda57f159655fcd30f0aa892cf574aa9dadb3092b970a4145ec3aa96526403",
+      "behaviorContractSha256": "51d6f7c0a53310f5361f0749de1c2ee73f6d546b025a7f7b62d83e91cc8af3f1",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "resistor.fixed-v1-state-v1",
         "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
       },
@@ -134203,13 +134203,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "1d77e73a6371e37e12df1d0a4cb75f5ef1acb7d20ac20a5042c5af7639ad17d3",
+      "behaviorContractSha256": "4d309be50cd356e5c4390bc5b70608ac25e539618f5a21bc1586aeb5ba5b67ae",
       "componentType": "board.stm32f429zi-nucleo144-v1",
       "componentVersion": 1,
       "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "board.stm32f429zi-nucleo144-v1-state-v1",
         "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
       },
@@ -134272,13 +134272,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "a73a8b329ff1765f72b912ec5e5b059254b2e2e82377cf611a893a42b1feca1d",
+      "behaviorContractSha256": "ea21348107fc1fce9d5c98bc4c5a0e7622e6dcfad0972f452db82a42b035d9a7",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "led.basic-v1-state-v1",
         "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
       },
@@ -134347,13 +134347,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "b3cde5d95a580cd91541d07e385cd5802ddec774c299bc97ed77811a302f2f3f",
+      "behaviorContractSha256": "78c6a653bbf99be30335655f2347fc784efe4e72789c947f145027c6d57b73b9",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
         "observerId": "resistor.fixed-v1-state-v1",
         "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
       },
@@ -134415,7 +134415,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     }
   ],
-  "implementationId": "intent-mcu-model-bundle-current-x37-ledger-progress-1@47",
+  "implementationId": "intent-mcu-model-bundle-current-x37-shared-horizon-1@48",
   "implementationMembers": [
     {
       "path": "src/component-catalog.mjs",
@@ -134659,20 +134659,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "fd140146e4687766d2f9f7209bb872c3af229ff78097ccf9c6196fec070bd0d4"
+      "sha256": "b317032a290908234f6a87666bb661bd06fc2f0708da76de5e883427511c61e2"
     }
   ],
-  "implementationSha256": "a183c9b22443c6ffb4efef6d0f1b13f2ab720240ce164bdfe473a8bcfd088240",
+  "implementationSha256": "d6167d0fdae7e8543e347713e6b3a2f4d5e518f29cb94820b465afc40f571421",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
-    "baselineClosureDisposition": "public rc.129 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, real worker, run, image build or deployment",
+    "baselineClosureDisposition": "public rc.129 and every earlier identity remain immutable and migration-only; this private source identity carries no public or release authority",
     "compatibility": "strict-versioned-data-only migration; runtime-and-verdict-authority-cleared",
     "presentationDisposition": "no UI or public release is added; the source candidate remains private pending bounded native evidence",
     "priorManifestSha256": "e59dfa176b412531dd65624d1319edd9fc8c3f0f3aabd1054a645b6e43210d67",
     "priorVersion": "2.0.0-x37-step-hotpath.1-current",
-    "semanticDisposition": "component, firmware and electrical semantics remain unchanged; private X37 stepping gains bounded pin observation and no executable authority"
+    "semanticDisposition": "component and electrical semantics remain unchanged; private X37 scheduling advances both participants against abstract exact-rational model-time horizons and the finite AVR request and confirm holds are 64 samples"
   },
-  "manifestSha256": "c01e6470aaad5bbf0182cfbf0129d550ab697419a9ba26e3ffbd2e376fc01c68",
+  "manifestSha256": "2a20219b162eb41a0353b5df4bb074f688fe69644d2eec1cb517d5408dd55c6b",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",
@@ -134680,5 +134680,5 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "renode@1.17.0"
   ],
   "schema": "intent-mcu-model-library-manifest@2",
-  "version": "2.0.0-x37-ledger-progress.1-current"
+  "version": "2.0.0-x37-shared-horizon.1-current"
 });

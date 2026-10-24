@@ -17,36 +17,45 @@ const observation = (participantId, watermark, localCycle, mode, level) => ({
 });
 
 class RealisticApiDouble {
-  constructor(participantId, batches) {
+  constructor(participantId, scheduled, { instructionMultiplier = 1 } = {}) {
     this.participantId = participantId; this.cycle = 0; this.pending = [observation(participantId, 1, 0, 'RELEASE')];
-    this.batches = batches; this.batch = 0; this.received = []; this.applied = new Set(); this.advanceCalls = 0;
+    this.scheduled = scheduled; this.received = []; this.applied = new Set(); this.advanceCalls = 0;
+    this.instructions = 0; this.instructionMultiplier = instructionMultiplier;
   }
   currentCycle() { return this.cycle; }
   observeFirmwareGpio() { const values = this.pending; this.pending = []; return values; }
   advanceToLocalCycle(targetCycle) {
-    assert(targetCycle >= this.cycle, 'no runtime rewind'); this.cycle = targetCycle; this.advanceCalls += 1;
+    assert(targetCycle >= this.cycle, 'no runtime rewind');
+    this.instructions += (targetCycle - this.cycle) * this.instructionMultiplier;
+    if (this.instructions > 1_000_000) throw Object.assign(new Error('X37_SEAM_INSTRUCTION_CAP'),
+      { code: 'X37_SEAM_INSTRUCTION_CAP' });
+    this.cycle = targetCycle; this.advanceCalls += 1;
     for (const record of this.received) this.applied.add(record);
-    const next = this.batches[this.batch];
-    if (typeof next === 'function') this.pending.push(...next(this));
-    this.batch += 1; return { reachedCycle: this.cycle };
+    while (this.scheduled.length && this.scheduled[0].cycle <= this.cycle
+        && this.applied.size >= (this.scheduled[0].minimumApplied ?? 0)) {
+      const next = this.scheduled.shift();
+      this.pending.push(observation(this.participantId, next.watermark, next.cycle, next.mode, next.level));
+    }
+    return { reachedCycle: this.cycle };
   }
   deliverResolvedLevel(level, source) {
     const record = { level, source, sequence: this.received.length + 1 };
     this.received.push(record); return { queued: [record] };
   }
-  lifecycle() { return { advanceCalls: this.advanceCalls, totalInstructions: this.advanceCalls, retired: false, disposed: false }; }
+  lifecycle() { return { advanceCalls: this.advanceCalls, totalInstructions: this.instructions, retired: false, disposed: false }; }
 }
 
 function fixture({ disconnect = false, conflict = false, earlyResponse = false, missingRelease = false } = {}) {
   const avr = new RealisticApiDouble('avr', [
-    () => [observation('avr', 2, 10, 'DRIVE', false), observation('avr', 3, 20, 'RELEASE')],
-    () => [observation('avr', 4, 50, 'DRIVE', false), observation('avr', 5, 60, 'RELEASE')],
+    { watermark: 2, cycle: 10, mode: 'DRIVE', level: false },
+    { watermark: 3, cycle: 20, mode: 'RELEASE' },
+    { watermark: 4, cycle: 50, mode: 'DRIVE', level: false, minimumApplied: 3 },
+    { watermark: 5, cycle: 60, mode: 'RELEASE' },
   ]);
   const rp = new RealisticApiDouble('rp', [
-    () => earlyResponse || conflict ? [observation('rp', 2, 15, 'DRIVE', conflict)] : [],
-    () => [],
-    () => [observation('rp', 2, 30, 'DRIVE', false),
-      ...(missingRelease ? [] : [observation('rp', 3, 40, 'RELEASE')])],
+    ...(earlyResponse || conflict ? [{ watermark: 2, cycle: 15, mode: 'DRIVE', level: conflict }] : []),
+    ...(!earlyResponse && !conflict ? [{ watermark: 2, cycle: 30, mode: 'DRIVE', level: false, minimumApplied: 3 },
+      ...(missingRelease ? [] : [{ watermark: 3, cycle: 40, mode: 'RELEASE' }])] : []),
   ]);
   const net = createObservedDigitalNetResolver({ netId: 'shared.digital.0',
     driverParticipantIds: ['avr', 'rp'], idleLevel: disconnect ? null : true });
@@ -80,28 +89,72 @@ test('orchestration source uses locale-independent ASCII participant ordering', 
 
 test('disconnect conflict missing release and response-before-input fail closed', () => {
   assert.throws(() => runX37TurnaroundOrchestration(fixture({ disconnect: true })), { code: 'X37_TURNAROUND_HIGH_Z' });
-  assert.throws(() => runX37TurnaroundOrchestration(fixture({ conflict: true })), { code: 'X37_TURNAROUND_CONFLICT' });
-  assert.throws(() => runX37TurnaroundOrchestration(fixture({ missingRelease: true })), { code: 'X37_EXPECTED_FIRMWARE_OBSERVATION_MISSING' });
-  assert.throws(() => runX37TurnaroundOrchestration(fixture({ earlyResponse: true })), { code: 'X37_TURNAROUND_RESPONSE_BEFORE_INPUT' });
+  assert.throws(() => runX37TurnaroundOrchestration(fixture({ conflict: true })), { code: 'X37_SEAM_NET_INPUT_INVALID' });
+  assert.throws(() => runX37TurnaroundOrchestration(fixture({ missingRelease: true })), { code: 'X37_SEAM_INSTRUCTION_CAP' });
+  assert.throws(() => runX37TurnaroundOrchestration(fixture({ earlyResponse: true })), { code: 'X37_SEAM_NET_INPUT_INVALID' });
 });
 
 test('adaptive bounded advances cross a startup longer than 16384 cycles without raising call cap', () => {
   const value = fixture();
-  value.seams.avr.batches = [() => [], () => [], () => [], () => [], () => [],
-    () => [observation('avr', 2, 20_000, 'DRIVE', false), observation('avr', 3, 21_000, 'RELEASE')],
-    () => [observation('avr', 4, 50_000, 'DRIVE', false), observation('avr', 5, 51_000, 'RELEASE')]];
-  value.seams.rp.batches = [() => [], () => [], () => [],
-    () => [observation('rp', 2, 40_000, 'DRIVE', false), observation('rp', 3, 41_000, 'RELEASE')]];
+  value.seams.avr.scheduled = [{ watermark: 2, cycle: 20_000, mode: 'DRIVE', level: false },
+    { watermark: 3, cycle: 21_000, mode: 'RELEASE' },
+    { watermark: 4, cycle: 50_000, mode: 'DRIVE', level: false, minimumApplied: 3 },
+    { watermark: 5, cycle: 51_000, mode: 'RELEASE' }];
+  value.seams.rp.scheduled = [{ watermark: 2, cycle: 40_000, mode: 'DRIVE', level: false, minimumApplied: 3 },
+    { watermark: 3, cycle: 41_000, mode: 'RELEASE' }];
   value.inputApplied = { avr: () => true, rp: () => true };
   assert.equal(runX37TurnaroundOrchestration(value).acceptance.accepted, true);
 });
 
 test('missing output preserves partial lifecycle and budget evidence', () => {
-  const value = fixture(); value.seams.avr.batches = Array.from({ length: 32 }, () => () => []);
+  const value = fixture(); value.seams.avr.scheduled = [];
   assert.throws(() => runX37TurnaroundOrchestration(value), (error) => {
     assert(['X37_SEAM_INSTRUCTION_CAP', 'X37_SEAM_ADVANCE_CALL_CAP',
-      'X37_EXPECTED_FIRMWARE_OBSERVATION_MISSING'].includes(error.code));
+      'X37_EXPECTED_FIRMWARE_OBSERVATION_MISSING',
+      'X37_TURNAROUND_RESPONSE_BEFORE_INPUT'].includes(error.code));
     assert.equal(error.x37Partial.evidence.length, 2);
     assert(error.x37Partial.seamLifecycle.avr.advanceCalls > 0); return true;
   });
+});
+
+test('shared horizons advance the waiting peer before the producer release', () => {
+  const value = fixture();
+  const result = runX37TurnaroundOrchestration({ ...value, advanceWindow: 4 });
+  assert.equal(result.acceptance.accepted, true);
+  const requestRelease = result.evidence.find(({ observation }) => observation.participantId === 'avr'
+    && observation.localCycle === 20);
+  assert(requestRelease);
+  assert(value.seams.rp.currentCycle() >= 20);
+  assert(value.seams.rp.received.some(({ source }) => source.localCycle === 10));
+});
+
+test('instruction-cap risk fails closed even when mapped-time chronology is fair', () => {
+  const value = fixture();
+  value.seams.rp = new RealisticApiDouble('rp', [
+    { watermark: 2, cycle: 900_000, mode: 'DRIVE', level: false, minimumApplied: 3 },
+    { watermark: 3, cycle: 900_010, mode: 'RELEASE' },
+  ], { instructionMultiplier: 100_000 });
+  value.inputApplied.rp = (record) => value.seams.rp.applied.has(record.delivery.queued[0]);
+  assert.throws(() => runX37TurnaroundOrchestration(value), { code: 'X37_SEAM_INSTRUCTION_CAP' });
+});
+
+test('full protocol fixture remains causal at finite wait and hold boundaries', () => {
+  const value = fixture();
+  value.seams.avr.scheduled = [
+    { watermark: 2, cycle: 100, mode: 'DRIVE', level: false },
+    { watermark: 3, cycle: 4_196, mode: 'RELEASE' },
+    { watermark: 4, cycle: 16_384, mode: 'DRIVE', level: false, minimumApplied: 3 },
+    { watermark: 5, cycle: 20_480, mode: 'RELEASE' },
+  ];
+  value.seams.rp.scheduled = [
+    { watermark: 2, cycle: 8_192, mode: 'DRIVE', level: false, minimumApplied: 3 },
+    { watermark: 3, cycle: 12_288, mode: 'RELEASE' },
+  ];
+  const result = runX37TurnaroundOrchestration({ ...value, advanceWindow: 64 });
+  assert.equal(result.acceptance.accepted, true);
+  assert.deepEqual(result.trace.slice(1).map(({ mappedTick }) => mappedTick),
+    [100, 4_196, 8_192, 12_288, 16_384, 20_480]);
+  assert.equal(4_196 - 100, 4_096);
+  assert.equal(12_288 - 8_192, 4_096);
+  assert.equal(20_480 - 16_384, 4_096);
 });

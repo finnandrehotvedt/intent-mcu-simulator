@@ -27,6 +27,14 @@ export function runX37TurnaroundOrchestration({ seams, schedulerContract, net,
     pending.sort(order);
   };
   const collectBoth = () => { collect('avr'); collect('rp'); };
+  const mappedCycle = (participantId) => {
+    const clock = clocks[participantId];
+    const scaled = seams[participantId].currentCycle() * clock.denominator;
+    if (!Number.isSafeInteger(scaled) || scaled % clock.numerator !== 0) {
+      fail('X37_CLOCK_INEXACT');
+    }
+    return scaled / clock.numerator;
+  };
   const processOne = () => {
     const observation = pending.shift();
     const resolved = net.apply([observation]);
@@ -52,6 +60,17 @@ export function runX37TurnaroundOrchestration({ seams, schedulerContract, net,
     const record = { participantId, source: item.observation, level: decision.level,
       targetCycle, advance, delivery };
     deliveries.push(record); return record;
+  };
+  const advanceToHorizon = (participantId, horizon, phase) => {
+    const seam = seams[participantId];
+    const boundary = targetCycleAtOrAfterMappedTick(horizon, clocks[participantId]);
+    if (boundary.cycle <= seam.currentCycle()) return null;
+    onProgress({ kind: 'advance-begin', phase, participantId, cycle: seam.currentCycle(),
+      targetCycle: boundary.cycle, mappedHorizon: horizon, lifecycle: seam.lifecycle() });
+    const advance = seam.advanceToLocalCycle(boundary.cycle); advanceCalls += 1; collect(participantId);
+    onProgress({ kind: 'advance-end', phase, participantId, cycle: seam.currentCycle(),
+      targetCycle: boundary.cycle, mappedHorizon: horizon, lifecycle: seam.lifecycle() });
+    return advance;
   };
   try {
   collectBoth();
@@ -84,12 +103,18 @@ export function runX37TurnaroundOrchestration({ seams, schedulerContract, net,
         item = processOne(); break;
       }
       const adaptiveWindow = Math.min(advanceWindow * (2 ** Math.min(attempt, 8)), 131_072);
-      onProgress({ kind: 'advance-begin', phase, participantId: actor, cycle: seams[actor].currentCycle(),
-        targetCycle: seams[actor].currentCycle() + adaptiveWindow, lifecycle: seams[actor].lifecycle() });
-      seams[actor].advanceToLocalCycle(seams[actor].currentCycle() + adaptiveWindow);
-      advanceCalls += 1; collect(actor);
-      onProgress({ kind: 'advance-end', phase, participantId: actor, cycle: seams[actor].currentCycle(),
-        lifecycle: seams[actor].lifecycle() });
+      const actorClock = clocks[actor];
+      const mappedWindow = adaptiveWindow * actorClock.denominator / actorClock.numerator;
+      if (!Number.isSafeInteger(mappedWindow)) fail('X37_CLOCK_INEXACT');
+      const horizon = Math.max(mappedCycle('avr'), mappedCycle('rp')) + mappedWindow;
+
+      // The participant expected to produce the next transition advances first.
+      // If it produces that transition, delivery happens before the peer may
+      // cross the same mapped-time horizon. Otherwise the peer catches up to
+      // the identical horizon, preventing actor-exclusive starvation.
+      advanceToHorizon(actor, horizon, phase);
+      if (pending.length) continue;
+      advanceToHorizon(target, horizon, phase);
     }
     if (!item) fail('X37_EXPECTED_FIRMWARE_OBSERVATION_MISSING');
     if ((phase === 'ack' || phase === 'confirm')

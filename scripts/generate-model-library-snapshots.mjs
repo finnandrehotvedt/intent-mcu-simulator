@@ -289,16 +289,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x37-ledger-progress.1-current',
-  'intent-mcu-model-bundle-current-x37-ledger-progress-1@47',
+  '2.0.0-x37-shared-horizon.1-current',
+  'intent-mcu-model-bundle-current-x37-shared-horizon-1@48',
   currentImplementation,
   {
     priorVersion: PRE_X37_LEDGER_PROGRESS_CURRENT_MODEL_LIBRARY_MANIFEST.version,
     priorManifestSha256: PRE_X37_LEDGER_PROGRESS_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component, firmware and electrical semantics remain unchanged; private X37 stepping gains bounded pin observation and no executable authority',
+    semanticDisposition: 'component and electrical semantics remain unchanged; private X37 scheduling advances both participants against abstract exact-rational model-time horizons and the finite AVR request and confirm holds are 64 samples',
     presentationDisposition: 'no UI or public release is added; the source candidate remains private pending bounded native evidence',
-    baselineClosureDisposition: 'public rc.129 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, real worker, run, image build or deployment',
+    baselineClosureDisposition: 'public rc.129 and every earlier identity remain immutable and migration-only; this private source identity carries no public or release authority',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
