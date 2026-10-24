@@ -3,6 +3,7 @@
 
 import { installX81Assessment } from './x81-assessment-controller.mjs';
 import { X81_RETAINED_ASSESSMENT } from '../src/x81-retained-assessment.mjs';
+import { installX37WorkbenchCandidate } from './x37-workbench-candidate-controller.mjs';
 
 import {
   CATALOG_CATEGORIES,
@@ -15352,3 +15353,4 @@ installX81Assessment({
   retainedEvidence: X81_RETAINED_ASSESSMENT?.sourceEvidence ?? null,
   retainedLabel: X81_RETAINED_ASSESSMENT?.label ?? 'Reviewed retained report',
 });
+installX37WorkbenchCandidate();

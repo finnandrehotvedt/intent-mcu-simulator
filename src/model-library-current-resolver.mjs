@@ -32,7 +32,7 @@ const exactInput = (value, keys) => value && typeof value === 'object' && !Array
 // Current behavior is separately owned so future current changes cannot mutate
 // the retained pre-X56 implementation by alias or shared constant.
 export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
-  id: 'intent-mcu-model-bundle-current-x37-mixed-retained-1@51',
+  id: 'intent-mcu-model-bundle-current-x37-workbench-candidate-1@52',
   manifestVersion: CURRENT_MODEL_LIBRARY_MANIFEST.version,
   definition(profile, componentType) {
     const entry = entries.get(`${profile}\u0000${componentType}`);
@@ -179,6 +179,13 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
     }
     return failure('MODEL_LIBRARY_PRODUCTION_UNAVAILABLE', [componentType]);
   },
+});
+
+export const PRE_X37_WORKBENCH_CANDIDATE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-x37-mixed-retained-1@51',
+  manifestVersion: '2.0.0-x37-mixed-retained.1-current',
+  migrationOnly: true,
 });
 
 export const PRE_X37_LEDGER_PROGRESS_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({

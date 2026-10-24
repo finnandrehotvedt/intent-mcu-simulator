@@ -155,6 +155,18 @@
       <button id="quick-stop" type="button" disabled title="Stop is unavailable for the AVR browser runtime; use Pause or Reset.">Stop unavailable</button>
     </nav>
 
+    <section id="x37-workbench-candidate" class="x37-candidate panel" aria-labelledby="x37-candidate-title" hidden>
+      <header class="x37-candidate-header"><div><p class="eyebrow">PRIVATE CANDIDATE · DEFAULT DISARMED</p><h2 id="x37-candidate-title">Two-controller shared-wire lesson</h2><p id="x37-candidate-project-name">Two-controller turnaround</p></div><span class="controller-badge">X37 planned</span></header>
+      <p class="truth">One ideal Boolean open-drain net with an explicit pull-up. Mapped ticks express deterministic model ordering—not voltage, propagation delay, wall time or physical synchronisation.</p>
+      <div class="x37-candidate-grid">
+        <section class="x37-candidate-sources" aria-label="Participant source files"><div class="x37-source-tabs" role="tablist" aria-label="Participant source"><button id="x37-source-avr" type="button" role="tab" aria-selected="true">AVR · main.ino</button><button id="x37-source-rp" type="button" role="tab" aria-selected="false">RP2040 · main.c</button></div><label for="x37-candidate-source">Authored source</label><textarea id="x37-candidate-source" rows="12" spellcheck="false"></textarea></section>
+        <section class="x37-candidate-canvas" aria-label="Named shared-wire topology"><article><strong>AVR</strong><span>Output D13</span><span>Input D2</span></article><div class="x37-shared-wire"><span>shared.digital.0</span><b>Ideal pull-up</b></div><article><strong>RP2040</strong><span>Output GPIO0</span><span>Input GPIO1</span></article></section>
+      </div>
+      <nav class="x37-candidate-controls" aria-label="Coordinated candidate controls"><button id="x37-candidate-build" type="button" disabled>Build both</button><button id="x37-candidate-run" type="button" disabled>Run</button><button id="x37-candidate-pause" type="button" disabled>Pause</button><button id="x37-candidate-stop" type="button" disabled>Stop</button><button id="x37-candidate-reset" type="button" disabled>Reset</button><button id="x37-candidate-download" type="button">Download copy</button><button id="x37-candidate-open" type="button">Open project</button><input id="x37-candidate-open-input" class="sr-only" type="file" accept="application/json,.json"></nav>
+      <p id="x37-candidate-status" class="truth" role="status"></p>
+      <section class="x37-candidate-trace" aria-labelledby="x37-candidate-trace-title"><h3 id="x37-candidate-trace-title">Combined shared-net trace</h3><div class="x37-trace-head"><span>Participant</span><span>Named pin</span><span>Local cycle</span><span>Mapped tick</span><span>State</span></div><p>No current trace. Open and source edits restore authored data only; a fresh supported coordinated Build would be required.</p></section>
+    </section>
+
     <details id="project-navigation" class="project-navigation panel">
       <summary>Find in this project</summary>
       <label for="project-navigation-query">Component, named pin, net, file, source line or saved test</label>
