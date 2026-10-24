@@ -171,11 +171,15 @@ test('full protocol fixture remains causal at finite wait and hold boundaries', 
     { watermark: 2, cycle: 8_192, mode: 'DRIVE', level: false, minimumApplied: 3 },
     { watermark: 3, cycle: 12_288, mode: 'RELEASE' },
   ];
-  const result = runX37TurnaroundOrchestration({ ...value, advanceWindow: 64 });
+  const result = runX37TurnaroundOrchestration({ ...value, advanceWindow: 512 });
   assert.equal(result.acceptance.accepted, true);
   assert.deepEqual(result.trace.slice(1).map(({ mappedTick }) => mappedTick),
     [100, 4_196, 8_192, 12_288, 16_384, 20_480]);
   assert.equal(4_196 - 100, 4_096);
   assert.equal(12_288 - 8_192, 4_096);
   assert.equal(20_480 - 16_384, 4_096);
+  assert(value.seams.avr.advanceCalls <= 32,
+    `AVR call budget exceeded: ${value.seams.avr.advanceCalls}`);
+  assert(value.seams.rp.advanceCalls <= 32,
+    `RP call budget exceeded: ${value.seams.rp.advanceCalls}`);
 });
