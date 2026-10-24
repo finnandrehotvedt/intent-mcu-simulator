@@ -1,4 +1,23 @@
-# Intent MCU Simulator 1.1.0-rc.129
+# Intent MCU Simulator 1.1.0-rc.130
+
+## A simpler first project
+
+Rc.130 opens a new project as an empty workbench with one primary action:
+`Legg til kontroller`. It no longer installs Blink before the learner chooses
+it. Examples and Scratch remain available, and the exact LED starter exposes
+`Kjør LED-eksempelet`; other authored projects keep `Kjør prosjektet`.
+Canvas navigation is grouped under the compact `Visning` disclosure.
+
+Existing projects remain local and are not overwritten. This release reuses
+the already accepted native compiler, worker, GPIO and visible-D13 evidence;
+it performs no new firmware Build, worker creation, Run or native claim. The
+included X37 contract work remains planned and is not presented as a released
+advanced capability. Exact public rc.129 and its private aggregate counter
+volume are the app-only rollback basis.
+
+---
+
+## 1.1.0-rc.129
 
 ## Saved-project compatibility for published model locks
 

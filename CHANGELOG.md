@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.130 — 2026-10-24
+
+- Makes a new project begin with an empty workbench and one clear
+  `Legg til kontroller` action instead of silently installing Blink.
+- Gives the exact LED starter a direct `Kjør LED-eksempelet` action while
+  retaining `Kjør prosjektet` for other authored projects.
+- Moves canvas navigation under the compact `Visning` disclosure and keeps
+  Examples and Scratch available without changing saved projects.
+- Reuses the accepted compiler-to-worker-to-D13 evidence; this release adds no
+  new firmware Build, worker, Run or native claim. X37 remains planned.
+- Retains exact public rc.129 and its private aggregate counter volume as the
+  app-only rollback basis.
+
 ## 1.1.0-rc.129 — 2026-10-24
 
 - Restores strict data-only Open and migration for exact project files saved

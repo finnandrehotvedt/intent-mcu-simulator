@@ -11,23 +11,23 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.128",
-    "current": "1.1.0-rc.129"
+    "previous": "1.1.0-rc.129",
+    "current": "1.1.0-rc.130"
   },
   "changes": [
     {
-      "id": "X88",
+      "id": "X59",
       "classification": "changed",
       "capabilities": [
-        "intent-mcu-release-changes@1"
+        "intent-mcu-shared-workbench-view@1"
       ],
       "contracts": [
-        "x88-machine-readable-release-delta-v1"
+        "x59-four-profile-simple-advanced-view-v1"
       ],
-      "summary": "Records rc.128 to rc.129 as an exact saved-project compatibility release: published rc.124 and rc.128 model locks reopen only for data migration, while unknown locks remain atomically rejected and no execution authority is restored."
+      "summary": "Makes the empty workbench the ordinary start, provides one clear controller action and groups canvas navigation under Visning without overwriting existing local projects or adding execution authority."
     }
   ],
-  "migrationRequired": true,
+  "migrationRequired": false,
   "breakingChangesPresent": false,
   "authority": {
     "apply": false,
