@@ -17,6 +17,7 @@ test('real producer worker uses ordinary builders, runtimes, identity seams and 
     'new RuntimeKernel', 'Rp2040ExperimentalRuntime.create', 'createAvrX37RuntimeSeam',
     'createRp2040X37RuntimeSeam', 'createObservedDigitalNetResolver',
     'runX37TurnaroundOrchestration', 'persistX37CompilerArtifact',
+    "config.mode === 'avr-compile-rp-retained'", 'loadX37RetainedArtifact',
     'constructX37RuntimePair', 'ensureX37WorkerEnvironment', 'verifiedCleanup', 'idleLevel: true',
     'avrSeam.retire()', 'rpSeam.retire()']) {
     assert(source.includes(expected), expected);

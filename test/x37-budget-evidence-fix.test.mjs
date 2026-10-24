@@ -6,7 +6,9 @@ import test from 'node:test';
 
 import { persistX37CompilerArtifact } from '../src/x37-producer-artifact-evidence.mjs';
 import { createX37PrivateRuntimeJournal } from '../src/x37-private-runtime-journal.mjs';
-import { loadX37RetainedArtifacts } from '../src/x37-retained-artifact-loader.mjs';
+import {
+  loadX37RetainedArtifact, loadX37RetainedArtifacts,
+} from '../src/x37-retained-artifact-loader.mjs';
 import { createHash } from 'node:crypto';
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
@@ -38,6 +40,9 @@ test('retained artifact continuation accepts only exact private evidence identit
       expected: { avr: identity, rp: identity }, expectedBytes: { avr: avr.length, rp: rp.length },
       expectedSha256: { avr: sha256(avr), rp: sha256(rp) } });
     assert.equal(loaded.avr.hexSha256, sha256(avr)); assert.equal(loaded.rp.uf2.sha256, sha256(rp));
+    const rpOnly = await loadX37RetainedArtifact({ evidenceDirectory: directory,
+      participantId: 'rp', expected: identity, expectedBytes: rp.length, expectedSha256: sha256(rp) });
+    assert.equal(rpOnly.uf2.sha256, sha256(rp));
     await assert.rejects(loadX37RetainedArtifacts({ evidenceDirectory: directory,
       expected: { avr: { ...identity, sourceSha256: '5'.repeat(64) }, rp: identity },
       expectedBytes: { avr: avr.length, rp: rp.length },

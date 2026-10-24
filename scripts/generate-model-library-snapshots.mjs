@@ -289,14 +289,14 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-x37-shared-horizon.1-current',
-  'intent-mcu-model-bundle-current-x37-shared-horizon-1@48',
+  '2.0.0-x37-short-pulse-hybrid.1-current',
+  'intent-mcu-model-bundle-current-x37-short-pulse-hybrid-1@49',
   currentImplementation,
   {
     priorVersion: PRE_X37_LEDGER_PROGRESS_CURRENT_MODEL_LIBRARY_MANIFEST.version,
     priorManifestSha256: PRE_X37_LEDGER_PROGRESS_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component and electrical semantics remain unchanged; private X37 scheduling advances both participants against abstract exact-rational model-time horizons and the finite AVR request and confirm holds are 64 samples',
+    semanticDisposition: 'component and electrical semantics remain unchanged; private X37 scheduling advances both participants against abstract exact-rational model-time horizons, finite AVR request and confirm holds are 64 samples, and the charged path compiles AVR while loading only exact retained RP evidence',
     presentationDisposition: 'no UI or public release is added; the source candidate remains private pending bounded native evidence',
     baselineClosureDisposition: 'public rc.129 and every earlier identity remain immutable and migration-only; this private source identity carries no public or release authority',
   },

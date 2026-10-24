@@ -25,7 +25,9 @@ import { persistX37CompilerArtifact } from '../src/x37-producer-artifact-evidenc
 import { constructX37RuntimePair } from '../src/x37-producer-runtime-lifecycle.mjs';
 import { ensureX37WorkerEnvironment } from '../src/x37-worker-environment.mjs';
 import { createX37PrivateRuntimeJournal } from '../src/x37-private-runtime-journal.mjs';
-import { loadX37RetainedArtifacts } from '../src/x37-retained-artifact-loader.mjs';
+import {
+  loadX37RetainedArtifact, loadX37RetainedArtifacts,
+} from '../src/x37-retained-artifact-loader.mjs';
 import { resolveX37ProducerArtifacts } from '../src/x37-producer-artifact-source.mjs';
 
 const workerEnvironment = await ensureX37WorkerEnvironment();
@@ -41,7 +43,8 @@ const exact = (value, keys) => value && typeof value === 'object' && !Array.isAr
 
 function validateConfiguration(value) {
   if (!exact(value, ['mode', 'avrLockPath', 'rp2040LockPath', 'avrSourcePath', 'rp2040SourcePath',
-    'evidenceDirectory', 'retainedEvidenceDirectory', 'abortBuffer']) || !['compile', 'retained'].includes(value.mode)
+    'evidenceDirectory', 'retainedEvidenceDirectory', 'abortBuffer'])
+      || !['compile', 'retained', 'avr-compile-rp-retained'].includes(value.mode)
       || !(value.abortBuffer instanceof SharedArrayBuffer)
       || Object.entries(value).some(([key, item]) => key !== 'mode'
         && key !== 'abortBuffer' && (typeof item !== 'string' || !item.startsWith('/')))) {
@@ -96,7 +99,16 @@ async function main() {
     imageId: avrLock.imageId, toolchainManifestSha256: avrLock.toolchainManifestSha256 };
   const rpIdentity = { requestSha256: sha256(JSON.stringify(rpRequest)), sourceSha256: sha256(rpSource),
     imageId: rpLock.imageId, toolchainManifestSha256: rpLock.toolchainManifestSha256 };
-  const selected = await resolveX37ProducerArtifacts({ mode: config.mode,
+  let selected;
+  if (config.mode === 'avr-compile-rp-retained') {
+    const avr = await compileOne('avr', avrLock, avrRequest, config.evidenceDirectory);
+    const rp = await loadX37RetainedArtifact({ evidenceDirectory: config.retainedEvidenceDirectory,
+      participantId: 'rp', expected: rpIdentity, expectedBytes: 1024,
+      expectedSha256: '05cdf8cc232a72cb1181bded3c65a60b41e419cc6eb396fc1b89f39aea21b2dc' });
+    activity.buildRecords.push({ participantId: 'rp', ...rpIdentity, status: 'retained-verified',
+      artifactSha256: rp.uf2.sha256 });
+    selected = { mode: config.mode, artifacts: { avr, rp }, compileCalls: 1 };
+  } else selected = await resolveX37ProducerArtifacts({ mode: config.mode,
     compile: async () => ({
       avr: await compileOne('avr', avrLock, avrRequest, config.evidenceDirectory),
       rp: await compileOne('rp', rpLock, rpRequest, config.evidenceDirectory),
