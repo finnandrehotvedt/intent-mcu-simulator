@@ -15,8 +15,9 @@ retires prior authority. Reference clients receive one-time secrets through
 standard input, and lost or oversized results reconcile without replay.
 
 This metadata increment performs no firmware Build, worker creation or native
-Run. Exact public rc.133 remains the app-only rollback basis until Desktop
-independently approves merge and deployment.
+Run. Exact rc.133 is the prior app-only rollback basis. The owning deployment
+checkpoint, rather than this immutable release copy, records which version is
+currently public.
 
 ---
 

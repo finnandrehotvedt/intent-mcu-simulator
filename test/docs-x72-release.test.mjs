@@ -73,3 +73,27 @@ test('docs preserve canonical runtime/model boundaries and explain the Build pri
   assert.match(llms, /typed authored facts/u);
   assert.match(llms, /literal source-file difference/u);
 });
+
+test('release copy reports its own version without embedding deployment state', async () => {
+  const [llms, support, apiRelease, server, releaseNotes, changelog] = await Promise.all([
+    read('../staging/llms.txt'), read('../staging/support.html'),
+    read('../docs/API-05-RELEASE-PREP.md'), read('../staging/server.mjs'),
+    read('../RELEASE-NOTES.md'), read('../CHANGELOG.md'),
+  ]);
+  assert.match(llms, new RegExp(`Current release: ${RELEASE_VERSION.replaceAll('.', '\\.')}`, 'u'));
+  assert.doesNotMatch(llms, /public deployment remains|until approved/iu);
+  assert.match(support, new RegExp(`Intent MCU Simulator ${RELEASE_VERSION.replaceAll('.', '\\.')}`, 'u'));
+  assert.doesNotMatch(support, /release candidate/iu);
+  assert.match(apiRelease, /deployment may enable the\s+route, but an unpaired request has no project access/iu);
+  assert.match(apiRelease, /Read-only scopes are the default/iu);
+  assert.match(apiRelease, /AVR edit scope needs\s+a separate explicit checkbox/iu);
+  assert.match(apiRelease, /Deployment status is deliberately not embedded/iu);
+  assert.match(server, /ENABLE_BROWSER_SESSION_API === '1'/u);
+  assert.doesNotMatch(apiRelease, /public release remains rc\./iu);
+  const currentNotes = releaseNotes.split('\n---\n', 1)[0];
+  const currentChanges = changelog.split('\n## 1.1.0-rc.133', 1)[0];
+  for (const currentCopy of [currentNotes, currentChanges]) {
+    assert.match(currentCopy, /deployment\s+checkpoint/iu);
+    assert.doesNotMatch(currentCopy, /public rc\.133|until Desktop|remains rc\.133/iu);
+  }
+});

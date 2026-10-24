@@ -12,7 +12,8 @@ All notable public source changes are recorded here.
 - Bounds pairing, scopes, leases, queues, request IDs, rates, payloads and
   reconciliation while revoking authority on lifecycle replacement.
 - Adds no Build, Run, compile, upload, device, worker or native authority and
-  retains exact public rc.133 as the app-only rollback basis.
+  records exact rc.133 as the prior app-only rollback basis; live deployment
+  state remains in the owning deployment checkpoint.
 
 ## 1.1.0-rc.133 — 2026-10-24
 
