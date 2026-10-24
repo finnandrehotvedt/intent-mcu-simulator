@@ -1,4 +1,28 @@
-# Intent MCU Simulator 1.1.0-rc.132
+# Intent MCU Simulator 1.1.0-rc.133
+
+## Clearer ordinary workbench actions
+
+Rc.133 combines the reviewed ordinary UX improvements into one release. Parts,
+pin targets, examples and project-file actions use clearer beginner-facing
+language and placement while advanced tools remain available under their
+existing disclosures. Valid passive pin targets stay visible, source editing
+retains focus, caret and draft state, and profile recovery no longer replaces
+the active workbench prematurely.
+
+For an active AVR runtime, one contextual control now shows Pause or Resume.
+The scoped accepted native journey used one compiler job and one worker and
+verified Run, Pause, Resume, Pause and Reset with exact authored, source,
+graph and artifact joins. Serial was verified as rendered DOM telemetry; no
+human-opened Instruments-panel or screenshot claim is added.
+
+This release-metadata increment performs no new firmware Build, worker or
+native Run. Public acceptance still requires Desktop's actual rc.133 reload.
+Exact public rc.132 and its persistent aggregate counter volume remain the
+app-only rollback basis.
+
+---
+
+## 1.1.0-rc.132
 
 ## Parts beside the canvas
 
