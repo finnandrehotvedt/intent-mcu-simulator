@@ -13,10 +13,14 @@ test('copyable Codex instructions are public, self-contained and secret-safe', (
   assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes(API_SESSION_PROTOCOL_URL));
   assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes(API_SESSION_CLIENT_URL));
   for (const required of ['discover before editing', 'named pins', 'atomic edit.batch', 'Undo',
-    'AVR', 'read-only', 'Build', 'Run', 'stdin', 'Never ask me to paste']) {
+    'AVR', 'read-only', 'Build', 'Run', 'hidden terminal prompt', 'Never ask me to paste']) {
     assert.ok(CODEX_PAIRING_INSTRUCTIONS.toLowerCase().includes(required.toLowerCase()), required);
   }
   assert.doesNotMatch(CODEX_PAIRING_INSTRUCTIONS, /Bearer [A-Za-z0-9_-]{20,}/);
+  assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node .\\client.mjs https://lab.teachthecompany.com/ [plan.json]'));
+  assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node ./client.mjs https://lab.teachthecompany.com/ [plan.json]'));
+  assert.doesNotMatch(CODEX_PAIRING_INSTRUCTIONS, /printf|PAIRING_SECRET=/);
+  assert.match(CODEX_PAIRING_INSTRUCTIONS, /Never auto-undo/);
 });
 
 test('build exposes versioned protocol, complete client and exact metaprompt', async () => {
@@ -29,5 +33,8 @@ test('build exposes versioned protocol, complete client and exact metaprompt', a
   assert.match(protocol, /API_STALE_REVISION/);
   assert.match(client, /pairing\.claim/);
   assert.match(client, /edit\.batch/);
+  assert.match(client, /API_PLAN_REMOVAL_NOT_ALLOWED/);
+  assert.doesNotMatch(client, /component\.remove.*before\.components/s);
+  assert.match(client, /if \(!plan\).*mode: 'read-only'/s);
   assert.equal(prompt, `${CODEX_PAIRING_INSTRUCTIONS}\n`);
 });

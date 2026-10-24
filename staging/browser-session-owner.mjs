@@ -127,15 +127,15 @@ export function installBrowserSessionOwner() {
   const nav = document.querySelector('#workbench-popup-controls'); if (!nav) return;
   nav.append(button);
   const dialog = document.createElement('dialog'); dialog.id = 'browser-session-api-dialog';
-  dialog.innerHTML = `<header><div><p class="eyebrow">PRIVATE API PREVIEW</p><h2>Connect a local Codex client</h2></div><button type="button" data-close>Close</button></header>
+  dialog.innerHTML = `<header><div><p class="eyebrow">API ACCESS</p><h2>Connect a local Codex client</h2></div><button type="button" data-close>Close</button></header>
     <div class="api-pairing-body">
       <ol class="api-pairing-steps" aria-label="Pairing workflow">
-        <li><strong>1. Copy Codex instructions</strong><span>The prompt explains the public protocol, local client and secret boundary.</span></li>
-        <li><strong>2. Create a pairing</strong><span>Read-only by default. AVR editing needs the separate checkbox.</span></li>
-        <li><strong>3. Enter the secret locally</strong><span>Never paste it into chat, a URL, a file or source control.</span></li>
+        <li><strong>Copy Codex instructions</strong><span>The prompt explains the public protocol, local client and secret boundary.</span></li>
+        <li><strong>Create a pairing</strong><span>Read-only by default. AVR editing needs the separate checkbox.</span></li>
+        <li><strong>Enter the secret locally</strong><span>Never paste it into chat, a URL, a file or source control.</span></li>
       </ol>
       <section class="api-codex-prompt" aria-labelledby="api-codex-prompt-title">
-        <div class="api-codex-prompt-heading"><div><p class="eyebrow">READY-TO-USE METAPROMPT</p><h3 id="api-codex-prompt-title">Give these instructions to Codex</h3></div><button type="button" data-copy-instructions>Copy instructions</button></div>
+        <div class="api-codex-prompt-heading"><div><p class="eyebrow">API ACCESS</p><h3 id="api-codex-prompt-title">Give these instructions to Codex</h3></div><button type="button" data-copy-instructions>Copy instructions</button></div>
         <textarea data-codex-instructions readonly spellcheck="false" aria-label="Codex pairing instructions"></textarea>
         <p class="api-resource-links"><a href="${API_SESSION_PROTOCOL_URL}">Protocol v1</a><a href="${API_SESSION_CLIENT_URL}" download>Download client.mjs</a></p>
         <p data-copy-status class="api-copy-status" role="status">The pairing secret is intentionally not included.</p>

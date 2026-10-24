@@ -58,6 +58,8 @@ const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
           links: [...dialogNode.querySelectorAll('.api-resource-links a')].map((node) => node.href),
           secret: dialogNode.querySelector('[data-secret]').value,
           copyStatus: dialogNode.querySelector('[data-copy-status]').textContent,
+          headerEyebrow: dialogNode.querySelector(':scope > header .eyebrow').textContent,
+          steps: [...dialogNode.querySelectorAll('.api-pairing-steps strong')].map((node) => node.textContent),
         };
       });
       assert.ok(metrics.pageOverflow <= 0, `${view.name} page overflow ${metrics.pageOverflow}`);
@@ -67,6 +69,8 @@ const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
       assert.equal(metrics.clipboard, metrics.prompt);
       assert.equal(metrics.secret, '');
       assert.match(metrics.copyStatus, /No pairing secret was included/);
+      assert.equal(metrics.headerEyebrow, 'API ACCESS');
+      assert.deepEqual(metrics.steps, ['Copy Codex instructions', 'Create a pairing', 'Enter the secret locally']);
       assert.deepEqual(metrics.links, [
         'https://lab.teachthecompany.com/api/session/v1/protocol.txt',
         'https://lab.teachthecompany.com/api/session/v1/client.mjs',
