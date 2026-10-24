@@ -28,9 +28,9 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 binds the rc128 saved-project compatibility release to coherent rc129 bytes', async () => {
+test('X88 binds the combined UX release to coherent rc133 bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.129');
+  assert.equal(release.version, '1.1.0-rc.133');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
@@ -38,15 +38,15 @@ test('X88 binds the rc128 saved-project compatibility release to coherent rc129 
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
   assert(registry.ids.includes('X92'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.128', current: '1.1.0-rc.129' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.132', current: '1.1.0-rc.133' });
   assert.deepEqual(value.changes, [
     {
-      id: 'X88', classification: 'changed', capabilities: ['intent-mcu-release-changes@1'],
-      contracts: ['x88-machine-readable-release-delta-v1'],
-      summary: 'Records rc.128 to rc.129 as an exact saved-project compatibility release: published rc.124 and rc.128 model locks reopen only for data migration, while unknown locks remain atomically rejected and no execution authority is restored.',
+      id: 'X59', classification: 'changed', capabilities: ['intent-mcu-shared-workbench-view@1'],
+      contracts: ['x59-four-profile-simple-advanced-view-v1'],
+      summary: 'Simplifies ordinary parts, pins, examples and file actions, preserves editor and profile recovery, and shows contextual Pause or Resume while keeping advanced tools and execution authority unchanged.',
     },
   ]);
-  assert.equal(value.migrationRequired, true);
+  assert.equal(value.migrationRequired, false);
   assert.equal(value.breakingChangesPresent, false);
   assert.deepEqual(value.authority, { apply: false, build: false, run: false, replay: false, verdict: false });
   assert.equal(value.product.source.implementation.sha256, options.implementationSha256);
@@ -106,7 +106,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.129');
+  assert.equal(discovery.identity.version, '1.1.0-rc.133');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

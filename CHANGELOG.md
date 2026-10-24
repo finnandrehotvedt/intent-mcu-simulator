@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.133 — 2026-10-24
+
+- Simplifies ordinary parts, pin, example and project-file actions while
+  retaining advanced tools under their existing disclosures.
+- Keeps valid passive pin targets visible and preserves source-editor focus,
+  caret, drafts and profile recovery through ordinary workbench updates.
+- Shows one contextual Pause or Resume action for the active AVR runtime and
+  retains exact authored bytes through Pause, Resume, Reset and reload.
+- Reuses the accepted single compiler-job and same-worker native UX evidence;
+  this metadata increment performs no new firmware Build or native Run.
+- Retains exact public rc.132 and its persistent aggregate counter volume as
+  the app-only rollback basis.
+
 ## 1.1.0-rc.132 — 2026-10-24
 
 - Keeps Parts visible beside the active canvas in Simple view across all four
