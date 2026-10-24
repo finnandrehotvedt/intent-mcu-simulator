@@ -77,6 +77,8 @@ export async function staticPreflight() {
   const manifestHash = (path) => rpManifest.files.find((value) => value.path === path)?.sha256;
   const candidateIdentityChanged = manifestHash('compiler/rp2040-build-worker.mjs') !== sha256(rpWorker)
     || manifestHash('compiler/rp2040-contract/intent_rp2040_runtime.h') !== sha256(rpHeader);
+  const turnaroundReleaseProtocol = rpHeader.includes('INTENT_SIO_GPIO_OE_CLR')
+    && rpHeader.includes('intent_gpio0_release');
   const checks = {
     avrRequest: normalizeBuildRequestValue({ schema: BUILD_REQUEST_SCHEMA, board: BOARD_PROFILE,
       files: [{ name: 'main.ino', content: avrSource }] }).board === BOARD_PROFILE,
@@ -112,16 +114,17 @@ export async function staticPreflight() {
   if (Object.values(checks).some((value) => value !== true)) blockers.push({ code: 'X37_STATIC_PREFLIGHT_FAILED' });
   if (candidateIdentityChanged) blockers.push({ code: 'X37_RP2040_COMPILER_IMAGE_REBUILD_REQUIRED',
     detail: 'candidate worker/header differ from the currently trusted manifest and image' });
+  if (!turnaroundReleaseProtocol) blockers.push({ code: 'X37_RP2040_RELEASE_PROTOCOL_REQUIRED',
+    detail: 'the accepted private image drives GPIO0 but has no bounded firmware release operation; two outputs cannot safely take turns on one shared net' });
   return {
-    result: blockers.length === 1 && blockers[0].code === 'X37_RP2040_COMPILER_IMAGE_REBUILD_REQUIRED'
-      ? 'extension-static-ready-image-rebuild-required' : blockers.length ? 'blocked-before-charge'
-        : 'ready-for-separate-producer-receipt',
+    result: blockers.length ? 'blocked-before-charge' : 'ready-for-separate-producer-receipt',
     chargeAuthorized: false, activity: { firmwareBuilds: 0, runtimeInstances: 0,
       nativeWorkers: 0, coordinatedRuns: 0, retries: 0 },
     budget: X37_PRODUCER_BUDGET, checks, blockers,
     requiredBuildBudget: { compilerImageBuilds: 1, firmwareBuilds: 2,
       coordinatedRuns: 1, retries: 0 },
     sources: { avrSha256: sha256(avrSource), rp2040RequiredSha256: sha256(rpRequiredSource) },
+    capabilities: { turnaroundReleaseProtocol },
     expectedObservations: [
       'AVR D13 firmware output reaches resolved shared net',
       'RP2040 GPIO1 firmware reads delivered level and changes GPIO0',

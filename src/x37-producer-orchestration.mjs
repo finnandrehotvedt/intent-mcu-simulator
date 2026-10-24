@@ -97,3 +97,26 @@ export async function verifiedCleanup(resources) {
   }
   return { cleaned: resources.filter(Boolean).length, verified: true };
 }
+
+export function evaluateCouplingAcceptance({ observations, deliveries }) {
+  if (!Array.isArray(observations) || observations.length < 2
+      || observations.some((value) => !Number.isSafeInteger(value?.mappedTick))
+      || observations.some((value, index) => index > 0
+        && value.mappedTick < observations[index - 1].mappedTick)) {
+    fail('X37_COUPLING_CHRONOLOGY_INVALID');
+  }
+  const expected = ['avr-to-rp', 'rp-to-avr'];
+  if (!Array.isArray(deliveries) || deliveries.length !== 2
+      || deliveries.some((value, index) => value?.direction !== expected[index]
+        || value.queued !== true || value.inputApplied !== true
+        || !Number.isSafeInteger(value.inputAppliedCycle)
+        || !Number.isSafeInteger(value.responseCycle)
+        || value.responseCycle <= value.inputAppliedCycle
+        || !Number.isSafeInteger(value.sourceMappedTick)
+        || !Number.isSafeInteger(value.responseMappedTick)
+        || value.responseMappedTick < value.sourceMappedTick)) {
+    fail('X37_COUPLING_CAUSAL_RESPONSE_MISSING');
+  }
+  return Object.freeze({ accepted: true, observations: observations.length,
+    directions: expected, autonomousSubstitutionRejected: true });
+}

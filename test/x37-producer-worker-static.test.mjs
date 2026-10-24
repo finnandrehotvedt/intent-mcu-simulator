@@ -17,7 +17,9 @@ test('real producer worker uses ordinary builders, runtimes, identity seams and 
     'new RuntimeKernel', 'Rp2040ExperimentalRuntime.create', 'createAvrX37RuntimeSeam',
     'createRp2040X37RuntimeSeam', 'createObservedDigitalNetResolver',
     'mapX37RuntimeObservation', 'createBoundedObservationFifo',
-    'resolvedDeliveryDecision', 'verifiedCleanup', 'avrSeam.retire()', 'rpSeam.retire()']) {
+    'resolvedDeliveryDecision', 'evaluateCouplingAcceptance', 'verifiedCleanup',
+    'X37_REQUIRED_DELIVERY_NOT_QUEUED', 'digital-input-applied',
+    'avrSeam.retire()', 'rpSeam.retire()']) {
     assert(source.includes(expected), expected);
   }
   assert.doesNotMatch(source, /synthetic|mock|fixtureArtifact|constantfold/iu);
