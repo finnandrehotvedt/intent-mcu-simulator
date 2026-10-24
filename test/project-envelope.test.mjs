@@ -14,6 +14,8 @@ import {
 import {
   CURRENT_MODEL_LIBRARY_LOCK, RC111_CURRENT_MODEL_LIBRARY_LOCK,
   RC112_CURRENT_MODEL_LIBRARY_LOCK, RC120_CURRENT_MODEL_LIBRARY_LOCK,
+  RC124_CURRENT_MODEL_LIBRARY_LOCK,
+  RC128_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_ALL_PROFILE_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_MODEL_COPY_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X55_SPLIT_EDITOR_CURRENT_MODEL_LIBRARY_LOCK,
@@ -481,6 +483,47 @@ test('current envelope rejects a rehashed or unknown model-library lock atomical
   const envelope = JSON.parse(canonicalProjectEnvelope(profile, project, adapters));
   envelope.modelLibrary = { ...envelope.modelLibrary, version: 'forged', manifestSha256: 'a'.repeat(64) };
   assert.equal(prepareProjectEnvelope(JSON.stringify(envelope), adapters).code, 'MODEL_LIBRARY_LOCK_UNTRUSTED');
+});
+
+test('published rc.124 project data opens migration-only while neighboring hashes remain atomic', () => {
+  const rc124Envelope = canonicalProjectEnvelope(
+    profile, project, adapters, emptyProjectBrief(), null, RC124_CURRENT_MODEL_LIBRARY_LOCK,
+  );
+  const opened = prepareProjectEnvelope(rc124Envelope, adapters);
+  assert.equal(opened.ok, true);
+  assert.deepEqual(opened.project, project);
+  assert.deepEqual(opened.modelLibrary, RC124_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(opened.report.executableAuthorityCleared, true);
+  assert.equal(opened.report.modelLibrary.migrationAvailable, true);
+
+  const migrated = migrateProjectModelLibrary(rc124Envelope, adapters);
+  assert.equal(migrated.ok, true);
+  assert.equal(migrated.originalUnchanged, rc124Envelope);
+  assert.equal(migrated.executableAuthorityCleared, true);
+  assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
+
+  const neighboring = JSON.parse(rc124Envelope);
+  neighboring.modelLibrary.manifestSha256 = `1${neighboring.modelLibrary.manifestSha256.slice(1)}`;
+  const rejected = prepareProjectEnvelope(JSON.stringify(neighboring), adapters);
+  assert.equal(rejected.code, 'MODEL_LIBRARY_LOCK_UNTRUSTED');
+  assert.deepEqual(JSON.parse(rc124Envelope).project, project);
+});
+
+test('published rc.128 project data remains openable after the compatibility-source identity advances', () => {
+  const rc128Envelope = canonicalProjectEnvelope(
+    profile, project, adapters, emptyProjectBrief(), null, RC128_CURRENT_MODEL_LIBRARY_LOCK,
+  );
+  const opened = prepareProjectEnvelope(rc128Envelope, adapters);
+  assert.equal(opened.ok, true);
+  assert.deepEqual(opened.project, project);
+  assert.deepEqual(opened.modelLibrary, RC128_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(opened.report.executableAuthorityCleared, true);
+  assert.equal(opened.report.modelLibrary.migrationAvailable, true);
+  const execution = migrateProjectModelLibrary(rc128Envelope, adapters);
+  assert.equal(execution.ok, true);
+  assert.equal(execution.originalUnchanged, rc128Envelope);
+  assert.equal(execution.executableAuthorityCleared, true);
+  assert.deepEqual(JSON.parse(execution.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
 });
 
 test('X01 brief round-trips purpose, inputs, outputs, boundaries and unevaluated acceptance IDs', () => {

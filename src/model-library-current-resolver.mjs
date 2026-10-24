@@ -187,6 +187,20 @@ export const PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = O
   migrationOnly: true,
 });
 
+export const RC124_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-pwm-led-short-routing-1@43',
+  manifestVersion: '2.0.0-pwm-led-short-routing.1-current',
+  migrationOnly: true,
+});
+
+export const RC128_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-x46-usart-rx-producer-1@45',
+  manifestVersion: '2.0.0-x46-usart-rx-producer.1-current',
+  migrationOnly: true,
+});
+
 export const RC120_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
   ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
   id: 'intent-mcu-model-bundle-current-retained-build-guard-1@41',

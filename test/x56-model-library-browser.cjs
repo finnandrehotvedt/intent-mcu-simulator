@@ -13,6 +13,20 @@ const profiles = [
   'board.esp32-c3-devmodule-v1',
   'board.stm32f429zi-nucleo144-v1',
 ];
+const rc124Lock = Object.freeze({
+  schema: 'intent-mcu-model-library-lock@2',
+  libraryId: 'intent-mcu-public-models',
+  version: '2.0.0-pwm-led-short-routing.1-current',
+  manifestSha256: '0907503c8a77e0ec7eda48079b138c23da2ba02be6f3ac2878ec1d64e64eacee',
+  implementationSha256: '31613553d024e84e3ea14cfc12ed98441f70d8a410a3eddb755cb69830d2c06c',
+});
+const rc128Lock = Object.freeze({
+  schema: 'intent-mcu-model-library-lock@2',
+  libraryId: 'intent-mcu-public-models',
+  version: '2.0.0-x46-usart-rx-producer.1-current',
+  manifestSha256: '7fc0e1d77126793f0a7726754fd926a90679268640b4a3c0c906c0e064a0aacf',
+  implementationSha256: '1465df81ca551e26ddab7be2a8318b8101fd043386e056be561cb099adb24f2e',
+});
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
@@ -44,6 +58,53 @@ const profiles = [
   const avr = profiles[0];
   await page.selectOption('#board-select', avr);
   const current = await page.evaluate((selected) => window.__COMMON_PROJECT_FILES__.current(selected), avr);
+  const rc124 = JSON.parse(current);
+  rc124.modelLibrary = rc124Lock;
+  rc124.project.metadata.name = 'PWM pulse';
+  await page.setInputFiles('#project-open-input', {
+    name: 'sanitized-public-rc124-pwm-pulse.intent-mcu.json', mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(rc124)),
+  });
+  await page.waitForFunction((hash) => JSON.parse(window.__COMMON_PROJECT_FILES__.current())
+    .modelLibrary.manifestSha256 === hash, rc124Lock.manifestSha256);
+  const rc124State = await page.evaluate(() => ({
+    bytes: window.__COMMON_PROJECT_FILES__.current(),
+    preview: window.__COMMON_PROJECT_FILES__.modelLibraryPreview(),
+    runtime: window.__M6_STATE__.artifactIdentity,
+    message: document.querySelector('#project-message').textContent,
+  }));
+  assert.equal(rc124State.preview.migrationRequired, true);
+  assert.equal(rc124State.runtime, null);
+  assert.match(rc124State.message, /fresh Build|migration/iu);
+
+  const unknownRc124 = JSON.parse(rc124State.bytes);
+  unknownRc124.modelLibrary.manifestSha256 = `1${rc124Lock.manifestSha256.slice(1)}`;
+  await page.setInputFiles('#project-open-input', {
+    name: 'unknown-neighbor-rc124.intent-mcu.json', mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(unknownRc124)),
+  });
+  await page.waitForFunction(() => document.querySelector('#project-message').textContent
+    .includes('MODEL_LIBRARY_LOCK_UNTRUSTED'));
+  assert.equal(await page.evaluate(() => window.__COMMON_PROJECT_FILES__.current()), rc124State.bytes,
+    'unknown neighboring rc.124 hash changed the open project');
+
+  const rc128 = JSON.parse(current);
+  rc128.modelLibrary = rc128Lock;
+  await page.setInputFiles('#project-open-input', {
+    name: 'sanitized-public-rc128.intent-mcu.json', mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(rc128)),
+  });
+  await page.waitForFunction((hash) => JSON.parse(window.__COMMON_PROJECT_FILES__.current())
+    .modelLibrary.manifestSha256 === hash, rc128Lock.manifestSha256);
+  const rc128State = await page.evaluate(() => ({
+    preview: window.__COMMON_PROJECT_FILES__.modelLibraryPreview(),
+    runtime: window.__M6_STATE__.artifactIdentity,
+    message: document.querySelector('#project-message').textContent,
+  }));
+  assert.equal(rc128State.preview.migrationRequired, true);
+  assert.equal(rc128State.runtime, null);
+  assert.match(rc128State.message, /fresh Build|migration/iu);
+
   const preX56 = JSON.parse(current);
   preX56.schema = 'intent-mcu-project-envelope@6';
   delete preX56.modelLibrary;
@@ -165,6 +226,7 @@ const profiles = [
   assert.equal((await context.cookies()).length, 0);
   await browser.close();
   process.stdout.write(`${JSON.stringify({ result: 'pass', profiles: profiles.length, exactLocks: true,
-    generatedPreX56Retained: true, generatedPriorX56: true, openCancelAtomic: true,
+    generatedPreX56Retained: true, generatedPriorX56: true, rc124MigrationOnly: true,
+    rc124UnknownAtomic: true, rc128MigrationOnly: true, openCancelAtomic: true,
     migrationCopyOnly: true, migratedSaveRoundtrip: true, forgedLockRejected: true, externalRequests: 0 })}\n`);
 })().catch((error) => { process.stderr.write(`${error.stack || error}\n`); process.exit(1); });

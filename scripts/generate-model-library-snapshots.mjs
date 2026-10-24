@@ -42,6 +42,10 @@ const RC113_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
   '../src/model-bundles/rc113-current-manifest.json', import.meta.url), 'utf8'));
 const RC120_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
   '../src/model-bundles/rc120-current-manifest.json', import.meta.url), 'utf8'));
+const RC124_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
+  '../src/model-bundles/rc124-current-manifest.json', import.meta.url), 'utf8'));
+const RC128_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
+  '../src/model-bundles/rc128-current-manifest.json', import.meta.url), 'utf8'));
 const PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_TEACHING_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -300,6 +304,8 @@ export const RC111_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringi
 export const RC112_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC112_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const RC113_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC113_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const RC120_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC120_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const RC124_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC124_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const RC128_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(RC128_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_RUNTIME_CONTROLS_SERIAL_UI_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_RUNTIME_CONTROLS_SERIAL_UI_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
