@@ -45,7 +45,7 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
 (async () => {
   const { createBrowserSessionRelay } = await import('../src/browser-session-relay.mjs');
   const { createBrowserSessionHttpHandler } = await import('../src/browser-session-http.mjs');
-  const relay = createBrowserSessionRelay(); let origin;
+  let relayOffset = 0; const relay = createBrowserSessionRelay({ now: () => Date.now() + relayOffset }); let origin;
   const server = createServer(async (request, response) => {
     if (await createBrowserSessionHttpHandler(relay, { publicOrigin: origin })(request, response)) return;
     const pathname = new URL(request.url, origin).pathname;
@@ -175,12 +175,31 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
     assert.equal((await post(origin, 'request.submit', { sessionId: raceClaim.sessionId,
       request: raceRequest }, raceClaim.clientCapability)).code, 'API_REQUEST_QUEUED');
     await pullSeen;
+    relayOffset += 30_001; holdPull = false; releasePull();
+    await page.waitForFunction(() => document.querySelector('#browser-session-api-dialog [data-status]')
+      ?.textContent.startsWith('Command expired or was revoked:'));
+    assert.equal(await page.locator('[data-component-id="race-led-1"]').count(), 0);
+    assert.equal(await page.evaluate(() => window.__BROWSER_SESSION_CANONICAL_OWNER__.snapshot().revision), 0);
+
+    // A second pulled command cannot cross actual same-revision replacement, revoke, or re-enable.
+    await page.locator('#browser-session-api-dialog [data-enable]').click();
+    await page.waitForFunction(() => document.querySelector('#browser-session-api-dialog [data-secret]').value.length > 20);
+    const replaceSecret = await page.locator('#browser-session-api-dialog [data-secret]').inputValue();
+    const replaceClaim = await post(origin, 'pairing.claim', { pairingSecret: replaceSecret,
+      scopes: ['discover', 'read_project', 'edit_circuit'] });
+    const replacementPullSeen = new Promise((resolve) => { observedPull = resolve; }); holdPull = true;
+    const replacementId = 'replacement-pull-race-0001';
+    const replacementRequest = { ...raceRequest, request_id: replacementId,
+      session_id: replaceClaim.sessionId, project_id: replaceClaim.projectId };
+    assert.equal((await post(origin, 'request.submit', { sessionId: replaceClaim.sessionId,
+      request: replacementRequest }, replaceClaim.clientCapability)).code, 'API_REQUEST_QUEUED');
+    await replacementPullSeen;
     await page.locator('#browser-session-api-dialog [data-close]').click();
     await page.evaluate(() => document.querySelector('#project-new').click());
     if (await page.locator('#unsaved-discard').isVisible()) await page.locator('#unsaved-discard').click();
     const replacement = await page.evaluate(() => ({ bytes: JSON.stringify(window.__M6_PROJECT__()),
       snapshot: window.__BROWSER_SESSION_CANONICAL_OWNER__.snapshot() }));
-    assert.equal(replacement.snapshot.revision, 0); assert.notEqual(replacement.snapshot.projectId, raceClaim.projectId);
+    assert.equal(replacement.snapshot.revision, 0); assert.notEqual(replacement.snapshot.projectId, replaceClaim.projectId);
     await page.evaluate(() => [...document.querySelectorAll('#workbench-popup-controls button')]
       .find((button) => button.textContent === 'API access').click());
     await page.locator('#browser-session-api-dialog [data-revoke]').click();
@@ -201,7 +220,7 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
     await context.close();
     process.stdout.write(`${JSON.stringify({ status: 'pass', visible, restoredExactBytes: true,
       editScopeExplicit: true, invalidAtomic: true, manualRaceStale: true,
-      delayedPullContained: true, replacementSameRevision: true,
+      expiredAfterPullContained: true, delayedPullContained: true, replacementSameRevision: true,
       buildRequests: 0, runtimeWorkers: workersBefore })}\n`);
   } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }
 })().catch((error) => { console.error(error); process.exitCode = 1; });

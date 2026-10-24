@@ -48,13 +48,16 @@ test('read-only request is correlated, transient and duplicate-safe', () => {
     requestId: value.request_id }), result);
   assert.equal(relay.readResult({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
     requestId: value.request_id }).code, 'API_REQUEST_RETIRED');
-  assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
-    request: value }).code, 'API_REQUEST_RETIRED');
+  const reconciled = relay.submit({ sessionId: ids.sessionId,
+    clientCapability: client.clientCapability, request: value });
+  assert.equal(reconciled.code, 'API_REQUEST_RECONCILE');
+  assert.deepEqual(reconciled.reconciliation, { request_id: value.request_id, status: 'accepted',
+    code: 'API_PROJECT_INSPECTED', revision_after: 0 });
   assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
     request: { ...value, expected_revision: 1 } }).code, 'API_REQUEST_ID_CONFLICT');
   clock.value += 5_001; relay.sweep();
   assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
-    request: value }).code, 'API_REQUEST_RETIRED');
+    request: value }).code, 'API_REQUEST_RECONCILE');
 });
 
 test('wrong project, sequence, expired client, owner loss and revoke fail closed', () => {
@@ -90,7 +93,7 @@ test('bounded request tombstones never evict into re-execution', () => {
   assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
     request: request(65) }).code, 'API_SESSION_RENEW_REQUIRED');
   assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
-    request: request(1) }).code, 'API_REQUEST_RETIRED');
+    request: request(1) }).code, 'API_REQUEST_RECONCILE');
 });
 
 test('pairing, rate, queue TTL and retired session storage are bounded', () => {
@@ -143,4 +146,57 @@ test('edit scope requires explicit owner grant and remains request scoped', () =
   edit.arguments = { transaction_id: 'transaction-edit-0001', commands: [] };
   assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
     request: edit }).code, 'API_REQUEST_QUEUED');
+});
+
+test('pulled command requires a live final execution authorization', () => {
+  const state = paired(); const value = request();
+  assert.equal(state.relay.submit({ sessionId: ids.sessionId,
+    clientCapability: state.client.clientCapability, request: value }).ok, true);
+  const pulled = state.relay.pull({ sessionId: ids.sessionId,
+    ownerCapability: state.owner.ownerCapability });
+  assert.equal(pulled.code, 'API_COMMAND_AVAILABLE');
+  assert.equal(state.relay.authorizeExecution({ sessionId: ids.sessionId,
+    ownerCapability: state.owner.ownerCapability, requestId: value.request_id }).code,
+  'API_EXECUTION_AUTHORIZED');
+  state.clock.value += 30_001;
+  assert.equal(state.relay.authorizeExecution({ sessionId: ids.sessionId,
+    ownerCapability: state.owner.ownerCapability, requestId: value.request_id }).code,
+  'API_REQUEST_EXPIRED');
+  assert.equal(state.relay.complete({ sessionId: ids.sessionId,
+    ownerCapability: state.owner.ownerCapability, result: { schema: BROWSER_SESSION_RESULT_SCHEMA,
+      request_id: value.request_id, status: 'accepted', code: 'MUST_NOT_COMMIT' } }).code,
+  'API_REQUEST_REPLAY');
+});
+
+test('lost result retry reconciles terminal mutation and response limit is reachable', () => {
+  const state = paired(); const value = request();
+  assert.equal(state.relay.submit({ sessionId: ids.sessionId,
+    clientCapability: state.client.clientCapability, request: value }).ok, true);
+  state.relay.pull({ sessionId: ids.sessionId, ownerCapability: state.owner.ownerCapability });
+  const result = { schema: BROWSER_SESSION_RESULT_SCHEMA, request_id: value.request_id,
+    status: 'accepted', code: 'API_BATCH_COMMITTED', revision_before: 0, revision_after: 1,
+    transaction_id: 'api-tx:session-0001:request-0001', changes: [{ component_id: 'led-1' }] };
+  assert.equal(state.relay.complete({ sessionId: ids.sessionId,
+    ownerCapability: state.owner.ownerCapability, result }).ok, true);
+  assert.deepEqual(state.relay.submit({ sessionId: ids.sessionId,
+    clientCapability: state.client.clientCapability, request: value }), result);
+  state.relay.readResult({ sessionId: ids.sessionId,
+    clientCapability: state.client.clientCapability, requestId: value.request_id });
+  const reconcile = state.relay.submit({ sessionId: ids.sessionId,
+    clientCapability: state.client.clientCapability, request: value });
+  assert.deepEqual(reconcile.reconciliation, { request_id: value.request_id, status: 'accepted',
+    code: 'API_BATCH_COMMITTED', revision_after: 1,
+    transaction_id: 'api-tx:session-0001:request-0001' });
+
+  const next = request(2); state.clock.value += 1_001;
+  assert.equal(state.relay.submit({ sessionId: ids.sessionId,
+    clientCapability: state.client.clientCapability, request: next }).ok, true);
+  state.relay.pull({ sessionId: ids.sessionId, ownerCapability: state.owner.ownerCapability });
+  assert.equal(state.relay.complete({ sessionId: ids.sessionId,
+    ownerCapability: state.owner.ownerCapability, result: { schema: BROWSER_SESSION_RESULT_SCHEMA,
+      request_id: next.request_id, status: 'accepted', code: 'API_PROJECT_INSPECTED',
+      project: { source: 'x'.repeat(41 * 1024) } } }).code, 'API_RESPONSE_LIMIT');
+  assert.equal(state.relay.readResult({ sessionId: ids.sessionId,
+    clientCapability: state.client.clientCapability, requestId: next.request_id }).code,
+  'API_RESPONSE_LIMIT');
 });

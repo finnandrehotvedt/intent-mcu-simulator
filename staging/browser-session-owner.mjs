@@ -184,6 +184,14 @@ export function installBrowserSessionOwner() {
       const pulled = await post('owner.pull', { sessionId: createdSessionId }, createdOwner).catch(() => ({ ok: false }));
       if (!contextLive()) return;
       if (pulled.code === 'API_COMMAND_AVAILABLE') {
+        const authorized = await post('owner.authorize', { sessionId: createdSessionId,
+          requestId: pulled.request.request_id }, createdOwner).catch(() => ({ ok: false }));
+        if (!contextLive()) return;
+        if (!authorized.ok || Date.now() >= authorized.requestExpiresAt) {
+          status.textContent = `Command expired or was revoked: ${authorized.code ?? 'API_REQUEST_EXPIRED'}.`;
+          if (contextLive()) await revokeCurrent();
+          return;
+        }
         const before = await snapshot().catch(() => null);
         if (!contextLive()) return;
         if (!before || before.projectId !== projectId || pulled.request.project_id !== projectId) {

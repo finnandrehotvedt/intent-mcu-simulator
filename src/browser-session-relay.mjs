@@ -7,7 +7,7 @@ export const BROWSER_SESSION_SCHEMA = 'intent-mcu-browser-session@1';
 export const BROWSER_SESSION_REQUEST_SCHEMA = 'intent-mcu-browser-session-request@1';
 export const BROWSER_SESSION_RESULT_SCHEMA = 'intent-mcu-browser-session-result@1';
 export const BROWSER_SESSION_LIMITS = Object.freeze({
-  bodyBytes: 48 * 1024, responseBytes: 384 * 1024, pairingTtlMs: 120_000,
+  bodyBytes: 48 * 1024, responseBytes: 40 * 1024, pairingTtlMs: 120_000,
   ownerLeaseMs: 130_000, clientIdleTtlMs: 120_000, clientAbsoluteTtlMs: 900_000,
   requestTtlMs: 30_000, transientResultTtlMs: 5_000, queueDepth: 16, requestCapacity: 64,
   rateWindowMs: 10_000, rateWindowCount: 20, burstWindowMs: 1_000, burstCount: 5,
@@ -162,7 +162,10 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
       const prior = session.outcomes.get(request.request_id);
       if (prior.canonical !== canonical) return failure('API_REQUEST_ID_CONFLICT');
       if (prior.result && prior.expiresAt <= now()) prior.result = null;
-      return prior.result ? clone(prior.result) : failure(prior.retiredCode ?? 'API_REQUEST_RETIRED');
+      if (prior.result) return clone(prior.result);
+      return prior.reconciliation ? { ok: true, code: 'API_REQUEST_RECONCILE',
+        reconciliation: clone(prior.reconciliation) }
+        : failure(prior.retiredCode ?? 'API_REQUEST_RETIRED');
     }
     if (session.requestIds.has(request.request_id)) return failure('API_REQUEST_REPLAY');
     if (session.requestIds.size >= BROWSER_SESSION_LIMITS.requestCapacity) return failure('API_SESSION_RENEW_REQUIRED');
@@ -187,8 +190,22 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
     }
     if (item) session.pending.set(item.request.request_id,
       { canonical: item.canonical, expiresAt: item.expiresAt });
-    return item ? { ok: true, code: 'API_COMMAND_AVAILABLE', request: item.request }
+    return item ? { ok: true, code: 'API_COMMAND_AVAILABLE', request: item.request,
+      requestExpiresAt: item.expiresAt }
       : { ok: true, code: 'API_QUEUE_EMPTY' };
+  }
+  function authorizeExecution({ sessionId, ownerCapability, requestId }) {
+    const session = authorizeOwner(sessionId, ownerCapability);
+    if (!session || !clientLive(session)) return failure('API_OWNER_GONE');
+    const pending = session.pending.get(requestId);
+    if (!pending) return failure('API_REQUEST_REPLAY');
+    if (pending.expiresAt <= now()) {
+      session.pending.delete(requestId);
+      session.outcomes.set(requestId, { canonical: pending.canonical, result: null,
+        retiredCode: 'API_REQUEST_EXPIRED', expiresAt: pending.expiresAt });
+      return failure('API_REQUEST_EXPIRED');
+    }
+    return { ok: true, code: 'API_EXECUTION_AUTHORIZED', requestExpiresAt: pending.expiresAt };
   }
   function complete({ sessionId, ownerCapability, result }) {
     const session = authorizeOwner(sessionId, ownerCapability);
@@ -210,12 +227,17 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
       const rejected = { schema: BROWSER_SESSION_RESULT_SCHEMA, request_id: result.request_id,
         status: 'rejected', code: 'API_RESPONSE_LIMIT' };
       session.outcomes.set(result.request_id, { canonical: pending.canonical, result: rejected,
+        reconciliation: { request_id: result.request_id, status: 'rejected', code: 'API_RESPONSE_LIMIT' },
         retiredCode: 'API_REQUEST_RETIRED', expiresAt: now() + BROWSER_SESSION_LIMITS.transientResultTtlMs });
       session.results.set(result.request_id, { value: rejected,
         expiresAt: now() + BROWSER_SESSION_LIMITS.transientResultTtlMs });
       return failure('API_RESPONSE_LIMIT');
     }
-    session.outcomes.set(result.request_id, { canonical: pending.canonical, result: publicResult,
+    const reconciliation = { request_id: result.request_id, status: publicResult.status,
+      code: publicResult.code, revision_after: publicResult.revision_after,
+      ...(typeof publicResult.transaction_id === 'string'
+        ? { transaction_id: publicResult.transaction_id } : {}) };
+    session.outcomes.set(result.request_id, { canonical: pending.canonical, result: publicResult, reconciliation,
       retiredCode: 'API_REQUEST_RETIRED', expiresAt: now() + BROWSER_SESSION_LIMITS.transientResultTtlMs });
     session.results.set(result.request_id, { value: publicResult,
       expiresAt: now() + BROWSER_SESSION_LIMITS.transientResultTtlMs });
@@ -254,7 +276,7 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
       }
     }
   }
-  return Object.freeze({ registerOwner, heartbeat, createPairing, claimPairing, submit, pull,
+  return Object.freeze({ registerOwner, heartbeat, createPairing, claimPairing, submit, pull, authorizeExecution,
     complete, readResult, revoke, sweep,
     inspect: () => ({ sessions: sessions.size, pairings: pairings.size }) });
 }
