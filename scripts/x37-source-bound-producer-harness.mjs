@@ -86,9 +86,12 @@ export async function staticPreflight() {
     rpImagePinned: /^sha256:[a-f0-9]{64}$/u.test(rpLock.imageId),
     rpManifestPinned: rpLock.toolchainManifestSha256 === rpManifestSha256,
     rpGrammarFixed: buildProtocol.includes('RP2040_X37_REFLECT_SOURCE')
-      && rpWorker.includes('X37_REFLECT_SOURCE'),
+      && buildProtocol.includes('RP2040_X37_TURNAROUND_SOURCE')
+      && rpWorker.includes('X37_REFLECT_SOURCE') && rpWorker.includes('X37_TURNAROUND_SOURCE'),
     rpInputMmioFixed: rpHeader.includes('#define INTENT_SIO_GPIO_IN         0xd0000004u')
-      && rpHeader.includes('intent_gpio0_reflect_gpio1_4096'),
+      && rpHeader.includes('intent_gpio0_reflect_gpio1_4096')
+      && rpHeader.includes('#define INTENT_SIO_GPIO_OE_CLR     0xd0000028u')
+      && rpHeader.includes('intent_x37_turnaround_8192'),
     rpBridgeMapsInputToMachinePin: runtimeBridge.includes('this.machine.gpio[pin].setInputValue(next.level)'),
     avrRuntimeApis: ['step()', 'queueDigitalSequence(events)', 'pause()', 'reset()']
       .every((value) => runtimeKernel.includes(value)),
@@ -99,7 +102,7 @@ export async function staticPreflight() {
       'X37_SEAM_CAUSAL_DELIVERY_INVALID'].every((value) => seams.includes(value)),
     killableWatchdog: runKillableWorker.toString().includes('worker.terminate()'),
     realProducerWorker: ['DockerBuildBroker', 'RuntimeKernel', 'Rp2040ExperimentalRuntime.create',
-      'createObservedDigitalNetResolver', 'resolvedDeliveryDecision', 'verifiedCleanup']
+      'createObservedDigitalNetResolver', 'runX37TurnaroundOrchestration', 'verifiedCleanup']
       .every((value) => producerWorker.includes(value)),
   };
   let rpSourceAccepted = false; let rpSourceError = null;

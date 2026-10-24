@@ -16,6 +16,7 @@ typedef unsigned char intent_u8;
 #define INTENT_SIO_GPIO_OUT_SET    0xd0000014u
 #define INTENT_SIO_GPIO_OUT_CLR    0xd0000018u
 #define INTENT_SIO_GPIO_OE_SET     0xd0000024u
+#define INTENT_SIO_GPIO_OE_CLR     0xd0000028u
 #define INTENT_UART0_DR            0x40034000u
 #define INTENT_UART0_CR            0x40034030u
 
@@ -30,8 +31,46 @@ static __attribute__((always_inline)) inline void intent_gpio0_output(intent_u32
 static __attribute__((always_inline)) inline intent_u32 intent_gpio1_input(void)
 {
   INTENT_MMIO32(INTENT_IO_BANK0_GPIO1_CTRL) = 5u;
-  INTENT_MMIO32(INTENT_PADS_BANK0_GPIO1) |= 0x40u;
+  INTENT_MMIO32(INTENT_PADS_BANK0_GPIO1) =
+    (INTENT_MMIO32(INTENT_PADS_BANK0_GPIO1) | 0x40u) & ~0x0cu;
   return (INTENT_MMIO32(INTENT_SIO_GPIO_IN) >> 1u) & 1u;
+}
+
+static __attribute__((always_inline)) inline void intent_gpio0_release(void)
+{
+  INTENT_MMIO32(INTENT_IO_BANK0_GPIO0_CTRL) = 5u;
+  INTENT_MMIO32(INTENT_SIO_GPIO_OUT_CLR) = 1u;
+  INTENT_MMIO32(INTENT_SIO_GPIO_OE_CLR) = 1u;
+}
+
+static __attribute__((always_inline)) inline void intent_gpio0_drive_low(void)
+{
+  INTENT_MMIO32(INTENT_IO_BANK0_GPIO0_CTRL) = 5u;
+  INTENT_MMIO32(INTENT_SIO_GPIO_OUT_CLR) = 1u;
+  INTENT_MMIO32(INTENT_SIO_GPIO_OE_SET) = 1u;
+}
+
+static __attribute__((always_inline)) inline intent_u32 intent_gpio1_wait_level(
+  intent_u32 level, intent_u32 maximum_samples)
+{
+  for (intent_u32 sample = 0u; sample < maximum_samples; sample++) {
+    if (intent_gpio1_input() == level) return 1u;
+  }
+  return 0u;
+}
+
+static __attribute__((always_inline)) inline intent_u32 intent_x37_turnaround_8192(void)
+{
+  intent_gpio0_release();
+  if (intent_gpio1_wait_level(1u, 8192u) == 0u) return 1u;
+  if (intent_gpio1_wait_level(0u, 8192u) == 0u) return 2u;
+  if (intent_gpio1_wait_level(1u, 8192u) == 0u) return 3u;
+  intent_gpio0_drive_low();
+  for (intent_u32 hold = 0u; hold < 4096u; hold++) __asm__ volatile ("nop");
+  intent_gpio0_release();
+  if (intent_gpio1_wait_level(0u, 8192u) == 0u) return 4u;
+  if (intent_gpio1_wait_level(1u, 8192u) == 0u) return 5u;
+  return 0u;
 }
 
 static __attribute__((always_inline)) inline void intent_gpio0_reflect_gpio1_4096(void)

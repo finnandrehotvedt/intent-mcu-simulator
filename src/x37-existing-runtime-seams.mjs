@@ -113,6 +113,7 @@ function commonSeam({ runtime, identityOwner, schedulerContract, profile, output
       exact: reachedCycle === targetCycle, overshootCycles: reachedCycle - targetCycle,
       totalInstructions, advanceCalls };
   };
+  sampleOutput(initial);
   return {
     identity: () => liveIdentity(identityOwner),
     currentCycle: () => runtimeSnapshot(runtime).cycle,
@@ -209,16 +210,17 @@ export function createRp2040X37RuntimeSeam({ runtime, identityOwner, outputPin =
   });
 }
 
-export function createObservedDigitalNetResolver({ netId, driverParticipantIds }) {
+export function createObservedDigitalNetResolver({ netId, driverParticipantIds, idleLevel = null }) {
   if (typeof netId !== 'string' || !Array.isArray(driverParticipantIds)
-      || driverParticipantIds.length < 1 || new Set(driverParticipantIds).size !== driverParticipantIds.length) {
+      || driverParticipantIds.length < 1 || new Set(driverParticipantIds).size !== driverParticipantIds.length
+      || ![null, false, true].includes(idleLevel)) {
     reject('X37_SEAM_NET_CONFIGURATION_INVALID');
   }
   const allowed = new Set(driverParticipantIds); let drivers = new Map();
   let watermarks = new Map(); let lastMappedTick = -1;
   const state = (source = drivers) => {
     const levels = [...source.values()].map(({ level }) => level);
-    if (!levels.length) return 'HIGH_Z';
+    if (!levels.length) return idleLevel === null ? 'HIGH_Z' : idleLevel ? 'HIGH' : 'LOW';
     return levels.every((value) => value === levels[0]) ? (levels[0] ? 'HIGH' : 'LOW') : 'CONFLICT';
   };
   return Object.freeze({
@@ -267,7 +269,7 @@ export function createObservedDigitalNetResolver({ netId, driverParticipantIds }
       drivers = stagedDrivers; watermarks = stagedWatermarks;
       return { participantId, runtimeEpoch: nextRuntimeEpoch, state: state() };
     },
-    snapshot: () => ({ netId, state: state(), lastMappedTick,
+    snapshot: () => ({ netId, state: state(), lastMappedTick, idleLevel,
       drivers: [...drivers.entries()].map(([participantId, value]) => ({ participantId, ...value })) }),
   });
 }

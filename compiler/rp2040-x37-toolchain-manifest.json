@@ -8,10 +8,10 @@
     "archiveSha256": "8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd"
   },
   "files": [
-    { "path": "compiler/rp2040-build-worker.mjs", "sha256": "c18f07b1dad7930df106bacecedf81d8e8494e8d0e25c2558d7725b30ed29dd6" },
+    { "path": "compiler/rp2040-build-worker.mjs", "sha256": "b388aecba101672644cc09c0a5b00a1bed37ee2e79a117821eec50ad92e80757" },
     { "path": "compiler/rp2040-contract/startup.S", "sha256": "a3d84e1c121e6a6365517c38993493b694f7ba85b9bc8db136ac00194ebe5897" },
     { "path": "compiler/rp2040-contract/rp2040.ld", "sha256": "189e4add83c2ec9fd6d6eca275f55043a92b5b50b8ab68d082a47c91927710d7" },
-    { "path": "compiler/rp2040-contract/intent_rp2040_runtime.h", "sha256": "7d695883835a8d26944ef257bf59f5b238e48141c11276fb48e42d9a4d6d53d4" }
+    { "path": "compiler/rp2040-contract/intent_rp2040_runtime.h", "sha256": "264ac81a1fbd54b5467df0e9d1774886d5ab9f0473d8f5cf2e5bfe28ca42afb3" }
   ],
-  "privateCandidate": "x37-gpio1-reflect-v1"
+  "privateCandidate": "x37-open-drain-turnaround-v1"
 }

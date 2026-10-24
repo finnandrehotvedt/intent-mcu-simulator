@@ -15,12 +15,12 @@ import { RuntimeKernel } from '../src/runtime-kernel.mjs';
 import { Rp2040ExperimentalRuntime } from '../src/rp2040-experimental-runtime.mjs';
 import {
   createAvrX37RuntimeSeam, createObservedDigitalNetResolver,
-  createRp2040X37RuntimeSeam, mapX37RuntimeObservation,
+  createRp2040X37RuntimeSeam,
 } from '../src/x37-existing-runtime-seams.mjs';
 import {
-  createBoundedObservationFifo, createLiveGenerationOwner, resolvedDeliveryDecision,
-  evaluateCouplingAcceptance, targetCycleAtOrAfterMappedTick, verifiedCleanup,
+  createLiveGenerationOwner, verifiedCleanup,
 } from '../src/x37-producer-orchestration.mjs';
+import { runX37TurnaroundOrchestration } from '../src/x37-turnaround-orchestrator.mjs';
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const activity = { firmwareBuildAttempts: 0, firmwareBuilds: 0, runtimeInstances: 0,
@@ -97,76 +97,20 @@ async function main() {
     activity.runtimeInstances = 2; activity.coordinatedRuns = 1;
     avrSeam = createAvrX37RuntimeSeam({ runtime: avr, identityOwner: avrOwner.snapshot, schedulerContract });
     rpSeam = createRp2040X37RuntimeSeam({ runtime: rp, identityOwner: rpOwner.snapshot, schedulerContract });
-    const net = createObservedDigitalNetResolver({ netId: 'shared.digital.0', driverParticipantIds: ['avr', 'rp'] });
-    const fifo = createBoundedObservationFifo(32); const evidence = []; let events = 0;
-    const processPending = (seam) => {
-      fifo.enqueue(seam.observeFirmwareGpio());
-      return fifo.drain((observation) => {
-        events += 1; activity.events = events;
-        const mapped = mapX37RuntimeObservation(observation, schedulerContract);
-        const resolved = net.apply([mapped]); evidence.push({ observation: mapped, resolved });
-        return { observation: mapped, resolved };
-      });
-    };
-    const nextDrive = (seam, level, window) => {
-      for (let call = 0; call < 32; call += 1) {
-        seam.advanceToLocalCycle(seam.currentCycle() + window);
-        const matching = processPending(seam).find(({ observation }) =>
-          observation.mode === 'DRIVE' && observation.level === level) ?? null;
-        if (matching) return matching;
-      }
-      throw Object.assign(new Error('X37_EXPECTED_FIRMWARE_OBSERVATION_MISSING'), { code: 'X37_EXPECTED_FIRMWARE_OBSERVATION_MISSING' });
-    };
-    const deliver = (resolvedObservation, targetSeam, clock) => {
-      const decision = resolvedDeliveryDecision(resolvedObservation.resolved,
-        resolvedObservation.observation);
-      if (!decision.deliver) return { ...decision, queued: false };
-      const boundary = targetCycleAtOrAfterMappedTick(
-        decision.sourceObservation.mappedTick, clock);
-      const advance = targetSeam.advanceToLocalCycle(boundary.cycle);
-      processPending(targetSeam);
-      const current = net.snapshot();
-      const currentDecision = resolvedDeliveryDecision({ ...current,
-        deliverable: ['LOW', 'HIGH'].includes(current.state),
-        ...(['LOW', 'HIGH'].includes(current.state) ? { level: current.state === 'HIGH' } : {}) },
-      decision.sourceObservation);
-      if (!currentDecision.deliver) return { ...currentDecision, boundary, advance, queued: false };
-      const delivery = targetSeam.deliverResolvedLevel(currentDecision.level, decision.sourceObservation);
-      return { ...decision, boundary, advance, delivery, queued: true };
-    };
-    const avrHigh = nextDrive(avrSeam, true, 20_000);
-    const avrToRp = deliver(avrHigh, rpSeam, { numerator: 1, denominator: 8 });
-    if (!avrToRp.queued) throw Object.assign(new Error('X37_REQUIRED_DELIVERY_NOT_QUEUED'),
-      { code: 'X37_REQUIRED_DELIVERY_NOT_QUEUED' });
-    const rpHigh = nextDrive(rpSeam, true, 20_000);
-    const rpApplied = rp.adapter.snapshot().events.findLast((event) =>
-      event.type === 'digital-input-applied' && event.pin === 'GPIO1');
-    const rpToAvr = deliver(rpHigh, avrSeam, { numerator: 1, denominator: 125 });
-    if (!rpToAvr.queued) throw Object.assign(new Error('X37_REQUIRED_DELIVERY_NOT_QUEUED'),
-      { code: 'X37_REQUIRED_DELIVERY_NOT_QUEUED' });
-    const avrLow = nextDrive(avrSeam, false, 20_000);
-    const avrQueued = rpToAvr.delivery.queued[0];
-    const avrApplied = avr.snapshot().eventLog.applied.find((event) => event.sequence === avrQueued.sequence);
-    const couplingAcceptance = evaluateCouplingAcceptance({
-      observations: evidence.map(({ observation }) => observation),
-      deliveries: [
-        { direction: 'avr-to-rp', queued: avrToRp.queued, inputApplied: Boolean(rpApplied),
-          inputAppliedCycle: rpApplied?.cycle, responseCycle: rpHigh.observation.localCycle,
-          sourceMappedTick: avrHigh.observation.mappedTick,
-          responseMappedTick: rpHigh.observation.mappedTick },
-        { direction: 'rp-to-avr', queued: rpToAvr.queued, inputApplied: Boolean(avrApplied),
-          inputAppliedCycle: avrApplied?.targetCycle, responseCycle: avrLow.observation.localCycle,
-          sourceMappedTick: rpHigh.observation.mappedTick,
-          responseMappedTick: avrLow.observation.mappedTick },
-      ],
-    });
-    const conflictDecision = resolvedDeliveryDecision(avrLow.resolved, avrLow.observation);
-    if (conflictDecision.deliver || conflictDecision.state !== 'CONFLICT') {
-      throw Object.assign(new Error('X37_EXPECTED_CONFLICT_MISSING'), { code: 'X37_EXPECTED_CONFLICT_MISSING' });
-    }
-    result = { evidence, observations: { avrHigh, rpHigh, avrLow },
-      deliveries: { avrToRp, rpToAvr, conflictDecision }, couplingAcceptance,
-      fifo: fifo.snapshot() };
+    const net = createObservedDigitalNetResolver({ netId: 'shared.digital.0',
+      driverParticipantIds: ['avr', 'rp'], idleLevel: true });
+    result = runX37TurnaroundOrchestration({ seams: { avr: avrSeam, rp: rpSeam },
+      schedulerContract, net, inputApplied: {
+        avr: (record) => {
+          const sequence = record.delivery.queued?.[0]?.sequence;
+          return Number.isSafeInteger(sequence)
+            && avr.snapshot().eventLog.applied.some((event) => event.sequence === sequence);
+        },
+        rp: (record) => rp.adapter.snapshot().events.some((event) =>
+          event.type === 'digital-input-applied' && event.pin === 'GPIO1'
+          && event.level === record.level && event.cycle >= record.targetCycle),
+      } });
+    activity.events = result.evidence.length;
   } catch (error) { primaryError = error; }
   try {
     await verifiedCleanup([

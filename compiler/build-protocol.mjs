@@ -33,8 +33,16 @@ int main(void)
   intent_halt();
 }
 `;
+const RP2040_X37_TURNAROUND_SOURCE = `/* Intent MCU Simulator private X37 RP2040 turnaround source v1 */
+int main(void)
+{
+  intent_x37_turnaround_8192();
+  intent_uart0_text("X37 TURNAROUND");
+  intent_halt();
+}
+`;
 const validRp2040Source = (source) => RP2040_CONSTANT_SOURCE_PATTERN.test(source)
-  || source === RP2040_X37_REFLECT_SOURCE;
+  || source === RP2040_X37_REFLECT_SOURCE || source === RP2040_X37_TURNAROUND_SOURCE;
 const INCLUDE_DIRECTIVE = /^\s*#\s*(include|include_next)\s+(.+?)\s*$/gm;
 const COMMON_SYSTEM_HEADERS = new Set([
   'Arduino.h', 'stdint.h', 'stddef.h', 'stdbool.h', 'stdint.h', 'limits.h',

@@ -33,7 +33,16 @@ int main(void)
   intent_halt();
 }
 `;
-const validSource = (source) => CONSTANT_SOURCE_PATTERN.test(source) || source === X37_REFLECT_SOURCE;
+const X37_TURNAROUND_SOURCE = `/* Intent MCU Simulator private X37 RP2040 turnaround source v1 */
+int main(void)
+{
+  intent_x37_turnaround_8192();
+  intent_uart0_text("X37 TURNAROUND");
+  intent_halt();
+}
+`;
+const validSource = (source) => CONSTANT_SOURCE_PATTERN.test(source)
+  || source === X37_REFLECT_SOURCE || source === X37_TURNAROUND_SOURCE;
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const exactKeys = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
