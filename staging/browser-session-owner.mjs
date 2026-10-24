@@ -7,6 +7,8 @@ import { RP2040_PICO_COMPONENT_CATALOG, validateRp2040PicoCircuit } from '../src
 import { ESP32C3_PUBLIC_COMPONENT_CATALOG, validateEsp32C3Circuit } from '../src/esp32c3-public-circuit.mjs';
 import { STM32_PUBLIC_COMPONENT_CATALOG, validateStm32Circuit } from '../src/stm32-public-circuit.mjs';
 import { API03_PROFILE_MATRIX, prepareApiBatch, summarizeApiChanges } from '../src/browser-session-edit.mjs';
+import { API_SESSION_CLIENT_URL, API_SESSION_PROTOCOL_URL,
+  CODEX_PAIRING_INSTRUCTIONS } from '../src/browser-session-codex-instructions.mjs';
 
 const endpoint = '/api/session/v1';
 const makeId = (prefix) => `${prefix}-${crypto.randomUUID()}`;
@@ -125,11 +127,44 @@ export function installBrowserSessionOwner() {
   const nav = document.querySelector('#workbench-popup-controls'); if (!nav) return;
   nav.append(button);
   const dialog = document.createElement('dialog'); dialog.id = 'browser-session-api-dialog';
-  dialog.innerHTML = '<header><div><p class="eyebrow">PRIVATE API PREVIEW</p><h2>API access</h2></div><button type="button" data-close>Close</button></header><p>Disabled by default. Pair one temporary client to this tab only.</p><label><input type="checkbox" data-edit-scope> Grant circuit editing for this pairing (AVR only)</label><p data-status role="status">API access is off.</p><div class="build-controls"><button type="button" data-enable>Enable and create pairing</button><button type="button" data-revoke disabled>Revoke</button></div><label>One-time pairing secret<input data-secret readonly value=""></label><p data-ttl>No active capability. Closing the tab fails closed after the bounded owner lease expires.</p>';
+  dialog.innerHTML = `<header><div><p class="eyebrow">PRIVATE API PREVIEW</p><h2>Connect a local Codex client</h2></div><button type="button" data-close>Close</button></header>
+    <div class="api-pairing-body">
+      <ol class="api-pairing-steps" aria-label="Pairing workflow">
+        <li><strong>1. Copy Codex instructions</strong><span>The prompt explains the public protocol, local client and secret boundary.</span></li>
+        <li><strong>2. Create a pairing</strong><span>Read-only by default. AVR editing needs the separate checkbox.</span></li>
+        <li><strong>3. Enter the secret locally</strong><span>Never paste it into chat, a URL, a file or source control.</span></li>
+      </ol>
+      <section class="api-codex-prompt" aria-labelledby="api-codex-prompt-title">
+        <div class="api-codex-prompt-heading"><div><p class="eyebrow">READY-TO-USE METAPROMPT</p><h3 id="api-codex-prompt-title">Give these instructions to Codex</h3></div><button type="button" data-copy-instructions>Copy instructions</button></div>
+        <textarea data-codex-instructions readonly spellcheck="false" aria-label="Codex pairing instructions"></textarea>
+        <p class="api-resource-links"><a href="${API_SESSION_PROTOCOL_URL}">Protocol v1</a><a href="${API_SESSION_CLIENT_URL}" download>Download client.mjs</a></p>
+        <p data-copy-status class="api-copy-status" role="status">The pairing secret is intentionally not included.</p>
+      </section>
+      <section class="api-pairing-controls" aria-label="Temporary API pairing">
+        <p>Disabled by default. Pair one temporary client to this tab only.</p>
+        <label class="api-edit-scope"><input type="checkbox" data-edit-scope><span>Grant circuit editing for this pairing <small>AVR only</small></span></label>
+        <p data-status role="status">API access is off.</p>
+        <div class="build-controls"><button type="button" data-enable>Enable and create pairing</button><button type="button" data-revoke disabled>Revoke</button></div>
+        <label class="api-secret-field">One-time pairing secret<input data-secret readonly value=""></label>
+        <p data-ttl>No active capability. Closing the tab fails closed after the bounded owner lease expires.</p>
+      </section>
+    </div>`;
   document.body.append(dialog);
   const status = dialog.querySelector('[data-status]'); const secretField = dialog.querySelector('[data-secret]');
   const ttl = dialog.querySelector('[data-ttl]'); const enable = dialog.querySelector('[data-enable]'); const revoke = dialog.querySelector('[data-revoke]');
   const editScope = dialog.querySelector('[data-edit-scope]');
+  const instructions = dialog.querySelector('[data-codex-instructions]');
+  const copyStatus = dialog.querySelector('[data-copy-status]');
+  instructions.value = CODEX_PAIRING_INSTRUCTIONS;
+  dialog.querySelector('[data-copy-instructions]').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(CODEX_PAIRING_INSTRUCTIONS);
+      copyStatus.textContent = 'Instructions copied. No pairing secret was included.';
+    } catch {
+      instructions.focus(); instructions.select();
+      copyStatus.textContent = 'Clipboard access was unavailable. The instructions are selected for manual copy.';
+    }
+  });
   let owner = null; let sessionId = null; let timer = null; let boundProjectId = null; let loopToken = 0;
   const stop = () => { if (timer) clearTimeout(timer); timer = null; loopToken += 1; owner = null; sessionId = null; boundProjectId = null; secretField.value = ''; revoke.disabled = true; enable.disabled = false; editScope.disabled = false; ttl.textContent = 'No active capability. Closing the tab fails closed after the bounded owner lease expires.'; };
   const revokeCurrent = async () => {

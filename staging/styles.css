@@ -1711,6 +1711,31 @@ dt { color: var(--muted); } dd { margin: 0; font: 600 .82rem ui-monospace, monos
 .pin-readout { margin-bottom: 0; }
 dialog { width: min(620px, calc(100% - 32px)); padding: 0; border: 1px solid #2a627f; border-radius: 18px; background: #0c1c2b; color: var(--text); box-shadow: 0 30px 100px #000c; }
 dialog::backdrop { background: #02070bca; backdrop-filter: blur(5px); }
+#browser-session-api-dialog { width: min(780px, calc(100% - 24px)); max-width: calc(100% - 24px); max-height: calc(100vh - 24px); overflow: hidden; }
+#browser-session-api-dialog > header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 18px; border-bottom: 1px solid #2a627f; background: #0a2131; }
+#browser-session-api-dialog > header h2, #browser-session-api-dialog > header p { margin: 0; }
+.api-pairing-body { display: grid; gap: 16px; width: 100%; min-width: 0; max-height: calc(100vh - 96px); padding: 18px; overflow-y: auto; overflow-x: hidden; }
+.api-pairing-body > *, .api-pairing-controls > *, .api-codex-prompt > * { min-width: 0; max-width: 100%; }
+.api-pairing-steps { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; counter-reset: api-step; }
+.api-pairing-steps li { position: relative; padding: 12px 12px 12px 42px; border: 1px solid #28566d; border-radius: 10px; background: #071722; color: var(--text); counter-increment: api-step; }
+.api-pairing-steps li::before { content: counter(api-step); position: absolute; left: 11px; top: 11px; display: grid; width: 22px; height: 22px; place-items: center; border-radius: 50%; color: #06111a; background: var(--cyan); font-weight: 900; }
+.api-pairing-steps strong, .api-pairing-steps span { display: block; }
+.api-pairing-steps span { margin-top: 5px; color: var(--muted); font-size: .7rem; line-height: 1.4; }
+.api-codex-prompt, .api-pairing-controls { padding: 14px; border: 1px solid #2a627f; border-radius: 12px; background: #07141f; }
+.api-codex-prompt-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.api-codex-prompt-heading h3, .api-codex-prompt-heading p { margin: 0; }
+.api-codex-prompt textarea { display: block; width: 100%; min-width: 0; height: 210px; margin-top: 12px; padding: 12px; resize: vertical; overflow-wrap: anywhere; white-space: pre-wrap; color: #d9f7ff; border: 1px solid #28566d; border-radius: 8px; background: #020a10; font: .72rem/1.5 ui-monospace,SFMono-Regular,Consolas,monospace; }
+.api-resource-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+.api-resource-links a { display: inline-flex; min-height: 34px; align-items: center; padding: 5px 9px; border: 1px solid #2a627f; border-radius: 7px; color: var(--cyan); text-decoration: none; font-size: .72rem; font-weight: 800; }
+.api-copy-status { margin: 8px 0 0; color: var(--muted); font-size: .7rem; }
+.api-pairing-controls > p { margin: 0 0 10px; }
+.api-edit-scope { display: flex; align-items: flex-start; gap: 9px; width: fit-content; max-width: 100%; color: var(--text); font-size: .78rem; font-weight: 800; }
+.api-edit-scope input[type="checkbox"] { flex: 0 0 18px; width: 18px; min-width: 18px; height: 18px; min-height: 18px; margin: 1px 0 0; padding: 0; accent-color: var(--lime); }
+.api-edit-scope span, .api-edit-scope small { min-width: 0; overflow-wrap: anywhere; }
+.api-edit-scope small { color: var(--muted); font-weight: 600; }
+.api-secret-field { display: grid; gap: 6px; margin-top: 10px; color: var(--muted); font-size: .72rem; font-weight: 800; }
+.api-secret-field input { width: 100%; min-width: 0; font-family: ui-monospace,SFMono-Regular,Consolas,monospace; }
+@media (max-width: 620px) { .api-pairing-steps { grid-template-columns: 1fr; } .api-codex-prompt-heading { align-items: stretch; flex-direction: column; } .api-codex-prompt-heading button { width: 100%; } }
 dialog form { position: relative; padding: 28px; }
 .dialog-close { position: absolute; top: 12px; right: 12px; min-width: 38px; padding: 0; font-size: 1.4rem; }
 dialog ol { display: grid; gap: 12px; padding-left: 24px; }

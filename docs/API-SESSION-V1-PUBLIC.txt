@@ -1,0 +1,77 @@
+Intent MCU Simulator browser-session API protocol
+Version: intent-mcu-browser-session-request@1
+Public Lab: https://lab.teachthecompany.com/
+Endpoint: POST https://lab.teachthecompany.com/api/session/v1
+Reference client: https://lab.teachthecompany.com/api/session/v1/client.mjs
+
+The API is off by default in every browser tab. The user opens API access and
+creates one temporary, one-use pairing. The secret must enter a local client
+through stdin and must never be put in a prompt, chat, URL, command argument,
+log, file, or source control.
+
+Transport operations
+owner.register, owner.heartbeat, pairing.create, pairing.claim,
+request.submit, owner.pull, owner.authorize, owner.complete, result.read,
+owner.revoke.
+
+Client request envelope
+{
+  "schema": "intent-mcu-browser-session-request@1",
+  "request_id": "unique client ID",
+  "session_id": "returned by pairing.claim",
+  "project_id": "returned by pairing.claim",
+  "expected_revision": 0,
+  "sequence": 1,
+  "command": "project.inspect",
+  "arguments": {}
+}
+
+Scopes
+discover and read_project are the default read-only scopes. edit_circuit is a
+separate user opt-in and is available only for board.atmega328p-16mhz-v1.
+board.rp2040-pico-v1, board.esp32-c3-devmodule-v1 and
+board.stm32f429zi-nucleo144-v1 are read-only.
+
+Discovery and read commands
+capabilities.list, components.catalog, project.inspect, components.list,
+component.pins, nets.list, circuit.validate.
+
+Edit commands
+edit.batch accepts exactly {"commands": [...]} and at most 16 operations.
+Supported operations are component.add, component.remove,
+component.property.set, wire.connect, wire.disconnect and
+wire.branch.disconnect. Connections use stable component IDs and named pins.
+The complete batch validates and commits as one transaction or changes
+nothing. edit.undo and edit.redo accept exactly the server-returned
+transaction_id and only operate when that transaction is still at the history
+head.
+
+Revision and concurrency rules
+Every command uses the current exact project_id, monotonically increasing
+sequence and latest expected_revision. Read the revision_after returned by each
+result before submitting the next request. API_STALE_REVISION,
+API_PROJECT_CHANGED and transaction conflicts require fresh discovery; never
+guess or silently retry a mutation. Reload, Open, New, profile change, revoke,
+expiry or project replacement removes the old authority.
+
+Stable result and error families
+API_AUTH_REQUIRED, API_SCOPE_REQUIRED, API_PROFILE_READ_ONLY,
+API_PAIRING_EXPIRED, API_CLIENT_GONE, API_OWNER_GONE, API_STALE_REVISION,
+API_PROJECT_CHANGED, API_COMMAND_UNSUPPORTED, API_BATCH_SHAPE,
+API_BATCH_COMMAND_SHAPE, API_BATCH_REJECTED, API_TRANSACTION_SHAPE,
+API_REQUEST_LIMIT, API_RATE_LIMIT, API_QUEUE_FULL, API_RESULT_PENDING,
+API_RESULT_EXPIRED, API_REQUEST_REPLAY, API_REQUEST_ID_CONFLICT and
+API_SEQUENCE_REQUIRED. Canonical editor validation or history conflicts may be
+returned unchanged in the result code. Other API_* codes fail closed. Stop and
+inspect the returned code; create a fresh pairing when the owner, client, or
+pairing is gone.
+
+Limits
+Request body 48 KiB; owner result 40 KiB; pairing 120 seconds; owner lease 130
+seconds; client idle 120 seconds; client absolute life 15 minutes; queued
+request 30 seconds; transient full result 5 seconds; queue depth 16; request
+ID/sequence capacity 64; rate 5 requests/second and 20 requests/10 seconds.
+
+Excluded authority
+No command can Build, Run, compile, upload, open a device, create a native
+runtime or worker, access files, deploy, or grant those capabilities.

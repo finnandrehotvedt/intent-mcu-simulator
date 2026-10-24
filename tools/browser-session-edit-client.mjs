@@ -39,6 +39,14 @@ async function execute(command, args = {}) {
   }
   throw new Error('API_TIMEOUT');
 }
+const capabilities = await execute('capabilities.list');
+if (capabilities.status !== 'accepted' || !capabilities.commands.includes('edit.batch')) {
+  throw new Error(capabilities.code ?? 'API_EDIT_UNAVAILABLE');
+}
+const project = await execute('project.inspect');
+if (project.status !== 'accepted') throw new Error(project.code);
+const catalog = await execute('components.catalog');
+if (catalog.status !== 'accepted') throw new Error(catalog.code);
 const before = await execute('components.list');
 if (before.status !== 'accepted') throw new Error(before.code);
 const operations = [
@@ -61,7 +69,10 @@ const applied = await execute('edit.batch', { commands: operations });
 if (applied.status !== 'accepted') throw new Error(applied.code);
 const transactionId = applied.transaction_id;
 const components = await execute('components.list'); const nets = await execute('nets.list');
-const pins = await execute('component.pins', { component_id: 'api-led-1' });
+const boardPins = await execute('component.pins', { component_id: 'api-board-1' });
+const resistorPins = await execute('component.pins', { component_id: 'api-resistor-1' });
+const ledPins = await execute('component.pins', { component_id: 'api-led-1' });
+const validation = await execute('circuit.validate');
 const holdMs = Number(process.env.API03_PAUSE_BEFORE_UNDO_MS ?? 0);
 if (Number.isInteger(holdMs) && holdMs > 0 && holdMs <= 10_000) {
   await new Promise((resolve) => setTimeout(resolve, holdMs));
@@ -70,6 +81,10 @@ const undone = await execute('edit.undo', { transaction_id: transactionId });
 if (undone.status !== 'accepted') throw new Error(undone.code);
 const restored = await execute('project.inspect');
 process.stdout.write(`${JSON.stringify({ status: 'pass', transaction_id: transactionId, changes: applied.changes,
+  discovery: { profile: catalog.profile, project_id: claim.projectId,
+    initial_component_count: project.project.circuit.components.length },
   assembled: { components: components.components.map((item) => item.id),
-    nets: nets.nets.map((item) => item.id), pins: pins.pins },
+    nets: nets.nets.map((item) => item.id), named_pins: {
+      board: boardPins.pins.map((item) => item.id), resistor: resistorPins.pins.map((item) => item.id),
+      led: ledPins.pins.map((item) => item.id) }, validation: validation.code },
   undo: undone.code, restored_component_count: restored.project.circuit.components.length })}\n`);

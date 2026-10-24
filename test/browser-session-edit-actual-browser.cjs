@@ -30,7 +30,7 @@ const resultFor = async (origin, claim, requestId) => {
   throw new Error('API_RESULT_TIMEOUT');
 };
 const runEditor = (origin, secret) => new Promise((resolve, reject) => {
-  const child = spawn(process.execPath, ['tools/browser-session-edit-client.mjs', origin], {
+  const child = spawn(process.execPath, ['dist/api/session/v1/client.mjs', origin], {
     stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, API03_PAUSE_BEFORE_UNDO_MS: '5000' },
   });
   let stdout = ''; let stderr = '';
