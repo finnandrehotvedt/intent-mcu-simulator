@@ -18,6 +18,9 @@ let browser;
   browser = await browserType.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   const page = await context.newPage();
+  await page.route('**/api/page-views', (route) => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ status: 'disabled' }),
+  }));
   const mutations = [];
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.stack || String(error)));
@@ -34,7 +37,7 @@ let browser;
   assert(await cards.filter({ visible: true }).count() === 0, 'inline starter gallery remains visible by default');
   const initialProject = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
   const initialWorkers = await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations);
-  await page.locator('#project-demo').focus();
+  await page.locator('#beginner-examples').focus();
   await page.keyboard.press('Enter');
   assert(await dialog.evaluate((node) => node.open), 'Choose example did not open the dialog');
   assert(await page.locator('#example-picker-search').evaluate((node) => document.activeElement === node),
@@ -52,13 +55,13 @@ let browser;
   await page.locator('#example-picker-search').focus();
   await page.keyboard.press('Escape');
   assert(!(await dialog.evaluate((node) => node.open)), 'Escape did not close the example dialog');
-  assert(await page.locator('#project-demo').evaluate((node) => document.activeElement === node),
+  assert(await page.locator('#beginner-examples').evaluate((node) => document.activeElement === node),
     'Escape did not return focus to Choose example');
   assert(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())) === initialProject,
     'opening and cancelling the picker changed the project');
   assert(await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations) === initialWorkers,
     'opening and cancelling the picker created a runtime worker');
-  await page.click('#project-demo');
+  await page.click('#beginner-examples');
   assert((await cards.nth(0).innerText()).includes('Controller · resistor · LED'), 'starter card omits its parts');
   const examples = [
     ['blink', 'Blink demo'],
@@ -84,7 +87,7 @@ let browser;
   });
   for (let index = 0; index < examples.length; index += 1) {
     const [id, name] = examples[index];
-    if (!(await dialog.evaluate((node) => node.open))) await page.click('#project-demo');
+    if (!(await dialog.evaluate((node) => node.open))) await page.click('#beginner-examples');
     await page.click(`.starter-card[data-example="${id}"]`);
     if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) {
       if (index === 1) {
@@ -102,13 +105,17 @@ let browser;
       return document.querySelector('#example-select').value === expectedId && observed === expectedName;
     }, [id, name]);
   }
+  await page.click('#workbench-view-advanced');
+  await page.click('#brief-tests-open');
   await page.locator('#prompt-drawer').evaluate((drawer) => { drawer.open = true; });
   await page.click('#prompt-generate');
   assert((await page.inputValue('#prompt-output')).length > 100,
     'Temperature candidate did not generate a portable prompt from its validated runtime projection');
   assert((await page.textContent('#prompt-message')).includes('generated locally'),
     'Temperature candidate prompt generation did not report local completion');
-  await page.click('#project-demo');
+  await page.keyboard.press('Escape');
+  await page.click('#workbench-view-simple');
+  await page.click('#beginner-examples');
   await page.click('.starter-card[data-example="button"]');
   if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
   await page.waitForFunction(() => document.querySelector('#project-message').textContent.includes('Button input loaded'));
@@ -125,7 +132,7 @@ let browser;
     { width: 390, height: 844 }, { width: 320, height: 720 },
   ]) {
     await page.setViewportSize(viewport);
-    if (!(await dialog.evaluate((node) => node.open))) await page.click('#project-demo');
+    if (!(await dialog.evaluate((node) => node.open))) await page.click('#beginner-examples');
     const layout = await page.evaluate(() => ({
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       visibleCards: [...document.querySelectorAll('.starter-card')].filter((card) => card.getClientRects().length).length,
@@ -137,12 +144,15 @@ let browser;
     assert(layout.visibleCards === 15, `starter cards disappear at ${viewport.width}px`);
   }
   await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.click('#workbench-view-advanced');
   if (await page.getAttribute('#serial-tab', 'aria-expanded') !== 'true') await page.click('#serial-tab');
   const serialLayout = await page.evaluate(() => ({
-    noOverlap: document.querySelector('main').getBoundingClientRect().right
-      <= document.querySelector('#serial-dock').getBoundingClientRect().left + 1,
+    visible: !document.querySelector('#serial-dock').hidden,
+    contained: document.querySelector('#serial-dock').getBoundingClientRect().left >= 0
+      && document.querySelector('#serial-dock').getBoundingClientRect().right <= innerWidth,
   }));
-  assert(serialLayout.noOverlap, 'example picker change caused Serial overlap');
+  assert(serialLayout.visible && serialLayout.contained, 'example picker change clipped the Serial dock');
   const workersBeforeReload = await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations);
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__M11_READY__ === true);
@@ -154,7 +164,7 @@ let browser;
   assert(errors.length === 0, `starter journeys raised browser errors: ${errors.join(' | ')}`);
   if (process.env.STARTER_SCREENSHOT) {
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.click('#project-demo');
+    await page.click('#beginner-examples');
     fs.mkdirSync(path.dirname(process.env.STARTER_SCREENSHOT), { recursive: true });
     await page.screenshot({ path: process.env.STARTER_SCREENSHOT, fullPage: false });
   }

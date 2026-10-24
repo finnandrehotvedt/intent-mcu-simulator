@@ -40,9 +40,9 @@
         <header class="top-workbench-toolbar">
           <div class="top-workbench-identity"><p class="eyebrow">ACTIVE BUILD SURFACE</p><h2 id="top-workbench-title">Build the circuit</h2><div class="workbench-view-switch" role="group" aria-label="Workbench detail level"><button id="workbench-view-simple" type="button" aria-pressed="true">Simple</button><button id="workbench-view-advanced" type="button" aria-pressed="false">Advanced</button></div><p id="workbench-view-status" class="sr-only" role="status">Simple view keeps the active project, circuit, source, runtime status, instruments, files, limits and diagnostics; advanced review tools are hidden.</p></div>
           <div id="top-controller-controls" class="top-controller-controls"></div>
-          <div id="top-primary-controls" class="top-primary-controls"></div>
+          <div id="top-primary-controls" class="top-primary-controls"><div id="beginner-primary" class="beginner-primary"><button id="beginner-run" class="beginner-run" type="button">Kjør LED-eksempelet</button><div class="beginner-secondary"><button id="beginner-examples" type="button">Eksempler</button><button id="beginner-scratch" type="button">Start fra scratch</button></div><span id="beginner-status" role="status">Ferdig koblet LED-eksempel · bygges ferskt når du trykker Kjør</span></div></div>
         </header>
-        <nav id="workbench-popup-controls" class="workbench-popup-controls" aria-label="Open secondary workbench tools">
+        <details id="workbench-more" class="workbench-more"><summary>Mer</summary><nav id="workbench-popup-controls" class="workbench-popup-controls" aria-label="Open secondary workbench tools">
           <button id="top-get-started" class="workbench-get-started" type="button" aria-haspopup="dialog" aria-controls="walkthrough">Get started</button>
           <button id="project-files-open" type="button" aria-haspopup="dialog" aria-controls="workbench-project-dialog">Project &amp; files</button>
           <button id="toggle-catalog" type="button" aria-haspopup="dialog" aria-controls="workbench-parts-dialog">Parts</button>
@@ -56,7 +56,7 @@
           <button id="help-limits-open" type="button" aria-haspopup="dialog" aria-controls="workbench-help-dialog">Help &amp; limits</button>
           <button id="build-list-export" type="button">Export build list</button>
           <button id="accessible-svg-export" type="button">Export accessible SVG</button>
-        </nav>
+        </nav></details>
         <p id="build-list-status" class="build-list-status" role="status">Build-list export: named connections and authored values only; no purchase, firmware or runtime evidence.</p>
         <p id="accessible-svg-status" class="build-list-status" role="status">Accessible SVG: circuit, named pins, release and model limits; no current measurements.</p>
       </div>

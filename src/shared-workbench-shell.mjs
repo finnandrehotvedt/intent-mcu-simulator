@@ -1808,7 +1808,9 @@ export function mountSharedWorkbenchShell(document) {
     advanced: document.querySelector('#workbench-view-advanced'),
   });
   const viewStatus = document.querySelector('#workbench-view-status');
-  if (Object.values(viewButtons).some((node) => !node) || !viewStatus) {
+  const more = document.querySelector('#workbench-more');
+  const popupControls = document.querySelector('#workbench-popup-controls');
+  if (Object.values(viewButtons).some((node) => !node) || !viewStatus || !more || !popupControls) {
     throw new Error('SHARED_WORKBENCH_VIEW_SWITCH_MISSING');
   }
   const advancedOnlySelector = [
@@ -1884,6 +1886,9 @@ export function mountSharedWorkbenchShell(document) {
     const closedBrief = nextMode === 'simple' && activePopup === 'brief';
     if (closedBrief) closePopup({ restoreFocus: false });
     viewMode = nextMode;
+    more.open = nextMode === 'advanced';
+    if (nextMode === 'simple') popupControls.prepend(quickControls);
+    else primaryMount.append(quickControls);
     document.body.dataset.workbenchView = viewMode;
     for (const [mode, button] of Object.entries(viewButtons)) {
       button.setAttribute('aria-pressed', String(mode === viewMode));

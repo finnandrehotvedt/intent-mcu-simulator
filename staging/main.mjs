@@ -525,6 +525,7 @@ const elements = Object.fromEntries([
   'counterexample-reduce', 'counterexample-reduction-summary',
   'fault-suite-load', 'fault-suite-replay', 'fault-suite-summary',
   'starter-examples', 'starter-gallery', 'quick-controls', 'workbench-workspace', 'project-bar',
+  'beginner-primary', 'beginner-run', 'beginner-examples', 'beginner-scratch', 'beginner-status', 'workbench-more',
   'build-list-export', 'build-list-status', 'accessible-svg-export', 'accessible-svg-status',
   'project-navigation', 'project-navigation-query', 'project-navigation-status', 'project-navigation-results',
   'family-select', 'board-select', 'controller-status', 'toolchain-boundary',
@@ -694,7 +695,25 @@ let pendingRuntimeRender = null;
 let runtimeWorkerCreations = 0;
 let runtimeReadyDeadlineTimer = null;
 const RUNTIME_READY_DEADLINE_MS = 5_000;
+const TAB_DRAFT_ID_KEY = 'intent-mcu.active-draft-id.v1';
+const TAB_PROFILE_KEY = 'intent-mcu.active-profile.v1';
+let activeDraftId = null;
+try {
+  activeDraftId = sessionStorage.getItem(TAB_DRAFT_ID_KEY);
+  if (!/^[a-f0-9-]{16,64}$/u.test(activeDraftId ?? '')) {
+    activeDraftId = crypto.randomUUID();
+    sessionStorage.setItem(TAB_DRAFT_ID_KEY, activeDraftId);
+  }
+} catch { activeDraftId = null; }
+const activeProjectStorageKey = activeDraftId ? `${PROJECT_STORAGE_KEY}.tab.${activeDraftId}` : PROJECT_STORAGE_KEY;
+const activeProjectRecoveryKey = activeDraftId ? `${PROJECT_RECOVERY_KEY}.tab.${activeDraftId}` : PROJECT_RECOVERY_KEY;
 let selectedCompilerProfile = AVR_PROFILE;
+try {
+  const retainedProfile = sessionStorage.getItem(TAB_PROFILE_KEY);
+  if ([AVR_PROFILE, RP2040_PROFILE, ESP32C3_PROFILE, STM32F429ZI_PROFILE].includes(retainedProfile)) {
+    selectedCompilerProfile = retainedProfile;
+  }
+} catch { /* session storage denial keeps the safe AVR default */ }
 let x92Budget = null;
 let x92BudgetExecutor = null;
 let x92C3Integration = null;
@@ -731,6 +750,7 @@ const requirementResultLinks = new Map();
 const sharedInstrumentSummaries = new Map();
 const sharedInstrumentLocals = new Map();
 let activeJob = null;
+let beginnerRunIntent = false;
 let loadedSourceIdentity = null;
 let running = false;
 let lastWorkerMessage = 0;
@@ -10809,9 +10829,9 @@ function persistProject(message = null) {
   try {
     const text = authoredProjectText(AVR_PROFILE);
     if (new TextEncoder().encode(text).length > 4 * 1024 * 1024) throw new Error('STORAGE_PROJECT_LIMIT');
-    localStorage.setItem(PROJECT_RECOVERY_KEY, text);
-    localStorage.setItem(PROJECT_STORAGE_KEY, text);
-    localStorage.removeItem(PROJECT_RECOVERY_KEY);
+    localStorage.setItem(activeProjectRecoveryKey, text);
+    localStorage.setItem(activeProjectStorageKey, text);
+    localStorage.removeItem(activeProjectRecoveryKey);
     savedRevision = editor.revision;
     savedProjectGeneration = lifecycle.projectGeneration;
     if (message) elements.projectmessage.textContent = message;
@@ -13397,6 +13417,9 @@ async function loadArtifact(hex, artifactIdentity, {
     publish({ runtime: state, runtimeLoadState: 'failed' });
     cancelThermostatExperiment(`Experiment unresolved: ${message}. Nothing was marked passed.`, { clearResults: false });
     elements.workerstate.textContent = 'Runtime failed to start — rebuild the current project';
+    beginnerRunIntent = false;
+    elements.beginnerrun.disabled = false;
+    elements.beginnerstatus.textContent = 'Kjøring kunne ikke starte. Rett feilen og prøv Kjør igjen.';
     showActionableError(elements.projectmessage, code, message);
   };
   loadWorker.addEventListener('message', async ({ data }) => {
@@ -13540,6 +13563,12 @@ async function loadArtifact(hex, artifactIdentity, {
       runtimeReadyDeadlineTimer = null;
       setRuntimeEnabled(true);
       publish({ runtimeLoadState: 'ready' });
+      if (beginnerRunIntent) {
+        beginnerRunIntent = false;
+        elements.beginnerrun.disabled = false;
+        elements.beginnerstatus.textContent = 'LED-eksempelet kjører. Åpne Mer for Pause, Reset og instrumenter.';
+        queueMicrotask(() => elements.run.click());
+      }
       if (authority) {
         x47WorkerIdentity = structuredClone(identity);
         renderX47Integration(x47UiOwner.bind({ authority,
@@ -13656,6 +13685,9 @@ async function pollJob(job, inputAtSubmit, modelExecutionContextSha256, modelImp
       }); return;
     }
     const errorCode = status.status === 'timeout' ? 'BUILD_TIMEOUT' : 'BUILD_FAILED';
+    beginnerRunIntent = false;
+    elements.beginnerrun.disabled = false;
+    elements.beginnerstatus.textContent = 'Bygget feilet. Åpne Mer → Firmware for feilmeldingen, og prøv igjen.';
     const acceptedFailure = applyLifecycle({
       type: 'build.failed', binding, diagnostics: status.result?.diagnostics ?? [{ code: errorCode }],
     });
@@ -13798,6 +13830,9 @@ async function build() {
     persistProject();
     elements.buildstate.textContent = 'Build request failed'; renderBuildDiagnostics(null, error.message); publish({ buildState: 'failed' });
     showActionableError(elements.projectmessage, 'BUILD_REQUEST_FAILED', error.message);
+    beginnerRunIntent = false;
+    elements.beginnerrun.disabled = false;
+    elements.beginnerstatus.textContent = 'Bygget kunne ikke startes. Prosjektet er beholdt; prøv Kjør igjen.';
     if (isRetryableCapacityCode(error.code)) elements.projectmessage.textContent = error.message;
   } finally {
     if (!activeJob) buildAbortController = null;
@@ -14668,7 +14703,7 @@ function createNewAvrProject() {
   selectedSourceFile = 'main.ino';
   clearProjectFileConnection(AVR_PROFILE);
   fileSavedRevision = null; fileSavedProjectGeneration = null; fileSaveState = null;
-  localStorage.removeItem(PROJECT_STORAGE_KEY); localStorage.removeItem(PROJECT_RECOVERY_KEY); renderCatalog(); renderProject();
+  localStorage.removeItem(activeProjectStorageKey); localStorage.removeItem(activeProjectRecoveryKey); renderCatalog(); renderProject();
   setProjectBaseline(AVR_PROFILE);
   elements.projectmessage.textContent = 'Created an actually empty project.';
 }
@@ -14856,6 +14891,48 @@ function openExamplePicker() {
   elements.examplepickerdialog.showModal();
   elements.examplepickersearch.focus();
 }
+function startFromScratch() {
+  const createScratch = () => {
+    createNewAvrProject();
+    elements.beginnerstatus.textContent = 'Tomt prosjekt opprettet. Åpne Mer → Deler og legg til en kontroller som første steg.';
+    sharedWorkbenchShell.openDialog('parts', elements.beginnerscratch);
+  };
+  if (requestUnsavedChangeGuard({
+    profile: AVR_PROFILE, actionLabel: 'starting from scratch', continueAction: createScratch,
+  })) return;
+  createScratch();
+}
+async function runBeginnerProject() {
+  if (selectedCompilerProfile !== AVR_PROFILE) {
+    elements.beginnerstatus.textContent = 'Kjør-hurtigstarten gjelder LED-eksempelet på AVR. Velg AVR, eller åpne Mer for kontrollene til valgt kort.';
+    sharedWorkbenchShell.openDialog('help', elements.beginnerrun);
+    return;
+  }
+  if (currentProject().circuit.components.length === 0) {
+    const install = () => {
+      const loaded = loadExampleProject('blink', 'project.beginner-run');
+      if (loaded?.ok) queueMicrotask(() => { void runBeginnerProject(); });
+      return loaded;
+    };
+    if (requestUnsavedChangeGuard({ profile: AVR_PROFILE, actionLabel: 'loading the LED example', continueAction: install })) return;
+    const loaded = install();
+    if (!loaded?.ok) return;
+    return;
+  }
+  elements.beginnerrun.disabled = true;
+  if (!elements.quickrun.disabled && lifecycle.artifact) {
+    elements.beginnerstatus.textContent = 'Starter den ferske, validerte firmwaren…';
+    elements.quickrun.click();
+    elements.beginnerrun.disabled = false;
+    return;
+  }
+  beginnerRunIntent = true;
+  elements.beginnerstatus.textContent = 'Bygger fersk firmware i den isolerte kompilatoren…';
+  elements.build.click();
+}
+elements.beginnerexamples.addEventListener('click', openExamplePicker);
+elements.beginnerscratch.addEventListener('click', startFromScratch);
+elements.beginnerrun.addEventListener('click', () => { void runBeginnerProject(); });
 elements.projectdemo.addEventListener('click', openExamplePicker);
 elements.examplepickerclose.addEventListener('click', () => closeExamplePicker());
 elements.examplepickersearch.addEventListener('input', filterStarterExamples);
@@ -14896,6 +14973,7 @@ elements.boardselect.addEventListener('change', () => {
   const previousRequirements = projectBriefForProfile(previousProfile).requiredCapabilities;
   const selected = candidateCompilerTarget(elements.boardselect.value);
   selectedCompilerProfile = selected ? selected.profile : AVR_PROFILE;
+  try { sessionStorage.setItem(TAB_PROFILE_KEY, selectedCompilerProfile); } catch { /* profile remains in memory */ }
   lastProfileMigrationReport = previousProfile === selectedCompilerProfile ? null : explainProfileMigration({
     fromProfile: previousProfile,
     toProfile: selectedCompilerProfile,
@@ -14994,8 +15072,8 @@ elements.projectname.addEventListener('change', () => {
 });
 elements.recoveryexport.addEventListener('click', () => downloadText('intent-mcu-recovery.json', authoredProjectText(AVR_PROFILE), 'application/json'));
 elements.projectreload.addEventListener('click', () => {
-  const recovery = localStorage.getItem(PROJECT_RECOVERY_KEY);
-  const stored = recovery ?? localStorage.getItem(PROJECT_STORAGE_KEY); const parsed = stored ? parseAvrRecoverySource(stored) : { ok: false, code: 'NO_LOCAL_SAVE' };
+  const recovery = localStorage.getItem(activeProjectRecoveryKey);
+  const stored = recovery ?? localStorage.getItem(activeProjectStorageKey); const parsed = stored ? parseAvrRecoverySource(stored) : { ok: false, code: 'NO_LOCAL_SAVE' };
   if (!parsed.ok) { showActionableError(elements.projectmessage, parsed.code, 'Reload validation failed.'); return; }
   editor = parsed.session;
   scenarioTimelineEditor = parsed.scenarioTimeline
@@ -15292,7 +15370,10 @@ renderStarterExamples();
 syncControllerSelectors(selectedCompilerProfile);
 
 let stored = null; let recoveryStored = null;
-try { stored = localStorage.getItem(PROJECT_STORAGE_KEY); recoveryStored = localStorage.getItem(PROJECT_RECOVERY_KEY); } catch { /* storage denial is recoverable */ }
+try {
+  stored = localStorage.getItem(activeProjectStorageKey) ?? localStorage.getItem(PROJECT_STORAGE_KEY);
+  recoveryStored = localStorage.getItem(activeProjectRecoveryKey) ?? localStorage.getItem(PROJECT_RECOVERY_KEY);
+} catch { /* storage denial is recoverable */ }
 const recoveryRestored = recoveryStored ? parseAvrRecoverySource(recoveryStored) : null;
 const currentRestored = stored ? parseAvrRecoverySource(stored) : null;
 const restored = recoveryRestored?.ok ? recoveryRestored : currentRestored;
@@ -15307,6 +15388,11 @@ scenarioTimelineEditor = restored?.scenarioTimeline
   ? new ScenarioTimelineEditor(restored.scenarioTimeline) : null;
 authoredScenarioResults = [];
 lifecycle = createLifecycleState({ empty: currentProject().circuit.components.length === 0 });
+let firstVisitStarterLoaded = false;
+if (!restored?.ok && !stored && !recoveryStored) {
+  const firstVisit = loadExampleProject('blink', 'project.first-visit');
+  firstVisitStarterLoaded = firstVisit?.ok === true;
+}
 if (restored?.ok) persistProject();
 const workspace = document.querySelector('.workspace');
 for (const [name, button] of [['catalog-collapsed', elements.togglecatalog], ['inspector-collapsed', elements.toggleinspector]]) {
@@ -15321,7 +15407,9 @@ elements.projectmessage.textContent = recoveryRestored?.ok
   ? 'Recovered and revalidated an interrupted local save. Rebuild before Run.'
   : restored?.ok ? 'Reopened and revalidated the local project. Rebuild before Run.'
     : stored || recoveryStored ? 'A saved value was invalid and was left untouched. The empty in-memory project can be exported before retrying.'
-      : 'No example or hidden template is loaded.';
+      : firstVisitStarterLoaded
+        ? 'LED-eksempelet er ferdig koblet. Trykk Kjør; Lab bygger alltid fersk firmware før første kjøring.'
+        : 'No example or hidden template is loaded.';
 if ((stored || recoveryStored) && !restored?.ok) elements.recoveryexport.disabled = false;
 for (const profile of [AVR_PROFILE, RP2040_PROFILE, ESP32C3_PROFILE, STM32F429ZI_PROFILE]) setProjectBaseline(profile);
 installNativeFileControls();
