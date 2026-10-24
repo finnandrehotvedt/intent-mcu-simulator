@@ -93,6 +93,17 @@ JSON object per line: `{"command":"inspect"}`,
 without another pairing while the existing owner, scope, revision, rate, idle
 and absolute-lifetime rules remain valid. Process exit, reload, revoke, expiry
 or authority loss requires a fresh pairing; no capability is persisted.
+The caller must launch this as a real keep-open process with writable stdin and
+retain its process/session handle across later AI chat turns. A detached command
+with closed stdin fails with API_SESSION_STDIN_REQUIRED before the ticket is
+read or deleted. Wait for the first `mode:"session"` JSON line, then send every
+later command through that exact process handle; never relaunch the consumed
+ticket. Session mode sends a quiet authenticated client heartbeat every 60
+seconds. It renews the 120-second idle lease and bounded 15-minute renewal
+horizon only while the original browser owner tab is independently alive and
+heartbeating. Closing the process, closing or reloading the tab, Revoke, two
+missed heartbeats or authority loss still fails closed. No capability is
+written to disk, cookie or browser storage, and one-shot mode does not renew.
 
 Exact batch operation shapes
 {"command":"component.add","id":"part-1","type":"led.basic-v1",

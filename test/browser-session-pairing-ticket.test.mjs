@@ -37,6 +37,18 @@ const secretSafe = (result) => {
   assert.doesNotMatch(result.stderr, new RegExp(marker, 'u'));
 };
 
+test('session with closed stdin preserves the one-use ticket before any network request', async (context) => {
+  let requests = 0;
+  const server = createServer((_request, response) => { requests += 1; response.end('{}'); });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  context.after(() => new Promise((resolve) => server.close(resolve)));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const { ticketPath } = await fixture(context, JSON.stringify(ticket(origin)));
+  const result = await run(['--session', ticketPath], { INTENT_MCU_ALLOW_LOOPBACK_TICKET: '1' });
+  secretSafe(result); assert.match(result.stderr, /API_SESSION_STDIN_REQUIRED/u);
+  assert.equal(requests, 0); await access(ticketPath);
+});
+
 test('malformed secret-bearing JSON returns one fixed code and is deleted', async (context) => {
   const { ticketPath } = await fixture(context, `{"pairing_secret":"${marker}",BROKEN}`);
   const result = await run(['--ticket', ticketPath]);

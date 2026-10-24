@@ -141,6 +141,18 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
       projectId: session.projectId, clientCapability, scopes: clone(session.client.scopes),
       revision: session.revision, expiresAt: session.client.absoluteExpiresAt };
   }
+  function clientHeartbeat({ sessionId, clientCapability }) {
+    const session = sessions.get(sessionId);
+    if (!clientLive(session) || !equal(clientCapability, session.client.hash)) {
+      if (session?.client && !clientLive(session)) retire(session);
+      return failure('API_AUTH_REQUIRED');
+    }
+    const time = now();
+    session.client.idleExpiresAt = time + BROWSER_SESSION_LIMITS.clientIdleTtlMs;
+    session.client.absoluteExpiresAt = time + BROWSER_SESSION_LIMITS.clientAbsoluteTtlMs;
+    return { ok: true, code: 'API_CLIENT_LEASE_RENEWED',
+      idleExpiresAt: session.client.idleExpiresAt, expiresAt: session.client.absoluteExpiresAt };
+  }
   function submit({ sessionId, clientCapability, request }) {
     const requiredScope = request?.command === 'capabilities.list' || request?.command === 'components.catalog'
       ? 'discover' : EDIT_COMMANDS.includes(request?.command) ? 'edit_circuit' : 'read_project';
@@ -280,7 +292,7 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
       }
     }
   }
-  return Object.freeze({ registerOwner, heartbeat, createPairing, claimPairing, submit, pull, authorizeExecution,
+  return Object.freeze({ registerOwner, heartbeat, createPairing, claimPairing, clientHeartbeat, submit, pull, authorizeExecution,
     complete, readResult, revoke, sweep,
     inspect: () => ({ sessions: sessions.size, pairings: pairings.size }) });
 }

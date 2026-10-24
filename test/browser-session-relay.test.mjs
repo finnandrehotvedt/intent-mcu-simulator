@@ -78,6 +78,28 @@ test('wrong project, sequence, expired client, owner loss and revoke fail closed
   assert.equal(second.relay.pull({ sessionId: ids.sessionId, ownerCapability: second.owner.ownerCapability }).code, 'API_OWNER_GONE');
 });
 
+test('memory-only client heartbeat renews only while the original owner tab remains live', () => {
+  const state = paired();
+  state.clock.value += 110_000;
+  assert.equal(state.relay.heartbeat({ sessionId: ids.sessionId,
+    ownerCapability: state.owner.ownerCapability, revision: 0 }).code, 'API_OWNER_LEASE_RENEWED');
+  const renewed = state.relay.clientHeartbeat({ sessionId: ids.sessionId,
+    clientCapability: state.client.clientCapability });
+  assert.equal(renewed.code, 'API_CLIENT_LEASE_RENEWED');
+  assert.equal(renewed.idleExpiresAt, state.clock.value + 120_000);
+  assert.equal(renewed.expiresAt, state.clock.value + 900_000);
+  assert.equal(state.relay.clientHeartbeat({ sessionId: ids.sessionId,
+    clientCapability: 'wrong' }).code, 'API_AUTH_REQUIRED');
+  state.clock.value += 110_000;
+  assert.equal(state.relay.submit({ sessionId: ids.sessionId,
+    clientCapability: state.client.clientCapability, request: request() }).code, 'API_REQUEST_QUEUED');
+
+  const ownerGone = paired(); ownerGone.clock.value += 130_001;
+  assert.equal(ownerGone.relay.clientHeartbeat({ sessionId: ids.sessionId,
+    clientCapability: ownerGone.client.clientCapability }).code, 'API_AUTH_REQUIRED');
+  assert.deepEqual(ownerGone.relay.inspect(), { sessions: 0, pairings: 0 });
+});
+
 test('bounded request tombstones never evict into re-execution', () => {
   const { relay, owner, client, clock } = paired();
   for (let sequence = 1; sequence <= 64; sequence += 1) {

@@ -15,6 +15,21 @@ const ticketPath = ticketMode ? args[1] : null;
 if ((!ticketMode && (!origin || args.length > 2)) || (ticketMode && (!ticketPath || args.length > (sessionMode ? 2 : 3)))) {
   stderr.write('Usage: node client.mjs ORIGIN [NONSECRET_PLAN.json]\n       node client.mjs --ticket PAIRING.intentpair [NONSECRET_PLAN.json]\n       node client.mjs --session PAIRING.intentpair\n'); process.exit(2);
 }
+async function requirePersistentSessionInput() {
+  if (!sessionMode || stdin.isTTY) return;
+  if (stdin.readableEnded || stdin.destroyed) throw new Error('API_SESSION_STDIN_REQUIRED');
+  let ended = false;
+  const markEnded = () => { ended = true; };
+  stdin.once('end', markEnded); stdin.once('close', markEnded);
+  stdin.resume();
+  await new Promise((resolve) => setTimeout(resolve, 75));
+  stdin.off('end', markEnded); stdin.off('close', markEnded);
+  if (ended || stdin.readableEnded || stdin.destroyed) throw new Error('API_SESSION_STDIN_REQUIRED');
+}
+// A session ticket is one-use. Prove that the caller retained a writable stdin
+// before reading or deleting it, so a detached one-shot command cannot consume
+// the user's only pairing and then exit immediately.
+await requirePersistentSessionInput();
 let pairingSecret = null;
 let ticketScopes = null;
 if (ticketMode) {
@@ -109,6 +124,21 @@ if (ticketScopes && scopes.some((scope) => !ticketScopes.includes(scope))) throw
 const claim = await post('pairing.claim', { pairingSecret, scopes });
 if (!claim.ok) throw new Error(claim.code);
 let sequence = 1; let revision = claim.revision;
+let sessionHeartbeat = null;
+if (sessionMode) {
+  sessionHeartbeat = setInterval(async () => {
+    try {
+      const renewed = await post('client.heartbeat', { sessionId: claim.sessionId }, claim.clientCapability);
+      if (!renewed.ok) {
+        stdout.write(`${JSON.stringify({ status: 'rejected', code: renewed.code })}\n`);
+        process.exit(0);
+      }
+    } catch {
+      stdout.write('{"status":"rejected","code":"API_SESSION_HEARTBEAT_FAILED"}\n');
+      process.exit(0);
+    }
+  }, 60_000);
+}
 async function execute(command, args = {}) {
   const requestId = `cli-${randomUUID()}`;
   const request = { schema: 'intent-mcu-browser-session-request@1', request_id: requestId,
@@ -166,6 +196,7 @@ if (sessionMode) {
       if (!input || typeof input !== 'object' || Array.isArray(input)
           || typeof input.command !== 'string') throw new Error('API_SESSION_INPUT_SHAPE');
       if (input.command === 'close' && Object.keys(input).join('|') === 'command') {
+        clearInterval(sessionHeartbeat);
         stdout.write('{"status":"closed","code":"API_SESSION_LOCAL_CLOSED"}\n'); break;
       }
       if (input.command === 'inspect' && Object.keys(input).join('|') === 'command') {

@@ -47,6 +47,7 @@ export function createBrowserSessionHttpHandler(relay, { publicOrigin }) {
       else if (operation === 'owner.heartbeat') result = relay.heartbeat({ ...value, ownerCapability: capability });
       else if (operation === 'pairing.create') result = relay.createPairing({ ...value, ownerCapability: capability });
       else if (operation === 'pairing.claim') result = relay.claimPairing(value);
+      else if (operation === 'client.heartbeat') result = relay.clientHeartbeat({ ...value, clientCapability: capability });
       else if (operation === 'request.submit') result = relay.submit({ ...value, clientCapability: capability });
       else if (operation === 'owner.pull') result = relay.pull({ ...value, ownerCapability: capability });
       else if (operation === 'owner.authorize') result = relay.authorizeExecution({ ...value, ownerCapability: capability });
