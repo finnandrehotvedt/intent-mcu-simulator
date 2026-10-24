@@ -32,17 +32,17 @@
 <body data-workbench-view="simple">
   <main>
     <header class="app-header">
-      <div><p class="eyebrow">PUBLIC RELEASE · AVR + BOUNDED PICO + ESP32-C3 + STM32F429ZI</p><h1>Intent MCU Simulator</h1></div>
-      <p class="lede">Build and run four bounded controller paths. C3 uses actual QEMU CPU/UART with a separate GPIO2 model; STM32 uses actual Renode PB0/USART3 with an ideal external LED teaching path.</p>
+      <div><p class="eyebrow">OPEN-SOURCE MICROCONTROLLER LAB</p><h1>Intent MCU Simulator</h1></div>
+      <div class="app-introduction"><p class="lede"><strong>Build a circuit. Connect pins. Run.</strong> Start with one tested controller and a working example.</p><details><summary>Controller and runtime details</summary><p>Four bounded controller paths are available. The exact QEMU, Renode, browser-worker and teaching-model boundaries are shown with each controller.</p></details></div>
     </header>
     <section id="top-workbench-shell" class="top-workbench-shell" aria-labelledby="top-workbench-title">
       <div id="top-workbench-sticky-controls" class="top-workbench-sticky-controls">
         <header class="top-workbench-toolbar">
-          <div class="top-workbench-identity"><p class="eyebrow">ACTIVE BUILD SURFACE</p><h2 id="top-workbench-title">Build the circuit</h2><div class="workbench-view-switch" role="group" aria-label="Workbench detail level"><button id="workbench-view-simple" type="button" aria-pressed="true">Simple</button><button id="workbench-view-advanced" type="button" aria-pressed="false">Advanced</button></div><p id="workbench-view-status" class="sr-only" role="status">Simple view keeps the active project, circuit, source, runtime status, instruments, files, limits and diagnostics; advanced review tools are hidden.</p></div>
+          <div class="top-workbench-identity"><p class="eyebrow">YOUR WORKBENCH</p><h2 id="top-workbench-title">Build the circuit</h2><div class="workbench-view-switch" role="group" aria-label="Workbench detail level"><button id="workbench-view-simple" type="button" aria-pressed="true">Simple</button><button id="workbench-view-advanced" type="button" aria-pressed="false">Advanced</button></div><p id="workbench-view-status" class="sr-only" role="status">Simple view keeps the active project, circuit, source, runtime status, instruments, files, limits and diagnostics; advanced review tools are hidden.</p></div>
           <div id="top-controller-controls" class="top-controller-controls"></div>
-          <div id="top-primary-controls" class="top-primary-controls"><div id="beginner-primary" class="beginner-primary"><button id="beginner-run" class="beginner-run" type="button">Kjør LED-eksempelet</button><div class="beginner-secondary"><button id="beginner-examples" type="button">Eksempler</button><button id="beginner-scratch" type="button">Start fra scratch</button><button id="beginner-source" type="button" hidden>Bruk minimal LED-kode</button></div><span id="beginner-status" role="status">Ferdig koblet LED-eksempel · bygges ferskt når du trykker Kjør</span></div></div>
+          <div id="top-primary-controls" class="top-primary-controls"><div id="beginner-primary" class="beginner-primary"><button id="beginner-run" class="beginner-run" type="button">Run LED example</button><div class="beginner-secondary"><button id="beginner-examples" type="button">Examples</button><button id="beginner-scratch" type="button">Start empty</button><button id="beginner-source" type="button" hidden>Use minimal LED code</button></div><span id="beginner-status" role="status">Working LED example · fresh firmware is built when you choose Run</span></div></div>
         </header>
-        <details id="workbench-more" class="workbench-more"><summary>Mer</summary><nav id="workbench-popup-controls" class="workbench-popup-controls" aria-label="Open secondary workbench tools">
+        <details id="workbench-more" class="workbench-more"><summary>More</summary><nav id="workbench-popup-controls" class="workbench-popup-controls" aria-label="Open secondary workbench tools">
           <button id="top-get-started" class="workbench-get-started" type="button" aria-haspopup="dialog" aria-controls="walkthrough">Get started</button>
           <button id="project-files-open" type="button" aria-haspopup="dialog" aria-controls="workbench-project-dialog">Project &amp; files</button>
           <button id="toggle-catalog" type="button" aria-haspopup="dialog" aria-controls="workbench-parts-dialog">Parts</button>
@@ -91,18 +91,18 @@
     </aside>
 
     <section id="project-bar" class="project-bar panel" aria-label="Project controls" data-shared-surface="project">
-      <div><p class="eyebrow">LOCAL PROJECT</p><label class="project-name-field" for="project-name">Project name <input id="project-name" type="text" maxlength="80" value="Untitled project" autocomplete="off"></label><strong id="project-state">Untitled project · empty · not saved</strong><span id="lifecycle-state" class="lifecycle-state">empty</span></div>
+      <div><p class="eyebrow">LOCAL PROJECT</p><label class="project-name-field" for="project-name">Name <input id="project-name" type="text" maxlength="80" value="Untitled project" autocomplete="off"></label><strong id="project-state">Untitled project · empty · not saved</strong><span id="lifecycle-state" class="lifecycle-state">empty</span></div>
       <div class="toolbar project-toolbar">
         <button id="project-new" type="button">New empty</button>
         <select id="example-select" hidden aria-hidden="true" tabindex="-1" aria-label="Selected example project"><option value="blink">Blink LED</option><option value="button">Button input</option><option value="adc">ADC dial</option><option value="pwm">PWM fade</option><option value="pwm-pulse">PWM pulse</option><option value="temperature-lcd-threshold">Temperature display</option><option value="avr-thermostat-boundary-v1">Thermostat boundary test</option><option value="avr-ground-reference-input">Ground reference input</option><option value="avr-toggle-input">SPST toggle input</option><option value="avr-spdt-selector">SPDT input selector</option><option value="avr-light-analogue">Analogue light level</option><option value="avr-light-threshold">Digital light threshold</option><option value="avr-active-buzzer">Logical active buzzer</option><option value="avr-seven-segment">Seven-segment digits</option><option value="avr-rotary-encoder">Quadrature encoder</option></select>
         <span id="starter-gallery" class="starter-launch"><button id="project-demo" type="button" aria-haspopup="dialog" aria-controls="example-picker-dialog">Choose example <span aria-hidden="true">· 15</span></button></span>
         <button id="walkthrough-open" type="button">First project guide</button>
         <button id="undo" type="button" disabled>Undo</button><button id="redo" type="button" disabled>Redo</button>
-        <button id="project-save" class="project-file-primary" type="button">Download copy</button><button id="project-open" class="project-file-primary" type="button">Open project</button>
+        <button id="project-save" class="project-file-primary" type="button">Save copy</button><button id="project-open" class="project-file-primary" type="button">Open file</button>
         <button id="teaching-exercise-open" type="button">Teaching exercise</button>
         <input id="project-open-input" class="sr-only" type="file" accept="application/json,.json" aria-label="Open project file">
         <details class="project-file-advanced">
-          <summary>Advanced file &amp; recovery</summary>
+          <summary>Details: file connection, versions &amp; browser recovery</summary>
           <div class="project-file-advanced-actions">
             <button id="project-native-open" class="native-file-action" type="button" hidden>Open &amp; connect…</button>
             <button id="project-native-save" class="native-file-action" type="button" hidden disabled>Save connected file</button>
@@ -118,8 +118,8 @@
           </div>
         </details>
       </div>
-      <p id="project-file-connection" class="file-connection" role="status">Download copy and Open project work without a native file connection.</p>
-      <p id="project-message" class="truth" role="status">No account or cloud project store. Save/Open uses a file on your computer; your browser or operating system chooses its location. Browser recovery is separate.</p>
+      <p id="project-file-connection" class="file-connection" role="status">Save copy downloads a project file. Open file reads a project file you choose.</p>
+      <p id="project-message" class="truth" role="status">Files stay on your computer. Browser recovery is a separate local safety copy, not a saved project file or cloud backup.</p>
       <details id="model-library-detail" class="model-library-detail">
         <summary><span id="model-library-summary">Model library · current locked version</span></summary>
         <p id="model-library-status" class="truth">This project uses the current immutable project-owned component/model library.</p>
@@ -1180,7 +1180,7 @@
       <button id="example-picker-close" class="dialog-close" type="button" aria-label="Close example chooser">×</button>
       <p class="eyebrow">VALIDATED AVR STARTERS</p>
       <h2 id="example-picker-title">Choose a working circuit</h2>
-      <p id="example-picker-description" class="example-picker-description">Select a goal, then edit its wiring and firmware. Every card uses the same project and electrical validation as a file you open yourself.</p>
+      <p id="example-picker-description" class="example-picker-description">Pick a goal and open its working circuit. The schematic icon marks a circuit example; teaching notes stay folded until you want them.</p>
       <label class="example-picker-search" for="example-picker-search">Find an example
         <input id="example-picker-search" type="search" autocomplete="off" placeholder="Search goal, part or lesson">
       </label>

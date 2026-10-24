@@ -25,6 +25,7 @@ import {
 import { createProjectNavigationView, searchProjectNavigation } from '../src/project-navigation.mjs';
 import { CIRCUIT_SCHEMA, validateCircuit } from '../src/circuit-engine.mjs';
 import { DEFAULT_CIRCUIT } from '../src/default-circuit.mjs';
+import { pinTargetGuidance } from '../src/pin-target-guidance.mjs';
 import { RELEASE_VERSION } from '../src/release-metadata.mjs';
 import { isRetryableCapacityCode, retryGuidanceFromResponse, retryMessage, retryResultFields } from '../src/retry-guidance.mjs';
 import {
@@ -729,7 +730,7 @@ function reportControllerDraftFailure(profile, message) {
 }
 function persistControllerDraft(profile, workbench) {
   if (corruptControllerDraftProfiles.has(profile)) {
-    reportControllerDraftFailure(profile, 'Browser draft was not replaced because its saved bytes are invalid. The original bytes remain untouched; use Download copy before leaving.');
+    reportControllerDraftFailure(profile, 'Browser recovery was not replaced because its saved bytes are invalid. The original bytes remain untouched; use Save copy before leaving.');
     return false;
   }
   try {
@@ -744,7 +745,7 @@ function persistControllerDraft(profile, workbench) {
     try { prior = JSON.parse(localStorage.getItem(profileDraftStorageKey(profile)) ?? 'null'); }
     catch {
       corruptControllerDraftProfiles.add(profile);
-      reportControllerDraftFailure(profile, 'Browser draft was not replaced because its saved bytes are invalid. The original bytes remain untouched; use Download copy before leaving.');
+      reportControllerDraftFailure(profile, 'Browser recovery was not replaced because its saved bytes are invalid. The original bytes remain untouched; use Save copy before leaving.');
       return false;
     }
     let validatedProject = prior?.schema === 'intent-mcu-profile-draft@1' ? prior.project : prior;
@@ -759,7 +760,7 @@ function persistControllerDraft(profile, workbench) {
     }));
     return true;
   } catch (error) {
-    reportControllerDraftFailure(profile, `Browser draft could not be saved (${error.name || error.message}). The in-memory project remains usable; use Download copy before leaving.`);
+    reportControllerDraftFailure(profile, `Browser recovery could not be saved (${error.name || error.message}). The in-memory project remains usable; use Save copy before leaving.`);
     return false;
   }
 }
@@ -8037,10 +8038,10 @@ function renderNativeFileControls() {
     ui.save.disabled = busy || !connection;
     ui.status.dataset.connected = String(Boolean(connection));
     ui.status.dataset.busy = String(Boolean(busy));
-    if (busy) ui.status.textContent = `Native ${nativeFileOperation.kind} is waiting for the browser or operating system. Download copy and ordinary Open remain available.`;
+    if (busy) ui.status.textContent = `Native ${nativeFileOperation.kind} is waiting for the browser or operating system. Save copy and Open file remain available.`;
     else if (connection) ui.status.textContent = `Connected for this session: ${connection.name}. Save connected file writes only after a complete close.`;
-    else if (capabilities.open || capabilities.save) ui.status.textContent = 'Optional native file connection available for this secure desktop session. Download copy and ordinary Open remain the reliable primary actions.';
-    else ui.status.textContent = 'Download copy and Open project are available. This browser does not expose the optional native file connection.';
+    else if (capabilities.open || capabilities.save) ui.status.textContent = 'Save copy and Open file are the primary actions. Optional native file connection is available under Details.';
+    else ui.status.textContent = 'Save copy and Open file are available. This browser does not expose the optional native file connection under Details.';
   }
 }
 function clearProjectFileConnection(profile) {
@@ -8049,7 +8050,7 @@ function clearProjectFileConnection(profile) {
 }
 function nativeFileIntent(profile, kind) {
   if (nativeFileOperation) {
-    profileMessage(profile, 'Another native file decision is still open. Download copy and ordinary Open remain available.');
+    profileMessage(profile, 'Another native file decision is still open. Save copy and Open file remain available.');
     return null;
   }
   const operation = {
@@ -12280,6 +12281,7 @@ function renderComponents() {
     for (const [pinIndex, pin] of definition.pins.entries()) {
       const anchor = document.createElement('button'); anchor.type = 'button'; anchor.className = 'pin-anchor';
       anchor.dataset.endpoint = `${component.id}.${pin.id}`; anchor.textContent = pin.id;
+      anchor.dataset.pinRole = pin.role;
       anchor.dataset.labelSide = pin.anchor.y < 0.5 ? 'top' : 'bottom';
       anchor.style.setProperty('--pin-label-lane', String(pinIndex % 5));
       anchor.title = `${component.id}.${pin.id} · ${pin.label} · ${pin.role}`;
@@ -12292,7 +12294,17 @@ function renderComponents() {
       visibleLabel.textContent = pin.label;
       anchor.append(visibleLabel);
       if (pendingEndpoint && endpointKey(pendingEndpoint) === anchor.dataset.endpoint) anchor.classList.add('pending');
-      else if (pendingEndpoint) anchor.classList.add('available');
+      else if (pendingEndpoint) {
+        const sourceComponent = currentProject().circuit.components.find(({ id }) => id === pendingEndpoint.component);
+        const sourcePin = uiComponentCatalog[sourceComponent?.type]?.pins.find(({ id }) => id === pendingEndpoint.pin);
+        const guidance = pinTargetGuidance(sourcePin?.role, pin.role);
+        anchor.classList.add(`${guidance}-target`);
+        anchor.setAttribute('aria-description', guidance === 'recommended'
+          ? 'Recommended named-pin target; final electrical validation still applies.'
+          : guidance === 'blocked'
+            ? 'Known output conflict; choose another named pin.'
+            : 'Possible named-pin target; final electrical validation decides whether the connection is accepted.');
+      }
       anchor.addEventListener('click', (event) => {
         event.stopPropagation();
         const intended = nearestPinAnchor(card, event, anchor);
@@ -13205,16 +13217,16 @@ function renderProject() {
     elements.beginnersource.hidden = selectedCompilerProfile !== AVR_PROFILE || !empty || !sourceEmpty;
     if (selectedCompilerProfile !== AVR_PROFILE) {
       const [label, status] = beginnerProfileLabels[selectedCompilerProfile]
-        ?? ['Fortsett med valgt kort', 'Valgt profil bruker sine egne synlige kontroller.'];
+        ?? ['Continue with selected controller', 'The selected profile uses its own visible controls.'];
       elements.beginnerrun.textContent = label;
       elements.beginnerstatus.textContent = status;
     } else {
-      elements.beginnerrun.textContent = empty ? 'Legg til deler' : blink ? 'Kjør LED-eksempelet' : 'Kjør prosjektet';
+      elements.beginnerrun.textContent = empty ? 'Add parts' : blink ? 'Run LED example' : 'Run project';
       elements.beginnerstatus.textContent = empty
-        ? `Tomt prosjekt · 1 Deler → 2 Koble pinner → 3 ${sourceEmpty ? 'Skriv kode' : 'Kode klar'} → 4 Kjør.`
+        ? `Empty project · 1 Parts → 2 Connect pins → 3 ${sourceEmpty ? 'Write code' : 'Code ready'} → 4 Run.`
         : blink
-          ? 'Ferdig koblet LED-eksempel · bygges ferskt når du trykker Kjør.'
-          : `${project.metadata.name} · bygges ferskt når du trykker Kjør.`;
+          ? 'Working LED example · fresh firmware is built when you choose Run.'
+          : `${project.metadata.name} · fresh firmware is built when you choose Run.`;
     }
   }
   elements.undo.disabled = !editor.undoStack.length; elements.redo.disabled = !editor.redoStack.length;
@@ -13646,7 +13658,7 @@ async function loadArtifact(hex, artifactIdentity, {
     elements.workerstate.textContent = 'Runtime failed to start — rebuild the current project';
     beginnerRunIntent = null;
     elements.beginnerrun.disabled = false;
-    elements.beginnerstatus.textContent = 'Kjøring kunne ikke starte. Rett feilen og prøv Kjør igjen.';
+    elements.beginnerstatus.textContent = 'Run could not start. Correct the error and choose Run again.';
     showActionableError(elements.projectmessage, code, message);
   };
   loadWorker.addEventListener('message', async ({ data }) => {
@@ -13796,7 +13808,7 @@ async function loadArtifact(hex, artifactIdentity, {
         const projectLabel = beginnerRunIntent.projectLabel;
         beginnerRunIntent = null;
         elements.beginnerrun.disabled = false;
-        elements.beginnerstatus.textContent = `${projectLabel} kjører. Åpne Mer for Pause, Reset og instrumenter.`;
+        elements.beginnerstatus.textContent = `${projectLabel} is running. Open More for Pause, Reset and instruments.`;
         queueMicrotask(() => elements.run.click());
       }
       if (authority) {
@@ -13917,7 +13929,7 @@ async function pollJob(job, inputAtSubmit, modelExecutionContextSha256, modelImp
     const errorCode = status.status === 'timeout' ? 'BUILD_TIMEOUT' : 'BUILD_FAILED';
     beginnerRunIntent = null;
     elements.beginnerrun.disabled = false;
-    elements.beginnerstatus.textContent = 'Bygget feilet. Åpne Mer → Firmware for feilmeldingen, og prøv igjen.';
+    elements.beginnerstatus.textContent = 'Build failed. Open More → Firmware for the error, then try again.';
     const acceptedFailure = applyLifecycle({
       type: 'build.failed', binding, diagnostics: status.result?.diagnostics ?? [{ code: errorCode }],
     });
@@ -14062,7 +14074,7 @@ async function build() {
     showActionableError(elements.projectmessage, 'BUILD_REQUEST_FAILED', error.message);
     beginnerRunIntent = null;
     elements.beginnerrun.disabled = false;
-    elements.beginnerstatus.textContent = 'Bygget kunne ikke startes. Prosjektet er beholdt; prøv Kjør igjen.';
+    elements.beginnerstatus.textContent = 'Build could not start. Your project was kept; choose Run to try again.';
     if (isRetryableCapacityCode(error.code)) elements.projectmessage.textContent = error.message;
   } finally {
     if (!activeJob) buildAbortController = null;
@@ -14164,7 +14176,7 @@ elements.cancel.addEventListener('click', () => {
   publish({ buildState: 'cancelled', artifactIdentity: null, inputIdentity: null, cacheHit: false });
   beginnerRunIntent = null;
   elements.beginnerrun.disabled = false;
-  elements.beginnerstatus.textContent = 'Bygget ble avbrutt. Prosjektet er beholdt; prøv Kjør igjen.';
+  elements.beginnerstatus.textContent = 'Build was cancelled. Your project was kept; choose Run to try again.';
 });
 elements.run.addEventListener('click', () => {
   const x92Boundary = x92BudgetExecutor?.runtimeBoundary?.();
@@ -15058,26 +15070,31 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
 
 function renderStarterExamples() {
   const cards = [...exampleCatalog(), TEMPERATURE_LCD_THRESHOLD_CARD, THERMOSTAT_EXPERIMENT_CARD, ...avrReferenceStarterCatalog()].map((example) => {
-    const button = document.createElement('button');
-    button.type = 'button'; button.className = 'starter-card'; button.dataset.example = example.id;
-    button.setAttribute('aria-label', `Open ${example.name}: ${example.focus}`);
+    const card = document.createElement('article'); card.className = 'starter-card'; card.dataset.example = example.id;
+    const visual = document.createElement('span'); visual.className = 'starter-visual'; visual.setAttribute('aria-hidden', 'true');
+    const meta = document.createElement('span'); meta.className = 'starter-meta';
     const focus = document.createElement('span'); focus.className = 'starter-focus'; focus.textContent = example.focus;
+    const difficulty = document.createElement('span'); difficulty.className = 'starter-difficulty';
+    difficulty.textContent = ['blink', 'button', 'adc'].includes(example.id) ? 'Beginner' : 'Next step';
+    meta.append(focus, difficulty);
     const name = document.createElement('strong'); name.textContent = example.name;
     const description = document.createElement('span'); description.className = 'starter-description'; description.textContent = example.description;
     const parts = document.createElement('span'); parts.className = 'starter-parts'; parts.textContent = example.partsLabel;
     const outcome = document.createElement('span'); outcome.className = 'starter-outcome'; outcome.textContent = example.outcome ?? example.observe;
-    const action = document.createElement('span'); action.className = 'starter-action'; action.textContent = 'Open working circuit →';
-    button.append(focus, name, description, parts, outcome);
+    const action = document.createElement('button'); action.type = 'button'; action.className = 'starter-action'; action.textContent = 'Open';
+    action.setAttribute('aria-label', `Open ${example.name}: ${example.focus}`);
+    card.append(visual, meta, name, description, parts, outcome, action);
     if (example.learn) {
+      const teaching = document.createElement('details'); teaching.className = 'starter-teaching';
+      const summary = document.createElement('summary'); summary.textContent = 'Teaching details';
       const guide = document.createElement('span'); guide.className = 'starter-learning-grid';
       for (const [label, value] of [['Learn', example.learn], ['Try', example.try], ['Observe', example.observe], ['Limits', example.limits], ['Next', example.next]]) {
         const row = document.createElement('span'); const title = document.createElement('b'); title.textContent = label;
         row.append(title, document.createTextNode(value)); guide.append(row);
       }
-      button.append(guide);
+      teaching.append(summary, guide); card.append(teaching);
     }
-    button.append(action);
-    button.addEventListener('click', () => {
+    action.addEventListener('click', () => {
       const install = () => {
         const result = loadExampleProject(example.id, 'project.starter');
         if (result?.ok) closeExamplePicker();
@@ -15086,7 +15103,7 @@ function renderStarterExamples() {
         profile: AVR_PROFILE, actionLabel: `loading ${example.name}`, continueAction: install,
       })) install();
     });
-    return button;
+    return card;
   });
   elements.starterexamples.replaceChildren(...cards);
 }
@@ -15127,7 +15144,7 @@ function openExamplePicker() {
 function startFromScratch() {
   const createScratch = () => {
     createNewAvrProject();
-    elements.beginnerstatus.textContent = 'Tomt prosjekt · 1 Deler → 2 Koble pinner → 3 Skriv kode → 4 Kjør. Velg minimal LED-kode bare hvis du vil bruke startkoden.';
+    elements.beginnerstatus.textContent = 'Empty project · 1 Parts → 2 Connect pins → 3 Write code → 4 Run. Minimal LED code is optional.';
     sharedWorkbenchShell.openDialog('parts', elements.beginnerscratch);
   };
   if (requestUnsavedChangeGuard({
@@ -15150,16 +15167,16 @@ function useMinimalLedSource() {
   if (selectedCompilerProfile !== AVR_PROFILE) return;
   const source = currentProject().source.files.find((file) => file.name === 'main.ino');
   if (!source || source.content.trim()) {
-    elements.beginnerstatus.textContent = 'Eksisterende kode ble beholdt. Minimal startkode kan bare legges inn i en tom main.ino.';
+    elements.beginnerstatus.textContent = 'Existing code was kept. Minimal starter code can only be added to an empty main.ino.';
     return;
   }
   const result = applyEditor({ type: 'source.set', name: 'main.ino', content: MINIMAL_LED_SOURCE }, 'Minimal LED starter selected');
-  if (result.ok) elements.beginnerstatus.textContent = 'Minimal LED-kode lagt inn · neste: legg til deler, koble D13 gjennom motstand og LED til GND, og velg deretter Kjør.';
+  if (result.ok) elements.beginnerstatus.textContent = 'Minimal LED code added · next, add parts and connect D13 through a resistor and LED to GND, then choose Run.';
 }
 const beginnerProfileLabels = Object.freeze({
-  [RP2040_PROFILE]: ['Fortsett med Pico', 'Pico er valgt · bruk de synlige Pico-kontrollene for Build og Run når koblingen er gyldig.'],
-  [ESP32C3_PROFILE]: ['Fortsett med ESP32-C3', 'ESP32-C3 er valgt · bruk de synlige ESP32-C3-kontrollene for Build og Run når koblingen er gyldig.'],
-  [STM32F429ZI_PROFILE]: ['Fortsett med STM32', 'STM32 er valgt · bruk de synlige STM32-kontrollene for Build og Run når koblingen er gyldig.'],
+  [RP2040_PROFILE]: ['Continue with Pico', 'Pico is selected · use its visible Build and Run controls when the wiring is valid.'],
+  [ESP32C3_PROFILE]: ['Continue with ESP32-C3', 'ESP32-C3 is selected · use its visible Build and Run controls when the wiring is valid.'],
+  [STM32F429ZI_PROFILE]: ['Continue with STM32', 'STM32 is selected · use its visible Build and Run controls when the wiring is valid.'],
 });
 function focusActiveProfileControls() {
   const stage = document.querySelector('#active-canvas-stage');
@@ -15169,18 +15186,18 @@ function focusActiveProfileControls() {
 async function runBeginnerProject() {
   if (selectedCompilerProfile !== AVR_PROFILE) {
     elements.beginnerstatus.textContent = beginnerProfileLabels[selectedCompilerProfile]?.[1]
-      ?? 'Valgt profil har egne synlige kontroller. Ingen firmwarehandling ble startet.';
+      ?? 'The selected profile has its own visible controls. No firmware action was started.';
     focusActiveProfileControls();
     return;
   }
   if (currentProject().circuit.components.length === 0) {
-    elements.beginnerstatus.textContent = 'Tomt prosjekt · velg en kontroller og deler. Ingenting ble erstattet.';
+    elements.beginnerstatus.textContent = 'Empty project · choose a controller and parts. Nothing was replaced.';
     sharedWorkbenchShell.openDialog('parts', elements.beginnerrun);
     return;
   }
   elements.beginnerrun.disabled = true;
   if (!elements.quickrun.disabled && lifecycle.artifact) {
-    elements.beginnerstatus.textContent = 'Starter den ferske, validerte firmwaren…';
+    elements.beginnerstatus.textContent = 'Starting the fresh, validated firmware…';
     elements.quickrun.click();
     elements.beginnerrun.disabled = false;
     return;
@@ -15188,14 +15205,14 @@ async function runBeginnerProject() {
   beginnerRunIntent = {
     projectGeneration: lifecycle.projectGeneration,
     inputIdentity: buildInputIdentity(),
-    projectLabel: currentProject().metadata.name === 'Blink demo' ? 'LED-eksempelet' : currentProject().metadata.name,
+    projectLabel: currentProject().metadata.name === 'Blink demo' ? 'LED example' : currentProject().metadata.name,
   };
-  elements.beginnerstatus.textContent = 'Bygger fersk firmware i den isolerte kompilatoren…';
+  elements.beginnerstatus.textContent = 'Building fresh firmware in the isolated compiler…';
   const result = await build();
   if (result?.ok === false && beginnerRunIntent) {
     beginnerRunIntent = null;
     elements.beginnerrun.disabled = false;
-    elements.beginnerstatus.textContent = 'Bygget kunne ikke startes. Prosjektet er beholdt; prøv Kjør igjen.';
+    elements.beginnerstatus.textContent = 'Build could not start. Your project was kept; choose Run to try again.';
   }
 }
 elements.beginnerexamples.addEventListener('click', openExamplePicker);
@@ -15713,7 +15730,7 @@ elements.projectmessage.textContent = recoveryRestored?.ok
   : restored?.ok ? 'Reopened and revalidated the local project. Rebuild before Run.'
     : stored || recoveryStored ? 'A saved value was invalid and was left untouched. The empty in-memory project can be exported before retrying.'
       : firstVisitStarterLoaded
-        ? 'LED-eksempelet er ferdig koblet. Trykk Kjør; Lab bygger alltid fersk firmware før første kjøring.'
+        ? 'The LED example is wired and ready. Choose Run; the Lab always builds fresh firmware before the first run.'
         : 'No example or hidden template is loaded.';
 if ((stored || recoveryStored) && !restored?.ok) elements.recoveryexport.disabled = false;
 for (const profile of [AVR_PROFILE, RP2040_PROFILE, ESP32C3_PROFILE, STM32F429ZI_PROFILE]) setProjectBaseline(profile);

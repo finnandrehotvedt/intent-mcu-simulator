@@ -82,10 +82,10 @@ test('X59 keeps finite presentation-only view state inside the X48-owned shared 
   assert.match(html, /id="workbench-view-advanced"[^>]+aria-pressed="false"/);
   assert.match(shell, /let viewMode = 'simple'/);
   assert.match(shell, /setViewMode\('simple'\)/);
-  assert.match(html, /id="beginner-run"[^>]*>Kjør LED-eksempelet</u);
-  assert.match(html, /id="beginner-examples"[^>]*>Eksempler</u);
-  assert.match(html, /id="beginner-scratch"[^>]*>Start fra scratch</u);
-  assert.match(html, /<details id="workbench-more"[^>]*><summary>Mer<\/summary>/u);
+  assert.match(html, /id="beginner-run"[^>]*>Run LED example</u);
+  assert.match(html, /id="beginner-examples"[^>]*>Examples</u);
+  assert.match(html, /id="beginner-scratch"[^>]*>Start empty</u);
+  assert.match(html, /<details id="workbench-more"[^>]*><summary>More<\/summary>/u);
   assert.match(shell, /popupControls\.prepend\(quickControls\)/u);
   assert.match(shell, /SHARED_WORKBENCH_VIEW_MODE_UNKNOWN/);
   assert.match(shell, /viewMode\(\) \{ return viewMode; \}/);
