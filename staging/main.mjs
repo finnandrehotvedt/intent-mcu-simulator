@@ -526,7 +526,7 @@ const elements = Object.fromEntries([
   'counterexample-reduce', 'counterexample-reduction-summary',
   'fault-suite-load', 'fault-suite-replay', 'fault-suite-summary',
   'starter-examples', 'starter-gallery', 'quick-controls', 'workbench-workspace', 'project-bar',
-  'beginner-primary', 'beginner-run', 'beginner-examples', 'beginner-scratch', 'beginner-source', 'beginner-status', 'workbench-more',
+  'beginner-primary', 'beginner-run', 'beginner-runtime-toggle', 'beginner-examples', 'beginner-scratch', 'beginner-source', 'beginner-status', 'workbench-more',
   'build-list-export', 'build-list-status', 'accessible-svg-export', 'accessible-svg-status',
   'project-navigation', 'project-navigation-query', 'project-navigation-status', 'project-navigation-results',
   'family-select', 'board-select', 'controller-status', 'toolchain-boundary',
@@ -722,10 +722,10 @@ const activeProjectRecoveryKey = activeDraftId ? `${PROJECT_RECOVERY_KEY}.tab.${
 const profileDraftStorageKey = (profile) => `intent-mcu.profile-draft.v1.${profile}.tab.${activeDraftId ?? 'fallback'}`;
 function reportControllerDraftFailure(profile, message) {
   profileMessage(profile, message);
-  if (elements?.projectmessage) elements.projectmessage.textContent = message;
+  if (profile === selectedCompilerProfile && elements?.projectmessage) elements.projectmessage.textContent = message;
   setTimeout(() => {
     profileMessage(profile, message);
-    if (elements?.projectmessage) elements.projectmessage.textContent = message;
+    if (profile === selectedCompilerProfile && elements?.projectmessage) elements.projectmessage.textContent = message;
   }, 0);
 }
 function persistControllerDraft(profile, workbench) {
@@ -751,7 +751,7 @@ function persistControllerDraft(profile, workbench) {
     let validatedProject = prior?.schema === 'intent-mcu-profile-draft@1' ? prior.project : prior;
     try { validatedProject = workbench.projectDocument(); } catch { /* keep last validated install basis */ }
     if (!validatedProject) return false;
-    const circuit = structuredClone(workbench.circuitEditor.snapshot().draft);
+    const circuit = JSON.parse(JSON.stringify(workbench.circuitEditor.snapshot().draft));
     localStorage.setItem(profileDraftStorageKey(profile), JSON.stringify({
       schema: 'intent-mcu-profile-draft@1', profile, project: validatedProject,
       authoredSource: inputs?.[0]?.value ?? workbench.project.source,
@@ -760,7 +760,7 @@ function persistControllerDraft(profile, workbench) {
     }));
     return true;
   } catch (error) {
-    reportControllerDraftFailure(profile, `Browser recovery could not be saved (${error.name || error.message}). The in-memory project remains usable; use Save copy before leaving.`);
+    reportControllerDraftFailure(profile, `Browser recovery for ${profile} could not be saved (${error.name || error.message}). Existing saved bytes were not replaced; the in-memory project remains usable. Use Save copy before leaving.`);
     return false;
   }
 }
@@ -1145,6 +1145,22 @@ function renderPicoQuickControls(state = picoPublicState) {
   elements.quickpause.title = '';
   elements.quickreset.title = '';
   elements.quickstop.title = 'Stop the browser worker and discard the current Pico artifact.';
+  renderBeginnerRuntimeToggle({ phase: state.phase, supportsPause: true, stopAvailable: true });
+}
+
+function renderBeginnerRuntimeToggle({ phase, supportsPause, stopAvailable }) {
+  const active = supportsPause && ['running', 'paused'].includes(phase);
+  elements.beginnerruntimetoggle.hidden = !active;
+  if (!active) return;
+  const paused = phase === 'paused';
+  elements.beginnerruntimetoggle.dataset.state = paused ? 'paused' : 'running';
+  elements.beginnerruntimetoggle.textContent = paused ? 'Resume' : 'Pause';
+  elements.beginnerruntimetoggle.setAttribute('aria-label', paused
+    ? 'Resume the current runtime without changing source or wiring'
+    : 'Pause the current runtime without changing source or wiring');
+  elements.beginnerstatus.textContent = paused
+    ? `Paused · source, wiring and current project are preserved. Choose Resume to continue.${stopAvailable ? '' : ' Stop is unavailable; Reset starts from the current built project.'}`
+    : `Running · choose Pause to inspect or correct the project without losing source.${stopAvailable ? '' : ' Stop is unavailable; use Pause or Reset.'}`;
 }
 
 function renderAvrQuickControls() {
@@ -1163,6 +1179,7 @@ function renderAvrQuickControls() {
   elements.quickpause.title = '';
   elements.quickreset.title = '';
   elements.quickstop.title = 'Stop is unavailable for the AVR browser runtime; use Pause or Reset.';
+  renderBeginnerRuntimeToggle({ phase: lifecycle.phase, supportsPause: true, stopAvailable: false });
 }
 
 function renderC3QuickControls(state = c3PublicState) {
@@ -1181,6 +1198,7 @@ function renderC3QuickControls(state = c3PublicState) {
   elements.quickpause.title = 'Pause is unavailable for the bounded QEMU run.';
   elements.quickreset.title = 'Reset replay is already verified inside each QEMU Run.';
   elements.quickstop.title = 'Stop QEMU and discard the transient C3 session.';
+  renderBeginnerRuntimeToggle({ phase: state.phase, supportsPause: false, stopAvailable: true });
 }
 
 function renderStm32QuickControls(state = stm32PublicState) {
@@ -1199,6 +1217,7 @@ function renderStm32QuickControls(state = stm32PublicState) {
   elements.quickpause.title = 'Pause is unavailable for the isolated Renode run.';
   elements.quickreset.title = '';
   elements.quickstop.title = 'Stop Renode and discard the transient STM32 executable.';
+  renderBeginnerRuntimeToggle({ phase: state.phase, supportsPause: false, stopAvailable: true });
 }
 
 let picoEditorZoom = 1;
@@ -15216,6 +15235,10 @@ async function runBeginnerProject() {
   }
 }
 elements.beginnerexamples.addEventListener('click', openExamplePicker);
+elements.beginnerruntimetoggle.addEventListener('click', () => {
+  if (elements.beginnerruntimetoggle.dataset.state === 'paused') elements.quickrun.click();
+  else elements.quickpause.click();
+});
 elements.beginnerscratch.addEventListener('click', startFromScratch);
 elements.beginnersource.addEventListener('click', useMinimalLedSource);
 elements.beginnerrun.addEventListener('click', () => { void runBeginnerProject(); });
