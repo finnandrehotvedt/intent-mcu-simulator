@@ -44,6 +44,18 @@ test('capability preflight is truthful and charges no current-tab budget', () =>
   assert.equal(X37_PUBLIC_CAPABILITY.enabled, false);
 });
 
+test('compiler and run attempts charge before dispatch and cancellation refunds only unstarted work', () => {
+  const budget = createX37CandidateBudget();
+  assert.equal(budget.preflight({ enabled: true }).ok, true);
+  budget.chargeBuild(); budget.cancel();
+  assert.deepEqual(budget.snapshot(), { limits: { builds: 2, runs: 1 },
+    charged: { builds: 1, runs: 0 }, reserved: null });
+  assert.equal(budget.preflight({ enabled: true }).code, 'X37_BUDGET_EXHAUSTED');
+  const complete = createX37CandidateBudget(); complete.preflight({ enabled: true });
+  complete.chargeBuild(); complete.chargeBuild(); complete.chargeRun();
+  assert.deepEqual(complete.snapshot().charged, { builds: 2, runs: 1 });
+});
+
 test('coordinated lifecycle joins both builds and invalidates atomically', () => {
   const owner = createX37CoordinatedLifecycle(4);
   owner.acceptBuild('avr', { projectGeneration: 4, artifactIdentity: 'avr-artifact' });

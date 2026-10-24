@@ -102,6 +102,14 @@ export function createX37CandidateBudget({ builds = 2, runs = 1 } = {}) {
       if (reservation || chargedBuilds + 2 > builds || chargedRuns + 1 > runs) return { ok: false, code: 'X37_BUDGET_EXHAUSTED', charged: false };
       reservation = Object.freeze({ builds: 2, runs: 1 }); return { ok: true, reservation };
     },
+    chargeBuild() {
+      if (!reservation || chargedBuilds >= builds) fail('X37_BUDGET_RESERVATION_REQUIRED');
+      chargedBuilds += 1; return clone({ builds: chargedBuilds, runs: chargedRuns });
+    },
+    chargeRun() {
+      if (!reservation || chargedBuilds !== builds || chargedRuns >= runs) fail('X37_BUDGET_RESERVATION_REQUIRED');
+      chargedRuns += 1; reservation = null; return clone({ builds: chargedBuilds, runs: chargedRuns });
+    },
     commit() { if (!reservation) fail('X37_BUDGET_RESERVATION_REQUIRED'); chargedBuilds += 2; chargedRuns += 1; reservation = null; },
     cancel() { reservation = null; },
     snapshot: () => ({ limits: { builds, runs }, charged: { builds: chargedBuilds, runs: chargedRuns }, reserved: clone(reservation) }),
