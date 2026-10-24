@@ -194,6 +194,10 @@ export function installBrowserSessionOwner() {
         }
         const before = await snapshot().catch(() => null);
         if (!contextLive()) return;
+        if (Date.now() >= authorized.requestExpiresAt) {
+          status.textContent = 'Command expired while refreshing canonical state.';
+          await revokeCurrent(); return;
+        }
         if (!before || before.projectId !== projectId || pulled.request.project_id !== projectId) {
           await post('owner.complete', { sessionId: createdSessionId, result: {
             schema: 'intent-mcu-browser-session-result@1', request_id: pulled.request.request_id,

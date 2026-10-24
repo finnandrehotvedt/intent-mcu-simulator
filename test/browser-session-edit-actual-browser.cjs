@@ -31,7 +31,7 @@ const resultFor = async (origin, claim, requestId) => {
 };
 const runEditor = (origin, secret) => new Promise((resolve, reject) => {
   const child = spawn(process.execPath, ['tools/browser-session-edit-client.mjs', origin], {
-    stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, API03_PAUSE_BEFORE_UNDO_MS: '1500' },
+    stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, API03_PAUSE_BEFORE_UNDO_MS: '5000' },
   });
   let stdout = ''; let stderr = '';
   child.stdout.on('data', (value) => { stdout += value; });
@@ -64,12 +64,18 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
     const context = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 1440, height: 900 } });
     const page = await context.newPage(); const browserErrors = []; const buildRequests = [];
     let holdPull = false; let releasePull = null; let observedPull = null;
+    let holdAuthorize = false; let releaseAuthorize = null; let observedAuthorize = null;
     await page.route('**/api/session/v1', async (route) => {
       const body = route.request().postDataJSON?.();
       if (holdPull && body?.operation === 'owner.pull') {
         const response = await route.fetch();
         observedPull?.();
         await new Promise((resolve) => { releasePull = resolve; });
+        await route.fulfill({ response }); return;
+      }
+      if (holdAuthorize && body?.operation === 'owner.authorize') {
+        const response = await route.fetch(); observedAuthorize?.();
+        await new Promise((resolve) => { releaseAuthorize = resolve; });
         await route.fulfill({ response }); return;
       }
       await route.continue();
@@ -102,6 +108,11 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
     assert.deepEqual(visible.components, ['api-board-1', 'api-led-1', 'api-resistor-1']);
     assert.deepEqual(visible.wires, ['api-net-drive', 'api-net-ground', 'api-net-series']);
     assert.equal(visible.buildStatus, 'dirty'); assert.equal(visible.artifactIdentity, null);
+    const assembledExact = await page.evaluate(() => structuredClone(window.__M6_PROJECT__()));
+    await page.locator('#browser-session-api-dialog [data-close]').click();
+    const downloadReady = page.waitForEvent('download');
+    await page.evaluate(() => document.querySelector('#project-save').click());
+    const download = await downloadReady; const savedPath = await download.path();
     if (process.env.API03_SCREENSHOT) await page.screenshot({ path: process.env.API03_SCREENSHOT, fullPage: false });
     const output = await editing;
     assert.equal(output.status, 'pass'); assert.equal(output.undo, 'API_TRANSACTION_UNDONE');
@@ -113,8 +124,20 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
     assert.equal(await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations), workersBefore);
     assert.deepEqual(buildRequests, []); assert.deepEqual(browserErrors, []);
 
-    // Edit scope is never inferred from a read-only pairing.
-    await page.locator('#browser-session-api-dialog [data-revoke]').click();
+    await page.locator('#project-open-input').setInputFiles(savedPath);
+    await page.waitForFunction((expected) => JSON.stringify(window.__M6_PROJECT__()) === expected,
+      JSON.stringify(assembledExact));
+    await page.waitForFunction(() => document.querySelector('#browser-session-api-dialog [data-status]')
+      ?.textContent.includes('Pair again.'));
+    const reopened = await page.evaluate(() => window.__M6_PROJECT__());
+    assert.deepEqual(reopened, assembledExact);
+
+    // Edit scope is never inferred from a read-only pairing; file Open revoked the prior scope.
+    await page.evaluate(() => [...document.querySelectorAll('#workbench-popup-controls button')]
+      .find((button) => button.textContent === 'API access').click());
+    if (await page.locator('#browser-session-api-dialog [data-revoke]').isEnabled()) {
+      await page.locator('#browser-session-api-dialog [data-revoke]').click();
+    }
     await page.locator('#browser-session-api-dialog [data-edit-scope]').uncheck();
     await page.locator('#browser-session-api-dialog [data-enable]').click();
     await page.waitForFunction(() => document.querySelector('#browser-session-api-dialog [data-secret]').value.length > 20);
@@ -131,12 +154,30 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
     const editSecret = await page.locator('#browser-session-api-dialog [data-secret]').inputValue();
     const claim = await post(origin, 'pairing.claim', { pairingSecret: editSecret,
       scopes: ['discover', 'read_project', 'edit_circuit'] });
+    await page.evaluate(() => {
+      window.__API04_STORAGE_SET__ = Storage.prototype.setItem;
+      Storage.prototype.setItem = () => { throw new DOMException('quota denied', 'QuotaExceededError'); };
+    });
+    const storageId = 'storage-denial-edit-0001';
+    const storageRequest = { schema: 'intent-mcu-browser-session-request@1', request_id: storageId,
+      session_id: claim.sessionId, project_id: claim.projectId, expected_revision: claim.revision,
+      sequence: 1, command: 'edit.batch', arguments: { commands: [{ command: 'component.property.set',
+        component_id: 'api-resistor-1', key: 'ohms', value: 330 }] } };
+    assert.equal((await post(origin, 'request.submit', { sessionId: claim.sessionId,
+      request: storageRequest }, claim.clientCapability)).code, 'API_REQUEST_QUEUED');
+    const storageResult = await resultFor(origin, claim, storageId);
+    assert.equal(storageResult.status, 'accepted');
+    assert.equal(await page.evaluate(() => window.__M6_PROJECT__().circuit.components
+      .find((component) => component.id === 'api-resistor-1').properties.ohms), 330);
+    assert.match(await page.locator('#project-message').textContent(), /local save failed/u);
+    await page.evaluate(() => { Storage.prototype.setItem = window.__API04_STORAGE_SET__;
+      delete window.__API04_STORAGE_SET__; });
     const stableBeforeInvalid = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
     const invalidId = 'invalid-batch-0001';
     const invalidRequest = { schema: 'intent-mcu-browser-session-request@1', request_id: invalidId,
-      session_id: claim.sessionId, project_id: claim.projectId, expected_revision: claim.revision,
-      sequence: 1, command: 'edit.batch', arguments: {
-        commands: [{ command: 'component.remove', component_id: 'board-1' }] } };
+      session_id: claim.sessionId, project_id: claim.projectId, expected_revision: storageResult.revision_after,
+      sequence: 2, command: 'edit.batch', arguments: {
+        commands: [{ command: 'component.remove', component_id: 'api-board-1' }] } };
     assert.equal((await post(origin, 'request.submit', { sessionId: claim.sessionId,
       request: invalidRequest }, claim.clientCapability)).code, 'API_REQUEST_QUEUED');
     assert.equal((await resultFor(origin, claim, invalidId)).status, 'rejected');
@@ -146,7 +187,7 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
       name.value = 'Manual race winner'; name.dispatchEvent(new Event('change', { bubbles: true })); });
     const manualWinner = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
     const staleId = 'stale-edit-0001';
-    const staleRequest = { ...invalidRequest, request_id: staleId, sequence: 2,
+    const staleRequest = { ...invalidRequest, request_id: staleId, sequence: 3,
       arguments: { transaction_id: 'transaction-stale-0001', commands: [] } };
     assert.equal((await post(origin, 'request.submit', { sessionId: claim.sessionId,
       request: staleRequest }, claim.clientCapability)).code, 'API_REQUEST_QUEUED');
@@ -166,7 +207,7 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
     const raceSecret = await page.locator('#browser-session-api-dialog [data-secret]').inputValue();
     const raceClaim = await post(origin, 'pairing.claim', { pairingSecret: raceSecret,
       scopes: ['discover', 'read_project', 'edit_circuit'] });
-    const pullSeen = new Promise((resolve) => { observedPull = resolve; }); holdPull = true;
+    const authorizeSeen = new Promise((resolve) => { observedAuthorize = resolve; }); holdAuthorize = true;
     const raceId = 'delayed-pull-race-0001';
     const raceRequest = { schema: 'intent-mcu-browser-session-request@1', request_id: raceId,
       session_id: raceClaim.sessionId, project_id: raceClaim.projectId, expected_revision: 0,
@@ -174,10 +215,14 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
         id: 'race-led-1', type: 'led.basic-v1', position: { x: 0.5, y: 0.5, rotation: 0 } }] } };
     assert.equal((await post(origin, 'request.submit', { sessionId: raceClaim.sessionId,
       request: raceRequest }, raceClaim.clientCapability)).code, 'API_REQUEST_QUEUED');
-    await pullSeen;
-    relayOffset += 30_001; holdPull = false; releasePull();
+    await authorizeSeen;
+    relayOffset += 121_001;
+    await page.evaluate(() => { window.__API04_REAL_NOW__ = Date.now;
+      Date.now = () => window.__API04_REAL_NOW__() + 121_001; });
+    holdAuthorize = false; releaseAuthorize();
     await page.waitForFunction(() => document.querySelector('#browser-session-api-dialog [data-status]')
       ?.textContent.startsWith('Command expired or was revoked:'));
+    await page.evaluate(() => { Date.now = window.__API04_REAL_NOW__; delete window.__API04_REAL_NOW__; });
     assert.equal(await page.locator('[data-component-id="race-led-1"]').count(), 0);
     assert.equal(await page.evaluate(() => window.__BROWSER_SESSION_CANONICAL_OWNER__.snapshot().revision), 0);
 
@@ -217,10 +262,31 @@ const runEditor = (origin, secret) => new Promise((resolve, reject) => {
     assert.equal((await post(origin, 'request.submit', { sessionId: successor.sessionId,
       request: successorRequest }, successor.clientCapability)).code, 'API_REQUEST_QUEUED');
     assert.deepEqual((await resultFor(origin, successor, successorId)).components, []);
+
+    const independentBrowser = await chromium.launch({ headless: true });
+    try {
+      const independentPage = await independentBrowser.newPage();
+      await independentPage.goto(origin, { waitUntil: 'domcontentloaded' });
+      await independentPage.waitForFunction(() => window.__BROWSER_SESSION_CANONICAL_OWNER__?.snapshot?.().ok === true);
+      await independentPage.evaluate(() => [...document.querySelectorAll('#workbench-popup-controls button')]
+        .find((button) => button.textContent === 'API access').click());
+      await independentPage.locator('#browser-session-api-dialog [data-enable]').click();
+      await independentPage.waitForFunction(() => document.querySelector(
+        '#browser-session-api-dialog [data-secret]').value.length > 20);
+      const independentSecret = await independentPage.locator(
+        '#browser-session-api-dialog [data-secret]').inputValue();
+      const independentClaim = await post(origin, 'pairing.claim', { pairingSecret: independentSecret,
+        scopes: ['discover', 'read_project'] });
+      assert.notEqual(independentClaim.sessionId, successor.sessionId);
+      assert.equal((await post(origin, 'request.submit', { sessionId: successor.sessionId,
+        request: successorRequest }, independentClaim.clientCapability)).code, 'API_AUTH_REQUIRED');
+    } finally { await independentBrowser.close(); }
     await context.close();
     process.stdout.write(`${JSON.stringify({ status: 'pass', visible, restoredExactBytes: true,
       editScopeExplicit: true, invalidAtomic: true, manualRaceStale: true,
+      actualFileRoundTrip: true, openRevokedPriorScope: true, storageDenialPreserved: true,
       expiredAfterPullContained: true, delayedPullContained: true, replacementSameRevision: true,
+      independentBrowserProcesses: 2,
       buildRequests: 0, runtimeWorkers: workersBefore })}\n`);
   } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }
 })().catch((error) => { console.error(error); process.exitCode = 1; });

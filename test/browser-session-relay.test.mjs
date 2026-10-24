@@ -196,7 +196,11 @@ test('lost result retry reconciles terminal mutation and response limit is reach
     ownerCapability: state.owner.ownerCapability, result: { schema: BROWSER_SESSION_RESULT_SCHEMA,
       request_id: next.request_id, status: 'accepted', code: 'API_PROJECT_INSPECTED',
       project: { source: 'x'.repeat(41 * 1024) } } }).code, 'API_RESPONSE_LIMIT');
-  assert.equal(state.relay.readResult({ sessionId: ids.sessionId,
-    clientCapability: state.client.clientCapability, requestId: next.request_id }).code,
-  'API_RESPONSE_LIMIT');
+  const bounded = state.relay.readResult({ sessionId: ids.sessionId,
+    clientCapability: state.client.clientCapability, requestId: next.request_id });
+  assert.equal(bounded.code, 'API_RESPONSE_LIMIT'); assert.equal(bounded.status, 'indeterminate');
+  assert.deepEqual(state.relay.submit({ sessionId: ids.sessionId,
+    clientCapability: state.client.clientCapability, request: next }).reconciliation,
+  { request_id: next.request_id, status: 'accepted', code: 'API_PROJECT_INSPECTED',
+    revision_after: undefined });
 });

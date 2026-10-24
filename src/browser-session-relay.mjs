@@ -225,9 +225,13 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
     const responseBytes = Buffer.byteLength(JSON.stringify(publicResult));
     if (responseBytes > BROWSER_SESSION_LIMITS.responseBytes) {
       const rejected = { schema: BROWSER_SESSION_RESULT_SCHEMA, request_id: result.request_id,
-        status: 'rejected', code: 'API_RESPONSE_LIMIT' };
+        status: 'indeterminate', code: 'API_RESPONSE_LIMIT' };
+      const reconciliation = { request_id: result.request_id, status: publicResult.status,
+        code: publicResult.code, revision_after: publicResult.revision_after,
+        ...(typeof publicResult.transaction_id === 'string'
+          ? { transaction_id: publicResult.transaction_id } : {}) };
       session.outcomes.set(result.request_id, { canonical: pending.canonical, result: rejected,
-        reconciliation: { request_id: result.request_id, status: 'rejected', code: 'API_RESPONSE_LIMIT' },
+        reconciliation,
         retiredCode: 'API_REQUEST_RETIRED', expiresAt: now() + BROWSER_SESSION_LIMITS.transientResultTtlMs });
       session.results.set(result.request_id, { value: rejected,
         expiresAt: now() + BROWSER_SESSION_LIMITS.transientResultTtlMs });
