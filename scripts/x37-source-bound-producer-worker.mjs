@@ -30,7 +30,9 @@ import { createX37PrivateRuntimeJournal } from '../src/x37-private-runtime-journ
 import {
   loadX37RetainedArtifact, loadX37RetainedArtifacts,
 } from '../src/x37-retained-artifact-loader.mjs';
-import { resolveX37ProducerArtifacts } from '../src/x37-producer-artifact-source.mjs';
+import {
+  resolveX37MixedRetainedArtifacts, resolveX37ProducerArtifacts,
+} from '../src/x37-producer-artifact-source.mjs';
 
 const workerEnvironment = await ensureX37WorkerEnvironment();
 const execFileAsync = promisify(execFile);
@@ -45,9 +47,11 @@ const exact = (value, keys) => value && typeof value === 'object' && !Array.isAr
   && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
 
 function validateConfiguration(value) {
-  if (!exact(value, ['mode', 'avrLockPath', 'rp2040LockPath', 'avrSourcePath', 'rp2040SourcePath',
-    'evidenceDirectory', 'retainedEvidenceDirectory', 'abortBuffer'])
-      || !['compile', 'retained', 'avr-compile-rp-retained'].includes(value.mode)
+  const common = ['mode', 'avrLockPath', 'rp2040LockPath', 'avrSourcePath', 'rp2040SourcePath',
+    'evidenceDirectory', 'retainedEvidenceDirectory', 'abortBuffer'];
+  const mixed = [...common, 'retainedAvrEvidenceDirectory', 'retainedRpEvidenceDirectory'];
+  if (!(exact(value, common) && ['compile', 'retained', 'avr-compile-rp-retained'].includes(value.mode)
+        || exact(value, mixed) && value.mode === 'mixed-retained')
       || !(value.abortBuffer instanceof SharedArrayBuffer)
       || Object.entries(value).some(([key, item]) => key !== 'mode'
         && key !== 'abortBuffer' && (typeof item !== 'string' || !item.startsWith('/')))) {
@@ -77,7 +81,8 @@ async function compileOne(participantId, lock, request, evidenceDirectory) {
   return result.artifact;
 }
 
-async function verifyShortPulseBeforeRuntime({ config, avrLock, avrSource, avrArtifact }) {
+async function verifyShortPulseBeforeRuntime({ config, avrLock, avrSource, avrArtifact,
+  artifactEvidenceDirectory = config.evidenceDirectory }) {
   const holds = avrSource.match(/driveLow\(64\);/gu) ?? [];
   if (holds.length !== 2 || /driveLow\(4096\);/u.test(avrSource)) {
     throw Object.assign(new Error('X37_AVR_SHORT_PULSE_SOURCE_INVALID'),
@@ -85,7 +90,8 @@ async function verifyShortPulseBeforeRuntime({ config, avrLock, avrSource, avrAr
   }
   const objdump = '/opt/arduino/data/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/bin/avr-objdump';
   const { stdout } = await execFileAsync('docker', ['run', '--rm', '--network', 'none', '--read-only',
-    '--volume', `${config.evidenceDirectory}:/evidence:ro`, '--entrypoint', objdump, avrLock.imageId,
+    '--user', '0:0', '--volume', `${artifactEvidenceDirectory}:/evidence:ro`,
+    '--entrypoint', objdump, avrLock.imageId,
     '-D', '-m', 'avr5', '/evidence/avr.firmware.bin'], { timeout: 10_000, maxBuffer: 2_000_000 });
   if (!stdout.includes('Disassembly of section') || stdout.length < 1_000) {
     throw Object.assign(new Error('X37_AVR_SHORT_PULSE_DISASSEMBLY_INVALID'),
@@ -145,6 +151,21 @@ async function main() {
     activity.buildRecords.push({ participantId: 'rp', ...rpIdentity, status: 'retained-verified',
       artifactSha256: rp.uf2.sha256 });
     selected = { mode: config.mode, artifacts: { avr, rp }, compileCalls: 1 };
+  } else if (config.mode === 'mixed-retained') {
+    selected = await resolveX37MixedRetainedArtifacts({
+      compile: () => { throw Object.assign(new Error('X37_MIXED_RETAINED_COMPILE_FORBIDDEN'),
+        { code: 'X37_MIXED_RETAINED_COMPILE_FORBIDDEN' }); },
+      loadRetainedAvr: () => loadX37RetainedArtifact({ evidenceDirectory: config.retainedAvrEvidenceDirectory,
+        participantId: 'avr', expected: avrIdentity, expectedBytes: 2832,
+        expectedSha256: '8fa977678b49b415f03f1febd84bf93262a43390703166589d0f2820e876b8bc' }),
+      loadRetainedRp: () => loadX37RetainedArtifact({ evidenceDirectory: config.retainedRpEvidenceDirectory,
+        participantId: 'rp', expected: rpIdentity, expectedBytes: 1024,
+        expectedSha256: '05cdf8cc232a72cb1181bded3c65a60b41e419cc6eb396fc1b89f39aea21b2dc' }),
+    });
+    const { avr, rp } = selected.artifacts;
+    activity.buildRecords.push(
+      { participantId: 'avr', ...avrIdentity, status: 'retained-verified', artifactSha256: avr.hexSha256 },
+      { participantId: 'rp', ...rpIdentity, status: 'retained-verified', artifactSha256: rp.uf2.sha256 });
   } else selected = await resolveX37ProducerArtifacts({ mode: config.mode,
     compile: async () => ({
       avr: await compileOne('avr', avrLock, avrRequest, config.evidenceDirectory),
@@ -163,8 +184,10 @@ async function main() {
       || sha256(Buffer.from(rpArtifact.uf2.base64, 'base64')) !== rpArtifact.uf2.sha256) {
     throw Object.assign(new Error('X37_ARTIFACT_IDENTITY_INVALID'), { code: 'X37_ARTIFACT_IDENTITY_INVALID' });
   }
-  if (selected.mode === 'avr-compile-rp-retained') {
-    await verifyShortPulseBeforeRuntime({ config, avrLock, avrSource, avrArtifact });
+  if (selected.mode === 'avr-compile-rp-retained' || selected.mode === 'mixed-retained') {
+    await verifyShortPulseBeforeRuntime({ config, avrLock, avrSource, avrArtifact,
+      artifactEvidenceDirectory: selected.mode === 'mixed-retained'
+        ? config.retainedAvrEvidenceDirectory : config.evidenceDirectory });
   }
   let avr = null; let rp = null; let avrSeam = null; let rpSeam = null;
   const avrOwner = createLiveGenerationOwner('avr');
