@@ -2,7 +2,9 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { chmod, readFile, writeFile } from 'node:fs/promises';
+import { promisify } from 'node:util';
 import { parentPort, workerData } from 'node:worker_threads';
 
 import { DockerBuildBroker, loadImageLock } from '../compiler/docker-broker.mjs';
@@ -31,10 +33,11 @@ import {
 import { resolveX37ProducerArtifacts } from '../src/x37-producer-artifact-source.mjs';
 
 const workerEnvironment = await ensureX37WorkerEnvironment();
+const execFileAsync = promisify(execFile);
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const activity = { firmwareBuildAttempts: 0, firmwareBuilds: 0, runtimeInstances: 0,
-  coordinatedRuns: 0, events: 0, buildRecords: [], workerEnvironment };
+  coordinatedRuns: 0, events: 0, buildRecords: [], workerEnvironment, preRunStaticGate: null };
 const terminal = (status, value) => parentPort.postMessage({
   schema: 'x37-producer-worker-result@1', status, ...value,
 });
@@ -72,6 +75,40 @@ async function compileOne(participantId, lock, request, evidenceDirectory) {
   record.persistedEvidence = await persistX37CompilerArtifact({ evidenceDirectory,
     participantId, artifact: result.artifact, buildRecord: record });
   return result.artifact;
+}
+
+async function verifyShortPulseBeforeRuntime({ config, avrLock, avrSource, avrArtifact }) {
+  const holds = avrSource.match(/driveLow\(64\);/gu) ?? [];
+  if (holds.length !== 2 || /driveLow\(4096\);/u.test(avrSource)) {
+    throw Object.assign(new Error('X37_AVR_SHORT_PULSE_SOURCE_INVALID'),
+      { code: 'X37_AVR_SHORT_PULSE_SOURCE_INVALID' });
+  }
+  const objdump = '/opt/arduino/data/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/bin/avr-objdump';
+  const { stdout } = await execFileAsync('docker', ['run', '--rm', '--network', 'none', '--read-only',
+    '--volume', `${config.evidenceDirectory}:/evidence:ro`, '--entrypoint', objdump, avrLock.imageId,
+    '-D', '-m', 'avr5', '/evidence/avr.firmware.bin'], { timeout: 10_000, maxBuffer: 2_000_000 });
+  if (!stdout.includes('Disassembly of section') || stdout.length < 1_000) {
+    throw Object.assign(new Error('X37_AVR_SHORT_PULSE_DISASSEMBLY_INVALID'),
+      { code: 'X37_AVR_SHORT_PULSE_DISASSEMBLY_INVALID' });
+  }
+  const disassemblyPath = `${config.evidenceDirectory}/avr.firmware.disasm.txt`;
+  await writeFile(disassemblyPath, stdout, { flag: 'wx', mode: 0o600 });
+  await chmod(disassemblyPath, 0o600);
+  const observedRequestCycle = 467;
+  const retainedCyclesPerSample = 255_464 / 4_096;
+  const projectedReleaseCycle = Math.ceil(observedRequestCycle + 64 * retainedCyclesPerSample);
+  const projectedRpReleaseCycle = Math.ceil(projectedReleaseCycle * 125 / 8);
+  const conservativeRpWaitBoundary = 7_297 + 8_192 * 15;
+  if (projectedRpReleaseCycle >= conservativeRpWaitBoundary) {
+    throw Object.assign(new Error('X37_AVR_SHORT_PULSE_STATIC_UNFEASIBLE'),
+      { code: 'X37_AVR_SHORT_PULSE_STATIC_UNFEASIBLE' });
+  }
+  activity.preRunStaticGate = { sourceHoldSamples: 64, sourceHoldOccurrences: holds.length,
+    artifactSha256: avrArtifact.hexSha256, disassemblyPath, disassemblySha256: sha256(stdout),
+    releaseAuthority: 'retained-cycle-projection-not-observed-changed-artifact-execution',
+    projectedReleaseCycle, projectedRpReleaseCycle, conservativeRpWaitBoundary,
+    projectedMarginCycles: conservativeRpWaitBoundary - projectedRpReleaseCycle,
+    runtimeInstancesAtGate: activity.runtimeInstances, coordinatedRunsAtGate: activity.coordinatedRuns };
 }
 
 const schedulerContract = {
@@ -125,6 +162,9 @@ async function main() {
   if (sha256(avrArtifact.hex) !== avrArtifact.hexSha256
       || sha256(Buffer.from(rpArtifact.uf2.base64, 'base64')) !== rpArtifact.uf2.sha256) {
     throw Object.assign(new Error('X37_ARTIFACT_IDENTITY_INVALID'), { code: 'X37_ARTIFACT_IDENTITY_INVALID' });
+  }
+  if (selected.mode === 'avr-compile-rp-retained') {
+    await verifyShortPulseBeforeRuntime({ config, avrLock, avrSource, avrArtifact });
   }
   let avr = null; let rp = null; let avrSeam = null; let rpSeam = null;
   const avrOwner = createLiveGenerationOwner('avr');
