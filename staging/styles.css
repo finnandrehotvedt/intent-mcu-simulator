@@ -116,6 +116,15 @@ h2 { font-size: 1.22rem; margin: 0; }
 .workbench-view-switch button { min-height: 25px; padding: 2px 8px; border: 0; border-radius: 5px; color: var(--muted); background: transparent; font-size: .62rem; }
 .workbench-view-switch button[aria-pressed="true"] { color: #06111a; background: var(--lime); }
 .workbench-view-switch button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.beginner-primary { display: grid; grid-template-columns: minmax(170px,auto) auto; gap: 5px 8px; align-items: center; }
+.beginner-run { min-height: 44px; padding: 8px 22px; color: #06111a; background: var(--lime); border-color: var(--lime); font-size: 1rem; font-weight: 900; }
+.beginner-secondary { display: flex; gap: 5px; }
+.beginner-secondary button { min-height: 32px; padding: 4px 8px; font-size: .7rem; }
+.beginner-primary > span { grid-column: 1 / -1; max-width: 390px; color: var(--muted); font-size: .67rem; }
+.workbench-more { grid-column: 1 / -1; }
+.workbench-more > summary { width: max-content; min-width: 84px; padding: 7px 12px; border: 1px solid #315c72; border-radius: 8px; color: var(--text); background: #0b2130; cursor: pointer; font-weight: 850; list-style-position: inside; }
+.workbench-more[open] > summary { margin-bottom: 6px; color: #06111a; background: var(--cyan); border-color: var(--cyan); }
+.workbench-more:not([open]) > .workbench-popup-controls { display: none; }
 .top-controller-controls { min-width: 0; }
 .top-controller-controls .controller-profile-picker { display: grid; grid-template-columns: auto minmax(110px,150px) auto minmax(210px,1fr); gap: 4px 7px; align-items: center; }
 .top-controller-controls .controller-profile-picker label { margin: 0; color: var(--muted); font-size: .62rem; font-weight: 800; }
@@ -138,6 +147,9 @@ h2 { font-size: 1.22rem; margin: 0; }
 .workbench-help-choices a:hover, .workbench-help-choices a:focus-visible, .workbench-help-choices button:hover, .workbench-help-choices button:focus-visible { border-color: var(--lime); color: var(--lime); }
 .build-list-status { min-width: 0; margin: 0; padding: 2px 10px; overflow: hidden; border: 1px solid #29495b; border-radius: 8px; color: var(--muted); background: #071620; font-size: .66rem; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
 body[data-workbench-view="simple"] #brief-tests-open,
+body[data-workbench-view="simple"] #x81-assessment-open,
+body[data-workbench-view="simple"] #presentation-open,
+body[data-workbench-view="simple"] #canvas-annotations-open,
 body[data-workbench-view="simple"] #build-list-export,
 body[data-workbench-view="simple"] #accessible-svg-export,
 body[data-workbench-view="simple"] #build-list-status,
@@ -148,12 +160,26 @@ body[data-workbench-view="simple"] #project-brief,
 body[data-workbench-view="simple"] #prompt-drawer,
 body[data-workbench-view="simple"] #thermostat-experiment,
 body[data-workbench-view="simple"] #regression-matrix { display: none !important; }
+body[data-workbench-view="advanced"] #beginner-primary { display: none; }
+body[data-workbench-view="advanced"] .workbench-more > summary { display: none; }
+body[data-workbench-view="advanced"] .workbench-more { display: contents; }
+.workbench-popup-controls > #quick-controls { grid-column: 1 / -1; }
+@media (max-width: 760px) {
+  .beginner-primary { grid-template-columns: minmax(0,1fr); width: 100%; }
+  .beginner-run { width: 100%; }
+  .beginner-secondary { flex-wrap: wrap; }
+  .beginner-secondary button { flex: 1 1 130px; }
+  .beginner-primary > span { grid-column: 1; }
+}
 .active-canvas-stage { min-width: 0; border: 1px solid #315c72; border-radius: 14px; background: #07141f; box-shadow: 0 18px 50px #0006; overflow: hidden; }
 #active-canvas-mount { min-width: 0; }
 #active-canvas-mount > [data-shared-surface="canvas"],
 #active-canvas-mount > .board-card { width: 100%; margin: 0; padding: 8px; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
 #active-canvas-mount > .board-card .card-heading { display: none; }
 #active-canvas-mount .canvas-tools { margin: 0 0 5px; gap: 4px; }
+.canvas-view-tools { margin: 0 0 5px; }
+.canvas-view-tools > summary { width: max-content; padding: 5px 9px; border: 1px solid #315c72; border-radius: 7px; color: var(--muted); background: #081925; cursor: pointer; font-size: .68rem; font-weight: 850; }
+.canvas-view-tools[open] > summary { margin-bottom: 5px; color: #06111a; background: var(--cyan); border-color: var(--cyan); }
 #active-canvas-mount .canvas-tools button,
 #active-canvas-mount .bounded-circuit-actions button { min-height: 30px; }
 #active-canvas-mount .pico-circuit-pane,
@@ -1715,6 +1741,13 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   main { width: min(100% - 18px, 680px); padding-top: 30px; }
   .app-header { align-items: start; flex-direction: column; gap: 8px; }
   .lede { text-align: left; }
+  body[data-active-profile] .app-header .lede { width: 100%; max-width: 100%; white-space: normal; }
+  .top-workbench-toolbar { grid-template-columns: minmax(0,1fr); }
+  .top-controller-controls, .top-primary-controls { width: 100%; min-width: 0; }
+  .top-controller-controls .controller-profile-picker { grid-template-columns: minmax(0,1fr); }
+  .top-controller-controls #controller-status { white-space: normal; }
+  .top-workbench-status { flex-wrap: wrap; }
+  .top-workbench-status > * { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
   .project-bar, .project-brief-grid, .controller-workbench, .workspace, .runtime, .instrument-grid, .prompt-grid, .about-intro, .answer-grid, .thermostat-contract, .requirement-trace-row, .open-assumption-row, .feasibility-row, .scenario-event, .scenario-event.expect-pin-level { grid-template-columns: 1fr; }
   .example-picker-dialog .starter-grid { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
   .scenario-card-heading, .scenario-editor-heading { align-items: stretch; flex-direction: column; }
@@ -1776,6 +1809,9 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   .pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label { top: calc(100% + 28px); }
   .shared-canvas-surface:fullscreen .pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label,
   .shared-profile-workbench.shared-canvas-focus .pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label { top: calc(100% - 5px); }
+}
+@media (max-width: 480px) {
+  .example-picker-dialog .starter-grid { grid-template-columns: minmax(0,1fr); }
 }
 @media (max-width: 390px) {
   .starter-grid, .example-picker-dialog .starter-grid { grid-template-columns: 1fr; }

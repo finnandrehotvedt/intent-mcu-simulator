@@ -29,7 +29,7 @@
   <meta name="twitter:image:alt" content="Intent MCU Simulator workbench with an original virtual controller, connected LED, source code, and logic trace.">
   <link rel="stylesheet" href="./styles.css">
 </head>
-<body data-workbench-view="advanced">
+<body data-workbench-view="simple">
   <main>
     <header class="app-header">
       <div><p class="eyebrow">PUBLIC RELEASE · AVR + BOUNDED PICO + ESP32-C3 + STM32F429ZI</p><h1>Intent MCU Simulator</h1></div>
@@ -38,11 +38,11 @@
     <section id="top-workbench-shell" class="top-workbench-shell" aria-labelledby="top-workbench-title">
       <div id="top-workbench-sticky-controls" class="top-workbench-sticky-controls">
         <header class="top-workbench-toolbar">
-          <div class="top-workbench-identity"><p class="eyebrow">ACTIVE BUILD SURFACE</p><h2 id="top-workbench-title">Build the circuit</h2><div class="workbench-view-switch" role="group" aria-label="Workbench detail level"><button id="workbench-view-simple" type="button" aria-pressed="false">Simple</button><button id="workbench-view-advanced" type="button" aria-pressed="true">Advanced</button></div><p id="workbench-view-status" class="sr-only" role="status">Advanced view shows all review and evidence tools.</p></div>
+          <div class="top-workbench-identity"><p class="eyebrow">ACTIVE BUILD SURFACE</p><h2 id="top-workbench-title">Build the circuit</h2><div class="workbench-view-switch" role="group" aria-label="Workbench detail level"><button id="workbench-view-simple" type="button" aria-pressed="true">Simple</button><button id="workbench-view-advanced" type="button" aria-pressed="false">Advanced</button></div><p id="workbench-view-status" class="sr-only" role="status">Simple view keeps the active project, circuit, source, runtime status, instruments, files, limits and diagnostics; advanced review tools are hidden.</p></div>
           <div id="top-controller-controls" class="top-controller-controls"></div>
-          <div id="top-primary-controls" class="top-primary-controls"></div>
+          <div id="top-primary-controls" class="top-primary-controls"><div id="beginner-primary" class="beginner-primary"><button id="beginner-run" class="beginner-run" type="button">Kjør LED-eksempelet</button><div class="beginner-secondary"><button id="beginner-examples" type="button">Eksempler</button><button id="beginner-scratch" type="button">Start fra scratch</button></div><span id="beginner-status" role="status">Ferdig koblet LED-eksempel · bygges ferskt når du trykker Kjør</span></div></div>
         </header>
-        <nav id="workbench-popup-controls" class="workbench-popup-controls" aria-label="Open secondary workbench tools">
+        <details id="workbench-more" class="workbench-more"><summary>Mer</summary><nav id="workbench-popup-controls" class="workbench-popup-controls" aria-label="Open secondary workbench tools">
           <button id="top-get-started" class="workbench-get-started" type="button" aria-haspopup="dialog" aria-controls="walkthrough">Get started</button>
           <button id="project-files-open" type="button" aria-haspopup="dialog" aria-controls="workbench-project-dialog">Project &amp; files</button>
           <button id="toggle-catalog" type="button" aria-haspopup="dialog" aria-controls="workbench-parts-dialog">Parts</button>
@@ -56,7 +56,7 @@
           <button id="help-limits-open" type="button" aria-haspopup="dialog" aria-controls="workbench-help-dialog">Help &amp; limits</button>
           <button id="build-list-export" type="button">Export build list</button>
           <button id="accessible-svg-export" type="button">Export accessible SVG</button>
-        </nav>
+        </nav></details>
         <p id="build-list-status" class="build-list-status" role="status">Build-list export: named connections and authored values only; no purchase, firmware or runtime evidence.</p>
         <p id="accessible-svg-status" class="build-list-status" role="status">Accessible SVG: circuit, named pins, release and model limits; no current measurements.</p>
       </div>
@@ -102,6 +102,9 @@
             <button id="project-native-save" class="native-file-action" type="button" hidden disabled>Save connected file</button>
             <button id="project-native-save-copy" class="native-file-action" type="button" hidden>Save copy…</button>
             <button id="project-reload" type="button">Restore browser recovery</button>
+            <label for="project-draft-recovery">Recover another local draft</label>
+            <select id="project-draft-recovery"><option value="">No other local drafts</option></select>
+            <button id="project-draft-recover" type="button" disabled>Open recovered copy</button>
             <button id="project-export" type="button">Legacy copy</button><button id="recovery-export" type="button" disabled>Download recovery</button>
             <label class="file-button" for="project-import">Import JSON</label>
             <input id="project-import" class="sr-only" type="file" accept="application/json,.json">
@@ -614,12 +617,12 @@
       <section class="board-card panel" aria-labelledby="canvas-title">
         <div class="card-heading"><div><p class="eyebrow">2 · CIRCUIT CANVAS</p><h2 id="canvas-title">Empty project</h2></div><span id="graph-state" class="state">0 components · 0 nets</span></div>
         <div id="parked-circuit-notice" class="parked-circuit-notice" hidden><strong>AVR project parked safely.</strong><span>The selected non-AVR profile does not remap or modify the existing AVR circuit. Return to AVR to continue editing.</span></div>
-        <div class="canvas-tools" aria-label="Canvas view controls">
+        <details class="canvas-view-tools"><summary>Visning</summary><div class="canvas-tools" aria-label="Canvas view controls">
           <button id="zoom-out" type="button" aria-label="Zoom out">−</button><output id="zoom-value">100%</output><button id="zoom-in" type="button" aria-label="Zoom in">+</button>
           <button id="pan-left" type="button" aria-label="Pan left">←</button><button id="pan-right" type="button" aria-label="Pan right">→</button><button id="pan-up" type="button" aria-label="Pan up">↑</button><button id="pan-down" type="button" aria-label="Pan down">↓</button><button id="view-reset" type="button">Reset view</button><button id="fit-project" type="button">Fit project</button>
           <button id="show-pin-labels" type="button" aria-pressed="false">Pin labels</button><button id="focus-canvas" type="button" aria-pressed="false">Focus canvas</button><button id="fullscreen-canvas" type="button">Fullscreen</button>
           <span class="canvas-mode" role="group" aria-label="Canvas interaction mode"><button id="canvas-select-mode" type="button" aria-pressed="true">Select</button><button id="canvas-interact-mode" type="button" aria-pressed="false">Interact</button></span>
-        </div>
+        </div></details>
         <div id="circuit-canvas" class="circuit-canvas" tabindex="0" aria-label="Manual circuit canvas. Click one pin and then another to connect them.">
           <div id="canvas-transform" class="canvas-transform"><svg id="circuit-wires" class="circuit-wires" role="group" aria-label="Editable wire routes"></svg><div id="component-layer" class="component-layer"></div><div id="canvas-annotation-layer" class="canvas-annotation-layer" aria-label="Visual notes, groups and labels bound to existing nets"></div></div>
         </div>

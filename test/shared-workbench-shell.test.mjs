@@ -76,14 +76,24 @@ test('X59 keeps finite presentation-only view state inside the X48-owned shared 
     readFile(new URL('../staging/styles.css', import.meta.url), 'utf8'),
     readFile(new URL('../scripts/generate-model-library-snapshots.mjs', import.meta.url), 'utf8'),
   ]);
-  assert.match(html, /body data-workbench-view="advanced"/);
-  assert.match(html, /id="workbench-view-simple"[^>]+aria-pressed="false"/);
-  assert.match(html, /id="workbench-view-advanced"[^>]+aria-pressed="true"/);
+  assert.match(html, /body data-workbench-view="simple"/);
+  assert.match(html, /id="workbench-view-simple"[^>]+aria-pressed="true"/);
+  assert.match(html, /id="workbench-view-advanced"[^>]+aria-pressed="false"/);
+  assert.match(shell, /let viewMode = 'simple'/);
+  assert.match(shell, /setViewMode\('simple'\)/);
+  assert.match(html, /id="beginner-run"[^>]*>Kjør LED-eksempelet</u);
+  assert.match(html, /id="beginner-examples"[^>]*>Eksempler</u);
+  assert.match(html, /id="beginner-scratch"[^>]*>Start fra scratch</u);
+  assert.match(html, /<details id="workbench-more"[^>]*><summary>Mer<\/summary>/u);
+  assert.match(shell, /popupControls\.prepend\(quickControls\)/u);
   assert.match(shell, /SHARED_WORKBENCH_VIEW_MODE_UNKNOWN/);
   assert.match(shell, /viewMode\(\) \{ return viewMode; \}/);
   assert.match(shell, /activePopup === 'brief'/);
   assert.doesNotMatch(shell, /localStorage|sessionStorage|indexedDB/u);
   assert.match(css, /body\[data-workbench-view="simple"\][^}]+#regression-matrix/s);
+  assert.match(css, /body\[data-workbench-view="simple"\][^}]+#x81-assessment-open/s);
+  assert.match(css, /body\[data-workbench-view="simple"\][^}]+#presentation-open/s);
+  assert.match(css, /body\[data-workbench-view="simple"\][^}]+#canvas-annotations-open/s);
   assert.doesNotMatch(css, /data-workbench-view="simple"[^}]+#firmware-open/s);
   assert.match(modelGenerator, /shared-workbench-shell\.mjs/u);
 });

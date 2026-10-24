@@ -38,11 +38,19 @@ async function setMode(page, mode) {
 }
 
 async function assertCoreVisible(page) {
-  for (const selector of ['#project-files-open', '#toggle-catalog', '#toggle-inspector', '#firmware-open',
-    '#instruments-open', '#help-limits-open', '#quick-build', '#quick-run', '#top-stage-state', '#top-stage-detail']) {
+  for (const selector of ['#beginner-run', '#beginner-examples', '#beginner-scratch', '#workbench-more',
+    '#top-stage-state', '#top-stage-detail']) {
     assert.equal(await page.locator(selector).isVisible(), true, `${selector} hidden in Simple view`);
   }
-  for (const selector of ['#brief-tests-open', '#build-list-export', '#accessible-svg-export', '#regression-matrix']) {
+  assert.equal(await page.locator('#quick-build').isVisible(), false, '#quick-build visible before More opens');
+  await page.locator('#workbench-more > summary').click();
+  for (const selector of ['#project-files-open', '#toggle-catalog', '#toggle-inspector', '#firmware-open',
+    '#instruments-open', '#help-limits-open', '#quick-build', '#quick-run']) {
+    assert.equal(await page.locator(selector).isVisible(), true, `${selector} unavailable below More`);
+  }
+  await page.locator('#workbench-more > summary').click();
+  for (const selector of ['#brief-tests-open', '#x81-assessment-open', '#presentation-open',
+    '#canvas-annotations-open', '#build-list-export', '#accessible-svg-export', '#regression-matrix']) {
     assert.equal(await page.locator(selector).isVisible(), false, `${selector} visible in Simple view`);
   }
 }
@@ -58,13 +66,15 @@ async function assertCoreVisible(page) {
       const page = await context.newPage();
       page.on('request', (request) => {
         const item = { method: request.method(), url: request.url() };
-        if (/\/api\//u.test(new URL(request.url()).pathname)) report.producerRequests.push(item);
-        if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method())) report.mutatingRequests.push(item);
+        const pathname = new URL(request.url()).pathname;
+        const isPageView = pathname === '/api/page-views';
+        if (/\/api\//u.test(pathname) && !isPageView) report.producerRequests.push(item);
+        if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method()) && !isPageView) report.mutatingRequests.push(item);
       });
       assert.equal((await page.goto(base, { waitUntil: 'domcontentloaded' }))?.status(), 200);
       await page.waitForFunction(() => window.__M11_READY__ === true);
-      assert.equal(await page.getAttribute('body', 'data-workbench-view'), 'advanced');
-      assert.equal(await page.getAttribute('#workbench-view-advanced', 'aria-pressed'), 'true');
+      assert.equal(await page.getAttribute('body', 'data-workbench-view'), 'simple');
+      assert.equal(await page.getAttribute('#workbench-view-simple', 'aria-pressed'), 'true');
 
       for (const profile of profiles) {
         await selectProfile(page, profile);
@@ -108,6 +118,7 @@ async function assertCoreVisible(page) {
         await page.keyboard.press('Escape');
         await page.waitForFunction(() => document.activeElement === document.querySelector('#brief-tests-open'));
         await setMode(page, 'simple');
+        await page.click('#workbench-more > summary');
 
         await selectProfile(page, profiles[2]);
         await page.click('#help-limits-open');

@@ -1795,7 +1795,7 @@ export function mountSharedWorkbenchShell(document) {
   let activeCanvas = null;
   let activePopup = null;
   let returnFocus = null;
-  let viewMode = 'advanced';
+  let viewMode = 'simple';
   const x42 = installX42TriggerCapture(document, () => activeProfile);
   const x43 = installX43AvrObservationProfile(document, () => activeProfile);
   const x47 = installX47PulsePreview(document, () => activeProfile);
@@ -1808,11 +1808,14 @@ export function mountSharedWorkbenchShell(document) {
     advanced: document.querySelector('#workbench-view-advanced'),
   });
   const viewStatus = document.querySelector('#workbench-view-status');
-  if (Object.values(viewButtons).some((node) => !node) || !viewStatus) {
+  const more = document.querySelector('#workbench-more');
+  const popupControls = document.querySelector('#workbench-popup-controls');
+  if (Object.values(viewButtons).some((node) => !node) || !viewStatus || !more || !popupControls) {
     throw new Error('SHARED_WORKBENCH_VIEW_SWITCH_MISSING');
   }
   const advancedOnlySelector = [
-    '#brief-tests-open', '#build-list-export', '#accessible-svg-export',
+    '#brief-tests-open', '#x81-assessment-open', '#presentation-open', '#canvas-annotations-open',
+    '#build-list-export', '#accessible-svg-export',
     '#build-list-status', '#accessible-svg-status', '#local-history',
     '#project-navigation', '#project-brief', '#prompt-drawer',
     '#thermostat-experiment', '#regression-matrix',
@@ -1883,6 +1886,9 @@ export function mountSharedWorkbenchShell(document) {
     const closedBrief = nextMode === 'simple' && activePopup === 'brief';
     if (closedBrief) closePopup({ restoreFocus: false });
     viewMode = nextMode;
+    more.open = nextMode === 'advanced';
+    if (nextMode === 'simple') popupControls.prepend(quickControls);
+    else primaryMount.append(quickControls);
     document.body.dataset.workbenchView = viewMode;
     for (const [mode, button] of Object.entries(viewButtons)) {
       button.setAttribute('aria-pressed', String(mode === viewMode));
@@ -2014,7 +2020,7 @@ export function mountSharedWorkbenchShell(document) {
     setViewMode(mode, options = {}) { return setViewMode(mode, options); },
     adapter(profile = activeProfile) { return sharedWorkbenchAdapter(profile); },
   });
-  setViewMode('advanced');
+  setViewMode('simple');
   api.activate(AVR_PROFILE);
   return api;
 }
