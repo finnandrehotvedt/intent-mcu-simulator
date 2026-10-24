@@ -73,11 +73,14 @@ or Run operation.
 
 ## Independent CLI acceptance
 
-`tools/browser-session-edit-client.mjs` reads the one-time pairing secret from
-standard input. In acceptance it independently creates a board, resistor, and
+`tools/browser-session-edit-client.mjs` reads and deletes one strict one-use
+`.intentpair` ticket, with hidden standard input retained as a fallback. In
+acceptance it independently creates a board, resistor, and
 LED connected by three named nets, reads the resulting canonical graph, and
 undoes the exact transaction. The real-browser test verifies the three visible
 components and routed wires before Undo, exact byte restoration afterward,
 atomic invalid-batch rejection, stale manual/API race handling, explicit scope,
 delayed-pull containment across same-revision replacement/revoke/re-enable, and
-zero Build requests or runtime-worker creation.
+zero Build requests or runtime-worker creation. Its optional JSONL mode keeps
+the claimed capability only in one live process for successive bounded plans;
+process exit, revoke, owner replacement or expiry requires fresh pairing.

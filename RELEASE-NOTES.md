@@ -1,4 +1,26 @@
-# Intent MCU Simulator 1.1.0-rc.135
+# Intent MCU Simulator 1.1.0-rc.136
+
+## One-use pairing tickets and same-process sessions
+
+Rc.136 adds a Lab-generated `.intentpair` transfer that keeps the one-use
+pairing secret out of AI chat, URLs and command arguments. The dependency-free
+local client strictly validates the ticket, pins production to the canonical
+HTTPS Lab origin, refuses redirects, deletes the ticket before use and emits
+fixed secret-safe errors. Hidden local input remains a legacy fallback.
+
+An optional JSONL session claims one ticket once and keeps its capability only
+in the live Node process for successive bounded inspect, AVR plan, explicit
+transaction Undo and later commands. Existing scopes, revision checks, request
+rates, 120-second idle expiry, 15-minute absolute expiry, owner lifecycle and
+revoke rules are unchanged. Ending the process requires a fresh pairing.
+
+This source release adds no Build, Run, compiler, native-runtime, worker or
+deployment authority. Rc.135 remains source history; the owning deployment
+checkpoint retains actual public rc.134 as the app-only rollback basis.
+
+---
+
+## 1.1.0-rc.135
 
 ## Task-driven Codex API pairing
 

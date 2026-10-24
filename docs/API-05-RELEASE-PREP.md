@@ -12,8 +12,11 @@ route, but an unpaired request has no project access. Each browser tab starts
 with API access off; the user must explicitly enable the tab and create one
 temporary pairing. Read-only scopes are the default, and AVR edit scope needs
 a separate explicit checkbox. The relay is ephemeral memory, not a project
-authority or store. Secrets enter the reference clients on standard input and
-are never placed in arguments, URLs, files or output.
+authority or store. Secrets never enter arguments, URLs, ordinary plans,
+output or source control. The Lab-generated `.intentpair` is the sole
+secret-bearing file exception: it is short-lived, one-use, local and deleted
+by the client immediately after strict parsing. Hidden standard input remains
+a legacy fallback.
 
 The protocol has ten transport operations: `owner.register`,
 `owner.heartbeat`, `pairing.create`, `pairing.claim`, `request.submit`,

@@ -2,6 +2,20 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.136 — 2026-10-24
+
+- Adds a short-lived one-use `.intentpair` download so the pairing secret need
+  not enter AI chat, a URL or a command argument.
+- Strictly pins production tickets to the canonical HTTPS Lab origin, rejects
+  redirects and secret-bearing malformed input safely, and deletes tickets
+  before use.
+- Adds optional same-process JSONL inspect, bounded plan, explicit Undo and
+  close actions under unchanged scopes, revisions, rates and expiry limits.
+- Persists no client capability and requires fresh pairing after process exit,
+  owner lifecycle change, revoke or expiry.
+- Adds no Build, Run, compiler, native runtime, worker, image or deployment
+  authority; actual public rc.134 remains the rollback basis.
+
 ## 1.1.0-rc.135 — 2026-10-24
 
 - Adds copyable task-driven Codex instructions, a versioned public protocol and
