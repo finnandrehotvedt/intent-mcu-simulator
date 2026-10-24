@@ -66,6 +66,30 @@ const base = process.env.TWO_BROWSER_URL || 'http://127.0.0.1:18932';
     assert.equal(await pageB.evaluate(() => window.__M6_PROJECT__().metadata.name), 'Button input');
     assert((await pageB.evaluate(() => window.__M6_PROJECT__().circuit.components.length)) > 0);
     await pageA.keyboard.press('Escape');
+    const emptyBeforeRefresh = await pageA.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
+    await pageA.reload({ waitUntil: 'domcontentloaded' });
+    await pageA.waitForFunction(() => window.__M11_READY__);
+    assert.equal(await pageA.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), emptyBeforeRefresh,
+      'intentional empty project must survive refresh without resurrecting Blink');
+
+    const popupPromise = pageA.waitForEvent('popup');
+    await pageA.evaluate((url) => window.open(url, '_blank'), base);
+    const duplicate = await popupPromise;
+    await duplicate.route('**/api/page-views', (route) => route.fulfill({
+      status: 200, contentType: 'application/json', body: JSON.stringify({ status: 'disabled' }),
+    }));
+    await duplicate.waitForFunction(() => window.__M11_READY__);
+    const [originalDraftId, duplicateDraftId] = await Promise.all([
+      pageA.evaluate(() => sessionStorage.getItem('intent-mcu.active-draft-id.v1')),
+      duplicate.evaluate(() => sessionStorage.getItem('intent-mcu.active-draft-id.v1')),
+    ]);
+    assert.notEqual(duplicateDraftId, originalDraftId, 'duplicate/opener tab must fork its writable draft key');
+    await duplicate.click('#beginner-examples');
+    await duplicate.click('.starter-card[data-example="adc"]');
+    if (await duplicate.locator('#unsaved-change-dialog').isVisible()) await duplicate.click('#unsaved-discard');
+    assert.equal(await pageA.evaluate(() => window.__M6_PROJECT__().circuit.components.length), 0,
+      'duplicate tab edits must not clobber the opener');
+    await duplicate.close();
 
     async function downloadProject(page) {
       if (!(await page.locator('#workbench-more').evaluate((node) => node.open))) await page.click('#workbench-more > summary');
@@ -86,7 +110,8 @@ const base = process.env.TWO_BROWSER_URL || 'http://127.0.0.1:18932';
     assert.equal(await pageA.evaluate(() => document.querySelector('#serial-output').textContent), 'No firmware bytes.');
     assert.equal(await pageB.evaluate(() => document.querySelector('#serial-output').textContent), 'No firmware bytes.');
     process.stdout.write(`${JSON.stringify({ result: 'pass', browserContexts: 2, isolatedStorage: true,
-      sameProfileTabs: 2, refreshRetainedAuthoredBytes: true, isolatedProjectSourceGraph: true,
+      sameProfileTabs: 3, duplicateTabDraftFork: true, emptyRefreshRetained: true,
+      refreshRetainedAuthoredBytes: true, isolatedProjectSourceGraph: true,
       isolatedDownloads: true, nativeBuilds: 0, nativeRuns: 0 })}\n`);
   } finally {
     await Promise.all(contexts.map((context) => context.close()));

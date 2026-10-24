@@ -495,7 +495,7 @@ const elements = Object.fromEntries([
   'local-history-status', 'local-history-list', 'local-history-confirm',
   'local-history-confirm-title', 'local-history-confirm-description', 'local-history-confirm-status',
   'local-history-confirm-cancel', 'local-history-confirm-accept',
-  'project-reload', 'project-export', 'project-import',
+  'project-reload', 'project-draft-recovery', 'project-draft-recover', 'project-export', 'project-import',
   'project-import-mode', 'undo', 'redo', 'prompt-generate', 'prompt-copy', 'prompt-output', 'prompt-response',
   'prompt-mode', 'prompt-apply', 'prompt-message', 'component-controls',
   'editor-title', 'source-file', 'source-file-name', 'source-file-add', 'source-file-remove',
@@ -697,9 +697,19 @@ let runtimeReadyDeadlineTimer = null;
 const RUNTIME_READY_DEADLINE_MS = 5_000;
 const TAB_DRAFT_ID_KEY = 'intent-mcu.active-draft-id.v1';
 const TAB_PROFILE_KEY = 'intent-mcu.active-profile.v1';
+const DRAFT_REGISTRY_KEY = 'intent-mcu.draft-registry.v1';
+const DRAFT_LEASE_PREFIX = 'intent-mcu.draft-lease.v1.';
+const DRAFT_REGISTRY_LIMIT = 12;
+const DRAFT_LEASE_MAX_AGE_MS = 15_000;
+const pageInstanceId = crypto.randomUUID();
 let activeDraftId = null;
 try {
   activeDraftId = sessionStorage.getItem(TAB_DRAFT_ID_KEY);
+  const navigationType = performance.getEntriesByType('navigation')[0]?.type ?? 'navigate';
+  const lease = activeDraftId ? JSON.parse(localStorage.getItem(`${DRAFT_LEASE_PREFIX}${activeDraftId}`) ?? 'null') : null;
+  const liveElsewhere = navigationType !== 'reload' && lease?.instanceId
+    && lease.instanceId !== pageInstanceId && Date.now() - Number(lease.updatedAt) < DRAFT_LEASE_MAX_AGE_MS;
+  if (liveElsewhere) activeDraftId = null;
   if (!/^[a-f0-9-]{16,64}$/u.test(activeDraftId ?? '')) {
     activeDraftId = crypto.randomUUID();
     sessionStorage.setItem(TAB_DRAFT_ID_KEY, activeDraftId);
@@ -707,6 +717,79 @@ try {
 } catch { activeDraftId = null; }
 const activeProjectStorageKey = activeDraftId ? `${PROJECT_STORAGE_KEY}.tab.${activeDraftId}` : PROJECT_STORAGE_KEY;
 const activeProjectRecoveryKey = activeDraftId ? `${PROJECT_RECOVERY_KEY}.tab.${activeDraftId}` : PROJECT_RECOVERY_KEY;
+const profileDraftStorageKey = (profile) => `intent-mcu.profile-draft.v1.${profile}.tab.${activeDraftId ?? 'fallback'}`;
+function persistControllerDraft(profile, workbench) {
+  try {
+    const inputs = {
+      [RP2040_PROFILE]: [elements?.picosource, elements?.picoprojectname],
+      [ESP32C3_PROFILE]: [elements?.c3source, elements?.c3projectname],
+      [STM32F429ZI_PROFILE]: [elements?.stm32source, elements?.stm32projectname],
+    }[profile];
+    if (inputs?.[0]) workbench.project.source = inputs[0].value;
+    if (inputs?.[1]?.value.trim()) workbench.project.name = inputs[1].value.trim();
+    let prior = null;
+    try { prior = JSON.parse(localStorage.getItem(profileDraftStorageKey(profile)) ?? 'null'); } catch { /* replace corrupt draft */ }
+    let validatedProject = prior?.schema === 'intent-mcu-profile-draft@1' ? prior.project : prior;
+    try { validatedProject = workbench.projectDocument(); } catch { /* keep last validated install basis */ }
+    if (!validatedProject) return false;
+    const circuit = structuredClone(workbench.circuitEditor.snapshot().draft);
+    localStorage.setItem(profileDraftStorageKey(profile), JSON.stringify({
+      schema: 'intent-mcu-profile-draft@1', profile, project: validatedProject,
+      authoredSource: inputs?.[0]?.value ?? workbench.project.source,
+      authoredName: inputs?.[1]?.value.trim() || workbench.project.name,
+      circuit,
+    }));
+    return true;
+  } catch { return false; }
+}
+function readControllerDraft(profile) {
+  try {
+    const source = localStorage.getItem(profileDraftStorageKey(profile));
+    return source ? JSON.parse(source) : null;
+  } catch { return null; }
+}
+function restoreControllerDraft(profile, workbench, retained = readControllerDraft(profile)) {
+  try {
+    if (!retained) return false;
+    const envelope = retained.schema === 'intent-mcu-profile-draft@1' ? retained : null;
+    const project = envelope ? { ...envelope.project, circuit: envelope.circuit } : retained;
+    workbench.installPreparedProject(project, 'Reopened validated local draft. Build fresh before Run.');
+    if (envelope) {
+      workbench.project.source = envelope.authoredSource;
+      workbench.project.name = envelope.authoredName;
+      workbench.elements.source.value = envelope.authoredSource;
+      workbench.elements.name.value = envelope.authoredName;
+      workbench.invalidate('Reopened local authored draft. Build fresh before Run.');
+    }
+    return true;
+  } catch { return false; }
+}
+function bindControllerDraftInputs(profile, workbench, source, name) {
+  source.addEventListener('input', () => {
+    workbench.project.source = source.value;
+    queueMicrotask(() => persistControllerDraft(profile, workbench));
+  });
+  name.addEventListener('input', () => {
+    workbench.project.name = name.value.trim();
+    queueMicrotask(() => persistControllerDraft(profile, workbench));
+  });
+  name.addEventListener('change', () => queueMicrotask(() => persistControllerDraft(profile, workbench)));
+}
+function writeDraftLease() {
+  if (!activeDraftId) return;
+  try { localStorage.setItem(`${DRAFT_LEASE_PREFIX}${activeDraftId}`, JSON.stringify({ instanceId: pageInstanceId, updatedAt: Date.now() })); } catch { /* persistence remains best effort */ }
+}
+writeDraftLease();
+const draftLeaseHeartbeat = setInterval(writeDraftLease, 5_000);
+window.addEventListener('pagehide', () => {
+  clearInterval(draftLeaseHeartbeat);
+  if (!activeDraftId) return;
+  try {
+    const leaseKey = `${DRAFT_LEASE_PREFIX}${activeDraftId}`;
+    const lease = JSON.parse(localStorage.getItem(leaseKey) ?? 'null');
+    if (lease?.instanceId === pageInstanceId) localStorage.removeItem(leaseKey);
+  } catch { /* a stale lease expires automatically */ }
+});
 let selectedCompilerProfile = AVR_PROFILE;
 try {
   const retainedProfile = sessionStorage.getItem(TAB_PROFILE_KEY);
@@ -750,7 +833,7 @@ const requirementResultLinks = new Map();
 const sharedInstrumentSummaries = new Map();
 const sharedInstrumentLocals = new Map();
 let activeJob = null;
-let beginnerRunIntent = false;
+let beginnerRunIntent = null;
 let loadedSourceIdentity = null;
 let running = false;
 let lastWorkerMessage = 0;
@@ -2399,6 +2482,7 @@ function renderPicoCircuitEditor(state) {
   requestAnimationFrame(() => requestAnimationFrame(drawPicoEditorWires));
 }
 
+const retainedPicoDraft = readControllerDraft(RP2040_PROFILE);
 const picoPublicWorkbench = new Rp2040PublicWorkbench({
   elements: {
     state: elements.picostate,
@@ -2428,6 +2512,7 @@ const picoPublicWorkbench = new Rp2040PublicWorkbench({
     renderPicoCircuitEditor(state);
     queueMicrotask(renderProjectNavigation);
     void syncX92Identity('RP2040 source or electrical graph changed');
+    persistControllerDraft(RP2040_PROFILE, picoPublicWorkbench);
   },
   onDiagnostics: (snapshot) => renderProfileDiagnostics(snapshot, {
     textarea: elements.picosource, summary: elements.picodiagnostics,
@@ -2437,6 +2522,8 @@ const picoPublicWorkbench = new Rp2040PublicWorkbench({
   onOpen: (file) => openCommonProjectFile(file),
   advanceGuard: (_action, dispatchPermit) => x92AdvancingBoundary(dispatchPermit),
 });
+restoreControllerDraft(RP2040_PROFILE, picoPublicWorkbench, retainedPicoDraft);
+bindControllerDraftInputs(RP2040_PROFILE, picoPublicWorkbench, elements.picosource, elements.picoprojectname);
 window.__RP2040_PUBLIC_WORKBENCH__ = {
   state: () => picoPublicWorkbench.snapshot(),
   build: () => picoPublicWorkbench.build(),
@@ -2675,6 +2762,7 @@ function renderC3CircuitEditor(state) {
   requestAnimationFrame(() => requestAnimationFrame(drawC3EditorWires));
 }
 
+const retainedC3Draft = readControllerDraft(ESP32C3_PROFILE);
 const c3PublicWorkbench = new Esp32C3PublicWorkbench({
   elements: {
     state: elements.c3state,
@@ -2702,6 +2790,7 @@ const c3PublicWorkbench = new Esp32C3PublicWorkbench({
     renderC3CircuitEditor(state);
     queueMicrotask(renderProjectNavigation);
     void syncX92Identity('ESP32-C3 source or electrical graph changed');
+    persistControllerDraft(ESP32C3_PROFILE, c3PublicWorkbench);
   },
   onDiagnostics: (snapshot) => renderProfileDiagnostics(snapshot, {
     textarea: elements.c3source, summary: elements.c3diagnostics,
@@ -2713,6 +2802,8 @@ const c3PublicWorkbench = new Esp32C3PublicWorkbench({
   advanceGuard: (action, permit, binding) => x92C3Integration?.advancingBoundary(permit, binding, action)
     ?? { ok: false, code: 'X92_C3_PRODUCT_OWNER_NOT_READY' },
 });
+restoreControllerDraft(ESP32C3_PROFILE, c3PublicWorkbench, retainedC3Draft);
+bindControllerDraftInputs(ESP32C3_PROFILE, c3PublicWorkbench, elements.c3source, elements.c3projectname);
 window.__ESP32C3_PUBLIC_WORKBENCH__ = {
   state: () => c3PublicWorkbench.snapshot(),
   build: () => executeC3ManualAction('firmware.build',
@@ -2960,6 +3051,7 @@ function renderStm32CircuitEditor(state) {
   requestAnimationFrame(() => requestAnimationFrame(drawStm32EditorWires));
 }
 
+const retainedStm32Draft = readControllerDraft(STM32F429ZI_PROFILE);
 const stm32PublicWorkbench = new Stm32PublicWorkbench({
   elements: {
     state: elements.stm32state,
@@ -2988,6 +3080,7 @@ const stm32PublicWorkbench = new Stm32PublicWorkbench({
     renderStm32CircuitEditor(state);
     queueMicrotask(renderProjectNavigation);
     void syncX92Identity('STM32 source or electrical graph changed');
+    persistControllerDraft(STM32F429ZI_PROFILE, stm32PublicWorkbench);
   },
   onDiagnostics: (snapshot) => renderProfileDiagnostics(snapshot, {
     textarea: elements.stm32source, summary: elements.stm32diagnostics,
@@ -2998,6 +3091,24 @@ const stm32PublicWorkbench = new Stm32PublicWorkbench({
   dispatchAction: (action, task) => executeStm32ManualAction(action, task),
   advanceGuard: (action, permit, binding) => x92Stm32Integration?.advancingBoundary(permit, binding, action)
     ?? { ok: false, code: 'X92_STM32_PRODUCT_OWNER_NOT_READY' },
+});
+restoreControllerDraft(STM32F429ZI_PROFILE, stm32PublicWorkbench, retainedStm32Draft);
+bindControllerDraftInputs(STM32F429ZI_PROFILE, stm32PublicWorkbench, elements.stm32source, elements.stm32projectname);
+document.addEventListener('input', (event) => {
+  const owner = {
+    'pico-source': [RP2040_PROFILE, picoPublicWorkbench],
+    'pico-project-name': [RP2040_PROFILE, picoPublicWorkbench],
+    'c3-source': [ESP32C3_PROFILE, c3PublicWorkbench],
+    'c3-project-name': [ESP32C3_PROFILE, c3PublicWorkbench],
+    'stm32-source': [STM32F429ZI_PROFILE, stm32PublicWorkbench],
+    'stm32-project-name': [STM32F429ZI_PROFILE, stm32PublicWorkbench],
+  }[event.target?.id];
+  if (owner) queueMicrotask(() => persistControllerDraft(owner[0], owner[1]));
+});
+window.addEventListener('pagehide', () => {
+  persistControllerDraft(RP2040_PROFILE, picoPublicWorkbench);
+  persistControllerDraft(ESP32C3_PROFILE, c3PublicWorkbench);
+  persistControllerDraft(STM32F429ZI_PROFILE, stm32PublicWorkbench);
 });
 window.__STM32_PUBLIC_WORKBENCH__ = {
   state: () => stm32PublicWorkbench.snapshot(),
@@ -10825,6 +10936,33 @@ function toggleFavorite(type, { restoreFocus = false } = {}) {
     target?.focus();
   }
 }
+function draftRegistry() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(DRAFT_REGISTRY_KEY) ?? '[]');
+    return Array.isArray(parsed) ? parsed.filter((item) => item && /^[a-f0-9-]{16,64}$/u.test(item.id ?? '')) : [];
+  } catch { return []; }
+}
+function renderDraftRecoveryChoices() {
+  const choices = draftRegistry().filter((item) => item.id !== activeDraftId)
+    .filter((item) => {
+      try { return Boolean(localStorage.getItem(`${PROJECT_STORAGE_KEY}.tab.${item.id}`)); } catch { return false; }
+    });
+  elements.projectdraftrecovery.replaceChildren(new Option(
+    choices.length ? 'Choose a preserved draft…' : 'No other local drafts', '', true, true,
+  ), ...choices.map((item) => new Option(
+    `${item.name || 'Untitled project'} · ${new Date(item.updatedAt).toLocaleString()}`, item.id,
+  )));
+  elements.projectdraftrecover.disabled = true;
+}
+function registerActiveDraft(name) {
+  if (!activeDraftId) return;
+  try {
+    const next = [{ id: activeDraftId, name, updatedAt: Date.now() },
+      ...draftRegistry().filter((item) => item.id !== activeDraftId)].slice(0, DRAFT_REGISTRY_LIMIT);
+    localStorage.setItem(DRAFT_REGISTRY_KEY, JSON.stringify(next));
+    renderDraftRecoveryChoices();
+  } catch { /* the current in-memory project remains usable */ }
+}
 function persistProject(message = null) {
   try {
     const text = authoredProjectText(AVR_PROFILE);
@@ -10832,6 +10970,7 @@ function persistProject(message = null) {
     localStorage.setItem(activeProjectRecoveryKey, text);
     localStorage.setItem(activeProjectStorageKey, text);
     localStorage.removeItem(activeProjectRecoveryKey);
+    registerActiveDraft(currentProject().metadata.name);
     savedRevision = editor.revision;
     savedProjectGeneration = lifecycle.projectGeneration;
     if (message) elements.projectmessage.textContent = message;
@@ -11324,6 +11463,7 @@ function detachOutstandingBuild() {
 }
 
 function installProjectGeneration({ empty, reason, runtimeMessage }) {
+  beginnerRunIntent = null;
   if (['project.new', 'project.reload', 'project.file-open'].includes(reason)) retireX92Budget(reason);
   retireX47Integration('X47_PROJECT_REPLACED');
   detachOutstandingBuild();
@@ -11385,7 +11525,11 @@ function applyEditor(command, message = command.type) {
       return rejected;
     }
   }
-  if (commandBuildRelevance(command.type) === 'build') retireX47Integration('X47_AUTHORED_INPUT_CHANGED');
+  if (commandBuildRelevance(command.type) === 'build') {
+    beginnerRunIntent = null;
+    elements.beginnerrun.disabled = false;
+    retireX47Integration('X47_AUTHORED_INPUT_CHANGED');
+  }
   const annotationBefore = canvasAnnotations ? canvasAnnotations.snapshot() : null;
   const subcircuitTransition = pendingSubcircuitTransition;
   const result = editor.apply({ ...command, revision: editor.revision }, { running });
@@ -13417,7 +13561,7 @@ async function loadArtifact(hex, artifactIdentity, {
     publish({ runtime: state, runtimeLoadState: 'failed' });
     cancelThermostatExperiment(`Experiment unresolved: ${message}. Nothing was marked passed.`, { clearResults: false });
     elements.workerstate.textContent = 'Runtime failed to start — rebuild the current project';
-    beginnerRunIntent = false;
+    beginnerRunIntent = null;
     elements.beginnerrun.disabled = false;
     elements.beginnerstatus.textContent = 'Kjøring kunne ikke starte. Rett feilen og prøv Kjør igjen.';
     showActionableError(elements.projectmessage, code, message);
@@ -13563,8 +13707,10 @@ async function loadArtifact(hex, artifactIdentity, {
       runtimeReadyDeadlineTimer = null;
       setRuntimeEnabled(true);
       publish({ runtimeLoadState: 'ready' });
-      if (beginnerRunIntent) {
-        beginnerRunIntent = false;
+      if (beginnerRunIntent
+          && beginnerRunIntent.projectGeneration === lifecycle.projectGeneration
+          && beginnerRunIntent.inputIdentity === buildInputIdentity()) {
+        beginnerRunIntent = null;
         elements.beginnerrun.disabled = false;
         elements.beginnerstatus.textContent = 'LED-eksempelet kjører. Åpne Mer for Pause, Reset og instrumenter.';
         queueMicrotask(() => elements.run.click());
@@ -13685,7 +13831,7 @@ async function pollJob(job, inputAtSubmit, modelExecutionContextSha256, modelImp
       }); return;
     }
     const errorCode = status.status === 'timeout' ? 'BUILD_TIMEOUT' : 'BUILD_FAILED';
-    beginnerRunIntent = false;
+    beginnerRunIntent = null;
     elements.beginnerrun.disabled = false;
     elements.beginnerstatus.textContent = 'Bygget feilet. Åpne Mer → Firmware for feilmeldingen, og prøv igjen.';
     const acceptedFailure = applyLifecycle({
@@ -13758,7 +13904,7 @@ async function build() {
       artifactManifest: null, compileOnly: false, runtime: null,
       compilerRequestBlocked: true, cacheHit: false,
     });
-    return;
+    return { ok: false, code: 'COMPILER_TARGET_UNAVAILABLE' };
   }
   if (editor.kind === 'candidate-project-v3') {
     const runnable = editor.runnable;
@@ -13768,7 +13914,7 @@ async function build() {
       elements.buildstate.textContent = 'Draft not runnable';
       renderBuildDiagnostics({ diagnostics: [{ file: 'circuit', line: 1, severity: 'error', message }] }, message);
       showActionableError(elements.projectmessage, runnable.code, message);
-      return;
+      return { ok: false, code: runnable.code };
     }
   }
   const runtimeProject = currentRuntimeProject();
@@ -13779,14 +13925,14 @@ async function build() {
     elements.buildstate.textContent = 'Circuit validation failed';
     renderBuildDiagnostics({ diagnostics: circuit.diagnostics.map((item) => ({ ...item, severity: 'error', message: explainError(item.code).action, file: 'circuit', line: 1 })) }, 'Circuit validation failed.');
     showActionableError(elements.projectmessage, circuit.code ?? 'INVALID_CIRCUIT', elements.diagnostics.textContent);
-    return;
+    return { ok: false, code: circuit.code ?? 'INVALID_CIRCUIT' };
   }
   detachOutstandingBuild();
   stopRuntime('Build in progress', { updateLifecycle: false });
   const started = applyLifecycle({ type: 'build.start' });
   if (!started.accepted) {
     showActionableError(elements.projectmessage, started.code, 'Build start rejected by lifecycle guard.');
-    return;
+    return { ok: false, code: started.code };
   }
   const binding = started.binding;
   const inputAtSubmit = buildInputIdentity();
@@ -13830,7 +13976,7 @@ async function build() {
     persistProject();
     elements.buildstate.textContent = 'Build request failed'; renderBuildDiagnostics(null, error.message); publish({ buildState: 'failed' });
     showActionableError(elements.projectmessage, 'BUILD_REQUEST_FAILED', error.message);
-    beginnerRunIntent = false;
+    beginnerRunIntent = null;
     elements.beginnerrun.disabled = false;
     elements.beginnerstatus.textContent = 'Bygget kunne ikke startes. Prosjektet er beholdt; prøv Kjør igjen.';
     if (isRetryableCapacityCode(error.code)) elements.projectmessage.textContent = error.message;
@@ -13932,6 +14078,9 @@ elements.cancel.addEventListener('click', () => {
   elements.buildstate.textContent = 'Build cancelled';
   elements.diagnostics.textContent = 'The cancelled build cannot update this project.';
   publish({ buildState: 'cancelled', artifactIdentity: null, inputIdentity: null, cacheHit: false });
+  beginnerRunIntent = null;
+  elements.beginnerrun.disabled = false;
+  elements.beginnerstatus.textContent = 'Bygget ble avbrutt. Prosjektet er beholdt; prøv Kjør igjen.';
 });
 elements.run.addEventListener('click', () => {
   const x92Boundary = x92BudgetExecutor?.runtimeBoundary?.();
@@ -14703,7 +14852,7 @@ function createNewAvrProject() {
   selectedSourceFile = 'main.ino';
   clearProjectFileConnection(AVR_PROFILE);
   fileSavedRevision = null; fileSavedProjectGeneration = null; fileSaveState = null;
-  localStorage.removeItem(activeProjectStorageKey); localStorage.removeItem(activeProjectRecoveryKey); renderCatalog(); renderProject();
+  persistProject(); renderCatalog(); renderProject();
   setProjectBaseline(AVR_PROFILE);
   elements.projectmessage.textContent = 'Created an actually empty project.';
 }
@@ -14926,9 +15075,17 @@ async function runBeginnerProject() {
     elements.beginnerrun.disabled = false;
     return;
   }
-  beginnerRunIntent = true;
+  beginnerRunIntent = {
+    projectGeneration: lifecycle.projectGeneration,
+    inputIdentity: buildInputIdentity(),
+  };
   elements.beginnerstatus.textContent = 'Bygger fersk firmware i den isolerte kompilatoren…';
-  elements.build.click();
+  const result = await build();
+  if (result?.ok === false && beginnerRunIntent) {
+    beginnerRunIntent = null;
+    elements.beginnerrun.disabled = false;
+    elements.beginnerstatus.textContent = 'Bygget kunne ikke startes. Prosjektet er beholdt; prøv Kjør igjen.';
+  }
 }
 elements.beginnerexamples.addEventListener('click', openExamplePicker);
 elements.beginnerscratch.addEventListener('click', startFromScratch);
@@ -14968,6 +15125,8 @@ elements.familyselect.addEventListener('change', () => {
   elements.boardselect.dispatchEvent(new Event('change', { bubbles: true }));
 });
 elements.boardselect.addEventListener('change', () => {
+  beginnerRunIntent = null;
+  elements.beginnerrun.disabled = false;
   const previousProfile = selectedCompilerProfile;
   const previousProject = profileProjectSnapshot(previousProfile);
   const previousRequirements = projectBriefForProfile(previousProfile).requiredCapabilities;
@@ -15090,6 +15249,39 @@ elements.projectreload.addEventListener('click', () => {
   });
   savedRevision = editor.revision; savedProjectGeneration = lifecycle.projectGeneration;
   setProjectBaseline(AVR_PROFILE); renderCatalog(); renderProject(); elements.projectmessage.textContent = 'Restored and revalidated browser recovery, including visual annotations. Previous runtime output was cleared; save a project file for durable storage.';
+});
+elements.projectdraftrecovery.addEventListener('change', () => {
+  elements.projectdraftrecover.disabled = !elements.projectdraftrecovery.value;
+});
+elements.projectdraftrecover.addEventListener('click', () => {
+  const recover = () => {
+    const draftId = elements.projectdraftrecovery.value;
+    let source = null;
+    try { source = localStorage.getItem(`${PROJECT_STORAGE_KEY}.tab.${draftId}`); } catch { /* handled below */ }
+    const parsed = source ? parseAvrRecoverySource(source) : { ok: false, code: 'NO_LOCAL_SAVE' };
+    if (!parsed.ok) {
+      showActionableError(elements.projectmessage, parsed.code, 'The preserved draft was left untouched because validation failed.');
+      return;
+    }
+    editor = parsed.session;
+    scenarioTimelineEditor = parsed.scenarioTimeline ? new ScenarioTimelineEditor(parsed.scenarioTimeline) : null;
+    authoredScenarioResults = [];
+    clearExpectationReference();
+    if (parsed.modelLibrary) projectModelLibraryLocks.set(AVR_PROFILE, structuredClone(parsed.modelLibrary));
+    installProjectGeneration({
+      empty: editor.project.circuit.components.length === 0, reason: 'project.reload',
+      runtimeMessage: 'Recovered draft requires build',
+    });
+    selectedSourceFile = 'main.ino';
+    resetCanvasAnnotations(parsed.annotations ?? emptyCanvasAnnotations(), {
+      subcircuits: parsed.subcircuits ?? emptySubcircuits(parsed.modelLibrary),
+    });
+    persistProject();
+    setProjectBaseline(AVR_PROFILE); renderCatalog(); renderProject();
+    elements.projectmessage.textContent = 'Opened a validated copy of the preserved draft in this tab. The original draft remains unchanged; Build fresh before Run.';
+  };
+  if (requestUnsavedChangeGuard({ profile: AVR_PROFILE, actionLabel: 'recovering another local draft', continueAction: recover })) return;
+  recover();
 });
 elements.projectexport.addEventListener('click', () => saveLegacyProject(AVR_PROFILE));
 
@@ -15394,6 +15586,7 @@ if (!restored?.ok && !stored && !recoveryStored) {
   firstVisitStarterLoaded = firstVisit?.ok === true;
 }
 if (restored?.ok) persistProject();
+renderDraftRecoveryChoices();
 const workspace = document.querySelector('.workspace');
 for (const [name, button] of [['catalog-collapsed', elements.togglecatalog], ['inspector-collapsed', elements.toggleinspector]]) {
   if (workspacePreference(name)) { workspace.classList.add(name); button.setAttribute('aria-pressed', 'true'); }
