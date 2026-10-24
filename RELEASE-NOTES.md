@@ -1,4 +1,22 @@
-# Intent MCU Simulator 1.1.0-rc.128
+# Intent MCU Simulator 1.1.0-rc.129
+
+## Saved-project compatibility for published model locks
+
+Rc.129 restores strict data-only Open and migration for project files saved
+under the exact published rc.124 and rc.128 model-library identities. Authored
+circuit, source and layout data are preserved, but executable artifacts,
+runtime history and verdict authority are never restored. Migration creates a
+separate canonical copy under the current model lock and requires a fresh
+Build before Run.
+
+The allowlist remains finite: unknown, neighboring, forged and self-rehashed
+locks reject atomically without replacing the open project. This release adds
+no firmware execution, native evidence or X92 completion claim. Exact public
+rc.128 and its persistent aggregate counter volume are the rollback basis.
+
+---
+
+## 1.1.0-rc.128
 
 ## Bounded USART0 RX evidence and cumulative pending release
 

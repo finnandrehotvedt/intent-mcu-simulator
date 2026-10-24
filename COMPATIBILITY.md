@@ -1,10 +1,15 @@
 # Compatibility
 
-Intent MCU Simulator 1.1.0-rc.128 publicly executes one `ATmega328P`, 16 MHz,
+Intent MCU Simulator 1.1.0-rc.129 publicly executes one `ATmega328P`, 16 MHz,
 5 V learning profile, one bounded `RP2040 Pico` GPIO0/UART0 source profile and
 one bounded `ESP32-C3` GPIO2/UART source profile, plus one bounded
 `STM32F429ZI` PB0/USART3/reset-replay profile. They are educational subsets,
 not complete electrical or cycle-perfect hardware replacements.
+
+Project files saved under the exact published rc.124 and rc.128 model-library
+locks reopen as authored data only. Their executable/runtime authority is
+cleared, migration produces a separate current-lock copy, and a fresh Build is
+required before Run. Unknown or altered locks remain rejected atomically.
 
 X46 supports read-only AVR USART0 TX byte, 8-N-1 framing and paired RX transfer
 evidence retained by the current identity-bound paused worker. It validates

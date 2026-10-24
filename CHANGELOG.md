@@ -2,6 +2,17 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.129 — 2026-10-24
+
+- Restores strict data-only Open and migration for exact project files saved
+  under the published rc.124 and rc.128 model-library locks.
+- Preserves authored circuit, source and layout while clearing executable,
+  runtime and verdict authority and requiring a fresh Build after migration.
+- Keeps unknown, neighboring, forged and self-rehashed locks atomically
+  rejected without replacing the current project.
+- Retains exact public rc.128 and its private aggregate counter volume as the
+  app-only rollback basis; X92 remains 85 complete, 2 active and 9 remaining.
+
 ## 1.1.0-rc.128 — 2026-10-24
 
 - Adds completed, in-flight and rejected model-derived AVR USART0 RX evidence
