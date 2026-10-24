@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.132 — 2026-10-24
+
+- Keeps Parts visible beside the active canvas in Simple view across all four
+  controller profiles.
+- Adds real HTML5 drag/drop placement while preserving click and keyboard
+  alternatives, bounded coordinates, one transaction and exact Undo.
+- Places search and supported cards before technical filters and keeps expert
+  route/geometry controls in Advanced view.
+- Keeps contextual Undo and Save copy visible without adding API, compiler,
+  runtime, worker or native execution authority.
+- Retains exact public rc.131 and its persistent aggregate counter volume as
+  the app-only rollback basis.
+
 ## 1.1.0-rc.131 — 2026-10-24
 
 - Keeps the Firmware dialog open while a learner types, inserts spaces, adds
