@@ -1,4 +1,22 @@
-# Intent MCU Simulator 1.1.0-rc.131
+# Intent MCU Simulator 1.1.0-rc.132
+
+## Parts beside the canvas
+
+Rc.132 keeps a persistent, non-modal Parts drawer beside the active canvas in
+Simple view for AVR, Pico, ESP32-C3 and STM32. Supported cards can be added by
+click, keyboard or real HTML5 drag/drop; accepted drops use bounded canvas
+coordinates and one exact Undo step. Search and cards appear before technical
+filters, while expert geometry remains under Advanced. Contextual Undo and a
+quiet Save copy action stay visible.
+
+This is an app-only usability release. It reuses accepted native compiler,
+worker, GPIO and visible-output evidence and performs no new firmware Build,
+worker creation, Run or native claim. Exact public rc.131 and its persistent
+aggregate counter volume are the app-only rollback basis.
+
+---
+
+## 1.1.0-rc.131
 
 ## Stable Firmware editing
 
