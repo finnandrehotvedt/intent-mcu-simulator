@@ -20,7 +20,9 @@ test('copyable Codex instructions are public, self-contained and secret-safe', (
   assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node .\\client.mjs --ticket .\\intent-mcu-pairing.intentpair plan.json'));
   assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node ./client.mjs --ticket ./intent-mcu-pairing.intentpair plan.json'));
   assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node .\\client.mjs --ticket .\\intent-mcu-pairing.intentpair\n'));
-  assert.match(CODEX_PAIRING_INSTRUCTIONS, /read-only client consumes its one-use pairing/);
+  assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node .\\client.mjs --session .\\intent-mcu-pairing.intentpair'));
+  assert.match(CODEX_PAIRING_INSTRUCTIONS, /One ticket is claimed once/);
+  assert.match(CODEX_PAIRING_INSTRUCTIONS, /ending it requires a fresh pairing/);
   assert.doesNotMatch(CODEX_PAIRING_INSTRUCTIONS, /printf|PAIRING_SECRET=/);
   assert.match(CODEX_PAIRING_INSTRUCTIONS, /Never auto-undo/);
 });
@@ -35,6 +37,8 @@ test('build exposes versioned protocol, complete client and exact metaprompt', a
   assert.match(protocol, /API_STALE_REVISION/);
   assert.match(client, /pairing\.claim/);
   assert.match(client, /intent-mcu-browser-session-pairing-ticket@1/);
+  assert.match(client, /API_SESSION_LOCAL_CLOSED/);
+  assert.match(client, /mode: 'session'/);
   assert.match(client, /await unlink\(ticketPath\)/);
   assert.match(client, /edit\.batch/);
   assert.match(client, /API_PLAN_REMOVAL_NOT_ALLOWED/);

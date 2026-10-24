@@ -8,11 +8,12 @@ import { createInterface } from 'node:readline';
 import { stdin, stderr, stdout } from 'node:process';
 
 const args = process.argv.slice(2);
-const ticketMode = args[0] === '--ticket';
-let [origin, planPath] = ticketMode ? [null, args[2]] : args;
+const sessionMode = args[0] === '--session';
+const ticketMode = args[0] === '--ticket' || sessionMode;
+let [origin, planPath] = ticketMode ? [null, sessionMode ? null : args[2]] : args;
 const ticketPath = ticketMode ? args[1] : null;
-if ((!ticketMode && (!origin || args.length > 2)) || (ticketMode && (!ticketPath || args.length > 3))) {
-  stderr.write('Usage: node client.mjs ORIGIN [NONSECRET_PLAN.json]\n       node client.mjs --ticket PAIRING.intentpair [NONSECRET_PLAN.json]\n'); process.exit(2);
+if ((!ticketMode && (!origin || args.length > 2)) || (ticketMode && (!ticketPath || args.length > (sessionMode ? 2 : 3)))) {
+  stderr.write('Usage: node client.mjs ORIGIN [NONSECRET_PLAN.json]\n       node client.mjs --ticket PAIRING.intentpair [NONSECRET_PLAN.json]\n       node client.mjs --session PAIRING.intentpair\n'); process.exit(2);
 }
 let pairingSecret = null;
 let ticketScopes = null;
@@ -83,23 +84,27 @@ async function ordinaryLine(prompt) {
 }
 if (!pairingSecret) pairingSecret = await hiddenLine('Pairing secret (hidden): ');
 if (!pairingSecret || pairingSecret.length > 256) throw new Error('API_PAIRING_INPUT_REQUIRED');
+function validatePlan(value) {
+  if (!value || value.schema !== 'intent-mcu-browser-session-plan@1' || !Array.isArray(value.commands)
+      || value.commands.length === 0 || value.commands.length > 16
+      || Object.keys(value).some((key) => !['schema', 'commands', 'allow_component_removal'].includes(key))) throw new Error('API_PLAN_SHAPE');
+  if (value.commands.some((command) => command?.command === 'component.remove')
+      && value.allow_component_removal !== true) throw new Error('API_PLAN_REMOVAL_NOT_ALLOWED');
+  return value;
+}
 let plan = null;
 if (planPath) {
   const bytes = await readFile(planPath);
   if (bytes.length > 48 * 1024) throw new Error('API_PLAN_LIMIT');
-  plan = JSON.parse(bytes.toString('utf8'));
-  if (!plan || plan.schema !== 'intent-mcu-browser-session-plan@1' || !Array.isArray(plan.commands)
-      || plan.commands.length === 0 || plan.commands.length > 16
-      || Object.keys(plan).some((key) => !['schema', 'commands', 'allow_component_removal'].includes(key))) throw new Error('API_PLAN_SHAPE');
-  if (plan.commands.some((command) => command?.command === 'component.remove')
-      && plan.allow_component_removal !== true) throw new Error('API_PLAN_REMOVAL_NOT_ALLOWED');
+  try { plan = validatePlan(JSON.parse(bytes.toString('utf8'))); }
+  catch (error) { throw new Error(error.message?.startsWith('API_') ? error.message : 'API_PLAN_SHAPE'); }
 }
 const post = async (operation, value = {}, capability = null) => {
   const response = await fetch(endpoint, { method: 'POST', redirect: 'error', headers: { 'Content-Type': 'application/json',
     ...(capability ? { Authorization: `Bearer ${capability}` } : {}) }, body: JSON.stringify({ operation, ...value }) });
   return response.json();
 };
-const scopes = ['discover', 'read_project', ...(plan ? ['edit_circuit'] : [])];
+const scopes = sessionMode ? ticketScopes : ['discover', 'read_project', ...(plan ? ['edit_circuit'] : [])];
 if (ticketScopes && scopes.some((scope) => !ticketScopes.includes(scope))) throw new Error('API_PAIRING_TICKET_SCOPE');
 const claim = await post('pairing.claim', { pairingSecret, scopes });
 if (!claim.ok) throw new Error(claim.code);
@@ -121,28 +126,82 @@ async function execute(command, args = {}) {
 const accepted = async (command, args = {}) => {
   const result = await execute(command, args); if (result.status !== 'accepted') throw new Error(result.code); return result;
 };
-const capabilities = await accepted('capabilities.list');
-const project = await accepted('project.inspect');
-const catalog = await accepted('components.catalog');
-const components = await accepted('components.list');
-const nets = await accepted('nets.list');
-const componentPins = {};
-for (const component of components.components) componentPins[component.id] = (await accepted('component.pins', { component_id: component.id })).pins;
-const validation = await accepted('circuit.validate');
-const discovery = { profile: catalog.profile, project_id: claim.projectId, revision,
-  commands: capabilities.commands, components: components.components, nets: nets.nets,
-  pins: componentPins, validation: validation.validation };
-if (!plan) { stdout.write(`${JSON.stringify({ status: 'pass', mode: 'read-only', discovery })}\n`); process.exit(0); }
-if (catalog.profile !== 'board.atmega328p-16mhz-v1') throw new Error('API_PROFILE_READ_ONLY');
-const typeById = new Map(components.components.map((item) => [item.id, item.type]));
-for (const command of plan.commands) if (command?.command === 'component.add') typeById.set(command.id, command.type);
-for (const command of plan.commands) {
-  if (command?.command !== 'wire.connect') continue;
-  for (const endpointValue of [command.from, command.to]) {
-    const type = typeById.get(endpointValue?.component); const pins = catalog.components[type]?.pins;
-    if (!type || !pins?.some((pin) => pin.id === endpointValue?.pin)) throw new Error('API_PLAN_NAMED_PIN_UNKNOWN');
+let staticDiscovery = null;
+async function discoverProject() {
+  const capabilities = staticDiscovery?.capabilities ?? await accepted('capabilities.list');
+  const project = await accepted('project.inspect');
+  const catalog = staticDiscovery?.catalog ?? await accepted('components.catalog');
+  const components = await accepted('components.list');
+  const nets = await accepted('nets.list');
+  const componentPins = { ...(staticDiscovery?.componentPins ?? {}) };
+  for (const component of components.components) if (!componentPins[component.id]) {
+    componentPins[component.id] = (await accepted('component.pins', { component_id: component.id })).pins;
+  }
+  const validation = await accepted('circuit.validate');
+  staticDiscovery = { capabilities, catalog, componentPins };
+  return { discovery: { profile: catalog.profile, project_id: claim.projectId, revision,
+    commands: capabilities.commands, components: components.components, nets: nets.nets,
+    pins: componentPins, validation: validation.validation }, project, catalog, components };
+}
+function validateNamedPins(candidate, components, catalog) {
+  const typeById = new Map(components.components.map((item) => [item.id, item.type]));
+  for (const command of candidate.commands) if (command?.command === 'component.add') typeById.set(command.id, command.type);
+  for (const command of candidate.commands) {
+    if (command?.command !== 'wire.connect') continue;
+    for (const endpointValue of [command.from, command.to]) {
+      const type = typeById.get(endpointValue?.component); const pins = catalog.components[type]?.pins;
+      if (!type || !pins?.some((pin) => pin.id === endpointValue?.pin)) throw new Error('API_PLAN_NAMED_PIN_UNKNOWN');
+    }
   }
 }
+if (sessionMode) {
+  let lastState = null;
+  stdout.write(`${JSON.stringify({ status: 'ready', mode: 'session', project_id: claim.projectId,
+    revision, scopes: claim.scopes, expires_at: claim.expiresAt })}\n`);
+  for await (const line of pipedLines ?? createInterface({ input: stdin, output: stderr, terminal: true })) {
+    let input;
+    try { input = JSON.parse(String(line)); }
+    catch { stdout.write('{"status":"rejected","code":"API_SESSION_INPUT_SHAPE"}\n'); continue; }
+    try {
+      if (!input || typeof input !== 'object' || Array.isArray(input)
+          || typeof input.command !== 'string') throw new Error('API_SESSION_INPUT_SHAPE');
+      if (input.command === 'close' && Object.keys(input).join('|') === 'command') {
+        stdout.write('{"status":"closed","code":"API_SESSION_LOCAL_CLOSED"}\n'); break;
+      }
+      if (input.command === 'inspect' && Object.keys(input).join('|') === 'command') {
+        lastState = await discoverProject(); stdout.write(`${JSON.stringify({ status: 'pass', mode: 'inspected', discovery: lastState.discovery })}\n`); continue;
+      }
+      if (input.command === 'apply' && Object.keys(input).sort().join('|') === 'command|plan') {
+        if (!claim.scopes.includes('edit_circuit')) throw new Error('API_SCOPE_REQUIRED');
+        const candidate = validatePlan(input.plan); const current = lastState ?? await discoverProject();
+        if (current.catalog.profile !== 'board.atmega328p-16mhz-v1') throw new Error('API_PROFILE_READ_ONLY');
+        validateNamedPins(candidate, current.components, current.catalog);
+        const applied = await accepted('edit.batch', { commands: candidate.commands });
+        lastState = null;
+        stdout.write(`${JSON.stringify({ status: 'pass', mode: 'edited', transaction_id: applied.transaction_id,
+          changes: applied.changes, revision_after: revision })}\n`); continue;
+      }
+      if (input.command === 'undo' && Object.keys(input).sort().join('|') === 'command|transaction_id'
+          && typeof input.transaction_id === 'string') {
+        const undone = await accepted('edit.undo', { transaction_id: input.transaction_id });
+        lastState = null; stdout.write(`${JSON.stringify({ status: 'pass', mode: 'undone',
+          transaction_id: input.transaction_id, undo: undone.code, revision_after: revision,
+        })}\n`); continue;
+      }
+      throw new Error('API_SESSION_COMMAND_UNSUPPORTED');
+    } catch (error) {
+      const code = typeof error?.message === 'string' && error.message.startsWith('API_')
+        ? error.message : 'API_SESSION_FAILED';
+      stdout.write(`${JSON.stringify({ status: 'rejected', code })}\n`);
+      if (['API_EXPIRED', 'API_AUTH_REQUIRED', 'API_OWNER_GONE', 'API_CLIENT_GONE'].includes(code)) break;
+    }
+  }
+  process.exit(0);
+}
+const { discovery, catalog, components } = await discoverProject();
+if (!plan) { stdout.write(`${JSON.stringify({ status: 'pass', mode: 'read-only', discovery })}\n`); process.exit(0); }
+if (catalog.profile !== 'board.atmega328p-16mhz-v1') throw new Error('API_PROFILE_READ_ONLY');
+validateNamedPins(plan, components, catalog);
 const applied = await accepted('edit.batch', { commands: plan.commands });
 const after = await accepted('project.inspect'); const afterNets = await accepted('nets.list');
 stdout.write(`${JSON.stringify({ status: 'pass', mode: 'edited', discovery, transaction_id: applied.transaction_id,
