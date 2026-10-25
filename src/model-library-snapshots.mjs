@@ -128521,11 +128521,11 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "99549d1a041e9f2b430b5d5069a7d4aba9687cf43a40043c55be5e116bfe0ff2",
+      "behaviorContractSha256": "55b140d1eccbb494ec6f04670e05f678ae924df77623473ea03b729f60cb804e",
       "componentType": "board.esp32-c3-devmodule-v1",
-      "componentVersion": 1,
+      "componentVersion": 2,
       "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
-      "modelVersion": 1,
+      "modelVersion": 2,
       "owner": {
         "implementationId": "intent-mcu-model-bundle-current-x46-usart-rx-producer-1@45",
         "observerId": "board.esp32-c3-devmodule-v1-state-v1",
@@ -128546,11 +128546,11 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       },
       "rendererContractSha256": "95b58544ffb4f3a11a9eb2514ed269bc0464d7b2bd3e1e7f50dda1839c841974",
       "semantic": {
-        "componentVersion": 1,
+        "componentVersion": 2,
         "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
-        "modelVersion": 1,
+        "modelVersion": 2,
         "pins": [
           {
             "constraints": {
@@ -128568,10 +128568,64 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           },
           {
             "constraints": {
+              "authoringOnly": true,
+              "connector": "J1",
+              "physicalPin": 5,
+              "voltageMax": 3.3,
+              "voltageMin": 0
+            },
+            "id": "GPIO3",
+            "role": "digital-io",
+            "signals": [
+              "digital.output"
+            ]
+          },
+          {
+            "constraints": {
+              "authoringOnly": true,
+              "connector": "J1",
+              "physicalPin": 9,
+              "voltageMax": 3.3,
+              "voltageMin": 0
+            },
+            "id": "GPIO0",
+            "role": "digital-io",
+            "signals": [
+              "digital.output"
+            ]
+          },
+          {
+            "constraints": {
+              "authoringOnly": true,
+              "connector": "J1",
+              "physicalPin": 10,
+              "voltageMax": 3.3,
+              "voltageMin": 0
+            },
+            "id": "GPIO1",
+            "role": "digital-io",
+            "signals": [
+              "digital.output"
+            ]
+          },
+          {
+            "constraints": {
               "connector": "J1",
               "physicalPin": 6
             },
             "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "authoringOnly": true,
+              "connector": "J1",
+              "physicalPin": 8
+            },
+            "id": "GND8",
             "role": "ground",
             "signals": [
               "ground.reference"
@@ -128587,7 +128641,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "partial"
         }
       },
-      "semanticSha256": "47f21637431be47217854b63ded12bc182b93af75d0f25cd8a36c05d7ee0a74d",
+      "semanticSha256": "022a7b5a52e561da2046bf4b297c0828dca3cb47e7c531d778c04a3a737bf170",
       "supportStatus": "partial"
     },
     {
@@ -128734,11 +128788,11 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "5c4be3ada7cf5844f323e1a0b7f69cc096922854113353df30b0baa39f915f9c",
+      "behaviorContractSha256": "ac7e20b5fe96b16e09826e888e7befaaed90c7278d24ec14da79dee820c1849e",
       "componentType": "board.rp2040-pico-v1",
-      "componentVersion": 1,
+      "componentVersion": 2,
       "modelId": "model.rp2040-pico-gpio0-public-v1",
-      "modelVersion": 1,
+      "modelVersion": 2,
       "owner": {
         "implementationId": "intent-mcu-model-bundle-current-x46-usart-rx-producer-1@45",
         "observerId": "board.rp2040-pico-v1-state-v1",
@@ -128759,11 +128813,11 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       },
       "rendererContractSha256": "52d6e473d0ddb6e77f4299987759cf671fcc9d7025d827651d9220935605250c",
       "semantic": {
-        "componentVersion": 1,
+        "componentVersion": 2,
         "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.rp2040-pico-gpio0-public-v1",
-        "modelVersion": 1,
+        "modelVersion": 2,
         "pins": [
           {
             "constraints": {
@@ -128780,9 +128834,59 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           },
           {
             "constraints": {
+              "authoringOnly": true,
+              "physicalPin": 2,
+              "voltageMax": 3.3,
+              "voltageMin": 0
+            },
+            "id": "GP1",
+            "role": "digital-io",
+            "signals": [
+              "digital.output"
+            ]
+          },
+          {
+            "constraints": {
               "physicalPin": 3
             },
             "id": "GND3",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "authoringOnly": true,
+              "physicalPin": 4,
+              "voltageMax": 3.3,
+              "voltageMin": 0
+            },
+            "id": "GP2",
+            "role": "digital-io",
+            "signals": [
+              "digital.output"
+            ]
+          },
+          {
+            "constraints": {
+              "authoringOnly": true,
+              "physicalPin": 5,
+              "voltageMax": 3.3,
+              "voltageMin": 0
+            },
+            "id": "GP3",
+            "role": "digital-io",
+            "signals": [
+              "digital.output"
+            ]
+          },
+          {
+            "constraints": {
+              "authoringOnly": true,
+              "physicalPin": 8
+            },
+            "id": "GND8",
             "role": "ground",
             "signals": [
               "ground.reference"
@@ -128798,7 +128902,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "partial"
         }
       },
-      "semanticSha256": "981d93d732c94ee648051dab6505f97712f18d7ecd26544102ee58239f72c265",
+      "semanticSha256": "dfe4034314ebd05b23809be29d36d3eca57f09232f8e824fff15f6583e9f65ed",
       "supportStatus": "partial"
     },
     {
@@ -128945,11 +129049,11 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "2afee812e1034b7a952095b51d88a0262d9e5aa3ceb700b4562ff34d78c0d685",
+      "behaviorContractSha256": "e11fbb51eabd6e0a18573eeba3d2383c56b2b500bd5f92c0b0eba2528ce448f7",
       "componentType": "board.stm32f429zi-nucleo144-v1",
-      "componentVersion": 1,
+      "componentVersion": 2,
       "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
-      "modelVersion": 1,
+      "modelVersion": 2,
       "owner": {
         "implementationId": "intent-mcu-model-bundle-current-x46-usart-rx-producer-1@45",
         "observerId": "board.stm32f429zi-nucleo144-v1-state-v1",
@@ -128970,11 +129074,11 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       },
       "rendererContractSha256": "5d3909f79e7ac00abfde9bc6d67044203ca6f262f7c17d28781331c6aec46de3",
       "semantic": {
-        "componentVersion": 1,
+        "componentVersion": 2,
         "controls": {},
         "internalTerminalGroups": [],
         "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
-        "modelVersion": 1,
+        "modelVersion": 2,
         "pins": [
           {
             "constraints": {
@@ -128991,10 +129095,63 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           },
           {
             "constraints": {
+              "authoringOnly": true,
+              "connector": "CN12",
+              "physicalPin": 24,
+              "voltageMax": 3.3,
+              "voltageMin": 0
+            },
+            "id": "PB1",
+            "role": "digital-io",
+            "signals": [
+              "digital.output"
+            ]
+          },
+          {
+            "constraints": {
+              "authoringOnly": true,
               "connector": "CN11",
-              "physicalPin": 35
+              "physicalPin": 21,
+              "voltageMax": 3.3,
+              "voltageMin": 0
+            },
+            "id": "PB7",
+            "role": "digital-io",
+            "signals": [
+              "digital.output"
+            ]
+          },
+          {
+            "constraints": {
+              "connector": "CN11",
+              "migratedFromIncorrectClaim": "CN11-35",
+              "physicalPin": 19
             },
             "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "authoringOnly": true,
+              "connector": "CN11",
+              "physicalPin": 20
+            },
+            "id": "GND20",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "authoringOnly": true,
+              "connector": "CN11",
+              "physicalPin": 8
+            },
+            "id": "GND8",
             "role": "ground",
             "signals": [
               "ground.reference"
@@ -129010,7 +129167,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "partial"
         }
       },
-      "semanticSha256": "4f2061383d5c2011fae731719a9e8a50883d1c37bcf8e607c56a6d2550310a76",
+      "semanticSha256": "a09aea016878eb98bd698c7af6dcaf6d93bcb3bdc081a9ead894cf8b15cdab90",
       "supportStatus": "partial"
     },
     {
@@ -129161,7 +129318,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
   "implementationMembers": [
     {
       "path": "src/component-catalog.mjs",
-      "sha256": "d461c7f52e591f2937518dd7cc30f9fdfd915cd9c6104624364d2236ecf1d236"
+      "sha256": "9abafc414c059b7365a65f1291d88c9a9f51be2cefb97990c2e6b5ab8b5cb0a4"
     },
     {
       "path": "src/circuit-engine.mjs",
@@ -129229,7 +129386,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/project-editor.mjs",
-      "sha256": "5ff152d2d14790eb975f279adbbdb2856d4ae7d8a97426d834537abb74f5010e"
+      "sha256": "aa7f19e84adc60b4ae6f78b8a4b06f17e438c0428b9d8294f19b3af260b646ae"
     },
     {
       "path": "src/lifecycle.mjs",
@@ -129237,7 +129394,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/component-artwork.mjs",
-      "sha256": "3708f938e394c562eedfef166ef7d17d53b6949584f01310b10fb90e72f31fc2"
+      "sha256": "668ed93a92aaefa4fbd6a1b44d83904d67ec54ff1def1b0ffe9882706fbb1205"
     },
     {
       "path": "src/model-library.mjs",
@@ -129249,7 +129406,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/project-envelope.mjs",
-      "sha256": "bfd8825dc0acf84900e7a318d63a1ed38fe70cb8ef25fe3971b640a1215ca547"
+      "sha256": "571d4d61ea1316e5ecad2be5bdd64fa02718f2bc0c00e1032db2cae86e635262"
     },
     {
       "path": "src/model-control-contracts.mjs",
@@ -129261,7 +129418,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "1bad8b094d75d0b1d3de67526b4d4871ccaabe2148bd008cad5c4c053297544f"
+      "sha256": "599069d148c66d72735364b6a9bcfc860a5d3a1c0a65154be64c88f67a9ddc9e"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -129305,27 +129462,27 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
-      "sha256": "12daab15af253d849c06632880949ad8bd6d42961747448b5fa5bcf658f8d803"
+      "sha256": "394483ae6646d1c3459c7e0b319e382befa9d97d44f6f0f2df3899a8db18bdba"
     },
     {
       "path": "src/esp32c3-public-circuit.mjs",
-      "sha256": "3482ea0bdbfd94268bdbf526d69547f076e635578677f38fd72308c8fb3a7c56"
+      "sha256": "591ef054952b0f37927b70501e24fe5db36315f291f5ad4b00cb38e99ff46fa0"
     },
     {
       "path": "src/stm32-public-circuit.mjs",
-      "sha256": "6ef18086d682c1ae66d0c39a239a9785f28d0ca07389ff687cefed5078d7b93f"
+      "sha256": "c437bdb7cd088e3b3ad024b1fddfff3705e6e780ac2875abeacfe528cbfc8572"
     },
     {
       "path": "src/rp2040-public-workbench.mjs",
-      "sha256": "3c3df5d9f83e7f98424e42bb0c93585596c097cec08b4b4bef6e95665309e9f1"
+      "sha256": "83a01d481a0b53c14113126162e730db2b5e4bc6aee378aa0f5b607bea379ddf"
     },
     {
       "path": "src/esp32c3-public-workbench.mjs",
-      "sha256": "0443cd4815c1f9d1f52c2233698e690190cd4fd2e7b5d6c6fad39283326c8579"
+      "sha256": "a5051153169dcac3f2045803fd7ccf0300493b656394ee6ef6ca7ce15dc465cc"
     },
     {
       "path": "src/stm32-public-workbench.mjs",
-      "sha256": "5c7280f084b2dddccbddc86deb548026613587a3807a88c5221da6f56549b19a"
+      "sha256": "ef4e33777b38ae0707b6b67502c0e83a10a12ab7e35f5a90f9a9f0c4a3092dce"
     },
     {
       "path": "c3/public-service.mjs",
@@ -129404,7 +129561,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "a60dd552da826bcf74e23eb7f8457de1ae1e8dd31f313536cb737f8a9d965507"
     }
   ],
-  "implementationSha256": "aa4b97113d6521d0e04b45da8b5200ef4ee98e65ccd7f859d9436dc12af9b877",
+  "implementationSha256": "d784cc9ea7ff0dd43163812d459ff23c81abce5f034a55fc4fb476e5b5fc8094",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.125 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, real worker, run, image build or deployment",
@@ -129414,7 +129571,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-config-producer.2-current",
     "semanticDisposition": "component, firmware and electrical semantics remain unchanged; paired read-only AVR USART0 RX peripheral-model events are added"
   },
-  "manifestSha256": "1be8d872f3fa67a61afead436887686c57082dfd5ad68dc20511c12c80a4a0cb",
+  "manifestSha256": "f8deca034c208f06d58db4db9f945507f8f5300b4e649f6b33cc164d25280672",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

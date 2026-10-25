@@ -5,11 +5,12 @@ import { VALIDATED_LED_CIRCUIT } from '../c3/gpio2-adapter.mjs';
 import { LED_FORWARD_VOLTS, defaultProperties } from './component-catalog.mjs';
 import { CURRENT_MODEL_LIBRARY_LOCK, resolveModelLibrary, validateProjectModelLibrary } from './model-library.mjs';
 import {
-  NamedSeriesLedCircuitEditor, createSeriesLedComponentPolicy, createSeriesLedConnectionPolicy,
+  NamedSeriesLedCircuitEditor, createSeriesLedComponentPolicy, createSeriesLedConnectionPolicy, normalizeBoundedIdCounters,
 } from './named-series-led-circuit-editor.mjs';
 import { normalizeStoredRoute } from './route-model.mjs';
 import { emptyComponentAppearance, normalizeComponentAppearance } from './component-appearance.mjs';
 import { exactKeys } from './strict-json.mjs';
+import { GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE, validateBounded3v3AuthoringGraph } from './bounded-3v3-authoring-contracts.mjs';
 
 export const ESP32C3_PUBLIC_CIRCUIT_SCHEMA = 'intent-mcu-esp32c3-public-circuit@1';
 export const ESP32C3_PUBLIC_PROFILE = 'board.esp32-c3-devmodule-v1';
@@ -19,6 +20,13 @@ export const ESP32C3_PIN_MAP = Object.freeze({
   GPIO2: Object.freeze({ signal: 'GPIO2', connector: 'J1', physicalPin: 4, voltage: 3.3, capability: 'digital-output' }),
   GND: Object.freeze({ signal: 'GND', connector: 'J1', physicalPin: 6, voltage: 0, capability: 'ground-reference' }),
 });
+export const ESP32C3_AUTHORING_PIN_MAP_V2 = Object.freeze({
+  source: Object.freeze({ url: 'https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32c3/esp32-c3-devkitm-1/user_guide.html#header-block',
+    schematic: 'SCH_ESP32-C3-DEVKITM-1_V1_20200915A.pdf' }),
+  pins: Object.freeze({ GPIO2: { connector: 'J1', physicalPin: 4 }, GPIO3: { connector: 'J1', physicalPin: 5 },
+    GND: { connector: 'J1', physicalPin: 6 }, GND8: { connector: 'J1', physicalPin: 8 },
+    GPIO0: { connector: 'J1', physicalPin: 9 }, GPIO1: { connector: 'J1', physicalPin: 10 } }),
+});
 
 const boardPin = (id, label, role, signals, x, y, constraints) => Object.freeze({
   id, label, role, signals: Object.freeze([...signals]), capabilities: Object.freeze([...signals]),
@@ -26,14 +34,22 @@ const boardPin = (id, label, role, signals, x, y, constraints) => Object.freeze(
 });
 
 export const ESP32C3_BOARD_DEFINITION = Object.freeze({
-  family: 'board.esp32-c3-learning-profile', variant: 'public-bounded-gpio2-3v3',
-  type: ESP32C3_PUBLIC_PROFILE, version: 1,
+  family: 'board.esp32-c3-learning-profile', variant: 'authoring-multipin-runtime-gpio2-3v3',
+  type: ESP32C3_PUBLIC_PROFILE, version: 2,
   displayName: 'ESP32-C3 learning profile board', manufacturer: 'Intent Learning', partNumber: 'IL-ESP32C3-GPIO2-PROFILE',
   pins: Object.freeze([
     boardPin('GPIO2', 'GPIO2 · J1 physical pin 4', 'digital-io', ['digital.output'], 0.95, 0.25,
       { voltageMin: 0, voltageMax: 3.3, connector: 'J1', physicalPin: 4, strappingPin: true }),
+    boardPin('GPIO3', 'GPIO3 · J1 physical pin 5 · authoring only', 'digital-io', ['digital.output'], 0.95, 0.35,
+      { voltageMin: 0, voltageMax: 3.3, connector: 'J1', physicalPin: 5, authoringOnly: true }),
+    boardPin('GPIO0', 'GPIO0 · J1 physical pin 9 · authoring only', 'digital-io', ['digital.output'], 0.95, 0.55,
+      { voltageMin: 0, voltageMax: 3.3, connector: 'J1', physicalPin: 9, authoringOnly: true }),
+    boardPin('GPIO1', 'GPIO1 · J1 physical pin 10 · authoring only', 'digital-io', ['digital.output'], 0.95, 0.65,
+      { voltageMin: 0, voltageMax: 3.3, connector: 'J1', physicalPin: 10, authoringOnly: true }),
     boardPin('GND', 'GND · J1 physical pin 6', 'ground', ['ground.reference'], 0.95, 0.75,
       { connector: 'J1', physicalPin: 6 }),
+    boardPin('GND8', 'GND · J1 physical pin 8 · authoring only', 'ground', ['ground.reference'], 0.95, 0.85,
+      { connector: 'J1', physicalPin: 8, authoringOnly: true }),
   ]),
   propertyKeys: Object.freeze([]), controlKeys: Object.freeze([]), propertySchema: Object.freeze({}),
   modelRef: 'model.esp32c3-gpio2-project-register-adapter-v1', internalTerminalGroups: Object.freeze([]), selectable: false,
@@ -67,11 +83,15 @@ const RESISTOR = 'resistor.fixed-v1';
 const LED = 'led.basic-v1';
 const resolveNetId = createSeriesLedConnectionPolicy({
   boardType: BOARD, sourcePin: 'GPIO2', groundPin: 'GND', sourceNetId: 'net-gpio2',
+  authoringSourcePins: ['GPIO2', 'GPIO3', 'GPIO0', 'GPIO1'], authoringGroundPins: ['GND', 'GND8'],
 });
 const TYPE_PINS = Object.freeze({
-  [BOARD]: new Set(['GPIO2', 'GND']),
+  [BOARD]: new Set(Object.keys(ESP32C3_AUTHORING_PIN_MAP_V2.pins)),
   [RESISTOR]: new Set(['A', 'B']),
   [LED]: new Set(['ANODE', 'CATHODE']),
+  [GROUND_REFERENCE_3V3_TYPE]: new Set(['GND']),
+  [MOMENTARY_BUTTON_3V3_TYPE]: new Set(['A', 'B']),
+  [TOGGLE_SWITCH_3V3_TYPE]: new Set(['A', 'B']),
 });
 const COMPONENT_POLICY = createSeriesLedComponentPolicy({
   profile: BOARD, boardId: 'c3-1', boardLabel: 'ESP32-C3 GPIO2 profile',
@@ -80,6 +100,7 @@ const COMPONENT_POLICY = createSeriesLedComponentPolicy({
   nominalVolts: ESP32C3_NOMINAL_VOLTS,
   ledCurrentLimitAmps: ESP32C3_LED_CURRENT_LIMIT_AMPS,
   ledForwardVolts: LED_FORWARD_VOLTS,
+  boardPins: Object.keys(ESP32C3_AUTHORING_PIN_MAP_V2.pins),
 });
 const clone = (value) => structuredClone(value);
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
@@ -130,6 +151,9 @@ function normalizeComponent(value) {
   if (value.type === LED && (!exactKeys(value.properties, ['color']) || !Object.hasOwn(LED_FORWARD_VOLTS, value.properties.color))) {
     throw Object.assign(new Error('C3_CIRCUIT_LED_INVALID'), { code: 'C3_CIRCUIT_LED_INVALID' });
   }
+  if (value.type === GROUND_REFERENCE_3V3_TYPE && !exactKeys(value.properties, [])) throw Object.assign(new Error('C3_CIRCUIT_COMPONENT_INVALID'), { code: 'C3_CIRCUIT_COMPONENT_INVALID' });
+  if ([MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE].includes(value.type)
+      && (!exactKeys(value.properties, ['defaultClosed']) || typeof value.properties.defaultClosed !== 'boolean')) throw Object.assign(new Error('C3_CIRCUIT_COMPONENT_INVALID'), { code: 'C3_CIRCUIT_COMPONENT_INVALID' });
   return clone(value);
 }
 
@@ -145,11 +169,15 @@ export function normalizeEsp32C3CircuitDraft(value) {
   if (!exactKeys(value, ['schema', 'boardProfile', 'components', 'nets', 'layout'])
       || value.schema !== ESP32C3_PUBLIC_CIRCUIT_SCHEMA || value.boardProfile !== ESP32C3_PUBLIC_PROFILE
       || !Array.isArray(value.components) || !Array.isArray(value.nets)
-      || value.components.length > 4 || value.nets.length > 4
+      || value.components.length > 17 || value.nets.length > 24
       || !(exactKeys(value.layout, ['positions', 'wireStyles'])
         || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes'])
         || exactKeys(value.layout, ['positions', 'wireStyles', 'componentAppearance'])
-        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes', 'componentAppearance']))
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes', 'componentAppearance'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'idCounters'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes', 'idCounters'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'componentAppearance', 'idCounters'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes', 'componentAppearance', 'idCounters']))
       || value.layout.positions === null || Array.isArray(value.layout.positions)
       || value.layout.wireStyles === null || Array.isArray(value.layout.wireStyles)) {
     throw Object.assign(new Error('C3_CIRCUIT_SHAPE'), { code: 'C3_CIRCUIT_SHAPE' });
@@ -169,7 +197,7 @@ export function normalizeEsp32C3CircuitDraft(value) {
   const endpoints = new Set();
   const nets = value.nets.map((net) => {
     if (!exactKeys(net, ['id', 'endpoints']) || typeof net.id !== 'string' || !ID.test(net.id)
-        || netIds.has(net.id) || !Array.isArray(net.endpoints) || net.endpoints.length !== 2) {
+        || netIds.has(net.id) || !Array.isArray(net.endpoints) || net.endpoints.length < 2 || net.endpoints.length > 8) {
       throw Object.assign(new Error('C3_CIRCUIT_NET_INVALID'), { code: 'C3_CIRCUIT_NET_INVALID' });
     }
     netIds.add(net.id);
@@ -218,8 +246,13 @@ export function normalizeEsp32C3CircuitDraft(value) {
   if (!componentAppearance) {
     throw Object.assign(new Error('C3_CIRCUIT_LAYOUT_INVALID'), { code: 'C3_CIRCUIT_LAYOUT_INVALID' });
   }
+  const idCounters = normalizeBoundedIdCounters(value.layout.idCounters, components);
+  const authoring = validateBounded3v3AuthoringGraph({ board: ESP32C3_BOARD_DEFINITION, components, nets });
+  if (!authoring.ok) throw Object.assign(new Error(`C3_${authoring.code}`), {
+    code: `C3_${authoring.code}`, details: authoring.details,
+  });
   return { schema: ESP32C3_PUBLIC_CIRCUIT_SCHEMA, boardProfile: ESP32C3_PUBLIC_PROFILE,
-    components, nets, layout: { positions, wireStyles, wireRoutes, componentAppearance } };
+    components, nets, layout: { positions, wireStyles, wireRoutes, componentAppearance, idCounters } };
 }
 
 function hasPair(net, left, right) {
@@ -239,10 +272,15 @@ export function validateEsp32C3Circuit(value, options = {}) {
   const boards = draft.components.filter((item) => item.type === BOARD);
   if (boards.length !== 1) return failure('C3_BOARD_COUNT');
   const board = boards[0];
+  const authoring = validateBounded3v3AuthoringGraph({ board: ESP32C3_BOARD_DEFINITION, components: draft.components, nets: draft.nets });
+  if (!authoring.ok) return failure(`C3_${authoring.code}`, authoring.details);
   const resistor = draft.components.find((item) => item.type === RESISTOR);
   const led = draft.components.find((item) => item.type === LED);
   if (!resistor) return failure('C3_SERIES_RESISTOR_REQUIRED');
   if (!led) return failure('C3_PATH_OPEN');
+  if (draft.components.length !== 3 || draft.components.filter((item) => item.type === RESISTOR).length !== 1
+      || draft.components.filter((item) => item.type === LED).length !== 1
+      || draft.nets.some((net) => net.endpoints.length !== 2)) return failure('C3_EXECUTABLE_PROJECTION_UNAVAILABLE');
   const gpio = `${board.id}.GPIO2`;
   const ground = `${board.id}.GND`;
   const ledAnode = `${led.id}.ANODE`;

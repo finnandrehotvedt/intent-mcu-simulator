@@ -110,7 +110,7 @@ test('public C3 editable circuit uses named physical pins and fail-closed electr
   overcurrent.components.find((item) => item.id === 'resistor-1').properties.ohms = 10;
   assert.equal(validateEsp32C3Circuit(overcurrent).code, 'C3_LED_OVERCURRENT');
   const unknownPin = structuredClone(draft);
-  unknownPin.nets[0].endpoints.find((endpoint) => endpoint.component === 'c3-1').pin = 'GPIO3';
+  unknownPin.nets[0].endpoints.find((endpoint) => endpoint.component === 'c3-1').pin = 'NOT_A_PIN';
   assert.throws(() => normalizeEsp32C3CircuitDraft(unknownPin), /C3_PIN_UNPROVEN/u);
 });
 

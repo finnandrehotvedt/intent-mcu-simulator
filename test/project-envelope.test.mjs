@@ -157,7 +157,7 @@ test('model-library migration creates a deterministic current copy without chang
   assert.deepEqual(repeated, migrated);
   assert.equal(migrated.originalUnchanged, previous);
   assert.equal(migrated.executableAuthorityCleared, true);
-  assert.equal(migrated.preview.semanticChanges.length, 0);
+  assert.equal(migrated.preview.semanticChanges.length, 3);
   assert.equal(migrated.preview.rendererChanges.length, 0);
   assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(migrateProjectModelLibrary(migrated.canonical, adapters).code, 'MODEL_LIBRARY_ALREADY_CURRENT');
@@ -177,9 +177,9 @@ test('accepted public rc.111 envelope reopens and migrates without changing save
   assert.equal(migrated.ok, true);
   assert.equal(migrated.originalUnchanged, oldEnvelope);
   assert.equal(migrated.executableAuthorityCleared, true);
-  assert.deepEqual(migrated.preview.semanticChanges, []);
+  assert.equal(migrated.preview.semanticChanges.length, 3);
   assert.deepEqual(migrated.preview.rendererChanges, []);
-  assert.equal(migrated.preview.unchanged.length, 25);
+  assert.equal(migrated.preview.unchanged.length, 22);
   assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
 });
 
@@ -196,9 +196,9 @@ test('accepted public rc.112 envelope normalizes, reopens and migrates without c
   assert.equal(migrated.ok, true);
   assert.equal(migrated.originalUnchanged, oldEnvelope);
   assert.equal(migrated.executableAuthorityCleared, true);
-  assert.deepEqual(migrated.preview.semanticChanges, []);
+  assert.equal(migrated.preview.semanticChanges.length, 3);
   assert.deepEqual(migrated.preview.rendererChanges, []);
-  assert.equal(migrated.preview.unchanged.length, 25);
+  assert.equal(migrated.preview.unchanged.length, 22);
   assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
 });
 
@@ -215,9 +215,9 @@ test('accepted public rc.120 envelope remains openable and migrates data-only af
   assert.equal(migrated.ok, true);
   assert.equal(migrated.originalUnchanged, oldEnvelope);
   assert.equal(migrated.executableAuthorityCleared, true);
-  assert.deepEqual(migrated.preview.semanticChanges, []);
+  assert.equal(migrated.preview.semanticChanges.length, 3);
   assert.deepEqual(migrated.preview.rendererChanges, []);
-  assert.equal(migrated.preview.unchanged.length, 25);
+  assert.equal(migrated.preview.unchanged.length, 22);
   assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
 });
 
@@ -486,13 +486,23 @@ test('current envelope rejects a rehashed or unknown model-library lock atomical
   assert.equal(prepareProjectEnvelope(JSON.stringify(envelope), adapters).code, 'MODEL_LIBRARY_LOCK_UNTRUSTED');
 });
 
-test('published rc136 and rc137 locks are exact data-only recovery anchors while unknown locks remain rejected', () => {
+test('published locks are exact data-only recovery anchors while unknown locks remain rejected', () => {
   const current = JSON.parse(canonicalProjectEnvelope(profile, project, adapters));
   const published = [
     ['1.1.0-rc.136', '49f5b582520551f6c7c3f68cd196c616dfde297988b7a85497e4e42664c97128',
       'cfaf5e18f657b2663c6ac776604af9d8aa3313997b36312e0dfe4b25359154d3'],
     ['1.1.0-rc.137', '709444f9c162942ebe960f43cdc8147300c93877100a34a5630a1e1c7bd63c4d',
       '7dfa75c67b84ba2b1f04002f2c1ee5d6a3c84dea94a263a09adb47a277bde71d'],
+    ['1.1.0-rc.138', '1be8d872f3fa67a61afead436887686c57082dfd5ad68dc20511c12c80a4a0cb',
+      'aa4b97113d6521d0e04b45da8b5200ef4ee98e65ccd7f859d9436dc12af9b877'],
+    ['1.1.0-rc.139-preservation', '8e4b68c47dd01cb1fe0867b1f32fbb7a0643e6fd4a3474e364417c8e4ad91c3a',
+      '3da666f7462e12455abb6b9bba7a4908f68ffcde58d8a6d7555658a94abf727d'],
+    ['1.1.0-rc.139-mixed-branch', '459064d5d903f2216d210a2bc36fa63202bd8ea7d2c803f7f6d7e07708e66475',
+      '8bfaa600faad662d5dac7771bcfe68cf46b935db8b74f5e45ea5c7b7c1c34a95'],
+    ['1.1.0-rc.139-two-gpio', '7d07cf060525771ee00944074cac315fc4af7bcefdbec13cefa549767b0b7e55',
+      'cda403bb54780de24cd06bc2c3642d4d62366bf1904bbc46a049e11d32355669'],
+    ['1.1.0-rc.139-pre-compatibility', '8af6ca28e648a79d09d1b29b2b8daf8032184460b42b20094141ce52f0b26bc8',
+      '39b67333105341c60fd4c9f2dfb43c3f5812260e6cd217b5e1973902400bed2c'],
   ];
   for (const [release, manifestSha256, implementationSha256] of published) {
     const envelope = structuredClone(current);

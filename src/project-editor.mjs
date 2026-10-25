@@ -130,17 +130,19 @@ function applyMutation(current, command) {
       break;
     }
     case 'component.duplicate': {
-      if (!exactCommand(command, ['sourceId', 'newId'])) throw new Error('EDITOR_COMMAND_SHAPE');
+      const positioned = exactCommand(command, ['sourceId', 'newId', 'position']);
+      if (!exactCommand(command, ['sourceId', 'newId'])
+          && (!positioned || !validPoint(command.position))) throw new Error('EDITOR_COMMAND_SHAPE');
       const source = componentById(graph, command.sourceId);
       if (!source) throw new Error('EDITOR_COMPONENT_MISSING');
       const copy = clone(source);
       copy.id = command.newId;
       copy.label = `${source.label} copy`;
       graph.components.push(copy);
-      const position = next.layout.positions[source.id];
-      next.layout.positions[copy.id] = {
-        x: Math.min(1, position.x + 0.04), y: Math.min(1, position.y + 0.04), rotation: position.rotation,
-      };
+      const position = positioned ? command.position : next.layout.positions[source.id];
+      next.layout.positions[copy.id] = positioned
+        ? { x: position.x, y: position.y, rotation: position.rotation ?? 0 }
+        : { x: Math.min(1, position.x + 0.04), y: Math.min(1, position.y + 0.04), rotation: position.rotation };
       if (next.layout.componentAppearance?.components[source.id]) {
         next.layout.componentAppearance.components[copy.id] = clone(
           next.layout.componentAppearance.components[source.id],

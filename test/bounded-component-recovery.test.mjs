@@ -7,6 +7,7 @@ import test from 'node:test';
 import { Esp32C3CircuitEditor } from '../src/esp32c3-public-circuit.mjs';
 import {
   BOUNDED_COMPONENT_CATALOG_SCHEMA, BOUNDED_LED_TYPE, BOUNDED_RESISTOR_TYPE,
+  GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE,
 } from '../src/named-series-led-circuit-editor.mjs';
 import { Rp2040PicoCircuitEditor } from '../src/rp2040-pico-circuit.mjs';
 import { Stm32CircuitEditor } from '../src/stm32-public-circuit.mjs';
@@ -18,17 +19,19 @@ const profiles = [
 ];
 
 for (const profile of profiles) {
-  test(`${profile.name} exposes only its fixed board, resistor and LED`, () => {
+  test(`${profile.name} exposes its fixed board plus bounded 3.3 V authoring catalogue`, () => {
     const editor = new profile.Editor();
     const catalog = editor.snapshot().catalog;
     assert.equal(catalog.schema, BOUNDED_COMPONENT_CATALOG_SCHEMA);
     assert.equal(catalog.profile, profile.boardType);
     assert.deepEqual(catalog.parts.map((part) => part.type), [
       profile.boardType, BOUNDED_RESISTOR_TYPE, BOUNDED_LED_TYPE,
+      GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE,
     ]);
     assert.equal(catalog.parts[0].fixed, true);
     assert.equal(catalog.parts[0].addable, false);
-    assert(catalog.parts.slice(1).every((part) => part.present && !part.addable));
+    assert(catalog.parts.slice(1, 3).every((part) => part.present && !part.addable));
+    assert(catalog.parts.slice(3).every((part) => !part.present && part.addable));
     assert.equal(editor.addMissingComponent(profile.boardType).code, `${profile.prefix}_BOARD_FIXED`);
     assert.equal(editor.addMissingComponent('button.momentary-v1').code, `${profile.prefix}_COMPONENT_UNSUPPORTED`);
     assert.equal(editor.addMissingComponent(BOUNDED_RESISTOR_TYPE).code, `${profile.prefix}_COMPONENT_EXISTS`);
@@ -39,6 +42,7 @@ for (const profile of profiles) {
     ['led-1', BOUNDED_LED_TYPE, `${profile.prefix}_PATH_OPEN`],
   ]) {
     test(`${profile.name} restores one deleted ${type} after history-free reopen`, () => {
+      const replacementId = `${id.split('-')[0]}-2`;
       const editor = new profile.Editor();
       editor.select({ kind: 'component', id });
       const deleted = editor.deleteSelected();
@@ -54,15 +58,15 @@ for (const profile of profiles) {
       assert.deepEqual(reopened.snapshot(), beforeAdd);
       const added = reopened.addMissingComponent(type, { x: 0.73, y: 0.61 });
       assert.equal(added.ok, true);
-      assert.equal(added.componentId, id);
+      assert.equal(added.componentId, replacementId);
       assert.equal(added.draft.components.filter((component) => component.type === type).length, 1);
       assert.equal(added.draft.nets.some((net) => net.endpoints.some((endpoint) => endpoint.component === id)), false);
-      assert.equal(added.selection.id, id);
-      assert.deepEqual(added.draft.layout.positions[id], { x: 0.73, y: 0.61, rotation: 0 });
+      assert.equal(added.selection.id, replacementId);
+      assert.deepEqual(added.draft.layout.positions[replacementId], { x: 0.73, y: 0.61, rotation: 0 });
       assert.equal(added.canUndo, true);
       assert.equal(reopened.addMissingComponent(type).code, `${profile.prefix}_COMPONENT_EXISTS`);
       assert.equal(reopened.undo().draft.components.some((component) => component.type === type), false);
-      assert.equal(reopened.redo().draft.components.some((component) => component.id === id), true);
+      assert.equal(reopened.redo().draft.components.some((component) => component.id === replacementId), true);
     });
   }
 

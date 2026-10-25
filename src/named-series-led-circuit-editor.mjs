@@ -3,6 +3,9 @@
 
 import { normalizeStoredRoute } from './route-model.mjs';
 import { withComponentAppearance, withComponentAppearanceBody } from './component-appearance.mjs';
+import {
+  GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE,
+} from './bounded-3v3-authoring-contracts.mjs';
 
 const clone = (value) => structuredClone(value);
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
@@ -11,6 +14,32 @@ const sameEndpoint = (left, right) => endpointKey(left) === endpointKey(right);
 export const BOUNDED_COMPONENT_CATALOG_SCHEMA = 'intent-mcu-bounded-component-catalog@1';
 export const BOUNDED_RESISTOR_TYPE = 'resistor.fixed-v1';
 export const BOUNDED_LED_TYPE = 'led.basic-v1';
+export { GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE };
+const COMPONENT_ID_STEMS = Object.freeze({ [BOUNDED_RESISTOR_TYPE]: 'resistor', [BOUNDED_LED_TYPE]: 'led',
+  [GROUND_REFERENCE_3V3_TYPE]: 'ground', [MOMENTARY_BUTTON_3V3_TYPE]: 'button',
+  [TOGGLE_SWITCH_3V3_TYPE]: 'switch' });
+const COMPONENT_ID_COUNTER_KEYS = Object.freeze([...new Set(Object.values(COMPONENT_ID_STEMS))].sort());
+
+export function normalizeBoundedIdCounters(value, components) {
+  const derived = Object.fromEntries(COMPONENT_ID_COUNTER_KEYS.map((stem) => [stem, 0]));
+  for (const component of components) {
+    const stem = COMPONENT_ID_STEMS[component.type];
+    const match = stem && new RegExp(`^${stem}-([1-9]|1[0-6])$`, 'u').exec(component.id);
+    if (match) derived[stem] = Math.max(derived[stem], Number(match[1]));
+  }
+  if (value === undefined) return derived;
+  if (!value || Array.isArray(value) || Object.keys(value).some((key) => !COMPONENT_ID_COUNTER_KEYS.includes(key))) {
+    throw Object.assign(new Error('BOUNDED_ID_COUNTERS_INVALID'), { code: 'BOUNDED_ID_COUNTERS_INVALID' });
+  }
+  for (const stem of COMPONENT_ID_COUNTER_KEYS) {
+    const counter = value[stem] ?? 0;
+    if (!Number.isInteger(counter) || counter < derived[stem] || counter > 16) {
+      throw Object.assign(new Error('BOUNDED_ID_COUNTERS_INVALID'), { code: 'BOUNDED_ID_COUNTERS_INVALID' });
+    }
+    derived[stem] = counter;
+  }
+  return derived;
+}
 export const BOUNDED_WIRE_COLORS = Object.freeze([
   '#39dff2', '#f5c451', '#f04f5f', '#a8ff3f', '#5f8cff', '#303943',
 ]);
@@ -28,7 +57,7 @@ function freezeRecord(value) {
  */
 export function createSeriesLedComponentPolicy({
   profile, boardId, boardLabel, resistorPosition, ledPosition,
-  nominalVolts, ledCurrentLimitAmps, ledForwardVolts,
+  nominalVolts, ledCurrentLimitAmps, ledForwardVolts, boardPins = [],
 }) {
   const part = (value) => Object.freeze({
     ...value,
@@ -44,7 +73,7 @@ export function createSeriesLedComponentPolicy({
     ledForwardVolts: Object.freeze({ ...ledForwardVolts }),
     board: Object.freeze({
       id: boardId, type: profile, displayName: boardLabel,
-      fixed: true, addable: false,
+      fixed: true, addable: false, pins: Object.freeze([...boardPins]),
       limitation: 'Fixed bounded controller profile; it cannot be added, duplicated or removed.',
     }),
     parts: Object.freeze([
@@ -66,6 +95,24 @@ export function createSeriesLedComponentPolicy({
         },
         limitation: 'Bounded polarity/current model; colour selects an ideal forward-voltage constant, not wavelength, brightness or physical accuracy.',
       }),
+      part({
+        id: 'ground-1', type: GROUND_REFERENCE_3V3_TYPE,
+        displayName: '3.3 V ground reference', label: 'Ground reference', properties: {},
+        position: { x: 0.78, y: 0.78, rotation: 0 }, supportedProperties: {},
+        pins: ['GND'], limitation: 'Authoring-only 0 V reference; it grants no executable or physical-hardware authority.',
+      }),
+      part({
+        id: 'button-1', type: MOMENTARY_BUTTON_3V3_TYPE,
+        displayName: 'Momentary button', label: 'Momentary button', properties: { defaultClosed: false },
+        position: { x: 0.72, y: 0.58, rotation: 0 }, supportedProperties: {},
+        pins: ['A', 'B'], limitation: 'Authoring-only passive 0–3.3 V contact; runtime behavior is intentionally unavailable.',
+      }),
+      part({
+        id: 'switch-1', type: TOGGLE_SWITCH_3V3_TYPE,
+        displayName: 'Toggle switch', label: 'Toggle switch', properties: { defaultClosed: false },
+        position: { x: 0.58, y: 0.72, rotation: 0 }, supportedProperties: {},
+        pins: ['A', 'B'], limitation: 'Authoring-only passive 0–3.3 V contact; runtime behavior is intentionally unavailable.',
+      }),
     ]),
   });
 }
@@ -85,6 +132,7 @@ function endpointType(draft, endpoint) {
  */
 export function createSeriesLedConnectionPolicy({
   boardType, sourcePin, groundPin, sourceNetId,
+  authoringSourcePins = [sourcePin], authoringGroundPins = [groundPin],
   resistorType = 'resistor.fixed-v1', ledType = 'led.basic-v1',
 }) {
   const is = (draft, endpoint, type, pins) => endpointType(draft, endpoint) === type && pins.includes(endpoint.pin);
@@ -92,9 +140,26 @@ export function createSeriesLedConnectionPolicy({
     is(draft, left, leftType, leftPins) && is(draft, right, rightType, rightPins)
     || is(draft, right, leftType, leftPins) && is(draft, left, rightType, rightPins);
   return (draft, left, right) => {
-    if (pair(draft, left, right, boardType, [sourcePin], resistorType, ['A', 'B'])) return sourceNetId;
-    if (pair(draft, left, right, resistorType, ['A', 'B'], ledType, ['ANODE'])) return 'net-series';
-    if (pair(draft, left, right, ledType, ['CATHODE'], boardType, [groundPin])) return 'net-ground';
+    const resistor = [left, right].find((point) => endpointType(draft, point) === resistorType);
+    const led = [left, right].find((point) => endpointType(draft, point) === ledType);
+    if (pair(draft, left, right, boardType, authoringSourcePins, resistorType, ['A', 'B'])) {
+      const board = [left, right].find((point) => endpointType(draft, point) === boardType);
+      if (board?.pin === sourcePin && resistor?.component === 'resistor-1') return sourceNetId;
+      return `net-${board?.pin.toLowerCase()}-${resistor.component}-drive`.slice(0, 48);
+    }
+    if (pair(draft, left, right, resistorType, ['A', 'B'], ledType, ['ANODE'])) {
+      return resistor?.component === 'resistor-1' && led?.component === 'led-1'
+        ? 'net-series' : `net-${resistor.component}-${led.component}`;
+    }
+    if (pair(draft, left, right, ledType, ['CATHODE'], boardType, authoringGroundPins)) {
+      const board = [left, right].find((point) => endpointType(draft, point) === boardType);
+      if (board?.pin === groundPin) return led?.component === 'led-1' ? 'net-ground' : `net-${led.component}-ground`;
+      return `net-${led.component}-${board?.pin.toLowerCase()}-ground`.slice(0, 48);
+    }
+    const authoringOnly = new Set([GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE]);
+    if (authoringOnly.has(endpointType(draft, left)) || authoringOnly.has(endpointType(draft, right))) {
+      return `net-${[endpointKey(left), endpointKey(right)].sort().join('-').replaceAll('.', '-')}`.toLowerCase().slice(0, 48);
+    }
     return null;
   };
 }
@@ -126,6 +191,7 @@ export class NamedSeriesLedCircuitEditor {
     this.revision = 0;
     this.apiTransactionHead = null;
     this.apiRedoTransaction = null;
+    this.issuedComponentIds = new Set(this.draft.components.map(({ id }) => id));
   }
 
   code(suffix) { return `${this.codePrefix}_${suffix}`; }
@@ -147,10 +213,55 @@ export class NamedSeriesLedCircuitEditor {
         ...this.componentPolicy.parts.map((part) => ({
           id: part.id, type: part.type, displayName: part.displayName,
           limitation: part.limitation, supportedProperties: clone(part.supportedProperties),
-          present: presentTypes.has(part.type), addable: !presentTypes.has(part.type), fixed: false,
+          present: presentTypes.has(part.type), count: this.draft.components.filter((item) => item.type === part.type).length,
+          addable: !presentTypes.has(part.type) && (this.draft.layout.idCounters?.[COMPONENT_ID_STEMS[part.type]] ?? 0) < 16,
+          repeatable: this.draft.components.length < 17
+            && (this.draft.layout.idCounters?.[COMPONENT_ID_STEMS[part.type]] ?? 0) < 16, fixed: false,
         })),
       ],
     };
+  }
+
+  nextComponentId(type) {
+    const stem = COMPONENT_ID_STEMS[type] ?? null;
+    if (!stem) return null;
+    const minimum = Math.max(1, (this.draft.layout.idCounters?.[stem] ?? 0) + 1);
+    for (let index = minimum; index <= 16; index += 1) {
+      const id = `${stem}-${index}`;
+      if (!this.issuedComponentIds.has(id)) return id;
+    }
+    return null;
+  }
+
+  reserveComponentId(draft, id, type) {
+    const stem = COMPONENT_ID_STEMS[type];
+    const sequence = Number(id.split('-').at(-1));
+    draft.layout.idCounters ??= {};
+    draft.layout.idCounters[stem] = Math.max(draft.layout.idCounters[stem] ?? 0, sequence);
+  }
+
+  preserveIdLineage(target, source) {
+    target.layout.idCounters ??= {};
+    for (const stem of COMPONENT_ID_COUNTER_KEYS) {
+      target.layout.idCounters[stem] = Math.max(target.layout.idCounters[stem] ?? 0,
+        source.layout.idCounters?.[stem] ?? 0);
+    }
+    return this.normalize(target);
+  }
+
+  newProject() {
+    const next = clone(this.createDefault());
+    const board = next.components.find((component) => component.type === this.fixedComponentType);
+    next.components = [board];
+    next.nets = [];
+    next.layout.positions = { [board.id]: next.layout.positions[board.id] };
+    next.layout.wireStyles = {};
+    next.layout.wireRoutes = {};
+    next.layout.idCounters = {};
+    next.layout.componentAppearance = { schema: 'intent-mcu-component-appearance@1', components: {} };
+    this.issuedComponentIds = new Set([board.id]);
+    return { ok: true, changed: true, code: this.code('NEW_PROJECT'),
+      ...this.commit(next, { kind: 'component', id: board.id }) };
   }
 
   select(selection) {
@@ -170,6 +281,7 @@ export class NamedSeriesLedCircuitEditor {
     this.future = [];
     this.futureKinds = [];
     this.draft = normalized;
+    for (const { id } of normalized.components) this.issuedComponentIds.add(id);
     this.selection = clone(selection);
     this.wireDraft = { mode: 'none' };
     this.revision += 1;
@@ -185,10 +297,14 @@ export class NamedSeriesLedCircuitEditor {
     const endpointKnown = (point) => {
       const component = next.components.find((item) => item.id === point?.component);
       if (!component || typeof point?.pin !== 'string') return false;
+      if (component.type === this.componentPolicy.board.type) {
+        return this.componentPolicy.board.pins.includes(point.pin);
+      }
+      const policy = this.componentPolicy.parts.find((item) => item.type === component.type);
+      if (policy?.pins) return policy.pins.includes(point.pin);
       const defaults = this.createDefault();
       const types = new Map(defaults.components.map((item) => [item.id, item.type]));
-      return defaults.nets.some((net) => net.endpoints.some((candidate) =>
-        types.get(candidate.component) === component.type && candidate.pin === point.pin));
+      return defaults.nets.some((net) => net.endpoints.some((candidate) => types.get(candidate.component) === component.type && candidate.pin === point.pin));
     };
     const connected = (point) => next.nets.some((net) => net.endpoints.some((item) => sameEndpoint(item, point)));
     try {
@@ -196,18 +312,45 @@ export class NamedSeriesLedCircuitEditor {
         if (!operation || typeof operation !== 'object' || Array.isArray(operation)) throw new Error('SHAPE');
         if (operation.command === 'component.add') {
           const policy = this.componentPolicy.parts.find((part) => part.type === operation.type);
-          if (!policy || operation.id !== policy.id || next.components.some((item) => item.id === operation.id)
+          const expectedStem = this.nextComponentId(operation.type)?.split('-')[0] ?? null;
+          if (!policy || !new RegExp(`^${expectedStem}-(?:[1-9]|1[0-6])$`, 'u').test(operation.id)
+              || Number(operation.id.split('-').at(-1)) !== (next.layout.idCounters?.[expectedStem] ?? 0) + 1
+              || next.components.some((item) => item.id === operation.id)
               || !operation.position || !Number.isFinite(operation.position.x) || !Number.isFinite(operation.position.y)
               || !Number.isFinite(operation.position.rotation)) throw new Error('COMPONENT_ADD_INVALID');
-          next.components.push({ id: policy.id, type: policy.type, label: policy.label,
+          next.components.push({ id: operation.id, type: policy.type,
+            label: operation.id === policy.id ? policy.label : `${policy.displayName} ${operation.id.split('-').at(-1)}`,
             properties: clone(policy.properties), controls: {} });
-          next.layout.positions[policy.id] = clone(operation.position);
+          next.layout.positions[operation.id] = clone(operation.position);
+          this.reserveComponentId(next, operation.id, operation.type);
+        } else if (operation.command === 'component.duplicate') {
+          const source = next.components.find((item) => item.id === operation.component_id);
+          const policy = source && this.componentPolicy.parts.find((part) => part.type === source.type);
+          const expectedStem = source ? this.nextComponentId(source.type)?.split('-')[0] ?? null : null;
+          if (!source || !policy || !expectedStem
+              || !new RegExp(`^${expectedStem}-(?:[1-9]|1[0-6])$`, 'u').test(operation.id)
+              || Number(operation.id.split('-').at(-1)) !== (next.layout.idCounters?.[expectedStem] ?? 0) + 1
+              || next.components.some((item) => item.id === operation.id)
+              || !operation.position || !Number.isFinite(operation.position.x) || !Number.isFinite(operation.position.y)
+              || !Number.isFinite(operation.position.rotation)) throw new Error('COMPONENT_DUPLICATE_INVALID');
+          next.components.push({ ...clone(source), id: operation.id,
+            label: `${policy.displayName} ${operation.id.split('-').at(-1)}` });
+          next.layout.positions[operation.id] = clone(operation.position);
+          this.reserveComponentId(next, operation.id, source.type);
         } else if (operation.command === 'component.remove') {
           const target = next.components.find((item) => item.id === operation.component_id);
           if (!target || target.type === this.fixedComponentType) throw new Error('COMPONENT_REMOVE_INVALID');
           next.components = next.components.filter((item) => item.id !== target.id);
           next.nets = next.nets.filter((net) => !net.endpoints.some((point) => point.component === target.id));
           delete next.layout.positions[target.id];
+          delete next.layout.componentAppearance?.components?.[target.id];
+          const retainedNets = new Set(next.nets.map(({ id }) => id));
+          for (const netId of Object.keys(next.layout.wireStyles)) {
+            if (!retainedNets.has(netId)) delete next.layout.wireStyles[netId];
+          }
+          for (const netId of Object.keys(next.layout.wireRoutes ?? {})) {
+            if (!retainedNets.has(netId)) delete next.layout.wireRoutes[netId];
+          }
         } else if (operation.command === 'component.property.set') {
           const target = next.components.find((item) => item.id === operation.component_id);
           const policy = target && this.componentPolicy.parts.find((part) => part.type === target.type);
@@ -228,17 +371,29 @@ export class NamedSeriesLedCircuitEditor {
               || next.nets.some((net) => net.id === operation.net_id)) throw new Error('WIRE_CONNECT_INVALID');
           next.nets.push({ id: operation.net_id, endpoints: [clone(operation.from), clone(operation.to)] });
           next.layout.wireStyles[operation.net_id] = this.createDefault().layout.wireStyles[operation.net_id] ?? '#39dff2';
+        } else if (operation.command === 'wire.branch.connect') {
+          const net = next.nets.find((item) => item.id === operation.net_id);
+          if (!net || net.endpoints.length >= 8 || !endpointKnown(operation.endpoint)
+              || connected(operation.endpoint)) throw new Error('WIRE_BRANCH_CONNECT_INVALID');
+          net.endpoints.push(clone(operation.endpoint));
+          delete next.layout.wireRoutes?.[net.id];
         } else if (operation.command === 'wire.disconnect') {
-          if (operation.endpoint !== undefined) throw new Error('WIRE_BRANCH_UNSUPPORTED');
-          if (!next.nets.some((net) => net.id === operation.net_id)) throw new Error('WIRE_MISSING');
-          next.nets = next.nets.filter((net) => net.id !== operation.net_id);
-          delete next.layout.wireStyles[operation.net_id];
-          delete next.layout.wireRoutes?.[operation.net_id];
+          const net = next.nets.find((item) => item.id === operation.net_id);
+          if (!net) throw new Error('WIRE_MISSING');
+          if (operation.endpoint !== undefined) {
+            if (net.endpoints.length <= 2 || !net.endpoints.some((point) => sameEndpoint(point, operation.endpoint))) {
+              throw new Error('WIRE_BRANCH_DISCONNECT_INVALID');
+            }
+            net.endpoints = net.endpoints.filter((point) => !sameEndpoint(point, operation.endpoint));
+            delete next.layout.wireRoutes?.[net.id];
+          } else {
+            next.nets = next.nets.filter((item) => item.id !== operation.net_id);
+            delete next.layout.wireStyles[operation.net_id];
+            delete next.layout.wireRoutes?.[operation.net_id];
+          }
         } else throw new Error('COMMAND_UNSUPPORTED');
       }
       if (!this.validatePropertyPair(next).ok) throw new Error('ELECTRICAL_LIMIT');
-      const validation = this.validate(next);
-      if (!validation?.ok) throw new Error('VALIDATION_FAILED');
       const result = this.commit(next);
       this.apiTransactionHead = transactionId;
       return { ok: true, code: this.code('API_BATCH_COMMITTED'), transactionId, ...result };
@@ -325,16 +480,19 @@ export class NamedSeriesLedCircuitEditor {
     if (position !== null && (!position || !Number.isFinite(position.x) || !Number.isFinite(position.y))) {
       return this.fail('COMPONENT_ADD_POSITION_INVALID', { type });
     }
+    const id = this.nextComponentId(type);
+    if (!id) return this.fail('COMPONENT_LIMIT', { type });
     const next = clone(this.draft);
     next.components.push({
-      id: policy.id, type: policy.type, label: policy.label,
+      id, type: policy.type, label: id === policy.id ? policy.label : `${policy.displayName} ${id.split('-').at(-1)}`,
       properties: clone(policy.properties), controls: {},
     });
-    next.layout.positions[policy.id] = position === null ? clone(policy.position) : {
+    next.layout.positions[id] = position === null ? clone(policy.position) : {
       x: Math.max(0.08, Math.min(0.92, position.x)),
       y: Math.max(0.1, Math.min(0.9, position.y)),
       rotation: policy.position.rotation,
     };
+    this.reserveComponentId(next, id, type);
     const electrical = this.validatePropertyPair(next);
     if (!electrical.ok) {
       return this.fail('COMPONENT_PROPERTY_ELECTRICAL_LIMIT', {
@@ -343,10 +501,73 @@ export class NamedSeriesLedCircuitEditor {
       });
     }
     try {
-      return { ok: true, changed: true, code: this.code('COMPONENT_ADDED'), componentId: policy.id,
-        ...this.commit(next, { kind: 'component', id: policy.id }) };
+      return { ok: true, changed: true, code: this.code('COMPONENT_ADDED'), componentId: id,
+        ...this.commit(next, { kind: 'component', id }) };
     } catch (error) {
       return this.fail('COMPONENT_ADD_INVALID', { type, cause: error.code ?? error.message });
+    }
+  }
+
+  addComponent(type, position = null) {
+    if (type === this.componentPolicy.board.type) return this.fail('BOARD_FIXED');
+    const policy = this.componentPolicy.parts.find((part) => part.type === type);
+    const id = policy && this.nextComponentId(type);
+    if (!policy || !id) return this.fail(policy
+      ? (this.draft.layout.idCounters?.[COMPONENT_ID_STEMS[type]] ?? 0) >= 16
+        ? 'COMPONENT_ID_LINEAGE_EXHAUSTED' : 'COMPONENT_LIMIT'
+      : 'COMPONENT_UNSUPPORTED', { type });
+    if (position !== null && (!position || !Number.isFinite(position.x) || !Number.isFinite(position.y))) {
+      return this.fail('COMPONENT_ADD_POSITION_INVALID', { type });
+    }
+    const index = Number(id.split('-').at(-1));
+    const next = clone(this.draft);
+    next.components.push({ id, type: policy.type,
+      label: type === BOUNDED_RESISTOR_TYPE ? `220 Ω resistor ${index}`
+        : type === BOUNDED_LED_TYPE ? `External red LED ${index}` : `${policy.displayName} ${index}`,
+      properties: clone(policy.properties), controls: {} });
+    const fallback = { x: Math.min(0.88, policy.position.x + ((index - 1) % 4) * 0.08),
+      y: Math.min(0.86, policy.position.y + Math.floor((index - 1) / 4) * 0.12), rotation: policy.position.rotation };
+    next.layout.positions[id] = position === null ? fallback : {
+      x: Math.max(0.08, Math.min(0.92, position.x)), y: Math.max(0.1, Math.min(0.9, position.y)),
+      rotation: policy.position.rotation,
+    };
+    this.reserveComponentId(next, id, type);
+    try {
+      return { ok: true, changed: true, code: this.code('COMPONENT_ADDED'), componentId: id,
+        ...this.commit(next, { kind: 'component', id }) };
+    } catch (error) {
+      return this.fail('COMPONENT_ADD_INVALID', { type, cause: error.code ?? error.message });
+    }
+  }
+
+  duplicateComponent(componentId, position = null) {
+    const source = this.draft.components.find((component) => component.id === componentId);
+    const policy = source && this.componentPolicy.parts.find((part) => part.type === source.type);
+    const id = policy && this.nextComponentId(source.type);
+    if (!source || source.type === this.fixedComponentType || !policy || !id) {
+      return this.fail(source && policy
+        ? (this.draft.layout.idCounters?.[COMPONENT_ID_STEMS[source.type]] ?? 0) >= 16
+          ? 'COMPONENT_ID_LINEAGE_EXHAUSTED' : 'COMPONENT_LIMIT'
+        : 'COMPONENT_DUPLICATE_UNSUPPORTED', { componentId });
+    }
+    if (position !== null && (!position || !Number.isFinite(position.x) || !Number.isFinite(position.y))) {
+      return this.fail('COMPONENT_DUPLICATE_POSITION_INVALID', { componentId });
+    }
+    const next = clone(this.draft);
+    const sourcePosition = next.layout.positions[componentId];
+    next.components.push({ ...clone(source), id, label: `${policy.displayName} ${id.split('-').at(-1)}` });
+    next.layout.positions[id] = position === null ? {
+      x: Math.min(0.92, sourcePosition.x + 0.08), y: Math.min(0.9, sourcePosition.y + 0.08),
+      rotation: sourcePosition.rotation,
+    } : { x: Math.max(0.08, Math.min(0.92, position.x)), y: Math.max(0.1, Math.min(0.9, position.y)),
+      rotation: sourcePosition.rotation };
+    this.reserveComponentId(next, id, source.type);
+    try {
+      return { ok: true, changed: true, code: this.code('COMPONENT_DUPLICATED'),
+        componentId: id, sourceComponentId: componentId,
+        ...this.commit(next, { kind: 'component', id }) };
+    } catch (error) {
+      return this.fail('COMPONENT_DUPLICATE_INVALID', { componentId, cause: error.code ?? error.message });
     }
   }
 
@@ -447,11 +668,14 @@ export class NamedSeriesLedCircuitEditor {
   isKnownEndpoint(endpoint) {
     const component = this.draft.components.find((candidate) => candidate.id === endpoint?.component);
     if (!component || typeof endpoint?.pin !== 'string') return false;
+    if (component.type === this.componentPolicy.board.type && this.componentPolicy.board.pins) {
+      return this.componentPolicy.board.pins.includes(endpoint.pin);
+    }
+    const policy = this.componentPolicy.parts.find((item) => item.type === component.type);
+    if (policy?.pins) return policy.pins.includes(endpoint.pin);
     const defaults = this.createDefault();
     const defaultTypes = new Map(defaults.components.map((candidate) => [candidate.id, candidate.type]));
-    const supportedPins = new Set(defaults.nets.flatMap((net) => net.endpoints
-      .filter((candidate) => defaultTypes.get(candidate.component) === component.type)
-      .map((candidate) => candidate.pin)));
+    const supportedPins = new Set(defaults.nets.flatMap((net) => net.endpoints.filter((candidate) => defaultTypes.get(candidate.component) === component.type).map((candidate) => candidate.pin)));
     return supportedPins.has(endpoint.pin);
   }
 
@@ -468,6 +692,14 @@ export class NamedSeriesLedCircuitEditor {
     this.selection = { kind: 'net', id: net.id };
     this.wireDraft = { mode: 'reconnect-source', netId: net.id };
     return { ok: true, changed: false, code: this.code('RECONNECT_SOURCE_REQUIRED'), ...this.snapshot() };
+  }
+
+  beginBranch(netId = this.selection.kind === 'net' ? this.selection.id : null) {
+    const net = this.draft.nets.find((candidate) => candidate.id === netId);
+    if (!net || net.endpoints.length >= 8) return this.fail('NET_BRANCH_UNAVAILABLE');
+    this.selection = { kind: 'net', id: net.id };
+    this.wireDraft = { mode: 'branch-target', netId: net.id };
+    return { ok: true, changed: false, code: this.code('BRANCH_TARGET_REQUIRED'), ...this.snapshot() };
   }
 
   cancelWireDraft() {
@@ -514,9 +746,38 @@ export class NamedSeriesLedCircuitEditor {
     }
   }
 
+  branchEndpoint(netId, endpoint) {
+    const net = this.draft.nets.find((candidate) => candidate.id === netId);
+    if (!net || net.endpoints.length >= 8 || !this.isKnownEndpoint(endpoint)) return this.fail('BRANCH_INVALID');
+    if (endpointConnection(this.draft, endpoint)) return this.fail('ENDPOINT_OCCUPIED');
+    const next = clone(this.draft);
+    next.nets.find((candidate) => candidate.id === netId).endpoints.push(clone(endpoint));
+    delete next.layout.wireRoutes?.[netId];
+    try {
+      return { ok: true, changed: true, code: this.code('BRANCH_CREATED'), netId,
+        ...this.commit(next, { kind: 'net', id: netId }) };
+    } catch (error) { return this.fail(error.code ?? 'BRANCH_INVALID'); }
+  }
+
+  deleteBranch(netId, endpoint) {
+    const net = this.draft.nets.find((candidate) => candidate.id === netId);
+    if (!net || net.endpoints.length <= 2 || !net.endpoints.some((point) => sameEndpoint(point, endpoint))) {
+      return this.fail('BRANCH_DELETE_INVALID');
+    }
+    const next = clone(this.draft);
+    next.nets.find((candidate) => candidate.id === netId).endpoints = net.endpoints
+      .filter((point) => !sameEndpoint(point, endpoint)).map(clone);
+    delete next.layout.wireRoutes?.[netId];
+    try {
+      return { ok: true, changed: true, code: this.code('BRANCH_DELETED'), netId,
+        ...this.commit(next, { kind: 'net', id: netId }) };
+    } catch (error) { return this.fail(error.code ?? 'BRANCH_DELETE_INVALID'); }
+  }
+
   activateEndpoint(endpoint) {
     if (this.wireDraft.mode === 'none') return this.startWire(endpoint);
     if (this.wireDraft.mode === 'connect-target') return this.connectEndpoints(this.wireDraft.from, endpoint);
+    if (this.wireDraft.mode === 'branch-target') return this.branchEndpoint(this.wireDraft.netId, endpoint);
     if (this.wireDraft.mode === 'reconnect-source') {
       const net = this.draft.nets.find((candidate) => candidate.id === this.wireDraft.netId);
       if (!net?.endpoints.some((candidate) => sameEndpoint(candidate, endpoint))) return this.fail('RECONNECT_SOURCE_INVALID');
@@ -559,7 +820,7 @@ export class NamedSeriesLedCircuitEditor {
     const changeKind = this.historyKinds.pop() ?? 'electrical';
     this.futureKinds.push(changeKind);
     if (this.future.length > this.historyLimit) { this.future.shift(); this.futureKinds.shift(); }
-    this.draft = this.history.pop();
+    this.draft = this.preserveIdLineage(this.history.pop(), this.draft);
     this.selection = { kind: 'none' };
     this.wireDraft = { mode: 'none' };
     this.revision += 1;
@@ -574,7 +835,7 @@ export class NamedSeriesLedCircuitEditor {
     const changeKind = this.futureKinds.pop() ?? 'electrical';
     this.historyKinds.push(changeKind);
     if (this.history.length > this.historyLimit) { this.history.shift(); this.historyKinds.shift(); }
-    this.draft = this.future.pop();
+    this.draft = this.preserveIdLineage(this.future.pop(), this.draft);
     this.selection = { kind: 'none' };
     this.wireDraft = { mode: 'none' };
     this.revision += 1;

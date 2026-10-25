@@ -1,0 +1,157 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.rp2040-pico-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-x46-usart-rx-producer.1-current",
+    "manifestSha256": "8e4b68c47dd01cb1fe0867b1f32fbb7a0643e6fd4a3474e364417c8e4ad91c3a",
+    "implementationSha256": "3da666f7462e12455abb6b9bba7a4908f68ffcde58d8a6d7555658a94abf727d"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-rp2040-public-project@1",
+    "name": "RC139 Pico preservation",
+    "profile": "board.rp2040-pico-v1",
+    "source": "/* Intent MCU Simulator public RP2040 source v1 */\nint main(void)\n{\n  intent_gpio0_output(1u);\n  intent_uart0_text(\"PICO PUBLIC\");\n  intent_halt();\n}\n",
+    "circuit": {
+      "schema": "intent-mcu-rp2040-pico-circuit@1",
+      "boardProfile": "board.rp2040-pico-v1",
+      "components": [
+        {
+          "id": "led-1",
+          "type": "led.basic-v1",
+          "label": "External red LED 1",
+          "properties": {
+            "color": "red"
+          },
+          "controls": {}
+        },
+        {
+          "id": "led-2",
+          "type": "led.basic-v1",
+          "label": "External red LED 2",
+          "properties": {
+            "color": "red"
+          },
+          "controls": {}
+        },
+        {
+          "id": "pico-1",
+          "type": "board.rp2040-pico-v1",
+          "label": "RP2040 Pico profile",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "resistor-1",
+          "type": "resistor.fixed-v1",
+          "label": "220 Ω resistor 1",
+          "properties": {
+            "ohms": 220
+          },
+          "controls": {}
+        },
+        {
+          "id": "resistor-2",
+          "type": "resistor.fixed-v1",
+          "label": "470 Ω series resistor",
+          "properties": {
+            "ohms": 470
+          },
+          "controls": {}
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-led-2-ground",
+          "endpoints": [
+            {
+              "component": "led-2",
+              "pin": "CATHODE"
+            },
+            {
+              "component": "pico-1",
+              "pin": "GND3"
+            }
+          ]
+        },
+        {
+          "id": "net-resistor-2-drive",
+          "endpoints": [
+            {
+              "component": "pico-1",
+              "pin": "GP0"
+            },
+            {
+              "component": "resistor-2",
+              "pin": "B"
+            }
+          ]
+        },
+        {
+          "id": "net-resistor-2-led-2",
+          "endpoints": [
+            {
+              "component": "led-2",
+              "pin": "ANODE"
+            },
+            {
+              "component": "resistor-2",
+              "pin": "A"
+            }
+          ]
+        }
+      ],
+      "layout": {
+        "positions": {
+          "led-1": {
+            "x": 0.22,
+            "y": 0.48,
+            "rotation": 0
+          },
+          "led-2": {
+            "x": 0.3,
+            "y": 0.48,
+            "rotation": 0
+          },
+          "pico-1": {
+            "x": 0.78,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "resistor-1": {
+            "x": 0.48,
+            "y": 0.27,
+            "rotation": 0
+          },
+          "resistor-2": {
+            "x": 0.5599999999999999,
+            "y": 0.27,
+            "rotation": 0
+          }
+        },
+        "wireStyles": {
+          "net-led-2-ground": "#39dff2",
+          "net-resistor-2-drive": "#39dff2",
+          "net-resistor-2-led-2": "#39dff2"
+        },
+        "wireRoutes": {},
+        "componentAppearance": {
+          "schema": "intent-mcu-component-appearance@1",
+          "components": {}
+        }
+      }
+    }
+  }
+}

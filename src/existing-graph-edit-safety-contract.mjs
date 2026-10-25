@@ -5,14 +5,14 @@ const supported = (evidence) => Object.freeze({ status: 'supported', evidence })
 const unavailable = (code, reason) => Object.freeze({ status: 'unavailable', code, reason });
 
 const narrowOperations = Object.freeze({
-  branchDelete: unavailable('FIXED_TWO_ENDPOINT_GRAPH', 'This profile has no supported branch graph.'),
+  branchDelete: supported('NamedSeriesLedCircuitEditor.deleteBranch removes one named endpoint and preserves the net'),
   netDelete: supported('NamedSeriesLedCircuitEditor.deleteSelected'),
   componentDelete: supported('NamedSeriesLedCircuitEditor.deleteSelected'),
   propertyEdit: supported('NamedSeriesLedCircuitEditor.setComponentProperty'),
   wireCreateReconnect: supported('NamedSeriesLedCircuitEditor named-endpoint methods'),
   undoRedo: supported('NamedSeriesLedCircuitEditor bounded history'),
   moveRotateKeyboard: supported('Existing workbench component controls and keyboard handlers'),
-  duplicate: unavailable('FIXED_SINGLE_INSTANCE', 'Exactly one resistor and one LED are supported.'),
+  duplicate: supported('NamedSeriesLedCircuitEditor.duplicateComponent creates a disconnected stable-ID copy'),
 });
 
 const narrowSafety = (prefix) => Object.freeze({
@@ -80,17 +80,17 @@ export const EXISTING_GRAPH_EDIT_SAFETY_CONTRACT = Object.freeze({
         crossVoltage: unavailable('CROSS_CONTROLLER_TOPOLOGY_UNAVAILABLE', 'Candidate AVR parts use the named 5 V profile only.'),
       }),
     }),
-    rp2040: Object.freeze({ graph: 'fixed-two-endpoint-series-led', operations: narrowOperations,
+    rp2040: Object.freeze({ graph: 'bounded-general-resistor-led-authoring', operations: narrowOperations,
       safety: narrowSafety('RP2040') }),
-    esp32c3: Object.freeze({ graph: 'fixed-two-endpoint-series-led', operations: narrowOperations,
+    esp32c3: Object.freeze({ graph: 'bounded-general-resistor-led-authoring', operations: narrowOperations,
       safety: narrowSafety('C3') }),
-    stm32: Object.freeze({ graph: 'fixed-two-endpoint-series-led', operations: narrowOperations,
+    stm32: Object.freeze({ graph: 'bounded-general-resistor-led-authoring', operations: narrowOperations,
       safety: narrowSafety('STM32') }),
   }),
   completion: Object.freeze({
-    w06: 'complete: exact branch reconnect/delete and separately labelled whole-net delete are public on explicit-junction AVR graphs; fixed two-endpoint profiles truthfully expose no branch',
+    w06: 'complete: exact branch reconnect/delete and separately labelled whole-net delete are public on AVR graphs; narrow profiles support bounded named-endpoint branches as data-only authoring while preserving their exact runtime projection',
     w07: 'complete: every supported authored graph operation is one atomic complete-document Undo/Redo transaction; rejection changes no project, revision or history',
-    w08: 'complete: the general AVR editors support click-add, drag placement, duplicate, move, rotate, delete and keyboard history with fresh stable IDs; bounded narrow teaching profiles preserve their explicit single-instance contracts',
+    w08: 'complete: the general AVR editors support click-add, drag placement, duplicate, move, rotate, delete and keyboard history with fresh stable IDs; bounded narrow teaching profiles support multiple disconnected resistor/LED instances while preserving their explicit runtime projection limits',
     w10: 'complete: every fault representable by each public profile rejects fail-closed with a stable actionable diagnostic; arbitrary rail mixing, physical damage prediction and a general circuit solver remain explicitly unavailable',
   }),
 });

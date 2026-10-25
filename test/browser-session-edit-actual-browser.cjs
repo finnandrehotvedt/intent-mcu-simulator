@@ -4,8 +4,10 @@
 const assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
 const { createReadStream } = require('node:fs');
-const { copyFile, stat } = require('node:fs/promises');
+const { copyFile, mkdtemp, rm, stat, writeFile } = require('node:fs/promises');
 const { createServer } = require('node:http');
+const { tmpdir } = require('node:os');
+const { createInterface } = require('node:readline');
 const path = require('node:path');
 const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES
   || '/root/.npm/_npx/fd3bca3c548369c0/node_modules', 'playwright'));
@@ -29,9 +31,10 @@ const resultFor = async (origin, claim, requestId) => {
   }
   throw new Error('API_RESULT_TIMEOUT');
 };
-const runEditor = (origin, secret) => {
-  const child = spawn(process.execPath, ['dist/api/session/v1/client.mjs', origin,
-    'test/fixtures/api-client-add-led-plan.json'], {
+let standaloneClientPath = null;
+const runEditor = (origin, secret, plan = 'test/fixtures/api-client-add-led-plan.json') => {
+  const child = spawn(process.execPath, [standaloneClientPath, origin,
+    plan], {
     stdio: ['pipe', 'pipe', 'pipe'], env: process.env,
   });
   let stdout = ''; let stderr = '';
@@ -42,8 +45,24 @@ const runEditor = (origin, secret) => {
     child.on('close', (code) => code === 0 ? resolve(stdout.trim().split('\n').map(JSON.parse))
       : reject(new Error(`${stderr}\nexit ${code}`)));
   });
+  done.catch(() => {});
   child.stdin.write(`${secret}\n`);
   return { done, undo: () => child.stdin.end('UNDO\n') };
+};
+const runSessionEditor = (ticketPath) => {
+  const child = spawn(process.execPath, [standaloneClientPath, '--session', ticketPath], {
+    stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, INTENT_MCU_ALLOW_LOOPBACK_TICKET: '1' },
+  });
+  let stderr = ''; const lines = []; const waiters = [];
+  child.stderr.on('data', (value) => { stderr += value; });
+  createInterface({ input: child.stdout }).on('line', (line) => {
+    const value = JSON.parse(line); const waiter = waiters.shift();
+    if (waiter) waiter.resolve(value); else lines.push(value);
+  });
+  const next = () => lines.length ? Promise.resolve(lines.shift()) : new Promise((resolve, reject) => waiters.push({ resolve, reject }));
+  const done = new Promise((resolve, reject) => child.on('close', (code) => code === 0 ? resolve() : reject(new Error(`${stderr}\nexit ${code}`))));
+  done.catch(() => {});
+  return { child, next, done, send: (value) => child.stdin.write(`${JSON.stringify(value)}\n`) };
 };
 
 (async () => {
@@ -63,6 +82,11 @@ const runEditor = (origin, secret) => {
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   origin = `http://127.0.0.1:${server.address().port}`;
+  const standaloneDirectory = await mkdtemp(path.join(tmpdir(), 'intent-mcu-client-'));
+  standaloneClientPath = path.join(standaloneDirectory, 'client.mjs');
+  const servedClient = await fetch(`${origin}/api/session/v1/client.mjs`);
+  assert.equal(servedClient.status, 200);
+  await writeFile(standaloneClientPath, Buffer.from(await servedClient.arrayBuffer()), { mode: 0o700 });
   const browser = await chromium.launch({ headless: true });
   try {
     const context = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 1440, height: 900 } });
@@ -290,12 +314,182 @@ const runEditor = (origin, secret) => {
       assert.equal((await post(origin, 'request.submit', { sessionId: successor.sessionId,
         request: successorRequest }, independentClaim.clientCapability)).code, 'API_AUTH_REQUIRED');
     } finally { await independentBrowser.close(); }
+    const mixedProfiles = [
+      ['board.rp2040-pico-v1', '__RP2040_PUBLIC_WORKBENCH__'],
+      ['board.esp32-c3-devmodule-v1', '__ESP32C3_PUBLIC_WORKBENCH__'],
+      ['board.stm32f429zi-nucleo144-v1', '__STM32_PUBLIC_WORKBENCH__'],
+    ];
+    for (const [profile, ownerKey] of mixedProfiles) {
+      const mixedPage = await context.newPage();
+      await mixedPage.goto(origin, { waitUntil: 'domcontentloaded' });
+      await mixedPage.selectOption('#board-select', profile);
+      await mixedPage.waitForFunction((key) => window[key]?.state?.().active === true, ownerKey);
+      const mixedBefore = await mixedPage.evaluate((key) => {
+        const state = window[key].state(); const project = state.project ?? { source: state.source, circuit: state.circuit };
+        return JSON.stringify({ source: project.source, components: project.circuit.components, nets: project.circuit.nets });
+      }, ownerKey);
+      await mixedPage.evaluate(() => [...document.querySelectorAll('#workbench-popup-controls button')]
+        .find((button) => button.textContent === 'API access').click());
+      await mixedPage.locator('#browser-session-api-dialog [data-edit-scope]').check();
+      await mixedPage.locator('#browser-session-api-dialog [data-enable]').click();
+      await mixedPage.waitForFunction(() => document.querySelector(
+        '#browser-session-api-dialog [data-secret]').value.length > 20);
+      const mixedSecret = await mixedPage.locator('#browser-session-api-dialog [data-secret]').inputValue();
+      const mixedEdit = runEditor(origin, mixedSecret,
+        'test/fixtures/api-client-mixed-authoring-plan.json');
+      await mixedPage.waitForFunction((key) => {
+        const state = window[key].state(); return (state.project?.circuit ?? state.circuit).components
+          .some(({ id }) => id === 'button-2');
+      }, ownerKey);
+      const mixedState = await mixedPage.evaluate((key) => {
+        const state = window[key].state();
+        return { authoringAccepted: state.authoringAccepted,
+          circuitAccepted: state.circuitAccepted ?? state.circuitValid,
+          circuitCode: state.circuitCode, text: state.circuitEditor.validation,
+          duplicatePosition: (state.project?.circuit ?? state.circuit).layout.positions['button-2'] };
+      }, ownerKey);
+      assert.equal(mixedState.authoringAccepted, true);
+      assert.notEqual(mixedState.circuitAccepted, true);
+      assert.equal(mixedState.circuitCode, 'MODEL_LIBRARY_COMPONENT_UNAVAILABLE');
+      assert.deepEqual(mixedState.duplicatePosition, { x: 0.82, y: 0.7, rotation: 0 });
+      mixedEdit.undo(); const mixedOutput = await mixedEdit.done;
+      assert.equal(mixedOutput[0].mode, 'edited');
+      assert.equal(mixedOutput[1].undo, 'API_TRANSACTION_UNDONE');
+      assert.deepEqual(mixedOutput[0].changes.map(({ operation }) => operation),
+        ['component.add', 'component.duplicate', 'wire.branch.connect', 'wire.disconnect']);
+      const mixedRestored = await mixedPage.evaluate((key) => {
+        const state = window[key].state(); const project = state.project ?? { source: state.source, circuit: state.circuit };
+        return { semantic: JSON.stringify({ source: project.source, components: project.circuit.components,
+          nets: project.circuit.nets }), buttonCounter: project.circuit.layout.idCounters.button };
+      }, ownerKey);
+      assert.equal(mixedRestored.semantic, mixedBefore);
+      assert.equal(mixedRestored.buttonCounter, 2);
+      await mixedPage.close();
+    }
+    const multiPinProfiles = [
+      { profile: 'board.rp2040-pico-v1', ownerKey: '__RP2040_PUBLIC_WORKBENCH__',
+        fixture: 'test/fixtures/api-client-pico-multipin-plan.json', layer: '#pico-editor-wires',
+        net: 'net-gp1-resistor-2-drive', invalidPin: 'GP2' },
+      { profile: 'board.esp32-c3-devmodule-v1', ownerKey: '__ESP32C3_PUBLIC_WORKBENCH__',
+        fixture: 'test/fixtures/api-client-c3-multipin-plan.json', layer: '#c3-editor-wires',
+        net: 'net-gpio3-resistor-2-drive', invalidPin: 'GPIO0' },
+      { profile: 'board.stm32f429zi-nucleo144-v1', ownerKey: '__STM32_PUBLIC_WORKBENCH__',
+        fixture: 'test/fixtures/api-client-stm32-multipin-plan.json', layer: '#stm32-editor-wires',
+        net: 'net-pb1-resistor-2-drive', invalidPin: 'PB7' },
+    ];
+    for (const profile of multiPinProfiles) {
+      process.stdout.write(`multipin-profile-start:${profile.profile}\n`);
+      const apiPage = await context.newPage();
+      const apiErrors = []; apiPage.on('pageerror', (error) => apiErrors.push(error.message));
+      await apiPage.goto(origin, { waitUntil: 'domcontentloaded' });
+      await apiPage.selectOption('#board-select', profile.profile);
+      await apiPage.waitForFunction((key) => window[key]?.state?.().active === true, profile.ownerKey);
+      const before = await apiPage.evaluate((key) => { const state = window[key].state();
+        const graph = state.project?.circuit ?? state.circuit;
+        return JSON.stringify({ components: graph.components, nets: graph.nets }); }, profile.ownerKey);
+      await apiPage.evaluate(() => [...document.querySelectorAll('#workbench-popup-controls button')]
+        .find((button) => button.textContent === 'API access').click());
+      await apiPage.locator('#browser-session-api-dialog [data-edit-scope]').check();
+      await apiPage.locator('#browser-session-api-dialog [data-enable]').click();
+      await apiPage.waitForFunction(() => document.querySelector('#browser-session-api-dialog [data-secret]').value.length > 20);
+      const secret = await apiPage.locator('#browser-session-api-dialog [data-secret]').inputValue();
+      const client = runEditor(origin, secret, profile.fixture);
+      try {
+        await apiPage.waitForFunction((key) => { const state = window[key].state();
+          return (state.project?.circuit ?? state.circuit).components.some(({ id }) => id === 'led-2');
+        }, profile.ownerKey, { timeout: 15_000 });
+      } catch (error) {
+        throw new Error(`MULTIPIN_WAIT:${profile.profile}:${JSON.stringify(apiErrors)}:${error.message}`);
+      }
+      await apiPage.waitForFunction(({ layer, net }) => document.querySelector(layer)
+        ?.querySelector(`[data-net="${net}"]`), profile);
+      const rendered = await apiPage.evaluate(({ ownerKey, layer, net }) => {
+        const state = window[ownerKey].state();
+        const graph = state.project?.circuit ?? state.circuit;
+        const svg = document.querySelector(layer);
+        return { components: graph.components.length, nets: graph.nets.length,
+          namedNet: graph.nets.some(({ id }) => id === net),
+          wirePaths: [...(svg?.querySelectorAll(`path[data-net="${net}"]`) ?? [])].map((path) => path.getAttribute('d')) };
+      }, profile);
+      assert.deepEqual(rendered.components, 5); assert.equal(rendered.nets, 6);
+      assert.equal(rendered.namedNet, true); assert.ok(rendered.wirePaths.length > 0);
+      assert.ok(rendered.wirePaths.every((value) => typeof value === 'string' && value.length > 3));
+      client.undo(); const output = await client.done;
+      assert.equal(output[0].mode, 'edited'); assert.equal(output[1].undo, 'API_TRANSACTION_UNDONE');
+      if (profile.profile === 'board.stm32f429zi-nucleo144-v1') {
+        assert.equal(output[0].discovery.validation.model.groundPhysicalPin, 19);
+      }
+      assert.equal(await apiPage.evaluate((key) => { const state = window[key].state();
+        const graph = state.project?.circuit ?? state.circuit;
+        return JSON.stringify({ components: graph.components, nets: graph.nets }); }, profile.ownerKey), before);
+      const redone = await apiPage.evaluate(({ ownerKey, transactionId }) => window[ownerKey].apiRedo(transactionId),
+        { ownerKey: profile.ownerKey, transactionId: output[0].transaction_id });
+      assert.equal(redone.ok, true); assert.equal(redone.draft.components.length, 5); assert.equal(redone.draft.nets.length, 6);
+      const undone = await apiPage.evaluate(({ ownerKey, transactionId }) => window[ownerKey].apiUndo(transactionId),
+        { ownerKey: profile.ownerKey, transactionId: output[0].transaction_id });
+      assert.equal(undone.ok, true);
+      const stable = await apiPage.evaluate((key) => { const state = window[key].state();
+        return JSON.stringify(state.project?.circuit ?? state.circuit); }, profile.ownerKey);
+      const rejected = await apiPage.evaluate(({ ownerKey, invalidPin }) => window[ownerKey].apiBatch([
+        { command: 'wire.connect', net_id: 'net-invalid',
+          from: { component: (window[ownerKey].state().project?.circuit
+            ?? window[ownerKey].state().circuit).components.find(({ type }) => type.startsWith('board.')).id, pin: invalidPin },
+          to: { component: 'resistor-1', pin: 'A' } },
+      ], 'negative-atomic'), profile);
+      assert.equal(rejected.ok, false);
+      assert.equal(await apiPage.evaluate((key) => { const state = window[key].state();
+        return JSON.stringify(state.project?.circuit ?? state.circuit); }, profile.ownerKey), stable);
+      assert.deepEqual(apiErrors, []);
+      await apiPage.close();
+    }
+    const sessionContext = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 1440, height: 900 } });
+    const sessionPage = await sessionContext.newPage(); const sessionErrors = [];
+    sessionPage.on('pageerror', (error) => sessionErrors.push(error.message));
+    await sessionPage.goto(origin, { waitUntil: 'domcontentloaded' });
+    await sessionPage.selectOption('#board-select', 'board.stm32f429zi-nucleo144-v1');
+    await sessionPage.waitForFunction(() => window.__STM32_PUBLIC_WORKBENCH__?.state?.().active === true);
+    const sessionBefore = await sessionPage.evaluate(() => { const state = window.__STM32_PUBLIC_WORKBENCH__.state();
+      const graph = state.project?.circuit ?? state.circuit;
+      return JSON.stringify({ components: graph.components, nets: graph.nets }); });
+    await sessionPage.evaluate(() => [...document.querySelectorAll('#workbench-popup-controls button')]
+      .find((button) => button.textContent === 'API access').click());
+    await sessionPage.locator('#browser-session-api-dialog [data-edit-scope]').check();
+    await sessionPage.locator('#browser-session-api-dialog [data-enable]').click();
+    await sessionPage.waitForFunction(() => document.querySelector('#browser-session-api-dialog [data-download-ticket]').disabled === false);
+    const ticketDownload = sessionPage.waitForEvent('download');
+    await sessionPage.locator('#browser-session-api-dialog [data-download-ticket]').click();
+    const downloadedTicket = await ticketDownload; const ticketPath = path.join(standaloneDirectory, 'pairing.intentpair');
+    await copyFile(await downloadedTicket.path(), ticketPath);
+    const persistent = runSessionEditor(ticketPath);
+    assert.equal((await persistent.next()).mode, 'session');
+    persistent.send({ command: 'inspect' }); const inspected = await persistent.next();
+    assert.equal(inspected.mode, 'inspected'); const revisionBefore = inspected.discovery.revision;
+    persistent.send({ command: 'apply', plan: { schema: 'intent-mcu-browser-session-plan@1', commands: [
+      { command: 'wire.connect', net_id: 'net-invalid', from: { component: 'stm32-1', pin: 'PB7' },
+        to: { component: 'resistor-1', pin: 'A' } },
+    ] } });
+    assert.equal((await persistent.next()).code, 'STM32_API_WIRE_CONNECT_INVALID');
+    persistent.send({ command: 'inspect' }); const afterRejected = await persistent.next();
+    assert.equal(afterRejected.mode, 'inspected'); assert.equal(afterRejected.discovery.revision, revisionBefore);
+    const validPlan = JSON.parse(require('node:fs').readFileSync('test/fixtures/api-client-stm32-multipin-plan.json', 'utf8'));
+    persistent.send({ command: 'apply', plan: validPlan }); const sessionApplied = await persistent.next();
+    assert.equal(sessionApplied.mode, 'edited');
+    persistent.send({ command: 'undo', transaction_id: sessionApplied.transaction_id });
+    assert.equal((await persistent.next()).mode, 'undone');
+    persistent.send({ command: 'inspect' }); assert.equal((await persistent.next()).mode, 'inspected');
+    assert.equal(await sessionPage.evaluate(() => { const state = window.__STM32_PUBLIC_WORKBENCH__.state();
+      const graph = state.project?.circuit ?? state.circuit;
+      return JSON.stringify({ components: graph.components, nets: graph.nets }); }), sessionBefore);
+    persistent.send({ command: 'close' }); assert.equal((await persistent.next()).status, 'closed'); await persistent.done;
+    assert.deepEqual(sessionErrors, []); await sessionContext.close();
     await context.close();
     process.stdout.write(`${JSON.stringify({ status: 'pass', visible, restoredExactBytes: true,
       editScopeExplicit: true, invalidAtomic: true, manualRaceStale: true,
       actualFileRoundTrip: true, openRevokedPriorScope: true, storageDenialPreserved: true,
       expiredAfterPullContained: true, delayedPullContained: true, replacementSameRevision: true,
-      independentBrowserProcesses: 2,
+      independentBrowserProcesses: 2, mixedReferenceClientProfiles: 3, multiPinReferenceClientProfiles: 3,
+      persistentStandaloneSessionRejectionAndUndo: true,
       buildRequests: 0, runtimeWorkers: workersBefore })}\n`);
-  } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }
+  } finally { await browser.close(); await new Promise((resolve) => server.close(resolve));
+    await rm(standaloneDirectory, { recursive: true, force: true }); }
 })().catch((error) => { console.error(error); process.exitCode = 1; });

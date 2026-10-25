@@ -49,9 +49,9 @@ mutate a successor project or cross into a re-enabled session.
 `edit.batch` accepts at most 16 named operations and commits them as one
 canonical history transaction:
 
-- add or remove a named component;
+- add, duplicate, or remove a named component;
 - set a validated component property;
-- connect named component pins with a named wire;
+- connect named component pins with a named wire or branch;
 - disconnect a named wire or one named branch.
 
 The adapter translates these operations into the existing project-editor

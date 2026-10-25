@@ -3,6 +3,7 @@
 
 import { installX81Assessment } from './x81-assessment-controller.mjs';
 import { X81_RETAINED_ASSESSMENT } from '../src/x81-retained-assessment.mjs';
+import { BOUNDED_3V3_UI_COMPONENTS, validateBounded3v3AuthoringGraph } from '../src/bounded-3v3-authoring-contracts.mjs';
 
 import {
   CATALOG_CATEGORIES,
@@ -277,16 +278,16 @@ import {
   normalizeRp2040PublicProject,
 } from '../src/rp2040-public-workbench.mjs';
 import {
-  RP2040_PICO_COMPONENT_CATALOG,
+  RP2040_PICO_BOARD_DEFINITION, RP2040_PICO_COMPONENT_CATALOG,
   validateRp2040PicoCircuit,
 } from '../src/rp2040-pico-circuit.mjs';
-import { ESP32C3_PUBLIC_COMPONENT_CATALOG, validateEsp32C3Circuit } from '../src/esp32c3-public-circuit.mjs';
+import { ESP32C3_BOARD_DEFINITION, ESP32C3_PUBLIC_COMPONENT_CATALOG, validateEsp32C3Circuit } from '../src/esp32c3-public-circuit.mjs';
 import {
   C3_PUBLIC_PROJECT_SCHEMA,
   Esp32C3PublicWorkbench,
   normalizeEsp32C3PublicProject,
 } from '../src/esp32c3-public-workbench.mjs';
-import { STM32_PUBLIC_COMPONENT_CATALOG, validateStm32Circuit } from '../src/stm32-public-circuit.mjs';
+import { STM32_BOARD_DEFINITION, STM32_PUBLIC_COMPONENT_CATALOG, validateStm32Circuit } from '../src/stm32-public-circuit.mjs';
 import {
   STM32_EDITABLE_PROJECT_SCHEMA,
   Stm32PublicWorkbench,
@@ -459,6 +460,7 @@ import {
 
 const uiComponentCatalog = Object.freeze({
   ...COMPONENT_CATALOG, ...CANDIDATE_UI_COMPONENTS,
+  ...BOUNDED_3V3_UI_COMPONENTS,
   ...RP2040_PICO_COMPONENT_CATALOG, ...ESP32C3_PUBLIC_COMPONENT_CATALOG,
   ...STM32_PUBLIC_COMPONENT_CATALOG,
 });
@@ -513,6 +515,8 @@ const elements = Object.fromEntries([
   'serial-provenance', 'instrument-evidence', 'instrument-evidence-state', 'instrument-evidence-profile',
   'instrument-evidence-artifact', 'instrument-evidence-time', 'instrument-evidence-retention',
   'x46-uart-panel',
+  'pico-branch-endpoint', 'pico-remove-branch', 'c3-branch-endpoint', 'c3-remove-branch',
+  'stm32-branch-endpoint', 'stm32-remove-branch',
   'control-runtime-evidence-body',
   'serial-tab', 'serial-dock', 'serial-close', 'serial-resizer', 'serial-resume', 'serial-new-output',
   'canvas-select-mode', 'canvas-interact-mode',
@@ -639,14 +643,14 @@ const elements = Object.fromEntries([
   'pico-editor-wires', 'pico-editor-components', 'pico-circuit-selection',
   'pico-parts-list', 'pico-part-properties',
   'pico-delete', 'pico-undo', 'pico-redo', 'pico-rotate', 'pico-zoom-out', 'pico-zoom-value',
-  'pico-zoom-in', 'pico-fit', 'pico-reconnect', 'pico-add-bend', 'pico-route-back', 'pico-route-forward',
+  'pico-zoom-in', 'pico-fit', 'pico-reconnect', 'pico-branch', 'pico-add-bend', 'pico-route-back', 'pico-route-forward',
   'pico-wire-color', 'pico-wire-cancel', 'pico-wire-state', 'pico-serial',
   'c3-public-workbench', 'c3-state', 'c3-project-name', 'c3-save', 'c3-open', 'c3-open-input',
   'c3-native-open', 'c3-native-save', 'c3-native-save-copy', 'c3-file-connection', 'c3-legacy-copy',
   'c3-profile-examples',
   'c3-source', 'c3-build', 'c3-run', 'c3-stop', 'c3-message', 'c3-source-hash', 'c3-flash-hash',
   'c3-diagnostics', 'c3-diagnostic-links',
-  'c3-diagram', 'c3-external-led', 'c3-circuit-state', 'c3-reconnect', 'c3-add-bend', 'c3-route-back', 'c3-route-forward',
+  'c3-diagram', 'c3-external-led', 'c3-circuit-state', 'c3-reconnect', 'c3-branch', 'c3-add-bend', 'c3-route-back', 'c3-route-forward',
   'c3-wire-color', 'c3-wire-cancel', 'c3-wire-state', 'c3-terminal',
   'c3-editor-wires', 'c3-editor-components', 'c3-circuit-selection',
   'c3-parts-list', 'c3-part-properties',
@@ -661,7 +665,7 @@ const elements = Object.fromEntries([
   'stm32-circuit-selection', 'stm32-delete', 'stm32-undo', 'stm32-redo', 'stm32-rotate',
   'stm32-parts-list', 'stm32-part-properties',
   'stm32-zoom-out', 'stm32-zoom-value', 'stm32-zoom-in', 'stm32-fit',
-  'stm32-reconnect', 'stm32-add-bend', 'stm32-route-back', 'stm32-route-forward',
+  'stm32-reconnect', 'stm32-branch', 'stm32-add-bend', 'stm32-route-back', 'stm32-route-forward',
   'stm32-wire-color', 'stm32-wire-cancel', 'stm32-wire-state',
 ].map((id) => [id.replaceAll('-', ''), byId(id)]));
 
@@ -706,6 +710,7 @@ const DRAFT_REGISTRY_LIMIT = 12;
 const DRAFT_LEASE_MAX_AGE_MS = 15_000;
 const pageInstanceId = crypto.randomUUID();
 const corruptControllerDraftProfiles = new Set();
+const controllerDraftRestoreInProgress = new Set();
 let activeDraftId = null;
 try {
   activeDraftId = sessionStorage.getItem(TAB_DRAFT_ID_KEY);
@@ -731,6 +736,7 @@ function reportControllerDraftFailure(profile, message) {
   }, 0);
 }
 function persistControllerDraft(profile, workbench) {
+  if (controllerDraftRestoreInProgress.has(profile)) return true;
   if (corruptControllerDraftProfiles.has(profile)) {
     reportControllerDraftFailure(profile, 'Browser recovery was not replaced because its saved bytes are invalid. The original bytes remain untouched; use Save copy before leaving.');
     return false;
@@ -776,6 +782,7 @@ function readControllerDraft(profile) {
   }
 }
 function restoreControllerDraft(profile, workbench, retained = readControllerDraft(profile)) {
+  controllerDraftRestoreInProgress.add(profile);
   try {
     if (!retained) return false;
     const envelope = retained.schema === 'intent-mcu-profile-draft@1' ? retained : null;
@@ -790,6 +797,11 @@ function restoreControllerDraft(profile, workbench, retained = readControllerDra
     }
     return true;
   } catch { return false; }
+  finally {
+    // Workbench installation queues its normal state notification. Keep that
+    // initialization notification read-only; later authored events persist.
+    setTimeout(() => controllerDraftRestoreInProgress.delete(profile), 0);
+  }
 }
 function bindControllerDraftInputs(profile, workbench, source, name) {
   source.addEventListener('input', () => {
@@ -1131,9 +1143,17 @@ function renderProfileDiagnostics(snapshot, { textarea, summary, links, current 
   links.replaceChildren(...nodes);
 }
 
+function boundedQuickCircuitStatus(state, validLabel) {
+  if (state.circuitValid || state.circuitAccepted) return validLabel;
+  if (state.authoringAccepted && state.circuitCode === 'MODEL_LIBRARY_COMPONENT_UNAVAILABLE') {
+    return 'authoring accepted · runtime unavailable for this graph';
+  }
+  return state.circuitCode;
+}
+
 function renderPicoQuickControls(state = picoPublicState) {
   if (selectedCompilerProfile !== RP2040_PROFILE || !state) return;
-  elements.quickstate.textContent = `Pico · ${state.phase} · ${state.circuitValid ? 'wiring valid' : state.circuitCode}`;
+  elements.quickstate.textContent = `Pico · ${state.phase} · ${boundedQuickCircuitStatus(state, 'wiring valid')}`;
   elements.quickbuild.textContent = 'Build Pico';
   elements.quickrun.textContent = 'Run Pico';
   elements.quickpause.textContent = 'Pause';
@@ -1186,7 +1206,7 @@ function renderAvrQuickControls() {
 
 function renderC3QuickControls(state = c3PublicState) {
   if (selectedCompilerProfile !== ESP32C3_PROFILE || !state) return;
-  elements.quickstate.textContent = `ESP32-C3 · ${state.phase} · ${state.circuitAccepted ? 'model wiring valid' : state.circuitCode}`;
+  elements.quickstate.textContent = `ESP32-C3 · ${state.phase} · ${boundedQuickCircuitStatus(state, 'model wiring valid')}`;
   elements.quickbuild.textContent = 'Build C3';
   elements.quickrun.textContent = 'Run actual QEMU';
   elements.quickpause.textContent = 'Pause unavailable';
@@ -1205,7 +1225,7 @@ function renderC3QuickControls(state = c3PublicState) {
 
 function renderStm32QuickControls(state = stm32PublicState) {
   if (selectedCompilerProfile !== STM32F429ZI_PROFILE || !state) return;
-  elements.quickstate.textContent = `STM32F429ZI · ${state.phase} · ${state.circuitAccepted ? 'PB0 wiring valid' : state.circuitCode}`;
+  elements.quickstate.textContent = `STM32F429ZI · ${state.phase} · ${boundedQuickCircuitStatus(state, 'PB0 wiring valid')}`;
   elements.quickbuild.textContent = 'Build STM32 ELF';
   elements.quickrun.textContent = 'Run actual Renode';
   elements.quickpause.textContent = 'Pause unavailable';
@@ -1242,6 +1262,9 @@ function namedWireInstruction(wireDraft) {
   if (wireDraft.mode === 'reconnect-target') {
     return `Move ${picoEndpointKey(wireDraft.from)} on ${wireDraft.netId} — choose a compatible free destination. Escape cancels.`;
   }
+  if (wireDraft.mode === 'branch-target') {
+    return `Add branch to ${wireDraft.netId} — choose one compatible free endpoint. Escape cancels.`;
+  }
   return 'Select a free named pin, then a compatible free destination. Select a cable first to reconnect one endpoint.';
 }
 
@@ -1250,6 +1273,7 @@ function decorateNamedWireAnchor(anchor, key, { draft, wireDraft }) {
   const pending = ['connect-target', 'reconnect-target'].includes(wireDraft.mode)
     && picoEndpointKey(wireDraft.from) === key;
   const available = wireDraft.mode === 'connect-target' && !connection
+    || wireDraft.mode === 'branch-target' && !connection
     || wireDraft.mode === 'reconnect-source' && connection?.id === wireDraft.netId
     || wireDraft.mode === 'reconnect-target' && !connection;
   anchor.classList.toggle('pending', pending);
@@ -1280,6 +1304,33 @@ function beginNamedWireReconnect(workbench, statusElement) {
   return result;
 }
 
+function beginNamedWireBranch(workbench, statusElement) {
+  const result = workbench.editCircuit('beginBranch');
+  statusElement.textContent = namedWireResultMessage(result);
+  return result;
+}
+
+function renderNamedBranchRemoval(select, button, draft, selection, wireDraft) {
+  const net = selection.kind === 'net' ? draft.nets.find(({ id }) => id === selection.id) : null;
+  const endpoints = net?.endpoints.length > 2 ? net.endpoints : [];
+  const previous = select.value;
+  select.replaceChildren(new Option('Choose branch endpoint', ''), ...endpoints.map((endpoint) =>
+    new Option(picoEndpointKey(endpoint), JSON.stringify(endpoint))));
+  if ([...select.options].some(({ value }) => value === previous)) select.value = previous;
+  select.disabled = !endpoints.length || wireDraft.mode !== 'none';
+  button.disabled = select.disabled || !select.value;
+}
+
+function removeNamedBranch(workbench, select, statusElement) {
+  const snapshot = workbench.snapshot().circuitEditor;
+  if (snapshot.selection.kind !== 'net' || !select.value) return;
+  const endpoint = JSON.parse(select.value);
+  const result = workbench.editCircuit('deleteBranch', snapshot.selection.id, endpoint);
+  statusElement.textContent = result.ok
+    ? `Removed ${picoEndpointKey(endpoint)} from ${snapshot.selection.id}. Undo restores it.`
+    : `Branch removal rejected (${result.code}). The circuit is unchanged.`;
+}
+
 function cancelNamedWire(workbench, statusElement) {
   const result = workbench.editCircuit('cancelWireDraft');
   statusElement.textContent = 'Wire selection cancelled. The circuit is unchanged.';
@@ -1288,10 +1339,11 @@ function cancelNamedWire(workbench, statusElement) {
 
 function boundedPartSummary(part, component) {
   if (part.fixed) return 'Fixed controller';
-  if (!component) return 'Missing · add to repair';
+  if (!component) return '0 placed · add a first part';
+  if ((part.count ?? 1) > 1) return `${part.count} placed · select one on the canvas to inspect`;
   if (part.type === 'resistor.fixed-v1') return `${component.properties.ohms} Ω · bounded ideal model`;
   if (part.type === 'led.basic-v1') return `${component.properties.color} · bounded ideal LED model`;
-  return 'Unsupported';
+  return 'Authoring-only · runtime unavailable';
 }
 
 function componentEditorKey(profile, componentId) {
@@ -1354,19 +1406,19 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
     const row = document.createElement('article');
     row.className = 'bounded-part-card'; row.dataset.type = part.type;
     row.dataset.present = String(part.present); row.setAttribute('role', 'listitem');
-    row.draggable = part.addable;
+    row.draggable = part.addable || part.repeatable;
     const name = document.createElement('strong'); name.textContent = part.displayName;
     const summary = document.createElement('small'); summary.textContent = boundedPartSummary(part, component);
     const id = document.createElement('code'); id.textContent = component?.id ?? part.id;
     const action = document.createElement('button'); action.type = 'button';
     action.dataset.boundedAdd = part.type;
-    action.textContent = part.fixed ? 'Fixed' : part.present ? 'Added' : 'Add missing part';
-    action.disabled = !part.addable;
+    action.textContent = part.fixed ? 'Fixed' : part.present ? 'Add another' : 'Add part';
+    action.disabled = !(part.addable || part.repeatable);
     action.setAttribute('aria-label', part.fixed
       ? `${part.displayName} is fixed for this profile`
-      : part.present ? `${part.displayName} is already present` : `Add missing ${part.displayName}`);
-    if (part.addable) {
-      action.addEventListener('click', () => editCircuit('addMissingComponent', part.type));
+      : `Add ${part.displayName}`);
+    if (part.addable || part.repeatable) {
+      action.addEventListener('click', () => editCircuit('addComponent', part.type));
       row.addEventListener('dragstart', (event) => {
         event.dataTransfer.effectAllowed = 'copy';
         event.dataTransfer.setData('application/x-intent-component', JSON.stringify({ profile, type: part.type }));
@@ -1387,6 +1439,15 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
       ? 'This controller profile is fixed. Select the resistor or LED to edit its bounded model property.'
       : 'Select the resistor or LED to edit only its tested bounded model property.';
     properties.replaceChildren(note); return;
+  }
+
+  if (!['resistor.fixed-v1', 'led.basic-v1'].includes(selected.type)) {
+    const note = document.createElement('p');
+    note.textContent = `${selectedPart.displayName} is a 3.3 V authoring-only part. Its named pins persist, but it cannot grant Build or Run authority.`;
+    const duplicate = document.createElement('button'); duplicate.type = 'button'; duplicate.textContent = 'Duplicate disconnected part';
+    duplicate.dataset.boundedDuplicate = selected.id;
+    duplicate.addEventListener('click', () => editCircuit('duplicateComponent', selected.id));
+    properties.replaceChildren(note, duplicate); return;
   }
 
   const row = document.createElement('div'); row.className = 'bounded-property-row';
@@ -1415,6 +1476,12 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
 
   const modelPanel = document.createElement('section');
   const modelStatus = document.createElement('p'); modelStatus.className = 'component-editor-invariant'; modelStatus.setAttribute('role', 'status');
+  const duplicate = document.createElement('button'); duplicate.type = 'button'; duplicate.textContent = 'Duplicate disconnected part';
+  duplicate.dataset.boundedDuplicate = selected.id;
+  duplicate.addEventListener('click', () => {
+    const result = editCircuit('duplicateComponent', selected.id);
+    if (!result?.ok) modelStatus.textContent = `Duplicate rejected (${result?.code ?? 'validation failed'}). The project is unchanged.`;
+  });
   const modelApply = document.createElement('button'); modelApply.type = 'button'; modelApply.textContent = 'Apply model property';
   modelApply.dataset.boundedModelApply = selected.id;
   const modelCancel = document.createElement('button'); modelCancel.type = 'button'; modelCancel.textContent = 'Cancel preview';
@@ -1453,7 +1520,7 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
     }
   });
   const modelActions = document.createElement('div'); modelActions.className = 'component-editor-actions';
-  modelActions.append(modelCancel, modelApply); modelPanel.append(row, modelStatus, modelActions); updateModel();
+  modelActions.append(duplicate, modelCancel, modelApply); modelPanel.append(row, modelStatus, modelActions); updateModel();
 
   const appearance = document.createElement('section'); appearance.className = 'bounded-property-row bounded-appearance-row';
   const appearanceLabel = document.createElement('label');
@@ -1547,7 +1614,7 @@ function installBoundedPartsDrop(profile, workbench, diagram) {
       x: Math.max(0.08, Math.min(0.92, (event.clientX - box.left) / box.width)),
       y: Math.max(0.1, Math.min(0.9, (event.clientY - box.top) / box.height)),
     };
-    const result = workbench.editCircuit('addMissingComponent', payload.type, position);
+    const result = workbench.editCircuit('addComponent', payload.type, position);
     const status = document.querySelector('#simple-parts-status');
     if (status && selectedCompilerProfile === profile) status.textContent = result.ok
       ? `Added ${result.componentId} at the dropped canvas position. Undo is available.`
@@ -1795,13 +1862,16 @@ function renderAccessibleConnections({ profile, label, view, adapter }) {
 
 function renderBoundedAccessibleConnections(profile, label, state, workbench, anchorSelector) {
   const graph = state.circuitEditor.draft;
+  const validation = state.authoringAccepted && !state.circuitValid && !state.circuitAccepted
+    ? { ok: true, code: `${state.authoringCode} · RUNTIME_UNAVAILABLE(${state.circuitCode})`, details: [] }
+    : state.circuitEditor.validation;
   const view = accessibleView({
     profile,
     revision: state.circuitEditor.revision,
     graph,
     catalogue: uiComponentCatalog,
-    validation: state.circuitEditor.validation,
-    limits: { components: 4, nets: 4, endpoints: 8 },
+    validation,
+    limits: { components: 17, nets: 24, endpoints: 48 },
   });
   const endpoint = (pin) => ({ component: pin.componentId, pin: pin.id });
   renderAccessibleConnections({
@@ -1880,10 +1950,13 @@ function navigationState() {
     : profile === ESP32C3_PROFILE ? c3PublicWorkbench.snapshot() : stm32PublicWorkbench.snapshot();
   const sourceName = profile === ESP32C3_PROFILE ? 'sketch.ino' : 'main.c';
   const source = state.source ?? state.project?.source;
+  const connectionValidation = state.authoringAccepted && !state.circuitValid && !state.circuitAccepted
+    ? { ok: true, code: `${state.authoringCode} · RUNTIME_UNAVAILABLE(${state.circuitCode})`, details: [] }
+    : state.circuitEditor.validation;
   return { profile, generation: 1, revision: state.revision,
     connections: accessibleView({ profile, revision: state.circuitEditor.revision,
       graph: state.circuitEditor.draft, catalogue: uiComponentCatalog,
-      validation: state.circuitEditor.validation, limits: { components: 4, nets: 4, endpoints: 8 } }),
+      validation: connectionValidation, limits: { components: 17, nets: 24, endpoints: 48 } }),
     sources: [{ name: sourceName, content: source }], criteria: brief.acceptanceCriteria, scenarios: [] };
 }
 function currentNavigationIdentity() {
@@ -2117,8 +2190,30 @@ function boundedRouteGeometry(config, draft) {
 
 function boundedCombinedPath(family, anchors) {
   const branches = routeFamilyPaths(family, anchors);
-  if (branches.length !== 2) throw new TypeError('BOUNDED_ROUTE_BRANCH_COUNT');
+  if (branches.length !== 2) throw new TypeError('BOUNDED_ROUTE_COMBINED_PATH_REQUIRES_TWO_BRANCHES');
   return [...branches[0].points, ...branches[1].points.slice(0, -1).reverse()];
+}
+
+function boundedPixelBranches(family, anchors, box) {
+  return routeFamilyPaths(family, anchors).map((branch) => ({
+    endpoint: branch.endpoint,
+    points: boundedPixelPoints(branch.points, box),
+  }));
+}
+
+function boundedReconcileStoredFamily(net, stored) {
+  if (!isRouteFamily(stored) || !stored.branches.length) return stored;
+  const expected = new Set(net.endpoints.map(picoEndpointKey));
+  const retained = stored.branches.filter((branch) => expected.has(picoEndpointKey(branch.endpoint)));
+  const hub = retained[0]?.points?.at(-1) ?? stored.branches[0]?.points?.at(-1);
+  if (!hub) return null;
+  const byEndpoint = new Map(retained.map((branch) => [picoEndpointKey(branch.endpoint), branch]));
+  return {
+    schema: 'intent-mcu-route@1',
+    branches: net.endpoints.map((endpoint) => byEndpoint.get(picoEndpointKey(endpoint)) ?? {
+      endpoint: structuredClone(endpoint), points: [structuredClone(hub)],
+    }),
+  };
 }
 
 function boundedPixelPoints(points, box) {
@@ -2143,14 +2238,23 @@ function boundedFamilyFromPixelRoute(net, points, box) {
 function boundedFamilyForNet(config, draft, net, geometry, occupied = []) {
   const stored = draft.layout.wireRoutes?.[net.id];
   if (stored) {
-    const family = materializeRouteFamily(net, stored, geometry.anchors, geometry.obstacles);
-    return { family, points: boundedPixelPoints(boundedCombinedPath(family, geometry.anchors), geometry.box) };
+    const family = materializeRouteFamily(net, boundedReconcileStoredFamily(net, stored), geometry.anchors, geometry.obstacles);
+    const branches = boundedPixelBranches(family, geometry.anchors, geometry.box);
+    const points = branches.length === 2
+      ? boundedPixelPoints(boundedCombinedPath(family, geometry.anchors), geometry.box) : branches[0].points;
+    return { family, branches, points };
+  }
+  if (net.endpoints.length !== 2) {
+    const family = materializeRouteFamily(net, null, geometry.anchors, geometry.obstacles);
+    const branches = boundedPixelBranches(family, geometry.anchors, geometry.box);
+    return { family, branches, points: branches[0].points };
   }
   const pixelAnchors = net.endpoints.map((endpoint) => picoEditorAnchor(endpoint, config.diagram, config.components));
   const points = picoEditorRoute(pixelAnchors, geometry.box,
     picoEditorObstacles(config.diagram, config.components), occupied);
   const storedFamily = boundedFamilyFromPixelRoute(net, points, geometry.box);
-  return { family: materializeRouteFamily(net, storedFamily, geometry.anchors, geometry.obstacles), points };
+  const family = materializeRouteFamily(net, storedFamily, geometry.anchors, geometry.obstacles);
+  return { family, branches: boundedPixelBranches(family, geometry.anchors, geometry.box), points };
 }
 
 function boundedPathData(points) {
@@ -2162,6 +2266,7 @@ function boundedCrossings(routes) {
   for (let leftIndex = 0; leftIndex < routes.length; leftIndex += 1) {
     for (let rightIndex = leftIndex + 1; rightIndex < routes.length; rightIndex += 1) {
       const left = routes[leftIndex]; const right = routes[rightIndex];
+      if (left.netId === right.netId) continue;
       for (let a = 0; a < left.points.length - 1; a += 1) {
         const a1 = left.points[a]; const a2 = left.points[a + 1];
         const aHorizontal = Math.abs(a1.y - a2.y) < 0.5;
@@ -2221,7 +2326,7 @@ function renderBoundedWireLayer(config) {
   const materialized = [];
   for (const net of draft.nets) {
     const resolved = boundedFamilyForNet(config, draft, net, geometry,
-      materialized.map((item) => ({ netId: item.net.id, points: item.points })));
+      materialized.flatMap((item) => item.branches.map((branch) => ({ netId: item.net.id, points: branch.points }))));
     materialized.push({ net, ...resolved });
   }
   const separated = separateParallelWireLanes(materialized.map((item) => ({
@@ -2230,8 +2335,11 @@ function renderBoundedWireLayer(config) {
     bounds: { left: 8, right: geometry.box.width - 8, top: 8, bottom: geometry.box.height - 8 } });
   const drawings = [];
   for (const item of materialized) {
-    const points = separated.routes.find((route) => route.netId === item.net.id)?.points ?? item.points;
-    const d = boundedPathData(points);
+    const twoTerminal = item.branches.length === 2;
+    const points = twoTerminal
+      ? separated.routes.find((route) => route.netId === item.net.id)?.points ?? item.points : item.points;
+    const renderedBranches = twoTerminal ? [{ points }] : item.branches;
+    const d = renderedBranches.map((branch) => boundedPathData(branch.points)).join(' ');
     const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     hit.classList.add('pico-editor-wire-hit'); hit.dataset.net = item.net.id; hit.setAttribute('d', d);
     hit.setAttribute('tabindex', '0'); hit.setAttribute('role', 'button');
@@ -2246,10 +2354,19 @@ function renderBoundedWireLayer(config) {
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.classList.add('pico-editor-wire');
     if (selection.kind === 'net' && selection.id === item.net.id) path.classList.add('selected');
-    path.dataset.net = item.net.id; path.dataset.points = JSON.stringify(points);
+    path.dataset.net = item.net.id; path.dataset.points = JSON.stringify(renderedBranches.map((branch) => branch.points));
+    path.dataset.renderedEndpoints = String(item.branches.length);
     path.dataset.laneConflicts = String(separated.conflicts.filter((value) => value.leftNet === item.net.id || value.rightNet === item.net.id).length);
     path.style.setProperty('--wire-color', draft.layout.wireStyles[item.net.id] ?? '#39dff2');
     path.setAttribute('d', d); drawings.push(hit, path);
+    if (item.branches.length > 2) {
+      const hub = item.branches[0].points.at(-1);
+      const junction = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      junction.classList.add('pico-wire-junction'); junction.dataset.net = item.net.id;
+      junction.dataset.renderedEndpoints = String(item.branches.length);
+      junction.setAttribute('cx', hub.x); junction.setAttribute('cy', hub.y); junction.setAttribute('r', '4');
+      drawings.push(junction);
+    }
     if (selection.kind === 'net' && selection.id === item.net.id) {
       for (const branch of routeFamilyPaths(item.family, geometry.anchors)) {
         for (let index = 1; index < branch.points.length - 1; index += 1) {
@@ -2287,7 +2404,10 @@ function renderBoundedWireLayer(config) {
       }
     }
   }
-  for (const crossing of boundedCrossings(separated.routes)) {
+  const crossingRoutes = materialized.flatMap((item) => item.branches.length === 2
+    ? [separated.routes.find((route) => route.netId === item.net.id) ?? { netId: item.net.id, points: item.points }]
+    : item.branches.map((branch) => ({ netId: item.net.id, points: branch.points })));
+  for (const crossing of boundedCrossings(crossingRoutes)) {
     const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     marker.classList.add('pico-wire-crossing'); marker.setAttribute('cx', crossing.x); marker.setAttribute('cy', crossing.y);
     marker.setAttribute('r', '4'); marker.dataset.crossing = `${crossing.leftNet}:${crossing.rightNet}`;
@@ -2314,25 +2434,29 @@ function boundedRouteCandidateValid(config, draft, targetNetId, targetFamily, ge
   const routes = [];
   for (const net of draft.nets) {
     const resolved = net.id === targetNetId
-      ? { family: targetFamily, points: boundedPixelPoints(boundedCombinedPath(targetFamily, geometry.anchors), geometry.box) }
+      ? (() => {
+        const branches = boundedPixelBranches(targetFamily, geometry.anchors, geometry.box);
+        return { family: targetFamily, branches, points: branches.length === 2
+          ? boundedPixelPoints(boundedCombinedPath(targetFamily, geometry.anchors), geometry.box) : branches[0].points };
+      })()
       : boundedFamilyForNet(config, draft, net, geometry, routes);
-    const points = resolved.points;
-    const blocked = points.slice(0, -1).some((start, index) => {
+    const candidateBranches = resolved.branches ?? [{ points: resolved.points }];
+    const blocked = candidateBranches.some(({ points }) => points.slice(0, -1).some((start, index) => {
       const end = points[index + 1];
       return picoEditorObstacles(config.diagram, config.components).some((body) => {
-        const endpointEscape = index === 0 && body.component === net.endpoints[0].component
-          || index === points.length - 2 && body.component === net.endpoints[1].component;
+        const endpointEscape = index === 0 && net.endpoints.some(({ component }) => body.component === component);
         return !endpointEscape && picoSegmentCrossesBody(start, end, body);
       });
-    });
+    }));
     if (blocked) return { ok: false, code: 'WIRE_ROUTE_BODY_INTERSECTION' };
-    routes.push({ netId: net.id, points });
+    routes.push(...candidateBranches.map(({ points }) => ({ netId: net.id, points })));
   }
   const separated = separateParallelWireLanes(routes, {
     clearance: 8, obstacles: picoEditorObstacles(config.diagram, config.components),
     bounds: { left: 8, right: geometry.box.width - 8, top: 8, bottom: geometry.box.height - 8 },
   });
-  return separated.conflicts.length
+  const interNetConflicts = separated.conflicts.filter((conflict) => conflict.leftNet !== conflict.rightNet);
+  return interNetConflicts.length
     ? { ok: false, code: 'WIRE_LANE_01_OVERLAP' }
     : { ok: true, crossings: boundedCrossings(separated.routes).length };
 }
@@ -2497,6 +2621,8 @@ function renderPicoCircuitEditor(state) {
   elements.picorotate.disabled = selection.kind !== 'component';
   elements.picoundo.disabled = !canUndo; elements.picoredo.disabled = !canRedo;
   elements.picoreconnect.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  elements.picobranch.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  renderNamedBranchRemoval(elements.picobranchendpoint, elements.picoremovebranch, draft, selection, wireDraft);
   const picoRouteSelected = selection.kind === 'net' && wireDraft.mode === 'none';
   elements.picoaddbend.disabled = !picoRouteSelected;
   elements.picorouteback.disabled = !picoRouteSelected;
@@ -2619,6 +2745,8 @@ window.__RP2040_PUBLIC_WORKBENCH__ = {
   moveCircuitComponent: (id, x, y) => picoPublicWorkbench.editCircuit('moveComponent', id, x, y),
   rotateCircuitComponent: (id) => picoPublicWorkbench.editCircuit('rotateComponent', id),
   activateEndpoint: (endpoint) => picoPublicWorkbench.editCircuit('activateEndpoint', endpoint),
+  newCircuit: () => picoPublicWorkbench.editCircuit('newProject'),
+  addComponent: (type, position) => picoPublicWorkbench.editCircuit('addComponent', type, position),
   addMissingComponent: (type) => picoPublicWorkbench.editCircuit('addMissingComponent', type),
   setComponentProperty: (id, key, value) => picoPublicWorkbench.editCircuit('setComponentProperty', id, key, value),
   setComponentAppearance: (id, preset) => picoPublicWorkbench.editCircuit('setComponentAppearance', id, preset),
@@ -2642,6 +2770,9 @@ elements.picorotate.addEventListener('click', () => {
   if (selection.kind === 'component') picoPublicWorkbench.editCircuit('rotateComponent', selection.id);
 });
 elements.picoreconnect.addEventListener('click', () => beginNamedWireReconnect(picoPublicWorkbench, elements.picowirestate));
+elements.picobranch.addEventListener('click', () => beginNamedWireBranch(picoPublicWorkbench, elements.picowirestate));
+elements.picobranchendpoint.addEventListener('change', () => { elements.picoremovebranch.disabled = !elements.picobranchendpoint.value; });
+elements.picoremovebranch.addEventListener('click', () => removeNamedBranch(picoPublicWorkbench, elements.picobranchendpoint, elements.picowirestate));
 elements.picoaddbend.addEventListener('click', () => editBoundedRoute('pico', 'bend'));
 elements.picorouteback.addEventListener('click', () => editBoundedRoute('pico', 'move', -1));
 elements.picorouteforward.addEventListener('click', () => editBoundedRoute('pico', 'move', 1));
@@ -2780,6 +2911,8 @@ function renderC3CircuitEditor(state) {
   elements.c3rotate.disabled = selection.kind !== 'component';
   elements.c3undo.disabled = !canUndo; elements.c3redo.disabled = !canRedo;
   elements.c3reconnect.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  elements.c3branch.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  renderNamedBranchRemoval(elements.c3branchendpoint, elements.c3removebranch, draft, selection, wireDraft);
   const c3RouteSelected = selection.kind === 'net' && wireDraft.mode === 'none';
   elements.c3addbend.disabled = !c3RouteSelected;
   elements.c3routeback.disabled = !c3RouteSelected;
@@ -2902,6 +3035,8 @@ window.__ESP32C3_PUBLIC_WORKBENCH__ = {
   moveCircuitComponent: (id, x, y) => c3PublicWorkbench.editCircuit('moveComponent', id, x, y),
   rotateCircuitComponent: (id) => c3PublicWorkbench.editCircuit('rotateComponent', id),
   activateEndpoint: (endpoint) => c3PublicWorkbench.editCircuit('activateEndpoint', endpoint),
+  newCircuit: () => c3PublicWorkbench.editCircuit('newProject'),
+  addComponent: (type, position) => c3PublicWorkbench.editCircuit('addComponent', type, position),
   addMissingComponent: (type) => c3PublicWorkbench.editCircuit('addMissingComponent', type),
   setComponentProperty: (id, key, value) => c3PublicWorkbench.editCircuit('setComponentProperty', id, key, value),
   setComponentAppearance: (id, preset) => c3PublicWorkbench.editCircuit('setComponentAppearance', id, preset),
@@ -2925,6 +3060,9 @@ elements.c3rotate.addEventListener('click', () => {
   if (selection.kind === 'component') c3PublicWorkbench.editCircuit('rotateComponent', selection.id);
 });
 elements.c3reconnect.addEventListener('click', () => beginNamedWireReconnect(c3PublicWorkbench, elements.c3wirestate));
+elements.c3branch.addEventListener('click', () => beginNamedWireBranch(c3PublicWorkbench, elements.c3wirestate));
+elements.c3branchendpoint.addEventListener('change', () => { elements.c3removebranch.disabled = !elements.c3branchendpoint.value; });
+elements.c3removebranch.addEventListener('click', () => removeNamedBranch(c3PublicWorkbench, elements.c3branchendpoint, elements.c3wirestate));
 elements.c3addbend.addEventListener('click', () => editBoundedRoute('c3', 'bend'));
 elements.c3routeback.addEventListener('click', () => editBoundedRoute('c3', 'move', -1));
 elements.c3routeforward.addEventListener('click', () => editBoundedRoute('c3', 'move', 1));
@@ -3067,6 +3205,8 @@ function renderStm32CircuitEditor(state) {
   elements.stm32rotate.disabled = selection.kind !== 'component';
   elements.stm32undo.disabled = !canUndo; elements.stm32redo.disabled = !canRedo;
   elements.stm32reconnect.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  elements.stm32branch.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  renderNamedBranchRemoval(elements.stm32branchendpoint, elements.stm32removebranch, draft, selection, wireDraft);
   const stm32RouteSelected = selection.kind === 'net' && wireDraft.mode === 'none';
   elements.stm32addbend.disabled = !stm32RouteSelected;
   elements.stm32routeback.disabled = !stm32RouteSelected;
@@ -3213,6 +3353,8 @@ window.__STM32_PUBLIC_WORKBENCH__ = {
   moveCircuitComponent: (id, x, y) => stm32PublicWorkbench.editCircuit('moveComponent', id, x, y),
   rotateCircuitComponent: (id) => stm32PublicWorkbench.editCircuit('rotateComponent', id),
   activateEndpoint: (endpoint) => stm32PublicWorkbench.editCircuit('activateEndpoint', endpoint),
+  newCircuit: () => stm32PublicWorkbench.editCircuit('newProject'),
+  addComponent: (type, position) => stm32PublicWorkbench.editCircuit('addComponent', type, position),
   addMissingComponent: (type) => stm32PublicWorkbench.editCircuit('addMissingComponent', type),
   setComponentProperty: (id, key, value) => stm32PublicWorkbench.editCircuit('setComponentProperty', id, key, value),
   setComponentAppearance: (id, preset) => stm32PublicWorkbench.editCircuit('setComponentAppearance', id, preset),
@@ -3227,6 +3369,37 @@ window.__STM32_PUBLIC_WORKBENCH__ = {
   setWireColor: (color) => setBoundedWireColor('stm32', color),
   setWireRoute: (netId, route) => stm32PublicWorkbench.editCircuit('setWireRoute', netId, route),
 };
+function createNewControllerProject(profile, workbench) {
+  const originalDraftId = activeDraftId;
+  if (!persistControllerDraft(profile, workbench)) {
+    profileMessage(profile, 'New circuit stopped because the current browser recovery copy could not be preserved. Download a copy and try again.');
+    return { ok: false, code: 'NEW_PROJECT_RECOVERY_REQUIRED' };
+  }
+  const originalKey = profileDraftStorageKey(profile);
+  const originalBytes = localStorage.getItem(originalKey);
+  if (!originalBytes) return { ok: false, code: 'NEW_PROJECT_RECOVERY_REQUIRED' };
+  const nextDraftId = forkDraftForRecovery();
+  const result = workbench.editCircuit('newProject');
+  if (!result.ok || !persistControllerDraft(profile, workbench)) {
+    if (result.ok) workbench.editCircuit('undo');
+    forkDraftForRecovery(originalDraftId);
+    profileMessage(profile, 'New circuit stopped because its new browser recovery copy could not be created. The preserved original remains active.');
+    return { ok: false, code: 'NEW_PROJECT_COPY_FAILED' };
+  }
+  setProjectBaseline(profile);
+  registerActiveDraft(currentProjectNameForGuard(profile));
+  renderDraftRecoveryChoices();
+  return { ...result, originalDraftId, originalKey, nextDraftId };
+}
+function bindNewControllerProject(selector, profile, workbench) {
+  document.querySelector(selector)?.addEventListener('click', () => {
+    const create = () => createNewControllerProject(profile, workbench);
+    if (!requestUnsavedChangeGuard({ profile, actionLabel: 'creating a new empty circuit', continueAction: create })) create();
+  });
+}
+bindNewControllerProject('#pico-new-circuit', RP2040_PROFILE, picoPublicWorkbench);
+bindNewControllerProject('#c3-new-circuit', ESP32C3_PROFILE, c3PublicWorkbench);
+bindNewControllerProject('#stm32-new-circuit', STM32F429ZI_PROFILE, stm32PublicWorkbench);
 installBoundedPartsDrop(RP2040_PROFILE, picoPublicWorkbench, elements.picodiagram);
 installBoundedPartsDrop(ESP32C3_PROFILE, c3PublicWorkbench, elements.c3diagram);
 installBoundedPartsDrop(STM32F429ZI_PROFILE, stm32PublicWorkbench, elements.stm32diagram);
@@ -3239,6 +3412,9 @@ elements.stm32rotate.addEventListener('click', () => {
   if (selection.kind === 'component') stm32PublicWorkbench.editCircuit('rotateComponent', selection.id);
 });
 elements.stm32reconnect.addEventListener('click', () => beginNamedWireReconnect(stm32PublicWorkbench, elements.stm32wirestate));
+elements.stm32branch.addEventListener('click', () => beginNamedWireBranch(stm32PublicWorkbench, elements.stm32wirestate));
+elements.stm32branchendpoint.addEventListener('change', () => { elements.stm32removebranch.disabled = !elements.stm32branchendpoint.value; });
+elements.stm32removebranch.addEventListener('click', () => removeNamedBranch(stm32PublicWorkbench, elements.stm32branchendpoint, elements.stm32wirestate));
 elements.stm32addbend.addEventListener('click', () => editBoundedRoute('stm32', 'bend'));
 elements.stm32routeback.addEventListener('click', () => editBoundedRoute('stm32', 'move', -1));
 elements.stm32routeforward.addEventListener('click', () => editBoundedRoute('stm32', 'move', 1));
@@ -7533,6 +7709,9 @@ const commonProjectAdapters = Object.freeze({
     electrical: (result) => modelLibraryImplementationForResult(result)
       .validateProfile(RP2040_PROFILE, result.project.circuit,
         { modelLibraryLock: result.modelLibrary }),
+    authoringAdmission: ({ project }) => validateBounded3v3AuthoringGraph({
+      board: RP2040_PICO_BOARD_DEFINITION, components: project.circuit.components, nets: project.circuit.nets,
+    }),
   }),
   [ESP32C3_PROFILE]: Object.freeze({
     schemas: Object.freeze([C3_PUBLIC_PROJECT_SCHEMA]),
@@ -7541,6 +7720,9 @@ const commonProjectAdapters = Object.freeze({
     electrical: (result) => modelLibraryImplementationForResult(result)
       .validateProfile(ESP32C3_PROFILE, result.project.circuit,
         { modelLibraryLock: result.modelLibrary }),
+    authoringAdmission: ({ project }) => validateBounded3v3AuthoringGraph({
+      board: ESP32C3_BOARD_DEFINITION, components: project.circuit.components, nets: project.circuit.nets,
+    }),
   }),
   [STM32F429ZI_PROFILE]: Object.freeze({
     schemas: Object.freeze([STM32_EDITABLE_PROJECT_SCHEMA, 'intent-mcu-stm32-public-project@1']),
@@ -7553,6 +7735,9 @@ const commonProjectAdapters = Object.freeze({
     electrical: (result) => modelLibraryImplementationForResult(result)
       .validateProfile(STM32F429ZI_PROFILE, result.project.circuit,
         { modelLibraryLock: result.modelLibrary }),
+    authoringAdmission: ({ project }) => validateBounded3v3AuthoringGraph({
+      board: STM32_BOARD_DEFINITION, components: project.circuit.components, nets: project.circuit.nets,
+    }),
   }),
 });
 function detectedAnnotatedWorkspaceSchema(source) {
@@ -7980,6 +8165,23 @@ function profileMessage(profile, message) {
     : profile === ESP32C3_PROFILE ? elements.c3message : elements.stm32message;
   target.textContent = message;
 }
+function presentProjectFileMessage(profile, message) {
+  profileMessage(profile, message);
+  elements.projectmessage.textContent = message;
+  sharedWorkbenchShell.openDialog('project', document.querySelector('#project-files-open'), {
+    initialFocus: false,
+  });
+  const mount = document.querySelector('#workbench-project-dialog .workbench-popup-mount');
+  let status = document.querySelector('#project-file-message');
+  if (!status) {
+    status = document.createElement('p');
+    status.id = 'project-file-message'; status.className = 'truth';
+    status.setAttribute('role', 'status'); status.tabIndex = -1;
+  }
+  status.textContent = message;
+  mount.prepend(status);
+  queueMicrotask(() => status.focus({ preventScroll: true }));
+}
 function renderModelLibraryStatus() {
   const lock = modelLibraryLockFor(selectedCompilerProfile);
   const preview = modelLibraryMigrationPreview(lock, CURRENT_MODEL_LIBRARY_LOCK);
@@ -8229,9 +8431,12 @@ function installPreparedProjectEnvelope(result, handle = null, { preserveExpecta
   renderModelLibraryStatus();
   renderExpectationReference();
   window.__COMMON_PROJECT_FILE_STATE__ = structuredClone({ profile: result.profile, report: result.report });
-  profileMessage(result.profile, result.report.legacy
+  const openedMessage = result.publishedRecovery
+    ? `Known previous release/candidate ${result.publishedRecovery.release} project opened as validated data only. The original file is unchanged; fresh Build is required.`
+    : result.report.legacy
     ? `Legacy ${result.report.inputSchema} migrated in memory to ${result.report.outputSchema}. Save creates a new file; fresh Build is required.`
-    : `Common project opened for ${result.profile}. Executable authority was cleared; fresh Build is required.`);
+    : `Common project opened for ${result.profile}. Executable authority was cleared; fresh Build is required.`;
+  presentProjectFileMessage(result.profile, openedMessage);
   return result;
 }
 async function openCommonProjectFile(file, handle = null) {
@@ -8256,9 +8461,10 @@ async function openCommonProjectFile(file, handle = null) {
       return { ok: false, code: error.code ?? error.message };
     }
   }
-  const result = annotated?.prepared ?? prepareProjectEnvelope(source, commonProjectAdapters);
+  const result = annotated?.prepared ?? preparePublishedRecoveryProjectEnvelope(source, commonProjectAdapters);
   if (!result.ok) {
-    profileMessage(activeBefore, `Open rejected (${result.code}). Profile and current project are unchanged.`);
+    presentProjectFileMessage(activeBefore,
+      `Open rejected (${result.code}). Profile and current project are unchanged. Choose another trusted project file or keep editing this project.`);
     return result;
   }
   if (result.profile === activeBefore && requestUnsavedChangeGuard({
@@ -15952,7 +16158,8 @@ if (!restored?.ok && !stored && !recoveryStored) {
   const firstVisit = loadExampleProject('blink', 'project.first-visit');
   firstVisitStarterLoaded = firstVisit?.ok === true;
 }
-if (restored?.ok) persistProject();
+// Startup restoration is read-only. Keep the exact prior bytes available until
+// the learner makes an authored change or explicitly saves a new copy.
 renderDraftRecoveryChoices();
 const workspace = document.querySelector('.workspace');
 for (const [name, button] of [['catalog-collapsed', elements.togglecatalog], ['inspector-collapsed', elements.toggleinspector]]) {

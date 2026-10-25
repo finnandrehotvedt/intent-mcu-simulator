@@ -199,14 +199,23 @@ async function discoverProject() {
   staticDiscovery = { capabilities, catalog, componentPins };
   return { discovery: { profile: catalog.profile, project_id: claim.projectId, revision,
     commands: capabilities.commands, components: components.components, nets: nets.nets,
-    pins: componentPins, validation: validation.validation }, project, catalog, components };
+    pins: componentPins, validation: validation.validation,
+    authoring: validation.authoring ?? validation.validation,
+    runtime: validation.runtime ?? validation.validation,
+    executable: validation.executable ?? validation.validation?.ok === true }, project, catalog, components };
 }
 function validateNamedPins(candidate, components, catalog) {
   const typeById = new Map(components.components.map((item) => [item.id, item.type]));
   for (const command of candidate.commands) if (command?.command === 'component.add') typeById.set(command.id, command.type);
+  for (const command of candidate.commands) if (command?.command === 'component.duplicate') {
+    const sourceType = typeById.get(command.component_id);
+    if (sourceType) typeById.set(command.id, sourceType);
+  }
   for (const command of candidate.commands) {
-    if (command?.command !== 'wire.connect') continue;
-    for (const endpointValue of [command.from, command.to]) {
+    const endpoints = command?.command === 'wire.connect' ? [command.from, command.to]
+      : ['wire.branch.connect', 'wire.disconnect'].includes(command?.command) && command.endpoint
+        ? [command.endpoint] : [];
+    for (const endpointValue of endpoints) {
       const type = typeById.get(endpointValue?.component); const pins = catalog.components[type]?.pins;
       if (!type || !pins?.some((pin) => pin.id === endpointValue?.pin)) throw new Error('API_PLAN_NAMED_PIN_UNKNOWN');
     }
@@ -250,7 +259,8 @@ if (sessionMode) {
       }
         throw new Error('API_SESSION_COMMAND_UNSUPPORTED');
       } catch (error) {
-        const code = typeof error?.message === 'string' && error.message.startsWith('API_')
+        const code = typeof error?.message === 'string'
+          && /^(?:API_[A-Z0-9_]+|(?:RP2040|C3|STM32)_API_[A-Z0-9_]+)$/u.test(error.message)
           ? error.message : 'API_SESSION_FAILED';
         stdout.write(`${JSON.stringify({ status: 'rejected', code })}\n`);
         if (['API_EXPIRED', 'API_AUTH_REQUIRED', 'API_OWNER_GONE', 'API_CLIENT_GONE'].includes(code)) break;

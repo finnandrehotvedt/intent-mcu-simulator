@@ -3,10 +3,12 @@
 
 import {
   RP2040_PICO_PROFILE,
+  RP2040_PICO_BOARD_DEFINITION,
   Rp2040PicoCircuitEditor,
   createRp2040PicoCircuitDraft,
   normalizeRp2040PicoCircuitDraft,
 } from './rp2040-pico-circuit.mjs';
+import { validateBounded3v3AuthoringGraph } from './bounded-3v3-authoring-contracts.mjs';
 import { parseStrictJson } from './strict-json.mjs';
 import { boundedPolicyDiagnostic, normalizeSourceDiagnostics } from './source-diagnostics.mjs';
 import { isRetryableCapacityCode, retryGuidanceFromResponse, retryMessage, retryResultFields } from './retry-guidance.mjs';
@@ -239,6 +241,8 @@ export class Rp2040PublicWorkbench {
     );
     const modelLibrary = modelLibraryExecutionIdentity(this.modelLibraryLock);
     const wiringReady = this.circuitEditor.snapshot().wireDraft.mode === 'none';
+    const authoring = validateBounded3v3AuthoringGraph({ board: RP2040_PICO_BOARD_DEFINITION,
+      components: this.project.circuit.components, nets: this.project.circuit.nets });
     return {
       profile: RP2040_PICO_PROFILE,
       phase: this.phase,
@@ -250,6 +254,8 @@ export class Rp2040PublicWorkbench {
       circuitEditor: this.circuitEditor.snapshot(),
       circuitValid: circuit.ok && wiringReady,
       circuitCode: wiringReady ? circuit.code : 'RP2040_WIRING_IN_PROGRESS',
+      authoringAccepted: authoring.ok && wiringReady,
+      authoringCode: wiringReady ? authoring.code : 'RP2040_WIRING_IN_PROGRESS',
       circuitObservation: this.modelLibraryImplementation.observeRp2040(
         this.project.circuit, this.lastRuntime, { modelLibraryLock: this.modelLibraryLock },
       ),
@@ -693,8 +699,8 @@ export class Rp2040PublicWorkbench {
   editCircuit(operation, ...args) {
     if (this.pauseProofOperation) this.rejectPauseProof('RP2040_BUDGET_PAUSE_CIRCUIT_CHANGED');
     if (!['deleteSelected', 'undo', 'redo', 'moveComponent', 'rotateComponent',
-      'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint',
-      'addMissingComponent', 'setComponentProperty', 'setComponentAppearance', 'setComponentAppearanceEdit',
+      'activateEndpoint', 'beginReconnect', 'beginBranch', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint', 'branchEndpoint', 'deleteBranch',
+      'newProject', 'addComponent', 'duplicateComponent', 'addMissingComponent', 'setComponentProperty', 'setComponentAppearance', 'setComponentAppearanceEdit',
       'setWireColor', 'setWireRoute', 'applyApiBatch', 'undoApi', 'redoApi'].includes(operation)) {
       return { ok: false, code: 'RP2040_CIRCUIT_OPERATION_INVALID' };
     }
@@ -728,6 +734,9 @@ export class Rp2040PublicWorkbench {
       activateEndpoint: `Cable changed (${result.code}). Executable authority retired; finish a valid circuit and build fresh firmware.`,
       connectEndpoints: `Cable created (${result.code}). Executable authority retired; finish a valid circuit and build fresh firmware.`,
       reconnectEndpoint: `Cable endpoint reconnected (${result.code}). Executable authority retired; finish a valid circuit and build fresh firmware.`,
+      newProject: 'New controller-only circuit started. Add supported parts and connect named pins.',
+      addComponent: `Added ${result.componentId} without inferred cables. Connect its named pins, then build fresh firmware.`,
+      duplicateComponent: `Duplicated ${result.sourceComponentId} as ${result.componentId} without inferred cables. Connect its named pins, then build fresh firmware.`,
       addMissingComponent: `Added ${result.componentId} without inferred cables. Connect its named pins, then build fresh firmware.`,
       setComponentProperty: `Updated ${result.componentId}.${result.key}. Electrical rules revalidated; build fresh firmware.`,
     };
@@ -774,6 +783,8 @@ export class Rp2040PublicWorkbench {
       RP2040_PICO_PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
     );
     const wiringReady = this.circuitEditor.snapshot().wireDraft.mode === 'none';
+    const authoring = validateBounded3v3AuthoringGraph({ board: RP2040_PICO_BOARD_DEFINITION,
+      components: this.project.circuit.components, nets: this.project.circuit.nets });
     const runtimeCircuit = this.modelLibraryImplementation.observeRp2040(
       this.project.circuit, this.lastRuntime, { modelLibraryLock: this.modelLibraryLock },
     );
@@ -796,6 +807,8 @@ export class Rp2040PublicWorkbench {
       ? 'Wiring in progress · executable and LED authority retired · finish or cancel before Build'
       : circuit.ok
       ? `Validated: GP0 pin 1 → ${circuit.model.resistorOhms} Ω → ${circuit.model.ledColor} LED anode/cathode → GND pin 3`
+      : authoring.ok
+      ? 'Authoring accepted · data-only components are structurally valid · runtime unavailable for this mixed graph'
       : describeCircuitGap(circuit.code);
     this.elements.externalLed?.classList.toggle('on', Boolean(runtimeCircuit.on));
     this.elements.externalLed?.setAttribute('aria-label', `External LED is ${runtimeCircuit.on ? 'on' : 'off'}`);

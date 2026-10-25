@@ -1,0 +1,157 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.esp32-c3-devmodule-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-x46-usart-rx-producer.1-current",
+    "manifestSha256": "8e4b68c47dd01cb1fe0867b1f32fbb7a0643e6fd4a3474e364417c8e4ad91c3a",
+    "implementationSha256": "3da666f7462e12455abb6b9bba7a4908f68ffcde58d8a6d7555658a94abf727d"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-esp32c3-public-project@1",
+    "name": "RC139 Desktop preservation check",
+    "profile": "board.esp32-c3-devmodule-v1",
+    "source": "// Copyright 2026 IntentForce\n// SPDX-License-Identifier: Apache-2.0\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(2, OUTPUT);\n  digitalWrite(2, HIGH);\n  Serial.println(\"C3_PUBLIC\");\n}\n\nvoid loop() {\n  delay(1000);\n}\n",
+    "circuit": {
+      "schema": "intent-mcu-esp32c3-public-circuit@1",
+      "boardProfile": "board.esp32-c3-devmodule-v1",
+      "components": [
+        {
+          "id": "c3-1",
+          "type": "board.esp32-c3-devmodule-v1",
+          "label": "ESP32-C3 GPIO2 profile",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "led-1",
+          "type": "led.basic-v1",
+          "label": "External red LED 1",
+          "properties": {
+            "color": "red"
+          },
+          "controls": {}
+        },
+        {
+          "id": "led-2",
+          "type": "led.basic-v1",
+          "label": "External red LED 2",
+          "properties": {
+            "color": "red"
+          },
+          "controls": {}
+        },
+        {
+          "id": "resistor-1",
+          "type": "resistor.fixed-v1",
+          "label": "220 Ω resistor 1",
+          "properties": {
+            "ohms": 220
+          },
+          "controls": {}
+        },
+        {
+          "id": "resistor-2",
+          "type": "resistor.fixed-v1",
+          "label": "470 Ω series resistor",
+          "properties": {
+            "ohms": 470
+          },
+          "controls": {}
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-led-2-ground",
+          "endpoints": [
+            {
+              "component": "c3-1",
+              "pin": "GND"
+            },
+            {
+              "component": "led-2",
+              "pin": "CATHODE"
+            }
+          ]
+        },
+        {
+          "id": "net-resistor-2-drive",
+          "endpoints": [
+            {
+              "component": "c3-1",
+              "pin": "GPIO2"
+            },
+            {
+              "component": "resistor-2",
+              "pin": "A"
+            }
+          ]
+        },
+        {
+          "id": "net-resistor-2-led-2",
+          "endpoints": [
+            {
+              "component": "led-2",
+              "pin": "ANODE"
+            },
+            {
+              "component": "resistor-2",
+              "pin": "B"
+            }
+          ]
+        }
+      ],
+      "layout": {
+        "positions": {
+          "c3-1": {
+            "x": 0.2,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "led-1": {
+            "x": 0.8,
+            "y": 0.48,
+            "rotation": 0
+          },
+          "led-2": {
+            "x": 0.88,
+            "y": 0.48,
+            "rotation": 0
+          },
+          "resistor-1": {
+            "x": 0.52,
+            "y": 0.27,
+            "rotation": 0
+          },
+          "resistor-2": {
+            "x": 0.615,
+            "y": 0.27,
+            "rotation": 0
+          }
+        },
+        "wireStyles": {
+          "net-led-2-ground": "#39dff2",
+          "net-resistor-2-drive": "#39dff2",
+          "net-resistor-2-led-2": "#39dff2"
+        },
+        "wireRoutes": {},
+        "componentAppearance": {
+          "schema": "intent-mcu-component-appearance@1",
+          "components": {}
+        }
+      }
+    }
+  }
+}

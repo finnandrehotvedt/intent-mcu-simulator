@@ -1,0 +1,162 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-pwm-led-short-routing.1-current",
+    "manifestSha256": "0907503c8a77e0ec7eda48079b138c23da2ba02be6f3ac2878ec1d64e64eacee",
+    "implementationSha256": "31613553d024e84e3ea14cfc12ed98441f70d8a410a3eddb755cb69830d2c06c"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "teach-lab-project@2",
+    "metadata": {
+      "name": "PWM pulse"
+    },
+    "boardProfile": "board.atmega328p-16mhz-v1",
+    "source": {
+      "files": [
+        {
+          "name": "main.ino",
+          "content": "void setup() { pinMode(3, OUTPUT); Serial.begin(9600); }\nvoid loop() {\n  analogWrite(3, 64); Serial.println(\"PWM 25\"); delay(300);\n  analogWrite(3, 191); Serial.println(\"PWM 75\"); delay(300);\n}"
+        }
+      ]
+    },
+    "circuit": {
+      "schema": "teach-lab-circuit@2",
+      "components": [
+        {
+          "id": "board-1",
+          "type": "board.atmega328p-16mhz-v1",
+          "label": "ATmega328P 16 MHz learning board",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "led-1",
+          "type": "led.basic-v1",
+          "label": "5 mm through-hole LED",
+          "properties": {
+            "color": "red"
+          },
+          "controls": {}
+        },
+        {
+          "id": "resistor-1",
+          "type": "resistor.fixed-v1",
+          "label": "Axial fixed resistor",
+          "properties": {
+            "ohms": 220
+          },
+          "controls": {}
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-example-1",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D3"
+            },
+            {
+              "component": "resistor-1",
+              "pin": "A"
+            }
+          ]
+        },
+        {
+          "id": "net-example-2",
+          "endpoints": [
+            {
+              "component": "led-1",
+              "pin": "ANODE"
+            },
+            {
+              "component": "resistor-1",
+              "pin": "B"
+            }
+          ]
+        },
+        {
+          "id": "net-example-3",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "GND1"
+            },
+            {
+              "component": "led-1",
+              "pin": "CATHODE"
+            }
+          ]
+        }
+      ],
+      "junctions": []
+    },
+    "layout": {
+      "positions": {
+        "board-1": {
+          "x": 0.27,
+          "y": 0.52,
+          "rotation": 0
+        },
+        "led-1": {
+          "x": 0.62,
+          "y": 0.3,
+          "rotation": 0
+        },
+        "resistor-1": {
+          "x": 0.82,
+          "y": 0.48,
+          "rotation": 0
+        }
+      },
+      "wireRoutes": {},
+      "wireStyles": {
+        "net-example-1": {
+          "color": "#39dff2"
+        },
+        "net-example-2": {
+          "color": "#39dff2"
+        },
+        "net-example-3": {
+          "color": "#303943"
+        }
+      },
+      "viewport": {
+        "zoom": 1,
+        "panX": 0,
+        "panY": 0
+      }
+    },
+    "instruments": {
+      "logicChannels": [
+        "D3"
+      ],
+      "selectedPin": "D13",
+      "serial": {
+        "baud": 9600,
+        "encoding": "utf-8",
+        "historyLimit": 512
+      }
+    },
+    "build": {
+      "status": "dirty",
+      "inputIdentity": null,
+      "artifactIdentity": null
+    }
+  }
+}
+

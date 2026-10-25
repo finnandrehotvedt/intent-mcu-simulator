@@ -112,7 +112,7 @@ function stm32F429ziBoard(svg, definition) {
     element('text', { x: 95, y: 174, class: 'stm32-editor-board-title', 'text-anchor': 'middle' }, 'STM32F429ZI'),
     element('text', { x: 95, y: 190, class: 'stm32-editor-board-subtitle', 'text-anchor': 'middle' }, 'ACTUAL RENODE PB0'),
     element('text', { x: 174, y: 64, class: 'stm32-editor-board-pin-label', 'text-anchor': 'end' }, 'CN11·34 PB0'),
-    element('text', { x: 174, y: 160, class: 'stm32-editor-board-pin-label', 'text-anchor': 'end' }, 'CN11·35 GND'),
+    element('text', { x: 174, y: 160, class: 'stm32-editor-board-pin-label', 'text-anchor': 'end' }, 'CN11·19 GND'),
   );
   for (let row = 0; row < 14; row += 1) {
     const y = 29 + row * 14;
@@ -198,6 +198,25 @@ function button(svg, definition) {
   drawTerminals(svg, definition, 3);
 }
 
+function groundReference3v3(svg, definition) {
+  append(svg,
+    element('line', { x1: 50, y1: 8, x2: 50, y2: 40, class: 'metal-lead' }),
+    element('line', { x1: 24, y1: 40, x2: 76, y2: 40, class: 'switch-common' }),
+    element('line', { x1: 32, y1: 50, x2: 68, y2: 50, class: 'switch-common' }),
+    element('line', { x1: 41, y1: 60, x2: 59, y2: 60, class: 'switch-common' }),
+    element('text', { x: 50, y: 74, 'text-anchor': 'middle', class: 'pico-board-subtitle' }, '0 V GROUND'));
+  drawTerminals(svg, definition, 3);
+}
+
+function toggleSwitch3v3(svg, definition) {
+  append(svg,
+    element('circle', { cx: 10, cy: 39, r: 5, class: 'button-frame' }),
+    element('circle', { cx: 90, cy: 39, r: 5, class: 'button-frame' }),
+    element('line', { x1: 15, y1: 37, x2: 75, y2: 18, class: 'switch-common' }),
+    element('text', { x: 50, y: 70, 'text-anchor': 'middle', class: 'pico-board-subtitle' }, 'OPEN · DATA ONLY'));
+  drawTerminals(svg, definition, 3);
+}
+
 function potentiometer(svg, definition) {
   append(svg,
     element('rect', { x: 18, y: 30, width: 74, height: 52, rx: 8, class: 'pot-body' }),
@@ -228,6 +247,8 @@ const renderers = Object.freeze({
   'resistor-axial': resistor,
   'led-through-hole': led,
   'button-tactile': button,
+  'ground-reference-3v3': groundReference3v3,
+  'switch-toggle-3v3': toggleSwitch3v3,
   'potentiometer-rotary': potentiometer,
   'instrument-serial': serialInstrument,
 });

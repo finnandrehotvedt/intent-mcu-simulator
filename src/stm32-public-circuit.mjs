@@ -4,11 +4,12 @@
 import { LED_FORWARD_VOLTS, defaultProperties } from './component-catalog.mjs';
 import { CURRENT_MODEL_LIBRARY_LOCK, resolveModelLibrary, validateProjectModelLibrary } from './model-library.mjs';
 import {
-  NamedSeriesLedCircuitEditor, createSeriesLedComponentPolicy, createSeriesLedConnectionPolicy,
+  NamedSeriesLedCircuitEditor, createSeriesLedComponentPolicy, createSeriesLedConnectionPolicy, normalizeBoundedIdCounters,
 } from './named-series-led-circuit-editor.mjs';
 import { normalizeStoredRoute } from './route-model.mjs';
 import { emptyComponentAppearance, normalizeComponentAppearance } from './component-appearance.mjs';
 import { exactKeys } from './strict-json.mjs';
+import { GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE, validateBounded3v3AuthoringGraph } from './bounded-3v3-authoring-contracts.mjs';
 
 export const STM32_PUBLIC_CIRCUIT_SCHEMA = 'intent-mcu-stm32-public-circuit@1';
 export const STM32_PUBLIC_PROFILE = 'board.stm32f429zi-nucleo144-v1';
@@ -17,8 +18,16 @@ export const STM32_LED_CURRENT_LIMIT_AMPS = 0.012;
 export const STM32_PIN_MAP = Object.freeze({
   PB0: Object.freeze({ signal: 'PB0', connector: 'CN11', physicalPin: 34,
     voltage: 3.3, capability: 'digital-output' }),
-  GND: Object.freeze({ signal: 'GND', connector: 'CN11', physicalPin: 35,
+  GND: Object.freeze({ signal: 'GND', connector: 'CN11', physicalPin: 19,
     voltage: 0, capability: 'ground-reference' }),
+});
+export const STM32_AUTHORING_PIN_MAP_V2 = Object.freeze({
+  source: Object.freeze({ url: 'https://www.st.com/resource/en/user_manual/dm00244518-stm32-nucleo-144-boards-mb1137-stmicroelectronics.pdf',
+    document: 'UM1974', revision: 'Rev 11, August 2025', table: 'Table 21, page 70' }),
+  migration: Object.freeze({ logicalPin: 'GND', fromClaim: 'CN11-35', to: 'CN11-19', reason: 'CN11-35 is PC2.' }),
+  pins: Object.freeze({ PB0: { connector: 'CN11', physicalPin: 34 }, PB1: { connector: 'CN12', physicalPin: 24 },
+    PB7: { connector: 'CN11', physicalPin: 21 }, GND: { connector: 'CN11', physicalPin: 19 },
+    GND20: { connector: 'CN11', physicalPin: 20 }, GND8: { connector: 'CN11', physicalPin: 8 } }),
 });
 
 const boardPin = (id, label, role, signals, x, y, constraints) => Object.freeze({
@@ -27,15 +36,23 @@ const boardPin = (id, label, role, signals, x, y, constraints) => Object.freeze(
 });
 
 export const STM32_BOARD_DEFINITION = Object.freeze({
-  family: 'board.stm32f429zi-learning-profile', variant: 'public-bounded-pb0-3v3',
-  type: STM32_PUBLIC_PROFILE, version: 1,
+  family: 'board.stm32f429zi-learning-profile', variant: 'authoring-multipin-runtime-pb0-3v3',
+  type: STM32_PUBLIC_PROFILE, version: 2,
   displayName: 'STM32F429ZI learning profile board', manufacturer: 'Intent Learning',
   partNumber: 'IL-STM32F429ZI-PB0-PROFILE',
   pins: Object.freeze([
     boardPin('PB0', 'PB0 · CN11 pin 34', 'digital-io', ['digital.output'], 0.96, 0.31,
       { voltageMin: 0, voltageMax: 3.3, connector: 'CN11', physicalPin: 34 }),
-    boardPin('GND', 'GND · CN11 pin 35', 'ground', ['ground.reference'], 0.96, 0.72,
-      { connector: 'CN11', physicalPin: 35 }),
+    boardPin('PB1', 'PB1 · CN12 pin 24 · authoring only', 'digital-io', ['digital.output'], 0.04, 0.42,
+      { voltageMin: 0, voltageMax: 3.3, connector: 'CN12', physicalPin: 24, authoringOnly: true }),
+    boardPin('PB7', 'PB7 · CN11 pin 21 · authoring only', 'digital-io', ['digital.output'], 0.96, 0.52,
+      { voltageMin: 0, voltageMax: 3.3, connector: 'CN11', physicalPin: 21, authoringOnly: true }),
+    boardPin('GND', 'GND · CN11 pin 19 · corrected metadata', 'ground', ['ground.reference'], 0.96, 0.72,
+      { connector: 'CN11', physicalPin: 19, migratedFromIncorrectClaim: 'CN11-35' }),
+    boardPin('GND20', 'GND · CN11 pin 20 · authoring only', 'ground', ['ground.reference'], 0.96, 0.62,
+      { connector: 'CN11', physicalPin: 20, authoringOnly: true }),
+    boardPin('GND8', 'GND · CN11 pin 8 · authoring only', 'ground', ['ground.reference'], 0.04, 0.72,
+      { connector: 'CN11', physicalPin: 8, authoringOnly: true }),
   ]),
   propertyKeys: Object.freeze([]), controlKeys: Object.freeze([]), propertySchema: Object.freeze({}),
   modelRef: 'model.stm32f429zi-pb0-renode-observation-v1', internalTerminalGroups: Object.freeze([]),
@@ -71,11 +88,15 @@ const RESISTOR = 'resistor.fixed-v1';
 const LED = 'led.basic-v1';
 const resolveNetId = createSeriesLedConnectionPolicy({
   boardType: BOARD, sourcePin: 'PB0', groundPin: 'GND', sourceNetId: 'net-pb0',
+  authoringSourcePins: ['PB0', 'PB1', 'PB7'], authoringGroundPins: ['GND', 'GND20', 'GND8'],
 });
 const TYPE_PINS = Object.freeze({
-  [BOARD]: new Set(['PB0', 'GND']),
+  [BOARD]: new Set(Object.keys(STM32_AUTHORING_PIN_MAP_V2.pins)),
   [RESISTOR]: new Set(['A', 'B']),
   [LED]: new Set(['ANODE', 'CATHODE']),
+  [GROUND_REFERENCE_3V3_TYPE]: new Set(['GND']),
+  [MOMENTARY_BUTTON_3V3_TYPE]: new Set(['A', 'B']),
+  [TOGGLE_SWITCH_3V3_TYPE]: new Set(['A', 'B']),
 });
 const COMPONENT_POLICY = createSeriesLedComponentPolicy({
   profile: BOARD, boardId: 'stm32-1', boardLabel: 'STM32F429ZI PB0 profile',
@@ -84,6 +105,7 @@ const COMPONENT_POLICY = createSeriesLedComponentPolicy({
   nominalVolts: STM32_NOMINAL_VOLTS,
   ledCurrentLimitAmps: STM32_LED_CURRENT_LIMIT_AMPS,
   ledForwardVolts: LED_FORWARD_VOLTS,
+  boardPins: Object.keys(STM32_AUTHORING_PIN_MAP_V2.pins),
 });
 const clone = (value) => structuredClone(value);
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
@@ -138,6 +160,9 @@ function normalizeComponent(value) {
   if (value.type === LED && (!exactKeys(value.properties, ['color']) || !Object.hasOwn(LED_FORWARD_VOLTS, value.properties.color))) {
     throw Object.assign(new Error('STM32_CIRCUIT_LED_INVALID'), { code: 'STM32_CIRCUIT_LED_INVALID' });
   }
+  if (value.type === GROUND_REFERENCE_3V3_TYPE && !exactKeys(value.properties, [])) throw Object.assign(new Error('STM32_CIRCUIT_COMPONENT_INVALID'), { code: 'STM32_CIRCUIT_COMPONENT_INVALID' });
+  if ([MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE].includes(value.type)
+      && (!exactKeys(value.properties, ['defaultClosed']) || typeof value.properties.defaultClosed !== 'boolean')) throw Object.assign(new Error('STM32_CIRCUIT_COMPONENT_INVALID'), { code: 'STM32_CIRCUIT_COMPONENT_INVALID' });
   return clone(value);
 }
 
@@ -153,11 +178,15 @@ export function normalizeStm32CircuitDraft(value) {
   if (!exactKeys(value, ['schema', 'boardProfile', 'components', 'nets', 'layout'])
       || value.schema !== STM32_PUBLIC_CIRCUIT_SCHEMA || value.boardProfile !== STM32_PUBLIC_PROFILE
       || !Array.isArray(value.components) || !Array.isArray(value.nets)
-      || value.components.length > 4 || value.nets.length > 4
+      || value.components.length > 17 || value.nets.length > 24
       || !(exactKeys(value.layout, ['positions', 'wireStyles'])
         || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes'])
         || exactKeys(value.layout, ['positions', 'wireStyles', 'componentAppearance'])
-        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes', 'componentAppearance']))
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes', 'componentAppearance'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'idCounters'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes', 'idCounters'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'componentAppearance', 'idCounters'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes', 'componentAppearance', 'idCounters']))
       || value.layout.positions === null || Array.isArray(value.layout.positions)
       || value.layout.wireStyles === null || Array.isArray(value.layout.wireStyles)) {
     throw Object.assign(new Error('STM32_CIRCUIT_SHAPE'), { code: 'STM32_CIRCUIT_SHAPE' });
@@ -179,7 +208,7 @@ export function normalizeStm32CircuitDraft(value) {
   const endpoints = new Set();
   const nets = value.nets.map((net) => {
     if (!exactKeys(net, ['id', 'endpoints']) || typeof net.id !== 'string' || !ID.test(net.id)
-        || netIds.has(net.id) || !Array.isArray(net.endpoints) || net.endpoints.length !== 2) {
+        || netIds.has(net.id) || !Array.isArray(net.endpoints) || net.endpoints.length < 2 || net.endpoints.length > 8) {
       throw Object.assign(new Error('STM32_CIRCUIT_NET_INVALID'), { code: 'STM32_CIRCUIT_NET_INVALID' });
     }
     netIds.add(net.id);
@@ -230,8 +259,13 @@ export function normalizeStm32CircuitDraft(value) {
   if (!componentAppearance) {
     throw Object.assign(new Error('STM32_CIRCUIT_LAYOUT_INVALID'), { code: 'STM32_CIRCUIT_LAYOUT_INVALID' });
   }
+  const idCounters = normalizeBoundedIdCounters(value.layout.idCounters, components);
+  const authoring = validateBounded3v3AuthoringGraph({ board: STM32_BOARD_DEFINITION, components, nets });
+  if (!authoring.ok) throw Object.assign(new Error(`STM32_${authoring.code}`), {
+    code: `STM32_${authoring.code}`, details: authoring.details,
+  });
   return { schema: STM32_PUBLIC_CIRCUIT_SCHEMA, boardProfile: STM32_PUBLIC_PROFILE,
-    components, nets, layout: { positions, wireStyles, wireRoutes, componentAppearance } };
+    components, nets, layout: { positions, wireStyles, wireRoutes, componentAppearance, idCounters } };
 }
 
 function hasPair(net, left, right) {
@@ -251,10 +285,15 @@ export function validateStm32Circuit(value, options = {}) {
   const boards = draft.components.filter((item) => item.type === BOARD);
   if (boards.length !== 1) return failure('STM32_BOARD_COUNT');
   const board = boards[0];
+  const authoring = validateBounded3v3AuthoringGraph({ board: STM32_BOARD_DEFINITION, components: draft.components, nets: draft.nets });
+  if (!authoring.ok) return failure(`STM32_${authoring.code}`, authoring.details);
   const resistor = draft.components.find((item) => item.type === RESISTOR);
   const led = draft.components.find((item) => item.type === LED);
   if (!resistor) return failure('STM32_SERIES_RESISTOR_REQUIRED');
   if (!led) return failure('STM32_PATH_OPEN');
+  if (draft.components.length !== 3 || draft.components.filter((item) => item.type === RESISTOR).length !== 1
+      || draft.components.filter((item) => item.type === LED).length !== 1
+      || draft.nets.some((net) => net.endpoints.length !== 2)) return failure('STM32_EXECUTABLE_PROJECTION_UNAVAILABLE');
   const source = `${board.id}.PB0`;
   const ground = `${board.id}.GND`;
   const ledAnode = `${led.id}.ANODE`;
@@ -287,7 +326,8 @@ export function validateStm32Circuit(value, options = {}) {
   }
   return { ok: true, code: 'OK', draft, model: {
     sourcePin: 'PB0', sourceAnchor: 'PB0', sourceConnector: 'CN11', sourcePhysicalPin: 34,
-    groundAnchor: 'GND', groundConnector: 'CN11', groundPhysicalPin: 35,
+    groundAnchor: 'GND', groundConnector: STM32_PIN_MAP.GND.connector,
+    groundPhysicalPin: STM32_PIN_MAP.GND.physicalPin,
     nominalVolts: STM32_NOMINAL_VOLTS,
     resistorId: resistor.id, resistorOhms: resistor.properties.ohms,
     ledId: led.id, ledColor: led.properties.color, forwardVolts, peakCurrentAmps,

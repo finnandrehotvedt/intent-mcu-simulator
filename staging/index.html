@@ -370,6 +370,7 @@
           <label for="pico-project-name">Local project name</label>
           <input id="pico-project-name" type="text" maxlength="80" value="Pico GPIO0 source project" autocomplete="off">
           <div class="pico-project-actions">
+            <button id="pico-new-circuit" type="button">New empty circuit</button>
             <button id="pico-save" type="button">Download copy</button>
             <button id="pico-open" type="button">Open local project</button>
             <button id="pico-native-open" class="native-file-action" type="button" hidden>Open &amp; connect…</button>
@@ -418,6 +419,9 @@
             <button id="pico-fit" type="button">Fit</button>
             <button id="pico-fullscreen" type="button" aria-pressed="false">Fullscreen</button>
             <button id="pico-reconnect" type="button" disabled>Reconnect endpoint</button>
+            <button id="pico-branch" type="button" disabled>Add branch</button>
+            <select id="pico-branch-endpoint" aria-label="Branch endpoint to remove" disabled><option value="">Choose branch endpoint</option></select>
+            <button id="pico-remove-branch" type="button" disabled>Remove endpoint</button>
             <button id="pico-add-bend" type="button" disabled>Add bend</button>
             <button id="pico-route-back" type="button" disabled aria-label="Move selected cable segment backward">Nudge −</button>
             <button id="pico-route-forward" type="button" disabled aria-label="Move selected cable segment forward">Nudge +</button>
@@ -452,6 +456,7 @@
           <label for="c3-project-name">Local project name</label>
           <input id="c3-project-name" type="text" maxlength="80" value="ESP32-C3 GPIO2 source project" autocomplete="off">
           <div class="c3-project-actions">
+            <button id="c3-new-circuit" type="button">New empty circuit</button>
             <button id="c3-save" type="button">Download copy</button>
             <button id="c3-open" type="button">Open local project</button>
             <button id="c3-native-open" class="native-file-action" type="button" hidden>Open &amp; connect…</button>
@@ -498,6 +503,9 @@
             <button id="c3-fit" type="button">Fit</button>
             <button id="c3-fullscreen" type="button" aria-pressed="false">Fullscreen</button>
             <button id="c3-reconnect" type="button" disabled>Reconnect endpoint</button>
+            <button id="c3-branch" type="button" disabled>Add branch</button>
+            <select id="c3-branch-endpoint" aria-label="Branch endpoint to remove" disabled><option value="">Choose branch endpoint</option></select>
+            <button id="c3-remove-branch" type="button" disabled>Remove endpoint</button>
             <button id="c3-add-bend" type="button" disabled>Add bend</button>
             <button id="c3-route-back" type="button" disabled aria-label="Move selected cable segment backward">Nudge −</button>
             <button id="c3-route-forward" type="button" disabled aria-label="Move selected cable segment forward">Nudge +</button>
@@ -533,6 +541,7 @@
           <label for="stm32-project-name">Local project name</label>
           <input id="stm32-project-name" type="text" maxlength="80" value="STM32F429 PB0 source project" autocomplete="off">
           <div class="stm32-project-actions">
+            <button id="stm32-new-circuit" type="button">New empty circuit</button>
             <button id="stm32-save" type="button">Download copy</button>
             <button id="stm32-open" type="button">Open local project</button>
             <button id="stm32-native-open" class="native-file-action" type="button" hidden>Open &amp; connect…</button>
@@ -563,7 +572,7 @@
           </dl>
         </section>
         <section class="stm32-circuit-pane" aria-label="Named STM32F429ZI PB0 teaching circuit">
-          <header class="pico-editor-heading"><div><strong>Editable ideal teaching circuit</strong><small>Named PB0 CN11 pin 34 and GND CN11 pin 35 anchors</small></div><span id="stm32-circuit-selection">Nothing selected</span></header>
+          <header class="pico-editor-heading"><div><strong>Editable ideal teaching circuit</strong><small>Named PB0 CN11 pin 34 and GND CN11 pin 19 anchors</small></div><span id="stm32-circuit-selection">Nothing selected</span></header>
           <section class="bounded-parts-panel" aria-labelledby="stm32-parts-title">
             <header><div><strong id="stm32-parts-title">Supported parts</strong><small>Filtered for this bounded STM32 profile</small></div><span>3.3 V model</span></header>
             <div id="stm32-parts-list" class="bounded-parts-list" role="list"></div>
@@ -580,6 +589,9 @@
             <button id="stm32-fit" type="button">Fit</button>
             <button id="stm32-fullscreen" type="button" aria-pressed="false">Fullscreen</button>
             <button id="stm32-reconnect" type="button" disabled>Reconnect endpoint</button>
+            <button id="stm32-branch" type="button" disabled>Add branch</button>
+            <select id="stm32-branch-endpoint" aria-label="Branch endpoint to remove" disabled><option value="">Choose branch endpoint</option></select>
+            <button id="stm32-remove-branch" type="button" disabled>Remove endpoint</button>
             <button id="stm32-add-bend" type="button" disabled>Add bend</button>
             <button id="stm32-route-back" type="button" disabled aria-label="Move selected cable segment backward">Nudge −</button>
             <button id="stm32-route-forward" type="button" disabled aria-label="Move selected cable segment forward">Nudge +</button>
@@ -592,7 +604,7 @@
             <svg id="stm32-editor-wires" class="pico-editor-wires" role="group" aria-label="Orthogonal STM32 named-pin wires"></svg>
             <div id="stm32-editor-components" class="pico-editor-components"></div>
           </div>
-          <p id="stm32-circuit-state" class="truth">Named path: PB0 CN11 pin 34 → 220 Ω → LED → GND CN11 pin 35 · awaiting actual Renode observation</p>
+          <p id="stm32-circuit-state" class="truth">Named path: PB0 CN11 pin 34 → 220 Ω → LED → GND CN11 pin 19 · awaiting actual Renode observation</p>
           <p class="pico-editor-help">If the resistor or LED is missing after Save/Open, add it from Supported parts, then connect its named pins. Select a cable and choose Reconnect endpoint to move one end. Escape cancels. Every accepted edit requires a fresh valid Build.</p>
           <div class="stm32-terminal-card"><strong>Actual Renode PB0 / USART3 evidence</strong><pre id="stm32-terminal" aria-live="polite">No Renode execution yet.</pre></div>
           <p class="stm32-model-label"><strong>Runtime truth:</strong> PB0 and USART3 are observed in actual Renode. <strong>Circuit truth:</strong> the external resistor/LED path is an ideal educational rendering.</p>

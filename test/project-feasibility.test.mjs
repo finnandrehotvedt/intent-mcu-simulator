@@ -32,5 +32,5 @@ test('X04 preserves project-model truth and profile-specific component availabil
   assert.equal(result.items[0].authorityStatus, 'project-model');
   assert.equal(result.items[1].state, 'available');
   assert.equal(result.items[2].state, 'unsupported');
-  assert.match(result.items[2].reason, /fixed board, resistor and LED/u);
+  assert.match(result.items[2].reason, /does not yet admit this component model/u);
 });

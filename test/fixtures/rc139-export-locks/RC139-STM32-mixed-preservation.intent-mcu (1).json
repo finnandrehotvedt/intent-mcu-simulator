@@ -1,0 +1,154 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.stm32f429zi-nucleo144-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-x46-usart-rx-producer.1-current",
+    "manifestSha256": "459064d5d903f2216d210a2bc36fa63202bd8ea7d2c803f7f6d7e07708e66475",
+    "implementationSha256": "8bfaa600faad662d5dac7771bcfe68cf46b935db8b74f5e45ea5c7b7c1c34a95"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-stm32-public-project@2",
+    "name": "RC139-STM32-mixed-preservation",
+    "profile": "board.stm32f429zi-nucleo144-v1",
+    "source": "/* Intent MCU Simulator public STM32F429 source v1 */\nint main(void)\n{\n  intent_pb0_output(1u);\n  intent_usart3_text(\"STM32 PUBLIC\");\n  intent_halt();\n}\n",
+    "circuit": {
+      "schema": "intent-mcu-stm32-public-circuit@1",
+      "boardProfile": "board.stm32f429zi-nucleo144-v1",
+      "components": [
+        {
+          "id": "led-1",
+          "type": "led.basic-v1",
+          "label": "External red LED",
+          "properties": {
+            "color": "red"
+          },
+          "controls": {}
+        },
+        {
+          "id": "resistor-1",
+          "type": "resistor.fixed-v1",
+          "label": "220 Ω series resistor",
+          "properties": {
+            "ohms": 220
+          },
+          "controls": {}
+        },
+        {
+          "id": "stm32-1",
+          "type": "board.stm32f429zi-nucleo144-v1",
+          "label": "STM32F429ZI PB0 profile",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "switch-1",
+          "type": "switch.toggle-3v3-v1",
+          "label": "Toggle switch 1",
+          "properties": {
+            "defaultClosed": false
+          },
+          "controls": {}
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-ground",
+          "endpoints": [
+            {
+              "component": "led-1",
+              "pin": "CATHODE"
+            },
+            {
+              "component": "stm32-1",
+              "pin": "GND"
+            },
+            {
+              "component": "switch-1",
+              "pin": "A"
+            }
+          ]
+        },
+        {
+          "id": "net-pb0",
+          "endpoints": [
+            {
+              "component": "resistor-1",
+              "pin": "A"
+            },
+            {
+              "component": "stm32-1",
+              "pin": "PB0"
+            }
+          ]
+        },
+        {
+          "id": "net-series",
+          "endpoints": [
+            {
+              "component": "led-1",
+              "pin": "ANODE"
+            },
+            {
+              "component": "resistor-1",
+              "pin": "B"
+            }
+          ]
+        }
+      ],
+      "layout": {
+        "positions": {
+          "led-1": {
+            "x": 0.82,
+            "y": 0.48,
+            "rotation": 0
+          },
+          "resistor-1": {
+            "x": 0.57,
+            "y": 0.27,
+            "rotation": 0
+          },
+          "stm32-1": {
+            "x": 0.2,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "switch-1": {
+            "x": 0.58,
+            "y": 0.72,
+            "rotation": 0
+          }
+        },
+        "wireStyles": {
+          "net-ground": "#202a34",
+          "net-pb0": "#e2ab1b",
+          "net-series": "#e13e51"
+        },
+        "wireRoutes": {},
+        "componentAppearance": {
+          "schema": "intent-mcu-component-appearance@1",
+          "components": {}
+        },
+        "idCounters": {
+          "button": 0,
+          "ground": 0,
+          "led": 1,
+          "resistor": 1,
+          "switch": 1
+        }
+      }
+    }
+  }
+}

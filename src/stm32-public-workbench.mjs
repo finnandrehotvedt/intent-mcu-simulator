@@ -7,8 +7,9 @@ import {
   STM32_RUN_RESPONSE_SCHEMA, STM32_RUN_SCHEMA, exactKeys, sourceForStm32, validateStm32Source,
 } from '../stm32/protocol.mjs';
 import {
-  Stm32CircuitEditor, createStm32CircuitDraft, normalizeStm32CircuitDraft,
+  Stm32CircuitEditor, STM32_BOARD_DEFINITION, createStm32CircuitDraft, normalizeStm32CircuitDraft,
 } from './stm32-public-circuit.mjs';
+import { validateBounded3v3AuthoringGraph } from './bounded-3v3-authoring-contracts.mjs';
 import { boundedPolicyDiagnostic, normalizeSourceDiagnostics } from './source-diagnostics.mjs';
 import { isRetryableCapacityCode, retryGuidanceFromResponse, retryMessage, retryResultFields } from './retry-guidance.mjs';
 import {
@@ -28,10 +29,10 @@ const clone = (value) => value === null || value === undefined ? value : structu
 function describeCircuitGap(code) {
   return ({
     STM32_SERIES_RESISTOR_REQUIRED: 'Missing resistor: add the supported series resistor between PB0 and the LED anode path.',
-    STM32_GROUND_REQUIRED: 'Missing ground: connect LED cathode to STM32 GND CN11 pin 35.',
+    STM32_GROUND_REQUIRED: 'Missing ground: connect LED cathode to STM32 GND CN11 pin 19.',
     STM32_LED_REVERSE_POLARITY: 'LED polarity is reversed: anode must face PB0 through the resistor; cathode must face GND.',
     STM32_LED_OVERCURRENT: 'LED current is above the teaching limit: increase the series resistance.',
-    STM32_PATH_OPEN: 'Open LED path: complete PB0 CN11 pin 34 → resistor → LED anode, then LED cathode → GND CN11 pin 35.',
+    STM32_PATH_OPEN: 'Open LED path: complete PB0 CN11 pin 34 → resistor → LED anode, then LED cathode → GND CN11 pin 19.',
   })[code] ?? `Circuit rejected (${code}). Inspect the highlighted supported parts and named pins.`;
 }
 
@@ -171,6 +172,8 @@ export class Stm32PublicWorkbench {
     );
     const modelLibrary = modelLibraryExecutionIdentity(this.modelLibraryLock);
     const wiringReady = this.circuitEditor.snapshot().wireDraft.mode === 'none';
+    const authoring = validateBounded3v3AuthoringGraph({ board: STM32_BOARD_DEFINITION,
+      components: this.project.circuit.components, nets: this.project.circuit.nets });
     return {
       profile: STM32_PROFILE, phase: this.phase, active: this.active, revision: this.revision,
       message: this.message, project: clone(this.project), artifact: clone(this.artifact),
@@ -178,6 +181,8 @@ export class Stm32PublicWorkbench {
       runnable: Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok && wiringReady),
       circuitAccepted: circuit.ok && wiringReady,
       circuitCode: wiringReady ? circuit.code : 'STM32_WIRING_IN_PROGRESS',
+      authoringAccepted: authoring.ok && wiringReady,
+      authoringCode: wiringReady ? authoring.code : 'STM32_WIRING_IN_PROGRESS',
       runtime: clone(this.result), actualRenodeExecution: true, actualPb0Observed: true,
       circuitModel: 'Ideal teaching LED path driven by Renode-observed PB0',
       transientExecutableMemoryOnly: true, durableServerProject: false,
@@ -269,7 +274,7 @@ export class Stm32PublicWorkbench {
     if (!circuit.ok) {
       this.wipeArtifact();
       this.phase = 'blocked';
-      this.message = `Circuit blocked (${circuit.code}). Complete the exact PB0 CN11 pin 34 → resistor → LED → GND CN11 pin 35 path.`;
+      this.message = `Circuit blocked (${circuit.code}). Complete the exact PB0 CN11 pin 34 → resistor → LED → GND CN11 pin 19 path.`;
       this.render();
       return { ok: false, code: circuit.code };
     }
@@ -444,8 +449,8 @@ export class Stm32PublicWorkbench {
   }
   editCircuit(operation, ...args) {
     if (!['deleteSelected', 'undo', 'redo', 'moveComponent', 'rotateComponent',
-      'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint',
-      'addMissingComponent', 'setComponentProperty', 'setComponentAppearance', 'setComponentAppearanceEdit',
+      'activateEndpoint', 'beginReconnect', 'beginBranch', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint', 'branchEndpoint', 'deleteBranch',
+      'newProject', 'addComponent', 'duplicateComponent', 'addMissingComponent', 'setComponentProperty', 'setComponentAppearance', 'setComponentAppearanceEdit',
       'setWireColor', 'setWireRoute', 'applyApiBatch', 'undoApi', 'redoApi'].includes(operation)) {
       return { ok: false, code: 'STM32_CIRCUIT_OPERATION_INVALID' };
     }
@@ -479,6 +484,9 @@ export class Stm32PublicWorkbench {
       activateEndpoint: `Cable changed (${result.code}). ELF and LED authority retired; finish a valid circuit and build fresh.`,
       connectEndpoints: `Cable created (${result.code}). ELF and LED authority retired; finish a valid circuit and build fresh.`,
       reconnectEndpoint: `Cable endpoint reconnected (${result.code}). ELF and LED authority retired; finish a valid circuit and build fresh.`,
+      newProject: 'New controller-only circuit started. Add supported parts and connect named pins.',
+      addComponent: `Added ${result.componentId} without inferred cables. Connect its named pins, then build fresh.`,
+      duplicateComponent: `Duplicated ${result.sourceComponentId} as ${result.componentId} without inferred cables. Connect its named pins, then build fresh.`,
       addMissingComponent: `Added ${result.componentId} without inferred cables. Connect its named pins, then build fresh.`,
       setComponentProperty: `Updated ${result.componentId}.${result.key}. Electrical rules revalidated; build fresh.`,
     };
@@ -532,6 +540,8 @@ export class Stm32PublicWorkbench {
       STM32_PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
     );
     const wiringReady = this.circuitEditor.snapshot().wireDraft.mode === 'none';
+    const authoring = validateBounded3v3AuthoringGraph({ board: STM32_BOARD_DEFINITION,
+      components: this.project.circuit.components, nets: this.project.circuit.nets });
     const runnable = Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok && wiringReady);
     this.elements.name.value = this.project.name;
     if (this.elements.source.value !== this.project.source) this.elements.source.value = this.project.source;
@@ -551,10 +561,12 @@ export class Stm32PublicWorkbench {
     this.elements.circuitState.textContent = !wiringReady
       ? 'Wiring in progress · ELF and LED authority retired · finish or cancel before Build'
       : !circuit.ok
-      ? `${describeCircuitGap(circuit.code)} Stale ELF and LED authority was retired.`
+      ? authoring.ok
+        ? 'Authoring accepted · data-only components are structurally valid · runtime unavailable for this mixed graph'
+        : `${describeCircuitGap(circuit.code)} Stale ELF and LED authority was retired.`
       : this.result
         ? `Renode observed PB0 ${on ? 'HIGH' : 'LOW'} · ideal ${circuit.model.resistorOhms} Ω / ${circuit.model.ledColor} LED teaching path renders ${on ? 'ON' : 'OFF'}`
-        : `Named path: PB0 CN11 pin 34 → ${circuit.model.resistorOhms} Ω → ${circuit.model.ledColor} LED → GND CN11 pin 35 · awaiting actual Renode observation`;
+        : `Named path: PB0 CN11 pin 34 → ${circuit.model.resistorOhms} Ω → ${circuit.model.ledColor} LED → GND CN11 pin 19 · awaiting actual Renode observation`;
     this.onDiagnostics({ profile: STM32_PROFILE, revision: this.revision, source: this.project.source,
       file: 'main.c', diagnostics: clone(this.diagnostics) });
     this.publish();

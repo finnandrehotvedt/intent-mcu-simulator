@@ -25,6 +25,8 @@ export const ARTWORK_RENDERER_IDS = Object.freeze([
   'resistor-axial',
   'led-through-hole',
   'button-tactile',
+  'ground-reference-3v3',
+  'switch-toggle-3v3',
   'potentiometer-rotary',
   'instrument-serial',
 ]);

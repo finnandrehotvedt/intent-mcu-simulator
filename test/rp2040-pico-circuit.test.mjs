@@ -36,7 +36,7 @@ test('officially named GPIO0 and GND anchors define one 3.3 V external LED path'
 });
 
 test('wrong pin, open path, ground, polarity, resistor and overcurrent fail closed', () => {
-  const wrongPin = mutate((draft) => { draft.nets[0].endpoints[0].pin = 'GP1'; });
+  const wrongPin = mutate((draft) => { draft.nets[0].endpoints[0].pin = 'NOT_A_PIN'; });
   assert.equal(validateRp2040PicoCircuit(wrongPin).code, 'RP2040_PIN_UNPROVEN');
 
   const disconnected = mutate((draft) => { draft.nets = draft.nets.filter((net) => net.id !== 'net-series'); delete draft.layout.wireStyles['net-series']; });

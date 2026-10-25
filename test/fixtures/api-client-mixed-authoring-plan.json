@@ -1,0 +1,27 @@
+{
+  "schema": "intent-mcu-browser-session-plan@1",
+  "commands": [
+    {
+      "command": "component.add",
+      "id": "button-1",
+      "type": "button.momentary-3v3-v1",
+      "position": { "x": 0.72, "y": 0.58, "rotation": 0 }
+    },
+    {
+      "command": "component.duplicate",
+      "component_id": "button-1",
+      "id": "button-2",
+      "position": { "x": 0.82, "y": 0.7, "rotation": 0 }
+    },
+    {
+      "command": "wire.branch.connect",
+      "net_id": "net-ground",
+      "endpoint": { "component": "button-1", "pin": "A" }
+    },
+    {
+      "command": "wire.disconnect",
+      "net_id": "net-ground",
+      "endpoint": { "component": "button-1", "pin": "A" }
+    }
+  ]
+}

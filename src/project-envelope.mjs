@@ -47,6 +47,26 @@ const PUBLISHED_RECOVERY_LOCKS = Object.freeze([
     libraryId: 'intent-mcu-public-models', version: '2.0.0-x46-usart-rx-producer.1-current',
     manifestSha256: '709444f9c162942ebe960f43cdc8147300c93877100a34a5630a1e1c7bd63c4d',
     implementationSha256: '7dfa75c67b84ba2b1f04002f2c1ee5d6a3c84dea94a263a09adb47a277bde71d' }),
+  Object.freeze({ release: '1.1.0-rc.138', schema: 'intent-mcu-model-library-lock@2',
+    libraryId: 'intent-mcu-public-models', version: '2.0.0-x46-usart-rx-producer.1-current',
+    manifestSha256: '1be8d872f3fa67a61afead436887686c57082dfd5ad68dc20511c12c80a4a0cb',
+    implementationSha256: 'aa4b97113d6521d0e04b45da8b5200ef4ee98e65ccd7f859d9436dc12af9b877' }),
+  Object.freeze({ release: '1.1.0-rc.139-preservation', schema: 'intent-mcu-model-library-lock@2',
+    libraryId: 'intent-mcu-public-models', version: '2.0.0-x46-usart-rx-producer.1-current',
+    manifestSha256: '8e4b68c47dd01cb1fe0867b1f32fbb7a0643e6fd4a3474e364417c8e4ad91c3a',
+    implementationSha256: '3da666f7462e12455abb6b9bba7a4908f68ffcde58d8a6d7555658a94abf727d' }),
+  Object.freeze({ release: '1.1.0-rc.139-mixed-branch', schema: 'intent-mcu-model-library-lock@2',
+    libraryId: 'intent-mcu-public-models', version: '2.0.0-x46-usart-rx-producer.1-current',
+    manifestSha256: '459064d5d903f2216d210a2bc36fa63202bd8ea7d2c803f7f6d7e07708e66475',
+    implementationSha256: '8bfaa600faad662d5dac7771bcfe68cf46b935db8b74f5e45ea5c7b7c1c34a95' }),
+  Object.freeze({ release: '1.1.0-rc.139-two-gpio', schema: 'intent-mcu-model-library-lock@2',
+    libraryId: 'intent-mcu-public-models', version: '2.0.0-x46-usart-rx-producer.1-current',
+    manifestSha256: '7d07cf060525771ee00944074cac315fc4af7bcefdbec13cefa549767b0b7e55',
+    implementationSha256: 'cda403bb54780de24cd06bc2c3642d4d62366bf1904bbc46a049e11d32355669' }),
+  Object.freeze({ release: '1.1.0-rc.139-pre-compatibility', schema: 'intent-mcu-model-library-lock@2',
+    libraryId: 'intent-mcu-public-models', version: '2.0.0-x46-usart-rx-producer.1-current',
+    manifestSha256: '8af6ca28e648a79d09d1b29b2b8daf8032184460b42b20094141ce52f0b26bc8',
+    implementationSha256: '39b67333105341c60fd4c9f2dfb43c3f5812260e6cd217b5e1973902400bed2c' }),
 ]);
 const samePublishedRecoveryLock = (left, right) => left && right
   && ['schema', 'libraryId', 'version', 'manifestSha256', 'implementationSha256']
@@ -306,6 +326,17 @@ function prepare(adapter, value, context) {
   return { ...result, project: clone(result.project) };
 }
 
+function projectDataAdmission(adapter, libraryAdmission, context) {
+  if (libraryAdmission.ok) return { ...libraryAdmission, authoringOnly: false,
+    executableAuthority: true, runtimeUnavailableCode: null };
+  if (typeof adapter.authoringAdmission !== 'function') return libraryAdmission;
+  const authoring = adapter.authoringAdmission(context);
+  if (!authoring?.ok) return libraryAdmission;
+  return { ok: true, code: authoring.code, retained: context.retained,
+    authoringOnly: true, executableAuthority: false,
+    runtimeUnavailableCode: libraryAdmission.code, authoring };
+}
+
 export function canonicalProjectEnvelope(profile, project, adapters, brief = emptyProjectBrief(), scenarioTimeline = null,
   modelLibrary = CURRENT_MODEL_LIBRARY_LOCK) {
   const adapter = adapterForProfile(adapters, profile);
@@ -321,9 +352,13 @@ export function canonicalProjectEnvelope(profile, project, adapters, brief = emp
   }
   const hasModelGraph = Array.isArray(prepared.project?.circuit?.components)
     || Array.isArray(prepared.project?.candidateCircuit?.components);
-  const admitted = modelLibrarySupportsProfile(profile) && hasModelGraph
+  const modelAdmission = modelLibrarySupportsProfile(profile) && hasModelGraph
     ? validateProjectModelLibrary(library.lock, profile, prepared.project)
     : { ok: true };
+  const admitted = projectDataAdmission(adapter, modelAdmission, {
+    profile, project: prepared.project, modelLibrary: library.lock,
+    retained: library.lock.manifestSha256 === RETAINED_MODEL_LIBRARY_LOCK.manifestSha256,
+  });
   if (!admitted.ok) throw Object.assign(new Error(admitted.code), { code: admitted.code, details: admitted.details });
   return `${JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, modelLibrary: library.lock,
     brief: normalizeProjectBrief(brief), scenarioTimeline: normalizeScenarioTimeline(scenarioTimeline, profile),
@@ -479,9 +514,13 @@ export function prepareProjectEnvelope(source, adapters) {
     }
     const hasModelGraph = Array.isArray(prepared.project?.circuit?.components)
       || Array.isArray(prepared.project?.candidateCircuit?.components);
-    const libraryAdmission = modelLibrarySupportsProfile(profile) && hasModelGraph
+    const modelAdmission = modelLibrarySupportsProfile(profile) && hasModelGraph
       ? validateProjectModelLibrary(modelLibrary, profile, prepared.project)
       : { ok: true, retained: modelLibrary.manifestSha256 === RETAINED_MODEL_LIBRARY_LOCK.manifestSha256 };
+    const libraryAdmission = projectDataAdmission(adapter, modelAdmission, {
+      profile, project: prepared.project, modelLibrary,
+      retained: modelLibrary.manifestSha256 === RETAINED_MODEL_LIBRARY_LOCK.manifestSha256,
+    });
     if (!libraryAdmission.ok) return libraryAdmission;
     const canonical = `${JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, modelLibrary,
       brief: normalizeProjectBrief(brief), scenarioTimeline: normalizeScenarioTimeline(scenarioTimeline, profile),
@@ -504,7 +543,10 @@ export function prepareProjectEnvelope(source, adapters) {
         executableAuthorityCleared: true,
         modelLibrary: { version: modelLibrary.version, manifestSha256: modelLibrary.manifestSha256,
           retained: libraryAdmission.retained,
-          migrationAvailable: modelLibrary.manifestSha256 !== CURRENT_MODEL_LIBRARY_LOCK.manifestSha256 },
+          migrationAvailable: modelLibrary.manifestSha256 !== CURRENT_MODEL_LIBRARY_LOCK.manifestSha256,
+          authoringOnly: libraryAdmission.authoringOnly === true,
+          executableAuthority: libraryAdmission.executableAuthority !== false,
+          runtimeUnavailableCode: libraryAdmission.runtimeUnavailableCode ?? null },
       },
     };
   } catch (error) {

@@ -2,6 +2,22 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.139 — 2026-10-25
+
+- Adds a visible New empty circuit action for Pico, ESP32-C3 and STM32 that
+  starts with the fixed controller only and never inherits template cables.
+- Allows multiple supported resistor and LED instances with deterministic IDs,
+  independent movement and properties, named-pin cable creation/deletion, and
+  exact graph/layout Undo and Redo.
+- Extends canonical API batches to the same stable multi-instance model while
+  rejecting type/ID mismatches, unknown or occupied pins and malformed graphs
+  atomically.
+- Preserves local Save/Open/reload, browser recovery identities, source/name
+  data and the existing bounded runtime rule: only the exact validated
+  controller-to-resistor-to-LED-to-ground path can Build or Run.
+- Adds no new controller pins, component models, compiler/runtime authority,
+  general circuit solver, deployment or public-service change.
+
 ## 1.1.0-rc.138 — 2026-10-25
 
 - Discovers valid historical browser drafts for AVR, RP2040 Pico, ESP32-C3 and
