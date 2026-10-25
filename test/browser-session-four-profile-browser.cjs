@@ -61,11 +61,21 @@ const resultFor = async (origin, claim, requestId) => {
       const claim = await post(origin, 'pairing.claim', { pairingSecret: secret,
         scopes: ['discover', 'read_project', 'edit_circuit'] });
       assert.equal(claim.ok, true, `${profile} claim`);
+      const beforeLabels = await page.evaluate((selected) => {
+        const components = selected === 'board.atmega328p-16mhz-v1'
+          ? window.__M6_PROJECT__().circuit.components
+          : window[selected === 'board.rp2040-pico-v1' ? '__RP2040_PUBLIC_WORKBENCH__'
+            : selected === 'board.esp32-c3-devmodule-v1' ? '__ESP32C3_PUBLIC_WORKBENCH__'
+              : '__STM32_PUBLIC_WORKBENCH__'].state().circuitEditor.draft.components;
+        return Object.fromEntries(components.filter((item) => ['resistor-1', 'led-1'].includes(item.id))
+          .map((item) => [item.id, item.label]));
+      }, profile);
       const editId = `four-profile-edit-${index}`;
       const edit = { schema: 'intent-mcu-browser-session-request@1', request_id: editId,
         session_id: claim.sessionId, project_id: claim.projectId, expected_revision: claim.revision,
         sequence: 1, command: 'edit.batch', arguments: { commands: [{ command: 'component.property.set',
-          component_id: 'resistor-1', key: 'ohms', value: 330 }] } };
+          component_id: 'resistor-1', key: 'ohms', value: 330 }, { command: 'component.property.set',
+          component_id: 'led-1', key: 'color', value: 'blue' }] } };
       assert.equal((await post(origin, 'request.submit', { sessionId: claim.sessionId, request: edit }, claim.clientCapability)).ok, true);
       const edited = await resultFor(origin, claim, editId);
       assert.equal(edited.status, 'accepted', `${profile} edit`);
@@ -77,11 +87,42 @@ const resultFor = async (origin, claim, requestId) => {
         return window[key].state().circuitEditor.draft.components.find((item) => item.id === 'resistor-1').properties.ohms;
       }, profile);
       assert.equal(ohms, 330);
+      const labels = await page.evaluate((selected) => {
+        const key = selected === 'board.atmega328p-16mhz-v1' ? null
+          : selected === 'board.rp2040-pico-v1' ? '__RP2040_PUBLIC_WORKBENCH__'
+            : selected === 'board.esp32-c3-devmodule-v1' ? '__ESP32C3_PUBLIC_WORKBENCH__' : '__STM32_PUBLIC_WORKBENCH__';
+        const components = key ? window[key].state().circuitEditor.draft.components
+          : window.__M6_PROJECT__().circuit.components;
+        const values = Object.fromEntries(components.filter((item) => ['resistor-1', 'led-1'].includes(item.id))
+          .map((item) => [item.id, item.label]));
+        const root = key ? document.querySelector(selected === 'board.rp2040-pico-v1' ? '#pico-editor-components'
+          : selected === 'board.esp32-c3-devmodule-v1' ? '#c3-editor-components' : '#stm32-editor-components')
+          : document.querySelector('#component-layer');
+        return { values, resistorText: root.querySelector('[data-component-id="resistor-1"]')?.textContent ?? '',
+          resistorAria: root.querySelector('[data-component-id="resistor-1"]')?.getAttribute('aria-label') ?? '' };
+      }, profile);
+      if (profile === 'board.atmega328p-16mhz-v1') assert.deepEqual(labels.values, beforeLabels);
+      else {
+        assert.equal(labels.values['resistor-1'], '330 Ω series resistor');
+        assert.equal(labels.values['led-1'], 'External blue LED');
+        assert.match(labels.resistorText, /330 Ω series resistor/u);
+        assert.match(labels.resistorAria, /330 Ω series resistor/u);
+      }
       const undoId = `four-profile-undo-${index}`;
       const undo = { ...edit, request_id: undoId, expected_revision: edited.revision_after, sequence: 2,
         command: 'edit.undo', arguments: { transaction_id: edited.transaction_id } };
       assert.equal((await post(origin, 'request.submit', { sessionId: claim.sessionId, request: undo }, claim.clientCapability)).ok, true);
       assert.equal((await resultFor(origin, claim, undoId)).status, 'accepted', `${profile} undo`);
+      const restoredLabels = await page.evaluate((selected) => {
+        const components = selected === 'board.atmega328p-16mhz-v1'
+          ? window.__M6_PROJECT__().circuit.components
+          : window[selected === 'board.rp2040-pico-v1' ? '__RP2040_PUBLIC_WORKBENCH__'
+            : selected === 'board.esp32-c3-devmodule-v1' ? '__ESP32C3_PUBLIC_WORKBENCH__'
+              : '__STM32_PUBLIC_WORKBENCH__'].state().circuitEditor.draft.components;
+        return Object.fromEntries(components.filter((item) => ['resistor-1', 'led-1'].includes(item.id))
+          .map((item) => [item.id, item.label]));
+      }, profile);
+      assert.deepEqual(restoredLabels, beforeLabels, `${profile} label undo`);
       await dialog.locator('[data-revoke]').click(); await dialog.locator('[data-close]').click();
       results.push(profile);
     }

@@ -174,11 +174,6 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
         || ![...READ_ONLY_COMMANDS, ...EDIT_COMMANDS].includes(request.command) || typeof request.arguments !== 'object'
         || Array.isArray(request.arguments)) return failure('API_ARGUMENTS_INVALID');
     if (!live(session) || !clientLive(session)) return failure('API_EXPIRED');
-    const time = now();
-    session.requestTimes = session.requestTimes.filter((value) => value > time - BROWSER_SESSION_LIMITS.rateWindowMs);
-    if (session.requestTimes.length >= BROWSER_SESSION_LIMITS.rateWindowCount
-        || session.requestTimes.filter((value) => value > time - BROWSER_SESSION_LIMITS.burstWindowMs).length
-          >= BROWSER_SESSION_LIMITS.burstCount) return failure('API_RATE_LIMIT');
     const canonical = JSON.stringify(request);
     if (session.outcomes.has(request.request_id)) {
       const prior = session.outcomes.get(request.request_id);
@@ -190,7 +185,19 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
         : failure(prior.retiredCode ?? 'API_REQUEST_RETIRED');
     }
     if (retiredHas(session, request.request_id)) return failure('API_REQUEST_REPLAY');
-    if (session.requestIds.has(request.request_id)) return failure('API_REQUEST_REPLAY');
+    if (session.requestIds.has(request.request_id)) {
+      const active = session.commands.find((item) => item.request.request_id === request.request_id)
+        ?? (session.pending.has(request.request_id)
+          ? { canonical: session.pending.get(request.request_id).canonical } : null);
+      if (!active || active.canonical !== canonical) return failure('API_REQUEST_ID_CONFLICT');
+      return { ok: true, code: 'API_REQUEST_RECONCILE',
+        reconciliation: { request_id: request.request_id, status: 'pending' } };
+    }
+    const time = now();
+    session.requestTimes = session.requestTimes.filter((value) => value > time - BROWSER_SESSION_LIMITS.rateWindowMs);
+    if (session.requestTimes.length >= BROWSER_SESSION_LIMITS.rateWindowCount
+        || session.requestTimes.filter((value) => value > time - BROWSER_SESSION_LIMITS.burstWindowMs).length
+          >= BROWSER_SESSION_LIMITS.burstCount) return failure('API_RATE_LIMIT');
     while (session.requestIds.size >= BROWSER_SESSION_LIMITS.requestCapacity) {
       const oldest = session.requestIds.values().next().value;
       const outcome = session.outcomes.get(oldest);

@@ -29,13 +29,36 @@ const claim = await post('pairing.claim', { pairingSecret, scopes: ['discover', 
 if (!claim.ok) throw new Error(claim.code);
 let sequence = 1;
 let revision = claim.revision;
+let lastSubmitAt = 0;
+let submitAmbiguous = false;
 async function execute(command, args = {}) {
+  if (submitAmbiguous) throw new Error('API_SUBMIT_RECONCILIATION_REQUIRED');
   const requestId = `cli-${randomUUID()}`;
   const request = { schema: 'intent-mcu-browser-session-request@1', request_id: requestId,
     session_id: claim.sessionId, project_id: claim.projectId, expected_revision: revision,
-    sequence: sequence++, command, arguments: args };
-  const queued = await post('request.submit', { sessionId: claim.sessionId, request }, claim.clientCapability);
-  if (!queued.ok) throw new Error(queued.code);
+    sequence, command, arguments: args };
+  let queued;
+  const paceMs = 210 - (Date.now() - lastSubmitAt);
+  if (paceMs > 0) await new Promise((resolve) => setTimeout(resolve, paceMs));
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      lastSubmitAt = Date.now();
+      queued = await post('request.submit', { sessionId: claim.sessionId, request }, claim.clientCapability);
+      break;
+    } catch (error) {
+      if (attempt === 2) { submitAmbiguous = true;
+        throw Object.assign(new Error('API_SUBMIT_RECONCILIATION_REQUIRED'), { cause: error }); }
+      await new Promise((resolve) => setTimeout(resolve, 100 * (attempt + 1)));
+    }
+  }
+  const reconciled = queued.status ? queued
+    : queued.code === 'API_REQUEST_RECONCILE' && queued.reconciliation?.status !== 'pending'
+      ? queued.reconciliation : null;
+  if (!queued.ok && !reconciled) throw new Error(queued.code);
+  if (!reconciled && !['API_REQUEST_QUEUED', 'API_REQUEST_RECONCILE'].includes(queued.code)) throw new Error(queued.code);
+  sequence += 1;
+  if (reconciled) { if (Number.isInteger(reconciled.revision_after)) revision = reconciled.revision_after;
+    return reconciled; }
   for (let attempt = 0; attempt < 40; attempt += 1) {
     const result = await post('result.read', { sessionId: claim.sessionId, requestId }, claim.clientCapability);
     if (result.code !== 'API_RESULT_PENDING') { if (Number.isInteger(result.revision_after)) revision = result.revision_after; return result; }

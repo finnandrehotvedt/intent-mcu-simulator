@@ -21,8 +21,18 @@ for (const [label, create] of profiles) test(`${label} canonical API batch is at
     key: 'ohms', value: 330 }], transactionId);
   assert.equal(applied.ok, true);
   assert.equal(editor.snapshot().draft.components.find((item) => item.id === 'resistor-1').properties.ohms, 330);
+  assert.equal(editor.snapshot().draft.components.find((item) => item.id === 'resistor-1').label,
+    '330 Ω series resistor');
   assert.equal(editor.undoApi('wrong').ok, false);
   assert.equal(editor.undoApi(transactionId).ok, true);
+  assert.equal(JSON.stringify(editor.snapshot().draft), before);
+
+  const ledTransaction = `${transactionId}:led`;
+  assert.equal(editor.applyApiBatch([{ command: 'component.property.set', component_id: 'led-1',
+    key: 'color', value: 'blue' }], ledTransaction).ok, true);
+  assert.equal(editor.snapshot().draft.components.find((item) => item.id === 'led-1').label,
+    'External blue LED');
+  assert.equal(editor.undoApi(ledTransaction).ok, true);
   assert.equal(JSON.stringify(editor.snapshot().draft), before);
 
   const unchanged = JSON.stringify(editor.snapshot().draft);

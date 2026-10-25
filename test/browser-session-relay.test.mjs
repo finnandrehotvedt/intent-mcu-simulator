@@ -60,6 +60,21 @@ test('read-only request is correlated, transient and duplicate-safe', () => {
     request: value }).code, 'API_REQUEST_RECONCILE');
 });
 
+test('exact submit replay reconciles without consuming another sequence', () => {
+  const { relay, owner, client } = paired();
+  const value = request(1, 'request-reconcile-0001');
+  assert.equal(relay.submit({ sessionId: ids.sessionId,
+    clientCapability: client.clientCapability, request: value }).code, 'API_REQUEST_QUEUED');
+  const replay = relay.submit({ sessionId: ids.sessionId,
+    clientCapability: client.clientCapability, request: structuredClone(value) });
+  assert.equal(replay.code, 'API_REQUEST_RECONCILE');
+  assert.equal(replay.reconciliation.status, 'pending');
+  assert.equal(relay.pull({ sessionId: ids.sessionId, ownerCapability: owner.ownerCapability }).request.request_id,
+    value.request_id);
+  assert.equal(relay.submit({ sessionId: ids.sessionId,
+    clientCapability: client.clientCapability, request: request(2) }).code, 'API_REQUEST_QUEUED');
+});
+
 test('wrong project, sequence, expired client, owner loss and revoke fail closed', () => {
   const first = paired();
   assert.equal(first.relay.submit({ sessionId: ids.sessionId, clientCapability: 'wrong', request: request() }).code, 'API_AUTH_REQUIRED');
@@ -144,9 +159,13 @@ test('pairing, rate, queue TTL and retired session storage are bounded', () => {
   }
   assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
     request: request(6) }).code, 'API_RATE_LIMIT');
+  assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
+    request: request(6) }).code, 'API_RATE_LIMIT');
   clock.value += 30_001;
   assert.equal(relay.pull({ sessionId: ids.sessionId, ownerCapability: owner.ownerCapability }).code,
     'API_QUEUE_EMPTY');
+  assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
+    request: request(6) }).code, 'API_REQUEST_QUEUED');
   assert.equal(relay.readResult({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
     requestId: request(1).request_id }).code, 'API_REQUEST_EXPIRED');
 

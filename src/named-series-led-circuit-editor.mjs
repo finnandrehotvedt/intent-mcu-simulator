@@ -216,6 +216,12 @@ export class NamedSeriesLedCircuitEditor {
               || !Number.isFinite(operation.value) || operation.value < contract.minimum || operation.value > contract.maximum)
               || contract.kind === 'enum' && !contract.values.includes(operation.value)) throw new Error('PROPERTY_INVALID');
           target.properties[operation.key] = clone(operation.value);
+          if (target.type === BOUNDED_RESISTOR_TYPE && operation.key === 'ohms') {
+            target.label = `${operation.value} Ω series resistor`;
+          }
+          if (target.type === BOUNDED_LED_TYPE && operation.key === 'color') {
+            target.label = `External ${operation.value} LED`;
+          }
         } else if (operation.command === 'wire.connect') {
           if (!endpointKnown(operation.from) || !endpointKnown(operation.to) || connected(operation.from) || connected(operation.to)
               || this.resolveNetId(next, operation.from, operation.to) !== operation.net_id
