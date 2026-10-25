@@ -497,7 +497,8 @@ const elements = Object.fromEntries([
   'local-history-status', 'local-history-list', 'local-history-confirm',
   'local-history-confirm-title', 'local-history-confirm-description', 'local-history-confirm-status',
   'local-history-confirm-cancel', 'local-history-confirm-accept',
-  'project-reload', 'project-draft-recovery', 'project-draft-recover', 'project-export', 'project-import',
+  'project-reload', 'browser-draft-recovery', 'project-draft-recovery', 'project-draft-recover',
+  'project-draft-recovery-status', 'project-export', 'project-import',
   'project-import-mode', 'undo', 'redo', 'prompt-generate', 'prompt-copy', 'prompt-output', 'prompt-response',
   'prompt-mode', 'prompt-apply', 'prompt-message', 'component-controls',
   'editor-title', 'source-file', 'source-file-name', 'source-file-add', 'source-file-remove',
@@ -15544,11 +15545,11 @@ function installPreservedDraftCopy(draft) {
     workbench.elements.name.value = draft.authoredName;
     workbench.invalidate('Opened a validated preserved copy. Build fresh before Run.');
     // A preserved draft may contain source that was still being edited and is
-    // therefore not build-valid yet. Keep that authored text byte-for-byte in
-    // the recovered copy; do not require a canonical project export merely to
-    // establish a clean baseline. The normal dirty guard remains conservative
-    // until the source becomes valid or the user saves a copy.
-    projectBaselines.delete(draft.profile);
+    // therefore not build-valid yet. authoredProjectFingerprint has an
+    // in-progress fallback, so the exact recovered state can still be the
+    // clean baseline and every subsequent Inspector/source/layout edit is
+    // protected by the ordinary unsaved-change guard.
+    setProjectBaseline(draft.profile);
   }
   corruptControllerDraftProfiles.delete(draft.profile);
   registerActiveDraft(draft.name);
@@ -15559,6 +15560,14 @@ function installPreservedDraftCopy(draft) {
 elements.projectdraftrecovery.addEventListener('change', () => {
   elements.projectdraftrecover.disabled = !elements.projectdraftrecovery.value;
 });
+function presentDraftRecoveryStatus(message) {
+  elements.projectdraftrecoverystatus.textContent = message;
+  elements.browserdraftrecovery.open = true;
+  sharedWorkbenchShell.openDialog('project', document.querySelector('#project-files-open'), {
+    initialFocus: false,
+  });
+  queueMicrotask(() => { elements.browserdraftrecovery.open = true; });
+}
 elements.projectdraftrecover.addEventListener('click', () => {
   const recover = () => {
     const key = elements.projectdraftrecovery.value;
@@ -15569,7 +15578,9 @@ elements.projectdraftrecover.addEventListener('click', () => {
     if (!draft?.valid) {
       showActionableError(elements.projectmessage, draft?.code ?? 'NO_LOCAL_SAVE',
         'The original preserved bytes remain untouched. Export browser storage before attempting manual recovery.');
-      elements.projectmessage.textContent = 'Recovery rejected because this saved entry is invalid. The original preserved bytes remain untouched.';
+      const message = 'Recovery rejected because this saved entry is invalid. The original preserved bytes remain untouched.';
+      elements.projectmessage.textContent = message;
+      presentDraftRecoveryStatus(message);
       return;
     }
     let result;
@@ -15577,17 +15588,22 @@ elements.projectdraftrecover.addEventListener('click', () => {
     catch (error) {
       showActionableError(elements.projectmessage, error.code ?? error.message ?? 'RECOVERY_COPY_FAILED',
         `Recovery stopped (${error.code ?? error.message ?? error.name}). The original preserved bytes remain untouched; any validated in-memory copy remains available for Save copy.`);
+      presentDraftRecoveryStatus(`Recovery stopped (${error.code ?? error.message ?? error.name}). The original preserved bytes remain untouched; any validated in-memory copy remains available for Save copy.`);
       return;
     }
     if (!result.ok) {
       showActionableError(elements.projectmessage, result.code,
         'Recovery stopped. The original preserved bytes remain untouched.');
-      elements.projectmessage.textContent = `Recovery stopped (${result.code}). The original preserved bytes remain untouched.`;
+      const message = `Recovery stopped (${result.code}). The original preserved bytes remain untouched.`;
+      elements.projectmessage.textContent = message;
+      presentDraftRecoveryStatus(message);
       return;
     }
     const migration = draft.migrationOnly
       ? ` Published ${draft.recoveryRelease} identity was migrated as data only; executable authority was cleared and a fresh Build is required.` : '';
-    elements.projectmessage.textContent = `Opened validated ${RECOVERY_PROFILE_LABELS[draft.profile]} copy in separate draft ${result.copyDraftId.slice(0, 8)}…: ${draft.name}, ${draft.components} parts, ${draft.nets} nets. Original key unchanged.${migration} Revision 0 and empty Undo history after recovery are expected; use Fit project if the graph count is non-zero but parts are offscreen.`;
+    const message = `Opened validated ${RECOVERY_PROFILE_LABELS[draft.profile]} copy in separate draft ${result.copyDraftId.slice(0, 8)}…: ${draft.name}, ${draft.components} parts, ${draft.nets} nets. Original key unchanged.${migration} Revision 0 and empty Undo history after recovery are expected; use Fit project if the graph count is non-zero but parts are offscreen.`;
+    elements.projectmessage.textContent = message;
+    presentDraftRecoveryStatus(message);
   };
   const selected = preservedDrafts().find((draft) => draft.key === elements.projectdraftrecovery.value);
   const profile = selected?.profile ?? selectedCompilerProfile;

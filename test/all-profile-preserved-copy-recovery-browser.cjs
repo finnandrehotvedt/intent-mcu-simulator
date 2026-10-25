@@ -19,6 +19,10 @@ const orphanIds = [
 ];
 
 async function openRecovery(page) {
+  if (await page.locator('#workbench-inspector-dialog').getAttribute('open') !== null) {
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('#workbench-inspector-dialog').open);
+  }
   if (!(await page.locator('#workbench-more').evaluate((node) => node.open))) await page.click('#workbench-more > summary');
   if (await page.locator('#workbench-project-dialog').getAttribute('open') === null) await page.click('#project-files-open');
   const recovery = page.locator('#browser-draft-recovery');
@@ -91,6 +95,9 @@ async function openRecovery(page) {
       const state = await page.evaluate((name) => window[name].state(), owner);
       const component = state.circuitEditor.draft.components[0];
       await page.evaluate(({ owner, id }) => window[owner].moveCircuitComponent(id, 0.23, 0.31), { owner, id: component.id });
+      if (profile === 'board.esp32-c3-devmodule-v1') {
+        await page.evaluate((name) => window[name].setComponentProperty('resistor-1', 'ohms', 330), owner);
+      }
       const record = await page.evaluate(({ profile, owner, orphanId }) => {
         const activeId = sessionStorage.getItem('intent-mcu.active-draft-id.v1');
         const activeKey = `intent-mcu.profile-draft.v1.${profile}.tab.${activeId}`;
@@ -138,6 +145,12 @@ async function openRecovery(page) {
       await page.waitForTimeout(300);
       assert.match(await page.textContent('#project-message'), /Original key unchanged/iu,
         `${record.profile}: recovery did not report preserved copy; ${await page.textContent('#technical-error-detail')}`);
+      assert(await page.locator('#project-draft-recovery-status').isVisible(),
+        `${record.profile}: shared recovery status is hidden`);
+      assert.match(await page.textContent('#project-draft-recovery-status'), /Original key unchanged/iu,
+        `${record.profile}: shared recovery status omitted success`);
+      assert(await page.locator('#browser-draft-recovery').evaluate((node) => node.open),
+        `${record.profile}: shared recovery panel did not remain open`);
       const proof = await page.evaluate(({ record }) => {
         const activeId = sessionStorage.getItem('intent-mcu.active-draft-id.v1');
         const value = record.owner === '__M6_PROJECT__' ? window.__M6_PROJECT__() : window[record.owner].state();
@@ -158,6 +171,51 @@ async function openRecovery(page) {
         assert.equal(proof.source, record.source, `${record.profile}: source changed`);
         assert.equal(proof.name, record.name, `${record.profile}: name changed`);
         assert.deepEqual(proof.circuit, record.circuit, `${record.profile}: graph/layout changed`);
+      }
+      if (record.profile === 'board.esp32-c3-devmodule-v1') {
+        if (await page.locator('#workbench-project-dialog').getAttribute('open') !== null) await page.keyboard.press('Escape');
+        await page.locator('#c3-editor-components [data-component-id="resistor-1"]').click();
+        await page.click('#toggle-inspector');
+        await page.waitForSelector('#workbench-inspector-dialog[open]');
+        const inspector = page.locator('#c3-part-properties');
+        const input = inspector.locator('[data-bounded-property="ohms"]');
+        assert.equal(await input.inputValue(), '330', 'C3 recovered resistor did not begin at 330 ohms');
+        await input.fill('470');
+        await inspector.locator('[data-bounded-model-apply]').click();
+        await page.waitForFunction(() => window.__ESP32C3_PUBLIC_WORKBENCH__.state()
+          .circuitEditor.draft.components.find((component) => component.id === 'resistor-1').properties.ohms === 470);
+        const beforeCancel = await page.evaluate(() => {
+          const state = window.__ESP32C3_PUBLIC_WORKBENCH__.state();
+          return { activeId: sessionStorage.getItem('intent-mcu.active-draft-id.v1'),
+            profile: document.querySelector('#board-select').value,
+            source: document.querySelector('#c3-source').value,
+            name: document.querySelector('#c3-project-name').value,
+            circuit: state.circuitEditor.draft };
+        });
+        await openRecovery(page);
+        const picoRecord = records.find((item) => item.profile === 'board.rp2040-pico-v1');
+        await page.selectOption('#project-draft-recovery', picoRecord.key);
+        await page.click('#project-draft-recover');
+        await page.waitForSelector('#unsaved-change-dialog[open]');
+        assert.match(await page.textContent('#unsaved-change-description'), /replace authored changes/iu,
+          'C3 Inspector edit did not trigger recovery unsaved guard');
+        await page.click('#unsaved-keep');
+        const afterCancel = await page.evaluate(() => {
+          const state = window.__ESP32C3_PUBLIC_WORKBENCH__.state();
+          return { activeId: sessionStorage.getItem('intent-mcu.active-draft-id.v1'),
+            profile: document.querySelector('#board-select').value,
+            source: document.querySelector('#c3-source').value,
+            name: document.querySelector('#c3-project-name').value,
+            circuit: state.circuitEditor.draft };
+        });
+        assert.deepEqual(afterCancel, beforeCancel,
+          'Keep editing changed recovered C3 copy/source/layout/profile/active key');
+        assert.equal(await page.evaluate((key) => localStorage.getItem(key), record.key), record.raw,
+          'Keep editing changed original C3 bytes');
+        assert.equal(await page.evaluate((key) => localStorage.getItem(key), picoRecord.key), picoRecord.raw,
+          'Keep editing changed original Pico bytes');
+        assert(await page.locator('#project-draft-recovery-status').isVisible(),
+          'shared recovery status was hidden after Keep editing');
       }
       await openRecovery(page);
     }
@@ -183,6 +241,8 @@ async function openRecovery(page) {
     assert.equal(await page.evaluate((key) => localStorage.getItem(key), unknownLockKey), unknownRaw);
     assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), beforeUnknown);
     assert.match(await page.textContent('#project-message'), /invalid.+original preserved bytes remain untouched/iu);
+    assert(await page.locator('#project-draft-recovery-status').isVisible());
+    assert.match(await page.textContent('#project-draft-recovery-status'), /invalid.+original preserved bytes remain untouched/iu);
     await openRecovery(page);
 
     const beforeInvalid = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
@@ -192,6 +252,8 @@ async function openRecovery(page) {
     assert.equal(await page.evaluate((key) => localStorage.getItem(key), invalidKey), invalidRaw);
     assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), beforeInvalid);
     assert.match(await page.textContent('#project-message'), /original preserved bytes remain untouched/iu);
+    assert(await page.locator('#project-draft-recovery-status').isVisible());
+    assert.match(await page.textContent('#project-draft-recovery-status'), /original preserved bytes remain untouched/iu);
 
     const duplicate = await context.newPage();
     await duplicate.route('**/api/page-views', (route) => route.fulfill({ status: 200,
@@ -203,6 +265,7 @@ async function openRecovery(page) {
     assert.equal(await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations), 0);
     process.stdout.write(`${JSON.stringify({ result: 'pass', historicalOrphansFound: 4,
       preservedCopyRecoveries: 4, invalidBytesUntouched: true, duplicateTabIsolated: true,
+      recoveredEditGuarded: true, keepEditingPreserved: true, sharedStatusVisible: true,
       publishedLockMigrations: 2, unknownLockRejected: true,
       duplicateLabelsDistinguished: true, originalStorageMutation: false, nativeBuilds: 0, nativeRuns: 0 })}\n`);
   } finally { await context.close(); await browser.close(); }
