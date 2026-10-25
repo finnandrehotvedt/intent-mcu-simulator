@@ -3234,9 +3234,37 @@ window.__STM32_PUBLIC_WORKBENCH__ = {
   setWireColor: (color) => setBoundedWireColor('stm32', color),
   setWireRoute: (netId, route) => stm32PublicWorkbench.editCircuit('setWireRoute', netId, route),
 };
-document.querySelector('#pico-new-circuit')?.addEventListener('click', () => picoPublicWorkbench.editCircuit('newProject'));
-document.querySelector('#c3-new-circuit')?.addEventListener('click', () => c3PublicWorkbench.editCircuit('newProject'));
-document.querySelector('#stm32-new-circuit')?.addEventListener('click', () => stm32PublicWorkbench.editCircuit('newProject'));
+function createNewControllerProject(profile, workbench) {
+  const originalDraftId = activeDraftId;
+  if (!persistControllerDraft(profile, workbench)) {
+    profileMessage(profile, 'New circuit stopped because the current browser recovery copy could not be preserved. Download a copy and try again.');
+    return { ok: false, code: 'NEW_PROJECT_RECOVERY_REQUIRED' };
+  }
+  const originalKey = profileDraftStorageKey(profile);
+  const originalBytes = localStorage.getItem(originalKey);
+  if (!originalBytes) return { ok: false, code: 'NEW_PROJECT_RECOVERY_REQUIRED' };
+  const nextDraftId = forkDraftForRecovery();
+  const result = workbench.editCircuit('newProject');
+  if (!result.ok || !persistControllerDraft(profile, workbench)) {
+    if (result.ok) workbench.editCircuit('undo');
+    forkDraftForRecovery(originalDraftId);
+    profileMessage(profile, 'New circuit stopped because its new browser recovery copy could not be created. The preserved original remains active.');
+    return { ok: false, code: 'NEW_PROJECT_COPY_FAILED' };
+  }
+  setProjectBaseline(profile);
+  registerActiveDraft(currentProjectNameForGuard(profile));
+  renderDraftRecoveryChoices();
+  return { ...result, originalDraftId, originalKey, nextDraftId };
+}
+function bindNewControllerProject(selector, profile, workbench) {
+  document.querySelector(selector)?.addEventListener('click', () => {
+    const create = () => createNewControllerProject(profile, workbench);
+    if (!requestUnsavedChangeGuard({ profile, actionLabel: 'creating a new empty circuit', continueAction: create })) create();
+  });
+}
+bindNewControllerProject('#pico-new-circuit', RP2040_PROFILE, picoPublicWorkbench);
+bindNewControllerProject('#c3-new-circuit', ESP32C3_PROFILE, c3PublicWorkbench);
+bindNewControllerProject('#stm32-new-circuit', STM32F429ZI_PROFILE, stm32PublicWorkbench);
 installBoundedPartsDrop(RP2040_PROFILE, picoPublicWorkbench, elements.picodiagram);
 installBoundedPartsDrop(ESP32C3_PROFILE, c3PublicWorkbench, elements.c3diagram);
 installBoundedPartsDrop(STM32F429ZI_PROFILE, stm32PublicWorkbench, elements.stm32diagram);

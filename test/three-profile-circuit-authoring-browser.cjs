@@ -8,11 +8,14 @@ const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/
 const base = process.env.RC139_AUTHORING_URL || 'http://host.docker.internal:18789';
 const profiles = [
   { id: 'board.rp2040-pico-v1', api: '__RP2040_PUBLIC_WORKBENCH__', button: '#pico-new-circuit',
-    layer: '#pico-editor-components', board: 'pico-1', sourcePin: 'GP0', groundPin: 'GND3', sourceLead: 'B', ledLead: 'A' },
+    layer: '#pico-editor-components', name: '#pico-project-name', source: '#pico-source',
+    board: 'pico-1', sourcePin: 'GP0', groundPin: 'GND3', sourceLead: 'B', ledLead: 'A' },
   { id: 'board.esp32-c3-devmodule-v1', api: '__ESP32C3_PUBLIC_WORKBENCH__', button: '#c3-new-circuit',
-    layer: '#c3-editor-components', board: 'c3-1', sourcePin: 'GPIO2', groundPin: 'GND', sourceLead: 'A', ledLead: 'B' },
+    layer: '#c3-editor-components', name: '#c3-project-name', source: '#c3-source',
+    board: 'c3-1', sourcePin: 'GPIO2', groundPin: 'GND', sourceLead: 'A', ledLead: 'B' },
   { id: 'board.stm32f429zi-nucleo144-v1', api: '__STM32_PUBLIC_WORKBENCH__', button: '#stm32-new-circuit',
-    layer: '#stm32-editor-components', board: 'stm32-1', sourcePin: 'PB0', groundPin: 'GND', sourceLead: 'A', ledLead: 'B' },
+    layer: '#stm32-editor-components', name: '#stm32-project-name', source: '#stm32-source',
+    board: 'stm32-1', sourcePin: 'PB0', groundPin: 'GND', sourceLead: 'A', ledLead: 'B' },
 ];
 
 (async () => {
@@ -69,6 +72,95 @@ const profiles = [
       assert.equal(await page.locator(`${profile.layer} [data-component-id="resistor-2"]`).count(), 1);
       assert.equal(await page.locator(`${profile.layer} [data-component-id="led-2"]`).count(), 1);
       assert.equal(result.redone.components.some(({ id }) => id === profile.board), true);
+
+      const protectedName = `RC139 protected ${profile.id}`;
+      await page.evaluate(({ name, protectedName }) => {
+        const input = document.querySelector(name); input.value = protectedName;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }, { ...profile, protectedName });
+      await page.waitForTimeout(0);
+      const beforeNew = await page.evaluate(({ api, id, name, source }) => {
+        const state = window[api].state();
+        const draftId = sessionStorage.getItem('intent-mcu.active-draft-id.v1');
+        const key = `intent-mcu.profile-draft.v1.${id}.tab.${draftId}`;
+        return { graph: state.circuit ?? state.project.circuit,
+          authoredName: document.querySelector(name).value,
+          authoredSource: document.querySelector(source).value,
+          draftId, key, raw: localStorage.getItem(key) };
+      }, profile);
+      assert.ok(beforeNew.raw, `${profile.id} has a durable pre-New recovery entry`);
+
+      await page.evaluate((selector) => document.querySelector(selector).click(), profile.button);
+      await page.locator('#unsaved-change-dialog[open]').waitFor();
+      await page.locator('#unsaved-keep').click();
+      const kept = await page.evaluate(({ api, name, source }) => {
+        const state = window[api].state();
+        return { graph: state.circuit ?? state.project.circuit,
+          authoredName: document.querySelector(name).value,
+          authoredSource: document.querySelector(source).value,
+          draftId: sessionStorage.getItem('intent-mcu.active-draft-id.v1') };
+      }, profile);
+      assert.deepEqual(kept, { graph: beforeNew.graph, authoredName: beforeNew.authoredName,
+        authoredSource: beforeNew.authoredSource, draftId: beforeNew.draftId });
+
+      await page.evaluate((selector) => document.querySelector(selector).click(), profile.button);
+      await page.locator('#unsaved-change-dialog[open]').waitFor();
+      const downloadPromise = page.waitForEvent('download');
+      await page.locator('#unsaved-download').click();
+      const download = await downloadPromise;
+      const downloaded = JSON.parse(await require('node:fs/promises').readFile(await download.path(), 'utf8'));
+      assert.equal(downloaded.project.name, beforeNew.authoredName);
+      assert.deepEqual(downloaded.project.circuit, beforeNew.graph);
+      const downloadedSource = downloaded.project.source.files?.[0]?.content ?? downloaded.project.source;
+      assert.equal(downloadedSource, beforeNew.authoredSource);
+      await page.locator('#unsaved-change-dialog[open]').waitFor();
+
+      await page.locator('#unsaved-discard').click();
+      await page.waitForFunction(({ api }) => {
+        const state = window[api].state(); const graph = state.circuit ?? state.project.circuit;
+        return graph.components.length === 1 && graph.nets.length === 0;
+      }, profile);
+      const afterNew = await page.evaluate(({ api, key }) => {
+        const state = window[api].state();
+        return { graph: state.circuit ?? state.project.circuit,
+          draftId: sessionStorage.getItem('intent-mcu.active-draft-id.v1'), oldRaw: localStorage.getItem(key) };
+      }, { ...profile, key: beforeNew.key });
+      assert.notEqual(afterNew.draftId, beforeNew.draftId);
+      const preserved = JSON.parse(afterNew.oldRaw);
+      assert.equal(preserved.authoredName, beforeNew.authoredName);
+      assert.equal(preserved.authoredSource, beforeNew.authoredSource);
+      assert.deepEqual(preserved.circuit, beforeNew.graph);
+
+      await page.evaluate(({ api }) => window[api].undoCircuit(), profile);
+      assert.deepEqual(await page.evaluate(({ api }) => {
+        const state = window[api].state(); return state.circuit ?? state.project.circuit;
+      }, profile), beforeNew.graph);
+      await page.evaluate(({ api }) => window[api].redoCircuit(), profile);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.selectOption('#board-select', profile.id);
+      await page.waitForFunction(({ api }) => Boolean(window[api]?.state().active), profile);
+      assert.equal(await page.evaluate(({ api }) => {
+        const state = window[api].state(); return (state.circuit ?? state.project.circuit).components.length;
+      }, profile), 1);
+      await page.evaluate((key) => {
+        const select = document.querySelector('#project-draft-recovery'); select.value = key;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      }, beforeNew.key);
+      await page.evaluate(() => document.querySelector('#project-draft-recover').click());
+      await page.waitForFunction(({ api }) => {
+        const state = window[api].state(); return (state.circuit ?? state.project.circuit).components.length === 5;
+      }, profile);
+      const recovered = await page.evaluate(({ api, name, source, key }) => {
+        const state = window[api].state();
+        return { graph: state.circuit ?? state.project.circuit,
+          authoredName: document.querySelector(name).value,
+          authoredSource: document.querySelector(source).value,
+          originalRaw: localStorage.getItem(key) };
+      }, { ...profile, key: beforeNew.key });
+      assert.deepEqual(recovered.graph, beforeNew.graph);
+      assert.equal(recovered.authoredName, beforeNew.authoredName);
+      assert.equal(recovered.authoredSource, beforeNew.authoredSource);
+      assert.equal(recovered.originalRaw, afterNew.oldRaw);
     }
     process.stdout.write('RC139 three-profile browser authoring PASS\n');
   } finally {
