@@ -3,7 +3,7 @@
 import { COMPONENT_CATALOG, LED_FORWARD_VOLTS, defaultProperties } from './component-catalog.mjs';
 import { CURRENT_MODEL_LIBRARY_LOCK, resolveModelLibrary, validateProjectModelLibrary } from './model-library.mjs';
 import {
-  NamedSeriesLedCircuitEditor, createSeriesLedComponentPolicy, createSeriesLedConnectionPolicy,
+  NamedSeriesLedCircuitEditor, createSeriesLedComponentPolicy, createSeriesLedConnectionPolicy, normalizeBoundedIdCounters,
 } from './named-series-led-circuit-editor.mjs';
 import { normalizeStoredRoute } from './route-model.mjs';
 import { emptyComponentAppearance, normalizeComponentAppearance } from './component-appearance.mjs';
@@ -157,7 +157,11 @@ export function normalizeRp2040PicoCircuitDraft(value) {
       || !(exactKeys(value.layout, ['positions', 'wireStyles'])
         || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes'])
         || exactKeys(value.layout, ['positions', 'wireStyles', 'componentAppearance'])
-        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes', 'componentAppearance']))
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes', 'componentAppearance'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'idCounters'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes', 'idCounters'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'componentAppearance', 'idCounters'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes', 'componentAppearance', 'idCounters']))
       || value.layout.positions === null || Array.isArray(value.layout.positions)
       || value.layout.wireStyles === null || Array.isArray(value.layout.wireStyles)) {
     throw Object.assign(new Error('RP2040_CIRCUIT_SHAPE'), { code: 'RP2040_CIRCUIT_SHAPE' });
@@ -226,8 +230,9 @@ export function normalizeRp2040PicoCircuitDraft(value) {
   if (!componentAppearance) {
     throw Object.assign(new Error('RP2040_CIRCUIT_LAYOUT_INVALID'), { code: 'RP2040_CIRCUIT_LAYOUT_INVALID' });
   }
+  const idCounters = normalizeBoundedIdCounters(value.layout.idCounters, components);
   return { schema: RP2040_PICO_CIRCUIT_SCHEMA, boardProfile: RP2040_PICO_PROFILE, components, nets,
-    layout: { positions, wireStyles, wireRoutes, componentAppearance } };
+    layout: { positions, wireStyles, wireRoutes, componentAppearance, idCounters } };
 }
 
 function hasPair(net, left, right) {

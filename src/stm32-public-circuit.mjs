@@ -4,7 +4,7 @@
 import { LED_FORWARD_VOLTS, defaultProperties } from './component-catalog.mjs';
 import { CURRENT_MODEL_LIBRARY_LOCK, resolveModelLibrary, validateProjectModelLibrary } from './model-library.mjs';
 import {
-  NamedSeriesLedCircuitEditor, createSeriesLedComponentPolicy, createSeriesLedConnectionPolicy,
+  NamedSeriesLedCircuitEditor, createSeriesLedComponentPolicy, createSeriesLedConnectionPolicy, normalizeBoundedIdCounters,
 } from './named-series-led-circuit-editor.mjs';
 import { normalizeStoredRoute } from './route-model.mjs';
 import { emptyComponentAppearance, normalizeComponentAppearance } from './component-appearance.mjs';
@@ -164,7 +164,11 @@ export function normalizeStm32CircuitDraft(value) {
       || !(exactKeys(value.layout, ['positions', 'wireStyles'])
         || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes'])
         || exactKeys(value.layout, ['positions', 'wireStyles', 'componentAppearance'])
-        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes', 'componentAppearance']))
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes', 'componentAppearance'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'idCounters'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes', 'idCounters'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'componentAppearance', 'idCounters'])
+        || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes', 'componentAppearance', 'idCounters']))
       || value.layout.positions === null || Array.isArray(value.layout.positions)
       || value.layout.wireStyles === null || Array.isArray(value.layout.wireStyles)) {
     throw Object.assign(new Error('STM32_CIRCUIT_SHAPE'), { code: 'STM32_CIRCUIT_SHAPE' });
@@ -237,8 +241,9 @@ export function normalizeStm32CircuitDraft(value) {
   if (!componentAppearance) {
     throw Object.assign(new Error('STM32_CIRCUIT_LAYOUT_INVALID'), { code: 'STM32_CIRCUIT_LAYOUT_INVALID' });
   }
+  const idCounters = normalizeBoundedIdCounters(value.layout.idCounters, components);
   return { schema: STM32_PUBLIC_CIRCUIT_SCHEMA, boardProfile: STM32_PUBLIC_PROFILE,
-    components, nets, layout: { positions, wireStyles, wireRoutes, componentAppearance } };
+    components, nets, layout: { positions, wireStyles, wireRoutes, componentAppearance, idCounters } };
 }
 
 function hasPair(net, left, right) {

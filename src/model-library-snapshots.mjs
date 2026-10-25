@@ -129305,15 +129305,15 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
-      "sha256": "f4b52a3966ad503bb739eebd029d17db589ee31683e9ee3bf73f7ac1d9193864"
+      "sha256": "93bdb57500b8f7b486a4bf5e52ebfeb10e95aaaca38ef0410d2e5bf34c2caae5"
     },
     {
       "path": "src/esp32c3-public-circuit.mjs",
-      "sha256": "9ebfb5dd9b200a9a02f4ceaa1bfc3aa67fc044d7774adb85e8c8c9ce79777061"
+      "sha256": "9794c956067f5aba9ee995a78113a177e05800db125947e9445647ceac5d611a"
     },
     {
       "path": "src/stm32-public-circuit.mjs",
-      "sha256": "aca2358cc474975e2db0538035af818f8dc2ee33c4733d92dca38d90e3178b3d"
+      "sha256": "59186c5e5ce820b4aaa42b80b7a6d5d089bf06d7b14c7ed6e1efc20bae49b9c3"
     },
     {
       "path": "src/rp2040-public-workbench.mjs",
@@ -129404,7 +129404,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "a60dd552da826bcf74e23eb7f8457de1ae1e8dd31f313536cb737f8a9d965507"
     }
   ],
-  "implementationSha256": "94de73ad584d80812b5a4eaa25be5886a8b355babb20bd47aa590f3bc2c431af",
+  "implementationSha256": "24b9a9ce6b8630076f89b2b24deeb4c6888e7e54acc36ba5a8c936953fe24c79",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.125 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, real worker, run, image build or deployment",
@@ -129414,7 +129414,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-config-producer.2-current",
     "semanticDisposition": "component, firmware and electrical semantics remain unchanged; paired read-only AVR USART0 RX peripheral-model events are added"
   },
-  "manifestSha256": "5f0201ddec53c3d4769ca4da0d8c338c2a87043c9eba652f6f5b3674347adfba",
+  "manifestSha256": "8e8126632c985d0a4e0dfeb23bb78ae6ac2ec4557d2399c78fc1142e36f0db95",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

@@ -16,6 +16,9 @@ const profiles = [
   { name: 'STM32', Editor: Stm32CircuitEditor, normalize: normalizeStm32CircuitDraft,
     source: { component: 'stm32-1', pin: 'PB0' }, ground: { component: 'stm32-1', pin: 'GND' } },
 ];
+const withoutIdCounters = (value) => {
+  const copy = structuredClone(value); delete copy.layout.idCounters; return copy;
+};
 
 for (const profile of profiles) {
   test(`${profile.name} authors a non-template circuit from a controller-only project`, () => {
@@ -65,7 +68,9 @@ for (const profile of profiles) {
     assert.equal(result.ok, true);
     assert.equal(result.draft.components.length, before.components.length + 2);
     assert.equal(editor.undoApi(`rc139-${profile.name.toLowerCase()}-batch`).ok, true);
-    assert.deepEqual(editor.snapshot().draft, before);
+    assert.deepEqual(withoutIdCounters(editor.snapshot().draft), withoutIdCounters(before));
+    assert.equal(editor.snapshot().draft.layout.idCounters.resistor, 2);
+    assert.equal(editor.snapshot().draft.layout.idCounters.led, 2);
     assert.equal(editor.redoApi(`rc139-${profile.name.toLowerCase()}-batch`).ok, true);
     assert.equal(editor.snapshot().draft.components.find(({ id }) => id === 'resistor-2').properties.ohms, 470);
 
@@ -95,6 +100,20 @@ for (const profile of profiles) {
     assert.equal(editor.deleteSelected().ok, true);
     assert.equal(editor.addComponent('resistor.fixed-v1').componentId, 'resistor-3');
     assert.equal(editor.snapshot().draft.components.some(({ id }) => id === 'resistor-1'), true);
+    assert.equal(editor.undo().ok, true);
+    assert.equal(editor.snapshot().draft.components.some(({ id }) => id === 'resistor-3'), false);
+    assert.equal(editor.snapshot().draft.layout.idCounters.resistor, 3);
+    const reopenedIds = new profile.Editor(JSON.parse(JSON.stringify(editor.snapshot().draft)));
+    assert.equal(reopenedIds.addComponent('resistor.fixed-v1').componentId, 'resistor-4');
+    assert.equal(reopenedIds.newProject().ok, true);
+    assert.equal(reopenedIds.addComponent('resistor.fixed-v1').componentId, 'resistor-1');
+    for (let sequence = 2; sequence <= 16; sequence += 1) {
+      const added = reopenedIds.addComponent('resistor.fixed-v1');
+      assert.equal(added.componentId, `resistor-${sequence}`);
+      reopenedIds.select({ kind: 'component', id: added.componentId });
+      assert.equal(reopenedIds.deleteSelected().ok, true);
+    }
+    assert.match(reopenedIds.addComponent('resistor.fixed-v1').code, /COMPONENT_ID_LINEAGE_EXHAUSTED/u);
 
     const beforeApi = structuredClone(editor.snapshot().draft);
     const api = editor.applyApiBatch([{ command: 'component.duplicate', component_id: 'led-1', id: 'led-2',
@@ -102,7 +121,8 @@ for (const profile of profiles) {
     assert.equal(api.ok, true);
     assert.equal(api.draft.components.some(({ id }) => id === 'led-2'), true);
     assert.equal(editor.undoApi(`duplicate-${profile.name}`).ok, true);
-    assert.deepEqual(editor.snapshot().draft, beforeApi);
+    assert.deepEqual(withoutIdCounters(editor.snapshot().draft), withoutIdCounters(beforeApi));
+    assert.equal(editor.snapshot().draft.layout.idCounters.led, 2);
     assert.equal(editor.redoApi(`duplicate-${profile.name}`).ok, true);
 
     editor.select({ kind: 'net', id: 'net-ground' });
@@ -156,6 +176,7 @@ for (const profile of profiles) {
     ], `mixed-${profile.name}`);
     assert.equal(api.ok, true);
     assert.equal(editor.undoApi(`mixed-${profile.name}`).ok, true);
-    assert.deepEqual(editor.snapshot().draft, saved);
+    assert.deepEqual(withoutIdCounters(editor.snapshot().draft), withoutIdCounters(saved));
+    assert.equal(editor.snapshot().draft.layout.idCounters.button, 2);
   });
 }

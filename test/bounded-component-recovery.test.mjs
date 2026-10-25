@@ -42,6 +42,7 @@ for (const profile of profiles) {
     ['led-1', BOUNDED_LED_TYPE, `${profile.prefix}_PATH_OPEN`],
   ]) {
     test(`${profile.name} restores one deleted ${type} after history-free reopen`, () => {
+      const replacementId = `${id.split('-')[0]}-2`;
       const editor = new profile.Editor();
       editor.select({ kind: 'component', id });
       const deleted = editor.deleteSelected();
@@ -57,15 +58,15 @@ for (const profile of profiles) {
       assert.deepEqual(reopened.snapshot(), beforeAdd);
       const added = reopened.addMissingComponent(type, { x: 0.73, y: 0.61 });
       assert.equal(added.ok, true);
-      assert.equal(added.componentId, id);
+      assert.equal(added.componentId, replacementId);
       assert.equal(added.draft.components.filter((component) => component.type === type).length, 1);
       assert.equal(added.draft.nets.some((net) => net.endpoints.some((endpoint) => endpoint.component === id)), false);
-      assert.equal(added.selection.id, id);
-      assert.deepEqual(added.draft.layout.positions[id], { x: 0.73, y: 0.61, rotation: 0 });
+      assert.equal(added.selection.id, replacementId);
+      assert.deepEqual(added.draft.layout.positions[replacementId], { x: 0.73, y: 0.61, rotation: 0 });
       assert.equal(added.canUndo, true);
       assert.equal(reopened.addMissingComponent(type).code, `${profile.prefix}_COMPONENT_EXISTS`);
       assert.equal(reopened.undo().draft.components.some((component) => component.type === type), false);
-      assert.equal(reopened.redo().draft.components.some((component) => component.id === id), true);
+      assert.equal(reopened.redo().draft.components.some((component) => component.id === replacementId), true);
     });
   }
 
