@@ -80,4 +80,42 @@ for (const profile of profiles) {
       assert.equal(JSON.stringify(editor.snapshot().draft), accepted);
     }
   });
+
+  test(`${profile.name} duplicates one disconnected part with stable IDs through UI and API owners`, () => {
+    const editor = new profile.Editor();
+    const first = editor.duplicateComponent('resistor-1', { x: 0.6, y: 0.6 });
+    assert.equal(first.ok, true);
+    assert.equal(first.componentId, 'resistor-2');
+    assert.deepEqual(first.draft.components.find(({ id }) => id === 'resistor-2').properties,
+      first.draft.components.find(({ id }) => id === 'resistor-1').properties);
+    assert.deepEqual(first.draft.layout.positions['resistor-2'], { x: 0.6, y: 0.6, rotation: 0 });
+    assert.equal(first.draft.nets.some((net) => net.endpoints.some(({ component }) => component === 'resistor-2')), false);
+
+    editor.select({ kind: 'component', id: 'resistor-2' });
+    assert.equal(editor.deleteSelected().ok, true);
+    assert.equal(editor.addComponent('resistor.fixed-v1').componentId, 'resistor-2');
+    assert.equal(editor.snapshot().draft.components.some(({ id }) => id === 'resistor-1'), true);
+
+    const beforeApi = structuredClone(editor.snapshot().draft);
+    const api = editor.applyApiBatch([{ command: 'component.duplicate', component_id: 'led-1', id: 'led-2',
+      position: { x: 0.75, y: 0.75, rotation: 0 } }], `duplicate-${profile.name}`);
+    assert.equal(api.ok, true);
+    assert.equal(api.draft.components.some(({ id }) => id === 'led-2'), true);
+    assert.equal(editor.undoApi(`duplicate-${profile.name}`).ok, true);
+    assert.deepEqual(editor.snapshot().draft, beforeApi);
+    assert.equal(editor.redoApi(`duplicate-${profile.name}`).ok, true);
+
+    const accepted = JSON.stringify(editor.snapshot().draft);
+    for (const operation of [
+      { command: 'component.duplicate', component_id: profile.source.component, id: 'board-2',
+        position: { x: 0.4, y: 0.4, rotation: 0 } },
+      { command: 'component.duplicate', component_id: 'led-1', id: 'resistor-3',
+        position: { x: 0.4, y: 0.4, rotation: 0 } },
+      { command: 'component.duplicate', component_id: 'missing', id: 'led-3',
+        position: { x: 0.4, y: 0.4, rotation: 0 } },
+    ]) {
+      assert.equal(editor.applyApiBatch([operation], `invalid-duplicate-${Math.random()}`).ok, false);
+      assert.equal(JSON.stringify(editor.snapshot().draft), accepted);
+    }
+  });
 }

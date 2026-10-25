@@ -694,7 +694,7 @@ export class Rp2040PublicWorkbench {
     if (this.pauseProofOperation) this.rejectPauseProof('RP2040_BUDGET_PAUSE_CIRCUIT_CHANGED');
     if (!['deleteSelected', 'undo', 'redo', 'moveComponent', 'rotateComponent',
       'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint',
-      'newProject', 'addComponent', 'addMissingComponent', 'setComponentProperty', 'setComponentAppearance', 'setComponentAppearanceEdit',
+      'newProject', 'addComponent', 'duplicateComponent', 'addMissingComponent', 'setComponentProperty', 'setComponentAppearance', 'setComponentAppearanceEdit',
       'setWireColor', 'setWireRoute', 'applyApiBatch', 'undoApi', 'redoApi'].includes(operation)) {
       return { ok: false, code: 'RP2040_CIRCUIT_OPERATION_INVALID' };
     }
@@ -730,6 +730,7 @@ export class Rp2040PublicWorkbench {
       reconnectEndpoint: `Cable endpoint reconnected (${result.code}). Executable authority retired; finish a valid circuit and build fresh firmware.`,
       newProject: 'New controller-only circuit started. Add supported parts and connect named pins.',
       addComponent: `Added ${result.componentId} without inferred cables. Connect its named pins, then build fresh firmware.`,
+      duplicateComponent: `Duplicated ${result.sourceComponentId} as ${result.componentId} without inferred cables. Connect its named pins, then build fresh firmware.`,
       addMissingComponent: `Added ${result.componentId} without inferred cables. Connect its named pins, then build fresh firmware.`,
       setComponentProperty: `Updated ${result.componentId}.${result.key}. Electrical rules revalidated; build fresh firmware.`,
     };

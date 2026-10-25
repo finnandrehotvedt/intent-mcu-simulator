@@ -12,7 +12,7 @@ const narrowOperations = Object.freeze({
   wireCreateReconnect: supported('NamedSeriesLedCircuitEditor named-endpoint methods'),
   undoRedo: supported('NamedSeriesLedCircuitEditor bounded history'),
   moveRotateKeyboard: supported('Existing workbench component controls and keyboard handlers'),
-  duplicate: unavailable('FIXED_SINGLE_INSTANCE', 'Exactly one resistor and one LED are supported.'),
+  duplicate: supported('NamedSeriesLedCircuitEditor.duplicateComponent creates a disconnected stable-ID copy'),
 });
 
 const narrowSafety = (prefix) => Object.freeze({
@@ -90,7 +90,7 @@ export const EXISTING_GRAPH_EDIT_SAFETY_CONTRACT = Object.freeze({
   completion: Object.freeze({
     w06: 'complete: exact branch reconnect/delete and separately labelled whole-net delete are public on explicit-junction AVR graphs; fixed two-endpoint profiles truthfully expose no branch',
     w07: 'complete: every supported authored graph operation is one atomic complete-document Undo/Redo transaction; rejection changes no project, revision or history',
-    w08: 'complete: the general AVR editors support click-add, drag placement, duplicate, move, rotate, delete and keyboard history with fresh stable IDs; bounded narrow teaching profiles preserve their explicit single-instance contracts',
+    w08: 'complete: the general AVR editors support click-add, drag placement, duplicate, move, rotate, delete and keyboard history with fresh stable IDs; bounded narrow teaching profiles support multiple disconnected resistor/LED instances while preserving their explicit runtime projection limits',
     w10: 'complete: every fault representable by each public profile rejects fail-closed with a stable actionable diagnostic; arbitrary rail mixing, physical damage prediction and a general circuit solver remain explicitly unavailable',
   }),
 });

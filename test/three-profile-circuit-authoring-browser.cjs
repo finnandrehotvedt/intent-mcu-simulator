@@ -161,6 +161,19 @@ const profiles = [
       assert.equal(recovered.authoredName, beforeNew.authoredName);
       assert.equal(recovered.authoredSource, beforeNew.authoredSource);
       assert.equal(recovered.originalRaw, afterNew.oldRaw);
+
+      await page.evaluate(({ api }) => window[api].selectCircuit({ kind: 'component', id: 'resistor-1' }), profile);
+      await page.waitForSelector('[data-bounded-duplicate="resistor-1"]', { state: 'attached' });
+      await page.evaluate(() => document.querySelector('[data-bounded-duplicate="resistor-1"]').click());
+      assert.equal(await page.evaluate(({ api }) => {
+        const state = window[api].state();
+        return (state.circuit ?? state.project.circuit).components.some(({ id }) => id === 'resistor-3');
+      }, profile), true);
+      await page.evaluate(({ api }) => window[api].undoCircuit(), profile);
+      assert.equal(await page.evaluate(({ api }) => {
+        const state = window[api].state();
+        return (state.circuit ?? state.project.circuit).components.some(({ id }) => id === 'resistor-3');
+      }, profile), false);
     }
     process.stdout.write('RC139 three-profile browser authoring PASS\n');
   } finally {

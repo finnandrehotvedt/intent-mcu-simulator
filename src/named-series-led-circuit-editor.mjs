@@ -239,6 +239,19 @@ export class NamedSeriesLedCircuitEditor {
             label: operation.id === policy.id ? policy.label : `${policy.displayName} ${operation.id.split('-').at(-1)}`,
             properties: clone(policy.properties), controls: {} });
           next.layout.positions[operation.id] = clone(operation.position);
+        } else if (operation.command === 'component.duplicate') {
+          const source = next.components.find((item) => item.id === operation.component_id);
+          const policy = source && this.componentPolicy.parts.find((part) => part.type === source.type);
+          const expectedStem = source?.type === BOUNDED_RESISTOR_TYPE ? 'resistor'
+            : source?.type === BOUNDED_LED_TYPE ? 'led' : null;
+          if (!source || !policy || !expectedStem
+              || !new RegExp(`^${expectedStem}-(?:[1-9]|1[0-6])$`, 'u').test(operation.id)
+              || next.components.some((item) => item.id === operation.id)
+              || !operation.position || !Number.isFinite(operation.position.x) || !Number.isFinite(operation.position.y)
+              || !Number.isFinite(operation.position.rotation)) throw new Error('COMPONENT_DUPLICATE_INVALID');
+          next.components.push({ ...clone(source), id: operation.id,
+            label: `${policy.displayName} ${operation.id.split('-').at(-1)}` });
+          next.layout.positions[operation.id] = clone(operation.position);
         } else if (operation.command === 'component.remove') {
           const target = next.components.find((item) => item.id === operation.component_id);
           if (!target || target.type === this.fixedComponentType) throw new Error('COMPONENT_REMOVE_INVALID');
@@ -417,6 +430,33 @@ export class NamedSeriesLedCircuitEditor {
         ...this.commit(next, { kind: 'component', id }) };
     } catch (error) {
       return this.fail('COMPONENT_ADD_INVALID', { type, cause: error.code ?? error.message });
+    }
+  }
+
+  duplicateComponent(componentId, position = null) {
+    const source = this.draft.components.find((component) => component.id === componentId);
+    const policy = source && this.componentPolicy.parts.find((part) => part.type === source.type);
+    const id = policy && this.nextComponentId(source.type);
+    if (!source || source.type === this.fixedComponentType || !policy || !id) {
+      return this.fail(source && policy ? 'COMPONENT_LIMIT' : 'COMPONENT_DUPLICATE_UNSUPPORTED', { componentId });
+    }
+    if (position !== null && (!position || !Number.isFinite(position.x) || !Number.isFinite(position.y))) {
+      return this.fail('COMPONENT_DUPLICATE_POSITION_INVALID', { componentId });
+    }
+    const next = clone(this.draft);
+    const sourcePosition = next.layout.positions[componentId];
+    next.components.push({ ...clone(source), id, label: `${policy.displayName} ${id.split('-').at(-1)}` });
+    next.layout.positions[id] = position === null ? {
+      x: Math.min(0.92, sourcePosition.x + 0.08), y: Math.min(0.9, sourcePosition.y + 0.08),
+      rotation: sourcePosition.rotation,
+    } : { x: Math.max(0.08, Math.min(0.92, position.x)), y: Math.max(0.1, Math.min(0.9, position.y)),
+      rotation: sourcePosition.rotation };
+    try {
+      return { ok: true, changed: true, code: this.code('COMPONENT_DUPLICATED'),
+        componentId: id, sourceComponentId: componentId,
+        ...this.commit(next, { kind: 'component', id }) };
+    } catch (error) {
+      return this.fail('COMPONENT_DUPLICATE_INVALID', { componentId, cause: error.code ?? error.message });
     }
   }
 

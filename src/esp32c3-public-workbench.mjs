@@ -576,7 +576,7 @@ export class Esp32C3PublicWorkbench {
   editCircuit(operation, ...args) {
     if (!['deleteSelected', 'undo', 'redo', 'moveComponent', 'rotateComponent',
       'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint',
-      'newProject', 'addComponent', 'addMissingComponent', 'setComponentProperty', 'setComponentAppearance', 'setComponentAppearanceEdit',
+      'newProject', 'addComponent', 'duplicateComponent', 'addMissingComponent', 'setComponentProperty', 'setComponentAppearance', 'setComponentAppearanceEdit',
       'setWireColor', 'setWireRoute', 'applyApiBatch', 'undoApi', 'redoApi'].includes(operation)) {
       return { ok: false, code: 'C3_CIRCUIT_OPERATION_INVALID' };
     }
@@ -612,6 +612,7 @@ export class Esp32C3PublicWorkbench {
       reconnectEndpoint: `Cable endpoint reconnected (${result.code}). Flash and LED authority retired; finish a valid circuit and build fresh.`,
       newProject: 'New controller-only circuit started. Add supported parts and connect named pins.',
       addComponent: `Added ${result.componentId} without inferred cables. Connect its named pins, then build fresh.`,
+      duplicateComponent: `Duplicated ${result.sourceComponentId} as ${result.componentId} without inferred cables. Connect its named pins, then build fresh.`,
       addMissingComponent: `Added ${result.componentId} without inferred cables. Connect its named pins, then build fresh.`,
       setComponentProperty: `Updated ${result.componentId}.${result.key}. Electrical rules revalidated; build fresh.`,
     };

@@ -1416,6 +1416,12 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
 
   const modelPanel = document.createElement('section');
   const modelStatus = document.createElement('p'); modelStatus.className = 'component-editor-invariant'; modelStatus.setAttribute('role', 'status');
+  const duplicate = document.createElement('button'); duplicate.type = 'button'; duplicate.textContent = 'Duplicate disconnected part';
+  duplicate.dataset.boundedDuplicate = selected.id;
+  duplicate.addEventListener('click', () => {
+    const result = editCircuit('duplicateComponent', selected.id);
+    if (!result?.ok) modelStatus.textContent = `Duplicate rejected (${result?.code ?? 'validation failed'}). The project is unchanged.`;
+  });
   const modelApply = document.createElement('button'); modelApply.type = 'button'; modelApply.textContent = 'Apply model property';
   modelApply.dataset.boundedModelApply = selected.id;
   const modelCancel = document.createElement('button'); modelCancel.type = 'button'; modelCancel.textContent = 'Cancel preview';
@@ -1454,7 +1460,7 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
     }
   });
   const modelActions = document.createElement('div'); modelActions.className = 'component-editor-actions';
-  modelActions.append(modelCancel, modelApply); modelPanel.append(row, modelStatus, modelActions); updateModel();
+  modelActions.append(duplicate, modelCancel, modelApply); modelPanel.append(row, modelStatus, modelActions); updateModel();
 
   const appearance = document.createElement('section'); appearance.className = 'bounded-property-row bounded-appearance-row';
   const appearanceLabel = document.createElement('label');
