@@ -1813,10 +1813,12 @@ export function mountSharedWorkbenchShell(document) {
   const simplePartsDrawer = document.querySelector('#simple-parts-drawer');
   const simplePartsMount = document.querySelector('#simple-parts-mount');
   const simplePartsProfile = document.querySelector('#simple-parts-profile');
+  const simplePartsEdit = document.querySelector('#simple-parts-edit');
   const simplePartsUndo = document.querySelector('#simple-parts-undo');
   const simplePartsSave = document.querySelector('#simple-parts-save');
   if (Object.values(viewButtons).some((node) => !node) || !viewStatus || !more || !popupControls
-      || !simplePartsDrawer || !simplePartsMount || !simplePartsProfile || !simplePartsUndo || !simplePartsSave) {
+      || !simplePartsDrawer || !simplePartsMount || !simplePartsProfile || !simplePartsEdit
+      || !simplePartsUndo || !simplePartsSave) {
     throw new Error('SHARED_WORKBENCH_VIEW_SWITCH_MISSING');
   }
   const simpleActionSelectors = Object.freeze({
@@ -1918,6 +1920,7 @@ export function mountSharedWorkbenchShell(document) {
   };
   simplePartsUndo.addEventListener('click', () => document.querySelector(simpleActionSelectors[activeProfile].undo)?.click());
   simplePartsSave.addEventListener('click', () => document.querySelector(simpleActionSelectors[activeProfile].save)?.click());
+  simplePartsEdit.addEventListener('click', () => document.querySelector('#toggle-inspector')?.click());
   const SimpleActionObserver = document.defaultView?.MutationObserver;
   const simpleActionObserver = SimpleActionObserver ? new SimpleActionObserver(syncSimplePartsActions) : null;
   if (simpleActionObserver) {

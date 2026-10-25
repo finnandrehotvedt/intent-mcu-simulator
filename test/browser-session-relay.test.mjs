@@ -60,6 +60,21 @@ test('read-only request is correlated, transient and duplicate-safe', () => {
     request: value }).code, 'API_REQUEST_RECONCILE');
 });
 
+test('exact submit replay reconciles without consuming another sequence', () => {
+  const { relay, owner, client } = paired();
+  const value = request(1, 'request-reconcile-0001');
+  assert.equal(relay.submit({ sessionId: ids.sessionId,
+    clientCapability: client.clientCapability, request: value }).code, 'API_REQUEST_QUEUED');
+  const replay = relay.submit({ sessionId: ids.sessionId,
+    clientCapability: client.clientCapability, request: structuredClone(value) });
+  assert.equal(replay.code, 'API_REQUEST_RECONCILE');
+  assert.equal(replay.reconciliation.status, 'pending');
+  assert.equal(relay.pull({ sessionId: ids.sessionId, ownerCapability: owner.ownerCapability }).request.request_id,
+    value.request_id);
+  assert.equal(relay.submit({ sessionId: ids.sessionId,
+    clientCapability: client.clientCapability, request: request(2) }).code, 'API_REQUEST_QUEUED');
+});
+
 test('wrong project, sequence, expired client, owner loss and revoke fail closed', () => {
   const first = paired();
   assert.equal(first.relay.submit({ sessionId: ids.sessionId, clientCapability: 'wrong', request: request() }).code, 'API_AUTH_REQUIRED');
@@ -78,6 +93,28 @@ test('wrong project, sequence, expired client, owner loss and revoke fail closed
   assert.equal(second.relay.pull({ sessionId: ids.sessionId, ownerCapability: second.owner.ownerCapability }).code, 'API_OWNER_GONE');
 });
 
+test('memory-only client heartbeat renews only while the original owner tab remains live', () => {
+  const state = paired();
+  state.clock.value += 110_000;
+  assert.equal(state.relay.heartbeat({ sessionId: ids.sessionId,
+    ownerCapability: state.owner.ownerCapability, revision: 0 }).code, 'API_OWNER_LEASE_RENEWED');
+  const renewed = state.relay.clientHeartbeat({ sessionId: ids.sessionId,
+    clientCapability: state.client.clientCapability });
+  assert.equal(renewed.code, 'API_CLIENT_LEASE_RENEWED');
+  assert.equal(renewed.idleExpiresAt, state.clock.value + 120_000);
+  assert.equal(renewed.expiresAt, state.clock.value + 900_000);
+  assert.equal(state.relay.clientHeartbeat({ sessionId: ids.sessionId,
+    clientCapability: 'wrong' }).code, 'API_AUTH_REQUIRED');
+  state.clock.value += 110_000;
+  assert.equal(state.relay.submit({ sessionId: ids.sessionId,
+    clientCapability: state.client.clientCapability, request: request() }).code, 'API_REQUEST_QUEUED');
+
+  const ownerGone = paired(); ownerGone.clock.value += 130_001;
+  assert.equal(ownerGone.relay.clientHeartbeat({ sessionId: ids.sessionId,
+    clientCapability: ownerGone.client.clientCapability }).code, 'API_AUTH_REQUIRED');
+  assert.deepEqual(ownerGone.relay.inspect(), { sessions: 0, pairings: 0 });
+});
+
 test('bounded request tombstones never evict into re-execution', () => {
   const { relay, owner, client, clock } = paired();
   for (let sequence = 1; sequence <= 64; sequence += 1) {
@@ -88,12 +125,28 @@ test('bounded request tombstones never evict into re-execution', () => {
     assert.equal(relay.complete({ sessionId: ids.sessionId, ownerCapability: owner.ownerCapability,
       result: { schema: BROWSER_SESSION_RESULT_SCHEMA, request_id: value.request_id, status: 'accepted',
         code: 'API_READ', revision_before: 0, revision_after: 0, changes: [] } }).ok, true);
+    assert.equal(relay.readResult({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
+      requestId: value.request_id }).status, 'accepted');
   }
   clock.value += 10_001;
   assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
-    request: request(65) }).code, 'API_SESSION_RENEW_REQUIRED');
+    request: request(65) }).code, 'API_REQUEST_QUEUED');
   assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
-    request: request(1) }).code, 'API_REQUEST_RECONCILE');
+    request: request(1) }).code, 'API_REQUEST_REPLAY');
+});
+
+test('owner-bound client heartbeat survives repeated idle and former absolute boundaries', () => {
+  const state = paired();
+  for (let minute = 1; minute <= 32; minute += 1) {
+    state.clock.value += 60_000;
+    assert.equal(state.relay.heartbeat({ sessionId: ids.sessionId,
+      ownerCapability: state.owner.ownerCapability, revision: 0 }).ok, true);
+    assert.equal(state.relay.clientHeartbeat({ sessionId: ids.sessionId,
+      clientCapability: state.client.clientCapability }).ok, true);
+  }
+  state.clock.value += 119_000;
+  assert.equal(state.relay.submit({ sessionId: ids.sessionId,
+    clientCapability: state.client.clientCapability, request: request() }).code, 'API_REQUEST_QUEUED');
 });
 
 test('pairing, rate, queue TTL and retired session storage are bounded', () => {
@@ -106,9 +159,13 @@ test('pairing, rate, queue TTL and retired session storage are bounded', () => {
   }
   assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
     request: request(6) }).code, 'API_RATE_LIMIT');
+  assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
+    request: request(6) }).code, 'API_RATE_LIMIT');
   clock.value += 30_001;
   assert.equal(relay.pull({ sessionId: ids.sessionId, ownerCapability: owner.ownerCapability }).code,
     'API_QUEUE_EMPTY');
+  assert.equal(relay.submit({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
+    request: request(6) }).code, 'API_REQUEST_QUEUED');
   assert.equal(relay.readResult({ sessionId: ids.sessionId, clientCapability: client.clientCapability,
     requestId: request(1).request_id }).code, 'API_REQUEST_EXPIRED');
 

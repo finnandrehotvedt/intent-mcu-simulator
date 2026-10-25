@@ -2,6 +2,20 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.137 — 2026-10-25
+
+- Enables explicit canonical circuit editing for AVR, Pico, ESP32-C3 and STM32
+  while preserving the fixed three-part non-AVR scope and profile validators.
+- Keeps request sequence unchanged after explicit rate-limit or queue-full
+  rejection and resumes safely after cooldown on the same pairing.
+- Reconciles ambiguous transport only with the identical request ID and payload
+  and fails closed when a bounded reconciliation cannot establish the outcome.
+- Keeps API resistor/LED properties, model-derived labels, accessible labels,
+  persistence and exact transaction Undo coherent with manual editing.
+- Records independent Windows/Chrome acceptance across more than 71 requests,
+  more than 15 minutes and all four profiles; adds no deployment or runtime
+  authority and preserves public rc.136 with rc.134 as rollback basis.
+
 ## 1.1.0-rc.136 — 2026-10-24
 
 - Adds a short-lived one-use `.intentpair` download so the pairing secret need

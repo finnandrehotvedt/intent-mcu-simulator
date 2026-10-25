@@ -17,12 +17,18 @@ test('copyable Codex instructions are public, self-contained and secret-safe', (
     assert.ok(CODEX_PAIRING_INSTRUCTIONS.toLowerCase().includes(required.toLowerCase()), required);
   }
   assert.doesNotMatch(CODEX_PAIRING_INSTRUCTIONS, /Bearer [A-Za-z0-9_-]{20,}/);
-  assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node .\\client.mjs --ticket .\\intent-mcu-pairing.intentpair plan.json'));
-  assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node ./client.mjs --ticket ./intent-mcu-pairing.intentpair plan.json'));
-  assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node .\\client.mjs --ticket .\\intent-mcu-pairing.intentpair\n'));
   assert.ok(CODEX_PAIRING_INSTRUCTIONS.includes('node .\\client.mjs --session .\\intent-mcu-pairing.intentpair'));
+  assert.match(CODEX_PAIRING_INSTRUCTIONS, /exec_command using tty:true/);
+  assert.match(CODEX_PAIRING_INSTRUCTIONS, /session_id/);
+  assert.match(CODEX_PAIRING_INSTRUCTIONS, /write_stdin/);
+  assert.match(CODEX_PAIRING_INSTRUCTIONS, /never fall back to a one-shot/);
   assert.match(CODEX_PAIRING_INSTRUCTIONS, /One ticket is claimed once/);
-  assert.match(CODEX_PAIRING_INSTRUCTIONS, /ending it requires a fresh pairing/);
+  assert.match(CODEX_PAIRING_INSTRUCTIONS, /Retain that same process handle across later chat turns/);
+  assert.match(CODEX_PAIRING_INSTRUCTIONS, /API_SESSION_STDIN_REQUIRED/);
+  assert.match(CODEX_PAIRING_INSTRUCTIONS, /reusable process\/session handle/);
+  assert.match(CODEX_PAIRING_INSTRUCTIONS, /heartbeat every 60 seconds/);
+  assert.match(CODEX_PAIRING_INSTRUCTIONS, /browser-session-style continuity/);
+  assert.match(CODEX_PAIRING_INSTRUCTIONS, /two missed client heartbeats/);
   assert.doesNotMatch(CODEX_PAIRING_INSTRUCTIONS, /printf|PAIRING_SECRET=/);
   assert.match(CODEX_PAIRING_INSTRUCTIONS, /Never auto-undo/);
 });
@@ -40,6 +46,8 @@ test('build exposes versioned protocol, complete client and exact metaprompt', a
   assert.match(client, /API_SESSION_LOCAL_CLOSED/);
   assert.match(client, /mode: 'session'/);
   assert.match(client, /await unlink\(ticketPath\)/);
+  assert.match(client, /requirePersistentSessionInput/);
+  assert.ok(client.indexOf('await requirePersistentSessionInput()') < client.indexOf('await readFile(ticketPath)'));
   assert.match(client, /edit\.batch/);
   assert.match(client, /API_PLAN_REMOVAL_NOT_ALLOWED/);
   assert.doesNotMatch(client, /component\.remove.*before\.components/s);

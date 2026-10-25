@@ -1,4 +1,37 @@
-# Intent MCU Simulator 1.1.0-rc.136
+# Intent MCU Simulator 1.1.0-rc.137
+
+## Four-profile canonical API and resilient persistent client
+
+Rc.137 extends the explicit `edit_circuit` opt-in to the existing canonical
+AVR, RP2040 Pico, ESP32-C3 and STM32F429ZI editors. The three non-AVR profiles
+remain deliberately limited to their fixed controller plus one resistor and
+one LED, exact named pins, bounded property models and profile electrical
+validators. This does not add general component, firmware Build or Run
+authority.
+
+The dependency-free persistent client now advances its monotonic request
+sequence only after a known queued or reconciled submit. Explicit rate-limit
+and queue-full rejection leaves the sequence available for a later user
+command after cooldown. Ambiguous transport is retried only with the identical
+request ID and payload; unresolved ambiguity fails closed instead of issuing a
+new mutation. Exact transaction Undo remains explicit and same-session only.
+API property changes now update model-derived resistor and LED labels through
+the same rules as manual edits, while AVR user-authored labels remain intact.
+
+Independent Windows/Chrome review used one pairing and one persistent client
+across chat turns, more than 71 requests and more than 15 minutes, including
+rate-limit recovery, a second edit, exact Undo, Revoke and all four profile
+journeys. The dated source review records the relationship to the approved
+24 October AVR workflow recording without altering that media.
+
+This source-only release preparation adds no deployment, compiler, native
+runtime, worker, image or public-route action. Rc.136 remains source history;
+the owning deployment checkpoint retains public rc.136 and rollback rc.134
+until a separate reviewed deployment packet changes them.
+
+---
+
+## 1.1.0-rc.136
 
 ## One-use pairing tickets and same-process sessions
 

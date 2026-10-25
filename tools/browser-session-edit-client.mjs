@@ -12,9 +12,31 @@ const sessionMode = args[0] === '--session';
 const ticketMode = args[0] === '--ticket' || sessionMode;
 let [origin, planPath] = ticketMode ? [null, sessionMode ? null : args[2]] : args;
 const ticketPath = ticketMode ? args[1] : null;
+const EDITABLE_PROFILES = new Set(['board.atmega328p-16mhz-v1', 'board.rp2040-pico-v1',
+  'board.esp32-c3-devmodule-v1', 'board.stm32f429zi-nucleo144-v1']);
 if ((!ticketMode && (!origin || args.length > 2)) || (ticketMode && (!ticketPath || args.length > (sessionMode ? 2 : 3)))) {
   stderr.write('Usage: node client.mjs ORIGIN [NONSECRET_PLAN.json]\n       node client.mjs --ticket PAIRING.intentpair [NONSECRET_PLAN.json]\n       node client.mjs --session PAIRING.intentpair\n'); process.exit(2);
 }
+// Install the line reader before the persistence probe. Node's readline
+// buffers an immediate first JSONL command while the caller keeps the pipe
+// open; no bytes are lost during the preflight delay.
+let pipedLines = null;
+if (!stdin.isTTY) pipedLines = createInterface({ input: stdin, crlfDelay: Infinity, terminal: false })[Symbol.asyncIterator]();
+async function requirePersistentSessionInput() {
+  if (!sessionMode || stdin.isTTY) return;
+  if (stdin.readableEnded || stdin.destroyed) throw new Error('API_SESSION_STDIN_REQUIRED');
+  let ended = false;
+  const markEnded = () => { ended = true; };
+  stdin.once('end', markEnded); stdin.once('close', markEnded);
+  stdin.resume();
+  await new Promise((resolve) => setTimeout(resolve, 75));
+  stdin.off('end', markEnded); stdin.off('close', markEnded);
+  if (ended || stdin.readableEnded || stdin.destroyed) throw new Error('API_SESSION_STDIN_REQUIRED');
+}
+// A session ticket is one-use. Prove that the caller retained a writable stdin
+// before reading or deleting it, so a detached one-shot command cannot consume
+// the user's only pairing and then exit immediately.
+await requirePersistentSessionInput();
 let pairingSecret = null;
 let ticketScopes = null;
 if (ticketMode) {
@@ -51,8 +73,6 @@ if (ticketMode) {
   origin = ticket.origin; pairingSecret = ticket.pairing_secret; ticketScopes = ticket.scopes;
 }
 const endpoint = new URL('/api/session/v1', origin);
-let pipedLines = null;
-if (!stdin.isTTY) pipedLines = createInterface({ input: stdin, crlfDelay: Infinity, terminal: false })[Symbol.asyncIterator]();
 async function hiddenLine(prompt) {
   if (!stdin.isTTY) return String((await pipedLines.next()).value ?? '').trim();
   stdin.setRawMode(true); stdin.resume();
@@ -109,13 +129,51 @@ if (ticketScopes && scopes.some((scope) => !ticketScopes.includes(scope))) throw
 const claim = await post('pairing.claim', { pairingSecret, scopes });
 if (!claim.ok) throw new Error(claim.code);
 let sequence = 1; let revision = claim.revision;
+let lastSubmitAt = 0;
+let submitAmbiguous = false;
+let sessionHeartbeat = null;
+if (sessionMode) {
+  sessionHeartbeat = setInterval(async () => {
+    try {
+      const renewed = await post('client.heartbeat', { sessionId: claim.sessionId }, claim.clientCapability);
+      if (!renewed.ok) {
+        stdout.write(`${JSON.stringify({ status: 'rejected', code: renewed.code })}\n`);
+        process.exit(0);
+      }
+    } catch {
+      stdout.write('{"status":"rejected","code":"API_SESSION_HEARTBEAT_FAILED"}\n');
+      process.exit(0);
+    }
+  }, 60_000);
+}
 async function execute(command, args = {}) {
+  if (submitAmbiguous) throw new Error('API_SUBMIT_RECONCILIATION_REQUIRED');
   const requestId = `cli-${randomUUID()}`;
   const request = { schema: 'intent-mcu-browser-session-request@1', request_id: requestId,
     session_id: claim.sessionId, project_id: claim.projectId, expected_revision: revision,
-    sequence: sequence++, command, arguments: args };
-  const queued = await post('request.submit', { sessionId: claim.sessionId, request }, claim.clientCapability);
-  if (!queued.ok) throw new Error(queued.code);
+    sequence, command, arguments: args };
+  let queued;
+  const paceMs = 210 - (Date.now() - lastSubmitAt);
+  if (paceMs > 0) await new Promise((resolve) => setTimeout(resolve, paceMs));
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      lastSubmitAt = Date.now();
+      queued = await post('request.submit', { sessionId: claim.sessionId, request }, claim.clientCapability);
+      break;
+    } catch (error) {
+      if (attempt === 2) { submitAmbiguous = true;
+        throw Object.assign(new Error('API_SUBMIT_RECONCILIATION_REQUIRED'), { cause: error }); }
+      await new Promise((resolve) => setTimeout(resolve, 100 * (attempt + 1)));
+    }
+  }
+  const reconciled = queued.status ? queued
+    : queued.code === 'API_REQUEST_RECONCILE' && queued.reconciliation?.status !== 'pending'
+      ? queued.reconciliation : null;
+  if (!queued.ok && !reconciled) throw new Error(queued.code);
+  if (!reconciled && !['API_REQUEST_QUEUED', 'API_REQUEST_RECONCILE'].includes(queued.code)) throw new Error(queued.code);
+  sequence += 1;
+  if (reconciled) { if (Number.isInteger(reconciled.revision_after)) revision = reconciled.revision_after;
+    return reconciled; }
   for (let attempt = 0; attempt < 120; attempt += 1) {
     const result = await post('result.read', { sessionId: claim.sessionId, requestId }, claim.clientCapability);
     if (result.code !== 'API_RESULT_PENDING') { if (Number.isInteger(result.revision_after)) revision = result.revision_after; return result; }
@@ -158,14 +216,16 @@ if (sessionMode) {
   let lastState = null;
   stdout.write(`${JSON.stringify({ status: 'ready', mode: 'session', project_id: claim.projectId,
     revision, scopes: claim.scopes, expires_at: claim.expiresAt })}\n`);
-  for await (const line of pipedLines ?? createInterface({ input: stdin, output: stderr, terminal: true })) {
-    let input;
-    try { input = JSON.parse(String(line)); }
-    catch { stdout.write('{"status":"rejected","code":"API_SESSION_INPUT_SHAPE"}\n'); continue; }
-    try {
+  try {
+    for await (const line of pipedLines ?? createInterface({ input: stdin, output: stderr, terminal: true })) {
+      let input;
+      try { input = JSON.parse(String(line)); }
+      catch { stdout.write('{"status":"rejected","code":"API_SESSION_INPUT_SHAPE"}\n'); continue; }
+      try {
       if (!input || typeof input !== 'object' || Array.isArray(input)
           || typeof input.command !== 'string') throw new Error('API_SESSION_INPUT_SHAPE');
       if (input.command === 'close' && Object.keys(input).join('|') === 'command') {
+        clearInterval(sessionHeartbeat);
         stdout.write('{"status":"closed","code":"API_SESSION_LOCAL_CLOSED"}\n'); break;
       }
       if (input.command === 'inspect' && Object.keys(input).join('|') === 'command') {
@@ -174,7 +234,7 @@ if (sessionMode) {
       if (input.command === 'apply' && Object.keys(input).sort().join('|') === 'command|plan') {
         if (!claim.scopes.includes('edit_circuit')) throw new Error('API_SCOPE_REQUIRED');
         const candidate = validatePlan(input.plan); const current = lastState ?? await discoverProject();
-        if (current.catalog.profile !== 'board.atmega328p-16mhz-v1') throw new Error('API_PROFILE_READ_ONLY');
+        if (!EDITABLE_PROFILES.has(current.catalog.profile)) throw new Error('API_PROFILE_READ_ONLY');
         validateNamedPins(candidate, current.components, current.catalog);
         const applied = await accepted('edit.batch', { commands: candidate.commands });
         lastState = null;
@@ -188,19 +248,23 @@ if (sessionMode) {
           transaction_id: input.transaction_id, undo: undone.code, revision_after: revision,
         })}\n`); continue;
       }
-      throw new Error('API_SESSION_COMMAND_UNSUPPORTED');
-    } catch (error) {
-      const code = typeof error?.message === 'string' && error.message.startsWith('API_')
-        ? error.message : 'API_SESSION_FAILED';
-      stdout.write(`${JSON.stringify({ status: 'rejected', code })}\n`);
-      if (['API_EXPIRED', 'API_AUTH_REQUIRED', 'API_OWNER_GONE', 'API_CLIENT_GONE'].includes(code)) break;
+        throw new Error('API_SESSION_COMMAND_UNSUPPORTED');
+      } catch (error) {
+        const code = typeof error?.message === 'string' && error.message.startsWith('API_')
+          ? error.message : 'API_SESSION_FAILED';
+        stdout.write(`${JSON.stringify({ status: 'rejected', code })}\n`);
+        if (['API_EXPIRED', 'API_AUTH_REQUIRED', 'API_OWNER_GONE', 'API_CLIENT_GONE'].includes(code)) break;
+      }
     }
+  } finally {
+    if (sessionHeartbeat) clearInterval(sessionHeartbeat);
+    sessionHeartbeat = null;
   }
   process.exit(0);
 }
 const { discovery, catalog, components } = await discoverProject();
 if (!plan) { stdout.write(`${JSON.stringify({ status: 'pass', mode: 'read-only', discovery })}\n`); process.exit(0); }
-if (catalog.profile !== 'board.atmega328p-16mhz-v1') throw new Error('API_PROFILE_READ_ONLY');
+if (!EDITABLE_PROFILES.has(catalog.profile)) throw new Error('API_PROFILE_READ_ONLY');
 validateNamedPins(plan, components, catalog);
 const applied = await accepted('edit.batch', { commands: plan.commands });
 const after = await accepted('project.inspect'); const afterNets = await accepted('nets.list');

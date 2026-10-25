@@ -13,11 +13,15 @@ infer that scope.
 | Profile | Discover/read | Canonical edit |
 | --- | --- | --- |
 | ATmega328P 16 MHz | Yes | Yes |
-| RP2040 Pico | Yes | No |
-| ESP32-C3 Dev Module | Yes | No |
-| STM32F429ZI Nucleo-144 | Yes | No |
+| RP2040 Pico | Yes | Yes, bounded series-LED model |
+| ESP32-C3 Dev Module | Yes | Yes, bounded series-LED model |
+| STM32F429ZI Nucleo-144 | Yes | Yes, bounded series-LED model |
 
-The AVR owner rejects editing while bounded subcircuits are present. API-04,
+The AVR owner rejects editing while bounded subcircuits are present. Each
+non-AVR owner accepts only its fixed controller plus its existing resistor/LED
+teaching model, exact named pins and profile validator. Unsupported component
+types, arbitrary IDs, branch disconnects, cross-profile pins and invalid final
+graphs reject the entire batch without mutation. API-04,
 including real Open and duplicate-project operations, remains pending.
 
 ## Identity and concurrency

@@ -6,7 +6,7 @@ compiler, runtime, service, or deployment.
 | Acceptance area | State | Evidence |
 | --- | --- | --- |
 | Independent tabs/users and same-profile isolation | PASS integrated | API-02 multi-context journey plus two independent Chromium processes; distinct sessions and cross-capability rejection |
-| Explicit AVR edit and truthful non-AVR read-only matrix | PASS | API-03 real browser and relay tests |
+| Explicit edit and truthful four-profile bounded matrix | PASS candidate | API-03 unit and real-browser four-profile tests |
 | Named pins, electrical validation, atomic invalid plans | PASS | canonical editor/electrical suites plus API-03 invalid batch browser case |
 | Manual edit versus API race and exact-head Undo/Redo | PASS | reducer and actual Chromium stale-race cases |
 | Delayed pull across same-revision replacement/revoke/re-enable | PASS | deterministic actual Chromium held-response case |

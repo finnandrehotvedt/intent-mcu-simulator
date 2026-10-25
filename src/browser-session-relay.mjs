@@ -28,6 +28,15 @@ const equal = (candidate, expected) => {
   return value.length === expected.length && timingSafeEqual(value, expected);
 };
 const failure = (code) => ({ ok: false, code });
+const RETIRED_REQUEST_BITS = 4096;
+const requestDigestIndexes = (id) => {
+  const bytes = createHash('sha256').update(id).digest();
+  return [bytes.readUInt32BE(0) % RETIRED_REQUEST_BITS, bytes.readUInt32BE(4) % RETIRED_REQUEST_BITS];
+};
+const retiredHas = (session, id) => requestDigestIndexes(id)
+  .every((bit) => (session.retiredRequestBits[bit >>> 5] & (1 << (bit & 31))) !== 0);
+const retiredAdd = (session, id) => requestDigestIndexes(id)
+  .forEach((bit) => { session.retiredRequestBits[bit >>> 5] |= 1 << (bit & 31); });
 
 export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
   const sessions = new Map();
@@ -89,6 +98,7 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
       ownerLeaseExpiresAt: now() + BROWSER_SESSION_LIMITS.ownerLeaseMs,
       client: null, revoked: false, commands: [], pending: new Map(), results: new Map(), outcomes: new Map(),
       requestIds: new Set(), nextSequence: 1, pairingKey: null, requestTimes: [],
+      retiredRequestBits: new Uint32Array(RETIRED_REQUEST_BITS / 32),
     });
     return { ok: true, code: 'API_OWNER_REGISTERED', schema: BROWSER_SESSION_SCHEMA,
       ownerCapability, ownerLeaseExpiresAt: sessions.get(sessionId).ownerLeaseExpiresAt };
@@ -141,6 +151,18 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
       projectId: session.projectId, clientCapability, scopes: clone(session.client.scopes),
       revision: session.revision, expiresAt: session.client.absoluteExpiresAt };
   }
+  function clientHeartbeat({ sessionId, clientCapability }) {
+    const session = sessions.get(sessionId);
+    if (!clientLive(session) || !equal(clientCapability, session.client.hash)) {
+      if (session?.client && !clientLive(session)) retire(session);
+      return failure('API_AUTH_REQUIRED');
+    }
+    const time = now();
+    session.client.idleExpiresAt = time + BROWSER_SESSION_LIMITS.clientIdleTtlMs;
+    session.client.absoluteExpiresAt = time + BROWSER_SESSION_LIMITS.clientAbsoluteTtlMs;
+    return { ok: true, code: 'API_CLIENT_LEASE_RENEWED',
+      idleExpiresAt: session.client.idleExpiresAt, expiresAt: session.client.absoluteExpiresAt };
+  }
   function submit({ sessionId, clientCapability, request }) {
     const requiredScope = request?.command === 'capabilities.list' || request?.command === 'components.catalog'
       ? 'discover' : EDIT_COMMANDS.includes(request?.command) ? 'edit_circuit' : 'read_project';
@@ -152,11 +174,6 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
         || ![...READ_ONLY_COMMANDS, ...EDIT_COMMANDS].includes(request.command) || typeof request.arguments !== 'object'
         || Array.isArray(request.arguments)) return failure('API_ARGUMENTS_INVALID');
     if (!live(session) || !clientLive(session)) return failure('API_EXPIRED');
-    const time = now();
-    session.requestTimes = session.requestTimes.filter((value) => value > time - BROWSER_SESSION_LIMITS.rateWindowMs);
-    if (session.requestTimes.length >= BROWSER_SESSION_LIMITS.rateWindowCount
-        || session.requestTimes.filter((value) => value > time - BROWSER_SESSION_LIMITS.burstWindowMs).length
-          >= BROWSER_SESSION_LIMITS.burstCount) return failure('API_RATE_LIMIT');
     const canonical = JSON.stringify(request);
     if (session.outcomes.has(request.request_id)) {
       const prior = session.outcomes.get(request.request_id);
@@ -167,8 +184,30 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
         reconciliation: clone(prior.reconciliation) }
         : failure(prior.retiredCode ?? 'API_REQUEST_RETIRED');
     }
-    if (session.requestIds.has(request.request_id)) return failure('API_REQUEST_REPLAY');
-    if (session.requestIds.size >= BROWSER_SESSION_LIMITS.requestCapacity) return failure('API_SESSION_RENEW_REQUIRED');
+    if (retiredHas(session, request.request_id)) return failure('API_REQUEST_REPLAY');
+    if (session.requestIds.has(request.request_id)) {
+      const active = session.commands.find((item) => item.request.request_id === request.request_id)
+        ?? (session.pending.has(request.request_id)
+          ? { canonical: session.pending.get(request.request_id).canonical } : null);
+      if (!active || active.canonical !== canonical) return failure('API_REQUEST_ID_CONFLICT');
+      return { ok: true, code: 'API_REQUEST_RECONCILE',
+        reconciliation: { request_id: request.request_id, status: 'pending' } };
+    }
+    const time = now();
+    session.requestTimes = session.requestTimes.filter((value) => value > time - BROWSER_SESSION_LIMITS.rateWindowMs);
+    if (session.requestTimes.length >= BROWSER_SESSION_LIMITS.rateWindowCount
+        || session.requestTimes.filter((value) => value > time - BROWSER_SESSION_LIMITS.burstWindowMs).length
+          >= BROWSER_SESSION_LIMITS.burstCount) return failure('API_RATE_LIMIT');
+    while (session.requestIds.size >= BROWSER_SESSION_LIMITS.requestCapacity) {
+      const oldest = session.requestIds.values().next().value;
+      const outcome = session.outcomes.get(oldest);
+      const active = session.commands.some((item) => item.request.request_id === oldest)
+        || session.pending.has(oldest) || session.results.has(oldest);
+      if (!outcome || active) return failure('API_SESSION_BUSY');
+      retiredAdd(session, oldest);
+      session.requestIds.delete(oldest);
+      session.outcomes.delete(oldest);
+    }
     if (request.sequence !== session.nextSequence) return failure('API_SEQUENCE_REQUIRED');
     if (session.commands.length >= BROWSER_SESSION_LIMITS.queueDepth) return failure('API_QUEUE_FULL');
     session.requestTimes.push(time);
@@ -280,7 +319,7 @@ export function createBrowserSessionRelay({ now = () => Date.now() } = {}) {
       }
     }
   }
-  return Object.freeze({ registerOwner, heartbeat, createPairing, claimPairing, submit, pull, authorizeExecution,
+  return Object.freeze({ registerOwner, heartbeat, createPairing, claimPairing, clientHeartbeat, submit, pull, authorizeExecution,
     complete, readResult, revoke, sweep,
     inspect: () => ({ sessions: sessions.size, pairings: pairings.size }) });
 }

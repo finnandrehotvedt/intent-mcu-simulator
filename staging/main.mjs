@@ -2627,6 +2627,9 @@ window.__RP2040_PUBLIC_WORKBENCH__ = {
   nudgeWireSegment: (direction) => editBoundedRoute('pico', 'move', direction),
   setWireColor: (color) => setBoundedWireColor('pico', color),
   setWireRoute: (netId, route) => picoPublicWorkbench.editCircuit('setWireRoute', netId, route),
+  apiBatch: (operations, transactionId) => picoPublicWorkbench.editCircuit('applyApiBatch', operations, transactionId),
+  apiUndo: (transactionId) => picoPublicWorkbench.editCircuit('undoApi', transactionId),
+  apiRedo: (transactionId) => picoPublicWorkbench.editCircuit('redoApi', transactionId),
 };
 renderProfileExampleCards(RP2040_PROFILE, elements.picoprofileexamples, picoPublicWorkbench);
 elements.picodelete.addEventListener('click', () => picoPublicWorkbench.editCircuit('deleteSelected'));
@@ -2907,6 +2910,9 @@ window.__ESP32C3_PUBLIC_WORKBENCH__ = {
   nudgeWireSegment: (direction) => editBoundedRoute('c3', 'move', direction),
   setWireColor: (color) => setBoundedWireColor('c3', color),
   setWireRoute: (netId, route) => c3PublicWorkbench.editCircuit('setWireRoute', netId, route),
+  apiBatch: (operations, transactionId) => c3PublicWorkbench.editCircuit('applyApiBatch', operations, transactionId),
+  apiUndo: (transactionId) => c3PublicWorkbench.editCircuit('undoApi', transactionId),
+  apiRedo: (transactionId) => c3PublicWorkbench.editCircuit('redoApi', transactionId),
 };
 renderProfileExampleCards(ESP32C3_PROFILE, elements.c3profileexamples, c3PublicWorkbench);
 elements.c3delete.addEventListener('click', () => c3PublicWorkbench.editCircuit('deleteSelected'));
@@ -3211,6 +3217,9 @@ window.__STM32_PUBLIC_WORKBENCH__ = {
   setComponentAppearanceEdit: (id, preset, body) => stm32PublicWorkbench.editCircuit('setComponentAppearanceEdit', id, preset, body),
   beginReconnect: () => stm32PublicWorkbench.editCircuit('beginReconnect'),
   cancelWire: () => stm32PublicWorkbench.editCircuit('cancelWireDraft'),
+  apiBatch: (operations, transactionId) => stm32PublicWorkbench.editCircuit('applyApiBatch', operations, transactionId),
+  apiUndo: (transactionId) => stm32PublicWorkbench.editCircuit('undoApi', transactionId),
+  apiRedo: (transactionId) => stm32PublicWorkbench.editCircuit('redoApi', transactionId),
   addWireBend: () => editBoundedRoute('stm32', 'bend'),
   nudgeWireSegment: (direction) => editBoundedRoute('stm32', 'move', direction),
   setWireColor: (color) => setBoundedWireColor('stm32', color),

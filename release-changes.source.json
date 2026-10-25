@@ -11,8 +11,8 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.135",
-    "current": "1.1.0-rc.136"
+    "previous": "1.1.0-rc.136",
+    "current": "1.1.0-rc.137"
   },
   "changes": [
     {
@@ -24,7 +24,7 @@
       "contracts": [
         "x59-four-profile-simple-advanced-view-v1"
       ],
-      "summary": "Adds short-lived one-use pairing-ticket transfer and an optional same-process JSONL session for successive bounded inspect, edit and explicit Undo actions without exposing secrets to AI chat."
+      "summary": "Extends canonical browser-session editing to all four exact profiles and hardens persistent-client recovery across rate limits, ambiguous transport, exact Undo and model-derived labels without exposing secrets to AI chat."
     }
   ],
   "migrationRequired": false,
