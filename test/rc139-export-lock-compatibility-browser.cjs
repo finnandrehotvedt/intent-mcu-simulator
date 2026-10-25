@@ -9,6 +9,14 @@ const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/
 const base = process.env.RC139_COMPAT_URL || 'http://127.0.0.1:18939';
 const fixtureRoot = path.join(__dirname, 'fixtures', 'rc139-export-locks');
 const fixtures = fs.readdirSync(fixtureRoot).filter((name) => name.endsWith('.json')).sort();
+const recoveryFixtureRoot = path.join(__dirname, 'fixtures', 'rc138-browser-recovery');
+const recoveryFixtures = [
+  ['board.atmega328p-16mhz-v1', 'public-rc138-recovery-avr.json'],
+  ['board.rp2040-pico-v1', 'public-rc138-recovery-pico-sentinel.json'],
+  ['board.esp32-c3-devmodule-v1', 'public-rc138-recovery-c3-sentinel.json'],
+  ['board.stm32f429zi-nucleo144-v1', 'public-rc138-recovery-stm32-sentinel.json'],
+];
+const RC124_TRUSTED_MANIFEST = '0907503c8a77e0ec7eda48079b138c23da2ba02be6f3ac2878ec1d64e64eacee';
 
 async function dismissUnsaved(page) {
   if (await page.locator('#unsaved-change-dialog').getAttribute('open') !== null) {
@@ -96,18 +104,30 @@ function assertProjectPreserved(actual, original, label) {
 
       const before = await page.evaluate(() => window.__COMMON_PROJECT_FILES__.current());
       await openBytes(page, original.profile, name, originalBytes);
+      const migrationOnly = original.modelLibrary.manifestSha256 !== RC124_TRUSTED_MANIFEST;
       await page.waitForFunction((profile) => document.querySelector('#board-select').value === profile
         && ['#project-message', '#pico-message', '#c3-message', '#stm32-message']
-          .some((selector) => document.querySelector(selector).textContent.includes('validated data only')), original.profile);
+          .some((selector) => /validated data only|Common project opened/iu
+            .test(document.querySelector(selector).textContent)), original.profile);
       const opened = JSON.parse(await page.evaluate(() => window.__COMMON_PROJECT_FILES__.current()));
       assertProjectPreserved(opened.project, original.project, `${name}: Open`);
-      assert.notDeepEqual(opened.modelLibrary, original.modelLibrary, `${name}: historical lock was not migrated`);
-      assert.match(await activeMessage(page), /original file is unchanged; fresh Build is required/iu,
+      if (migrationOnly) assert.notDeepEqual(opened.modelLibrary, original.modelLibrary,
+        `${name}: historical lock was not migrated`);
+      else assert.deepEqual(opened.modelLibrary, original.modelLibrary,
+        `${name}: already trusted immutable lock changed`);
+      assert.match(await activeMessage(page), migrationOnly
+        ? /original file is unchanged; fresh Build is required/iu : /Common project opened.+fresh Build is required/iu,
         `${name}: data-only recovery was not visible`);
       assert.equal(await page.locator('#project-file-message').isVisible(), true,
         `${name}: recovery message was hidden`);
-      assert.match(await page.textContent('#project-file-message'), /validated data only.+original file is unchanged/iu);
+      assert.match(await page.textContent('#project-file-message'), migrationOnly
+        ? /validated data only.+original file is unchanged/iu : /Common project opened.+fresh Build is required/iu);
       const ui = profileUi(original.profile);
+      await page.waitForFunction(({ selector, wire, expected }) => {
+        const actual = [...new Set([...document.querySelectorAll(`${selector} ${wire}`)]
+          .map((node) => node.dataset.net))].sort();
+        return JSON.stringify(actual) === JSON.stringify(expected);
+      }, { selector: ui.wires, wire: ui.wire, expected: original.project.circuit.nets.map((net) => net.id).sort() });
       const renderedNets = await page.locator(`${ui.wires} ${ui.wire}`).evaluateAll(
         (nodes) => [...new Set(nodes.map((node) => node.dataset.net))].sort(),
       );
@@ -121,6 +141,9 @@ function assertProjectPreserved(actual, original, label) {
       const branched = original.profile === 'board.atmega328p-16mhz-v1'
         ? original.project.circuit.junctions.length
         : original.project.circuit.nets.filter((net) => net.endpoints.length === 3).length;
+      await page.waitForFunction(({ selector, junction, expected }) =>
+        document.querySelectorAll(`${selector} ${junction}`).length === expected,
+      { selector: ui.wires, junction: ui.junction, expected: branched });
       assert.equal(await page.locator(`${ui.wires} ${ui.junction}`).count(), branched,
         `${name}: rendered junction count differs from graph`);
 
@@ -178,7 +201,55 @@ function assertProjectPreserved(actual, original, label) {
       assert.deepEqual(pageErrors, [], `${name}: browser page errors`);
       await page.close();
     }
+    for (const [profile, name] of recoveryFixtures) {
+      const raw = fs.readFileSync(path.join(recoveryFixtureRoot, name), 'utf8').trimEnd();
+      const stored = JSON.parse(raw);
+      const draftId = '13800000-0000-4000-8000-000000000138';
+      const key = profile === 'board.atmega328p-16mhz-v1'
+        ? `teach-lab.simulator.project.v2.tab.${draftId}`
+        : `intent-mcu.profile-draft.v1.${profile}.tab.${draftId}`;
+      const recoveryContext = await browser.newContext({ viewport: { width: 1440, height: 900 }, serviceWorkers: 'block' });
+      await recoveryContext.addInitScript(({ draftId: id, profile: selected, key: storageKey, raw: bytes }) => {
+        sessionStorage.setItem('intent-mcu.active-draft-id.v1', id);
+        sessionStorage.setItem('intent-mcu.active-profile.v1', selected);
+        localStorage.setItem(storageKey, bytes);
+      }, { draftId, profile, key, raw });
+      const page = await recoveryContext.newPage();
+      const pageErrors = [];
+      page.on('pageerror', (error) => pageErrors.push(error.message));
+      await page.goto(base, { waitUntil: 'networkidle' });
+      await page.waitForFunction(() => window.__M11_READY__ === true);
+      assert.equal(await page.locator('#board-select').inputValue(), profile,
+        `${name}: page-start did not restore the active rc.138 profile`);
+      const restored = JSON.parse(await page.evaluate((selected) => window.__COMMON_PROJECT_FILES__.current(selected), profile));
+      const expected = profile === 'board.atmega328p-16mhz-v1'
+        ? stored.project : { ...stored.project, circuit: stored.circuit };
+      assertProjectPreserved(restored.project, expected, `${name}: direct page-start recovery`);
+      if (profile !== 'board.atmega328p-16mhz-v1') {
+        assert.match(restored.project.name, /^RC138 recovery sentinel/u, `${name}: non-default name was reset`);
+        const sourceSentinel = profile === 'board.rp2040-pico-v1' ? /intent_gpio0_output\(0u\)/u
+          : profile === 'board.esp32-c3-devmodule-v1' ? /digitalWrite\(2, LOW\)/u
+            : /intent_pb0_output\(0u\)/u;
+        assert.match(restored.project.source, sourceSentinel, `${name}: non-default source was reset`);
+        assert.equal(restored.project.circuit.components.find((item) => item.id === 'resistor-1').properties.ohms,
+          470, `${name}: non-default resistor value was reset`);
+        assert.deepEqual(restored.project.circuit.layout.positions['resistor-1'],
+          { x: 0.61, y: 0.33, rotation: 0 }, `${name}: non-default position was reset`);
+      }
+      const ui = profileUi(profile);
+      await page.waitForFunction(({ selector, wire, expectedNets }) => {
+        const actual = [...new Set([...document.querySelectorAll(`${selector} ${wire}`)]
+          .map((node) => node.dataset.net))].sort();
+        return JSON.stringify(actual) === JSON.stringify(expectedNets);
+      }, { selector: ui.wires, wire: ui.wire,
+        expectedNets: expected.circuit.nets.map((net) => net.id).sort() });
+      assert.equal(await page.evaluate((storageKey) => localStorage.getItem(storageKey), key), raw,
+        `${name}: page-start recovery changed the original rc.138 bytes`);
+      assert.deepEqual(pageErrors, [], `${name}: page-start browser errors`);
+      await recoveryContext.close();
+    }
   } finally { await browser.close(); }
   process.stdout.write(`${JSON.stringify({ result: 'pass', actualExports: fixtures.length,
-    profiles: 4, openReloadDownloadRoundtrip: true, alteredAndUnknownAtomic: true, visibleErrors: true })}\n`);
+    profiles: 4, directRc138Recoveries: recoveryFixtures.length,
+    openReloadDownloadRoundtrip: true, alteredAndUnknownAtomic: true, visibleErrors: true })}\n`);
 })().catch((error) => { process.stderr.write(`${error.stack || error}\n`); process.exit(1); });

@@ -710,6 +710,7 @@ const DRAFT_REGISTRY_LIMIT = 12;
 const DRAFT_LEASE_MAX_AGE_MS = 15_000;
 const pageInstanceId = crypto.randomUUID();
 const corruptControllerDraftProfiles = new Set();
+const controllerDraftRestoreInProgress = new Set();
 let activeDraftId = null;
 try {
   activeDraftId = sessionStorage.getItem(TAB_DRAFT_ID_KEY);
@@ -735,6 +736,7 @@ function reportControllerDraftFailure(profile, message) {
   }, 0);
 }
 function persistControllerDraft(profile, workbench) {
+  if (controllerDraftRestoreInProgress.has(profile)) return true;
   if (corruptControllerDraftProfiles.has(profile)) {
     reportControllerDraftFailure(profile, 'Browser recovery was not replaced because its saved bytes are invalid. The original bytes remain untouched; use Save copy before leaving.');
     return false;
@@ -780,6 +782,7 @@ function readControllerDraft(profile) {
   }
 }
 function restoreControllerDraft(profile, workbench, retained = readControllerDraft(profile)) {
+  controllerDraftRestoreInProgress.add(profile);
   try {
     if (!retained) return false;
     const envelope = retained.schema === 'intent-mcu-profile-draft@1' ? retained : null;
@@ -794,6 +797,11 @@ function restoreControllerDraft(profile, workbench, retained = readControllerDra
     }
     return true;
   } catch { return false; }
+  finally {
+    // Workbench installation queues its normal state notification. Keep that
+    // initialization notification read-only; later authored events persist.
+    setTimeout(() => controllerDraftRestoreInProgress.delete(profile), 0);
+  }
 }
 function bindControllerDraftInputs(profile, workbench, source, name) {
   source.addEventListener('input', () => {
@@ -8424,7 +8432,7 @@ function installPreparedProjectEnvelope(result, handle = null, { preserveExpecta
   renderExpectationReference();
   window.__COMMON_PROJECT_FILE_STATE__ = structuredClone({ profile: result.profile, report: result.report });
   const openedMessage = result.publishedRecovery
-    ? `Known previous candidate ${result.publishedRecovery.release} project opened as validated data only. The original file is unchanged; fresh Build is required.`
+    ? `Known previous release/candidate ${result.publishedRecovery.release} project opened as validated data only. The original file is unchanged; fresh Build is required.`
     : result.report.legacy
     ? `Legacy ${result.report.inputSchema} migrated in memory to ${result.report.outputSchema}. Save creates a new file; fresh Build is required.`
     : `Common project opened for ${result.profile}. Executable authority was cleared; fresh Build is required.`;
@@ -16150,7 +16158,8 @@ if (!restored?.ok && !stored && !recoveryStored) {
   const firstVisit = loadExampleProject('blink', 'project.first-visit');
   firstVisitStarterLoaded = firstVisit?.ok === true;
 }
-if (restored?.ok) persistProject();
+// Startup restoration is read-only. Keep the exact prior bytes available until
+// the learner makes an authored change or explicitly saves a new copy.
 renderDraftRecoveryChoices();
 const workspace = document.querySelector('.workspace');
 for (const [name, button] of [['catalog-collapsed', elements.togglecatalog], ['inspector-collapsed', elements.toggleinspector]]) {

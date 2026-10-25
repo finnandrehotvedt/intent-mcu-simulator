@@ -493,6 +493,8 @@ test('published locks are exact data-only recovery anchors while unknown locks r
       'cfaf5e18f657b2663c6ac776604af9d8aa3313997b36312e0dfe4b25359154d3'],
     ['1.1.0-rc.137', '709444f9c162942ebe960f43cdc8147300c93877100a34a5630a1e1c7bd63c4d',
       '7dfa75c67b84ba2b1f04002f2c1ee5d6a3c84dea94a263a09adb47a277bde71d'],
+    ['1.1.0-rc.138', '1be8d872f3fa67a61afead436887686c57082dfd5ad68dc20511c12c80a4a0cb',
+      'aa4b97113d6521d0e04b45da8b5200ef4ee98e65ccd7f859d9436dc12af9b877'],
     ['1.1.0-rc.139-preservation', '8e4b68c47dd01cb1fe0867b1f32fbb7a0643e6fd4a3474e364417c8e4ad91c3a',
       '3da666f7462e12455abb6b9bba7a4908f68ffcde58d8a6d7555658a94abf727d'],
     ['1.1.0-rc.139-mixed-branch', '459064d5d903f2216d210a2bc36fa63202bd8ea7d2c803f7f6d7e07708e66475',
