@@ -76,6 +76,9 @@ Supported operations are component.add, component.duplicate, component.remove,
 component.property.set, wire.connect, wire.branch.connect, and wire.disconnect. A wire.disconnect
 with only net_id removes the whole net; adding endpoint removes one branch.
 Connections use stable component IDs and named pins.
+Property keys are component- and profile-specific. Read components.catalog for
+the active profile and use that component's exact propertyKeys and
+propertySchema; do not invent aliases.
 The complete batch validates and commits as one transaction or changes
 nothing. edit.undo and edit.redo accept exactly the server-returned
 transaction_id and only operate when that transaction is still at the history
@@ -119,8 +122,8 @@ Exact batch operation shapes
 {"command":"component.duplicate","component_id":"part-1","id":"part-2",
  "position":{"x":0.8,"y":0.5,"rotation":0}}
 {"command":"component.remove","component_id":"part-1"}
-{"command":"component.property.set","component_id":"part-1",
- "key":"resistance_ohms","value":220}
+{"command":"component.property.set","component_id":"resistor-1",
+ "key":"ohms","value":470}
 {"command":"wire.connect","net_id":"signal-1",
  "from":{"component":"board-1","pin":"D13"},
  "to":{"component":"resistor-1","pin":"A"}}
