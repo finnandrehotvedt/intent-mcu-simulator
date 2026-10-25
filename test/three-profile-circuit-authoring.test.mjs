@@ -105,6 +105,23 @@ for (const profile of profiles) {
     assert.deepEqual(editor.snapshot().draft, beforeApi);
     assert.equal(editor.redoApi(`duplicate-${profile.name}`).ok, true);
 
+    editor.select({ kind: 'net', id: 'net-ground' });
+    assert.equal(editor.beginBranch().ok, true);
+    const branched = editor.activateEndpoint({ component: 'led-2', pin: 'CATHODE' });
+    assert.equal(branched.ok, true);
+    assert.equal(branched.draft.nets.find(({ id }) => id === 'net-ground').endpoints.length, 3);
+    assert.equal(branched.validation.ok, false);
+    assert.equal(editor.deleteBranch('net-ground', { component: 'led-2', pin: 'CATHODE' }).ok, true);
+    assert.equal(editor.snapshot().draft.nets.find(({ id }) => id === 'net-ground').endpoints.length, 2);
+
+    const apiBranch = editor.applyApiBatch([{ command: 'wire.branch.connect', net_id: 'net-ground',
+      endpoint: { component: 'led-2', pin: 'CATHODE' } }], `branch-${profile.name}`);
+    assert.equal(apiBranch.ok, true);
+    const apiDetach = editor.applyApiBatch([{ command: 'wire.disconnect', net_id: 'net-ground',
+      endpoint: { component: 'led-2', pin: 'CATHODE' } }], `branch-delete-${profile.name}`);
+    assert.equal(apiDetach.ok, true);
+    assert.equal(apiDetach.draft.nets.find(({ id }) => id === 'net-ground').endpoints.length, 2);
+
     const accepted = JSON.stringify(editor.snapshot().draft);
     for (const operation of [
       { command: 'component.duplicate', component_id: profile.source.component, id: 'board-2',

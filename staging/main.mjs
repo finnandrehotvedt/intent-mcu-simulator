@@ -639,14 +639,14 @@ const elements = Object.fromEntries([
   'pico-editor-wires', 'pico-editor-components', 'pico-circuit-selection',
   'pico-parts-list', 'pico-part-properties',
   'pico-delete', 'pico-undo', 'pico-redo', 'pico-rotate', 'pico-zoom-out', 'pico-zoom-value',
-  'pico-zoom-in', 'pico-fit', 'pico-reconnect', 'pico-add-bend', 'pico-route-back', 'pico-route-forward',
+  'pico-zoom-in', 'pico-fit', 'pico-reconnect', 'pico-branch', 'pico-add-bend', 'pico-route-back', 'pico-route-forward',
   'pico-wire-color', 'pico-wire-cancel', 'pico-wire-state', 'pico-serial',
   'c3-public-workbench', 'c3-state', 'c3-project-name', 'c3-save', 'c3-open', 'c3-open-input',
   'c3-native-open', 'c3-native-save', 'c3-native-save-copy', 'c3-file-connection', 'c3-legacy-copy',
   'c3-profile-examples',
   'c3-source', 'c3-build', 'c3-run', 'c3-stop', 'c3-message', 'c3-source-hash', 'c3-flash-hash',
   'c3-diagnostics', 'c3-diagnostic-links',
-  'c3-diagram', 'c3-external-led', 'c3-circuit-state', 'c3-reconnect', 'c3-add-bend', 'c3-route-back', 'c3-route-forward',
+  'c3-diagram', 'c3-external-led', 'c3-circuit-state', 'c3-reconnect', 'c3-branch', 'c3-add-bend', 'c3-route-back', 'c3-route-forward',
   'c3-wire-color', 'c3-wire-cancel', 'c3-wire-state', 'c3-terminal',
   'c3-editor-wires', 'c3-editor-components', 'c3-circuit-selection',
   'c3-parts-list', 'c3-part-properties',
@@ -661,7 +661,7 @@ const elements = Object.fromEntries([
   'stm32-circuit-selection', 'stm32-delete', 'stm32-undo', 'stm32-redo', 'stm32-rotate',
   'stm32-parts-list', 'stm32-part-properties',
   'stm32-zoom-out', 'stm32-zoom-value', 'stm32-zoom-in', 'stm32-fit',
-  'stm32-reconnect', 'stm32-add-bend', 'stm32-route-back', 'stm32-route-forward',
+  'stm32-reconnect', 'stm32-branch', 'stm32-add-bend', 'stm32-route-back', 'stm32-route-forward',
   'stm32-wire-color', 'stm32-wire-cancel', 'stm32-wire-state',
 ].map((id) => [id.replaceAll('-', ''), byId(id)]));
 
@@ -1242,6 +1242,9 @@ function namedWireInstruction(wireDraft) {
   if (wireDraft.mode === 'reconnect-target') {
     return `Move ${picoEndpointKey(wireDraft.from)} on ${wireDraft.netId} — choose a compatible free destination. Escape cancels.`;
   }
+  if (wireDraft.mode === 'branch-target') {
+    return `Add branch to ${wireDraft.netId} — choose one compatible free endpoint. Escape cancels.`;
+  }
   return 'Select a free named pin, then a compatible free destination. Select a cable first to reconnect one endpoint.';
 }
 
@@ -1250,6 +1253,7 @@ function decorateNamedWireAnchor(anchor, key, { draft, wireDraft }) {
   const pending = ['connect-target', 'reconnect-target'].includes(wireDraft.mode)
     && picoEndpointKey(wireDraft.from) === key;
   const available = wireDraft.mode === 'connect-target' && !connection
+    || wireDraft.mode === 'branch-target' && !connection
     || wireDraft.mode === 'reconnect-source' && connection?.id === wireDraft.netId
     || wireDraft.mode === 'reconnect-target' && !connection;
   anchor.classList.toggle('pending', pending);
@@ -1276,6 +1280,12 @@ function activateNamedWireEndpoint(workbench, statusElement, endpoint) {
 
 function beginNamedWireReconnect(workbench, statusElement) {
   const result = workbench.editCircuit('beginReconnect');
+  statusElement.textContent = namedWireResultMessage(result);
+  return result;
+}
+
+function beginNamedWireBranch(workbench, statusElement) {
+  const result = workbench.editCircuit('beginBranch');
   statusElement.textContent = namedWireResultMessage(result);
   return result;
 }
@@ -2504,6 +2514,7 @@ function renderPicoCircuitEditor(state) {
   elements.picorotate.disabled = selection.kind !== 'component';
   elements.picoundo.disabled = !canUndo; elements.picoredo.disabled = !canRedo;
   elements.picoreconnect.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  elements.picobranch.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
   const picoRouteSelected = selection.kind === 'net' && wireDraft.mode === 'none';
   elements.picoaddbend.disabled = !picoRouteSelected;
   elements.picorouteback.disabled = !picoRouteSelected;
@@ -2651,6 +2662,7 @@ elements.picorotate.addEventListener('click', () => {
   if (selection.kind === 'component') picoPublicWorkbench.editCircuit('rotateComponent', selection.id);
 });
 elements.picoreconnect.addEventListener('click', () => beginNamedWireReconnect(picoPublicWorkbench, elements.picowirestate));
+elements.picobranch.addEventListener('click', () => beginNamedWireBranch(picoPublicWorkbench, elements.picowirestate));
 elements.picoaddbend.addEventListener('click', () => editBoundedRoute('pico', 'bend'));
 elements.picorouteback.addEventListener('click', () => editBoundedRoute('pico', 'move', -1));
 elements.picorouteforward.addEventListener('click', () => editBoundedRoute('pico', 'move', 1));
@@ -2789,6 +2801,7 @@ function renderC3CircuitEditor(state) {
   elements.c3rotate.disabled = selection.kind !== 'component';
   elements.c3undo.disabled = !canUndo; elements.c3redo.disabled = !canRedo;
   elements.c3reconnect.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  elements.c3branch.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
   const c3RouteSelected = selection.kind === 'net' && wireDraft.mode === 'none';
   elements.c3addbend.disabled = !c3RouteSelected;
   elements.c3routeback.disabled = !c3RouteSelected;
@@ -2936,6 +2949,7 @@ elements.c3rotate.addEventListener('click', () => {
   if (selection.kind === 'component') c3PublicWorkbench.editCircuit('rotateComponent', selection.id);
 });
 elements.c3reconnect.addEventListener('click', () => beginNamedWireReconnect(c3PublicWorkbench, elements.c3wirestate));
+elements.c3branch.addEventListener('click', () => beginNamedWireBranch(c3PublicWorkbench, elements.c3wirestate));
 elements.c3addbend.addEventListener('click', () => editBoundedRoute('c3', 'bend'));
 elements.c3routeback.addEventListener('click', () => editBoundedRoute('c3', 'move', -1));
 elements.c3routeforward.addEventListener('click', () => editBoundedRoute('c3', 'move', 1));
@@ -3078,6 +3092,7 @@ function renderStm32CircuitEditor(state) {
   elements.stm32rotate.disabled = selection.kind !== 'component';
   elements.stm32undo.disabled = !canUndo; elements.stm32redo.disabled = !canRedo;
   elements.stm32reconnect.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  elements.stm32branch.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
   const stm32RouteSelected = selection.kind === 'net' && wireDraft.mode === 'none';
   elements.stm32addbend.disabled = !stm32RouteSelected;
   elements.stm32routeback.disabled = !stm32RouteSelected;
@@ -3283,6 +3298,7 @@ elements.stm32rotate.addEventListener('click', () => {
   if (selection.kind === 'component') stm32PublicWorkbench.editCircuit('rotateComponent', selection.id);
 });
 elements.stm32reconnect.addEventListener('click', () => beginNamedWireReconnect(stm32PublicWorkbench, elements.stm32wirestate));
+elements.stm32branch.addEventListener('click', () => beginNamedWireBranch(stm32PublicWorkbench, elements.stm32wirestate));
 elements.stm32addbend.addEventListener('click', () => editBoundedRoute('stm32', 'bend'));
 elements.stm32routeback.addEventListener('click', () => editBoundedRoute('stm32', 'move', -1));
 elements.stm32routeforward.addEventListener('click', () => editBoundedRoute('stm32', 'move', 1));

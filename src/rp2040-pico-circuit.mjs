@@ -170,7 +170,7 @@ export function normalizeRp2040PicoCircuitDraft(value) {
   const endpoints = new Set();
   const nets = value.nets.map((net) => {
     if (!exactKeys(net, ['id', 'endpoints']) || typeof net.id !== 'string' || !ID.test(net.id)
-        || netIds.has(net.id) || !Array.isArray(net.endpoints) || net.endpoints.length !== 2) {
+        || netIds.has(net.id) || !Array.isArray(net.endpoints) || net.endpoints.length < 2 || net.endpoints.length > 8) {
       throw Object.assign(new Error('RP2040_CIRCUIT_NET_INVALID'), { code: 'RP2040_CIRCUIT_NET_INVALID' });
     }
     netIds.add(net.id);
@@ -244,6 +244,9 @@ export function validateRp2040PicoCircuit(value, options = {}) {
   const led = draft.components.find((item) => item.type === LED);
   if (!resistor) return failure('RP2040_SERIES_RESISTOR_REQUIRED');
   if (!led) return failure('RP2040_PATH_OPEN');
+  if (draft.components.length !== 3 || draft.components.filter((item) => item.type === RESISTOR).length !== 1
+      || draft.components.filter((item) => item.type === LED).length !== 1
+      || draft.nets.some((net) => net.endpoints.length !== 2)) return failure('RP2040_EXECUTABLE_PROJECTION_UNAVAILABLE');
   const boardGp0 = `${board.id}.GP0`;
   const boardGround = `${board.id}.GND3`;
   const ledAnode = `${led.id}.ANODE`;

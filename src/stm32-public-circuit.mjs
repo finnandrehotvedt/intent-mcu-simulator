@@ -179,7 +179,7 @@ export function normalizeStm32CircuitDraft(value) {
   const endpoints = new Set();
   const nets = value.nets.map((net) => {
     if (!exactKeys(net, ['id', 'endpoints']) || typeof net.id !== 'string' || !ID.test(net.id)
-        || netIds.has(net.id) || !Array.isArray(net.endpoints) || net.endpoints.length !== 2) {
+        || netIds.has(net.id) || !Array.isArray(net.endpoints) || net.endpoints.length < 2 || net.endpoints.length > 8) {
       throw Object.assign(new Error('STM32_CIRCUIT_NET_INVALID'), { code: 'STM32_CIRCUIT_NET_INVALID' });
     }
     netIds.add(net.id);
@@ -255,6 +255,9 @@ export function validateStm32Circuit(value, options = {}) {
   const led = draft.components.find((item) => item.type === LED);
   if (!resistor) return failure('STM32_SERIES_RESISTOR_REQUIRED');
   if (!led) return failure('STM32_PATH_OPEN');
+  if (draft.components.length !== 3 || draft.components.filter((item) => item.type === RESISTOR).length !== 1
+      || draft.components.filter((item) => item.type === LED).length !== 1
+      || draft.nets.some((net) => net.endpoints.length !== 2)) return failure('STM32_EXECUTABLE_PROJECTION_UNAVAILABLE');
   const source = `${board.id}.PB0`;
   const ground = `${board.id}.GND`;
   const ledAnode = `${led.id}.ANODE`;

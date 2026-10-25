@@ -129261,7 +129261,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "fca843b07630346aa2389aa5636120b7607a42b8de14044d975e57619fc43bf9"
+      "sha256": "00ab568224efababc04bf3105565f5b1eca050d41e50619649a0a1b29d633f5a"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -129305,27 +129305,27 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
-      "sha256": "11f37a57dcce987999648fad82e8eacc70481595a291acdf8a56f89609ceb73c"
+      "sha256": "13fa6b35f626e2944a1dcb869304f1a7a34c64a32d61023712474a5703257c3c"
     },
     {
       "path": "src/esp32c3-public-circuit.mjs",
-      "sha256": "12b59848e39173e01bd2cc0ec013857fde144bfc5253e8f3524da5bff9be07b5"
+      "sha256": "78bd4af8b4215eb7f6639464cd211acc5ccb6f283add3778cad345d705ad2442"
     },
     {
       "path": "src/stm32-public-circuit.mjs",
-      "sha256": "3cc4ef9ce29922f129282150447d143a111becf4ee37e7dd634ef3f844314af4"
+      "sha256": "b5d65f4816ff5cec2da998297360f64f3bcf007a3f34d560d70d550f536ae349"
     },
     {
       "path": "src/rp2040-public-workbench.mjs",
-      "sha256": "4cc973190733ea9a92d1a7914496c5e8ee6ea9dc933878863bf9dc1ef78e45ef"
+      "sha256": "e8be7cbbc0e18e1427b0e065c4a90c4831e2bf4e643c9a93a0d9163be168ba76"
     },
     {
       "path": "src/esp32c3-public-workbench.mjs",
-      "sha256": "b67274dede800ca1c66ee931295d5255bfd807221fca119aa331fe84b355c31d"
+      "sha256": "a98a6b8c5ea9ca1a36ea9acca0ed6d4f4d89e5991abf52f6e454dd4041a02626"
     },
     {
       "path": "src/stm32-public-workbench.mjs",
-      "sha256": "59399fcb92a376374b250cd350091f44d836c94c931ef8cadf43f156133c495a"
+      "sha256": "fbf4d0483ac842bcd2d862d81574fc1d89a297324145d3be201fca601d42009d"
     },
     {
       "path": "c3/public-service.mjs",
@@ -129404,7 +129404,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "a60dd552da826bcf74e23eb7f8457de1ae1e8dd31f313536cb737f8a9d965507"
     }
   ],
-  "implementationSha256": "a56077e17649aa6537a5279a0f51c692e8b9e2abb7c8fb622e1bf9ff2abfeabc",
+  "implementationSha256": "984511348fa052fefb24b9a26fbc2c4488c51d0d6c9874b1056087eee217dd87",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.125 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, real worker, run, image build or deployment",
@@ -129414,7 +129414,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-config-producer.2-current",
     "semanticDisposition": "component, firmware and electrical semantics remain unchanged; paired read-only AVR USART0 RX peripheral-model events are added"
   },
-  "manifestSha256": "2c103213a40fb43571532ce73b39878bc0d1fe8b46978ac3488147a55ed56764",
+  "manifestSha256": "d37be460d28fdea14c6ed62e42bc81b13afbcac9b936d5c6b414b41d6bea4c8b",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

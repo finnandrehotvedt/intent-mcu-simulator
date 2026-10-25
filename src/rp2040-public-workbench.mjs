@@ -693,7 +693,7 @@ export class Rp2040PublicWorkbench {
   editCircuit(operation, ...args) {
     if (this.pauseProofOperation) this.rejectPauseProof('RP2040_BUDGET_PAUSE_CIRCUIT_CHANGED');
     if (!['deleteSelected', 'undo', 'redo', 'moveComponent', 'rotateComponent',
-      'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint',
+      'activateEndpoint', 'beginReconnect', 'beginBranch', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint', 'branchEndpoint', 'deleteBranch',
       'newProject', 'addComponent', 'duplicateComponent', 'addMissingComponent', 'setComponentProperty', 'setComponentAppearance', 'setComponentAppearanceEdit',
       'setWireColor', 'setWireRoute', 'applyApiBatch', 'undoApi', 'redoApi'].includes(operation)) {
       return { ok: false, code: 'RP2040_CIRCUIT_OPERATION_INVALID' };

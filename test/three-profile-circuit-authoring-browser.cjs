@@ -162,6 +162,20 @@ const profiles = [
       assert.equal(recovered.authoredSource, beforeNew.authoredSource);
       assert.equal(recovered.originalRaw, afterNew.oldRaw);
 
+      await page.evaluate(({ api }) => window[api].selectCircuit({ kind: 'net', id: 'net-led-2-ground' }), profile);
+      const branchSelector = profile.id === 'board.rp2040-pico-v1' ? '#pico-branch'
+        : profile.id === 'board.esp32-c3-devmodule-v1' ? '#c3-branch' : '#stm32-branch';
+      await page.evaluate((selector) => document.querySelector(selector).click(), branchSelector);
+      await page.evaluate(({ layer }) => document.querySelector(`${layer} [data-editor-endpoint="resistor-1.A"]`).click(), profile);
+      const branch = await page.evaluate(({ api }) => {
+        const state = window[api].state(); const graph = state.circuit ?? state.project.circuit;
+        return { endpoints: graph.nets.find(({ id }) => id === 'net-led-2-ground').endpoints.length,
+          validation: state.circuitEditor.validation };
+      }, profile);
+      assert.equal(branch.endpoints, 3);
+      assert.equal(branch.validation.ok, false);
+      await page.evaluate(({ api }) => window[api].undoCircuit(), profile);
+
       await page.evaluate(({ api }) => window[api].selectCircuit({ kind: 'component', id: 'resistor-1' }), profile);
       await page.waitForSelector('[data-bounded-duplicate="resistor-1"]', { state: 'attached' });
       await page.evaluate(() => document.querySelector('[data-bounded-duplicate="resistor-1"]').click());

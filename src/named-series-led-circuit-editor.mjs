@@ -286,12 +286,26 @@ export class NamedSeriesLedCircuitEditor {
               || next.nets.some((net) => net.id === operation.net_id)) throw new Error('WIRE_CONNECT_INVALID');
           next.nets.push({ id: operation.net_id, endpoints: [clone(operation.from), clone(operation.to)] });
           next.layout.wireStyles[operation.net_id] = this.createDefault().layout.wireStyles[operation.net_id] ?? '#39dff2';
+        } else if (operation.command === 'wire.branch.connect') {
+          const net = next.nets.find((item) => item.id === operation.net_id);
+          if (!net || net.endpoints.length >= 8 || !endpointKnown(operation.endpoint)
+              || connected(operation.endpoint)) throw new Error('WIRE_BRANCH_CONNECT_INVALID');
+          net.endpoints.push(clone(operation.endpoint));
+          delete next.layout.wireRoutes?.[net.id];
         } else if (operation.command === 'wire.disconnect') {
-          if (operation.endpoint !== undefined) throw new Error('WIRE_BRANCH_UNSUPPORTED');
-          if (!next.nets.some((net) => net.id === operation.net_id)) throw new Error('WIRE_MISSING');
-          next.nets = next.nets.filter((net) => net.id !== operation.net_id);
-          delete next.layout.wireStyles[operation.net_id];
-          delete next.layout.wireRoutes?.[operation.net_id];
+          const net = next.nets.find((item) => item.id === operation.net_id);
+          if (!net) throw new Error('WIRE_MISSING');
+          if (operation.endpoint !== undefined) {
+            if (net.endpoints.length <= 2 || !net.endpoints.some((point) => sameEndpoint(point, operation.endpoint))) {
+              throw new Error('WIRE_BRANCH_DISCONNECT_INVALID');
+            }
+            net.endpoints = net.endpoints.filter((point) => !sameEndpoint(point, operation.endpoint));
+            delete next.layout.wireRoutes?.[net.id];
+          } else {
+            next.nets = next.nets.filter((item) => item.id !== operation.net_id);
+            delete next.layout.wireStyles[operation.net_id];
+            delete next.layout.wireRoutes?.[operation.net_id];
+          }
         } else throw new Error('COMMAND_UNSUPPORTED');
       }
       if (!this.validatePropertyPair(next).ok) throw new Error('ELECTRICAL_LIMIT');
@@ -580,6 +594,14 @@ export class NamedSeriesLedCircuitEditor {
     return { ok: true, changed: false, code: this.code('RECONNECT_SOURCE_REQUIRED'), ...this.snapshot() };
   }
 
+  beginBranch(netId = this.selection.kind === 'net' ? this.selection.id : null) {
+    const net = this.draft.nets.find((candidate) => candidate.id === netId);
+    if (!net || net.endpoints.length >= 8) return this.fail('NET_BRANCH_UNAVAILABLE');
+    this.selection = { kind: 'net', id: net.id };
+    this.wireDraft = { mode: 'branch-target', netId: net.id };
+    return { ok: true, changed: false, code: this.code('BRANCH_TARGET_REQUIRED'), ...this.snapshot() };
+  }
+
   cancelWireDraft() {
     this.wireDraft = { mode: 'none' };
     return { ok: true, changed: false, code: this.code('WIRE_CANCELLED'), ...this.snapshot() };
@@ -624,9 +646,38 @@ export class NamedSeriesLedCircuitEditor {
     }
   }
 
+  branchEndpoint(netId, endpoint) {
+    const net = this.draft.nets.find((candidate) => candidate.id === netId);
+    if (!net || net.endpoints.length >= 8 || !this.isKnownEndpoint(endpoint)) return this.fail('BRANCH_INVALID');
+    if (endpointConnection(this.draft, endpoint)) return this.fail('ENDPOINT_OCCUPIED');
+    const next = clone(this.draft);
+    next.nets.find((candidate) => candidate.id === netId).endpoints.push(clone(endpoint));
+    delete next.layout.wireRoutes?.[netId];
+    try {
+      return { ok: true, changed: true, code: this.code('BRANCH_CREATED'), netId,
+        ...this.commit(next, { kind: 'net', id: netId }) };
+    } catch (error) { return this.fail(error.code ?? 'BRANCH_INVALID'); }
+  }
+
+  deleteBranch(netId, endpoint) {
+    const net = this.draft.nets.find((candidate) => candidate.id === netId);
+    if (!net || net.endpoints.length <= 2 || !net.endpoints.some((point) => sameEndpoint(point, endpoint))) {
+      return this.fail('BRANCH_DELETE_INVALID');
+    }
+    const next = clone(this.draft);
+    next.nets.find((candidate) => candidate.id === netId).endpoints = net.endpoints
+      .filter((point) => !sameEndpoint(point, endpoint)).map(clone);
+    delete next.layout.wireRoutes?.[netId];
+    try {
+      return { ok: true, changed: true, code: this.code('BRANCH_DELETED'), netId,
+        ...this.commit(next, { kind: 'net', id: netId }) };
+    } catch (error) { return this.fail(error.code ?? 'BRANCH_DELETE_INVALID'); }
+  }
+
   activateEndpoint(endpoint) {
     if (this.wireDraft.mode === 'none') return this.startWire(endpoint);
     if (this.wireDraft.mode === 'connect-target') return this.connectEndpoints(this.wireDraft.from, endpoint);
+    if (this.wireDraft.mode === 'branch-target') return this.branchEndpoint(this.wireDraft.netId, endpoint);
     if (this.wireDraft.mode === 'reconnect-source') {
       const net = this.draft.nets.find((candidate) => candidate.id === this.wireDraft.netId);
       if (!net?.endpoints.some((candidate) => sameEndpoint(candidate, endpoint))) return this.fail('RECONNECT_SOURCE_INVALID');

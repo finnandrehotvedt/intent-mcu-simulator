@@ -36,7 +36,7 @@ test('contract names the four workflows while narrow profiles gain only disconne
   assert.deepEqual(contract.requirements, ['W06', 'W07', 'W08', 'W10']);
   assert.deepEqual(Object.keys(contract.completion), ['w06', 'w07', 'w08', 'w10']);
   for (const id of ['rp2040', 'esp32c3', 'stm32']) {
-    assert.equal(contract.profiles[id].operations.branchDelete.status, 'unavailable');
+    assert.equal(contract.profiles[id].operations.branchDelete.status, 'supported');
     assert.equal(contract.profiles[id].operations.duplicate.status, 'supported');
     assert.equal(contract.profiles[id].safety.outputContention.status, 'unavailable');
     assert.equal(contract.profiles[id].safety.arbitraryVoltageShort.status, 'unavailable');
@@ -85,11 +85,11 @@ test('AVR branch delete, whole-net delete and duplicate remain distinct reversib
   assert.equal(JSON.stringify(editor.project), before);
 });
 
-test('narrow fixed graphs expose no branch, allow disconnected duplicate, and reject unsafe properties atomically', () => {
+test('narrow graphs allow data-only branches and disconnected duplicate, and reject unsafe properties atomically', () => {
   for (const profile of narrowProfiles) {
     const editor = new profile.Editor();
     assert.equal(editor.snapshot().draft.nets.every((net) => net.endpoints.length === 2), true, profile.id);
-    assert.equal(typeof editor.deleteBranch, 'undefined', profile.id);
+    assert.equal(typeof editor.deleteBranch, 'function', profile.id);
     assert.equal(typeof editor.duplicateComponent, 'function', profile.id);
     const duplicated = editor.duplicateComponent('led-1');
     assert.equal(duplicated.ok, true, profile.id);

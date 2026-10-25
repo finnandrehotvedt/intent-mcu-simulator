@@ -575,7 +575,7 @@ export class Esp32C3PublicWorkbench {
 
   editCircuit(operation, ...args) {
     if (!['deleteSelected', 'undo', 'redo', 'moveComponent', 'rotateComponent',
-      'activateEndpoint', 'beginReconnect', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint',
+      'activateEndpoint', 'beginReconnect', 'beginBranch', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint', 'branchEndpoint', 'deleteBranch',
       'newProject', 'addComponent', 'duplicateComponent', 'addMissingComponent', 'setComponentProperty', 'setComponentAppearance', 'setComponentAppearanceEdit',
       'setWireColor', 'setWireRoute', 'applyApiBatch', 'undoApi', 'redoApi'].includes(operation)) {
       return { ok: false, code: 'C3_CIRCUIT_OPERATION_INVALID' };
