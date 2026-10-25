@@ -32,7 +32,7 @@ const exactInput = (value, keys) => value && typeof value === 'object' && !Array
 // Current behavior is separately owned so future current changes cannot mutate
 // the retained pre-X56 implementation by alias or shared constant.
 export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
-  id: 'intent-mcu-model-bundle-current-x46-usart-rx-producer-1@45',
+  id: 'intent-mcu-model-bundle-current-thumbnail-artwork-1@46',
   manifestVersion: CURRENT_MODEL_LIBRARY_MANIFEST.version,
   definition(profile, componentType) {
     const entry = entries.get(`${profile}\u0000${componentType}`);
@@ -184,6 +184,13 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
 export const PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
   ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
   id: 'intent-mcu-model-bundle-current-x46-usart-config-producer-2@44',
+  migrationOnly: true,
+});
+
+export const PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-x46-usart-rx-producer-1@45',
+  manifestVersion: '2.0.0-x46-usart-rx-producer.1-current',
   migrationOnly: true,
 });
 

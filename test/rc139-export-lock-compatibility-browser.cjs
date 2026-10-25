@@ -17,6 +17,12 @@ const recoveryFixtures = [
   ['board.stm32f429zi-nucleo144-v1', 'public-rc138-recovery-stm32-sentinel.json'],
 ];
 const RC124_TRUSTED_MANIFEST = '0907503c8a77e0ec7eda48079b138c23da2ba02be6f3ac2878ec1d64e64eacee';
+const RC139_ACCEPTED_CURRENT_LOCK = Object.freeze({
+  schema: 'intent-mcu-model-library-lock@2', libraryId: 'intent-mcu-public-models',
+  version: '2.0.0-x46-usart-rx-producer.1-current',
+  manifestSha256: 'f8deca034c208f06d58db4db9f945507f8f5300b4e649f6b33cc164d25280672',
+  implementationSha256: 'd784cc9ea7ff0dd43163812d459ff23c81abce5f034a55fc4fb476e5b5fc8094',
+});
 
 async function dismissUnsaved(page) {
   if (await page.locator('#unsaved-change-dialog').getAttribute('open') !== null) {
@@ -245,11 +251,73 @@ function assertProjectPreserved(actual, original, label) {
         expectedNets: expected.circuit.nets.map((net) => net.id).sort() });
       assert.equal(await page.evaluate((storageKey) => localStorage.getItem(storageKey), key), raw,
         `${name}: page-start recovery changed the original rc.138 bytes`);
+
+      const rc139Envelope = {
+        schema: 'intent-mcu-project-envelope@8', profile,
+        modelLibrary: RC139_ACCEPTED_CURRENT_LOCK,
+        brief: { schema: 'intent-mcu-project-brief@4', purpose: '', inputs: [], outputs: [],
+          boundaryCases: [], acceptanceCriteria: [], openAssumptions: [], requiredCapabilities: [] },
+        scenarioTimeline: null, project: expected,
+      };
+      const rc139Bytes = JSON.stringify(rc139Envelope);
+      await openBytes(page, profile, `accepted-rc139-${name}`, rc139Bytes);
+      await page.waitForFunction((selected) => document.querySelector('#board-select').value === selected, profile);
+      const rc139Opened = JSON.parse(await page.evaluate((selected) =>
+        window.__COMMON_PROJECT_FILES__.current(selected), profile));
+      assertProjectPreserved(rc139Opened.project, expected, `${name}: accepted rc.139 Open`);
+      assert.notDeepEqual(rc139Opened.modelLibrary, RC139_ACCEPTED_CURRENT_LOCK,
+        `${name}: accepted rc.139 lock was not migrated to the current presentation identity`);
+      assert.equal(JSON.stringify(rc139Envelope), rc139Bytes,
+        `${name}: accepted rc.139 source bytes changed during Open`);
       assert.deepEqual(pageErrors, [], `${name}: page-start browser errors`);
       await recoveryContext.close();
+    }
+    for (const [profile, name] of recoveryFixtures) {
+      const fixture = JSON.parse(fs.readFileSync(path.join(recoveryFixtureRoot, name), 'utf8'));
+      if (profile === 'board.atmega328p-16mhz-v1') fixture.modelLibrary = RC139_ACCEPTED_CURRENT_LOCK;
+      const raw = JSON.stringify(fixture);
+      const draftId = '13900000-0000-4000-8000-000000000139';
+      const key = profile === 'board.atmega328p-16mhz-v1'
+        ? `teach-lab.simulator.project.v2.tab.${draftId}`
+        : `intent-mcu.profile-draft.v1.${profile}.tab.${draftId}`;
+      const startupContext = await browser.newContext({ viewport: { width: 1440, height: 900 }, serviceWorkers: 'block' });
+      await startupContext.addInitScript(({ draftId: id, profile: selected, key: storageKey, raw: bytes }) => {
+        sessionStorage.setItem('intent-mcu.active-draft-id.v1', id);
+        sessionStorage.setItem('intent-mcu.active-profile.v1', selected);
+        localStorage.setItem(storageKey, bytes);
+      }, { draftId, profile, key, raw });
+      const page = await startupContext.newPage();
+      const pageErrors = [];
+      page.on('pageerror', (error) => pageErrors.push(error.message));
+      await page.goto(base, { waitUntil: 'networkidle' });
+      await page.waitForFunction(() => window.__M11_READY__ === true);
+      assert.equal(await page.locator('#board-select').inputValue(), profile,
+        `${name}: fresh rc.139 page-start did not restore the active profile`);
+      const restored = JSON.parse(await page.evaluate((selected) =>
+        window.__COMMON_PROJECT_FILES__.current(selected), profile));
+      const expected = profile === 'board.atmega328p-16mhz-v1'
+        ? fixture.project : { ...fixture.project, circuit: fixture.circuit };
+      assertProjectPreserved(restored.project, expected, `${name}: direct rc.139 page-start recovery`);
+      assert.equal(await page.evaluate((storageKey) => localStorage.getItem(storageKey), key), raw,
+        `${name}: direct rc.139 page-start changed original storage bytes`);
+      const artworkSelector = profile === 'board.atmega328p-16mhz-v1'
+        ? '#catalog-list .catalog-thumbnail-slot svg[role="img"]'
+        : profile === 'board.rp2040-pico-v1' ? '#pico-parts-list .bounded-part-thumbnail svg[role="img"]'
+          : profile === 'board.esp32-c3-devmodule-v1' ? '#c3-parts-list .bounded-part-thumbnail svg[role="img"]'
+            : '#stm32-parts-list .bounded-part-thumbnail svg[role="img"]';
+      const expectedArtwork = profile === 'board.atmega328p-16mhz-v1' ? 5 : 6;
+      await page.waitForFunction(({ selector, expectedCount }) =>
+        document.querySelectorAll(selector).length >= expectedCount,
+      { selector: artworkSelector, expectedCount: expectedArtwork });
+      assert([...await page.locator(artworkSelector).all()].length >= expectedArtwork,
+        `${name}: SVG parts artwork missing after direct rc.139 startup`);
+      assert.deepEqual(pageErrors, [], `${name}: direct rc.139 startup browser errors`);
+      await startupContext.close();
     }
   } finally { await browser.close(); }
   process.stdout.write(`${JSON.stringify({ result: 'pass', actualExports: fixtures.length,
     profiles: 4, directRc138Recoveries: recoveryFixtures.length,
+    directRc139Recoveries: recoveryFixtures.length,
+    acceptedRc139OpenExports: recoveryFixtures.length,
     openReloadDownloadRoundtrip: true, alteredAndUnknownAtomic: true, visibleErrors: true })}\n`);
 })().catch((error) => { process.stderr.write(`${error.stack || error}\n`); process.exit(1); });
