@@ -3,6 +3,9 @@
 
 import { normalizeStoredRoute } from './route-model.mjs';
 import { withComponentAppearance, withComponentAppearanceBody } from './component-appearance.mjs';
+import {
+  GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE,
+} from './bounded-3v3-authoring-contracts.mjs';
 
 const clone = (value) => structuredClone(value);
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
@@ -11,6 +14,7 @@ const sameEndpoint = (left, right) => endpointKey(left) === endpointKey(right);
 export const BOUNDED_COMPONENT_CATALOG_SCHEMA = 'intent-mcu-bounded-component-catalog@1';
 export const BOUNDED_RESISTOR_TYPE = 'resistor.fixed-v1';
 export const BOUNDED_LED_TYPE = 'led.basic-v1';
+export { GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE };
 export const BOUNDED_WIRE_COLORS = Object.freeze([
   '#39dff2', '#f5c451', '#f04f5f', '#a8ff3f', '#5f8cff', '#303943',
 ]);
@@ -66,6 +70,24 @@ export function createSeriesLedComponentPolicy({
         },
         limitation: 'Bounded polarity/current model; colour selects an ideal forward-voltage constant, not wavelength, brightness or physical accuracy.',
       }),
+      part({
+        id: 'ground-1', type: GROUND_REFERENCE_3V3_TYPE,
+        displayName: '3.3 V ground reference', label: 'Ground reference', properties: {},
+        position: { x: 0.78, y: 0.78, rotation: 0 }, supportedProperties: {},
+        pins: ['GND'], limitation: 'Authoring-only 0 V reference; it grants no executable or physical-hardware authority.',
+      }),
+      part({
+        id: 'button-1', type: MOMENTARY_BUTTON_3V3_TYPE,
+        displayName: 'Momentary button', label: 'Momentary button', properties: { defaultClosed: false },
+        position: { x: 0.72, y: 0.58, rotation: 0 }, supportedProperties: {},
+        pins: ['A', 'B'], limitation: 'Authoring-only passive 0–3.3 V contact; runtime behavior is intentionally unavailable.',
+      }),
+      part({
+        id: 'switch-1', type: TOGGLE_SWITCH_3V3_TYPE,
+        displayName: 'Toggle switch', label: 'Toggle switch', properties: { defaultClosed: false },
+        position: { x: 0.58, y: 0.72, rotation: 0 }, supportedProperties: {},
+        pins: ['A', 'B'], limitation: 'Authoring-only passive 0–3.3 V contact; runtime behavior is intentionally unavailable.',
+      }),
     ]),
   });
 }
@@ -104,6 +126,10 @@ export function createSeriesLedConnectionPolicy({
     if (pair(draft, left, right, ledType, ['CATHODE'], boardType, [groundPin])) {
       return led?.component === 'led-1' ? 'net-ground' : `net-${led.component}-ground`;
     }
+    const authoringOnly = new Set([GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE]);
+    if (authoringOnly.has(endpointType(draft, left)) || authoringOnly.has(endpointType(draft, right))) {
+      return `net-${[endpointKey(left), endpointKey(right)].sort().join('-').replaceAll('.', '-')}`.toLowerCase().slice(0, 48);
+    }
     return null;
   };
 }
@@ -135,6 +161,7 @@ export class NamedSeriesLedCircuitEditor {
     this.revision = 0;
     this.apiTransactionHead = null;
     this.apiRedoTransaction = null;
+    this.issuedComponentIds = new Set(this.draft.components.map(({ id }) => id));
   }
 
   code(suffix) { return `${this.codePrefix}_${suffix}`; }
@@ -164,11 +191,14 @@ export class NamedSeriesLedCircuitEditor {
   }
 
   nextComponentId(type) {
-    const stem = type === BOUNDED_RESISTOR_TYPE ? 'resistor' : type === BOUNDED_LED_TYPE ? 'led' : null;
+    const stems = { [BOUNDED_RESISTOR_TYPE]: 'resistor', [BOUNDED_LED_TYPE]: 'led',
+      [GROUND_REFERENCE_3V3_TYPE]: 'ground', [MOMENTARY_BUTTON_3V3_TYPE]: 'button',
+      [TOGGLE_SWITCH_3V3_TYPE]: 'switch' };
+    const stem = stems[type] ?? null;
     if (!stem) return null;
     for (let index = 1; index <= 16; index += 1) {
       const id = `${stem}-${index}`;
-      if (!this.draft.components.some((component) => component.id === id)) return id;
+      if (!this.issuedComponentIds.has(id)) return id;
     }
     return null;
   }
@@ -182,6 +212,7 @@ export class NamedSeriesLedCircuitEditor {
     next.layout.wireStyles = {};
     next.layout.wireRoutes = {};
     next.layout.componentAppearance = { schema: 'intent-mcu-component-appearance@1', components: {} };
+    this.issuedComponentIds = new Set([board.id]);
     return { ok: true, changed: true, code: this.code('NEW_PROJECT'),
       ...this.commit(next, { kind: 'component', id: board.id }) };
   }
@@ -203,6 +234,7 @@ export class NamedSeriesLedCircuitEditor {
     this.future = [];
     this.futureKinds = [];
     this.draft = normalized;
+    for (const { id } of normalized.components) this.issuedComponentIds.add(id);
     this.selection = clone(selection);
     this.wireDraft = { mode: 'none' };
     this.revision += 1;
@@ -218,10 +250,11 @@ export class NamedSeriesLedCircuitEditor {
     const endpointKnown = (point) => {
       const component = next.components.find((item) => item.id === point?.component);
       if (!component || typeof point?.pin !== 'string') return false;
+      const policy = this.componentPolicy.parts.find((item) => item.type === component.type);
+      if (policy?.pins) return policy.pins.includes(point.pin);
       const defaults = this.createDefault();
       const types = new Map(defaults.components.map((item) => [item.id, item.type]));
-      return defaults.nets.some((net) => net.endpoints.some((candidate) =>
-        types.get(candidate.component) === component.type && candidate.pin === point.pin));
+      return defaults.nets.some((net) => net.endpoints.some((candidate) => types.get(candidate.component) === component.type && candidate.pin === point.pin));
     };
     const connected = (point) => next.nets.some((net) => net.endpoints.some((item) => sameEndpoint(item, point)));
     try {
@@ -229,8 +262,7 @@ export class NamedSeriesLedCircuitEditor {
         if (!operation || typeof operation !== 'object' || Array.isArray(operation)) throw new Error('SHAPE');
         if (operation.command === 'component.add') {
           const policy = this.componentPolicy.parts.find((part) => part.type === operation.type);
-          const expectedStem = operation.type === BOUNDED_RESISTOR_TYPE ? 'resistor'
-            : operation.type === BOUNDED_LED_TYPE ? 'led' : null;
+          const expectedStem = this.nextComponentId(operation.type)?.split('-')[0] ?? null;
           if (!policy || !new RegExp(`^${expectedStem}-(?:[1-9]|1[0-6])$`, 'u').test(operation.id)
               || next.components.some((item) => item.id === operation.id)
               || !operation.position || !Number.isFinite(operation.position.x) || !Number.isFinite(operation.position.y)
@@ -242,8 +274,7 @@ export class NamedSeriesLedCircuitEditor {
         } else if (operation.command === 'component.duplicate') {
           const source = next.components.find((item) => item.id === operation.component_id);
           const policy = source && this.componentPolicy.parts.find((part) => part.type === source.type);
-          const expectedStem = source?.type === BOUNDED_RESISTOR_TYPE ? 'resistor'
-            : source?.type === BOUNDED_LED_TYPE ? 'led' : null;
+          const expectedStem = source ? this.nextComponentId(source.type)?.split('-')[0] ?? null : null;
           if (!source || !policy || !expectedStem
               || !new RegExp(`^${expectedStem}-(?:[1-9]|1[0-6])$`, 'u').test(operation.id)
               || next.components.some((item) => item.id === operation.id)
@@ -431,7 +462,8 @@ export class NamedSeriesLedCircuitEditor {
     const index = Number(id.split('-').at(-1));
     const next = clone(this.draft);
     next.components.push({ id, type: policy.type,
-      label: type === BOUNDED_RESISTOR_TYPE ? `220 Ω resistor ${index}` : `External red LED ${index}`,
+      label: type === BOUNDED_RESISTOR_TYPE ? `220 Ω resistor ${index}`
+        : type === BOUNDED_LED_TYPE ? `External red LED ${index}` : `${policy.displayName} ${index}`,
       properties: clone(policy.properties), controls: {} });
     const fallback = { x: Math.min(0.88, policy.position.x + ((index - 1) % 4) * 0.08),
       y: Math.min(0.86, policy.position.y + Math.floor((index - 1) / 4) * 0.12), rotation: policy.position.rotation };
@@ -571,11 +603,11 @@ export class NamedSeriesLedCircuitEditor {
   isKnownEndpoint(endpoint) {
     const component = this.draft.components.find((candidate) => candidate.id === endpoint?.component);
     if (!component || typeof endpoint?.pin !== 'string') return false;
+    const policy = this.componentPolicy.parts.find((item) => item.type === component.type);
+    if (policy?.pins) return policy.pins.includes(endpoint.pin);
     const defaults = this.createDefault();
     const defaultTypes = new Map(defaults.components.map((candidate) => [candidate.id, candidate.type]));
-    const supportedPins = new Set(defaults.nets.flatMap((net) => net.endpoints
-      .filter((candidate) => defaultTypes.get(candidate.component) === component.type)
-      .map((candidate) => candidate.pin)));
+    const supportedPins = new Set(defaults.nets.flatMap((net) => net.endpoints.filter((candidate) => defaultTypes.get(candidate.component) === component.type).map((candidate) => candidate.pin)));
     return supportedPins.has(endpoint.pin);
   }
 

@@ -129161,7 +129161,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
   "implementationMembers": [
     {
       "path": "src/component-catalog.mjs",
-      "sha256": "d461c7f52e591f2937518dd7cc30f9fdfd915cd9c6104624364d2236ecf1d236"
+      "sha256": "9abafc414c059b7365a65f1291d88c9a9f51be2cefb97990c2e6b5ab8b5cb0a4"
     },
     {
       "path": "src/circuit-engine.mjs",
@@ -129237,7 +129237,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/component-artwork.mjs",
-      "sha256": "3708f938e394c562eedfef166ef7d17d53b6949584f01310b10fb90e72f31fc2"
+      "sha256": "d473d78f636217d51228c2fbbd5a0e57d10613ad7816552f5b0aa3186d756607"
     },
     {
       "path": "src/model-library.mjs",
@@ -129261,7 +129261,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "00ab568224efababc04bf3105565f5b1eca050d41e50619649a0a1b29d633f5a"
+      "sha256": "5303b0247480d14f048498b66ef6ca589932c33bcee74e1094a7c847783a5e07"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -129305,15 +129305,15 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
-      "sha256": "13fa6b35f626e2944a1dcb869304f1a7a34c64a32d61023712474a5703257c3c"
+      "sha256": "f4b52a3966ad503bb739eebd029d17db589ee31683e9ee3bf73f7ac1d9193864"
     },
     {
       "path": "src/esp32c3-public-circuit.mjs",
-      "sha256": "78bd4af8b4215eb7f6639464cd211acc5ccb6f283add3778cad345d705ad2442"
+      "sha256": "9ebfb5dd9b200a9a02f4ceaa1bfc3aa67fc044d7774adb85e8c8c9ce79777061"
     },
     {
       "path": "src/stm32-public-circuit.mjs",
-      "sha256": "b5d65f4816ff5cec2da998297360f64f3bcf007a3f34d560d70d550f536ae349"
+      "sha256": "aca2358cc474975e2db0538035af818f8dc2ee33c4733d92dca38d90e3178b3d"
     },
     {
       "path": "src/rp2040-public-workbench.mjs",
@@ -129404,7 +129404,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "a60dd552da826bcf74e23eb7f8457de1ae1e8dd31f313536cb737f8a9d965507"
     }
   ],
-  "implementationSha256": "984511348fa052fefb24b9a26fbc2c4488c51d0d6c9874b1056087eee217dd87",
+  "implementationSha256": "94de73ad584d80812b5a4eaa25be5886a8b355babb20bd47aa590f3bc2c431af",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.125 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, real worker, run, image build or deployment",
@@ -129414,7 +129414,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-config-producer.2-current",
     "semanticDisposition": "component, firmware and electrical semantics remain unchanged; paired read-only AVR USART0 RX peripheral-model events are added"
   },
-  "manifestSha256": "d37be460d28fdea14c6ed62e42bc81b13afbcac9b936d5c6b414b41d6bea4c8b",
+  "manifestSha256": "5f0201ddec53c3d4769ca4da0d8c338c2a87043c9eba652f6f5b3674347adfba",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

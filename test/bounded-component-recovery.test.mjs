@@ -7,6 +7,7 @@ import test from 'node:test';
 import { Esp32C3CircuitEditor } from '../src/esp32c3-public-circuit.mjs';
 import {
   BOUNDED_COMPONENT_CATALOG_SCHEMA, BOUNDED_LED_TYPE, BOUNDED_RESISTOR_TYPE,
+  GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE,
 } from '../src/named-series-led-circuit-editor.mjs';
 import { Rp2040PicoCircuitEditor } from '../src/rp2040-pico-circuit.mjs';
 import { Stm32CircuitEditor } from '../src/stm32-public-circuit.mjs';
@@ -18,17 +19,19 @@ const profiles = [
 ];
 
 for (const profile of profiles) {
-  test(`${profile.name} exposes only its fixed board, resistor and LED`, () => {
+  test(`${profile.name} exposes its fixed board plus bounded 3.3 V authoring catalogue`, () => {
     const editor = new profile.Editor();
     const catalog = editor.snapshot().catalog;
     assert.equal(catalog.schema, BOUNDED_COMPONENT_CATALOG_SCHEMA);
     assert.equal(catalog.profile, profile.boardType);
     assert.deepEqual(catalog.parts.map((part) => part.type), [
       profile.boardType, BOUNDED_RESISTOR_TYPE, BOUNDED_LED_TYPE,
+      GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE,
     ]);
     assert.equal(catalog.parts[0].fixed, true);
     assert.equal(catalog.parts[0].addable, false);
-    assert(catalog.parts.slice(1).every((part) => part.present && !part.addable));
+    assert(catalog.parts.slice(1, 3).every((part) => part.present && !part.addable));
+    assert(catalog.parts.slice(3).every((part) => !part.present && part.addable));
     assert.equal(editor.addMissingComponent(profile.boardType).code, `${profile.prefix}_BOARD_FIXED`);
     assert.equal(editor.addMissingComponent('button.momentary-v1').code, `${profile.prefix}_COMPONENT_UNSUPPORTED`);
     assert.equal(editor.addMissingComponent(BOUNDED_RESISTOR_TYPE).code, `${profile.prefix}_COMPONENT_EXISTS`);

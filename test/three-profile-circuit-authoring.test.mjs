@@ -93,7 +93,7 @@ for (const profile of profiles) {
 
     editor.select({ kind: 'component', id: 'resistor-2' });
     assert.equal(editor.deleteSelected().ok, true);
-    assert.equal(editor.addComponent('resistor.fixed-v1').componentId, 'resistor-2');
+    assert.equal(editor.addComponent('resistor.fixed-v1').componentId, 'resistor-3');
     assert.equal(editor.snapshot().draft.components.some(({ id }) => id === 'resistor-1'), true);
 
     const beforeApi = structuredClone(editor.snapshot().draft);
@@ -134,5 +134,28 @@ for (const profile of profiles) {
       assert.equal(editor.applyApiBatch([operation], `invalid-duplicate-${Math.random()}`).ok, false);
       assert.equal(JSON.stringify(editor.snapshot().draft), accepted);
     }
+  });
+
+  test(`${profile.name} persists mixed 3.3 V authoring-only parts and named-pin API wiring`, () => {
+    const editor = new profile.Editor();
+    assert.equal(editor.addComponent('ground.reference-3v3-v1').componentId, 'ground-1');
+    assert.equal(editor.addComponent('button.momentary-3v3-v1').componentId, 'button-1');
+    assert.equal(editor.addComponent('switch.toggle-3v3-v1').componentId, 'switch-1');
+    const sourceNet = editor.snapshot().draft.nets.find((net) => net.endpoints.some((endpoint) =>
+      endpoint.component === profile.source.component && endpoint.pin === profile.source.pin));
+    assert.equal(editor.branchEndpoint(sourceNet.id, { component: 'button-1', pin: 'A' }).ok, true);
+    assert.equal(editor.connectEndpoints({ component: 'button-1', pin: 'B' }, { component: 'ground-1', pin: 'GND' }).ok, true);
+    const saved = JSON.parse(JSON.stringify(editor.snapshot().draft));
+    assert.deepEqual(profile.normalize(saved), saved);
+    assert.equal(editor.snapshot().validation.ok, false);
+
+    const api = editor.applyApiBatch([
+      { command: 'component.add', id: 'button-2', type: 'button.momentary-3v3-v1', position: { x: 0.7, y: 0.7, rotation: 0 } },
+      { command: 'wire.branch.connect', net_id: saved.nets.find((net) => net.endpoints.some(({ component }) => component === 'ground-1')).id,
+        endpoint: { component: 'button-2', pin: 'B' } },
+    ], `mixed-${profile.name}`);
+    assert.equal(api.ok, true);
+    assert.equal(editor.undoApi(`mixed-${profile.name}`).ok, true);
+    assert.deepEqual(editor.snapshot().draft, saved);
   });
 }

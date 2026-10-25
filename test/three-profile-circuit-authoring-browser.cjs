@@ -174,6 +174,21 @@ const profiles = [
       }, profile);
       assert.equal(branch.endpoints, 3);
       assert.equal(branch.validation.ok, false);
+      const endpointSelect = profile.id === 'board.rp2040-pico-v1' ? '#pico-branch-endpoint'
+        : profile.id === 'board.esp32-c3-devmodule-v1' ? '#c3-branch-endpoint' : '#stm32-branch-endpoint';
+      const removeBranch = profile.id === 'board.rp2040-pico-v1' ? '#pico-remove-branch'
+        : profile.id === 'board.esp32-c3-devmodule-v1' ? '#c3-remove-branch' : '#stm32-remove-branch';
+      await page.selectOption(endpointSelect, { label: 'resistor-1.A' });
+      await page.evaluate((selector) => document.querySelector(selector).click(), removeBranch);
+      assert.equal(await page.evaluate(({ api }) => {
+        const state = window[api].state(); const graph = state.circuit ?? state.project.circuit;
+        return graph.nets.find(({ id }) => id === 'net-led-2-ground').endpoints.length;
+      }, profile), 2);
+      await page.evaluate(({ api }) => window[api].undoCircuit(), profile);
+      assert.equal(await page.evaluate(({ api }) => {
+        const state = window[api].state(); const graph = state.circuit ?? state.project.circuit;
+        return graph.nets.find(({ id }) => id === 'net-led-2-ground').endpoints.length;
+      }, profile), 3);
       await page.evaluate(({ api }) => window[api].undoCircuit(), profile);
 
       await page.evaluate(({ api }) => window[api].selectCircuit({ kind: 'component', id: 'resistor-1' }), profile);
@@ -188,6 +203,12 @@ const profiles = [
         const state = window[api].state();
         return (state.circuit ?? state.project.circuit).components.some(({ id }) => id === 'resistor-3');
       }, profile), false);
+      await page.evaluate(() => document.querySelector('[data-bounded-add="button.momentary-3v3-v1"]').click());
+      assert.equal(await page.evaluate(({ api, layer }) => {
+        const state = window[api].state(); const graph = state.circuit ?? state.project.circuit;
+        return graph.components.some(({ id, type }) => id === 'button-1' && type === 'button.momentary-3v3-v1')
+          && Boolean(document.querySelector(`${layer} [data-editor-endpoint="button-1.A"]`));
+      }, profile), true);
     }
     process.stdout.write('RC139 three-profile browser authoring PASS\n');
   } finally {

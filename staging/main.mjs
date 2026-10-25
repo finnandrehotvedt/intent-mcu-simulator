@@ -3,6 +3,7 @@
 
 import { installX81Assessment } from './x81-assessment-controller.mjs';
 import { X81_RETAINED_ASSESSMENT } from '../src/x81-retained-assessment.mjs';
+import { BOUNDED_3V3_UI_COMPONENTS } from '../src/bounded-3v3-authoring-contracts.mjs';
 
 import {
   CATALOG_CATEGORIES,
@@ -459,6 +460,7 @@ import {
 
 const uiComponentCatalog = Object.freeze({
   ...COMPONENT_CATALOG, ...CANDIDATE_UI_COMPONENTS,
+  ...BOUNDED_3V3_UI_COMPONENTS,
   ...RP2040_PICO_COMPONENT_CATALOG, ...ESP32C3_PUBLIC_COMPONENT_CATALOG,
   ...STM32_PUBLIC_COMPONENT_CATALOG,
 });
@@ -513,6 +515,8 @@ const elements = Object.fromEntries([
   'serial-provenance', 'instrument-evidence', 'instrument-evidence-state', 'instrument-evidence-profile',
   'instrument-evidence-artifact', 'instrument-evidence-time', 'instrument-evidence-retention',
   'x46-uart-panel',
+  'pico-branch-endpoint', 'pico-remove-branch', 'c3-branch-endpoint', 'c3-remove-branch',
+  'stm32-branch-endpoint', 'stm32-remove-branch',
   'control-runtime-evidence-body',
   'serial-tab', 'serial-dock', 'serial-close', 'serial-resizer', 'serial-resume', 'serial-new-output',
   'canvas-select-mode', 'canvas-interact-mode',
@@ -1290,6 +1294,27 @@ function beginNamedWireBranch(workbench, statusElement) {
   return result;
 }
 
+function renderNamedBranchRemoval(select, button, draft, selection, wireDraft) {
+  const net = selection.kind === 'net' ? draft.nets.find(({ id }) => id === selection.id) : null;
+  const endpoints = net?.endpoints.length > 2 ? net.endpoints : [];
+  const previous = select.value;
+  select.replaceChildren(new Option('Choose branch endpoint', ''), ...endpoints.map((endpoint) =>
+    new Option(picoEndpointKey(endpoint), JSON.stringify(endpoint))));
+  if ([...select.options].some(({ value }) => value === previous)) select.value = previous;
+  select.disabled = !endpoints.length || wireDraft.mode !== 'none';
+  button.disabled = select.disabled || !select.value;
+}
+
+function removeNamedBranch(workbench, select, statusElement) {
+  const snapshot = workbench.snapshot().circuitEditor;
+  if (snapshot.selection.kind !== 'net' || !select.value) return;
+  const endpoint = JSON.parse(select.value);
+  const result = workbench.editCircuit('deleteBranch', snapshot.selection.id, endpoint);
+  statusElement.textContent = result.ok
+    ? `Removed ${picoEndpointKey(endpoint)} from ${snapshot.selection.id}. Undo restores it.`
+    : `Branch removal rejected (${result.code}). The circuit is unchanged.`;
+}
+
 function cancelNamedWire(workbench, statusElement) {
   const result = workbench.editCircuit('cancelWireDraft');
   statusElement.textContent = 'Wire selection cancelled. The circuit is unchanged.';
@@ -1398,6 +1423,15 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
       ? 'This controller profile is fixed. Select the resistor or LED to edit its bounded model property.'
       : 'Select the resistor or LED to edit only its tested bounded model property.';
     properties.replaceChildren(note); return;
+  }
+
+  if (!['resistor.fixed-v1', 'led.basic-v1'].includes(selected.type)) {
+    const note = document.createElement('p');
+    note.textContent = `${selectedPart.displayName} is a 3.3 V authoring-only part. Its named pins persist, but it cannot grant Build or Run authority.`;
+    const duplicate = document.createElement('button'); duplicate.type = 'button'; duplicate.textContent = 'Duplicate disconnected part';
+    duplicate.dataset.boundedDuplicate = selected.id;
+    duplicate.addEventListener('click', () => editCircuit('duplicateComponent', selected.id));
+    properties.replaceChildren(note, duplicate); return;
   }
 
   const row = document.createElement('div'); row.className = 'bounded-property-row';
@@ -2515,6 +2549,7 @@ function renderPicoCircuitEditor(state) {
   elements.picoundo.disabled = !canUndo; elements.picoredo.disabled = !canRedo;
   elements.picoreconnect.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
   elements.picobranch.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  renderNamedBranchRemoval(elements.picobranchendpoint, elements.picoremovebranch, draft, selection, wireDraft);
   const picoRouteSelected = selection.kind === 'net' && wireDraft.mode === 'none';
   elements.picoaddbend.disabled = !picoRouteSelected;
   elements.picorouteback.disabled = !picoRouteSelected;
@@ -2663,6 +2698,8 @@ elements.picorotate.addEventListener('click', () => {
 });
 elements.picoreconnect.addEventListener('click', () => beginNamedWireReconnect(picoPublicWorkbench, elements.picowirestate));
 elements.picobranch.addEventListener('click', () => beginNamedWireBranch(picoPublicWorkbench, elements.picowirestate));
+elements.picobranchendpoint.addEventListener('change', () => { elements.picoremovebranch.disabled = !elements.picobranchendpoint.value; });
+elements.picoremovebranch.addEventListener('click', () => removeNamedBranch(picoPublicWorkbench, elements.picobranchendpoint, elements.picowirestate));
 elements.picoaddbend.addEventListener('click', () => editBoundedRoute('pico', 'bend'));
 elements.picorouteback.addEventListener('click', () => editBoundedRoute('pico', 'move', -1));
 elements.picorouteforward.addEventListener('click', () => editBoundedRoute('pico', 'move', 1));
@@ -2802,6 +2839,7 @@ function renderC3CircuitEditor(state) {
   elements.c3undo.disabled = !canUndo; elements.c3redo.disabled = !canRedo;
   elements.c3reconnect.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
   elements.c3branch.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  renderNamedBranchRemoval(elements.c3branchendpoint, elements.c3removebranch, draft, selection, wireDraft);
   const c3RouteSelected = selection.kind === 'net' && wireDraft.mode === 'none';
   elements.c3addbend.disabled = !c3RouteSelected;
   elements.c3routeback.disabled = !c3RouteSelected;
@@ -2950,6 +2988,8 @@ elements.c3rotate.addEventListener('click', () => {
 });
 elements.c3reconnect.addEventListener('click', () => beginNamedWireReconnect(c3PublicWorkbench, elements.c3wirestate));
 elements.c3branch.addEventListener('click', () => beginNamedWireBranch(c3PublicWorkbench, elements.c3wirestate));
+elements.c3branchendpoint.addEventListener('change', () => { elements.c3removebranch.disabled = !elements.c3branchendpoint.value; });
+elements.c3removebranch.addEventListener('click', () => removeNamedBranch(c3PublicWorkbench, elements.c3branchendpoint, elements.c3wirestate));
 elements.c3addbend.addEventListener('click', () => editBoundedRoute('c3', 'bend'));
 elements.c3routeback.addEventListener('click', () => editBoundedRoute('c3', 'move', -1));
 elements.c3routeforward.addEventListener('click', () => editBoundedRoute('c3', 'move', 1));
@@ -3093,6 +3133,7 @@ function renderStm32CircuitEditor(state) {
   elements.stm32undo.disabled = !canUndo; elements.stm32redo.disabled = !canRedo;
   elements.stm32reconnect.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
   elements.stm32branch.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  renderNamedBranchRemoval(elements.stm32branchendpoint, elements.stm32removebranch, draft, selection, wireDraft);
   const stm32RouteSelected = selection.kind === 'net' && wireDraft.mode === 'none';
   elements.stm32addbend.disabled = !stm32RouteSelected;
   elements.stm32routeback.disabled = !stm32RouteSelected;
@@ -3299,6 +3340,8 @@ elements.stm32rotate.addEventListener('click', () => {
 });
 elements.stm32reconnect.addEventListener('click', () => beginNamedWireReconnect(stm32PublicWorkbench, elements.stm32wirestate));
 elements.stm32branch.addEventListener('click', () => beginNamedWireBranch(stm32PublicWorkbench, elements.stm32wirestate));
+elements.stm32branchendpoint.addEventListener('change', () => { elements.stm32removebranch.disabled = !elements.stm32branchendpoint.value; });
+elements.stm32removebranch.addEventListener('click', () => removeNamedBranch(stm32PublicWorkbench, elements.stm32branchendpoint, elements.stm32wirestate));
 elements.stm32addbend.addEventListener('click', () => editBoundedRoute('stm32', 'bend'));
 elements.stm32routeback.addEventListener('click', () => editBoundedRoute('stm32', 'move', -1));
 elements.stm32routeforward.addEventListener('click', () => editBoundedRoute('stm32', 'move', 1));

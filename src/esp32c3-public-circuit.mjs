@@ -10,6 +10,7 @@ import {
 import { normalizeStoredRoute } from './route-model.mjs';
 import { emptyComponentAppearance, normalizeComponentAppearance } from './component-appearance.mjs';
 import { exactKeys } from './strict-json.mjs';
+import { GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE, validateBounded3v3AuthoringGraph } from './bounded-3v3-authoring-contracts.mjs';
 
 export const ESP32C3_PUBLIC_CIRCUIT_SCHEMA = 'intent-mcu-esp32c3-public-circuit@1';
 export const ESP32C3_PUBLIC_PROFILE = 'board.esp32-c3-devmodule-v1';
@@ -72,6 +73,9 @@ const TYPE_PINS = Object.freeze({
   [BOARD]: new Set(['GPIO2', 'GND']),
   [RESISTOR]: new Set(['A', 'B']),
   [LED]: new Set(['ANODE', 'CATHODE']),
+  [GROUND_REFERENCE_3V3_TYPE]: new Set(['GND']),
+  [MOMENTARY_BUTTON_3V3_TYPE]: new Set(['A', 'B']),
+  [TOGGLE_SWITCH_3V3_TYPE]: new Set(['A', 'B']),
 });
 const COMPONENT_POLICY = createSeriesLedComponentPolicy({
   profile: BOARD, boardId: 'c3-1', boardLabel: 'ESP32-C3 GPIO2 profile',
@@ -130,6 +134,9 @@ function normalizeComponent(value) {
   if (value.type === LED && (!exactKeys(value.properties, ['color']) || !Object.hasOwn(LED_FORWARD_VOLTS, value.properties.color))) {
     throw Object.assign(new Error('C3_CIRCUIT_LED_INVALID'), { code: 'C3_CIRCUIT_LED_INVALID' });
   }
+  if (value.type === GROUND_REFERENCE_3V3_TYPE && !exactKeys(value.properties, [])) throw Object.assign(new Error('C3_CIRCUIT_COMPONENT_INVALID'), { code: 'C3_CIRCUIT_COMPONENT_INVALID' });
+  if ([MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE].includes(value.type)
+      && (!exactKeys(value.properties, ['defaultClosed']) || typeof value.properties.defaultClosed !== 'boolean')) throw Object.assign(new Error('C3_CIRCUIT_COMPONENT_INVALID'), { code: 'C3_CIRCUIT_COMPONENT_INVALID' });
   return clone(value);
 }
 
@@ -239,6 +246,8 @@ export function validateEsp32C3Circuit(value, options = {}) {
   const boards = draft.components.filter((item) => item.type === BOARD);
   if (boards.length !== 1) return failure('C3_BOARD_COUNT');
   const board = boards[0];
+  const authoring = validateBounded3v3AuthoringGraph({ board: ESP32C3_BOARD_DEFINITION, components: draft.components, nets: draft.nets });
+  if (!authoring.ok) return failure(`C3_${authoring.code}`, authoring.details);
   const resistor = draft.components.find((item) => item.type === RESISTOR);
   const led = draft.components.find((item) => item.type === LED);
   if (!resistor) return failure('C3_SERIES_RESISTOR_REQUIRED');

@@ -9,6 +9,7 @@ import {
 import { normalizeStoredRoute } from './route-model.mjs';
 import { emptyComponentAppearance, normalizeComponentAppearance } from './component-appearance.mjs';
 import { exactKeys } from './strict-json.mjs';
+import { GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE, validateBounded3v3AuthoringGraph } from './bounded-3v3-authoring-contracts.mjs';
 
 export const STM32_PUBLIC_CIRCUIT_SCHEMA = 'intent-mcu-stm32-public-circuit@1';
 export const STM32_PUBLIC_PROFILE = 'board.stm32f429zi-nucleo144-v1';
@@ -76,6 +77,9 @@ const TYPE_PINS = Object.freeze({
   [BOARD]: new Set(['PB0', 'GND']),
   [RESISTOR]: new Set(['A', 'B']),
   [LED]: new Set(['ANODE', 'CATHODE']),
+  [GROUND_REFERENCE_3V3_TYPE]: new Set(['GND']),
+  [MOMENTARY_BUTTON_3V3_TYPE]: new Set(['A', 'B']),
+  [TOGGLE_SWITCH_3V3_TYPE]: new Set(['A', 'B']),
 });
 const COMPONENT_POLICY = createSeriesLedComponentPolicy({
   profile: BOARD, boardId: 'stm32-1', boardLabel: 'STM32F429ZI PB0 profile',
@@ -138,6 +142,9 @@ function normalizeComponent(value) {
   if (value.type === LED && (!exactKeys(value.properties, ['color']) || !Object.hasOwn(LED_FORWARD_VOLTS, value.properties.color))) {
     throw Object.assign(new Error('STM32_CIRCUIT_LED_INVALID'), { code: 'STM32_CIRCUIT_LED_INVALID' });
   }
+  if (value.type === GROUND_REFERENCE_3V3_TYPE && !exactKeys(value.properties, [])) throw Object.assign(new Error('STM32_CIRCUIT_COMPONENT_INVALID'), { code: 'STM32_CIRCUIT_COMPONENT_INVALID' });
+  if ([MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE].includes(value.type)
+      && (!exactKeys(value.properties, ['defaultClosed']) || typeof value.properties.defaultClosed !== 'boolean')) throw Object.assign(new Error('STM32_CIRCUIT_COMPONENT_INVALID'), { code: 'STM32_CIRCUIT_COMPONENT_INVALID' });
   return clone(value);
 }
 
@@ -251,6 +258,8 @@ export function validateStm32Circuit(value, options = {}) {
   const boards = draft.components.filter((item) => item.type === BOARD);
   if (boards.length !== 1) return failure('STM32_BOARD_COUNT');
   const board = boards[0];
+  const authoring = validateBounded3v3AuthoringGraph({ board: STM32_BOARD_DEFINITION, components: draft.components, nets: draft.nets });
+  if (!authoring.ok) return failure(`STM32_${authoring.code}`, authoring.details);
   const resistor = draft.components.find((item) => item.type === RESISTOR);
   const led = draft.components.find((item) => item.type === LED);
   if (!resistor) return failure('STM32_SERIES_RESISTOR_REQUIRED');
