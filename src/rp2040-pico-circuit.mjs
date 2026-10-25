@@ -231,6 +231,10 @@ export function normalizeRp2040PicoCircuitDraft(value) {
     throw Object.assign(new Error('RP2040_CIRCUIT_LAYOUT_INVALID'), { code: 'RP2040_CIRCUIT_LAYOUT_INVALID' });
   }
   const idCounters = normalizeBoundedIdCounters(value.layout.idCounters, components);
+  const authoring = validateBounded3v3AuthoringGraph({ board: RP2040_PICO_BOARD_DEFINITION, components, nets });
+  if (!authoring.ok) throw Object.assign(new Error(`RP2040_${authoring.code}`), {
+    code: `RP2040_${authoring.code}`, details: authoring.details,
+  });
   return { schema: RP2040_PICO_CIRCUIT_SCHEMA, boardProfile: RP2040_PICO_PROFILE, components, nets,
     layout: { positions, wireStyles, wireRoutes, componentAppearance, idCounters } };
 }

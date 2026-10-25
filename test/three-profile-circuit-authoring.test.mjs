@@ -9,11 +9,11 @@ import { Rp2040PicoCircuitEditor, normalizeRp2040PicoCircuitDraft } from '../src
 import { Stm32CircuitEditor, normalizeStm32CircuitDraft } from '../src/stm32-public-circuit.mjs';
 
 const profiles = [
-  { name: 'Pico', Editor: Rp2040PicoCircuitEditor, normalize: normalizeRp2040PicoCircuitDraft,
+  { name: 'Pico', prefix: 'RP2040', Editor: Rp2040PicoCircuitEditor, normalize: normalizeRp2040PicoCircuitDraft,
     source: { component: 'pico-1', pin: 'GP0' }, ground: { component: 'pico-1', pin: 'GND3' } },
-  { name: 'C3', Editor: Esp32C3CircuitEditor, normalize: normalizeEsp32C3CircuitDraft,
+  { name: 'C3', prefix: 'C3', Editor: Esp32C3CircuitEditor, normalize: normalizeEsp32C3CircuitDraft,
     source: { component: 'c3-1', pin: 'GPIO2' }, ground: { component: 'c3-1', pin: 'GND' } },
-  { name: 'STM32', Editor: Stm32CircuitEditor, normalize: normalizeStm32CircuitDraft,
+  { name: 'STM32', prefix: 'STM32', Editor: Stm32CircuitEditor, normalize: normalizeStm32CircuitDraft,
     source: { component: 'stm32-1', pin: 'PB0' }, ground: { component: 'stm32-1', pin: 'GND' } },
 ];
 const withoutIdCounters = (value) => {
@@ -178,5 +178,40 @@ for (const profile of profiles) {
     assert.equal(editor.undoApi(`mixed-${profile.name}`).ok, true);
     assert.deepEqual(withoutIdCounters(editor.snapshot().draft), withoutIdCounters(saved));
     assert.equal(editor.snapshot().draft.layout.idCounters.button, 2);
+  });
+
+  test(`${profile.name} rejects unsafe mixed edits and imports before commit`, () => {
+    const direct = new profile.Editor(); direct.newProject();
+    direct.addComponent('ground.reference-3v3-v1');
+    const directBefore = JSON.stringify(direct.snapshot().draft);
+    const directResult = direct.connectEndpoints(profile.source, { component: 'ground-1', pin: 'GND' });
+    assert.equal(directResult.ok, false);
+    assert.match(directResult.code, /AUTHORING_DIRECT_SOURCE_GROUND_SHORT/u);
+    assert.equal(JSON.stringify(direct.snapshot().draft), directBefore);
+
+    const directNetId = direct.resolveNetId(direct.draft, profile.source, { component: 'ground-1', pin: 'GND' });
+    const apiResult = direct.applyApiBatch([{ command: 'wire.connect', net_id: directNetId,
+      from: profile.source, to: { component: 'ground-1', pin: 'GND' } }], `unsafe-${profile.name}`);
+    assert.equal(apiResult.ok, false);
+    assert.match(apiResult.code, /AUTHORING_DIRECT_SOURCE_GROUND_SHORT/u);
+    assert.equal(JSON.stringify(direct.snapshot().draft), directBefore);
+
+    const branch = new profile.Editor(); branch.newProject();
+    branch.addComponent('button.momentary-3v3-v1');
+    branch.addComponent('ground.reference-3v3-v1');
+    assert.equal(branch.connectEndpoints(profile.source, { component: 'button-1', pin: 'A' }).ok, true);
+    assert.equal(branch.connectEndpoints({ component: 'button-1', pin: 'B' }, { component: 'ground-1', pin: 'GND' }).ok, true);
+    const sourceNet = branch.snapshot().draft.nets.find((net) => net.endpoints.some((point) =>
+      point.component === profile.source.component && point.pin === profile.source.pin));
+    const branchBefore = JSON.stringify(branch.snapshot().draft);
+    const branchResult = branch.branchEndpoint(sourceNet.id, profile.ground);
+    assert.equal(branchResult.ok, false);
+    assert.match(branchResult.code, /AUTHORING_DIRECT_SOURCE_GROUND_SHORT/u);
+    assert.equal(JSON.stringify(branch.snapshot().draft), branchBefore);
+
+    const closed = structuredClone(branch.snapshot().draft);
+    closed.components.find(({ id }) => id === 'button-1').properties.defaultClosed = true;
+    assert.throws(() => profile.normalize(closed), (error) =>
+      error.code === `${profile.prefix}_AUTHORING_CLOSED_CONTACT_UNSUPPORTED`);
   });
 }

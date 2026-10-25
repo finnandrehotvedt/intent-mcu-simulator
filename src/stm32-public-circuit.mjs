@@ -242,6 +242,10 @@ export function normalizeStm32CircuitDraft(value) {
     throw Object.assign(new Error('STM32_CIRCUIT_LAYOUT_INVALID'), { code: 'STM32_CIRCUIT_LAYOUT_INVALID' });
   }
   const idCounters = normalizeBoundedIdCounters(value.layout.idCounters, components);
+  const authoring = validateBounded3v3AuthoringGraph({ board: STM32_BOARD_DEFINITION, components, nets });
+  if (!authoring.ok) throw Object.assign(new Error(`STM32_${authoring.code}`), {
+    code: `STM32_${authoring.code}`, details: authoring.details,
+  });
   return { schema: STM32_PUBLIC_CIRCUIT_SCHEMA, boardProfile: STM32_PUBLIC_PROFILE,
     components, nets, layout: { positions, wireStyles, wireRoutes, componentAppearance, idCounters } };
 }

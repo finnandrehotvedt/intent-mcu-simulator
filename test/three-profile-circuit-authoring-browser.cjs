@@ -209,6 +209,19 @@ const profiles = [
         return graph.components.some(({ id, type }) => id === 'button-1' && type === 'button.momentary-3v3-v1')
           && Boolean(document.querySelector(`${layer} [data-editor-endpoint="button-1.A"]`));
       }, profile), true);
+
+      await page.evaluate(({ api }) => window[api].newCircuit(), profile);
+      await page.evaluate(() => document.querySelector('[data-bounded-add="ground.reference-3v3-v1"]').click());
+      const unsafeBefore = await page.evaluate(({ api }) => {
+        const state = window[api].state(); return JSON.stringify(state.circuit ?? state.project.circuit);
+      }, profile);
+      await page.evaluate(({ layer, board, sourcePin }) => {
+        document.querySelector(`${layer} [data-editor-endpoint="${board}.${sourcePin}"]`).click();
+        document.querySelector(`${layer} [data-editor-endpoint="ground-1.GND"]`).click();
+      }, profile);
+      assert.equal(await page.evaluate(({ api }) => {
+        const state = window[api].state(); return JSON.stringify(state.circuit ?? state.project.circuit);
+      }, profile), unsafeBefore);
     }
     process.stdout.write('RC139 three-profile browser authoring PASS\n');
   } finally {

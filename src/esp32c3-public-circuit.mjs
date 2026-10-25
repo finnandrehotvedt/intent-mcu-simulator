@@ -230,6 +230,10 @@ export function normalizeEsp32C3CircuitDraft(value) {
     throw Object.assign(new Error('C3_CIRCUIT_LAYOUT_INVALID'), { code: 'C3_CIRCUIT_LAYOUT_INVALID' });
   }
   const idCounters = normalizeBoundedIdCounters(value.layout.idCounters, components);
+  const authoring = validateBounded3v3AuthoringGraph({ board: ESP32C3_BOARD_DEFINITION, components, nets });
+  if (!authoring.ok) throw Object.assign(new Error(`C3_${authoring.code}`), {
+    code: `C3_${authoring.code}`, details: authoring.details,
+  });
   return { schema: ESP32C3_PUBLIC_CIRCUIT_SCHEMA, boardProfile: ESP32C3_PUBLIC_PROFILE,
     components, nets, layout: { positions, wireStyles, wireRoutes, componentAppearance, idCounters } };
 }
