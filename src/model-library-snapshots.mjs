@@ -129261,7 +129261,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "c15318df376fc2d6d2bda6bb344928e037180b9d34dab511d064d39163216e91"
+      "sha256": "5d7f0fc71e35fc6eefcfb1d1b9d001fc0b361f1ee682cff1d5ca609265ddc718"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -129277,7 +129277,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/shared-workbench-shell.mjs",
-      "sha256": "e9fcc90e0f2ad609cd908f75672b7f6f1f239b427200e536ed7e755a5491b61d"
+      "sha256": "15b6956070b236a38b6349e8f54a3244bfa2124e36c8e1d6386fb48ae5d1678d"
     },
     {
       "path": "src/rp2040-snapshot-pacer.mjs",
@@ -129317,15 +129317,15 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/rp2040-public-workbench.mjs",
-      "sha256": "8cc77526b2e3d10dd84013af7fbe5c3d5b15589e3878e13fa56c6f1ec6d25c93"
+      "sha256": "3c3df5d9f83e7f98424e42bb0c93585596c097cec08b4b4bef6e95665309e9f1"
     },
     {
       "path": "src/esp32c3-public-workbench.mjs",
-      "sha256": "c6309155aaeee381a463681b5e838d396ad904e1d43f0e03a42609c1b9bf4e60"
+      "sha256": "0443cd4815c1f9d1f52c2233698e690190cd4fd2e7b5d6c6fad39283326c8579"
     },
     {
       "path": "src/stm32-public-workbench.mjs",
-      "sha256": "778cbfe76cb9fc8ddf3c87f59953417cfa0e4344395510696c71d48fbd370db5"
+      "sha256": "5c7280f084b2dddccbddc86deb548026613587a3807a88c5221da6f56549b19a"
     },
     {
       "path": "c3/public-service.mjs",
@@ -129404,7 +129404,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "a60dd552da826bcf74e23eb7f8457de1ae1e8dd31f313536cb737f8a9d965507"
     }
   ],
-  "implementationSha256": "cfaf5e18f657b2663c6ac776604af9d8aa3313997b36312e0dfe4b25359154d3",
+  "implementationSha256": "7dfa75c67b84ba2b1f04002f2c1ee5d6a3c84dea94a263a09adb47a277bde71d",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.125 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, real worker, run, image build or deployment",
@@ -129414,7 +129414,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-config-producer.2-current",
     "semanticDisposition": "component, firmware and electrical semantics remain unchanged; paired read-only AVR USART0 RX peripheral-model events are added"
   },
-  "manifestSha256": "49f5b582520551f6c7c3f68cd196c616dfde297988b7a85497e4e42664c97128",
+  "manifestSha256": "709444f9c162942ebe960f43cdc8147300c93877100a34a5630a1e1c7bd63c4d",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",
