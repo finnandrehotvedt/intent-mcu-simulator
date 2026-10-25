@@ -4,16 +4,26 @@
 import { createComponent } from './circuit-engine.mjs';
 import { GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE,
   TOGGLE_SWITCH_3V3_TYPE } from './bounded-3v3-authoring-contracts.mjs';
+import { PCF8574_LCD_TYPE, createPcf8574LcdComponent } from '../expansion-drafts/pcf8574-lcd-backpack-v1.mjs';
+import { CHARACTER_LCD_TYPE, createCharacterLcdComponent } from '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs';
 
 const ID = /^[a-z][a-z0-9-]{0,47}$/u;
 const TYPES = new Set(['board.atmega328p-16mhz-v1', 'resistor.fixed-v1', 'led.basic-v1',
   'button.momentary-v1', 'potentiometer.linear-v1', 'terminal.serial-uart-v1',
+  CHARACTER_LCD_TYPE, PCF8574_LCD_TYPE,
   GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE]);
 const exact = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && Object.keys(value).sort().join('|') === [...keys].sort().join('|');
 const endpoint = (value) => exact(value, ['component', 'pin']) && ID.test(value.component)
   && /^[A-Z0-9]{1,12}$/u.test(value.pin) ? structuredClone(value) : null;
 const fail = (code) => { throw Object.assign(new Error(code), { code }); };
+function boundedJunctionId(netId, point) {
+  const source = `${netId}-${point.component}-${point.pin}`.toLowerCase();
+  let hash = 0x811c9dc5;
+  for (const character of source) { hash ^= character.codePointAt(0); hash = Math.imul(hash, 0x01000193); }
+  return `junction-${source}`.slice(0, 39).replace(/-+$/u, '')
+    + `-${(hash >>> 0).toString(16).padStart(8, '0')}`;
+}
 
 export const API03_PROFILE_MATRIX = Object.freeze({
   'board.atmega328p-16mhz-v1': Object.freeze({ discover: true, read_project: true, edit_circuit: true,
@@ -45,9 +55,12 @@ export function prepareApiBatch(project, operations) {
     if (operation.command === 'component.add') {
       if (!exact(operation, ['command', 'id', 'type', 'position']) || !ID.test(operation.id)
           || !TYPES.has(operation.type) || !exact(operation.position, ['x', 'y', 'rotation'])) fail('API_COMPONENT_ADD_SHAPE');
-      const component = (project.profile ?? project.boardProfile ?? project.controller?.profile ?? project.circuit?.boardProfile)
-        === 'board.atmega328p-16mhz-v1'
-        ? createComponent(operation.id, operation.type) : { id: operation.id, type: operation.type };
+      const avr = (project.profile ?? project.boardProfile ?? project.controller?.profile ?? project.circuit?.boardProfile)
+        === 'board.atmega328p-16mhz-v1';
+      const component = avr && operation.type === PCF8574_LCD_TYPE
+        ? createPcf8574LcdComponent(operation.id)
+        : avr && operation.type === CHARACTER_LCD_TYPE ? createCharacterLcdComponent(operation.id)
+        : avr ? createComponent(operation.id, operation.type) : { id: operation.id, type: operation.type };
       return { type: 'component.add', component,
         position: structuredClone(operation.position) };
     }
@@ -81,7 +94,7 @@ export function prepareApiBatch(project, operations) {
         fail('API_WIRE_BRANCH_CONNECT_SHAPE');
       }
       return { type: 'wire.branch', netId: operation.net_id, endpoint: point,
-        junctionId: `junction-${operation.net_id}-${point.component}-${point.pin}`.slice(0, 96) };
+        junctionId: boundedJunctionId(operation.net_id, point) };
     }
     if (operation.command === 'wire.disconnect') {
       if (exact(operation, ['command', 'net_id']) && ID.test(operation.net_id)) {

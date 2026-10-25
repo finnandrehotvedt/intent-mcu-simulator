@@ -135085,7 +135085,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "a146a438c173986ce4d74dc41fdfb4795ba5ff0683822b80a775eefaea9cf071"
+      "sha256": "bb564251ff3133a48b621a41ef8229324ae617f23ca73bc19efa2f6b52402aa8"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -135117,7 +135117,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "65855e5d2192c7bbce7a4aabd62a27f81708053a37645ff5e2926e082d3b2f58"
+      "sha256": "5aa5604a39f00de7619456395a4ae5e96dc162e72f88446c04a61ed41c437581"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -135240,7 +135240,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "f7cd16498d64867c71de97588f25c995051b210b2f4ea357b357ff93a1aa377a"
     }
   ],
-  "implementationSha256": "d56180b251f1298ca949152a8b13803f7511762c1cb9c1a4031e8a096d1d008a",
+  "implementationSha256": "321f7d3f4135ff73e2e4104b0250547a7a49a7e4218056f8958f000708c445b4",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -135250,7 +135250,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR TWI write observation and fixed-address PCF8574 LCD semantics while retaining every prior component contract"
   },
-  "manifestSha256": "3dae5f3d3c50abf64859748f12b9583b19eaa3bb85467a0cfca18aa04921dcf6",
+  "manifestSha256": "c42786d73800d24ac7c8a9c7193e4fbc9a9a1195904a3a6506527d19e2af2d62",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

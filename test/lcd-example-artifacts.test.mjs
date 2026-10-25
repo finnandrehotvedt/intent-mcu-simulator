@@ -5,23 +5,49 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { openCandidateUiSession } from '../src/candidate-existing-ui-adapter.mjs';
+import { RETAINED_MODEL_LIBRARY_LOCK, resolveModelLibrary } from '../src/model-library.mjs';
+import { prepareProjectEnvelope } from '../src/project-envelope.mjs';
 
 const root = new URL('../examples/lcd/', import.meta.url);
+const AVR = 'board.atmega328p-16mhz-v1';
+const adapter = Object.freeze({ schemas: Object.freeze(['intent-mcu-project-contact-persistence@1']), prepare(value) {
+  const opened = openCandidateUiSession(JSON.stringify(value));
+  if (!opened.ok) throw Object.assign(new Error(opened.code), opened);
+  return { project: JSON.parse(opened.session.saveText()), prepared: opened.session };
+} });
+const adapters = Object.freeze({ [AVR]: adapter });
 
-test('committed CMP-050 and CMP-051 beginner project files are exact and openable', async () => {
+test('committed CMP-050 and CMP-051 files are exact current common envelopes', async () => {
   const manifest = JSON.parse(await readFile(new URL('manifest.json', root), 'utf8'));
-  assert.equal(manifest.schema, 'intent-mcu-lcd-example-manifest@1');
-  assert.equal(manifest.profile, 'board.atmega328p-16mhz-v1');
+  assert.equal(manifest.schema, 'intent-mcu-lcd-example-manifest@2');
+  assert.equal(manifest.profile, AVR);
   assert.deepEqual(manifest.entries.map((entry) => entry.requirementIds[0]), ['CMP-050', 'CMP-051']);
   for (const entry of manifest.entries) {
     const bytes = await readFile(new URL(entry.file, root), 'utf8');
     assert.equal(createHash('sha256').update(bytes).digest('hex'), entry.projectSha256);
-    const opened = openCandidateUiSession(bytes);
+    const raw = JSON.parse(bytes);
+    assert.equal(raw.schema, 'intent-mcu-project-envelope@8');
+    assert.deepEqual(raw.modelLibrary, manifest.modelLibrary);
+    const opened = prepareProjectEnvelope(bytes, adapters);
     assert.equal(opened.ok, true, `${entry.id}:${opened.code}`);
-    assert.equal(opened.session.runnable.ok, true, `${entry.id}:${opened.session.runnable.code}`);
-    assert(entry.expectedBehavior.length > 20);
+    assert.equal(opened.prepared.runnable.ok, true, `${entry.id}:${opened.prepared.runnable.code}`);
+    assert(entry.sourceSha256?.length === 64);
+    assert(Object.keys(entry.namedPins).length >= 4);
+    assert.equal(Object.keys(entry.profileBehavior).length, 4);
+    assert(entry.expectedBehavior.length > 20 && entry.firmwareLimits.length > 20 && entry.provenance.length > 20);
   }
   const backpack = manifest.entries.find((entry) => entry.id === 'pcf8574-lcd-backpack');
+  assert.equal(backpack.previousProjectSha256, '6d4c8d6a1f42a251c441ec6bc811066397c0a17be731be52a63c60e80d1e3e75');
   assert.equal(backpack.sourceSha256, '4fdce12246f4eb202259a492795ac93f5b59ce56678c357dbb30120ca3e6c809');
   assert.deepEqual(backpack.namedPins, { VCC: '5V', GND: 'GND1', SDA: 'A4', SCL: 'A5' });
+});
+
+test('raw new-PCF candidate remains rejected by retained legacy admission', async () => {
+  const envelope = JSON.parse(await readFile(new URL('pcf8574-0x27-lcd.intent-mcu.json', root), 'utf8'));
+  const rawCandidate = JSON.stringify(envelope.project);
+  const retained = resolveModelLibrary(RETAINED_MODEL_LIBRARY_LOCK);
+  assert.equal(retained.ok, true);
+  const result = retained.implementation.openCandidateUiSession(rawCandidate);
+  assert.equal(result.ok, false);
+  assert.equal(result.code, 'PROJECT_CONTACT_UNKNOWN_COMPONENT');
 });

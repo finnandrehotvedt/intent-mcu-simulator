@@ -49,3 +49,12 @@ connected ACK path and the disconnected NACK path.
 for CMP-050 and CMP-051. The manifest pins each project's SHA-256, stable
 component requirement, expected behavior and limits. The backpack entry also
 pins the four public named connections and the compiled fixture source hash.
+Both files are canonical `intent-mcu-project-envelope@8` downloads carrying
+the exact current model-library lock; raw candidate documents are not presented
+as downloadable project files.
+
+The browser-session edit owner admits current candidate projects with the same
+project-id/revision guards used by stable projects. CMP-051 add, named wiring,
+fixed-address property validation and transaction-bound undo/redo are exercised
+through the canonical API command translation. Historical retained parsers
+remain unchanged and cannot authorize the new component.

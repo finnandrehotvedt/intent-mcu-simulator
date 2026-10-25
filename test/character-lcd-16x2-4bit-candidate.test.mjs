@@ -26,6 +26,7 @@ import {
   openCandidateUiSession,
 } from '../src/candidate-existing-ui-adapter.mjs';
 import { openPortableEditorSession } from '../src/candidate-project-session.mjs';
+import { prepareApiBatch } from '../src/browser-session-edit.mjs';
 
 const SIGNAL_PINS = Object.freeze({ RS: 'D3', E: 'D4', D4: 'D5', D5: 'D6', D6: 'D7', D7: 'D8' });
 
@@ -78,6 +79,27 @@ function wireSignals(session, mapping = SIGNAL_PINS) {
     });
   }
 }
+
+test('canonical API batch adds and wires direct LCD with exact transaction undo/redo', () => {
+  const session = openSession();
+  const operations = [
+    { command: 'component.add', id: 'character-lcd-1', type: CHARACTER_LCD_TYPE,
+      position: { x: 0.72, y: 0.64, rotation: 0 } },
+    ...['VCC', 'GND', 'RW'].map((pin) => ({ command: 'wire.branch.connect',
+      net_id: pin === 'VCC' ? 'net-5v' : 'net-ground-branch', endpoint: { component: 'character-lcd-1', pin } })),
+    ...Object.entries(SIGNAL_PINS).map(([pin, boardPin]) => ({ command: 'wire.connect',
+      net_id: `net-api-lcd-${pin.toLowerCase()}`, from: { component: 'character-lcd-1', pin },
+      to: { component: 'board-1', pin: boardPin } })),
+  ];
+  const transactionId = 'transaction-character-lcd-api-1';
+  const commands = prepareApiBatch({ profile: 'board.atmega328p-16mhz-v1', circuit: session.visualProject.circuit }, operations);
+  assert.equal(session.apply({ type: 'edit.batch', revision: session.revision, transactionId, commands }).ok, true);
+  assert.equal(session.runnable.ok, true);
+  assert.equal(session.apply({ type: 'edit.undo', revision: session.revision, transactionId }).ok, true);
+  assert.equal(session.visualProject.circuit.components.some((item) => item.id === 'character-lcd-1'), false);
+  assert.equal(session.apply({ type: 'edit.redo', revision: session.revision, transactionId }).ok, true);
+  assert.equal(session.runnable.ok, true);
+});
 
 function traceWriter(mapping = SIGNAL_PINS) {
   const levels = Object.fromEntries(CHARACTER_LCD_SIGNALS.map((signal) => [signal, false]));

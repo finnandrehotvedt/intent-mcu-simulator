@@ -8,6 +8,7 @@ import { createEditableContactDraft } from '../expansion-drafts/contact-persiste
 import { openPortableEditorSession } from '../src/candidate-project-session.mjs';
 import { Atmega328PAdapter } from '../src/atmega328p-adapter.mjs';
 import { componentSupportCell } from '../src/component-support-matrix.mjs';
+import { prepareApiBatch } from '../src/browser-session-edit.mjs';
 import {
   PCF8574_LCD_ADDRESS, PCF8574_LCD_DEFINITION, PCF8574_LCD_TYPE,
   createPcf8574LcdComponent, createPcf8574LcdDecoder,
@@ -61,6 +62,34 @@ test('openable starter preserves exact pins, source identity and CMP requirement
   const example = createPcf8574LcdHelloExample();
   assert.equal(example.project.project.source.files[0].content, PCF8574_LCD_HELLO_SOURCE);
   assert.equal(openPortableEditorSession(example.text).session.runnable.ok, true);
+});
+
+test('canonical API batch adds and wires backpack with atomic invalid address and exact undo/redo', () => {
+  const draft = createEditableContactDraft(PCF8574_LCD_HELLO_SOURCE);
+  const session = openPortableEditorSession(canonicalContactPersistenceDraftJson(draft.project)).session;
+  const operations = [
+    { command: 'component.add', id: 'pcf8574-lcd-1', type: PCF8574_LCD_TYPE, position: { x: 0.72, y: 0.58, rotation: 0 } },
+    { command: 'wire.branch.connect', net_id: 'net-5v', endpoint: { component: 'pcf8574-lcd-1', pin: 'VCC' } },
+    { command: 'wire.branch.connect', net_id: 'net-ground-branch', endpoint: { component: 'pcf8574-lcd-1', pin: 'GND' } },
+    { command: 'wire.connect', net_id: 'net-api-pcf-sda', from: { component: 'pcf8574-lcd-1', pin: 'SDA' }, to: { component: 'board-1', pin: 'A4' } },
+    { command: 'wire.connect', net_id: 'net-api-pcf-scl', from: { component: 'pcf8574-lcd-1', pin: 'SCL' }, to: { component: 'board-1', pin: 'A5' } },
+  ];
+  const project = { profile: 'board.atmega328p-16mhz-v1', circuit: session.visualProject.circuit };
+  const transactionId = 'transaction-pcf8574-api-1';
+  const applied = session.apply({ type: 'edit.batch', revision: session.revision, transactionId,
+    commands: prepareApiBatch(project, operations) });
+  assert.equal(applied.ok, true, applied.code);
+  assert.equal(session.runnable.ok, true);
+  const accepted = session.saveText();
+  const invalid = session.apply({ type: 'edit.batch', revision: session.revision,
+    transactionId: 'transaction-pcf8574-api-invalid', commands: prepareApiBatch(project,
+      [{ command: 'component.property.set', component_id: 'pcf8574-lcd-1', key: 'address', value: 0x26 }]) });
+  assert.equal(invalid.ok, false);
+  assert.equal(session.saveText(), accepted);
+  assert.equal(session.apply({ type: 'edit.undo', revision: session.revision, transactionId }).ok, true);
+  assert.equal(session.visualProject.circuit.components.some((item) => item.id === 'pcf8574-lcd-1'), false);
+  assert.equal(session.apply({ type: 'edit.redo', revision: session.revision, transactionId }).ok, true);
+  assert.equal(session.runnable.ok, true);
 });
 
 test('acknowledged 0x27 bytes drive the reused HD44780 state machine to visible text', () => {

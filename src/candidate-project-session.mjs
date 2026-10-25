@@ -258,6 +258,7 @@ export class CandidateEditorSession {
     this.historyLimit = historyLimit;
     this.undoStack = [];
     this.redoStack = [];
+    this.apiTransaction = null;
   }
 
   get project() { return visualProject(this.accepted); }
@@ -372,6 +373,34 @@ export class CandidateEditorSession {
     if (!command || !Number.isInteger(command.revision) || command.revision !== this.revision) {
       return failure('EDITOR_STALE_REVISION', this.revision);
     }
+    if (command.type === 'edit.undo' || command.type === 'edit.redo') {
+      if (!exactCommand(command, ['transactionId']) || command.transactionId !== this.apiTransaction?.id) {
+        return failure('API_UNDO_CONFLICT', this.revision);
+      }
+      const undo = command.type === 'edit.undo';
+      const expectedRevision = undo ? this.apiTransaction.appliedRevision : this.apiTransaction.undoneRevision;
+      if (this.revision !== expectedRevision) return failure('API_UNDO_CONFLICT', this.revision);
+      const result = this.#travel({ type: undo ? 'undo' : 'redo', revision: this.revision });
+      if (result.ok) this.apiTransaction[undo ? 'undoneRevision' : 'appliedRevision'] = result.revision;
+      return result;
+    }
+    if (command.type === 'edit.batch') {
+      if (!exactCommand(command, ['transactionId', 'commands']) || typeof command.transactionId !== 'string'
+          || !Array.isArray(command.commands) || !command.commands.length || command.commands.length > 16) {
+        return failure('EDITOR_COMMAND_SHAPE', this.revision);
+      }
+      const temporary = new CandidateEditorSession(this.accepted.project, {
+        historyLimit: this.historyLimit, modelLibraryLock: this.modelLibraryLock,
+      });
+      for (const item of command.commands) {
+        const result = temporary.apply({ ...item, revision: temporary.revision });
+        if (!result.ok) return failure(result.code, this.revision, result.details);
+      }
+      const result = this.#accept(temporary.accepted.project, 'API_BATCH_APPLIED', { runtimeDirty: true });
+      if (result.ok) this.apiTransaction = { id: command.transactionId, appliedRevision: result.revision,
+        undoneRevision: null };
+      return result;
+    }
     if (command.type === 'undo' || command.type === 'redo') return this.#travel(command);
     const draft = clone(this.accepted.project);
     let runtimeDirty = false;
@@ -473,6 +502,18 @@ export class CandidateEditorSession {
             }
           }
           for (const netId of changedNets) normalizeChangedNet(draft, netId);
+          runtimeDirty = true;
+          break;
+        }
+        case 'component.property.set': {
+          if (!exactCommand(command, ['componentId', 'key', 'value'])) {
+            return failure('EDITOR_COMMAND_SHAPE', this.revision);
+          }
+          const component = draft.candidateCircuit.components.find((item) => item.id === command.componentId);
+          if (!component || !Object.hasOwn(component.properties, command.key)) {
+            return failure('EDITOR_PROPERTY_UNSUPPORTED', this.revision, [command.componentId, command.key]);
+          }
+          component.properties[command.key] = clone(command.value);
           runtimeDirty = true;
           break;
         }

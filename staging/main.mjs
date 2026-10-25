@@ -16156,10 +16156,12 @@ window.__BROWSER_SESSION_CANONICAL_OWNER__ = Object.freeze({
     return { ok: true, profile: AVR_PROFILE,
       projectId: `project-avr-${Math.max(1, lifecycle.projectGeneration)}`,
       revision: editor.revision, project: structuredClone(currentProject()),
-      supportsEdit: editor instanceof ProjectEditorReducer && boundedSubcircuits.instances.length === 0 };
+      supportsEdit: (editor instanceof ProjectEditorReducer || editor.kind === 'candidate-project-v3')
+        && boundedSubcircuits.instances.length === 0 };
   },
   batch: ({ expectedProjectId, expectedRevision, transactionId, commands }) => {
-    if (selectedCompilerProfile !== AVR_PROFILE || !(editor instanceof ProjectEditorReducer)
+    if (selectedCompilerProfile !== AVR_PROFILE
+        || (!(editor instanceof ProjectEditorReducer) && editor.kind !== 'candidate-project-v3')
         || boundedSubcircuits.instances.length) return { ok: false, code: 'API_PROFILE_READ_ONLY' };
     if (expectedProjectId !== `project-avr-${Math.max(1, lifecycle.projectGeneration)}`) {
       return { ok: false, code: 'API_PROJECT_CHANGED' };
@@ -16168,7 +16170,8 @@ window.__BROWSER_SESSION_CANONICAL_OWNER__ = Object.freeze({
     return applyEditor({ type: 'edit.batch', transactionId, commands }, 'API batch');
   },
   undo: ({ expectedProjectId, expectedRevision, transactionId }) => {
-    if (selectedCompilerProfile !== AVR_PROFILE || !(editor instanceof ProjectEditorReducer)) {
+    if (selectedCompilerProfile !== AVR_PROFILE
+        || (!(editor instanceof ProjectEditorReducer) && editor.kind !== 'candidate-project-v3')) {
       return { ok: false, code: 'API_PROFILE_READ_ONLY' };
     }
     if (expectedProjectId !== `project-avr-${Math.max(1, lifecycle.projectGeneration)}`) {
@@ -16178,7 +16181,8 @@ window.__BROWSER_SESSION_CANONICAL_OWNER__ = Object.freeze({
     return applyEditor({ type: 'edit.undo', transactionId }, 'API undo');
   },
   redo: ({ expectedProjectId, expectedRevision, transactionId }) => {
-    if (selectedCompilerProfile !== AVR_PROFILE || !(editor instanceof ProjectEditorReducer)) {
+    if (selectedCompilerProfile !== AVR_PROFILE
+        || (!(editor instanceof ProjectEditorReducer) && editor.kind !== 'candidate-project-v3')) {
       return { ok: false, code: 'API_PROFILE_READ_ONLY' };
     }
     if (expectedProjectId !== `project-avr-${Math.max(1, lifecycle.projectGeneration)}`) {

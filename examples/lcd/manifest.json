@@ -1,6 +1,13 @@
 {
-  "schema": "intent-mcu-lcd-example-manifest@1",
+  "schema": "intent-mcu-lcd-example-manifest@2",
   "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-end-to-end.1-current",
+    "manifestSha256": "c42786d73800d24ac7c8a9c7193e4fbc9a9a1195904a3a6506527d19e2af2d62",
+    "implementationSha256": "321f7d3f4135ff73e2e4104b0250547a7a49a7e4218056f8958f000708c445b4"
+  },
   "entries": [
     {
       "id": "character-lcd-16x2-4bit",
@@ -8,11 +15,29 @@
         "CMP-050"
       ],
       "file": "parallel-hd44780-16x2.intent-mcu.json",
-      "projectSha256": "ad89013c070a7b4b41639a2d725255dd79459ba427838c491a98fa4b8a94ed7b",
-      "sourceSha256": null,
-      "namedPins": null,
+      "previousProjectSha256": "ad89013c070a7b4b41639a2d725255dd79459ba427838c491a98fa4b8a94ed7b",
+      "sourceSha256": "b44d1fb8110182417c70fc39e85153d7e557c673eecb201c72acab2a4fd8b07c",
+      "namedPins": {
+        "VCC": "5V",
+        "GND": "GND1",
+        "RW": "GND1",
+        "RS": "D3",
+        "E": "D4",
+        "D4": "D7",
+        "D5": "D8",
+        "D6": "D10",
+        "D7": "D12"
+      },
       "expectedBehavior": "LCD text, RGB colour and Serial agree at the threshold.",
-      "limits": "Ideal sensor, display and RGB subset; no physical timing or current model."
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "component unavailable",
+        "board.esp32-c3-devmodule-v1": "component unavailable",
+        "board.stm32f429zi-nucleo144-v1": "component unavailable"
+      },
+      "firmwareLimits": "Ideal sensor, display and RGB subset; no physical timing or current model.",
+      "provenance": "Original project-owned direct 4-bit LCD example generated from the committed factory and canonical common project envelope.",
+      "projectSha256": "9b030a50a0248a8b11180436b4af79878f04a1300182279896eaed157b3bc117"
     },
     {
       "id": "pcf8574-lcd-backpack",
@@ -20,7 +45,7 @@
         "CMP-051"
       ],
       "file": "pcf8574-0x27-lcd.intent-mcu.json",
-      "projectSha256": "6d4c8d6a1f42a251c441ec6bc811066397c0a17be731be52a63c60e80d1e3e75",
+      "previousProjectSha256": "6d4c8d6a1f42a251c441ec6bc811066397c0a17be731be52a63c60e80d1e3e75",
       "sourceSha256": "4fdce12246f4eb202259a492795ac93f5b59ce56678c357dbb30120ca3e6c809",
       "namedPins": {
         "VCC": "5V",
@@ -29,7 +54,15 @@
         "SCL": "A5"
       },
       "expectedBehavior": "The display reads I2C LCD ready and Address 0x27 only after accepted writes.",
-      "limits": "Partial: AVR-only, fixed address and mapping, write-only ASCII subset; no arbitrary Wire compatibility."
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "component unavailable",
+        "board.esp32-c3-devmodule-v1": "component unavailable",
+        "board.stm32f429zi-nucleo144-v1": "component unavailable"
+      },
+      "firmwareLimits": "Partial: AVR-only, fixed address and mapping, write-only ASCII subset; no arbitrary Wire compatibility.",
+      "provenance": "Original project-owned fixed 0x27 PCF8574 example generated from the committed factory and canonical common project envelope.",
+      "projectSha256": "b97253f7e8bed50232700567796255ce0de396a8ea9514c50455d4ac84b4bfd8"
     }
   ]
 }
