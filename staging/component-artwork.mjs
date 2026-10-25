@@ -112,7 +112,7 @@ function stm32F429ziBoard(svg, definition) {
     element('text', { x: 95, y: 174, class: 'stm32-editor-board-title', 'text-anchor': 'middle' }, 'STM32F429ZI'),
     element('text', { x: 95, y: 190, class: 'stm32-editor-board-subtitle', 'text-anchor': 'middle' }, 'ACTUAL RENODE PB0'),
     element('text', { x: 174, y: 64, class: 'stm32-editor-board-pin-label', 'text-anchor': 'end' }, 'CN11·34 PB0'),
-    element('text', { x: 174, y: 160, class: 'stm32-editor-board-pin-label', 'text-anchor': 'end' }, 'CN11·35 GND'),
+    element('text', { x: 174, y: 160, class: 'stm32-editor-board-pin-label', 'text-anchor': 'end' }, 'CN11·19 GND'),
   );
   for (let row = 0; row < 14; row += 1) {
     const y = 29 + row * 14;

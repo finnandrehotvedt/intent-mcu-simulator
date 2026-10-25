@@ -18,8 +18,16 @@ export const STM32_LED_CURRENT_LIMIT_AMPS = 0.012;
 export const STM32_PIN_MAP = Object.freeze({
   PB0: Object.freeze({ signal: 'PB0', connector: 'CN11', physicalPin: 34,
     voltage: 3.3, capability: 'digital-output' }),
-  GND: Object.freeze({ signal: 'GND', connector: 'CN11', physicalPin: 35,
+  GND: Object.freeze({ signal: 'GND', connector: 'CN11', physicalPin: 19,
     voltage: 0, capability: 'ground-reference' }),
+});
+export const STM32_AUTHORING_PIN_MAP_V2 = Object.freeze({
+  source: Object.freeze({ url: 'https://www.st.com/resource/en/user_manual/dm00244518-stm32-nucleo-144-boards-mb1137-stmicroelectronics.pdf',
+    document: 'UM1974', revision: 'Rev 11, August 2025', table: 'Table 21, page 70' }),
+  migration: Object.freeze({ logicalPin: 'GND', fromClaim: 'CN11-35', to: 'CN11-19', reason: 'CN11-35 is PC2.' }),
+  pins: Object.freeze({ PB0: { connector: 'CN11', physicalPin: 34 }, PB1: { connector: 'CN12', physicalPin: 24 },
+    PB7: { connector: 'CN11', physicalPin: 21 }, GND: { connector: 'CN11', physicalPin: 19 },
+    GND20: { connector: 'CN11', physicalPin: 20 }, GND8: { connector: 'CN11', physicalPin: 8 } }),
 });
 
 const boardPin = (id, label, role, signals, x, y, constraints) => Object.freeze({
@@ -28,15 +36,23 @@ const boardPin = (id, label, role, signals, x, y, constraints) => Object.freeze(
 });
 
 export const STM32_BOARD_DEFINITION = Object.freeze({
-  family: 'board.stm32f429zi-learning-profile', variant: 'public-bounded-pb0-3v3',
-  type: STM32_PUBLIC_PROFILE, version: 1,
+  family: 'board.stm32f429zi-learning-profile', variant: 'authoring-multipin-runtime-pb0-3v3',
+  type: STM32_PUBLIC_PROFILE, version: 2,
   displayName: 'STM32F429ZI learning profile board', manufacturer: 'Intent Learning',
   partNumber: 'IL-STM32F429ZI-PB0-PROFILE',
   pins: Object.freeze([
     boardPin('PB0', 'PB0 · CN11 pin 34', 'digital-io', ['digital.output'], 0.96, 0.31,
       { voltageMin: 0, voltageMax: 3.3, connector: 'CN11', physicalPin: 34 }),
-    boardPin('GND', 'GND · CN11 pin 35', 'ground', ['ground.reference'], 0.96, 0.72,
-      { connector: 'CN11', physicalPin: 35 }),
+    boardPin('PB1', 'PB1 · CN12 pin 24 · authoring only', 'digital-io', ['digital.output'], 0.04, 0.42,
+      { voltageMin: 0, voltageMax: 3.3, connector: 'CN12', physicalPin: 24, authoringOnly: true }),
+    boardPin('PB7', 'PB7 · CN11 pin 21 · authoring only', 'digital-io', ['digital.output'], 0.96, 0.52,
+      { voltageMin: 0, voltageMax: 3.3, connector: 'CN11', physicalPin: 21, authoringOnly: true }),
+    boardPin('GND', 'GND · CN11 pin 19 · corrected metadata', 'ground', ['ground.reference'], 0.96, 0.72,
+      { connector: 'CN11', physicalPin: 19, migratedFromIncorrectClaim: 'CN11-35' }),
+    boardPin('GND20', 'GND · CN11 pin 20 · authoring only', 'ground', ['ground.reference'], 0.96, 0.62,
+      { connector: 'CN11', physicalPin: 20, authoringOnly: true }),
+    boardPin('GND8', 'GND · CN11 pin 8 · authoring only', 'ground', ['ground.reference'], 0.04, 0.72,
+      { connector: 'CN11', physicalPin: 8, authoringOnly: true }),
   ]),
   propertyKeys: Object.freeze([]), controlKeys: Object.freeze([]), propertySchema: Object.freeze({}),
   modelRef: 'model.stm32f429zi-pb0-renode-observation-v1', internalTerminalGroups: Object.freeze([]),
@@ -72,9 +88,10 @@ const RESISTOR = 'resistor.fixed-v1';
 const LED = 'led.basic-v1';
 const resolveNetId = createSeriesLedConnectionPolicy({
   boardType: BOARD, sourcePin: 'PB0', groundPin: 'GND', sourceNetId: 'net-pb0',
+  authoringSourcePins: ['PB0', 'PB1', 'PB7'], authoringGroundPins: ['GND', 'GND20', 'GND8'],
 });
 const TYPE_PINS = Object.freeze({
-  [BOARD]: new Set(['PB0', 'GND']),
+  [BOARD]: new Set(Object.keys(STM32_AUTHORING_PIN_MAP_V2.pins)),
   [RESISTOR]: new Set(['A', 'B']),
   [LED]: new Set(['ANODE', 'CATHODE']),
   [GROUND_REFERENCE_3V3_TYPE]: new Set(['GND']),
@@ -88,6 +105,7 @@ const COMPONENT_POLICY = createSeriesLedComponentPolicy({
   nominalVolts: STM32_NOMINAL_VOLTS,
   ledCurrentLimitAmps: STM32_LED_CURRENT_LIMIT_AMPS,
   ledForwardVolts: LED_FORWARD_VOLTS,
+  boardPins: Object.keys(STM32_AUTHORING_PIN_MAP_V2.pins),
 });
 const clone = (value) => structuredClone(value);
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;

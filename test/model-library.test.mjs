@@ -296,9 +296,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_LOCK,
   );
   assert.equal(applyMigration.ok, true);
-  assert.equal(applyMigration.semanticChanges.length, 0);
+  assert.equal(applyMigration.semanticChanges.length, 3);
   assert.equal(applyMigration.rendererChanges.length, 0);
-  assert.equal(applyMigration.unchanged.length, 25);
+  assert.equal(applyMigration.unchanged.length, 22);
   const preMomentaryControl = historical.at(-2);
   assert.equal(preMomentaryControl.version, '2.0.0-x47-repeatable-inputs-candidate.2-current');
   assert.equal(normalizeModelLibraryLock(PRE_X47_MOMENTARY_CONTROL_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
@@ -309,9 +309,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     PRE_X47_MOMENTARY_CONTROL_CURRENT_MODEL_LIBRARY_LOCK,
   );
   assert.equal(momentaryMigration.ok, true);
-  assert.equal(momentaryMigration.semanticChanges.length, 0);
+  assert.equal(momentaryMigration.semanticChanges.length, 3);
   assert.equal(momentaryMigration.rendererChanges.length, 0);
-  assert.equal(momentaryMigration.unchanged.length, 25);
+  assert.equal(momentaryMigration.unchanged.length, 22);
   const preRejection = historical.at(-3);
   assert.equal(preRejection.version, '2.0.0-x47-repeatable-inputs-candidate.1-current');
   assert.equal(normalizeModelLibraryLock(PRE_X47_REPEATABLE_REJECTION_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
@@ -322,9 +322,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     PRE_X47_REPEATABLE_REJECTION_CURRENT_MODEL_LIBRARY_LOCK,
   );
   assert.equal(rejectionMigration.ok, true);
-  assert.equal(rejectionMigration.semanticChanges.length, 0);
+  assert.equal(rejectionMigration.semanticChanges.length, 3);
   assert.equal(rejectionMigration.rendererChanges.length, 0);
-  assert.equal(rejectionMigration.unchanged.length, 25);
+  assert.equal(rejectionMigration.unchanged.length, 22);
   const preRepeatable = historical.at(-4);
   assert.equal(preRepeatable.version, '2.0.0-x43-stack-hotpath-candidate.1-current');
   assert.equal(normalizeModelLibraryLock(PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
@@ -332,9 +332,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const repeatableMigration = modelLibraryMigrationPreview(PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(repeatableMigration.ok, true);
-  assert.equal(repeatableMigration.semanticChanges.length, 0);
+  assert.equal(repeatableMigration.semanticChanges.length, 3);
   assert.equal(repeatableMigration.rendererChanges.length, 0);
-  assert.equal(repeatableMigration.unchanged.length, 25);
+  assert.equal(repeatableMigration.unchanged.length, 22);
   const preHotpath = historical.find(({ version }) => version === '2.0.0-x43-observed-stack-candidate.1-current');
   assert.equal(preHotpath.version, '2.0.0-x43-observed-stack-candidate.1-current');
   assert.equal(normalizeModelLibraryLock(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
@@ -342,9 +342,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const hotpathMigration = modelLibraryMigrationPreview(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(hotpathMigration.ok, true);
-  assert.equal(hotpathMigration.semanticChanges.length, 0);
+  assert.equal(hotpathMigration.semanticChanges.length, 3);
   assert.equal(hotpathMigration.rendererChanges.length, 0);
-  assert.equal(hotpathMigration.unchanged.length, 25);
+  assert.equal(hotpathMigration.unchanged.length, 22);
 
   const preStack = historical.find(({ version }) => version === '2.0.0-ux-public-isolation.1-current');
   assert.equal(preStack.version, '2.0.0-ux-public-isolation.1-current');
@@ -353,9 +353,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const stackMigration = modelLibraryMigrationPreview(PRE_X43_STACK_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(stackMigration.ok, true);
-  assert.equal(stackMigration.semanticChanges.length, 0);
+  assert.equal(stackMigration.semanticChanges.length, 3);
   assert.equal(stackMigration.rendererChanges.length, 0);
-  assert.equal(stackMigration.unchanged.length, 25);
+  assert.equal(stackMigration.unchanged.length, 22);
 
   const preControlLabel = historical.find(({ version }) => version === '2.0.0-x55-resistor-appearance.1-current');
   assert.equal(preControlLabel.version, '2.0.0-x55-resistor-appearance.1-current');
@@ -368,9 +368,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_LOCK,
   );
   assert.equal(controlLabelMigration.ok, true);
-  assert.equal(controlLabelMigration.semanticChanges.length, 0);
+  assert.equal(controlLabelMigration.semanticChanges.length, 3);
   assert.equal(controlLabelMigration.rendererChanges.length, 0);
-  assert.equal(controlLabelMigration.unchanged.length, 25);
+  assert.equal(controlLabelMigration.unchanged.length, 22);
 
   const preX55 = historical.find(({ version }) => version === '2.0.0-x47-ui-async-epoch.1-current');
   assert.equal(preX55.version, '2.0.0-x47-ui-async-epoch.1-current');
@@ -379,9 +379,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const x55Migration = modelLibraryMigrationPreview(PRE_X55_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(x55Migration.ok, true);
-  assert.equal(x55Migration.semanticChanges.length, 0);
+  assert.equal(x55Migration.semanticChanges.length, 3);
   assert.equal(x55Migration.rendererChanges.length, 0);
-  assert.equal(x55Migration.unchanged.length, 25);
+  assert.equal(x55Migration.unchanged.length, 22);
 
   const prior = historical.find(({ version }) => version === '2.0.0-x56-current');
   assert.equal(prior.version, '2.0.0-x56-current');
@@ -393,9 +393,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   const migration = modelLibraryMigrationPreview(PRIOR_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(migration.ok, true);
   assert.equal(migration.migrationRequired, true);
-  assert.equal(migration.semanticChanges.length, 0);
+  assert.equal(migration.semanticChanges.length, 3);
   assert.equal(migration.rendererChanges.length, 0);
-  assert.equal(migration.unchanged.length, 25);
+  assert.equal(migration.unchanged.length, 22);
 
   const preX47 = historical.find(({ version }) => version === '2.0.0-pico-presentation.1-current');
   assert.equal(preX47.version, '2.0.0-pico-presentation.1-current');
@@ -409,9 +409,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   const x47Migration = modelLibraryMigrationPreview(PRE_X47_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(x47Migration.ok, true);
   assert.equal(x47Migration.migrationRequired, true);
-  assert.equal(x47Migration.semanticChanges.length, 0);
+  assert.equal(x47Migration.semanticChanges.length, 3);
   assert.equal(x47Migration.rendererChanges.length, 0);
-  assert.equal(x47Migration.unchanged.length, 25);
+  assert.equal(x47Migration.unchanged.length, 22);
 
   const preValidation = historical.find(({ version }) => version === '2.0.0-x47-runtime-contract.1-current');
   assert.equal(preValidation.version, '2.0.0-x47-runtime-contract.1-current');
@@ -424,9 +424,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const validationMigration = modelLibraryMigrationPreview(PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(validationMigration.ok, true);
-  assert.equal(validationMigration.semanticChanges.length, 0);
+  assert.equal(validationMigration.semanticChanges.length, 3);
   assert.equal(validationMigration.rendererChanges.length, 0);
-  assert.equal(validationMigration.unchanged.length, 25);
+  assert.equal(validationMigration.unchanged.length, 22);
 
   const preUi = historical.find(({ version }) => version === '2.0.0-x47-receipt-validation.1-current');
   assert.equal(preUi.version, '2.0.0-x47-receipt-validation.1-current');
@@ -439,9 +439,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const uiMigration = modelLibraryMigrationPreview(PRE_X47_UI_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(uiMigration.ok, true);
-  assert.equal(uiMigration.semanticChanges.length, 0);
+  assert.equal(uiMigration.semanticChanges.length, 3);
   assert.equal(uiMigration.rendererChanges.length, 0);
-  assert.equal(uiMigration.unchanged.length, 25);
+  assert.equal(uiMigration.unchanged.length, 22);
 
   const preAsync = historical.find(({ version }) => version === '2.0.0-x47-ui-integration.1-current');
   assert.equal(preAsync.version, '2.0.0-x47-ui-integration.1-current');
@@ -454,9 +454,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const asyncMigration = modelLibraryMigrationPreview(PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(asyncMigration.ok, true);
-  assert.equal(asyncMigration.semanticChanges.length, 0);
+  assert.equal(asyncMigration.semanticChanges.length, 3);
   assert.equal(asyncMigration.rendererChanges.length, 0);
-  assert.equal(asyncMigration.unchanged.length, 25);
+  assert.equal(asyncMigration.unchanged.length, 22);
 
   const preUx = historical.find(({ version }) => version === '2.0.0-x55-control-label-fix.1-current');
   assert.equal(preUx.version, '2.0.0-x55-control-label-fix.1-current');
@@ -467,9 +467,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const uxMigration = modelLibraryMigrationPreview(PRE_UX_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(uxMigration.ok, true);
-  assert.equal(uxMigration.semanticChanges.length, 0);
+  assert.equal(uxMigration.semanticChanges.length, 3);
   assert.equal(uxMigration.rendererChanges.length, 0);
-  assert.equal(uxMigration.unchanged.length, 25);
+  assert.equal(uxMigration.unchanged.length, 22);
 });
 
 test('retained behavior is a dependency-closed historical source graph with no current imports', async () => {
@@ -790,9 +790,9 @@ test('trusted migration reports unchanged real semantics while controlled test-o
   const preview = modelLibraryMigrationPreview(RETAINED_MODEL_LIBRARY_LOCK, CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
   assert.equal(preview.migrationRequired, true);
-  assert.equal(preview.semanticChanges.length, 0);
+  assert.equal(preview.semanticChanges.length, 3);
   assert.equal(preview.rendererChanges.length, 0);
-  assert.equal(preview.unchanged.length, 25);
+  assert.equal(preview.unchanged.length, 22);
 
   const [retained] = trustedModelLibraryManifests();
   const semantic = structuredClone(retained.entries);

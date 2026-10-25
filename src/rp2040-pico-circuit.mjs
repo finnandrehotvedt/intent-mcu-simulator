@@ -20,6 +20,11 @@ export const RP2040_PICO_PIN_MAP = Object.freeze({
   GP0: Object.freeze({ signal: 'GPIO0', physicalPin: 1, voltage: 3.3, capability: 'digital-output+pwm' }),
   GND3: Object.freeze({ signal: 'GND', physicalPin: 3, voltage: 0, capability: 'ground-reference' }),
 });
+export const RP2040_PICO_AUTHORING_PIN_MAP_V2 = Object.freeze({
+  source: Object.freeze({ url: 'https://www.raspberrypi.com/documentation/microcontrollers/images/pico-pinout.svg', board: 'Raspberry Pi Pico' }),
+  pins: Object.freeze({ GP0: { physicalPin: 1 }, GP1: { physicalPin: 2 }, GND3: { physicalPin: 3 },
+    GP2: { physicalPin: 4 }, GP3: { physicalPin: 5 }, GND8: { physicalPin: 8 } }),
+});
 
 const picoPin = (id, label, role, signals, x, y, constraints) => Object.freeze({
   id, label, role, signals: Object.freeze([...signals]), capabilities: Object.freeze([...signals]),
@@ -27,14 +32,22 @@ const picoPin = (id, label, role, signals, x, y, constraints) => Object.freeze({
 });
 
 export const RP2040_PICO_BOARD_DEFINITION = Object.freeze({
-  family: 'board.rp2040-pico-profile', variant: 'public-bounded-gpio0-3v3',
-  type: RP2040_PICO_PROFILE, version: 1,
+  family: 'board.rp2040-pico-profile', variant: 'authoring-multipin-runtime-gpio0-3v3',
+  type: RP2040_PICO_PROFILE, version: 2,
   displayName: 'RP2040 Pico profile board', manufacturer: 'Intent Learning', partNumber: 'IL-RP2040-PICO-PROFILE',
   pins: Object.freeze([
     picoPin('GP0', 'GPIO0 · physical pin 1', 'digital-io', ['digital.output', 'pwm.output'], 8 / 132, 27 / 300,
       { voltageMin: 0, voltageMax: 3.3, physicalPin: 1 }),
+    picoPin('GP1', 'GPIO1 · physical pin 2 · authoring only', 'digital-io', ['digital.output'], 8 / 132, 40 / 300,
+      { voltageMin: 0, voltageMax: 3.3, physicalPin: 2, authoringOnly: true }),
     picoPin('GND3', 'GND · physical pin 3', 'ground', ['ground.reference'], 8 / 132, 53 / 300,
       { physicalPin: 3 }),
+    picoPin('GP2', 'GPIO2 · physical pin 4 · authoring only', 'digital-io', ['digital.output'], 8 / 132, 66 / 300,
+      { voltageMin: 0, voltageMax: 3.3, physicalPin: 4, authoringOnly: true }),
+    picoPin('GP3', 'GPIO3 · physical pin 5 · authoring only', 'digital-io', ['digital.output'], 8 / 132, 79 / 300,
+      { voltageMin: 0, voltageMax: 3.3, physicalPin: 5, authoringOnly: true }),
+    picoPin('GND8', 'GND · physical pin 8 · authoring only', 'ground', ['ground.reference'], 8 / 132, 118 / 300,
+      { physicalPin: 8, authoringOnly: true }),
   ]),
   propertyKeys: Object.freeze([]), controlKeys: Object.freeze([]), propertySchema: Object.freeze({}),
   modelRef: 'model.rp2040-pico-gpio0-public-v1', internalTerminalGroups: Object.freeze([]), selectable: false,
@@ -68,9 +81,10 @@ const RESISTOR = 'resistor.fixed-v1';
 const LED = 'led.basic-v1';
 const resolveNetId = createSeriesLedConnectionPolicy({
   boardType: BOARD, sourcePin: 'GP0', groundPin: 'GND3', sourceNetId: 'net-gpio0',
+  authoringSourcePins: ['GP0', 'GP1', 'GP2', 'GP3'], authoringGroundPins: ['GND3', 'GND8'],
 });
 const TYPE_PINS = Object.freeze({
-  [BOARD]: new Set(['GP0', 'GND3']),
+  [BOARD]: new Set(Object.keys(RP2040_PICO_AUTHORING_PIN_MAP_V2.pins)),
   [RESISTOR]: new Set(['A', 'B']),
   [LED]: new Set(['ANODE', 'CATHODE']),
   [GROUND_REFERENCE_3V3_TYPE]: new Set(['GND']),
@@ -84,6 +98,7 @@ const COMPONENT_POLICY = createSeriesLedComponentPolicy({
   nominalVolts: RP2040_PICO_NOMINAL_VOLTS,
   ledCurrentLimitAmps: RP2040_PICO_LED_CURRENT_LIMIT_AMPS,
   ledForwardVolts: LED_FORWARD_VOLTS,
+  boardPins: Object.keys(RP2040_PICO_AUTHORING_PIN_MAP_V2.pins),
 });
 
 const clone = (value) => structuredClone(value);

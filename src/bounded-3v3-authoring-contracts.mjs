@@ -91,17 +91,19 @@ export function validateBounded3v3AuthoringGraph({ board, components, nets }) {
   for (const net of nets) {
     if (!net || typeof net.id !== 'string' || !Array.isArray(net.endpoints)
         || net.endpoints.length < 2 || net.endpoints.length > 8) return failure('AUTHORING_NET_INVALID', { netId: net?.id });
-    let source = false; let ground = false;
+    let source = false; let sourceCount = 0; let ground = false;
     for (const endpoint of net.endpoints) {
       const definition = instances.get(endpoint?.component);
       const pin = definition?.pins.find(({ id }) => id === endpoint?.pin);
       if (!pin) return failure('AUTHORING_ENDPOINT_UNSUPPORTED', { endpoint });
       if (used.has(key(endpoint))) return failure('AUTHORING_ENDPOINT_REUSED', { endpoint });
       used.add(key(endpoint));
-      source ||= ['digital-io', 'digital-output'].includes(pin.role) || pin.voltageMax === 3.3 && pin.role === 'source';
+      const output = ['digital-io', 'digital-output'].includes(pin.role) || pin.voltageMax === 3.3 && pin.role === 'source';
+      source ||= output; sourceCount += output ? 1 : 0;
       ground ||= pin.role === 'ground';
       if (pin.voltageMin < 0 || pin.voltageMax > 3.3) return failure('AUTHORING_VOLTAGE_UNSUPPORTED', { endpoint });
     }
+    if (sourceCount > 1) return failure('AUTHORING_OUTPUT_CONFLICT', { netId: net.id });
     if (source && ground) return failure('AUTHORING_DIRECT_SOURCE_GROUND_SHORT', { netId: net.id });
   }
   return { ok: true, code: 'AUTHORING_GRAPH_ACCEPTED_DATA_ONLY', executable: false,

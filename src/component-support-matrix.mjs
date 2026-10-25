@@ -6,6 +6,7 @@ import { CANDIDATE_UI_COMPONENTS } from './candidate-existing-ui-adapter.mjs';
 import { RP2040_PICO_COMPONENT_CATALOG } from './rp2040-pico-circuit.mjs';
 import { ESP32C3_PUBLIC_COMPONENT_CATALOG } from './esp32c3-public-circuit.mjs';
 import { STM32_PUBLIC_COMPONENT_CATALOG } from './stm32-public-circuit.mjs';
+import { BOUNDED_3V3_UI_COMPONENTS } from './bounded-3v3-authoring-contracts.mjs';
 
 export const COMPONENT_SUPPORT_MATRIX_SCHEMA = 'intent-mcu-component-support-matrix@1';
 
@@ -39,7 +40,7 @@ const narrowBoards = [
   STM32_PUBLIC_COMPONENT_CATALOG[STM32],
 ];
 
-const definitions = new Map([...avrBase, ...avrCandidate, ...narrowBoards]
+const definitions = new Map([...avrBase, ...avrCandidate, ...Object.values(BOUNDED_3V3_UI_COMPONENTS), ...narrowBoards]
   .map((definition) => [definition.type, definition]));
 
 export const COMPONENT_SUPPORT_MODELS = deepFreeze([...definitions.values()].map((definition) => ({
@@ -55,6 +56,7 @@ export const COMPONENT_SUPPORT_MODELS = deepFreeze([...definitions.values()].map
 const AVR_BASE_TYPES = new Set(avrBase.map((definition) => definition.type));
 const AVR_CANDIDATE_TYPES = new Set(avrCandidate.map((definition) => definition.type));
 const NARROW_BOARDS = new Map([[PICO, PICO], [C3, C3], [STM32, STM32]]);
+const NARROW_AUTHORING_TYPES = new Set(Object.keys(BOUNDED_3V3_UI_COMPONENTS));
 
 const referenceBindings = deepFreeze({
   [AVR]: {
@@ -106,13 +108,15 @@ function availability(profile, type) {
 
 function unavailableReason(profile, type) {
   if (type.startsWith('board.')) return 'A controller board belongs only to its exact profile.';
-  if (profile !== AVR) return 'This public profile accepts only its fixed board, resistor and LED graph.';
+  if (profile !== AVR && NARROW_AUTHORING_TYPES.has(type)) return 'Authoring-only on this 3.3 V profile; no runtime adapter is available.';
+  if (profile !== AVR) return 'This public profile does not yet admit this component model.';
   return 'This model is not part of the public AVR catalogue.';
 }
 
 export const COMPONENT_SUPPORT_CELLS = deepFreeze(COMPONENT_SUPPORT_PROFILES.flatMap((profile) =>
   COMPONENT_SUPPORT_MODELS.map((model) => {
     const state = availability(profile.id, model.type);
+    const authoringAvailable = state.available || profile.id !== AVR && NARROW_AUTHORING_TYPES.has(model.type);
     const definition = definitions.get(model.type);
     const binding = referenceBindings[profile.id]?.[model.type] ?? null;
     return {
@@ -120,10 +124,12 @@ export const COMPONENT_SUPPORT_CELLS = deepFreeze(COMPONENT_SUPPORT_PROFILES.fla
       profile: profile.id,
       model: model.type,
       available: state.available,
-      status: state.available ? definition.support.status : 'unavailable',
-      projectMode: state.mode,
-      functions: state.available ? [...definition.catalog.functions] : [],
-      interfaces: state.available ? [...definition.catalog.interfaces] : [],
+      authoringAvailable,
+      executableAvailable: state.available,
+      status: authoringAvailable ? definition.support.status : 'unavailable',
+      projectMode: state.available ? state.mode : authoringAvailable ? 'authoring-only' : state.mode,
+      functions: authoringAvailable ? [...definition.catalog.functions] : [],
+      interfaces: authoringAvailable ? [...definition.catalog.interfaces] : [],
       nominalProfileVolts: profile.nominalVolts,
       limitations: state.available ? [...definition.support.limitations] : [unavailableReason(profile.id, model.type)],
       reference: binding ? { starters: [...binding.starters], tests: [...binding.tests] } : null,
@@ -140,10 +146,12 @@ export function componentSupportSummary(profile) {
     profile,
     total: cells.length,
     available: cells.filter((cell) => cell.available).length,
+    authoringAvailable: cells.filter((cell) => cell.authoringAvailable).length,
+    executableAvailable: cells.filter((cell) => cell.executableAvailable).length,
     simulated: cells.filter((cell) => cell.status === 'simulated').length,
     partial: cells.filter((cell) => cell.status === 'partial').length,
     visual: cells.filter((cell) => cell.status === 'visual').length,
-    unavailable: cells.filter((cell) => !cell.available).length,
+    unavailable: cells.filter((cell) => !cell.authoringAvailable).length,
   };
 }
 

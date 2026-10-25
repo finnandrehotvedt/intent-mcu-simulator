@@ -9,13 +9,13 @@ const base = process.env.RC139_AUTHORING_URL || 'http://host.docker.internal:187
 const profiles = [
   { id: 'board.rp2040-pico-v1', api: '__RP2040_PUBLIC_WORKBENCH__', button: '#pico-new-circuit',
     layer: '#pico-editor-components', name: '#pico-project-name', source: '#pico-source', openInput: '#pico-open-input',
-    board: 'pico-1', sourcePin: 'GP0', groundPin: 'GND3', sourceLead: 'B', ledLead: 'A' },
+    board: 'pico-1', sourcePin: 'GP0', secondSourcePin: 'GP1', groundPin: 'GND3', sourceLead: 'B', branchLead: 'A', ledLead: 'A' },
   { id: 'board.esp32-c3-devmodule-v1', api: '__ESP32C3_PUBLIC_WORKBENCH__', button: '#c3-new-circuit',
     layer: '#c3-editor-components', name: '#c3-project-name', source: '#c3-source', openInput: '#c3-open-input',
-    board: 'c3-1', sourcePin: 'GPIO2', groundPin: 'GND', sourceLead: 'A', ledLead: 'B' },
+    board: 'c3-1', sourcePin: 'GPIO2', secondSourcePin: 'GPIO3', groundPin: 'GND', sourceLead: 'A', branchLead: 'B', ledLead: 'B' },
   { id: 'board.stm32f429zi-nucleo144-v1', api: '__STM32_PUBLIC_WORKBENCH__', button: '#stm32-new-circuit',
     layer: '#stm32-editor-components', name: '#stm32-project-name', source: '#stm32-source', openInput: '#stm32-open-input',
-    board: 'stm32-1', sourcePin: 'PB0', groundPin: 'GND', sourceLead: 'A', ledLead: 'B' },
+    board: 'stm32-1', sourcePin: 'PB0', secondSourcePin: 'PB1', groundPin: 'GND', sourceLead: 'A', branchLead: 'B', ledLead: 'B' },
 ];
 
 (async () => {
@@ -36,7 +36,7 @@ const profiles = [
         const graph = state.circuit ?? state.project.circuit;
         return graph.components.length === 1 && graph.nets.length === 0;
       }, profile);
-      const result = await page.evaluate(({ api, board, sourcePin, groundPin, sourceLead, ledLead }) => {
+      const result = await page.evaluate(({ api, board, sourcePin, secondSourcePin, groundPin, sourceLead, ledLead }) => {
         const owner = window[api];
         owner.addComponent('resistor.fixed-v1', { x: 0.44, y: 0.28 });
         owner.addComponent('resistor.fixed-v1', { x: 0.62, y: 0.28 });
@@ -50,6 +50,8 @@ const profiles = [
         owner.activateEndpoint({ component: 'led-2', pin: 'ANODE' });
         owner.activateEndpoint({ component: 'led-2', pin: 'CATHODE' });
         owner.activateEndpoint({ component: board, pin: groundPin });
+        owner.activateEndpoint({ component: board, pin: secondSourcePin });
+        owner.activateEndpoint({ component: 'resistor-1', pin: sourceLead });
         const edited = owner.state();
         const editedGraph = (edited.circuit ?? edited.project.circuit);
         const middleNet = editedGraph.nets.find((net) => net.endpoints.some((point) => point.component === 'resistor-2')
@@ -66,7 +68,7 @@ const profiles = [
       }, profile);
       assert.equal(result.edited.components.length, 5);
       assert.equal(result.edited.components.find(({ id }) => id === 'resistor-2').properties.ohms, 470);
-      assert.equal(result.edited.nets.length, 3);
+      assert.equal(result.edited.nets.length, 4);
       assert.equal(result.disconnected.nets.some(({ id }) => id === result.middleNet), false);
       assert.deepEqual(result.undone, result.edited);
       assert.deepEqual(result.redone, result.disconnected);
@@ -193,7 +195,8 @@ const profiles = [
       const branchSelector = profile.id === 'board.rp2040-pico-v1' ? '#pico-branch'
         : profile.id === 'board.esp32-c3-devmodule-v1' ? '#c3-branch' : '#stm32-branch';
       await page.evaluate((selector) => document.querySelector(selector).click(), branchSelector);
-      await page.evaluate(({ layer }) => document.querySelector(`${layer} [data-editor-endpoint="resistor-1.A"]`).click(), profile);
+      await page.evaluate(({ layer, branchLead }) => document.querySelector(
+        `${layer} [data-editor-endpoint="resistor-1.${branchLead}"]`).click(), profile);
       const branch = await page.evaluate(({ api }) => {
         const state = window[api].state(); const graph = state.circuit ?? state.project.circuit;
         return { endpoints: graph.nets.find(({ id }) => id === 'net-led-2-ground').endpoints.length,
@@ -226,7 +229,7 @@ const profiles = [
         : profile.id === 'board.esp32-c3-devmodule-v1' ? '#c3-branch-endpoint' : '#stm32-branch-endpoint';
       const removeBranch = profile.id === 'board.rp2040-pico-v1' ? '#pico-remove-branch'
         : profile.id === 'board.esp32-c3-devmodule-v1' ? '#c3-remove-branch' : '#stm32-remove-branch';
-      await page.selectOption(endpointSelect, { label: 'resistor-1.A' });
+      await page.selectOption(endpointSelect, { label: `resistor-1.${profile.branchLead}` });
       await page.evaluate((selector) => document.querySelector(selector).click(), removeBranch);
       assert.equal(await page.evaluate(({ api }) => {
         const state = window[api].state(); const graph = state.circuit ?? state.project.circuit;

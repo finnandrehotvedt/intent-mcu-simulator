@@ -1135,9 +1135,17 @@ function renderProfileDiagnostics(snapshot, { textarea, summary, links, current 
   links.replaceChildren(...nodes);
 }
 
+function boundedQuickCircuitStatus(state, validLabel) {
+  if (state.circuitValid || state.circuitAccepted) return validLabel;
+  if (state.authoringAccepted && state.circuitCode === 'MODEL_LIBRARY_COMPONENT_UNAVAILABLE') {
+    return 'authoring accepted · runtime unavailable for this graph';
+  }
+  return state.circuitCode;
+}
+
 function renderPicoQuickControls(state = picoPublicState) {
   if (selectedCompilerProfile !== RP2040_PROFILE || !state) return;
-  elements.quickstate.textContent = `Pico · ${state.phase} · ${state.circuitValid ? 'wiring valid' : state.circuitCode}`;
+  elements.quickstate.textContent = `Pico · ${state.phase} · ${boundedQuickCircuitStatus(state, 'wiring valid')}`;
   elements.quickbuild.textContent = 'Build Pico';
   elements.quickrun.textContent = 'Run Pico';
   elements.quickpause.textContent = 'Pause';
@@ -1190,7 +1198,7 @@ function renderAvrQuickControls() {
 
 function renderC3QuickControls(state = c3PublicState) {
   if (selectedCompilerProfile !== ESP32C3_PROFILE || !state) return;
-  elements.quickstate.textContent = `ESP32-C3 · ${state.phase} · ${state.circuitAccepted ? 'model wiring valid' : state.circuitCode}`;
+  elements.quickstate.textContent = `ESP32-C3 · ${state.phase} · ${boundedQuickCircuitStatus(state, 'model wiring valid')}`;
   elements.quickbuild.textContent = 'Build C3';
   elements.quickrun.textContent = 'Run actual QEMU';
   elements.quickpause.textContent = 'Pause unavailable';
@@ -1209,7 +1217,7 @@ function renderC3QuickControls(state = c3PublicState) {
 
 function renderStm32QuickControls(state = stm32PublicState) {
   if (selectedCompilerProfile !== STM32F429ZI_PROFILE || !state) return;
-  elements.quickstate.textContent = `STM32F429ZI · ${state.phase} · ${state.circuitAccepted ? 'PB0 wiring valid' : state.circuitCode}`;
+  elements.quickstate.textContent = `STM32F429ZI · ${state.phase} · ${boundedQuickCircuitStatus(state, 'PB0 wiring valid')}`;
   elements.quickbuild.textContent = 'Build STM32 ELF';
   elements.quickrun.textContent = 'Run actual Renode';
   elements.quickpause.textContent = 'Pause unavailable';

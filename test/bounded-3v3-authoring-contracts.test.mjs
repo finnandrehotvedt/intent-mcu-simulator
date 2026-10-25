@@ -21,9 +21,9 @@ test('three explicit 3.3 V contracts are separately versioned and authoring-only
 });
 
 for (const profile of [
-  { board: RP2040_PICO_BOARD_DEFINITION, type: RP2040_PICO_PROFILE, id: 'pico-1', source: 'GP0', ground: 'GND3' },
-  { board: ESP32C3_BOARD_DEFINITION, type: ESP32C3_PUBLIC_PROFILE, id: 'c3-1', source: 'GPIO2', ground: 'GND' },
-  { board: STM32_BOARD_DEFINITION, type: STM32_PUBLIC_PROFILE, id: 'stm32-1', source: 'PB0', ground: 'GND' },
+  { board: RP2040_PICO_BOARD_DEFINITION, type: RP2040_PICO_PROFILE, id: 'pico-1', source: 'GP0', source2: 'GP1', ground: 'GND3', ground2: 'GND8' },
+  { board: ESP32C3_BOARD_DEFINITION, type: ESP32C3_PUBLIC_PROFILE, id: 'c3-1', source: 'GPIO2', source2: 'GPIO3', ground: 'GND', ground2: 'GND8' },
+  { board: STM32_BOARD_DEFINITION, type: STM32_PUBLIC_PROFILE, id: 'stm32-1', source: 'PB0', source2: 'PB1', ground: 'GND', ground2: 'GND20' },
 ]) {
   test(`${profile.type} mixed authoring graph validates structurally and rejects a direct short`, () => {
     const components = [{ id: profile.id, type: profile.type },
@@ -39,6 +39,14 @@ for (const profile of [
       { id: 'short', endpoints: [{ component: profile.id, pin: profile.source }, { component: profile.id, pin: profile.ground }] },
     ] });
     assert.equal(shorted.code, 'AUTHORING_DIRECT_SOURCE_GROUND_SHORT');
+    const conflict = validateBounded3v3AuthoringGraph({ board: profile.board, components, nets: [
+      { id: 'conflict', endpoints: [{ component: profile.id, pin: profile.source }, { component: profile.id, pin: profile.source2 }] },
+    ] });
+    assert.equal(conflict.code, 'AUTHORING_OUTPUT_CONFLICT');
+    const tiedGrounds = validateBounded3v3AuthoringGraph({ board: profile.board, components, nets: [
+      { id: 'grounds', endpoints: [{ component: profile.id, pin: profile.ground }, { component: profile.id, pin: profile.ground2 }] },
+    ] });
+    assert.equal(tiedGrounds.ok, true);
   });
 }
 

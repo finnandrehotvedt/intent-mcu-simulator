@@ -11,6 +11,7 @@ import {
 import { ESP32C3_PUBLIC_COMPONENT_CATALOG } from './esp32c3-public-circuit.mjs';
 import { RP2040_PICO_COMPONENT_CATALOG } from './rp2040-pico-circuit.mjs';
 import { STM32_PUBLIC_COMPONENT_CATALOG } from './stm32-public-circuit.mjs';
+import { BOUNDED_3V3_UI_COMPONENTS } from './bounded-3v3-authoring-contracts.mjs';
 
 export const CONTROL_PERSISTENCE_POLICY_SCHEMA = 'intent-mcu-control-persistence-policy@1';
 
@@ -20,6 +21,7 @@ const definitions = new Map([
   ...Object.values(RP2040_PICO_COMPONENT_CATALOG),
   ...Object.values(ESP32C3_PUBLIC_COMPONENT_CATALOG),
   ...Object.values(STM32_PUBLIC_COMPONENT_CATALOG),
+  ...Object.values(BOUNDED_3V3_UI_COMPONENTS),
 ].map((definition) => [definition.type, definition]));
 
 const retainedState = new Set(['sensor.light-threshold-digital-v1.outputActive']);

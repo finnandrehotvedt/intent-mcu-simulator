@@ -7,12 +7,13 @@ bounded property, connect and delete named-pin cables, and use exact Undo/Redo.
 Stable instance IDs, project name, source and graph/layout data survive the
 existing local Save/Open and browser recovery paths.
 
-This is intentionally not a general electrical solver. Each profile still
-exposes only its previously declared source and ground pins, resistor A/B and
-LED ANODE/CATHODE. Incomplete authored drafts are valid project data but are
-not runnable. Build/Run remains available only when the existing profile
-validator accepts the exact single series LED path. Branch wiring, extra GPIO,
-new component models and inferred connections are not claimed.
+This is intentionally not a general electrical solver. The version-2
+authoring maps expose several officially documented 3.3 V GPIO and ground
+anchors while preserving the original runtime pin subset. Incomplete and
+multi-GPIO authored drafts are valid project data but are not runnable.
+Build/Run remains available only when the existing profile validator accepts
+the exact original single-series LED path. See
+`RC139-MULTIPIN-AUTHORING-MAPS.md` for pin provenance and limits.
 
 Canonical browser-session API edits use the same graph owner. Batches remain
 atomic and reject malformed IDs, type/ID mismatches, unknown or occupied pins,

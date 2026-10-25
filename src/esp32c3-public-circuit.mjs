@@ -20,6 +20,13 @@ export const ESP32C3_PIN_MAP = Object.freeze({
   GPIO2: Object.freeze({ signal: 'GPIO2', connector: 'J1', physicalPin: 4, voltage: 3.3, capability: 'digital-output' }),
   GND: Object.freeze({ signal: 'GND', connector: 'J1', physicalPin: 6, voltage: 0, capability: 'ground-reference' }),
 });
+export const ESP32C3_AUTHORING_PIN_MAP_V2 = Object.freeze({
+  source: Object.freeze({ url: 'https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32c3/esp32-c3-devkitm-1/user_guide.html#header-block',
+    schematic: 'SCH_ESP32-C3-DEVKITM-1_V1_20200915A.pdf' }),
+  pins: Object.freeze({ GPIO2: { connector: 'J1', physicalPin: 4 }, GPIO3: { connector: 'J1', physicalPin: 5 },
+    GND: { connector: 'J1', physicalPin: 6 }, GND8: { connector: 'J1', physicalPin: 8 },
+    GPIO0: { connector: 'J1', physicalPin: 9 }, GPIO1: { connector: 'J1', physicalPin: 10 } }),
+});
 
 const boardPin = (id, label, role, signals, x, y, constraints) => Object.freeze({
   id, label, role, signals: Object.freeze([...signals]), capabilities: Object.freeze([...signals]),
@@ -27,14 +34,22 @@ const boardPin = (id, label, role, signals, x, y, constraints) => Object.freeze(
 });
 
 export const ESP32C3_BOARD_DEFINITION = Object.freeze({
-  family: 'board.esp32-c3-learning-profile', variant: 'public-bounded-gpio2-3v3',
-  type: ESP32C3_PUBLIC_PROFILE, version: 1,
+  family: 'board.esp32-c3-learning-profile', variant: 'authoring-multipin-runtime-gpio2-3v3',
+  type: ESP32C3_PUBLIC_PROFILE, version: 2,
   displayName: 'ESP32-C3 learning profile board', manufacturer: 'Intent Learning', partNumber: 'IL-ESP32C3-GPIO2-PROFILE',
   pins: Object.freeze([
     boardPin('GPIO2', 'GPIO2 · J1 physical pin 4', 'digital-io', ['digital.output'], 0.95, 0.25,
       { voltageMin: 0, voltageMax: 3.3, connector: 'J1', physicalPin: 4, strappingPin: true }),
+    boardPin('GPIO3', 'GPIO3 · J1 physical pin 5 · authoring only', 'digital-io', ['digital.output'], 0.95, 0.35,
+      { voltageMin: 0, voltageMax: 3.3, connector: 'J1', physicalPin: 5, authoringOnly: true }),
+    boardPin('GPIO0', 'GPIO0 · J1 physical pin 9 · authoring only', 'digital-io', ['digital.output'], 0.95, 0.55,
+      { voltageMin: 0, voltageMax: 3.3, connector: 'J1', physicalPin: 9, authoringOnly: true }),
+    boardPin('GPIO1', 'GPIO1 · J1 physical pin 10 · authoring only', 'digital-io', ['digital.output'], 0.95, 0.65,
+      { voltageMin: 0, voltageMax: 3.3, connector: 'J1', physicalPin: 10, authoringOnly: true }),
     boardPin('GND', 'GND · J1 physical pin 6', 'ground', ['ground.reference'], 0.95, 0.75,
       { connector: 'J1', physicalPin: 6 }),
+    boardPin('GND8', 'GND · J1 physical pin 8 · authoring only', 'ground', ['ground.reference'], 0.95, 0.85,
+      { connector: 'J1', physicalPin: 8, authoringOnly: true }),
   ]),
   propertyKeys: Object.freeze([]), controlKeys: Object.freeze([]), propertySchema: Object.freeze({}),
   modelRef: 'model.esp32c3-gpio2-project-register-adapter-v1', internalTerminalGroups: Object.freeze([]), selectable: false,
@@ -68,9 +83,10 @@ const RESISTOR = 'resistor.fixed-v1';
 const LED = 'led.basic-v1';
 const resolveNetId = createSeriesLedConnectionPolicy({
   boardType: BOARD, sourcePin: 'GPIO2', groundPin: 'GND', sourceNetId: 'net-gpio2',
+  authoringSourcePins: ['GPIO2', 'GPIO3', 'GPIO0', 'GPIO1'], authoringGroundPins: ['GND', 'GND8'],
 });
 const TYPE_PINS = Object.freeze({
-  [BOARD]: new Set(['GPIO2', 'GND']),
+  [BOARD]: new Set(Object.keys(ESP32C3_AUTHORING_PIN_MAP_V2.pins)),
   [RESISTOR]: new Set(['A', 'B']),
   [LED]: new Set(['ANODE', 'CATHODE']),
   [GROUND_REFERENCE_3V3_TYPE]: new Set(['GND']),
@@ -84,6 +100,7 @@ const COMPONENT_POLICY = createSeriesLedComponentPolicy({
   nominalVolts: ESP32C3_NOMINAL_VOLTS,
   ledCurrentLimitAmps: ESP32C3_LED_CURRENT_LIMIT_AMPS,
   ledForwardVolts: LED_FORWARD_VOLTS,
+  boardPins: Object.keys(ESP32C3_AUTHORING_PIN_MAP_V2.pins),
 });
 const clone = (value) => structuredClone(value);
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;

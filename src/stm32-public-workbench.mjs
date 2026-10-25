@@ -29,10 +29,10 @@ const clone = (value) => value === null || value === undefined ? value : structu
 function describeCircuitGap(code) {
   return ({
     STM32_SERIES_RESISTOR_REQUIRED: 'Missing resistor: add the supported series resistor between PB0 and the LED anode path.',
-    STM32_GROUND_REQUIRED: 'Missing ground: connect LED cathode to STM32 GND CN11 pin 35.',
+    STM32_GROUND_REQUIRED: 'Missing ground: connect LED cathode to STM32 GND CN11 pin 19.',
     STM32_LED_REVERSE_POLARITY: 'LED polarity is reversed: anode must face PB0 through the resistor; cathode must face GND.',
     STM32_LED_OVERCURRENT: 'LED current is above the teaching limit: increase the series resistance.',
-    STM32_PATH_OPEN: 'Open LED path: complete PB0 CN11 pin 34 → resistor → LED anode, then LED cathode → GND CN11 pin 35.',
+    STM32_PATH_OPEN: 'Open LED path: complete PB0 CN11 pin 34 → resistor → LED anode, then LED cathode → GND CN11 pin 19.',
   })[code] ?? `Circuit rejected (${code}). Inspect the highlighted supported parts and named pins.`;
 }
 
@@ -274,7 +274,7 @@ export class Stm32PublicWorkbench {
     if (!circuit.ok) {
       this.wipeArtifact();
       this.phase = 'blocked';
-      this.message = `Circuit blocked (${circuit.code}). Complete the exact PB0 CN11 pin 34 → resistor → LED → GND CN11 pin 35 path.`;
+      this.message = `Circuit blocked (${circuit.code}). Complete the exact PB0 CN11 pin 34 → resistor → LED → GND CN11 pin 19 path.`;
       this.render();
       return { ok: false, code: circuit.code };
     }
@@ -566,7 +566,7 @@ export class Stm32PublicWorkbench {
         : `${describeCircuitGap(circuit.code)} Stale ELF and LED authority was retired.`
       : this.result
         ? `Renode observed PB0 ${on ? 'HIGH' : 'LOW'} · ideal ${circuit.model.resistorOhms} Ω / ${circuit.model.ledColor} LED teaching path renders ${on ? 'ON' : 'OFF'}`
-        : `Named path: PB0 CN11 pin 34 → ${circuit.model.resistorOhms} Ω → ${circuit.model.ledColor} LED → GND CN11 pin 35 · awaiting actual Renode observation`;
+        : `Named path: PB0 CN11 pin 34 → ${circuit.model.resistorOhms} Ω → ${circuit.model.ledColor} LED → GND CN11 pin 19 · awaiting actual Renode observation`;
     this.onDiagnostics({ profile: STM32_PROFILE, revision: this.revision, source: this.project.source,
       file: 'main.c', diagnostics: clone(this.diagnostics) });
     this.publish();

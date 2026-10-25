@@ -57,7 +57,7 @@ function freezeRecord(value) {
  */
 export function createSeriesLedComponentPolicy({
   profile, boardId, boardLabel, resistorPosition, ledPosition,
-  nominalVolts, ledCurrentLimitAmps, ledForwardVolts,
+  nominalVolts, ledCurrentLimitAmps, ledForwardVolts, boardPins = [],
 }) {
   const part = (value) => Object.freeze({
     ...value,
@@ -73,7 +73,7 @@ export function createSeriesLedComponentPolicy({
     ledForwardVolts: Object.freeze({ ...ledForwardVolts }),
     board: Object.freeze({
       id: boardId, type: profile, displayName: boardLabel,
-      fixed: true, addable: false,
+      fixed: true, addable: false, pins: Object.freeze([...boardPins]),
       limitation: 'Fixed bounded controller profile; it cannot be added, duplicated or removed.',
     }),
     parts: Object.freeze([
@@ -132,6 +132,7 @@ function endpointType(draft, endpoint) {
  */
 export function createSeriesLedConnectionPolicy({
   boardType, sourcePin, groundPin, sourceNetId,
+  authoringSourcePins = [sourcePin], authoringGroundPins = [groundPin],
   resistorType = 'resistor.fixed-v1', ledType = 'led.basic-v1',
 }) {
   const is = (draft, endpoint, type, pins) => endpointType(draft, endpoint) === type && pins.includes(endpoint.pin);
@@ -141,15 +142,19 @@ export function createSeriesLedConnectionPolicy({
   return (draft, left, right) => {
     const resistor = [left, right].find((point) => endpointType(draft, point) === resistorType);
     const led = [left, right].find((point) => endpointType(draft, point) === ledType);
-    if (pair(draft, left, right, boardType, [sourcePin], resistorType, ['A', 'B'])) {
-      return resistor?.component === 'resistor-1' ? sourceNetId : `net-${resistor.component}-drive`;
+    if (pair(draft, left, right, boardType, authoringSourcePins, resistorType, ['A', 'B'])) {
+      const board = [left, right].find((point) => endpointType(draft, point) === boardType);
+      if (board?.pin === sourcePin && resistor?.component === 'resistor-1') return sourceNetId;
+      return `net-${board?.pin.toLowerCase()}-${resistor.component}-drive`.slice(0, 48);
     }
     if (pair(draft, left, right, resistorType, ['A', 'B'], ledType, ['ANODE'])) {
       return resistor?.component === 'resistor-1' && led?.component === 'led-1'
         ? 'net-series' : `net-${resistor.component}-${led.component}`;
     }
-    if (pair(draft, left, right, ledType, ['CATHODE'], boardType, [groundPin])) {
-      return led?.component === 'led-1' ? 'net-ground' : `net-${led.component}-ground`;
+    if (pair(draft, left, right, ledType, ['CATHODE'], boardType, authoringGroundPins)) {
+      const board = [left, right].find((point) => endpointType(draft, point) === boardType);
+      if (board?.pin === groundPin) return led?.component === 'led-1' ? 'net-ground' : `net-${led.component}-ground`;
+      return `net-${led.component}-${board?.pin.toLowerCase()}-ground`.slice(0, 48);
     }
     const authoringOnly = new Set([GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE]);
     if (authoringOnly.has(endpointType(draft, left)) || authoringOnly.has(endpointType(draft, right))) {
@@ -660,6 +665,9 @@ export class NamedSeriesLedCircuitEditor {
   isKnownEndpoint(endpoint) {
     const component = this.draft.components.find((candidate) => candidate.id === endpoint?.component);
     if (!component || typeof endpoint?.pin !== 'string') return false;
+    if (component.type === this.componentPolicy.board.type && this.componentPolicy.board.pins) {
+      return this.componentPolicy.board.pins.includes(endpoint.pin);
+    }
     const policy = this.componentPolicy.parts.find((item) => item.type === component.type);
     if (policy?.pins) return policy.pins.includes(endpoint.pin);
     const defaults = this.createDefault();

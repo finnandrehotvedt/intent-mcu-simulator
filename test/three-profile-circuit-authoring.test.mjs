@@ -10,17 +10,40 @@ import { Stm32CircuitEditor, normalizeStm32CircuitDraft } from '../src/stm32-pub
 
 const profiles = [
   { name: 'Pico', prefix: 'RP2040', Editor: Rp2040PicoCircuitEditor, normalize: normalizeRp2040PicoCircuitDraft,
-    source: { component: 'pico-1', pin: 'GP0' }, ground: { component: 'pico-1', pin: 'GND3' } },
+    source: { component: 'pico-1', pin: 'GP0' }, secondSource: { component: 'pico-1', pin: 'GP1' }, thirdSource: { component: 'pico-1', pin: 'GP2' },
+    ground: { component: 'pico-1', pin: 'GND3' } },
   { name: 'C3', prefix: 'C3', Editor: Esp32C3CircuitEditor, normalize: normalizeEsp32C3CircuitDraft,
-    source: { component: 'c3-1', pin: 'GPIO2' }, ground: { component: 'c3-1', pin: 'GND' } },
+    source: { component: 'c3-1', pin: 'GPIO2' }, secondSource: { component: 'c3-1', pin: 'GPIO3' }, thirdSource: { component: 'c3-1', pin: 'GPIO0' },
+    ground: { component: 'c3-1', pin: 'GND' } },
   { name: 'STM32', prefix: 'STM32', Editor: Stm32CircuitEditor, normalize: normalizeStm32CircuitDraft,
-    source: { component: 'stm32-1', pin: 'PB0' }, ground: { component: 'stm32-1', pin: 'GND' } },
+    source: { component: 'stm32-1', pin: 'PB0' }, secondSource: { component: 'stm32-1', pin: 'PB1' }, thirdSource: { component: 'stm32-1', pin: 'PB7' },
+    ground: { component: 'stm32-1', pin: 'GND' } },
 ];
 const withoutIdCounters = (value) => {
   const copy = structuredClone(value); delete copy.layout.idCounters; return copy;
 };
 
 for (const profile of profiles) {
+  test(`${profile.name} authors two independent GPIO nets while runtime remains unavailable`, () => {
+    const editor = new profile.Editor(); editor.newProject();
+    editor.addComponent('resistor.fixed-v1'); editor.addComponent('resistor.fixed-v1');
+    assert.equal(editor.connectEndpoints(profile.source, { component: 'resistor-1', pin: 'A' }).ok, true);
+    assert.equal(editor.connectEndpoints(profile.secondSource, { component: 'resistor-2', pin: 'A' }).ok, true);
+    const accepted = editor.snapshot().draft;
+    assert.deepEqual(profile.normalize(structuredClone(accepted)), accepted);
+    assert.equal(accepted.nets.length, 2);
+    assert.equal(editor.snapshot().validation.ok, false);
+    const sourceNet = accepted.nets.find((net) => net.endpoints.some((endpoint) => endpoint.pin === profile.source.pin));
+    const beforeConflict = JSON.stringify(accepted);
+    const conflict = editor.branchEndpoint(sourceNet.id, profile.thirdSource);
+    assert.equal(conflict.ok, false);
+    assert.match(conflict.code, /AUTHORING_OUTPUT_CONFLICT/u);
+    assert.equal(JSON.stringify(editor.snapshot().draft), beforeConflict);
+    const unknown = editor.connectEndpoints({ component: profile.source.component, pin: 'NOT_A_PIN' },
+      { component: 'resistor-1', pin: 'B' });
+    assert.equal(unknown.ok, false);
+    assert.equal(JSON.stringify(editor.snapshot().draft), beforeConflict);
+  });
   test(`${profile.name} authors a non-template circuit from a controller-only project`, () => {
     const editor = new profile.Editor();
     assert.equal(editor.newProject().draft.components.length, 1);
