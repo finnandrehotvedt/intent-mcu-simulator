@@ -2,6 +2,18 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.138 — 2026-10-25
+
+- Discovers valid historical browser drafts for AVR, RP2040 Pico, ESP32-C3 and
+  STM32F429ZI even when an older non-AVR draft was never added to the registry.
+- Shows profile, authored name, saved time when known, and exact part/net counts
+  in one shared recovery panel available from every controller profile.
+- Opens recovery as a new per-tab draft, preserving source bytes, authored
+  source, name, circuit and layout while leaving the original storage key
+  unchanged; malformed entries remain visible but cannot replace the project.
+- Treats revision 0 and empty Undo history after reconstruction honestly and
+  performs no native Build or Run. This source candidate is not a deployment.
+
 ## 1.1.0-rc.137 — 2026-10-25
 
 - Enables explicit canonical circuit editing for AVR, Pico, ESP32-C3 and STM32

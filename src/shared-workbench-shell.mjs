@@ -1726,6 +1726,7 @@ export function mountSharedWorkbenchShell(document) {
     return [name, { dialog, mount, opener }];
   }));
   const common = {
+    recovery: document.querySelector('#browser-draft-recovery'),
     history: document.querySelector('#local-history'),
     navigation: document.querySelector('#project-navigation'),
     brief: document.querySelector('#project-brief'),
@@ -1743,7 +1744,7 @@ export function mountSharedWorkbenchShell(document) {
     if (profile === AVR_PROFILE) {
       return {
         canvas: root.querySelector(adapter.canvas),
-        project: [document.querySelector('#project-bar'), common.history],
+        project: [document.querySelector('#project-bar'), common.recovery, common.history],
         parts: [root.querySelector(adapter.parts)],
         inspector: [root.querySelector(adapter.inspector)],
         firmware: [document.querySelector('#firmware-drawer')],
@@ -1754,7 +1755,7 @@ export function mountSharedWorkbenchShell(document) {
     }
     return {
       canvas: shared('canvas'),
-      project: [root.querySelector('.shared-project-bar'), common.history],
+      project: [root.querySelector('.shared-project-bar'), common.recovery, common.history],
       parts: [shared('parts')],
       inspector: [shared('inspector')],
       firmware: [shared('source')],

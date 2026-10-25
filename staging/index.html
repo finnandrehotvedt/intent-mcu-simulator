@@ -108,9 +108,6 @@
             <button id="project-native-save" class="native-file-action" type="button" hidden disabled>Save connected file</button>
             <button id="project-native-save-copy" class="native-file-action" type="button" hidden>Save copy…</button>
             <button id="project-reload" type="button">Restore browser recovery</button>
-            <label for="project-draft-recovery">Recover another local draft</label>
-            <select id="project-draft-recovery"><option value="">No other local drafts</option></select>
-            <button id="project-draft-recover" type="button" disabled>Open recovered copy</button>
             <button id="project-export" type="button">Legacy copy</button><button id="recovery-export" type="button" disabled>Download recovery</button>
             <label class="file-button" for="project-import">Import JSON</label>
             <input id="project-import" class="sr-only" type="file" accept="application/json,.json">
@@ -129,6 +126,18 @@
       </details>
       <details id="technical-error" class="technical-error" hidden><summary>Technical details</summary><pre id="technical-error-detail"></pre></details>
     </section>
+
+    <details id="browser-draft-recovery" class="local-history panel">
+      <summary>Preserved browser drafts <span>all four profiles</span></summary>
+      <p class="truth">This scans this site's existing browser-local keys, including historical drafts that were never registered in the old chooser. It does not upload, delete, migrate or rewrite them. Each recovery opens a validated copy under a new draft identity; the original raw value stays unchanged.</p>
+      <div class="local-history-controls">
+        <label for="project-draft-recovery">Choose by profile, project, saved time and graph size
+          <select id="project-draft-recovery"><option value="">No local drafts found</option></select>
+        </label>
+        <button id="project-draft-recover" type="button" disabled>Open validated copy</button>
+      </div>
+      <p class="truth">Revision 0 and disabled Undo after recovery mean command history was not restored; they do not mean the graph is empty. Check the parts/nets count and use Fit project when a non-empty graph is outside the current viewport.</p>
+    </details>
 
     <details id="local-history" class="local-history panel">
       <summary>Local version history <span id="local-history-badge">Off</span></summary>

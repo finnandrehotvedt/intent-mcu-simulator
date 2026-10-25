@@ -66,24 +66,26 @@ const profiles = [
     }
 
     const beforeCorruptRecovery = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
-    await page.evaluate(() => {
+    const corruptKey = await page.evaluate(() => {
       const id = 'deadbeef-dead-beef-dead-beefdeadbeef';
-      localStorage.setItem(`teach-lab.simulator.project.v2.tab.${id}`, '{bad json');
+      const key = `teach-lab.simulator.project.v2.tab.${id}`;
+      localStorage.setItem(key, '{bad json');
       const registry = JSON.parse(localStorage.getItem('intent-mcu.draft-registry.v1') || '[]');
       registry.unshift({ id, name: 'Corrupt preserved draft', updatedAt: Date.now() });
       localStorage.setItem('intent-mcu.draft-registry.v1', JSON.stringify(registry));
+      return key;
     });
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.__M11_READY__);
     await page.selectOption('#board-select', 'board.atmega328p-16mhz-v1');
     await page.click('#workbench-more > summary');
     await page.click('#project-files-open');
-    await page.click('.project-file-advanced > summary');
-    await page.selectOption('#project-draft-recovery', 'deadbeef-dead-beef-dead-beefdeadbeef');
+    await page.click('#browser-draft-recovery > summary');
+    await page.selectOption('#project-draft-recovery', corruptKey);
     await page.click('#project-draft-recover');
     assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), beforeCorruptRecovery,
       'corrupt recovery must not replace the current project');
-    assert.match(await page.textContent('#project-message'), /left untouched|validation failed|did not complete/iu);
+    assert.match(await page.textContent('#project-message'), /left untouched|remain untouched|validation failed|did not complete/iu);
 
     process.stdout.write(`${JSON.stringify({ result: 'pass', profiles: 4,
       sourceNameGraphRefresh: true, corruptRecoveryAtomic: true, nativeBuilds: 0, nativeRuns: 0 })}\n`);
