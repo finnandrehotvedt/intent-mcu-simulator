@@ -11114,7 +11114,8 @@ function preservedDraftLabel(draft) {
   const time = draft.updatedAt ? new Date(draft.updatedAt).toLocaleString() : 'saved time unknown';
   const graph = draft.valid ? `${draft.components} parts · ${draft.nets} nets` : `invalid · ${draft.code}`;
   const location = draft.draftId === activeDraftId ? 'current tab key' : draft.journal ? 'interrupted save' : 'preserved key';
-  return `${profile} · ${draft.name} · ${time} · ${graph} · ${location}`;
+  const identity = draft.draftId === 'legacy-global' ? 'legacy' : draft.draftId.slice(0, 8);
+  return `${profile} · ${draft.name} · ${time} · ${graph} · draft ${identity} · ${location}`;
 }
 function renderDraftRecoveryChoices() {
   const choices = preservedDrafts();

@@ -82,7 +82,11 @@ async function openRecovery(page) {
       records.push({ profile, owner, sourceSelector, nameSelector, ...record });
     }
     const invalidKey = `intent-mcu.profile-draft.v1.board.rp2040-pico-v1.tab.50000000-0000-4000-8000-000000000005`;
-    await page.evaluate(({ invalidKey }) => localStorage.setItem(invalidKey, '{historical-invalid'), { invalidKey });
+    const duplicateLabelKey = `intent-mcu.profile-draft.v1.board.rp2040-pico-v1.tab.60000000-0000-4000-8000-000000000006`;
+    await page.evaluate(({ invalidKey, duplicateLabelKey, sourceKey }) => {
+      localStorage.setItem(invalidKey, '{historical-invalid');
+      localStorage.setItem(duplicateLabelKey, localStorage.getItem(sourceKey));
+    }, { invalidKey, duplicateLabelKey, sourceKey: records[1].key });
     await page.reload({ waitUntil: 'domcontentloaded' }); await page.waitForFunction(() => window.__M11_READY__);
     await openRecovery(page);
     const optionSummary = await page.locator('#project-draft-recovery option').allTextContents();
@@ -93,6 +97,9 @@ async function openRecovery(page) {
     }
     assert(optionSummary.some((text) => text.includes('saved time unknown')), 'historical unknown time was not disclosed');
     assert(optionSummary.some((text) => text.includes('invalid')), 'invalid preserved bytes were hidden');
+    assert(optionSummary.some((text) => text.includes('draft 20000000'))
+      && optionSummary.some((text) => text.includes('draft 60000000')),
+    'otherwise identical historical drafts lacked distinct nonsecret identities');
 
     for (const record of records) {
       await page.selectOption('#project-draft-recovery', record.key);
@@ -143,6 +150,6 @@ async function openRecovery(page) {
     assert.equal(await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations), 0);
     process.stdout.write(`${JSON.stringify({ result: 'pass', historicalOrphansFound: 4,
       preservedCopyRecoveries: 4, invalidBytesUntouched: true, duplicateTabIsolated: true,
-      originalStorageMutation: false, nativeBuilds: 0, nativeRuns: 0 })}\n`);
+      duplicateLabelsDistinguished: true, originalStorageMutation: false, nativeBuilds: 0, nativeRuns: 0 })}\n`);
   } finally { await context.close(); await browser.close(); }
 })().catch((error) => { console.error(error); process.exitCode = 1; });

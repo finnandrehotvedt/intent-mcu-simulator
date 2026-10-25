@@ -6,7 +6,9 @@ project-owned browser-storage keys and validates each candidate with the
 profile owner before offering recovery.
 
 Valid entries disclose profile, authored name, saved time when available, and
-validated part/net counts. Selecting **Open as separate copy** creates a fresh
+validated part/net counts. A short nonsecret draft-ID prefix distinguishes
+otherwise identical historical choices without exposing full storage keys.
+Selecting **Open as separate copy** creates a fresh
 per-tab draft ID. It preserves authored source, name, circuit and layout, and
 checks that the original key still contains the exact source bytes after the
 copy is installed. No firmware Build or Run is started.
