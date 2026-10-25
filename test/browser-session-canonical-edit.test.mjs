@@ -47,3 +47,15 @@ test('invalid or stale batch preserves exact bytes and revision', () => {
     transactionId: transaction, commands }).code, 'EDITOR_STALE_REVISION');
   assert.equal(JSON.stringify(editor.project), before);
 });
+
+test('AVR duplicate honors the exact API-requested position', () => {
+  const editor = new ProjectEditorReducer(createEmptyProject());
+  const position = { x: 0.81, y: 0.67, rotation: 90 };
+  assert.equal(editor.apply({ type: 'component.add', revision: 0,
+    component: createComponent('resistor-1', 'resistor.fixed-v1'),
+    position: { x: 0.4, y: 0.4, rotation: 0 } }).ok, true);
+  const result = editor.apply({ type: 'component.duplicate', revision: 1,
+    sourceId: 'resistor-1', newId: 'resistor-2', position });
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.project.layout.positions['resistor-2'], position);
+});

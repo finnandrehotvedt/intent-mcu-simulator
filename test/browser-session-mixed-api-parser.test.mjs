@@ -16,11 +16,13 @@ test('canonical profile matrix publishes duplicate, branch and endpoint disconne
 });
 
 test('canonical parser maps duplicate, branch and endpoint disconnect to reducer commands', () => {
-  assert.deepEqual(prepareApiBatch(project, [
+  const prepared = prepareApiBatch(project, [
     { command: 'component.duplicate', component_id: 'led-1', id: 'led-2', position },
     { command: 'wire.branch.connect', net_id: 'net-ground', endpoint: { component: 'led-2', pin: 'CATHODE' } },
     { command: 'wire.disconnect', net_id: 'net-ground', endpoint: { component: 'led-2', pin: 'CATHODE' } },
-  ]).map(({ type }) => type), ['component.duplicate', 'wire.branch', 'wire.branch.delete']);
+  ]);
+  assert.deepEqual(prepared.map(({ type }) => type), ['component.duplicate', 'wire.branch', 'wire.branch.delete']);
+  assert.deepEqual(prepared[0].position, position);
 });
 
 test('canonical parser rejects unknown fields and incomplete branch/disconnect shapes', () => {

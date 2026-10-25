@@ -321,11 +321,13 @@ const runEditor = (origin, secret, plan = 'test/fixtures/api-client-add-led-plan
         const state = window[key].state();
         return { authoringAccepted: state.authoringAccepted,
           circuitAccepted: state.circuitAccepted ?? state.circuitValid,
-          circuitCode: state.circuitCode, text: state.circuitEditor.validation };
+          circuitCode: state.circuitCode, text: state.circuitEditor.validation,
+          duplicatePosition: (state.project?.circuit ?? state.circuit).layout.positions['button-2'] };
       }, ownerKey);
       assert.equal(mixedState.authoringAccepted, true);
       assert.notEqual(mixedState.circuitAccepted, true);
       assert.equal(mixedState.circuitCode, 'MODEL_LIBRARY_COMPONENT_UNAVAILABLE');
+      assert.deepEqual(mixedState.duplicatePosition, { x: 0.82, y: 0.7, rotation: 0 });
       mixedEdit.undo(); const mixedOutput = await mixedEdit.done;
       assert.equal(mixedOutput[0].mode, 'edited');
       assert.equal(mixedOutput[1].undo, 'API_TRANSACTION_UNDONE');

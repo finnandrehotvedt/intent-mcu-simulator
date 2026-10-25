@@ -56,7 +56,8 @@ export function prepareApiBatch(project, operations) {
           || !ID.test(operation.component_id) || !ID.test(operation.id)
           || operation.component_id === operation.id
           || !exact(operation.position, ['x', 'y', 'rotation'])) fail('API_COMPONENT_DUPLICATE_SHAPE');
-      return { type: 'component.duplicate', sourceId: operation.component_id, newId: operation.id };
+      return { type: 'component.duplicate', sourceId: operation.component_id, newId: operation.id,
+        position: structuredClone(operation.position) };
     }
     if (operation.command === 'component.remove') {
       if (!exact(operation, ['command', 'component_id']) || !ID.test(operation.component_id)) fail('API_COMPONENT_REMOVE_SHAPE');
