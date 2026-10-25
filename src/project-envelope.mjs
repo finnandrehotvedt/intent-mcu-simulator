@@ -4,7 +4,8 @@
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
 import { normalizeScenarioTimeline } from './scenario-timeline.mjs';
 import {
-  CURRENT_MODEL_LIBRARY_LOCK, PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_LOCK,
+  CURRENT_MODEL_LIBRARY_LOCK, PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_LOCK,
   RETAINED_MODEL_LIBRARY_LOCK,
   modelLibraryExecutionIdentity, modelLibraryMigrationPreview, modelLibrarySupportsProfile,
   normalizeModelLibraryLock, validateProjectModelLibrary,
@@ -565,8 +566,9 @@ export function preparePublishedRecoveryProjectEnvelope(source, adapters) {
   try { value = parseStrictJson(source, PROJECT_ENVELOPE_LIMIT); }
   catch { return ordinary; }
   if (value?.schema !== PROJECT_ENVELOPE_SCHEMA) return ordinary;
-  if (ordinary.ok && samePublishedRecoveryLock(
-    value.modelLibrary, PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_LOCK)) {
+  if (ordinary.ok && [PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_LOCK,
+    PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_LOCK].some((lock) => samePublishedRecoveryLock(
+    value.modelLibrary, lock))) {
     const migratedValue = clone(value);
     migratedValue.modelLibrary = clone(CURRENT_MODEL_LIBRARY_LOCK);
     const migrated = prepareProjectEnvelope(JSON.stringify(migratedValue), adapters);

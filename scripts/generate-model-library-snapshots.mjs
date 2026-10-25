@@ -14,6 +14,8 @@ import * as existingSnapshots from '../src/model-library-snapshots.mjs';
 const PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
+  '../src/model-bundles/pre-lcd-current-manifest.json', import.meta.url), 'utf8'));
 
 const { RETAINED_MODEL_LIBRARY_MANIFEST } = existingSnapshots;
 const PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MANIFEST =
@@ -238,6 +240,9 @@ const CURRENT_CLOSURE = Object.freeze([
   '../expansion-drafts/active-buzzer-module-v1.mjs',
   '../expansion-drafts/seven-segment-common-cathode-v1.mjs',
   '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs',
+  '../expansion-drafts/pcf8574-lcd-backpack-v1.mjs',
+  '../expansion-drafts/pcf8574-lcd-backpack-artwork-v1.mjs',
+  '../expansion-drafts/pcf8574-lcd-hello-example-v1.mjs',
   '../expansion-drafts/rotary-encoder-quadrature-v1.mjs',
 ]);
 
@@ -286,16 +291,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-thumbnail-artwork.1-current',
-  'intent-mcu-model-bundle-current-thumbnail-artwork-1@46',
+  '2.0.0-lcd-end-to-end.1-current',
+  'intent-mcu-model-bundle-current-lcd-end-to-end-1@47',
   currentImplementation,
   {
     priorVersion: PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST.version,
     priorManifestSha256: PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component, firmware and electrical semantics remain unchanged',
-    presentationDisposition: 'original SVG thumbnails are rendered in all four parts drawers with readable stacked copy',
-    baselineClosureDisposition: 'the accepted rc.139 identity and every earlier identity remain immutable and migration-only; this source candidate performs no firmware compile, native run, image build or deployment',
+    semanticDisposition: 'adds bounded AVR TWI write observation and fixed-address PCF8574 LCD semantics while retaining every prior component contract',
+    presentationDisposition: 'CMP-050 direct GPIO and CMP-051 fixed 0x27 backpack render firmware-decoded 16x2 text with original project artwork',
+    baselineClosureDisposition: 'accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -316,6 +321,7 @@ export const PRE_PWM_LED_SHORT_ROUTING_CURRENT_MODEL_LIBRARY_MANIFEST = Object.f
 export const PRE_X46_USART_CONFIG_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X46_USART_CONFIG_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_RUNTIME_READY_DEADLINE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_RUNTIME_READY_DEADLINE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});

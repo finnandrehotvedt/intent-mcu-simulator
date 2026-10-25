@@ -42,6 +42,7 @@ import { COMMON_CATHODE_RGB_LED_TYPE } from '../expansion-drafts/common-cathode-
 import { ACTIVE_BUZZER_TYPE } from '../expansion-drafts/active-buzzer-module-v1.mjs';
 import { SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
 import { CHARACTER_LCD_TYPE } from '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs';
+import { PCF8574_LCD_TYPE } from '../expansion-drafts/pcf8574-lcd-backpack-v1.mjs';
 import {
   ROTARY_ENCODER_TYPE,
   ROTARY_ENCODER_DETENT_MAX,
@@ -61,6 +62,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
   ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE,
   CHARACTER_LCD_TYPE,
+  PCF8574_LCD_TYPE,
   ROTARY_ENCODER_TYPE,
 ]);
 

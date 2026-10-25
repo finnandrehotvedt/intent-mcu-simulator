@@ -6,6 +6,7 @@ import {
   AVRADC,
   AVRIOPort,
   AVRTimer,
+  AVRTWI,
   AVRUSART,
   CPU,
   avrInstruction,
@@ -16,6 +17,7 @@ import {
   timer0Config,
   timer1Config,
   timer2Config,
+  twiConfig,
   usart0Config,
 } from 'avr8js';
 import { X34PrecisionObserver } from './x34-precision-observer.mjs';
@@ -27,6 +29,7 @@ import { USART_RX_OBSERVATION_LATENESS_LIMIT } from './x46-usart-rx-limits.mjs';
 export const CLOCK_HZ = 16_000_000;
 export const TRACE_LIMIT = 100_000;
 export const SERIAL_LIMIT = 4_096;
+export const I2C_LIMIT = 8_192;
 export { USART_RX_OBSERVATION_LATENESS_LIMIT };
 const SAMPLE_LIMIT = 4_096;
 const UNSUPPORTED_LIMIT = 256;
@@ -49,7 +52,6 @@ const PWM_OUTPUTS = Object.freeze({
 
 const UNSUPPORTED_REGISTERS = Object.freeze([
   { address: 0x4c, name: 'SPI', active: (value) => Boolean(value & 0x40) },
-  { address: 0xbc, name: 'TWI', active: (value) => Boolean(value & 0x04) },
   { address: 0x3f, name: 'EEPROM', active: (value) => Boolean(value & 0x07) },
   { address: 0x60, name: 'watchdog', active: (value) => Boolean(value & 0x08) },
   { address: 0x50, name: 'analogue-comparator', active: (value) => Boolean(value & 0x08) },
@@ -89,6 +91,12 @@ export class Atmega328PAdapter {
     this.x46RuntimeIdentity = options.runtimeIdentity
       ? structuredClone(options.runtimeIdentity) : null;
     this.x46ResetEpoch = 0;
+    const i2cDevices = options.i2cDevices ?? [];
+    if (!Array.isArray(i2cDevices) || i2cDevices.length > 1
+        || i2cDevices.some((item) => item?.address !== 0x27 || item?.type !== 'pcf8574-lcd')) {
+      throw new TypeError('I2C_DEVICE_CONFIGURATION');
+    }
+    this.i2cAddresses = new Set(i2cDevices.map((item) => item.address));
     this.#createMachine();
   }
 
@@ -107,12 +115,14 @@ export class Atmega328PAdapter {
     ];
     this.adc = new AVRADC(this.cpu, adcConfig);
     this.usart = new AVRUSART(this.cpu, usart0Config, CLOCK_HZ);
+    this.twi = new AVRTWI(this.cpu, twiConfig, CLOCK_HZ);
     this.x46ResetEpoch += 1;
     this.x46UsartConfiguration = this.x46RuntimeIdentity
       ? new X46UsartConfigurationProducer(this.x46RuntimeIdentity, this.x46ResetEpoch)
       : null;
     this.trace = [];
     this.serial = [];
+    this.i2c = [];
     this.usartRxSequence = 0;
     this.activeUsartRx = null;
     this.pendingUsartRxCompletion = null;
@@ -123,7 +133,7 @@ export class Atmega328PAdapter {
     this.x47DigitalTransitionDrops = 0;
     this.stuckAnalogChannels = new Map();
     this.faultEvents = [];
-    this.retentionDrops = { logic: 0, serial: 0, adc: 0, unsupported: 0 };
+    this.retentionDrops = { logic: 0, serial: 0, i2c: 0, adc: 0, unsupported: 0 };
     this.blocked = false;
     this.instructions = 0;
     this.x34Observer?.reset();
@@ -135,6 +145,7 @@ export class Atmega328PAdapter {
     this.#attachAdcTrace();
     this.#attachUsartTrace();
     this.#attachUsartConfigurationTrace();
+    this.#attachTwiTrace();
     this.#attachUnsupportedMonitors();
     this.#attachUnsupportedModeMonitors();
     for (const [pin, level] of this.inputLevels) this.#setDigitalPinNow(pin, level, false);
@@ -226,6 +237,39 @@ export class Atmega328PAdapter {
         });
       });
     }
+  }
+
+  #attachTwiTrace() {
+    let address = null;
+    this.twi.eventHandler = {
+      start: (repeated) => {
+        this.retentionDrops.i2c += boundedPush(this.i2c,
+          { cycle: this.cpu.cycles, kind: repeated ? 'repeated-start' : 'start' }, I2C_LIMIT);
+        this.twi.completeStart();
+      },
+      stop: () => {
+        this.retentionDrops.i2c += boundedPush(this.i2c,
+          { cycle: this.cpu.cycles, kind: 'stop', address }, I2C_LIMIT);
+        address = null; this.twi.completeStop();
+      },
+      connectToSlave: (nextAddress, write) => {
+        address = nextAddress;
+        const acknowledged = write && this.i2cAddresses.has(address);
+        this.retentionDrops.i2c += boundedPush(this.i2c,
+          { cycle: this.cpu.cycles, kind: 'address', address, read: !write, acknowledged }, I2C_LIMIT);
+        this.twi.completeConnect(acknowledged);
+      },
+      writeByte: (value) => {
+        const acknowledged = this.i2cAddresses.has(address);
+        this.retentionDrops.i2c += boundedPush(this.i2c,
+          { cycle: this.cpu.cycles, kind: 'write', address, value, acknowledged }, I2C_LIMIT);
+        this.twi.completeWrite(acknowledged);
+      },
+      readByte: () => {
+        this.#markUnsupported('twi-read', { address });
+        this.twi.completeRead(0xff);
+      },
+    };
   }
 
   #attachUnsupportedMonitors() {
@@ -684,6 +728,7 @@ export class Atmega328PAdapter {
       digitalPins,
       trace: this.trace.slice(),
       serial: this.serial.slice(),
+      i2c: this.i2c.map((entry) => ({ ...entry })),
       adcReads: this.adcReads.map((entry) => ({ ...entry })),
       unsupported: this.unsupported.slice(),
       faultEvents: this.faultEvents.map((entry) => ({ ...entry })),

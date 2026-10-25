@@ -75,6 +75,7 @@ const referenceBindings = deepFreeze({
     'output.active-buzzer-module-v1': { starters: ['avr-active-buzzer'], tests: ['test/active-buzzer-candidate.test.mjs', 'test/active-buzzer-ui-candidate.cjs'] },
     'output.seven-segment-common-cathode-v1': { starters: ['avr-seven-segment'], tests: ['test/seven-segment-common-cathode-candidate.test.mjs', 'test/seven-segment-common-cathode-ui-candidate.cjs'] },
     'output.character-lcd-16x2-4bit-v1': { starters: ['temperature-lcd-threshold'], tests: ['test/character-lcd-16x2-4bit-candidate.test.mjs', 'test/character-lcd-16x2-4bit-ui-candidate.cjs'] },
+    'output.character-lcd-16x2-pcf8574-v1': { starters: ['avr-pcf8574-lcd-hello'], tests: ['test/pcf8574-lcd-backpack.test.mjs', 'test/pcf8574-lcd-end-to-end-browser.cjs'] },
     'input.rotary-encoder-quadrature-v1': { starters: ['avr-rotary-encoder'], tests: ['test/component-support-matrix.test.mjs'] },
   },
   [PICO]: {

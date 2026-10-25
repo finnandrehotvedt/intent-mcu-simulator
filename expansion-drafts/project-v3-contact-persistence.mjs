@@ -73,6 +73,12 @@ import {
   validateCharacterLcdComponent,
 } from './character-lcd-16x2-4bit-v1.mjs';
 import {
+  PCF8574_LCD_DEFINITION,
+  PCF8574_LCD_TYPE,
+  projectPcf8574LcdDisplays,
+  validatePcf8574LcdComponent,
+} from './pcf8574-lcd-backpack-v1.mjs';
+import {
   ROTARY_ENCODER_DEFINITION,
   ROTARY_ENCODER_TYPE,
   projectRotaryEncoders,
@@ -143,6 +149,7 @@ function pinIds(component) {
   if (component.type === ACTIVE_BUZZER_TYPE) return ['VCC', 'GND', 'EN'];
   if (component.type === SEVEN_SEGMENT_TYPE) return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'COM'];
   if (component.type === CHARACTER_LCD_TYPE) return ['VCC', 'GND', 'RS', 'RW', 'E', 'D4', 'D5', 'D6', 'D7'];
+  if (component.type === PCF8574_LCD_TYPE) return ['VCC', 'GND', 'SDA', 'SCL'];
   if (component.type === ROTARY_ENCODER_TYPE) return ['A', 'COM', 'B'];
   const definition = catalogType(component.type);
   return definition ? definition.pins.map((pin) => pin.id) : null;
@@ -159,6 +166,7 @@ function componentPins(component) {
   if (component.type === ACTIVE_BUZZER_TYPE) return ACTIVE_BUZZER_DEFINITION.pins;
   if (component.type === SEVEN_SEGMENT_TYPE) return SEVEN_SEGMENT_DEFINITION.pins;
   if (component.type === CHARACTER_LCD_TYPE) return CHARACTER_LCD_DEFINITION.pins;
+  if (component.type === PCF8574_LCD_TYPE) return PCF8574_LCD_DEFINITION.pins;
   if (component.type === ROTARY_ENCODER_TYPE) return ROTARY_ENCODER_DEFINITION.pins;
   return catalogType(component.type)?.pins ?? null;
 }
@@ -212,6 +220,10 @@ function validateCandidateComponent(component) {
   } else if (component.type === CHARACTER_LCD_TYPE) {
     if (!validateCharacterLcdComponent(component)) {
       fail('PROJECT_CONTACT_CHARACTER_LCD_STATE', [component.id]);
+    }
+  } else if (component.type === PCF8574_LCD_TYPE) {
+    if (!validatePcf8574LcdComponent(component)) {
+      fail('PROJECT_CONTACT_PCF8574_LCD_STATE', [component.id]);
     }
   } else if (component.type === ROTARY_ENCODER_TYPE) {
     if (!validateRotaryEncoderComponent(component)) {
@@ -594,7 +606,19 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
   })));
   for (const display of characterLcdProjection.displays) production(implementation, CHARACTER_LCD_TYPE,
     { lines: ['', ''] }, [display.componentId]);
-  const rotaryEncoderProjection = projectRotaryEncoders(characterLcdProjection.runtimeGraph);
+  const pcf8574LcdProjection = projectPcf8574LcdDisplays(characterLcdProjection.runtimeGraph);
+  if (!pcf8574LcdProjection.ok) {
+    fail(`PROJECT_CONTACT_${pcf8574LcdProjection.code}`, pcf8574LcdProjection.details);
+  }
+  contacts.push(...pcf8574LcdProjection.displays.map((display) => ({
+    componentId: display.componentId,
+    type: PCF8574_LCD_TYPE,
+    state: { geometry: '16x2', busMode: 'i2c-pcf8574-fixed-0x27' },
+    runtimeProjection: clone(display),
+  })));
+  for (const display of pcf8574LcdProjection.displays) production(implementation, PCF8574_LCD_TYPE,
+    { lines: ['', ''] }, [display.componentId]);
+  const rotaryEncoderProjection = projectRotaryEncoders(pcf8574LcdProjection.runtimeGraph);
   if (!rotaryEncoderProjection.ok) {
     fail(`PROJECT_CONTACT_${rotaryEncoderProjection.code}`, rotaryEncoderProjection.details);
   }

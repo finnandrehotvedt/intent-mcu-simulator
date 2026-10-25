@@ -121,6 +121,9 @@ import {
   openTemperatureLcdThresholdExample,
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
+  PCF8574_LCD_HELLO_CARD, PCF8574_LCD_HELLO_EXAMPLE_ID, createPcf8574LcdHelloExample,
+} from '../expansion-drafts/pcf8574-lcd-hello-example-v1.mjs';
+import {
   THERMOSTAT_EXPERIMENT_ID,
   THERMOSTAT_SCENARIOS,
   THERMOSTAT_TIME,
@@ -453,6 +456,7 @@ import {
   CHARACTER_LCD_TYPE,
   createCharacterLcd4BitDecoder,
 } from '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs';
+import { PCF8574_LCD_TYPE } from '../expansion-drafts/pcf8574-lcd-backpack-v1.mjs';
 import {
   ROTARY_ENCODER_TYPE,
   nextRotaryEncoderDetent,
@@ -11495,7 +11499,7 @@ function clearRuntimePresentation() {
     for (const wave of artwork.querySelectorAll('.buzzer-wave')) wave.classList.remove('on');
   }
   characterLcdRuntime.clear();
-  for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key="output-character-lcd-16x2-4bit"]')) {
+  for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key^="output-character-lcd-16x2"]')) {
     artwork.dataset.protocolState = 'awaiting-initialization';
     artwork.dataset.line1 = ''; artwork.dataset.line2 = '';
     artwork.querySelector('[data-lcd-line="1"]')?.replaceChildren();
@@ -12950,6 +12954,7 @@ function candidateComponentPrefix(type) {
       [ACTIVE_BUZZER_TYPE]: 'active-buzzer',
       [SEVEN_SEGMENT_TYPE]: 'seven-segment',
       [CHARACTER_LCD_TYPE]: 'character-lcd',
+      [PCF8574_LCD_TYPE]: 'pcf8574-lcd',
       [ROTARY_ENCODER_TYPE]: 'rotary-encoder',
   }[type] ?? null;
 }
@@ -13787,6 +13792,43 @@ function renderCharacterLcdRuntime(message) {
   publish({ characterLcd: published });
 }
 
+function renderPcf8574LcdRuntime(message) {
+  if (editor.kind !== 'candidate-project-v3') return;
+  const records = Array.isArray(message.i2c) ? message.i2c : [];
+  const published = [];
+  for (const support of (Array.isArray(editor.runtimeSupport) ? editor.runtimeSupport : []).filter(
+    (item) => item.type === PCF8574_LCD_TYPE && item.runtimeProjection,
+  )) {
+    const artwork = elements.componentlayer.querySelector(
+      `[data-component-id="${support.componentId}"] [data-artwork-key="output-character-lcd-16x2-pcf8574"]`,
+    );
+    if (!artwork) continue;
+    let record = characterLcdRuntime.get(support.componentId);
+    if (!record || message.cycle < record.cycle || records.length < record.traceLength) {
+      record = { decoder: modelLibraryImplementationFor(AVR_PROFILE)
+        .createPcf8574LcdDecoder(support.runtimeProjection.address), cycle: 0, traceLength: 0 };
+      characterLcdRuntime.set(support.componentId, record);
+    }
+    const snapshot = record.decoder.consume(records, { i2cDrops: message.retentionDrops?.i2c ?? 0 });
+    record.traceLength = records.length; record.cycle = message.cycle;
+    const decodedLines = snapshot.displayOn ? snapshot.lines : ['', ''];
+    const observed = modelLibraryImplementationFor(AVR_PROFILE)
+      .evaluateProduction(PCF8574_LCD_TYPE, { lines: decodedLines });
+    if (!observed.ok) throw Object.assign(new Error(observed.code), observed);
+    const lines = observed.result.lines;
+    artwork.dataset.protocolState = snapshot.status;
+    artwork.dataset.line1 = lines[0]; artwork.dataset.line2 = lines[1];
+    artwork.querySelector('[data-lcd-line="1"]')?.replaceChildren(lines[0]);
+    artwork.querySelector('[data-lcd-line="2"]')?.replaceChildren(lines[1]);
+    const detail = snapshot.error ? snapshot.error.code : `${snapshot.transactions} acknowledged bytes`;
+    const label = `${support.componentId}, line 1 ${JSON.stringify(lines[0])}, line 2 ${JSON.stringify(lines[1])}; fixed AVR I2C address 0x27; ${detail}`;
+    artwork.setAttribute('aria-label', label);
+    const title = artwork.querySelector('title'); if (title) title.textContent = label;
+    published.push({ componentId: support.componentId, ...snapshot, lines });
+  }
+  publish({ pcf8574Lcd: published });
+}
+
 function renderRuntime(message, { publishState = true } = {}) {
   if (publishState) publish({ runtime: structuredClone(message) });
   renderInstrumentEvidence(message);
@@ -13816,6 +13858,7 @@ function renderRuntime(message, { publishState = true } = {}) {
   renderActiveBuzzerRuntime(message);
   renderSevenSegmentRuntime(message);
   renderCharacterLcdRuntime(message);
+  renderPcf8574LcdRuntime(message);
   const trace = Array.isArray(message.trace) ? message.trace : [];
   const transitions = trace.filter((entry) => entry.pin === 13).slice(-8).reverse();
   elements.trace.replaceChildren(...(transitions.length ? transitions : [null]).map((entry) => {
@@ -13935,6 +13978,10 @@ async function loadArtifact(hex, artifactIdentity, {
     modelImplementationSha256,
     modelExecutionContextSha256,
     digitalInputs: structuredClone(currentCandidateInputs()),
+    i2cDevices: editor.kind === 'candidate-project-v3'
+      ? editor.runtimeSupport.filter((item) => item.type === PCF8574_LCD_TYPE).map((item) => ({
+        type: 'pcf8574-lcd', address: item.runtimeProjection.address,
+      })) : [],
     instruments: {
       logicChannels: [...project.instruments.logicChannels],
       selectedPin: project.instruments.selectedPin,
@@ -14209,6 +14256,7 @@ async function loadArtifact(hex, artifactIdentity, {
     ...(authority ? { x47RuntimeAuthority: structuredClone(authority) } : {}),
     ...(frozen.x34Probe ? { x34Probe: frozen.x34Probe } : {}),
     digitalInputs: frozen.digitalInputs,
+    i2cDevices: frozen.i2cDevices,
     instruments: {
       logicChannels: frozen.instruments.logicChannels,
       selectedPin: frozen.instruments.selectedPin,
@@ -15319,6 +15367,30 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
     elements.projectmessage.textContent = `${example.name} loaded as authored data only. Build fresh, then ${example.try.toLowerCase()}`;
     return { ok: true, code: parsed.code, example };
   }
+  if (exampleId === PCF8574_LCD_HELLO_EXAMPLE_ID) {
+    const before = currentProjectText(); let example;
+    try { example = createPcf8574LcdHelloExample(); }
+    catch (error) {
+      showActionableError(elements.projectmessage, error?.message ?? 'EXAMPLE_INVALID', 'I2C LCD example could not be constructed.');
+      return { ok: false, code: error?.message ?? 'EXAMPLE_INVALID' };
+    }
+    const parsed = modelLibraryImplementationFor(AVR_PROFILE).openCandidateUiSession(example.text, {
+      modelLibraryLock: modelLibraryLockFor(AVR_PROFILE),
+    });
+    if (!parsed.ok) {
+      showActionableError(elements.projectmessage, parsed.code, 'I2C LCD example was rejected atomically; project unchanged.');
+      if (currentProjectText() !== before) throw new Error('Atomic I2C LCD starter boundary violated');
+      return parsed;
+    }
+    editor = parsed.session; scenarioTimelineEditor = null; authoredScenarioResults = [];
+    clearExpectationReference(); resetProjectModelLibrary(AVR_PROFILE);
+    installProjectGeneration({ empty: false, reason, runtimeMessage: `${example.name} loaded — build required` });
+    selectedSourceFile = 'main.ino'; elements.exampleselect.value = exampleId;
+    persistProject(); publish({ lastAction: 'PCF8574_LCD_HELLO_LOADED', importReport: parsed.report ?? parsed.code });
+    renderCatalog(); renderProject();
+    elements.projectmessage.textContent = `${example.name} loaded with fixed 0x27, A4/SDA and A5/SCL wiring.`;
+    return { ok: true, code: parsed.code, example };
+  }
   if (exampleId === THERMOSTAT_EXPERIMENT_ID) {
     const before = currentProjectText();
     let example;
@@ -15401,7 +15473,7 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
 }
 
 function renderStarterExamples() {
-  const cards = [...exampleCatalog(), TEMPERATURE_LCD_THRESHOLD_CARD, THERMOSTAT_EXPERIMENT_CARD, ...avrReferenceStarterCatalog()].map((example) => {
+  const cards = [...exampleCatalog(), TEMPERATURE_LCD_THRESHOLD_CARD, PCF8574_LCD_HELLO_CARD, THERMOSTAT_EXPERIMENT_CARD, ...avrReferenceStarterCatalog()].map((example) => {
     const card = document.createElement('article'); card.className = 'starter-card'; card.dataset.example = example.id;
     const visual = document.createElement('span'); visual.className = 'starter-visual'; visual.setAttribute('aria-hidden', 'true');
     const meta = document.createElement('span'); meta.className = 'starter-meta';

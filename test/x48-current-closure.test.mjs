@@ -32,7 +32,7 @@ test('X48 current identity owns every newly executed path', async () => {
     assert.equal(createHash('sha256').update(bytes).digest('hex'), members.get(path), path);
   }
   assert.equal(CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    '2.0.0-pwm-led-short-routing.1-current');
+    '2.0.0-lcd-end-to-end.1-current');
 });
 
 test('current resolver manifest and admitted execution identity use one exact implementation ID', () => {
@@ -59,9 +59,9 @@ test('accepted public rc.111 manifest is preserved byte-for-byte as migration-on
   const preview = modelLibraryMigrationPreview(RC111_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
   assert.equal(preview.migrationRequired, true);
-  assert.deepEqual(preview.semanticChanges, []);
+  assert.equal(preview.semanticChanges.length, 4);
   assert.deepEqual(preview.rendererChanges, []);
-  assert.equal(preview.unchanged.length, 25);
+  assert.equal(preview.unchanged.length, 22);
 });
 
 test('accepted public rc.112 current object is complete, immutable and migration-only', async () => {
@@ -79,9 +79,9 @@ test('accepted public rc.112 current object is complete, immutable and migration
   const preview = modelLibraryMigrationPreview(RC112_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
   assert.equal(preview.migrationRequired, true);
-  assert.deepEqual(preview.semanticChanges, []);
+  assert.equal(preview.semanticChanges.length, 4);
   assert.deepEqual(preview.rendererChanges, []);
-  assert.equal(preview.unchanged.length, 25);
+  assert.equal(preview.unchanged.length, 22);
 });
 
 test('the older pre-X48 authority identity remains separately immutable and migration-only', () => {
@@ -107,6 +107,7 @@ test('the older pre-X48 current alias remains byte-exact and cannot execute as X
   const preview = modelLibraryMigrationPreview(PRE_X48_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
   assert.equal(preview.migrationRequired, true);
-  assert.deepEqual(preview.semanticChanges, []);
+  assert.equal(preview.semanticChanges.length, 4);
   assert.deepEqual(preview.rendererChanges, []);
+  assert.equal(preview.unchanged.length, 22);
 });

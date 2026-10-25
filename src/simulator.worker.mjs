@@ -329,6 +329,7 @@ async function handleMessage(data) {
           ...(data.x34Probe ? { x34Probe: data.x34Probe } : {}),
           ...(data.x35Probe ? { x35Probe: data.x35Probe } : {}),
           ...(data.x47RuntimeAuthority ? { x47RuntimeAuthority: data.x47RuntimeAuthority } : {}),
+          ...(data.i2cDevices ? { i2cDevices: data.i2cDevices } : {}),
         });
         kernel = candidate;
         validatedModelExecutionContextSha256 = binding.modelExecutionContextSha256;
