@@ -300,6 +300,7 @@ import {
   emptyProjectBrief,
   migrateProjectModelLibrary,
   normalizeProjectBrief,
+  preparePublishedRecoveryProjectEnvelope,
   prepareProjectEnvelope,
 } from '../src/project-envelope.mjs';
 import {
@@ -496,7 +497,8 @@ const elements = Object.fromEntries([
   'local-history-status', 'local-history-list', 'local-history-confirm',
   'local-history-confirm-title', 'local-history-confirm-description', 'local-history-confirm-status',
   'local-history-confirm-cancel', 'local-history-confirm-accept',
-  'project-reload', 'project-draft-recovery', 'project-draft-recover', 'project-export', 'project-import',
+  'project-reload', 'browser-draft-recovery', 'project-draft-recovery', 'project-draft-recover',
+  'project-draft-recovery-status', 'project-export', 'project-import',
   'project-import-mode', 'undo', 'redo', 'prompt-generate', 'prompt-copy', 'prompt-output', 'prompt-response',
   'prompt-mode', 'prompt-apply', 'prompt-message', 'component-controls',
   'editor-title', 'source-file', 'source-file-name', 'source-file-add', 'source-file-remove',
@@ -717,8 +719,8 @@ try {
     sessionStorage.setItem(TAB_DRAFT_ID_KEY, activeDraftId);
   }
 } catch { activeDraftId = null; }
-const activeProjectStorageKey = activeDraftId ? `${PROJECT_STORAGE_KEY}.tab.${activeDraftId}` : PROJECT_STORAGE_KEY;
-const activeProjectRecoveryKey = activeDraftId ? `${PROJECT_RECOVERY_KEY}.tab.${activeDraftId}` : PROJECT_RECOVERY_KEY;
+let activeProjectStorageKey = activeDraftId ? `${PROJECT_STORAGE_KEY}.tab.${activeDraftId}` : PROJECT_STORAGE_KEY;
+let activeProjectRecoveryKey = activeDraftId ? `${PROJECT_RECOVERY_KEY}.tab.${activeDraftId}` : PROJECT_RECOVERY_KEY;
 const profileDraftStorageKey = (profile) => `intent-mcu.profile-draft.v1.${profile}.tab.${activeDraftId ?? 'fallback'}`;
 function reportControllerDraftFailure(profile, message) {
   profileMessage(profile, message);
@@ -756,7 +758,7 @@ function persistControllerDraft(profile, workbench) {
       schema: 'intent-mcu-profile-draft@1', profile, project: validatedProject,
       authoredSource: inputs?.[0]?.value ?? workbench.project.source,
       authoredName: inputs?.[1]?.value.trim() || workbench.project.name,
-      circuit,
+      circuit, updatedAt: new Date().toISOString(),
     }));
     return true;
   } catch (error) {
@@ -7570,7 +7572,7 @@ function prepareAuthoredProjectEnvelope(source) {
         annotations: opened.workspace.annotations, subcircuits: opened.workspace.subcircuits };
     } catch (error) { return { ok: false, code: error.code ?? error.message }; }
   }
-  return prepareProjectEnvelope(source, commonProjectAdapters);
+  return preparePublishedRecoveryProjectEnvelope(source, commonProjectAdapters);
 }
 function parseAvrRecoverySource(source) {
   const common = prepareAuthoredProjectEnvelope(source);
@@ -8132,14 +8134,16 @@ const projectBaselines = new Map();
 let pendingDestructiveProjectAction = null;
 let destructiveActionSequence = 0;
 function setProjectBaseline(profile) {
-  projectBaselines.set(profile, authoredProjectText(profile));
+  // Source editors intentionally allow an in-progress, not-yet-build-valid
+  // program. Baseline tracking must still preserve and compare that draft
+  // instead of throwing while the user is midway through an edit.
+  projectBaselines.set(profile, authoredProjectFingerprint(profile));
   if (profile === AVR_PROFILE) canvasAnnotationBaseline = canvasReadabilitySnapshot();
 }
 function isProjectDirty(profile) {
   const baseline = projectBaselines.get(profile);
   if (baseline === undefined) return false;
-  try { return authoredProjectText(profile) !== baseline; }
-  catch { return true; }
+  return authoredProjectFingerprint(profile) !== baseline;
 }
 function authoredProjectFingerprint(profile) {
   try { return authoredProjectText(profile); }
@@ -9403,7 +9407,7 @@ window.__X68_PRESENTATION_VIEW__ = Object.freeze({
   persistence: false,
 });
 function normalizeTeachingExerciseProject(value, { variantId } = {}) {
-  const prepared = prepareProjectEnvelope(JSON.stringify(value), commonProjectAdapters);
+  const prepared = preparePublishedRecoveryProjectEnvelope(JSON.stringify(value), commonProjectAdapters);
   if (!prepared.ok) throw Object.assign(new Error(prepared.code), prepared);
   if (prepared.profile !== TEACHING_EXERCISE_PROFILE || !isThermostatExperimentProject(prepared.project)
       || thermostatFirmwareVariant(prepared.project) !== variantId) {
@@ -11033,16 +11037,96 @@ function draftRegistry() {
     return Array.isArray(parsed) ? parsed.filter((item) => item && /^[a-f0-9-]{16,64}$/u.test(item.id ?? '')) : [];
   } catch { return []; }
 }
+const RECOVERY_PROFILE_LABELS = Object.freeze({
+  [AVR_PROFILE]: 'ATmega328P',
+  [RP2040_PROFILE]: 'RP2040 Pico',
+  [ESP32C3_PROFILE]: 'ESP32-C3',
+  [STM32F429ZI_PROFILE]: 'STM32F429ZI',
+});
+function storageKeys() {
+  const keys = [];
+  try {
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (key) keys.push(key);
+    }
+  } catch { /* unavailable storage produces an honest empty list */ }
+  return keys.sort();
+}
+function draftKeyIdentity(key) {
+  if (key === PROJECT_STORAGE_KEY || key === PROJECT_RECOVERY_KEY) {
+    return { profile: AVR_PROFILE, draftId: 'legacy-global', journal: key === PROJECT_RECOVERY_KEY };
+  }
+  for (const [prefix, journal] of [[`${PROJECT_STORAGE_KEY}.tab.`, false], [`${PROJECT_RECOVERY_KEY}.tab.`, true]]) {
+    if (key.startsWith(prefix)) return { profile: AVR_PROFILE, draftId: key.slice(prefix.length), journal };
+  }
+  const prefix = 'intent-mcu.profile-draft.v1.';
+  if (!key.startsWith(prefix)) return null;
+  for (const profile of [RP2040_PROFILE, ESP32C3_PROFILE, STM32F429ZI_PROFILE]) {
+    const marker = `${prefix}${profile}.tab.`;
+    if (key.startsWith(marker)) return { profile, draftId: key.slice(marker.length), journal: false };
+  }
+  return null;
+}
+function inspectPreservedDraft(key, raw, registryById = new Map()) {
+  const identity = draftKeyIdentity(key);
+  if (!identity || typeof raw !== 'string') return null;
+  try {
+    if (identity.profile === AVR_PROFILE) {
+      const prepared = prepareAuthoredProjectEnvelope(raw);
+      if (!prepared.ok || prepared.profile !== AVR_PROFILE) throw new Error(prepared.code ?? 'RECOVERY_PROJECT_INVALID');
+      const project = prepared.project;
+      return { key, raw, ...identity, valid: true, prepared,
+        name: project.metadata?.name ?? project.name ?? 'Untitled project',
+        components: project.circuit?.components?.length ?? 0, nets: project.circuit?.nets?.length ?? 0,
+        migrationOnly: Boolean(prepared.publishedRecovery),
+        recoveryRelease: prepared.publishedRecovery?.release ?? null,
+        updatedAt: registryById.get(identity.draftId)?.updatedAt ?? null };
+    }
+    const envelope = JSON.parse(raw);
+    if (envelope?.schema !== 'intent-mcu-profile-draft@1' || envelope.profile !== identity.profile
+        || !envelope.project || !envelope.circuit || typeof envelope.authoredSource !== 'string'
+        || typeof envelope.authoredName !== 'string' || !envelope.authoredName.trim()) throw new Error('PROFILE_DRAFT_IDENTITY');
+    const candidate = structuredClone(envelope.project);
+    candidate.circuit = structuredClone(envelope.circuit);
+    const normalized = commonProjectAdapters[identity.profile].prepare(candidate).project;
+    return { key, raw, ...identity, valid: true, project: normalized,
+      authoredSource: envelope.authoredSource, authoredName: envelope.authoredName.trim(),
+      name: envelope.authoredName.trim(),
+      components: normalized.circuit?.components?.length ?? 0, nets: normalized.circuit?.nets?.length ?? 0,
+      updatedAt: Number.isNaN(Date.parse(envelope.updatedAt))
+        ? registryById.get(identity.draftId)?.updatedAt ?? null : envelope.updatedAt };
+  } catch (error) {
+    return { key, raw, ...identity, valid: false, code: error.code ?? error.message ?? 'RECOVERY_PROJECT_INVALID',
+      name: 'Invalid preserved bytes', components: null, nets: null,
+      updatedAt: registryById.get(identity.draftId)?.updatedAt ?? null };
+  }
+}
+function preservedDrafts() {
+  const registryById = new Map(draftRegistry().map((item) => [item.id, item]));
+  return storageKeys().map((key) => {
+    let raw = null;
+    try { raw = localStorage.getItem(key); } catch { /* represented by omission */ }
+    return inspectPreservedDraft(key, raw, registryById);
+  }).filter(Boolean).sort((left, right) => {
+    if (left.valid !== right.valid) return left.valid ? -1 : 1;
+    return String(right.updatedAt ?? '').localeCompare(String(left.updatedAt ?? '')) || left.key.localeCompare(right.key);
+  });
+}
+function preservedDraftLabel(draft) {
+  const profile = RECOVERY_PROFILE_LABELS[draft.profile] ?? draft.profile;
+  const time = draft.updatedAt ? new Date(draft.updatedAt).toLocaleString() : 'saved time unknown';
+  const migration = draft.migrationOnly ? ` · ${draft.recoveryRelease} data-only migration` : '';
+  const graph = draft.valid ? `${draft.components} parts · ${draft.nets} nets${migration}` : `invalid · ${draft.code}`;
+  const location = draft.draftId === activeDraftId ? 'current tab key' : draft.journal ? 'interrupted save' : 'preserved key';
+  const identity = draft.draftId === 'legacy-global' ? 'legacy' : draft.draftId.slice(0, 8);
+  return `${profile} · ${draft.name} · ${time} · ${graph} · draft ${identity} · ${location}`;
+}
 function renderDraftRecoveryChoices() {
-  const choices = draftRegistry().filter((item) => item.id !== activeDraftId)
-    .filter((item) => {
-      try { return Boolean(localStorage.getItem(`${PROJECT_STORAGE_KEY}.tab.${item.id}`)); } catch { return false; }
-    });
+  const choices = preservedDrafts();
   elements.projectdraftrecovery.replaceChildren(new Option(
-    choices.length ? 'Choose a preserved draft…' : 'No other local drafts', '', true, true,
-  ), ...choices.map((item) => new Option(
-    `${item.name || 'Untitled project'} · ${new Date(item.updatedAt).toLocaleString()}`, item.id,
-  )));
+    choices.length ? 'Choose any preserved browser draft…' : 'No local drafts found', '', true, true,
+  ), ...choices.map((item) => new Option(preservedDraftLabel(item), item.key)));
   elements.projectdraftrecover.disabled = true;
 }
 function registerActiveDraft(name) {
@@ -15412,37 +15496,120 @@ elements.projectreload.addEventListener('click', () => {
   savedRevision = editor.revision; savedProjectGeneration = lifecycle.projectGeneration;
   setProjectBaseline(AVR_PROFILE); renderCatalog(); renderProject(); elements.projectmessage.textContent = 'Restored and revalidated browser recovery, including visual annotations. Previous runtime output was cleared; save a project file for durable storage.';
 });
+function forkDraftForRecovery(nextId = crypto.randomUUID()) {
+  sessionStorage.setItem(TAB_DRAFT_ID_KEY, nextId);
+  activeDraftId = nextId;
+  activeProjectStorageKey = `${PROJECT_STORAGE_KEY}.tab.${nextId}`;
+  activeProjectRecoveryKey = `${PROJECT_RECOVERY_KEY}.tab.${nextId}`;
+  writeDraftLease();
+  return nextId;
+}
+function installPreservedDraftCopy(draft) {
+  if (!draft?.valid) return { ok: false, code: draft?.code ?? 'RECOVERY_PROJECT_INVALID' };
+  const sourceRaw = localStorage.getItem(draft.key);
+  if (sourceRaw !== draft.raw) return { ok: false, code: 'RECOVERY_SOURCE_CHANGED' };
+  const copyDraftId = crypto.randomUUID();
+  const copyKey = draft.profile === AVR_PROFILE
+    ? `${PROJECT_STORAGE_KEY}.tab.${copyDraftId}`
+    : `intent-mcu.profile-draft.v1.${draft.profile}.tab.${copyDraftId}`;
+  try {
+    if (localStorage.getItem(copyKey) !== null) return { ok: false, code: 'RECOVERY_COPY_KEY_COLLISION' };
+    localStorage.setItem(copyKey, draft.profile === AVR_PROFILE ? sourceRaw : JSON.stringify({
+      schema: 'intent-mcu-profile-draft@1', profile: draft.profile,
+      project: structuredClone(draft.project), authoredSource: draft.authoredSource,
+      authoredName: draft.authoredName, circuit: structuredClone(draft.project.circuit),
+      updatedAt: new Date().toISOString(),
+    }));
+  } catch { return { ok: false, code: 'RECOVERY_COPY_SAVE_FAILED' }; }
+  try { forkDraftForRecovery(copyDraftId); }
+  catch {
+    try { localStorage.removeItem(copyKey); } catch { /* harmless unregistered copy remains recoverable */ }
+    return { ok: false, code: 'RECOVERY_COPY_ACTIVATION_FAILED' };
+  }
+  if (draft.profile === AVR_PROFILE) {
+    installPreparedProjectEnvelope(draft.prepared, null, {
+      annotations: draft.prepared.annotations ?? null,
+      subcircuits: draft.prepared.subcircuits ?? null,
+    });
+  } else {
+    if (selectedCompilerProfile !== draft.profile) {
+      elements.boardselect.value = draft.profile;
+      elements.boardselect.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    const workbench = actionWorkbench(draft.profile);
+    if (!workbench) return { ok: false, code: 'RECOVERY_PROFILE_UNSUPPORTED' };
+    workbench.installPreparedProject(structuredClone(draft.project), 'Opened a validated preserved copy. Build fresh before Run.');
+    workbench.project.source = draft.authoredSource;
+    workbench.project.name = draft.authoredName;
+    workbench.elements.source.value = draft.authoredSource;
+    workbench.elements.name.value = draft.authoredName;
+    workbench.invalidate('Opened a validated preserved copy. Build fresh before Run.');
+    // A preserved draft may contain source that was still being edited and is
+    // therefore not build-valid yet. authoredProjectFingerprint has an
+    // in-progress fallback, so the exact recovered state can still be the
+    // clean baseline and every subsequent Inspector/source/layout edit is
+    // protected by the ordinary unsaved-change guard.
+    setProjectBaseline(draft.profile);
+  }
+  corruptControllerDraftProfiles.delete(draft.profile);
+  registerActiveDraft(draft.name);
+  if (localStorage.getItem(draft.key) !== sourceRaw) throw new Error('RECOVERY_ORIGINAL_MUTATED');
+  renderDraftRecoveryChoices();
+  return { ok: true, code: 'RECOVERY_COPY_OPENED', copyDraftId };
+}
 elements.projectdraftrecovery.addEventListener('change', () => {
   elements.projectdraftrecover.disabled = !elements.projectdraftrecovery.value;
 });
+function presentDraftRecoveryStatus(message) {
+  elements.projectdraftrecoverystatus.textContent = message;
+  elements.browserdraftrecovery.open = true;
+  sharedWorkbenchShell.openDialog('project', document.querySelector('#project-files-open'), {
+    initialFocus: false,
+  });
+  queueMicrotask(() => { elements.browserdraftrecovery.open = true; });
+}
 elements.projectdraftrecover.addEventListener('click', () => {
   const recover = () => {
-    const draftId = elements.projectdraftrecovery.value;
-    let source = null;
-    try { source = localStorage.getItem(`${PROJECT_STORAGE_KEY}.tab.${draftId}`); } catch { /* handled below */ }
-    const parsed = source ? parseAvrRecoverySource(source) : { ok: false, code: 'NO_LOCAL_SAVE' };
-    if (!parsed.ok) {
-      showActionableError(elements.projectmessage, parsed.code, 'The preserved draft was left untouched because validation failed.');
+    const key = elements.projectdraftrecovery.value;
+    let raw = null;
+    try { raw = localStorage.getItem(key); } catch { /* handled below */ }
+    const draft = inspectPreservedDraft(key, raw,
+      new Map(draftRegistry().map((item) => [item.id, item])));
+    if (!draft?.valid) {
+      showActionableError(elements.projectmessage, draft?.code ?? 'NO_LOCAL_SAVE',
+        'The original preserved bytes remain untouched. Export browser storage before attempting manual recovery.');
+      const message = 'Recovery rejected because this saved entry is invalid. The original preserved bytes remain untouched.';
+      elements.projectmessage.textContent = message;
+      presentDraftRecoveryStatus(message);
       return;
     }
-    editor = parsed.session;
-    scenarioTimelineEditor = parsed.scenarioTimeline ? new ScenarioTimelineEditor(parsed.scenarioTimeline) : null;
-    authoredScenarioResults = [];
-    clearExpectationReference();
-    if (parsed.modelLibrary) projectModelLibraryLocks.set(AVR_PROFILE, structuredClone(parsed.modelLibrary));
-    installProjectGeneration({
-      empty: editor.project.circuit.components.length === 0, reason: 'project.reload',
-      runtimeMessage: 'Recovered draft requires build',
-    });
-    selectedSourceFile = 'main.ino';
-    resetCanvasAnnotations(parsed.annotations ?? emptyCanvasAnnotations(), {
-      subcircuits: parsed.subcircuits ?? emptySubcircuits(parsed.modelLibrary),
-    });
-    persistProject();
-    setProjectBaseline(AVR_PROFILE); renderCatalog(); renderProject();
-    elements.projectmessage.textContent = 'Opened a validated copy of the preserved draft in this tab. The original draft remains unchanged; Build fresh before Run.';
+    let result;
+    try { result = installPreservedDraftCopy(draft); }
+    catch (error) {
+      showActionableError(elements.projectmessage, error.code ?? error.message ?? 'RECOVERY_COPY_FAILED',
+        `Recovery stopped (${error.code ?? error.message ?? error.name}). The original preserved bytes remain untouched; any validated in-memory copy remains available for Save copy.`);
+      presentDraftRecoveryStatus(`Recovery stopped (${error.code ?? error.message ?? error.name}). The original preserved bytes remain untouched; any validated in-memory copy remains available for Save copy.`);
+      return;
+    }
+    if (!result.ok) {
+      showActionableError(elements.projectmessage, result.code,
+        'Recovery stopped. The original preserved bytes remain untouched.');
+      const message = `Recovery stopped (${result.code}). The original preserved bytes remain untouched.`;
+      elements.projectmessage.textContent = message;
+      presentDraftRecoveryStatus(message);
+      return;
+    }
+    const migration = draft.migrationOnly
+      ? ` Published ${draft.recoveryRelease} identity was migrated as data only; executable authority was cleared and a fresh Build is required.` : '';
+    const message = `Opened validated ${RECOVERY_PROFILE_LABELS[draft.profile]} copy in separate draft ${result.copyDraftId.slice(0, 8)}…: ${draft.name}, ${draft.components} parts, ${draft.nets} nets. Original key unchanged.${migration} Revision 0 and empty Undo history after recovery are expected; use Fit project if the graph count is non-zero but parts are offscreen.`;
+    elements.projectmessage.textContent = message;
+    presentDraftRecoveryStatus(message);
   };
-  if (requestUnsavedChangeGuard({ profile: AVR_PROFILE, actionLabel: 'recovering another local draft', continueAction: recover })) return;
+  const selected = preservedDrafts().find((draft) => draft.key === elements.projectdraftrecovery.value);
+  const profile = selected?.profile ?? selectedCompilerProfile;
+  if (requestUnsavedChangeGuard({ profile: selectedCompilerProfile,
+    actionLabel: `opening a preserved ${RECOVERY_PROFILE_LABELS[profile] ?? profile} copy in a separate draft`,
+    continueAction: recover })) return;
   recover();
 });
 elements.projectexport.addEventListener('click', () => saveLegacyProject(AVR_PROFILE));

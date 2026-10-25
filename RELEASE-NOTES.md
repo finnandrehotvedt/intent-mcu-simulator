@@ -1,4 +1,32 @@
-# Intent MCU Simulator 1.1.0-rc.137
+# Intent MCU Simulator 1.1.0-rc.138
+
+## Four-profile preserved-draft recovery
+
+Rc.138 adds one shared browser-recovery view for AVR, RP2040 Pico, ESP32-C3
+and STM32F429ZI. It scans the bounded project-owned Local Storage key space so
+older valid non-AVR drafts remain discoverable even when historical builds did
+not register them. Each entry identifies its controller profile, authored
+name, known save time, and validated part/net counts.
+
+Recovery validates first, allocates a fresh per-tab draft ID and installs a
+separate copy. The original key and bytes remain unchanged. Authored source,
+name, circuit and layout are preserved, including source that was saved while
+still being edited and is not build-valid yet. Invalid entries are disclosed
+and rejected without replacing the current project. Revision 0 and empty Undo
+history after reconstruction are expected and stated in the interface.
+
+The exact locks shipped by public rc.136 and rc.137 are accepted only by this
+data-recovery path. They migrate validated authored data into the new copy,
+clear executable authority and require a fresh Build. Unknown or neighboring
+lock identities remain rejected, and original historical bytes stay intact.
+
+This source-only candidate performs no native Build or Run and makes no
+deployment change. Rc.137 remains the prior source release; deployment state
+continues to belong to the separate deployment checkpoint.
+
+---
+
+## 1.1.0-rc.137
 
 ## Four-profile canonical API and resilient persistent client
 

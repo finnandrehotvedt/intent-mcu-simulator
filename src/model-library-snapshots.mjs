@@ -129249,7 +129249,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/project-envelope.mjs",
-      "sha256": "ff4ab3f6680d2b5f0c6aabc16537062465fc85381d4b6d1fc642a39a14094adf"
+      "sha256": "bfd8825dc0acf84900e7a318d63a1ed38fe70cb8ef25fe3971b640a1215ca547"
     },
     {
       "path": "src/model-control-contracts.mjs",
@@ -129261,7 +129261,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "5d7f0fc71e35fc6eefcfb1d1b9d001fc0b361f1ee682cff1d5ca609265ddc718"
+      "sha256": "1bad8b094d75d0b1d3de67526b4d4871ccaabe2148bd008cad5c4c053297544f"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -129277,7 +129277,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/shared-workbench-shell.mjs",
-      "sha256": "15b6956070b236a38b6349e8f54a3244bfa2124e36c8e1d6386fb48ae5d1678d"
+      "sha256": "f1b46e67293c96bc3b30574c4b1240a3ba7b18c9fa3c7acb8277dd194f289e56"
     },
     {
       "path": "src/rp2040-snapshot-pacer.mjs",
@@ -129404,7 +129404,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "a60dd552da826bcf74e23eb7f8457de1ae1e8dd31f313536cb737f8a9d965507"
     }
   ],
-  "implementationSha256": "7dfa75c67b84ba2b1f04002f2c1ee5d6a3c84dea94a263a09adb47a277bde71d",
+  "implementationSha256": "aa4b97113d6521d0e04b45da8b5200ef4ee98e65ccd7f859d9436dc12af9b877",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.125 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, real worker, run, image build or deployment",
@@ -129414,7 +129414,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-config-producer.2-current",
     "semanticDisposition": "component, firmware and electrical semantics remain unchanged; paired read-only AVR USART0 RX peripheral-model events are added"
   },
-  "manifestSha256": "709444f9c162942ebe960f43cdc8147300c93877100a34a5630a1e1c7bd63c4d",
+  "manifestSha256": "1be8d872f3fa67a61afead436887686c57082dfd5ad68dc20511c12c80a4a0cb",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

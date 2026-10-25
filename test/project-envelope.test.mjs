@@ -9,7 +9,8 @@ import {
   PREVIOUS_PROJECT_BRIEF_SCHEMA, PREVIOUS_PROJECT_ENVELOPE_SCHEMA,
   PROJECT_BRIEF_SCHEMA, PROJECT_ENVELOPE_SCHEMA, SCENARIOLESS_PROJECT_ENVELOPE_SCHEMA,
   TRACE_PROJECT_BRIEF_SCHEMA, TRACE_PROJECT_ENVELOPE_SCHEMA,
-  canonicalProjectEnvelope, emptyProjectBrief, migrateProjectModelLibrary, prepareProjectEnvelope,
+  canonicalProjectEnvelope, emptyProjectBrief, migrateProjectModelLibrary,
+  prepareProjectEnvelope, preparePublishedRecoveryProjectEnvelope,
 } from '../src/project-envelope.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, RC111_CURRENT_MODEL_LIBRARY_LOCK,
@@ -483,6 +484,37 @@ test('current envelope rejects a rehashed or unknown model-library lock atomical
   const envelope = JSON.parse(canonicalProjectEnvelope(profile, project, adapters));
   envelope.modelLibrary = { ...envelope.modelLibrary, version: 'forged', manifestSha256: 'a'.repeat(64) };
   assert.equal(prepareProjectEnvelope(JSON.stringify(envelope), adapters).code, 'MODEL_LIBRARY_LOCK_UNTRUSTED');
+});
+
+test('published rc136 and rc137 locks are exact data-only recovery anchors while unknown locks remain rejected', () => {
+  const current = JSON.parse(canonicalProjectEnvelope(profile, project, adapters));
+  const published = [
+    ['1.1.0-rc.136', '49f5b582520551f6c7c3f68cd196c616dfde297988b7a85497e4e42664c97128',
+      'cfaf5e18f657b2663c6ac776604af9d8aa3313997b36312e0dfe4b25359154d3'],
+    ['1.1.0-rc.137', '709444f9c162942ebe960f43cdc8147300c93877100a34a5630a1e1c7bd63c4d',
+      '7dfa75c67b84ba2b1f04002f2c1ee5d6a3c84dea94a263a09adb47a277bde71d'],
+  ];
+  for (const [release, manifestSha256, implementationSha256] of published) {
+    const envelope = structuredClone(current);
+    envelope.modelLibrary = { ...envelope.modelLibrary, manifestSha256, implementationSha256 };
+    const source = JSON.stringify(envelope);
+    assert.equal(prepareProjectEnvelope(source, adapters).code, 'MODEL_LIBRARY_LOCK_UNTRUSTED');
+    const recovered = preparePublishedRecoveryProjectEnvelope(source, adapters);
+    assert.equal(recovered.ok, true);
+    assert.equal(recovered.code, 'PROJECT_ENVELOPE_PUBLISHED_LOCK_RECOVERED');
+    assert.equal(recovered.originalUnchanged, source);
+    assert.equal(recovered.publishedRecovery.release, release);
+    assert.equal(recovered.publishedRecovery.migrationOnly, true);
+    assert.equal(recovered.publishedRecovery.executableAuthority, false);
+    assert.equal(recovered.publishedRecovery.freshBuildRequired, true);
+    assert.deepEqual(recovered.project, project);
+    assert.deepEqual(recovered.modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
+  }
+  const unknown = structuredClone(current);
+  unknown.modelLibrary = { ...unknown.modelLibrary, manifestSha256: 'a'.repeat(64),
+    implementationSha256: 'b'.repeat(64) };
+  assert.equal(preparePublishedRecoveryProjectEnvelope(JSON.stringify(unknown), adapters).code,
+    'MODEL_LIBRARY_LOCK_UNTRUSTED');
 });
 
 test('published rc.124 project data opens migration-only while neighboring hashes remain atomic', () => {

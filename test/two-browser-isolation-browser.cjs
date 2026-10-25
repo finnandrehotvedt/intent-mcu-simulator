@@ -55,7 +55,7 @@ const base = process.env.TWO_BROWSER_URL || 'http://127.0.0.1:18932';
     assert.doesNotMatch(await tabA2.evaluate(() => window.__M6_PROJECT__().source.files[0].content), /browser-owner-A/u);
 
     await pageB.click('#beginner-examples');
-    await pageB.click('.starter-card[data-example="button"]');
+    await pageB.click('.starter-card[data-example="button"] .starter-action');
     if (await pageB.locator('#unsaved-change-dialog').isVisible()) await pageB.click('#unsaved-discard');
     await pageB.waitForFunction(() => window.__M6_PROJECT__().metadata.name === 'Button input');
     assert.equal(await pageA.evaluate(() => window.__M6_PROJECT__().metadata.name), 'Blink demo');
@@ -85,7 +85,7 @@ const base = process.env.TWO_BROWSER_URL || 'http://127.0.0.1:18932';
     ]);
     assert.notEqual(duplicateDraftId, originalDraftId, 'duplicate/opener tab must fork its writable draft key');
     await duplicate.click('#beginner-examples');
-    await duplicate.click('.starter-card[data-example="adc"]');
+    await duplicate.click('.starter-card[data-example="adc"] .starter-action');
     if (await duplicate.locator('#unsaved-change-dialog').isVisible()) await duplicate.click('#unsaved-discard');
     assert.equal(await pageA.evaluate(() => window.__M6_PROJECT__().circuit.components.length), 0,
       'duplicate tab edits must not clobber the opener');

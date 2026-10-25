@@ -49,6 +49,40 @@ const base = process.env.DRAFT_SAFETY_URL || 'http://127.0.0.1:18932';
     for (const result of nonFinite) assert.deepEqual(result, { accepted: false, unchanged: true },
       'non-finite authored value was accepted or changed a profile draft');
     assert.doesNotMatch(await startup.locator('#project-message').innerText(), /Browser recovery .* could not be saved/iu);
+    await startup.selectOption('#board-select', 'board.rp2040-pico-v1');
+    const recoveryQuota = await startup.evaluate(() => {
+      const activeId = sessionStorage.getItem('intent-mcu.active-draft-id.v1');
+      const sourceKey = `intent-mcu.profile-draft.v1.board.rp2040-pico-v1.tab.${activeId}`;
+      const orphanKey = 'intent-mcu.profile-draft.v1.board.rp2040-pico-v1.tab.33333333-3333-4333-8333-333333333333';
+      const raw = localStorage.getItem(sourceKey);
+      localStorage.setItem(orphanKey, raw);
+      return { activeId, orphanKey, raw };
+    });
+    await startup.reload({ waitUntil: 'domcontentloaded' });
+    await startup.waitForFunction(() => window.__M11_READY__);
+    await startup.selectOption('#board-select', 'board.rp2040-pico-v1');
+    recoveryQuota.before = await startup.evaluate(({ orphanKey }) => {
+      const before = JSON.stringify(window.__RP2040_PUBLIC_WORKBENCH__.state());
+      const originalSetItem = Storage.prototype.setItem;
+      Storage.prototype.setItem = function setItem(key, value) {
+        if (String(key).startsWith('intent-mcu.profile-draft.v1.board.rp2040-pico-v1.tab.')
+            && key !== orphanKey) throw new DOMException('Recovery copy quota test', 'QuotaExceededError');
+        return originalSetItem.call(this, key, value);
+      };
+      return before;
+    }, { orphanKey: recoveryQuota.orphanKey });
+    await startup.click('#workbench-more > summary');
+    await startup.click('#project-files-open');
+    await startup.click('#browser-draft-recovery > summary');
+    await startup.selectOption('#project-draft-recovery', recoveryQuota.orphanKey);
+    await startup.click('#project-draft-recover');
+    assert.equal(await startup.evaluate(() => sessionStorage.getItem('intent-mcu.active-draft-id.v1')),
+      recoveryQuota.activeId, 'copy-save failure changed the active draft');
+    assert.equal(await startup.evaluate(() => JSON.stringify(window.__RP2040_PUBLIC_WORKBENCH__.state())),
+      recoveryQuota.before, 'copy-save failure replaced the in-memory project');
+    assert.equal(await startup.evaluate((key) => localStorage.getItem(key), recoveryQuota.orphanKey),
+      recoveryQuota.raw, 'copy-save failure changed the preserved original');
+    assert.match(await startup.textContent('#project-message'), /RECOVERY_COPY_SAVE_FAILED.*original preserved bytes remain untouched/iu);
     await startupContext.close();
 
     const corruptContext = await browser.newContext({ serviceWorkers: 'block' });
@@ -150,6 +184,7 @@ const base = process.env.DRAFT_SAFETY_URL || 'http://127.0.0.1:18932';
 
     process.stdout.write(`${JSON.stringify({ result: 'pass', startupProfilesPersistedLosslessly: 3, corruptDraftAtomic: true,
       controllerCorruptDraftsAtomic: 3, quotaFailureKeepsInMemoryWork: true,
-      controllerQuotaFailureVisible: true, recoveryDownloadEnabled: true, nativeBuilds: 0, nativeRuns: 0 })}\n`);
+      controllerQuotaFailureVisible: true, recoveryCopyQuotaAtomic: true,
+      recoveryDownloadEnabled: true, nativeBuilds: 0, nativeRuns: 0 })}\n`);
   } finally { await browser.close(); }
 })().catch((error) => { console.error(error); process.exitCode = 1; });

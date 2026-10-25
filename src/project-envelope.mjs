@@ -38,6 +38,19 @@ const FORBIDDEN_AUTHORITY_KEYS = new Set([
 ]);
 const clone = (value) => structuredClone(value);
 const failure = (code, details = []) => ({ ok: false, code, details });
+const PUBLISHED_RECOVERY_LOCKS = Object.freeze([
+  Object.freeze({ release: '1.1.0-rc.136', schema: 'intent-mcu-model-library-lock@2',
+    libraryId: 'intent-mcu-public-models', version: '2.0.0-x46-usart-rx-producer.1-current',
+    manifestSha256: '49f5b582520551f6c7c3f68cd196c616dfde297988b7a85497e4e42664c97128',
+    implementationSha256: 'cfaf5e18f657b2663c6ac776604af9d8aa3313997b36312e0dfe4b25359154d3' }),
+  Object.freeze({ release: '1.1.0-rc.137', schema: 'intent-mcu-model-library-lock@2',
+    libraryId: 'intent-mcu-public-models', version: '2.0.0-x46-usart-rx-producer.1-current',
+    manifestSha256: '709444f9c162942ebe960f43cdc8147300c93877100a34a5630a1e1c7bd63c4d',
+    implementationSha256: '7dfa75c67b84ba2b1f04002f2c1ee5d6a3c84dea94a263a09adb47a277bde71d' }),
+]);
+const samePublishedRecoveryLock = (left, right) => left && right
+  && ['schema', 'libraryId', 'version', 'manifestSha256', 'implementationSha256']
+    .every((key) => left[key] === right[key]);
 
 export function emptyProjectBrief() {
   return {
@@ -497,6 +510,31 @@ export function prepareProjectEnvelope(source, adapters) {
   } catch (error) {
     return failure(error.code ?? error.message ?? 'PROJECT_ENVELOPE_INVALID', error.details ?? []);
   }
+}
+
+export function preparePublishedRecoveryProjectEnvelope(source, adapters) {
+  const ordinary = prepareProjectEnvelope(source, adapters);
+  if (ordinary.ok || ordinary.code !== 'MODEL_LIBRARY_LOCK_UNTRUSTED') return ordinary;
+  let value;
+  try { value = parseStrictJson(source, PROJECT_ENVELOPE_LIMIT); }
+  catch { return ordinary; }
+  if (value?.schema !== PROJECT_ENVELOPE_SCHEMA) return ordinary;
+  const anchor = PUBLISHED_RECOVERY_LOCKS.find((candidate) => samePublishedRecoveryLock(value.modelLibrary, candidate));
+  if (!anchor) return ordinary;
+  const migratedValue = clone(value);
+  migratedValue.modelLibrary = clone(CURRENT_MODEL_LIBRARY_LOCK);
+  const migrated = prepareProjectEnvelope(JSON.stringify(migratedValue), adapters);
+  if (!migrated.ok) return migrated;
+  return {
+    ...migrated,
+    code: 'PROJECT_ENVELOPE_PUBLISHED_LOCK_RECOVERED', originalUnchanged: source,
+    publishedRecovery: { release: anchor.release, from: clone(value.modelLibrary),
+      to: clone(CURRENT_MODEL_LIBRARY_LOCK), migrationOnly: true,
+      executableAuthority: false, freshBuildRequired: true },
+    report: { ...migrated.report, executableAuthorityCleared: true,
+      publishedRecovery: { release: anchor.release, migrationOnly: true,
+        executableAuthority: false, freshBuildRequired: true } },
+  };
 }
 
 export function migrateProjectModelLibrary(source, adapters) {
