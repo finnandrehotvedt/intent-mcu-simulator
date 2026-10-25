@@ -6,6 +6,7 @@ import { COMPONENT_CATALOG } from '../src/component-catalog.mjs';
 import { RP2040_PICO_COMPONENT_CATALOG, validateRp2040PicoCircuit } from '../src/rp2040-pico-circuit.mjs';
 import { ESP32C3_PUBLIC_COMPONENT_CATALOG, validateEsp32C3Circuit } from '../src/esp32c3-public-circuit.mjs';
 import { STM32_PUBLIC_COMPONENT_CATALOG, validateStm32Circuit } from '../src/stm32-public-circuit.mjs';
+import { BOUNDED_3V3_UI_COMPONENTS } from '../src/bounded-3v3-authoring-contracts.mjs';
 import { API03_PROFILE_MATRIX, prepareApiBatch, summarizeApiChanges } from '../src/browser-session-edit.mjs';
 import { API_SESSION_CLIENT_URL, API_SESSION_PROTOCOL_URL,
   CODEX_PAIRING_INSTRUCTIONS } from '../src/browser-session-codex-instructions.mjs';
@@ -26,9 +27,9 @@ const workbenchFor = (profile) => ({
 })[profile] ?? null;
 const catalogueFor = (profile) => ({
   'board.atmega328p-16mhz-v1': COMPONENT_CATALOG,
-  'board.rp2040-pico-v1': { ...COMPONENT_CATALOG, ...RP2040_PICO_COMPONENT_CATALOG },
-  'board.esp32-c3-devmodule-v1': { ...COMPONENT_CATALOG, ...ESP32C3_PUBLIC_COMPONENT_CATALOG },
-  'board.stm32f429zi-nucleo144-v1': { ...COMPONENT_CATALOG, ...STM32_PUBLIC_COMPONENT_CATALOG },
+  'board.rp2040-pico-v1': { ...COMPONENT_CATALOG, ...RP2040_PICO_COMPONENT_CATALOG, ...BOUNDED_3V3_UI_COMPONENTS },
+  'board.esp32-c3-devmodule-v1': { ...COMPONENT_CATALOG, ...ESP32C3_PUBLIC_COMPONENT_CATALOG, ...BOUNDED_3V3_UI_COMPONENTS },
+  'board.stm32f429zi-nucleo144-v1': { ...COMPONENT_CATALOG, ...STM32_PUBLIC_COMPONENT_CATALOG, ...BOUNDED_3V3_UI_COMPONENTS },
 })[profile] ?? null;
 const projectNameId = (profile) => ({ 'board.rp2040-pico-v1': 'pico-project-name',
   'board.esp32-c3-devmodule-v1': 'c3-project-name',
@@ -93,13 +94,13 @@ function execute(request, current, context) {
       return { status: 'rejected', code: 'API_BATCH_SHAPE' };
     }
     const transactionId = `api-tx:${context.sessionId}:${request.request_id}`;
+    let canonicalCommands;
+    try { canonicalCommands = prepareApiBatch(current.project, request.arguments.commands); }
+    catch (error) { return { status: 'rejected', code: error.code ?? 'API_BATCH_REJECTED' }; }
     let result;
     if (current.profile === 'board.atmega328p-16mhz-v1') {
-      let commands;
-      try { commands = prepareApiBatch(current.project, request.arguments.commands); }
-      catch (error) { return { status: 'rejected', code: error.code ?? 'API_BATCH_REJECTED' }; }
       result = window.__BROWSER_SESSION_CANONICAL_OWNER__.batch({ expectedProjectId: current.projectId,
-        expectedRevision: request.expected_revision, transactionId, commands });
+        expectedRevision: request.expected_revision, transactionId, commands: canonicalCommands });
     } else result = workbenchFor(current.profile)?.apiBatch?.(request.arguments.commands, transactionId)
       ?? { ok: false, code: 'API_PROFILE_UNSUPPORTED' };
     return result.ok ? { status: 'accepted', code: 'API_BATCH_COMMITTED',

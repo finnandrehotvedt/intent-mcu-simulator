@@ -29,9 +29,9 @@ const resultFor = async (origin, claim, requestId) => {
   }
   throw new Error('API_RESULT_TIMEOUT');
 };
-const runEditor = (origin, secret) => {
+const runEditor = (origin, secret, plan = 'test/fixtures/api-client-add-led-plan.json') => {
   const child = spawn(process.execPath, ['dist/api/session/v1/client.mjs', origin,
-    'test/fixtures/api-client-add-led-plan.json'], {
+    plan], {
     stdio: ['pipe', 'pipe', 'pipe'], env: process.env,
   });
   let stdout = ''; let stderr = '';
@@ -290,12 +290,62 @@ const runEditor = (origin, secret) => {
       assert.equal((await post(origin, 'request.submit', { sessionId: successor.sessionId,
         request: successorRequest }, independentClaim.clientCapability)).code, 'API_AUTH_REQUIRED');
     } finally { await independentBrowser.close(); }
+    const mixedProfiles = [
+      ['board.rp2040-pico-v1', '__RP2040_PUBLIC_WORKBENCH__'],
+      ['board.esp32-c3-devmodule-v1', '__ESP32C3_PUBLIC_WORKBENCH__'],
+      ['board.stm32f429zi-nucleo144-v1', '__STM32_PUBLIC_WORKBENCH__'],
+    ];
+    for (const [profile, ownerKey] of mixedProfiles) {
+      const mixedPage = await context.newPage();
+      await mixedPage.goto(origin, { waitUntil: 'domcontentloaded' });
+      await mixedPage.selectOption('#board-select', profile);
+      await mixedPage.waitForFunction((key) => window[key]?.state?.().active === true, ownerKey);
+      const mixedBefore = await mixedPage.evaluate((key) => {
+        const state = window[key].state(); const project = state.project ?? { source: state.source, circuit: state.circuit };
+        return JSON.stringify({ source: project.source, components: project.circuit.components, nets: project.circuit.nets });
+      }, ownerKey);
+      await mixedPage.evaluate(() => [...document.querySelectorAll('#workbench-popup-controls button')]
+        .find((button) => button.textContent === 'API access').click());
+      await mixedPage.locator('#browser-session-api-dialog [data-edit-scope]').check();
+      await mixedPage.locator('#browser-session-api-dialog [data-enable]').click();
+      await mixedPage.waitForFunction(() => document.querySelector(
+        '#browser-session-api-dialog [data-secret]').value.length > 20);
+      const mixedSecret = await mixedPage.locator('#browser-session-api-dialog [data-secret]').inputValue();
+      const mixedEdit = runEditor(origin, mixedSecret,
+        'test/fixtures/api-client-mixed-authoring-plan.json');
+      await mixedPage.waitForFunction((key) => {
+        const state = window[key].state(); return (state.project?.circuit ?? state.circuit).components
+          .some(({ id }) => id === 'button-2');
+      }, ownerKey);
+      const mixedState = await mixedPage.evaluate((key) => {
+        const state = window[key].state();
+        return { authoringAccepted: state.authoringAccepted,
+          circuitAccepted: state.circuitAccepted ?? state.circuitValid,
+          circuitCode: state.circuitCode, text: state.circuitEditor.validation };
+      }, ownerKey);
+      assert.equal(mixedState.authoringAccepted, true);
+      assert.notEqual(mixedState.circuitAccepted, true);
+      assert.equal(mixedState.circuitCode, 'MODEL_LIBRARY_COMPONENT_UNAVAILABLE');
+      mixedEdit.undo(); const mixedOutput = await mixedEdit.done;
+      assert.equal(mixedOutput[0].mode, 'edited');
+      assert.equal(mixedOutput[1].undo, 'API_TRANSACTION_UNDONE');
+      assert.deepEqual(mixedOutput[0].changes.map(({ operation }) => operation),
+        ['component.add', 'component.duplicate', 'wire.branch.connect', 'wire.disconnect']);
+      const mixedRestored = await mixedPage.evaluate((key) => {
+        const state = window[key].state(); const project = state.project ?? { source: state.source, circuit: state.circuit };
+        return { semantic: JSON.stringify({ source: project.source, components: project.circuit.components,
+          nets: project.circuit.nets }), buttonCounter: project.circuit.layout.idCounters.button };
+      }, ownerKey);
+      assert.equal(mixedRestored.semantic, mixedBefore);
+      assert.equal(mixedRestored.buttonCounter, 2);
+      await mixedPage.close();
+    }
     await context.close();
     process.stdout.write(`${JSON.stringify({ status: 'pass', visible, restoredExactBytes: true,
       editScopeExplicit: true, invalidAtomic: true, manualRaceStale: true,
       actualFileRoundTrip: true, openRevokedPriorScope: true, storageDenialPreserved: true,
       expiredAfterPullContained: true, delayedPullContained: true, replacementSameRevision: true,
-      independentBrowserProcesses: 2,
+      independentBrowserProcesses: 2, mixedReferenceClientProfiles: 3,
       buildRequests: 0, runtimeWorkers: workersBefore })}\n`);
   } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }
 })().catch((error) => { console.error(error); process.exitCode = 1; });

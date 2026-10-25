@@ -204,9 +204,15 @@ async function discoverProject() {
 function validateNamedPins(candidate, components, catalog) {
   const typeById = new Map(components.components.map((item) => [item.id, item.type]));
   for (const command of candidate.commands) if (command?.command === 'component.add') typeById.set(command.id, command.type);
+  for (const command of candidate.commands) if (command?.command === 'component.duplicate') {
+    const sourceType = typeById.get(command.component_id);
+    if (sourceType) typeById.set(command.id, sourceType);
+  }
   for (const command of candidate.commands) {
-    if (command?.command !== 'wire.connect') continue;
-    for (const endpointValue of [command.from, command.to]) {
+    const endpoints = command?.command === 'wire.connect' ? [command.from, command.to]
+      : ['wire.branch.connect', 'wire.disconnect'].includes(command?.command) && command.endpoint
+        ? [command.endpoint] : [];
+    for (const endpointValue of endpoints) {
       const type = typeById.get(endpointValue?.component); const pins = catalog.components[type]?.pins;
       if (!type || !pins?.some((pin) => pin.id === endpointValue?.pin)) throw new Error('API_PLAN_NAMED_PIN_UNKNOWN');
     }

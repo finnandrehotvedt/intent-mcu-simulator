@@ -5,9 +5,11 @@ import {
 } from '../c3/protocol.mjs';
 import {
   Esp32C3CircuitEditor,
+  ESP32C3_BOARD_DEFINITION,
   createEsp32C3CircuitDraft,
   normalizeEsp32C3CircuitDraft,
 } from './esp32c3-public-circuit.mjs';
+import { validateBounded3v3AuthoringGraph } from './bounded-3v3-authoring-contracts.mjs';
 import { parseStrictJson } from './strict-json.mjs';
 import { boundedPolicyDiagnostic, normalizeSourceDiagnostics } from './source-diagnostics.mjs';
 import { isRetryableCapacityCode, retryGuidanceFromResponse, retryMessage, retryResultFields } from './retry-guidance.mjs';
@@ -167,6 +169,8 @@ export class Esp32C3PublicWorkbench {
     );
     const modelLibrary = modelLibraryExecutionIdentity(this.modelLibraryLock);
     const wiringReady = this.circuitEditor.snapshot().wireDraft.mode === 'none';
+    const authoring = validateBounded3v3AuthoringGraph({ board: ESP32C3_BOARD_DEFINITION,
+      components: this.project.circuit.components, nets: this.project.circuit.nets });
     return {
       profile: PROFILE, phase: this.phase, active: this.active, revision: this.revision,
       message: this.message, project: clone(this.project),
@@ -175,6 +179,8 @@ export class Esp32C3PublicWorkbench {
       runnable: Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok && wiringReady),
       circuitAccepted: circuit.ok && wiringReady,
       circuitCode: wiringReady ? circuit.code : 'C3_WIRING_IN_PROGRESS',
+      authoringAccepted: authoring.ok && wiringReady,
+      authoringCode: wiringReady ? authoring.code : 'C3_WIRING_IN_PROGRESS',
       runtime: this.lastRuntime ? clone(this.lastRuntime) : null,
       actualQemuCpuUart: true, qemuPinStateObserved: false,
       gpioPeripheralModel: 'IntentForce project-owned GPIO2 register adapter',
@@ -658,6 +664,8 @@ export class Esp32C3PublicWorkbench {
       PROFILE, this.project.circuit, { modelLibraryLock: this.modelLibraryLock },
     );
     const wiringReady = this.circuitEditor.snapshot().wireDraft.mode === 'none';
+    const authoring = validateBounded3v3AuthoringGraph({ board: ESP32C3_BOARD_DEFINITION,
+      components: this.project.circuit.components, nets: this.project.circuit.nets });
     const modeled = this.lastRuntime?.modeledCircuit;
     const led = modeled?.epochs?.at(-1)?.led;
     this.elements.name.value = this.project.name;
@@ -679,6 +687,8 @@ export class Esp32C3PublicWorkbench {
       ? 'Wiring in progress · flash and LED authority retired · finish or cancel before Build'
       : circuit.ok
       ? `Project model accepted · GPIO2 J1 pin 4 → ${circuit.model.resistorOhms} Ω → ${circuit.model.ledColor} LED → GND J1 pin 6 · ${led?.code ?? 'waiting for Run'}`
+      : authoring.ok
+      ? 'Authoring accepted · data-only components are structurally valid · runtime unavailable for this mixed graph'
       : `${describeCircuitGap(circuit.code)} Stale flash and LED authority was retired.`;
     this.onDiagnostics({ profile: PROFILE, revision: this.revision, source: this.project.source,
       file: 'sketch.ino', diagnostics: clone(this.diagnostics) });

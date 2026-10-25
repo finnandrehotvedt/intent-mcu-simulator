@@ -34,9 +34,10 @@ execution, or grant file authority.
 
 ## Canonical edits and atomic batches
 
-`edit.batch` accepts no more than 16 operations. The six operation shapes are
-component add, component remove, validated component-property set, named-pin
-wire connect, whole-net disconnect, and named-branch disconnect. Stable IDs,
+`edit.batch` accepts no more than 16 operations. The seven operation kinds are
+component add, component duplicate, component remove, validated component-property set,
+named-pin wire connect, named-pin branch connect, and wire disconnect (whole-net or
+one named endpoint). Stable IDs,
 known component types, supported properties, named pins, topology and the final
 electrical graph are validated by existing canonical owners. The entire staged
 batch commits as one history transaction or changes nothing. The server-owned

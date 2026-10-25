@@ -129317,15 +129317,15 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/rp2040-public-workbench.mjs",
-      "sha256": "e8be7cbbc0e18e1427b0e065c4a90c4831e2bf4e643c9a93a0d9163be168ba76"
+      "sha256": "83a01d481a0b53c14113126162e730db2b5e4bc6aee378aa0f5b607bea379ddf"
     },
     {
       "path": "src/esp32c3-public-workbench.mjs",
-      "sha256": "a98a6b8c5ea9ca1a36ea9acca0ed6d4f4d89e5991abf52f6e454dd4041a02626"
+      "sha256": "a5051153169dcac3f2045803fd7ccf0300493b656394ee6ef6ca7ce15dc465cc"
     },
     {
       "path": "src/stm32-public-workbench.mjs",
-      "sha256": "fbf4d0483ac842bcd2d862d81574fc1d89a297324145d3be201fca601d42009d"
+      "sha256": "86c3b2b4e8f31d29c0647eb33653b3c08903591b015d28e7dbb7d840df67838b"
     },
     {
       "path": "c3/public-service.mjs",
@@ -129404,7 +129404,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "a60dd552da826bcf74e23eb7f8457de1ae1e8dd31f313536cb737f8a9d965507"
     }
   ],
-  "implementationSha256": "3d0f1aad03e9f2e99418a01d54a312b386b5fd0e9d6f67ad53ea69515f2ef187",
+  "implementationSha256": "82d13702b0788af804273d45c06b74b8126a6df92250c9ed9425c0126f59154c",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "public rc.125 and every earlier identity remain immutable and migration-only; this source candidate performs zero firmware compile, real worker, run, image build or deployment",
@@ -129414,7 +129414,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-config-producer.2-current",
     "semanticDisposition": "component, firmware and electrical semantics remain unchanged; paired read-only AVR USART0 RX peripheral-model events are added"
   },
-  "manifestSha256": "819fdf6d0fe2283b343af0d4146eb2a5933108a75967d17148d090b5ac0108fd",
+  "manifestSha256": "44233af30da90d846429c9e37b6516b5fdf593b236af04591e5ac7608bcefd50",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

@@ -67,8 +67,8 @@ component.pins, nets.list, circuit.validate.
 
 Edit commands
 edit.batch accepts exactly {"commands": [...]} and at most 16 operations.
-Supported operations are component.add, component.remove,
-component.property.set, wire.connect, and wire.disconnect. A wire.disconnect
+Supported operations are component.add, component.duplicate, component.remove,
+component.property.set, wire.connect, wire.branch.connect, and wire.disconnect. A wire.disconnect
 with only net_id removes the whole net; adding endpoint removes one branch.
 Connections use stable component IDs and named pins.
 The complete batch validates and commits as one transaction or changes
@@ -111,12 +111,16 @@ written to disk, cookie or browser storage, and one-shot mode does not renew.
 Exact batch operation shapes
 {"command":"component.add","id":"part-1","type":"led.basic-v1",
  "position":{"x":0.7,"y":0.4,"rotation":0}}
+{"command":"component.duplicate","component_id":"part-1","id":"part-2",
+ "position":{"x":0.8,"y":0.5,"rotation":0}}
 {"command":"component.remove","component_id":"part-1"}
 {"command":"component.property.set","component_id":"part-1",
  "key":"resistance_ohms","value":220}
 {"command":"wire.connect","net_id":"signal-1",
  "from":{"component":"board-1","pin":"D13"},
  "to":{"component":"resistor-1","pin":"A"}}
+{"command":"wire.branch.connect","net_id":"signal-1",
+ "endpoint":{"component":"part-2","pin":"ANODE"}}
 {"command":"wire.disconnect","net_id":"signal-1"}
 {"command":"wire.disconnect","net_id":"signal-1",
  "endpoint":{"component":"resistor-1","pin":"A"}}
