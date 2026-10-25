@@ -306,6 +306,17 @@ function prepare(adapter, value, context) {
   return { ...result, project: clone(result.project) };
 }
 
+function projectDataAdmission(adapter, libraryAdmission, context) {
+  if (libraryAdmission.ok) return { ...libraryAdmission, authoringOnly: false,
+    executableAuthority: true, runtimeUnavailableCode: null };
+  if (typeof adapter.authoringAdmission !== 'function') return libraryAdmission;
+  const authoring = adapter.authoringAdmission(context);
+  if (!authoring?.ok) return libraryAdmission;
+  return { ok: true, code: authoring.code, retained: context.retained,
+    authoringOnly: true, executableAuthority: false,
+    runtimeUnavailableCode: libraryAdmission.code, authoring };
+}
+
 export function canonicalProjectEnvelope(profile, project, adapters, brief = emptyProjectBrief(), scenarioTimeline = null,
   modelLibrary = CURRENT_MODEL_LIBRARY_LOCK) {
   const adapter = adapterForProfile(adapters, profile);
@@ -321,9 +332,13 @@ export function canonicalProjectEnvelope(profile, project, adapters, brief = emp
   }
   const hasModelGraph = Array.isArray(prepared.project?.circuit?.components)
     || Array.isArray(prepared.project?.candidateCircuit?.components);
-  const admitted = modelLibrarySupportsProfile(profile) && hasModelGraph
+  const modelAdmission = modelLibrarySupportsProfile(profile) && hasModelGraph
     ? validateProjectModelLibrary(library.lock, profile, prepared.project)
     : { ok: true };
+  const admitted = projectDataAdmission(adapter, modelAdmission, {
+    profile, project: prepared.project, modelLibrary: library.lock,
+    retained: library.lock.manifestSha256 === RETAINED_MODEL_LIBRARY_LOCK.manifestSha256,
+  });
   if (!admitted.ok) throw Object.assign(new Error(admitted.code), { code: admitted.code, details: admitted.details });
   return `${JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, modelLibrary: library.lock,
     brief: normalizeProjectBrief(brief), scenarioTimeline: normalizeScenarioTimeline(scenarioTimeline, profile),
@@ -479,9 +494,13 @@ export function prepareProjectEnvelope(source, adapters) {
     }
     const hasModelGraph = Array.isArray(prepared.project?.circuit?.components)
       || Array.isArray(prepared.project?.candidateCircuit?.components);
-    const libraryAdmission = modelLibrarySupportsProfile(profile) && hasModelGraph
+    const modelAdmission = modelLibrarySupportsProfile(profile) && hasModelGraph
       ? validateProjectModelLibrary(modelLibrary, profile, prepared.project)
       : { ok: true, retained: modelLibrary.manifestSha256 === RETAINED_MODEL_LIBRARY_LOCK.manifestSha256 };
+    const libraryAdmission = projectDataAdmission(adapter, modelAdmission, {
+      profile, project: prepared.project, modelLibrary,
+      retained: modelLibrary.manifestSha256 === RETAINED_MODEL_LIBRARY_LOCK.manifestSha256,
+    });
     if (!libraryAdmission.ok) return libraryAdmission;
     const canonical = `${JSON.stringify({ schema: PROJECT_ENVELOPE_SCHEMA, profile, modelLibrary,
       brief: normalizeProjectBrief(brief), scenarioTimeline: normalizeScenarioTimeline(scenarioTimeline, profile),
@@ -504,7 +523,10 @@ export function prepareProjectEnvelope(source, adapters) {
         executableAuthorityCleared: true,
         modelLibrary: { version: modelLibrary.version, manifestSha256: modelLibrary.manifestSha256,
           retained: libraryAdmission.retained,
-          migrationAvailable: modelLibrary.manifestSha256 !== CURRENT_MODEL_LIBRARY_LOCK.manifestSha256 },
+          migrationAvailable: modelLibrary.manifestSha256 !== CURRENT_MODEL_LIBRARY_LOCK.manifestSha256,
+          authoringOnly: libraryAdmission.authoringOnly === true,
+          executableAuthority: libraryAdmission.executableAuthority !== false,
+          runtimeUnavailableCode: libraryAdmission.runtimeUnavailableCode ?? null },
       },
     };
   } catch (error) {

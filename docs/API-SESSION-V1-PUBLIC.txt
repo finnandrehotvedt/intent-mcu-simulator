@@ -65,6 +65,11 @@ Discovery and read commands
 capabilities.list, components.catalog, project.inspect, components.list,
 component.pins, nets.list, circuit.validate.
 
+circuit.validate returns separate authoring and runtime results plus an
+executable boolean. A structurally accepted authoring-only graph may have
+authoring.ok true, runtime.ok false and executable false; it never gains Build
+or Run authority from authoring admission.
+
 Edit commands
 edit.batch accepts exactly {"commands": [...]} and at most 16 operations.
 Supported operations are component.add, component.duplicate, component.remove,

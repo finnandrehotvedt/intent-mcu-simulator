@@ -3,10 +3,10 @@
 
 import { validateCircuit } from '../src/circuit-engine.mjs';
 import { COMPONENT_CATALOG } from '../src/component-catalog.mjs';
-import { RP2040_PICO_COMPONENT_CATALOG, validateRp2040PicoCircuit } from '../src/rp2040-pico-circuit.mjs';
-import { ESP32C3_PUBLIC_COMPONENT_CATALOG, validateEsp32C3Circuit } from '../src/esp32c3-public-circuit.mjs';
-import { STM32_PUBLIC_COMPONENT_CATALOG, validateStm32Circuit } from '../src/stm32-public-circuit.mjs';
-import { BOUNDED_3V3_UI_COMPONENTS } from '../src/bounded-3v3-authoring-contracts.mjs';
+import { RP2040_PICO_BOARD_DEFINITION, RP2040_PICO_COMPONENT_CATALOG, validateRp2040PicoCircuit } from '../src/rp2040-pico-circuit.mjs';
+import { ESP32C3_BOARD_DEFINITION, ESP32C3_PUBLIC_COMPONENT_CATALOG, validateEsp32C3Circuit } from '../src/esp32c3-public-circuit.mjs';
+import { STM32_BOARD_DEFINITION, STM32_PUBLIC_COMPONENT_CATALOG, validateStm32Circuit } from '../src/stm32-public-circuit.mjs';
+import { BOUNDED_3V3_UI_COMPONENTS, validateBounded3v3AuthoringGraph } from '../src/bounded-3v3-authoring-contracts.mjs';
 import { API03_PROFILE_MATRIX, prepareApiBatch, summarizeApiChanges } from '../src/browser-session-edit.mjs';
 import { API_SESSION_CLIENT_URL, API_SESSION_PROTOCOL_URL,
   CODEX_PAIRING_INSTRUCTIONS } from '../src/browser-session-codex-instructions.mjs';
@@ -85,7 +85,14 @@ function execute(request, current, context) {
       'board.esp32-c3-devmodule-v1': validateEsp32C3Circuit,
       'board.stm32f429zi-nucleo144-v1': validateStm32Circuit };
     const validation = validators[current.profile]?.(current.project?.circuit);
-    return validation ? { status: 'accepted', code: 'API_VALIDATION_READ_ONLY', validation }
+    const boards = { 'board.rp2040-pico-v1': RP2040_PICO_BOARD_DEFINITION,
+      'board.esp32-c3-devmodule-v1': ESP32C3_BOARD_DEFINITION,
+      'board.stm32f429zi-nucleo144-v1': STM32_BOARD_DEFINITION };
+    const board = boards[current.profile];
+    const authoring = board ? validateBounded3v3AuthoringGraph({ board,
+      components: current.project.circuit.components, nets: current.project.circuit.nets }) : validation;
+    return validation ? { status: 'accepted', code: 'API_VALIDATION_READ_ONLY', validation,
+      authoring, runtime: validation, executable: validation.ok === true }
       : { status: 'rejected', code: 'API_PROFILE_UNSUPPORTED' };
   }
   if (request.command === 'edit.batch') {

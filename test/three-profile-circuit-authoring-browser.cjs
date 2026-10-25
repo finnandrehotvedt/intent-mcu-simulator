@@ -8,13 +8,13 @@ const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/
 const base = process.env.RC139_AUTHORING_URL || 'http://host.docker.internal:18789';
 const profiles = [
   { id: 'board.rp2040-pico-v1', api: '__RP2040_PUBLIC_WORKBENCH__', button: '#pico-new-circuit',
-    layer: '#pico-editor-components', name: '#pico-project-name', source: '#pico-source',
+    layer: '#pico-editor-components', name: '#pico-project-name', source: '#pico-source', openInput: '#pico-open-input',
     board: 'pico-1', sourcePin: 'GP0', groundPin: 'GND3', sourceLead: 'B', ledLead: 'A' },
   { id: 'board.esp32-c3-devmodule-v1', api: '__ESP32C3_PUBLIC_WORKBENCH__', button: '#c3-new-circuit',
-    layer: '#c3-editor-components', name: '#c3-project-name', source: '#c3-source',
+    layer: '#c3-editor-components', name: '#c3-project-name', source: '#c3-source', openInput: '#c3-open-input',
     board: 'c3-1', sourcePin: 'GPIO2', groundPin: 'GND', sourceLead: 'A', ledLead: 'B' },
   { id: 'board.stm32f429zi-nucleo144-v1', api: '__STM32_PUBLIC_WORKBENCH__', button: '#stm32-new-circuit',
-    layer: '#stm32-editor-components', name: '#stm32-project-name', source: '#stm32-source',
+    layer: '#stm32-editor-components', name: '#stm32-project-name', source: '#stm32-source', openInput: '#stm32-open-input',
     board: 'stm32-1', sourcePin: 'PB0', groundPin: 'GND', sourceLead: 'A', ledLead: 'B' },
 ];
 
@@ -73,6 +73,13 @@ const profiles = [
       assert.equal(await page.locator(`${profile.layer} [data-component-id="led-2"]`).count(), 1);
       assert.equal(result.redone.components.some(({ id }) => id === profile.board), true);
 
+      await page.evaluate(({ api }) => {
+        const owner = window[api];
+        owner.addComponent('ground.reference-3v3-v1', { x: 0.2, y: 0.78 });
+        owner.addComponent('button.momentary-3v3-v1', { x: 0.42, y: 0.78 });
+        owner.addComponent('switch.toggle-3v3-v1', { x: 0.64, y: 0.78 });
+      }, profile);
+
       const protectedName = `RC139 protected ${profile.id}`;
       await page.evaluate(({ name, protectedName }) => {
         const input = document.querySelector(name); input.value = protectedName;
@@ -111,6 +118,10 @@ const profiles = [
       const downloaded = JSON.parse(await require('node:fs/promises').readFile(await download.path(), 'utf8'));
       assert.equal(downloaded.project.name, beforeNew.authoredName);
       assert.deepEqual(downloaded.project.circuit, beforeNew.graph);
+      assert.equal(downloaded.project.circuit.components.length, 8);
+      assert.equal(downloaded.project.circuit.components.some(({ type }) => type === 'ground.reference-3v3-v1'), true);
+      assert.equal(downloaded.project.circuit.components.some(({ type }) => type === 'button.momentary-3v3-v1'), true);
+      assert.equal(downloaded.project.circuit.components.some(({ type }) => type === 'switch.toggle-3v3-v1'), true);
       const downloadedSource = downloaded.project.source.files?.[0]?.content ?? downloaded.project.source;
       assert.equal(downloadedSource, beforeNew.authoredSource);
       await page.locator('#unsaved-change-dialog[open]').waitFor();
@@ -148,7 +159,7 @@ const profiles = [
       }, beforeNew.key);
       await page.evaluate(() => document.querySelector('#project-draft-recover').click());
       await page.waitForFunction(({ api }) => {
-        const state = window[api].state(); return (state.circuit ?? state.project.circuit).components.length === 5;
+        const state = window[api].state(); return (state.circuit ?? state.project.circuit).components.length === 8;
       }, profile);
       const recovered = await page.evaluate(({ api, name, source, key }) => {
         const state = window[api].state();
@@ -161,6 +172,21 @@ const profiles = [
       assert.equal(recovered.authoredName, beforeNew.authoredName);
       assert.equal(recovered.authoredSource, beforeNew.authoredSource);
       assert.equal(recovered.originalRaw, afterNew.oldRaw);
+
+      await page.evaluate((selector) => document.querySelector(selector).click(), profile.button);
+      if (await page.locator('#unsaved-change-dialog[open]').isVisible()) {
+        await page.locator('#unsaved-discard').click();
+      }
+      await page.waitForFunction(({ api }) => {
+        const state = window[api].state(); return (state.circuit ?? state.project.circuit).components.length === 1;
+      }, profile);
+      await page.locator(profile.openInput).setInputFiles(await download.path());
+      await page.waitForFunction(({ api }) => {
+        const state = window[api].state(); return (state.circuit ?? state.project.circuit).components.length === 8;
+      }, profile);
+      assert.deepEqual(await page.evaluate(({ api }) => {
+        const state = window[api].state(); return state.circuit ?? state.project.circuit;
+      }, profile), beforeNew.graph);
 
       await page.evaluate(({ api }) => window[api].selectCircuit({ kind: 'net', id: 'net-led-2-ground' }), profile);
       const branchSelector = profile.id === 'board.rp2040-pico-v1' ? '#pico-branch'
@@ -206,8 +232,8 @@ const profiles = [
       await page.evaluate(() => document.querySelector('[data-bounded-add="button.momentary-3v3-v1"]').click());
       assert.equal(await page.evaluate(({ api, layer }) => {
         const state = window[api].state(); const graph = state.circuit ?? state.project.circuit;
-        return graph.components.some(({ id, type }) => id === 'button-1' && type === 'button.momentary-3v3-v1')
-          && Boolean(document.querySelector(`${layer} [data-editor-endpoint="button-1.A"]`));
+        return graph.components.some(({ id, type }) => id === 'button-2' && type === 'button.momentary-3v3-v1')
+          && Boolean(document.querySelector(`${layer} [data-editor-endpoint="button-2.A"]`));
       }, profile), true);
 
       await page.evaluate(({ api }) => window[api].newCircuit(), profile);

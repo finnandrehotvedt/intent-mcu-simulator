@@ -199,7 +199,10 @@ async function discoverProject() {
   staticDiscovery = { capabilities, catalog, componentPins };
   return { discovery: { profile: catalog.profile, project_id: claim.projectId, revision,
     commands: capabilities.commands, components: components.components, nets: nets.nets,
-    pins: componentPins, validation: validation.validation }, project, catalog, components };
+    pins: componentPins, validation: validation.validation,
+    authoring: validation.authoring ?? validation.validation,
+    runtime: validation.runtime ?? validation.validation,
+    executable: validation.executable ?? validation.validation?.ok === true }, project, catalog, components };
 }
 function validateNamedPins(candidate, components, catalog) {
   const typeById = new Map(components.components.map((item) => [item.id, item.type]));

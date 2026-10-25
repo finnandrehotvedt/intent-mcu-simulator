@@ -3,7 +3,7 @@
 
 import { installX81Assessment } from './x81-assessment-controller.mjs';
 import { X81_RETAINED_ASSESSMENT } from '../src/x81-retained-assessment.mjs';
-import { BOUNDED_3V3_UI_COMPONENTS } from '../src/bounded-3v3-authoring-contracts.mjs';
+import { BOUNDED_3V3_UI_COMPONENTS, validateBounded3v3AuthoringGraph } from '../src/bounded-3v3-authoring-contracts.mjs';
 
 import {
   CATALOG_CATEGORIES,
@@ -278,16 +278,16 @@ import {
   normalizeRp2040PublicProject,
 } from '../src/rp2040-public-workbench.mjs';
 import {
-  RP2040_PICO_COMPONENT_CATALOG,
+  RP2040_PICO_BOARD_DEFINITION, RP2040_PICO_COMPONENT_CATALOG,
   validateRp2040PicoCircuit,
 } from '../src/rp2040-pico-circuit.mjs';
-import { ESP32C3_PUBLIC_COMPONENT_CATALOG, validateEsp32C3Circuit } from '../src/esp32c3-public-circuit.mjs';
+import { ESP32C3_BOARD_DEFINITION, ESP32C3_PUBLIC_COMPONENT_CATALOG, validateEsp32C3Circuit } from '../src/esp32c3-public-circuit.mjs';
 import {
   C3_PUBLIC_PROJECT_SCHEMA,
   Esp32C3PublicWorkbench,
   normalizeEsp32C3PublicProject,
 } from '../src/esp32c3-public-workbench.mjs';
-import { STM32_PUBLIC_COMPONENT_CATALOG, validateStm32Circuit } from '../src/stm32-public-circuit.mjs';
+import { STM32_BOARD_DEFINITION, STM32_PUBLIC_COMPONENT_CATALOG, validateStm32Circuit } from '../src/stm32-public-circuit.mjs';
 import {
   STM32_EDITABLE_PROJECT_SCHEMA,
   Stm32PublicWorkbench,
@@ -1327,7 +1327,7 @@ function boundedPartSummary(part, component) {
   if ((part.count ?? 1) > 1) return `${part.count} placed · select one on the canvas to inspect`;
   if (part.type === 'resistor.fixed-v1') return `${component.properties.ohms} Ω · bounded ideal model`;
   if (part.type === 'led.basic-v1') return `${component.properties.color} · bounded ideal LED model`;
-  return 'Unsupported';
+  return 'Authoring-only · runtime unavailable';
 }
 
 function componentEditorKey(profile, componentId) {
@@ -1846,12 +1846,15 @@ function renderAccessibleConnections({ profile, label, view, adapter }) {
 
 function renderBoundedAccessibleConnections(profile, label, state, workbench, anchorSelector) {
   const graph = state.circuitEditor.draft;
+  const validation = state.authoringAccepted && !state.circuitValid && !state.circuitAccepted
+    ? { ok: true, code: `${state.authoringCode} · RUNTIME_UNAVAILABLE(${state.circuitCode})`, details: [] }
+    : state.circuitEditor.validation;
   const view = accessibleView({
     profile,
     revision: state.circuitEditor.revision,
     graph,
     catalogue: uiComponentCatalog,
-    validation: state.circuitEditor.validation,
+    validation,
     limits: { components: 17, nets: 24, endpoints: 48 },
   });
   const endpoint = (pin) => ({ component: pin.componentId, pin: pin.id });
@@ -1931,10 +1934,13 @@ function navigationState() {
     : profile === ESP32C3_PROFILE ? c3PublicWorkbench.snapshot() : stm32PublicWorkbench.snapshot();
   const sourceName = profile === ESP32C3_PROFILE ? 'sketch.ino' : 'main.c';
   const source = state.source ?? state.project?.source;
+  const connectionValidation = state.authoringAccepted && !state.circuitValid && !state.circuitAccepted
+    ? { ok: true, code: `${state.authoringCode} · RUNTIME_UNAVAILABLE(${state.circuitCode})`, details: [] }
+    : state.circuitEditor.validation;
   return { profile, generation: 1, revision: state.revision,
     connections: accessibleView({ profile, revision: state.circuitEditor.revision,
       graph: state.circuitEditor.draft, catalogue: uiComponentCatalog,
-      validation: state.circuitEditor.validation, limits: { components: 17, nets: 24, endpoints: 48 } }),
+      validation: connectionValidation, limits: { components: 17, nets: 24, endpoints: 48 } }),
     sources: [{ name: sourceName, content: source }], criteria: brief.acceptanceCriteria, scenarios: [] };
 }
 function currentNavigationIdentity() {
@@ -7636,6 +7642,9 @@ const commonProjectAdapters = Object.freeze({
     electrical: (result) => modelLibraryImplementationForResult(result)
       .validateProfile(RP2040_PROFILE, result.project.circuit,
         { modelLibraryLock: result.modelLibrary }),
+    authoringAdmission: ({ project }) => validateBounded3v3AuthoringGraph({
+      board: RP2040_PICO_BOARD_DEFINITION, components: project.circuit.components, nets: project.circuit.nets,
+    }),
   }),
   [ESP32C3_PROFILE]: Object.freeze({
     schemas: Object.freeze([C3_PUBLIC_PROJECT_SCHEMA]),
@@ -7644,6 +7653,9 @@ const commonProjectAdapters = Object.freeze({
     electrical: (result) => modelLibraryImplementationForResult(result)
       .validateProfile(ESP32C3_PROFILE, result.project.circuit,
         { modelLibraryLock: result.modelLibrary }),
+    authoringAdmission: ({ project }) => validateBounded3v3AuthoringGraph({
+      board: ESP32C3_BOARD_DEFINITION, components: project.circuit.components, nets: project.circuit.nets,
+    }),
   }),
   [STM32F429ZI_PROFILE]: Object.freeze({
     schemas: Object.freeze([STM32_EDITABLE_PROJECT_SCHEMA, 'intent-mcu-stm32-public-project@1']),
@@ -7656,6 +7668,9 @@ const commonProjectAdapters = Object.freeze({
     electrical: (result) => modelLibraryImplementationForResult(result)
       .validateProfile(STM32F429ZI_PROFILE, result.project.circuit,
         { modelLibraryLock: result.modelLibrary }),
+    authoringAdmission: ({ project }) => validateBounded3v3AuthoringGraph({
+      board: STM32_BOARD_DEFINITION, components: project.circuit.components, nets: project.circuit.nets,
+    }),
   }),
 });
 function detectedAnnotatedWorkspaceSchema(source) {
