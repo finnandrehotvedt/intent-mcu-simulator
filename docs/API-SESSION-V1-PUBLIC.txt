@@ -131,7 +131,14 @@ the reference client sends that Undo request.
 Revision and concurrency rules
 Every command uses the current exact project_id, monotonically increasing
 sequence and latest expected_revision. Read the revision_after returned by each
-result before submitting the next request. API_STALE_REVISION,
+result before submitting the next request. A sequence is consumed only after a
+known queued or reconciled submit. Explicit API_RATE_LIMIT and API_QUEUE_FULL
+responses consume neither sequence nor mutation authority. After the bounded
+cooldown, the next user command may use that same sequence. An ambiguous
+transport submit is reconciled only with the identical request_id and payload;
+the reference client never invents a fresh mutation retry and locks with
+API_SUBMIT_RECONCILIATION_REQUIRED when bounded reconciliation cannot establish
+the outcome. API_STALE_REVISION,
 API_PROJECT_CHANGED and transaction conflicts require fresh discovery; never
 guess or silently retry a mutation. Reload, Open, New, profile change, revoke,
 expiry or project replacement removes the old authority.
@@ -142,15 +149,15 @@ API_PAIRING_EXPIRED, API_CLIENT_GONE, API_OWNER_GONE, API_STALE_REVISION,
 API_PROJECT_CHANGED, API_COMMAND_UNSUPPORTED, API_BATCH_SHAPE,
 API_BATCH_COMMAND_SHAPE, API_BATCH_REJECTED, API_TRANSACTION_SHAPE,
 API_REQUEST_LIMIT, API_RATE_LIMIT, API_QUEUE_FULL, API_RESULT_PENDING,
-API_RESULT_EXPIRED, API_REQUEST_REPLAY, API_REQUEST_ID_CONFLICT and
-API_SEQUENCE_REQUIRED. Canonical editor validation or history conflicts may be
+API_RESULT_EXPIRED, API_REQUEST_REPLAY, API_REQUEST_ID_CONFLICT,
+API_SEQUENCE_REQUIRED and API_SUBMIT_RECONCILIATION_REQUIRED. Canonical editor validation or history conflicts may be
 returned unchanged in the result code. Other API_* codes fail closed. Stop and
 inspect the returned code; create a fresh pairing when the owner, client, or
 pairing is gone.
 
 Limits
 Request body 48 KiB; owner result 40 KiB; pairing 120 seconds; owner lease 130
-seconds; client idle 120 seconds; client absolute life 15 minutes; queued
+seconds; client idle 120 seconds; client renewal horizon 15 minutes; queued
 request 30 seconds; transient full result 5 seconds; queue depth 16; active
 request/result ledger capacity 64 with fixed-memory replay tombstones and
 monotonic sequence rollover; rate 5 requests/second and 20 requests/10 seconds.
