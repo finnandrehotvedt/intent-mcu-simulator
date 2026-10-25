@@ -326,7 +326,8 @@ export function validateStm32Circuit(value, options = {}) {
   }
   return { ok: true, code: 'OK', draft, model: {
     sourcePin: 'PB0', sourceAnchor: 'PB0', sourceConnector: 'CN11', sourcePhysicalPin: 34,
-    groundAnchor: 'GND', groundConnector: 'CN11', groundPhysicalPin: 35,
+    groundAnchor: 'GND', groundConnector: STM32_PIN_MAP.GND.connector,
+    groundPhysicalPin: STM32_PIN_MAP.GND.physicalPin,
     nominalVolts: STM32_NOMINAL_VOLTS,
     resistorId: resistor.id, resistorOhms: resistor.properties.ohms,
     ledId: led.id, ledColor: led.properties.color, forwardVolts, peakCurrentAmps,

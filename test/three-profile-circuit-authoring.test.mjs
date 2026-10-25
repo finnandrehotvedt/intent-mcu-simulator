@@ -11,13 +11,16 @@ import { Stm32CircuitEditor, normalizeStm32CircuitDraft } from '../src/stm32-pub
 const profiles = [
   { name: 'Pico', prefix: 'RP2040', Editor: Rp2040PicoCircuitEditor, normalize: normalizeRp2040PicoCircuitDraft,
     source: { component: 'pico-1', pin: 'GP0' }, secondSource: { component: 'pico-1', pin: 'GP1' }, thirdSource: { component: 'pico-1', pin: 'GP2' },
-    ground: { component: 'pico-1', pin: 'GND3' } },
+    ground: { component: 'pico-1', pin: 'GND3' }, secondGround: { component: 'pico-1', pin: 'GND8' },
+    apiNets: ['net-gp1-resistor-2-drive', 'net-resistor-2-led-2', 'net-led-2-gnd8-ground'] },
   { name: 'C3', prefix: 'C3', Editor: Esp32C3CircuitEditor, normalize: normalizeEsp32C3CircuitDraft,
     source: { component: 'c3-1', pin: 'GPIO2' }, secondSource: { component: 'c3-1', pin: 'GPIO3' }, thirdSource: { component: 'c3-1', pin: 'GPIO0' },
-    ground: { component: 'c3-1', pin: 'GND' } },
+    ground: { component: 'c3-1', pin: 'GND' }, secondGround: { component: 'c3-1', pin: 'GND8' },
+    apiNets: ['net-gpio3-resistor-2-drive', 'net-resistor-2-led-2', 'net-led-2-gnd8-ground'] },
   { name: 'STM32', prefix: 'STM32', Editor: Stm32CircuitEditor, normalize: normalizeStm32CircuitDraft,
     source: { component: 'stm32-1', pin: 'PB0' }, secondSource: { component: 'stm32-1', pin: 'PB1' }, thirdSource: { component: 'stm32-1', pin: 'PB7' },
-    ground: { component: 'stm32-1', pin: 'GND' } },
+    ground: { component: 'stm32-1', pin: 'GND' }, secondGround: { component: 'stm32-1', pin: 'GND20' },
+    apiNets: ['net-pb1-resistor-2-drive', 'net-resistor-2-led-2', 'net-led-2-gnd20-ground'] },
 ];
 const withoutIdCounters = (value) => {
   const copy = structuredClone(value); delete copy.layout.idCounters; return copy;
@@ -107,6 +110,33 @@ for (const profile of profiles) {
       assert.equal(rejected.ok, false);
       assert.equal(JSON.stringify(editor.snapshot().draft), accepted);
     }
+  });
+
+  test(`${profile.name} canonical API batch creates and reverses a second documented GPIO circuit`, () => {
+    const editor = new profile.Editor();
+    const before = JSON.stringify(withoutIdCounters(editor.snapshot().draft));
+    const commands = [
+      { command: 'component.add', id: 'resistor-2', type: 'resistor.fixed-v1', position: { x: 0.62, y: 0.7, rotation: 0 } },
+      { command: 'component.add', id: 'led-2', type: 'led.basic-v1', position: { x: 0.8, y: 0.7, rotation: 0 } },
+      { command: 'wire.connect', net_id: profile.apiNets[0], from: profile.secondSource, to: { component: 'resistor-2', pin: 'A' } },
+      { command: 'wire.connect', net_id: profile.apiNets[1], from: { component: 'resistor-2', pin: 'B' }, to: { component: 'led-2', pin: 'ANODE' } },
+      { command: 'wire.connect', net_id: profile.apiNets[2], from: { component: 'led-2', pin: 'CATHODE' }, to: profile.secondGround },
+    ];
+    const applied = editor.applyApiBatch(commands, `multipin-${profile.name}`);
+    assert.equal(applied.ok, true, applied.code);
+    assert.deepEqual(applied.draft.nets.filter(({ id }) => profile.apiNets.includes(id)).map(({ id }) => id).sort(),
+      [...profile.apiNets].sort());
+    const accepted = JSON.stringify(applied.draft);
+    assert.equal(editor.undoApi(`multipin-${profile.name}`).ok, true);
+    assert.equal(JSON.stringify(withoutIdCounters(editor.snapshot().draft)), before);
+    assert.equal(editor.redoApi(`multipin-${profile.name}`).ok, true);
+    assert.equal(JSON.stringify(editor.snapshot().draft), accepted);
+    const rejected = editor.applyApiBatch([
+      { command: 'wire.connect', net_id: 'net-invalid', from: profile.thirdSource,
+        to: { component: 'resistor-2', pin: 'A' } },
+    ], `invalid-${profile.name}`);
+    assert.equal(rejected.ok, false);
+    assert.equal(JSON.stringify(editor.snapshot().draft), accepted);
   });
 
   test(`${profile.name} duplicates one disconnected part with stable IDs through UI and API owners`, () => {

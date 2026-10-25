@@ -259,7 +259,8 @@ if (sessionMode) {
       }
         throw new Error('API_SESSION_COMMAND_UNSUPPORTED');
       } catch (error) {
-        const code = typeof error?.message === 'string' && error.message.startsWith('API_')
+        const code = typeof error?.message === 'string'
+          && /^(?:API_[A-Z0-9_]+|(?:RP2040|C3|STM32)_API_[A-Z0-9_]+)$/u.test(error.message)
           ? error.message : 'API_SESSION_FAILED';
         stdout.write(`${JSON.stringify({ status: 'rejected', code })}\n`);
         if (['API_EXPIRED', 'API_AUTH_REQUIRED', 'API_OWNER_GONE', 'API_CLIENT_GONE'].includes(code)) break;

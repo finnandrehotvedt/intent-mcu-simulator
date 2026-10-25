@@ -32,7 +32,7 @@ test('STM32 named PB0 teaching circuit validates and edits transactionally', () 
   assert.deepEqual({ source: validated.model.sourcePin, sourcePin: validated.model.sourcePhysicalPin,
     ground: validated.model.groundAnchor, groundPin: validated.model.groundPhysicalPin,
     resistor: validated.model.resistorOhms },
-  { source: 'PB0', sourcePin: 34, ground: 'GND', groundPin: 35, resistor: 220 });
+  { source: 'PB0', sourcePin: 34, ground: 'GND', groundPin: 19, resistor: 220 });
   assert.deepEqual(normalizeStm32CircuitDraft(draft), validated.draft);
 
   const editor = new Stm32CircuitEditor(draft);

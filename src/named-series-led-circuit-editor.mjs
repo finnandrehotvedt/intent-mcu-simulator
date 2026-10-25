@@ -297,6 +297,9 @@ export class NamedSeriesLedCircuitEditor {
     const endpointKnown = (point) => {
       const component = next.components.find((item) => item.id === point?.component);
       if (!component || typeof point?.pin !== 'string') return false;
+      if (component.type === this.componentPolicy.board.type) {
+        return this.componentPolicy.board.pins.includes(point.pin);
+      }
       const policy = this.componentPolicy.parts.find((item) => item.type === component.type);
       if (policy?.pins) return policy.pins.includes(point.pin);
       const defaults = this.createDefault();
