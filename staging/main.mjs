@@ -2174,8 +2174,30 @@ function boundedRouteGeometry(config, draft) {
 
 function boundedCombinedPath(family, anchors) {
   const branches = routeFamilyPaths(family, anchors);
-  if (branches.length !== 2) throw new TypeError('BOUNDED_ROUTE_BRANCH_COUNT');
+  if (branches.length !== 2) throw new TypeError('BOUNDED_ROUTE_COMBINED_PATH_REQUIRES_TWO_BRANCHES');
   return [...branches[0].points, ...branches[1].points.slice(0, -1).reverse()];
+}
+
+function boundedPixelBranches(family, anchors, box) {
+  return routeFamilyPaths(family, anchors).map((branch) => ({
+    endpoint: branch.endpoint,
+    points: boundedPixelPoints(branch.points, box),
+  }));
+}
+
+function boundedReconcileStoredFamily(net, stored) {
+  if (!isRouteFamily(stored) || !stored.branches.length) return stored;
+  const expected = new Set(net.endpoints.map(picoEndpointKey));
+  const retained = stored.branches.filter((branch) => expected.has(picoEndpointKey(branch.endpoint)));
+  const hub = retained[0]?.points?.at(-1) ?? stored.branches[0]?.points?.at(-1);
+  if (!hub) return null;
+  const byEndpoint = new Map(retained.map((branch) => [picoEndpointKey(branch.endpoint), branch]));
+  return {
+    schema: 'intent-mcu-route@1',
+    branches: net.endpoints.map((endpoint) => byEndpoint.get(picoEndpointKey(endpoint)) ?? {
+      endpoint: structuredClone(endpoint), points: [structuredClone(hub)],
+    }),
+  };
 }
 
 function boundedPixelPoints(points, box) {
@@ -2200,14 +2222,23 @@ function boundedFamilyFromPixelRoute(net, points, box) {
 function boundedFamilyForNet(config, draft, net, geometry, occupied = []) {
   const stored = draft.layout.wireRoutes?.[net.id];
   if (stored) {
-    const family = materializeRouteFamily(net, stored, geometry.anchors, geometry.obstacles);
-    return { family, points: boundedPixelPoints(boundedCombinedPath(family, geometry.anchors), geometry.box) };
+    const family = materializeRouteFamily(net, boundedReconcileStoredFamily(net, stored), geometry.anchors, geometry.obstacles);
+    const branches = boundedPixelBranches(family, geometry.anchors, geometry.box);
+    const points = branches.length === 2
+      ? boundedPixelPoints(boundedCombinedPath(family, geometry.anchors), geometry.box) : branches[0].points;
+    return { family, branches, points };
+  }
+  if (net.endpoints.length !== 2) {
+    const family = materializeRouteFamily(net, null, geometry.anchors, geometry.obstacles);
+    const branches = boundedPixelBranches(family, geometry.anchors, geometry.box);
+    return { family, branches, points: branches[0].points };
   }
   const pixelAnchors = net.endpoints.map((endpoint) => picoEditorAnchor(endpoint, config.diagram, config.components));
   const points = picoEditorRoute(pixelAnchors, geometry.box,
     picoEditorObstacles(config.diagram, config.components), occupied);
   const storedFamily = boundedFamilyFromPixelRoute(net, points, geometry.box);
-  return { family: materializeRouteFamily(net, storedFamily, geometry.anchors, geometry.obstacles), points };
+  const family = materializeRouteFamily(net, storedFamily, geometry.anchors, geometry.obstacles);
+  return { family, branches: boundedPixelBranches(family, geometry.anchors, geometry.box), points };
 }
 
 function boundedPathData(points) {
@@ -2219,6 +2250,7 @@ function boundedCrossings(routes) {
   for (let leftIndex = 0; leftIndex < routes.length; leftIndex += 1) {
     for (let rightIndex = leftIndex + 1; rightIndex < routes.length; rightIndex += 1) {
       const left = routes[leftIndex]; const right = routes[rightIndex];
+      if (left.netId === right.netId) continue;
       for (let a = 0; a < left.points.length - 1; a += 1) {
         const a1 = left.points[a]; const a2 = left.points[a + 1];
         const aHorizontal = Math.abs(a1.y - a2.y) < 0.5;
@@ -2278,7 +2310,7 @@ function renderBoundedWireLayer(config) {
   const materialized = [];
   for (const net of draft.nets) {
     const resolved = boundedFamilyForNet(config, draft, net, geometry,
-      materialized.map((item) => ({ netId: item.net.id, points: item.points })));
+      materialized.flatMap((item) => item.branches.map((branch) => ({ netId: item.net.id, points: branch.points }))));
     materialized.push({ net, ...resolved });
   }
   const separated = separateParallelWireLanes(materialized.map((item) => ({
@@ -2287,8 +2319,11 @@ function renderBoundedWireLayer(config) {
     bounds: { left: 8, right: geometry.box.width - 8, top: 8, bottom: geometry.box.height - 8 } });
   const drawings = [];
   for (const item of materialized) {
-    const points = separated.routes.find((route) => route.netId === item.net.id)?.points ?? item.points;
-    const d = boundedPathData(points);
+    const twoTerminal = item.branches.length === 2;
+    const points = twoTerminal
+      ? separated.routes.find((route) => route.netId === item.net.id)?.points ?? item.points : item.points;
+    const renderedBranches = twoTerminal ? [{ points }] : item.branches;
+    const d = renderedBranches.map((branch) => boundedPathData(branch.points)).join(' ');
     const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     hit.classList.add('pico-editor-wire-hit'); hit.dataset.net = item.net.id; hit.setAttribute('d', d);
     hit.setAttribute('tabindex', '0'); hit.setAttribute('role', 'button');
@@ -2303,10 +2338,19 @@ function renderBoundedWireLayer(config) {
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.classList.add('pico-editor-wire');
     if (selection.kind === 'net' && selection.id === item.net.id) path.classList.add('selected');
-    path.dataset.net = item.net.id; path.dataset.points = JSON.stringify(points);
+    path.dataset.net = item.net.id; path.dataset.points = JSON.stringify(renderedBranches.map((branch) => branch.points));
+    path.dataset.renderedEndpoints = String(item.branches.length);
     path.dataset.laneConflicts = String(separated.conflicts.filter((value) => value.leftNet === item.net.id || value.rightNet === item.net.id).length);
     path.style.setProperty('--wire-color', draft.layout.wireStyles[item.net.id] ?? '#39dff2');
     path.setAttribute('d', d); drawings.push(hit, path);
+    if (item.branches.length > 2) {
+      const hub = item.branches[0].points.at(-1);
+      const junction = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      junction.classList.add('pico-wire-junction'); junction.dataset.net = item.net.id;
+      junction.dataset.renderedEndpoints = String(item.branches.length);
+      junction.setAttribute('cx', hub.x); junction.setAttribute('cy', hub.y); junction.setAttribute('r', '4');
+      drawings.push(junction);
+    }
     if (selection.kind === 'net' && selection.id === item.net.id) {
       for (const branch of routeFamilyPaths(item.family, geometry.anchors)) {
         for (let index = 1; index < branch.points.length - 1; index += 1) {
@@ -2344,7 +2388,10 @@ function renderBoundedWireLayer(config) {
       }
     }
   }
-  for (const crossing of boundedCrossings(separated.routes)) {
+  const crossingRoutes = materialized.flatMap((item) => item.branches.length === 2
+    ? [separated.routes.find((route) => route.netId === item.net.id) ?? { netId: item.net.id, points: item.points }]
+    : item.branches.map((branch) => ({ netId: item.net.id, points: branch.points })));
+  for (const crossing of boundedCrossings(crossingRoutes)) {
     const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     marker.classList.add('pico-wire-crossing'); marker.setAttribute('cx', crossing.x); marker.setAttribute('cy', crossing.y);
     marker.setAttribute('r', '4'); marker.dataset.crossing = `${crossing.leftNet}:${crossing.rightNet}`;
@@ -2371,25 +2418,29 @@ function boundedRouteCandidateValid(config, draft, targetNetId, targetFamily, ge
   const routes = [];
   for (const net of draft.nets) {
     const resolved = net.id === targetNetId
-      ? { family: targetFamily, points: boundedPixelPoints(boundedCombinedPath(targetFamily, geometry.anchors), geometry.box) }
+      ? (() => {
+        const branches = boundedPixelBranches(targetFamily, geometry.anchors, geometry.box);
+        return { family: targetFamily, branches, points: branches.length === 2
+          ? boundedPixelPoints(boundedCombinedPath(targetFamily, geometry.anchors), geometry.box) : branches[0].points };
+      })()
       : boundedFamilyForNet(config, draft, net, geometry, routes);
-    const points = resolved.points;
-    const blocked = points.slice(0, -1).some((start, index) => {
+    const candidateBranches = resolved.branches ?? [{ points: resolved.points }];
+    const blocked = candidateBranches.some(({ points }) => points.slice(0, -1).some((start, index) => {
       const end = points[index + 1];
       return picoEditorObstacles(config.diagram, config.components).some((body) => {
-        const endpointEscape = index === 0 && body.component === net.endpoints[0].component
-          || index === points.length - 2 && body.component === net.endpoints[1].component;
+        const endpointEscape = index === 0 && net.endpoints.some(({ component }) => body.component === component);
         return !endpointEscape && picoSegmentCrossesBody(start, end, body);
       });
-    });
+    }));
     if (blocked) return { ok: false, code: 'WIRE_ROUTE_BODY_INTERSECTION' };
-    routes.push({ netId: net.id, points });
+    routes.push(...candidateBranches.map(({ points }) => ({ netId: net.id, points })));
   }
   const separated = separateParallelWireLanes(routes, {
     clearance: 8, obstacles: picoEditorObstacles(config.diagram, config.components),
     bounds: { left: 8, right: geometry.box.width - 8, top: 8, bottom: geometry.box.height - 8 },
   });
-  return separated.conflicts.length
+  const interNetConflicts = separated.conflicts.filter((conflict) => conflict.leftNet !== conflict.rightNet);
+  return interNetConflicts.length
     ? { ok: false, code: 'WIRE_LANE_01_OVERLAP' }
     : { ok: true, crossings: boundedCrossings(separated.routes).length };
 }

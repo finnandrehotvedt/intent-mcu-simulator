@@ -23,7 +23,8 @@ const profiles = [
   try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     page.setDefaultTimeout(10_000);
-    page.on('pageerror', (error) => process.stderr.write(`pageerror: ${error.message}\n`));
+    const pageErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error));
     await page.goto(base, { waitUntil: 'domcontentloaded', timeout: 10_000 });
     await page.waitForFunction(() => Boolean(window.__RP2040_PUBLIC_WORKBENCH__), null, { timeout: 10_000 });
     for (const profile of profiles) {
@@ -200,6 +201,27 @@ const profiles = [
       }, profile);
       assert.equal(branch.endpoints, 3);
       assert.equal(branch.validation.ok, false);
+      await page.waitForFunction(({ layer, api }) => {
+        const wireLayer = layer.replace('-components', '-wires');
+        const svg = document.querySelector(wireLayer);
+        const wire = svg?.querySelector('.pico-editor-wire[data-net="net-led-2-ground"]');
+        const junction = svg?.querySelector('.pico-wire-junction[data-net="net-led-2-ground"]');
+        const paths = wire?.getAttribute('d').split(/(?=M )/u).filter(Boolean) ?? [];
+        const starts = paths.map((path) => path.match(/^M ([\d.-]+) ([\d.-]+)/u)).filter(Boolean)
+          .map((match) => ({ x: Number(match[1]), y: Number(match[2]) }));
+        const state = window[api].state(); const graph = state.circuit ?? state.project.circuit;
+        const net = graph.nets.find(({ id }) => id === 'net-led-2-ground');
+        const box = svg?.getBoundingClientRect();
+        const anchors = net?.endpoints.map((endpoint) => document.querySelector(
+          `${layer} [data-editor-endpoint="${endpoint.component}.${endpoint.pin}"]`)).map((node) => {
+          const pin = node?.getBoundingClientRect();
+          return pin && box ? { x: pin.left + pin.width / 2 - box.left, y: pin.top + pin.height / 2 - box.top } : null;
+        }) ?? [];
+        const namedPinsAttached = anchors.every((anchor) => anchor && starts.some((start) =>
+          Math.hypot(start.x - anchor.x, start.y - anchor.y) < 4));
+        return wire?.dataset.renderedEndpoints === '3' && paths.length === 3 && namedPinsAttached
+          && junction?.dataset.renderedEndpoints === '3';
+      }, profile);
       const endpointSelect = profile.id === 'board.rp2040-pico-v1' ? '#pico-branch-endpoint'
         : profile.id === 'board.esp32-c3-devmodule-v1' ? '#c3-branch-endpoint' : '#stm32-branch-endpoint';
       const removeBranch = profile.id === 'board.rp2040-pico-v1' ? '#pico-remove-branch'
@@ -215,6 +237,11 @@ const profiles = [
         const state = window[api].state(); const graph = state.circuit ?? state.project.circuit;
         return graph.nets.find(({ id }) => id === 'net-led-2-ground').endpoints.length;
       }, profile), 3);
+      assert.equal(await page.evaluate(({ layer }) => {
+        const wireLayer = layer.replace('-components', '-wires');
+        const wire = document.querySelector(`${wireLayer} .pico-editor-wire[data-net="net-led-2-ground"]`);
+        return wire?.dataset.renderedEndpoints === '3' && (wire.getAttribute('d').match(/M /g) ?? []).length === 3;
+      }, profile), true);
       await page.evaluate(({ api }) => window[api].undoCircuit(), profile);
 
       await page.evaluate(({ api }) => window[api].selectCircuit({ kind: 'component', id: 'resistor-1' }), profile);
@@ -248,6 +275,7 @@ const profiles = [
       assert.equal(await page.evaluate(({ api }) => {
         const state = window[api].state(); return JSON.stringify(state.circuit ?? state.project.circuit);
       }, profile), unsafeBefore);
+      assert.deepEqual(pageErrors.map((error) => error.message), []);
     }
     process.stdout.write('RC139 three-profile browser authoring PASS\n');
   } finally {
