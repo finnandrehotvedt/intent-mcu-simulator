@@ -92,9 +92,18 @@ export function createSeriesLedConnectionPolicy({
     is(draft, left, leftType, leftPins) && is(draft, right, rightType, rightPins)
     || is(draft, right, leftType, leftPins) && is(draft, left, rightType, rightPins);
   return (draft, left, right) => {
-    if (pair(draft, left, right, boardType, [sourcePin], resistorType, ['A', 'B'])) return sourceNetId;
-    if (pair(draft, left, right, resistorType, ['A', 'B'], ledType, ['ANODE'])) return 'net-series';
-    if (pair(draft, left, right, ledType, ['CATHODE'], boardType, [groundPin])) return 'net-ground';
+    const resistor = [left, right].find((point) => endpointType(draft, point) === resistorType);
+    const led = [left, right].find((point) => endpointType(draft, point) === ledType);
+    if (pair(draft, left, right, boardType, [sourcePin], resistorType, ['A', 'B'])) {
+      return resistor?.component === 'resistor-1' ? sourceNetId : `net-${resistor.component}-drive`;
+    }
+    if (pair(draft, left, right, resistorType, ['A', 'B'], ledType, ['ANODE'])) {
+      return resistor?.component === 'resistor-1' && led?.component === 'led-1'
+        ? 'net-series' : `net-${resistor.component}-${led.component}`;
+    }
+    if (pair(draft, left, right, ledType, ['CATHODE'], boardType, [groundPin])) {
+      return led?.component === 'led-1' ? 'net-ground' : `net-${led.component}-ground`;
+    }
     return null;
   };
 }
@@ -147,10 +156,34 @@ export class NamedSeriesLedCircuitEditor {
         ...this.componentPolicy.parts.map((part) => ({
           id: part.id, type: part.type, displayName: part.displayName,
           limitation: part.limitation, supportedProperties: clone(part.supportedProperties),
-          present: presentTypes.has(part.type), addable: !presentTypes.has(part.type), fixed: false,
+          present: presentTypes.has(part.type), count: this.draft.components.filter((item) => item.type === part.type).length,
+          addable: !presentTypes.has(part.type), repeatable: this.draft.components.length < 17, fixed: false,
         })),
       ],
     };
+  }
+
+  nextComponentId(type) {
+    const stem = type === BOUNDED_RESISTOR_TYPE ? 'resistor' : type === BOUNDED_LED_TYPE ? 'led' : null;
+    if (!stem) return null;
+    for (let index = 1; index <= 16; index += 1) {
+      const id = `${stem}-${index}`;
+      if (!this.draft.components.some((component) => component.id === id)) return id;
+    }
+    return null;
+  }
+
+  newProject() {
+    const next = clone(this.createDefault());
+    const board = next.components.find((component) => component.type === this.fixedComponentType);
+    next.components = [board];
+    next.nets = [];
+    next.layout.positions = { [board.id]: next.layout.positions[board.id] };
+    next.layout.wireStyles = {};
+    next.layout.wireRoutes = {};
+    next.layout.componentAppearance = { schema: 'intent-mcu-component-appearance@1', components: {} };
+    return { ok: true, changed: true, code: this.code('NEW_PROJECT'),
+      ...this.commit(next, { kind: 'component', id: board.id }) };
   }
 
   select(selection) {
@@ -196,18 +229,30 @@ export class NamedSeriesLedCircuitEditor {
         if (!operation || typeof operation !== 'object' || Array.isArray(operation)) throw new Error('SHAPE');
         if (operation.command === 'component.add') {
           const policy = this.componentPolicy.parts.find((part) => part.type === operation.type);
-          if (!policy || operation.id !== policy.id || next.components.some((item) => item.id === operation.id)
+          const expectedStem = operation.type === BOUNDED_RESISTOR_TYPE ? 'resistor'
+            : operation.type === BOUNDED_LED_TYPE ? 'led' : null;
+          if (!policy || !new RegExp(`^${expectedStem}-(?:[1-9]|1[0-6])$`, 'u').test(operation.id)
+              || next.components.some((item) => item.id === operation.id)
               || !operation.position || !Number.isFinite(operation.position.x) || !Number.isFinite(operation.position.y)
               || !Number.isFinite(operation.position.rotation)) throw new Error('COMPONENT_ADD_INVALID');
-          next.components.push({ id: policy.id, type: policy.type, label: policy.label,
+          next.components.push({ id: operation.id, type: policy.type,
+            label: operation.id === policy.id ? policy.label : `${policy.displayName} ${operation.id.split('-').at(-1)}`,
             properties: clone(policy.properties), controls: {} });
-          next.layout.positions[policy.id] = clone(operation.position);
+          next.layout.positions[operation.id] = clone(operation.position);
         } else if (operation.command === 'component.remove') {
           const target = next.components.find((item) => item.id === operation.component_id);
           if (!target || target.type === this.fixedComponentType) throw new Error('COMPONENT_REMOVE_INVALID');
           next.components = next.components.filter((item) => item.id !== target.id);
           next.nets = next.nets.filter((net) => !net.endpoints.some((point) => point.component === target.id));
           delete next.layout.positions[target.id];
+          delete next.layout.componentAppearance?.components?.[target.id];
+          const retainedNets = new Set(next.nets.map(({ id }) => id));
+          for (const netId of Object.keys(next.layout.wireStyles)) {
+            if (!retainedNets.has(netId)) delete next.layout.wireStyles[netId];
+          }
+          for (const netId of Object.keys(next.layout.wireRoutes ?? {})) {
+            if (!retainedNets.has(netId)) delete next.layout.wireRoutes[netId];
+          }
         } else if (operation.command === 'component.property.set') {
           const target = next.components.find((item) => item.id === operation.component_id);
           const policy = target && this.componentPolicy.parts.find((part) => part.type === target.type);
@@ -237,8 +282,6 @@ export class NamedSeriesLedCircuitEditor {
         } else throw new Error('COMMAND_UNSUPPORTED');
       }
       if (!this.validatePropertyPair(next).ok) throw new Error('ELECTRICAL_LIMIT');
-      const validation = this.validate(next);
-      if (!validation?.ok) throw new Error('VALIDATION_FAILED');
       const result = this.commit(next);
       this.apiTransactionHead = transactionId;
       return { ok: true, code: this.code('API_BATCH_COMMITTED'), transactionId, ...result };
@@ -345,6 +388,33 @@ export class NamedSeriesLedCircuitEditor {
     try {
       return { ok: true, changed: true, code: this.code('COMPONENT_ADDED'), componentId: policy.id,
         ...this.commit(next, { kind: 'component', id: policy.id }) };
+    } catch (error) {
+      return this.fail('COMPONENT_ADD_INVALID', { type, cause: error.code ?? error.message });
+    }
+  }
+
+  addComponent(type, position = null) {
+    if (type === this.componentPolicy.board.type) return this.fail('BOARD_FIXED');
+    const policy = this.componentPolicy.parts.find((part) => part.type === type);
+    const id = policy && this.nextComponentId(type);
+    if (!policy || !id) return this.fail(policy ? 'COMPONENT_LIMIT' : 'COMPONENT_UNSUPPORTED', { type });
+    if (position !== null && (!position || !Number.isFinite(position.x) || !Number.isFinite(position.y))) {
+      return this.fail('COMPONENT_ADD_POSITION_INVALID', { type });
+    }
+    const index = Number(id.split('-').at(-1));
+    const next = clone(this.draft);
+    next.components.push({ id, type: policy.type,
+      label: type === BOUNDED_RESISTOR_TYPE ? `220 Ω resistor ${index}` : `External red LED ${index}`,
+      properties: clone(policy.properties), controls: {} });
+    const fallback = { x: Math.min(0.88, policy.position.x + ((index - 1) % 4) * 0.08),
+      y: Math.min(0.86, policy.position.y + Math.floor((index - 1) / 4) * 0.12), rotation: policy.position.rotation };
+    next.layout.positions[id] = position === null ? fallback : {
+      x: Math.max(0.08, Math.min(0.92, position.x)), y: Math.max(0.1, Math.min(0.9, position.y)),
+      rotation: policy.position.rotation,
+    };
+    try {
+      return { ok: true, changed: true, code: this.code('COMPONENT_ADDED'), componentId: id,
+        ...this.commit(next, { kind: 'component', id }) };
     } catch (error) {
       return this.fail('COMPONENT_ADD_INVALID', { type, cause: error.code ?? error.message });
     }

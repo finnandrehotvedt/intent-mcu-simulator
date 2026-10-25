@@ -153,7 +153,7 @@ export function normalizeStm32CircuitDraft(value) {
   if (!exactKeys(value, ['schema', 'boardProfile', 'components', 'nets', 'layout'])
       || value.schema !== STM32_PUBLIC_CIRCUIT_SCHEMA || value.boardProfile !== STM32_PUBLIC_PROFILE
       || !Array.isArray(value.components) || !Array.isArray(value.nets)
-      || value.components.length > 4 || value.nets.length > 4
+      || value.components.length > 17 || value.nets.length > 24
       || !(exactKeys(value.layout, ['positions', 'wireStyles'])
         || exactKeys(value.layout, ['positions', 'wireStyles', 'wireRoutes'])
         || exactKeys(value.layout, ['positions', 'wireStyles', 'componentAppearance'])

@@ -1,0 +1,83 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Finn Andre Hotvedt and IntentForce
+
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import { Esp32C3CircuitEditor, normalizeEsp32C3CircuitDraft } from '../src/esp32c3-public-circuit.mjs';
+import { Rp2040PicoCircuitEditor, normalizeRp2040PicoCircuitDraft } from '../src/rp2040-pico-circuit.mjs';
+import { Stm32CircuitEditor, normalizeStm32CircuitDraft } from '../src/stm32-public-circuit.mjs';
+
+const profiles = [
+  { name: 'Pico', Editor: Rp2040PicoCircuitEditor, normalize: normalizeRp2040PicoCircuitDraft,
+    source: { component: 'pico-1', pin: 'GP0' }, ground: { component: 'pico-1', pin: 'GND3' } },
+  { name: 'C3', Editor: Esp32C3CircuitEditor, normalize: normalizeEsp32C3CircuitDraft,
+    source: { component: 'c3-1', pin: 'GPIO2' }, ground: { component: 'c3-1', pin: 'GND' } },
+  { name: 'STM32', Editor: Stm32CircuitEditor, normalize: normalizeStm32CircuitDraft,
+    source: { component: 'stm32-1', pin: 'PB0' }, ground: { component: 'stm32-1', pin: 'GND' } },
+];
+
+for (const profile of profiles) {
+  test(`${profile.name} authors a non-template circuit from a controller-only project`, () => {
+    const editor = new profile.Editor();
+    assert.equal(editor.newProject().draft.components.length, 1);
+    assert.equal(editor.snapshot().draft.nets.length, 0);
+
+    assert.equal(editor.addComponent('resistor.fixed-v1').componentId, 'resistor-1');
+    assert.equal(editor.addComponent('resistor.fixed-v1', { x: 0.64, y: 0.22 }).componentId, 'resistor-2');
+    assert.equal(editor.addComponent('led.basic-v1').componentId, 'led-1');
+    assert.equal(editor.addComponent('led.basic-v1', { x: 0.7, y: 0.72 }).componentId, 'led-2');
+    assert.equal(editor.setComponentProperty('resistor-2', 'ohms', 470).ok, true);
+    assert.equal(editor.moveComponent('led-2', 0.81, 0.67).ok, true);
+
+    assert.equal(editor.connectEndpoints(profile.source, { component: 'resistor-1', pin: 'A' }).ok, true);
+    assert.equal(editor.connectEndpoints({ component: 'resistor-1', pin: 'B' }, { component: 'led-1', pin: 'ANODE' }).ok, true);
+    assert.equal(editor.connectEndpoints({ component: 'led-1', pin: 'CATHODE' }, profile.ground).ok, true);
+    const authored = editor.snapshot().draft;
+    assert.equal(authored.components.length, 5);
+    assert.deepEqual(authored.components.map(({ id }) => id).sort(),
+      ['led-1', 'led-2', 'resistor-1', 'resistor-2', profile.source.component].sort());
+    assert.equal(authored.components.find(({ id }) => id === 'resistor-2').properties.ohms, 470);
+
+    editor.select({ kind: 'net', id: 'net-series' });
+    assert.equal(editor.deleteSelected().ok, true);
+    assert.equal(editor.snapshot().draft.nets.some(({ id }) => id === 'net-series'), false);
+    const disconnected = structuredClone(editor.snapshot().draft);
+    assert.equal(editor.undo().ok, true);
+    const connected = structuredClone(editor.snapshot().draft);
+    assert.equal(editor.redo().ok, true);
+    assert.deepEqual(editor.snapshot().draft, disconnected);
+    assert.deepEqual(profile.normalize(JSON.parse(JSON.stringify(connected))), connected);
+
+    const reopened = new profile.Editor(JSON.parse(JSON.stringify(connected)));
+    assert.deepEqual(reopened.snapshot().draft, connected);
+    assert.equal(reopened.snapshot().draft.layout.positions['led-2'].x, 0.81);
+  });
+
+  test(`${profile.name} canonical API batch adds multiple stable instances atomically`, () => {
+    const editor = new profile.Editor();
+    const before = structuredClone(editor.snapshot().draft);
+    const result = editor.applyApiBatch([
+      { command: 'component.add', id: 'resistor-2', type: 'resistor.fixed-v1', position: { x: 0.62, y: 0.7, rotation: 0 } },
+      { command: 'component.add', id: 'led-2', type: 'led.basic-v1', position: { x: 0.8, y: 0.7, rotation: 0 } },
+      { command: 'component.property.set', component_id: 'resistor-2', key: 'ohms', value: 470 },
+    ], `rc139-${profile.name.toLowerCase()}-batch`);
+    assert.equal(result.ok, true);
+    assert.equal(result.draft.components.length, before.components.length + 2);
+    assert.equal(editor.undoApi(`rc139-${profile.name.toLowerCase()}-batch`).ok, true);
+    assert.deepEqual(editor.snapshot().draft, before);
+    assert.equal(editor.redoApi(`rc139-${profile.name.toLowerCase()}-batch`).ok, true);
+    assert.equal(editor.snapshot().draft.components.find(({ id }) => id === 'resistor-2').properties.ohms, 470);
+
+    const accepted = JSON.stringify(editor.snapshot().draft);
+    for (const operations of [
+      [{ command: 'component.add', id: 'led-3', type: 'resistor.fixed-v1', position: { x: 0.4, y: 0.4, rotation: 0 } }],
+      [{ command: 'wire.connect', net_id: 'net-unknown', from: { component: profile.source.component, pin: 'UNKNOWN' }, to: { component: 'resistor-2', pin: 'A' } }],
+      [{ command: 'wire.connect', net_id: 'net-duplicate', from: profile.source, to: { component: 'resistor-1', pin: 'A' } }],
+    ]) {
+      const rejected = editor.applyApiBatch(operations, `negative-${Math.random()}`);
+      assert.equal(rejected.ok, false);
+      assert.equal(JSON.stringify(editor.snapshot().draft), accepted);
+    }
+  });
+}

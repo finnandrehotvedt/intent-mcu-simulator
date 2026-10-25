@@ -1288,7 +1288,8 @@ function cancelNamedWire(workbench, statusElement) {
 
 function boundedPartSummary(part, component) {
   if (part.fixed) return 'Fixed controller';
-  if (!component) return 'Missing · add to repair';
+  if (!component) return '0 placed · add a first part';
+  if ((part.count ?? 1) > 1) return `${part.count} placed · select one on the canvas to inspect`;
   if (part.type === 'resistor.fixed-v1') return `${component.properties.ohms} Ω · bounded ideal model`;
   if (part.type === 'led.basic-v1') return `${component.properties.color} · bounded ideal LED model`;
   return 'Unsupported';
@@ -1354,19 +1355,19 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
     const row = document.createElement('article');
     row.className = 'bounded-part-card'; row.dataset.type = part.type;
     row.dataset.present = String(part.present); row.setAttribute('role', 'listitem');
-    row.draggable = part.addable;
+    row.draggable = part.addable || part.repeatable;
     const name = document.createElement('strong'); name.textContent = part.displayName;
     const summary = document.createElement('small'); summary.textContent = boundedPartSummary(part, component);
     const id = document.createElement('code'); id.textContent = component?.id ?? part.id;
     const action = document.createElement('button'); action.type = 'button';
     action.dataset.boundedAdd = part.type;
-    action.textContent = part.fixed ? 'Fixed' : part.present ? 'Added' : 'Add missing part';
-    action.disabled = !part.addable;
+    action.textContent = part.fixed ? 'Fixed' : part.present ? 'Add another' : 'Add part';
+    action.disabled = !(part.addable || part.repeatable);
     action.setAttribute('aria-label', part.fixed
       ? `${part.displayName} is fixed for this profile`
-      : part.present ? `${part.displayName} is already present` : `Add missing ${part.displayName}`);
-    if (part.addable) {
-      action.addEventListener('click', () => editCircuit('addMissingComponent', part.type));
+      : `Add ${part.displayName}`);
+    if (part.addable || part.repeatable) {
+      action.addEventListener('click', () => editCircuit('addComponent', part.type));
       row.addEventListener('dragstart', (event) => {
         event.dataTransfer.effectAllowed = 'copy';
         event.dataTransfer.setData('application/x-intent-component', JSON.stringify({ profile, type: part.type }));
@@ -1547,7 +1548,7 @@ function installBoundedPartsDrop(profile, workbench, diagram) {
       x: Math.max(0.08, Math.min(0.92, (event.clientX - box.left) / box.width)),
       y: Math.max(0.1, Math.min(0.9, (event.clientY - box.top) / box.height)),
     };
-    const result = workbench.editCircuit('addMissingComponent', payload.type, position);
+    const result = workbench.editCircuit('addComponent', payload.type, position);
     const status = document.querySelector('#simple-parts-status');
     if (status && selectedCompilerProfile === profile) status.textContent = result.ok
       ? `Added ${result.componentId} at the dropped canvas position. Undo is available.`
@@ -1801,7 +1802,7 @@ function renderBoundedAccessibleConnections(profile, label, state, workbench, an
     graph,
     catalogue: uiComponentCatalog,
     validation: state.circuitEditor.validation,
-    limits: { components: 4, nets: 4, endpoints: 8 },
+    limits: { components: 17, nets: 24, endpoints: 48 },
   });
   const endpoint = (pin) => ({ component: pin.componentId, pin: pin.id });
   renderAccessibleConnections({
@@ -1883,7 +1884,7 @@ function navigationState() {
   return { profile, generation: 1, revision: state.revision,
     connections: accessibleView({ profile, revision: state.circuitEditor.revision,
       graph: state.circuitEditor.draft, catalogue: uiComponentCatalog,
-      validation: state.circuitEditor.validation, limits: { components: 4, nets: 4, endpoints: 8 } }),
+      validation: state.circuitEditor.validation, limits: { components: 17, nets: 24, endpoints: 48 } }),
     sources: [{ name: sourceName, content: source }], criteria: brief.acceptanceCriteria, scenarios: [] };
 }
 function currentNavigationIdentity() {
@@ -2619,6 +2620,8 @@ window.__RP2040_PUBLIC_WORKBENCH__ = {
   moveCircuitComponent: (id, x, y) => picoPublicWorkbench.editCircuit('moveComponent', id, x, y),
   rotateCircuitComponent: (id) => picoPublicWorkbench.editCircuit('rotateComponent', id),
   activateEndpoint: (endpoint) => picoPublicWorkbench.editCircuit('activateEndpoint', endpoint),
+  newCircuit: () => picoPublicWorkbench.editCircuit('newProject'),
+  addComponent: (type, position) => picoPublicWorkbench.editCircuit('addComponent', type, position),
   addMissingComponent: (type) => picoPublicWorkbench.editCircuit('addMissingComponent', type),
   setComponentProperty: (id, key, value) => picoPublicWorkbench.editCircuit('setComponentProperty', id, key, value),
   setComponentAppearance: (id, preset) => picoPublicWorkbench.editCircuit('setComponentAppearance', id, preset),
@@ -2902,6 +2905,8 @@ window.__ESP32C3_PUBLIC_WORKBENCH__ = {
   moveCircuitComponent: (id, x, y) => c3PublicWorkbench.editCircuit('moveComponent', id, x, y),
   rotateCircuitComponent: (id) => c3PublicWorkbench.editCircuit('rotateComponent', id),
   activateEndpoint: (endpoint) => c3PublicWorkbench.editCircuit('activateEndpoint', endpoint),
+  newCircuit: () => c3PublicWorkbench.editCircuit('newProject'),
+  addComponent: (type, position) => c3PublicWorkbench.editCircuit('addComponent', type, position),
   addMissingComponent: (type) => c3PublicWorkbench.editCircuit('addMissingComponent', type),
   setComponentProperty: (id, key, value) => c3PublicWorkbench.editCircuit('setComponentProperty', id, key, value),
   setComponentAppearance: (id, preset) => c3PublicWorkbench.editCircuit('setComponentAppearance', id, preset),
@@ -3213,6 +3218,8 @@ window.__STM32_PUBLIC_WORKBENCH__ = {
   moveCircuitComponent: (id, x, y) => stm32PublicWorkbench.editCircuit('moveComponent', id, x, y),
   rotateCircuitComponent: (id) => stm32PublicWorkbench.editCircuit('rotateComponent', id),
   activateEndpoint: (endpoint) => stm32PublicWorkbench.editCircuit('activateEndpoint', endpoint),
+  newCircuit: () => stm32PublicWorkbench.editCircuit('newProject'),
+  addComponent: (type, position) => stm32PublicWorkbench.editCircuit('addComponent', type, position),
   addMissingComponent: (type) => stm32PublicWorkbench.editCircuit('addMissingComponent', type),
   setComponentProperty: (id, key, value) => stm32PublicWorkbench.editCircuit('setComponentProperty', id, key, value),
   setComponentAppearance: (id, preset) => stm32PublicWorkbench.editCircuit('setComponentAppearance', id, preset),
@@ -3227,6 +3234,9 @@ window.__STM32_PUBLIC_WORKBENCH__ = {
   setWireColor: (color) => setBoundedWireColor('stm32', color),
   setWireRoute: (netId, route) => stm32PublicWorkbench.editCircuit('setWireRoute', netId, route),
 };
+document.querySelector('#pico-new-circuit')?.addEventListener('click', () => picoPublicWorkbench.editCircuit('newProject'));
+document.querySelector('#c3-new-circuit')?.addEventListener('click', () => c3PublicWorkbench.editCircuit('newProject'));
+document.querySelector('#stm32-new-circuit')?.addEventListener('click', () => stm32PublicWorkbench.editCircuit('newProject'));
 installBoundedPartsDrop(RP2040_PROFILE, picoPublicWorkbench, elements.picodiagram);
 installBoundedPartsDrop(ESP32C3_PROFILE, c3PublicWorkbench, elements.c3diagram);
 installBoundedPartsDrop(STM32F429ZI_PROFILE, stm32PublicWorkbench, elements.stm32diagram);

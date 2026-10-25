@@ -11,8 +11,8 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.137",
-    "current": "1.1.0-rc.138"
+    "previous": "1.1.0-rc.138",
+    "current": "1.1.0-rc.139"
   },
   "changes": [
     {
@@ -24,7 +24,7 @@
       "contracts": [
         "x59-four-profile-simple-advanced-view-v1"
       ],
-      "summary": "Makes valid historical browser drafts discoverable across all four profiles and opens each as a separate validated copy while preserving original storage bytes and rejecting invalid entries unchanged."
+      "summary": "Adds controller-only new circuits and stable multi-instance resistor/LED authoring for Pico, ESP32-C3 and STM32 while preserving exact named-pin, Undo/Redo, local-file, recovery and canonical API boundaries."
     }
   ],
   "migrationRequired": false,
