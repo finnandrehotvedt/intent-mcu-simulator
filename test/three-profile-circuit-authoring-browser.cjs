@@ -8,13 +8,13 @@ const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/
 const base = process.env.RC139_AUTHORING_URL || 'http://host.docker.internal:18789';
 const profiles = [
   { id: 'board.rp2040-pico-v1', api: '__RP2040_PUBLIC_WORKBENCH__', button: '#pico-new-circuit',
-    layer: '#pico-editor-components', name: '#pico-project-name', source: '#pico-source', openInput: '#pico-open-input',
+    layer: '#pico-editor-components', list: '#pico-parts-list', name: '#pico-project-name', source: '#pico-source', openInput: '#pico-open-input',
     board: 'pico-1', sourcePin: 'GP0', secondSourcePin: 'GP1', groundPin: 'GND3', sourceLead: 'B', branchLead: 'A', ledLead: 'A' },
   { id: 'board.esp32-c3-devmodule-v1', api: '__ESP32C3_PUBLIC_WORKBENCH__', button: '#c3-new-circuit',
-    layer: '#c3-editor-components', name: '#c3-project-name', source: '#c3-source', openInput: '#c3-open-input',
+    layer: '#c3-editor-components', list: '#c3-parts-list', name: '#c3-project-name', source: '#c3-source', openInput: '#c3-open-input',
     board: 'c3-1', sourcePin: 'GPIO2', secondSourcePin: 'GPIO3', groundPin: 'GND', sourceLead: 'A', branchLead: 'B', ledLead: 'B' },
   { id: 'board.stm32f429zi-nucleo144-v1', api: '__STM32_PUBLIC_WORKBENCH__', button: '#stm32-new-circuit',
-    layer: '#stm32-editor-components', name: '#stm32-project-name', source: '#stm32-source', openInput: '#stm32-open-input',
+    layer: '#stm32-editor-components', list: '#stm32-parts-list', name: '#stm32-project-name', source: '#stm32-source', openInput: '#stm32-open-input',
     board: 'stm32-1', sourcePin: 'PB0', secondSourcePin: 'PB1', groundPin: 'GND', sourceLead: 'A', branchLead: 'B', ledLead: 'B' },
 ];
 
@@ -27,9 +27,37 @@ const profiles = [
     page.on('pageerror', (error) => pageErrors.push(error));
     await page.goto(base, { waitUntil: 'domcontentloaded', timeout: 10_000 });
     await page.waitForFunction(() => Boolean(window.__RP2040_PUBLIC_WORKBENCH__), null, { timeout: 10_000 });
+    await page.waitForFunction(() => {
+      const cards = [...document.querySelectorAll('#catalog-list .catalog-item')];
+      return cards.length >= 5 && cards.every((card) => card.querySelector('.catalog-thumbnail-slot svg[role="img"]'));
+    });
+    const avrCatalogueArtwork = await page.evaluate(() => ({
+      cards: document.querySelectorAll('#catalog-list .catalog-item').length,
+      thumbnails: document.querySelectorAll('#catalog-list .catalog-thumbnail-slot svg[role="img"]').length,
+      empty: [...document.querySelectorAll('#catalog-list .catalog-thumbnail-slot')].filter((slot) => !slot.firstElementChild).length,
+      labels: [...document.querySelectorAll('#catalog-list .catalog-thumbnail-slot svg')].every((svg) => Boolean(svg.getAttribute('aria-label'))),
+    }));
+    assert.equal(avrCatalogueArtwork.cards, avrCatalogueArtwork.thumbnails);
+    assert.equal(avrCatalogueArtwork.empty, 0);
+    assert.equal(avrCatalogueArtwork.labels, true);
     for (const profile of profiles) {
       await page.selectOption('#board-select', profile.id);
       await page.waitForFunction(({ api }) => Boolean(window[api]?.state().active), profile);
+      await page.waitForFunction(({ list }) => {
+        const cards = [...document.querySelectorAll(`${list} .bounded-part-card`)];
+        return cards.length === 6 && cards.every((card) => card.querySelector('.bounded-part-thumbnail svg[role="img"]'));
+      }, profile);
+      const catalogueArtwork = await page.evaluate(({ list }) => ({
+        cards: document.querySelectorAll(`${list} .bounded-part-card`).length,
+        thumbnails: document.querySelectorAll(`${list} .bounded-part-thumbnail svg[role="img"]`).length,
+        empty: [...document.querySelectorAll(`${list} .bounded-part-thumbnail`)].filter((slot) => !slot.firstElementChild).length,
+        labels: [...document.querySelectorAll(`${list} .bounded-part-thumbnail svg`)].every((svg) => Boolean(svg.getAttribute('aria-label'))),
+        visible: [...document.querySelectorAll(`${list} .bounded-part-thumbnail svg`)].every((svg) => {
+          const box = svg.getBoundingClientRect();
+          return box.width >= 40 && box.height >= 40 && box.left >= 0 && box.right <= document.documentElement.clientWidth;
+        }),
+      }), profile);
+      assert.deepEqual(catalogueArtwork, { cards: 6, thumbnails: 6, empty: 0, labels: true, visible: true });
       await page.evaluate((selector) => document.querySelector(selector).click(), profile.button);
       await page.waitForFunction(({ api }) => {
         const state = window[api].state();
@@ -240,6 +268,11 @@ const profiles = [
         const state = window[api].state(); const graph = state.circuit ?? state.project.circuit;
         return graph.nets.find(({ id }) => id === 'net-led-2-ground').endpoints.length;
       }, profile), 3);
+      await page.waitForFunction(({ layer }) => {
+        const wireLayer = layer.replace('-components', '-wires');
+        const wire = document.querySelector(`${wireLayer} .pico-editor-wire[data-net="net-led-2-ground"]`);
+        return wire?.dataset.renderedEndpoints === '3' && (wire.getAttribute('d').match(/M /g) ?? []).length === 3;
+      }, profile);
       assert.equal(await page.evaluate(({ layer }) => {
         const wireLayer = layer.replace('-components', '-wires');
         const wire = document.querySelector(`${wireLayer} .pico-editor-wire[data-net="net-led-2-ground"]`);
@@ -279,6 +312,23 @@ const profiles = [
         const state = window[api].state(); return JSON.stringify(state.circuit ?? state.project.circuit);
       }, profile), unsafeBefore);
       assert.deepEqual(pageErrors.map((error) => error.message), []);
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
+    for (const profile of profiles) {
+      await page.selectOption('#board-select', profile.id);
+      await page.waitForFunction(({ api }) => Boolean(window[api]?.state().active), profile);
+      assert.equal(await page.evaluate(({ list }) => {
+        const root = document.querySelector(list);
+        const graphics = [...root.querySelectorAll('.bounded-part-thumbnail svg[role="img"]')];
+        return graphics.length === 6
+          && graphics.every((svg) => { const box = svg.getBoundingClientRect(); return box.width >= 40 && box.height >= 40; })
+          && document.documentElement.scrollWidth <= document.documentElement.clientWidth;
+      }, profile), true);
+    }
+    if (process.env.ARTWORK_SCREENSHOT_DIR) {
+      await page.screenshot({ path: path.join(process.env.ARTWORK_SCREENSHOT_DIR, 'parts-drawer-narrow-390.png'), fullPage: true });
+      await page.setViewportSize({ width: 1440, height: 1000 });
+      await page.screenshot({ path: path.join(process.env.ARTWORK_SCREENSHOT_DIR, 'parts-drawer-desktop-1440.png'), fullPage: true });
     }
     process.stdout.write('RC139 three-profile browser authoring PASS\n');
   } finally {

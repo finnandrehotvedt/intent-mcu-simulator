@@ -14,6 +14,7 @@ import {
 } from '../src/project-envelope.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, RC111_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_LOCK,
   RC112_CURRENT_MODEL_LIBRARY_LOCK, RC120_CURRENT_MODEL_LIBRARY_LOCK,
   RC124_CURRENT_MODEL_LIBRARY_LOCK,
   RC128_CURRENT_MODEL_LIBRARY_LOCK,
@@ -486,6 +487,24 @@ test('current envelope rejects a rehashed or unknown model-library lock atomical
   assert.equal(prepareProjectEnvelope(JSON.stringify(envelope), adapters).code, 'MODEL_LIBRARY_LOCK_UNTRUSTED');
 });
 
+test('accepted rc.139 current lock remains an exact migration-only recovery anchor', () => {
+  const envelope = JSON.parse(canonicalProjectEnvelope(profile, project, adapters));
+  envelope.modelLibrary = structuredClone(PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_LOCK);
+  const source = JSON.stringify(envelope);
+  const opened = preparePublishedRecoveryProjectEnvelope(source, adapters);
+  assert.equal(opened.ok, true);
+  assert.equal(opened.originalUnchanged, source);
+  assert.deepEqual(opened.project, project);
+  assert.equal(opened.code, 'PROJECT_ENVELOPE_PUBLISHED_LOCK_RECOVERED');
+  assert.equal(opened.publishedRecovery.release, '1.1.0-rc.139-current');
+  assert.equal(opened.publishedRecovery.executableAuthority, false);
+  assert.equal(opened.publishedRecovery.freshBuildRequired, true);
+  const migrated = migrateProjectModelLibrary(source, adapters);
+  assert.equal(migrated.ok, true);
+  assert.deepEqual(JSON.parse(migrated.canonical).project, project);
+  assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
+});
+
 test('published locks are exact data-only recovery anchors while unknown locks remain rejected', () => {
   const current = JSON.parse(canonicalProjectEnvelope(profile, project, adapters));
   const published = [
@@ -506,7 +525,8 @@ test('published locks are exact data-only recovery anchors while unknown locks r
   ];
   for (const [release, manifestSha256, implementationSha256] of published) {
     const envelope = structuredClone(current);
-    envelope.modelLibrary = { ...envelope.modelLibrary, manifestSha256, implementationSha256 };
+    envelope.modelLibrary = { ...envelope.modelLibrary,
+      version: '2.0.0-x46-usart-rx-producer.1-current', manifestSha256, implementationSha256 };
     const source = JSON.stringify(envelope);
     assert.equal(prepareProjectEnvelope(source, adapters).code, 'MODEL_LIBRARY_LOCK_UNTRUSTED');
     const recovered = preparePublishedRecoveryProjectEnvelope(source, adapters);

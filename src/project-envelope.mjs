@@ -4,7 +4,8 @@
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
 import { normalizeScenarioTimeline } from './scenario-timeline.mjs';
 import {
-  CURRENT_MODEL_LIBRARY_LOCK, RETAINED_MODEL_LIBRARY_LOCK,
+  CURRENT_MODEL_LIBRARY_LOCK, PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_LOCK,
+  RETAINED_MODEL_LIBRARY_LOCK,
   modelLibraryExecutionIdentity, modelLibraryMigrationPreview, modelLibrarySupportsProfile,
   normalizeModelLibraryLock, validateProjectModelLibrary,
 } from './model-library.mjs';
@@ -328,7 +329,9 @@ function prepare(adapter, value, context) {
 
 function projectDataAdmission(adapter, libraryAdmission, context) {
   if (libraryAdmission.ok) return { ...libraryAdmission, authoringOnly: false,
-    executableAuthority: true, runtimeUnavailableCode: null };
+    executableAuthority: context.modelLibraryIdentity?.executableAuthority !== false,
+    runtimeUnavailableCode: context.modelLibraryIdentity?.executableAuthority === false
+      ? 'MODEL_LIBRARY_MIGRATION_REQUIRED' : null };
   if (typeof adapter.authoringAdmission !== 'function') return libraryAdmission;
   const authoring = adapter.authoringAdmission(context);
   if (!authoring?.ok) return libraryAdmission;
@@ -357,6 +360,7 @@ export function canonicalProjectEnvelope(profile, project, adapters, brief = emp
     : { ok: true };
   const admitted = projectDataAdmission(adapter, modelAdmission, {
     profile, project: prepared.project, modelLibrary: library.lock,
+    modelLibraryIdentity: execution.identity,
     retained: library.lock.manifestSha256 === RETAINED_MODEL_LIBRARY_LOCK.manifestSha256,
   });
   if (!admitted.ok) throw Object.assign(new Error(admitted.code), { code: admitted.code, details: admitted.details });
@@ -519,6 +523,7 @@ export function prepareProjectEnvelope(source, adapters) {
       : { ok: true, retained: modelLibrary.manifestSha256 === RETAINED_MODEL_LIBRARY_LOCK.manifestSha256 };
     const libraryAdmission = projectDataAdmission(adapter, modelAdmission, {
       profile, project: prepared.project, modelLibrary,
+      modelLibraryIdentity: execution.identity,
       retained: modelLibrary.manifestSha256 === RETAINED_MODEL_LIBRARY_LOCK.manifestSha256,
     });
     if (!libraryAdmission.ok) return libraryAdmission;
@@ -556,11 +561,28 @@ export function prepareProjectEnvelope(source, adapters) {
 
 export function preparePublishedRecoveryProjectEnvelope(source, adapters) {
   const ordinary = prepareProjectEnvelope(source, adapters);
-  if (ordinary.ok || ordinary.code !== 'MODEL_LIBRARY_LOCK_UNTRUSTED') return ordinary;
   let value;
   try { value = parseStrictJson(source, PROJECT_ENVELOPE_LIMIT); }
   catch { return ordinary; }
   if (value?.schema !== PROJECT_ENVELOPE_SCHEMA) return ordinary;
+  if (ordinary.ok && samePublishedRecoveryLock(
+    value.modelLibrary, PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_LOCK)) {
+    const migratedValue = clone(value);
+    migratedValue.modelLibrary = clone(CURRENT_MODEL_LIBRARY_LOCK);
+    const migrated = prepareProjectEnvelope(JSON.stringify(migratedValue), adapters);
+    if (!migrated.ok) return migrated;
+    return {
+      ...migrated,
+      code: 'PROJECT_ENVELOPE_PUBLISHED_LOCK_RECOVERED', originalUnchanged: source,
+      publishedRecovery: { release: '1.1.0-rc.139-current', from: clone(value.modelLibrary),
+        to: clone(CURRENT_MODEL_LIBRARY_LOCK), migrationOnly: true,
+        executableAuthority: false, freshBuildRequired: true },
+      report: { ...migrated.report, executableAuthorityCleared: true,
+        publishedRecovery: { release: '1.1.0-rc.139-current', migrationOnly: true,
+          executableAuthority: false, freshBuildRequired: true } },
+    };
+  }
+  if (ordinary.ok || ordinary.code !== 'MODEL_LIBRARY_LOCK_UNTRUSTED') return ordinary;
   const anchor = PUBLISHED_RECOVERY_LOCKS.find((candidate) => samePublishedRecoveryLock(value.modelLibrary, candidate));
   if (!anchor) return ordinary;
   const migratedValue = clone(value);

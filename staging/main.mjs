@@ -1407,9 +1407,22 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
     row.className = 'bounded-part-card'; row.dataset.type = part.type;
     row.dataset.present = String(part.present); row.setAttribute('role', 'listitem');
     row.draggable = part.addable || part.repeatable;
+    const thumbnail = document.createElement('span');
+    thumbnail.className = 'bounded-part-thumbnail';
+    const definition = uiComponentCatalog[part.type];
+    const previewComponent = component ?? {
+      id: `catalog-${part.type.replace(/[^a-z0-9]+/giu, '-')}`,
+      type: part.type,
+      label: part.displayName,
+      properties: definition?.propertyKeys?.length ? defaultProperties(part.type) : {},
+      controls: {},
+    };
+    if (definition) thumbnail.append(createComponentArtwork(definition, previewComponent, { thumbnail: true }));
+    const copy = document.createElement('span'); copy.className = 'bounded-part-copy';
     const name = document.createElement('strong'); name.textContent = part.displayName;
     const summary = document.createElement('small'); summary.textContent = boundedPartSummary(part, component);
     const id = document.createElement('code'); id.textContent = component?.id ?? part.id;
+    copy.append(name, summary, id);
     const action = document.createElement('button'); action.type = 'button';
     action.dataset.boundedAdd = part.type;
     action.textContent = part.fixed ? 'Fixed' : part.present ? 'Add another' : 'Add part';
@@ -1425,7 +1438,7 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
       });
     }
     row.title = part.limitation;
-    row.append(name, summary, id, action);
+    row.append(thumbnail, copy, action);
     return row;
   });
   list.replaceChildren(...rows);
