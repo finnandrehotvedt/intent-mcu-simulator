@@ -300,6 +300,7 @@ import {
   emptyProjectBrief,
   migrateProjectModelLibrary,
   normalizeProjectBrief,
+  preparePublishedRecoveryProjectEnvelope,
   prepareProjectEnvelope,
 } from '../src/project-envelope.mjs';
 import {
@@ -7570,7 +7571,7 @@ function prepareAuthoredProjectEnvelope(source) {
         annotations: opened.workspace.annotations, subcircuits: opened.workspace.subcircuits };
     } catch (error) { return { ok: false, code: error.code ?? error.message }; }
   }
-  return prepareProjectEnvelope(source, commonProjectAdapters);
+  return preparePublishedRecoveryProjectEnvelope(source, commonProjectAdapters);
 }
 function parseAvrRecoverySource(source) {
   const common = prepareAuthoredProjectEnvelope(source);
@@ -9405,7 +9406,7 @@ window.__X68_PRESENTATION_VIEW__ = Object.freeze({
   persistence: false,
 });
 function normalizeTeachingExerciseProject(value, { variantId } = {}) {
-  const prepared = prepareProjectEnvelope(JSON.stringify(value), commonProjectAdapters);
+  const prepared = preparePublishedRecoveryProjectEnvelope(JSON.stringify(value), commonProjectAdapters);
   if (!prepared.ok) throw Object.assign(new Error(prepared.code), prepared);
   if (prepared.profile !== TEACHING_EXERCISE_PROFILE || !isThermostatExperimentProject(prepared.project)
       || thermostatFirmwareVariant(prepared.project) !== variantId) {
@@ -11077,6 +11078,8 @@ function inspectPreservedDraft(key, raw, registryById = new Map()) {
       return { key, raw, ...identity, valid: true, prepared,
         name: project.metadata?.name ?? project.name ?? 'Untitled project',
         components: project.circuit?.components?.length ?? 0, nets: project.circuit?.nets?.length ?? 0,
+        migrationOnly: Boolean(prepared.publishedRecovery),
+        recoveryRelease: prepared.publishedRecovery?.release ?? null,
         updatedAt: registryById.get(identity.draftId)?.updatedAt ?? null };
     }
     const envelope = JSON.parse(raw);
@@ -11112,7 +11115,8 @@ function preservedDrafts() {
 function preservedDraftLabel(draft) {
   const profile = RECOVERY_PROFILE_LABELS[draft.profile] ?? draft.profile;
   const time = draft.updatedAt ? new Date(draft.updatedAt).toLocaleString() : 'saved time unknown';
-  const graph = draft.valid ? `${draft.components} parts · ${draft.nets} nets` : `invalid · ${draft.code}`;
+  const migration = draft.migrationOnly ? ` · ${draft.recoveryRelease} data-only migration` : '';
+  const graph = draft.valid ? `${draft.components} parts · ${draft.nets} nets${migration}` : `invalid · ${draft.code}`;
   const location = draft.draftId === activeDraftId ? 'current tab key' : draft.journal ? 'interrupted save' : 'preserved key';
   const identity = draft.draftId === 'legacy-global' ? 'legacy' : draft.draftId.slice(0, 8);
   return `${profile} · ${draft.name} · ${time} · ${graph} · draft ${identity} · ${location}`;
@@ -15581,7 +15585,9 @@ elements.projectdraftrecover.addEventListener('click', () => {
       elements.projectmessage.textContent = `Recovery stopped (${result.code}). The original preserved bytes remain untouched.`;
       return;
     }
-    elements.projectmessage.textContent = `Opened validated ${RECOVERY_PROFILE_LABELS[draft.profile]} copy in separate draft ${result.copyDraftId.slice(0, 8)}…: ${draft.name}, ${draft.components} parts, ${draft.nets} nets. Original key unchanged. Revision 0 and empty Undo history after recovery are expected; use Fit project if the graph count is non-zero but parts are offscreen.`;
+    const migration = draft.migrationOnly
+      ? ` Published ${draft.recoveryRelease} identity was migrated as data only; executable authority was cleared and a fresh Build is required.` : '';
+    elements.projectmessage.textContent = `Opened validated ${RECOVERY_PROFILE_LABELS[draft.profile]} copy in separate draft ${result.copyDraftId.slice(0, 8)}…: ${draft.name}, ${draft.components} parts, ${draft.nets} nets. Original key unchanged.${migration} Revision 0 and empty Undo history after recovery are expected; use Fit project if the graph count is non-zero but parts are offscreen.`;
   };
   const selected = preservedDrafts().find((draft) => draft.key === elements.projectdraftrecovery.value);
   const profile = selected?.profile ?? selectedCompilerProfile;

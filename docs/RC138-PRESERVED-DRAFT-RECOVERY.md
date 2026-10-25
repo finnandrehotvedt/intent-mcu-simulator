@@ -19,3 +19,10 @@ not yet build-valid; build validation remains a later explicit action.
 Reconstructed copies start at revision 0 with empty Undo history because prior
 editor command history was never stored. This is recovery of saved authored
 state, not proof of the cause of any earlier drawing-loss incident.
+
+The exact model-library locks published in rc.136 and rc.137 are recognized
+only in this recovery path as data-only migration anchors. Their saved source,
+graph and layout are validated into a new copy under the current data model;
+the historical bytes remain unchanged, executable authority is cleared and a
+fresh Build is required. Neighboring or otherwise unknown lock hashes remain
+untrusted and cannot replace the active project.

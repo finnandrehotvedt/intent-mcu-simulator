@@ -52,6 +52,31 @@ async function openRecovery(page) {
     }, { orphanId: orphanIds[0] });
 
     const records = [{ profile: 'board.atmega328p-16mhz-v1', owner: '__M6_PROJECT__', ...avr }];
+    const publishedLocks = [
+      { release: '1.1.0-rc.136', id: '71000000-0000-4000-8000-000000000136',
+        manifestSha256: '49f5b582520551f6c7c3f68cd196c616dfde297988b7a85497e4e42664c97128',
+        implementationSha256: 'cfaf5e18f657b2663c6ac776604af9d8aa3313997b36312e0dfe4b25359154d3' },
+      { release: '1.1.0-rc.137', id: '72000000-0000-4000-8000-000000000137',
+        manifestSha256: '709444f9c162942ebe960f43cdc8147300c93877100a34a5630a1e1c7bd63c4d',
+        implementationSha256: '7dfa75c67b84ba2b1f04002f2c1ee5d6a3c84dea94a263a09adb47a277bde71d' },
+    ].map((entry) => ({ ...entry, key: `teach-lab.simulator.project.v2.tab.${entry.id}` }));
+    const unknownLockKey = 'teach-lab.simulator.project.v2.tab.73000000-0000-4000-8000-000000000138';
+    const publishedRaw = await page.evaluate(({ raw, publishedLocks, unknownLockKey }) => {
+      const basis = JSON.parse(raw);
+      const records = publishedLocks.map((entry) => {
+        const value = structuredClone(basis);
+        value.modelLibrary = { ...value.modelLibrary,
+          manifestSha256: entry.manifestSha256, implementationSha256: entry.implementationSha256 };
+        const encoded = JSON.stringify(value);
+        localStorage.setItem(entry.key, encoded);
+        return [entry.key, encoded];
+      });
+      const unknown = structuredClone(basis);
+      unknown.modelLibrary = { ...unknown.modelLibrary,
+        manifestSha256: 'a'.repeat(64), implementationSha256: 'b'.repeat(64) };
+      localStorage.setItem(unknownLockKey, JSON.stringify(unknown));
+      return Object.fromEntries(records);
+    }, { raw: avr.raw, publishedLocks, unknownLockKey });
     for (let index = 0; index < profiles.length; index += 1) {
       const [profile, sourceSelector, nameSelector, owner] = profiles[index];
       await page.selectOption('#board-select', profile);
@@ -97,6 +122,11 @@ async function openRecovery(page) {
     }
     assert(optionSummary.some((text) => text.includes('saved time unknown')), 'historical unknown time was not disclosed');
     assert(optionSummary.some((text) => text.includes('invalid')), 'invalid preserved bytes were hidden');
+    for (const entry of publishedLocks) assert(optionSummary.some((text) => text.includes(entry.release)
+      && text.includes('data-only migration') && text.includes(`draft ${entry.id.slice(0, 8)}`)),
+    `${entry.release}: published recovery identity was not presented as migration-only`);
+    assert(optionSummary.some((text) => text.includes('MODEL_LIBRARY_LOCK_UNTRUSTED')
+      && text.includes('draft 73000000')), 'truly unknown model lock was not rejected visibly');
     assert(optionSummary.some((text) => text.includes('draft 20000000'))
       && optionSummary.some((text) => text.includes('draft 60000000')),
     'otherwise identical historical drafts lacked distinct nonsecret identities');
@@ -132,6 +162,29 @@ async function openRecovery(page) {
       await openRecovery(page);
     }
 
+    for (const entry of publishedLocks) {
+      await page.selectOption('#project-draft-recovery', entry.key);
+      await page.click('#project-draft-recover');
+      if (await page.locator('#unsaved-change-dialog').getAttribute('open') !== null) await page.click('#unsaved-discard');
+      await page.waitForTimeout(200);
+      assert.match(await page.textContent('#project-message'),
+        new RegExp(`Published ${entry.release.replaceAll('.', '\\.')}.+migrated as data only.+fresh Build`, 'iu'));
+      assert.equal(await page.evaluate((key) => localStorage.getItem(key), entry.key), publishedRaw[entry.key],
+        `${entry.release}: published original bytes changed`);
+      assert.deepEqual(await page.evaluate(() => window.__M6_PROJECT__().circuit), avr.project.circuit,
+        `${entry.release}: recovered graph changed`);
+      await openRecovery(page);
+    }
+
+    const beforeUnknown = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
+    const unknownRaw = await page.evaluate((key) => localStorage.getItem(key), unknownLockKey);
+    await page.selectOption('#project-draft-recovery', unknownLockKey);
+    await page.click('#project-draft-recover');
+    assert.equal(await page.evaluate((key) => localStorage.getItem(key), unknownLockKey), unknownRaw);
+    assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), beforeUnknown);
+    assert.match(await page.textContent('#project-message'), /invalid.+original preserved bytes remain untouched/iu);
+    await openRecovery(page);
+
     const beforeInvalid = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
     const invalidRaw = await page.evaluate((key) => localStorage.getItem(key), invalidKey);
     await page.selectOption('#project-draft-recovery', invalidKey);
@@ -150,6 +203,7 @@ async function openRecovery(page) {
     assert.equal(await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations), 0);
     process.stdout.write(`${JSON.stringify({ result: 'pass', historicalOrphansFound: 4,
       preservedCopyRecoveries: 4, invalidBytesUntouched: true, duplicateTabIsolated: true,
+      publishedLockMigrations: 2, unknownLockRejected: true,
       duplicateLabelsDistinguished: true, originalStorageMutation: false, nativeBuilds: 0, nativeRuns: 0 })}\n`);
   } finally { await context.close(); await browser.close(); }
 })().catch((error) => { console.error(error); process.exitCode = 1; });

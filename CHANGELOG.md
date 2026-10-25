@@ -11,6 +11,9 @@ All notable public source changes are recorded here.
 - Opens recovery as a new per-tab draft, preserving source bytes, authored
   source, name, circuit and layout while leaving the original storage key
   unchanged; malformed entries remain visible but cannot replace the project.
+- Recognizes the exact published rc.136 and rc.137 model locks only as
+  data-only recovery anchors; unknown locks remain rejected and every migrated
+  copy requires a fresh Build with no inherited executable authority.
 - Treats revision 0 and empty Undo history after reconstruction honestly and
   performs no native Build or Run. This source candidate is not a deployment.
 

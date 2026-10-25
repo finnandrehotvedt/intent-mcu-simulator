@@ -15,6 +15,11 @@ still being edited and is not build-valid yet. Invalid entries are disclosed
 and rejected without replacing the current project. Revision 0 and empty Undo
 history after reconstruction are expected and stated in the interface.
 
+The exact locks shipped by public rc.136 and rc.137 are accepted only by this
+data-recovery path. They migrate validated authored data into the new copy,
+clear executable authority and require a fresh Build. Unknown or neighboring
+lock identities remain rejected, and original historical bytes stay intact.
+
 This source-only candidate performs no native Build or Run and makes no
 deployment change. Rc.137 remains the prior source release; deployment state
 continues to belong to the separate deployment checkpoint.
