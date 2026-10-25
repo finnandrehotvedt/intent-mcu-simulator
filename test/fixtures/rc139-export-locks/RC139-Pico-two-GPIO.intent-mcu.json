@@ -1,0 +1,206 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.rp2040-pico-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-x46-usart-rx-producer.1-current",
+    "manifestSha256": "7d07cf060525771ee00944074cac315fc4af7bcefdbec13cefa549767b0b7e55",
+    "implementationSha256": "cda403bb54780de24cd06bc2c3642d4d62366bf1904bbc46a049e11d32355669"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-rp2040-public-project@1",
+    "name": "RC139-Pico-two-GPIO",
+    "profile": "board.rp2040-pico-v1",
+    "source": "/* Intent MCU Simulator public RP2040 source v1 */\nint main(void)\n{\n  intent_gpio0_output(1u);\n  intent_uart0_text(\"PICO PUBLIC\");\n  intent_halt();\n}\n",
+    "circuit": {
+      "schema": "intent-mcu-rp2040-pico-circuit@1",
+      "boardProfile": "board.rp2040-pico-v1",
+      "components": [
+        {
+          "id": "led-1",
+          "type": "led.basic-v1",
+          "label": "External red LED",
+          "properties": {
+            "color": "red"
+          },
+          "controls": {}
+        },
+        {
+          "id": "led-2",
+          "type": "led.basic-v1",
+          "label": "External red LED 2",
+          "properties": {
+            "color": "red"
+          },
+          "controls": {}
+        },
+        {
+          "id": "pico-1",
+          "type": "board.rp2040-pico-v1",
+          "label": "RP2040 Pico profile",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "resistor-1",
+          "type": "resistor.fixed-v1",
+          "label": "220 Ω series resistor",
+          "properties": {
+            "ohms": 220
+          },
+          "controls": {}
+        },
+        {
+          "id": "resistor-2",
+          "type": "resistor.fixed-v1",
+          "label": "220 Ω resistor 2",
+          "properties": {
+            "ohms": 220
+          },
+          "controls": {}
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-gp1-resistor-2-drive",
+          "endpoints": [
+            {
+              "component": "pico-1",
+              "pin": "GP1"
+            },
+            {
+              "component": "resistor-2",
+              "pin": "A"
+            }
+          ]
+        },
+        {
+          "id": "net-gpio0",
+          "endpoints": [
+            {
+              "component": "pico-1",
+              "pin": "GP0"
+            },
+            {
+              "component": "resistor-1",
+              "pin": "B"
+            }
+          ]
+        },
+        {
+          "id": "net-ground",
+          "endpoints": [
+            {
+              "component": "led-1",
+              "pin": "CATHODE"
+            },
+            {
+              "component": "pico-1",
+              "pin": "GND3"
+            }
+          ]
+        },
+        {
+          "id": "net-led-2-gnd8-ground",
+          "endpoints": [
+            {
+              "component": "led-2",
+              "pin": "CATHODE"
+            },
+            {
+              "component": "pico-1",
+              "pin": "GND8"
+            }
+          ]
+        },
+        {
+          "id": "net-resistor-2-led-2",
+          "endpoints": [
+            {
+              "component": "led-2",
+              "pin": "ANODE"
+            },
+            {
+              "component": "resistor-2",
+              "pin": "B"
+            }
+          ]
+        },
+        {
+          "id": "net-series",
+          "endpoints": [
+            {
+              "component": "led-1",
+              "pin": "ANODE"
+            },
+            {
+              "component": "resistor-1",
+              "pin": "A"
+            }
+          ]
+        }
+      ],
+      "layout": {
+        "positions": {
+          "led-1": {
+            "x": 0.22,
+            "y": 0.48,
+            "rotation": 0
+          },
+          "led-2": {
+            "x": 0.3,
+            "y": 0.48,
+            "rotation": 0
+          },
+          "pico-1": {
+            "x": 0.78,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "resistor-1": {
+            "x": 0.48,
+            "y": 0.27,
+            "rotation": 0
+          },
+          "resistor-2": {
+            "x": 0.5599999999999999,
+            "y": 0.27,
+            "rotation": 0
+          }
+        },
+        "wireStyles": {
+          "net-gp1-resistor-2-drive": "#39dff2",
+          "net-gpio0": "#f5c451",
+          "net-ground": "#303943",
+          "net-led-2-gnd8-ground": "#39dff2",
+          "net-resistor-2-led-2": "#39dff2",
+          "net-series": "#f04f5f"
+        },
+        "wireRoutes": {},
+        "componentAppearance": {
+          "schema": "intent-mcu-component-appearance@1",
+          "components": {}
+        },
+        "idCounters": {
+          "button": 0,
+          "ground": 0,
+          "led": 2,
+          "resistor": 2,
+          "switch": 0
+        }
+      }
+    }
+  }
+}

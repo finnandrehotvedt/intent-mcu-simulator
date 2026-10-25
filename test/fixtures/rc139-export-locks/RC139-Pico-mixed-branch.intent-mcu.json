@@ -1,0 +1,154 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.rp2040-pico-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-x46-usart-rx-producer.1-current",
+    "manifestSha256": "459064d5d903f2216d210a2bc36fa63202bd8ea7d2c803f7f6d7e07708e66475",
+    "implementationSha256": "8bfaa600faad662d5dac7771bcfe68cf46b935db8b74f5e45ea5c7b7c1c34a95"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-rp2040-public-project@1",
+    "name": "RC139-Pico-mixed-branch",
+    "profile": "board.rp2040-pico-v1",
+    "source": "/* Intent MCU Simulator public RP2040 source v1 */\nint main(void)\n{\n  intent_gpio0_output(1u);\n  intent_uart0_text(\"PICO PUBLIC\");\n  intent_halt();\n}\n",
+    "circuit": {
+      "schema": "intent-mcu-rp2040-pico-circuit@1",
+      "boardProfile": "board.rp2040-pico-v1",
+      "components": [
+        {
+          "id": "button-1",
+          "type": "button.momentary-3v3-v1",
+          "label": "Momentary button 1",
+          "properties": {
+            "defaultClosed": false
+          },
+          "controls": {}
+        },
+        {
+          "id": "led-1",
+          "type": "led.basic-v1",
+          "label": "External red LED",
+          "properties": {
+            "color": "red"
+          },
+          "controls": {}
+        },
+        {
+          "id": "pico-1",
+          "type": "board.rp2040-pico-v1",
+          "label": "RP2040 Pico profile",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "resistor-1",
+          "type": "resistor.fixed-v1",
+          "label": "220 Ω series resistor",
+          "properties": {
+            "ohms": 220
+          },
+          "controls": {}
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-gpio0",
+          "endpoints": [
+            {
+              "component": "pico-1",
+              "pin": "GP0"
+            },
+            {
+              "component": "resistor-1",
+              "pin": "B"
+            }
+          ]
+        },
+        {
+          "id": "net-ground",
+          "endpoints": [
+            {
+              "component": "button-1",
+              "pin": "A"
+            },
+            {
+              "component": "led-1",
+              "pin": "CATHODE"
+            },
+            {
+              "component": "pico-1",
+              "pin": "GND3"
+            }
+          ]
+        },
+        {
+          "id": "net-series",
+          "endpoints": [
+            {
+              "component": "led-1",
+              "pin": "ANODE"
+            },
+            {
+              "component": "resistor-1",
+              "pin": "A"
+            }
+          ]
+        }
+      ],
+      "layout": {
+        "positions": {
+          "button-1": {
+            "x": 0.72,
+            "y": 0.58,
+            "rotation": 0
+          },
+          "led-1": {
+            "x": 0.22,
+            "y": 0.48,
+            "rotation": 0
+          },
+          "pico-1": {
+            "x": 0.78,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "resistor-1": {
+            "x": 0.48,
+            "y": 0.27,
+            "rotation": 0
+          }
+        },
+        "wireStyles": {
+          "net-gpio0": "#f5c451",
+          "net-ground": "#303943",
+          "net-series": "#f04f5f"
+        },
+        "wireRoutes": {},
+        "componentAppearance": {
+          "schema": "intent-mcu-component-appearance@1",
+          "components": {}
+        },
+        "idCounters": {
+          "button": 1,
+          "ground": 0,
+          "led": 1,
+          "resistor": 1,
+          "switch": 0
+        }
+      }
+    }
+  }
+}

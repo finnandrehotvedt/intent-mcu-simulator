@@ -8157,6 +8157,23 @@ function profileMessage(profile, message) {
     : profile === ESP32C3_PROFILE ? elements.c3message : elements.stm32message;
   target.textContent = message;
 }
+function presentProjectFileMessage(profile, message) {
+  profileMessage(profile, message);
+  elements.projectmessage.textContent = message;
+  sharedWorkbenchShell.openDialog('project', document.querySelector('#project-files-open'), {
+    initialFocus: false,
+  });
+  const mount = document.querySelector('#workbench-project-dialog .workbench-popup-mount');
+  let status = document.querySelector('#project-file-message');
+  if (!status) {
+    status = document.createElement('p');
+    status.id = 'project-file-message'; status.className = 'truth';
+    status.setAttribute('role', 'status'); status.tabIndex = -1;
+  }
+  status.textContent = message;
+  mount.prepend(status);
+  queueMicrotask(() => status.focus({ preventScroll: true }));
+}
 function renderModelLibraryStatus() {
   const lock = modelLibraryLockFor(selectedCompilerProfile);
   const preview = modelLibraryMigrationPreview(lock, CURRENT_MODEL_LIBRARY_LOCK);
@@ -8406,9 +8423,12 @@ function installPreparedProjectEnvelope(result, handle = null, { preserveExpecta
   renderModelLibraryStatus();
   renderExpectationReference();
   window.__COMMON_PROJECT_FILE_STATE__ = structuredClone({ profile: result.profile, report: result.report });
-  profileMessage(result.profile, result.report.legacy
+  const openedMessage = result.publishedRecovery
+    ? `Known previous candidate ${result.publishedRecovery.release} project opened as validated data only. The original file is unchanged; fresh Build is required.`
+    : result.report.legacy
     ? `Legacy ${result.report.inputSchema} migrated in memory to ${result.report.outputSchema}. Save creates a new file; fresh Build is required.`
-    : `Common project opened for ${result.profile}. Executable authority was cleared; fresh Build is required.`);
+    : `Common project opened for ${result.profile}. Executable authority was cleared; fresh Build is required.`;
+  presentProjectFileMessage(result.profile, openedMessage);
   return result;
 }
 async function openCommonProjectFile(file, handle = null) {
@@ -8433,9 +8453,10 @@ async function openCommonProjectFile(file, handle = null) {
       return { ok: false, code: error.code ?? error.message };
     }
   }
-  const result = annotated?.prepared ?? prepareProjectEnvelope(source, commonProjectAdapters);
+  const result = annotated?.prepared ?? preparePublishedRecoveryProjectEnvelope(source, commonProjectAdapters);
   if (!result.ok) {
-    profileMessage(activeBefore, `Open rejected (${result.code}). Profile and current project are unchanged.`);
+    presentProjectFileMessage(activeBefore,
+      `Open rejected (${result.code}). Profile and current project are unchanged. Choose another trusted project file or keep editing this project.`);
     return result;
   }
   if (result.profile === activeBefore && requestUnsavedChangeGuard({

@@ -47,6 +47,22 @@ const PUBLISHED_RECOVERY_LOCKS = Object.freeze([
     libraryId: 'intent-mcu-public-models', version: '2.0.0-x46-usart-rx-producer.1-current',
     manifestSha256: '709444f9c162942ebe960f43cdc8147300c93877100a34a5630a1e1c7bd63c4d',
     implementationSha256: '7dfa75c67b84ba2b1f04002f2c1ee5d6a3c84dea94a263a09adb47a277bde71d' }),
+  Object.freeze({ release: '1.1.0-rc.139-preservation', schema: 'intent-mcu-model-library-lock@2',
+    libraryId: 'intent-mcu-public-models', version: '2.0.0-x46-usart-rx-producer.1-current',
+    manifestSha256: '8e4b68c47dd01cb1fe0867b1f32fbb7a0643e6fd4a3474e364417c8e4ad91c3a',
+    implementationSha256: '3da666f7462e12455abb6b9bba7a4908f68ffcde58d8a6d7555658a94abf727d' }),
+  Object.freeze({ release: '1.1.0-rc.139-mixed-branch', schema: 'intent-mcu-model-library-lock@2',
+    libraryId: 'intent-mcu-public-models', version: '2.0.0-x46-usart-rx-producer.1-current',
+    manifestSha256: '459064d5d903f2216d210a2bc36fa63202bd8ea7d2c803f7f6d7e07708e66475',
+    implementationSha256: '8bfaa600faad662d5dac7771bcfe68cf46b935db8b74f5e45ea5c7b7c1c34a95' }),
+  Object.freeze({ release: '1.1.0-rc.139-two-gpio', schema: 'intent-mcu-model-library-lock@2',
+    libraryId: 'intent-mcu-public-models', version: '2.0.0-x46-usart-rx-producer.1-current',
+    manifestSha256: '7d07cf060525771ee00944074cac315fc4af7bcefdbec13cefa549767b0b7e55',
+    implementationSha256: 'cda403bb54780de24cd06bc2c3642d4d62366bf1904bbc46a049e11d32355669' }),
+  Object.freeze({ release: '1.1.0-rc.139-pre-compatibility', schema: 'intent-mcu-model-library-lock@2',
+    libraryId: 'intent-mcu-public-models', version: '2.0.0-x46-usart-rx-producer.1-current',
+    manifestSha256: '8af6ca28e648a79d09d1b29b2b8daf8032184460b42b20094141ce52f0b26bc8',
+    implementationSha256: '39b67333105341c60fd4c9f2dfb43c3f5812260e6cd217b5e1973902400bed2c' }),
 ]);
 const samePublishedRecoveryLock = (left, right) => left && right
   && ['schema', 'libraryId', 'version', 'manifestSha256', 'implementationSha256']
