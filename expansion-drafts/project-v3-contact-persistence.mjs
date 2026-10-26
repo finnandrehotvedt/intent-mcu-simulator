@@ -36,6 +36,11 @@ import {
   TOGGLE_SWITCH_TYPE,
 } from './toggle-switch-integration-v1.mjs';
 import {
+  LIMIT_SWITCH_DEFINITION, LIMIT_SWITCH_TYPE, NC_BUTTON_DEFINITION, NC_BUTTON_TYPE,
+  SLIDE_SWITCH_DEFINITION, SLIDE_SWITCH_TYPE, mechanicalRuntimeState,
+  validateMechanicalInputComponent,
+} from './mechanical-inputs-v1.mjs';
+import {
   LIGHT_ANALOGUE_SENSOR_DEFINITION,
   LIGHT_ANALOGUE_SENSOR_TYPE,
   projectLightAnalogueSensors,
@@ -153,6 +158,9 @@ function pinIds(component) {
   if (component.type === GROUND_REFERENCE_TYPE) return ['REF'];
   if (component.type === POWER_REFERENCE_TYPE) return ['OUT'];
   if (component.type === TOGGLE_SWITCH_TYPE) return ['A', 'B'];
+  if (component.type === NC_BUTTON_TYPE) return ['A', 'B'];
+  if (component.type === SLIDE_SWITCH_TYPE) return ['COM', 'A', 'B'];
+  if (component.type === LIMIT_SWITCH_TYPE) return ['COM', 'NC', 'NO'];
   if (component.type === SPDT_CONTACT_TYPE) return ['COM', 'A', 'B'];
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
@@ -172,6 +180,9 @@ function componentPins(component) {
   if (component.type === GROUND_REFERENCE_TYPE) return GROUND_REFERENCE_DEFINITION.pins;
   if (component.type === POWER_REFERENCE_TYPE) return POWER_REFERENCE_DEFINITION.pins;
   if (component.type === TOGGLE_SWITCH_TYPE) return TOGGLE_SWITCH_DEFINITION.pins;
+  if (component.type === NC_BUTTON_TYPE) return NC_BUTTON_DEFINITION.pins;
+  if (component.type === SLIDE_SWITCH_TYPE) return SLIDE_SWITCH_DEFINITION.pins;
+  if (component.type === LIMIT_SWITCH_TYPE) return LIMIT_SWITCH_DEFINITION.pins;
   if (component.type === SPDT_CONTACT_TYPE) return SPDT_CONTACT_DEFINITION.terminals;
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return LIGHT_ANALOGUE_SENSOR_DEFINITION.pins;
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return TEMPERATURE_ANALOGUE_SENSOR_DEFINITION.pins;
@@ -203,6 +214,10 @@ function validateCandidateComponent(component) {
     if (!exactKeys(component.properties, ['normallyOpen']) || component.properties.normallyOpen !== true
         || !exactKeys(component.controls, ['closed']) || typeof component.controls.closed !== 'boolean') {
       fail('PROJECT_CONTACT_SPST_STATE', [component.id]);
+    }
+  } else if ([SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE].includes(component.type)) {
+    if (!validateMechanicalInputComponent(component)) {
+      fail('PROJECT_CONTACT_MECHANICAL_INPUT_STATE', [component.id]);
     }
   } else if (component.type === SPDT_CONTACT_TYPE) {
     if (!exactKeys(component.properties, ['transitionPolicy'])
@@ -282,6 +297,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
   if (requireCandidate
       && !components.some((component) => [
         GROUND_REFERENCE_TYPE, POWER_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
+        SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE,
         LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
         DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
         ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
@@ -488,6 +504,35 @@ function projectSpstComponents(graph) {
   return projected;
 }
 
+function projectMechanicalInputs(graph) {
+  const projected = clone(graph);
+  projected.components = projected.components.map((component) => {
+    if (component.type === NC_BUTTON_TYPE) return {
+      id: component.id, type: TOGGLE_SWITCH_TYPE, label: component.label,
+      properties: { normallyOpen: true }, controls: { closed: !component.controls.pressed },
+    };
+    if (component.type === SLIDE_SWITCH_TYPE) return {
+      id: component.id, type: SPDT_CONTACT_TYPE, label: component.label,
+      properties: { transitionPolicy: 'break-before-make' },
+      controls: { selectedThrow: component.controls.selectedThrow },
+    };
+    if (component.type === LIMIT_SWITCH_TYPE) return {
+      id: component.id, type: SPDT_CONTACT_TYPE, label: component.label,
+      properties: { transitionPolicy: 'break-before-make' },
+      controls: { selectedThrow: component.controls.actuated ? 'B' : 'A' },
+    };
+    return component;
+  });
+  projected.nets = projected.nets.map((net) => ({ ...net, endpoints: net.endpoints.map((endpoint) => {
+    const source = graph.components.find((item) => item.id === endpoint.component);
+    if (source?.type === LIMIT_SWITCH_TYPE) {
+      return { ...endpoint, pin: endpoint.pin === 'NC' ? 'A' : endpoint.pin === 'NO' ? 'B' : endpoint.pin };
+    }
+    return endpoint;
+  }) }));
+  return projected;
+}
+
 function production(implementation, componentType, input, details = []) {
   const evaluated = implementation.evaluateProduction(componentType, input);
   if (!evaluated.ok) fail(evaluated.code, [componentType, ...details]);
@@ -529,9 +574,18 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
         oppositeTransition: clone(transition),
       });
     }
+    if ([SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE].includes(component.type)) {
+      const state = mechanicalRuntimeState(component);
+      production(implementation, component.type,
+        component.type === SLIDE_SWITCH_TYPE ? { selectedThrow: component.controls.selectedThrow }
+          : component.type === NC_BUTTON_TYPE ? { pressed: component.controls.pressed }
+            : { actuated: component.controls.actuated }, [component.id]);
+      contacts.push({ componentId: component.id, type: component.type, state });
+    }
   }
 
-  const withoutSpdt = removeSpdtComponents(graph);
+  const mechanicalProjection = projectMechanicalInputs(graph);
+  const withoutSpdt = removeSpdtComponents(mechanicalProjection);
   const withProjectedSpst = projectSpstComponents(withoutSpdt);
   const lightProjection = projectLightAnalogueSensors(withProjectedSpst);
   if (!lightProjection.ok) fail(`PROJECT_CONTACT_${lightProjection.code}`, lightProjection.details);
@@ -717,6 +771,9 @@ function draftContacts(graph) {
         contactGraph: clone(resolveSwitchContactGraph(selectedThrow)),
         oppositeTransition: clone(transitionSwitchContact(selectedThrow, selectedThrow === 'A' ? 'B' : 'A')),
       }];
+    }
+    if ([SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE].includes(component.type)) {
+      return [{ componentId: component.id, type: component.type, state: mechanicalRuntimeState(component) }];
     }
     if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) {
       return [{

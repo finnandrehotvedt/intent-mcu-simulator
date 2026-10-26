@@ -12973,6 +12973,9 @@ function candidateComponentPrefix(type) {
       [POWER_REFERENCE_TYPE]: 'power-reference',
       'switch.toggle-spst-v1': 'toggle-switch',
       'switch.changeover-spdt-v1': 'selector',
+      'switch.slide-spdt-v1': 'slide-switch',
+      'button.momentary-nc-v1': 'nc-button',
+      'switch.limit-spdt-v1': 'limit-switch',
       'sensor.light-analogue-v1': 'light-sensor',
       'sensor.temperature-analogue-v1': 'temperature-sensor',
       [DIGITAL_LIGHT_THRESHOLD_TYPE]: 'light-threshold',
@@ -13010,6 +13013,9 @@ function addComponent(type, point = null) {
       [POWER_REFERENCE_TYPE]: { x: 0.18, y: 0.64 },
       'switch.toggle-spst-v1': { x: 0.48, y: 0.78 },
       'switch.changeover-spdt-v1': { x: 0.78, y: 0.78 },
+      'switch.slide-spdt-v1': { x: 0.54, y: 0.76 },
+      'button.momentary-nc-v1': { x: 0.68, y: 0.76 },
+      'switch.limit-spdt-v1': { x: 0.82, y: 0.76 },
       'sensor.light-analogue-v1': { x: 0.62, y: 0.76 },
       'sensor.temperature-analogue-v1': { x: 0.78, y: 0.76 },
       [DIGITAL_LIGHT_THRESHOLD_TYPE]: { x: 0.78, y: 0.72 },
@@ -13425,6 +13431,31 @@ function renderRuntimeControls() {
           ? `${component.label} changed at runtime without rebuilding.`
           : `${component.label} changed through BREAK. Direct GND/5 V digital-input model only.`;
         renderProject();
+      });
+      row.append(label, button); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3'
+        && ['switch.slide-spdt-v1', 'button.momentary-nc-v1', 'switch.limit-spdt-v1'].includes(component.type)) {
+      const row = document.createElement('div');
+      const label = document.createElement('span'); label.textContent = component.label;
+      const button = document.createElement('button'); button.type = 'button';
+      const key = component.type === 'switch.slide-spdt-v1' ? 'selectedThrow'
+        : component.type === 'button.momentary-nc-v1' ? 'pressed' : 'actuated';
+      const value = component.controls[key];
+      button.dataset.control = `${component.id}.${key}`;
+      button.setAttribute('aria-pressed', String(key === 'selectedThrow' ? value === 'B' : value));
+      button.textContent = key === 'selectedThrow' ? `Throw ${value}`
+        : key === 'pressed' ? (value ? 'Pressed · open' : 'Released · closed')
+          : (value ? 'Actuated · NO' : 'Resting · NC');
+      button.addEventListener('click', () => {
+        const next = key === 'selectedThrow' ? (component.controls.selectedThrow === 'A' ? 'B' : 'A') : !component.controls[key];
+        const prepared = selectedCandidateContactControl(component.id, key, next);
+        if (!prepared.ok) { showActionableError(elements.projectmessage, prepared.code, 'Mechanical input rejected.'); return; }
+        const changed = editor.apply({ ...prepared.command, revision: editor.revision });
+        if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Mechanical input rejected.'); return; }
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject();
+        if (prepared.worker) worker?.postMessage(prepared.worker);
+        elements.projectmessage.textContent = `${component.label} contact state changed.`; renderProject();
       });
       row.append(label, button); return [row];
     }

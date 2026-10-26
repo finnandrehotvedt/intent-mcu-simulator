@@ -21,10 +21,11 @@ const adapters = Object.freeze({ 'board.atmega328p-16mhz-v1': Object.freeze({
   },
 }) });
 
-test('CMP-021/022/132 artifacts are canonical, hashed and profile-bounded', async () => {
+test('input-control artifacts are canonical, hashed and profile-bounded', async () => {
   const manifest = JSON.parse(await readFile(new URL('manifest.json', ROOT), 'utf8'));
   assert.equal(manifest.schema, 'intent-mcu-input-control-example-manifest@1');
-  assert.deepEqual(manifest.entries.map((entry) => entry.requirementIds).flat(), ['CMP-021', 'CMP-022', 'CMP-132']);
+  assert.deepEqual(manifest.entries.map((entry) => entry.requirementIds).flat(),
+    ['CMP-021', 'CMP-022', 'CMP-132', 'CMP-023', 'CMP-025', 'CMP-032']);
   for (const entry of manifest.entries) {
     const bytes = await readFile(new URL(entry.file, ROOT), 'utf8');
     assert.equal(sha256(bytes), entry.projectSha256, entry.id);
@@ -42,11 +43,20 @@ test('CMP-021/022/132 artifacts are canonical, hashed and profile-bounded', asyn
   }
 });
 
-test('CMP-021/022/132 named wiring is exact', async () => {
+test('input-control named wiring is exact', async () => {
   const manifest = JSON.parse(await readFile(new URL('manifest.json', ROOT), 'utf8'));
   assert.deepEqual(manifest.entries.map((entry) => entry.namedPins), [
     { A: 'D2', B: 'GND1' },
     { A: 'D3', B: 'GND1' },
     { A: 'D2', B: 'D3', COM: 'GND2' },
+    { slideCom: 'D4', slideA: 'GND1', slideB: '5V', ncA: 'D5', ncB: 'GND1',
+      limitCom: 'D6', limitNC: 'GND1', limitNO: '5V' },
   ]);
+});
+
+test('combined mechanical example contains all three exact models', async () => {
+  const parsed = JSON.parse(await readFile(new URL('avr-mechanical-inputs.intent-mcu.json', ROOT), 'utf8'));
+  const components = parsed.project.candidateCircuit.components;
+  assert.deepEqual(['switch.slide-spdt-v1', 'button.momentary-nc-v1', 'switch.limit-spdt-v1']
+    .map((type) => components.filter((component) => component.type === type).length), [1, 1, 1]);
 });

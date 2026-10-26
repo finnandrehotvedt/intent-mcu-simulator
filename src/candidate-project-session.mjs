@@ -29,6 +29,7 @@ import {
   evaluateSpdtDigitalInput,
 } from './candidate-spdt-runtime.mjs';
 import { TOGGLE_SWITCH_TYPE } from '../expansion-drafts/toggle-switch-integration-v1.mjs';
+import { LIMIT_SWITCH_TYPE, NC_BUTTON_TYPE, SLIDE_SWITCH_TYPE } from '../expansion-drafts/mechanical-inputs-v1.mjs';
 import { LIGHT_ANALOGUE_SENSOR_TYPE } from '../expansion-drafts/light-analogue-sensor-v1.mjs';
 import {
   TEMPERATURE_ANALOGUE_SENSOR_TYPE,
@@ -60,6 +61,7 @@ const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
 const MOMENTARY_BUTTON_TYPE = 'button.momentary-v1';
 const CANDIDATE_COMPONENT_TYPES = new Set([
   GROUND_REFERENCE_TYPE, POWER_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
+  SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE,
   LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
   DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
   ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE,
@@ -179,6 +181,12 @@ function contactSupport(result) {
           ? 'board-5v-source-projection'
         : contact.type === TOGGLE_SWITCH_TYPE
           ? 'button.momentary-v1'
+        : contact.type === NC_BUTTON_TYPE
+          ? 'button.momentary-v1-inverted'
+        : contact.type === SLIDE_SWITCH_TYPE
+          ? 'spdt-digital-reference-v1'
+        : contact.type === LIMIT_SWITCH_TYPE
+          ? 'spdt-digital-reference-v1-spring-return'
           : contact.type === LIGHT_ANALOGUE_SENSOR_TYPE
             ? 'potentiometer.linear-v1'
           : contact.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE
@@ -795,6 +803,24 @@ export class CandidateEditorSession {
             if (projected) projected.controls.pressed = command.value;
             runtimeDirty = true;
             break;
+          }
+          if (component.type === NC_BUTTON_TYPE) {
+            if (command.key !== 'pressed' || typeof command.value !== 'boolean') {
+              return failure('PROJECT_CONTACT_MECHANICAL_INPUT_STATE', this.revision);
+            }
+            component.controls.pressed = command.value; runtimeDirty = true; break;
+          }
+          if (component.type === SLIDE_SWITCH_TYPE) {
+            if (command.key !== 'selectedThrow' || !['A', 'B'].includes(command.value)) {
+              return failure('PROJECT_CONTACT_MECHANICAL_INPUT_STATE', this.revision);
+            }
+            component.controls.selectedThrow = command.value; runtimeDirty = true; break;
+          }
+          if (component.type === LIMIT_SWITCH_TYPE) {
+            if (command.key !== 'actuated' || typeof command.value !== 'boolean') {
+              return failure('PROJECT_CONTACT_MECHANICAL_INPUT_STATE', this.revision);
+            }
+            component.controls.actuated = command.value; runtimeDirty = true; break;
           }
           if (component.type === SPDT_CONTACT_TYPE) {
             if (command.key !== 'selectedThrow' || !['A', 'B'].includes(command.value)) {

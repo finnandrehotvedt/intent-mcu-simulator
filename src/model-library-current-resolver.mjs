@@ -116,6 +116,21 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       return { ok: true, code: 'OK', result: { selectedThrow: input.selectedThrow,
         activeContact: ['COM', input.selectedThrow], breakBeforeMake: true } };
     }
+    if (componentType === 'switch.slide-spdt-v1') {
+      if (!['A', 'B'].includes(input?.selectedThrow)) return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      return { ok: true, code: 'OK', result: { selectedThrow: input.selectedThrow,
+        activeContact: ['COM', input.selectedThrow], breakBeforeMake: true, maintained: true } };
+    }
+    if (componentType === 'button.momentary-nc-v1') {
+      if (typeof input?.pressed !== 'boolean') return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      return { ok: true, code: 'OK', result: { connected: !input.pressed, normallyClosed: true } };
+    }
+    if (componentType === 'switch.limit-spdt-v1') {
+      if (typeof input?.actuated !== 'boolean') return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      const selectedThrow = input.actuated ? 'NO' : 'NC';
+      return { ok: true, code: 'OK', result: { selectedThrow,
+        activeContact: ['COM', selectedThrow], breakBeforeMake: true, springReturn: true } };
+    }
     if (componentType === 'sensor.light-analogue-v1') {
       if (!Number.isFinite(input?.lightLevel) || input.lightLevel < 0 || input.lightLevel > 1) {
         return failure('MODEL_LIBRARY_PRODUCTION_INPUT');

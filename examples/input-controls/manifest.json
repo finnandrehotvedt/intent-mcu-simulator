@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-lcd-20x4-cgram.1-current",
-    "manifestSha256": "86ca6f5da809f27ea49167ff6b8c33ecdc985a7571475bd1d246f63901b9bbd0",
-    "implementationSha256": "19f52e599130c136461eb1fb6c30a950cadce415351a60c692e85c199e1fd85c"
+    "manifestSha256": "5ccfb4dc994d3f1638af7472481d1f952a1d1ada13cad332ff27e919b382457d",
+    "implementationSha256": "51511638bc14a59c64b977118d178b76ddeb5bc2d7e75da4714ddf9b44d43ddd"
   },
   "entries": [
     {
@@ -22,7 +22,7 @@
       "expectedBehavior": "Pressing the active-low button changes D2 and Serial from RELEASED to PRESSED.",
       "firmwareLimits": "Ideal normally-open contact with INPUT_PULLUP; no bounce, resistance, wear or physical timing model.",
       "sourceSha256": "1bf4ebdd58ce128405d2fecec4d8b0c2b10c3e744cc7dbab6b522353c5f3c581",
-      "projectSha256": "df8626a0868669741df6242c60e3c2f3a5d31197aa125a9952b3f0ca2969ed7b",
+      "projectSha256": "3c8e47b8dc5cf75049d9fb5d95dc3b8ad33be84634fc3d7382e93b5f287f2425",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "separate 3.3 V authoring component exists; this exact model is unavailable",
@@ -44,7 +44,7 @@
       "expectedBehavior": "The maintained Open/Closed control changes compiled D3 input, D13 and Serial output.",
       "firmwareLimits": "Ideal AVR-only maintained SPST contact; no bounce, resistance, current rating, arcing or wear.",
       "sourceSha256": "8077c43a7452edc47e82f79525a3322c588f7fc020773c35b279c0c7da101aa1",
-      "projectSha256": "28b78afa7205b68acbaf31ddb8425273d001f90a5764bd13f4b334bfb9ba8930",
+      "projectSha256": "a6cf14618a405813179dfadbb86822e5a1517bdadcafba1d0b1e0bcdf334efa4",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "separate 3.3 V authoring component exists; this exact model is unavailable",
@@ -73,7 +73,37 @@
       "expectedBehavior": "One detent produces ordered 01→00→10→11 clockwise phases and the exact reverse counter-clockwise.",
       "firmwareLimits": "CMP-132 only: ideal AVR quadrature phases at fixed 1 ms spacing. This is not CMP-027; it has no push switch, bounce, acceleration or physical detents.",
       "sourceSha256": "f0a3e2f6a9856762285b21ee4e3d51e95c76f9549c2b0dfcdc3c4a9ec98806e3",
-      "projectSha256": "1ce7c32d0274ac1add1f3903aeca8fe030f6c541e2c47712d1dece1edfcd292d",
+      "projectSha256": "0502ec06540e501111e6fbf04ff95635d3ebfd188cf215c40232e0f385352432",
+      "provenance": "Original project-owned component, artwork, circuit factory and canonical project envelope."
+    },
+    {
+      "id": "avr-mechanical-inputs",
+      "requirementIds": [
+        "CMP-023",
+        "CMP-025",
+        "CMP-032"
+      ],
+      "file": "avr-mechanical-inputs.intent-mcu.json",
+      "namedPins": {
+        "slideCom": "D4",
+        "slideA": "GND1",
+        "slideB": "5V",
+        "ncA": "D5",
+        "ncB": "GND1",
+        "limitCom": "D6",
+        "limitNC": "GND1",
+        "limitNO": "5V"
+      },
+      "expectedBehavior": "Slide selection changes D4, pressing the normally-closed button opens D5, and actuating the limit switch changes D6 from NC to NO.",
+      "firmwareLimits": "Ideal AVR contact models only; no bounce, resistance, force, travel, current rating, arcing or wear.",
+      "sourceSha256": "83de9735067bc9065b69ba247ba52cebadd7b3d3571d0ebae27273f0885353b4",
+      "projectSha256": "a780952f2dd07da753e4ee9ab5407af40141aa50b09c9b43cf097b51a52bea62",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "separate 3.3 V authoring component exists; this exact model is unavailable",
+        "board.esp32-c3-devmodule-v1": "separate 3.3 V authoring component exists; this exact model is unavailable",
+        "board.stm32f429zi-nucleo144-v1": "separate 3.3 V authoring component exists; this exact model is unavailable"
+      },
       "provenance": "Original project-owned component, artwork, circuit factory and canonical project envelope."
     }
   ]

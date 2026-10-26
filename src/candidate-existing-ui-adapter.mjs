@@ -29,6 +29,11 @@ import {
 } from '../expansion-drafts/toggle-switch-integration-v1.mjs';
 import { createToggleSwitchArtwork } from '../expansion-drafts/toggle-switch-artwork-v1.mjs';
 import {
+  LIMIT_SWITCH_TYPE, MECHANICAL_INPUT_DEFINITIONS, NC_BUTTON_TYPE, SLIDE_SWITCH_TYPE,
+  createMechanicalInputComponent,
+} from '../expansion-drafts/mechanical-inputs-v1.mjs';
+import { createMechanicalInputArtwork } from '../expansion-drafts/mechanical-inputs-artwork-v1.mjs';
+import {
   LIGHT_ANALOGUE_SENSOR_DEFINITION,
   LIGHT_ANALOGUE_SENSOR_TYPE,
   createLightAnalogueSensorComponent,
@@ -139,6 +144,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   [GROUND_REFERENCE_TYPE]: GROUND_REFERENCE_DEFINITION,
   [POWER_REFERENCE_TYPE]: POWER_REFERENCE_DEFINITION,
   [TOGGLE_SWITCH_TYPE]: TOGGLE_SWITCH_DEFINITION,
+  ...MECHANICAL_INPUT_DEFINITIONS,
   [SPDT_CONTACT_TYPE]: SPDT_UI_DEFINITION,
   [LIGHT_ANALOGUE_SENSOR_TYPE]: LIGHT_ANALOGUE_SENSOR_DEFINITION,
   [TEMPERATURE_ANALOGUE_SENSOR_TYPE]: TEMPERATURE_ANALOGUE_SENSOR_DEFINITION,
@@ -165,6 +171,9 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   }
   if (component?.type === TOGGLE_SWITCH_TYPE) {
     return createToggleSwitchArtwork(documentObject, definition, component, options);
+  }
+  if ([SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE].includes(component?.type)) {
+    return createMechanicalInputArtwork(documentObject, definition, component, options);
   }
   if (component?.type === SPDT_CONTACT_TYPE) {
     return createSwitchContactArtwork(documentObject, definition, component.controls.selectedThrow, options);
@@ -206,6 +215,9 @@ export function createCandidateUiComponent(type, id) {
   if (type === GROUND_REFERENCE_TYPE) return createGroundReferenceComponent(id);
   if (type === POWER_REFERENCE_TYPE) return createPowerReferenceComponent(id);
   if (type === TOGGLE_SWITCH_TYPE) return createToggleSwitchComponent(id);
+  if ([SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE].includes(type)) {
+    return createMechanicalInputComponent(type, id);
+  }
   if (type === SPDT_CONTACT_TYPE) return createSwitchContactComponent(id, 'SPDT changeover contact', { selectedThrow: 'A' });
   if (type === LIGHT_ANALOGUE_SENSOR_TYPE) return createLightAnalogueSensorComponent(id);
   if (type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return createTemperatureAnalogueSensorComponent(id);
@@ -276,6 +288,18 @@ export function candidateContactControl(session, componentId, key, value) {
       command: { type: 'component.control.set', componentId, key, value },
       transition: transition ? clone(transition.transition) : null,
     };
+  }
+  if (component.type === SLIDE_SWITCH_TYPE && key === 'selectedThrow' && ['A', 'B'].includes(value)) {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+  }
+  if (component.type === NC_BUTTON_TYPE && key === 'pressed' && typeof value === 'boolean') {
+    return {
+      ok: true, command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'pressed', value: !value },
+    };
+  }
+  if (component.type === LIMIT_SWITCH_TYPE && key === 'actuated' && typeof value === 'boolean') {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
   }
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE && key === 'lightLevel'
       && Number.isFinite(value) && value >= 0 && value <= 1) {

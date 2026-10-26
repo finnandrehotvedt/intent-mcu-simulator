@@ -24,6 +24,15 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
     selectedThrow: { kind: 'enum', values: ['A', 'B'], default: 'A',
       mutability: 'authored' },
   },
+  'switch.slide-spdt-v1': {
+    selectedThrow: { kind: 'enum', values: ['A', 'B'], default: 'A', mutability: 'authored' },
+  },
+  'button.momentary-nc-v1': {
+    pressed: { kind: 'boolean', default: false, mutability: 'authored' },
+  },
+  'switch.limit-spdt-v1': {
+    actuated: { kind: 'boolean', default: false, mutability: 'authored' },
+  },
   'sensor.light-analogue-v1': {
     lightLevel: { kind: 'number', minimum: 0, maximum: 1, default: 0.5,
       unit: 'ratio', mutability: 'authored' },

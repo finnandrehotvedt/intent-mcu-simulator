@@ -7,6 +7,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createEditableContactDraft } from '../expansion-drafts/contact-persistence-fixture-v1.mjs';
 import { canonicalContactPersistenceDraftJson } from '../expansion-drafts/project-v3-contact-persistence.mjs';
 import { createAvrReferenceStarter } from '../src/avr-reference-starters.mjs';
+import { createMechanicalInputComponent } from '../expansion-drafts/mechanical-inputs-v1.mjs';
 import { openCandidateUiSession } from '../src/candidate-existing-ui-adapter.mjs';
 import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
 import {
@@ -51,6 +52,38 @@ buttonDraft.project.project.metadata.name = 'Momentary button input';
 const button = { project: JSON.parse(canonicalContactPersistenceDraftJson(buttonDraft.project)) };
 const toggle = createAvrReferenceStarter('avr-toggle-input');
 const encoder = createAvrReferenceStarter('avr-rotary-encoder');
+const mechanicalSource = `void setup() { pinMode(4, INPUT); pinMode(5, INPUT_PULLUP); pinMode(6, INPUT); Serial.begin(115200); }
+void loop() { Serial.print(digitalRead(4)); Serial.print(','); Serial.print(digitalRead(5)); Serial.print(','); Serial.println(digitalRead(6)); delay(120); }
+`;
+function mechanicalExample() {
+  const draft = createEditableContactDraft(mechanicalSource);
+  if (!draft.ok) throw new Error(draft.code);
+  draft.project.project.metadata.name = 'Three mechanical input types';
+  const session = openCandidateUiSession(canonicalContactPersistenceDraftJson(draft.project)).session;
+  const apply = (command) => {
+    const result = session.apply({ ...command, revision: session.revision });
+    if (!result.ok) throw new Error(`MECHANICAL_EXAMPLE:${command.type}:${result.code}`);
+  };
+  const add = (type, id, position) => apply({ type: 'component.add',
+    component: createMechanicalInputComponent(type, id), position });
+  const wire = (id, component, pin, boardPin) => apply({ type: 'wire.create', net: { id,
+    endpoints: [{ component, pin }, { component: 'board-1', pin: boardPin }] } });
+  const branch = (netId, component, pin, junctionId) => apply({ type: 'wire.branch', netId,
+    endpoint: { component, pin }, junctionId });
+  add('switch.slide-spdt-v1', 'slide-switch-1', { x: 0.68, y: 0.38 });
+  branch('net-ground-branch', 'slide-switch-1', 'A', 'junction-mechanical-slide-ground');
+  branch('net-5v', 'slide-switch-1', 'B', 'junction-mechanical-slide-power');
+  wire('net-mechanical-slide-d4', 'slide-switch-1', 'COM', 'D4');
+  add('button.momentary-nc-v1', 'nc-button-1', { x: 0.68, y: 0.58 });
+  branch('net-ground-branch', 'nc-button-1', 'B', 'junction-mechanical-button-ground');
+  wire('net-mechanical-button-d5', 'nc-button-1', 'A', 'D5');
+  add('switch.limit-spdt-v1', 'limit-switch-1', { x: 0.68, y: 0.78 });
+  branch('net-ground-branch', 'limit-switch-1', 'NC', 'junction-mechanical-limit-ground');
+  branch('net-5v', 'limit-switch-1', 'NO', 'junction-mechanical-limit-power');
+  wire('net-mechanical-limit-d6', 'limit-switch-1', 'COM', 'D6');
+  return JSON.parse(session.saveText());
+}
+const mechanical = mechanicalExample();
 const definitions = [
   {
     id: 'avr-momentary-button-input', requirementIds: ['CMP-021'],
@@ -73,6 +106,14 @@ const definitions = [
     profileBehavior: ENCODER_PROFILE_BEHAVIOR,
     expectedBehavior: 'One detent produces ordered 01→00→10→11 clockwise phases and the exact reverse counter-clockwise.',
     firmwareLimits: 'CMP-132 only: ideal AVR quadrature phases at fixed 1 ms spacing. This is not CMP-027; it has no push switch, bounce, acceleration or physical detents.',
+  },
+  {
+    id: 'avr-mechanical-inputs', requirementIds: ['CMP-023', 'CMP-025', 'CMP-032'],
+    file: 'avr-mechanical-inputs.intent-mcu.json', project: mechanical,
+    namedPins: { slideCom: 'D4', slideA: 'GND1', slideB: '5V', ncA: 'D5', ncB: 'GND1',
+      limitCom: 'D6', limitNC: 'GND1', limitNO: '5V' },
+    expectedBehavior: 'Slide selection changes D4, pressing the normally-closed button opens D5, and actuating the limit switch changes D6 from NC to NO.',
+    firmwareLimits: 'Ideal AVR contact models only; no bounce, resistance, force, travel, current rating, arcing or wear.',
   },
 ];
 const outputs = definitions.map((item) => {
