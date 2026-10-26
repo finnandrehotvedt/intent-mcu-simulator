@@ -6,13 +6,14 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createExampleProject } from '../src/example-projects.mjs';
 import { canonicalProjectJson, parseProjectV2 } from '../src/project-v2.mjs';
-import { POTENTIOMETER_3V3_TYPE } from '../src/bounded-3v3-authoring-contracts.mjs';
-import { Rp2040PicoCircuitEditor } from '../src/rp2040-pico-circuit.mjs';
-import { Esp32C3CircuitEditor } from '../src/esp32c3-public-circuit.mjs';
-import { Stm32CircuitEditor } from '../src/stm32-public-circuit.mjs';
-import { RP2040_PUBLIC_PROJECT_SCHEMA, RP2040_PUBLIC_SOURCE } from '../src/rp2040-public-workbench.mjs';
-import { C3_PUBLIC_PROJECT_SCHEMA, C3_PUBLIC_SOURCE } from '../src/esp32c3-public-workbench.mjs';
-import { STM32_EDITABLE_PROJECT_SCHEMA, STM32_PUBLIC_SOURCE } from '../src/stm32-public-workbench.mjs';
+import { POTENTIOMETER_3V3_TYPE, validateBounded3v3AuthoringGraph } from '../src/bounded-3v3-authoring-contracts.mjs';
+import { Rp2040PicoCircuitEditor, RP2040_PICO_BOARD_DEFINITION } from '../src/rp2040-pico-circuit.mjs';
+import { Esp32C3CircuitEditor, ESP32C3_BOARD_DEFINITION } from '../src/esp32c3-public-circuit.mjs';
+import { Stm32CircuitEditor, STM32_BOARD_DEFINITION } from '../src/stm32-public-circuit.mjs';
+import { RP2040_PUBLIC_PROJECT_SCHEMA, RP2040_PUBLIC_SOURCE, normalizeRp2040PublicProject } from '../src/rp2040-public-workbench.mjs';
+import { C3_PUBLIC_PROJECT_SCHEMA, C3_PUBLIC_SOURCE, normalizeEsp32C3PublicProject } from '../src/esp32c3-public-workbench.mjs';
+import { STM32_EDITABLE_PROJECT_SCHEMA, STM32_PUBLIC_SOURCE, normalizeStm32PublicProject } from '../src/stm32-public-workbench.mjs';
+import { canonicalProjectEnvelope, emptyProjectBrief } from '../src/project-envelope.mjs';
 
 const ROOT = new URL('../examples/basic-components/', import.meta.url);
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
@@ -26,18 +27,26 @@ const projects = Object.freeze({ blink: createExampleProject('blink'), adc: crea
 const files = new Map(Object.entries(projects).map(([id, value]) => [`avr-${id}.intent-mcu.json`, canonicalProjectJson(value.project)]));
 const authoringProfiles = [
   { id: 'pico', profile: 'board.rp2040-pico-v1', schema: RP2040_PUBLIC_PROJECT_SCHEMA, source: RP2040_PUBLIC_SOURCE,
-    Editor: Rp2040PicoCircuitEditor, boardId: 'pico-1', pin: 'GP26', highPin: 'GP1', lowPin: 'GND8' },
+    Editor: Rp2040PicoCircuitEditor, normalize: normalizeRp2040PublicProject, board: RP2040_PICO_BOARD_DEFINITION,
+    boardId: 'pico-1', pin: 'GP26', highPin: 'GP1', lowPin: 'GND8' },
   { id: 'esp32-c3', profile: 'board.esp32-c3-devmodule-v1', schema: C3_PUBLIC_PROJECT_SCHEMA, source: C3_PUBLIC_SOURCE,
-    Editor: Esp32C3CircuitEditor, boardId: 'c3-1', pin: 'GPIO0', highPin: 'GPIO3', lowPin: 'GND8' },
+    Editor: Esp32C3CircuitEditor, normalize: normalizeEsp32C3PublicProject, board: ESP32C3_BOARD_DEFINITION,
+    boardId: 'c3-1', pin: 'GPIO0', highPin: 'GPIO3', lowPin: 'GND8' },
   { id: 'stm32', profile: 'board.stm32f429zi-nucleo144-v1', schema: STM32_EDITABLE_PROJECT_SCHEMA, source: STM32_PUBLIC_SOURCE,
-    Editor: Stm32CircuitEditor, boardId: 'stm32-1', pin: 'PB0', highPin: 'PB1', lowPin: 'GND20', occupiedNet: 'net-pb0' },
+    Editor: Stm32CircuitEditor, normalize: normalizeStm32PublicProject, board: STM32_BOARD_DEFINITION,
+    boardId: 'stm32-1', pin: 'PB0', highPin: 'PB1', lowPin: 'GND20', occupiedNet: 'net-pb0' },
 ];
+const envelopeAdapters = Object.fromEntries(authoringProfiles.map((definition) => [definition.profile, {
+  schemas: [definition.schema], prepare: (value) => ({ project: definition.normalize(value), preserved: ['circuit'] }),
+  authoringAdmission: ({ project }) => validateBounded3v3AuthoringGraph({ board: definition.board,
+    components: project.circuit.components, nets: project.circuit.nets }),
+}]));
 const crossProfileSeries = authoringProfiles.map((definition) => {
   const circuit = new definition.Editor().snapshot().draft;
   const file = `${definition.id}-series-led.intent-mcu.json`;
   const project = { schema: definition.schema, name: `${definition.id} series resistor and LED`,
     profile: definition.profile, source: definition.source, circuit };
-  const bytes = `${JSON.stringify(project, null, 2)}\n`;
+  const bytes = canonicalProjectEnvelope(definition.profile, project, envelopeAdapters, emptyProjectBrief());
   files.set(file, bytes);
   return { id: `${definition.id}-series-led`, profile: definition.profile, file,
     componentIds: circuit.components.map(({ id }) => id),
