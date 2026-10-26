@@ -147519,7 +147519,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "bbb9ec5f91938da7b675a09977370d1613c93f3adb988f5bb53a02e900bd95b5"
+      "sha256": "963bec4dfc2fedbf9a84234616d364e8b010792f87abcadf612bdfb11ab4f390"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -147551,7 +147551,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "a861a368af4163f24708f79e28fedeb0bcfd760d0fa9cde17fca100417918d05"
+      "sha256": "5b34844191074f8aa8b906bc2df0e29d02a25b03495669f69902664dbfd23843"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -147682,7 +147682,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "ceb73c0f8d4eb4a3f2343f04adc974458a20ccfd50e64fde01b6e50ca9076328"
     }
   ],
-  "implementationSha256": "a9a0a65499807f143c1645e7ad5edd5d275f67c3f6b19623562bef0a45ccbc24",
+  "implementationSha256": "9d65a7d4104b1e5d80b0feb33d23a0344a56632394cdaf3997e5b85563f45f6e",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -147692,7 +147692,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract"
   },
-  "manifestSha256": "81fb4f4e5934d313482404587c2ef0b945e30e9ba6ffe5241dc9ed2dcedc73f6",
+  "manifestSha256": "f6374a7c432f4001e67d9a243834ababb20910a5737380490a854c38860e26d4",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

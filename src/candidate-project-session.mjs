@@ -621,6 +621,30 @@ export class CandidateEditorSession {
           runtimeDirty = true;
           break;
         }
+        case 'junction.remove': {
+          if (!exactCommand(command, ['junctionId', 'detachEndpoint'])) {
+            return failure('EDITOR_COMMAND_SHAPE', this.revision);
+          }
+          const junction = draft.candidateCircuit.junctions.find(
+            (item) => item.id === command.junctionId,
+          );
+          if (!junction) return failure('EDITOR_JUNCTION_MISSING', this.revision, [command.junctionId]);
+          const net = draft.candidateCircuit.nets.find((item) => item.id === junction.net);
+          if (!net) return failure('EDITOR_NET_MISSING', this.revision, [junction.net]);
+          if (command.detachEndpoint !== null) {
+            return failure('EDITOR_JUNCTION_BRANCH_REMOVAL_REQUIRES_EXPLICIT_BRANCH', this.revision,
+              [junction.id, endpointKey(command.detachEndpoint)]);
+          }
+          if (net.endpoints.length > 2) {
+            return failure('EDITOR_JUNCTION_REQUIRED_FOR_MULTI_ENDPOINT_NET', this.revision,
+              [junction.id, net.id]);
+          }
+          draft.candidateCircuit.junctions = draft.candidateCircuit.junctions.filter(
+            (item) => item.id !== junction.id,
+          );
+          runtimeDirty = true;
+          break;
+        }
         case 'wire.reconnect': {
           if (!exactCommand(command, ['netId', 'from', 'to'])) {
             return failure('EDITOR_COMMAND_SHAPE', this.revision);

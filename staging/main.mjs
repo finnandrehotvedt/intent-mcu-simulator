@@ -13359,9 +13359,13 @@ function renderInspector() {
   elements.wirecolor.disabled = !net;
   if (net) elements.wirecolor.value = currentProject().layout.wireStyles[net.id].color;
   const junction = net && currentProject().circuit.junctions.find((item) => item.net === net.id);
-  elements.removejunction.disabled = !junction;
+  const junctionRemovalBlocked = Boolean(junction && net.endpoints.length > 2);
+  elements.removejunction.disabled = !junction || junctionRemovalBlocked;
+  elements.removejunction.title = junctionRemovalBlocked
+    ? 'This junction is required by the multi-pin net. Remove a named branch instead.'
+    : junction ? 'Remove this redundant junction without changing any pin connection.' : 'This net has no junction.';
   elements.netmembers.textContent = net
-    ? `${selectedRouteSegment ? `Selected branch: ${selectedRouteSegment.endpoint}\n` : ''}${net.endpoints.map(endpointKey).join('\n')}${junction ? '\n\nPolicy: the explicit junction hub stays fixed during section moves.' : '\n\nPolicy: crossings and overlaps never connect.'}`
+    ? `${selectedRouteSegment ? `Selected branch: ${selectedRouteSegment.endpoint}\n` : ''}${net.endpoints.map(endpointKey).join('\n')}${junctionRemovalBlocked ? '\n\nJunction removal unavailable: this multi-pin net requires its explicit junction. Select a named branch to disconnect it safely.' : junction ? '\n\nPolicy: the explicit junction hub stays fixed during section moves.' : '\n\nPolicy: crossings and overlaps never connect.'}`
     : 'Select a net to inspect all connected pins.';
   renderWireBends(net);
 }
@@ -15264,8 +15268,11 @@ elements.removejunction.addEventListener('click', () => {
   const net = currentProject().circuit.nets.find((item) => item.id === selectedNetId);
   const junction = currentProject().circuit.junctions.find((item) => item.net === selectedNetId);
   if (!net || !junction) return;
-  const detachEndpoint = net.endpoints.length > 2 ? net.endpoints.at(-1) : null;
-  applyEditor({ type: 'junction.remove', junctionId: junction.id, detachEndpoint }, `Removed ${junction.id}`);
+  if (net.endpoints.length > 2) {
+    elements.wirestate.textContent = 'This junction is required by the multi-pin net. Select a named branch to disconnect it safely.';
+    return;
+  }
+  applyEditor({ type: 'junction.remove', junctionId: junction.id, detachEndpoint: null }, `Removed ${junction.id}`);
 });
 
 function clamp(value, minimum, maximum) { return Math.max(minimum, Math.min(maximum, value)); }

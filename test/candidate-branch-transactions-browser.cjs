@@ -72,6 +72,18 @@ async function endpointGeometry(page) {
     await page.waitForFunction(() => window.__M11_READY__ === true);
     await openProject(page, fixture);
 
+    await page.selectOption('#selected-net', 'net-ground-branch');
+    const guardedJunction = await page.evaluate(() => ({
+      disabled: document.querySelector('#remove-junction').disabled,
+      title: document.querySelector('#remove-junction').title,
+      explanation: document.querySelector('#net-members').textContent,
+      project: JSON.stringify(window.__M6_PROJECT__()),
+    }));
+    assert.equal(guardedJunction.disabled, true);
+    assert.match(guardedJunction.title, /required.*multi-pin.*named branch/i);
+    assert.match(guardedJunction.explanation, /removal unavailable.*requires.*explicit junction/i);
+    assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), guardedJunction.project);
+
     const before = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
     await page.locator('.wire-segment-hit[data-net="net-ground-branch"][data-endpoint="ground-reference-branch.REF"]').first().focus();
     await page.click('#reconnect-mode');
@@ -131,7 +143,7 @@ async function endpointGeometry(page) {
     assert.deepEqual(outside, []);
     process.stdout.write(`${JSON.stringify({ ok: true, requirements: ['W06', 'W07'], candidateReconnect: true,
       branchDeleteUndoRedo: true, wholeNetDeleteUndoRedo: true, saveOpen: true,
-      exactPinAttachment: true, junctionDistinct: true, overflow: false })}\n`);
+      exactPinAttachment: true, junctionDistinct: true, junctionRemovalGuard: true, overflow: false })}\n`);
   } finally {
     await browser.close();
   }
