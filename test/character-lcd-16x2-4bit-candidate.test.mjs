@@ -259,6 +259,47 @@ test('decoder renders compiled-style Hello text and a later updated two-line val
   assert.deepEqual(snapshot.lines, ['Updated by AVR  ', 'Count: 42       ']);
 });
 
+test('display control, cursor, blink, clear, home and 16x2 wrapping update incrementally', () => {
+  const decoder = createCharacterLcd4BitDecoder(SIGNAL_PINS);
+  const writer = initializedTrace();
+  let offset = 0;
+  let snapshot = decoder.consume(writer.events);
+  offset = writer.events.length;
+  assert.deepEqual({ displayOn: snapshot.displayOn, cursorOn: snapshot.cursorOn, blinkOn: snapshot.blinkOn },
+    { displayOn: true, cursorOn: false, blinkOn: false });
+
+  writer.cycle = writer.byte(0x0f, false, writer.cycle);
+  writer.cycle += CHARACTER_LCD_TIMING.instructionMinimumCycles;
+  snapshot = decoder.consume(writer.events.slice(offset)); offset = writer.events.length;
+  assert.deepEqual({ displayOn: snapshot.displayOn, cursorOn: snapshot.cursorOn, blinkOn: snapshot.blinkOn },
+    { displayOn: true, cursorOn: true, blinkOn: true });
+
+  writer.cycle = writer.byte(0x80, false, writer.cycle);
+  writer.cycle += CHARACTER_LCD_TIMING.instructionMinimumCycles;
+  for (const character of 'ABCDEFGHIJKLMNOPq') {
+    writer.cycle = writer.byte(character.charCodeAt(0), true, writer.cycle);
+    writer.cycle += CHARACTER_LCD_TIMING.instructionMinimumCycles;
+  }
+  snapshot = decoder.consume(writer.events.slice(offset)); offset = writer.events.length;
+  assert.deepEqual(snapshot.lines, ['ABCDEFGHIJKLMNOP', 'q               ']);
+  assert.equal(snapshot.address, 0x41);
+
+  writer.cycle = writer.byte(0x02, false, writer.cycle);
+  writer.cycle += CHARACTER_LCD_TIMING.clearHomeMinimumCycles;
+  writer.cycle = writer.byte('H'.charCodeAt(0), true, writer.cycle);
+  writer.cycle += CHARACTER_LCD_TIMING.instructionMinimumCycles;
+  snapshot = decoder.consume(writer.events.slice(offset)); offset = writer.events.length;
+  assert.deepEqual(snapshot.lines, ['HBCDEFGHIJKLMNOP', 'q               ']);
+
+  writer.cycle = writer.byte(0x08, false, writer.cycle);
+  writer.cycle += CHARACTER_LCD_TIMING.instructionMinimumCycles;
+  writer.cycle = writer.byte(0x01, false, writer.cycle);
+  snapshot = decoder.consume(writer.events.slice(offset));
+  assert.deepEqual(snapshot.lines, ['                ', '                ']);
+  assert.deepEqual({ displayOn: snapshot.displayOn, cursorOn: snapshot.cursorOn, blinkOn: snapshot.blinkOn },
+    { displayOn: false, cursorOn: false, blinkOn: false });
+});
+
 test('unsupported command, inadequate timing and trace loss are explicit terminal errors', () => {
   const commandDecoder = createCharacterLcd4BitDecoder(SIGNAL_PINS);
   const commandTrace = initializedTrace();

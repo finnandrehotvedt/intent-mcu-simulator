@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-lcd-end-to-end.1-current",
-    "manifestSha256": "e65d471ca57a11395e116274b51cb6072457d61e015b004c4f91598aeef50919",
-    "implementationSha256": "51acf15d529b8c16cc2e0735bc232a012fd23e14a757e383f45330612e8f2a36"
+    "manifestSha256": "c3b3aa4627fdd7fbae7d32794afb302ad38b01712bfa6d7727f7194e3a4864bc",
+    "implementationSha256": "4b9552a468a876221e85fddc57f1529eb17ef9cb960b330725197491a414078b"
   },
   "entries": [
     {
@@ -37,7 +37,7 @@
       },
       "firmwareLimits": "Ideal sensor, display and RGB subset; no physical timing or current model.",
       "provenance": "Original project-owned direct 4-bit LCD example generated from the committed factory and canonical common project envelope.",
-      "projectSha256": "e9b2cff25845a8a81fde826f30070264de3c7f912249a3b29ba71fbbaa013249"
+      "projectSha256": "87789113d5c8f570006389e5501521d67097f323d52c3629a7965f17b8252322"
     },
     {
       "id": "pcf8574-lcd-backpack",
@@ -62,7 +62,7 @@
       },
       "firmwareLimits": "Partial: AVR-only, fixed address and mapping, write-only ASCII subset; no arbitrary Wire compatibility.",
       "provenance": "Original project-owned fixed 0x27 PCF8574 example generated from the committed factory and canonical common project envelope.",
-      "projectSha256": "3a735e5473835bc7238b0b35c53d45a6892d44e0949913a8b49c52351380df81"
+      "projectSha256": "5f265268bbee2d5607bf8106271d1c205967b830caf851f378e1f019a0f357fe"
     }
   ]
 }

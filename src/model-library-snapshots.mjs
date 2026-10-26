@@ -133052,7 +133052,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "572e6cd0fd2a2dab4255165f8ed9687f2d5980a5adb936d51446cd47cb80ca12",
+      "behaviorContractSha256": "6df3890ea05c51ce499ef18bb4ebfd370afcd61134942be3a1b1867c69b993be",
       "componentType": "output.character-lcd-16x2-4bit-v1",
       "componentVersion": 1,
       "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
@@ -133191,16 +133191,16 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "limitations": [
             "Bounded HD44780-style write-only 4-bit decoder for one 16×2 display. VCC requires 5 V, GND and RW require ground, and RS, E and D4–D7 require six unique direct AVR D2–D13 outputs.",
             "Supported initialization is 0x3,0x3,0x3,0x2 followed by commands 0x28,0x0C,0x06,0x01 with enforced power-on, enable-pulse and instruction timing. Supported runtime commands are clear, home, 4-bit/2-line function set, display-on, increment entry mode and visible DDRAM addresses.",
-            "Printable ASCII 0x20–0x7E is rendered. Reads, busy flag, RW-high operation, custom glyphs/CGRAM, cursor or blink modes, display shifts, automatic line wrapping, 8-bit mode, I²C, backpacks, contrast, backlight, current and physical timing tolerances are unsupported."
+            "Printable ASCII 0x20–0x7E, clear/home, visible DDRAM addressing, deterministic 16×2 wrapping, display on/off, cursor and blink state are rendered. Reads, busy flag, RW-high operation, custom glyphs/CGRAM, display shifts, 8-bit mode, I²C, backpacks, contrast, backlight, current and physical timing tolerances are unsupported."
           ],
           "status": "partial"
         }
       },
-      "semanticSha256": "7b5ae575ea2513ecc0452e086a6c321db93bd1299d2d1a2c8bc1b7def5e2b132",
+      "semanticSha256": "db1715d43fb78b0ba2a17137d8e0e0160b6a544710a11fd9afc8e490729a3065",
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "016b9ab7c6802dab95c2430b0da5a5152c88aa0f0d2086f880b5c2a24bae4bd6",
+      "behaviorContractSha256": "0d243759f3afa94c2fd6f28c46672a1c0a107c4201f0c901f8e3acf1eaec1a31",
       "componentType": "output.character-lcd-16x2-pcf8574-v1",
       "componentVersion": 1,
       "modelId": "model.character-lcd-16x2-pcf8574-write-only-v1",
@@ -133286,12 +133286,12 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "limitations": [
             "AVR-only fixed 7-bit address 0x27 on A4/SDA and A5/SCL, using mapping P0=RS, P1=RW, P2=E, P3=backlight, P4..P7=D4..D7.",
             "Only firmware writes observed through the bounded AVR TWI register protocol are accepted; arbitrary Wire-library compatibility, reads, clock stretching, arbitration, pull-up/current and physical bus timing are not modelled.",
-            "The attached display uses the same write-only 4-bit initialization, printable ASCII and command limits as CMP-050; busy reads, CGRAM/custom glyphs, cursor/blink, shifts and 8-bit mode remain unsupported."
+            "The attached display uses the same write-only 4-bit initialization, printable ASCII, clear/home, 16×2 wrapping, DDRAM addressing, display-control, cursor and blink state as CMP-050; busy reads, CGRAM/custom glyphs, shifts and 8-bit mode remain unsupported."
           ],
           "status": "partial"
         }
       },
-      "semanticSha256": "23815aca2d4abf8bf41e1f22300c7a2591dbf8ab678cd52511dc2589c74c506d",
+      "semanticSha256": "7d595bf369659f7e6af318852d9bb48cc6bda4c1bf55a3a6dab62161f612909b",
       "supportStatus": "partial"
     },
     {
@@ -135085,7 +135085,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "b0b83357ea8505ea158c6ef3e2c3f0006dd779fe21a6f4e4821bdadc26272f3e"
+      "sha256": "201e49652fb4b3d068abd1ee483585d388309d8688206e0a58426dfe711a3af6"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -135217,11 +135217,11 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/character-lcd-16x2-4bit-v1.mjs",
-      "sha256": "463871c751ee4e7857d46ceb75500f417c59a59af331535e8e3b2c87d17b27ee"
+      "sha256": "5e2c947976f29ebeca4aa22c566d7bed295c7600566299a6edddd23a4eb874dc"
     },
     {
       "path": "expansion-drafts/pcf8574-lcd-backpack-v1.mjs",
-      "sha256": "6feb8e04b542472182e999d685ecb6cdbc2d6eab267b2c1a0927c6f42ca081aa"
+      "sha256": "b46019e63908a2c4f3dfbdf3b9b497b814d9b3fb41945d3f0fe34b3e5d144170"
     },
     {
       "path": "expansion-drafts/pcf8574-lcd-backpack-artwork-v1.mjs",
@@ -135240,7 +135240,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "f7cd16498d64867c71de97588f25c995051b210b2f4ea357b357ff93a1aa377a"
     }
   ],
-  "implementationSha256": "51acf15d529b8c16cc2e0735bc232a012fd23e14a757e383f45330612e8f2a36",
+  "implementationSha256": "4b9552a468a876221e85fddc57f1529eb17ef9cb960b330725197491a414078b",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -135250,7 +135250,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR TWI write observation and fixed-address PCF8574 LCD semantics while retaining every prior component contract"
   },
-  "manifestSha256": "e65d471ca57a11395e116274b51cb6072457d61e015b004c4f91598aeef50919",
+  "manifestSha256": "c3b3aa4627fdd7fbae7d32794afb302ad38b01712bfa6d7727f7194e3a4864bc",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

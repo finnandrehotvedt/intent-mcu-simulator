@@ -102,7 +102,7 @@ test('acknowledged 0x27 bytes drive the reused HD44780 state machine to visible 
   assert(snapshot.transactions > 100);
 });
 
-test('clear, home, DDRAM line addressing and line boundaries remain deterministic', () => {
+test('clear, home, cursor, blink, DDRAM addressing and 16x2 wrapping remain deterministic', () => {
   const trace = initialized();
   trace.byte(0x80, false); for (const char of 'ABCDEFGHIJKLMNOP') trace.byte(char.charCodeAt(0), true);
   trace.byte(0xc0, false); for (const char of 'qrstuvwxyz012345') trace.byte(char.charCodeAt(0), true);
@@ -116,10 +116,12 @@ test('clear, home, DDRAM line addressing and line boundaries remain deterministi
   snapshot = createPcf8574LcdDecoder().consume(trace.records);
   assert.deepEqual(snapshot.lines, ['                ', 'U               ']);
 
-  const overflow = initialized(); overflow.byte(0x8f, false);
-  overflow.byte('X'.charCodeAt(0), true); overflow.byte('Y'.charCodeAt(0), true);
-  const rejected = createPcf8574LcdDecoder().consume(overflow.records);
-  assert.equal(rejected.error.code, 'CHARACTER_LCD_DDRAM_ADDRESS_UNSUPPORTED');
+  const wrapped = initialized(); wrapped.byte(0x0f, false); wrapped.byte(0x8f, false);
+  wrapped.byte('X'.charCodeAt(0), true); wrapped.byte('Y'.charCodeAt(0), true);
+  const updated = createPcf8574LcdDecoder().consume(wrapped.records);
+  assert.equal(updated.lines[0][15], 'X'); assert.equal(updated.lines[1][0], 'Y');
+  assert.equal(updated.address, 0x27); assert.equal(updated.ddramAddress, 0x41);
+  assert.equal(updated.cursorOn, true); assert.equal(updated.blinkOn, true);
 });
 
 test('wrong address, RW-high and dropped traces fail closed', () => {

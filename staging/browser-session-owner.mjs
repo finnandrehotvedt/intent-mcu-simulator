@@ -72,7 +72,9 @@ async function snapshot() {
     supportsEdit: Boolean(editorState && editorState.wireDraft?.mode === 'none') };
 }
 function execute(request, current, context) {
-  if (request.expected_revision !== current.revision) return { status: 'rejected', code: 'API_STALE_REVISION' };
+  if (request.command !== 'project.inspect' && request.expected_revision !== current.revision) {
+    return { status: 'rejected', code: 'API_STALE_REVISION' };
+  }
   const components = current.project?.circuit?.components ?? [];
   const nets = current.project?.circuit?.nets ?? [];
   if (request.command === 'project.inspect') return { status: 'accepted', code: 'API_PROJECT_INSPECTED', project: current.project };

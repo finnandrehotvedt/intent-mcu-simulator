@@ -93,7 +93,7 @@ export const CHARACTER_LCD_DEFINITION = deepFreeze({
     limitations: [
       'Bounded HD44780-style write-only 4-bit decoder for one 16×2 display. VCC requires 5 V, GND and RW require ground, and RS, E and D4–D7 require six unique direct AVR D2–D13 outputs.',
       'Supported initialization is 0x3,0x3,0x3,0x2 followed by commands 0x28,0x0C,0x06,0x01 with enforced power-on, enable-pulse and instruction timing. Supported runtime commands are clear, home, 4-bit/2-line function set, display-on, increment entry mode and visible DDRAM addresses.',
-      'Printable ASCII 0x20–0x7E is rendered. Reads, busy flag, RW-high operation, custom glyphs/CGRAM, cursor or blink modes, display shifts, automatic line wrapping, 8-bit mode, I²C, backpacks, contrast, backlight, current and physical timing tolerances are unsupported.',
+      'Printable ASCII 0x20–0x7E, clear/home, visible DDRAM addressing, deterministic 16×2 wrapping, display on/off, cursor and blink state are rendered. Reads, busy flag, RW-high operation, custom glyphs/CGRAM, display shifts, 8-bit mode, I²C, backpacks, contrast, backlight, current and physical timing tolerances are unsupported.',
     ],
   },
 });
@@ -264,6 +264,8 @@ export class CharacterLcd4BitDecoder {
     this.rows = blankRows();
     this.address = 0;
     this.displayOn = false;
+    this.cursorOn = false;
+    this.blinkOn = false;
     this.status = 'awaiting-initialization';
     this.error = null;
     this.initNibbleIndex = 0;
@@ -342,7 +344,11 @@ export class CharacterLcd4BitDecoder {
         return this.#reject('CHARACTER_LCD_INIT_COMMAND', [this.initCommandIndex, expected, command]);
       }
       this.initCommandIndex += 1;
-      if (command === 0x0c) this.displayOn = true;
+      if ((command & 0xf8) === 0x08) {
+        this.displayOn = Boolean(command & 0x04);
+        this.cursorOn = Boolean(command & 0x02);
+        this.blinkOn = Boolean(command & 0x01);
+      }
       if (command === 0x01) { this.rows = blankRows(); this.address = 0; }
       this.readyCycle = cycle + (command === 0x01
         ? CHARACTER_LCD_TIMING.clearHomeMinimumCycles
@@ -362,8 +368,12 @@ export class CharacterLcd4BitDecoder {
       this.readyCycle = cycle + CHARACTER_LCD_TIMING.clearHomeMinimumCycles;
       return true;
     }
-    if (command === 0x28 || command === 0x0c || command === 0x06) {
-      if (command === 0x0c) this.displayOn = true;
+    if (command === 0x28 || command === 0x06 || (command & 0xf8) === 0x08) {
+      if ((command & 0xf8) === 0x08) {
+        this.displayOn = Boolean(command & 0x04);
+        this.cursorOn = Boolean(command & 0x02);
+        this.blinkOn = Boolean(command & 0x01);
+      }
       this.readyCycle = cycle + CHARACTER_LCD_TIMING.instructionMinimumCycles;
       return true;
     }
@@ -394,7 +404,7 @@ export class CharacterLcd4BitDecoder {
       return this.#reject('CHARACTER_LCD_DDRAM_ADDRESS_UNSUPPORTED', [this.address]);
     }
     this.rows[row][column] = String.fromCharCode(value);
-    this.address += 1;
+    this.address = this.address === 0x0f ? 0x40 : this.address === 0x4f ? 0x00 : this.address + 1;
     this.readyCycle = cycle + CHARACTER_LCD_TIMING.instructionMinimumCycles;
     return true;
   }
@@ -460,6 +470,8 @@ export class CharacterLcd4BitDecoder {
       lines: this.rows.map((row) => row.join('')),
       address: this.address,
       displayOn: this.displayOn,
+      cursorOn: this.cursorOn,
+      blinkOn: this.blinkOn,
       initialized: this.initCommandIndex === CHARACTER_LCD_INITIALIZATION.commands.length,
       initNibbleIndex: this.initNibbleIndex,
       initCommandIndex: this.initCommandIndex,

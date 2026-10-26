@@ -114,7 +114,9 @@ async function resultFor(origin, claim, requestId) {
       arguments: { commands: [{ command: 'component.property.set', component_id: 'pcf8574-lcd-api', key: 'address', value: 0x26 }] } };
     assert.equal((await post(origin, 'request.submit', { sessionId: claim.sessionId, request: invalid }, claim.clientCapability)).ok, true);
     const rejected = await resultFor(origin, claim, invalid.request_id);
-    assert.equal(rejected.status, 'rejected'); assert.equal(rejected.revision_after, redone.revision_after);
+    assert.equal(rejected.status, 'rejected');
+    assert.equal(rejected.code, 'PROJECT_CONTACT_PCF8574_LCD_STATE');
+    assert.equal(rejected.revision_after, redone.revision_after);
     assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), after);
     await dialog.locator('[data-revoke]').click();
     const denied = await post(origin, 'client.heartbeat', { sessionId: claim.sessionId }, claim.clientCapability);

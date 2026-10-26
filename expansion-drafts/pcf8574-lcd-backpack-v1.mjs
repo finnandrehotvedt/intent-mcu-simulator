@@ -35,7 +35,7 @@ export const PCF8574_LCD_DEFINITION = deepFreeze({
   support: { status: 'partial', limitations: [
     'AVR-only fixed 7-bit address 0x27 on A4/SDA and A5/SCL, using mapping P0=RS, P1=RW, P2=E, P3=backlight, P4..P7=D4..D7.',
     'Only firmware writes observed through the bounded AVR TWI register protocol are accepted; arbitrary Wire-library compatibility, reads, clock stretching, arbitration, pull-up/current and physical bus timing are not modelled.',
-    'The attached display uses the same write-only 4-bit initialization, printable ASCII and command limits as CMP-050; busy reads, CGRAM/custom glyphs, cursor/blink, shifts and 8-bit mode remain unsupported.',
+    'The attached display uses the same write-only 4-bit initialization, printable ASCII, clear/home, 16×2 wrapping, DDRAM addressing, display-control, cursor and blink state as CMP-050; busy reads, CGRAM/custom glyphs, shifts and 8-bit mode remain unsupported.',
   ] },
 });
 
@@ -101,9 +101,9 @@ export class Pcf8574LcdDecoder {
     }
     this.lastIndex = records.length;
     const snapshot = this.lcd.consume(events);
-    return { ...snapshot, protocol: 'i2c-pcf8574-fixed-0x27', address: this.address, transactions: this.transactions, error: this.error ?? snapshot.error };
+    return { ...snapshot, ddramAddress: snapshot.address, protocol: 'i2c-pcf8574-fixed-0x27', address: this.address, transactions: this.transactions, error: this.error ?? snapshot.error };
   }
-  snapshot() { const snapshot = this.lcd.snapshot(); return { ...snapshot, protocol: 'i2c-pcf8574-fixed-0x27', address: this.address, transactions: this.transactions, error: this.error ?? snapshot.error }; }
+  snapshot() { const snapshot = this.lcd.snapshot(); return { ...snapshot, ddramAddress: snapshot.address, protocol: 'i2c-pcf8574-fixed-0x27', address: this.address, transactions: this.transactions, error: this.error ?? snapshot.error }; }
 }
 
 export const createPcf8574LcdDecoder = (address) => new Pcf8574LcdDecoder(address);

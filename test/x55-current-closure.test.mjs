@@ -78,9 +78,9 @@ test('pre-review X66 net-label identity is immutable migration-only data', () =>
     PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   );
   assert.equal(preview.ok, true);
-  assert.equal(preview.semanticChanges.length, 4);
+  assert.equal(preview.semanticChanges.length, 5);
   assert.deepEqual(preview.rendererChanges, []);
-  assert.equal(preview.unchanged.length, 22);
+  assert.equal(preview.unchanged.length, 21);
 });
 
 test('pre-X66 teaching-review identity is immutable migration-only data', () => {
@@ -94,9 +94,9 @@ test('pre-X66 teaching-review identity is immutable migration-only data', () => 
   const preview = modelLibraryMigrationPreview(PRE_X66_NET_LABELS_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
   assert.equal(preview.migrationRequired, true);
-  assert.equal(preview.semanticChanges.length, 4);
+  assert.equal(preview.semanticChanges.length, 5);
   assert.deepEqual(preview.rendererChanges, []);
-  assert.equal(preview.unchanged.length, 22);
+  assert.equal(preview.unchanged.length, 21);
 });
 
 test('private split-editor identity is immutable migration-only after model copy correction', () => {
@@ -109,9 +109,9 @@ test('private split-editor identity is immutable migration-only after model copy
   ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const preview = modelLibraryMigrationPreview(PRE_X55_MODEL_COPY_FIX_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
-  assert.equal(preview.semanticChanges.length, 4);
+  assert.equal(preview.semanticChanges.length, 5);
   assert.deepEqual(preview.rendererChanges, []);
-  assert.equal(preview.unchanged.length, 22);
+  assert.equal(preview.unchanged.length, 21);
 });
 
 test('private no-op Apply identity is immutable migration-only after the split editor', () => {
@@ -124,9 +124,9 @@ test('private no-op Apply identity is immutable migration-only after the split e
   ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const preview = modelLibraryMigrationPreview(PRE_X55_SPLIT_EDITOR_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
-  assert.equal(preview.semanticChanges.length, 4);
+  assert.equal(preview.semanticChanges.length, 5);
   assert.deepEqual(preview.rendererChanges, []);
-  assert.equal(preview.unchanged.length, 22);
+  assert.equal(preview.unchanged.length, 21);
 });
 
 test('public rc103 bounded-body identity is immutable migration-only after no-op Apply correction', () => {
@@ -140,9 +140,9 @@ test('public rc103 bounded-body identity is immutable migration-only after no-op
   const preview = modelLibraryMigrationPreview(PRE_X55_NOOP_APPLY_FIX_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
   assert.equal(preview.migrationRequired, true);
-  assert.equal(preview.semanticChanges.length, 4);
+  assert.equal(preview.semanticChanges.length, 5);
   assert.deepEqual(preview.rendererChanges, []);
-  assert.equal(preview.unchanged.length, 22);
+  assert.equal(preview.unchanged.length, 21);
 });
 
 test('first bounded-body identity is immutable migration-only after lead continuity correction', () => {
@@ -156,9 +156,9 @@ test('first bounded-body identity is immutable migration-only after lead continu
   const preview = modelLibraryMigrationPreview(PRE_X55_BODY_LEAD_FIX_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
   assert.equal(preview.migrationRequired, true);
-  assert.equal(preview.semanticChanges.length, 4);
+  assert.equal(preview.semanticChanges.length, 5);
   assert.deepEqual(preview.rendererChanges, []);
-  assert.equal(preview.unchanged.length, 22);
+  assert.equal(preview.unchanged.length, 21);
 });
 
 test('pre-X55 identity stays immutable and does not absorb X55 owners', () => {
@@ -174,7 +174,7 @@ test('pre-X55 identity stays immutable and does not absorb X55 owners', () => {
   const preview = modelLibraryMigrationPreview(PRE_X55_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
   assert.equal(preview.migrationRequired, true);
-  assert.equal(preview.semanticChanges.length, 4);
+  assert.equal(preview.semanticChanges.length, 5);
   assert.deepEqual(preview.rendererChanges, []);
 });
 
@@ -188,7 +188,7 @@ test('prior X55 appearance identity is immutable migration-only data after the c
   const preview = modelLibraryMigrationPreview(PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
   assert.equal(preview.migrationRequired, true);
-  assert.equal(preview.semanticChanges.length, 4);
+  assert.equal(preview.semanticChanges.length, 5);
   assert.deepEqual(preview.rendererChanges, []);
-  assert.equal(preview.unchanged.length, 22);
+  assert.equal(preview.unchanged.length, 21);
 });

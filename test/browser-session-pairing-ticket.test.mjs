@@ -144,6 +144,68 @@ test('ambiguous submit retries the exact request id and payload before continuin
   await absent(ticketPath);
 });
 
+test('inspect resynchronizes revision before later read-only discovery requests', async (context) => {
+  const pending = new Map(); const submitted = [];
+  const server = createServer((request, response) => {
+    let body = ''; request.setEncoding('utf8'); request.on('data', (chunk) => { body += chunk; });
+    request.on('end', () => {
+      const input = JSON.parse(body); let value;
+      if (input.operation === 'pairing.claim') value = { ok: true, sessionId: 'session-resync-0001',
+        projectId: 'project-resync-0001', clientCapability: 'synthetic-capability',
+        scopes: ['discover', 'read_project'], revision: 0, expiresAt: Date.now() + 900_000 };
+      else if (input.operation === 'request.submit') {
+        submitted.push(structuredClone(input.request)); pending.set(input.request.request_id, input.request.command);
+        value = { ok: true, code: 'API_REQUEST_QUEUED' };
+      } else if (input.operation === 'result.read') {
+        const command = pending.get(input.requestId); const common = { status: 'accepted', code: 'OK',
+          revision_before: command === 'project.inspect' ? 0 : 4, revision_after: 4, changes: [] };
+        value = command === 'project.inspect' ? { ...common, project: { circuit: { components: [], nets: [] } } }
+          : command === 'capabilities.list' ? { ...common, commands: [] }
+            : command === 'components.catalog' ? { ...common, profile: 'board.atmega328p-16mhz-v1', components: {} }
+              : command === 'components.list' ? { ...common, components: [] }
+                : command === 'nets.list' ? { ...common, nets: [] }
+                  : { ...common, validation: { ok: true } };
+      } else value = { ok: false, code: 'API_UNEXPECTED' };
+      response.setHeader('Content-Type', 'application/json'); response.end(JSON.stringify(value));
+    });
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  context.after(() => new Promise((resolve) => server.close(resolve)));
+  const { ticketPath } = await fixture(context, JSON.stringify(ticket(`http://127.0.0.1:${server.address().port}`)));
+  const child = spawn(process.execPath, ['tools/browser-session-edit-client.mjs', '--session', ticketPath],
+    { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, INTENT_MCU_ALLOW_LOOPBACK_TICKET: '1' } });
+  let output = ''; child.stdout.on('data', (chunk) => { output += chunk; }); child.stdin.write('{"command":"inspect"}\n');
+  const deadline = Date.now() + 4_000;
+  while (!output.includes('"mode":"inspected"') && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.match(output, /"mode":"inspected"/u);
+  assert.equal(submitted[0].command, 'project.inspect'); assert.equal(submitted[0].expected_revision, 0);
+  assert(submitted.slice(1).every((request) => request.expected_revision === 4));
+  child.stdin.end('{"command":"close"}\n'); assert.equal(await new Promise((resolve) => child.on('close', resolve)), 0);
+});
+
+test('terminal authentication rejection is reported once and closes the retained client', async (context) => {
+  let submissions = 0;
+  const server = createServer((request, response) => {
+    let body = ''; request.setEncoding('utf8'); request.on('data', (chunk) => { body += chunk; });
+    request.on('end', () => {
+      const input = JSON.parse(body); const value = input.operation === 'pairing.claim'
+        ? { ok: true, sessionId: 'session-revoked-0001', projectId: 'project-revoked-0001',
+          clientCapability: 'synthetic-capability', scopes: ['discover', 'read_project'], revision: 0,
+          expiresAt: Date.now() + 900_000 }
+        : (submissions += 1, { ok: false, code: 'API_AUTH_REQUIRED' });
+      response.setHeader('Content-Type', 'application/json'); response.end(JSON.stringify(value));
+    });
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  context.after(() => new Promise((resolve) => server.close(resolve)));
+  const { ticketPath } = await fixture(context, JSON.stringify(ticket(`http://127.0.0.1:${server.address().port}`)));
+  const child = spawn(process.execPath, ['tools/browser-session-edit-client.mjs', '--session', ticketPath],
+    { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, INTENT_MCU_ALLOW_LOOPBACK_TICKET: '1' } });
+  let output = ''; child.stdout.on('data', (chunk) => { output += chunk; }); child.stdin.write('{"command":"inspect"}\n');
+  assert.equal(await new Promise((resolve) => child.on('close', resolve)), 0);
+  assert.match(output, /API_AUTH_REQUIRED/u); assert.equal(submissions, 1);
+});
+
 test('malformed secret-bearing JSON returns one fixed code and is deleted', async (context) => {
   const { ticketPath } = await fixture(context, `{"pairing_secret":"${marker}",BROKEN}`);
   const result = await run(['--ticket', ticketPath]);

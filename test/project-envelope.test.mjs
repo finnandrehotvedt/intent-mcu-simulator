@@ -159,7 +159,7 @@ test('model-library migration creates a deterministic current copy without chang
   assert.deepEqual(repeated, migrated);
   assert.equal(migrated.originalUnchanged, previous);
   assert.equal(migrated.executableAuthorityCleared, true);
-  assert.equal(migrated.preview.semanticChanges.length, 4);
+  assert.equal(migrated.preview.semanticChanges.length, 5);
   assert.equal(migrated.preview.rendererChanges.length, 0);
   assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(migrateProjectModelLibrary(migrated.canonical, adapters).code, 'MODEL_LIBRARY_ALREADY_CURRENT');
@@ -179,9 +179,9 @@ test('accepted public rc.111 envelope reopens and migrates without changing save
   assert.equal(migrated.ok, true);
   assert.equal(migrated.originalUnchanged, oldEnvelope);
   assert.equal(migrated.executableAuthorityCleared, true);
-  assert.equal(migrated.preview.semanticChanges.length, 4);
+  assert.equal(migrated.preview.semanticChanges.length, 5);
   assert.deepEqual(migrated.preview.rendererChanges, []);
-  assert.equal(migrated.preview.unchanged.length, 22);
+  assert.equal(migrated.preview.unchanged.length, 21);
   assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
 });
 
@@ -198,9 +198,9 @@ test('accepted public rc.112 envelope normalizes, reopens and migrates without c
   assert.equal(migrated.ok, true);
   assert.equal(migrated.originalUnchanged, oldEnvelope);
   assert.equal(migrated.executableAuthorityCleared, true);
-  assert.equal(migrated.preview.semanticChanges.length, 4);
+  assert.equal(migrated.preview.semanticChanges.length, 5);
   assert.deepEqual(migrated.preview.rendererChanges, []);
-  assert.equal(migrated.preview.unchanged.length, 22);
+  assert.equal(migrated.preview.unchanged.length, 21);
   assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
 });
 
@@ -217,9 +217,9 @@ test('accepted public rc.120 envelope remains openable and migrates data-only af
   assert.equal(migrated.ok, true);
   assert.equal(migrated.originalUnchanged, oldEnvelope);
   assert.equal(migrated.executableAuthorityCleared, true);
-  assert.equal(migrated.preview.semanticChanges.length, 4);
+  assert.equal(migrated.preview.semanticChanges.length, 5);
   assert.deepEqual(migrated.preview.rendererChanges, []);
-  assert.equal(migrated.preview.unchanged.length, 22);
+  assert.equal(migrated.preview.unchanged.length, 21);
   assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
 });
 

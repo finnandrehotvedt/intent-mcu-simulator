@@ -13776,6 +13776,8 @@ function renderCharacterLcdRuntime(message) {
     if (!observed.ok) throw Object.assign(new Error(observed.code), observed);
     const lines = observed.result.lines;
     artwork.dataset.protocolState = state;
+    artwork.dataset.cursor = snapshot.cursorOn ? 'on' : 'off';
+    artwork.dataset.blink = snapshot.blinkOn ? 'on' : 'off';
     artwork.dataset.line1 = lines[0]; artwork.dataset.line2 = lines[1];
     const line1 = artwork.querySelector('[data-lcd-line="1"]');
     const line2 = artwork.querySelector('[data-lcd-line="2"]');
@@ -13783,7 +13785,7 @@ function renderCharacterLcdRuntime(message) {
     if (line2) line2.textContent = lines[1];
     const detail = snapshot.error
       ? `${snapshot.error.code}: ${snapshot.error.details.join(', ')}`
-      : `${state}; write-only 4-bit GPIO, ${snapshot.latchedBytes} bytes`;
+      : `${state}; write-only 4-bit GPIO, ${snapshot.latchedBytes} bytes, cursor ${snapshot.cursorOn ? 'on' : 'off'}, blink ${snapshot.blinkOn ? 'on' : 'off'}`;
     const label = `${support.componentId}, line 1 ${JSON.stringify(lines[0])}, line 2 ${JSON.stringify(lines[1])}; ${detail}; no I2C or physical display accuracy claimed`;
     artwork.setAttribute('aria-label', label);
     const title = artwork.querySelector('title'); if (title) title.textContent = label;
@@ -13817,6 +13819,8 @@ function renderPcf8574LcdRuntime(message) {
     if (!observed.ok) throw Object.assign(new Error(observed.code), observed);
     const lines = observed.result.lines;
     artwork.dataset.protocolState = snapshot.status;
+    artwork.dataset.cursor = snapshot.cursorOn ? 'on' : 'off';
+    artwork.dataset.blink = snapshot.blinkOn ? 'on' : 'off';
     artwork.dataset.line1 = lines[0]; artwork.dataset.line2 = lines[1];
     artwork.querySelector('[data-lcd-line="1"]')?.replaceChildren(lines[0]);
     artwork.querySelector('[data-lcd-line="2"]')?.replaceChildren(lines[1]);
