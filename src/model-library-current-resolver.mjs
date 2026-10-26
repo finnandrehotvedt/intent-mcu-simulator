@@ -244,6 +244,19 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
         : ['11', '10', '00', '01', '11'];
       return { ok: true, code: 'OK', result: { states, phaseCycles: 16000 } };
     }
+    if (componentType === 'input.analog-joystick-2axis-v1') {
+      if (!Number.isFinite(input?.x) || input.x < 0 || input.x > 1
+          || !Number.isFinite(input?.y) || input.y < 0 || input.y > 1
+          || typeof input?.pressed !== 'boolean') return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      return { ok: true, code: 'OK', result: { xVolts: input.x * 5, yVolts: input.y * 5,
+        switchClosed: input.pressed } };
+    }
+    if (['input.matrix-keypad-3x4-v1', 'input.matrix-keypad-4x4-v1'].includes(componentType)) {
+      const columns = componentType.includes('3x4') ? 3 : 4;
+      if (input?.pressedKey !== 'none' && (!/^R[1-4]C[1-4]$/u.test(input?.pressedKey)
+          || Number(input.pressedKey.at(-1)) > columns)) return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      return { ok: true, code: 'OK', result: { closedContact: input.pressedKey === 'none' ? null : input.pressedKey } };
+    }
     if (['board.atmega328p-16mhz-v1', 'board.rp2040-pico-v1',
       'board.esp32-c3-devmodule-v1', 'board.stm32f429zi-nucleo144-v1'].includes(componentType)) {
       return exactInput(input, []) ? { ok: true, code: 'OK', result: { profile: componentType } }

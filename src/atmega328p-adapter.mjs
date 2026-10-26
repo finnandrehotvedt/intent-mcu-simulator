@@ -81,6 +81,8 @@ export class Atmega328PAdapter {
     this.program = parseIntelHex(hexText);
     this.speed = options.speed ?? 1;
     this.inputLevels = new Map();
+    this.digitalBridges = new Map();
+    this.refreshingDigitalBridges = false;
     this.analogVoltages = new Map();
     this.stuckAnalogChannels = new Map();
     this.faultEvents = [];
@@ -149,6 +151,7 @@ export class Atmega328PAdapter {
     this.#attachUnsupportedMonitors();
     this.#attachUnsupportedModeMonitors();
     for (const [pin, level] of this.inputLevels) this.#setDigitalPinNow(pin, level, false);
+    this.#refreshDigitalBridges();
     for (const [channel, voltage] of this.analogVoltages) this.adc.channelValues[channel] = voltage;
   }
 
@@ -166,6 +169,7 @@ export class Atmega328PAdapter {
           level: Boolean(value & (1 << bit)),
         }, TRACE_LIMIT);
       }
+      this.#refreshDigitalBridges();
     });
   }
 
@@ -461,6 +465,38 @@ export class Atmega328PAdapter {
     const alreadyInitialized = this.inputLevels.has(pin);
     this.inputLevels.set(pin, Boolean(level));
     this.#setDigitalPinNow(pin, level, alreadyInitialized);
+  }
+
+  setDigitalBridge(id, pinA, pinB, closed) {
+    if (typeof id !== 'string' || !/^\d+$/.test(String(pinA)) || !/^\d+$/.test(String(pinB))
+        || !PIN_MAP[pinA] || !PIN_MAP[pinB] || pinA === pinB || typeof closed !== 'boolean') {
+      throw new TypeError('DIGITAL_BRIDGE_CONFIGURATION');
+    }
+    this.digitalBridges.set(id, { pinA: Number(pinA), pinB: Number(pinB), closed });
+    this.#refreshDigitalBridges();
+  }
+
+  #refreshDigitalBridges() {
+    if (this.refreshingDigitalBridges || !this.cpu) return;
+    this.refreshingDigitalBridges = true;
+    try {
+      const configFor = (pin) => { const [port, bit] = PIN_MAP[pin];
+        return { port, bit, config: { B: portBConfig, C: portCConfig, D: portDConfig }[port] }; };
+      for (const bridge of this.digitalBridges.values()) {
+        if (!bridge.closed) continue;
+        const left = configFor(bridge.pinA); const right = configFor(bridge.pinB);
+        const leftOutput = Boolean(this.cpu.data[left.config.DDR] & (1 << left.bit));
+        const rightOutput = Boolean(this.cpu.data[right.config.DDR] & (1 << right.bit));
+        if (leftOutput && !rightOutput) this.#setDigitalPinNow(bridge.pinB,
+          Boolean(this.cpu.data[left.config.PORT] & (1 << left.bit)), false);
+        else if (rightOutput && !leftOutput) this.#setDigitalPinNow(bridge.pinA,
+          Boolean(this.cpu.data[right.config.PORT] & (1 << right.bit)), false);
+        else if (!leftOutput && !rightOutput) {
+          this.#setDigitalPinNow(bridge.pinA, true, false);
+          this.#setDigitalPinNow(bridge.pinB, true, false);
+        }
+      }
+    } finally { this.refreshingDigitalBridges = false; }
   }
 
   #releaseDigitalPinNow(event) {

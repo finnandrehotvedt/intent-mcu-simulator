@@ -148201,6 +148201,402 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
+      "behaviorContractSha256": "768a91543a477340c329d4f0b464a10a06248806efbb602a81b2d7718b636324",
+      "componentType": "input.analog-joystick-2axis-v1",
+      "componentVersion": 1,
+      "modelId": "model.analog-joystick-2axis-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "input.analog-joystick-2axis-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 126,
+        "cssWidth": 150,
+        "renderer": "input-analog-joystick-2axis",
+        "thumbnail": "input-analog-joystick-2axis",
+        "viewBox": [
+          0,
+          0,
+          150,
+          126
+        ]
+      },
+      "rendererContractSha256": "e34d496c5e5b0ced2ea8bc2207cda224a997e59cafbd53d61826d5882f92ac23",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "pressed": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          },
+          "x": {
+            "default": 0.5,
+            "kind": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "ratio"
+          },
+          "y": {
+            "default": 0.5,
+            "kind": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "ratio"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.analog-joystick-2axis-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {},
+            "id": "VCC",
+            "role": "power.input",
+            "signals": [
+              "power.input"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "GND",
+            "role": "ground.reference",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "VRX",
+            "role": "analogue.output",
+            "signals": [
+              "analogue.output"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "VRY",
+            "role": "analogue.output",
+            "signals": [
+              "analogue.output"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "SW",
+            "role": "passive.contact",
+            "signals": [
+              "passive.contact"
+            ]
+          }
+        ],
+        "properties": {
+          "axisRangeVolts": {
+            "default": 5,
+            "kind": "number",
+            "maximum": 5,
+            "minimum": 5
+          }
+        },
+        "support": {
+          "limitations": [
+            "X and Y are independent ideal 0–5 V ratios and SW is an ideal active-low contact to GND.",
+            "No dead zone, spring mechanics, axis coupling, tolerance, noise, bounce, force or physical travel model."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "1ed2909af3a414d5f841415224cb19237d19d0eebaa1bb2d30a6819c34547d31",
+      "supportStatus": "partial"
+    },
+    {
+      "behaviorContractSha256": "8bc7ac77753ad926877b6135bc6666d6f90a181dc67f803b65d281fe7365e965",
+      "componentType": "input.matrix-keypad-3x4-v1",
+      "componentVersion": 1,
+      "modelId": "model.matrix-keypad-4x3-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "input.matrix-keypad-3x4-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 126,
+        "cssWidth": 132,
+        "renderer": "input-matrix-keypad-3x4",
+        "thumbnail": "input-matrix-keypad-3x4",
+        "viewBox": [
+          0,
+          0,
+          132,
+          126
+        ]
+      },
+      "rendererContractSha256": "c01c3c2178fa12691774a1d68eb00dfb9c7018eab1f299a6c217e46abfab1405",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "pressedKey": {
+            "default": "none",
+            "kind": "enum",
+            "mutability": "authored",
+            "values": [
+              "none",
+              "R1C1",
+              "R1C2",
+              "R1C3",
+              "R2C1",
+              "R2C2",
+              "R2C3",
+              "R3C1",
+              "R3C2",
+              "R3C3",
+              "R4C1",
+              "R4C2",
+              "R4C3"
+            ]
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.matrix-keypad-4x3-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {},
+            "id": "R1",
+            "role": "passive.matrix-row",
+            "signals": [
+              "passive.matrix-row"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "R2",
+            "role": "passive.matrix-row",
+            "signals": [
+              "passive.matrix-row"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "R3",
+            "role": "passive.matrix-row",
+            "signals": [
+              "passive.matrix-row"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "R4",
+            "role": "passive.matrix-row",
+            "signals": [
+              "passive.matrix-row"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "C1",
+            "role": "passive.matrix-column",
+            "signals": [
+              "passive.matrix-column"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "C2",
+            "role": "passive.matrix-column",
+            "signals": [
+              "passive.matrix-column"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "C3",
+            "role": "passive.matrix-column",
+            "signals": [
+              "passive.matrix-column"
+            ]
+          }
+        ],
+        "properties": {
+          "columns": {
+            "default": 3,
+            "kind": "integer",
+            "maximum": 3,
+            "minimum": 3
+          },
+          "rows": {
+            "default": 4,
+            "kind": "integer",
+            "maximum": 4,
+            "minimum": 4
+          }
+        },
+        "support": {
+          "limitations": [
+            "Exactly one selected key closes one explicit row-to-column contact; no key invents a ground or supply connection.",
+            "No ghosting suppression, diode matrix, debounce, rollover timing, membrane resistance, force or physical key travel model."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "78bab92471e7345a8f097e785fe1e411dd8900a7ffd4c71f02cca00d758de19f",
+      "supportStatus": "partial"
+    },
+    {
+      "behaviorContractSha256": "4b2b65187ba71b2bb310c59808ead0139fde5abce76091be164652ffe60c633b",
+      "componentType": "input.matrix-keypad-4x4-v1",
+      "componentVersion": 1,
+      "modelId": "model.matrix-keypad-4x4-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "input.matrix-keypad-4x4-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 126,
+        "cssWidth": 154,
+        "renderer": "input-matrix-keypad-4x4",
+        "thumbnail": "input-matrix-keypad-4x4",
+        "viewBox": [
+          0,
+          0,
+          154,
+          126
+        ]
+      },
+      "rendererContractSha256": "f064e7931badb1391e280be18e8f3258efada44823f85032939a96327433137d",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "pressedKey": {
+            "default": "none",
+            "kind": "enum",
+            "mutability": "authored",
+            "values": [
+              "none",
+              "R1C1",
+              "R1C2",
+              "R1C3",
+              "R1C4",
+              "R2C1",
+              "R2C2",
+              "R2C3",
+              "R2C4",
+              "R3C1",
+              "R3C2",
+              "R3C3",
+              "R3C4",
+              "R4C1",
+              "R4C2",
+              "R4C3",
+              "R4C4"
+            ]
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.matrix-keypad-4x4-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {},
+            "id": "R1",
+            "role": "passive.matrix-row",
+            "signals": [
+              "passive.matrix-row"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "R2",
+            "role": "passive.matrix-row",
+            "signals": [
+              "passive.matrix-row"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "R3",
+            "role": "passive.matrix-row",
+            "signals": [
+              "passive.matrix-row"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "R4",
+            "role": "passive.matrix-row",
+            "signals": [
+              "passive.matrix-row"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "C1",
+            "role": "passive.matrix-column",
+            "signals": [
+              "passive.matrix-column"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "C2",
+            "role": "passive.matrix-column",
+            "signals": [
+              "passive.matrix-column"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "C3",
+            "role": "passive.matrix-column",
+            "signals": [
+              "passive.matrix-column"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "C4",
+            "role": "passive.matrix-column",
+            "signals": [
+              "passive.matrix-column"
+            ]
+          }
+        ],
+        "properties": {
+          "columns": {
+            "default": 4,
+            "kind": "integer",
+            "maximum": 4,
+            "minimum": 4
+          },
+          "rows": {
+            "default": 4,
+            "kind": "integer",
+            "maximum": 4,
+            "minimum": 4
+          }
+        },
+        "support": {
+          "limitations": [
+            "Exactly one selected key closes one explicit row-to-column contact; no key invents a ground or supply connection.",
+            "No ghosting suppression, diode matrix, debounce, rollover timing, membrane resistance, force or physical key travel model."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "ceae0e3ee236b163e9c654d4e5fb57da17d22a10b643136918b3762f17be02e3",
+      "supportStatus": "partial"
+    },
+    {
       "behaviorContractSha256": "9b3dd88cb9f5fe810199eadbbdfb9584c431cff672b9cddf76b4548de90c1084",
       "componentType": "input.rotary-encoder-button-v1",
       "componentVersion": 1,
@@ -151688,7 +152084,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/circuit-engine.mjs",
-      "sha256": "7072b39da52b283abb340a30b3b58616e2312751f24bdc669145157e6331daca"
+      "sha256": "7b00cf9a625772b8d7a426b4d8a1bd4371d842d38c8608ea8523d660895d743e"
     },
     {
       "path": "src/runtime-kernel.mjs",
@@ -151704,7 +152100,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/atmega328p-adapter.mjs",
-      "sha256": "815d95c8528c31a8ab51eebf23994d5a7848d1b6d4bde7d4eafaf216e5ab5403"
+      "sha256": "16b0f9a1754de5d3abf3fb69ad52ae50f877c0fed5fd1dfa6de17a762beefbf9"
     },
     {
       "path": "src/x43-avr-stack-profile.mjs",
@@ -151776,7 +152172,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-control-contracts.mjs",
-      "sha256": "b29ce8071a5dd731659d792bbc2da4474d2187597e14f5672fd43a09404162e8"
+      "sha256": "2d32dea6692404d6840e9fcea41fc6ab7c85dff73d676c340d58311773cbbae6"
     },
     {
       "path": "src/simulator.worker.mjs",
@@ -151816,7 +152212,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "511b085b6132e6aba3c62178df5658ceaf9a009ee13ecc5d7508f06d996b645c"
+      "sha256": "aee89b83694fbbb9eec57f11796a270a75d0b16fbcf1ed270569c34988dc433f"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -151824,7 +152220,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "f7a8df5c5eb20b1e6003ade49e96d4ab833bc9599372402bbf1bb028de7cf7ee"
+      "sha256": "3238210702f01b787e95f41e02efcea1b135ff66bc299bfddd1640697adf61ba"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -151872,7 +152268,15 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "9c29fa3916a9471f7966a0cd5eb414baeacc890bac3a2b103bbba1b60254e03a"
+      "sha256": "3e5e874493786dc78bd78ca967b4d70eb8b393f24bb59bba9be4ac1fb8f51e29"
+    },
+    {
+      "path": "expansion-drafts/joystick-keypads-v1.mjs",
+      "sha256": "5762487dcb898fe9870604d128ec7e6fc0b90ec00faf7a3c850b62b91d826d73"
+    },
+    {
+      "path": "expansion-drafts/joystick-keypads-artwork-v1.mjs",
+      "sha256": "f313be4b031e5d64d00ec99dfeb1312c9ef001e30888e61f1e9ee5f9af3e982c"
     },
     {
       "path": "expansion-drafts/ground-reference-integration-v1.mjs",
@@ -151944,10 +152348,10 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "cd48958b6ac51a5564cd06f196b1986be101fadad774da49221c5064dab75491"
+      "sha256": "9210ee69c3659a48ff69798c09c4cd9b43131f3cde7d296ac35fc29d740ea291"
     }
   ],
-  "implementationSha256": "6f104875caa2fc1abab5764b04e1ed7e2be88e57ed534b8fcb1b75c15848956c",
+  "implementationSha256": "a55fc49c2ee7f29f59a1c4fb955eefd731fdd01173fdd0addbdd199780db545a",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -151957,7 +152361,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract"
   },
-  "manifestSha256": "ce6e8e71146930b9d229f2cb2fe60afc69d402189c3c513d2355c0d5950f62b2",
+  "manifestSha256": "da1e577cf3939ac733c0b00af3e45ec1765b45b93f974da7dbc228adcbb29858",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

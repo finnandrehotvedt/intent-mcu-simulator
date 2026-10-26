@@ -307,11 +307,14 @@ function analyzeElectrical(graph, options = {}) {
     const accepted = cases.find(([sourceNet, groundNet]) => sourceNet && groundNet
       && boardEndpoint(indexes, sourceNet, (pin) => /^D\d+$/.test(pin))
       && boardEndpoint(indexes, groundNet, (pin) => /^GND[123]$/.test(pin)));
-    if (!accepted) {
+    const bridgePins = [netA, netB].map((netId) => netId
+      ? boardEndpoint(indexes, netId, (pin) => /^D\d+$/.test(pin))?.pin ?? null : null);
+    const bridge = !accepted && bridgePins.every(Boolean) && bridgePins[0] !== bridgePins[1];
+    if (!accepted && !bridge) {
       diagnostics.push(diagnostic('BUTTON_UNSUPPORTED_PATH', { componentId: button.id, netId: netA ?? netB }));
       continue;
     }
-    const source = boardEndpoint(indexes, accepted[0], (pin) => /^D\d+$/.test(pin));
+    const source = accepted ? boardEndpoint(indexes, accepted[0], (pin) => /^D\d+$/.test(pin)) : null;
     const reference = modelLibrary.evaluateReference('button.momentary-v1', {
       pressed: button.controls.pressed,
     });
@@ -319,8 +322,10 @@ function analyzeElectrical(graph, options = {}) {
       diagnostics.push(diagnostic(reference.code, { componentId: button.id, netId: accepted[0] }));
       continue;
     }
-    models.buttons.push({ componentId: button.id, boardPin: source.pin,
-      pressed: button.controls.pressed, connected: reference.result.connected });
+    models.buttons.push(bridge
+      ? { componentId: button.id, bridgePins, pressed: button.controls.pressed, connected: reference.result.connected }
+      : { componentId: button.id, boardPin: source.pin,
+        pressed: button.controls.pressed, connected: reference.result.connected });
   }
 
   for (const pot of graph.components.filter((component) => component.type === 'potentiometer.linear-v1')) {
@@ -470,7 +475,9 @@ export class CircuitRuntime {
       const pressed = this.controls[button.componentId].pressed;
       const reference = resolveModelLibrary(this.modelLibraryLock).implementation
         .evaluateReference('button.momentary-v1', { pressed });
-      adapter.setDigitalPin(Number(button.boardPin.slice(1)), !reference.result.connected);
+      if (button.bridgePins) adapter.setDigitalBridge(button.componentId,
+        Number(button.bridgePins[0].slice(1)), Number(button.bridgePins[1].slice(1)), reference.result.connected);
+      else adapter.setDigitalPin(Number(button.boardPin.slice(1)), !reference.result.connected);
     }
     for (const pot of this.models.potentiometers) {
       const position = this.controls[pot.componentId].position;

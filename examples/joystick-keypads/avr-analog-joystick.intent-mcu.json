@@ -1,0 +1,418 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "da1e577cf3939ac733c0b00af3e45ec1765b45b93f974da7dbc228adcbb29858",
+    "implementationSha256": "a55fc49c2ee7f29f59a1c4fb955eefd731fdd01173fdd0addbdd199780db545a"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-project-contact-persistence@1",
+    "project": {
+      "schema": "intent-mcu-project@3",
+      "metadata": {
+        "name": "Two-axis analogue joystick"
+      },
+      "catalogue": {
+        "schema": "intent-mcu-catalogue-ref@1",
+        "version": "intent-mcu-catalogue@2"
+      },
+      "controller": {
+        "profile": "board.atmega328p-16mhz-v1",
+        "adapterContract": "intent-mcu-controller-adapter@1",
+        "status": "simulated",
+        "capabilities": [
+          {
+            "id": "gpio",
+            "status": "simulated"
+          },
+          {
+            "id": "adc",
+            "status": "simulated"
+          },
+          {
+            "id": "pwm",
+            "status": "simulated"
+          },
+          {
+            "id": "uart0",
+            "status": "simulated"
+          },
+          {
+            "id": "timers",
+            "status": "partial"
+          },
+          {
+            "id": "interrupts",
+            "status": "partial"
+          },
+          {
+            "id": "spi",
+            "status": "unsupported"
+          },
+          {
+            "id": "i2c",
+            "status": "unsupported"
+          },
+          {
+            "id": "eeprom",
+            "status": "unsupported"
+          },
+          {
+            "id": "watchdog",
+            "status": "unsupported"
+          }
+        ]
+      },
+      "source": {
+        "files": [
+          {
+            "name": "main.ino",
+            "content": "void setup(){pinMode(2,INPUT_PULLUP);Serial.begin(115200);}\nvoid loop(){Serial.print(analogRead(A0));Serial.print(\",\");Serial.print(analogRead(A1));Serial.print(\",\");Serial.println(digitalRead(2));delay(120);}\n"
+          }
+        ]
+      },
+      "circuit": {
+        "schema": "teach-lab-circuit@2",
+        "components": [
+          {
+            "id": "board-1",
+            "type": "board.atmega328p-16mhz-v1",
+            "label": "ATmega328P board",
+            "properties": {},
+            "controls": {}
+          },
+          {
+            "id": "joystick-1-sw",
+            "type": "button.momentary-v1",
+            "label": "Two-axis analogue joystick switch",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "joystick-1-x",
+            "type": "potentiometer.linear-v1",
+            "label": "Two-axis analogue joystick X",
+            "properties": {
+              "ohms": 10000,
+              "taper": "linear"
+            },
+            "controls": {
+              "position": 0.25
+            }
+          },
+          {
+            "id": "joystick-1-y",
+            "type": "potentiometer.linear-v1",
+            "label": "Two-axis analogue joystick Y",
+            "properties": {
+              "ohms": 10000,
+              "taper": "linear"
+            },
+            "controls": {
+              "position": 0.75
+            }
+          }
+        ],
+        "nets": [
+          {
+            "id": "net-joystick-gnd",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "GND1"
+              },
+              {
+                "component": "joystick-1-sw",
+                "pin": "B"
+              },
+              {
+                "component": "joystick-1-x",
+                "pin": "LOW"
+              },
+              {
+                "component": "joystick-1-y",
+                "pin": "LOW"
+              }
+            ]
+          },
+          {
+            "id": "net-joystick-switch",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D2"
+              },
+              {
+                "component": "joystick-1-sw",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-joystick-vcc",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "5V"
+              },
+              {
+                "component": "joystick-1-x",
+                "pin": "HIGH"
+              },
+              {
+                "component": "joystick-1-y",
+                "pin": "HIGH"
+              }
+            ]
+          },
+          {
+            "id": "net-joystick-x",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "A0"
+              },
+              {
+                "component": "joystick-1-x",
+                "pin": "WIPER"
+              }
+            ]
+          },
+          {
+            "id": "net-joystick-y",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "A1"
+              },
+              {
+                "component": "joystick-1-y",
+                "pin": "WIPER"
+              }
+            ]
+          }
+        ],
+        "junctions": []
+      },
+      "layout": {
+        "positions": {
+          "board-1": {
+            "x": 0.12,
+            "y": 0.2,
+            "rotation": 0
+          },
+          "joystick-1-sw": {
+            "x": 0.7,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "joystick-1-x": {
+            "x": 0.7,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "joystick-1-y": {
+            "x": 0.7,
+            "y": 0.52,
+            "rotation": 0
+          }
+        },
+        "wireRoutes": {},
+        "wireStyles": {
+          "net-joystick-gnd": {
+            "color": "#303943"
+          },
+          "net-joystick-switch": {
+            "color": "#39dff2"
+          },
+          "net-joystick-vcc": {
+            "color": "#f04f5f"
+          },
+          "net-joystick-x": {
+            "color": "#a8ff3f"
+          },
+          "net-joystick-y": {
+            "color": "#a8ff3f"
+          }
+        },
+        "viewport": {
+          "zoom": 1,
+          "panX": 0,
+          "panY": 0
+        }
+      },
+      "instruments": {
+        "logicChannels": [
+          "D13",
+          "D2"
+        ],
+        "selectedPin": "D13",
+        "serial": {
+          "baud": 9600,
+          "encoding": "utf-8",
+          "historyLimit": 512
+        }
+      },
+      "artifact": {
+        "schema": "intent-mcu-project-artifact-ref@1",
+        "status": "dirty",
+        "profile": null,
+        "inputIdentitySha256": null,
+        "artifactIdentitySha256": null
+      }
+    },
+    "candidateCircuit": {
+      "schema": "teach-lab-circuit@2",
+      "components": [
+        {
+          "id": "board-1",
+          "type": "board.atmega328p-16mhz-v1",
+          "label": "ATmega328P board",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "joystick-1",
+          "type": "input.analog-joystick-2axis-v1",
+          "label": "Two-axis analogue joystick",
+          "properties": {
+            "axisRangeVolts": 5
+          },
+          "controls": {
+            "x": 0.25,
+            "y": 0.75,
+            "pressed": false
+          }
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-joystick-gnd",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "GND1"
+            },
+            {
+              "component": "joystick-1",
+              "pin": "GND"
+            }
+          ]
+        },
+        {
+          "id": "net-joystick-switch",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D2"
+            },
+            {
+              "component": "joystick-1",
+              "pin": "SW"
+            }
+          ]
+        },
+        {
+          "id": "net-joystick-vcc",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "5V"
+            },
+            {
+              "component": "joystick-1",
+              "pin": "VCC"
+            }
+          ]
+        },
+        {
+          "id": "net-joystick-x",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "A0"
+            },
+            {
+              "component": "joystick-1",
+              "pin": "VRX"
+            }
+          ]
+        },
+        {
+          "id": "net-joystick-y",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "A1"
+            },
+            {
+              "component": "joystick-1",
+              "pin": "VRY"
+            }
+          ]
+        }
+      ],
+      "junctions": []
+    },
+    "candidateLayout": {
+      "schema": "intent-mcu-candidate-layout@1",
+      "positions": {
+        "board-1": {
+          "x": 0.12,
+          "y": 0.2,
+          "rotation": 0
+        },
+        "joystick-1": {
+          "x": 0.7,
+          "y": 0.52,
+          "rotation": 0
+        }
+      },
+      "wireRoutes": {},
+      "viewport": {
+        "zoom": 1,
+        "panX": 0,
+        "panY": 0
+      }
+    },
+    "compiledFixture": {
+      "schema": "intent-mcu-compiled-fixture-ref@1",
+      "id": "button-pullup",
+      "profile": "board.atmega328p-16mhz-v1",
+      "toolchainImageId": "sha256:f04aa7a8c37699d16a965fb374870ff147ca776ba6386f81e7700e350ed3d89f",
+      "source": {
+        "sha256": "84ceea4f298483f4696a3672ac1fff97b046b9e35c65aaa6155b20140a66f518",
+        "bytes": 209
+      },
+      "executable": {
+        "format": "intel-hex",
+        "sha256": "247f94bb051e9eebb4dfe8099278d810e04ccbf097f1b3ddb53b904e26ea8ebc",
+        "bytes": 2525
+      },
+      "debug": {
+        "format": "elf",
+        "sha256": "23a37eff7f7c5b1d0626e12a3f31e00d9b79466eab374cd0d74c46e3667150bd",
+        "bytes": 14632
+      },
+      "artifactIdentitySha256": "69ad0bc87ba02a2d33ac4c5ba1d9bd07e28636b631cd007f4b9423889e76bd3b"
+    }
+  }
+}

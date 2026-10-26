@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-lcd-20x4-cgram.1-current",
-    "manifestSha256": "ce6e8e71146930b9d229f2cb2fe60afc69d402189c3c513d2355c0d5950f62b2",
-    "implementationSha256": "6f104875caa2fc1abab5764b04e1ed7e2be88e57ed534b8fcb1b75c15848956c"
+    "manifestSha256": "da1e577cf3939ac733c0b00af3e45ec1765b45b93f974da7dbc228adcbb29858",
+    "implementationSha256": "a55fc49c2ee7f29f59a1c4fb955eefd731fdd01173fdd0addbdd199780db545a"
   },
   "brief": {
     "schema": "intent-mcu-project-brief@4",

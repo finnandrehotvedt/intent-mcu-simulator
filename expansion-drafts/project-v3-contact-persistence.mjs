@@ -112,6 +112,10 @@ import {
   projectRotaryEncoders,
   validateRotaryEncoderComponent,
 } from './rotary-encoder-quadrature-v1.mjs';
+import {
+  ANALOG_JOYSTICK_TYPE, JOYSTICK_KEYPAD_DEFINITIONS, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE,
+  projectJoystickKeypads, validateJoystickKeypad,
+} from './joystick-keypads-v1.mjs';
 
 export const CONTACT_PERSISTENCE_SCHEMA = 'intent-mcu-project-contact-persistence@1';
 export const COMPILED_FIXTURE_REFERENCE_SCHEMA = 'intent-mcu-compiled-fixture-ref@1';
@@ -179,6 +183,9 @@ function pinIds(component) {
   if (ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type]) {
     return ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type].pins.map((item) => item.id);
   }
+  if (JOYSTICK_KEYPAD_DEFINITIONS[component.type]) {
+    return JOYSTICK_KEYPAD_DEFINITIONS[component.type].pins.map((item) => item.id);
+  }
   if (component.type === SPDT_CONTACT_TYPE) return ['COM', 'A', 'B'];
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
@@ -204,6 +211,7 @@ function componentPins(component) {
   if (ADVANCED_SWITCH_INPUT_DEFINITIONS[component.type]) return ADVANCED_SWITCH_INPUT_DEFINITIONS[component.type].pins;
   if (SAFETY_PEDAL_INPUT_DEFINITIONS[component.type]) return SAFETY_PEDAL_INPUT_DEFINITIONS[component.type].pins;
   if (ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type]) return ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type].pins;
+  if (JOYSTICK_KEYPAD_DEFINITIONS[component.type]) return JOYSTICK_KEYPAD_DEFINITIONS[component.type].pins;
   if (component.type === SPDT_CONTACT_TYPE) return SPDT_CONTACT_DEFINITION.terminals;
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return LIGHT_ANALOGUE_SENSOR_DEFINITION.pins;
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return TEMPERATURE_ANALOGUE_SENSOR_DEFINITION.pins;
@@ -246,6 +254,8 @@ function validateCandidateComponent(component) {
     if (!validateSafetyPedalInput(component)) fail('PROJECT_CONTACT_SAFETY_PEDAL_STATE', [component.id]);
   } else if (ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type]) {
     if (!validateRotarySelectorIndicator(component)) fail('PROJECT_CONTACT_ROTARY_SELECTOR_INDICATOR_STATE', [component.id]);
+  } else if (JOYSTICK_KEYPAD_DEFINITIONS[component.type]) {
+    if (!validateJoystickKeypad(component)) fail('PROJECT_CONTACT_JOYSTICK_KEYPAD_STATE', [component.id]);
   } else if (component.type === SPDT_CONTACT_TYPE) {
     if (!exactKeys(component.properties, ['transitionPolicy'])
         || component.properties.transitionPolicy !== 'break-before-make'
@@ -677,9 +687,17 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
       contacts.push({ componentId: component.id, type: component.type,
         state: { position: component.controls.position, contacts: rotarySelectorContactState(component) } });
     }
+    if (JOYSTICK_KEYPAD_DEFINITIONS[component.type]) {
+      const input = component.type === ANALOG_JOYSTICK_TYPE
+        ? { x: component.controls.x, y: component.controls.y, pressed: component.controls.pressed }
+        : { pressedKey: component.controls.pressedKey };
+      production(implementation, component.type, input, [component.id]);
+      contacts.push({ componentId: component.id, type: component.type, state: clone(input) });
+    }
   }
 
-  const selectorProjection = projectRotarySelectors(graph);
+  const joystickKeypadProjection = projectJoystickKeypads(graph);
+  const selectorProjection = projectRotarySelectors(joystickKeypadProjection.runtimeGraph);
   const advancedProjection = projectAdvancedSwitchInputs(selectorProjection.runtimeGraph);
   const mechanicalProjection = projectMechanicalInputs(advancedProjection);
   const withoutSpdt = removeSpdtComponents(mechanicalProjection);
@@ -857,6 +875,7 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
       ...barProjection.runtimePositionSources,
       ...sevenSegmentProjection.runtimePositionSources,
       ...rotaryEncoderProjection.runtimePositionSources,
+      ...joystickKeypadProjection.runtimePositionSources,
     }),
   };
 }

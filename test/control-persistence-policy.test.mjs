@@ -30,6 +30,9 @@ const expected = {
   'switch.reed-no-v1': ['magnetPresent'],
   'switch.emergency-stop-nc-v1': ['latched'],
   'switch.foot-pedal-no-v1': ['pressed'],
+  'input.analog-joystick-2axis-v1': ['x', 'y', 'pressed'],
+  'input.matrix-keypad-3x4-v1': ['pressedKey'],
+  'input.matrix-keypad-4x4-v1': ['pressedKey'],
   'switch.rotary-selector-4-v1': ['position'],
   'sensor.light-analogue-v1': ['lightLevel'],
   'sensor.temperature-analogue-v1': ['temperatureC'],
@@ -59,10 +62,10 @@ function candidate(id, componentId, changes) {
   return opened.session;
 }
 
-test('all 38 executable cells have one exact controls-persist or controls-empty policy', () => {
+test('all 41 executable cells have one exact controls-persist or controls-empty policy', () => {
   assert.deepEqual(controlPersistenceSummary(), {
-    profiles: 4, cells: 144, available: 38, unavailable: 106,
-    controlBearing: 17, controlsEmpty: 21, controls: 24,
+    profiles: 4, cells: 156, available: 41, unavailable: 115,
+    controlBearing: 20, controlsEmpty: 21, controls: 29,
   });
   const inventory = controlPersistenceInventory();
   const bearing = inventory.filter((cell) => cell.available && cell.controls.length);

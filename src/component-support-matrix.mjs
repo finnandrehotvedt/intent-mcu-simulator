@@ -93,6 +93,9 @@ const referenceBindings = deepFreeze({
     'output.character-lcd-20x4-4bit-v1': { starters: ['avr-character-lcd-20x4-cgram'], tests: ['test/character-lcd-20x4-cgram.test.mjs', 'test/character-lcd-20x4-cgram-ui-candidate.cjs'] },
     'output.character-lcd-16x2-pcf8574-v1': { starters: ['avr-pcf8574-lcd-hello'], tests: ['test/pcf8574-lcd-backpack.test.mjs', 'test/pcf8574-lcd-end-to-end-browser.cjs'] },
     'input.rotary-encoder-quadrature-v1': { starters: ['avr-rotary-encoder'], tests: ['test/component-support-matrix.test.mjs', 'test/input-control-example-artifacts.test.mjs'] },
+    'input.analog-joystick-2axis-v1': { starters: ['avr-analog-joystick'], tests: ['test/joystick-keypads-candidate.test.mjs', 'test/joystick-keypad-example-artifacts.test.mjs'] },
+    'input.matrix-keypad-3x4-v1': { starters: ['avr-matrix-keypad-3x4'], tests: ['test/joystick-keypads-candidate.test.mjs', 'test/joystick-keypad-example-artifacts.test.mjs'] },
+    'input.matrix-keypad-4x4-v1': { starters: ['avr-matrix-keypad-4x4'], tests: ['test/joystick-keypads-candidate.test.mjs', 'test/joystick-keypad-example-artifacts.test.mjs'] },
   },
   [PICO]: {
     [PICO]: { starters: ['pico-led-on', 'pico-led-off'], tests: ['test/rp2040-pico-circuit.test.mjs', 'test/supported-example-pack-browser.cjs'] },

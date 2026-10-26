@@ -14,6 +14,8 @@ import { DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE,
   createAdvancedSwitchInput } from '../expansion-drafts/advanced-switch-inputs-v1.mjs';
 import { EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE, REED_SWITCH_TYPE,
   createSafetyPedalInput } from '../expansion-drafts/safety-pedal-inputs-v1.mjs';
+import { ANALOG_JOYSTICK_TYPE, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE,
+  createJoystickKeypad } from '../expansion-drafts/joystick-keypads-v1.mjs';
 import { LED_BAR_GRAPH_TYPE, RGB_COMMON_ANODE_TYPE, ROTARY_SELECTOR_TYPE,
   createRotarySelectorIndicator } from '../expansion-drafts/rotary-selector-indicators-v1.mjs';
 
@@ -25,6 +27,7 @@ const TYPES = new Set(['board.atmega328p-16mhz-v1', 'resistor.fixed-v1', 'led.ba
   SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE,
   DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE,
   REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE,
+  ANALOG_JOYSTICK_TYPE, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE,
   ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
   GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE]);
 const exact = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
@@ -83,6 +86,8 @@ export function prepareApiBatch(project, operations) {
           ? createAdvancedSwitchInput(operation.type, operation.id)
         : avr && [REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(operation.type)
           ? createSafetyPedalInput(operation.type, operation.id)
+        : avr && [ANALOG_JOYSTICK_TYPE, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE].includes(operation.type)
+          ? createJoystickKeypad(operation.type, operation.id)
         : avr && [ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE].includes(operation.type)
           ? createRotarySelectorIndicator(operation.type, operation.id)
         : avr ? createComponent(operation.id, operation.type) : { id: operation.id, type: operation.type };

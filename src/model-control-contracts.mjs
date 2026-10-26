@@ -57,6 +57,17 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
     position: { kind: 'integer', minimum: 1, maximum: 4, default: 1,
       unit: 'position', mutability: 'authored' },
   },
+  'input.analog-joystick-2axis-v1': {
+    x: { kind: 'number', minimum: 0, maximum: 1, default: 0.5, unit: 'ratio', mutability: 'authored' },
+    y: { kind: 'number', minimum: 0, maximum: 1, default: 0.5, unit: 'ratio', mutability: 'authored' },
+    pressed: { kind: 'boolean', default: false, mutability: 'authored' },
+  },
+  'input.matrix-keypad-3x4-v1': {
+    pressedKey: { kind: 'enum', values: ['none', 'R1C1', 'R1C2', 'R1C3', 'R2C1', 'R2C2', 'R2C3', 'R3C1', 'R3C2', 'R3C3', 'R4C1', 'R4C2', 'R4C3'], default: 'none', mutability: 'authored' },
+  },
+  'input.matrix-keypad-4x4-v1': {
+    pressedKey: { kind: 'enum', values: ['none', 'R1C1', 'R1C2', 'R1C3', 'R1C4', 'R2C1', 'R2C2', 'R2C3', 'R2C4', 'R3C1', 'R3C2', 'R3C3', 'R3C4', 'R4C1', 'R4C2', 'R4C3', 'R4C4'], default: 'none', mutability: 'authored' },
+  },
   'sensor.light-analogue-v1': {
     lightLevel: { kind: 'number', minimum: 0, maximum: 1, default: 0.5,
       unit: 'ratio', mutability: 'authored' },

@@ -31,6 +31,11 @@ const rows = [
   ['sensor.light-threshold-digital-v1', 'hysteresisPercentagePoints', 'control · derived pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed'],
   ['sensor.light-threshold-digital-v1', 'outputActive', 'derived state · emitted as control pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed-derived'],
   ['input.rotary-encoder-quadrature-v1', 'detent', 'digital-sequence · four ordered phases', 'D2/D3 inputs → executed firmware → USART', 'actual-executed'],
+  ['input.analog-joystick-2axis-v1', 'x', 'control · X position', 'A0 ADC → executed firmware → USART', 'actual-executed'],
+  ['input.analog-joystick-2axis-v1', 'y', 'control · Y position', 'A1 ADC → executed firmware → USART', 'actual-executed'],
+  ['input.analog-joystick-2axis-v1', 'pressed', 'contact projection · shaft button', 'D2 input → executed firmware → USART', 'actual-executed'],
+  ['input.matrix-keypad-3x4-v1', 'pressedKey', 'digital bridge · selected row and column', 'D2–D8 scan → executed firmware → USART', 'actual-executed'],
+  ['input.matrix-keypad-4x4-v1', 'pressedKey', 'digital bridge · selected row and column', 'D2–D9 scan → executed firmware → USART', 'actual-executed'],
 ].map(([model, field, workerEvent, observable, evidence]) => Object.freeze({
   profile: AVR_PROFILE,
   model,

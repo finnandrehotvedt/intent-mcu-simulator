@@ -39,6 +39,9 @@ import { createAdvancedSwitchInputArtwork } from '../expansion-drafts/advanced-s
 import { EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE, REED_SWITCH_TYPE,
   SAFETY_PEDAL_INPUT_DEFINITIONS, createSafetyPedalInput } from '../expansion-drafts/safety-pedal-inputs-v1.mjs';
 import { createSafetyPedalInputArtwork } from '../expansion-drafts/safety-pedal-inputs-artwork-v1.mjs';
+import { ANALOG_JOYSTICK_TYPE, JOYSTICK_KEYPAD_DEFINITIONS,
+  createJoystickKeypad } from '../expansion-drafts/joystick-keypads-v1.mjs';
+import { createJoystickKeypadArtwork } from '../expansion-drafts/joystick-keypads-artwork-v1.mjs';
 import { ROTARY_SELECTOR_INDICATOR_DEFINITIONS, ROTARY_SELECTOR_TYPE,
   createRotarySelectorIndicator } from '../expansion-drafts/rotary-selector-indicators-v1.mjs';
 import { createRotarySelectorIndicatorArtwork } from '../expansion-drafts/rotary-selector-indicators-artwork-v1.mjs';
@@ -156,6 +159,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   ...MECHANICAL_INPUT_DEFINITIONS,
   ...ADVANCED_SWITCH_INPUT_DEFINITIONS,
   ...SAFETY_PEDAL_INPUT_DEFINITIONS,
+  ...JOYSTICK_KEYPAD_DEFINITIONS,
   ...ROTARY_SELECTOR_INDICATOR_DEFINITIONS,
   [SPDT_CONTACT_TYPE]: SPDT_UI_DEFINITION,
   [LIGHT_ANALOGUE_SENSOR_TYPE]: LIGHT_ANALOGUE_SENSOR_DEFINITION,
@@ -193,6 +197,7 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component?.type)) {
     return createSafetyPedalInputArtwork(documentObject, definition, component, options);
   }
+  if (JOYSTICK_KEYPAD_DEFINITIONS[component?.type]) return createJoystickKeypadArtwork(documentObject, definition, component, options);
   if (ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component?.type]) {
     return createRotarySelectorIndicatorArtwork(documentObject, definition, component, options);
   }
@@ -245,6 +250,7 @@ export function createCandidateUiComponent(type, id) {
   if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(type)) {
     return createSafetyPedalInput(type, id);
   }
+  if (JOYSTICK_KEYPAD_DEFINITIONS[type]) return createJoystickKeypad(type, id);
   if (ROTARY_SELECTOR_INDICATOR_DEFINITIONS[type]) return createRotarySelectorIndicator(type, id);
   if (type === SPDT_CONTACT_TYPE) return createSwitchContactComponent(id, 'SPDT changeover contact', { selectedThrow: 'A' });
   if (type === LIGHT_ANALOGUE_SENSOR_TYPE) return createLightAnalogueSensorComponent(id);
@@ -349,6 +355,19 @@ export function candidateContactControl(session, componentId, key, value) {
     return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
   }
   if (component.type === FOOT_PEDAL_TYPE && key === 'pressed' && typeof value === 'boolean') {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+  }
+  if (component.type === ANALOG_JOYSTICK_TYPE && ['x', 'y'].includes(key)
+      && Number.isFinite(value) && value >= 0 && value <= 1) {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId: `${componentId}-${key}`, key: 'position', value } };
+  }
+  if (component.type === ANALOG_JOYSTICK_TYPE && key === 'pressed' && typeof value === 'boolean') {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId: `${componentId}-sw`, key: 'pressed', value } };
+  }
+  if (['input.matrix-keypad-3x4-v1', 'input.matrix-keypad-4x4-v1'].includes(component.type)
+      && key === 'pressedKey' && typeof value === 'string') {
     return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
   }
   if (component.type === ROTARY_SELECTOR_TYPE && key === 'position'

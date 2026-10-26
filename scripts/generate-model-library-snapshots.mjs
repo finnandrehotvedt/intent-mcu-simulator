@@ -242,6 +242,8 @@ const CURRENT_CLOSURE = Object.freeze([
   '../expansion-drafts/rp2040-conformance-fixtures-v1.mjs',
   '../expansion-drafts/rp2040-firmware-artifact-v1.mjs',
   '../expansion-drafts/project-v3-contact-persistence.mjs',
+  '../expansion-drafts/joystick-keypads-v1.mjs',
+  '../expansion-drafts/joystick-keypads-artwork-v1.mjs',
   '../expansion-drafts/ground-reference-integration-v1.mjs',
   '../expansion-drafts/toggle-switch-integration-v1.mjs',
   '../expansion-drafts/switch-contact-graph-v1.mjs',

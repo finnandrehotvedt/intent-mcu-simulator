@@ -55,6 +55,7 @@ import {
   ROTARY_ENCODER_DETENT_MAX,
   ROTARY_ENCODER_DETENT_MIN,
 } from '../expansion-drafts/rotary-encoder-quadrature-v1.mjs';
+import { ANALOG_JOYSTICK_TYPE, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE } from '../expansion-drafts/joystick-keypads-v1.mjs';
 
 export const CANDIDATE_EDITOR_INTEGRATION_SCHEMA = 'intent-mcu-candidate-editor-session@1';
 export const CANDIDATE_EDITOR_HISTORY_LIMIT = 64;
@@ -76,6 +77,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   CHARACTER_LCD_20X4_TYPE,
   PCF8574_LCD_TYPE,
   ROTARY_ENCODER_TYPE,
+  ANALOG_JOYSTICK_TYPE, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE,
 ]);
 
 function validPoint(value) {
@@ -218,6 +220,10 @@ function contactSupport(result) {
             ? 'avr-gpio-hd44780-write-only-decoder-v1-20x4-cgram'
           : contact.type === ROTARY_ENCODER_TYPE
             ? 'two-button.momentary-v1-with-timed-gray-sequence'
+          : contact.type === ANALOG_JOYSTICK_TYPE
+            ? 'two-potentiometer.linear-v1-plus-button.momentary-v1'
+          : [KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE].includes(contact.type)
+            ? 'selected-row-column-digital-bridge-v1'
           : spdt?.ok
             ? 'spdt-digital-reference-v1'
             : null,

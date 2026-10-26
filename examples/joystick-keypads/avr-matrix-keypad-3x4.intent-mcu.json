@@ -1,0 +1,349 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "da1e577cf3939ac733c0b00af3e45ec1765b45b93f974da7dbc228adcbb29858",
+    "implementationSha256": "a55fc49c2ee7f29f59a1c4fb955eefd731fdd01173fdd0addbdd199780db545a"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-project-contact-persistence@1",
+    "project": {
+      "schema": "intent-mcu-project@3",
+      "metadata": {
+        "name": "3×4 matrix keypad"
+      },
+      "catalogue": {
+        "schema": "intent-mcu-catalogue-ref@1",
+        "version": "intent-mcu-catalogue@2"
+      },
+      "controller": {
+        "profile": "board.atmega328p-16mhz-v1",
+        "adapterContract": "intent-mcu-controller-adapter@1",
+        "status": "simulated",
+        "capabilities": [
+          {
+            "id": "gpio",
+            "status": "simulated"
+          },
+          {
+            "id": "adc",
+            "status": "simulated"
+          },
+          {
+            "id": "pwm",
+            "status": "simulated"
+          },
+          {
+            "id": "uart0",
+            "status": "simulated"
+          },
+          {
+            "id": "timers",
+            "status": "partial"
+          },
+          {
+            "id": "interrupts",
+            "status": "partial"
+          },
+          {
+            "id": "spi",
+            "status": "unsupported"
+          },
+          {
+            "id": "i2c",
+            "status": "unsupported"
+          },
+          {
+            "id": "eeprom",
+            "status": "unsupported"
+          },
+          {
+            "id": "watchdog",
+            "status": "unsupported"
+          }
+        ]
+      },
+      "source": {
+        "files": [
+          {
+            "name": "main.ino",
+            "content": "const byte rows[4]={2,3,4,5}; const byte cols[3]={6,7,8};\nvoid setup(){Serial.begin(115200);for(byte r:rows){pinMode(r,OUTPUT);digitalWrite(r,HIGH);}for(byte c:cols)pinMode(c,INPUT_PULLUP);}\nvoid loop(){for(byte r=0;r<4;r++){digitalWrite(rows[r],LOW);for(byte c=0;c<3;c++)if(!digitalRead(cols[c])){Serial.print(r+1);Serial.println(c+1);}digitalWrite(rows[r],HIGH);}delay(20);}\n"
+          }
+        ]
+      },
+      "circuit": {
+        "schema": "teach-lab-circuit@2",
+        "components": [
+          {
+            "id": "board-1",
+            "type": "board.atmega328p-16mhz-v1",
+            "label": "ATmega328P board",
+            "properties": {},
+            "controls": {}
+          },
+          {
+            "id": "keypad-3x4-1-key",
+            "type": "button.momentary-v1",
+            "label": "3×4 matrix keypad R2C2",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": true
+            }
+          }
+        ],
+        "nets": [
+          {
+            "id": "net-keypad-3x4-1-c2",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D7"
+              },
+              {
+                "component": "keypad-3x4-1-key",
+                "pin": "B"
+              }
+            ]
+          },
+          {
+            "id": "net-keypad-3x4-1-r2",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D3"
+              },
+              {
+                "component": "keypad-3x4-1-key",
+                "pin": "A"
+              }
+            ]
+          }
+        ],
+        "junctions": []
+      },
+      "layout": {
+        "positions": {
+          "board-1": {
+            "x": 0.12,
+            "y": 0.2,
+            "rotation": 0
+          },
+          "keypad-3x4-1-key": {
+            "x": 0.7,
+            "y": 0.52,
+            "rotation": 0
+          }
+        },
+        "wireRoutes": {},
+        "wireStyles": {
+          "net-keypad-3x4-1-c2": {
+            "color": "#39dff2"
+          },
+          "net-keypad-3x4-1-r2": {
+            "color": "#39dff2"
+          }
+        },
+        "viewport": {
+          "zoom": 1,
+          "panX": 0,
+          "panY": 0
+        }
+      },
+      "instruments": {
+        "logicChannels": [
+          "D13",
+          "D2"
+        ],
+        "selectedPin": "D13",
+        "serial": {
+          "baud": 9600,
+          "encoding": "utf-8",
+          "historyLimit": 512
+        }
+      },
+      "artifact": {
+        "schema": "intent-mcu-project-artifact-ref@1",
+        "status": "dirty",
+        "profile": null,
+        "inputIdentitySha256": null,
+        "artifactIdentitySha256": null
+      }
+    },
+    "candidateCircuit": {
+      "schema": "teach-lab-circuit@2",
+      "components": [
+        {
+          "id": "board-1",
+          "type": "board.atmega328p-16mhz-v1",
+          "label": "ATmega328P board",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "keypad-3x4-1",
+          "type": "input.matrix-keypad-3x4-v1",
+          "label": "3×4 matrix keypad",
+          "properties": {
+            "rows": 4,
+            "columns": 3
+          },
+          "controls": {
+            "pressedKey": "R2C2"
+          }
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-keypad-3x4-1-c1",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D6"
+            },
+            {
+              "component": "keypad-3x4-1",
+              "pin": "C1"
+            }
+          ]
+        },
+        {
+          "id": "net-keypad-3x4-1-c2",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D7"
+            },
+            {
+              "component": "keypad-3x4-1",
+              "pin": "C2"
+            }
+          ]
+        },
+        {
+          "id": "net-keypad-3x4-1-c3",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D8"
+            },
+            {
+              "component": "keypad-3x4-1",
+              "pin": "C3"
+            }
+          ]
+        },
+        {
+          "id": "net-keypad-3x4-1-r1",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D2"
+            },
+            {
+              "component": "keypad-3x4-1",
+              "pin": "R1"
+            }
+          ]
+        },
+        {
+          "id": "net-keypad-3x4-1-r2",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D3"
+            },
+            {
+              "component": "keypad-3x4-1",
+              "pin": "R2"
+            }
+          ]
+        },
+        {
+          "id": "net-keypad-3x4-1-r3",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D4"
+            },
+            {
+              "component": "keypad-3x4-1",
+              "pin": "R3"
+            }
+          ]
+        },
+        {
+          "id": "net-keypad-3x4-1-r4",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D5"
+            },
+            {
+              "component": "keypad-3x4-1",
+              "pin": "R4"
+            }
+          ]
+        }
+      ],
+      "junctions": []
+    },
+    "candidateLayout": {
+      "schema": "intent-mcu-candidate-layout@1",
+      "positions": {
+        "board-1": {
+          "x": 0.12,
+          "y": 0.2,
+          "rotation": 0
+        },
+        "keypad-3x4-1": {
+          "x": 0.7,
+          "y": 0.52,
+          "rotation": 0
+        }
+      },
+      "wireRoutes": {},
+      "viewport": {
+        "zoom": 1,
+        "panX": 0,
+        "panY": 0
+      }
+    },
+    "compiledFixture": {
+      "schema": "intent-mcu-compiled-fixture-ref@1",
+      "id": "button-pullup",
+      "profile": "board.atmega328p-16mhz-v1",
+      "toolchainImageId": "sha256:f04aa7a8c37699d16a965fb374870ff147ca776ba6386f81e7700e350ed3d89f",
+      "source": {
+        "sha256": "84ceea4f298483f4696a3672ac1fff97b046b9e35c65aaa6155b20140a66f518",
+        "bytes": 209
+      },
+      "executable": {
+        "format": "intel-hex",
+        "sha256": "247f94bb051e9eebb4dfe8099278d810e04ccbf097f1b3ddb53b904e26ea8ebc",
+        "bytes": 2525
+      },
+      "debug": {
+        "format": "elf",
+        "sha256": "23a37eff7f7c5b1d0626e12a3f31e00d9b79466eab374cd0d74c46e3667150bd",
+        "bytes": 14632
+      },
+      "artifactIdentitySha256": "69ad0bc87ba02a2d33ac4c5ba1d9bd07e28636b631cd007f4b9423889e76bd3b"
+    }
+  }
+}
