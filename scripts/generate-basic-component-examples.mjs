@@ -32,6 +32,21 @@ const authoringProfiles = [
   { id: 'stm32', profile: 'board.stm32f429zi-nucleo144-v1', schema: STM32_EDITABLE_PROJECT_SCHEMA, source: STM32_PUBLIC_SOURCE,
     Editor: Stm32CircuitEditor, boardId: 'stm32-1', pin: 'PB0', highPin: 'PB1', lowPin: 'GND20', occupiedNet: 'net-pb0' },
 ];
+const crossProfileSeries = authoringProfiles.map((definition) => {
+  const circuit = new definition.Editor().snapshot().draft;
+  const file = `${definition.id}-series-led.intent-mcu.json`;
+  const project = { schema: definition.schema, name: `${definition.id} series resistor and LED`,
+    profile: definition.profile, source: definition.source, circuit };
+  const bytes = `${JSON.stringify(project, null, 2)}\n`;
+  files.set(file, bytes);
+  return { id: `${definition.id}-series-led`, profile: definition.profile, file,
+    componentIds: circuit.components.map(({ id }) => id),
+    exactNets: circuit.nets.map(({ id, endpoints }) => ({ id,
+      endpoints: endpoints.map(({ component, pin }) => `${component}.${pin}`) })),
+    projectSha256: sha256(bytes), sourceSha256: sha256(definition.source),
+    expectedVisibleBehavior: 'Opening restores the board, resistor and LED with the validated named series wiring.',
+    firmware: 'the bounded profile supports only its documented output subset; this file makes no broader peripheral claim' };
+});
 const crossProfileAuthoring = authoringProfiles.map((definition) => {
   const editor = new definition.Editor();
   if (!editor.addMissingComponent(POTENTIOMETER_3V3_TYPE, { x: 0.44, y: 0.72 }).ok) throw new Error('POT_EXAMPLE_ADD_FAILED');
@@ -63,7 +78,8 @@ const definitions = [
   { id: 'avr-series-resistor', requirementIds: ['CMP-001'], file: 'avr-blink.intent-mcu.json',
     componentType: 'resistor.fixed-v1', namedPins: { A: 'D13', B: 'LED.ANODE' }, value: '220 Ω',
     expectedBehavior: 'The validated 220 Ω series path limits the ideal D13 LED model.',
-    limits: 'Ideal resistance in supported low-voltage teaching topologies; no tolerance, power or thermal model.' },
+    limits: 'Ideal resistance in supported low-voltage teaching topologies; no tolerance, power or thermal model.',
+    crossProfileAuthoring: crossProfileSeries },
   { id: 'avr-analogue-potentiometer', requirementIds: ['CMP-002'], file: 'avr-adc.intent-mcu.json',
     componentType: 'potentiometer.linear-v1', namedPins: { HIGH: '5V', WIPER: 'A0', LOW: 'GND1' }, value: '10 kΩ linear',
     expectedBehavior: 'Turning the control maps linearly from 0–5 V to AVR ADC counts 0–1023.',
@@ -72,7 +88,8 @@ const definitions = [
   { id: 'avr-series-led', requirementIds: ['CMP-037'], file: 'avr-blink.intent-mcu.json',
     componentType: 'led.basic-v1', namedPins: { ANODE: '220Ω.B', CATHODE: 'GND1' }, value: 'red 5 mm',
     expectedBehavior: 'Compiled D13 HIGH/LOW changes the visible LED and logic trace together.',
-    limits: 'Bounded polarity, series-current and relative-brightness model; no physical optical or thermal accuracy.' },
+    limits: 'Bounded polarity, series-current and relative-brightness model; no physical optical or thermal accuracy.',
+    crossProfileAuthoring: crossProfileSeries },
 ];
 for (const [file, bytes] of files) {
   if (file.startsWith('avr-') && !parseProjectV2(bytes).ok) throw new Error('BASIC_COMPONENT_PROJECT_INVALID');

@@ -55,6 +55,27 @@ test('CMP-002 cross-profile combined examples reopen with exact hashes and hones
   }
 });
 
+test('CMP-001/037 cross-profile series examples reopen with exact components nets and hashes', async () => {
+  const manifest = JSON.parse(await readFile(new URL('manifest.json', ROOT), 'utf8'));
+  const entries = manifest.entries.filter(({ requirementIds }) => requirementIds.some((id) => ['CMP-001', 'CMP-037'].includes(id)));
+  assert.equal(entries.length, 2);
+  assert.deepEqual(entries[0].crossProfileAuthoring, entries[1].crossProfileAuthoring);
+  for (const variant of entries[0].crossProfileAuthoring) {
+    const bytes = await readFile(new URL(variant.file, ROOT), 'utf8');
+    assert.equal(sha256(bytes), variant.projectSha256, variant.id);
+    const project = JSON.parse(bytes);
+    const normalizers = { 'board.rp2040-pico-v1': normalizeRp2040PublicProject,
+      'board.esp32-c3-devmodule-v1': normalizeEsp32C3PublicProject,
+      'board.stm32f429zi-nucleo144-v1': normalizeStm32PublicProject };
+    const circuit = normalizers[variant.profile](project).circuit;
+    assert.deepEqual(circuit.components.map(({ id }) => id), variant.componentIds);
+    assert.deepEqual(circuit.nets.map(({ id, endpoints }) => ({ id,
+      endpoints: endpoints.map(({ component, pin }) => `${component}.${pin}`) })), variant.exactNets);
+    assert(circuit.components.some(({ type }) => type === 'resistor.fixed-v1'));
+    assert(circuit.components.some(({ type }) => type === 'led.basic-v1'));
+  }
+});
+
 test('basic examples preserve exact validated topology and values', async () => {
   const blink = parseProjectV2(await readFile(new URL('avr-blink.intent-mcu.json', ROOT), 'utf8')).project;
   const adc = parseProjectV2(await readFile(new URL('avr-adc.intent-mcu.json', ROOT), 'utf8')).project;

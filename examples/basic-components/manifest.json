@@ -15,6 +15,119 @@
       "value": "220 Ω",
       "expectedBehavior": "The validated 220 Ω series path limits the ideal D13 LED model.",
       "limits": "Ideal resistance in supported low-voltage teaching topologies; no tolerance, power or thermal model.",
+      "crossProfileAuthoring": [
+        {
+          "id": "pico-series-led",
+          "profile": "board.rp2040-pico-v1",
+          "file": "pico-series-led.intent-mcu.json",
+          "componentIds": [
+            "led-1",
+            "pico-1",
+            "resistor-1"
+          ],
+          "exactNets": [
+            {
+              "id": "net-gpio0",
+              "endpoints": [
+                "pico-1.GP0",
+                "resistor-1.B"
+              ]
+            },
+            {
+              "id": "net-ground",
+              "endpoints": [
+                "led-1.CATHODE",
+                "pico-1.GND3"
+              ]
+            },
+            {
+              "id": "net-series",
+              "endpoints": [
+                "led-1.ANODE",
+                "resistor-1.A"
+              ]
+            }
+          ],
+          "projectSha256": "03e0881abaad6398c903d49532d7f2886471ef132365240b3bbd118f5af40afc",
+          "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
+          "expectedVisibleBehavior": "Opening restores the board, resistor and LED with the validated named series wiring.",
+          "firmware": "the bounded profile supports only its documented output subset; this file makes no broader peripheral claim"
+        },
+        {
+          "id": "esp32-c3-series-led",
+          "profile": "board.esp32-c3-devmodule-v1",
+          "file": "esp32-c3-series-led.intent-mcu.json",
+          "componentIds": [
+            "c3-1",
+            "led-1",
+            "resistor-1"
+          ],
+          "exactNets": [
+            {
+              "id": "net-gpio2",
+              "endpoints": [
+                "c3-1.GPIO2",
+                "resistor-1.A"
+              ]
+            },
+            {
+              "id": "net-ground",
+              "endpoints": [
+                "c3-1.GND",
+                "led-1.CATHODE"
+              ]
+            },
+            {
+              "id": "net-series",
+              "endpoints": [
+                "led-1.ANODE",
+                "resistor-1.B"
+              ]
+            }
+          ],
+          "projectSha256": "52eb9ac7891f31c017a49b90dd093e6ec86494aa8045dd259692a7d692f3a1f6",
+          "sourceSha256": "d936fc50b2c874d6af660ece56abbb024c86e7b30462c403542b8d2166b85480",
+          "expectedVisibleBehavior": "Opening restores the board, resistor and LED with the validated named series wiring.",
+          "firmware": "the bounded profile supports only its documented output subset; this file makes no broader peripheral claim"
+        },
+        {
+          "id": "stm32-series-led",
+          "profile": "board.stm32f429zi-nucleo144-v1",
+          "file": "stm32-series-led.intent-mcu.json",
+          "componentIds": [
+            "led-1",
+            "resistor-1",
+            "stm32-1"
+          ],
+          "exactNets": [
+            {
+              "id": "net-ground",
+              "endpoints": [
+                "led-1.CATHODE",
+                "stm32-1.GND"
+              ]
+            },
+            {
+              "id": "net-pb0",
+              "endpoints": [
+                "resistor-1.A",
+                "stm32-1.PB0"
+              ]
+            },
+            {
+              "id": "net-series",
+              "endpoints": [
+                "led-1.ANODE",
+                "resistor-1.B"
+              ]
+            }
+          ],
+          "projectSha256": "f8ab47dc4a2bb24bdcaafbb0fd8da544b47b7b83eebac2c8829930417d6e3424",
+          "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
+          "expectedVisibleBehavior": "Opening restores the board, resistor and LED with the validated named series wiring.",
+          "firmware": "the bounded profile supports only its documented output subset; this file makes no broader peripheral claim"
+        }
+      ],
       "sourceSha256": "ab478b64ef170c6a43965e3b2d40424caf4d1de85aa9e2467a661c9679c1f127",
       "projectSha256": "2b94712762974e149bb3f29fea48f46025ac09105c903218fc64ce3546b48fd8",
       "profileBehavior": {
@@ -129,6 +242,119 @@
       "value": "red 5 mm",
       "expectedBehavior": "Compiled D13 HIGH/LOW changes the visible LED and logic trace together.",
       "limits": "Bounded polarity, series-current and relative-brightness model; no physical optical or thermal accuracy.",
+      "crossProfileAuthoring": [
+        {
+          "id": "pico-series-led",
+          "profile": "board.rp2040-pico-v1",
+          "file": "pico-series-led.intent-mcu.json",
+          "componentIds": [
+            "led-1",
+            "pico-1",
+            "resistor-1"
+          ],
+          "exactNets": [
+            {
+              "id": "net-gpio0",
+              "endpoints": [
+                "pico-1.GP0",
+                "resistor-1.B"
+              ]
+            },
+            {
+              "id": "net-ground",
+              "endpoints": [
+                "led-1.CATHODE",
+                "pico-1.GND3"
+              ]
+            },
+            {
+              "id": "net-series",
+              "endpoints": [
+                "led-1.ANODE",
+                "resistor-1.A"
+              ]
+            }
+          ],
+          "projectSha256": "03e0881abaad6398c903d49532d7f2886471ef132365240b3bbd118f5af40afc",
+          "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
+          "expectedVisibleBehavior": "Opening restores the board, resistor and LED with the validated named series wiring.",
+          "firmware": "the bounded profile supports only its documented output subset; this file makes no broader peripheral claim"
+        },
+        {
+          "id": "esp32-c3-series-led",
+          "profile": "board.esp32-c3-devmodule-v1",
+          "file": "esp32-c3-series-led.intent-mcu.json",
+          "componentIds": [
+            "c3-1",
+            "led-1",
+            "resistor-1"
+          ],
+          "exactNets": [
+            {
+              "id": "net-gpio2",
+              "endpoints": [
+                "c3-1.GPIO2",
+                "resistor-1.A"
+              ]
+            },
+            {
+              "id": "net-ground",
+              "endpoints": [
+                "c3-1.GND",
+                "led-1.CATHODE"
+              ]
+            },
+            {
+              "id": "net-series",
+              "endpoints": [
+                "led-1.ANODE",
+                "resistor-1.B"
+              ]
+            }
+          ],
+          "projectSha256": "52eb9ac7891f31c017a49b90dd093e6ec86494aa8045dd259692a7d692f3a1f6",
+          "sourceSha256": "d936fc50b2c874d6af660ece56abbb024c86e7b30462c403542b8d2166b85480",
+          "expectedVisibleBehavior": "Opening restores the board, resistor and LED with the validated named series wiring.",
+          "firmware": "the bounded profile supports only its documented output subset; this file makes no broader peripheral claim"
+        },
+        {
+          "id": "stm32-series-led",
+          "profile": "board.stm32f429zi-nucleo144-v1",
+          "file": "stm32-series-led.intent-mcu.json",
+          "componentIds": [
+            "led-1",
+            "resistor-1",
+            "stm32-1"
+          ],
+          "exactNets": [
+            {
+              "id": "net-ground",
+              "endpoints": [
+                "led-1.CATHODE",
+                "stm32-1.GND"
+              ]
+            },
+            {
+              "id": "net-pb0",
+              "endpoints": [
+                "resistor-1.A",
+                "stm32-1.PB0"
+              ]
+            },
+            {
+              "id": "net-series",
+              "endpoints": [
+                "led-1.ANODE",
+                "resistor-1.B"
+              ]
+            }
+          ],
+          "projectSha256": "f8ab47dc4a2bb24bdcaafbb0fd8da544b47b7b83eebac2c8829930417d6e3424",
+          "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
+          "expectedVisibleBehavior": "Opening restores the board, resistor and LED with the validated named series wiring.",
+          "firmware": "the bounded profile supports only its documented output subset; this file makes no broader peripheral claim"
+        }
+      ],
       "sourceSha256": "ab478b64ef170c6a43965e3b2d40424caf4d1de85aa9e2467a661c9679c1f127",
       "projectSha256": "2b94712762974e149bb3f29fea48f46025ac09105c903218fc64ce3546b48fd8",
       "profileBehavior": {
