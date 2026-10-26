@@ -18,7 +18,7 @@ import {
 import {
   POWER_REFERENCE_DEFINITION,
   POWER_REFERENCE_TYPE,
-  validatePowerReferenceCircuit,
+  projectPowerReferenceCircuit,
 } from './power-reference-integration-v1.mjs';
 import {
   PROJECT_V3_LIMIT,
@@ -673,7 +673,7 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
     (component) => component.type === POWER_REFERENCE_TYPE,
   );
   const powerProjected = hasPower
-    ? validatePowerReferenceCircuit(rotaryEncoderProjection.runtimeGraph, { modelLibraryLock })
+    ? projectPowerReferenceCircuit(rotaryEncoderProjection.runtimeGraph)
     : { ok: true, graph: rotaryEncoderProjection.runtimeGraph };
   if (!powerProjected.ok) fail(`PROJECT_CONTACT_${powerProjected.code}`, powerProjected.diagnostics ?? []);
   const afterPower = powerProjected.runtimeGraph ?? powerProjected.graph;

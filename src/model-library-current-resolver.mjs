@@ -199,6 +199,13 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
   },
 });
 
+export const PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-pre-cmp020-manual-mixed-repair@49',
+  manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
+  migrationOnly: true,
+});
+
 export const PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
   ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
   id: 'intent-mcu-model-bundle-current-thumbnail-artwork-1@46',

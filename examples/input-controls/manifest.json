@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-lcd-20x4-cgram.1-current",
-    "manifestSha256": "e21796ca4c48cc2383b7081b79c0bd2940e8e01fc70bb384c3086a38789f90f3",
-    "implementationSha256": "c007abdc66298536241c438cef09df11a671c03dd2e2d1eaf38b735f104dfe5a"
+    "manifestSha256": "86ca6f5da809f27ea49167ff6b8c33ecdc985a7571475bd1d246f63901b9bbd0",
+    "implementationSha256": "19f52e599130c136461eb1fb6c30a950cadce415351a60c692e85c199e1fd85c"
   },
   "entries": [
     {
@@ -22,7 +22,7 @@
       "expectedBehavior": "Pressing the active-low button changes D2 and Serial from RELEASED to PRESSED.",
       "firmwareLimits": "Ideal normally-open contact with INPUT_PULLUP; no bounce, resistance, wear or physical timing model.",
       "sourceSha256": "1bf4ebdd58ce128405d2fecec4d8b0c2b10c3e744cc7dbab6b522353c5f3c581",
-      "projectSha256": "79b2ca335cede1bd3b42451d0c55f960b89a9b640915493d84b6aeae80791a61",
+      "projectSha256": "df8626a0868669741df6242c60e3c2f3a5d31197aa125a9952b3f0ca2969ed7b",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "separate 3.3 V authoring component exists; this exact model is unavailable",
@@ -44,7 +44,7 @@
       "expectedBehavior": "The maintained Open/Closed control changes compiled D3 input, D13 and Serial output.",
       "firmwareLimits": "Ideal AVR-only maintained SPST contact; no bounce, resistance, current rating, arcing or wear.",
       "sourceSha256": "8077c43a7452edc47e82f79525a3322c588f7fc020773c35b279c0c7da101aa1",
-      "projectSha256": "d73cab29ad8590753015c105c1c334a4cd66a7b730f1b7a322d5e561775e1d01",
+      "projectSha256": "28b78afa7205b68acbaf31ddb8425273d001f90a5764bd13f4b334bfb9ba8930",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "separate 3.3 V authoring component exists; this exact model is unavailable",
@@ -73,7 +73,7 @@
       "expectedBehavior": "One detent produces ordered 01→00→10→11 clockwise phases and the exact reverse counter-clockwise.",
       "firmwareLimits": "CMP-132 only: ideal AVR quadrature phases at fixed 1 ms spacing. This is not CMP-027; it has no push switch, bounce, acceleration or physical detents.",
       "sourceSha256": "f0a3e2f6a9856762285b21ee4e3d51e95c76f9549c2b0dfcdc3c4a9ec98806e3",
-      "projectSha256": "85950f3f6fc5218df7dd1a71eef28b8b9fd2c87a649883b65f13373373aa4181",
+      "projectSha256": "1ce7c32d0274ac1add1f3903aeca8fe030f6c541e2c47712d1dece1edfcd292d",
       "provenance": "Original project-owned component, artwork, circuit factory and canonical project envelope."
     }
   ]

@@ -8,7 +8,9 @@ import {
   candidateUiDefinition,
   createCandidateUiArtwork,
   createCandidateUiComponent,
+  openCandidateUiSession,
 } from '../src/candidate-existing-ui-adapter.mjs';
+import { createAvrReferenceStarter } from '../src/avr-reference-starters.mjs';
 import { prepareApiBatch } from '../src/browser-session-edit.mjs';
 import {
   POWER_REFERENCE_DEFINITION,
@@ -84,4 +86,63 @@ test('CMP-020 renderer exposes the named OUT terminal using original SVG geometr
   assert.equal(svg.attributes.role, 'img');
   assert.equal(svg.children.some((item) => item.attributes['data-terminal-pin'] === 'OUT'), true);
   assert.match(svg.children.find((item) => item.name === 'title').textContent, /5 V circuit source/u);
+});
+
+test('CMP-020 composes with a retained 0 V reference and preserves exact history and persistence', () => {
+  const starter = createAvrReferenceStarter('avr-ground-reference-input');
+  const opened = openCandidateUiSession(starter.text);
+  assert.equal(opened.ok, true);
+  const session = opened.session;
+  const original = session.saveText();
+  const add = session.apply({
+    type: 'component.add', revision: session.revision,
+    component: createPowerReferenceComponent('power-reference-1'),
+    position: { x: 0.18, y: 0.64, rotation: 0 },
+  });
+  assert.equal(add.ok, true, add.code);
+  const wire = session.apply({
+    type: 'wire.create', revision: session.revision,
+    net: { id: 'net-power-reference-d3', endpoints: [
+      { component: 'power-reference-1', pin: 'OUT' },
+      { component: 'board-1', pin: 'D3' },
+    ] },
+  });
+  assert.equal(wire.ok, true, wire.code);
+  assert.deepEqual(session.runnable, { ok: true, code: 'OK', details: [] });
+  assert.equal(session.runtimeProject.circuit.components.some(
+    (item) => ['reference.power-5v-v1', 'reference.ground-v1'].includes(item.type),
+  ), false);
+  const accepted = session.saveText();
+  assert.equal(openCandidateUiSession(accepted).session.saveText(), accepted);
+  assert.equal(session.apply({ type: 'undo', revision: session.revision }).ok, true);
+  assert.equal(session.apply({ type: 'undo', revision: session.revision }).ok, true);
+  assert.equal(session.saveText(), original);
+  assert.equal(session.apply({ type: 'redo', revision: session.revision }).ok, true);
+  assert.equal(session.apply({ type: 'redo', revision: session.revision }).ok, true);
+  assert.equal(session.saveText(), accepted);
+});
+
+test('CMP-020 mixed projects reject changed voltage and power-to-ground conflicts atomically', () => {
+  const opened = openCandidateUiSession(createAvrReferenceStarter('avr-ground-reference-input').text);
+  const session = opened.session;
+  assert.equal(session.apply({
+    type: 'component.add', revision: session.revision,
+    component: createPowerReferenceComponent('power-reference-1'),
+    position: { x: 0.18, y: 0.64, rotation: 0 },
+  }).ok, true);
+  const beforeVoltage = session.saveText();
+  const voltage = session.apply({
+    type: 'component.property.set', revision: session.revision,
+    componentId: 'power-reference-1', key: 'voltageVolts', value: 3.3,
+  });
+  assert.equal(voltage.ok, false);
+  assert.equal(session.saveText(), beforeVoltage);
+  const conflict = session.apply({
+    type: 'wire.branch', revision: session.revision, netId: 'net-ground-branch',
+    endpoint: { component: 'power-reference-1', pin: 'OUT' },
+    junctionId: 'junction-power-ground-conflict',
+  });
+  assert.equal(conflict.ok, false);
+  assert.equal(conflict.code, 'PROJECT_CONTACT_POWER_SHORT');
+  assert.equal(session.saveText(), beforeVoltage);
 });

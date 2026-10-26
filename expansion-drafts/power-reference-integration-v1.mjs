@@ -64,7 +64,7 @@ function failure(code, componentId = null, netId = null) {
   return { ok: false, code, diagnostics: [{ code, severity: 'block', componentId, netId, message: code }] };
 }
 
-export function validatePowerReferenceCircuit(value, options = {}) {
+export function projectPowerReferenceCircuit(value) {
   if (!exactKeys(value, ['schema', 'components', 'nets', 'junctions'])
       || !Array.isArray(value.components) || !Array.isArray(value.nets) || !Array.isArray(value.junctions)) {
     return failure('CIRCUIT_SHAPE');
@@ -83,6 +83,10 @@ export function validatePowerReferenceCircuit(value, options = {}) {
   if (!board) return failure('POWER_REFERENCE_AVR_ONLY');
 
   const used = new Set();
+  let supplyNet = graph.nets.find((net) => net.endpoints.some(
+    (endpoint) => endpoint.component === board.id && endpoint.pin === '5V',
+  )) ?? null;
+  const mergedNets = new Map();
   for (const net of graph.nets) {
     const sourceEndpoints = net.endpoints?.filter((endpoint) => references.has(endpoint.component)) ?? [];
     if (!sourceEndpoints.length) continue;
@@ -97,18 +101,34 @@ export function validatePowerReferenceCircuit(value, options = {}) {
     }
     const boardSources = remaining.filter((endpoint) => endpoint.component === board.id && endpoint.pin === '5V');
     if (boardSources.length > 1) return failure('POWER_REFERENCE_SOURCE_CONFLICT', sourceEndpoints[0].component, net.id);
-    if (!boardSources.length) remaining.push({ component: board.id, pin: '5V' });
-    net.endpoints = remaining;
+    if (!boardSources.length && supplyNet && supplyNet !== net) {
+      supplyNet.endpoints.push(...remaining);
+      mergedNets.set(net.id, supplyNet.id);
+    } else {
+      if (!boardSources.length) remaining.push({ component: board.id, pin: '5V' });
+      net.endpoints = remaining;
+      supplyNet = net;
+    }
   }
   for (const id of references) if (!used.has(id)) return failure('POWER_REFERENCE_UNCONNECTED', id);
   graph.components = graph.components.filter((item) => !references.has(item.id));
-  const result = validateCircuit(graph, options);
-  if (!result.ok) return { ...result, sourceReferences: [] };
+  graph.nets = graph.nets.filter((net) => !mergedNets.has(net.id));
+  graph.junctions = graph.junctions.map((junction) => mergedNets.has(junction.net)
+    ? { ...junction, net: mergedNets.get(junction.net) }
+    : junction);
   return {
-    ok: true, code: 'OK', graph: clone(value), runtimeGraph: result.graph,
-    diagnostics: [], models: result.models,
+    ok: true, code: 'OK', graph: clone(value), runtimeGraph: graph,
+    diagnostics: [],
     sourceReferences: [...references].sort().map((componentId) => ({ componentId, voltageVolts: 5, direction: 'source' })),
   };
+}
+
+export function validatePowerReferenceCircuit(value, options = {}) {
+  const projected = projectPowerReferenceCircuit(value);
+  if (!projected.ok) return projected;
+  const result = validateCircuit(projected.runtimeGraph, options);
+  if (!result.ok) return { ...result, graph: projected.graph, runtimeGraph: projected.runtimeGraph, sourceReferences: [] };
+  return { ...projected, runtimeGraph: result.graph, models: result.models };
 }
 
 export function parsePowerReferenceCircuitText(source, options = {}) {

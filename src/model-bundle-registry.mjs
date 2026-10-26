@@ -3,6 +3,7 @@
 
 import {
   CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
   PRE_LCD_PERSISTENCE_FIX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION,
@@ -58,6 +59,9 @@ import { RETAINED_MODEL_LIBRARY_IMPLEMENTATION } from './model-library-retained-
 // complete allowlisted lock, then selects one of these finite static imports.
 export function productionModelBundle(role) {
   if (role === 'retained') return RETAINED_MODEL_LIBRARY_IMPLEMENTATION;
+  if (role === 'pre-cmp020-manual-mixed-repair-current-migration') {
+    return PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION;
+  }
   if (role === 'pre-lcd-api-duplicate-fix-current-migration') {
     return PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION;
   }

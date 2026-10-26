@@ -434,6 +434,7 @@ import {
   openCandidateUiSession,
 } from '../src/candidate-existing-ui-adapter.mjs';
 import { CONTACT_PERSISTENCE_SCHEMA } from '../expansion-drafts/project-v3-contact-persistence.mjs';
+import { POWER_REFERENCE_TYPE } from '../expansion-drafts/power-reference-integration-v1.mjs';
 import { controlRuntimeEvidenceMatrix } from '../src/control-runtime-evidence.mjs';
 import {
   TEMPERATURE_MAX_C,
@@ -12969,6 +12970,7 @@ async function benchmarkCatalogFixture(action = 'start') {
 function candidateComponentPrefix(type) {
   return {
       'reference.ground-v1': 'ground-reference',
+      [POWER_REFERENCE_TYPE]: 'power-reference',
       'switch.toggle-spst-v1': 'toggle-switch',
       'switch.changeover-spdt-v1': 'selector',
       'sensor.light-analogue-v1': 'light-sensor',
@@ -13005,6 +13007,7 @@ function addComponent(type, point = null) {
       'button.momentary-v1': { x: 0.77, y: 0.52 },
       'potentiometer.linear-v1': { x: 0.47, y: 0.76 },
       'reference.ground-v1': { x: 0.18, y: 0.78 },
+      [POWER_REFERENCE_TYPE]: { x: 0.18, y: 0.64 },
       'switch.toggle-spst-v1': { x: 0.48, y: 0.78 },
       'switch.changeover-spdt-v1': { x: 0.78, y: 0.78 },
       'sensor.light-analogue-v1': { x: 0.62, y: 0.76 },
