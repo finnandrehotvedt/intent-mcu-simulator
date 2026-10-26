@@ -17,11 +17,11 @@ const adapter = Object.freeze({ schemas: Object.freeze(['intent-mcu-project-cont
 } });
 const adapters = Object.freeze({ [AVR]: adapter });
 
-test('committed CMP-050 and CMP-051 files are exact current common envelopes', async () => {
+test('committed CMP-050, CMP-051, CMP-052 and CMP-062 files are exact current common envelopes', async () => {
   const manifest = JSON.parse(await readFile(new URL('manifest.json', root), 'utf8'));
   assert.equal(manifest.schema, 'intent-mcu-lcd-example-manifest@2');
   assert.equal(manifest.profile, AVR);
-  assert.deepEqual(manifest.entries.map((entry) => entry.requirementIds[0]), ['CMP-050', 'CMP-051']);
+  assert.deepEqual(manifest.entries.map((entry) => entry.requirementIds[0]), ['CMP-050', 'CMP-051', 'CMP-052']);
   for (const entry of manifest.entries) {
     const bytes = await readFile(new URL(entry.file, root), 'utf8');
     assert.equal(createHash('sha256').update(bytes).digest('hex'), entry.projectSha256);
@@ -40,6 +40,10 @@ test('committed CMP-050 and CMP-051 files are exact current common envelopes', a
   assert.equal(backpack.previousProjectSha256, '6d4c8d6a1f42a251c441ec6bc811066397c0a17be731be52a63c60e80d1e3e75');
   assert.equal(backpack.sourceSha256, '4fdce12246f4eb202259a492795ac93f5b59ce56678c357dbb30120ca3e6c809');
   assert.deepEqual(backpack.namedPins, { VCC: '5V', GND: 'GND1', SDA: 'A4', SCL: 'A5' });
+  const lcd20x4 = manifest.entries.find((entry) => entry.id === 'avr-character-lcd-20x4-cgram');
+  assert.deepEqual(lcd20x4.requirementIds, ['CMP-052', 'CMP-062']);
+  assert.equal(lcd20x4.sourceSha256, '4950c66f1669022ffa91528ee5e557bd789833caa08e961bd374c1a8eea63f3e');
+  assert.equal(Object.keys(lcd20x4.namedPins).length, 9);
 });
 
 test('raw new-PCF candidate remains rejected by retained legacy admission', async () => {

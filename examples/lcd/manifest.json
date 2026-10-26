@@ -4,9 +4,9 @@
   "modelLibrary": {
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
-    "version": "2.0.0-lcd-end-to-end.1-current",
-    "manifestSha256": "c3b3aa4627fdd7fbae7d32794afb302ad38b01712bfa6d7727f7194e3a4864bc",
-    "implementationSha256": "4b9552a468a876221e85fddc57f1529eb17ef9cb960b330725197491a414078b"
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "e7ef38fe421b4ed52a07cc154e0a08977232f2309f589b5630b533e7ae851068",
+    "implementationSha256": "783df0a6b6775ec96c62109c6ca217df7a7d3af3e226c43b60d51fdc1543062f"
   },
   "entries": [
     {
@@ -37,7 +37,7 @@
       },
       "firmwareLimits": "Ideal sensor, display and RGB subset; no physical timing or current model.",
       "provenance": "Original project-owned direct 4-bit LCD example generated from the committed factory and canonical common project envelope.",
-      "projectSha256": "87789113d5c8f570006389e5501521d67097f323d52c3629a7965f17b8252322"
+      "projectSha256": "b8bd5afd3de3cde66b682fc4afa94d116fcbd5d284a21666facecda66eccea30"
     },
     {
       "id": "pcf8574-lcd-backpack",
@@ -62,7 +62,37 @@
       },
       "firmwareLimits": "Partial: AVR-only, fixed address and mapping, write-only ASCII subset; no arbitrary Wire compatibility.",
       "provenance": "Original project-owned fixed 0x27 PCF8574 example generated from the committed factory and canonical common project envelope.",
-      "projectSha256": "5f265268bbee2d5607bf8106271d1c205967b830caf851f378e1f019a0f357fe"
+      "projectSha256": "eab001f0e2fad283a168bd306e5220c18329b345781791365005aba616d0d4bc"
+    },
+    {
+      "id": "avr-character-lcd-20x4-cgram",
+      "requirementIds": [
+        "CMP-052",
+        "CMP-062"
+      ],
+      "file": "parallel-hd44780-20x4-cgram.intent-mcu.json",
+      "sourceSha256": "4950c66f1669022ffa91528ee5e557bd789833caa08e961bd374c1a8eea63f3e",
+      "namedPins": {
+        "VCC": "5V",
+        "GND": "GND1",
+        "RW": "GND1",
+        "RS": "D3",
+        "E": "D4",
+        "D4": "D7",
+        "D5": "D8",
+        "D6": "D10",
+        "D7": "D12"
+      },
+      "expectedBehavior": "Four exact 20-column rows render from DDRAM offsets 0x00, 0x40, 0x14 and 0x54, with custom character code 1 showing the programmed 5x8 heart.",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "component unavailable",
+        "board.esp32-c3-devmodule-v1": "component unavailable",
+        "board.stm32f429zi-nucleo144-v1": "component unavailable"
+      },
+      "firmwareLimits": "Partial: AVR-only write-only 4-bit GPIO, eight bounded CGRAM slots; no reads, busy flag, shifts, 8-bit mode, I2C, contrast, backlight or physical timing accuracy.",
+      "provenance": "Original project-owned 20x4/CGRAM example generated through the committed canonical envelope generator.",
+      "projectSha256": "85d6e672367b4d59f630be2c7df824d1569f80b27ccd8f8840747d70946dc170"
     }
   ]
 }

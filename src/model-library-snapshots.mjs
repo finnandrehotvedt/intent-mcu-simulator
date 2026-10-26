@@ -132370,13 +132370,13 @@ export const PRE_X66_PUBLIC_THERMOSTAT_CREATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
   "entries": [
     {
-      "behaviorContractSha256": "8d977faf45f4b131f58718fa2db774f2eaa772280e85e08723af86aa26e9b63f",
+      "behaviorContractSha256": "4f7338737430353e4b25816ffed16d5e8aac3683ef2b9c321c84fb062d5ae234",
       "componentType": "board.atmega328p-16mhz-v1",
       "componentVersion": 1,
       "modelId": "model.atmega328p-board-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "board.atmega328p-16mhz-v1-state-v1",
         "pipelineId": "avr-base-circuit-runtime-v1"
       },
@@ -132696,13 +132696,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "f34c16185d3ae78174fe709ec1dd9b3cebeb13323c0ab9b1cd53043ca5a33551",
+      "behaviorContractSha256": "0e5f776c2a2dfc27900b8154a1b85def57807b54e906d27175ce942b6973314d",
       "componentType": "button.momentary-v1",
       "componentVersion": 1,
       "modelId": "model.button-momentary-no-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "button.momentary-v1-state-v1",
         "pipelineId": "avr-base-circuit-runtime-v1"
       },
@@ -132794,13 +132794,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "ad6fbb19c652efdd751b97292c681e998a02678ba7ae123b58ab6686a676ff59",
+      "behaviorContractSha256": "e35becf06c05430b6f8894afa7e92acd16f146a7856fe8909fc5acd19598af6f",
       "componentType": "input.rotary-encoder-quadrature-v1",
       "componentVersion": 1,
       "modelId": "model.rotary-encoder-quadrature-ideal-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "input.rotary-encoder-quadrature-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -132899,13 +132899,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "5b652d30be8782906d36ab09e43fb93cb248786c7287d4829c29c55fb087a0e0",
+      "behaviorContractSha256": "b647f2c148878c2ce93354e0b39072cacbd1c39ba5000c34e9d34bad745763ad",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "led.basic-v1-state-v1",
         "pipelineId": "avr-base-circuit-runtime-v1"
       },
@@ -132974,13 +132974,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "36b64787d30b75089908eaeef3b3f75379c0159d49e92354d55706e8fa3d5122",
+      "behaviorContractSha256": "fc4dbd841e05220344630dbed9d1bcf6a3a913ce3ab32d127292291036fe5ad4",
       "componentType": "output.active-buzzer-module-v1",
       "componentVersion": 1,
       "modelId": "model.active-buzzer-logical-enable-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "output.active-buzzer-module-v1-observer-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -133052,13 +133052,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "6df3890ea05c51ce499ef18bb4ebfd370afcd61134942be3a1b1867c69b993be",
+      "behaviorContractSha256": "e3477a6dbefbf751c0d27df75bfb9526097aab28008f6d35ff855f9bb9745d89",
       "componentType": "output.character-lcd-16x2-4bit-v1",
       "componentVersion": 1,
       "modelId": "model.character-lcd-16x2-write-only-4bit-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "output.character-lcd-16x2-4bit-v1-observer-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -133200,13 +133200,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "0d243759f3afa94c2fd6f28c46672a1c0a107c4201f0c901f8e3acf1eaec1a31",
+      "behaviorContractSha256": "7f4629bee97ed76671143c0458a777c7b9f3ddca4ccc926cb18e6d25114a83ab",
       "componentType": "output.character-lcd-16x2-pcf8574-v1",
       "componentVersion": 1,
       "modelId": "model.character-lcd-16x2-pcf8574-write-only-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "output.character-lcd-16x2-pcf8574-v1-observer-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -133295,13 +133295,161 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "3e93a0b7f06c93ccc7dc18ec61d4e6c08d54536905db6f3b7edaaf37b946de71",
+      "behaviorContractSha256": "c8315573f22ba2f201ec9aba380366e33a6de7276113f47186532d505c1be887",
+      "componentType": "output.character-lcd-20x4-4bit-v1",
+      "componentVersion": 1,
+      "modelId": "model.character-lcd-20x4-cgram-write-only-4bit-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "output.character-lcd-20x4-4bit-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 180,
+        "cssWidth": 260,
+        "renderer": "output-character-lcd-20x4-4bit",
+        "thumbnail": "output-character-lcd-20x4-4bit",
+        "viewBox": [
+          0,
+          0,
+          260,
+          180
+        ]
+      },
+      "rendererContractSha256": "7efe325499acf3e20368bc27b7fc7df87ca47c2f90581a73c1762df61d6d79cc",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.character-lcd-20x4-cgram-write-only-4bit-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "RS",
+            "role": "digital-in",
+            "signals": [
+              "digital.hd44780-register-select"
+            ]
+          },
+          {
+            "constraints": {
+              "requiredLevel": "LOW",
+              "writeOnly": true
+            },
+            "id": "RW",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "latchEdge": "falling",
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "E",
+            "role": "digital-in",
+            "signals": [
+              "digital.hd44780-enable"
+            ]
+          },
+          {
+            "constraints": {
+              "bit": 4,
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D4",
+            "role": "digital-in",
+            "signals": [
+              "digital.hd44780-data-4bit"
+            ]
+          },
+          {
+            "constraints": {
+              "bit": 5,
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D5",
+            "role": "digital-in",
+            "signals": [
+              "digital.hd44780-data-4bit"
+            ]
+          },
+          {
+            "constraints": {
+              "bit": 6,
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D6",
+            "role": "digital-in",
+            "signals": [
+              "digital.hd44780-data-4bit"
+            ]
+          },
+          {
+            "constraints": {
+              "bit": 7,
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D7",
+            "role": "digital-in",
+            "signals": [
+              "digital.hd44780-data-4bit"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Bounded AVR-only HD44780-style write-only 4-bit decoder for one 20×4 display. It uses the same exact 5 V, shared-ground RW and six unique direct GPIO requirements as the qualified 16×2 path.",
+            "Visible DDRAM uses exact row starts 0x00, 0x40, 0x14 and 0x54 with deterministic 20-column wrapping. Clear, home, display on/off, cursor, blink and increment entry mode are supported.",
+            "CGRAM addresses 0x00–0x3F define eight 5×8 custom glyph slots. Character codes 0–7 render those exact five-bit rows. Reads, busy flag, RW-high operation, shifts, 8-bit mode, I²C, contrast, backlight, current and physical timing tolerances remain unsupported."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "2ad4bfd8d3a1c3f4335af9aa8b0436f11ba3bb8d53f68bd3e050d63f45b9ab88",
+      "supportStatus": "partial"
+    },
+    {
+      "behaviorContractSha256": "5b6bb39eb446471e84635805e6f46180a0a9adc8eca4b700476d43967a4263f7",
       "componentType": "output.rgb-led-common-cathode-v1",
       "componentVersion": 1,
       "modelId": "model.rgb-led-common-cathode-ideal-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "output.rgb-led-common-cathode-v1-observer-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -133388,13 +133536,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "47ee69b2f1b51b9ad545a8be1d6e3f51363432532c685b37dca4640ad0c41656",
+      "behaviorContractSha256": "a1c2b475c1da2d28026a77d4efbb9151224ddafd9649536d778e17445be98e97",
       "componentType": "output.seven-segment-common-cathode-v1",
       "componentVersion": 1,
       "modelId": "model.seven-segment-common-cathode-ideal-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "output.seven-segment-common-cathode-v1-observer-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -133529,13 +133677,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "4154e0a2e5beeaed6a2514e5dc566ce45dcceabd8177a8d6dc04c1ce05178b3b",
+      "behaviorContractSha256": "5fe7b51669ce0dcbac122951785c714e98b45f6a35fd9a99ae5ec20a042165ab",
       "componentType": "potentiometer.linear-v1",
       "componentVersion": 1,
       "modelId": "model.pot-divider-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "potentiometer.linear-v1-state-v1",
         "pipelineId": "avr-base-circuit-runtime-v1"
       },
@@ -133621,13 +133769,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "c8a2a0cdf803031a491e3df2eecb880c710584bf4ef971b91d49483d5508604c",
+      "behaviorContractSha256": "70bd7440f128ed56561175c3f0dea508ddd7b8250643b1fd662600bfae1e49e6",
       "componentType": "reference.ground-v1",
       "componentVersion": 1,
       "modelId": "model.ground-reference-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "reference.ground-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -133685,13 +133833,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "376c655f63256cd1059f3ceea3ea544b68c1bf0afca49cdd4c7c4c4cf8129390",
+      "behaviorContractSha256": "d85c71cf1df2bdf5a828c6dbc935431dfe819075b82bc2e7e628c5b73128ce56",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "resistor.fixed-v1-state-v1",
         "pipelineId": "avr-base-circuit-runtime-v1"
       },
@@ -133753,13 +133901,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "d61ab15dd409e5da6dc96dcdf9e63988e95eac77cc1b8b723701c846a9a38bee",
+      "behaviorContractSha256": "b098c6801370b2396962e0765a42e2e97a50a7b5366ce9fb16b4b13ca595c461",
       "componentType": "sensor.light-analogue-v1",
       "componentVersion": 1,
       "modelId": "model.light-analogue-ideal-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "sensor.light-analogue-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -133839,13 +133987,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "b116ee75c4b55655bb3b02111d3858a960e71462dc5aee670d90141790cf09a0",
+      "behaviorContractSha256": "7a86aa293211e569f5f4679f07d0bf9972515a5565ee0c26b7267cd8a982b5f4",
       "componentType": "sensor.light-threshold-digital-v1",
       "componentVersion": 1,
       "modelId": "model.light-threshold-digital-ideal-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "sensor.light-threshold-digital-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -133947,13 +134095,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "4f6839a1c53745533b7ad475dbf0c9bc238dec9bd5ef679b1b854102dc8b3303",
+      "behaviorContractSha256": "50f7e22d39d8957cc4b223ed0cd4d20bbb9dea893340c6b2eab66f7859acbed9",
       "componentType": "sensor.temperature-analogue-v1",
       "componentVersion": 1,
       "modelId": "model.temperature-analogue-ideal-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "sensor.temperature-analogue-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -134033,13 +134181,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "c90b7bfbe6f93440d07550f42dbdd5d5d6239fd8c05e3ad591fd9b9d4b20602c",
+      "behaviorContractSha256": "15af21aa8cd278121383a3b69a11dbdd63de33292728ed22ac86729394c1e8b2",
       "componentType": "switch.changeover-spdt-v1",
       "componentVersion": 1,
       "modelId": "model.switch-changeover-spdt-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "switch.changeover-spdt-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -134115,13 +134263,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "be79e58daeedad71855a6247912bb19ecd1a56cc5340a16d3e439997dbb84fb2",
+      "behaviorContractSha256": "91876a77f4e690f69506b701da1678880c21ad48762234d790515a66869f8d50",
       "componentType": "switch.toggle-spst-v1",
       "componentVersion": 1,
       "modelId": "model.switch-toggle-spst-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "switch.toggle-spst-v1-state-v1",
         "pipelineId": "avr-candidate-reconstruction-ordered-v1"
       },
@@ -134188,13 +134336,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "3b80c06e6ed0bcdf137c68e20aa3bf19524abe346c853e6eeaad12309068acf1",
+      "behaviorContractSha256": "746eda59dacd2207ff87c20523bf2151adba9ae46562d663634462d780c4319d",
       "componentType": "board.esp32-c3-devmodule-v1",
       "componentVersion": 2,
       "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
       "modelVersion": 2,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "board.esp32-c3-devmodule-v1-state-v1",
         "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
       },
@@ -134312,13 +134460,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "91244619342a44c6e9119821ff7a8585b629c39236fec6a4775e8fddfebd0206",
+      "behaviorContractSha256": "12a9e296a27006804cce877669b295c565b39e93b509568cd55cade1c5160691",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "led.basic-v1-state-v1",
         "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
       },
@@ -134387,13 +134535,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "d42ffc9804d4e8f3a15c5fc894b305c68d1616dded1d53482adf75d1ac8ebcbb",
+      "behaviorContractSha256": "a0a213c639e25110b7e8b7886508475b1098eaa2f5640fff79486ba47c9f23dc",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "resistor.fixed-v1-state-v1",
         "pipelineId": "board.esp32-c3-devmodule-v1-validation-observation-v1"
       },
@@ -134455,13 +134603,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "2f8a5b7ff79129f21eafe69d6d20e264e85e584bf39d29ab2b7b674cd694fab0",
+      "behaviorContractSha256": "6f36774e1ad48bd4893201507b8a40f369a7574c3c151086ceccb4eb8e903477",
       "componentType": "board.rp2040-pico-v1",
       "componentVersion": 2,
       "modelId": "model.rp2040-pico-gpio0-public-v1",
       "modelVersion": 2,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "board.rp2040-pico-v1-state-v1",
         "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
       },
@@ -134573,13 +134721,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "0595748140f023fb4e595cfb074635f3f2684fcedac3763a41f2ee20e526baae",
+      "behaviorContractSha256": "b997787396eb106bc540f320ae7e668348a7067d746bd7cd03b0495b971facaa",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "led.basic-v1-state-v1",
         "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
       },
@@ -134648,13 +134796,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "09cc666f55a0c58a04ba3bf56f2bd18d1ee587dc4d0460ea9ad78792124813c1",
+      "behaviorContractSha256": "ffef787af661202e772c7a4833fbb4e9ac6c4ea87ff531a45f7e284714eca8ac",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "resistor.fixed-v1-state-v1",
         "pipelineId": "board.rp2040-pico-v1-validation-observation-v1"
       },
@@ -134716,13 +134864,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "95acc66eec192482f93cf8962156108e05a1eea5ef71245927f93116cf067fc4",
+      "behaviorContractSha256": "407a2f0e4b3b4cf512d99d678d4c0e1dbd3a20cac0d8c17b64624df01dc31723",
       "componentType": "board.stm32f429zi-nucleo144-v1",
       "componentVersion": 2,
       "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
       "modelVersion": 2,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "board.stm32f429zi-nucleo144-v1-state-v1",
         "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
       },
@@ -134838,13 +134986,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
-      "behaviorContractSha256": "bc594e123557d7bc2a0f4a95733286f8d0ea75ac60469c6d618ec99fabebb3ed",
+      "behaviorContractSha256": "103eb4d3bee77aaedd8e0245e795f269a508606e8ca9d726498bd50e4e521c44",
       "componentType": "led.basic-v1",
       "componentVersion": 1,
       "modelId": "model.led-current-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "led.basic-v1-state-v1",
         "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
       },
@@ -134913,13 +135061,13 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "30361a41ee1d791be7660ed59d58c76b7bd2b44d730ea6965bd7bf0d553af104",
+      "behaviorContractSha256": "c988334610aeb9d16829d8dfe4146784ba6312e835554e611a007a0442bee0b8",
       "componentType": "resistor.fixed-v1",
       "componentVersion": 1,
       "modelId": "model.resistor-fixed-v1",
       "modelVersion": 1,
       "owner": {
-        "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
         "observerId": "resistor.fixed-v1-state-v1",
         "pipelineId": "board.stm32f429zi-nucleo144-v1-validation-observation-v1"
       },
@@ -134981,7 +135129,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     }
   ],
-  "implementationId": "intent-mcu-model-bundle-current-lcd-end-to-end-1@47",
+  "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
   "implementationMembers": [
     {
       "path": "src/component-catalog.mjs",
@@ -135085,7 +135233,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "201e49652fb4b3d068abd1ee483585d388309d8688206e0a58426dfe711a3af6"
+      "sha256": "2c13b7a92b88c27ecbd446af59de6e53ce75fcead2e28dab9ac3093f08cd0f06"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -135117,7 +135265,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "5aa5604a39f00de7619456395a4ae5e96dc162e72f88446c04a61ed41c437581"
+      "sha256": "c3b631af9ad826562f0a23d2c46a74a9c683d85aef8870f3f9352d57e2579ab1"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -135125,7 +135273,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "c269cad3935a958b2b23e679b2c80c45909a27469e8e80d87ed6ab3b67dc97ba"
+      "sha256": "3e6e215314ba1d5c389433937312ae0c4909a14b6f62459fbbfe93dfc8e448a8"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -135173,7 +135321,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "7ba0122945fb7b394b9e62667d5f22632ae7f3d2dbe2326c30132c23c74e3126"
+      "sha256": "c767beec48b5683d000e65d4684adfb4b4eaa1fb7db65c615b518e3b37accb7c"
     },
     {
       "path": "expansion-drafts/ground-reference-integration-v1.mjs",
@@ -135217,7 +135365,15 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/character-lcd-16x2-4bit-v1.mjs",
-      "sha256": "5e2c947976f29ebeca4aa22c566d7bed295c7600566299a6edddd23a4eb874dc"
+      "sha256": "52e7f5c7e21ba4272b5cf92d0da87f01b618d9ffebd111945541e4340b094cd0"
+    },
+    {
+      "path": "expansion-drafts/character-lcd-20x4-4bit-v1.mjs",
+      "sha256": "96f0775846abc6030c65602939f42fbde94ab8ffd9da542e77c924d3cefdc70f"
+    },
+    {
+      "path": "expansion-drafts/character-lcd-20x4-4bit-artwork-v1.mjs",
+      "sha256": "a4580cde6b9841bf0ce1ad210b15c90900556ae1aaa2885c3a2f126f69e36422"
     },
     {
       "path": "expansion-drafts/pcf8574-lcd-backpack-v1.mjs",
@@ -135237,20 +135393,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "f7cd16498d64867c71de97588f25c995051b210b2f4ea357b357ff93a1aa377a"
+      "sha256": "cd22f6416210b8c733524c52c5a4cb332531c87d5e93982b24853087ab7215ed"
     }
   ],
-  "implementationSha256": "4b9552a468a876221e85fddc57f1529eb17ef9cb960b330725197491a414078b",
+  "implementationSha256": "783df0a6b6775ec96c62109c6ca217df7a7d3af3e226c43b60d51fdc1543062f",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
     "compatibility": "strict-versioned-data-only migration; runtime-and-verdict-authority-cleared",
-    "presentationDisposition": "CMP-050 direct GPIO and CMP-051 fixed 0x27 backpack render firmware-decoded 16x2 text with original project artwork",
+    "presentationDisposition": "CMP-052 and CMP-062 render firmware-decoded four-line text and deterministic custom glyph pixels with original project artwork",
     "priorManifestSha256": "f8deca034c208f06d58db4db9f945507f8f5300b4e649f6b33cc164d25280672",
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
-    "semanticDisposition": "adds bounded AVR TWI write observation and fixed-address PCF8574 LCD semantics while retaining every prior component contract"
+    "semanticDisposition": "adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract"
   },
-  "manifestSha256": "c3b3aa4627fdd7fbae7d32794afb302ad38b01712bfa6d7727f7194e3a4864bc",
+  "manifestSha256": "e7ef38fe421b4ed52a07cc154e0a08977232f2309f589b5630b533e7ae851068",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",
@@ -135258,5 +135414,5 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "renode@1.17.0"
   ],
   "schema": "intent-mcu-model-library-manifest@2",
-  "version": "2.0.0-lcd-end-to-end.1-current"
+  "version": "2.0.0-lcd-20x4-cgram.1-current"
 });

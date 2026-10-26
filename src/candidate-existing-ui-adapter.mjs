@@ -69,6 +69,12 @@ import {
 } from '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs';
 import { createCharacterLcdArtwork } from '../expansion-drafts/character-lcd-16x2-4bit-artwork-v1.mjs';
 import {
+  CHARACTER_LCD_20X4_DEFINITION,
+  CHARACTER_LCD_20X4_TYPE,
+  createCharacterLcd20x4Component,
+} from '../expansion-drafts/character-lcd-20x4-4bit-v1.mjs';
+import { createCharacterLcd20x4Artwork } from '../expansion-drafts/character-lcd-20x4-4bit-artwork-v1.mjs';
+import {
   PCF8574_LCD_DEFINITION,
   PCF8574_LCD_TYPE,
   createPcf8574LcdComponent,
@@ -134,6 +140,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   [ACTIVE_BUZZER_TYPE]: ACTIVE_BUZZER_DEFINITION,
   [SEVEN_SEGMENT_TYPE]: SEVEN_SEGMENT_DEFINITION,
   [CHARACTER_LCD_TYPE]: CHARACTER_LCD_DEFINITION,
+  [CHARACTER_LCD_20X4_TYPE]: CHARACTER_LCD_20X4_DEFINITION,
   [PCF8574_LCD_TYPE]: PCF8574_LCD_DEFINITION,
   [ROTARY_ENCODER_TYPE]: ROTARY_ENCODER_DEFINITION,
 });
@@ -173,6 +180,9 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (component?.type === CHARACTER_LCD_TYPE) {
     return createCharacterLcdArtwork(documentObject, definition, component, options);
   }
+  if (component?.type === CHARACTER_LCD_20X4_TYPE) {
+    return createCharacterLcd20x4Artwork(documentObject, definition, component, options);
+  }
   if (component?.type === PCF8574_LCD_TYPE) {
     return createPcf8574LcdArtwork(documentObject, definition, component, options);
   }
@@ -193,6 +203,7 @@ export function createCandidateUiComponent(type, id) {
   if (type === ACTIVE_BUZZER_TYPE) return createActiveBuzzerComponent(id);
   if (type === SEVEN_SEGMENT_TYPE) return createSevenSegmentComponent(id);
   if (type === CHARACTER_LCD_TYPE) return createCharacterLcdComponent(id);
+  if (type === CHARACTER_LCD_20X4_TYPE) return createCharacterLcd20x4Component(id);
   if (type === PCF8574_LCD_TYPE) return createPcf8574LcdComponent(id);
   if (type === ROTARY_ENCODER_TYPE) return createRotaryEncoderComponent(id);
   throw new TypeError('CANDIDATE_UI_COMPONENT_TYPE');

@@ -454,8 +454,11 @@ import { ACTIVE_BUZZER_TYPE } from '../expansion-drafts/active-buzzer-module-v1.
 import { SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
 import {
   CHARACTER_LCD_TYPE,
-  createCharacterLcd4BitDecoder,
 } from '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs';
+import {
+  CHARACTER_LCD_20X4_RENDERER,
+  CHARACTER_LCD_20X4_TYPE,
+} from '../expansion-drafts/character-lcd-20x4-4bit-v1.mjs';
 import { PCF8574_LCD_TYPE } from '../expansion-drafts/pcf8574-lcd-backpack-v1.mjs';
 import {
   ROTARY_ENCODER_TYPE,
@@ -11499,11 +11502,13 @@ function clearRuntimePresentation() {
     for (const wave of artwork.querySelectorAll('.buzzer-wave')) wave.classList.remove('on');
   }
   characterLcdRuntime.clear();
-  for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key^="output-character-lcd-16x2"]')) {
+  for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key^="output-character-lcd-"]')) {
     artwork.dataset.protocolState = 'awaiting-initialization';
-    artwork.dataset.line1 = ''; artwork.dataset.line2 = '';
+    artwork.dataset.line1 = ''; artwork.dataset.line2 = ''; artwork.dataset.line3 = ''; artwork.dataset.line4 = '';
     artwork.querySelector('[data-lcd-line="1"]')?.replaceChildren();
     artwork.querySelector('[data-lcd-line="2"]')?.replaceChildren();
+    for (const cell of artwork.querySelectorAll('[data-lcd-cell]')) cell.replaceChildren();
+    for (const glyph of artwork.querySelectorAll('[data-lcd-runtime-glyph]')) glyph.remove();
   }
   publish({ runtime: null });
 }
@@ -12954,6 +12959,7 @@ function candidateComponentPrefix(type) {
       [ACTIVE_BUZZER_TYPE]: 'active-buzzer',
       [SEVEN_SEGMENT_TYPE]: 'seven-segment',
       [CHARACTER_LCD_TYPE]: 'character-lcd',
+      [CHARACTER_LCD_20X4_TYPE]: 'character-lcd-20x4',
       [PCF8574_LCD_TYPE]: 'pcf8574-lcd',
       [ROTARY_ENCODER_TYPE]: 'rotary-encoder',
   }[type] ?? null;
@@ -12989,6 +12995,7 @@ function addComponent(type, point = null) {
       [ACTIVE_BUZZER_TYPE]: { x: 0.78, y: 0.68 },
       [SEVEN_SEGMENT_TYPE]: { x: 0.76, y: 0.66 },
       [CHARACTER_LCD_TYPE]: { x: 0.72, y: 0.64 },
+      [CHARACTER_LCD_20X4_TYPE]: { x: 0.7, y: 0.62 },
       [ROTARY_ENCODER_TYPE]: { x: 0.72, y: 0.64 },
     }[type];
     const sameTypeCount = currentProject().circuit.components.filter((item) => item.type === type).length;
@@ -13743,10 +13750,12 @@ function renderCharacterLcdRuntime(message) {
   const trace = Array.isArray(message.trace) ? message.trace : [];
   const published = [];
   for (const support of (Array.isArray(editor.runtimeSupport) ? editor.runtimeSupport : []).filter(
-    (item) => item.type === CHARACTER_LCD_TYPE && item.runtimeProjection,
+    (item) => [CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE].includes(item.type) && item.runtimeProjection,
   )) {
+    const is20x4 = support.type === CHARACTER_LCD_20X4_TYPE;
+    const renderer = is20x4 ? CHARACTER_LCD_20X4_RENDERER : 'output-character-lcd-16x2-4bit';
     const artwork = elements.componentlayer.querySelector(
-      `[data-component-id="${support.componentId}"] [data-artwork-key="output-character-lcd-16x2-4bit"]`,
+      `[data-component-id="${support.componentId}"] [data-artwork-key="${renderer}"]`,
     );
     if (!artwork) continue;
     const mapping = Object.fromEntries(Object.entries(support.runtimeProjection.signals).map(
@@ -13755,7 +13764,9 @@ function renderCharacterLcdRuntime(message) {
     let record = characterLcdRuntime.get(support.componentId);
     if (!record || message.cycle < record.cycle || trace.length < record.traceLength) {
       record = {
-        decoder: modelLibraryImplementationFor(AVR_PROFILE).createCharacterLcdDecoder(mapping),
+        decoder: is20x4
+          ? modelLibraryImplementationFor(AVR_PROFILE).createCharacterLcd20x4Decoder(mapping)
+          : modelLibraryImplementationFor(AVR_PROFILE).createCharacterLcdDecoder(mapping),
         cycle: 0,
         traceLength: 0,
       };
@@ -13770,23 +13781,46 @@ function renderCharacterLcdRuntime(message) {
     record.traceLength = trace.length;
     record.cycle = message.cycle;
     const state = driven ? snapshot.status : 'not-driven';
-    const decodedLines = driven && snapshot.displayOn ? snapshot.lines : ['', ''];
+    const decodedLines = driven && snapshot.displayOn ? snapshot.lines : (is20x4 ? ['', '', '', ''] : ['', '']);
     const observed = modelLibraryImplementationFor(AVR_PROFILE)
-      .evaluateProduction(CHARACTER_LCD_TYPE, { lines: decodedLines });
+      .evaluateProduction(support.type, { lines: decodedLines });
     if (!observed.ok) throw Object.assign(new Error(observed.code), observed);
     const lines = observed.result.lines;
     artwork.dataset.protocolState = state;
     artwork.dataset.cursor = snapshot.cursorOn ? 'on' : 'off';
     artwork.dataset.blink = snapshot.blinkOn ? 'on' : 'off';
-    artwork.dataset.line1 = lines[0]; artwork.dataset.line2 = lines[1];
-    const line1 = artwork.querySelector('[data-lcd-line="1"]');
-    const line2 = artwork.querySelector('[data-lcd-line="2"]');
-    if (line1) line1.textContent = lines[0];
-    if (line2) line2.textContent = lines[1];
+    lines.forEach((line, index) => { artwork.dataset[`line${index + 1}`] = line; });
+    if (is20x4) {
+      const codes = snapshot.displayOn ? snapshot.cellCodes : Array.from({ length: 4 }, () => Array(20).fill(32));
+      for (const cell of artwork.querySelectorAll('[data-lcd-cell]')) {
+        const [row, column] = cell.dataset.lcdCell.split(':').map(Number);
+        const code = codes[row]?.[column] ?? 32;
+        cell.textContent = code < 8 ? '' : String.fromCharCode(code);
+        artwork.querySelector(`[data-lcd-runtime-glyph="${row}:${column}"]`)?.remove();
+        if (code < 8) {
+          const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+          group.dataset.lcdRuntimeGlyph = `${row}:${column}`;
+          const x = Number(cell.getAttribute('x')) - 3.75;
+          const y = Number(cell.getAttribute('y')) - 9;
+          snapshot.customGlyphs[code].forEach((bits, pixelRow) => {
+            for (let pixelColumn = 0; pixelColumn < 5; pixelColumn += 1) if (bits & (1 << (4 - pixelColumn))) {
+              const pixel = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+              pixel.setAttribute('x', String(x + pixelColumn * 1.5)); pixel.setAttribute('y', String(y + pixelRow * 1.5));
+              pixel.setAttribute('width', '1.2'); pixel.setAttribute('height', '1.2'); pixel.setAttribute('fill', '#17220d');
+              group.append(pixel);
+            }
+          });
+          artwork.append(group);
+        }
+      }
+    } else {
+      artwork.querySelector('[data-lcd-line="1"]')?.replaceChildren(lines[0]);
+      artwork.querySelector('[data-lcd-line="2"]')?.replaceChildren(lines[1]);
+    }
     const detail = snapshot.error
       ? `${snapshot.error.code}: ${snapshot.error.details.join(', ')}`
       : `${state}; write-only 4-bit GPIO, ${snapshot.latchedBytes} bytes, cursor ${snapshot.cursorOn ? 'on' : 'off'}, blink ${snapshot.blinkOn ? 'on' : 'off'}`;
-    const label = `${support.componentId}, line 1 ${JSON.stringify(lines[0])}, line 2 ${JSON.stringify(lines[1])}; ${detail}; no I2C or physical display accuracy claimed`;
+    const label = `${support.componentId}, ${lines.map((line, index) => `line ${index + 1} ${JSON.stringify(line)}`).join(', ')}; ${detail}; no I2C or physical display accuracy claimed`;
     artwork.setAttribute('aria-label', label);
     const title = artwork.querySelector('title'); if (title) title.textContent = label;
     published.push({ componentId: support.componentId, ...snapshot, status: state, lines });

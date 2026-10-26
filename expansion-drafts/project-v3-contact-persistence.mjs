@@ -73,6 +73,12 @@ import {
   validateCharacterLcdComponent,
 } from './character-lcd-16x2-4bit-v1.mjs';
 import {
+  CHARACTER_LCD_20X4_DEFINITION,
+  CHARACTER_LCD_20X4_TYPE,
+  projectCharacterLcd20x4Displays,
+  validateCharacterLcd20x4Component,
+} from './character-lcd-20x4-4bit-v1.mjs';
+import {
   PCF8574_LCD_DEFINITION,
   PCF8574_LCD_TYPE,
   projectPcf8574LcdDisplays,
@@ -149,6 +155,7 @@ function pinIds(component) {
   if (component.type === ACTIVE_BUZZER_TYPE) return ['VCC', 'GND', 'EN'];
   if (component.type === SEVEN_SEGMENT_TYPE) return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'COM'];
   if (component.type === CHARACTER_LCD_TYPE) return ['VCC', 'GND', 'RS', 'RW', 'E', 'D4', 'D5', 'D6', 'D7'];
+  if (component.type === CHARACTER_LCD_20X4_TYPE) return ['VCC', 'GND', 'RS', 'RW', 'E', 'D4', 'D5', 'D6', 'D7'];
   if (component.type === PCF8574_LCD_TYPE) return ['VCC', 'GND', 'SDA', 'SCL'];
   if (component.type === ROTARY_ENCODER_TYPE) return ['A', 'COM', 'B'];
   const definition = catalogType(component.type);
@@ -166,6 +173,7 @@ function componentPins(component) {
   if (component.type === ACTIVE_BUZZER_TYPE) return ACTIVE_BUZZER_DEFINITION.pins;
   if (component.type === SEVEN_SEGMENT_TYPE) return SEVEN_SEGMENT_DEFINITION.pins;
   if (component.type === CHARACTER_LCD_TYPE) return CHARACTER_LCD_DEFINITION.pins;
+  if (component.type === CHARACTER_LCD_20X4_TYPE) return CHARACTER_LCD_20X4_DEFINITION.pins;
   if (component.type === PCF8574_LCD_TYPE) return PCF8574_LCD_DEFINITION.pins;
   if (component.type === ROTARY_ENCODER_TYPE) return ROTARY_ENCODER_DEFINITION.pins;
   return catalogType(component.type)?.pins ?? null;
@@ -221,6 +229,10 @@ function validateCandidateComponent(component) {
     if (!validateCharacterLcdComponent(component)) {
       fail('PROJECT_CONTACT_CHARACTER_LCD_STATE', [component.id]);
     }
+  } else if (component.type === CHARACTER_LCD_20X4_TYPE) {
+    if (!validateCharacterLcd20x4Component(component)) {
+      fail('PROJECT_CONTACT_CHARACTER_LCD_20X4_STATE', [component.id]);
+    }
   } else if (component.type === PCF8574_LCD_TYPE) {
     if (!validatePcf8574LcdComponent(component)) {
       fail('PROJECT_CONTACT_PCF8574_LCD_STATE', [component.id]);
@@ -262,7 +274,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         GROUND_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
         LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
         DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
-        ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE,
+        ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
         ROTARY_ENCODER_TYPE,
       ].includes(component.type))) {
     fail('PROJECT_CONTACT_CANDIDATE_REQUIRED');
@@ -606,7 +618,19 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
   })));
   for (const display of characterLcdProjection.displays) production(implementation, CHARACTER_LCD_TYPE,
     { lines: ['', ''] }, [display.componentId]);
-  const pcf8574LcdProjection = projectPcf8574LcdDisplays(characterLcdProjection.runtimeGraph);
+  const characterLcd20x4Projection = projectCharacterLcd20x4Displays(characterLcdProjection.runtimeGraph);
+  if (!characterLcd20x4Projection.ok) {
+    fail(`PROJECT_CONTACT_${characterLcd20x4Projection.code}`, characterLcd20x4Projection.details);
+  }
+  contacts.push(...characterLcd20x4Projection.displays.map((display) => ({
+    componentId: display.componentId,
+    type: CHARACTER_LCD_20X4_TYPE,
+    state: { geometry: '20x4', busMode: display.busMode, customGlyphSlots: 8 },
+    runtimeProjection: clone(display),
+  })));
+  for (const display of characterLcd20x4Projection.displays) production(implementation, CHARACTER_LCD_20X4_TYPE,
+    { lines: ['', '', '', ''] }, [display.componentId]);
+  const pcf8574LcdProjection = projectPcf8574LcdDisplays(characterLcd20x4Projection.runtimeGraph);
   if (!pcf8574LcdProjection.ok) {
     fail(`PROJECT_CONTACT_${pcf8574LcdProjection.code}`, pcf8574LcdProjection.details);
   }
@@ -720,6 +744,14 @@ function draftContacts(graph) {
         componentId: component.id,
         type: component.type,
         state: { geometry: '16x2', busMode: 'write-only-4-bit' },
+        runtimeProjection: null,
+      }];
+    }
+    if (component.type === CHARACTER_LCD_20X4_TYPE) {
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { geometry: '20x4', busMode: 'write-only-4-bit', customGlyphSlots: 8 },
         runtimeProjection: null,
       }];
     }
@@ -844,7 +876,7 @@ export function validateContactPersistenceProject(value, options = {}) {
       GROUND_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
       LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
       DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
-      ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE,
+      ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
       ROTARY_ENCODER_TYPE,
     ].includes(component.type),
   )) return failResult('PROJECT_CONTACT_CANDIDATE_REQUIRED');

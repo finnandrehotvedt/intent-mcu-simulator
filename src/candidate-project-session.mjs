@@ -42,6 +42,7 @@ import { COMMON_CATHODE_RGB_LED_TYPE } from '../expansion-drafts/common-cathode-
 import { ACTIVE_BUZZER_TYPE } from '../expansion-drafts/active-buzzer-module-v1.mjs';
 import { SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
 import { CHARACTER_LCD_TYPE } from '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs';
+import { CHARACTER_LCD_20X4_TYPE } from '../expansion-drafts/character-lcd-20x4-4bit-v1.mjs';
 import { PCF8574_LCD_TYPE } from '../expansion-drafts/pcf8574-lcd-backpack-v1.mjs';
 import {
   ROTARY_ENCODER_TYPE,
@@ -62,6 +63,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
   ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE,
   CHARACTER_LCD_TYPE,
+  CHARACTER_LCD_20X4_TYPE,
   PCF8574_LCD_TYPE,
   ROTARY_ENCODER_TYPE,
 ]);
@@ -188,6 +190,8 @@ function contactSupport(result) {
             ? 'seven-independent-led.basic-v1'
           : contact.type === CHARACTER_LCD_TYPE
             ? 'avr-gpio-hd44780-write-only-decoder-v1'
+          : contact.type === CHARACTER_LCD_20X4_TYPE
+            ? 'avr-gpio-hd44780-write-only-decoder-v1-20x4-cgram'
           : contact.type === ROTARY_ENCODER_TYPE
             ? 'two-button.momentary-v1-with-timed-gray-sequence'
           : spdt?.ok
@@ -202,7 +206,9 @@ function contactSupport(result) {
         : contact.type === SEVEN_SEGMENT_TYPE
         ? 'Ideal commanded on/off state through seven independently current-limited existing LED channels; no decimal point, multiplexing, driver IC, brightness, optical, package-current or physical display accuracy is modelled.'
         : contact.type === CHARACTER_LCD_TYPE
-        ? 'Bounded 16x2 write-only 4-bit GPIO character decoder. Reads, busy flag, custom glyphs, cursor/blink, shifts, auto-wrap, 8-bit mode, I2C/backpacks and physical display behavior are unsupported.'
+        ? 'Bounded AVR-only 16x2 write-only 4-bit GPIO character decoder with deterministic wrapping, display on/off, cursor and blink. Reads, busy flag, custom glyphs, shifts, 8-bit mode, I2C/backpacks and physical display behavior are unsupported.'
+        : contact.type === CHARACTER_LCD_20X4_TYPE
+        ? 'Bounded AVR-only 20x4 write-only 4-bit GPIO decoder with exact four-row DDRAM addressing and eight 5x8 CGRAM slots. Reads, busy flag, shifts, 8-bit mode, I2C and physical display behavior are unsupported.'
         : contact.type === ROTARY_ENCODER_TYPE
         ? 'Ideal no-bounce A/B contacts to COM only. Each detent schedules four one-bit Gray transitions at 16,000 cycles per phase; physical acceleration, missed edges and mechanical behavior are unsupported.'
         : contact.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE

@@ -18,13 +18,13 @@ lost trace records cannot update the display.
 ## Display behavior
 
 The shared deterministic decoder supports the write-only 4-bit initialization
-sequence, display-on, entry mode, clear, home, explicit first-line DDRAM
+sequence, display-on/off, entry mode, clear, home, visible cursor/blink, explicit first-line DDRAM
 addresses `0x00..0x0f`, second-line addresses `0x40..0x4f`, and printable ASCII.
 It rejects invalid initialization, inadequate instruction timing, out-of-range
-DDRAM access, unsupported commands and data before initialization. Automatic
-line wrapping, busy reads, custom glyphs/CGRAM, visible cursor/blink, display
-shifts, arbitrary PCF8574 mappings and generic Wire-library compatibility are
-not supported.
+DDRAM access, unsupported commands and data before initialization. Deterministic
+16-column wrapping is supported. Busy reads, custom glyphs/CGRAM, display shifts,
+arbitrary PCF8574 mappings and generic Wire-library compatibility are not supported
+for these two 16×2 models; CMP-052/CMP-062 own the separate 20×4/CGRAM slice.
 
 ## Compiled fixture
 

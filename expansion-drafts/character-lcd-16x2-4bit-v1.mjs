@@ -182,14 +182,18 @@ function inspectSignal(index, component, signal, netId) {
   return { ok: true, signal, netId, sourcePin };
 }
 
-export function projectCharacterLcdDisplays(value) {
+export function projectCharacterLcdDisplays(value, options = {}) {
+  const componentType = options.componentType ?? CHARACTER_LCD_TYPE;
+  const validateComponent = options.validateComponent ?? validateCharacterLcdComponent;
+  const supportedGeometry = options.supportedGeometry ?? { columns: 16, rows: 2 };
+  const decoder = options.decoder ?? CHARACTER_LCD_RUNTIME_ADAPTER;
   const graph = clone(value);
-  const components = graph.components.filter((component) => component.type === CHARACTER_LCD_TYPE);
+  const components = graph.components.filter((component) => component.type === componentType);
   if (!components.length) return { ok: true, runtimeGraph: graph, displays: [] };
   const index = indexes(graph);
   const displays = [];
   for (const component of components) {
-    if (!validateCharacterLcdComponent(component)) return fail('CHARACTER_LCD_STATE', [component.id]);
+    if (!validateComponent(component)) return fail('CHARACTER_LCD_STATE', [component.id]);
     const vccNet = index.endpointToNet.get(`${component.id}.VCC`) ?? null;
     const groundNet = index.endpointToNet.get(`${component.id}.GND`) ?? null;
     const rwNet = index.endpointToNet.get(`${component.id}.RW`) ?? null;
@@ -227,8 +231,8 @@ export function projectCharacterLcdDisplays(value) {
       rwNet,
       signals: clone(signals),
       busMode: 'write-only-4-bit',
-      decoder: CHARACTER_LCD_RUNTIME_ADAPTER,
-      supportedGeometry: { columns: 16, rows: 2 },
+      decoder,
+      supportedGeometry: clone(supportedGeometry),
       timing: clone(CHARACTER_LCD_TIMING),
     });
   }
@@ -249,19 +253,39 @@ function validSignalMap(mapping) {
     && new Set(Object.values(mapping)).size === CHARACTER_LCD_SIGNALS.length;
 }
 
-function blankRows() { return [Array(16).fill(' '), Array(16).fill(' ')]; }
+function normalizeLcdOptions(options = {}) {
+  const columns = options.columns ?? 16;
+  const rows = options.rows ?? 2;
+  const rowOffsets = options.rowOffsets ?? [0x00, 0x40];
+  const customGlyphs = options.customGlyphs ?? false;
+  if (!Number.isInteger(columns) || columns < 1 || columns > 40
+      || !Number.isInteger(rows) || rows < 1 || rows > 4
+      || !Array.isArray(rowOffsets) || rowOffsets.length !== rows
+      || rowOffsets.some((offset) => !Number.isInteger(offset) || offset < 0 || offset > 0x7f)
+      || new Set(rowOffsets).size !== rows || typeof customGlyphs !== 'boolean') {
+    throw new TypeError('CHARACTER_LCD_GEOMETRY');
+  }
+  return Object.freeze({ columns, rows, rowOffsets: Object.freeze([...rowOffsets]), customGlyphs });
+}
+
+function blankRows(geometry) {
+  return Array.from({ length: geometry.rows }, () => Array(geometry.columns).fill(0x20));
+}
 
 export class CharacterLcd4BitDecoder {
-  constructor(mapping) {
+  constructor(mapping, options = {}) {
     if (!validSignalMap(mapping)) throw new TypeError('CHARACTER_LCD_SIGNAL_MAP');
     this.mapping = Object.freeze({ ...mapping });
+    this.geometry = normalizeLcdOptions(options);
     this.reverse = new Map(Object.entries(mapping).map(([signal, pin]) => [Number(pin.slice(1)), signal]));
     this.reset();
   }
 
   reset() {
     this.levels = Object.fromEntries(CHARACTER_LCD_SIGNALS.map((signal) => [signal, false]));
-    this.rows = blankRows();
+    this.rows = blankRows(this.geometry);
+    this.cgram = Array.from({ length: 8 }, () => Array(8).fill(0));
+    this.addressSpace = 'ddram';
     this.address = 0;
     this.displayOn = false;
     this.cursorOn = false;
@@ -349,7 +373,7 @@ export class CharacterLcd4BitDecoder {
         this.cursorOn = Boolean(command & 0x02);
         this.blinkOn = Boolean(command & 0x01);
       }
-      if (command === 0x01) { this.rows = blankRows(); this.address = 0; }
+      if (command === 0x01) { this.rows = blankRows(this.geometry); this.address = 0; this.addressSpace = 'ddram'; }
       this.readyCycle = cycle + (command === 0x01
         ? CHARACTER_LCD_TIMING.clearHomeMinimumCycles
         : CHARACTER_LCD_TIMING.instructionMinimumCycles);
@@ -359,12 +383,12 @@ export class CharacterLcd4BitDecoder {
       return true;
     }
     if (command === 0x01) {
-      this.rows = blankRows(); this.address = 0;
+      this.rows = blankRows(this.geometry); this.address = 0; this.addressSpace = 'ddram';
       this.readyCycle = cycle + CHARACTER_LCD_TIMING.clearHomeMinimumCycles;
       return true;
     }
     if (command === 0x02) {
-      this.address = 0;
+      this.address = 0; this.addressSpace = 'ddram';
       this.readyCycle = cycle + CHARACTER_LCD_TIMING.clearHomeMinimumCycles;
       return true;
     }
@@ -379,32 +403,56 @@ export class CharacterLcd4BitDecoder {
     }
     if (command & 0x80) {
       const address = command & 0x7f;
-      if (!((address >= 0 && address <= 0x0f) || (address >= 0x40 && address <= 0x4f))) {
+      if (!this.#visiblePosition(address)) {
         return this.#reject('CHARACTER_LCD_DDRAM_ADDRESS_UNSUPPORTED', [address]);
       }
-      this.address = address;
+      this.address = address; this.addressSpace = 'ddram';
+      this.readyCycle = cycle + CHARACTER_LCD_TIMING.instructionMinimumCycles;
+      return true;
+    }
+    if ((command & 0xc0) === 0x40) {
+      if (!this.geometry.customGlyphs) return this.#reject('CHARACTER_LCD_COMMAND_UNSUPPORTED', [command]);
+      this.address = command & 0x3f; this.addressSpace = 'cgram';
       this.readyCycle = cycle + CHARACTER_LCD_TIMING.instructionMinimumCycles;
       return true;
     }
     return this.#reject('CHARACTER_LCD_COMMAND_UNSUPPORTED', [command]);
   }
 
+  #visiblePosition(address) {
+    for (let row = 0; row < this.geometry.rows; row += 1) {
+      const offset = this.geometry.rowOffsets[row];
+      if (address >= offset && address < offset + this.geometry.columns) {
+        return { row, column: address - offset };
+      }
+    }
+    return null;
+  }
+
+  #nextDdramAddress(row, column) {
+    if (column + 1 < this.geometry.columns) return this.geometry.rowOffsets[row] + column + 1;
+    return this.geometry.rowOffsets[(row + 1) % this.geometry.rows];
+  }
+
   #writeData(value, cycle) {
     if (this.status !== 'ready') return this.#reject('CHARACTER_LCD_DATA_BEFORE_READY', [value]);
-    if (value < 0x20 || value > 0x7e) {
+    if (this.addressSpace === 'cgram') {
+      const slot = Math.floor(this.address / 8);
+      const row = this.address % 8;
+      this.cgram[slot][row] = value & 0x1f;
+      this.address = (this.address + 1) & 0x3f;
+      this.readyCycle = cycle + CHARACTER_LCD_TIMING.instructionMinimumCycles;
+      return true;
+    }
+    if ((value < 0x20 || value > 0x7e) && !(this.geometry.customGlyphs && value >= 0 && value <= 7)) {
       return this.#reject('CHARACTER_LCD_CHARACTER_UNSUPPORTED', [value]);
     }
-    let row;
-    let column;
-    if (this.address >= 0 && this.address <= 0x0f) {
-      row = 0; column = this.address;
-    } else if (this.address >= 0x40 && this.address <= 0x4f) {
-      row = 1; column = this.address - 0x40;
-    } else {
+    const position = this.#visiblePosition(this.address);
+    if (!position) {
       return this.#reject('CHARACTER_LCD_DDRAM_ADDRESS_UNSUPPORTED', [this.address]);
     }
-    this.rows[row][column] = String.fromCharCode(value);
-    this.address = this.address === 0x0f ? 0x40 : this.address === 0x4f ? 0x00 : this.address + 1;
+    this.rows[position.row][position.column] = value;
+    this.address = this.#nextDdramAddress(position.row, position.column);
     this.readyCycle = cycle + CHARACTER_LCD_TIMING.instructionMinimumCycles;
     return true;
   }
@@ -467,7 +515,11 @@ export class CharacterLcd4BitDecoder {
     return clone({
       status: this.status,
       error: this.error,
-      lines: this.rows.map((row) => row.join('')),
+      lines: this.rows.map((row) => row.map((value) => String.fromCharCode(value)).join('')),
+      cellCodes: this.rows,
+      customGlyphs: this.cgram,
+      addressSpace: this.addressSpace,
+      geometry: this.geometry,
       address: this.address,
       displayOn: this.displayOn,
       cursorOn: this.cursorOn,
@@ -482,6 +534,6 @@ export class CharacterLcd4BitDecoder {
   }
 }
 
-export function createCharacterLcd4BitDecoder(mapping) {
-  return new CharacterLcd4BitDecoder(mapping);
+export function createCharacterLcd4BitDecoder(mapping, options = {}) {
+  return new CharacterLcd4BitDecoder(mapping, options);
 }

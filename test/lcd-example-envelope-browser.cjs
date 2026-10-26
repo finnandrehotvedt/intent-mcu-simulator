@@ -8,6 +8,7 @@ const base = process.env.LCD_EXAMPLE_URL || 'http://127.0.0.1:18776';
 const fixtures = [
   ['parallel-hd44780-16x2.intent-mcu.json', 'character-lcd-1', 'output-character-lcd-16x2-4bit', 9],
   ['pcf8574-0x27-lcd.intent-mcu.json', 'pcf8574-lcd-1', 'output-character-lcd-16x2-pcf8574', 4],
+  ['parallel-hd44780-20x4-cgram.intent-mcu.json', 'character-lcd-1', 'output-character-lcd-20x4-4bit', 9],
 ];
 async function openDialog(page) {
   if (await page.locator('#workbench-project-dialog').getAttribute('open') !== null) return;
@@ -50,7 +51,7 @@ async function actualOpen(page, name, bytes) {
       assert.match(await page.locator('#project-message').textContent(), /rejected/iu);
       assert.deepEqual(mutations, []); reports.push(name); await page.close();
     }
-    process.stdout.write(`${JSON.stringify({ result: 'pass', files: reports, actualFileChooserOpen: 2,
-      visibleSvgAndNamedPins: 2, downloadOpenReload: 2, corruptAtomic: 2, mutationRequests: 0 })}\n`);
+    process.stdout.write(`${JSON.stringify({ result: 'pass', files: reports, actualFileChooserOpen: 3,
+      visibleSvgAndNamedPins: 3, downloadOpenReload: 3, corruptAtomic: 3, mutationRequests: 0 })}\n`);
   } finally { await browser.close(); }
 })().catch((error) => { process.stderr.write(`${error.stack || error}\n`); process.exit(1); });

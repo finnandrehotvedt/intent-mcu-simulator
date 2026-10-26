@@ -240,6 +240,8 @@ const CURRENT_CLOSURE = Object.freeze([
   '../expansion-drafts/active-buzzer-module-v1.mjs',
   '../expansion-drafts/seven-segment-common-cathode-v1.mjs',
   '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs',
+  '../expansion-drafts/character-lcd-20x4-4bit-v1.mjs',
+  '../expansion-drafts/character-lcd-20x4-4bit-artwork-v1.mjs',
   '../expansion-drafts/pcf8574-lcd-backpack-v1.mjs',
   '../expansion-drafts/pcf8574-lcd-backpack-artwork-v1.mjs',
   '../expansion-drafts/pcf8574-lcd-hello-example-v1.mjs',
@@ -291,15 +293,15 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-lcd-end-to-end.1-current',
-  'intent-mcu-model-bundle-current-lcd-end-to-end-1@47',
+  '2.0.0-lcd-20x4-cgram.1-current',
+  'intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48',
   currentImplementation,
   {
     priorVersion: PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST.version,
     priorManifestSha256: PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'adds bounded AVR TWI write observation and fixed-address PCF8574 LCD semantics while retaining every prior component contract',
-    presentationDisposition: 'CMP-050 direct GPIO and CMP-051 fixed 0x27 backpack render firmware-decoded 16x2 text with original project artwork',
+    semanticDisposition: 'adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract',
+    presentationDisposition: 'CMP-052 and CMP-062 render firmware-decoded four-line text and deterministic custom glyph pixels with original project artwork',
     baselineClosureDisposition: 'accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only',
   },
 );

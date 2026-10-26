@@ -46,10 +46,11 @@ test('every available matrix cell now resolves to a real starter id', () => {
   const ids = new Set([
     'blink', 'button', 'adc', 'pwm', 'pwm-pulse', 'temperature-lcd-threshold',
     'avr-thermostat-boundary-v1', 'pico-led-on', 'pico-led-off', 'c3-led-on',
-    'c3-led-off', 'stm32-led-on', 'stm32-led-off', 'avr-pcf8574-lcd-hello', ...Object.keys(expected),
+    'c3-led-off', 'stm32-led-on', 'stm32-led-off', 'avr-pcf8574-lcd-hello',
+    'avr-character-lcd-20x4-cgram', ...Object.keys(expected),
   ]);
   const inventory = componentReferenceInventory();
-  assert.equal(inventory.length, 26);
+  assert.equal(inventory.length, 27);
   for (const item of inventory) {
     assert.equal(item.hasPositiveReference, true, `${item.profile}:${item.model}`);
     assert(item.starters.every((id) => ids.has(id)), `${item.model}:${item.starters.join(',')}`);

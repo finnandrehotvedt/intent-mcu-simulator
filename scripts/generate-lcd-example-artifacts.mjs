@@ -28,6 +28,8 @@ function envelope(example) {
   return canonicalProjectEnvelope(AVR, example.project, adapters, emptyProjectBrief(), null, CURRENT_MODEL_LIBRARY_LOCK);
 }
 const directSourceSha256 = sha256(TEMPERATURE_LCD_THRESHOLD_SOURCE);
+const lcd20x4Envelope = JSON.parse(await readFile(new URL(
+  'parallel-hd44780-20x4-cgram.intent-mcu.json', ROOT), 'utf8'));
 const definitions = [
   {
     id: 'character-lcd-16x2-4bit', requirementIds: ['CMP-050'],
@@ -51,6 +53,20 @@ const definitions = [
       'board.stm32f429zi-nucleo144-v1': 'component unavailable' },
     firmwareLimits: PCF8574_LCD_HELLO_CARD.limits,
     provenance: 'Original project-owned fixed 0x27 PCF8574 example generated from the committed factory and canonical common project envelope.',
+  },
+  {
+    id: 'avr-character-lcd-20x4-cgram', requirementIds: ['CMP-052', 'CMP-062'],
+    file: 'parallel-hd44780-20x4-cgram.intent-mcu.json',
+    example: { project: lcd20x4Envelope.project },
+    sourceSha256: '4950c66f1669022ffa91528ee5e557bd789833caa08e961bd374c1a8eea63f3e',
+    namedPins: { VCC: '5V', GND: 'GND1', RW: 'GND1', RS: 'D3', E: 'D4',
+      D4: 'D7', D5: 'D8', D6: 'D10', D7: 'D12' },
+    expectedBehavior: 'Four exact 20-column rows render from DDRAM offsets 0x00, 0x40, 0x14 and 0x54, with custom character code 1 showing the programmed 5x8 heart.',
+    profileBehavior: { [AVR]: 'authoring and executable adapter available after a fresh isolated Build',
+      'board.rp2040-pico-v1': 'component unavailable', 'board.esp32-c3-devmodule-v1': 'component unavailable',
+      'board.stm32f429zi-nucleo144-v1': 'component unavailable' },
+    firmwareLimits: 'Partial: AVR-only write-only 4-bit GPIO, eight bounded CGRAM slots; no reads, busy flag, shifts, 8-bit mode, I2C, contrast, backlight or physical timing accuracy.',
+    provenance: 'Original project-owned 20x4/CGRAM example generated through the committed canonical envelope generator.',
   },
 ];
 const outputs = definitions.map((item) => ({ ...item, bytes: envelope(item.example) }));
