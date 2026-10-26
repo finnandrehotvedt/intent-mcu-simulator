@@ -56,7 +56,7 @@
     {
       "id": "avr-quadrature-encoder",
       "requirementIds": [
-        "CMP-027"
+        "CMP-132"
       ],
       "file": "avr-quadrature-encoder.intent-mcu.json",
       "namedPins": {
@@ -65,7 +65,7 @@
         "COM": "GND2"
       },
       "expectedBehavior": "One detent produces ordered 01→00→10→11 clockwise phases and the exact reverse counter-clockwise.",
-      "firmwareLimits": "Ideal AVR-only quadrature phases at fixed 1 ms spacing; no push switch, bounce, acceleration or physical detents.",
+      "firmwareLimits": "CMP-132 only: ideal AVR quadrature phases at fixed 1 ms spacing. This is not CMP-027; it has no push switch, bounce, acceleration or physical detents.",
       "sourceSha256": "f0a3e2f6a9856762285b21ee4e3d51e95c76f9549c2b0dfcdc3c4a9ec98806e3",
       "projectSha256": "a1e757311a301d9ef5932781a4a3a58fbd033615280adde4d1c187ececb02d7b",
       "profileBehavior": {

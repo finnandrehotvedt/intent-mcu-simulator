@@ -21,10 +21,10 @@ const adapters = Object.freeze({ 'board.atmega328p-16mhz-v1': Object.freeze({
   },
 }) });
 
-test('CMP-021/022/027 artifacts are canonical, hashed and profile-bounded', async () => {
+test('CMP-021/022/132 artifacts are canonical, hashed and profile-bounded', async () => {
   const manifest = JSON.parse(await readFile(new URL('manifest.json', ROOT), 'utf8'));
   assert.equal(manifest.schema, 'intent-mcu-input-control-example-manifest@1');
-  assert.deepEqual(manifest.entries.map((entry) => entry.requirementIds).flat(), ['CMP-021', 'CMP-022', 'CMP-027']);
+  assert.deepEqual(manifest.entries.map((entry) => entry.requirementIds).flat(), ['CMP-021', 'CMP-022', 'CMP-132']);
   for (const entry of manifest.entries) {
     const bytes = await readFile(new URL(entry.file, ROOT), 'utf8');
     assert.equal(sha256(bytes), entry.projectSha256, entry.id);
@@ -40,7 +40,7 @@ test('CMP-021/022/027 artifacts are canonical, hashed and profile-bounded', asyn
   }
 });
 
-test('CMP-021/022/027 named wiring is exact', async () => {
+test('CMP-021/022/132 named wiring is exact', async () => {
   const manifest = JSON.parse(await readFile(new URL('manifest.json', ROOT), 'utf8'));
   assert.deepEqual(manifest.entries.map((entry) => entry.namedPins), [
     { A: 'D2', B: 'GND1' },

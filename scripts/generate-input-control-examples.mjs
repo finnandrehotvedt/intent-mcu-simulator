@@ -61,11 +61,11 @@ const definitions = [
     firmwareLimits: 'Ideal AVR-only maintained SPST contact; no bounce, resistance, current rating, arcing or wear.',
   },
   {
-    id: 'avr-quadrature-encoder', requirementIds: ['CMP-027'],
+    id: 'avr-quadrature-encoder', requirementIds: ['CMP-132'],
     file: 'avr-quadrature-encoder.intent-mcu.json', project: encoder.project,
     namedPins: { A: 'D2', B: 'D3', COM: 'GND2' },
     expectedBehavior: 'One detent produces ordered 01→00→10→11 clockwise phases and the exact reverse counter-clockwise.',
-    firmwareLimits: 'Ideal AVR-only quadrature phases at fixed 1 ms spacing; no push switch, bounce, acceleration or physical detents.',
+    firmwareLimits: 'CMP-132 only: ideal AVR quadrature phases at fixed 1 ms spacing. This is not CMP-027; it has no push switch, bounce, acceleration or physical detents.',
   },
 ];
 const outputs = definitions.map((item) => {

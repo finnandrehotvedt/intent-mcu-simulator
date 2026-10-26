@@ -63,7 +63,7 @@ const cases = [
     starter: 'avr-rotary-encoder', component: 'encoder-1', key: 'detent', value: 1,
     mutate: async (page) => page.click('[data-control="encoder-1.cw"]'),
     display: async (page) => assert.match(await page.textContent('.encoder-runtime-control'), /detent 1/u),
-    serial: null, invalid: 1000, artworkSelector: '[data-renderer="input-rotary-encoder-quadrature"] [data-encoder-marker]', requirementId: 'CMP-027',
+    serial: null, invalid: 1000, artworkSelector: '[data-renderer="input-rotary-encoder-quadrature"] [data-encoder-marker]', requirementId: 'CMP-132',
   },
 ];
 const selectedCases = requirementFilter.size
