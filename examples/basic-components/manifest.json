@@ -1,0 +1,78 @@
+{
+  "schema": "intent-mcu-basic-component-example-manifest@1",
+  "entries": [
+    {
+      "id": "avr-series-resistor",
+      "requirementIds": [
+        "CMP-001"
+      ],
+      "file": "avr-blink.intent-mcu.json",
+      "componentType": "resistor.fixed-v1",
+      "namedPins": {
+        "A": "D13",
+        "B": "LED.ANODE"
+      },
+      "value": "220 Ω",
+      "expectedBehavior": "The validated 220 Ω series path limits the ideal D13 LED model.",
+      "limits": "Ideal resistance in supported low-voltage teaching topologies; no tolerance, power or thermal model.",
+      "sourceSha256": "ab478b64ef170c6a43965e3b2d40424caf4d1de85aa9e2467a661c9679c1f127",
+      "projectSha256": "2b94712762974e149bb3f29fea48f46025ac09105c903218fc64ce3546b48fd8",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "bounded LED and resistor authoring/execution available; potentiometer unavailable",
+        "board.esp32-c3-devmodule-v1": "bounded LED and resistor authoring/model output available; potentiometer unavailable",
+        "board.stm32f429zi-nucleo144-v1": "bounded LED and resistor authoring/execution available; potentiometer unavailable"
+      },
+      "provenance": "Original project-owned component artwork, circuit factory, firmware example and canonical project format."
+    },
+    {
+      "id": "avr-analogue-potentiometer",
+      "requirementIds": [
+        "CMP-002"
+      ],
+      "file": "avr-adc.intent-mcu.json",
+      "componentType": "potentiometer.linear-v1",
+      "namedPins": {
+        "HIGH": "5V",
+        "WIPER": "A0",
+        "LOW": "GND1"
+      },
+      "value": "10 kΩ linear",
+      "expectedBehavior": "Turning the control maps linearly from 0–5 V to AVR ADC counts 0–1023.",
+      "limits": "Ideal unloaded linear divider; no tolerance, contact noise, loading or logarithmic taper.",
+      "sourceSha256": "ccbc6a1ad9bdd7b2e3fc7ccec3d60781bf767392039a1c42a471af69a198dea8",
+      "projectSha256": "816740837eb3b463d718dd3d6ba2a992ecc93374c8c711cbfb349fa00da0685a",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "bounded LED and resistor authoring/execution available; potentiometer unavailable",
+        "board.esp32-c3-devmodule-v1": "bounded LED and resistor authoring/model output available; potentiometer unavailable",
+        "board.stm32f429zi-nucleo144-v1": "bounded LED and resistor authoring/execution available; potentiometer unavailable"
+      },
+      "provenance": "Original project-owned component artwork, circuit factory, firmware example and canonical project format."
+    },
+    {
+      "id": "avr-series-led",
+      "requirementIds": [
+        "CMP-037"
+      ],
+      "file": "avr-blink.intent-mcu.json",
+      "componentType": "led.basic-v1",
+      "namedPins": {
+        "ANODE": "220Ω.B",
+        "CATHODE": "GND1"
+      },
+      "value": "red 5 mm",
+      "expectedBehavior": "Compiled D13 HIGH/LOW changes the visible LED and logic trace together.",
+      "limits": "Bounded polarity, series-current and relative-brightness model; no physical optical or thermal accuracy.",
+      "sourceSha256": "ab478b64ef170c6a43965e3b2d40424caf4d1de85aa9e2467a661c9679c1f127",
+      "projectSha256": "2b94712762974e149bb3f29fea48f46025ac09105c903218fc64ce3546b48fd8",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "bounded LED and resistor authoring/execution available; potentiometer unavailable",
+        "board.esp32-c3-devmodule-v1": "bounded LED and resistor authoring/model output available; potentiometer unavailable",
+        "board.stm32f429zi-nucleo144-v1": "bounded LED and resistor authoring/execution available; potentiometer unavailable"
+      },
+      "provenance": "Original project-owned component artwork, circuit factory, firmware example and canonical project format."
+    }
+  ]
+}

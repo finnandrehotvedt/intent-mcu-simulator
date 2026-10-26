@@ -20,6 +20,7 @@
     "test:api03:browser": "node test/browser-session-edit-actual-browser.cjs",
     "test:api04": "node --test --test-concurrency=1 test/browser-session-api04.test.mjs test/browser-session-canonical-edit.test.mjs test/browser-session-relay.test.mjs",
     "test:input-controls": "node scripts/generate-input-control-examples.mjs && node --test --test-concurrency=1 test/input-control-example-artifacts.test.mjs",
+    "test:basic-components": "node scripts/generate-basic-component-examples.mjs && node --test --test-concurrency=1 test/basic-component-example-artifacts.test.mjs",
     "test:top-layout": "node --test --test-concurrency=1 test/shared-workbench-shell.test.mjs test/named-pin-wire-authoring.test.mjs test/three-profile-circuit-authoring.test.mjs test/rp2040-pico-circuit.test.mjs test/esp32c3-public.test.mjs test/stm32-public.test.mjs",
     "test:rc139": "node --test --test-concurrency=1 test/authoring-only-envelope.test.mjs test/three-profile-circuit-authoring.test.mjs",
     "test:rc139:browser": "node test/three-profile-circuit-authoring-browser.cjs",

@@ -61,10 +61,10 @@ const NARROW_AUTHORING_TYPES = new Set(Object.keys(BOUNDED_3V3_UI_COMPONENTS));
 const referenceBindings = deepFreeze({
   [AVR]: {
     [AVR]: { starters: ['blink', 'button', 'adc', 'pwm', 'pwm-pulse', 'temperature-lcd-threshold', 'avr-thermostat-boundary-v1'], tests: ['test/circuit-model.test.mjs', 'test/starter-examples.cjs'] },
-    [LED]: { starters: ['blink', 'pwm', 'pwm-pulse', 'avr-thermostat-boundary-v1'], tests: ['test/circuit-model.test.mjs', 'test/starter-examples.cjs'] },
-    [RESISTOR]: { starters: ['blink', 'pwm', 'pwm-pulse', 'temperature-lcd-threshold', 'avr-thermostat-boundary-v1'], tests: ['test/circuit-model.test.mjs', 'test/starter-examples.cjs'] },
+    [LED]: { starters: ['blink', 'pwm', 'pwm-pulse', 'avr-thermostat-boundary-v1'], tests: ['test/circuit-model.test.mjs', 'test/starter-examples.cjs', 'test/basic-component-example-artifacts.test.mjs'] },
+    [RESISTOR]: { starters: ['blink', 'pwm', 'pwm-pulse', 'temperature-lcd-threshold', 'avr-thermostat-boundary-v1'], tests: ['test/circuit-model.test.mjs', 'test/starter-examples.cjs', 'test/basic-component-example-artifacts.test.mjs'] },
     'button.momentary-v1': { starters: ['button', 'avr-thermostat-boundary-v1'], tests: ['test/circuit-model.test.mjs', 'test/starter-examples.cjs', 'test/input-control-example-artifacts.test.mjs'] },
-    'potentiometer.linear-v1': { starters: ['adc'], tests: ['test/circuit-model.test.mjs', 'test/starter-examples.cjs'] },
+    'potentiometer.linear-v1': { starters: ['adc'], tests: ['test/circuit-model.test.mjs', 'test/starter-examples.cjs', 'test/basic-component-example-artifacts.test.mjs'] },
     'reference.ground-v1': { starters: ['avr-ground-reference-input'], tests: ['test/candidate-draft-runnable-transition.test.mjs'] },
     'switch.toggle-spst-v1': { starters: ['avr-toggle-input'], tests: ['test/candidate-draft-runnable-transition.test.mjs', 'test/input-control-example-artifacts.test.mjs'] },
     'switch.changeover-spdt-v1': { starters: ['avr-spdt-selector'], tests: ['test/candidate-draft-runnable-transition.test.mjs'] },
