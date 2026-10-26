@@ -19,7 +19,7 @@ const adapters = Object.freeze({ [AVR]: adapter });
 
 test('committed CMP-050, CMP-051, CMP-052 and CMP-062 files are exact current common envelopes', async () => {
   const manifest = JSON.parse(await readFile(new URL('manifest.json', root), 'utf8'));
-  assert.equal(manifest.schema, 'intent-mcu-lcd-example-manifest@2');
+  assert.equal(manifest.schema, 'intent-mcu-lcd-example-manifest@3');
   assert.equal(manifest.profile, AVR);
   assert.deepEqual(manifest.entries.map((entry) => entry.requirementIds[0]), ['CMP-050', 'CMP-051', 'CMP-052']);
   for (const entry of manifest.entries) {
@@ -32,9 +32,27 @@ test('committed CMP-050, CMP-051, CMP-052 and CMP-062 files are exact current co
     assert.equal(opened.ok, true, `${entry.id}:${opened.code}`);
     assert.equal(opened.prepared.runnable.ok, true, `${entry.id}:${opened.prepared.runnable.code}`);
     assert(entry.sourceSha256?.length === 64);
+    assert.deepEqual(entry.sourceFiles, raw.project.project.source.files.map(({ name, content }) => ({
+      name, sha256: createHash('sha256').update(content).digest('hex'),
+    })));
+    assert.equal(entry.sourceFiles[0].sha256, entry.sourceSha256);
     assert(Object.keys(entry.namedPins).length >= 4);
     assert.equal(Object.keys(entry.profileBehavior).length, 4);
     assert(entry.expectedBehavior.length > 20 && entry.firmwareLimits.length > 20 && entry.provenance.length > 20);
+    assert(entry.participatingComponentIds.includes('board-1'));
+    const lcdComponentId = entry.id === 'pcf8574-lcd-backpack' ? 'pcf8574-lcd-1' : 'character-lcd-1';
+    assert(entry.participatingComponentIds.includes(lcdComponentId));
+    assert.equal(entry.participatingNets.length, new Set(Object.values(entry.namedPins)).size);
+    const actualNets = raw.project.candidateCircuit.nets
+      .filter((net) => net.endpoints.some((endpoint) => endpoint.component === lcdComponentId))
+      .map((net) => ({ id: net.id, endpoints: net.endpoints.map(({ component, pin }) => `${component}.${pin}`) }));
+    assert.deepEqual(entry.participatingNets, actualNets);
+    for (const net of entry.participatingNets) {
+      assert(net.endpoints.some((endpoint) => endpoint.startsWith('board-1.')),
+        `${entry.id}:${net.id} has no controller endpoint`);
+      assert(net.endpoints.some((endpoint) => endpoint.startsWith(`${lcdComponentId}.`)),
+        `${entry.id}:${net.id} has no LCD endpoint`);
+    }
   }
   const backpack = manifest.entries.find((entry) => entry.id === 'pcf8574-lcd-backpack');
   assert.equal(backpack.previousProjectSha256, '6d4c8d6a1f42a251c441ec6bc811066397c0a17be731be52a63c60e80d1e3e75');

@@ -1,5 +1,5 @@
 {
-  "schema": "intent-mcu-lcd-example-manifest@2",
+  "schema": "intent-mcu-lcd-example-manifest@3",
   "profile": "board.atmega328p-16mhz-v1",
   "modelLibrary": {
     "schema": "intent-mcu-model-library-lock@2",
@@ -37,6 +37,80 @@
       },
       "firmwareLimits": "Ideal sensor, display and RGB subset; no physical timing or current model.",
       "provenance": "Original project-owned direct 4-bit LCD example generated from the committed factory and canonical common project envelope.",
+      "participatingComponentIds": [
+        "board-1",
+        "character-lcd-1",
+        "rgb-led-1",
+        "temperature-sensor-1"
+      ],
+      "participatingNets": [
+        {
+          "id": "net-example-5v",
+          "endpoints": [
+            "board-1.5V",
+            "character-lcd-1.VCC",
+            "temperature-sensor-1.VCC"
+          ]
+        },
+        {
+          "id": "net-example-ground",
+          "endpoints": [
+            "board-1.GND1",
+            "character-lcd-1.GND",
+            "character-lcd-1.RW",
+            "rgb-led-1.COM",
+            "temperature-sensor-1.GND"
+          ]
+        },
+        {
+          "id": "net-example-lcd-d4",
+          "endpoints": [
+            "board-1.D7",
+            "character-lcd-1.D4"
+          ]
+        },
+        {
+          "id": "net-example-lcd-d5",
+          "endpoints": [
+            "board-1.D8",
+            "character-lcd-1.D5"
+          ]
+        },
+        {
+          "id": "net-example-lcd-d6",
+          "endpoints": [
+            "board-1.D10",
+            "character-lcd-1.D6"
+          ]
+        },
+        {
+          "id": "net-example-lcd-d7",
+          "endpoints": [
+            "board-1.D12",
+            "character-lcd-1.D7"
+          ]
+        },
+        {
+          "id": "net-example-lcd-e",
+          "endpoints": [
+            "board-1.D4",
+            "character-lcd-1.E"
+          ]
+        },
+        {
+          "id": "net-example-lcd-rs",
+          "endpoints": [
+            "board-1.D3",
+            "character-lcd-1.RS"
+          ]
+        }
+      ],
+      "sourceFiles": [
+        {
+          "name": "main.ino",
+          "sha256": "b44d1fb8110182417c70fc39e85153d7e557c673eecb201c72acab2a4fd8b07c"
+        }
+      ],
       "projectSha256": "89dabf0d43b0f566f52ba55505da1848b67610d4089311fd45a9370d535102ba"
     },
     {
@@ -62,6 +136,55 @@
       },
       "firmwareLimits": "Partial: AVR-only, fixed address and mapping, write-only ASCII subset; no arbitrary Wire compatibility.",
       "provenance": "Original project-owned fixed 0x27 PCF8574 example generated from the committed factory and canonical common project envelope.",
+      "participatingComponentIds": [
+        "board-1",
+        "button-1",
+        "led-1",
+        "led-2",
+        "pcf8574-lcd-1",
+        "pot-1"
+      ],
+      "participatingNets": [
+        {
+          "id": "net-5v",
+          "endpoints": [
+            "board-1.5V",
+            "pcf8574-lcd-1.VCC",
+            "pot-1.HIGH"
+          ]
+        },
+        {
+          "id": "net-ground-branch",
+          "endpoints": [
+            "board-1.GND1",
+            "button-1.B",
+            "led-1.CATHODE",
+            "led-2.CATHODE",
+            "pcf8574-lcd-1.GND",
+            "pot-1.LOW"
+          ]
+        },
+        {
+          "id": "net-pcf-example-scl",
+          "endpoints": [
+            "board-1.A5",
+            "pcf8574-lcd-1.SCL"
+          ]
+        },
+        {
+          "id": "net-pcf-example-sda",
+          "endpoints": [
+            "board-1.A4",
+            "pcf8574-lcd-1.SDA"
+          ]
+        }
+      ],
+      "sourceFiles": [
+        {
+          "name": "main.ino",
+          "sha256": "4fdce12246f4eb202259a492795ac93f5b59ce56678c357dbb30120ca3e6c809"
+        }
+      ],
       "projectSha256": "cb80d4128bf767322cb334385587596980952a5d295e9e42e0cecd636cd90e47"
     },
     {
@@ -92,6 +215,80 @@
       },
       "firmwareLimits": "Partial: AVR-only write-only 4-bit GPIO, eight bounded CGRAM slots; no reads, busy flag, shifts, 8-bit mode, I2C, contrast, backlight or physical timing accuracy.",
       "provenance": "Original project-owned 20x4/CGRAM example generated through the committed canonical envelope generator.",
+      "participatingComponentIds": [
+        "board-1",
+        "character-lcd-1",
+        "rgb-led-1",
+        "temperature-sensor-1"
+      ],
+      "participatingNets": [
+        {
+          "id": "net-example-5v",
+          "endpoints": [
+            "board-1.5V",
+            "character-lcd-1.VCC",
+            "temperature-sensor-1.VCC"
+          ]
+        },
+        {
+          "id": "net-example-ground",
+          "endpoints": [
+            "board-1.GND1",
+            "character-lcd-1.GND",
+            "character-lcd-1.RW",
+            "rgb-led-1.COM",
+            "temperature-sensor-1.GND"
+          ]
+        },
+        {
+          "id": "net-example-lcd-d4",
+          "endpoints": [
+            "board-1.D7",
+            "character-lcd-1.D4"
+          ]
+        },
+        {
+          "id": "net-example-lcd-d5",
+          "endpoints": [
+            "board-1.D8",
+            "character-lcd-1.D5"
+          ]
+        },
+        {
+          "id": "net-example-lcd-d6",
+          "endpoints": [
+            "board-1.D10",
+            "character-lcd-1.D6"
+          ]
+        },
+        {
+          "id": "net-example-lcd-d7",
+          "endpoints": [
+            "board-1.D12",
+            "character-lcd-1.D7"
+          ]
+        },
+        {
+          "id": "net-example-lcd-e",
+          "endpoints": [
+            "board-1.D4",
+            "character-lcd-1.E"
+          ]
+        },
+        {
+          "id": "net-example-lcd-rs",
+          "endpoints": [
+            "board-1.D3",
+            "character-lcd-1.RS"
+          ]
+        }
+      ],
+      "sourceFiles": [
+        {
+          "name": "main.ino",
+          "sha256": "4950c66f1669022ffa91528ee5e557bd789833caa08e961bd374c1a8eea63f3e"
+        }
+      ],
       "projectSha256": "bf6ab319ed1782eae4a24fe68d7037d3926e13be3a8d50b04829e364399897ed"
     }
   ]

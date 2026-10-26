@@ -27,6 +27,23 @@ const adapters = Object.freeze({ [AVR]: adapter });
 function envelope(example) {
   return canonicalProjectEnvelope(AVR, example.project, adapters, emptyProjectBrief(), null, CURRENT_MODEL_LIBRARY_LOCK);
 }
+function participation(bytes, componentId = 'character-lcd-1') {
+  const document = JSON.parse(bytes);
+  const circuit = document.project.candidateCircuit;
+  const sourceFiles = document.project.project.source.files;
+  const participatingNets = circuit.nets
+    .filter((net) => net.endpoints.some((endpoint) => endpoint.component === componentId))
+    .map((net) => ({ id: net.id, endpoints: net.endpoints.map(({ component, pin }) => `${component}.${pin}`) }));
+  const componentIds = new Set([componentId]);
+  for (const net of participatingNets) {
+    for (const endpoint of net.endpoints) componentIds.add(endpoint.slice(0, endpoint.lastIndexOf('.')));
+  }
+  return {
+    participatingComponentIds: [...componentIds].sort(),
+    participatingNets,
+    sourceFiles: sourceFiles.map(({ name, content }) => ({ name, sha256: sha256(content) })),
+  };
+}
 const directSourceSha256 = sha256(TEMPERATURE_LCD_THRESHOLD_SOURCE);
 const lcd20x4Envelope = JSON.parse(await readFile(new URL(
   'parallel-hd44780-20x4-cgram.intent-mcu.json', ROOT), 'utf8'));
@@ -45,6 +62,7 @@ const definitions = [
   },
   {
     id: 'pcf8574-lcd-backpack', requirementIds: ['CMP-051'],
+    participantComponentId: 'pcf8574-lcd-1',
     file: 'pcf8574-0x27-lcd.intent-mcu.json', previousProjectSha256: '6d4c8d6a1f42a251c441ec6bc811066397c0a17be731be52a63c60e80d1e3e75',
     example: createPcf8574LcdHelloExample(), sourceSha256: PCF8574_LCD_HELLO_SOURCE_SHA256,
     namedPins: PCF8574_LCD_HELLO_CARD.namedPins, expectedBehavior: PCF8574_LCD_HELLO_CARD.observe,
@@ -70,9 +88,11 @@ const definitions = [
   },
 ];
 const outputs = definitions.map((item) => ({ ...item, bytes: envelope(item.example) }));
-const manifest = { schema: 'intent-mcu-lcd-example-manifest@2', profile: AVR,
+const manifest = { schema: 'intent-mcu-lcd-example-manifest@3', profile: AVR,
   modelLibrary: CURRENT_MODEL_LIBRARY_LOCK,
-  entries: outputs.map(({ example, bytes, ...item }) => ({ ...item, projectSha256: sha256(bytes) })) };
+  entries: outputs.map(({ example, bytes, participantComponentId, ...item }) => ({
+    ...item, ...participation(bytes, participantComponentId), projectSha256: sha256(bytes),
+  })) };
 for (const item of outputs) {
   const opened = prepareProjectEnvelope(item.bytes, adapters);
   if (!opened.ok) throw new Error(`${item.id}:${opened.code}`);
