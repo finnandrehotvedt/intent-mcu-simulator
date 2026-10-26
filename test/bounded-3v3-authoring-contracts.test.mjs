@@ -8,6 +8,7 @@ import {
 import { RP2040_PICO_BOARD_DEFINITION, RP2040_PICO_PROFILE } from '../src/rp2040-pico-circuit.mjs';
 import { ESP32C3_BOARD_DEFINITION, ESP32C3_PUBLIC_PROFILE } from '../src/esp32c3-public-circuit.mjs';
 import { STM32_BOARD_DEFINITION, STM32_PUBLIC_PROFILE } from '../src/stm32-public-circuit.mjs';
+import { defaultControls, defaultProperties } from '../src/component-catalog.mjs';
 
 test('four explicit 3.3 V contracts are separately versioned and authoring-only', () => {
   assert.equal(BOUNDED_3V3_AUTHORING_CONTRACTS.schema, 'intent-mcu-bounded-3v3-authoring@1');
@@ -21,6 +22,8 @@ test('four explicit 3.3 V contracts are separately versioned and authoring-only'
 });
 
 test('potentiometer contract requires bounded resistance and a linear taper', () => {
+  assert.deepEqual(defaultProperties(POTENTIOMETER_3V3_TYPE), { ohms: 10_000, taper: 'linear' });
+  assert.deepEqual(defaultControls(POTENTIOMETER_3V3_TYPE), {});
   const board = RP2040_PICO_BOARD_DEFINITION;
   const graph = (properties) => validateBounded3v3AuthoringGraph({ board, components: [
     { id: 'pico-1', type: RP2040_PICO_PROFILE },

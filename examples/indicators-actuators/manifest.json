@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-lcd-20x4-cgram.1-current",
-    "manifestSha256": "de26dcbfdd3f4d1b806bd19056171f74e9aee910f408a03ce93bba9c60fcaf3e",
-    "implementationSha256": "ec07e66782087d500af6675c047a62737d7cdc42c7aeb9faa87d9870fbcf96eb"
+    "manifestSha256": "7703f731bd8584ca61f9b5fd6e67da9b9c1b69d6e17d628d7b47d6121c83af44",
+    "implementationSha256": "640be6f503c932dfb2692808d65f24057a6b057671fc2f381aa017332adb4b24"
   },
   "entries": [
     {
@@ -25,7 +25,7 @@
       "expectedBehavior": "Three independently current-limited compiled PWM outputs produce a visible relative RGB mix.",
       "firmwareLimits": "Ideal common-cathode relative PWM colour only; no wavelength, luminous intensity, current matching or thermal accuracy.",
       "sourceSha256": "b44d1fb8110182417c70fc39e85153d7e557c673eecb201c72acab2a4fd8b07c",
-      "projectSha256": "081566f6c3d32b83bf68e3a78c6233c29338bbaa1849070c9a23d23dc4e55677",
+      "projectSha256": "a2e3e9f5cd99dc492f1c9f6bb5d4c784c1bc174b4dd08d618e84038e2192154d",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "this exact component model is unavailable",
@@ -54,7 +54,7 @@
       "expectedBehavior": "Compiled segment patterns display 0, 1, 2 and 8 and agree with Serial labels.",
       "firmwareLimits": "One ideal common-cathode digit; no decimal point, multiplexing, driver IC or physical brightness.",
       "sourceSha256": "1e75cd6f5afd21941f923cb8d845356456645d1231bd4381208326520b2c28a0",
-      "projectSha256": "ed86ffd9be2dd9c223c3360160df34dff1c4375acdb0830995e68b4f39f26a52",
+      "projectSha256": "43a1b75dc7618d58adc5a195e761d2698d6c258e701313b6b57dde5e5f40b4ca",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "this exact component model is unavailable",
@@ -78,7 +78,7 @@
       "expectedBehavior": "Compiled D8 alternates the visible enabled/disabled state and matching Serial BUZZER ON/OFF lines.",
       "firmwareLimits": "Silent logical indicator only; no browser audio, oscillator, frequency, sound pressure or physical current model.",
       "sourceSha256": "0b598076ab9afc84f5c3a79e2b438288d289c5ded30d28b553f4b86c5992adc8",
-      "projectSha256": "f242b21ee5e155cf6fb14f66ec6f9d2a2cf037834c2d0e4e2b62e15caba3d70e",
+      "projectSha256": "3cc8f6db084d257fd1e0894204b085fea7f77bb6016d4dcb344b3db8011f8bbe",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "this exact component model is unavailable",

@@ -369,6 +369,7 @@ export function defaultProperties(type) {
   if (type === 'resistor.fixed-v1') return { ohms: 220 };
   if (type === 'button.momentary-v1') return { normallyOpen: true };
   if (type === 'potentiometer.linear-v1') return { ohms: 10_000, taper: 'linear' };
+  if (type === 'potentiometer.linear-3v3-v1') return { ohms: 10_000, taper: 'linear' };
   if (type === 'terminal.serial-uart-v1') return { baud: 9_600, encoding: 'utf-8', historyLimit: 512 };
   throw new Error(`Unknown component type: ${type}`);
 }
@@ -376,6 +377,7 @@ export function defaultProperties(type) {
 export function defaultControls(type) {
   if (type === 'button.momentary-v1') return { pressed: false };
   if (type === 'potentiometer.linear-v1') return { position: 0.5 };
+  if (type === 'potentiometer.linear-3v3-v1') return {};
   if (catalogType(type)) return {};
   throw new Error(`Unknown component type: ${type}`);
 }
