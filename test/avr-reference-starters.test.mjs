@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import './input-control-example-artifacts.test.mjs';
 import './basic-component-example-artifacts.test.mjs';
+import './indicator-actuator-example-artifacts.test.mjs';
 import { avrReferenceStarterCatalog, createAvrReferenceStarter } from '../src/avr-reference-starters.mjs';
 import { componentReferenceInventory } from '../src/component-support-matrix.mjs';
 import { openCandidateUiSession } from '../src/candidate-existing-ui-adapter.mjs';
