@@ -135085,7 +135085,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "bb564251ff3133a48b621a41ef8229324ae617f23ca73bc19efa2f6b52402aa8"
+      "sha256": "b0b83357ea8505ea158c6ef3e2c3f0006dd779fe21a6f4e4821bdadc26272f3e"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -135240,7 +135240,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "f7cd16498d64867c71de97588f25c995051b210b2f4ea357b357ff93a1aa377a"
     }
   ],
-  "implementationSha256": "321f7d3f4135ff73e2e4104b0250547a7a49a7e4218056f8958f000708c445b4",
+  "implementationSha256": "51acf15d529b8c16cc2e0735bc232a012fd23e14a757e383f45330612e8f2a36",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -135250,7 +135250,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR TWI write observation and fixed-address PCF8574 LCD semantics while retaining every prior component contract"
   },
-  "manifestSha256": "c42786d73800d24ac7c8a9c7193e4fbc9a9a1195904a3a6506527d19e2af2d62",
+  "manifestSha256": "e65d471ca57a11395e116274b51cb6072457d61e015b004c4f91598aeef50919",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

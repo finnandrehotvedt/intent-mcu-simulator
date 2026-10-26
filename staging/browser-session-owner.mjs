@@ -7,6 +7,7 @@ import { RP2040_PICO_BOARD_DEFINITION, RP2040_PICO_COMPONENT_CATALOG, validateRp
 import { ESP32C3_BOARD_DEFINITION, ESP32C3_PUBLIC_COMPONENT_CATALOG, validateEsp32C3Circuit } from '../src/esp32c3-public-circuit.mjs';
 import { STM32_BOARD_DEFINITION, STM32_PUBLIC_COMPONENT_CATALOG, validateStm32Circuit } from '../src/stm32-public-circuit.mjs';
 import { BOUNDED_3V3_UI_COMPONENTS, validateBounded3v3AuthoringGraph } from '../src/bounded-3v3-authoring-contracts.mjs';
+import { CANDIDATE_UI_COMPONENTS } from '../src/candidate-existing-ui-adapter.mjs';
 import { API03_PROFILE_MATRIX, prepareApiBatch, summarizeApiChanges } from '../src/browser-session-edit.mjs';
 import { API_SESSION_CLIENT_URL, API_SESSION_PROTOCOL_URL,
   CODEX_PAIRING_INSTRUCTIONS } from '../src/browser-session-codex-instructions.mjs';
@@ -26,11 +27,20 @@ const workbenchFor = (profile) => ({
   'board.stm32f429zi-nucleo144-v1': window.__STM32_PUBLIC_WORKBENCH__,
 })[profile] ?? null;
 const catalogueFor = (profile) => ({
-  'board.atmega328p-16mhz-v1': COMPONENT_CATALOG,
+  'board.atmega328p-16mhz-v1': { ...COMPONENT_CATALOG, ...CANDIDATE_UI_COMPONENTS },
   'board.rp2040-pico-v1': { ...COMPONENT_CATALOG, ...RP2040_PICO_COMPONENT_CATALOG, ...BOUNDED_3V3_UI_COMPONENTS },
   'board.esp32-c3-devmodule-v1': { ...COMPONENT_CATALOG, ...ESP32C3_PUBLIC_COMPONENT_CATALOG, ...BOUNDED_3V3_UI_COMPONENTS },
   'board.stm32f429zi-nucleo144-v1': { ...COMPONENT_CATALOG, ...STM32_PUBLIC_COMPONENT_CATALOG, ...BOUNDED_3V3_UI_COMPONENTS },
 })[profile] ?? null;
+const apiCatalogueFor = (profile) => Object.fromEntries(Object.entries(catalogueFor(profile) ?? {}).map(
+  ([type, definition]) => [type, {
+    type,
+    displayName: definition.displayName,
+    pins: definition.pins.map(({ id, label }) => ({ id, label })),
+    propertyKeys: structuredClone(definition.propertyKeys ?? []),
+    propertySchema: structuredClone(definition.propertySchema ?? {}),
+  }],
+));
 const projectNameId = (profile) => ({ 'board.rp2040-pico-v1': 'pico-project-name',
   'board.esp32-c3-devmodule-v1': 'c3-project-name',
   'board.stm32f429zi-nucleo144-v1': 'stm32-project-name' })[profile];
@@ -41,7 +51,8 @@ async function snapshot() {
     const canonical = window.__BROWSER_SESSION_CANONICAL_OWNER__?.snapshot?.();
     if (canonical?.ok) return { profile, project: canonical.project,
       projectId: canonical.projectId, revision: canonical.revision,
-      supportsEdit: canonical.supportsEdit, fingerprint: canonical.projectId };
+      supportsEdit: canonical.supportsEdit, fingerprint: canonical.projectId,
+      candidateValidation: canonical.candidateValidation };
     project = window.__M6_PROJECT__?.() ?? null;
   }
   else {
@@ -80,6 +91,11 @@ function execute(request, current, context) {
     return { status: 'accepted', code: 'API_COMPONENT_PINS_LISTED', component_id: component.id, pins };
   }
   if (request.command === 'circuit.validate') {
+    if (current.candidateValidation) return { status: 'accepted', code: 'API_VALIDATION_READ_ONLY',
+      validation: current.candidateValidation.runtime,
+      authoring: current.candidateValidation.authoring,
+      runtime: current.candidateValidation.runtime,
+      executable: current.candidateValidation.executable };
     const validators = { 'board.atmega328p-16mhz-v1': validateCircuit,
       'board.rp2040-pico-v1': validateRp2040PicoCircuit,
       'board.esp32-c3-devmodule-v1': validateEsp32C3Circuit,
@@ -138,7 +154,7 @@ function execute(request, current, context) {
     scopes: ['discover', 'read_project', 'edit_circuit'], profile_matrix: API03_PROFILE_MATRIX };
   if (request.command === 'components.catalog') {
     return { status: 'accepted', code: 'API_CATALOG_LISTED', profile: current.profile,
-      components: catalogueFor(current.profile) ?? {} };
+      components: apiCatalogueFor(current.profile) };
   }
   return { status: 'rejected', code: 'API_COMMAND_UNSUPPORTED' };
 }

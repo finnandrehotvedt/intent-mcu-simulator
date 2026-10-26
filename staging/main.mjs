@@ -16153,9 +16153,15 @@ window.__M6_PROJECT__ = () => JSON.parse(currentProjectText());
 window.__BROWSER_SESSION_CANONICAL_OWNER__ = Object.freeze({
   snapshot: () => {
     if (selectedCompilerProfile !== AVR_PROFILE) return { ok: false, code: 'API_PROFILE_READ_ONLY' };
+    const candidateValidation = editor.kind === 'candidate-project-v3' ? {
+      authoring: { ok: true, code: 'CANDIDATE_PROJECT_ACCEPTED', details: [] },
+      runtime: editor.runnable,
+      executable: editor.runnable.ok === true,
+    } : null;
     return { ok: true, profile: AVR_PROFILE,
       projectId: `project-avr-${Math.max(1, lifecycle.projectGeneration)}`,
       revision: editor.revision, project: structuredClone(currentProject()),
+      candidateValidation: structuredClone(candidateValidation),
       supportsEdit: (editor instanceof ProjectEditorReducer || editor.kind === 'candidate-project-v3')
         && boundedSubcircuits.instances.length === 0 };
   },
