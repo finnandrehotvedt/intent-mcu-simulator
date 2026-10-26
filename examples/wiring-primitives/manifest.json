@@ -1,0 +1,39 @@
+{
+  "schema": "intent-mcu-wiring-primitive-example-manifest@1",
+  "entries": [
+    {
+      "id": "avr-explicit-junction-crossing",
+      "requirementIds": [
+        "CMP-019"
+      ],
+      "file": "avr-explicit-junction-crossing.intent-mcu.json",
+      "profile": "board.atmega328p-16mhz-v1",
+      "projectSha256": "8dac22fe48e00dfad1aa5bf8e6c1d6d7d1b992c5656b4b93c807c53680b18467",
+      "junction": {
+        "id": "junction-ground",
+        "netId": "net-ground-branch",
+        "endpointKeys": [
+          "board-1.GND1",
+          "button-1.B",
+          "ground-reference-1.REF",
+          "led-1.CATHODE",
+          "led-2.CATHODE",
+          "pot-1.LOW"
+        ]
+      },
+      "crossing": {
+        "netIds": [
+          "net-ground-branch",
+          "net-button-d2"
+        ],
+        "point": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "electricallyConnected": false
+      },
+      "expectedBehavior": "Only the declared ground junction joins branches; the D2 route crossing at the same drawing point remains a separate net.",
+      "limits": "A junction is an explicit graph operation, not a decorative component. Route crossings never infer electrical identity."
+    }
+  ]
+}
