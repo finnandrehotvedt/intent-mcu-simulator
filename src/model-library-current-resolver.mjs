@@ -206,6 +206,13 @@ export const PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION =
   migrationOnly: true,
 });
 
+export const PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48-migration',
+  manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
+  migrationOnly: true,
+});
+
 export const PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
   ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
   id: 'intent-mcu-model-bundle-current-x46-usart-config-producer-2@44',

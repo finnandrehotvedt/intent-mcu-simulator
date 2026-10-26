@@ -25,6 +25,7 @@ import {
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_LOCK,
   RC113_CURRENT_MODEL_LIBRARY_LOCK,
   RC120_CURRENT_MODEL_LIBRARY_LOCK,
@@ -147,6 +148,19 @@ test('locks resolve only against the trusted catalogue, never a supplied self-ha
     'MODEL_LIBRARY_LOCK_SHAPE');
 });
 
+test('the immediately preceding LCD lock reopens losslessly as migration-only data', () => {
+  assert.equal(PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256,
+    '1e2e94a3d88ce7bcc50a058536858897578b6cc3e13f5b4936a7a6003b11fe1f');
+  assert.equal(PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK.implementationSha256,
+    'be66fe9d85d39c439540c979504ba762b3918811c05a8a540dffc83842c33b41');
+  const resolved = resolveModelLibrary(PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(resolved.ok, true);
+  assert.equal(resolved.role, 'pre-lcd-api-duplicate-fix-current-migration');
+  assert.equal(resolved.implementation.migrationOnly, true);
+  assert.equal(modelLibraryExecutionIdentity(PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK).code,
+    'MODEL_LIBRARY_MIGRATION_REQUIRED');
+});
+
 test('self-rehashed mutations of every manifest identity class remain untrusted', () => {
   const current = trustedModelLibraryManifests()[1];
   const resistorIndex = current.entries.findIndex((entry) => entry.componentType === 'resistor.fixed-v1');
@@ -210,7 +224,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
 
 test('prior current locks remain exact and data-migratable but cannot authorize execution', () => {
   const historical = historicalModelLibraryManifests();
-  assert.equal(historical.length, 38);
+  assert.equal(historical.length, 39);
   for (const manifest of historical.slice(1)) {
     const lock = { schema: 'intent-mcu-model-library-lock@2', libraryId: manifest.libraryId,
       version: manifest.version, manifestSha256: manifest.manifestSha256,

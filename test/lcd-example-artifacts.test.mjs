@@ -5,7 +5,10 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { openCandidateUiSession } from '../src/candidate-existing-ui-adapter.mjs';
-import { RETAINED_MODEL_LIBRARY_LOCK, resolveModelLibrary } from '../src/model-library.mjs';
+import {
+  PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK,
+  RETAINED_MODEL_LIBRARY_LOCK, resolveModelLibrary,
+} from '../src/model-library.mjs';
 import { prepareProjectEnvelope } from '../src/project-envelope.mjs';
 
 const root = new URL('../examples/lcd/', import.meta.url);
@@ -77,4 +80,17 @@ test('raw new-PCF candidate remains rejected by retained legacy admission', asyn
   const result = retained.implementation.openCandidateUiSession(rawCandidate);
   assert.equal(result.ok, false);
   assert.equal(result.code, 'PROJECT_CONTACT_UNKNOWN_COMPONENT');
+});
+
+test('the preceding valid LCD export reopens losslessly with runtime authority cleared', async () => {
+  const current = JSON.parse(await readFile(new URL('parallel-hd44780-20x4-cgram.intent-mcu.json', root), 'utf8'));
+  current.modelLibrary = structuredClone(PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK);
+  const priorBytes = JSON.stringify(current);
+  const opened = prepareProjectEnvelope(priorBytes, adapters);
+  assert.equal(opened.ok, true, opened.code);
+  assert.equal(opened.report.modelLibrary.migrationAvailable, true);
+  assert.equal(opened.report.modelLibrary.executableAuthority, false);
+  assert.deepEqual(opened.project.candidateCircuit, current.project.candidateCircuit);
+  assert.deepEqual(opened.project.candidateLayout, current.project.candidateLayout);
+  assert.deepEqual(opened.project.project.source, current.project.project.source);
 });
