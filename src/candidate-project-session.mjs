@@ -447,7 +447,9 @@ export class CandidateEditorSession {
           break;
         }
         case 'component.duplicate': {
-          if (!exactCommand(command, ['sourceId', 'newId'])
+          const hasPosition = Object.hasOwn(command, 'position');
+          if (!exactCommand(command, hasPosition ? ['sourceId', 'newId', 'position'] : ['sourceId', 'newId'])
+              || (hasPosition && !validPoint(command.position))
               || typeof command.newId !== 'string' || command.newId.length === 0) {
             return failure('EDITOR_COMMAND_SHAPE', this.revision);
           }
@@ -466,7 +468,7 @@ export class CandidateEditorSession {
           copy.label = `${source.label} copy`;
           draft.candidateCircuit.components.push(copy);
           const position = draft.candidateLayout.positions[source.id];
-          draft.candidateLayout.positions[copy.id] = {
+          draft.candidateLayout.positions[copy.id] = hasPosition ? clone(command.position) : {
             x: Math.min(0.93, Math.max(0.07, position.x + 0.04)),
             y: Math.min(0.92, Math.max(0.08, position.y + 0.04)),
             rotation: position.rotation,

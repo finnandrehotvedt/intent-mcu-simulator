@@ -135283,7 +135283,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "c3b631af9ad826562f0a23d2c46a74a9c683d85aef8870f3f9352d57e2579ab1"
+      "sha256": "a861a368af4163f24708f79e28fedeb0bcfd760d0fa9cde17fca100417918d05"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -135414,7 +135414,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "cd22f6416210b8c733524c52c5a4cb332531c87d5e93982b24853087ab7215ed"
     }
   ],
-  "implementationSha256": "be66fe9d85d39c439540c979504ba762b3918811c05a8a540dffc83842c33b41",
+  "implementationSha256": "667395a6aaa5fa4c1f7e4aa00853d55c30fd481d661fc8bd7d987a5a2945ca70",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -135424,7 +135424,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract"
   },
-  "manifestSha256": "1e2e94a3d88ce7bcc50a058536858897578b6cc3e13f5b4936a7a6003b11fe1f",
+  "manifestSha256": "8ad3ab7f854764cb1974f2f893d0497cfe610a47335dcccfd1a1aac8ebbebb09",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",
