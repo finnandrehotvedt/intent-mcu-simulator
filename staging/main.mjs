@@ -507,6 +507,7 @@ const elements = Object.fromEntries([
   'local-history-confirm-title', 'local-history-confirm-description', 'local-history-confirm-status',
   'local-history-confirm-cancel', 'local-history-confirm-accept',
   'project-reload', 'browser-draft-recovery', 'project-draft-recovery', 'project-draft-recover',
+  'project-draft-download',
   'project-draft-recovery-status', 'project-export', 'project-import',
   'project-import-mode', 'undo', 'redo', 'prompt-generate', 'prompt-copy', 'prompt-output', 'prompt-response',
   'prompt-mode', 'prompt-apply', 'prompt-message', 'component-controls',
@@ -11359,6 +11360,7 @@ function renderDraftRecoveryChoices() {
     choices.length ? 'Choose any preserved browser draft…' : 'No local drafts found', '', true, true,
   ), ...choices.map((item) => new Option(preservedDraftLabel(item), item.key)));
   elements.projectdraftrecover.disabled = true;
+  elements.projectdraftdownload.disabled = true;
 }
 function registerActiveDraft(name) {
   if (!activeDraftId) return;
@@ -15893,6 +15895,7 @@ function installPreservedDraftCopy(draft) {
 }
 elements.projectdraftrecovery.addEventListener('change', () => {
   elements.projectdraftrecover.disabled = !elements.projectdraftrecovery.value;
+  elements.projectdraftdownload.disabled = !elements.projectdraftrecovery.value;
 });
 function presentDraftRecoveryStatus(message) {
   elements.projectdraftrecoverystatus.textContent = message;
@@ -15945,6 +15948,20 @@ elements.projectdraftrecover.addEventListener('click', () => {
     actionLabel: `opening a preserved ${RECOVERY_PROFILE_LABELS[profile] ?? profile} copy in a separate draft`,
     continueAction: recover })) return;
   recover();
+});
+elements.projectdraftdownload.addEventListener('click', async () => {
+  const draft = preservedDrafts().find((candidate) => candidate.key === elements.projectdraftrecovery.value);
+  if (!draft || typeof draft.raw !== 'string') {
+    presentDraftRecoveryStatus('No preserved browser entry is selected. Nothing was downloaded or changed.');
+    return;
+  }
+  const originalRaw = draft.raw;
+  const safeIdentity = `${draft.profile}-${draft.draftId}`.replaceAll(/[^a-z0-9.-]+/giu, '-').slice(0, 120);
+  const digest = await sha256Text(originalRaw);
+  downloadText(`preserved-${safeIdentity}.txt`, originalRaw, 'text/plain;charset=utf-8');
+  if (localStorage.getItem(draft.key) !== originalRaw) throw new Error('RECOVERY_ORIGINAL_MUTATED');
+  const validity = draft.valid ? 'validated entry' : `untrusted entry (${draft.code})`;
+  presentDraftRecoveryStatus(`Downloaded exact raw bytes for ${validity} · SHA-256 ${digest}. Original key unchanged; the download did not activate, migrate, or delete this entry.`);
 });
 elements.projectexport.addEventListener('click', () => saveLegacyProject(AVR_PROFILE));
 

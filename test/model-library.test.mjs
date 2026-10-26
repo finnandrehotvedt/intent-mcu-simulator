@@ -27,6 +27,7 @@ import {
   CURRENT_MODEL_LIBRARY_LOCK, PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_LCD_PERSISTENCE_FIX_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_LOCK,
   RC113_CURRENT_MODEL_LIBRARY_LOCK,
   RC120_CURRENT_MODEL_LIBRARY_LOCK,
@@ -174,6 +175,18 @@ test('the API-repaired LCD lock also remains finite migration-only data', () => 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
 });
 
+test('the pre-preserved-export lock remains finite migration-only data', () => {
+  assert.equal(PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256,
+    'f12c5df8dd0ea3658e3c85e017d140011690a921c6eac613f2c6de680d69aa02');
+  assert.equal(PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_LOCK.implementationSha256,
+    '423fa71c93c13293bb791a0970726e7e1b0470174507c376e3b2129a96270be6');
+  const resolved = resolveModelLibrary(PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(resolved.ok, true);
+  assert.equal(resolved.role, 'pre-preserved-draft-export-current-migration');
+  assert.equal(modelLibraryExecutionIdentity(PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_LOCK).code,
+    'MODEL_LIBRARY_MIGRATION_REQUIRED');
+});
+
 test('self-rehashed mutations of every manifest identity class remain untrusted', () => {
   const current = trustedModelLibraryManifests()[1];
   const resistorIndex = current.entries.findIndex((entry) => entry.componentType === 'resistor.fixed-v1');
@@ -237,7 +250,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
 
 test('prior current locks remain exact and data-migratable but cannot authorize execution', () => {
   const historical = historicalModelLibraryManifests();
-  assert.equal(historical.length, 40);
+  assert.equal(historical.length, 41);
   for (const manifest of historical.slice(1)) {
     const lock = { schema: 'intent-mcu-model-library-lock@2', libraryId: manifest.libraryId,
       version: manifest.version, manifestSha256: manifest.manifestSha256,

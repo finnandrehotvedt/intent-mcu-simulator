@@ -2,6 +2,7 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/runner/node_modules', 'playwright'));
 
@@ -58,9 +59,11 @@ async function openRecovery(page) {
     const records = [{ profile: 'board.atmega328p-16mhz-v1', owner: '__M6_PROJECT__', ...avr }];
     const publishedLocks = [
       { release: '1.1.0-rc.136', id: '71000000-0000-4000-8000-000000000136',
+        version: '2.0.0-x46-usart-rx-producer.1-current',
         manifestSha256: '49f5b582520551f6c7c3f68cd196c616dfde297988b7a85497e4e42664c97128',
         implementationSha256: 'cfaf5e18f657b2663c6ac776604af9d8aa3313997b36312e0dfe4b25359154d3' },
       { release: '1.1.0-rc.137', id: '72000000-0000-4000-8000-000000000137',
+        version: '2.0.0-x46-usart-rx-producer.1-current',
         manifestSha256: '709444f9c162942ebe960f43cdc8147300c93877100a34a5630a1e1c7bd63c4d',
         implementationSha256: '7dfa75c67b84ba2b1f04002f2c1ee5d6a3c84dea94a263a09adb47a277bde71d' },
     ].map((entry) => ({ ...entry, key: `teach-lab.simulator.project.v2.tab.${entry.id}` }));
@@ -69,7 +72,7 @@ async function openRecovery(page) {
       const basis = JSON.parse(raw);
       const records = publishedLocks.map((entry) => {
         const value = structuredClone(basis);
-        value.modelLibrary = { ...value.modelLibrary,
+        value.modelLibrary = { ...value.modelLibrary, version: entry.version,
           manifestSha256: entry.manifestSha256, implementationSha256: entry.implementationSha256 };
         const encoded = JSON.stringify(value);
         localStorage.setItem(entry.key, encoded);
@@ -248,6 +251,20 @@ async function openRecovery(page) {
     const beforeInvalid = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
     const invalidRaw = await page.evaluate((key) => localStorage.getItem(key), invalidKey);
     await page.selectOption('#project-draft-recovery', invalidKey);
+    assert.equal(await page.locator('#project-draft-download').isEnabled(), true,
+      'raw download was unavailable for an invalid preserved entry');
+    const downloadPromise = page.waitForEvent('download');
+    await page.click('#project-draft-download');
+    const download = await downloadPromise;
+    const downloadPath = await download.path();
+    assert(downloadPath, 'raw preserved download did not produce a local file');
+    assert.equal(fs.readFileSync(downloadPath, 'utf8'), invalidRaw,
+      'raw preserved download was not byte-identical');
+    assert.match(download.suggestedFilename(), /^preserved-board\.rp2040-pico-v1-50000000-.+\.txt$/u);
+    assert.equal(await page.evaluate((key) => localStorage.getItem(key), invalidKey), invalidRaw,
+      'raw download changed the preserved source entry');
+    assert.match(await page.textContent('#project-draft-recovery-status'),
+      /untrusted entry.+SHA-256 [a-f0-9]{64}.+Original key unchanged.+did not activate, migrate, or delete/iu);
     await page.click('#project-draft-recover');
     assert.equal(await page.evaluate((key) => localStorage.getItem(key), invalidKey), invalidRaw);
     assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), beforeInvalid);
