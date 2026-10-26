@@ -68,7 +68,8 @@ async function candidateProject() {
       }
       const favorite = document.querySelector('#catalog-favorites'); favorite.checked = false; favorite.dispatchEvent(new Event('change', { bubbles: true }));
     });
-    for (const type of ['switch.slide-spdt-v1', 'button.momentary-nc-v1', 'switch.limit-spdt-v1']) {
+    for (const type of ['switch.slide-spdt-v1', 'button.momentary-nc-v1', 'switch.limit-spdt-v1',
+      'switch.dip-4-v1', 'switch.changeover-spdt-v1', 'input.rotary-encoder-button-v1']) {
       await page.evaluate((query) => { const input = document.querySelector('#catalog-search'); input.value = query.split(/[.-]/u)[1]; input.dispatchEvent(new Event('input', { bubbles: true })); }, type);
       const found = await page.locator(`.catalog-item[data-type="${type}"]`).count();
       assert.equal(found, 1, JSON.stringify(await page.evaluate(() => ({ query: document.querySelector('#catalog-search')?.value, status: document.querySelector('#catalog-status')?.value, types: [...document.querySelectorAll('.catalog-item')].map((item) => item.dataset.type) }))));
@@ -76,9 +77,13 @@ async function candidateProject() {
       assert.equal(result.ok, true, JSON.stringify({ result, model: await page.locator('#model-library-status').textContent() }));
     }
     const ids = await page.evaluate(() => window.__M6_PROJECT__().candidateCircuit.components.map((component) => component.id));
-    assert(['slide-switch-1', 'nc-button-1', 'limit-switch-1'].every((id) => ids.includes(id)), JSON.stringify({ ids, message: await page.locator('#project-message').textContent(), technical: await page.locator('#technical-error-detail').textContent(), errors }));
-    for (const [id, renderer] of [['slide-switch-1', 'switch-slide-spdt'], ['nc-button-1', 'button-momentary-nc'], ['limit-switch-1', 'switch-limit-spdt']]) {
-      assert.equal(await page.locator(`.circuit-component[data-component-id="${id}"] [data-artwork-key="${renderer}"]`).count(), 1);
+    assert(['slide-switch-1', 'nc-button-1', 'limit-switch-1', 'dip-switch-1', 'selector-1',
+      'encoder-button-1'].every((id) => ids.includes(id)), JSON.stringify({ ids, message: await page.locator('#project-message').textContent(), technical: await page.locator('#technical-error-detail').textContent(), errors }));
+    for (const [id, renderer] of [['slide-switch-1', 'switch-slide-spdt'], ['nc-button-1', 'button-momentary-nc'],
+      ['limit-switch-1', 'switch-limit-spdt'], ['dip-switch-1', 'switch-dip-4'],
+      ['encoder-button-1', 'input-rotary-encoder-button']]) {
+      assert.equal(await page.locator(`.circuit-component[data-component-id="${id}"] [data-artwork-key="${renderer}"]`).count(), 1,
+        JSON.stringify({ id, renderer, html: await page.locator(`.circuit-component[data-component-id="${id}"]`).evaluate((node) => node.outerHTML), errors }));
     }
     const before = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
     if (await page.locator('#workbench-parts-dialog').evaluate((node) => node.open)) await page.click('#workbench-parts-dialog .workbench-popup-close');
@@ -86,6 +91,14 @@ async function candidateProject() {
     await page.click('#toggle-inspector');
     await page.evaluate(() => document.querySelector('[data-control="nc-button-1.pressed"]').click());
     assert.equal(await page.locator('[data-control="nc-button-1.pressed"]').textContent(), 'Pressed · open');
+    await page.click('#workbench-inspector-dialog .workbench-popup-close');
+    await page.locator('.circuit-component[data-component-id="dip-switch-1"]').click(); await page.click('#toggle-inspector');
+    await page.evaluate(() => document.querySelector('[data-control="dip-switch-1.switch2"]').click());
+    assert.equal(await page.locator('[data-control="dip-switch-1.switch2"]').textContent(), 'On · closed');
+    await page.click('#workbench-inspector-dialog .workbench-popup-close');
+    await page.locator('.circuit-component[data-component-id="encoder-button-1"]').click(); await page.click('#toggle-inspector');
+    await page.evaluate(() => document.querySelector('[data-control="encoder-button-1.pressed"]').click());
+    assert.equal(await page.locator('[data-control="encoder-button-1.pressed"]').textContent(), 'Pressed');
     await page.evaluate(() => document.querySelector('#undo').click());
     await page.evaluate(() => document.querySelector('#redo').click());
     assert.notEqual(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), before);
@@ -119,29 +132,30 @@ async function candidateProject() {
     };
     const catalog = await command('mechanical-catalog-1', 'components.catalog');
     assert.equal(catalog.status, 'accepted');
-    for (const type of ['switch.slide-spdt-v1', 'button.momentary-nc-v1', 'switch.limit-spdt-v1']) {
+    for (const type of ['switch.slide-spdt-v1', 'button.momentary-nc-v1', 'switch.limit-spdt-v1',
+      'switch.dip-4-v1', 'switch.changeover-spdt-v1', 'input.rotary-encoder-button-v1']) {
       assert.ok(catalog.components[type], type);
     }
     const edited = await command('mechanical-api-add-1', 'edit.batch', { commands: [
-      { command: 'component.add', id: 'api-slide-1', type: 'switch.slide-spdt-v1', position: { x: 0.82, y: 0.22, rotation: 0 } },
+      { command: 'component.add', id: 'api-encoder-button-1', type: 'input.rotary-encoder-button-v1', position: { x: 0.82, y: 0.22, rotation: 0 } },
     ] });
-    assert.equal(edited.status, 'accepted', edited.code); await page.waitForSelector('[data-component-id="api-slide-1"]');
+    assert.equal(edited.status, 'accepted', edited.code); await page.waitForSelector('[data-component-id="api-encoder-button-1"]');
     const apiBytes = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
     const undone = await command('mechanical-api-undo-1', 'edit.undo', { transaction_id: edited.transaction_id }, edited.revision_after);
-    assert.equal(undone.status, 'accepted'); await page.waitForFunction(() => !window.__M6_PROJECT__().candidateCircuit.components.some((item) => item.id === 'api-slide-1'));
+    assert.equal(undone.status, 'accepted'); await page.waitForFunction(() => !window.__M6_PROJECT__().candidateCircuit.components.some((item) => item.id === 'api-encoder-button-1'));
     const redone = await command('mechanical-api-redo-1', 'edit.redo',
       { transaction_id: edited.transaction_id }, undone.revision_after);
-    assert.equal(redone.status, 'accepted'); await page.waitForSelector('[data-component-id="api-slide-1"]');
+    assert.equal(redone.status, 'accepted'); await page.waitForSelector('[data-component-id="api-encoder-button-1"]');
     assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), apiBytes);
     const invalid = await command('mechanical-api-invalid-1', 'edit.batch', { commands: [
-      { command: 'component.property.set', component_id: 'api-slide-1', key: 'transitionPolicy', value: 'make-before-break' },
+      { command: 'component.property.set', component_id: 'api-encoder-button-1', key: 'encoding', value: 'binary' },
     ] }, redone.revision_after);
     assert.equal(invalid.status, 'rejected');
     assert.equal(invalid.revision_after, redone.revision_after);
     assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), apiBytes);
     await dialog.locator('[data-revoke]').click();
     assert.deepEqual(errors, []); assert.deepEqual(outside, []);
-    process.stdout.write(`${JSON.stringify({ ok: true, rendered: 3, manualAdd: true, controls: true,
+    process.stdout.write(`${JSON.stringify({ ok: true, rendered: 6, manualAdd: true, controls: true,
       fileRoundtrip: true, actualPairingApi: true, apiUndoRedo: true, invalidAtomic: true, thirdPartyRequests: 0 })}\n`);
   } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }
 })().catch((error) => { process.stderr.write(`${error.stack}\n`); process.exitCode = 1; });

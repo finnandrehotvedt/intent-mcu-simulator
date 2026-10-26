@@ -75,6 +75,8 @@ const referenceBindings = deepFreeze({
     'switch.slide-spdt-v1': { starters: ['avr-spdt-selector'], tests: ['test/mechanical-inputs-candidate.test.mjs'] },
     'button.momentary-nc-v1': { starters: ['button'], tests: ['test/mechanical-inputs-candidate.test.mjs'] },
     'switch.limit-spdt-v1': { starters: ['avr-spdt-selector'], tests: ['test/mechanical-inputs-candidate.test.mjs'] },
+    'switch.dip-4-v1': { starters: ['avr-advanced-switch-inputs'], tests: ['test/advanced-switch-inputs-candidate.test.mjs'] },
+    'input.rotary-encoder-button-v1': { starters: ['avr-advanced-switch-inputs'], tests: ['test/advanced-switch-inputs-candidate.test.mjs'] },
     'sensor.light-analogue-v1': { starters: ['avr-light-analogue'], tests: ['test/light-analogue-sensor-candidate.test.mjs', 'test/light-analogue-sensor-ui-candidate.cjs'] },
     'sensor.temperature-analogue-v1': { starters: ['temperature-lcd-threshold', 'avr-thermostat-boundary-v1'], tests: ['test/temperature-analogue-sensor-candidate.test.mjs', 'test/temperature-analogue-sensor-ui-candidate.cjs'] },
     'sensor.light-threshold-digital-v1': { starters: ['avr-light-threshold'], tests: ['test/digital-light-threshold-candidate.test.mjs', 'test/digital-light-threshold-ui-candidate.cjs'] },

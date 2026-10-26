@@ -10,6 +10,8 @@ import { CHARACTER_LCD_20X4_TYPE, createCharacterLcd20x4Component } from '../exp
 import { POWER_REFERENCE_TYPE, createPowerReferenceComponent } from '../expansion-drafts/power-reference-integration-v1.mjs';
 import { LIMIT_SWITCH_TYPE, NC_BUTTON_TYPE, SLIDE_SWITCH_TYPE,
   createMechanicalInputComponent } from '../expansion-drafts/mechanical-inputs-v1.mjs';
+import { DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE,
+  createAdvancedSwitchInput } from '../expansion-drafts/advanced-switch-inputs-v1.mjs';
 
 const ID = /^[a-z][a-z0-9-]{0,47}$/u;
 const TYPES = new Set(['board.atmega328p-16mhz-v1', 'resistor.fixed-v1', 'led.basic-v1',
@@ -17,6 +19,7 @@ const TYPES = new Set(['board.atmega328p-16mhz-v1', 'resistor.fixed-v1', 'led.ba
   CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE, PCF8574_LCD_TYPE,
   POWER_REFERENCE_TYPE,
   SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE,
+  DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE,
   GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE]);
 const exact = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && Object.keys(value).sort().join('|') === [...keys].sort().join('|');
@@ -70,6 +73,8 @@ export function prepareApiBatch(project, operations) {
         : avr && operation.type === POWER_REFERENCE_TYPE ? createPowerReferenceComponent(operation.id)
         : avr && [SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE].includes(operation.type)
           ? createMechanicalInputComponent(operation.type, operation.id)
+        : avr && [DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE].includes(operation.type)
+          ? createAdvancedSwitchInput(operation.type, operation.id)
         : avr ? createComponent(operation.id, operation.type) : { id: operation.id, type: operation.type };
       return { type: 'component.add', component,
         position: structuredClone(operation.position) };

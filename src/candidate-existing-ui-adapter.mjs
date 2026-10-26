@@ -33,6 +33,9 @@ import {
   createMechanicalInputComponent,
 } from '../expansion-drafts/mechanical-inputs-v1.mjs';
 import { createMechanicalInputArtwork } from '../expansion-drafts/mechanical-inputs-artwork-v1.mjs';
+import { ADVANCED_SWITCH_INPUT_DEFINITIONS, DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE,
+  createAdvancedSwitchInput } from '../expansion-drafts/advanced-switch-inputs-v1.mjs';
+import { createAdvancedSwitchInputArtwork } from '../expansion-drafts/advanced-switch-inputs-artwork-v1.mjs';
 import {
   LIGHT_ANALOGUE_SENSOR_DEFINITION,
   LIGHT_ANALOGUE_SENSOR_TYPE,
@@ -145,6 +148,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   [POWER_REFERENCE_TYPE]: POWER_REFERENCE_DEFINITION,
   [TOGGLE_SWITCH_TYPE]: TOGGLE_SWITCH_DEFINITION,
   ...MECHANICAL_INPUT_DEFINITIONS,
+  ...ADVANCED_SWITCH_INPUT_DEFINITIONS,
   [SPDT_CONTACT_TYPE]: SPDT_UI_DEFINITION,
   [LIGHT_ANALOGUE_SENSOR_TYPE]: LIGHT_ANALOGUE_SENSOR_DEFINITION,
   [TEMPERATURE_ANALOGUE_SENSOR_TYPE]: TEMPERATURE_ANALOGUE_SENSOR_DEFINITION,
@@ -174,6 +178,9 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   }
   if ([SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE].includes(component?.type)) {
     return createMechanicalInputArtwork(documentObject, definition, component, options);
+  }
+  if ([DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE].includes(component?.type)) {
+    return createAdvancedSwitchInputArtwork(documentObject, definition, component, options);
   }
   if (component?.type === SPDT_CONTACT_TYPE) {
     return createSwitchContactArtwork(documentObject, definition, component.controls.selectedThrow, options);
@@ -217,6 +224,9 @@ export function createCandidateUiComponent(type, id) {
   if (type === TOGGLE_SWITCH_TYPE) return createToggleSwitchComponent(id);
   if ([SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE].includes(type)) {
     return createMechanicalInputComponent(type, id);
+  }
+  if ([DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE].includes(type)) {
+    return createAdvancedSwitchInput(type, id);
   }
   if (type === SPDT_CONTACT_TYPE) return createSwitchContactComponent(id, 'SPDT changeover contact', { selectedThrow: 'A' });
   if (type === LIGHT_ANALOGUE_SENSOR_TYPE) return createLightAnalogueSensorComponent(id);
@@ -300,6 +310,19 @@ export function candidateContactControl(session, componentId, key, value) {
   }
   if (component.type === LIMIT_SWITCH_TYPE && key === 'actuated' && typeof value === 'boolean') {
     return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+  }
+  if (component.type === DIP_SWITCH_4_TYPE && /^switch[1-4]$/u.test(key)
+      && typeof value === 'boolean') {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+  }
+  if (component.type === ROTARY_ENCODER_BUTTON_TYPE && key === 'pressed'
+      && typeof value === 'boolean') {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+  }
+  if (component.type === ROTARY_ENCODER_BUTTON_TYPE && key === 'detent'
+      && Number.isInteger(value) && Math.abs(value - component.controls.detent) === 1) {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value },
+      direction: value > component.controls.detent ? 'cw' : 'ccw' };
   }
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE && key === 'lightLevel'
       && Number.isFinite(value) && value >= 0 && value <= 1) {

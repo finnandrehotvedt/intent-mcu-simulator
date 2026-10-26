@@ -12976,6 +12976,8 @@ function candidateComponentPrefix(type) {
       'switch.slide-spdt-v1': 'slide-switch',
       'button.momentary-nc-v1': 'nc-button',
       'switch.limit-spdt-v1': 'limit-switch',
+      'switch.dip-4-v1': 'dip-switch',
+      'input.rotary-encoder-button-v1': 'encoder-button',
       'sensor.light-analogue-v1': 'light-sensor',
       'sensor.temperature-analogue-v1': 'temperature-sensor',
       [DIGITAL_LIGHT_THRESHOLD_TYPE]: 'light-threshold',
@@ -13016,6 +13018,8 @@ function addComponent(type, point = null) {
       'switch.slide-spdt-v1': { x: 0.54, y: 0.76 },
       'button.momentary-nc-v1': { x: 0.68, y: 0.76 },
       'switch.limit-spdt-v1': { x: 0.82, y: 0.76 },
+      'switch.dip-4-v1': { x: 0.62, y: 0.7 },
+      'input.rotary-encoder-button-v1': { x: 0.78, y: 0.66 },
       'sensor.light-analogue-v1': { x: 0.62, y: 0.76 },
       'sensor.temperature-analogue-v1': { x: 0.78, y: 0.76 },
       [DIGITAL_LIGHT_THRESHOLD_TYPE]: { x: 0.78, y: 0.72 },
@@ -13458,6 +13462,40 @@ function renderRuntimeControls() {
         elements.projectmessage.textContent = `${component.label} contact state changed.`; renderProject();
       });
       row.append(label, button); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && component.type === 'switch.dip-4-v1') {
+      return [1, 2, 3, 4].map((index) => {
+        const row = document.createElement('div'); const label = document.createElement('span');
+        const key = `switch${index}`; const value = component.controls[key];
+        label.textContent = `${component.label} · ${index}`;
+        const button = document.createElement('button'); button.type = 'button';
+        button.dataset.control = `${component.id}.${key}`; button.setAttribute('aria-pressed', String(value));
+        button.textContent = value ? 'On · closed' : 'Off · open';
+        button.addEventListener('click', () => {
+          const prepared = selectedCandidateContactControl(component.id, key, !component.controls[key]);
+          const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
+          if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'DIP switch rejected.'); return; }
+          applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject(); renderProject();
+        }); row.append(label, button); return row;
+      });
+    }
+    if (editor.kind === 'candidate-project-v3' && component.type === 'input.rotary-encoder-button-v1') {
+      const row = document.createElement('div'); const label = document.createElement('span');
+      label.textContent = `${component.label} · detent ${component.controls.detent}`;
+      const ccw = document.createElement('button'); ccw.type = 'button'; ccw.textContent = 'CCW −1';
+      const cw = document.createElement('button'); cw.type = 'button'; cw.textContent = 'CW +1';
+      const pressed = document.createElement('button'); pressed.type = 'button';
+      pressed.dataset.control = `${component.id}.pressed`; pressed.textContent = component.controls.pressed ? 'Pressed' : 'Released';
+      const applyControl = (key, value) => {
+        const prepared = selectedCandidateContactControl(component.id, key, value);
+        const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
+        if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Encoder control rejected.'); return; }
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject(); renderProject();
+      };
+      ccw.addEventListener('click', () => applyControl('detent', component.controls.detent - 1));
+      cw.addEventListener('click', () => applyControl('detent', component.controls.detent + 1));
+      pressed.addEventListener('click', () => applyControl('pressed', !component.controls.pressed));
+      row.append(label, ccw, cw, pressed); return [row];
     }
     if (component.type === 'button.momentary-v1') {
       const row = document.createElement('div');

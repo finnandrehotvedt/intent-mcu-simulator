@@ -33,6 +33,17 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
   'switch.limit-spdt-v1': {
     actuated: { kind: 'boolean', default: false, mutability: 'authored' },
   },
+  'switch.dip-4-v1': {
+    switch1: { kind: 'boolean', default: false, mutability: 'authored' },
+    switch2: { kind: 'boolean', default: false, mutability: 'authored' },
+    switch3: { kind: 'boolean', default: false, mutability: 'authored' },
+    switch4: { kind: 'boolean', default: false, mutability: 'authored' },
+  },
+  'input.rotary-encoder-button-v1': {
+    detent: { kind: 'integer', minimum: -999, maximum: 999, default: 0,
+      unit: 'detent', mutability: 'transition-only' },
+    pressed: { kind: 'boolean', default: false, mutability: 'authored' },
+  },
   'sensor.light-analogue-v1': {
     lightLevel: { kind: 'number', minimum: 0, maximum: 1, default: 0.5,
       unit: 'ratio', mutability: 'authored' },

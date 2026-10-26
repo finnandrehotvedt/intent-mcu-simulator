@@ -25,6 +25,7 @@ import {
 } from './spdt-contact-runtime-adapter-v1.mjs';
 import { TOGGLE_SWITCH_TYPE } from './toggle-switch-integration-v1.mjs';
 import { LIMIT_SWITCH_TYPE, NC_BUTTON_TYPE, SLIDE_SWITCH_TYPE } from './mechanical-inputs-v1.mjs';
+import { DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE } from './advanced-switch-inputs-v1.mjs';
 import { LIGHT_ANALOGUE_SENSOR_TYPE } from './light-analogue-sensor-v1.mjs';
 import {
   TEMPERATURE_ANALOGUE_SENSOR_TYPE,
@@ -45,6 +46,7 @@ const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
 const CANDIDATE_COMPONENT_TYPES = new Set([
   GROUND_REFERENCE_TYPE, POWER_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
   SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE,
+  DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE,
   LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
   DIGITAL_LIGHT_THRESHOLD_TYPE,
 ]);
@@ -501,6 +503,22 @@ export class CandidateEditorSession {
               return failure('PROJECT_CONTACT_MECHANICAL_INPUT_STATE', this.revision);
             }
             component.controls.actuated = command.value; runtimeDirty = true; break;
+          }
+          if (component.type === DIP_SWITCH_4_TYPE) {
+            if (!/^switch[1-4]$/u.test(command.key) || typeof command.value !== 'boolean') {
+              return failure('PROJECT_CONTACT_ADVANCED_SWITCH_STATE', this.revision);
+            }
+            component.controls[command.key] = command.value; runtimeDirty = true; break;
+          }
+          if (component.type === ROTARY_ENCODER_BUTTON_TYPE) {
+            if (command.key === 'pressed' && typeof command.value === 'boolean') {
+              component.controls.pressed = command.value; runtimeDirty = true; break;
+            }
+            if (command.key === 'detent' && Number.isInteger(command.value)
+                && Math.abs(command.value - component.controls.detent) === 1) {
+              component.controls.detent = command.value; runtimeDirty = true; break;
+            }
+            return failure('PROJECT_CONTACT_ADVANCED_SWITCH_STATE', this.revision);
           }
           if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) {
             if (command.key !== 'lightLevel' || !Number.isFinite(command.value)

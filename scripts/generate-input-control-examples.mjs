@@ -8,6 +8,9 @@ import { createEditableContactDraft } from '../expansion-drafts/contact-persiste
 import { canonicalContactPersistenceDraftJson } from '../expansion-drafts/project-v3-contact-persistence.mjs';
 import { createAvrReferenceStarter } from '../src/avr-reference-starters.mjs';
 import { createMechanicalInputComponent } from '../expansion-drafts/mechanical-inputs-v1.mjs';
+import { DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE,
+  createAdvancedSwitchInput } from '../expansion-drafts/advanced-switch-inputs-v1.mjs';
+import { createSwitchContactComponent } from '../expansion-drafts/switch-contact-graph-v1.mjs';
 import { openCandidateUiSession } from '../src/candidate-existing-ui-adapter.mjs';
 import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
 import {
@@ -84,6 +87,39 @@ function mechanicalExample() {
   return JSON.parse(session.saveText());
 }
 const mechanical = mechanicalExample();
+function advancedSwitchExample() {
+  const source = `void setup() { for (byte p=2;p<=9;p++) pinMode(p, INPUT_PULLUP); Serial.begin(115200); }
+void loop() { for (byte p=2;p<=9;p++) Serial.print(digitalRead(p)); Serial.println(); delay(120); }
+`;
+  const draft = createEditableContactDraft(source); if (!draft.ok) throw new Error(draft.code);
+  draft.project.project.metadata.name = 'DIP, changeover and encoder button inputs';
+  const session = openCandidateUiSession(canonicalContactPersistenceDraftJson(draft.project)).session;
+  const apply = (command) => { const result = session.apply({ ...command, revision: session.revision });
+    if (!result.ok) throw new Error(`ADVANCED_SWITCH_EXAMPLE:${command.type}:${result.code}`); };
+  const add = (component, position) => apply({ type: 'component.add', component, position });
+  const wire = (id, component, pin, boardPin) => apply({ type: 'wire.create', net: { id,
+    endpoints: [{ component, pin }, { component: 'board-1', pin: boardPin }] } });
+  const branch = (netId, component, pin, junctionId) => apply({ type: 'wire.branch', netId,
+    endpoint: { component, pin }, junctionId });
+  apply({ type: 'component.remove', componentId: 'button-1' });
+  add(createAdvancedSwitchInput(ROTARY_ENCODER_BUTTON_TYPE, 'encoder-button-1'), { x: 0.74, y: 0.3 });
+  wire('net-advanced-encoder-a', 'encoder-button-1', 'A', 'D2');
+  wire('net-advanced-encoder-b', 'encoder-button-1', 'B', 'D3');
+  branch('net-ground-branch', 'encoder-button-1', 'COM', 'junction-advanced-encoder-ground');
+  wire('net-advanced-encoder-sw', 'encoder-button-1', 'SW', 'D4');
+  branch('net-ground-branch', 'encoder-button-1', 'SWCOM', 'junction-advanced-button-ground');
+  add(createAdvancedSwitchInput(DIP_SWITCH_4_TYPE, 'dip-switch-1'), { x: 0.72, y: 0.58 });
+  [1, 2, 3, 4].forEach((channel) => {
+    wire(`net-advanced-dip-${channel}`, 'dip-switch-1', `${channel}A`, `D${channel + 4}`);
+    branch('net-ground-branch', 'dip-switch-1', `${channel}B`, `junction-advanced-dip-${channel}-ground`);
+  });
+  add(createSwitchContactComponent('changeover-1', 'SPDT changeover contact', { selectedThrow: 'A' }), { x: 0.74, y: 0.82 });
+  wire('net-advanced-changeover', 'changeover-1', 'COM', 'D9');
+  branch('net-ground-branch', 'changeover-1', 'A', 'junction-advanced-changeover-ground');
+  branch('net-5v', 'changeover-1', 'B', 'junction-advanced-changeover-power');
+  return JSON.parse(session.saveText());
+}
+const advancedSwitches = advancedSwitchExample();
 const definitions = [
   {
     id: 'avr-momentary-button-input', requirementIds: ['CMP-021'],
@@ -114,6 +150,14 @@ const definitions = [
       limitCom: 'D6', limitNC: 'GND1', limitNO: '5V' },
     expectedBehavior: 'Slide selection changes D4, pressing the normally-closed button opens D5, and actuating the limit switch changes D6 from NC to NO.',
     firmwareLimits: 'Ideal AVR contact models only; no bounce, resistance, force, travel, current rating, arcing or wear.',
+  },
+  {
+    id: 'avr-advanced-switch-inputs', requirementIds: ['CMP-024', 'CMP-026', 'CMP-027'],
+    file: 'avr-advanced-switch-inputs.intent-mcu.json', project: advancedSwitches,
+    namedPins: { encoderA: 'D2', encoderB: 'D3', encoderButton: 'D4', dip1: 'D5', dip2: 'D6',
+      dip3: 'D7', dip4: 'D8', changeoverCom: 'D9', contactsCommon: 'GND1', changeoverB: '5V' },
+    expectedBehavior: 'Turning and pressing the encoder changes D2–D4, four DIP positions change D5–D8, and the changeover contact selects GND or 5 V on D9.',
+    firmwareLimits: 'Ideal AVR contact models only; no bounce, acceleration, resistance, missed edges, force, travel, arcing or wear.',
   },
 ];
 const outputs = definitions.map((item) => {

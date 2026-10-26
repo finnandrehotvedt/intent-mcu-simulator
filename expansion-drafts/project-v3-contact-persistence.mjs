@@ -41,6 +41,10 @@ import {
   validateMechanicalInputComponent,
 } from './mechanical-inputs-v1.mjs';
 import {
+  ADVANCED_SWITCH_INPUT_DEFINITIONS, DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE,
+  advancedSwitchRuntimeState, validateAdvancedSwitchInput,
+} from './advanced-switch-inputs-v1.mjs';
+import {
   LIGHT_ANALOGUE_SENSOR_DEFINITION,
   LIGHT_ANALOGUE_SENSOR_TYPE,
   projectLightAnalogueSensors,
@@ -161,6 +165,8 @@ function pinIds(component) {
   if (component.type === NC_BUTTON_TYPE) return ['A', 'B'];
   if (component.type === SLIDE_SWITCH_TYPE) return ['COM', 'A', 'B'];
   if (component.type === LIMIT_SWITCH_TYPE) return ['COM', 'NC', 'NO'];
+  if (component.type === DIP_SWITCH_4_TYPE) return ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B'];
+  if (component.type === ROTARY_ENCODER_BUTTON_TYPE) return ['A', 'COM', 'B', 'SW', 'SWCOM'];
   if (component.type === SPDT_CONTACT_TYPE) return ['COM', 'A', 'B'];
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
@@ -183,6 +189,7 @@ function componentPins(component) {
   if (component.type === NC_BUTTON_TYPE) return NC_BUTTON_DEFINITION.pins;
   if (component.type === SLIDE_SWITCH_TYPE) return SLIDE_SWITCH_DEFINITION.pins;
   if (component.type === LIMIT_SWITCH_TYPE) return LIMIT_SWITCH_DEFINITION.pins;
+  if (ADVANCED_SWITCH_INPUT_DEFINITIONS[component.type]) return ADVANCED_SWITCH_INPUT_DEFINITIONS[component.type].pins;
   if (component.type === SPDT_CONTACT_TYPE) return SPDT_CONTACT_DEFINITION.terminals;
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return LIGHT_ANALOGUE_SENSOR_DEFINITION.pins;
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return TEMPERATURE_ANALOGUE_SENSOR_DEFINITION.pins;
@@ -219,6 +226,8 @@ function validateCandidateComponent(component) {
     if (!validateMechanicalInputComponent(component)) {
       fail('PROJECT_CONTACT_MECHANICAL_INPUT_STATE', [component.id]);
     }
+  } else if ([DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE].includes(component.type)) {
+    if (!validateAdvancedSwitchInput(component)) fail('PROJECT_CONTACT_ADVANCED_SWITCH_STATE', [component.id]);
   } else if (component.type === SPDT_CONTACT_TYPE) {
     if (!exactKeys(component.properties, ['transitionPolicy'])
         || component.properties.transitionPolicy !== 'break-before-make'
@@ -298,6 +307,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
       && !components.some((component) => [
         GROUND_REFERENCE_TYPE, POWER_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
         SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE,
+        DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE,
         LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
         DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
         ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
@@ -533,6 +543,48 @@ function projectMechanicalInputs(graph) {
   return projected;
 }
 
+function projectedId(id, suffix) {
+  return `${id.slice(0, 47 - suffix.length)}-${suffix}`;
+}
+
+function projectAdvancedSwitchInputs(graph) {
+  const projected = clone(graph);
+  const replacements = new Map();
+  projected.components = projected.components.flatMap((component) => {
+    if (component.type === DIP_SWITCH_4_TYPE) {
+      const items = [1, 2, 3, 4].map((channel) => ({
+        id: projectedId(component.id, `s${channel}`), type: TOGGLE_SWITCH_TYPE,
+        label: `${component.label} ${channel}`, properties: { normallyOpen: true },
+        controls: { closed: component.controls[`switch${channel}`] },
+      }));
+      replacements.set(component.id, Object.fromEntries(items.flatMap((item, index) => [
+        [`${index + 1}A`, { component: item.id, pin: 'A' }],
+        [`${index + 1}B`, { component: item.id, pin: 'B' }],
+      ])));
+      return items;
+    }
+    if (component.type === ROTARY_ENCODER_BUTTON_TYPE) {
+      const encoderId = projectedId(component.id, 'enc'); const buttonId = projectedId(component.id, 'sw');
+      replacements.set(component.id, {
+        A: { component: encoderId, pin: 'A' }, COM: { component: encoderId, pin: 'COM' },
+        B: { component: encoderId, pin: 'B' }, SW: { component: buttonId, pin: 'A' },
+        SWCOM: { component: buttonId, pin: 'B' },
+      });
+      return [{ id: encoderId, type: ROTARY_ENCODER_TYPE, label: component.label,
+        properties: { encoding: 'gray-2bit', pullMode: 'input-pullup' },
+        controls: { detent: component.controls.detent } },
+      { id: buttonId, type: TOGGLE_SWITCH_TYPE, label: `${component.label} button`,
+        properties: { normallyOpen: true }, controls: { closed: component.controls.pressed } }];
+    }
+    return [component];
+  });
+  projected.nets = projected.nets.map((net) => ({ ...net, endpoints: net.endpoints.map((endpoint) => {
+    const replacement = replacements.get(endpoint.component)?.[endpoint.pin];
+    return replacement ? { ...endpoint, ...replacement } : endpoint;
+  }) }));
+  return projected;
+}
+
 function production(implementation, componentType, input, details = []) {
   const evaluated = implementation.evaluateProduction(componentType, input);
   if (!evaluated.ok) fail(evaluated.code, [componentType, ...details]);
@@ -582,9 +634,17 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
             : { actuated: component.controls.actuated }, [component.id]);
       contacts.push({ componentId: component.id, type: component.type, state });
     }
+    if ([DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE].includes(component.type)) {
+      const state = advancedSwitchRuntimeState(component);
+      production(implementation, component.type, component.type === DIP_SWITCH_4_TYPE
+        ? { switches: state.contacts.map((item) => item.closed) }
+        : { direction: 'cw', pressed: component.controls.pressed }, [component.id]);
+      contacts.push({ componentId: component.id, type: component.type, state });
+    }
   }
 
-  const mechanicalProjection = projectMechanicalInputs(graph);
+  const advancedProjection = projectAdvancedSwitchInputs(graph);
+  const mechanicalProjection = projectMechanicalInputs(advancedProjection);
   const withoutSpdt = removeSpdtComponents(mechanicalProjection);
   const withProjectedSpst = projectSpstComponents(withoutSpdt);
   const lightProjection = projectLightAnalogueSensors(withProjectedSpst);
@@ -774,6 +834,9 @@ function draftContacts(graph) {
     }
     if ([SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE].includes(component.type)) {
       return [{ componentId: component.id, type: component.type, state: mechanicalRuntimeState(component) }];
+    }
+    if ([DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE].includes(component.type)) {
+      return [{ componentId: component.id, type: component.type, state: advancedSwitchRuntimeState(component) }];
     }
     if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) {
       return [{

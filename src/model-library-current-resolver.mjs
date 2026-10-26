@@ -131,6 +131,22 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       return { ok: true, code: 'OK', result: { selectedThrow,
         activeContact: ['COM', selectedThrow], breakBeforeMake: true, springReturn: true } };
     }
+    if (componentType === 'switch.dip-4-v1') {
+      if (!Array.isArray(input?.switches) || input.switches.length !== 4
+          || input.switches.some((value) => typeof value !== 'boolean')) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { connected: [...input.switches] } };
+    }
+    if (componentType === 'input.rotary-encoder-button-v1') {
+      if (!['cw', 'ccw'].includes(input?.direction) || typeof input?.pressed !== 'boolean') {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      const states = input.direction === 'cw' ? ['11', '01', '00', '10', '11']
+        : ['11', '10', '00', '01', '11'];
+      return { ok: true, code: 'OK', result: { states, phaseCycles: 16000,
+        buttonConnected: input.pressed } };
+    }
     if (componentType === 'sensor.light-analogue-v1') {
       if (!Number.isFinite(input?.lightLevel) || input.lightLevel < 0 || input.lightLevel > 1) {
         return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
