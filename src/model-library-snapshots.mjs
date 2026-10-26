@@ -134336,7 +134336,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "746eda59dacd2207ff87c20523bf2151adba9ae46562d663634462d780c4319d",
+      "behaviorContractSha256": "7fb2100823a681fde197ab0adb0e53a79d74607541f4bc545cb81652affeb5e8",
       "componentType": "board.esp32-c3-devmodule-v1",
       "componentVersion": 2,
       "modelId": "model.esp32c3-gpio2-project-register-adapter-v1",
@@ -134397,6 +134397,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           },
           {
             "constraints": {
+              "adcChannel": 0,
               "authoringOnly": true,
               "connector": "J1",
               "physicalPin": 9,
@@ -134406,7 +134407,8 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
             "id": "GPIO0",
             "role": "digital-io",
             "signals": [
-              "digital.output"
+              "digital.output",
+              "analogue.input"
             ]
           },
           {
@@ -134456,7 +134458,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "partial"
         }
       },
-      "semanticSha256": "022a7b5a52e561da2046bf4b297c0828dca3cb47e7c531d778c04a3a737bf170",
+      "semanticSha256": "20d32931a99c3a847d29f48ea3a097ffece0bee37a57e0699cacaadfa5fa02d0",
       "supportStatus": "partial"
     },
     {
@@ -134603,7 +134605,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "6f36774e1ad48bd4893201507b8a40f369a7574c3c151086ceccb4eb8e903477",
+      "behaviorContractSha256": "ed78a3b66fd2f07fcfc3a72851560a6270fa716a364a5af468fa8d871187c0e8",
       "componentType": "board.rp2040-pico-v1",
       "componentVersion": 2,
       "modelId": "model.rp2040-pico-gpio0-public-v1",
@@ -134706,6 +134708,20 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
             "signals": [
               "ground.reference"
             ]
+          },
+          {
+            "constraints": {
+              "adcChannel": 0,
+              "authoringOnly": true,
+              "physicalPin": 31,
+              "voltageMax": 3.3,
+              "voltageMin": 0
+            },
+            "id": "GP26",
+            "role": "analogue-input",
+            "signals": [
+              "analogue.input"
+            ]
           }
         ],
         "properties": {},
@@ -134717,7 +134733,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "partial"
         }
       },
-      "semanticSha256": "dfe4034314ebd05b23809be29d36d3eca57f09232f8e824fff15f6583e9f65ed",
+      "semanticSha256": "a3f9227d9dcbdc6597241d922048a68f2bc565ade3d640c5625715f2767d3ed5",
       "supportStatus": "partial"
     },
     {
@@ -134864,7 +134880,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
-      "behaviorContractSha256": "407a2f0e4b3b4cf512d99d678d4c0e1dbd3a20cac0d8c17b64624df01dc31723",
+      "behaviorContractSha256": "5bb487dc4ddf7cdb1cd1127692266af92c554c85eeedf0ae0c0a4d221fe97a87",
       "componentType": "board.stm32f429zi-nucleo144-v1",
       "componentVersion": 2,
       "modelId": "model.stm32f429zi-pb0-renode-observation-v1",
@@ -134897,6 +134913,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
         "pins": [
           {
             "constraints": {
+              "adcChannel": 8,
               "connector": "CN11",
               "physicalPin": 34,
               "voltageMax": 3.3,
@@ -134905,7 +134922,8 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
             "id": "PB0",
             "role": "digital-io",
             "signals": [
-              "digital.output"
+              "digital.output",
+              "analogue.input"
             ]
           },
           {
@@ -134982,7 +135000,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
           "status": "partial"
         }
       },
-      "semanticSha256": "a09aea016878eb98bd698c7af6dcaf6d93bcb3bdc081a9ead894cf8b15cdab90",
+      "semanticSha256": "403008506b05ec19fdd32cb7fb012afaddad57e07392bd8f8911fe9cd1fe1079",
       "supportStatus": "partial"
     },
     {
@@ -135277,15 +135295,15 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
-      "sha256": "394483ae6646d1c3459c7e0b319e382befa9d97d44f6f0f2df3899a8db18bdba"
+      "sha256": "89b9a643fce49e8b2fbf78e4c54e44bc0494b18881574f2d5d0df0011b31f426"
     },
     {
       "path": "src/esp32c3-public-circuit.mjs",
-      "sha256": "591ef054952b0f37927b70501e24fe5db36315f291f5ad4b00cb38e99ff46fa0"
+      "sha256": "b7b251935d8c2dd505b786848174aba142628b074591a6afb2eb71718c7c5b49"
     },
     {
       "path": "src/stm32-public-circuit.mjs",
-      "sha256": "c437bdb7cd088e3b3ad024b1fddfff3705e6e780ac2875abeacfe528cbfc8572"
+      "sha256": "83354b171ebeea89ea901452211eeada8826d69f8793c30d9e529f0e4b414380"
     },
     {
       "path": "src/rp2040-public-workbench.mjs",
@@ -135396,7 +135414,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "cd22f6416210b8c733524c52c5a4cb332531c87d5e93982b24853087ab7215ed"
     }
   ],
-  "implementationSha256": "783df0a6b6775ec96c62109c6ca217df7a7d3af3e226c43b60d51fdc1543062f",
+  "implementationSha256": "ec07e66782087d500af6675c047a62737d7cdc42c7aeb9faa87d9870fbcf96eb",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -135406,7 +135424,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract"
   },
-  "manifestSha256": "e7ef38fe421b4ed52a07cc154e0a08977232f2309f589b5630b533e7ae851068",
+  "manifestSha256": "de26dcbfdd3f4d1b806bd19056171f74e9aee910f408a03ce93bba9c60fcaf3e",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

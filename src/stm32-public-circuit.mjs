@@ -9,7 +9,7 @@ import {
 import { normalizeStoredRoute } from './route-model.mjs';
 import { emptyComponentAppearance, normalizeComponentAppearance } from './component-appearance.mjs';
 import { exactKeys } from './strict-json.mjs';
-import { GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE, validateBounded3v3AuthoringGraph } from './bounded-3v3-authoring-contracts.mjs';
+import { GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE, validateBounded3v3AuthoringGraph } from './bounded-3v3-authoring-contracts.mjs';
 
 export const STM32_PUBLIC_CIRCUIT_SCHEMA = 'intent-mcu-stm32-public-circuit@1';
 export const STM32_PUBLIC_PROFILE = 'board.stm32f429zi-nucleo144-v1';
@@ -41,8 +41,8 @@ export const STM32_BOARD_DEFINITION = Object.freeze({
   displayName: 'STM32F429ZI learning profile board', manufacturer: 'Intent Learning',
   partNumber: 'IL-STM32F429ZI-PB0-PROFILE',
   pins: Object.freeze([
-    boardPin('PB0', 'PB0 · CN11 pin 34', 'digital-io', ['digital.output'], 0.96, 0.31,
-      { voltageMin: 0, voltageMax: 3.3, connector: 'CN11', physicalPin: 34 }),
+    boardPin('PB0', 'PB0 / ADC1_IN8 · CN11 pin 34', 'digital-io', ['digital.output', 'analogue.input'], 0.96, 0.31,
+      { voltageMin: 0, voltageMax: 3.3, connector: 'CN11', physicalPin: 34, adcChannel: 8 }),
     boardPin('PB1', 'PB1 · CN12 pin 24 · authoring only', 'digital-io', ['digital.output'], 0.04, 0.42,
       { voltageMin: 0, voltageMax: 3.3, connector: 'CN12', physicalPin: 24, authoringOnly: true }),
     boardPin('PB7', 'PB7 · CN11 pin 21 · authoring only', 'digital-io', ['digital.output'], 0.96, 0.52,
@@ -97,6 +97,7 @@ const TYPE_PINS = Object.freeze({
   [GROUND_REFERENCE_3V3_TYPE]: new Set(['GND']),
   [MOMENTARY_BUTTON_3V3_TYPE]: new Set(['A', 'B']),
   [TOGGLE_SWITCH_3V3_TYPE]: new Set(['A', 'B']),
+  [POTENTIOMETER_3V3_TYPE]: new Set(['HIGH', 'WIPER', 'LOW']),
 });
 const COMPONENT_POLICY = createSeriesLedComponentPolicy({
   profile: BOARD, boardId: 'stm32-1', boardLabel: 'STM32F429ZI PB0 profile',
@@ -163,6 +164,11 @@ function normalizeComponent(value) {
   if (value.type === GROUND_REFERENCE_3V3_TYPE && !exactKeys(value.properties, [])) throw Object.assign(new Error('STM32_CIRCUIT_COMPONENT_INVALID'), { code: 'STM32_CIRCUIT_COMPONENT_INVALID' });
   if ([MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE].includes(value.type)
       && (!exactKeys(value.properties, ['defaultClosed']) || typeof value.properties.defaultClosed !== 'boolean')) throw Object.assign(new Error('STM32_CIRCUIT_COMPONENT_INVALID'), { code: 'STM32_CIRCUIT_COMPONENT_INVALID' });
+  if (value.type === POTENTIOMETER_3V3_TYPE
+      && (!exactKeys(value.properties, ['ohms', 'taper']) || !Number.isFinite(value.properties.ohms)
+        || value.properties.ohms < 1 || value.properties.ohms > 10_000_000 || value.properties.taper !== 'linear')) {
+    throw Object.assign(new Error('STM32_CIRCUIT_COMPONENT_INVALID'), { code: 'STM32_CIRCUIT_COMPONENT_INVALID' });
+  }
   return clone(value);
 }
 

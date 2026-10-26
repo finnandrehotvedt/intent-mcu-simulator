@@ -2,7 +2,7 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import { createComponent } from './circuit-engine.mjs';
-import { GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE,
+import { GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE,
   TOGGLE_SWITCH_3V3_TYPE } from './bounded-3v3-authoring-contracts.mjs';
 import { PCF8574_LCD_TYPE, createPcf8574LcdComponent } from '../expansion-drafts/pcf8574-lcd-backpack-v1.mjs';
 import { CHARACTER_LCD_TYPE, createCharacterLcdComponent } from '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs';
@@ -12,7 +12,7 @@ const ID = /^[a-z][a-z0-9-]{0,47}$/u;
 const TYPES = new Set(['board.atmega328p-16mhz-v1', 'resistor.fixed-v1', 'led.basic-v1',
   'button.momentary-v1', 'potentiometer.linear-v1', 'terminal.serial-uart-v1',
   CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE, PCF8574_LCD_TYPE,
-  GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE]);
+  GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE]);
 const exact = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && Object.keys(value).sort().join('|') === [...keys].sort().join('|');
 const endpoint = (value) => exact(value, ['component', 'pin']) && ID.test(value.component)

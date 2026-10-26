@@ -19,9 +19,9 @@
       "projectSha256": "2b94712762974e149bb3f29fea48f46025ac09105c903218fc64ce3546b48fd8",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
-        "board.rp2040-pico-v1": "bounded LED and resistor authoring/execution available; potentiometer unavailable",
-        "board.esp32-c3-devmodule-v1": "bounded LED and resistor authoring/model output available; potentiometer unavailable",
-        "board.stm32f429zi-nucleo144-v1": "bounded LED and resistor authoring/execution available; potentiometer unavailable"
+        "board.rp2040-pico-v1": "bounded LED execution plus 3.3 V potentiometer authoring; ADC firmware unavailable",
+        "board.esp32-c3-devmodule-v1": "bounded LED model output plus 3.3 V potentiometer authoring; ADC firmware unavailable",
+        "board.stm32f429zi-nucleo144-v1": "bounded LED execution plus 3.3 V potentiometer authoring; ADC firmware unavailable"
       },
       "provenance": "Original project-owned component artwork, circuit factory, firmware example and canonical project format."
     },
@@ -40,13 +40,78 @@
       "value": "10 kΩ linear",
       "expectedBehavior": "Turning the control maps linearly from 0–5 V to AVR ADC counts 0–1023.",
       "limits": "Ideal unloaded linear divider; no tolerance, contact noise, loading or logarithmic taper.",
+      "crossProfileAuthoring": [
+        {
+          "id": "pico-potentiometer-combined",
+          "profile": "board.rp2040-pico-v1",
+          "file": "pico-potentiometer-combined.intent-mcu.json",
+          "componentIds": [
+            "led-1",
+            "pico-1",
+            "potentiometer-1",
+            "resistor-1"
+          ],
+          "namedPins": {
+            "HIGH": "pico-1.GP1",
+            "WIPER": "pico-1.GP26",
+            "LOW": "pico-1.GND8"
+          },
+          "projectSha256": "5229533d8c174e0cdef01a5a206fbedc49eeaa53f4a978b6b647bd33ad3e2652",
+          "sourceSha256": null,
+          "expectedVisibleBehavior": "Opening restores the board, resistor, LED and 10 kΩ potentiometer with its WIPER wire attached.",
+          "model": "validated data-only 3.3 V authoring graph",
+          "firmware": "unavailable for potentiometer ADC on this bounded profile"
+        },
+        {
+          "id": "esp32-c3-potentiometer-combined",
+          "profile": "board.esp32-c3-devmodule-v1",
+          "file": "esp32-c3-potentiometer-combined.intent-mcu.json",
+          "componentIds": [
+            "c3-1",
+            "led-1",
+            "potentiometer-1",
+            "resistor-1"
+          ],
+          "namedPins": {
+            "HIGH": "c3-1.GPIO3",
+            "WIPER": "c3-1.GPIO0",
+            "LOW": "c3-1.GND8"
+          },
+          "projectSha256": "10167ddb7e926388912450d71a20bf6b6bca6a3ec9033656becfe43fde1dde0b",
+          "sourceSha256": null,
+          "expectedVisibleBehavior": "Opening restores the board, resistor, LED and 10 kΩ potentiometer with its WIPER wire attached.",
+          "model": "validated data-only 3.3 V authoring graph",
+          "firmware": "unavailable for potentiometer ADC on this bounded profile"
+        },
+        {
+          "id": "stm32-potentiometer-combined",
+          "profile": "board.stm32f429zi-nucleo144-v1",
+          "file": "stm32-potentiometer-combined.intent-mcu.json",
+          "componentIds": [
+            "led-1",
+            "potentiometer-1",
+            "resistor-1",
+            "stm32-1"
+          ],
+          "namedPins": {
+            "HIGH": "stm32-1.PB1",
+            "WIPER": "stm32-1.PB0",
+            "LOW": "stm32-1.GND20"
+          },
+          "projectSha256": "5ad35e0552b7f54795a2a27662d0c3dccc2226b0043fd54583e932eae3b2883a",
+          "sourceSha256": null,
+          "expectedVisibleBehavior": "Opening restores the board, resistor, LED and 10 kΩ potentiometer with its WIPER wire attached.",
+          "model": "validated data-only 3.3 V authoring graph",
+          "firmware": "unavailable for potentiometer ADC on this bounded profile"
+        }
+      ],
       "sourceSha256": "ccbc6a1ad9bdd7b2e3fc7ccec3d60781bf767392039a1c42a471af69a198dea8",
       "projectSha256": "816740837eb3b463d718dd3d6ba2a992ecc93374c8c711cbfb349fa00da0685a",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
-        "board.rp2040-pico-v1": "bounded LED and resistor authoring/execution available; potentiometer unavailable",
-        "board.esp32-c3-devmodule-v1": "bounded LED and resistor authoring/model output available; potentiometer unavailable",
-        "board.stm32f429zi-nucleo144-v1": "bounded LED and resistor authoring/execution available; potentiometer unavailable"
+        "board.rp2040-pico-v1": "bounded LED execution plus 3.3 V potentiometer authoring; ADC firmware unavailable",
+        "board.esp32-c3-devmodule-v1": "bounded LED model output plus 3.3 V potentiometer authoring; ADC firmware unavailable",
+        "board.stm32f429zi-nucleo144-v1": "bounded LED execution plus 3.3 V potentiometer authoring; ADC firmware unavailable"
       },
       "provenance": "Original project-owned component artwork, circuit factory, firmware example and canonical project format."
     },
@@ -68,9 +133,9 @@
       "projectSha256": "2b94712762974e149bb3f29fea48f46025ac09105c903218fc64ce3546b48fd8",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
-        "board.rp2040-pico-v1": "bounded LED and resistor authoring/execution available; potentiometer unavailable",
-        "board.esp32-c3-devmodule-v1": "bounded LED and resistor authoring/model output available; potentiometer unavailable",
-        "board.stm32f429zi-nucleo144-v1": "bounded LED and resistor authoring/execution available; potentiometer unavailable"
+        "board.rp2040-pico-v1": "bounded LED execution plus 3.3 V potentiometer authoring; ADC firmware unavailable",
+        "board.esp32-c3-devmodule-v1": "bounded LED model output plus 3.3 V potentiometer authoring; ADC firmware unavailable",
+        "board.stm32f429zi-nucleo144-v1": "bounded LED execution plus 3.3 V potentiometer authoring; ADC firmware unavailable"
       },
       "provenance": "Original project-owned component artwork, circuit factory, firmware example and canonical project format."
     }

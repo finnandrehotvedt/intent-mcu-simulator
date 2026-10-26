@@ -3,21 +3,34 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   BOUNDED_3V3_AUTHORING_CONTRACTS, GROUND_REFERENCE_3V3_TYPE,
-  MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE, validateBounded3v3AuthoringGraph,
+  MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE, validateBounded3v3AuthoringGraph,
 } from '../src/bounded-3v3-authoring-contracts.mjs';
 import { RP2040_PICO_BOARD_DEFINITION, RP2040_PICO_PROFILE } from '../src/rp2040-pico-circuit.mjs';
 import { ESP32C3_BOARD_DEFINITION, ESP32C3_PUBLIC_PROFILE } from '../src/esp32c3-public-circuit.mjs';
 import { STM32_BOARD_DEFINITION, STM32_PUBLIC_PROFILE } from '../src/stm32-public-circuit.mjs';
 
-test('three explicit 3.3 V contracts are separately versioned and authoring-only', () => {
+test('four explicit 3.3 V contracts are separately versioned and authoring-only', () => {
   assert.equal(BOUNDED_3V3_AUTHORING_CONTRACTS.schema, 'intent-mcu-bounded-3v3-authoring@1');
   assert.equal(BOUNDED_3V3_AUTHORING_CONTRACTS.execution, 'authoring-only');
   assert.deepEqual(Object.keys(BOUNDED_3V3_AUTHORING_CONTRACTS.components).sort(),
-    [GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE].sort());
+    [GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE].sort());
   for (const definition of Object.values(BOUNDED_3V3_AUTHORING_CONTRACTS.components)) {
     assert.equal(definition.version, 1);
     assert.equal(definition.pins.every(({ voltageMin, voltageMax }) => voltageMin >= 0 && voltageMax <= 3.3), true);
   }
+});
+
+test('potentiometer contract requires bounded resistance and a linear taper', () => {
+  const board = RP2040_PICO_BOARD_DEFINITION;
+  const graph = (properties) => validateBounded3v3AuthoringGraph({ board, components: [
+    { id: 'pico-1', type: RP2040_PICO_PROFILE },
+    { id: 'potentiometer-1', type: POTENTIOMETER_3V3_TYPE, properties },
+  ], nets: [{ id: 'analogue', endpoints: [
+    { component: 'pico-1', pin: 'GP26' }, { component: 'potentiometer-1', pin: 'WIPER' },
+  ] }] });
+  assert.equal(graph({ ohms: 10_000, taper: 'linear' }).ok, true);
+  assert.equal(graph({ ohms: 0, taper: 'linear' }).code, 'AUTHORING_POTENTIOMETER_PROPERTIES_UNSUPPORTED');
+  assert.equal(graph({ ohms: 10_000, taper: 'logarithmic' }).code, 'AUTHORING_POTENTIOMETER_PROPERTIES_UNSUPPORTED');
 });
 
 for (const profile of [

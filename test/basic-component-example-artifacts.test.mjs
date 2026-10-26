@@ -6,6 +6,12 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { parseProjectV2 } from '../src/project-v2.mjs';
+import { Rp2040PicoCircuitEditor } from '../src/rp2040-pico-circuit.mjs';
+import { Esp32C3CircuitEditor } from '../src/esp32c3-public-circuit.mjs';
+import { Stm32CircuitEditor } from '../src/stm32-public-circuit.mjs';
+import { normalizeRp2040PublicProject } from '../src/rp2040-public-workbench.mjs';
+import { normalizeEsp32C3PublicProject } from '../src/esp32c3-public-workbench.mjs';
+import { normalizeStm32PublicProject } from '../src/stm32-public-workbench.mjs';
 
 await import('../scripts/generate-basic-component-examples.mjs');
 const ROOT = new URL('../examples/basic-components/', import.meta.url);
@@ -23,6 +29,29 @@ test('CMP-001/002/037 examples are canonical, hashed and electrically named', as
     assert.equal(sha256(opened.project.source.files[0].content), entry.sourceSha256, `${entry.id}:source`);
     assert(Object.keys(entry.namedPins).length >= 2, `${entry.id}:pins`);
     assert.match(entry.profileBehavior['board.atmega328p-16mhz-v1'], /executable/u);
+  }
+});
+
+test('CMP-002 cross-profile combined examples reopen with exact hashes and honest firmware limits', async () => {
+  const manifest = JSON.parse(await readFile(new URL('manifest.json', ROOT), 'utf8'));
+  const variants = manifest.entries.find(({ id }) => id === 'avr-analogue-potentiometer').crossProfileAuthoring;
+  const editors = { 'board.rp2040-pico-v1': Rp2040PicoCircuitEditor,
+    'board.esp32-c3-devmodule-v1': Esp32C3CircuitEditor,
+    'board.stm32f429zi-nucleo144-v1': Stm32CircuitEditor };
+  const normalizers = { 'board.rp2040-pico-v1': normalizeRp2040PublicProject,
+    'board.esp32-c3-devmodule-v1': normalizeEsp32C3PublicProject,
+    'board.stm32f429zi-nucleo144-v1': normalizeStm32PublicProject };
+  assert.equal(variants.length, 3);
+  for (const variant of variants) {
+    const bytes = await readFile(new URL(variant.file, ROOT), 'utf8');
+    assert.equal(sha256(bytes), variant.projectSha256, variant.id);
+    assert.equal(variant.sourceSha256, null);
+    assert.match(variant.firmware, /unavailable/u);
+    const project = normalizers[variant.profile](JSON.parse(bytes));
+    const reopened = new editors[variant.profile](project.circuit).snapshot().draft;
+    assert.deepEqual(reopened.components.map(({ id }) => id), variant.componentIds);
+    for (const pin of ['HIGH', 'WIPER', 'LOW']) assert(reopened.nets.some(({ endpoints }) => endpoints.some(
+      ({ component, pin: actual }) => component === 'potentiometer-1' && actual === pin)));
   }
 });
 

@@ -50,9 +50,9 @@ function candidate(id, componentId, changes) {
   return opened.session;
 }
 
-test('all 27 available cells have one exact controls-persist or controls-empty policy', () => {
+test('all 27 executable cells have one exact controls-persist or controls-empty policy', () => {
   assert.deepEqual(controlPersistenceSummary(), {
-    profiles: 4, cells: 96, available: 27, unavailable: 69,
+    profiles: 4, cells: 100, available: 27, unavailable: 73,
     controlBearing: 8, controlsEmpty: 19, controls: 11,
   });
   const inventory = controlPersistenceInventory();

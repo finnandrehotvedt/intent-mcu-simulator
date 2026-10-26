@@ -7,7 +7,7 @@ import test from 'node:test';
 import { Esp32C3CircuitEditor } from '../src/esp32c3-public-circuit.mjs';
 import {
   BOUNDED_COMPONENT_CATALOG_SCHEMA, BOUNDED_LED_TYPE, BOUNDED_RESISTOR_TYPE,
-  GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE,
+  GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE,
 } from '../src/named-series-led-circuit-editor.mjs';
 import { Rp2040PicoCircuitEditor } from '../src/rp2040-pico-circuit.mjs';
 import { Stm32CircuitEditor } from '../src/stm32-public-circuit.mjs';
@@ -26,7 +26,7 @@ for (const profile of profiles) {
     assert.equal(catalog.profile, profile.boardType);
     assert.deepEqual(catalog.parts.map((part) => part.type), [
       profile.boardType, BOUNDED_RESISTOR_TYPE, BOUNDED_LED_TYPE,
-      GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE,
+      GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE, POTENTIOMETER_3V3_TYPE,
     ]);
     assert.equal(catalog.parts[0].fixed, true);
     assert.equal(catalog.parts[0].addable, false);

@@ -5,6 +5,7 @@ export const BOUNDED_3V3_AUTHORING_SCHEMA = 'intent-mcu-bounded-3v3-authoring@1'
 export const GROUND_REFERENCE_3V3_TYPE = 'ground.reference-3v3-v1';
 export const MOMENTARY_BUTTON_3V3_TYPE = 'button.momentary-3v3-v1';
 export const TOGGLE_SWITCH_3V3_TYPE = 'switch.toggle-3v3-v1';
+export const POTENTIOMETER_3V3_TYPE = 'potentiometer.linear-3v3-v1';
 
 const contract = (value) => Object.freeze({
   ...value,
@@ -33,6 +34,13 @@ export const BOUNDED_3V3_AUTHORING_CONTRACTS = Object.freeze({
         { id: 'B', role: 'passive', voltageMin: 0, voltageMax: 3.3 }],
       properties: { defaultClosed: false },
     }),
+    [POTENTIOMETER_3V3_TYPE]: contract({
+      type: POTENTIOMETER_3V3_TYPE, version: 1, displayName: 'Linear potentiometer (3.3 V authoring)',
+      pins: [{ id: 'HIGH', role: 'passive', voltageMin: 0, voltageMax: 3.3 },
+        { id: 'WIPER', role: 'passive', voltageMin: 0, voltageMax: 3.3 },
+        { id: 'LOW', role: 'passive', voltageMin: 0, voltageMax: 3.3 }],
+      properties: { ohms: 10000, taper: 'linear' },
+    }),
   }),
 });
 
@@ -60,6 +68,20 @@ export const BOUNDED_3V3_UI_COMPONENTS = Object.freeze({
     [uiPin('A', 'Contact A', 'passive', 0.08), uiPin('B', 'Contact B', 'passive', 0.92)]),
   [TOGGLE_SWITCH_3V3_TYPE]: uiDefinition(TOGGLE_SWITCH_3V3_TYPE, 'Toggle switch (3.3 V)',
     [uiPin('A', 'Contact A', 'passive', 0.08), uiPin('B', 'Contact B', 'passive', 0.92)], 'switch-toggle-3v3'),
+  [POTENTIOMETER_3V3_TYPE]: Object.freeze({
+    ...uiDefinition(POTENTIOMETER_3V3_TYPE, 'Linear potentiometer (3.3 V)', [
+      uiPin('HIGH', 'High terminal', 'passive', 0.19),
+      uiPin('WIPER', 'Wiper', 'passive', 0.5),
+      uiPin('LOW', 'Low terminal', 'passive', 0.81),
+    ], 'potentiometer-rotary'),
+    family: 'input.potentiometer-rotary', variant: 'linear-three-terminal-3v3-authoring',
+    propertyKeys: Object.freeze(['ohms', 'taper']),
+    propertySchema: Object.freeze({ ohms: Object.freeze({ kind: 'number', minimum: 1, maximum: 10_000_000, default: 10_000, unit: 'Ω' }),
+      taper: Object.freeze({ kind: 'enum', values: Object.freeze(['linear']), default: 'linear' }) }),
+    catalog: Object.freeze({ category: 'inputs', aliases: Object.freeze(['potentiometer', 'analogue dial', '3.3v']),
+      functions: Object.freeze(['data-only analogue circuit authoring']), interfaces: Object.freeze(['analogue']),
+      supplyVolts: Object.freeze({ min: 0, max: 3.3 }), package: 'three-terminal authoring symbol' }),
+  }),
 });
 
 const key = ({ component, pin }) => `${component}.${pin}`;
@@ -84,6 +106,11 @@ export function validateBounded3v3AuthoringGraph({ board, components, nets }) {
     if ([MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE].includes(component.type)
         && component.properties?.defaultClosed === true) {
       return failure('AUTHORING_CLOSED_CONTACT_UNSUPPORTED', { componentId: component.id });
+    }
+    if (component.type === POTENTIOMETER_3V3_TYPE
+        && (component.properties?.taper !== 'linear' || !Number.isFinite(component.properties?.ohms)
+          || component.properties.ohms < 1 || component.properties.ohms > 10_000_000)) {
+      return failure('AUTHORING_POTENTIOMETER_PROPERTIES_UNSUPPORTED', { componentId: component.id });
     }
     instances.set(component.id, definition);
   }
