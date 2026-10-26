@@ -11,6 +11,12 @@ import {
 } from '../expansion-drafts/ground-reference-integration-v1.mjs';
 import { createGroundReferenceArtwork } from '../expansion-drafts/ground-reference-artwork-v1.mjs';
 import {
+  POWER_REFERENCE_DEFINITION,
+  POWER_REFERENCE_TYPE,
+  createPowerReferenceComponent,
+} from '../expansion-drafts/power-reference-integration-v1.mjs';
+import { createPowerReferenceArtwork } from '../expansion-drafts/power-reference-artwork-v1.mjs';
+import {
   SPDT_CONTACT_DEFINITION,
   SPDT_CONTACT_TYPE,
   createSwitchContactComponent,
@@ -131,6 +137,7 @@ const SPDT_UI_DEFINITION = Object.freeze({
 
 export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   [GROUND_REFERENCE_TYPE]: GROUND_REFERENCE_DEFINITION,
+  [POWER_REFERENCE_TYPE]: POWER_REFERENCE_DEFINITION,
   [TOGGLE_SWITCH_TYPE]: TOGGLE_SWITCH_DEFINITION,
   [SPDT_CONTACT_TYPE]: SPDT_UI_DEFINITION,
   [LIGHT_ANALOGUE_SENSOR_TYPE]: LIGHT_ANALOGUE_SENSOR_DEFINITION,
@@ -152,6 +159,9 @@ export function candidateUiDefinition(type) {
 export function createCandidateUiArtwork(documentObject, definition, component, options = {}) {
   if (component?.type === GROUND_REFERENCE_TYPE) {
     return createGroundReferenceArtwork(documentObject, definition, component, options);
+  }
+  if (component?.type === POWER_REFERENCE_TYPE) {
+    return createPowerReferenceArtwork(documentObject, definition, component, options);
   }
   if (component?.type === TOGGLE_SWITCH_TYPE) {
     return createToggleSwitchArtwork(documentObject, definition, component, options);
@@ -194,6 +204,7 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
 
 export function createCandidateUiComponent(type, id) {
   if (type === GROUND_REFERENCE_TYPE) return createGroundReferenceComponent(id);
+  if (type === POWER_REFERENCE_TYPE) return createPowerReferenceComponent(id);
   if (type === TOGGLE_SWITCH_TYPE) return createToggleSwitchComponent(id);
   if (type === SPDT_CONTACT_TYPE) return createSwitchContactComponent(id, 'SPDT changeover contact', { selectedThrow: 'A' });
   if (type === LIGHT_ANALOGUE_SENSOR_TYPE) return createLightAnalogueSensorComponent(id);

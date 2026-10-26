@@ -17,6 +17,7 @@ import {
   validateContactPersistenceDraft,
 } from './project-v3-contact-persistence.mjs';
 import { GROUND_REFERENCE_TYPE } from './ground-reference-integration-v1.mjs';
+import { POWER_REFERENCE_TYPE } from './power-reference-integration-v1.mjs';
 import { SPDT_CONTACT_TYPE } from './switch-contact-graph-v1.mjs';
 import {
   createSpdtDigitalTransition,
@@ -41,7 +42,7 @@ const clone = (value) => structuredClone(value);
 const failure = (code, revision, details = []) => ({ ok: false, code, revision, details });
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
 const CANDIDATE_COMPONENT_TYPES = new Set([
-  GROUND_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
+  GROUND_REFERENCE_TYPE, POWER_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
   LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
   DIGITAL_LIGHT_THRESHOLD_TYPE,
 ]);
@@ -148,6 +149,8 @@ function contactSupport(result) {
       status: spdt && !spdt.ok ? 'runtime-unsupported' : 'projected-simulated',
       runtimeAdapter: contact.type === GROUND_REFERENCE_TYPE
         ? 'board-ground-projection'
+        : contact.type === POWER_REFERENCE_TYPE
+          ? 'board-5v-source-projection'
         : contact.type === TOGGLE_SWITCH_TYPE
           ? 'button.momentary-v1'
           : contact.type === LIGHT_ANALOGUE_SENSOR_TYPE
@@ -455,8 +458,8 @@ export class CandidateEditorSession {
           }
           const component = draft.candidateCircuit.components.find((item) => item.id === command.componentId);
           if (!component) return failure('EDITOR_COMPONENT_MISSING', this.revision);
-          if (component.type === GROUND_REFERENCE_TYPE) {
-            return failure('CANDIDATE_EDITOR_GROUND_IMMUTABLE', this.revision);
+          if (component.type === GROUND_REFERENCE_TYPE || component.type === POWER_REFERENCE_TYPE) {
+            return failure('CANDIDATE_EDITOR_REFERENCE_IMMUTABLE', this.revision);
           }
           if (component.type === TOGGLE_SWITCH_TYPE) {
             if (command.key !== 'closed' || typeof command.value !== 'boolean') {

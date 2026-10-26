@@ -22,6 +22,7 @@ import {
   validateContactPersistenceDraft,
 } from '../expansion-drafts/project-v3-contact-persistence.mjs';
 import { GROUND_REFERENCE_TYPE } from '../expansion-drafts/ground-reference-integration-v1.mjs';
+import { POWER_REFERENCE_TYPE } from '../expansion-drafts/power-reference-integration-v1.mjs';
 import { SPDT_CONTACT_TYPE } from '../expansion-drafts/switch-contact-graph-v1.mjs';
 import {
   createSpdtDigitalTransition,
@@ -58,7 +59,7 @@ const failure = (code, revision, details = []) => ({ ok: false, code, revision, 
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
 const MOMENTARY_BUTTON_TYPE = 'button.momentary-v1';
 const CANDIDATE_COMPONENT_TYPES = new Set([
-  GROUND_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
+  GROUND_REFERENCE_TYPE, POWER_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
   LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
   DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
   ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE,
@@ -174,6 +175,8 @@ function contactSupport(result) {
       runtimeProjection: clone(contact.runtimeProjection ?? null),
       runtimeAdapter: contact.type === GROUND_REFERENCE_TYPE
         ? 'board-ground-projection'
+        : contact.type === POWER_REFERENCE_TYPE
+          ? 'board-5v-source-projection'
         : contact.type === TOGGLE_SWITCH_TYPE
           ? 'button.momentary-v1'
           : contact.type === LIGHT_ANALOGUE_SENSOR_TYPE
@@ -762,8 +765,8 @@ export class CandidateEditorSession {
           }
           const component = draft.candidateCircuit.components.find((item) => item.id === command.componentId);
           if (!component) return failure('EDITOR_COMPONENT_MISSING', this.revision);
-          if (component.type === GROUND_REFERENCE_TYPE) {
-            return failure('CANDIDATE_EDITOR_GROUND_IMMUTABLE', this.revision);
+          if (component.type === GROUND_REFERENCE_TYPE || component.type === POWER_REFERENCE_TYPE) {
+            return failure('CANDIDATE_EDITOR_REFERENCE_IMMUTABLE', this.revision);
           }
           if (component.type === MOMENTARY_BUTTON_TYPE) {
             if (command.key !== 'pressed' || typeof command.value !== 'boolean') {

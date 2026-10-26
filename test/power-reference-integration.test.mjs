@@ -5,6 +5,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { DEFAULT_CIRCUIT } from '../src/default-circuit.mjs';
 import {
+  candidateUiDefinition,
+  createCandidateUiArtwork,
+  createCandidateUiComponent,
+} from '../src/candidate-existing-ui-adapter.mjs';
+import { prepareApiBatch } from '../src/browser-session-edit.mjs';
+import {
   POWER_REFERENCE_DEFINITION,
   createPowerReferenceComponent,
   parsePowerReferenceCircuitText,
@@ -49,4 +55,33 @@ test('CMP-020 rejects changed voltage, ground conflict, reuse and malformed JSON
   ] });
   assert.equal(validatePowerReferenceCircuit(reused).code, 'POWER_REFERENCE_REUSED');
   assert.equal(parsePowerReferenceCircuitText('{').code, 'MALFORMED_JSON');
+});
+
+test('CMP-020 is discoverable and addable through the canonical editor and API contracts', () => {
+  assert.equal(candidateUiDefinition('reference.power-5v-v1'), POWER_REFERENCE_DEFINITION);
+  assert.deepEqual(createCandidateUiComponent('reference.power-5v-v1', 'power-reference-2'), {
+    id: 'power-reference-2', type: 'reference.power-5v-v1', label: '5 V circuit source',
+    properties: { voltageVolts: 5 }, controls: {},
+  });
+  const [command] = prepareApiBatch({ profile: 'board.atmega328p-16mhz-v1', circuit: structuredClone(DEFAULT_CIRCUIT) }, [{
+    command: 'component.add', id: 'power-reference-3', type: 'reference.power-5v-v1',
+    position: { x: 0.7, y: 0.2, rotation: 0 },
+  }]);
+  assert.equal(command.component.type, 'reference.power-5v-v1');
+  assert.equal(command.component.properties.voltageVolts, 5);
+});
+
+test('CMP-020 renderer exposes the named OUT terminal using original SVG geometry', () => {
+  class Node {
+    constructor(name) { this.name = name; this.attributes = {}; this.children = []; this.textContent = ''; }
+    setAttribute(key, value) { this.attributes[key] = value; }
+    append(...children) { this.children.push(...children); }
+  }
+  const documentObject = { createElementNS: (_namespace, name) => new Node(name) };
+  const component = createCandidateUiComponent('reference.power-5v-v1', 'power-reference-4');
+  const svg = createCandidateUiArtwork(documentObject, POWER_REFERENCE_DEFINITION, component);
+  assert.equal(svg.attributes['data-artwork-key'], 'power-reference-5v-symbol');
+  assert.equal(svg.attributes.role, 'img');
+  assert.equal(svg.children.some((item) => item.attributes['data-terminal-pin'] === 'OUT'), true);
+  assert.match(svg.children.find((item) => item.name === 'title').textContent, /5 V circuit source/u);
 });

@@ -16,6 +16,11 @@ import {
   validateGroundReferenceCircuit,
 } from './ground-reference-integration-v1.mjs';
 import {
+  POWER_REFERENCE_DEFINITION,
+  POWER_REFERENCE_TYPE,
+  validatePowerReferenceCircuit,
+} from './power-reference-integration-v1.mjs';
+import {
   PROJECT_V3_LIMIT,
   validateProjectV3,
 } from './project-v3-envelope.mjs';
@@ -146,6 +151,7 @@ export function validateCompiledFixtureReference(value, profile) {
 
 function pinIds(component) {
   if (component.type === GROUND_REFERENCE_TYPE) return ['REF'];
+  if (component.type === POWER_REFERENCE_TYPE) return ['OUT'];
   if (component.type === TOGGLE_SWITCH_TYPE) return ['A', 'B'];
   if (component.type === SPDT_CONTACT_TYPE) return ['COM', 'A', 'B'];
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
@@ -164,6 +170,7 @@ function pinIds(component) {
 
 function componentPins(component) {
   if (component.type === GROUND_REFERENCE_TYPE) return GROUND_REFERENCE_DEFINITION.pins;
+  if (component.type === POWER_REFERENCE_TYPE) return POWER_REFERENCE_DEFINITION.pins;
   if (component.type === TOGGLE_SWITCH_TYPE) return TOGGLE_SWITCH_DEFINITION.pins;
   if (component.type === SPDT_CONTACT_TYPE) return SPDT_CONTACT_DEFINITION.terminals;
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return LIGHT_ANALOGUE_SENSOR_DEFINITION.pins;
@@ -189,6 +196,9 @@ function validateCandidateComponent(component) {
   if (component.type === GROUND_REFERENCE_TYPE) {
     if (!exactKeys(component.properties, ['potentialVolts']) || component.properties.potentialVolts !== 0
         || !exactKeys(component.controls, [])) fail('PROJECT_CONTACT_GROUND_STATE', [component.id]);
+  } else if (component.type === POWER_REFERENCE_TYPE) {
+    if (!exactKeys(component.properties, ['voltageVolts']) || component.properties.voltageVolts !== 5
+        || !exactKeys(component.controls, [])) fail('PROJECT_CONTACT_POWER_STATE', [component.id]);
   } else if (component.type === TOGGLE_SWITCH_TYPE) {
     if (!exactKeys(component.properties, ['normallyOpen']) || component.properties.normallyOpen !== true
         || !exactKeys(component.controls, ['closed']) || typeof component.controls.closed !== 'boolean') {
@@ -271,7 +281,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
   }
   if (requireCandidate
       && !components.some((component) => [
-        GROUND_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
+        GROUND_REFERENCE_TYPE, POWER_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
         LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
         DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
         ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
@@ -427,6 +437,7 @@ function deriveNetClasses(graph) {
     for (const endpoint of net.endpoints) {
       const component = components.get(endpoint.component);
       if (component?.type === GROUND_REFERENCE_TYPE && endpoint.pin === 'REF') classes.add('ground.reference');
+      if (component?.type === POWER_REFERENCE_TYPE && endpoint.pin === 'OUT') classes.add('power.5v-reference');
       if (component?.type === BOARD_TYPE && GROUND_PINS.has(endpoint.pin)) classes.add('ground.reference');
       if (component?.type === BOARD_TYPE && endpoint.pin === '5V') classes.add('power.5v-reference');
     }
@@ -490,6 +501,10 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
     if (component.type === GROUND_REFERENCE_TYPE) {
       production(implementation, component.type, component.controls, [component.id]);
       contacts.push({ componentId: component.id, type: component.type, state: { potentialVolts: 0 } });
+    }
+    if (component.type === POWER_REFERENCE_TYPE) {
+      contacts.push({ componentId: component.id, type: component.type,
+        state: { voltageVolts: 5, direction: 'source' } });
     }
     if (component.type === TOGGLE_SWITCH_TYPE) {
       production(implementation, component.type, { closed: component.controls.closed }, [component.id]);
@@ -654,12 +669,20 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
   })));
   for (const encoder of rotaryEncoderProjection.encoders) production(implementation, ROTARY_ENCODER_TYPE,
     { direction: 'cw' }, [encoder.componentId]);
-  const hasGround = rotaryEncoderProjection.runtimeGraph.components.some(
+  const hasPower = rotaryEncoderProjection.runtimeGraph.components.some(
+    (component) => component.type === POWER_REFERENCE_TYPE,
+  );
+  const powerProjected = hasPower
+    ? validatePowerReferenceCircuit(rotaryEncoderProjection.runtimeGraph, { modelLibraryLock })
+    : { ok: true, graph: rotaryEncoderProjection.runtimeGraph };
+  if (!powerProjected.ok) fail(`PROJECT_CONTACT_${powerProjected.code}`, powerProjected.diagnostics ?? []);
+  const afterPower = powerProjected.runtimeGraph ?? powerProjected.graph;
+  const hasGround = afterPower.components.some(
     (component) => component.type === GROUND_REFERENCE_TYPE,
   );
   const projected = hasGround
-    ? validateGroundReferenceCircuit(rotaryEncoderProjection.runtimeGraph, { modelLibraryLock })
-    : validateCircuit(rotaryEncoderProjection.runtimeGraph, { modelLibraryLock });
+    ? validateGroundReferenceCircuit(afterPower, { modelLibraryLock })
+    : validateCircuit(afterPower, { modelLibraryLock });
   if (!projected.ok) fail(`PROJECT_CONTACT_${projected.code}`, projected.diagnostics ?? []);
   const runtimeGraph = projected.runtimeGraph ?? projected.graph;
   return {
@@ -677,6 +700,10 @@ function draftContacts(graph) {
   return graph.components.flatMap((component) => {
     if (component.type === GROUND_REFERENCE_TYPE) {
       return [{ componentId: component.id, type: component.type, state: { potentialVolts: 0 } }];
+    }
+    if (component.type === POWER_REFERENCE_TYPE) {
+      return [{ componentId: component.id, type: component.type,
+        state: { voltageVolts: 5, direction: 'source' } }];
     }
     if (component.type === TOGGLE_SWITCH_TYPE) {
       return [{ componentId: component.id, type: component.type, state: { closed: component.controls.closed } }];
@@ -873,7 +900,7 @@ export function validateContactPersistenceProject(value, options = {}) {
   if (!draft.ok) return draft;
   if (!draft.reconstruction.graph.components.some(
     (component) => [
-      GROUND_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
+      GROUND_REFERENCE_TYPE, POWER_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
       LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
       DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
       ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
