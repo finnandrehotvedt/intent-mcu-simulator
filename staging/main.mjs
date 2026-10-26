@@ -1461,7 +1461,7 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
     properties.replaceChildren(note); return;
   }
 
-  if (!['resistor.fixed-v1', 'led.basic-v1'].includes(selected.type)) {
+  if (!['resistor.fixed-v1', 'led.basic-v1', 'potentiometer.linear-3v3-v1'].includes(selected.type)) {
     const note = document.createElement('p');
     note.textContent = `${selectedPart.displayName} is a 3.3 V authoring-only part. Its named pins persist, but it cannot grant Build or Run authority.`;
     const duplicate = document.createElement('button'); duplicate.type = 'button'; duplicate.textContent = 'Duplicate disconnected part';
@@ -1474,9 +1474,11 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
   const label = document.createElement('label');
   const limit = document.createElement('small');
   let input;
-  if (selected.type === 'resistor.fixed-v1') {
+  if (['resistor.fixed-v1', 'potentiometer.linear-3v3-v1'].includes(selected.type)) {
     label.append('Resistance (Ω)');
-    limit.textContent = 'Accepted only when the selected LED remains within the exact 3.3 V / 12 mA ideal-model limit.';
+    limit.textContent = selected.type === 'resistor.fixed-v1'
+      ? 'Accepted only when the selected LED remains within the exact 3.3 V / 12 mA ideal-model limit.'
+      : 'Authoring value only. This does not prove a powered divider, ADC runtime, loading, noise or physical tolerance.';
     input = document.createElement('input'); input.type = 'number'; input.min = '1'; input.max = '10000000';
     input.step = '1'; input.value = String(selected.properties.ohms); input.dataset.boundedProperty = 'ohms';
   } else {
@@ -1490,10 +1492,6 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
   }
   label.append(limit); input.id = `${selected.id}-${input.dataset.boundedProperty}`; label.htmlFor = input.id;
   row.append(label, input);
-  if (!['resistor.fixed-v1', 'led.basic-v1'].includes(selected.type)) {
-    properties.replaceChildren(row); return;
-  }
-
   const modelPanel = document.createElement('section');
   const modelStatus = document.createElement('p'); modelStatus.className = 'component-editor-invariant'; modelStatus.setAttribute('role', 'status');
   const duplicate = document.createElement('button'); duplicate.type = 'button'; duplicate.textContent = 'Duplicate disconnected part';
@@ -1541,6 +1539,10 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
   });
   const modelActions = document.createElement('div'); modelActions.className = 'component-editor-actions';
   modelActions.append(duplicate, modelCancel, modelApply); modelPanel.append(row, modelStatus, modelActions); updateModel();
+
+  if (selected.type === 'potentiometer.linear-3v3-v1') {
+    properties.replaceChildren(modelPanel); return;
+  }
 
   const appearance = document.createElement('section'); appearance.className = 'bounded-property-row bounded-appearance-row';
   const appearanceLabel = document.createElement('label');
@@ -2696,6 +2698,7 @@ function renderPicoCircuitEditor(state) {
     card.addEventListener('pointerdown', (event) => startPicoEditorDrag(event, component.id, card));
     card.addEventListener('pointermove', movePicoEditorDrag); card.addEventListener('pointerup', finishPicoEditorDrag);
     card.addEventListener('pointercancel', finishPicoEditorDrag);
+    card.addEventListener('click', () => picoPublicWorkbench.selectCircuit({ kind: 'component', id: component.id }));
     card.addEventListener('keydown', (event) => {
       if (event.target === card && ['Enter', ' '].includes(event.key)) { event.preventDefault(); picoPublicWorkbench.selectCircuit({ kind: 'component', id: component.id }); }
     });
@@ -2986,6 +2989,7 @@ function renderC3CircuitEditor(state) {
     card.addEventListener('pointerdown', (event) => startC3EditorDrag(event, component.id, card));
     card.addEventListener('pointermove', moveC3EditorDrag); card.addEventListener('pointerup', finishC3EditorDrag);
     card.addEventListener('pointercancel', finishC3EditorDrag);
+    card.addEventListener('click', () => c3PublicWorkbench.selectCircuit({ kind: 'component', id: component.id }));
     card.addEventListener('keydown', (event) => {
       if (event.target === card && ['Enter', ' '].includes(event.key)) { event.preventDefault(); c3PublicWorkbench.selectCircuit({ kind: 'component', id: component.id }); }
     });
@@ -3283,6 +3287,7 @@ function renderStm32CircuitEditor(state) {
     card.addEventListener('pointermove', moveStm32EditorDrag);
     card.addEventListener('pointerup', finishStm32EditorDrag);
     card.addEventListener('pointercancel', finishStm32EditorDrag);
+    card.addEventListener('click', () => stm32PublicWorkbench.selectCircuit({ kind: 'component', id: component.id }));
     card.addEventListener('keydown', (event) => {
       if (event.target === card && ['Enter', ' '].includes(event.key)) {
         event.preventDefault(); stm32PublicWorkbench.selectCircuit({ kind: 'component', id: component.id });

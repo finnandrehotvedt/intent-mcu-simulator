@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-lcd-20x4-cgram.1-current",
-    "manifestSha256": "7703f731bd8584ca61f9b5fd6e67da9b9c1b69d6e17d628d7b47d6121c83af44",
-    "implementationSha256": "640be6f503c932dfb2692808d65f24057a6b057671fc2f381aa017332adb4b24"
+    "manifestSha256": "1e2e94a3d88ce7bcc50a058536858897578b6cc3e13f5b4936a7a6003b11fe1f",
+    "implementationSha256": "be66fe9d85d39c439540c979504ba762b3918811c05a8a540dffc83842c33b41"
   },
   "entries": [
     {
@@ -37,7 +37,7 @@
       },
       "firmwareLimits": "Ideal sensor, display and RGB subset; no physical timing or current model.",
       "provenance": "Original project-owned direct 4-bit LCD example generated from the committed factory and canonical common project envelope.",
-      "projectSha256": "b0dea910d075bee411b6e1755931e8b879e27ef3fc40eaa68d981bbae3ed3fa0"
+      "projectSha256": "89dabf0d43b0f566f52ba55505da1848b67610d4089311fd45a9370d535102ba"
     },
     {
       "id": "pcf8574-lcd-backpack",
@@ -62,7 +62,7 @@
       },
       "firmwareLimits": "Partial: AVR-only, fixed address and mapping, write-only ASCII subset; no arbitrary Wire compatibility.",
       "provenance": "Original project-owned fixed 0x27 PCF8574 example generated from the committed factory and canonical common project envelope.",
-      "projectSha256": "3ade9189c336290dbf3bd18ae8e049de85feaeb538fa78c569eb93ec8f4fa0cc"
+      "projectSha256": "cb80d4128bf767322cb334385587596980952a5d295e9e42e0cecd636cd90e47"
     },
     {
       "id": "avr-character-lcd-20x4-cgram",
@@ -92,7 +92,7 @@
       },
       "firmwareLimits": "Partial: AVR-only write-only 4-bit GPIO, eight bounded CGRAM slots; no reads, busy flag, shifts, 8-bit mode, I2C, contrast, backlight or physical timing accuracy.",
       "provenance": "Original project-owned 20x4/CGRAM example generated through the committed canonical envelope generator.",
-      "projectSha256": "87548d7da6b5dc6a1f0a335e38f7e78eea1710ce6ea1c1653f381e15ceae6067"
+      "projectSha256": "bf6ab319ed1782eae4a24fe68d7037d3926e13be3a8d50b04829e364399897ed"
     }
   ]
 }
