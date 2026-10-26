@@ -43,6 +43,11 @@ const profiles = [
       assert.deepEqual(wide, { cards: expectedCards, artwork: expectedCards, shellContained: true, resistorBands: 4,
         resistorValue: '220 Ω', ledAnode: 'A +', ledCathode: 'K −', buttonMark: 'PUSH' });
       if (process.env.ARTWORK_SCREENSHOT_DIR) {
+        await page.evaluate(() => {
+          window.scrollTo(0, 0);
+          document.querySelector('#top-workbench-shell').scrollTo(0, 0);
+          document.querySelector('#simple-parts-drawer').scrollTo(0, 0);
+        });
         await page.locator('#top-workbench-shell').screenshot({
           path: path.join(process.env.ARTWORK_SCREENSHOT_DIR, `${slug}-1905.png`),
         });
@@ -92,6 +97,11 @@ const profiles = [
         { stageWidth: 980, containedScroll: true, documentContained: true, artworkVisible: true,
           catalogueUsable: true, controlsUsable: true, serialClearOfCanvas: true });
       if (process.env.ARTWORK_SCREENSHOT_DIR) {
+        await page.evaluate(() => {
+          window.scrollTo(0, 0);
+          document.querySelector('#top-workbench-shell').scrollTo(0, 0);
+          document.querySelector('#simple-parts-drawer').scrollTo(0, 0);
+        });
         await page.locator('#top-workbench-shell').screenshot({
           path: path.join(process.env.ARTWORK_SCREENSHOT_DIR, `${slug}-511.png`),
         });
