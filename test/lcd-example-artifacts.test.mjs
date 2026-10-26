@@ -41,12 +41,17 @@ test('committed CMP-050, CMP-051, CMP-052 and CMP-062 files are exact current co
     assert(entry.expectedBehavior.length > 20 && entry.firmwareLimits.length > 20 && entry.provenance.length > 20);
     assert(entry.participatingComponentIds.includes('board-1'));
     const lcdComponentId = entry.id === 'pcf8574-lcd-backpack' ? 'pcf8574-lcd-1' : 'character-lcd-1';
-    assert(entry.participatingComponentIds.includes(lcdComponentId));
+    assert.deepEqual(entry.participatingComponentIds, ['board-1', lcdComponentId]);
     assert.equal(entry.participatingNets.length, new Set(Object.values(entry.namedPins)).size);
     const actualNets = raw.project.candidateCircuit.nets
       .filter((net) => net.endpoints.some((endpoint) => endpoint.component === lcdComponentId))
       .map((net) => ({ id: net.id, endpoints: net.endpoints.map(({ component, pin }) => `${component}.${pin}`) }));
     assert.deepEqual(entry.participatingNets, actualNets);
+    const connectedIds = new Set([lcdComponentId]);
+    for (const net of actualNets) {
+      for (const endpoint of net.endpoints) connectedIds.add(endpoint.slice(0, endpoint.lastIndexOf('.')));
+    }
+    assert.deepEqual(entry.electricallyConnectedComponentIds, [...connectedIds].sort());
     for (const net of entry.participatingNets) {
       assert(net.endpoints.some((endpoint) => endpoint.startsWith('board-1.')),
         `${entry.id}:${net.id} has no controller endpoint`);

@@ -39,7 +39,8 @@ function participation(bytes, componentId = 'character-lcd-1') {
     for (const endpoint of net.endpoints) componentIds.add(endpoint.slice(0, endpoint.lastIndexOf('.')));
   }
   return {
-    participatingComponentIds: [...componentIds].sort(),
+    participatingComponentIds: ['board-1', componentId],
+    electricallyConnectedComponentIds: [...componentIds].sort(),
     participatingNets,
     sourceFiles: sourceFiles.map(({ name, content }) => ({ name, sha256: sha256(content) })),
   };

@@ -39,6 +39,10 @@
       "provenance": "Original project-owned direct 4-bit LCD example generated from the committed factory and canonical common project envelope.",
       "participatingComponentIds": [
         "board-1",
+        "character-lcd-1"
+      ],
+      "electricallyConnectedComponentIds": [
+        "board-1",
         "character-lcd-1",
         "rgb-led-1",
         "temperature-sensor-1"
@@ -138,6 +142,10 @@
       "provenance": "Original project-owned fixed 0x27 PCF8574 example generated from the committed factory and canonical common project envelope.",
       "participatingComponentIds": [
         "board-1",
+        "pcf8574-lcd-1"
+      ],
+      "electricallyConnectedComponentIds": [
+        "board-1",
         "button-1",
         "led-1",
         "led-2",
@@ -216,6 +224,10 @@
       "firmwareLimits": "Partial: AVR-only write-only 4-bit GPIO, eight bounded CGRAM slots; no reads, busy flag, shifts, 8-bit mode, I2C, contrast, backlight or physical timing accuracy.",
       "provenance": "Original project-owned 20x4/CGRAM example generated through the committed canonical envelope generator.",
       "participatingComponentIds": [
+        "board-1",
+        "character-lcd-1"
+      ],
+      "electricallyConnectedComponentIds": [
         "board-1",
         "character-lcd-1",
         "rgb-led-1",
