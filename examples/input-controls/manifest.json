@@ -64,16 +64,16 @@
         "B": "D3",
         "COM": "GND2"
       },
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "quadrature encoder is unavailable in the current bounded Parts catalogue",
+        "board.esp32-c3-devmodule-v1": "quadrature encoder is unavailable in the current bounded Parts catalogue",
+        "board.stm32f429zi-nucleo144-v1": "quadrature encoder is unavailable in the current bounded Parts catalogue"
+      },
       "expectedBehavior": "One detent produces ordered 01→00→10→11 clockwise phases and the exact reverse counter-clockwise.",
       "firmwareLimits": "CMP-132 only: ideal AVR quadrature phases at fixed 1 ms spacing. This is not CMP-027; it has no push switch, bounce, acceleration or physical detents.",
       "sourceSha256": "f0a3e2f6a9856762285b21ee4e3d51e95c76f9549c2b0dfcdc3c4a9ec98806e3",
       "projectSha256": "a1e757311a301d9ef5932781a4a3a58fbd033615280adde4d1c187ececb02d7b",
-      "profileBehavior": {
-        "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
-        "board.rp2040-pico-v1": "separate 3.3 V authoring component exists; this exact model is unavailable",
-        "board.esp32-c3-devmodule-v1": "separate 3.3 V authoring component exists; this exact model is unavailable",
-        "board.stm32f429zi-nucleo144-v1": "separate 3.3 V authoring component exists; this exact model is unavailable"
-      },
       "provenance": "Original project-owned component, artwork, circuit factory and canonical project envelope."
     }
   ]

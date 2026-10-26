@@ -22,6 +22,12 @@ const PROFILE_BEHAVIOR = Object.freeze({
   'board.esp32-c3-devmodule-v1': 'separate 3.3 V authoring component exists; this exact model is unavailable',
   'board.stm32f429zi-nucleo144-v1': 'separate 3.3 V authoring component exists; this exact model is unavailable',
 });
+const ENCODER_PROFILE_BEHAVIOR = Object.freeze({
+  [AVR]: 'authoring and executable adapter available after a fresh isolated Build',
+  'board.rp2040-pico-v1': 'quadrature encoder is unavailable in the current bounded Parts catalogue',
+  'board.esp32-c3-devmodule-v1': 'quadrature encoder is unavailable in the current bounded Parts catalogue',
+  'board.stm32f429zi-nucleo144-v1': 'quadrature encoder is unavailable in the current bounded Parts catalogue',
+});
 const candidateAdapter = Object.freeze({
   schemas: Object.freeze(['intent-mcu-project-contact-persistence@1']),
   prepare(value) {
@@ -64,6 +70,7 @@ const definitions = [
     id: 'avr-quadrature-encoder', requirementIds: ['CMP-132'],
     file: 'avr-quadrature-encoder.intent-mcu.json', project: encoder.project,
     namedPins: { A: 'D2', B: 'D3', COM: 'GND2' },
+    profileBehavior: ENCODER_PROFILE_BEHAVIOR,
     expectedBehavior: 'One detent produces ordered 01→00→10→11 clockwise phases and the exact reverse counter-clockwise.',
     firmwareLimits: 'CMP-132 only: ideal AVR quadrature phases at fixed 1 ms spacing. This is not CMP-027; it has no push switch, bounce, acceleration or physical detents.',
   },
@@ -80,7 +87,7 @@ const manifest = {
   schema: 'intent-mcu-input-control-example-manifest@1', profile: AVR,
   modelLibrary: CURRENT_MODEL_LIBRARY_LOCK,
   entries: outputs.map(({ project, bytes, ...entry }) => ({
-    ...entry, profileBehavior: PROFILE_BEHAVIOR,
+    ...entry, profileBehavior: entry.profileBehavior ?? PROFILE_BEHAVIOR,
     provenance: 'Original project-owned component, artwork, circuit factory and canonical project envelope.',
   })),
 };

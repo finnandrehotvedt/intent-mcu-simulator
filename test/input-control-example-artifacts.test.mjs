@@ -35,7 +35,9 @@ test('CMP-021/022/132 artifacts are canonical, hashed and profile-bounded', asyn
     assert.equal(opened.ok, true, `${entry.id}:${opened.code}`);
     assert.match(entry.profileBehavior['board.atmega328p-16mhz-v1'], /executable/u);
     for (const profile of ['board.rp2040-pico-v1', 'board.esp32-c3-devmodule-v1', 'board.stm32f429zi-nucleo144-v1']) {
-      assert.match(entry.profileBehavior[profile], /exact model is unavailable/u, `${entry.id}:${profile}`);
+      assert.match(entry.profileBehavior[profile], entry.id === 'avr-quadrature-encoder'
+        ? /unavailable in the current bounded Parts catalogue/u : /exact model is unavailable/u,
+      `${entry.id}:${profile}`);
     }
   }
 });
