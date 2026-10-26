@@ -18,6 +18,8 @@ const PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readF
   '../src/model-bundles/pre-lcd-current-manifest.json', import.meta.url), 'utf8'));
 const PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
   '../src/model-bundles/pre-lcd-api-duplicate-fix-current-manifest.json', import.meta.url), 'utf8'));
+const PRE_LCD_PERSISTENCE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
+  '../src/model-bundles/pre-lcd-persistence-fix-current-manifest.json', import.meta.url), 'utf8'));
 
 const { RETAINED_MODEL_LIBRARY_MANIFEST } = existingSnapshots;
 const PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_MANIFEST =
@@ -327,6 +329,7 @@ export const PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${J
 export const PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_LCD_PERSISTENCE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_LCD_PERSISTENCE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_RUNTIME_READY_DEADLINE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_RUNTIME_READY_DEADLINE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});

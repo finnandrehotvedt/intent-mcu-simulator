@@ -7,6 +7,7 @@ import test from 'node:test';
 import { openCandidateUiSession } from '../src/candidate-existing-ui-adapter.mjs';
 import {
   PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_LCD_PERSISTENCE_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   RETAINED_MODEL_LIBRARY_LOCK, resolveModelLibrary,
 } from '../src/model-library.mjs';
 import { prepareProjectEnvelope } from '../src/project-envelope.mjs';
@@ -84,13 +85,15 @@ test('raw new-PCF candidate remains rejected by retained legacy admission', asyn
 
 test('the preceding valid LCD export reopens losslessly with runtime authority cleared', async () => {
   const current = JSON.parse(await readFile(new URL('parallel-hd44780-20x4-cgram.intent-mcu.json', root), 'utf8'));
-  current.modelLibrary = structuredClone(PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK);
-  const priorBytes = JSON.stringify(current);
-  const opened = prepareProjectEnvelope(priorBytes, adapters);
-  assert.equal(opened.ok, true, opened.code);
-  assert.equal(opened.report.modelLibrary.migrationAvailable, true);
-  assert.equal(opened.report.modelLibrary.executableAuthority, false);
-  assert.deepEqual(opened.project.candidateCircuit, current.project.candidateCircuit);
-  assert.deepEqual(opened.project.candidateLayout, current.project.candidateLayout);
-  assert.deepEqual(opened.project.project.source, current.project.project.source);
+  for (const priorLock of [PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK,
+    PRE_LCD_PERSISTENCE_FIX_CURRENT_MODEL_LIBRARY_LOCK]) {
+    const prior = structuredClone(current); prior.modelLibrary = structuredClone(priorLock);
+    const opened = prepareProjectEnvelope(JSON.stringify(prior), adapters);
+    assert.equal(opened.ok, true, `${priorLock.manifestSha256}:${opened.code}`);
+    assert.equal(opened.report.modelLibrary.migrationAvailable, true);
+    assert.equal(opened.report.modelLibrary.executableAuthority, false);
+    assert.deepEqual(opened.project.candidateCircuit, prior.project.candidateCircuit);
+    assert.deepEqual(opened.project.candidateLayout, prior.project.candidateLayout);
+    assert.deepEqual(opened.project.project.source, prior.project.project.source);
+  }
 });
