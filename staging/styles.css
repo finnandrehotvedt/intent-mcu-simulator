@@ -1135,6 +1135,8 @@ button:disabled, select:disabled { opacity: .42; }
 .button-body { fill: #2c3237; stroke: #aab2b5; stroke-width: 1.5; }
 .button-frame { fill: #111619; stroke: #697278; }
 .button-cap { fill: #d8463c; stroke: #ff8a81; stroke-width: 2; }
+.component-identity-mark { fill: #d9e5eb; font: 700 7px/1 system-ui, sans-serif; letter-spacing: .03em; pointer-events: none; }
+.button-identity-mark { fill: #fff; font-size: 6px; }
 .pot-body { fill: #7a6545; stroke: #d0b478; }
 .pot-case { fill: #92989a; stroke: #e4e7e7; stroke-width: 1.5; }
 .pot-shaft { fill: #c5c9ca; stroke: #656d70; }
@@ -1891,6 +1893,23 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   .pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label { top: calc(100% + 28px); }
   .shared-canvas-surface:fullscreen .pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label,
   .shared-profile-workbench.shared-canvas-focus .pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label { top: calc(100% - 5px); }
+  /* The circuit editor is a desktop workbench, not a separate mobile UI.
+     Narrow windows scroll the intact editor instead of compressing pin labels,
+     component art and the inspector into overlapping columns. */
+  .shared-profile-workbench { overflow-x: auto; overscroll-behavior-inline: contain; }
+  .pico-public-grid.shared-profile-grid,
+  .c3-public-grid.shared-profile-grid,
+  .stm32-public-grid.shared-profile-grid { min-width: 1120px; grid-template-columns: 260px 8px minmax(520px,1fr) 8px 280px;
+    grid-template-areas: "parts parts-resizer canvas inspector-resizer inspector"; }
+  .shared-profile-workbench .serial-tab, .shared-profile-workbench .serial-tab[aria-expanded="true"] {
+    top: 44%; right: 0; bottom: auto; min-width: 48px; min-height: 112px;
+    border-right: 0; border-radius: 12px 0 0 12px; writing-mode: vertical-rl;
+  }
+  .top-workbench-shell { overflow-x: auto; overscroll-behavior-inline: contain; }
+  .top-workbench-sticky-controls, .active-canvas-stage { min-width: 980px; }
+  .active-canvas-stage { grid-template-columns: 270px minmax(700px,1fr); }
+  .simple-parts-mount .catalog-list { grid-template-columns: 1fr; overflow-x: hidden; }
+  body[data-workbench-view="simple"] > .serial-tab { display: none; }
 }
 @media (max-width: 480px) {
   .example-picker-dialog .starter-grid { grid-template-columns: minmax(0,1fr); }

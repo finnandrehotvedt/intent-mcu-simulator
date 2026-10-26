@@ -1918,6 +1918,9 @@ export function mountSharedWorkbenchShell(document) {
     for (const node of [...simplePartsMount.children]) if (!activeParts.has(node)) parking.append(node);
     for (const node of activeParts) simplePartsMount.append(node);
     syncSimplePartsActions();
+    document.dispatchEvent(new document.defaultView.CustomEvent('intent-simple-parts-mounted', {
+      detail: { profile: activeProfile },
+    }));
   };
   simplePartsUndo.addEventListener('click', () => document.querySelector(simpleActionSelectors[activeProfile].undo)?.click());
   simplePartsSave.addEventListener('click', () => document.querySelector(simpleActionSelectors[activeProfile].save)?.click());

@@ -147,8 +147,11 @@ function resistor(svg, definition, component, { appearancePreset = 'standard-bei
   );
   const bandScale = `translate(75 24) scale(${body.widthPct / 100} ${body.heightPct / 100}) translate(-75 -24)`;
   resistorBands(component.properties.ohms).forEach((color, index) => {
-    svg.append(element('rect', { x: 55 + index * 13, y: 11, width: 5, height: 26, rx: 1, fill: color, transform: bandScale }));
+    svg.append(element('rect', { x: 55 + index * 13, y: 11, width: 5, height: 26, rx: 1, fill: color,
+      transform: bandScale, 'data-resistor-band': String(index + 1) }));
   });
+  svg.append(element('text', { x: 75, y: 46, 'text-anchor': 'middle', class: 'component-identity-mark',
+    'data-component-identity': 'resistance' }, `${component.properties.ohms} Ω`));
   drawTerminals(svg, definition, 2.8);
 }
 
@@ -178,6 +181,10 @@ function led(svg, definition, component, { appearancePreset = 'round-5mm', appea
     element('path', { d: 'M 20 52 H 54', class: 'led-rim', transform: bodyScale }),
     element('path', { d: 'M 47 35 V 48', class: 'led-cathode-flat', transform: bodyScale }),
     element('ellipse', { cx: 30, cy: 30, rx: 5, ry: 8, class: 'led-highlight', transform: bodyScale }),
+    element('text', { x: 20, y: 89, class: 'component-identity-mark', 'text-anchor': 'middle',
+      'data-component-identity': 'led-anode' }, 'A +'),
+    element('text', { x: 52, y: 89, class: 'component-identity-mark', 'text-anchor': 'middle',
+      'data-component-identity': 'led-cathode' }, 'K −'),
   );
   drawTerminals(svg, definition, 3);
 }
@@ -191,6 +198,8 @@ function button(svg, definition) {
     element('rect', { x: 17, y: 10, width: 66, height: 58, rx: 7, class: 'button-body' }),
     element('rect', { x: 27, y: 19, width: 46, height: 40, rx: 7, class: 'button-frame' }),
     element('circle', { cx: 50, cy: 39, r: 15, class: 'button-cap' }),
+    element('text', { x: 50, y: 42, class: 'component-identity-mark button-identity-mark',
+      'text-anchor': 'middle', 'data-component-identity': 'momentary-push' }, 'PUSH'),
   );
   for (const [x, y, label] of [[8, 20, 'A1'], [8, 58, 'A2'], [92, 20, 'B1'], [92, 58, 'B2']]) {
     svg.append(element('circle', { cx: x, cy: y, r: 2.2, class: 'art-terminal-secondary', 'data-physical-terminal': label }));

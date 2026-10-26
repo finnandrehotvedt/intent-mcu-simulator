@@ -9,6 +9,7 @@ import {
   PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_LCD_PERSISTENCE_FIX_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_COMPONENT_IMAGE_PARITY_CURRENT_MODEL_LIBRARY_LOCK,
   RETAINED_MODEL_LIBRARY_LOCK, resolveModelLibrary,
 } from '../src/model-library.mjs';
 import { prepareProjectEnvelope } from '../src/project-envelope.mjs';
@@ -88,7 +89,8 @@ test('the preceding valid LCD export reopens losslessly with runtime authority c
   const current = JSON.parse(await readFile(new URL('parallel-hd44780-20x4-cgram.intent-mcu.json', root), 'utf8'));
   for (const priorLock of [PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK,
     PRE_LCD_PERSISTENCE_FIX_CURRENT_MODEL_LIBRARY_LOCK,
-    PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_LOCK]) {
+    PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_LOCK,
+    PRE_COMPONENT_IMAGE_PARITY_CURRENT_MODEL_LIBRARY_LOCK]) {
     const prior = structuredClone(current); prior.modelLibrary = structuredClone(priorLock);
     const opened = prepareProjectEnvelope(JSON.stringify(prior), adapters);
     assert.equal(opened.ok, true, `${priorLock.manifestSha256}:${opened.code}`);

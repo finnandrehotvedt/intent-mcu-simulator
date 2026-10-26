@@ -12821,6 +12821,12 @@ function renderCatalog() {
   const interactive = catalogFixtureRecords === null;
   const buttons = windowRecords.map((definition) => createCatalogRow(definition, { interactive, thumbnail: true }));
   elements.cataloglist.replaceChildren(...buttons);
+  if (elements.cataloglist.closest('#simple-parts-mount')) {
+    for (const slot of elements.cataloglist.querySelectorAll('.catalog-thumbnail-slot')) {
+      hydrateCatalogThumbnail(slot);
+      catalogThumbnailObserver?.unobserve(slot);
+    }
+  }
   elements.cataloglist.scrollTop = 0;
   const first = matches.length ? catalogWindowStart + 1 : 0;
   const last = Math.min(matches.length, catalogWindowStart + windowRecords.length);
@@ -12833,6 +12839,12 @@ function renderCatalog() {
   if (catalogBenchmarkSession) catalogBenchmarkSession.renderDurations.push(milliseconds);
   return { matches: matches.length, rendered: windowRecords.length, first, last, milliseconds };
 }
+document.addEventListener('intent-simple-parts-mounted', () => {
+  for (const slot of elements.cataloglist.querySelectorAll('.catalog-thumbnail-slot')) {
+    hydrateCatalogThumbnail(slot);
+    catalogThumbnailObserver?.unobserve(slot);
+  }
+});
 
 function renderComponentSupportMatrix() {
   const profileId = elements.componentsupportprofile.value || selectedCompilerProfile || AVR_PROFILE;

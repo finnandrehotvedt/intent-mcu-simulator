@@ -227,6 +227,13 @@ export const PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMEN
   migrationOnly: true,
 });
 
+export const PRE_COMPONENT_IMAGE_PARITY_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-preserved-draft-export@51-migration',
+  manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
+  migrationOnly: true,
+});
+
 export const PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
   ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
   id: 'intent-mcu-model-bundle-current-x46-usart-config-producer-2@44',
