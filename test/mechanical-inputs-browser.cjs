@@ -47,7 +47,9 @@ async function candidateProject() {
     page.on('pageerror', (error) => errors.push(String(error)));
     page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
     page.on('request', (request) => { if (new URL(request.url()).origin !== new URL(base).origin) outside.push(request.url()); });
-    await page.goto(base, { waitUntil: 'domcontentloaded' }); await page.waitForFunction(() => window.__M11_READY__ === true);
+    await page.goto(base, { waitUntil: 'domcontentloaded' });
+    try { await page.waitForFunction(() => window.__M11_READY__ === true); }
+    catch { throw new Error(`WORKBENCH_NOT_READY:${JSON.stringify({ errors, body: (await page.locator('body').innerText()).slice(0, 1200) })}`); }
     await page.evaluate(() => localStorage.clear()); await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.__M11_READY__ === true); await page.click('#workbench-view-advanced');
     await page.setInputFiles('#project-open-input', { name: 'mechanical.intent-mcu.json', mimeType: 'application/json', buffer: Buffer.from(await candidateProject()) });
@@ -78,17 +80,21 @@ async function candidateProject() {
       assert.equal(result.ok, true, JSON.stringify({ result, model: await page.locator('#model-library-status').textContent() }));
     }
     const ids = await page.evaluate(() => window.__M6_PROJECT__().candidateCircuit.components.map((component) => component.id));
-    for (const type of ['switch.reed-no-v1', 'switch.emergency-stop-nc-v1', 'switch.foot-pedal-no-v1']) {
+    for (const type of ['switch.reed-no-v1', 'switch.emergency-stop-nc-v1', 'switch.foot-pedal-no-v1',
+      'switch.rotary-selector-4-v1', 'output.rgb-led-common-anode-v1', 'output.led-bar-graph-10-v1']) {
       const result = await page.evaluate((componentType) => window.__M6_ADD__(componentType), type);
       assert.equal(result.ok, true, JSON.stringify(result));
     }
     const allIds = await page.evaluate(() => window.__M6_PROJECT__().candidateCircuit.components.map((component) => component.id));
     assert(['slide-switch-1', 'nc-button-1', 'limit-switch-1', 'dip-switch-1', 'selector-1',
-      'encoder-button-1', 'reed-switch-1', 'emergency-stop-1', 'foot-pedal-1'].every((id) => allIds.includes(id)), JSON.stringify({ ids: allIds, message: await page.locator('#project-message').textContent(), technical: await page.locator('#technical-error-detail').textContent(), errors }));
+      'encoder-button-1', 'reed-switch-1', 'emergency-stop-1', 'foot-pedal-1',
+      'rotary-selector-1', 'rgb-led-ca-1', 'led-bar-1'].every((id) => allIds.includes(id)), JSON.stringify({ ids: allIds, message: await page.locator('#project-message').textContent(), technical: await page.locator('#technical-error-detail').textContent(), errors }));
     for (const [id, renderer] of [['slide-switch-1', 'switch-slide-spdt'], ['nc-button-1', 'button-momentary-nc'],
       ['limit-switch-1', 'switch-limit-spdt'], ['dip-switch-1', 'switch-dip-4'],
       ['encoder-button-1', 'input-rotary-encoder-button'], ['reed-switch-1', 'switch-reed-no'],
-      ['emergency-stop-1', 'switch-emergency-stop-nc'], ['foot-pedal-1', 'switch-foot-pedal-no']]) {
+      ['emergency-stop-1', 'switch-emergency-stop-nc'], ['foot-pedal-1', 'switch-foot-pedal-no'],
+      ['rotary-selector-1', 'switch-rotary-selector-4'], ['rgb-led-ca-1', 'output-rgb-led-common-anode'],
+      ['led-bar-1', 'output-led-bar-graph-10']]) {
       assert.equal(await page.locator(`.circuit-component[data-component-id="${id}"] [data-artwork-key="${renderer}"]`).count(), 1,
         JSON.stringify({ id, renderer, html: await page.locator(`.circuit-component[data-component-id="${id}"]`).evaluate((node) => node.outerHTML), errors }));
     }
@@ -166,10 +172,11 @@ async function candidateProject() {
     assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), apiBytes);
     await dialog.locator('[data-revoke]').click();
     assert.deepEqual(errors, []); assert.deepEqual(outside, []);
-    for (const type of ['switch.reed-no-v1', 'switch.emergency-stop-nc-v1', 'switch.foot-pedal-no-v1']) {
+    for (const type of ['switch.reed-no-v1', 'switch.emergency-stop-nc-v1', 'switch.foot-pedal-no-v1',
+      'switch.rotary-selector-4-v1', 'output.rgb-led-common-anode-v1', 'output.led-bar-graph-10-v1']) {
       assert.ok(catalog.components[type], type);
     }
-    process.stdout.write(`${JSON.stringify({ ok: true, rendered: 9, manualAdd: true, controls: true,
+    process.stdout.write(`${JSON.stringify({ ok: true, rendered: 12, manualAdd: true, controls: true,
       fileRoundtrip: true, actualPairingApi: true, apiUndoRedo: true, invalidAtomic: true, thirdPartyRequests: 0 })}\n`);
   } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }
 })().catch((error) => { process.stderr.write(`${error.stack}\n`); process.exitCode = 1; });

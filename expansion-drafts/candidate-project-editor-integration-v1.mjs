@@ -27,6 +27,8 @@ import { TOGGLE_SWITCH_TYPE } from './toggle-switch-integration-v1.mjs';
 import { LIMIT_SWITCH_TYPE, NC_BUTTON_TYPE, SLIDE_SWITCH_TYPE } from './mechanical-inputs-v1.mjs';
 import { DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE } from './advanced-switch-inputs-v1.mjs';
 import { EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE, REED_SWITCH_TYPE } from './safety-pedal-inputs-v1.mjs';
+import { LED_BAR_GRAPH_TYPE, RGB_COMMON_ANODE_TYPE,
+  ROTARY_SELECTOR_TYPE } from './rotary-selector-indicators-v1.mjs';
 import { LIGHT_ANALOGUE_SENSOR_TYPE } from './light-analogue-sensor-v1.mjs';
 import {
   TEMPERATURE_ANALOGUE_SENSOR_TYPE,
@@ -49,6 +51,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE,
   DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE,
   REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE,
+  ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
   LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
   DIGITAL_LIGHT_THRESHOLD_TYPE,
 ]);
@@ -529,6 +532,13 @@ export class CandidateEditorSession {
               return failure('PROJECT_CONTACT_SAFETY_PEDAL_STATE', this.revision);
             }
             component.controls[expectedKey] = command.value; runtimeDirty = true; break;
+          }
+          if (component.type === ROTARY_SELECTOR_TYPE) {
+            if (command.key !== 'position' || !Number.isInteger(command.value)
+                || command.value < 1 || command.value > 4) {
+              return failure('PROJECT_CONTACT_ROTARY_SELECTOR_INDICATOR_STATE', this.revision);
+            }
+            component.controls.position = command.value; runtimeDirty = true; break;
           }
           if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) {
             if (command.key !== 'lightLevel' || !Number.isFinite(command.value)

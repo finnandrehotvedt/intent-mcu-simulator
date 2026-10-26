@@ -151,6 +151,25 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       if (typeof input?.closed !== 'boolean') return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
       return { ok: true, code: 'OK', result: { connected: input.closed } };
     }
+    if (componentType === 'switch.rotary-selector-4-v1') {
+      if (!Number.isInteger(input?.position) || input.position < 1 || input.position > 4) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { position: input.position,
+        activeContact: ['COM', `P${input.position}`] } };
+    }
+    if (componentType === 'output.rgb-led-common-anode-v1') {
+      if (!exactInput(input, ['duties']) || !input.duties || ['R', 'G', 'B'].some(
+        (key) => !Number.isFinite(input.duties[key]) || input.duties[key] < 0 || input.duties[key] > 1)) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { activeLevel: 'LOW', duties: structuredClone(input.duties) } };
+    }
+    if (componentType === 'output.led-bar-graph-10-v1') {
+      if (!Array.isArray(input?.segments) || input.segments.length !== 10
+          || input.segments.some((value) => typeof value !== 'boolean')) return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      return { ok: true, code: 'OK', result: { segments: [...input.segments] } };
+    }
     if (componentType === 'sensor.light-analogue-v1') {
       if (!Number.isFinite(input?.lightLevel) || input.lightLevel < 0 || input.lightLevel > 1) {
         return failure('MODEL_LIBRARY_PRODUCTION_INPUT');

@@ -148964,6 +148964,383 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
+      "behaviorContractSha256": "97c1fe63fd67d787c205add943dcd69c2b23acb8746f3a1037b47a2236473edf",
+      "componentType": "output.led-bar-graph-10-v1",
+      "componentVersion": 1,
+      "modelId": "model.led-bar-graph-10-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "output.led-bar-graph-10-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 112,
+        "cssWidth": 188,
+        "renderer": "output-led-bar-graph-10",
+        "thumbnail": "output-led-bar-graph-10",
+        "viewBox": [
+          0,
+          0,
+          188,
+          112
+        ]
+      },
+      "rendererContractSha256": "5d07702eed7bc0713efd577081f7f3ab104cfe76622ff8f4928e3d46fe33e8f9",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.led-bar-graph-10-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "polarity": "anode",
+              "requiresSeriesResistor": true,
+              "segment": 1
+            },
+            "id": "A1",
+            "role": "passive",
+            "signals": [
+              "passive"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "cathode",
+              "segment": 1
+            },
+            "id": "K1",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "anode",
+              "requiresSeriesResistor": true,
+              "segment": 2
+            },
+            "id": "A2",
+            "role": "passive",
+            "signals": [
+              "passive"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "cathode",
+              "segment": 2
+            },
+            "id": "K2",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "anode",
+              "requiresSeriesResistor": true,
+              "segment": 3
+            },
+            "id": "A3",
+            "role": "passive",
+            "signals": [
+              "passive"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "cathode",
+              "segment": 3
+            },
+            "id": "K3",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "anode",
+              "requiresSeriesResistor": true,
+              "segment": 4
+            },
+            "id": "A4",
+            "role": "passive",
+            "signals": [
+              "passive"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "cathode",
+              "segment": 4
+            },
+            "id": "K4",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "anode",
+              "requiresSeriesResistor": true,
+              "segment": 5
+            },
+            "id": "A5",
+            "role": "passive",
+            "signals": [
+              "passive"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "cathode",
+              "segment": 5
+            },
+            "id": "K5",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "anode",
+              "requiresSeriesResistor": true,
+              "segment": 6
+            },
+            "id": "A6",
+            "role": "passive",
+            "signals": [
+              "passive"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "cathode",
+              "segment": 6
+            },
+            "id": "K6",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "anode",
+              "requiresSeriesResistor": true,
+              "segment": 7
+            },
+            "id": "A7",
+            "role": "passive",
+            "signals": [
+              "passive"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "cathode",
+              "segment": 7
+            },
+            "id": "K7",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "anode",
+              "requiresSeriesResistor": true,
+              "segment": 8
+            },
+            "id": "A8",
+            "role": "passive",
+            "signals": [
+              "passive"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "cathode",
+              "segment": 8
+            },
+            "id": "K8",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "anode",
+              "requiresSeriesResistor": true,
+              "segment": 9
+            },
+            "id": "A9",
+            "role": "passive",
+            "signals": [
+              "passive"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "cathode",
+              "segment": 9
+            },
+            "id": "K9",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "anode",
+              "requiresSeriesResistor": true,
+              "segment": 10
+            },
+            "id": "A10",
+            "role": "passive",
+            "signals": [
+              "passive"
+            ]
+          },
+          {
+            "constraints": {
+              "polarity": "cathode",
+              "segment": 10
+            },
+            "id": "K10",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          }
+        ],
+        "properties": {
+          "color": {
+            "default": "green",
+            "kind": "enum",
+            "values": [
+              "red",
+              "green",
+              "yellow"
+            ]
+          }
+        },
+        "support": {
+          "limitations": [
+            "Each of ten electrically independent segments requires its own current-limiting resistor and ground return.",
+            "No shared cathode is invented; no optical coupling, package current, thermal or multiplexing model."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "5d60781d6da219b1d6433bbaec0651fe85911751a3facc45404ab37138047128",
+      "supportStatus": "partial"
+    },
+    {
+      "behaviorContractSha256": "d6177b7a3745c6941d072e6ee330e80e7c0187cb6a665aeb7633500979d636a6",
+      "componentType": "output.rgb-led-common-anode-v1",
+      "componentVersion": 1,
+      "modelId": "model.rgb-led-common-anode-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "output.rgb-led-common-anode-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "output-rgb-led-common-anode",
+        "thumbnail": "output-rgb-led-common-anode",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "9c4dd09e8a92d3c57e46786bb49fdf2c02e2c730278ce0a7d8e7c8334ce63474",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.rgb-led-common-anode-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "channel": "red",
+              "polarity": "cathode",
+              "requiresSeriesResistor": true
+            },
+            "id": "R",
+            "role": "passive",
+            "signals": [
+              "passive"
+            ]
+          },
+          {
+            "constraints": {
+              "channel": "green",
+              "polarity": "cathode",
+              "requiresSeriesResistor": true
+            },
+            "id": "G",
+            "role": "passive",
+            "signals": [
+              "passive"
+            ]
+          },
+          {
+            "constraints": {
+              "channel": "blue",
+              "polarity": "cathode",
+              "requiresSeriesResistor": true
+            },
+            "id": "B",
+            "role": "passive",
+            "signals": [
+              "passive"
+            ]
+          },
+          {
+            "constraints": {
+              "commonAnode": true,
+              "polarity": "anode"
+            },
+            "id": "COM",
+            "role": "passive",
+            "signals": [
+              "passive"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "R, G and B require separate external resistors and are active-low.",
+            "Displayed colour is a commanded relative PWM mix; no optical, thermal, tolerance or physical colour accuracy is claimed."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "cb496d9ef406173d43625f2c17f5d61bd56156fa9cf32acb3ac778633a7930b7",
+      "supportStatus": "partial"
+    },
+    {
       "behaviorContractSha256": "5b6bb39eb446471e84635805e6f46180a0a9adc8eca4b700476d43967a4263f7",
       "componentType": "output.rgb-led-common-cathode-v1",
       "componentVersion": 1,
@@ -150231,6 +150608,107 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
+      "behaviorContractSha256": "1d04459662065d6715e727b1b57138b0574f56f673ad5c932c57ac41cf23f42c",
+      "componentType": "switch.rotary-selector-4-v1",
+      "componentVersion": 1,
+      "modelId": "model.switch-rotary-selector-1p4t-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "switch.rotary-selector-4-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 112,
+        "cssWidth": 132,
+        "renderer": "switch-rotary-selector-4",
+        "thumbnail": "switch-rotary-selector-4",
+        "viewBox": [
+          0,
+          0,
+          132,
+          112
+        ]
+      },
+      "rendererContractSha256": "0a6b14901372fd5f57c4f8b850062950037abb5ea52c5f928166bb3b184da41e",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "position": {
+            "default": 1,
+            "kind": "integer",
+            "maximum": 4,
+            "minimum": 1,
+            "mutability": "authored",
+            "unit": "position"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.switch-rotary-selector-1p4t-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {},
+            "id": "COM",
+            "role": "passive",
+            "signals": [
+              "passive"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "P1",
+            "role": "passive",
+            "signals": [
+              "passive"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "P2",
+            "role": "passive",
+            "signals": [
+              "passive"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "P3",
+            "role": "passive",
+            "signals": [
+              "passive"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "P4",
+            "role": "passive",
+            "signals": [
+              "passive"
+            ]
+          }
+        ],
+        "properties": {
+          "positions": {
+            "default": 4,
+            "kind": "integer",
+            "maximum": 4,
+            "minimum": 4
+          }
+        },
+        "support": {
+          "limitations": [
+            "Exactly one ideal COM-to-P1…P4 contact is closed.",
+            "No contact bounce, overlap, resistance, current rating, shaft mechanics or analogue multiplexing model."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "c9cc90b6c17f9d01b62700593247a584031295df1f146c3d2778814d735e3466",
+      "supportStatus": "partial"
+    },
+    {
       "behaviorContractSha256": "1493f8fb92ddf5c72b49924317c0341d30a0782cf6cbd4d633cb482c17b91548",
       "componentType": "switch.slide-spdt-v1",
       "componentVersion": 1,
@@ -151210,7 +151688,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/circuit-engine.mjs",
-      "sha256": "8b1a35ef42551922aff101adffccc48d76d7eae07fcc3a923a713e42714497d2"
+      "sha256": "7072b39da52b283abb340a30b3b58616e2312751f24bdc669145157e6331daca"
     },
     {
       "path": "src/runtime-kernel.mjs",
@@ -151298,7 +151776,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-control-contracts.mjs",
-      "sha256": "87ae0144e3d01efa98fbf560b1b486a8656c797ac894cd44aa42ad106d103518"
+      "sha256": "b29ce8071a5dd731659d792bbc2da4474d2187597e14f5672fd43a09404162e8"
     },
     {
       "path": "src/simulator.worker.mjs",
@@ -151306,7 +151784,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "02e1a1bf48e50a7492cde05d5234b8c895869fb12be9bb6f944a65969ea5afe7"
+      "sha256": "b9f727edb1a8e1ffb6ac9e59c128d59a2a2c4311ff7027866d8ee61a68d5f8a9"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -151338,7 +151816,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "4744b5cbae7449d85bea791e0db3ef096c8691abf95972e88e72da48ab30c5a5"
+      "sha256": "511b085b6132e6aba3c62178df5658ceaf9a009ee13ecc5d7508f06d996b645c"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -151346,7 +151824,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "c1db058ebf89c17715f73b41b6b7b92a0ea381e3103c86455170caa24725a7af"
+      "sha256": "f7a8df5c5eb20b1e6003ade49e96d4ab833bc9599372402bbf1bb028de7cf7ee"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -151394,7 +151872,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "459230d24e22d1f2f42934ea4e9bf40469ceebbb835c1db9d22dfd585af5ead6"
+      "sha256": "9c29fa3916a9471f7966a0cd5eb414baeacc890bac3a2b103bbba1b60254e03a"
     },
     {
       "path": "expansion-drafts/ground-reference-integration-v1.mjs",
@@ -151466,10 +151944,10 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "5e71ffb71cea2b4726088a6850df53425e12b902a3979c0cd90dcca81792499b"
+      "sha256": "cd48958b6ac51a5564cd06f196b1986be101fadad774da49221c5064dab75491"
     }
   ],
-  "implementationSha256": "2fd049564a92b8bc9fa0d4e74c7bec42a214de83d3520a64f9cbe5dcc10ca725",
+  "implementationSha256": "6f104875caa2fc1abab5764b04e1ed7e2be88e57ed534b8fcb1b75c15848956c",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -151479,7 +151957,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract"
   },
-  "manifestSha256": "e000f0c3c96bec3bf9004da47c8d7d605f54ff94740bf837328764fbc4eb9f62",
+  "manifestSha256": "ce6e8e71146930b9d229f2cb2fe60afc69d402189c3c513d2355c0d5950f62b2",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

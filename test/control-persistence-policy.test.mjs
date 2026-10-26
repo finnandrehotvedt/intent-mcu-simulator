@@ -30,6 +30,7 @@ const expected = {
   'switch.reed-no-v1': ['magnetPresent'],
   'switch.emergency-stop-nc-v1': ['latched'],
   'switch.foot-pedal-no-v1': ['pressed'],
+  'switch.rotary-selector-4-v1': ['position'],
   'sensor.light-analogue-v1': ['lightLevel'],
   'sensor.temperature-analogue-v1': ['temperatureC'],
   'sensor.light-threshold-digital-v1': [
@@ -58,10 +59,10 @@ function candidate(id, componentId, changes) {
   return opened.session;
 }
 
-test('all 35 executable cells have one exact controls-persist or controls-empty policy', () => {
+test('all 38 executable cells have one exact controls-persist or controls-empty policy', () => {
   assert.deepEqual(controlPersistenceSummary(), {
-    profiles: 4, cells: 132, available: 35, unavailable: 97,
-    controlBearing: 16, controlsEmpty: 19, controls: 23,
+    profiles: 4, cells: 144, available: 38, unavailable: 106,
+    controlBearing: 17, controlsEmpty: 21, controls: 24,
   });
   const inventory = controlPersistenceInventory();
   const bearing = inventory.filter((cell) => cell.available && cell.controls.length);

@@ -32,6 +32,8 @@ import { TOGGLE_SWITCH_TYPE } from '../expansion-drafts/toggle-switch-integratio
 import { LIMIT_SWITCH_TYPE, NC_BUTTON_TYPE, SLIDE_SWITCH_TYPE } from '../expansion-drafts/mechanical-inputs-v1.mjs';
 import { DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE } from '../expansion-drafts/advanced-switch-inputs-v1.mjs';
 import { EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE, REED_SWITCH_TYPE } from '../expansion-drafts/safety-pedal-inputs-v1.mjs';
+import { LED_BAR_GRAPH_TYPE, RGB_COMMON_ANODE_TYPE,
+  ROTARY_SELECTOR_TYPE } from '../expansion-drafts/rotary-selector-indicators-v1.mjs';
 import { LIGHT_ANALOGUE_SENSOR_TYPE } from '../expansion-drafts/light-analogue-sensor-v1.mjs';
 import {
   TEMPERATURE_ANALOGUE_SENSOR_TYPE,
@@ -66,6 +68,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE,
   DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE,
   REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE,
+  ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
   LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
   DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
   ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE,
@@ -197,8 +200,14 @@ function contactSupport(result) {
             ? 'potentiometer.linear-v1'
           : contact.type === DIGITAL_LIGHT_THRESHOLD_TYPE
             ? 'button.momentary-v1'
-          : contact.type === COMMON_CATHODE_RGB_LED_TYPE
-            ? 'three-independent-led.basic-v1'
+        : contact.type === COMMON_CATHODE_RGB_LED_TYPE
+          ? 'three-independent-led.basic-v1'
+        : contact.type === ROTARY_SELECTOR_TYPE
+          ? 'one-of-four-passive-contact-v1'
+        : contact.type === RGB_COMMON_ANODE_TYPE
+          ? 'three-independent-active-low-led-v1'
+        : contact.type === LED_BAR_GRAPH_TYPE
+          ? 'ten-independent-led.basic-v1'
           : contact.type === ACTIVE_BUZZER_TYPE
             ? 'avr-gpio-logical-output-observer-v1'
           : contact.type === SEVEN_SEGMENT_TYPE
@@ -216,6 +225,12 @@ function contactSupport(result) {
         ? 'Ideal active-low percentage threshold with retained hysteresis state only; no lux accuracy or physical detector behavior is modelled.'
         : contact.type === COMMON_CATHODE_RGB_LED_TYPE
         ? 'Ideal relative PWM mix through three independently current-limited existing LED channels; no physical colour, wavelength, optical or current accuracy is modelled.'
+        : contact.type === ROTARY_SELECTOR_TYPE
+        ? 'Ideal maintained one-of-four passive contact; no overlap, bounce, resistance, current rating or shaft mechanics.'
+        : contact.type === RGB_COMMON_ANODE_TYPE
+        ? 'Ideal active-low relative PWM mix with one resistor per channel; no physical optical or thermal accuracy.'
+        : contact.type === LED_BAR_GRAPH_TYPE
+        ? 'Ten electrically independent LEDs with twenty explicit terminals and one resistor per segment; no invented common return.'
         : contact.type === ACTIVE_BUZZER_TYPE
         ? 'Ideal high-active GPIO enable observed as a silent logical on/off indicator; no waveform, frequency, sound pressure, supply/GPIO current, loading or physical acoustic accuracy is modelled.'
         : contact.type === SEVEN_SEGMENT_TYPE

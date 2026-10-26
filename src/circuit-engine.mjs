@@ -220,6 +220,37 @@ function analyzeElectrical(graph, options = {}) {
     const cathodeNet = connectedNet(indexes, led.id, 'CATHODE');
     const anodeGround = anodeNet && boardEndpoint(indexes, anodeNet, (pin) => /^GND[123]$/.test(pin));
     const cathodeSource = cathodeNet && boardEndpoint(indexes, cathodeNet, (pin) => /^D\d+$/.test(pin));
+    const anodePower = anodeNet && boardEndpoint(indexes, anodeNet, (pin) => pin === '5V');
+    if (anodePower && cathodeNet && !cathodeSource) {
+      const candidates = [];
+      for (const resistor of graph.components.filter((component) => component.type === 'resistor.fixed-v1')) {
+        for (const [near, far] of [['A', 'B'], ['B', 'A']]) {
+          if (connectedNet(indexes, resistor.id, near) !== cathodeNet) continue;
+          const sourceNet = connectedNet(indexes, resistor.id, far);
+          const source = sourceNet && boardEndpoint(indexes, sourceNet, (pin) => /^D\d+$/.test(pin));
+          if (source) candidates.push({ resistor, sourcePin: source.pin });
+        }
+      }
+      if (candidates.length !== 1 || indexes.nets.get(cathodeNet).endpoints.length !== 2) {
+        diagnostics.push(diagnostic('LED_UNSUPPORTED_PATH', { componentId: led.id, netId: cathodeNet }));
+        continue;
+      }
+      const candidate = candidates[0];
+      const ledReference = modelLibrary.evaluateReference('led.basic-v1', { volts: 5, color: led.properties.color });
+      const resistorReference = modelLibrary.evaluateReference('resistor.fixed-v1', {
+        volts: 5 - ledReference.result?.forwardVolts, ohms: candidate.resistor.properties.ohms,
+      });
+      const currentAmps = resistorReference.result?.amps;
+      if (!Number.isFinite(currentAmps) || currentAmps <= 0 || currentAmps > 0.02) {
+        diagnostics.push(diagnostic('LED_OVERCURRENT', { componentId: led.id, netId: cathodeNet }));
+        continue;
+      }
+      consumedResistors.add(candidate.resistor.id);
+      models.leds.push({ componentId: led.id, resistorId: candidate.resistor.id,
+        sourcePin: candidate.sourcePin, currentAmps, brightness: Math.min(currentAmps / 0.02, 1),
+        color: led.properties.color, activeLow: true });
+      continue;
+    }
     if (anodeGround || cathodeSource) {
       diagnostics.push(diagnostic('LED_REVERSE_POLARITY', { componentId: led.id, netId: anodeNet ?? cathodeNet }));
       continue;
@@ -466,12 +497,13 @@ export class CircuitRuntime {
       const duty = Number.isFinite(pin?.pwm?.duty)
         ? Math.max(0, Math.min(1, pin.pwm.duty))
         : Number(Boolean(snapshot.digitalPins?.[model.sourcePin]));
-      const on = duty > 0;
+      const effectiveDuty = model.activeLow ? 1 - duty : duty;
+      const on = effectiveDuty > 0;
       return {
         componentId: model.componentId,
         on,
-        currentAmps: model.currentAmps * duty,
-        brightness: model.brightness * duty,
+        currentAmps: model.currentAmps * effectiveDuty,
+        brightness: model.brightness * effectiveDuty,
         color: model.color,
       };
     });

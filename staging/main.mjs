@@ -451,6 +451,8 @@ import {
   LIGHT_THRESHOLD_MIN_PERCENT,
 } from '../expansion-drafts/digital-light-threshold-module-v1.mjs';
 import { COMMON_CATHODE_RGB_LED_TYPE } from '../expansion-drafts/common-cathode-rgb-led-v1.mjs';
+import { LED_BAR_GRAPH_TYPE, RGB_COMMON_ANODE_TYPE,
+  ROTARY_SELECTOR_TYPE } from '../expansion-drafts/rotary-selector-indicators-v1.mjs';
 import { ACTIVE_BUZZER_TYPE } from '../expansion-drafts/active-buzzer-module-v1.mjs';
 import { SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
 import {
@@ -12981,10 +12983,13 @@ function candidateComponentPrefix(type) {
       'switch.reed-no-v1': 'reed-switch',
       'switch.emergency-stop-nc-v1': 'emergency-stop',
       'switch.foot-pedal-no-v1': 'foot-pedal',
+      [ROTARY_SELECTOR_TYPE]: 'rotary-selector',
       'sensor.light-analogue-v1': 'light-sensor',
       'sensor.temperature-analogue-v1': 'temperature-sensor',
       [DIGITAL_LIGHT_THRESHOLD_TYPE]: 'light-threshold',
       [COMMON_CATHODE_RGB_LED_TYPE]: 'rgb-led',
+      [RGB_COMMON_ANODE_TYPE]: 'rgb-led-ca',
+      [LED_BAR_GRAPH_TYPE]: 'led-bar',
       [ACTIVE_BUZZER_TYPE]: 'active-buzzer',
       [SEVEN_SEGMENT_TYPE]: 'seven-segment',
       [CHARACTER_LCD_TYPE]: 'character-lcd',
@@ -13026,10 +13031,13 @@ function addComponent(type, point = null) {
       'switch.reed-no-v1': { x: 0.58, y: 0.72 },
       'switch.emergency-stop-nc-v1': { x: 0.72, y: 0.72 },
       'switch.foot-pedal-no-v1': { x: 0.84, y: 0.72 },
+      [ROTARY_SELECTOR_TYPE]: { x: 0.82, y: 0.66 },
       'sensor.light-analogue-v1': { x: 0.62, y: 0.76 },
       'sensor.temperature-analogue-v1': { x: 0.78, y: 0.76 },
       [DIGITAL_LIGHT_THRESHOLD_TYPE]: { x: 0.78, y: 0.72 },
       [COMMON_CATHODE_RGB_LED_TYPE]: { x: 0.78, y: 0.7 },
+      [RGB_COMMON_ANODE_TYPE]: { x: 0.78, y: 0.7 },
+      [LED_BAR_GRAPH_TYPE]: { x: 0.72, y: 0.62 },
       [ACTIVE_BUZZER_TYPE]: { x: 0.78, y: 0.68 },
       [SEVEN_SEGMENT_TYPE]: { x: 0.76, y: 0.66 },
       [CHARACTER_LCD_TYPE]: { x: 0.72, y: 0.64 },
@@ -13520,6 +13528,23 @@ function renderRuntimeControls() {
         if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Input control rejected.'); return; }
         applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject(); renderProject();
       }); row.append(label, button); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && component.type === ROTARY_SELECTOR_TYPE) {
+      const row = document.createElement('div'); const label = document.createElement('label');
+      label.textContent = component.label;
+      const select = document.createElement('select'); select.dataset.control = `${component.id}.position`;
+      select.setAttribute('aria-label', `${component.label}: selected position`);
+      for (let position = 1; position <= 4; position += 1) {
+        const option = document.createElement('option'); option.value = String(position);
+        option.textContent = `Position ${position}`; option.selected = component.controls.position === position;
+        select.append(option);
+      }
+      select.addEventListener('change', () => {
+        const prepared = selectedCandidateContactControl(component.id, 'position', Number(select.value));
+        const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
+        if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Rotary selector rejected.'); return; }
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject(); renderProject();
+      }); row.append(label, select); return [row];
     }
     if (component.type === 'button.momentary-v1') {
       const row = document.createElement('div');

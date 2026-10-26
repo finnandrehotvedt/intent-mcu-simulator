@@ -1,0 +1,1332 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "ce6e8e71146930b9d229f2cb2fe60afc69d402189c3c513d2355c0d5950f62b2",
+    "implementationSha256": "6f104875caa2fc1abab5764b04e1ed7e2be88e57ed534b8fcb1b75c15848956c"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-project-contact-persistence@1",
+    "project": {
+      "schema": "intent-mcu-project@3",
+      "metadata": {
+        "name": "Ten-segment LED bar graph"
+      },
+      "catalogue": {
+        "schema": "intent-mcu-catalogue-ref@1",
+        "version": "intent-mcu-catalogue@2"
+      },
+      "controller": {
+        "profile": "board.atmega328p-16mhz-v1",
+        "adapterContract": "intent-mcu-controller-adapter@1",
+        "status": "simulated",
+        "capabilities": [
+          {
+            "id": "gpio",
+            "status": "simulated"
+          },
+          {
+            "id": "adc",
+            "status": "simulated"
+          },
+          {
+            "id": "pwm",
+            "status": "simulated"
+          },
+          {
+            "id": "uart0",
+            "status": "simulated"
+          },
+          {
+            "id": "timers",
+            "status": "partial"
+          },
+          {
+            "id": "interrupts",
+            "status": "partial"
+          },
+          {
+            "id": "spi",
+            "status": "unsupported"
+          },
+          {
+            "id": "i2c",
+            "status": "unsupported"
+          },
+          {
+            "id": "eeprom",
+            "status": "unsupported"
+          },
+          {
+            "id": "watchdog",
+            "status": "unsupported"
+          }
+        ]
+      },
+      "source": {
+        "files": [
+          {
+            "name": "main.ino",
+            "content": "void setup() { for (byte p=2;p<=11;p++) pinMode(p, OUTPUT); Serial.begin(115200); }\nvoid loop() { for (byte p=2;p<=11;p++) digitalWrite(p, p<=6 ? HIGH : LOW); delay(120); }\n"
+          }
+        ]
+      },
+      "circuit": {
+        "schema": "teach-lab-circuit@2",
+        "components": [
+          {
+            "id": "board-1",
+            "type": "board.atmega328p-16mhz-v1",
+            "label": "ATmega328P board",
+            "properties": {},
+            "controls": {}
+          },
+          {
+            "id": "led-bar-1",
+            "type": "led.basic-v1",
+            "label": "Ten-segment LED bar graph 1",
+            "properties": {
+              "color": "green"
+            },
+            "controls": {}
+          },
+          {
+            "id": "led-bar-1-s10",
+            "type": "led.basic-v1",
+            "label": "Ten-segment LED bar graph 10",
+            "properties": {
+              "color": "green"
+            },
+            "controls": {}
+          },
+          {
+            "id": "led-bar-1-s2",
+            "type": "led.basic-v1",
+            "label": "Ten-segment LED bar graph 2",
+            "properties": {
+              "color": "green"
+            },
+            "controls": {}
+          },
+          {
+            "id": "led-bar-1-s3",
+            "type": "led.basic-v1",
+            "label": "Ten-segment LED bar graph 3",
+            "properties": {
+              "color": "green"
+            },
+            "controls": {}
+          },
+          {
+            "id": "led-bar-1-s4",
+            "type": "led.basic-v1",
+            "label": "Ten-segment LED bar graph 4",
+            "properties": {
+              "color": "green"
+            },
+            "controls": {}
+          },
+          {
+            "id": "led-bar-1-s5",
+            "type": "led.basic-v1",
+            "label": "Ten-segment LED bar graph 5",
+            "properties": {
+              "color": "green"
+            },
+            "controls": {}
+          },
+          {
+            "id": "led-bar-1-s6",
+            "type": "led.basic-v1",
+            "label": "Ten-segment LED bar graph 6",
+            "properties": {
+              "color": "green"
+            },
+            "controls": {}
+          },
+          {
+            "id": "led-bar-1-s7",
+            "type": "led.basic-v1",
+            "label": "Ten-segment LED bar graph 7",
+            "properties": {
+              "color": "green"
+            },
+            "controls": {}
+          },
+          {
+            "id": "led-bar-1-s8",
+            "type": "led.basic-v1",
+            "label": "Ten-segment LED bar graph 8",
+            "properties": {
+              "color": "green"
+            },
+            "controls": {}
+          },
+          {
+            "id": "led-bar-1-s9",
+            "type": "led.basic-v1",
+            "label": "Ten-segment LED bar graph 9",
+            "properties": {
+              "color": "green"
+            },
+            "controls": {}
+          },
+          {
+            "id": "bar-resistor-1",
+            "type": "resistor.fixed-v1",
+            "label": "Axial fixed resistor",
+            "properties": {
+              "ohms": 330
+            },
+            "controls": {}
+          },
+          {
+            "id": "bar-resistor-10",
+            "type": "resistor.fixed-v1",
+            "label": "Axial fixed resistor",
+            "properties": {
+              "ohms": 330
+            },
+            "controls": {}
+          },
+          {
+            "id": "bar-resistor-2",
+            "type": "resistor.fixed-v1",
+            "label": "Axial fixed resistor",
+            "properties": {
+              "ohms": 330
+            },
+            "controls": {}
+          },
+          {
+            "id": "bar-resistor-3",
+            "type": "resistor.fixed-v1",
+            "label": "Axial fixed resistor",
+            "properties": {
+              "ohms": 330
+            },
+            "controls": {}
+          },
+          {
+            "id": "bar-resistor-4",
+            "type": "resistor.fixed-v1",
+            "label": "Axial fixed resistor",
+            "properties": {
+              "ohms": 330
+            },
+            "controls": {}
+          },
+          {
+            "id": "bar-resistor-5",
+            "type": "resistor.fixed-v1",
+            "label": "Axial fixed resistor",
+            "properties": {
+              "ohms": 330
+            },
+            "controls": {}
+          },
+          {
+            "id": "bar-resistor-6",
+            "type": "resistor.fixed-v1",
+            "label": "Axial fixed resistor",
+            "properties": {
+              "ohms": 330
+            },
+            "controls": {}
+          },
+          {
+            "id": "bar-resistor-7",
+            "type": "resistor.fixed-v1",
+            "label": "Axial fixed resistor",
+            "properties": {
+              "ohms": 330
+            },
+            "controls": {}
+          },
+          {
+            "id": "bar-resistor-8",
+            "type": "resistor.fixed-v1",
+            "label": "Axial fixed resistor",
+            "properties": {
+              "ohms": 330
+            },
+            "controls": {}
+          },
+          {
+            "id": "bar-resistor-9",
+            "type": "resistor.fixed-v1",
+            "label": "Axial fixed resistor",
+            "properties": {
+              "ohms": 330
+            },
+            "controls": {}
+          }
+        ],
+        "nets": [
+          {
+            "id": "net-bar-1-anode",
+            "endpoints": [
+              {
+                "component": "bar-resistor-1",
+                "pin": "B"
+              },
+              {
+                "component": "led-bar-1",
+                "pin": "ANODE"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-1-drive",
+            "endpoints": [
+              {
+                "component": "bar-resistor-1",
+                "pin": "A"
+              },
+              {
+                "component": "board-1",
+                "pin": "D2"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-10-anode",
+            "endpoints": [
+              {
+                "component": "bar-resistor-10",
+                "pin": "B"
+              },
+              {
+                "component": "led-bar-1-s10",
+                "pin": "ANODE"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-10-drive",
+            "endpoints": [
+              {
+                "component": "bar-resistor-10",
+                "pin": "A"
+              },
+              {
+                "component": "board-1",
+                "pin": "D11"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-2-anode",
+            "endpoints": [
+              {
+                "component": "bar-resistor-2",
+                "pin": "B"
+              },
+              {
+                "component": "led-bar-1-s2",
+                "pin": "ANODE"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-2-drive",
+            "endpoints": [
+              {
+                "component": "bar-resistor-2",
+                "pin": "A"
+              },
+              {
+                "component": "board-1",
+                "pin": "D3"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-3-anode",
+            "endpoints": [
+              {
+                "component": "bar-resistor-3",
+                "pin": "B"
+              },
+              {
+                "component": "led-bar-1-s3",
+                "pin": "ANODE"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-3-drive",
+            "endpoints": [
+              {
+                "component": "bar-resistor-3",
+                "pin": "A"
+              },
+              {
+                "component": "board-1",
+                "pin": "D4"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-4-anode",
+            "endpoints": [
+              {
+                "component": "bar-resistor-4",
+                "pin": "B"
+              },
+              {
+                "component": "led-bar-1-s4",
+                "pin": "ANODE"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-4-drive",
+            "endpoints": [
+              {
+                "component": "bar-resistor-4",
+                "pin": "A"
+              },
+              {
+                "component": "board-1",
+                "pin": "D5"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-5-anode",
+            "endpoints": [
+              {
+                "component": "bar-resistor-5",
+                "pin": "B"
+              },
+              {
+                "component": "led-bar-1-s5",
+                "pin": "ANODE"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-5-drive",
+            "endpoints": [
+              {
+                "component": "bar-resistor-5",
+                "pin": "A"
+              },
+              {
+                "component": "board-1",
+                "pin": "D6"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-6-anode",
+            "endpoints": [
+              {
+                "component": "bar-resistor-6",
+                "pin": "B"
+              },
+              {
+                "component": "led-bar-1-s6",
+                "pin": "ANODE"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-6-drive",
+            "endpoints": [
+              {
+                "component": "bar-resistor-6",
+                "pin": "A"
+              },
+              {
+                "component": "board-1",
+                "pin": "D7"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-7-anode",
+            "endpoints": [
+              {
+                "component": "bar-resistor-7",
+                "pin": "B"
+              },
+              {
+                "component": "led-bar-1-s7",
+                "pin": "ANODE"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-7-drive",
+            "endpoints": [
+              {
+                "component": "bar-resistor-7",
+                "pin": "A"
+              },
+              {
+                "component": "board-1",
+                "pin": "D8"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-8-anode",
+            "endpoints": [
+              {
+                "component": "bar-resistor-8",
+                "pin": "B"
+              },
+              {
+                "component": "led-bar-1-s8",
+                "pin": "ANODE"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-8-drive",
+            "endpoints": [
+              {
+                "component": "bar-resistor-8",
+                "pin": "A"
+              },
+              {
+                "component": "board-1",
+                "pin": "D9"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-9-anode",
+            "endpoints": [
+              {
+                "component": "bar-resistor-9",
+                "pin": "B"
+              },
+              {
+                "component": "led-bar-1-s9",
+                "pin": "ANODE"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-9-drive",
+            "endpoints": [
+              {
+                "component": "bar-resistor-9",
+                "pin": "A"
+              },
+              {
+                "component": "board-1",
+                "pin": "D10"
+              }
+            ]
+          },
+          {
+            "id": "net-bar-ground",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "GND1"
+              },
+              {
+                "component": "led-bar-1-s10",
+                "pin": "CATHODE"
+              },
+              {
+                "component": "led-bar-1-s2",
+                "pin": "CATHODE"
+              },
+              {
+                "component": "led-bar-1-s3",
+                "pin": "CATHODE"
+              },
+              {
+                "component": "led-bar-1-s4",
+                "pin": "CATHODE"
+              },
+              {
+                "component": "led-bar-1-s5",
+                "pin": "CATHODE"
+              },
+              {
+                "component": "led-bar-1-s6",
+                "pin": "CATHODE"
+              },
+              {
+                "component": "led-bar-1-s7",
+                "pin": "CATHODE"
+              },
+              {
+                "component": "led-bar-1-s8",
+                "pin": "CATHODE"
+              },
+              {
+                "component": "led-bar-1-s9",
+                "pin": "CATHODE"
+              },
+              {
+                "component": "led-bar-1",
+                "pin": "CATHODE"
+              }
+            ]
+          }
+        ],
+        "junctions": [
+          {
+            "id": "junction-bar-ground-2",
+            "net": "net-bar-ground"
+          }
+        ]
+      },
+      "layout": {
+        "positions": {
+          "bar-resistor-1": {
+            "x": 0.45,
+            "y": 0.185,
+            "rotation": 0
+          },
+          "bar-resistor-10": {
+            "x": 0.45,
+            "y": 0.77,
+            "rotation": 0
+          },
+          "bar-resistor-2": {
+            "x": 0.45,
+            "y": 0.25,
+            "rotation": 0
+          },
+          "bar-resistor-3": {
+            "x": 0.45,
+            "y": 0.315,
+            "rotation": 0
+          },
+          "bar-resistor-4": {
+            "x": 0.45,
+            "y": 0.38,
+            "rotation": 0
+          },
+          "bar-resistor-5": {
+            "x": 0.45,
+            "y": 0.445,
+            "rotation": 0
+          },
+          "bar-resistor-6": {
+            "x": 0.45,
+            "y": 0.51,
+            "rotation": 0
+          },
+          "bar-resistor-7": {
+            "x": 0.45,
+            "y": 0.575,
+            "rotation": 0
+          },
+          "bar-resistor-8": {
+            "x": 0.45,
+            "y": 0.64,
+            "rotation": 0
+          },
+          "bar-resistor-9": {
+            "x": 0.45,
+            "y": 0.705,
+            "rotation": 0
+          },
+          "board-1": {
+            "x": 0.12,
+            "y": 0.2,
+            "rotation": 0
+          },
+          "led-bar-1": {
+            "x": 0.74,
+            "y": 0.5,
+            "rotation": 0
+          },
+          "led-bar-1-s10": {
+            "x": 0.74,
+            "y": 0.5,
+            "rotation": 0
+          },
+          "led-bar-1-s2": {
+            "x": 0.74,
+            "y": 0.5,
+            "rotation": 0
+          },
+          "led-bar-1-s3": {
+            "x": 0.74,
+            "y": 0.5,
+            "rotation": 0
+          },
+          "led-bar-1-s4": {
+            "x": 0.74,
+            "y": 0.5,
+            "rotation": 0
+          },
+          "led-bar-1-s5": {
+            "x": 0.74,
+            "y": 0.5,
+            "rotation": 0
+          },
+          "led-bar-1-s6": {
+            "x": 0.74,
+            "y": 0.5,
+            "rotation": 0
+          },
+          "led-bar-1-s7": {
+            "x": 0.74,
+            "y": 0.5,
+            "rotation": 0
+          },
+          "led-bar-1-s8": {
+            "x": 0.74,
+            "y": 0.5,
+            "rotation": 0
+          },
+          "led-bar-1-s9": {
+            "x": 0.74,
+            "y": 0.5,
+            "rotation": 0
+          }
+        },
+        "wireRoutes": {},
+        "wireStyles": {
+          "net-bar-1-anode": {
+            "color": "#39dff2"
+          },
+          "net-bar-1-drive": {
+            "color": "#39dff2"
+          },
+          "net-bar-10-anode": {
+            "color": "#39dff2"
+          },
+          "net-bar-10-drive": {
+            "color": "#39dff2"
+          },
+          "net-bar-2-anode": {
+            "color": "#39dff2"
+          },
+          "net-bar-2-drive": {
+            "color": "#39dff2"
+          },
+          "net-bar-3-anode": {
+            "color": "#39dff2"
+          },
+          "net-bar-3-drive": {
+            "color": "#39dff2"
+          },
+          "net-bar-4-anode": {
+            "color": "#39dff2"
+          },
+          "net-bar-4-drive": {
+            "color": "#39dff2"
+          },
+          "net-bar-5-anode": {
+            "color": "#39dff2"
+          },
+          "net-bar-5-drive": {
+            "color": "#39dff2"
+          },
+          "net-bar-6-anode": {
+            "color": "#39dff2"
+          },
+          "net-bar-6-drive": {
+            "color": "#39dff2"
+          },
+          "net-bar-7-anode": {
+            "color": "#39dff2"
+          },
+          "net-bar-7-drive": {
+            "color": "#39dff2"
+          },
+          "net-bar-8-anode": {
+            "color": "#39dff2"
+          },
+          "net-bar-8-drive": {
+            "color": "#39dff2"
+          },
+          "net-bar-9-anode": {
+            "color": "#39dff2"
+          },
+          "net-bar-9-drive": {
+            "color": "#39dff2"
+          },
+          "net-bar-ground": {
+            "color": "#303943"
+          }
+        },
+        "viewport": {
+          "zoom": 1,
+          "panX": 0,
+          "panY": 0
+        }
+      },
+      "instruments": {
+        "logicChannels": [
+          "D13",
+          "D2"
+        ],
+        "selectedPin": "D13",
+        "serial": {
+          "baud": 9600,
+          "encoding": "utf-8",
+          "historyLimit": 512
+        }
+      },
+      "artifact": {
+        "schema": "intent-mcu-project-artifact-ref@1",
+        "status": "dirty",
+        "profile": null,
+        "inputIdentitySha256": null,
+        "artifactIdentitySha256": null
+      }
+    },
+    "candidateCircuit": {
+      "schema": "teach-lab-circuit@2",
+      "components": [
+        {
+          "id": "board-1",
+          "type": "board.atmega328p-16mhz-v1",
+          "label": "ATmega328P board",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "led-bar-1",
+          "type": "output.led-bar-graph-10-v1",
+          "label": "Ten-segment LED bar graph",
+          "properties": {
+            "color": "green"
+          },
+          "controls": {}
+        },
+        {
+          "id": "bar-ground-1",
+          "type": "reference.ground-v1",
+          "label": "0 V circuit reference",
+          "properties": {
+            "potentialVolts": 0
+          },
+          "controls": {}
+        },
+        {
+          "id": "bar-resistor-1",
+          "type": "resistor.fixed-v1",
+          "label": "Axial fixed resistor",
+          "properties": {
+            "ohms": 330
+          },
+          "controls": {}
+        },
+        {
+          "id": "bar-resistor-10",
+          "type": "resistor.fixed-v1",
+          "label": "Axial fixed resistor",
+          "properties": {
+            "ohms": 330
+          },
+          "controls": {}
+        },
+        {
+          "id": "bar-resistor-2",
+          "type": "resistor.fixed-v1",
+          "label": "Axial fixed resistor",
+          "properties": {
+            "ohms": 330
+          },
+          "controls": {}
+        },
+        {
+          "id": "bar-resistor-3",
+          "type": "resistor.fixed-v1",
+          "label": "Axial fixed resistor",
+          "properties": {
+            "ohms": 330
+          },
+          "controls": {}
+        },
+        {
+          "id": "bar-resistor-4",
+          "type": "resistor.fixed-v1",
+          "label": "Axial fixed resistor",
+          "properties": {
+            "ohms": 330
+          },
+          "controls": {}
+        },
+        {
+          "id": "bar-resistor-5",
+          "type": "resistor.fixed-v1",
+          "label": "Axial fixed resistor",
+          "properties": {
+            "ohms": 330
+          },
+          "controls": {}
+        },
+        {
+          "id": "bar-resistor-6",
+          "type": "resistor.fixed-v1",
+          "label": "Axial fixed resistor",
+          "properties": {
+            "ohms": 330
+          },
+          "controls": {}
+        },
+        {
+          "id": "bar-resistor-7",
+          "type": "resistor.fixed-v1",
+          "label": "Axial fixed resistor",
+          "properties": {
+            "ohms": 330
+          },
+          "controls": {}
+        },
+        {
+          "id": "bar-resistor-8",
+          "type": "resistor.fixed-v1",
+          "label": "Axial fixed resistor",
+          "properties": {
+            "ohms": 330
+          },
+          "controls": {}
+        },
+        {
+          "id": "bar-resistor-9",
+          "type": "resistor.fixed-v1",
+          "label": "Axial fixed resistor",
+          "properties": {
+            "ohms": 330
+          },
+          "controls": {}
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-bar-1-anode",
+          "endpoints": [
+            {
+              "component": "bar-resistor-1",
+              "pin": "B"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "A1"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-1-drive",
+          "endpoints": [
+            {
+              "component": "bar-resistor-1",
+              "pin": "A"
+            },
+            {
+              "component": "board-1",
+              "pin": "D2"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-10-anode",
+          "endpoints": [
+            {
+              "component": "bar-resistor-10",
+              "pin": "B"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "A10"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-10-drive",
+          "endpoints": [
+            {
+              "component": "bar-resistor-10",
+              "pin": "A"
+            },
+            {
+              "component": "board-1",
+              "pin": "D11"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-2-anode",
+          "endpoints": [
+            {
+              "component": "bar-resistor-2",
+              "pin": "B"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "A2"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-2-drive",
+          "endpoints": [
+            {
+              "component": "bar-resistor-2",
+              "pin": "A"
+            },
+            {
+              "component": "board-1",
+              "pin": "D3"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-3-anode",
+          "endpoints": [
+            {
+              "component": "bar-resistor-3",
+              "pin": "B"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "A3"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-3-drive",
+          "endpoints": [
+            {
+              "component": "bar-resistor-3",
+              "pin": "A"
+            },
+            {
+              "component": "board-1",
+              "pin": "D4"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-4-anode",
+          "endpoints": [
+            {
+              "component": "bar-resistor-4",
+              "pin": "B"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "A4"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-4-drive",
+          "endpoints": [
+            {
+              "component": "bar-resistor-4",
+              "pin": "A"
+            },
+            {
+              "component": "board-1",
+              "pin": "D5"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-5-anode",
+          "endpoints": [
+            {
+              "component": "bar-resistor-5",
+              "pin": "B"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "A5"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-5-drive",
+          "endpoints": [
+            {
+              "component": "bar-resistor-5",
+              "pin": "A"
+            },
+            {
+              "component": "board-1",
+              "pin": "D6"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-6-anode",
+          "endpoints": [
+            {
+              "component": "bar-resistor-6",
+              "pin": "B"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "A6"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-6-drive",
+          "endpoints": [
+            {
+              "component": "bar-resistor-6",
+              "pin": "A"
+            },
+            {
+              "component": "board-1",
+              "pin": "D7"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-7-anode",
+          "endpoints": [
+            {
+              "component": "bar-resistor-7",
+              "pin": "B"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "A7"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-7-drive",
+          "endpoints": [
+            {
+              "component": "bar-resistor-7",
+              "pin": "A"
+            },
+            {
+              "component": "board-1",
+              "pin": "D8"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-8-anode",
+          "endpoints": [
+            {
+              "component": "bar-resistor-8",
+              "pin": "B"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "A8"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-8-drive",
+          "endpoints": [
+            {
+              "component": "bar-resistor-8",
+              "pin": "A"
+            },
+            {
+              "component": "board-1",
+              "pin": "D9"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-9-anode",
+          "endpoints": [
+            {
+              "component": "bar-resistor-9",
+              "pin": "B"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "A9"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-9-drive",
+          "endpoints": [
+            {
+              "component": "bar-resistor-9",
+              "pin": "A"
+            },
+            {
+              "component": "board-1",
+              "pin": "D10"
+            }
+          ]
+        },
+        {
+          "id": "net-bar-ground",
+          "endpoints": [
+            {
+              "component": "bar-ground-1",
+              "pin": "REF"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "K1"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "K10"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "K2"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "K3"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "K4"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "K5"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "K6"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "K7"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "K8"
+            },
+            {
+              "component": "led-bar-1",
+              "pin": "K9"
+            }
+          ]
+        }
+      ],
+      "junctions": [
+        {
+          "id": "junction-bar-ground-2",
+          "net": "net-bar-ground"
+        }
+      ]
+    },
+    "candidateLayout": {
+      "schema": "intent-mcu-candidate-layout@1",
+      "positions": {
+        "bar-ground-1": {
+          "x": 0.74,
+          "y": 0.82,
+          "rotation": 0
+        },
+        "bar-resistor-1": {
+          "x": 0.45,
+          "y": 0.185,
+          "rotation": 0
+        },
+        "bar-resistor-10": {
+          "x": 0.45,
+          "y": 0.77,
+          "rotation": 0
+        },
+        "bar-resistor-2": {
+          "x": 0.45,
+          "y": 0.25,
+          "rotation": 0
+        },
+        "bar-resistor-3": {
+          "x": 0.45,
+          "y": 0.315,
+          "rotation": 0
+        },
+        "bar-resistor-4": {
+          "x": 0.45,
+          "y": 0.38,
+          "rotation": 0
+        },
+        "bar-resistor-5": {
+          "x": 0.45,
+          "y": 0.445,
+          "rotation": 0
+        },
+        "bar-resistor-6": {
+          "x": 0.45,
+          "y": 0.51,
+          "rotation": 0
+        },
+        "bar-resistor-7": {
+          "x": 0.45,
+          "y": 0.575,
+          "rotation": 0
+        },
+        "bar-resistor-8": {
+          "x": 0.45,
+          "y": 0.64,
+          "rotation": 0
+        },
+        "bar-resistor-9": {
+          "x": 0.45,
+          "y": 0.705,
+          "rotation": 0
+        },
+        "board-1": {
+          "x": 0.12,
+          "y": 0.2,
+          "rotation": 0
+        },
+        "led-bar-1": {
+          "x": 0.74,
+          "y": 0.5,
+          "rotation": 0
+        }
+      },
+      "wireRoutes": {},
+      "viewport": {
+        "zoom": 1,
+        "panX": 0,
+        "panY": 0
+      }
+    },
+    "compiledFixture": {
+      "schema": "intent-mcu-compiled-fixture-ref@1",
+      "id": "button-pullup",
+      "profile": "board.atmega328p-16mhz-v1",
+      "toolchainImageId": "sha256:f04aa7a8c37699d16a965fb374870ff147ca776ba6386f81e7700e350ed3d89f",
+      "source": {
+        "sha256": "84ceea4f298483f4696a3672ac1fff97b046b9e35c65aaa6155b20140a66f518",
+        "bytes": 209
+      },
+      "executable": {
+        "format": "intel-hex",
+        "sha256": "247f94bb051e9eebb4dfe8099278d810e04ccbf097f1b3ddb53b904e26ea8ebc",
+        "bytes": 2525
+      },
+      "debug": {
+        "format": "elf",
+        "sha256": "23a37eff7f7c5b1d0626e12a3f31e00d9b79466eab374cd0d74c46e3667150bd",
+        "bytes": 14632
+      },
+      "artifactIdentitySha256": "69ad0bc87ba02a2d33ac4c5ba1d9bd07e28636b631cd007f4b9423889e76bd3b"
+    }
+  }
+}

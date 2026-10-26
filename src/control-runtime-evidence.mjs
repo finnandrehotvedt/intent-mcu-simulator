@@ -23,6 +23,7 @@ const rows = [
   ['switch.reed-no-v1', 'magnetPresent', 'contact projection · magnetic presence', 'authored reed contact → bounded AVR projection', 'model-projected'],
   ['switch.emergency-stop-nc-v1', 'latched', 'contact projection · instructional latch', 'authored NC stop contact → bounded AVR projection', 'model-projected'],
   ['switch.foot-pedal-no-v1', 'pressed', 'contact projection · pedal press', 'authored pedal contact → bounded AVR projection', 'model-projected'],
+  ['switch.rotary-selector-4-v1', 'position', 'contact projection · selected one-of-four throw', 'authored COM/P1–P4 contact → bounded AVR projection', 'model-projected'],
   ['sensor.light-analogue-v1', 'lightLevel', 'control · position', 'A0 ADC → executed firmware → USART/D13', 'actual-executed'],
   ['sensor.temperature-analogue-v1', 'temperatureC', 'control · normalized position', 'A1 ADC → executed firmware → USART/D13', 'actual-executed'],
   ['sensor.light-threshold-digital-v1', 'lightLevelPercent', 'control · derived pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed'],

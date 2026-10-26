@@ -48,6 +48,10 @@ import {
   EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE, REED_SWITCH_TYPE, SAFETY_PEDAL_INPUT_DEFINITIONS,
   safetyPedalRuntimeState, validateSafetyPedalInput,
 } from './safety-pedal-inputs-v1.mjs';
+import { LED_BAR_GRAPH_TYPE, RGB_COMMON_ANODE_TYPE, ROTARY_SELECTOR_INDICATOR_DEFINITIONS,
+  ROTARY_SELECTOR_TYPE, projectCommonAnodeRgbLeds, projectLedBarGraphs, projectRotarySelectors,
+  rotarySelectorContactState,
+  validateRotarySelectorIndicator } from './rotary-selector-indicators-v1.mjs';
 import {
   LIGHT_ANALOGUE_SENSOR_DEFINITION,
   LIGHT_ANALOGUE_SENSOR_TYPE,
@@ -172,6 +176,9 @@ function pinIds(component) {
   if (component.type === DIP_SWITCH_4_TYPE) return ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B'];
   if (component.type === ROTARY_ENCODER_BUTTON_TYPE) return ['A', 'COM', 'B', 'SW', 'SWCOM'];
   if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component.type)) return ['A', 'B'];
+  if (ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type]) {
+    return ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type].pins.map((item) => item.id);
+  }
   if (component.type === SPDT_CONTACT_TYPE) return ['COM', 'A', 'B'];
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
@@ -196,6 +203,7 @@ function componentPins(component) {
   if (component.type === LIMIT_SWITCH_TYPE) return LIMIT_SWITCH_DEFINITION.pins;
   if (ADVANCED_SWITCH_INPUT_DEFINITIONS[component.type]) return ADVANCED_SWITCH_INPUT_DEFINITIONS[component.type].pins;
   if (SAFETY_PEDAL_INPUT_DEFINITIONS[component.type]) return SAFETY_PEDAL_INPUT_DEFINITIONS[component.type].pins;
+  if (ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type]) return ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type].pins;
   if (component.type === SPDT_CONTACT_TYPE) return SPDT_CONTACT_DEFINITION.terminals;
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return LIGHT_ANALOGUE_SENSOR_DEFINITION.pins;
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return TEMPERATURE_ANALOGUE_SENSOR_DEFINITION.pins;
@@ -236,6 +244,8 @@ function validateCandidateComponent(component) {
     if (!validateAdvancedSwitchInput(component)) fail('PROJECT_CONTACT_ADVANCED_SWITCH_STATE', [component.id]);
   } else if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component.type)) {
     if (!validateSafetyPedalInput(component)) fail('PROJECT_CONTACT_SAFETY_PEDAL_STATE', [component.id]);
+  } else if (ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type]) {
+    if (!validateRotarySelectorIndicator(component)) fail('PROJECT_CONTACT_ROTARY_SELECTOR_INDICATOR_STATE', [component.id]);
   } else if (component.type === SPDT_CONTACT_TYPE) {
     if (!exactKeys(component.properties, ['transitionPolicy'])
         || component.properties.transitionPolicy !== 'break-before-make'
@@ -317,6 +327,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE,
         DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE,
         REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE,
+        ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
         LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
         DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
         ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
@@ -661,9 +672,15 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
       production(implementation, component.type, { closed: state.closed }, [component.id]);
       contacts.push({ componentId: component.id, type: component.type, state });
     }
+    if (component.type === ROTARY_SELECTOR_TYPE) {
+      production(implementation, component.type, { position: component.controls.position }, [component.id]);
+      contacts.push({ componentId: component.id, type: component.type,
+        state: { position: component.controls.position, contacts: rotarySelectorContactState(component) } });
+    }
   }
 
-  const advancedProjection = projectAdvancedSwitchInputs(graph);
+  const selectorProjection = projectRotarySelectors(graph);
+  const advancedProjection = projectAdvancedSwitchInputs(selectorProjection.runtimeGraph);
   const mechanicalProjection = projectMechanicalInputs(advancedProjection);
   const withoutSpdt = removeSpdtComponents(mechanicalProjection);
   const withProjectedSpst = projectSpstComponents(withoutSpdt);
@@ -719,7 +736,19 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
     }, [module.componentId]);
     if (expected.outputActive !== module.outputActive) fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [module.componentId]);
   }
-  const rgbProjection = projectCommonCathodeRgbLeds(thresholdProjection.runtimeGraph);
+  const commonAnodeProjection = projectCommonAnodeRgbLeds(thresholdProjection.runtimeGraph);
+  contacts.push(...commonAnodeProjection.outputs.map((output) => ({ componentId: output.componentId,
+    type: RGB_COMMON_ANODE_TYPE, state: { commonPolarity: 'anode', activeLevel: 'LOW' },
+    runtimeProjection: clone(output) })));
+  for (const output of commonAnodeProjection.outputs) production(implementation, RGB_COMMON_ANODE_TYPE,
+    { duties: { R: 0, G: 0, B: 0 } }, [output.componentId]);
+  const barProjection = projectLedBarGraphs(commonAnodeProjection.runtimeGraph);
+  contacts.push(...barProjection.displays.map((display) => ({ componentId: display.componentId,
+    type: LED_BAR_GRAPH_TYPE, state: { segments: 10, color: display.color },
+    runtimeProjection: clone(display) })));
+  for (const display of barProjection.displays) production(implementation, LED_BAR_GRAPH_TYPE,
+    { segments: Array(10).fill(false) }, [display.componentId]);
+  const rgbProjection = projectCommonCathodeRgbLeds(barProjection.runtimeGraph);
   if (!rgbProjection.ok) {
     fail(`PROJECT_CONTACT_${rgbProjection.code}`, rgbProjection.details);
   }
@@ -824,6 +853,8 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
     modelLibraryImplementationId: implementation.id,
     runtimePositionSources: clone({
       ...rgbProjection.runtimePositionSources,
+      ...commonAnodeProjection.runtimePositionSources,
+      ...barProjection.runtimePositionSources,
       ...sevenSegmentProjection.runtimePositionSources,
       ...rotaryEncoderProjection.runtimePositionSources,
     }),
@@ -861,6 +892,15 @@ function draftContacts(graph) {
     if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component.type)) {
       return [{ componentId: component.id, type: component.type, state: safetyPedalRuntimeState(component) }];
     }
+    if (component.type === ROTARY_SELECTOR_TYPE) {
+      return [{ componentId: component.id, type: component.type, state: {
+        position: component.controls.position, contacts: rotarySelectorContactState(component),
+      }, runtimeProjection: null }];
+    }
+    if (component.type === RGB_COMMON_ANODE_TYPE) return [{ componentId: component.id,
+      type: component.type, state: { commonPolarity: 'anode', activeLevel: 'LOW' }, runtimeProjection: null }];
+    if (component.type === LED_BAR_GRAPH_TYPE) return [{ componentId: component.id,
+      type: component.type, state: { segments: 10, independentCathodes: true }, runtimeProjection: null }];
     if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) {
       return [{
         componentId: component.id,
@@ -1046,6 +1086,7 @@ export function validateContactPersistenceProject(value, options = {}) {
       GROUND_REFERENCE_TYPE, POWER_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
       LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
       DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
+      ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
       ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
       ROTARY_ENCODER_TYPE,
     ].includes(component.type),

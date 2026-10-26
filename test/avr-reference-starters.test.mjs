@@ -6,6 +6,7 @@ import test from 'node:test';
 import './input-control-example-artifacts.test.mjs';
 import './basic-component-example-artifacts.test.mjs';
 import './indicator-actuator-example-artifacts.test.mjs';
+import './rotary-selector-indicator-example-artifacts.test.mjs';
 import { avrReferenceStarterCatalog, createAvrReferenceStarter } from '../src/avr-reference-starters.mjs';
 import { componentReferenceInventory } from '../src/component-support-matrix.mjs';
 import { openCandidateUiSession } from '../src/candidate-existing-ui-adapter.mjs';
@@ -52,9 +53,10 @@ test('every available matrix cell now resolves to a real starter id', () => {
     'c3-led-off', 'stm32-led-on', 'stm32-led-off', 'avr-pcf8574-lcd-hello',
     'avr-character-lcd-20x4-cgram', ...Object.keys(expected),
     'avr-advanced-switch-inputs', 'avr-safety-pedal-inputs',
+    'avr-rotary-selector-4', 'avr-rgb-common-anode', 'avr-led-bar-graph',
   ]);
   const inventory = componentReferenceInventory();
-  assert.equal(inventory.length, 35);
+  assert.equal(inventory.length, 38);
   for (const item of inventory) {
     assert.equal(item.hasPositiveReference, true, `${item.profile}:${item.model}`);
     assert(item.starters.every((id) => ids.has(id)), `${item.model}:${item.starters.join(',')}`);
