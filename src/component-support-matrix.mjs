@@ -33,7 +33,11 @@ export const COMPONENT_SUPPORT_PROFILES = deepFreeze([
 ]);
 
 const avrBase = Object.values(COMPONENT_CATALOG).filter((definition) => definition.selectable);
-const avrCandidate = Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable);
+// CMP-020's AVR 5 V source is integrated for private candidate review but is
+// intentionally excluded from the public matrix until that review and release
+// gate complete. Candidate discovery is not public qualification.
+const avrCandidate = Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) =>
+  definition.selectable && definition.type !== 'reference.power-5v-v1');
 const narrowBoards = [
   RP2040_PICO_COMPONENT_CATALOG[PICO],
   ESP32C3_PUBLIC_COMPONENT_CATALOG[C3],

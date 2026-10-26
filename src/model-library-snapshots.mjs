@@ -147499,7 +147499,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library.mjs",
-      "sha256": "f932adcffa7d1a5dd22be5589ae72a8bab8dbe606a75a07cbb4c46396037faae"
+      "sha256": "557868bd34f4548b4b3853a6a95965f7c78568df0679e7b6c33ce0883456523a"
     },
     {
       "path": "src/model-bundle-registry.mjs",
@@ -147551,7 +147551,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "5b34844191074f8aa8b906bc2df0e29d02a25b03495669f69902664dbfd23843"
+      "sha256": "b005b0721f87eaf650a69a8a8225071d235d9d6d311df40bcbabe69290e2680c"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -147559,7 +147559,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "3e6e215314ba1d5c389433937312ae0c4909a14b6f62459fbbfe93dfc8e448a8"
+      "sha256": "1dea09ed4359cea14226c643d8b907e2eccb6fe0204bed920c0a3a3cc3715145"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -147607,7 +147607,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "c767beec48b5683d000e65d4684adfb4b4eaa1fb7db65c615b518e3b37accb7c"
+      "sha256": "84a58f3e4db2f4cad57ef930de2ec3503e76543135eb0002582fe76709844c49"
     },
     {
       "path": "expansion-drafts/ground-reference-integration-v1.mjs",
@@ -147682,7 +147682,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "ceb73c0f8d4eb4a3f2343f04adc974458a20ccfd50e64fde01b6e50ca9076328"
     }
   ],
-  "implementationSha256": "9d65a7d4104b1e5d80b0feb33d23a0344a56632394cdaf3997e5b85563f45f6e",
+  "implementationSha256": "c007abdc66298536241c438cef09df11a671c03dd2e2d1eaf38b735f104dfe5a",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -147692,7 +147692,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract"
   },
-  "manifestSha256": "f6374a7c432f4001e67d9a243834ababb20910a5737380490a854c38860e26d4",
+  "manifestSha256": "e21796ca4c48cc2383b7081b79c0bd2940e8e01fc70bb384c3086a38789f90f3",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

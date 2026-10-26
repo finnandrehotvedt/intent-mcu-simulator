@@ -440,6 +440,21 @@ function validateProjectWithEntries(entries, manifest, profile, project) {
   const components = graph?.components;
   if (!Array.isArray(components)) return failure('MODEL_LIBRARY_PROJECT_COMPONENTS');
   for (const component of components) {
+    if (manifest.manifestSha256 === CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256
+        && component?.type === 'reference.power-5v-v1') {
+      if (!exactKeys(component.properties ?? {}, ['voltageVolts']) || component.properties.voltageVolts !== 5) {
+        return failure('MODEL_LIBRARY_PROPERTY_VALUE', [component.id, component.type, 'voltageVolts']);
+      }
+      if (!exactKeys(component.controls ?? {}, [])) {
+        return failure('MODEL_LIBRARY_CONTROL_KEYS', [component.id, component.type]);
+      }
+      for (const net of graph.nets ?? []) for (const endpoint of net.endpoints ?? []) {
+        if (endpoint.component === component.id && endpoint.pin !== 'OUT') {
+          return failure('MODEL_LIBRARY_PIN_UNKNOWN', [component.id, component.type, endpoint.pin]);
+        }
+      }
+      continue;
+    }
     const entry = entries.get(entryKey(profile, component?.type));
     if (!entry) return failure('MODEL_LIBRARY_COMPONENT_UNAVAILABLE', [profile, component?.type ?? null]);
     if (entry.componentVersion < 1 || entry.modelVersion < 1
