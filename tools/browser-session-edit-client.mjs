@@ -6,6 +6,10 @@ import { randomUUID } from 'node:crypto';
 import { readFile, unlink } from 'node:fs/promises';
 import { createInterface } from 'node:readline';
 import { stdin, stderr, stdout } from 'node:process';
+import {
+  publicSessionErrorCode,
+  validateDiscoveredPlan,
+} from '../src/browser-session-client-contract.mjs';
 
 const args = process.argv.slice(2);
 const sessionMode = args[0] === '--session';
@@ -204,23 +208,6 @@ async function discoverProject() {
     runtime: validation.runtime ?? validation.validation,
     executable: validation.executable ?? validation.validation?.ok === true }, project, catalog, components };
 }
-function validateNamedPins(candidate, components, catalog) {
-  const typeById = new Map(components.components.map((item) => [item.id, item.type]));
-  for (const command of candidate.commands) if (command?.command === 'component.add') typeById.set(command.id, command.type);
-  for (const command of candidate.commands) if (command?.command === 'component.duplicate') {
-    const sourceType = typeById.get(command.component_id);
-    if (sourceType) typeById.set(command.id, sourceType);
-  }
-  for (const command of candidate.commands) {
-    const endpoints = command?.command === 'wire.connect' ? [command.from, command.to]
-      : ['wire.branch.connect', 'wire.disconnect'].includes(command?.command) && command.endpoint
-        ? [command.endpoint] : [];
-    for (const endpointValue of endpoints) {
-      const type = typeById.get(endpointValue?.component); const pins = catalog.components[type]?.pins;
-      if (!type || !pins?.some((pin) => pin.id === endpointValue?.pin)) throw new Error('API_PLAN_NAMED_PIN_UNKNOWN');
-    }
-  }
-}
 if (sessionMode) {
   let lastState = null;
   stdout.write(`${JSON.stringify({ status: 'ready', mode: 'session', project_id: claim.projectId,
@@ -244,7 +231,7 @@ if (sessionMode) {
         if (!claim.scopes.includes('edit_circuit')) throw new Error('API_SCOPE_REQUIRED');
         const candidate = validatePlan(input.plan); const current = lastState ?? await discoverProject();
         if (!EDITABLE_PROFILES.has(current.catalog.profile)) throw new Error('API_PROFILE_READ_ONLY');
-        validateNamedPins(candidate, current.components, current.catalog);
+        validateDiscoveredPlan(candidate, current.components, current.catalog);
         const applied = await accepted('edit.batch', { commands: candidate.commands });
         lastState = null;
         stdout.write(`${JSON.stringify({ status: 'pass', mode: 'edited', transaction_id: applied.transaction_id,
@@ -259,9 +246,7 @@ if (sessionMode) {
       }
         throw new Error('API_SESSION_COMMAND_UNSUPPORTED');
       } catch (error) {
-        const code = typeof error?.message === 'string'
-          && /^(?:API_[A-Z0-9_]+|PROJECT_CONTACT_[A-Z0-9_]+|(?:RP2040|C3|STM32)_API_[A-Z0-9_]+)$/u.test(error.message)
-          ? error.message : 'API_SESSION_FAILED';
+        const code = publicSessionErrorCode(error);
         stdout.write(`${JSON.stringify({ status: 'rejected', code })}\n`);
         if (['API_EXPIRED', 'API_AUTH_REQUIRED', 'API_OWNER_GONE', 'API_CLIENT_GONE'].includes(code)) break;
       }
@@ -275,7 +260,7 @@ if (sessionMode) {
 const { discovery, catalog, components } = await discoverProject();
 if (!plan) { stdout.write(`${JSON.stringify({ status: 'pass', mode: 'read-only', discovery })}\n`); process.exit(0); }
 if (!EDITABLE_PROFILES.has(catalog.profile)) throw new Error('API_PROFILE_READ_ONLY');
-validateNamedPins(plan, components, catalog);
+validateDiscoveredPlan(plan, components, catalog);
 const applied = await accepted('edit.batch', { commands: plan.commands });
 const after = await accepted('project.inspect'); const afterNets = await accepted('nets.list');
 stdout.write(`${JSON.stringify({ status: 'pass', mode: 'edited', discovery, transaction_id: applied.transaction_id,

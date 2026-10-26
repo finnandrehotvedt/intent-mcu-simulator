@@ -119,6 +119,23 @@ test('candidate junction removal preserves every endpoint and rejects unsafe mul
   assert.equal(session.undoStack.length, history);
 });
 
+test('candidate API property batch reports the exact model error and rejects all operations atomically', () => {
+  const created = createContactPersistenceExample();
+  assert.equal(created.ok, true);
+  const session = new CandidateEditorSession(created.project);
+  const before = session.saveText();
+  const revision = session.revision;
+  const result = session.apply({ type: 'edit.batch', revision, transactionId: 'api-negative-property', commands: [
+    { type: 'component.property.set', componentId: 'resistor-1', key: 'ohms', value: 330 },
+    { type: 'component.property.set', componentId: 'resistor-1', key: 'ohms', value: 0 },
+  ] });
+  assert.equal(result.ok, false);
+  assert.equal(result.code, 'MODEL_LIBRARY_PROPERTY_VALUE');
+  assert.equal(session.saveText(), before);
+  assert.equal(session.revision, revision);
+  assert.equal(session.undoStack.length, 0);
+});
+
 test('electrically unsafe candidate reconnect rejects before history commit', () => {
   const created = createContactPersistenceExample();
   assert.equal(created.ok, true);
