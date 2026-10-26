@@ -58,9 +58,9 @@
           },
           "projectSha256": "5229533d8c174e0cdef01a5a206fbedc49eeaa53f4a978b6b647bd33ad3e2652",
           "sourceSha256": null,
-          "expectedVisibleBehavior": "Opening restores the board, resistor, LED and 10 kΩ potentiometer with its WIPER wire attached.",
-          "model": "validated data-only 3.3 V authoring graph",
-          "firmware": "unavailable for potentiometer ADC on this bounded profile"
+          "expectedVisibleBehavior": "Opening restores the board, resistor, LED and 10 kΩ potentiometer with all three named wires attached.",
+          "model": "validated passive data-only 0–3.3 V authoring graph; HIGH is attached to an authoring-only GPIO, not a proven supply",
+          "firmware": "unavailable for potentiometer ADC and no powered-divider behavior is claimed on this bounded profile"
         },
         {
           "id": "esp32-c3-potentiometer-combined",
@@ -79,9 +79,9 @@
           },
           "projectSha256": "10167ddb7e926388912450d71a20bf6b6bca6a3ec9033656becfe43fde1dde0b",
           "sourceSha256": null,
-          "expectedVisibleBehavior": "Opening restores the board, resistor, LED and 10 kΩ potentiometer with its WIPER wire attached.",
-          "model": "validated data-only 3.3 V authoring graph",
-          "firmware": "unavailable for potentiometer ADC on this bounded profile"
+          "expectedVisibleBehavior": "Opening restores the board, resistor, LED and 10 kΩ potentiometer with all three named wires attached.",
+          "model": "validated passive data-only 0–3.3 V authoring graph; HIGH is attached to an authoring-only GPIO, not a proven supply",
+          "firmware": "unavailable for potentiometer ADC and no powered-divider behavior is claimed on this bounded profile"
         },
         {
           "id": "stm32-potentiometer-combined",
@@ -100,9 +100,9 @@
           },
           "projectSha256": "5ad35e0552b7f54795a2a27662d0c3dccc2226b0043fd54583e932eae3b2883a",
           "sourceSha256": null,
-          "expectedVisibleBehavior": "Opening restores the board, resistor, LED and 10 kΩ potentiometer with its WIPER wire attached.",
-          "model": "validated data-only 3.3 V authoring graph",
-          "firmware": "unavailable for potentiometer ADC on this bounded profile"
+          "expectedVisibleBehavior": "Opening restores the board, resistor, LED and 10 kΩ potentiometer with all three named wires attached.",
+          "model": "validated passive data-only 0–3.3 V authoring graph; HIGH is attached to an authoring-only GPIO, not a proven supply",
+          "firmware": "unavailable for potentiometer ADC and no powered-divider behavior is claimed on this bounded profile"
         }
       ],
       "sourceSha256": "ccbc6a1ad9bdd7b2e3fc7ccec3d60781bf767392039a1c42a471af69a198dea8",

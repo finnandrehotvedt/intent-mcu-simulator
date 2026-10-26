@@ -121,7 +121,7 @@ export function createSeriesLedComponentPolicy({
         supportedProperties: { ohms: { kind: 'number', minimum: 1, maximum: 10_000_000, unit: 'Ω' },
           taper: { kind: 'enum', values: Object.freeze(['linear']) } },
         pins: ['HIGH', 'WIPER', 'LOW'],
-        limitation: 'Authoring-only linear 0–3.3 V divider; no ADC runtime, loading, noise or physical tolerance model.',
+        limitation: 'Authoring-only passive three-terminal network rated for 0–3.3 V; GPIO HIGH is not a proven supply, and no ADC runtime, loading, noise or physical tolerance model is provided.',
       }),
     ]),
   });

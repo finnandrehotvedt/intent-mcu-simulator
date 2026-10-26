@@ -55,8 +55,9 @@ const crossProfileAuthoring = authoringProfiles.map((definition) => {
     namedPins: { HIGH: `${definition.boardId}.${definition.highPin}`,
       WIPER: `${definition.boardId}.${definition.pin}`, LOW: `${definition.boardId}.${definition.lowPin}` },
     projectSha256: sha256(bytes), sourceSha256: null,
-    expectedVisibleBehavior: 'Opening restores the board, resistor, LED and 10 kΩ potentiometer with its WIPER wire attached.',
-    model: 'validated data-only 3.3 V authoring graph', firmware: 'unavailable for potentiometer ADC on this bounded profile' };
+    expectedVisibleBehavior: 'Opening restores the board, resistor, LED and 10 kΩ potentiometer with all three named wires attached.',
+    model: 'validated passive data-only 0–3.3 V authoring graph; HIGH is attached to an authoring-only GPIO, not a proven supply',
+    firmware: 'unavailable for potentiometer ADC and no powered-divider behavior is claimed on this bounded profile' };
 });
 const definitions = [
   { id: 'avr-series-resistor', requirementIds: ['CMP-001'], file: 'avr-blink.intent-mcu.json',
