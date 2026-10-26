@@ -61,6 +61,9 @@ async function endpointGeometry(page) {
   try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     page.setDefaultTimeout(120_000);
+    await page.route('**/api/page-views', (route) => route.fulfill({
+      status: 200, contentType: 'application/json', body: '{"status":"disabled"}',
+    }));
     const errors = []; const outside = [];
     page.on('pageerror', (error) => errors.push(error.stack || String(error)));
     page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
@@ -72,6 +75,10 @@ async function endpointGeometry(page) {
     await page.waitForFunction(() => window.__M11_READY__ === true);
     await openProject(page, fixture);
 
+    await page.click('#workbench-project-dialog .workbench-popup-close');
+    await page.locator('#workbench-more > summary').click();
+    await page.click('#toggle-inspector');
+    await page.waitForFunction(() => document.querySelector('#workbench-inspector-dialog').open === true);
     await page.selectOption('#selected-net', 'net-ground-branch');
     const guardedJunction = await page.evaluate(() => ({
       disabled: document.querySelector('#remove-junction').disabled,
@@ -83,10 +90,13 @@ async function endpointGeometry(page) {
     assert.match(guardedJunction.title, /required.*multi-pin.*named branch/i);
     assert.match(guardedJunction.explanation, /removal unavailable.*requires.*explicit junction/i);
     assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), guardedJunction.project);
+    await page.click('#workbench-inspector-dialog .workbench-popup-close');
 
     const before = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
-    await page.locator('.wire-segment-hit[data-net="net-ground-branch"][data-endpoint="ground-reference-branch.REF"]').first().focus();
+    await page.locator('.wire-segment-hit[data-net="net-ground-branch"][data-endpoint="ground-reference-branch.REF"]').first().click({ force: true });
+    await page.click('#toggle-inspector');
     await page.click('#reconnect-mode');
+    await page.click('#workbench-inspector-dialog .workbench-popup-close');
     await page.locator('.pin-anchor[data-endpoint="ground-reference-target.REF"]').click({ force: true });
     await page.waitForFunction(() => window.__M6_PROJECT__().candidateCircuit.nets
       .find((net) => net.id === 'net-ground-branch').endpoints
@@ -101,12 +111,15 @@ async function endpointGeometry(page) {
     assert.match(geometry.crossingCopy, /crossing.*separate/i);
     assert.equal(geometry.width[0], geometry.width[1]);
 
-    await page.locator('.wire-segment-hit[data-net="net-ground-branch"][data-endpoint="ground-reference-target.REF"]').first().focus();
+    await page.locator('.wire-segment-hit[data-net="net-ground-branch"][data-endpoint="ground-reference-target.REF"]').first().click({ force: true });
+    await page.click('#toggle-inspector');
     await page.click('#delete-branch');
+    await page.click('#workbench-inspector-dialog .workbench-popup-close');
     await page.waitForFunction(() => !window.__M6_PROJECT__().candidateCircuit.nets
       .find((net) => net.id === 'net-ground-branch').endpoints
       .some((endpoint) => endpoint.component === 'ground-reference-target'));
     const branchDeleted = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
+    await page.click('#project-files-open');
     await page.click('#undo');
     await page.waitForFunction(() => window.__M6_PROJECT__().candidateCircuit.nets
       .find((net) => net.id === 'net-ground-branch').endpoints
@@ -118,11 +131,15 @@ async function endpointGeometry(page) {
       .some((endpoint) => endpoint.component === 'ground-reference-target'));
     assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), branchDeleted);
     await page.click('#undo');
+    await page.click('#workbench-project-dialog .workbench-popup-close');
 
+    await page.click('#toggle-inspector');
     await page.selectOption('#selected-net', 'net-selector-com');
     await page.click('#delete-wire');
+    await page.click('#workbench-inspector-dialog .workbench-popup-close');
     await page.waitForFunction(() => !window.__M6_PROJECT__().candidateCircuit.nets.some((net) => net.id === 'net-selector-com'));
     const netDeleted = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
+    await page.click('#project-files-open');
     await page.click('#undo');
     await page.waitForFunction(() => window.__M6_PROJECT__().candidateCircuit.nets.some((net) => net.id === 'net-selector-com'));
     assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), reconnected);
