@@ -44,6 +44,15 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
       unit: 'detent', mutability: 'transition-only' },
     pressed: { kind: 'boolean', default: false, mutability: 'authored' },
   },
+  'switch.reed-no-v1': {
+    magnetPresent: { kind: 'boolean', default: false, mutability: 'authored' },
+  },
+  'switch.emergency-stop-nc-v1': {
+    latched: { kind: 'boolean', default: false, mutability: 'authored' },
+  },
+  'switch.foot-pedal-no-v1': {
+    pressed: { kind: 'boolean', default: false, mutability: 'authored' },
+  },
   'sensor.light-analogue-v1': {
     lightLevel: { kind: 'number', minimum: 0, maximum: 1, default: 0.5,
       unit: 'ratio', mutability: 'authored' },

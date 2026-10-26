@@ -147,6 +147,10 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       return { ok: true, code: 'OK', result: { states, phaseCycles: 16000,
         buttonConnected: input.pressed } };
     }
+    if (['switch.reed-no-v1', 'switch.emergency-stop-nc-v1', 'switch.foot-pedal-no-v1'].includes(componentType)) {
+      if (typeof input?.closed !== 'boolean') return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      return { ok: true, code: 'OK', result: { connected: input.closed } };
+    }
     if (componentType === 'sensor.light-analogue-v1') {
       if (!Number.isFinite(input?.lightLevel) || input.lightLevel < 0 || input.lightLevel > 1) {
         return failure('MODEL_LIBRARY_PRODUCTION_INPUT');

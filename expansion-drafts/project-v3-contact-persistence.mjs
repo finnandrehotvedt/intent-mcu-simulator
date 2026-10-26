@@ -45,6 +45,10 @@ import {
   advancedSwitchRuntimeState, validateAdvancedSwitchInput,
 } from './advanced-switch-inputs-v1.mjs';
 import {
+  EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE, REED_SWITCH_TYPE, SAFETY_PEDAL_INPUT_DEFINITIONS,
+  safetyPedalRuntimeState, validateSafetyPedalInput,
+} from './safety-pedal-inputs-v1.mjs';
+import {
   LIGHT_ANALOGUE_SENSOR_DEFINITION,
   LIGHT_ANALOGUE_SENSOR_TYPE,
   projectLightAnalogueSensors,
@@ -167,6 +171,7 @@ function pinIds(component) {
   if (component.type === LIMIT_SWITCH_TYPE) return ['COM', 'NC', 'NO'];
   if (component.type === DIP_SWITCH_4_TYPE) return ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B'];
   if (component.type === ROTARY_ENCODER_BUTTON_TYPE) return ['A', 'COM', 'B', 'SW', 'SWCOM'];
+  if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component.type)) return ['A', 'B'];
   if (component.type === SPDT_CONTACT_TYPE) return ['COM', 'A', 'B'];
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
@@ -190,6 +195,7 @@ function componentPins(component) {
   if (component.type === SLIDE_SWITCH_TYPE) return SLIDE_SWITCH_DEFINITION.pins;
   if (component.type === LIMIT_SWITCH_TYPE) return LIMIT_SWITCH_DEFINITION.pins;
   if (ADVANCED_SWITCH_INPUT_DEFINITIONS[component.type]) return ADVANCED_SWITCH_INPUT_DEFINITIONS[component.type].pins;
+  if (SAFETY_PEDAL_INPUT_DEFINITIONS[component.type]) return SAFETY_PEDAL_INPUT_DEFINITIONS[component.type].pins;
   if (component.type === SPDT_CONTACT_TYPE) return SPDT_CONTACT_DEFINITION.terminals;
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return LIGHT_ANALOGUE_SENSOR_DEFINITION.pins;
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return TEMPERATURE_ANALOGUE_SENSOR_DEFINITION.pins;
@@ -228,6 +234,8 @@ function validateCandidateComponent(component) {
     }
   } else if ([DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE].includes(component.type)) {
     if (!validateAdvancedSwitchInput(component)) fail('PROJECT_CONTACT_ADVANCED_SWITCH_STATE', [component.id]);
+  } else if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component.type)) {
+    if (!validateSafetyPedalInput(component)) fail('PROJECT_CONTACT_SAFETY_PEDAL_STATE', [component.id]);
   } else if (component.type === SPDT_CONTACT_TYPE) {
     if (!exactKeys(component.properties, ['transitionPolicy'])
         || component.properties.transitionPolicy !== 'break-before-make'
@@ -308,6 +316,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         GROUND_REFERENCE_TYPE, POWER_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
         SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE,
         DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE,
+        REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE,
         LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
         DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
         ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
@@ -576,6 +585,12 @@ function projectAdvancedSwitchInputs(graph) {
       { id: buttonId, type: TOGGLE_SWITCH_TYPE, label: `${component.label} button`,
         properties: { normallyOpen: true }, controls: { closed: component.controls.pressed } }];
     }
+    if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component.type)) {
+      const contactId = component.id;
+      replacements.set(component.id, { A: { component: contactId, pin: 'A' }, B: { component: contactId, pin: 'B' } });
+      return [{ id: contactId, type: TOGGLE_SWITCH_TYPE, label: component.label,
+        properties: { normallyOpen: true }, controls: { closed: safetyPedalRuntimeState(component).closed } }];
+    }
     return [component];
   });
   projected.nets = projected.nets.map((net) => ({ ...net, endpoints: net.endpoints.map((endpoint) => {
@@ -639,6 +654,11 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
       production(implementation, component.type, component.type === DIP_SWITCH_4_TYPE
         ? { switches: state.contacts.map((item) => item.closed) }
         : { direction: 'cw', pressed: component.controls.pressed }, [component.id]);
+      contacts.push({ componentId: component.id, type: component.type, state });
+    }
+    if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component.type)) {
+      const state = safetyPedalRuntimeState(component);
+      production(implementation, component.type, { closed: state.closed }, [component.id]);
       contacts.push({ componentId: component.id, type: component.type, state });
     }
   }
@@ -837,6 +857,9 @@ function draftContacts(graph) {
     }
     if ([DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE].includes(component.type)) {
       return [{ componentId: component.id, type: component.type, state: advancedSwitchRuntimeState(component) }];
+    }
+    if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component.type)) {
+      return [{ componentId: component.id, type: component.type, state: safetyPedalRuntimeState(component) }];
     }
     if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) {
       return [{

@@ -149921,6 +149921,154 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
+      "behaviorContractSha256": "233942f181d92cd687b0be904cd588e430fa42bcb2fc77a9910beb28d8a1b3ae",
+      "componentType": "switch.emergency-stop-nc-v1",
+      "componentVersion": 1,
+      "modelId": "model.switch-emergency-stop-nc-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "switch.emergency-stop-nc-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 86,
+        "cssWidth": 126,
+        "renderer": "switch-emergency-stop-nc",
+        "thumbnail": "switch-emergency-stop-nc",
+        "viewBox": [
+          0,
+          0,
+          126,
+          86
+        ]
+      },
+      "rendererContractSha256": "a7141e31abf7dc581a71d04097d78911f14fdff0f90fbaa4b38feddb6e3e8d05",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "latched": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.switch-emergency-stop-nc-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {},
+            "id": "A",
+            "role": "passive",
+            "signals": [
+              "passive.contact"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "B",
+            "role": "passive",
+            "signals": [
+              "passive.contact"
+            ]
+          }
+        ],
+        "properties": {
+          "latching": {
+            "default": true,
+            "kind": "boolean"
+          },
+          "normallyClosed": {
+            "default": true,
+            "kind": "boolean"
+          }
+        },
+        "support": {
+          "limitations": [
+            "Instructional ideal NC contact opens while latched and closes only after reset.",
+            "Not a safety-rated device or safety-function validation; no dual channel, force-guided contact, diagnostics or certification model."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "e827157a930c2968a5c1f314acd06b43791d1ceb2c3744d18f54a9a67502e06c",
+      "supportStatus": "partial"
+    },
+    {
+      "behaviorContractSha256": "781088153a1bdcfd425fbc09122e5871e45e994d77cb11f6af337a82dc65a8f8",
+      "componentType": "switch.foot-pedal-no-v1",
+      "componentVersion": 1,
+      "modelId": "model.switch-foot-pedal-no-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "switch.foot-pedal-no-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 86,
+        "cssWidth": 130,
+        "renderer": "switch-foot-pedal-no",
+        "thumbnail": "switch-foot-pedal-no",
+        "viewBox": [
+          0,
+          0,
+          130,
+          86
+        ]
+      },
+      "rendererContractSha256": "c322c9592a5c6c79d6bb8c7371fb04d906eeea045626061030273da73d4e2f3c",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "pressed": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.switch-foot-pedal-no-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {},
+            "id": "A",
+            "role": "passive",
+            "signals": [
+              "passive.contact"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "B",
+            "role": "passive",
+            "signals": [
+              "passive.contact"
+            ]
+          }
+        ],
+        "properties": {
+          "normallyOpen": {
+            "default": true,
+            "kind": "boolean"
+          }
+        },
+        "support": {
+          "limitations": [
+            "Ideal normally-open contact closes only while pressed.",
+            "No travel, force, bounce, resistance, cable, current rating or wear model."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "95d729f876bba1e477e06314636dc8b86595c7988aff08bf7b6a8bf284249d6a",
+      "supportStatus": "partial"
+    },
+    {
       "behaviorContractSha256": "88ea014b16cc5648745adc9c40b3af36c9bba7100fc50d42119c8e7b2dcc0c2e",
       "componentType": "switch.limit-spdt-v1",
       "componentVersion": 1,
@@ -150008,6 +150156,78 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
         }
       },
       "semanticSha256": "2866f25a59f14ea3883b4fe01cf7430562a9156705d350a3985cd78f809ca2cd",
+      "supportStatus": "partial"
+    },
+    {
+      "behaviorContractSha256": "6ed597d6ac089e9526b225ae08be0cdd2d8efe5b30bc8729662a8607c9dec998",
+      "componentType": "switch.reed-no-v1",
+      "componentVersion": 1,
+      "modelId": "model.switch-reed-no-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "switch.reed-no-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 86,
+        "cssWidth": 118,
+        "renderer": "switch-reed-no",
+        "thumbnail": "switch-reed-no",
+        "viewBox": [
+          0,
+          0,
+          118,
+          86
+        ]
+      },
+      "rendererContractSha256": "68148a67558fca9a129385afd100e58439832e67857c687c1b4ea5c761d83e1f",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "magnetPresent": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.switch-reed-no-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {},
+            "id": "A",
+            "role": "passive",
+            "signals": [
+              "passive.contact"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "B",
+            "role": "passive",
+            "signals": [
+              "passive.contact"
+            ]
+          }
+        ],
+        "properties": {
+          "normallyOpen": {
+            "default": true,
+            "kind": "boolean"
+          }
+        },
+        "support": {
+          "limitations": [
+            "Ideal normally-open contact closes while Magnet present is enabled.",
+            "No magnetic field, hysteresis, bounce, resistance, glass package or current rating model."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "26786aaa1cc4ce152ca0602443265ed9f3e4a858505aba91655816d4a618272f",
       "supportStatus": "partial"
     },
     {
@@ -151078,7 +151298,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-control-contracts.mjs",
-      "sha256": "89bfa080ea40d26126353ed9af150b98fc25ce4a883419eb1b2e0e99aee39f3e"
+      "sha256": "87ae0144e3d01efa98fbf560b1b486a8656c797ac894cd44aa42ad106d103518"
     },
     {
       "path": "src/simulator.worker.mjs",
@@ -151086,7 +151306,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "cb6030550296cdd3105223899e1ad3dde7048d2043750a57980db2310a6739af"
+      "sha256": "02e1a1bf48e50a7492cde05d5234b8c895869fb12be9bb6f944a65969ea5afe7"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -151118,7 +151338,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "5877fafb2ffa5504e8f680872df727ea345b77e98d8c7afe05fba2497bd517c8"
+      "sha256": "4744b5cbae7449d85bea791e0db3ef096c8691abf95972e88e72da48ab30c5a5"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -151126,7 +151346,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "2874ba6b68674173c7b18fa573d1a110714a3f90dfa59f98111201bae70bfdc5"
+      "sha256": "c1db058ebf89c17715f73b41b6b7b92a0ea381e3103c86455170caa24725a7af"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -151174,7 +151394,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "d6f827070b35b2b8f092b46f777ddf963178f8856cf0ec5209beb199a9c3b110"
+      "sha256": "459230d24e22d1f2f42934ea4e9bf40469ceebbb835c1db9d22dfd585af5ead6"
     },
     {
       "path": "expansion-drafts/ground-reference-integration-v1.mjs",
@@ -151246,10 +151466,10 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "d550c52535c9f4c0e9352624e61362bee1b6fabac0373a1624e62a128887ea8c"
+      "sha256": "5e71ffb71cea2b4726088a6850df53425e12b902a3979c0cd90dcca81792499b"
     }
   ],
-  "implementationSha256": "d70c89392556f2668ca035c2335bd2ee04fc9524aad6701d73566b3e6158abdb",
+  "implementationSha256": "2fd049564a92b8bc9fa0d4e74c7bec42a214de83d3520a64f9cbe5dcc10ca725",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -151259,7 +151479,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract"
   },
-  "manifestSha256": "1f8caa95ca7a544631a701b9062f132c93c4f09771a4ba1c9740752b81193484",
+  "manifestSha256": "e000f0c3c96bec3bf9004da47c8d7d605f54ff94740bf837328764fbc4eb9f62",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

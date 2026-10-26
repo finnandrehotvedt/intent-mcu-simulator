@@ -11,7 +11,9 @@ import { createMechanicalInputComponent } from '../expansion-drafts/mechanical-i
 import { DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE,
   createAdvancedSwitchInput } from '../expansion-drafts/advanced-switch-inputs-v1.mjs';
 import { createSwitchContactComponent } from '../expansion-drafts/switch-contact-graph-v1.mjs';
-import { openCandidateUiSession } from '../src/candidate-existing-ui-adapter.mjs';
+import { EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE, REED_SWITCH_TYPE,
+  createSafetyPedalInput } from '../expansion-drafts/safety-pedal-inputs-v1.mjs';
+import { createCandidateUiComponent, openCandidateUiSession } from '../src/candidate-existing-ui-adapter.mjs';
 import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
 import {
   canonicalProjectEnvelope, emptyProjectBrief, prepareProjectEnvelope,
@@ -120,6 +122,31 @@ void loop() { for (byte p=2;p<=9;p++) Serial.print(digitalRead(p)); Serial.print
   return JSON.parse(session.saveText());
 }
 const advancedSwitches = advancedSwitchExample();
+function safetyPedalExample() {
+  const source = `void setup() { pinMode(7, INPUT_PULLUP); pinMode(8, INPUT_PULLUP); pinMode(9, INPUT_PULLUP); Serial.begin(115200); }
+void loop() { Serial.print(digitalRead(7)); Serial.print(','); Serial.print(digitalRead(8)); Serial.print(','); Serial.println(digitalRead(9)); delay(120); }
+`;
+  const draft = createEditableContactDraft(source); if (!draft.ok) throw new Error(draft.code);
+  draft.project.project.metadata.name = 'Reed, emergency stop and foot pedal inputs';
+  const session = openCandidateUiSession(canonicalContactPersistenceDraftJson(draft.project)).session;
+  const apply = (command) => { const result = session.apply({ ...command, revision: session.revision });
+    if (!result.ok) throw new Error(`SAFETY_PEDAL_EXAMPLE:${command.type}:${result.code}:${JSON.stringify(result.details)}`); };
+  const cases = [[REED_SWITCH_TYPE, 'reed-switch-1', 'D7'],
+    [EMERGENCY_STOP_TYPE, 'emergency-stop-1', 'D8'], [FOOT_PEDAL_TYPE, 'foot-pedal-1', 'D9']];
+  cases.forEach(([type, id, boardPin], index) => {
+    apply({ type: 'component.add', component: createSafetyPedalInput(type, id),
+      position: { x: 0.7 + index * 0.08, y: 0.68, rotation: 0 } });
+    const groundId = `safety-ground-${index + 1}`;
+    apply({ type: 'component.add', component: createCandidateUiComponent('reference.ground-v1', groundId),
+      position: { x: 0.7 + index * 0.08, y: 0.86, rotation: 0 } });
+    apply({ type: 'wire.create', net: { id: `net-safety-${index + 1}`,
+      endpoints: [{ component: id, pin: 'A' }, { component: 'board-1', pin: boardPin }] } });
+    apply({ type: 'wire.create', net: { id: `net-safety-${index + 1}-ground`,
+      endpoints: [{ component: id, pin: 'B' }, { component: groundId, pin: 'REF' }] } });
+  });
+  return JSON.parse(session.saveText());
+}
+const safetyPedal = safetyPedalExample();
 const definitions = [
   {
     id: 'avr-momentary-button-input', requirementIds: ['CMP-021'],
@@ -158,6 +185,13 @@ const definitions = [
       dip3: 'D7', dip4: 'D8', changeoverCom: 'D9', contactsCommon: 'GND1', changeoverB: '5V' },
     expectedBehavior: 'Turning and pressing the encoder changes D2–D4, four DIP positions change D5–D8, and the changeover contact selects GND or 5 V on D9.',
     firmwareLimits: 'Ideal AVR contact models only; no bounce, acceleration, resistance, missed edges, force, travel, arcing or wear.',
+  },
+  {
+    id: 'avr-safety-pedal-inputs', requirementIds: ['CMP-033', 'CMP-034', 'CMP-035'],
+    file: 'avr-safety-pedal-inputs.intent-mcu.json', project: safetyPedal,
+    namedPins: { reed: 'D7', emergencyStop: 'D8', footPedal: 'D9', common: 'three explicit 0 V references' },
+    expectedBehavior: 'Magnet presence closes D7, latching the instructional emergency stop opens D8, and pressing the foot pedal closes D9.',
+    firmwareLimits: 'Instructional ideal contacts only; the emergency-stop model is not safety-rated and no contact includes physical bounce, force, resistance or certification behavior.',
   },
 ];
 const outputs = definitions.map((item) => {

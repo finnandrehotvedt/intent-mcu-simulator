@@ -48,7 +48,7 @@
               ]
             }
           ],
-          "projectSha256": "23b262028162099aa070ca9795069ee342fe7a9ecadb2ed5e43b7fe064f1a5ad",
+          "projectSha256": "2abc5b1622419283cfd18545706066f392b82b7af91b126635b1b366c328b3a6",
           "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
           "expectedVisibleBehavior": "Opening restores the board, resistor and LED with the validated named series wiring.",
           "firmware": "the bounded profile supports only its documented output subset; this file makes no broader peripheral claim"
@@ -85,7 +85,7 @@
               ]
             }
           ],
-          "projectSha256": "277b694120f46de46e78b54029b1ef42970e99249ae1c786935478d85c2e8ef1",
+          "projectSha256": "40cd4065f5b297c35f319076a1964e011710b91c84d5f6df66646044c85c7b40",
           "sourceSha256": "d936fc50b2c874d6af660ece56abbb024c86e7b30462c403542b8d2166b85480",
           "expectedVisibleBehavior": "Opening restores the board, resistor and LED with the validated named series wiring.",
           "firmware": "the bounded profile supports only its documented output subset; this file makes no broader peripheral claim"
@@ -122,7 +122,7 @@
               ]
             }
           ],
-          "projectSha256": "c80022acc12329179e9bfd5e5796554f821cea2cf5a1032e822c5ef0d41ed553",
+          "projectSha256": "c7f946b181b52cca5d67ec85471d99a38a21edd271dc55759341f6f28f4a65c0",
           "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
           "expectedVisibleBehavior": "Opening restores the board, resistor and LED with the validated named series wiring.",
           "firmware": "the bounded profile supports only its documented output subset; this file makes no broader peripheral claim"
@@ -275,7 +275,7 @@
               ]
             }
           ],
-          "projectSha256": "23b262028162099aa070ca9795069ee342fe7a9ecadb2ed5e43b7fe064f1a5ad",
+          "projectSha256": "2abc5b1622419283cfd18545706066f392b82b7af91b126635b1b366c328b3a6",
           "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
           "expectedVisibleBehavior": "Opening restores the board, resistor and LED with the validated named series wiring.",
           "firmware": "the bounded profile supports only its documented output subset; this file makes no broader peripheral claim"
@@ -312,7 +312,7 @@
               ]
             }
           ],
-          "projectSha256": "277b694120f46de46e78b54029b1ef42970e99249ae1c786935478d85c2e8ef1",
+          "projectSha256": "40cd4065f5b297c35f319076a1964e011710b91c84d5f6df66646044c85c7b40",
           "sourceSha256": "d936fc50b2c874d6af660ece56abbb024c86e7b30462c403542b8d2166b85480",
           "expectedVisibleBehavior": "Opening restores the board, resistor and LED with the validated named series wiring.",
           "firmware": "the bounded profile supports only its documented output subset; this file makes no broader peripheral claim"
@@ -349,7 +349,7 @@
               ]
             }
           ],
-          "projectSha256": "c80022acc12329179e9bfd5e5796554f821cea2cf5a1032e822c5ef0d41ed553",
+          "projectSha256": "c7f946b181b52cca5d67ec85471d99a38a21edd271dc55759341f6f28f4a65c0",
           "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
           "expectedVisibleBehavior": "Opening restores the board, resistor and LED with the validated named series wiring.",
           "firmware": "the bounded profile supports only its documented output subset; this file makes no broader peripheral claim"

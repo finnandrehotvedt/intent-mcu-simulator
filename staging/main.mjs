@@ -12978,6 +12978,9 @@ function candidateComponentPrefix(type) {
       'switch.limit-spdt-v1': 'limit-switch',
       'switch.dip-4-v1': 'dip-switch',
       'input.rotary-encoder-button-v1': 'encoder-button',
+      'switch.reed-no-v1': 'reed-switch',
+      'switch.emergency-stop-nc-v1': 'emergency-stop',
+      'switch.foot-pedal-no-v1': 'foot-pedal',
       'sensor.light-analogue-v1': 'light-sensor',
       'sensor.temperature-analogue-v1': 'temperature-sensor',
       [DIGITAL_LIGHT_THRESHOLD_TYPE]: 'light-threshold',
@@ -13020,6 +13023,9 @@ function addComponent(type, point = null) {
       'switch.limit-spdt-v1': { x: 0.82, y: 0.76 },
       'switch.dip-4-v1': { x: 0.62, y: 0.7 },
       'input.rotary-encoder-button-v1': { x: 0.78, y: 0.66 },
+      'switch.reed-no-v1': { x: 0.58, y: 0.72 },
+      'switch.emergency-stop-nc-v1': { x: 0.72, y: 0.72 },
+      'switch.foot-pedal-no-v1': { x: 0.84, y: 0.72 },
       'sensor.light-analogue-v1': { x: 0.62, y: 0.76 },
       'sensor.temperature-analogue-v1': { x: 0.78, y: 0.76 },
       [DIGITAL_LIGHT_THRESHOLD_TYPE]: { x: 0.78, y: 0.72 },
@@ -13496,6 +13502,24 @@ function renderRuntimeControls() {
       cw.addEventListener('click', () => applyControl('detent', component.controls.detent + 1));
       pressed.addEventListener('click', () => applyControl('pressed', !component.controls.pressed));
       row.append(label, ccw, cw, pressed); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3'
+        && ['switch.reed-no-v1', 'switch.emergency-stop-nc-v1', 'switch.foot-pedal-no-v1'].includes(component.type)) {
+      const row = document.createElement('div'); const label = document.createElement('span');
+      const key = component.type === 'switch.reed-no-v1' ? 'magnetPresent'
+        : component.type === 'switch.emergency-stop-nc-v1' ? 'latched' : 'pressed';
+      const value = component.controls[key]; label.textContent = component.label;
+      const button = document.createElement('button'); button.type = 'button';
+      button.dataset.control = `${component.id}.${key}`; button.setAttribute('aria-pressed', String(value));
+      button.textContent = component.type === 'switch.reed-no-v1' ? (value ? 'Magnet present · closed' : 'No magnet · open')
+        : component.type === 'switch.emergency-stop-nc-v1' ? (value ? 'Latched · open' : 'Reset · closed')
+          : (value ? 'Pressed · closed' : 'Released · open');
+      button.addEventListener('click', () => {
+        const prepared = selectedCandidateContactControl(component.id, key, !component.controls[key]);
+        const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
+        if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Input control rejected.'); return; }
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject(); renderProject();
+      }); row.append(label, button); return [row];
     }
     if (component.type === 'button.momentary-v1') {
       const row = document.createElement('div');
