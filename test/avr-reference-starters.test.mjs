@@ -19,6 +19,7 @@ const expected = Object.freeze({
   'avr-light-analogue': 'sensor.light-analogue-v1',
   'avr-light-threshold': 'sensor.light-threshold-digital-v1',
   'avr-dht11-temperature-humidity': 'sensor.dht11-temperature-humidity-v1',
+  'avr-ds18b20-temperature': 'sensor.ds18b20-temperature-v1',
   'avr-active-buzzer': 'output.active-buzzer-module-v1',
   'avr-traffic-light': 'output.traffic-light-module-v1',
   'avr-seven-segment': 'output.seven-segment-common-cathode-v1',
@@ -26,9 +27,9 @@ const expected = Object.freeze({
   'avr-rotary-encoder': 'input.rotary-encoder-quadrature-v1',
 });
 
-test('L06 publishes exactly twelve clear existing-capability AVR references', () => {
+test('L06 publishes exactly thirteen clear existing-capability AVR references', () => {
   const cards = avrReferenceStarterCatalog();
-  assert.equal(cards.length, 12);
+  assert.equal(cards.length, 13);
   assert.deepEqual(Object.fromEntries(cards.map((card) => [card.id, card.model])), expected);
   for (const card of cards) {
     for (const field of ['learn', 'try', 'observe', 'limits']) {
@@ -37,7 +38,7 @@ test('L06 publishes exactly twelve clear existing-capability AVR references', ()
   }
 });
 
-test('all twelve reference projects are canonical runnable candidate-v3 projects', () => {
+test('all thirteen reference projects are canonical runnable candidate-v3 projects', () => {
   for (const card of avrReferenceStarterCatalog()) {
     const created = createAvrReferenceStarter(card.id);
     const opened = openCandidateUiSession(created.text);
@@ -71,7 +72,7 @@ test('every available matrix cell now resolves to a real starter id', () => {
     'avr-contact-sensors',
   ]);
   const inventory = componentReferenceInventory();
-  assert.equal(inventory.length, 72);
+  assert.equal(inventory.length, 73);
   for (const item of inventory) {
     assert.equal(item.hasPositiveReference, true, `${item.profile}:${item.model}`);
     assert(item.starters.every((id) => ids.has(id)), `${item.model}:${item.starters.join(',')}`);

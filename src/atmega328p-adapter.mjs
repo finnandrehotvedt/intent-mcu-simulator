@@ -36,7 +36,30 @@ const UNSUPPORTED_LIMIT = 256;
 const X47_TRANSITION_LIMIT = 64;
 const DHT11_TRANSACTION_LIMIT = 64;
 const DHT11_START_MIN_CYCLES = 18 * 16_000;
+const DS18B20_TRANSACTION_LIMIT = 64;
+const DS18B20_RESET_MIN_CYCLES = 400 * 16;
+const DS18B20_WRITE_ZERO_MIN_CYCLES = 40 * 16;
 const microsToCycles = (microseconds) => microseconds * 16;
+const validDs18b20RuntimeTemperature = (value) => Number.isFinite(value)
+  && value >= -55 && value <= 125 && Number.isInteger(value / 0.0625);
+const ds18b20RuntimeCrc8 = (bytes) => {
+  let crc = 0;
+  for (const value of bytes) {
+    let incoming = value;
+    for (let bit = 0; bit < 8; bit += 1) {
+      const mix = (crc ^ incoming) & 1;
+      crc >>= 1;
+      if (mix) crc ^= 0x8c;
+      incoming >>= 1;
+    }
+  }
+  return crc;
+};
+const ds18b20RuntimeScratchpad = (temperatureC) => {
+  const raw = Math.round(temperatureC * 16);
+  const bytes = [raw & 0xff, (raw >> 8) & 0xff, 75, 70, 0x7f, 0xff, 0x0c, 0x10];
+  return [...bytes, ds18b20RuntimeCrc8(bytes)];
+};
 const PIN_MAP = Object.freeze({
   0: ['D', 0], 1: ['D', 1], 2: ['D', 2], 3: ['D', 3],
   4: ['D', 4], 5: ['D', 5], 6: ['D', 6], 7: ['D', 7],
@@ -110,6 +133,28 @@ export class Atmega328PAdapter {
       componentId: item.componentId, pin: item.pin, temperatureC: item.temperatureC,
       humidityPercent: item.humidityPercent, lowStartCycle: null, busyUntilCycle: 0,
     }]));
+    const ds18b20Devices = options.ds18b20Devices ?? [];
+    if (!Array.isArray(ds18b20Devices) || ds18b20Devices.length > 1
+        || ds18b20Devices.some((item) => !item || item.type !== 'ds18b20'
+          || typeof item.componentId !== 'string' || !/^[a-z][a-z0-9-]{0,47}$/u.test(item.componentId)
+          || !Number.isInteger(item.pin) || item.pin < 2 || item.pin > 12
+          || !validDs18b20RuntimeTemperature(item.temperatureC))) {
+      throw new TypeError('DS18B20_DEVICE_CONFIGURATION');
+    }
+    this.ds18b20Devices = new Map(ds18b20Devices.map((item) => [item.componentId, {
+      componentId: item.componentId,
+      pin: item.pin,
+      temperatureC: item.temperatureC,
+      lowStartCycle: null,
+      busyUntilCycle: 0,
+      phase: 'await-reset',
+      receiveByte: 0,
+      receiveBit: 0,
+      scratchpad: ds18b20RuntimeScratchpad(item.temperatureC),
+      readBits: [],
+      readBit: 0,
+      converted: false,
+    }]));
     const i2cDevices = options.i2cDevices ?? [];
     if (!Array.isArray(i2cDevices) || i2cDevices.length > 1
         || i2cDevices.some((item) => item?.address !== 0x27 || item?.type !== 'pcf8574-lcd')) {
@@ -143,6 +188,7 @@ export class Atmega328PAdapter {
     this.serial = [];
     this.i2c = [];
     this.dht11 = [];
+    this.ds18b20 = [];
     this.usartRxSequence = 0;
     this.activeUsartRx = null;
     this.pendingUsartRxCompletion = null;
@@ -172,6 +218,18 @@ export class Atmega328PAdapter {
     for (const device of this.dht11Devices.values()) {
       device.lowStartCycle = null;
       device.busyUntilCycle = 0;
+      this.#setDigitalPinNow(device.pin, true, false);
+    }
+    for (const device of this.ds18b20Devices.values()) {
+      device.lowStartCycle = null;
+      device.busyUntilCycle = 0;
+      device.phase = 'await-reset';
+      device.receiveByte = 0;
+      device.receiveBit = 0;
+      device.scratchpad = ds18b20RuntimeScratchpad(device.temperatureC);
+      device.readBits = [];
+      device.readBit = 0;
+      device.converted = false;
       this.#setDigitalPinNow(device.pin, true, false);
     }
     this.#refreshDigitalBridges();
@@ -412,6 +470,7 @@ export class Atmega328PAdapter {
       }
       if (event.type === 'analogue') this.setAnalogChannel(event.channel, event.voltage);
       if (event.type === 'dht11') this.#setDigitalPinNow(event.pin, event.level);
+      if (event.type === 'ds18b20') this.#setDigitalPinNow(event.pin, event.level);
       if (event.type === 'fault-digital-drive') {
         this.inputLevels.set(event.pin, event.level);
         this.#setDigitalPinNow(event.pin, event.level);
@@ -547,6 +606,116 @@ export class Atmega328PAdapter {
       if (startPulseCycles >= DHT11_START_MIN_CYCLES
           && this.cpu.cycles >= device.busyUntilCycle) {
         this.#scheduleDht11Response(device, this.cpu.cycles, startPulseCycles);
+      }
+    }
+  }
+
+  setDs18b20Temperature(componentId, value) {
+    const device = this.ds18b20Devices.get(componentId);
+    if (!device || !validDs18b20RuntimeTemperature(value)) throw new TypeError('DS18B20_CONTROL');
+    device.temperatureC = value;
+  }
+
+  #scheduleDs18b20Presence(device, releaseCycle, resetPulseCycles) {
+    let cycle = releaseCycle + microsToCycles(30);
+    this.#schedule({ type: 'ds18b20', cycle, pin: device.pin, level: false });
+    cycle += microsToCycles(120);
+    this.#schedule({ type: 'ds18b20', cycle, pin: device.pin, level: true });
+    device.busyUntilCycle = cycle;
+    device.phase = 'rom-command';
+    device.receiveByte = 0;
+    device.receiveBit = 0;
+    device.readBits = [];
+    device.readBit = 0;
+    boundedPush(this.ds18b20, {
+      kind: 'reset-presence', componentId: device.componentId, pin: device.pin,
+      releaseCycle, resetPulseCycles, presenceStartCycle: releaseCycle + microsToCycles(30),
+      presenceEndCycle: cycle,
+    }, DS18B20_TRANSACTION_LIMIT);
+  }
+
+  #acceptDs18b20WriteBit(device, bit, cycle) {
+    device.receiveByte |= (bit ? 1 : 0) << device.receiveBit;
+    device.receiveBit += 1;
+    if (device.receiveBit < 8) return;
+    const command = device.receiveByte;
+    const phase = device.phase;
+    device.receiveByte = 0;
+    device.receiveBit = 0;
+    boundedPush(this.ds18b20, {
+      kind: 'command', componentId: device.componentId, pin: device.pin,
+      cycle, phase, command,
+    }, DS18B20_TRANSACTION_LIMIT);
+    if (phase === 'rom-command') {
+      device.phase = command === 0xcc ? 'function-command' : 'await-reset';
+      return;
+    }
+    if (phase !== 'function-command') {
+      device.phase = 'await-reset';
+      return;
+    }
+    if (command === 0x44) {
+      device.scratchpad = ds18b20RuntimeScratchpad(device.temperatureC);
+      device.converted = true;
+      device.phase = 'await-reset';
+      return;
+    }
+    if (command === 0xbe && device.converted) {
+      device.scratchpad = ds18b20RuntimeScratchpad(device.temperatureC);
+      device.readBits = device.scratchpad.flatMap((value) =>
+        Array.from({ length: 8 }, (_unused, index) => Boolean(value & (1 << index))));
+      device.readBit = 0;
+      device.phase = 'read-scratchpad';
+      return;
+    }
+    device.phase = 'await-reset';
+  }
+
+  #scheduleDs18b20ReadBit(device, releaseCycle) {
+    const bit = device.readBits[device.readBit];
+    if (typeof bit !== 'boolean') {
+      device.phase = 'await-reset';
+      return;
+    }
+    let cycle = releaseCycle + microsToCycles(2);
+    this.#schedule({ type: 'ds18b20', cycle, pin: device.pin, level: bit });
+    cycle = releaseCycle + microsToCycles(45);
+    this.#schedule({ type: 'ds18b20', cycle, pin: device.pin, level: true });
+    device.busyUntilCycle = cycle;
+    device.readBit += 1;
+    if (device.readBit === device.readBits.length) {
+      boundedPush(this.ds18b20, {
+        kind: 'scratchpad-read', componentId: device.componentId, pin: device.pin,
+        releaseCycle, temperatureC: device.temperatureC,
+        scratchpad: [...device.scratchpad], crcValid: true,
+      }, DS18B20_TRANSACTION_LIMIT);
+      device.phase = 'await-reset';
+    }
+  }
+
+  #monitorDs18b20() {
+    for (const device of this.ds18b20Devices.values()) {
+      const [port, bit] = PIN_MAP[device.pin];
+      const config = { B: portBConfig, C: portCConfig, D: portDConfig }[port];
+      const mask = 1 << bit;
+      const hostDrivingLow = Boolean(this.cpu.data[config.DDR] & mask)
+        && !Boolean(this.cpu.data[config.PORT] & mask);
+      if (hostDrivingLow) {
+        if (device.lowStartCycle === null && this.cpu.cycles >= device.busyUntilCycle) {
+          device.lowStartCycle = this.cpu.cycles;
+        }
+        continue;
+      }
+      if (device.lowStartCycle === null) continue;
+      const lowCycles = this.cpu.cycles - device.lowStartCycle;
+      device.lowStartCycle = null;
+      if (lowCycles >= DS18B20_RESET_MIN_CYCLES) {
+        this.#scheduleDs18b20Presence(device, this.cpu.cycles, lowCycles);
+      } else if (this.cpu.cycles >= device.busyUntilCycle && device.phase === 'read-scratchpad') {
+        this.#scheduleDs18b20ReadBit(device, this.cpu.cycles);
+      } else if (this.cpu.cycles >= device.busyUntilCycle
+          && ['rom-command', 'function-command'].includes(device.phase)) {
+        this.#acceptDs18b20WriteBit(device, lowCycles < DS18B20_WRITE_ZERO_MIN_CYCLES, this.cpu.cycles);
       }
     }
   }
@@ -704,6 +873,7 @@ export class Atmega328PAdapter {
     const traceAfterInstruction = this.trace.length;
     this.cpu.tick();
     this.#monitorDht11();
+    this.#monitorDs18b20();
     const portAfterTick = this.cpu.data[portBConfig.PORT];
     const traceAfterTick = this.trace.length;
     this.instructions++;
@@ -851,6 +1021,8 @@ export class Atmega328PAdapter {
       serial: this.serial.slice(),
       i2c: this.i2c.map((entry) => ({ ...entry })),
       dht11: this.dht11.map((entry) => ({ ...entry, payload: [...entry.payload] })),
+      ds18b20: this.ds18b20.map((entry) => ({ ...entry,
+        ...(entry.scratchpad ? { scratchpad: [...entry.scratchpad] } : {}) })),
       adcReads: this.adcReads.map((entry) => ({ ...entry })),
       unsupported: this.unsupported.slice(),
       faultEvents: this.faultEvents.map((entry) => ({ ...entry })),

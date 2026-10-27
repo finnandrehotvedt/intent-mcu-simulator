@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Twenty-one ready-made AVR examples, including twelve exact component references, plus an empty-circuit choice and paired UART/LED lessons for bounded Pico, ESP32-C3 and STM32 profiles.">
+  <meta name="description" content="Twenty-two ready-made AVR examples, including thirteen exact component references, plus an empty-circuit choice and paired UART/LED lessons for bounded Pico, ESP32-C3 and STM32 profiles.">
   <meta name="robots" content="index,follow,max-snippet:-1">
   <title>Starter examples | Intent MCU Simulator</title>
   <link rel="canonical" href="https://lab.teachthecompany.com/examples.html">
@@ -36,6 +36,7 @@
       <article class="docs-card"><h2>Analogue light level</h2><p><strong>Learn:</strong> ideal percentage-to-voltage conversion. <strong>Try:</strong> move the light control. <strong>Observe:</strong> A1 voltage, ADC counts and D13. <strong>Limits:</strong> no lux calibration or physical response.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
       <article class="docs-card"><h2>Digital light threshold</h2><p><strong>Learn:</strong> active-low threshold hysteresis. <strong>Try:</strong> cross the threshold in both directions. <strong>Observe:</strong> D7, D13 and Serial LIGHT/DARK. <strong>Limits:</strong> no lux calibration or comparator noise.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
       <article class="docs-card"><h2>DHT11 temperature and humidity</h2><p><strong>Learn:</strong> decode a timed five-byte digital sensor response. <strong>Try:</strong> move temperature and humidity independently. <strong>Observe:</strong> D4 timing and checksum-validated TEMP_C/HUMIDITY_RH Serial output. <strong>Limits:</strong> integer AVR-only protocol model without physical accuracy, noise, cable or latency effects.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
+      <article class="docs-card"><h2>DS18B20 OneWire temperature</h2><p><strong>Learn:</strong> use reset/presence, command and read slots on one bidirectional line. <strong>Try:</strong> move temperature through positive and negative values. <strong>Observe:</strong> D3 and CRC-validated signed TEMP_C Serial output. <strong>Limits:</strong> one externally powered AVR-only device without parasite power, multidrop addressing, conversion latency or physical thermal effects.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
       <article class="docs-card"><h2>Logical active buzzer</h2><p><strong>Learn:</strong> logic enable versus physical sound. <strong>Try:</strong> run the D8 on/off sequence. <strong>Observe:</strong> GPIO, Serial and the silent indicator. <strong>Limits:</strong> Partial; no audio, current or acoustic accuracy.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
       <article class="docs-card"><h2>Seven-segment digits</h2><p><strong>Learn:</strong> seven independent current-limited channels. <strong>Try:</strong> run digits 0, 1, 2 and 8. <strong>Observe:</strong> D3–D9 and Serial labels. <strong>Limits:</strong> one ideal digit without decimal point or multiplexing.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
       <article class="docs-card"><h2>Four-digit multiplex</h2><p><strong>Learn:</strong> eight shared current-limited segments and four active-low digit selects. <strong>Try:</strong> run the deliberately slowed 1-2-3-4 scan. <strong>Observe:</strong> the retained visible digits and Serial DISPLAY 1234. <strong>Limits:</strong> ideal sampled AVR multiplex state without driver, package-current or refresh-rate fidelity.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
@@ -60,6 +61,8 @@
         <li><strong>SPDT input selector</strong><span>Next: Load Quadrature encoder to observe ordered changes across two inputs.</span></li>
         <li><strong>Analogue light level</strong><span>Next: Load Digital light threshold to compare continuous and thresholded sensing.</span></li>
         <li><strong>Digital light threshold</strong><span>Next: Load Thermostat boundary test to express a threshold as an executable requirement.</span></li>
+        <li><strong>DHT11 temperature and humidity</strong><span>Next: Load DS18B20 OneWire temperature to compare a fixed timed payload with command and read slots.</span></li>
+        <li><strong>DS18B20 OneWire temperature</strong><span>Next: Load DHT11 to compare OneWire scratchpad access with a timed climate payload.</span></li>
         <li><strong>Logical active buzzer</strong><span>Next: Load Traffic light sequence to coordinate three current-limited outputs.</span></li>
         <li><strong>Traffic light sequence</strong><span>Next: Load Seven-segment digits to coordinate a larger group of outputs.</span></li>
         <li><strong>Seven-segment digits</strong><span>Next: Load Four-digit multiplex to coordinate shared segments and digit selection.</span></li>
@@ -88,7 +91,7 @@
       <ol><li>Save the incomplete project and Open it again if you want to prove history-free recovery.</li><li>In <strong>Supported parts</strong>, add the one missing resistor or LED. The fixed stable ID returns, with no cable.</li><li>Activate two compatible free named pins for each missing connection. Unsafe resistance/colour pairs reject without changing the accepted draft.</li><li>When the circuit state says accepted, Build fresh and Run. Old executable authority never returns from the file.</li></ol>
       <nav class="docs-nav" aria-label="Recovery help"><a href="/components.html#narrow-profile-parts">Part and property limits</a><a href="/support.html#routing-help">Cable routing help</a><a href="/support.html#repair-after-open">Detailed Save/Open recovery</a><a href="/">Open the workbench</a></nav>
     </section>
-    <footer>Twenty-two AVR chooser choices—an empty circuit plus twenty-one ready-made examples—and paired bounded Pico, ESP32-C3 and STM32 examples in Intent MCU Simulator 1.1.0-rc.143</footer>
+    <footer>Twenty-three AVR chooser choices—an empty circuit plus twenty-two ready-made examples—and paired bounded Pico, ESP32-C3 and STM32 examples in Intent MCU Simulator 1.1.0-rc.144</footer>
   </main>
 </body>
 </html>

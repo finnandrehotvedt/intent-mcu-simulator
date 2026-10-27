@@ -3,9 +3,9 @@
   "modelLibrary": {
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
-    "version": "2.0.0-dht11-protocol.1-current",
-    "manifestSha256": "bccc4e6e72663981af1434c30ad50c37c901abd5a8f9bc634af96ba1e746c951",
-    "implementationSha256": "4ca7bf0544404b898376a69f163674ca7bdab9707bfee178faaeeb724e4e479c"
+    "version": "2.0.0-ds18b20-onewire.1-current",
+    "manifestSha256": "68779518482549c7d75e3ed93999ca268039d7038536a0039a0df809a1cf59be",
+    "implementationSha256": "94564b898a62435d77d549a532c1e4eecca77ac57199d0f605b01986bd8f5835"
   },
   "requirementIds": [
     "CMP-004",
@@ -59,7 +59,7 @@
       },
       "limitations": "Raw two-terminal authoring only. No transient/SPICE or frequency solver, capacitance/inductance behavior, ESR, leakage, polarity-failure, saturation, tolerance, temperature, Build/Run authority or physical equivalence.",
       "sourceSha256": "b65dc8b613d592b39d0b243223a6421cb151c83a504105cbb7a18adbf7cbda13",
-      "projectSha256": "00b2b8e1b974d64b1c9c3a8a599bf362ed4b3f6b839de88ff37b2befe29bf018",
+      "projectSha256": "b21b203b8c465cb24d84243e6404c6494416dcb8a1f22a904cb6c66582b1479c",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     },
     {
@@ -102,7 +102,7 @@
       },
       "limitations": "Raw two-terminal authoring only. No transient/SPICE or frequency solver, capacitance/inductance behavior, ESR, leakage, polarity-failure, saturation, tolerance, temperature, Build/Run authority or physical equivalence.",
       "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
-      "projectSha256": "84582adb4d96844357dc1da3b956ed1e611ea8c3b27c5b280ae6935a3c851953",
+      "projectSha256": "ecdc7287927f05a53b69754dd78dec110d70cd8e4856cfdf50992515e05b2b29",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     },
     {
@@ -145,7 +145,7 @@
       },
       "limitations": "Raw two-terminal authoring only. No transient/SPICE or frequency solver, capacitance/inductance behavior, ESR, leakage, polarity-failure, saturation, tolerance, temperature, Build/Run authority or physical equivalence.",
       "sourceSha256": "d936fc50b2c874d6af660ece56abbb024c86e7b30462c403542b8d2166b85480",
-      "projectSha256": "999b1c44478651492d614b1776f08d8b17add26354b07d0c984ddcd8fce0e7b1",
+      "projectSha256": "7f9538783adca4b19bc297a0af94f2a351e3031c53cd147ee286835a4180030d",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     },
     {
@@ -188,7 +188,7 @@
       },
       "limitations": "Raw two-terminal authoring only. No transient/SPICE or frequency solver, capacitance/inductance behavior, ESR, leakage, polarity-failure, saturation, tolerance, temperature, Build/Run authority or physical equivalence.",
       "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
-      "projectSha256": "1ee449fb7e9698dd1855093599635246a52dff7de9bf7bab7b908f5006046487",
+      "projectSha256": "ce6c7e676986d52e7aaa8d1b266149e6790681d8d0c147ef5399b56f74bee009",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     }
   ]

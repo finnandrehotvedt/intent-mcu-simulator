@@ -17,6 +17,8 @@ import {
 import { RESISTIVE_DIVIDER_SENSOR_DEFINITIONS, resistiveDividerSensorResistance,
   resistiveDividerSensorVoltage } from '../expansion-drafts/resistive-divider-sensors-v1.mjs';
 import { DHT11_TYPE, dht11Payload } from '../expansion-drafts/dht11-temperature-humidity-v1.mjs';
+import { DS18B20_TYPE, ds18b20Scratchpad,
+  validDs18b20Temperature } from '../expansion-drafts/ds18b20-temperature-v1.mjs';
 import { observeRp2040PicoCircuit, validateRp2040PicoCircuit } from './rp2040-pico-circuit.mjs';
 import { esp32C3RuntimeCircuit, validateEsp32C3Circuit } from './esp32c3-public-circuit.mjs';
 import { validateStm32Circuit } from './stm32-public-circuit.mjs';
@@ -38,7 +40,7 @@ const exactInput = (value, keys) => value && typeof value === 'object' && !Array
 // Current behavior is separately owned so future current changes cannot mutate
 // the retained pre-X56 implementation by alias or shared constant.
 export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
-  id: 'intent-mcu-model-bundle-current-dht11-protocol-1@51',
+  id: 'intent-mcu-model-bundle-current-ds18b20-onewire-1@52',
   manifestVersion: CURRENT_MODEL_LIBRARY_MANIFEST.version,
   definition(profile, componentType) {
     const entry = entries.get(`${profile}\u0000${componentType}`);
@@ -115,6 +117,15 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
     if (componentType === 'resistor.fixed-v1') return this.evaluateReference(componentType, input);
     if (componentType === 'led.basic-v1') return this.evaluateReference(componentType, input);
     if (componentType === 'button.momentary-v1') return this.evaluateReference(componentType, input);
+    if (componentType === DS18B20_TYPE) {
+      if (!exactInput(input, ['temperatureC']) || !validDs18b20Temperature(input.temperatureC)) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: {
+        temperatureC: input.temperatureC,
+        scratchpad: ds18b20Scratchpad(input.temperatureC),
+      } };
+    }
     if (['potentiometer.linear-v1', 'potentiometer.trimmer-v1'].includes(componentType)) {
       return this.evaluateReference(componentType, input);
     }
@@ -421,6 +432,13 @@ export const PRE_CMP092_DHT11_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = O
   ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
   id: 'intent-mcu-model-bundle-current-pre-cmp092-dht11@57',
   manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
+  migrationOnly: true,
+});
+
+export const PRE_CMP091_DS18B20_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-pre-cmp091-ds18b20@58',
+  manifestVersion: '2.0.0-dht11-protocol.1-current',
   migrationOnly: true,
 });
 

@@ -331,6 +331,7 @@ async function handleMessage(data) {
           ...(data.x47RuntimeAuthority ? { x47RuntimeAuthority: data.x47RuntimeAuthority } : {}),
           ...(data.i2cDevices ? { i2cDevices: data.i2cDevices } : {}),
           ...(data.dht11Devices ? { dht11Devices: data.dht11Devices } : {}),
+          ...(data.ds18b20Devices ? { ds18b20Devices: data.ds18b20Devices } : {}),
         });
         kernel = candidate;
         validatedModelExecutionContextSha256 = binding.modelExecutionContextSha256;
@@ -456,6 +457,10 @@ async function handleMessage(data) {
       if (isRp2040()) throw new Error('DHT11_PROFILE_UNAVAILABLE');
       kernel.adapter.setDht11Environment(data.componentId, data.key, data.value);
       status('dht11-control');
+    } else if (data.command === 'ds18b20-control') {
+      if (isRp2040()) throw new Error('DS18B20_PROFILE_UNAVAILABLE');
+      kernel.adapter.setDs18b20Temperature(data.componentId, data.value);
+      status('ds18b20-control');
     } else if (data.command === 'x48-run') {
       if (!exactKeys(data, ['command', 'binding'])) throw new Error('X48_RUN_COMMAND_INVALID');
       if (isRp2040()) throw new Error('X48_PROFILE_UNAVAILABLE');

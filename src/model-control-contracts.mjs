@@ -189,6 +189,10 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
     humidityPercent: { kind: 'integer', minimum: 20, maximum: 90, default: 50,
       unit: '%RH', mutability: 'authored' },
   },
+  'sensor.ds18b20-temperature-v1': {
+    temperatureC: { kind: 'number', minimum: -55, maximum: 125, default: 23.5,
+      unit: '°C', mutability: 'authored' },
+  },
   'input.rotary-encoder-quadrature-v1': {
     detent: { kind: 'integer', minimum: -999, maximum: 999, default: 0,
       unit: 'detent', mutability: 'transition-only' },

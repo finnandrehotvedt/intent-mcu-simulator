@@ -11,8 +11,8 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.142",
-    "current": "1.1.0-rc.143"
+    "previous": "1.1.0-rc.143",
+    "current": "1.1.0-rc.144"
   },
   "changes": [
     {
@@ -24,7 +24,7 @@
       "contracts": [
         "x72-example-progression-v1"
       ],
-      "summary": "Adds a runnable AVR DHT11 starter with original component artwork, independent integer temperature and humidity controls, timed single-wire payload and checksum execution, and canonical Save and Open persistence."
+      "summary": "Adds a runnable AVR DS18B20 starter with original component artwork, signed 1/16 degree temperature control, OneWire reset, presence, command and scratchpad execution, Dallas CRC-8 validation, and canonical Save and Open persistence."
     }
   ],
   "migrationRequired": false,

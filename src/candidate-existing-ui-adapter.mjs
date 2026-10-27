@@ -150,6 +150,13 @@ import {
 } from '../expansion-drafts/dht11-temperature-humidity-v1.mjs';
 import { createDht11Artwork } from '../expansion-drafts/dht11-temperature-humidity-artwork-v1.mjs';
 import {
+  DS18B20_DEFINITION,
+  DS18B20_TYPE,
+  createDs18b20Component,
+  validDs18b20Temperature,
+} from '../expansion-drafts/ds18b20-temperature-v1.mjs';
+import { createDs18b20Artwork } from '../expansion-drafts/ds18b20-temperature-artwork-v1.mjs';
+import {
   ANALOGUE_MOISTURE_LEVEL_DEFINITIONS,
   ANALOGUE_WATER_LEVEL_TYPE,
   CAPACITIVE_SOIL_MOISTURE_TYPE,
@@ -267,6 +274,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   ...DIGITAL_PULSE_SENSOR_DEFINITIONS,
   ...DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS,
   [DHT11_TYPE]: DHT11_DEFINITION,
+  [DS18B20_TYPE]: DS18B20_DEFINITION,
   ...ANALOGUE_MOISTURE_LEVEL_DEFINITIONS,
   ...ANALOGUE_DETECTION_DEFINITIONS,
   ...ANALOGUE_DIRECTION_FIELD_DEFINITIONS,
@@ -359,6 +367,9 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (component?.type === DHT11_TYPE) {
     return createDht11Artwork(documentObject, definition, component, options);
   }
+  if (component?.type === DS18B20_TYPE) {
+    return createDs18b20Artwork(documentObject, definition, component, options);
+  }
   if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component?.type]) {
     return createAnalogueMoistureLevelArtwork(documentObject, definition, component, options);
   }
@@ -430,6 +441,7 @@ export function createCandidateUiComponent(type, id) {
   if (DIGITAL_PULSE_SENSOR_DEFINITIONS[type]) return createDigitalPulseSensor(type, id);
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[type]) return createDigitalReflectiveSensor(type, id);
   if (type === DHT11_TYPE) return createDht11Component(id);
+  if (type === DS18B20_TYPE) return createDs18b20Component(id);
   if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[type]) return createAnalogueMoistureLevelSensor(type, id);
   if (ANALOGUE_DETECTION_DEFINITIONS[type]) return createAnalogueDetectionSensor(type, id);
   if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[type]) return createAnalogueDirectionFieldSensor(type, id);
@@ -592,6 +604,14 @@ export function candidateContactControl(session, componentId, key, value) {
         worker: { command: 'dht11-control', componentId, key, value },
       };
     }
+  }
+  if (component.type === DS18B20_TYPE && key === 'temperatureC'
+      && validDs18b20Temperature(value)) {
+    return {
+      ok: true,
+      command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'ds18b20-control', componentId, key, value },
+    };
   }
   if (component.type === ANALOG_JOYSTICK_TYPE && ['x', 'y'].includes(key)
       && Number.isFinite(value) && value >= 0 && value <= 1) {

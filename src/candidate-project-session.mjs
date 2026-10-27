@@ -67,6 +67,10 @@ import {
   DHT11_HUMIDITY_MAX_PERCENT, DHT11_HUMIDITY_MIN_PERCENT,
   DHT11_TEMPERATURE_MAX_C, DHT11_TEMPERATURE_MIN_C, DHT11_TYPE,
 } from '../expansion-drafts/dht11-temperature-humidity-v1.mjs';
+import {
+  DS18B20_TYPE,
+  validDs18b20Temperature,
+} from '../expansion-drafts/ds18b20-temperature-v1.mjs';
 import { ANALOGUE_MOISTURE_LEVEL_DEFINITIONS, ANALOGUE_WATER_LEVEL_TYPE,
   CAPACITIVE_SOIL_MOISTURE_TYPE, RESISTIVE_SOIL_MOISTURE_TYPE,
 } from '../expansion-drafts/analogue-moisture-level-sensors-v1.mjs';
@@ -114,6 +118,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   ...Object.keys(DIGITAL_PULSE_SENSOR_DEFINITIONS),
   IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
   DHT11_TYPE,
+  DS18B20_TYPE,
   RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
   RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
   MQ_GAS_ANALOGUE_TYPE, CO2_ANALOGUE_TYPE, UV_ANALOGUE_TYPE,
@@ -309,6 +314,8 @@ function contactSupport(result) {
             ? 'button.momentary-v1-active-low-adapter'
           : contact.type === DHT11_TYPE
             ? 'avr-dht11-single-wire-protocol-v1'
+          : contact.type === DS18B20_TYPE
+            ? 'avr-ds18b20-onewire-protocol-v1'
           : spdt?.ok
             ? 'spdt-digital-reference-v1'
             : null,
@@ -322,6 +329,8 @@ function contactSupport(result) {
         ? 'Ideal active-low reflected-state only; distance, surface response, calibration, geometry, ambient light and electrical loading are not modelled.'
         : contact.type === DHT11_TYPE
         ? 'Integer DHT11 protocol payload with checksum on AVR only; no physical latency, sampling noise, self-heating, cable or electrical accuracy is modelled.'
+        : contact.type === DS18B20_TYPE
+        ? 'Externally powered single-device OneWire scratchpad with CRC on AVR only; no conversion latency, multidrop ROM selection, parasite power or physical thermal/electrical accuracy is modelled.'
         : contact.type === COMMON_CATHODE_RGB_LED_TYPE
         ? 'Ideal relative PWM mix through three independently current-limited existing LED channels; no physical colour, wavelength, optical or current accuracy is modelled.'
         : contact.type === TRAFFIC_LIGHT_TYPE
@@ -1046,6 +1055,14 @@ export class CandidateEditorSession {
               { ...component.controls, [command.key]: command.value });
             if (!evaluated.ok) return failure(evaluated.code, this.revision, [component.id]);
             component.controls[command.key] = command.value; runtimeDirty = true; break;
+          }
+          if (component.type === DS18B20_TYPE) {
+            if (command.key !== 'temperatureC' || !validDs18b20Temperature(command.value)) {
+              return failure('PROJECT_CONTACT_DS18B20_STATE', this.revision);
+            }
+            const evaluated = this.evaluateModel(component.type, { temperatureC: command.value });
+            if (!evaluated.ok) return failure(evaluated.code, this.revision, [component.id]);
+            component.controls.temperatureC = command.value; runtimeDirty = true; break;
           }
           if (component.type === SPDT_CONTACT_TYPE) {
             if (command.key !== 'selectedThrow' || !['A', 'B'].includes(command.value)) {

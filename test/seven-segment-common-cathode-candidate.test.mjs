@@ -111,8 +111,8 @@ test('single-digit seven-segment display is an original explicit eight-terminal 
   assert(!Object.hasOwn(COMPONENT_CATALOG, SEVEN_SEGMENT_TYPE));
   assert.equal(Object.values(COMPONENT_CATALOG).length, 7);
   assert.equal(Object.values(COMPONENT_CATALOG).filter((definition) => definition.selectable).length, 6);
-  assert.equal(Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable).length, 72);
-  assert.equal(6 + Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable).length, 78);
+  assert.equal(Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable).length, 73);
+  assert.equal(6 + Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable).length, 79);
   assert.deepEqual(createCandidateUiComponent(SEVEN_SEGMENT_TYPE, 'seven-segment-2'), {
     id: 'seven-segment-2', type: SEVEN_SEGMENT_TYPE,
     label: 'Single-digit seven-segment display', properties: {}, controls: {},

@@ -87,8 +87,8 @@ let browser;
   });
   await page.goto(base, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__M11_READY__ === true);
-  assert(await page.locator('.starter-card').count() === 21, 'expected 21 starter cards');
-  assert(await page.locator('.starter-learning-grid').count() === 21, 'all cards must expose Learn/Try/Observe/Limits');
+  assert(await page.locator('.starter-card').count() === 22, 'expected 22 starter cards');
+  assert(await page.locator('.starter-learning-grid').count() === 22, 'all cards must expose Learn/Try/Observe/Limits');
 
   await load(page, 'avr-ground-reference-input', 'Ground reference input');
   assert(await page.locator('[data-component-id="ground-reference-1"] [data-terminal-pin="REF"]').count() === 1, 'ground reference terminal missing');

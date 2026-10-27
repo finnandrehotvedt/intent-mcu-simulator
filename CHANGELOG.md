@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.144 — 2026-10-27
+
+- Adds an AVR-only DS18B20 component with original VCC/DQ/GND probe artwork
+  and a signed temperature control in exact 1/16 °C steps.
+- Executes OneWire reset/presence, Skip ROM, Convert T, Read Scratchpad and
+  Dallas CRC-8 through compiled AVR firmware on D3.
+- Adds a working DS18B20 starter with positive and negative temperature
+  output, canonical Save/Open persistence and explicit model limitations.
+- Keeps DS18B20 unavailable on Pico, ESP32-C3 and STM32 until those profiles
+  own tested runtimes, while preserving their shared AVR-style Parts drawer.
+- Leaves actual public deployment state and rollback evidence in the separate
+  deployment checkpoint.
+
 ## 1.1.0-rc.143 — 2026-10-27
 
 - Adds an AVR-only DHT11 component with original VCC/DATA/GND artwork and

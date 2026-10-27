@@ -51,6 +51,7 @@ const expected = {
   'sensor.ir-obstacle-reflective-v1': ['obstacleDetected'],
   'sensor.line-tracking-reflective-v1': ['lineDetected'],
   'sensor.dht11-temperature-humidity-v1': ['temperatureC', 'humidityPercent'],
+  'sensor.ds18b20-temperature-v1': ['temperatureC'],
   'sensor.soil-moisture-resistive-analogue-v1': ['moistureRatio'],
   'sensor.soil-moisture-capacitive-analogue-v1': ['moistureRatio'],
   'sensor.water-level-analogue-v1': ['waterLevelRatio'],
@@ -90,10 +91,10 @@ function candidate(id, componentId, changes) {
   return opened.session;
 }
 
-test('all 72 executable cells have one exact controls-persist or controls-empty policy', () => {
+test('all 73 executable cells have one exact controls-persist or controls-empty policy', () => {
   assert.deepEqual(controlPersistenceSummary(), {
-    profiles: 4, cells: 340, available: 72, unavailable: 268,
-    controlBearing: 48, controlsEmpty: 24, controls: 58,
+    profiles: 4, cells: 344, available: 73, unavailable: 271,
+    controlBearing: 49, controlsEmpty: 24, controls: 59,
   });
   const inventory = controlPersistenceInventory();
   const bearing = inventory.filter((cell) => cell.available && cell.controls.length);

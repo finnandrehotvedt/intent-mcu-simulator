@@ -132,6 +132,7 @@ export class RuntimeKernel {
       ...(options.runtimeIdentity ? { runtimeIdentity: options.runtimeIdentity } : {}),
       ...(options.i2cDevices ? { i2cDevices: options.i2cDevices } : {}),
       ...(options.dht11Devices ? { dht11Devices: options.dht11Devices } : {}),
+      ...(options.ds18b20Devices ? { ds18b20Devices: options.ds18b20Devices } : {}),
     });
     this.x43StackTracker = createX43AvrStackTracker({
       pointer: this.adapter.cpu.SP, cycle: this.adapter.cpu.cycles,

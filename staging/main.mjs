@@ -487,6 +487,12 @@ import {
   DHT11_TEMPERATURE_MAX_C, DHT11_TEMPERATURE_MIN_C, DHT11_TYPE,
 } from '../expansion-drafts/dht11-temperature-humidity-v1.mjs';
 import {
+  DS18B20_TEMPERATURE_MAX_C,
+  DS18B20_TEMPERATURE_MIN_C,
+  DS18B20_TEMPERATURE_STEP_C,
+  DS18B20_TYPE,
+} from '../expansion-drafts/ds18b20-temperature-v1.mjs';
+import {
   CAPACITIVE_TOUCH_TYPE,
   DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
   HALL_SWITCH_TYPE,
@@ -13087,7 +13093,7 @@ function renderComponentSupportMatrix() {
   const summary = componentSupportSummary(profile.id);
   elements.componentsupportsummary.textContent = `${summary.available} of ${summary.total} models available · ${summary.simulated} Simulated · ${summary.partial} Partial · ${summary.unavailable} Unavailable`;
   elements.componentsupportmode.textContent = profile.id === AVR_PROFILE
-    ? 'Ordinary AVR project-v2 exposes 6 executable models. Candidate-v3 exposes all 63 executable AVR models—39 Simulated and 24 Partial—plus 15 Visual authoring-only models.'
+    ? 'Ordinary AVR project-v2 exposes 6 executable models. Candidate-v3 exposes all 64 executable AVR models—40 Simulated and 24 Partial—plus 15 Visual authoring-only models.'
     : 'This bounded profile exposes exactly 3 available entries: its fixed Partial controller, plus the Simulated resistor and LED. Other models are unavailable and are never silently substituted.';
   const cells = COMPONENT_SUPPORT_CELLS.filter((cell) => cell.profile === profile.id);
   const rows = COMPONENT_SUPPORT_MODELS.map((model) => {
@@ -13254,6 +13260,7 @@ function candidateComponentPrefix(type) {
       [CHARACTER_LCD_20X4_TYPE]: 'character-lcd-20x4',
       [PCF8574_LCD_TYPE]: 'pcf8574-lcd',
       [DHT11_TYPE]: 'dht11',
+      [DS18B20_TYPE]: 'ds18b20',
       [ROTARY_ENCODER_TYPE]: 'rotary-encoder',
       [NONPOLAR_CAPACITOR_TYPE]: 'capacitor',
       [ELECTROLYTIC_CAPACITOR_TYPE]: 'electrolytic-capacitor',
@@ -13345,6 +13352,7 @@ function addComponent(type, point = null) {
       [CHARACTER_LCD_20X4_TYPE]: { x: 0.7, y: 0.62 },
       [ROTARY_ENCODER_TYPE]: { x: 0.72, y: 0.64 },
       [DHT11_TYPE]: { x: 0.75, y: 0.7 },
+      [DS18B20_TYPE]: { x: 0.74, y: 0.7 },
       [NONPOLAR_CAPACITOR_TYPE]: { x: 0.56, y: 0.2 },
       [ELECTROLYTIC_CAPACITOR_TYPE]: { x: 0.7, y: 0.2 },
       [FIXED_INDUCTOR_TYPE]: { x: 0.84, y: 0.2 },
@@ -14019,6 +14027,27 @@ function renderRuntimeControls() {
         });
         row.append(label, input); return row;
       });
+    }
+    if (editor.kind === 'candidate-project-v3' && component.type === DS18B20_TYPE) {
+      const row = document.createElement('div'); const label = document.createElement('label');
+      label.textContent = `${component.label} · Temperature ${component.controls.temperatureC} °C`;
+      const input = document.createElement('input'); input.type = 'range';
+      input.step = String(DS18B20_TEMPERATURE_STEP_C);
+      input.min = String(DS18B20_TEMPERATURE_MIN_C); input.max = String(DS18B20_TEMPERATURE_MAX_C);
+      input.value = String(component.controls.temperatureC);
+      input.dataset.control = `${component.id}.temperatureC`;
+      input.id = `control-${component.id}-temperatureC`; label.htmlFor = input.id;
+      input.setAttribute('aria-label', `${component.label} simulated DS18B20 temperature in degrees Celsius, ${DS18B20_TEMPERATURE_MIN_C} to ${DS18B20_TEMPERATURE_MAX_C}`);
+      input.addEventListener('input', () => {
+        const value = Number(input.value);
+        const prepared = selectedCandidateContactControl(component.id, 'temperatureC', value);
+        if (!prepared.ok) {
+          showActionableError(elements.projectmessage, prepared.code, 'DS18B20 control rejected.'); return;
+        }
+        const result = applyEditor(prepared.command, `${component.label} temperature ${value} °C`);
+        if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+      });
+      row.append(label, input); return [row];
     }
     if (editor.kind === 'candidate-project-v3' && ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) {
       const row = document.createElement('div'); const label = document.createElement('label');
@@ -14786,6 +14815,12 @@ async function loadArtifact(hex, artifactIdentity, {
         temperatureC: item.runtimeProjection.temperatureC,
         humidityPercent: item.runtimeProjection.humidityPercent,
       })) : [],
+    ds18b20Devices: editor.kind === 'candidate-project-v3'
+      ? editor.runtimeSupport.filter((item) => item.type === DS18B20_TYPE).map((item) => ({
+        type: 'ds18b20', componentId: item.componentId,
+        pin: item.runtimeProjection.boardPinNumber,
+        temperatureC: item.runtimeProjection.temperatureC,
+      })) : [],
     instruments: {
       logicChannels: [...project.instruments.logicChannels],
       selectedPin: project.instruments.selectedPin,
@@ -15062,6 +15097,7 @@ async function loadArtifact(hex, artifactIdentity, {
     digitalInputs: frozen.digitalInputs,
     i2cDevices: frozen.i2cDevices,
     dht11Devices: frozen.dht11Devices,
+    ds18b20Devices: frozen.ds18b20Devices,
     instruments: {
       logicChannels: frozen.instruments.logicChannels,
       selectedPin: frozen.instruments.selectedPin,

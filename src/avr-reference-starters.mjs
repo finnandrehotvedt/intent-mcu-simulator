@@ -10,6 +10,7 @@ import { createSevenSegmentComponent } from '../expansion-drafts/seven-segment-c
 import { createFourDigitSevenSegmentComponent } from '../expansion-drafts/seven-segment-four-digit-common-cathode-v1.mjs';
 import { createTrafficLightComponent } from '../expansion-drafts/traffic-light-module-v1.mjs';
 import { createDht11Component } from '../expansion-drafts/dht11-temperature-humidity-v1.mjs';
+import { createDs18b20Component } from '../expansion-drafts/ds18b20-temperature-v1.mjs';
 import { createComponent } from './circuit-engine.mjs';
 import { createCandidateUiComponent, openCandidateUiSession } from './candidate-existing-ui-adapter.mjs';
 
@@ -91,6 +92,17 @@ const CARDS = Object.freeze([
     observe: 'Serial reports TEMP_C and HUMIDITY_RH only after firmware validates the checksum.',
     limits: 'Integer AVR-only protocol model; no physical accuracy, latency, noise or cable effects.',
     next: 'Load Digital light threshold to compare a timed protocol sensor with a simple digital level.',
+  },
+  {
+    id: 'avr-ds18b20-temperature', name: 'DS18B20 OneWire temperature',
+    model: 'sensor.ds18b20-temperature-v1',
+    focus: 'OneWire scratchpad · D3', partsLabel: 'Controller · DS18B20 digital probe',
+    description: 'Convert and read signed temperature from a CRC-protected DS18B20 scratchpad.',
+    learn: 'How reset/presence, Skip ROM, commands and LSB-first read slots share one bidirectional line.',
+    try: 'Build and Run, then move Temperature through positive and negative values.',
+    observe: 'Serial reports TEMP_C only after firmware validates the scratchpad CRC-8.',
+    limits: 'One externally powered AVR-only device; no parasite power, multidrop addressing or physical thermal accuracy.',
+    next: 'Load DHT11 to compare OneWire command slots with a fixed timed sensor payload.',
   },
   {
     id: 'avr-active-buzzer', name: 'Logical active buzzer', model: 'output.active-buzzer-module-v1',
@@ -217,6 +229,110 @@ void loop() {
   delay(1500);
 }
 `,
+  'avr-ds18b20-temperature': `const byte ONE_WIRE_PIN = 3;
+
+void oneWireLow() {
+  pinMode(ONE_WIRE_PIN, OUTPUT);
+  digitalWrite(ONE_WIRE_PIN, LOW);
+}
+
+void oneWireRelease() {
+  pinMode(ONE_WIRE_PIN, INPUT_PULLUP);
+}
+
+bool oneWireReset() {
+  oneWireLow();
+  delayMicroseconds(500);
+  oneWireRelease();
+  delayMicroseconds(70);
+  bool present = digitalRead(ONE_WIRE_PIN) == LOW;
+  delayMicroseconds(410);
+  return present;
+}
+
+void oneWireWriteBit(byte value) {
+  oneWireLow();
+  if (value) {
+    delayMicroseconds(6);
+    oneWireRelease();
+    delayMicroseconds(64);
+  } else {
+    delayMicroseconds(60);
+    oneWireRelease();
+    delayMicroseconds(10);
+  }
+}
+
+byte oneWireReadBit() {
+  oneWireLow();
+  delayMicroseconds(3);
+  oneWireRelease();
+  delayMicroseconds(12);
+  byte value = digitalRead(ONE_WIRE_PIN) == HIGH;
+  delayMicroseconds(55);
+  return value;
+}
+
+void oneWireWriteByte(byte value) {
+  for (byte bit = 0; bit < 8; bit++) {
+    oneWireWriteBit((value >> bit) & 1);
+  }
+}
+
+byte oneWireReadByte() {
+  byte value = 0;
+  for (byte bit = 0; bit < 8; bit++) {
+    value |= oneWireReadBit() << bit;
+  }
+  return value;
+}
+
+byte oneWireCrc8(const byte *data, byte length) {
+  byte crc = 0;
+  for (byte index = 0; index < length; index++) {
+    byte incoming = data[index];
+    for (byte bit = 0; bit < 8; bit++) {
+      byte mix = (crc ^ incoming) & 1;
+      crc >>= 1;
+      if (mix) crc ^= 0x8C;
+      incoming >>= 1;
+    }
+  }
+  return crc;
+}
+
+bool readTemperature(int16_t &rawTemperature) {
+  if (!oneWireReset()) return false;
+  oneWireWriteByte(0xCC);
+  oneWireWriteByte(0x44);
+  delay(800);
+  if (!oneWireReset()) return false;
+  oneWireWriteByte(0xCC);
+  oneWireWriteByte(0xBE);
+  byte scratchpad[9];
+  for (byte index = 0; index < 9; index++) scratchpad[index] = oneWireReadByte();
+  if (oneWireCrc8(scratchpad, 8) != scratchpad[8]) return false;
+  rawTemperature = (int16_t)((uint16_t)scratchpad[1] << 8 | scratchpad[0]);
+  return true;
+}
+
+void setup() {
+  oneWireRelease();
+  Serial.begin(115200);
+}
+
+void loop() {
+  int16_t rawTemperature = 0;
+  if (readTemperature(rawTemperature)) {
+    Serial.print("TEMP_C=");
+    Serial.print(rawTemperature / 16.0, 4);
+    Serial.println(" CRC=OK");
+  } else {
+    Serial.println("DS18B20 READ ERROR");
+  }
+  delay(800);
+}
+`,
   'avr-active-buzzer': `void setup() { pinMode(8, OUTPUT); Serial.begin(115200); }
 void loop() { digitalWrite(8, HIGH); Serial.println("BUZZER ON"); delay(240); digitalWrite(8, LOW); Serial.println("BUZZER OFF"); delay(240); }
 `,
@@ -309,6 +425,13 @@ function construct(card) {
     branch(session, 'net-5v', 'dht11-1', 'VCC', 'junction-starter-dht11-vcc');
     branch(session, 'net-ground-branch', 'dht11-1', 'GND', 'junction-starter-dht11-ground');
     wire(session, 'net-starter-dht11-d4', 'dht11-1', 'DATA', 'board-1', 'D4');
+  } else if (card.id === 'avr-ds18b20-temperature') {
+    add(session, createDs18b20Component('ds18b20-1', 'Waterproof temperature probe', {
+      temperatureC: 23.5,
+    }), { x: 0.76, y: 0.72 });
+    branch(session, 'net-5v', 'ds18b20-1', 'VCC', 'junction-starter-ds18b20-vcc');
+    branch(session, 'net-ground-branch', 'ds18b20-1', 'GND', 'junction-starter-ds18b20-ground');
+    wire(session, 'net-starter-ds18b20-d3', 'ds18b20-1', 'DQ', 'board-1', 'D3');
   } else if (card.id === 'avr-active-buzzer') {
     add(session, createActiveBuzzerComponent('active-buzzer-1', 'Silent logical buzzer'), { x: 0.76, y: 0.7 });
     branch(session, 'net-5v', 'active-buzzer-1', 'VCC', 'junction-starter-buzzer-vcc');

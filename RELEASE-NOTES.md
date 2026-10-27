@@ -1,4 +1,28 @@
-# Intent MCU Simulator 1.1.0-rc.143
+# Intent MCU Simulator 1.1.0-rc.144
+
+## OneWire digital temperature probe
+
+Rc.144 adds DS18B20 as a distinct AVR component and working starter. The part
+has original three-pin probe artwork, named VCC/DQ/GND terminals and a signed
+temperature control in exact 1/16 °C steps. Firmware must issue a OneWire
+reset, observe presence, send Skip ROM, Convert T and Read Scratchpad commands,
+then accept the visible Serial result only after Dallas CRC-8 validates.
+
+Temperature is bounded to −55–125 °C. The component, control value and exact
+D3 wiring survive canonical Save/Open, while compiled and runtime authority
+still require a fresh Build. This bounded model supports one externally
+powered device and intentionally omits parasite power, multidrop addressing,
+conversion latency and physical thermal/electrical effects. Pico, ESP32-C3
+and STM32 keep DS18B20 explicitly unavailable until they own a tested runtime
+path. The shared AVR-style Parts drawer remains unchanged across all four
+controller profiles.
+
+Actual public deployment state and rollback evidence remain owned by the
+separate deployment checkpoint.
+
+---
+
+## 1.1.0-rc.143
 
 ## First timed digital climate sensor
 
