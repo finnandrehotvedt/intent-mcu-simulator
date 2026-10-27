@@ -448,6 +448,7 @@ import { createX92C3BudgetIntegration } from '../src/x92-c3-budget-integration.m
 import { createX92Stm32BudgetIntegration } from '../src/x92-stm32-budget-integration.mjs';
 import { serialEventText, serialInputBytes, serialText } from '../src/serial-view.mjs';
 import { SERIAL_HISTORY_MAX } from '../src/runtime-kernel.mjs';
+import { selectedBinaryRuntimeControl } from '../src/selected-runtime-control.mjs';
 import { createSupportedProfileExample, supportedProfileExamples } from '../src/supported-example-pack.mjs';
 import { CPU_CYCLES_PER_MILLISECOND, cursorCycles, waveformPaths } from '../src/waveform-view.mjs';
 import { createComponentArtwork as createBaseComponentArtwork } from './component-artwork.mjs';
@@ -16250,6 +16251,10 @@ function selectedRuntimeDescriptor() {
   }
   if (['A', 'B'].includes(component.controls?.selectedThrow)) {
     return { kind: 'switch', component, key: 'selectedThrow', momentary: false };
+  }
+  const binaryControl = selectedBinaryRuntimeControl(component);
+  if (binaryControl) {
+    return { kind: 'switch', component, key: binaryControl.key, momentary: binaryControl.momentary };
   }
   if (component.type === ROTARY_ENCODER_TYPE && Number.isInteger(component.controls?.detent)) {
     return { kind: 'number', component, key: 'detent', minimum: ROTARY_ENCODER_DETENT_MIN,
