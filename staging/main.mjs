@@ -483,6 +483,10 @@ import {
 } from '../expansion-drafts/character-lcd-20x4-4bit-v1.mjs';
 import { PCF8574_LCD_TYPE } from '../expansion-drafts/pcf8574-lcd-backpack-v1.mjs';
 import {
+  DHT11_HUMIDITY_MAX_PERCENT, DHT11_HUMIDITY_MIN_PERCENT,
+  DHT11_TEMPERATURE_MAX_C, DHT11_TEMPERATURE_MIN_C, DHT11_TYPE,
+} from '../expansion-drafts/dht11-temperature-humidity-v1.mjs';
+import {
   CAPACITIVE_TOUCH_TYPE,
   DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
   HALL_SWITCH_TYPE,
@@ -13083,7 +13087,7 @@ function renderComponentSupportMatrix() {
   const summary = componentSupportSummary(profile.id);
   elements.componentsupportsummary.textContent = `${summary.available} of ${summary.total} models available · ${summary.simulated} Simulated · ${summary.partial} Partial · ${summary.unavailable} Unavailable`;
   elements.componentsupportmode.textContent = profile.id === AVR_PROFILE
-    ? 'Ordinary AVR projects show 5 Simulated parts. Candidate-v3 shows 13 by default; All statuses shows all 16 available AVR parts, including 3 Partial.'
+    ? 'Ordinary AVR project-v2 exposes 6 executable models. Candidate-v3 exposes all 63 executable AVR models—39 Simulated and 24 Partial—plus 15 Visual authoring-only models.'
     : 'This bounded profile exposes exactly 3 available entries: its fixed Partial controller, plus the Simulated resistor and LED. Other models are unavailable and are never silently substituted.';
   const cells = COMPONENT_SUPPORT_CELLS.filter((cell) => cell.profile === profile.id);
   const rows = COMPONENT_SUPPORT_MODELS.map((model) => {
@@ -13249,6 +13253,7 @@ function candidateComponentPrefix(type) {
       [CHARACTER_LCD_TYPE]: 'character-lcd',
       [CHARACTER_LCD_20X4_TYPE]: 'character-lcd-20x4',
       [PCF8574_LCD_TYPE]: 'pcf8574-lcd',
+      [DHT11_TYPE]: 'dht11',
       [ROTARY_ENCODER_TYPE]: 'rotary-encoder',
       [NONPOLAR_CAPACITOR_TYPE]: 'capacitor',
       [ELECTROLYTIC_CAPACITOR_TYPE]: 'electrolytic-capacitor',
@@ -13339,6 +13344,7 @@ function addComponent(type, point = null) {
       [CHARACTER_LCD_TYPE]: { x: 0.72, y: 0.64 },
       [CHARACTER_LCD_20X4_TYPE]: { x: 0.7, y: 0.62 },
       [ROTARY_ENCODER_TYPE]: { x: 0.72, y: 0.64 },
+      [DHT11_TYPE]: { x: 0.75, y: 0.7 },
       [NONPOLAR_CAPACITOR_TYPE]: { x: 0.56, y: 0.2 },
       [ELECTROLYTIC_CAPACITOR_TYPE]: { x: 0.7, y: 0.2 },
       [FIXED_INDUCTOR_TYPE]: { x: 0.84, y: 0.2 },
@@ -13982,6 +13988,37 @@ function renderRuntimeControls() {
         if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
       });
       row.append(label, input); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && component.type === DHT11_TYPE) {
+      const definitions = [
+        { key: 'temperatureC', label: 'Temperature', unit: '°C',
+          min: DHT11_TEMPERATURE_MIN_C, max: DHT11_TEMPERATURE_MAX_C,
+          aria: 'simulated DHT11 temperature in degrees Celsius' },
+        { key: 'humidityPercent', label: 'Humidity', unit: '% RH',
+          min: DHT11_HUMIDITY_MIN_PERCENT, max: DHT11_HUMIDITY_MAX_PERCENT,
+          aria: 'simulated DHT11 relative humidity percent' },
+      ];
+      return definitions.map((control) => {
+        const row = document.createElement('div'); const label = document.createElement('label');
+        label.textContent = `${component.label} · ${control.label} ${component.controls[control.key]} ${control.unit}`;
+        const input = document.createElement('input'); input.type = 'range'; input.step = '1';
+        input.min = String(control.min); input.max = String(control.max);
+        input.value = String(component.controls[control.key]);
+        input.dataset.control = `${component.id}.${control.key}`;
+        input.id = `control-${component.id}-${control.key}`; label.htmlFor = input.id;
+        input.setAttribute('aria-label', `${component.label} ${control.aria}, ${control.min} to ${control.max}`);
+        input.addEventListener('input', () => {
+          const value = Number(input.value);
+          const prepared = selectedCandidateContactControl(component.id, control.key, value);
+          if (!prepared.ok) {
+            showActionableError(elements.projectmessage, prepared.code, 'DHT11 control rejected.'); return;
+          }
+          const result = applyEditor(prepared.command,
+            `${component.label} ${control.label.toLocaleLowerCase()} ${value} ${control.unit}`);
+          if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+        });
+        row.append(label, input); return row;
+      });
     }
     if (editor.kind === 'candidate-project-v3' && ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) {
       const row = document.createElement('div'); const label = document.createElement('label');
@@ -14742,6 +14779,13 @@ async function loadArtifact(hex, artifactIdentity, {
       ? editor.runtimeSupport.filter((item) => item.type === PCF8574_LCD_TYPE).map((item) => ({
         type: 'pcf8574-lcd', address: item.runtimeProjection.address,
       })) : [],
+    dht11Devices: editor.kind === 'candidate-project-v3'
+      ? editor.runtimeSupport.filter((item) => item.type === DHT11_TYPE).map((item) => ({
+        type: 'dht11', componentId: item.componentId,
+        pin: item.runtimeProjection.boardPinNumber,
+        temperatureC: item.runtimeProjection.temperatureC,
+        humidityPercent: item.runtimeProjection.humidityPercent,
+      })) : [],
     instruments: {
       logicChannels: [...project.instruments.logicChannels],
       selectedPin: project.instruments.selectedPin,
@@ -15017,6 +15061,7 @@ async function loadArtifact(hex, artifactIdentity, {
     ...(frozen.x34Probe ? { x34Probe: frozen.x34Probe } : {}),
     digitalInputs: frozen.digitalInputs,
     i2cDevices: frozen.i2cDevices,
+    dht11Devices: frozen.dht11Devices,
     instruments: {
       logicChannels: frozen.instruments.logicChannels,
       selectedPin: frozen.instruments.selectedPin,
@@ -16318,8 +16363,8 @@ function filterStarterExamples() {
     if (!card.hidden) visible += 1;
   }
   elements.examplepickerstatus.textContent = query
-    ? `${visible} of 20 examples match “${elements.examplepickersearch.value.trim()}”`
-    : '20 examples available';
+    ? `${visible} of 21 examples match “${elements.examplepickersearch.value.trim()}”`
+    : '21 examples available';
 }
 function closeExamplePicker({ restoreFocus = true } = {}) {
   const returnFocus = examplePickerReturnFocus;

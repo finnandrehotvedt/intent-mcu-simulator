@@ -119,6 +119,7 @@ const referenceBindings = deepFreeze({
     'sensor.wind-speed-pulse-digital-v1': { starters: ['avr-digital-pulse-sensors'], tests: ['test/digital-pulse-sensors-candidate.test.mjs', 'test/digital-pulse-sensor-example-artifacts.test.mjs'] },
     'sensor.ir-obstacle-reflective-v1': { starters: ['avr-digital-reflective-sensors'], tests: ['test/digital-reflective-sensors-candidate.test.mjs', 'test/digital-reflective-sensor-example-artifacts.test.mjs'] },
     'sensor.line-tracking-reflective-v1': { starters: ['avr-digital-reflective-sensors'], tests: ['test/digital-reflective-sensors-candidate.test.mjs', 'test/digital-reflective-sensor-example-artifacts.test.mjs'] },
+    'sensor.dht11-temperature-humidity-v1': { starters: ['avr-dht11-temperature-humidity'], tests: ['test/dht11-temperature-humidity.test.mjs', 'test/dht11-temperature-humidity-browser.cjs'] },
     'sensor.soil-moisture-resistive-analogue-v1': { starters: ['avr-analogue-moisture-level-sensors'], tests: ['test/analogue-moisture-level-sensors-candidate.test.mjs', 'test/analogue-moisture-level-sensor-example-artifacts.test.mjs'] },
     'sensor.soil-moisture-capacitive-analogue-v1': { starters: ['avr-analogue-moisture-level-sensors'], tests: ['test/analogue-moisture-level-sensors-candidate.test.mjs', 'test/analogue-moisture-level-sensor-example-artifacts.test.mjs'] },
     'sensor.water-level-analogue-v1': { starters: ['avr-analogue-moisture-level-sensors'], tests: ['test/analogue-moisture-level-sensors-candidate.test.mjs', 'test/analogue-moisture-level-sensor-example-artifacts.test.mjs'] },

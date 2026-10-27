@@ -330,6 +330,7 @@ async function handleMessage(data) {
           ...(data.x35Probe ? { x35Probe: data.x35Probe } : {}),
           ...(data.x47RuntimeAuthority ? { x47RuntimeAuthority: data.x47RuntimeAuthority } : {}),
           ...(data.i2cDevices ? { i2cDevices: data.i2cDevices } : {}),
+          ...(data.dht11Devices ? { dht11Devices: data.dht11Devices } : {}),
         });
         kernel = candidate;
         validatedModelExecutionContextSha256 = binding.modelExecutionContextSha256;
@@ -451,6 +452,10 @@ async function handleMessage(data) {
       if (data.targetCycle === undefined) kernel.queueControl(data.componentId, data.key, data.value);
       else kernel.queueControlAtCycle(data.componentId, data.key, data.value, data.targetCycle);
       status('control');
+    } else if (data.command === 'dht11-control') {
+      if (isRp2040()) throw new Error('DHT11_PROFILE_UNAVAILABLE');
+      kernel.adapter.setDht11Environment(data.componentId, data.key, data.value);
+      status('dht11-control');
     } else if (data.command === 'x48-run') {
       if (!exactKeys(data, ['command', 'binding'])) throw new Error('X48_RUN_COMMAND_INVALID');
       if (isRp2040()) throw new Error('X48_PROFILE_UNAVAILABLE');

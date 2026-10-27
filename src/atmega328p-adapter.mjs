@@ -34,6 +34,9 @@ export { USART_RX_OBSERVATION_LATENESS_LIMIT };
 const SAMPLE_LIMIT = 4_096;
 const UNSUPPORTED_LIMIT = 256;
 const X47_TRANSITION_LIMIT = 64;
+const DHT11_TRANSACTION_LIMIT = 64;
+const DHT11_START_MIN_CYCLES = 18 * 16_000;
+const microsToCycles = (microseconds) => microseconds * 16;
 const PIN_MAP = Object.freeze({
   0: ['D', 0], 1: ['D', 1], 2: ['D', 2], 3: ['D', 3],
   4: ['D', 4], 5: ['D', 5], 6: ['D', 6], 7: ['D', 7],
@@ -93,6 +96,20 @@ export class Atmega328PAdapter {
     this.x46RuntimeIdentity = options.runtimeIdentity
       ? structuredClone(options.runtimeIdentity) : null;
     this.x46ResetEpoch = 0;
+    const dht11Devices = options.dht11Devices ?? [];
+    if (!Array.isArray(dht11Devices) || dht11Devices.length > 1
+        || dht11Devices.some((item) => !item || item.type !== 'dht11'
+          || typeof item.componentId !== 'string' || !/^[a-z][a-z0-9-]{0,47}$/u.test(item.componentId)
+          || !Number.isInteger(item.pin) || item.pin < 2 || item.pin > 12
+          || !Number.isInteger(item.temperatureC) || item.temperatureC < 0 || item.temperatureC > 50
+          || !Number.isInteger(item.humidityPercent)
+          || item.humidityPercent < 20 || item.humidityPercent > 90)) {
+      throw new TypeError('DHT11_DEVICE_CONFIGURATION');
+    }
+    this.dht11Devices = new Map(dht11Devices.map((item) => [item.componentId, {
+      componentId: item.componentId, pin: item.pin, temperatureC: item.temperatureC,
+      humidityPercent: item.humidityPercent, lowStartCycle: null, busyUntilCycle: 0,
+    }]));
     const i2cDevices = options.i2cDevices ?? [];
     if (!Array.isArray(i2cDevices) || i2cDevices.length > 1
         || i2cDevices.some((item) => item?.address !== 0x27 || item?.type !== 'pcf8574-lcd')) {
@@ -125,6 +142,7 @@ export class Atmega328PAdapter {
     this.trace = [];
     this.serial = [];
     this.i2c = [];
+    this.dht11 = [];
     this.usartRxSequence = 0;
     this.activeUsartRx = null;
     this.pendingUsartRxCompletion = null;
@@ -151,6 +169,11 @@ export class Atmega328PAdapter {
     this.#attachUnsupportedMonitors();
     this.#attachUnsupportedModeMonitors();
     for (const [pin, level] of this.inputLevels) this.#setDigitalPinNow(pin, level, false);
+    for (const device of this.dht11Devices.values()) {
+      device.lowStartCycle = null;
+      device.busyUntilCycle = 0;
+      this.#setDigitalPinNow(device.pin, true, false);
+    }
     this.#refreshDigitalBridges();
     for (const [channel, voltage] of this.analogVoltages) this.adc.channelValues[channel] = voltage;
   }
@@ -388,6 +411,7 @@ export class Atmega328PAdapter {
         }
       }
       if (event.type === 'analogue') this.setAnalogChannel(event.channel, event.voltage);
+      if (event.type === 'dht11') this.#setDigitalPinNow(event.pin, event.level);
       if (event.type === 'fault-digital-drive') {
         this.inputLevels.set(event.pin, event.level);
         this.#setDigitalPinNow(event.pin, event.level);
@@ -465,6 +489,66 @@ export class Atmega328PAdapter {
     const alreadyInitialized = this.inputLevels.has(pin);
     this.inputLevels.set(pin, Boolean(level));
     this.#setDigitalPinNow(pin, level, alreadyInitialized);
+  }
+
+  setDht11Environment(componentId, key, value) {
+    const device = this.dht11Devices.get(componentId);
+    const valid = key === 'temperatureC'
+      ? Number.isInteger(value) && value >= 0 && value <= 50
+      : key === 'humidityPercent' && Number.isInteger(value) && value >= 20 && value <= 90;
+    if (!device || !valid) throw new TypeError('DHT11_CONTROL');
+    device[key] = value;
+  }
+
+  #scheduleDht11Response(device, releaseCycle, startPulseCycles) {
+    const bytes = [device.humidityPercent, 0, device.temperatureC, 0];
+    bytes.push(bytes.reduce((sum, value) => (sum + value) & 0xff, 0));
+    const bits = bytes.flatMap((value) => Array.from({ length: 8 }, (_, index) =>
+      Boolean(value & (1 << (7 - index)))));
+    let cycle = releaseCycle + microsToCycles(20);
+    this.#schedule({ type: 'dht11', cycle, pin: device.pin, level: false });
+    cycle += microsToCycles(80);
+    this.#schedule({ type: 'dht11', cycle, pin: device.pin, level: true });
+    cycle += microsToCycles(80);
+    this.#schedule({ type: 'dht11', cycle, pin: device.pin, level: false });
+    for (const bit of bits) {
+      cycle += microsToCycles(50);
+      this.#schedule({ type: 'dht11', cycle, pin: device.pin, level: true });
+      cycle += microsToCycles(bit ? 70 : 28);
+      this.#schedule({ type: 'dht11', cycle, pin: device.pin, level: false });
+    }
+    cycle += microsToCycles(50);
+    this.#schedule({ type: 'dht11', cycle, pin: device.pin, level: true });
+    device.busyUntilCycle = cycle;
+    boundedPush(this.dht11, {
+      componentId: device.componentId, pin: device.pin, releaseCycle, startPulseCycles,
+      responseStartCycle: releaseCycle + microsToCycles(20), responseEndCycle: cycle,
+      temperatureC: device.temperatureC, humidityPercent: device.humidityPercent,
+      payload: bytes,
+    }, DHT11_TRANSACTION_LIMIT);
+  }
+
+  #monitorDht11() {
+    for (const device of this.dht11Devices.values()) {
+      const [port, bit] = PIN_MAP[device.pin];
+      const config = { B: portBConfig, C: portCConfig, D: portDConfig }[port];
+      const mask = 1 << bit;
+      const hostDrivingLow = Boolean(this.cpu.data[config.DDR] & mask)
+        && !Boolean(this.cpu.data[config.PORT] & mask);
+      if (hostDrivingLow) {
+        if (device.lowStartCycle === null && this.cpu.cycles >= device.busyUntilCycle) {
+          device.lowStartCycle = this.cpu.cycles;
+        }
+        continue;
+      }
+      if (device.lowStartCycle === null) continue;
+      const startPulseCycles = this.cpu.cycles - device.lowStartCycle;
+      device.lowStartCycle = null;
+      if (startPulseCycles >= DHT11_START_MIN_CYCLES
+          && this.cpu.cycles >= device.busyUntilCycle) {
+        this.#scheduleDht11Response(device, this.cpu.cycles, startPulseCycles);
+      }
+    }
   }
 
   setDigitalBridge(id, pinA, pinB, closed) {
@@ -619,6 +703,7 @@ export class Atmega328PAdapter {
     const portAfterInstruction = this.cpu.data[portBConfig.PORT];
     const traceAfterInstruction = this.trace.length;
     this.cpu.tick();
+    this.#monitorDht11();
     const portAfterTick = this.cpu.data[portBConfig.PORT];
     const traceAfterTick = this.trace.length;
     this.instructions++;
@@ -765,6 +850,7 @@ export class Atmega328PAdapter {
       trace: this.trace.slice(),
       serial: this.serial.slice(),
       i2c: this.i2c.map((entry) => ({ ...entry })),
+      dht11: this.dht11.map((entry) => ({ ...entry, payload: [...entry.payload] })),
       adcReads: this.adcReads.map((entry) => ({ ...entry })),
       unsupported: this.unsupported.slice(),
       faultEvents: this.faultEvents.map((entry) => ({ ...entry })),

@@ -16,8 +16,9 @@ import {
   resolveModelLibrary,
   validateProjectModelLibrary,
 } from './model-library.mjs';
+import { CIRCUIT_SCHEMA } from './circuit-schema.mjs';
 
-export const CIRCUIT_SCHEMA = 'teach-lab-circuit@2';
+export { CIRCUIT_SCHEMA } from './circuit-schema.mjs';
 export const MODEL_LIBRARY_TEST_AUTHORITY = Symbol('MODEL_LIBRARY_TEST_AUTHORITY');
 const ID = /^[a-z][a-z0-9-]{0,47}$/;
 const LABEL = /^[\p{L}\p{N} ._#()°Ω×+\-]{1,64}$/u;

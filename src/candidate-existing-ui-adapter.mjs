@@ -140,6 +140,16 @@ import {
 } from '../expansion-drafts/digital-reflective-sensors-v1.mjs';
 import { createDigitalReflectiveSensorArtwork } from '../expansion-drafts/digital-reflective-sensors-artwork-v1.mjs';
 import {
+  DHT11_DEFINITION,
+  DHT11_HUMIDITY_MAX_PERCENT,
+  DHT11_HUMIDITY_MIN_PERCENT,
+  DHT11_TEMPERATURE_MAX_C,
+  DHT11_TEMPERATURE_MIN_C,
+  DHT11_TYPE,
+  createDht11Component,
+} from '../expansion-drafts/dht11-temperature-humidity-v1.mjs';
+import { createDht11Artwork } from '../expansion-drafts/dht11-temperature-humidity-artwork-v1.mjs';
+import {
   ANALOGUE_MOISTURE_LEVEL_DEFINITIONS,
   ANALOGUE_WATER_LEVEL_TYPE,
   CAPACITIVE_SOIL_MOISTURE_TYPE,
@@ -256,6 +266,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   ...DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
   ...DIGITAL_PULSE_SENSOR_DEFINITIONS,
   ...DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS,
+  [DHT11_TYPE]: DHT11_DEFINITION,
   ...ANALOGUE_MOISTURE_LEVEL_DEFINITIONS,
   ...ANALOGUE_DETECTION_DEFINITIONS,
   ...ANALOGUE_DIRECTION_FIELD_DEFINITIONS,
@@ -345,6 +356,9 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component?.type]) {
     return createDigitalReflectiveSensorArtwork(documentObject, definition, component, options);
   }
+  if (component?.type === DHT11_TYPE) {
+    return createDht11Artwork(documentObject, definition, component, options);
+  }
   if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component?.type]) {
     return createAnalogueMoistureLevelArtwork(documentObject, definition, component, options);
   }
@@ -415,6 +429,7 @@ export function createCandidateUiComponent(type, id) {
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[type]) return createDigitalPresenceSensor(type, id);
   if (DIGITAL_PULSE_SENSOR_DEFINITIONS[type]) return createDigitalPulseSensor(type, id);
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[type]) return createDigitalReflectiveSensor(type, id);
+  if (type === DHT11_TYPE) return createDht11Component(id);
   if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[type]) return createAnalogueMoistureLevelSensor(type, id);
   if (ANALOGUE_DETECTION_DEFINITIONS[type]) return createAnalogueDetectionSensor(type, id);
   if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[type]) return createAnalogueDirectionFieldSensor(type, id);
@@ -563,6 +578,20 @@ export function candidateContactControl(session, componentId, key, value) {
       command: { type: 'component.control.set', componentId, key, value },
       worker: { command: 'control', componentId, key: 'pressed', value },
     };
+  }
+  if (component.type === DHT11_TYPE) {
+    const accepted = key === 'temperatureC'
+      ? Number.isInteger(value) && value >= DHT11_TEMPERATURE_MIN_C && value <= DHT11_TEMPERATURE_MAX_C
+      : key === 'humidityPercent'
+        && Number.isInteger(value) && value >= DHT11_HUMIDITY_MIN_PERCENT
+        && value <= DHT11_HUMIDITY_MAX_PERCENT;
+    if (accepted) {
+      return {
+        ok: true,
+        command: { type: 'component.control.set', componentId, key, value },
+        worker: { command: 'dht11-control', componentId, key, value },
+      };
+    }
   }
   if (component.type === ANALOG_JOYSTICK_TYPE && ['x', 'y'].includes(key)
       && Number.isFinite(value) && value >= 0 && value <= 1) {

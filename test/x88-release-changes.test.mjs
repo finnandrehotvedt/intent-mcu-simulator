@@ -28,9 +28,9 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 binds the four-profile AVR picker parity release to coherent rc142 bytes', async () => {
+test('X88 binds the AVR DHT11 release to coherent rc143 bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.142');
+  assert.equal(release.version, '1.1.0-rc.143');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
@@ -38,12 +38,12 @@ test('X88 binds the four-profile AVR picker parity release to coherent rc142 byt
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
   assert(registry.ids.includes('X92'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.141', current: '1.1.0-rc.142' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.142', current: '1.1.0-rc.143' });
   assert.deepEqual(value.changes, [
     {
-      id: 'X59', classification: 'changed', capabilities: ['intent-mcu-shared-workbench-view@1'],
-      contracts: ['x59-four-profile-simple-advanced-view-v1'],
-      summary: "Makes AVR, Pico, ESP32-C3 and STM32 use the same AVR catalogue structure, card design, search, filters, favourites and pagination inside the shared Parts drawer while preserving each controller's supported component set.",
+      id: 'X72', classification: 'additive', capabilities: ['intent-mcu-example-progression@1'],
+      contracts: ['x72-example-progression-v1'],
+      summary: 'Adds a runnable AVR DHT11 starter with original component artwork, independent integer temperature and humidity controls, timed single-wire payload and checksum execution, and canonical Save and Open persistence.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -106,7 +106,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.142');
+  assert.equal(discovery.identity.version, '1.1.0-rc.143');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);
@@ -114,7 +114,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   assert.equal('releaseChanges' in discovery, false);
   const baselineProjection = clone(discovery);
   baselineProjection.identity.version = '1.1.0-rc.81';
-  assert.equal(sha256(JSON.stringify(baselineProjection)), '5b9b3680a9b94c783d55a4937326d5994ebed893b7d9d2c89a2aec5cd6c0f8be');
+  assert.equal(sha256(JSON.stringify(baselineProjection)), 'afe63a421ccd10725e106d7610727d2225ddc80ad7f67e3d92d088328e5f7bde');
 });
 
 test('HTML, llms and Support discover the same static file without adding a public API', async () => {

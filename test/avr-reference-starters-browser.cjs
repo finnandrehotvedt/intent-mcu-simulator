@@ -10,7 +10,7 @@ const screenshotPath = process.env.AVR_REFERENCE_SCREENSHOT || null;
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 
 async function load(page, id, name) {
-  await page.click(`.starter-card[data-example="${id}"]`);
+  await page.click(`.starter-card[data-example="${id}"] .starter-action`);
   await page.waitForFunction(([expectedId, expectedName]) => {
     const value = window.__M6_PROJECT__();
     return document.querySelector('#example-select').value === expectedId
@@ -87,8 +87,8 @@ let browser;
   });
   await page.goto(base, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__M11_READY__ === true);
-  assert(await page.locator('.starter-card').count() === 16, 'expected 16 starter cards');
-  assert(await page.locator('.starter-learning-grid').count() === 9, 'nine cards must expose Learn/Try/Observe/Limits');
+  assert(await page.locator('.starter-card').count() === 21, 'expected 21 starter cards');
+  assert(await page.locator('.starter-learning-grid').count() === 21, 'all cards must expose Learn/Try/Observe/Limits');
 
   await load(page, 'avr-ground-reference-input', 'Ground reference input');
   assert(await page.locator('[data-component-id="ground-reference-1"] [data-terminal-pin="REF"]').count() === 1, 'ground reference terminal missing');

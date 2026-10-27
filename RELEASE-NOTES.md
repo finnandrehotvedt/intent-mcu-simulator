@@ -1,4 +1,26 @@
-# Intent MCU Simulator 1.1.0-rc.142
+# Intent MCU Simulator 1.1.0-rc.143
+
+## First timed digital climate sensor
+
+Rc.143 adds DHT11 as a distinct AVR component and working starter. The part
+has original three-pin artwork, named VCC/DATA/GND terminals and separate
+temperature and relative-humidity controls. Firmware must issue the start
+pulse and decode the timed five-byte response; the visible Serial result is
+accepted only after its checksum is valid.
+
+Temperature is bounded to integer 0–50 °C and humidity to 20–90 %RH. The
+component, both control values and exact D4 wiring survive canonical
+Save/Open, while compiled and runtime authority still require a fresh Build.
+Pico, ESP32-C3 and STM32 keep DHT11 explicitly unavailable until they own a
+tested runtime path. The shared AVR-style Parts drawer remains unchanged
+across all four controller profiles.
+
+Actual public deployment state and rollback evidence remain owned by the
+separate deployment checkpoint.
+
+---
+
+## 1.1.0-rc.142
 
 ## AVR component picker parity across all controllers
 

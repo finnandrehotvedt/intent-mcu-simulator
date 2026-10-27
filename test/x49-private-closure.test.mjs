@@ -29,11 +29,11 @@ test('generated private runtime and evidence-tool closures are exact and fresh',
   assert.deepEqual(manifest.externalContracts, ['avr8js@0.21.1']);
 });
 
-test('approved X48 worker increment preserves X49 runtime dependencies and private-owner isolation', async () => {
+test('approved DHT11 runtime increment preserves X49 runtime dependencies and private-owner isolation', async () => {
   const immutableRuntime = {
-    'src/atmega328p-adapter.mjs': '16b0f9a1754de5d3abf3fb69ad52ae50f877c0fed5fd1dfa6de17a762beefbf9',
-    'src/runtime-kernel.mjs': 'e25c99995a4e8481f1e714ca7b3fa6de5416e12c72f9171495f4115468178f4c',
-    'src/simulator.worker.mjs': '7053abcd7e41b9630eacc929509ae3e82e1201e7542586b038c10b2219ff07b3',
+    'src/atmega328p-adapter.mjs': '7b8ecf5ef392cf1ae118897ebbad48c5af5d03f6f42cd68a93753f925463a9eb',
+    'src/runtime-kernel.mjs': 'a6a51d420ef7aa28d82fbe8591b76b4604c1bf6f96faffe3538d403d48e6dff0',
+    'src/simulator.worker.mjs': '324392d06d5d1a55c19d2d61a59f3fdcbf5d0d6fc95e54871b2254a26189c6af',
   };
   for (const [path, hash] of Object.entries(immutableRuntime)) {
     const bytes = await readFile(new URL(`../${path}`, import.meta.url));

@@ -50,6 +50,7 @@ const expected = {
   'sensor.wind-speed-pulse-digital-v1': ['pulseHigh'],
   'sensor.ir-obstacle-reflective-v1': ['obstacleDetected'],
   'sensor.line-tracking-reflective-v1': ['lineDetected'],
+  'sensor.dht11-temperature-humidity-v1': ['temperatureC', 'humidityPercent'],
   'sensor.soil-moisture-resistive-analogue-v1': ['moistureRatio'],
   'sensor.soil-moisture-capacitive-analogue-v1': ['moistureRatio'],
   'sensor.water-level-analogue-v1': ['waterLevelRatio'],
@@ -89,10 +90,10 @@ function candidate(id, componentId, changes) {
   return opened.session;
 }
 
-test('all 71 executable cells have one exact controls-persist or controls-empty policy', () => {
+test('all 72 executable cells have one exact controls-persist or controls-empty policy', () => {
   assert.deepEqual(controlPersistenceSummary(), {
-    profiles: 4, cells: 336, available: 71, unavailable: 265,
-    controlBearing: 47, controlsEmpty: 24, controls: 56,
+    profiles: 4, cells: 340, available: 72, unavailable: 268,
+    controlBearing: 48, controlsEmpty: 24, controls: 58,
   });
   const inventory = controlPersistenceInventory();
   const bearing = inventory.filter((cell) => cell.available && cell.controls.length);
@@ -126,7 +127,7 @@ test('project-v2 button and potentiometer controls round-trip as authored data',
   }
 });
 
-test('all six candidate control models round-trip exact non-default retained values with empty history', () => {
+test('all seven representative candidate control models round-trip exact non-default retained values with empty history', () => {
   const sessions = [
     ['avr-toggle-input', 'toggle-switch-1', [['closed', true]]],
     ['avr-spdt-selector', 'selector-1', [['selectedThrow', 'B']]],
@@ -134,6 +135,7 @@ test('all six candidate control models round-trip exact non-default retained val
     ['temperature-lcd-threshold', 'temperature-sensor-1', [['temperatureC', 100]]],
     ['avr-light-threshold', 'light-threshold-1', [['lightLevelPercent', 50], ['lightLevelPercent', 48]]],
     ['avr-rotary-encoder', 'encoder-1', [['detent', 1], ['detent', 2]]],
+    ['avr-dht11-temperature-humidity', 'dht11-1', [['temperatureC', 31], ['humidityPercent', 64]]],
   ].map(([id, componentId, changes]) => [componentId, candidate(id, componentId, changes)]);
 
   for (const [componentId, session] of sessions) {

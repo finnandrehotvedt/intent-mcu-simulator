@@ -1,6 +1,6 @@
 {
   "name": "intent-mcu-simulator",
-  "version": "1.1.0-rc.142",
+  "version": "1.1.0-rc.143",
   "private": true,
   "description": "Original browser-based microcontroller learning environment source",
   "license": "Apache-2.0",
@@ -27,6 +27,8 @@
     "test:trimmer:browser": "npm run build && node test/trimmer-potentiometer-browser.cjs",
     "test:traffic-light": "node scripts/generate-indicator-actuator-examples.mjs && node --test --test-concurrency=1 test/traffic-light-module.test.mjs test/indicator-actuator-example-artifacts.test.mjs",
     "test:traffic-light:browser": "npm run build && node test/traffic-light-module-browser.cjs",
+    "test:dht11": "node --test --test-concurrency=1 test/dht11-temperature-humidity.test.mjs",
+    "test:dht11:browser": "npm run build && node test/dht11-temperature-humidity-browser.cjs",
     "test:four-digit-seven-segment": "node scripts/generate-indicator-actuator-examples.mjs && node --test --test-concurrency=1 test/four-digit-seven-segment.test.mjs test/indicator-actuator-example-artifacts.test.mjs",
     "test:four-digit-seven-segment:browser": "npm run build && node test/four-digit-seven-segment-browser.cjs",
     "test:passive-energy-storage": "node scripts/generate-passive-energy-storage-examples.mjs && node --test --test-concurrency=1 test/passive-energy-storage-components.test.mjs test/passive-energy-storage-example-artifacts.test.mjs",

@@ -183,6 +183,12 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
   'sensor.line-tracking-reflective-v1': {
     lineDetected: { kind: 'boolean', default: false, mutability: 'authored' },
   },
+  'sensor.dht11-temperature-humidity-v1': {
+    temperatureC: { kind: 'integer', minimum: 0, maximum: 50, default: 25,
+      unit: '°C', mutability: 'authored' },
+    humidityPercent: { kind: 'integer', minimum: 20, maximum: 90, default: 50,
+      unit: '%RH', mutability: 'authored' },
+  },
   'input.rotary-encoder-quadrature-v1': {
     detent: { kind: 'integer', minimum: -999, maximum: 999, default: 0,
       unit: 'detent', mutability: 'transition-only' },

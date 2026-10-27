@@ -16,6 +16,7 @@ import {
 } from '../expansion-drafts/rotary-encoder-quadrature-v1.mjs';
 import { RESISTIVE_DIVIDER_SENSOR_DEFINITIONS, resistiveDividerSensorResistance,
   resistiveDividerSensorVoltage } from '../expansion-drafts/resistive-divider-sensors-v1.mjs';
+import { DHT11_TYPE, dht11Payload } from '../expansion-drafts/dht11-temperature-humidity-v1.mjs';
 import { observeRp2040PicoCircuit, validateRp2040PicoCircuit } from './rp2040-pico-circuit.mjs';
 import { esp32C3RuntimeCircuit, validateEsp32C3Circuit } from './esp32c3-public-circuit.mjs';
 import { validateStm32Circuit } from './stm32-public-circuit.mjs';
@@ -37,7 +38,7 @@ const exactInput = (value, keys) => value && typeof value === 'object' && !Array
 // Current behavior is separately owned so future current changes cannot mutate
 // the retained pre-X56 implementation by alias or shared constant.
 export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
-  id: 'intent-mcu-model-bundle-current-lcd-20x4-cgram-1@50',
+  id: 'intent-mcu-model-bundle-current-dht11-protocol-1@51',
   manifestVersion: CURRENT_MODEL_LIBRARY_MANIFEST.version,
   definition(profile, componentType) {
     const entry = entries.get(`${profile}\u0000${componentType}`);
@@ -297,6 +298,18 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       }
       return { ok: true, code: 'OK', result: { active: input.active, digitalLevel: !input.active } };
     }
+    if (componentType === DHT11_TYPE) {
+      if (!exactInput(input, ['temperatureC', 'humidityPercent'])) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      try {
+        return { ok: true, code: 'OK', result: {
+          temperatureC: input.temperatureC,
+          humidityPercent: input.humidityPercent,
+          payload: dht11Payload(input.temperatureC, input.humidityPercent),
+        } };
+      } catch { return failure('MODEL_LIBRARY_PRODUCTION_INPUT'); }
+    }
     if (componentType === 'output.rgb-led-common-cathode-v1') {
       const duties = input?.duties;
       if (!duties || ['R', 'G', 'B'].some((key) => !Number.isFinite(duties[key]))) {
@@ -400,6 +413,13 @@ export const PRE_CMP041_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTA
 export const PRE_CMP043_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
   ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
   id: 'intent-mcu-model-bundle-current-pre-cmp043-public-source@56',
+  manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
+  migrationOnly: true,
+});
+
+export const PRE_CMP092_DHT11_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-pre-cmp092-dht11@57',
   manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
   migrationOnly: true,
 });

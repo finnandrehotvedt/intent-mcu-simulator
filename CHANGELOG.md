@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.143 — 2026-10-27
+
+- Adds an AVR-only DHT11 component with original VCC/DATA/GND artwork and
+  independent integer temperature and relative-humidity controls.
+- Executes the sensor's timed single-wire start, acknowledgement, five-byte
+  payload and checksum through compiled AVR firmware on D4.
+- Adds a working DHT11 starter with visible checksum-validated Serial output,
+  canonical Save/Open persistence and explicit physical-model limitations.
+- Keeps DHT11 unavailable on Pico, ESP32-C3 and STM32 until those profiles own
+  a tested runtime, while preserving their shared AVR-style Parts drawer.
+- Leaves actual public deployment state and rollback evidence in the separate
+  deployment checkpoint.
+
 ## 1.1.0-rc.142 — 2026-10-27
 
 - Replaces the three reduced Pico, ESP32-C3 and STM32 part lists with the same

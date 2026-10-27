@@ -9,6 +9,7 @@ import { canonicalContactPersistenceDraftJson } from '../expansion-drafts/projec
 import { createSevenSegmentComponent } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
 import { createFourDigitSevenSegmentComponent } from '../expansion-drafts/seven-segment-four-digit-common-cathode-v1.mjs';
 import { createTrafficLightComponent } from '../expansion-drafts/traffic-light-module-v1.mjs';
+import { createDht11Component } from '../expansion-drafts/dht11-temperature-humidity-v1.mjs';
 import { createComponent } from './circuit-engine.mjs';
 import { createCandidateUiComponent, openCandidateUiSession } from './candidate-existing-ui-adapter.mjs';
 
@@ -79,6 +80,17 @@ const CARDS = Object.freeze([
     observe: 'Compiled D7 drives D13 and reports LIGHT/DARK on Serial.',
     limits: 'Ideal percentage input only; no lux calibration or comparator noise.',
     next: 'Load Thermostat boundary test to express a threshold as an executable requirement.',
+  },
+  {
+    id: 'avr-dht11-temperature-humidity', name: 'DHT11 temperature and humidity',
+    model: 'sensor.dht11-temperature-humidity-v1',
+    focus: 'Timed digital protocol · D4', partsLabel: 'Controller · DHT11 digital sensor',
+    description: 'Read temperature and relative humidity from a timed five-byte DHT11 response.',
+    learn: 'How one bidirectional DATA line carries an acknowledged payload and checksum.',
+    try: 'Build and Run, then move Temperature and Humidity independently.',
+    observe: 'Serial reports TEMP_C and HUMIDITY_RH only after firmware validates the checksum.',
+    limits: 'Integer AVR-only protocol model; no physical accuracy, latency, noise or cable effects.',
+    next: 'Load Digital light threshold to compare a timed protocol sensor with a simple digital level.',
   },
   {
     id: 'avr-active-buzzer', name: 'Logical active buzzer', model: 'output.active-buzzer-module-v1',
@@ -152,6 +164,58 @@ void loop() { int level = analogRead(A1); digitalWrite(13, level >= 512); Serial
 `,
   'avr-light-threshold': `void setup() { pinMode(7, INPUT_PULLUP); pinMode(13, OUTPUT); Serial.begin(115200); }
 void loop() { bool active = digitalRead(7) == LOW; digitalWrite(13, active); Serial.println(active ? "DARK" : "LIGHT"); delay(120); }
+`,
+  'avr-dht11-temperature-humidity': `const byte DHT_DATA = 4;
+
+bool waitForDhtLevel(byte level, unsigned long timeoutMicros) {
+  unsigned long waitStart = micros();
+  while (digitalRead(DHT_DATA) != level) {
+    if (micros() - waitStart > timeoutMicros) return false;
+  }
+  return true;
+}
+
+bool readDht11(byte &temperatureC, byte &humidityPercent) {
+  byte data[5] = {0, 0, 0, 0, 0};
+  pinMode(DHT_DATA, OUTPUT);
+  digitalWrite(DHT_DATA, LOW);
+  delay(20);
+  pinMode(DHT_DATA, INPUT_PULLUP);
+  if (!waitForDhtLevel(LOW, 250)) return false;
+  if (!waitForDhtLevel(HIGH, 150)) return false;
+  if (!waitForDhtLevel(LOW, 150)) return false;
+  for (byte bit = 0; bit < 40; bit++) {
+    if (!waitForDhtLevel(HIGH, 120)) return false;
+    delayMicroseconds(40);
+    data[bit / 8] = (data[bit / 8] << 1) | (digitalRead(DHT_DATA) == HIGH ? 1 : 0);
+    if (!waitForDhtLevel(LOW, 120)) return false;
+  }
+  byte checksum = byte(data[0] + data[1] + data[2] + data[3]);
+  if (data[1] != 0 || data[3] != 0 || checksum != data[4]) return false;
+  humidityPercent = data[0];
+  temperatureC = data[2];
+  return true;
+}
+
+void setup() {
+  pinMode(DHT_DATA, INPUT_PULLUP);
+  Serial.begin(115200);
+}
+
+void loop() {
+  byte temperatureC = 0;
+  byte humidityPercent = 0;
+  if (readDht11(temperatureC, humidityPercent)) {
+    Serial.print("TEMP_C=");
+    Serial.print(temperatureC);
+    Serial.print(" HUMIDITY_RH=");
+    Serial.print(humidityPercent);
+    Serial.println(" CHECKSUM=OK");
+  } else {
+    Serial.println("DHT11 READ ERROR");
+  }
+  delay(1500);
+}
 `,
   'avr-active-buzzer': `void setup() { pinMode(8, OUTPUT); Serial.begin(115200); }
 void loop() { digitalWrite(8, HIGH); Serial.println("BUZZER ON"); delay(240); digitalWrite(8, LOW); Serial.println("BUZZER OFF"); delay(240); }
@@ -238,6 +302,13 @@ function construct(card) {
     branch(session, 'net-5v', 'light-threshold-1', 'VCC', 'junction-starter-threshold-vcc');
     branch(session, 'net-ground-branch', 'light-threshold-1', 'GND', 'junction-starter-threshold-ground');
     wire(session, 'net-starter-threshold-d7', 'light-threshold-1', 'DOUT', 'board-1', 'D7');
+  } else if (card.id === 'avr-dht11-temperature-humidity') {
+    add(session, createDht11Component('dht11-1', 'Room DHT11', {
+      temperatureC: 25, humidityPercent: 50,
+    }), { x: 0.76, y: 0.72 });
+    branch(session, 'net-5v', 'dht11-1', 'VCC', 'junction-starter-dht11-vcc');
+    branch(session, 'net-ground-branch', 'dht11-1', 'GND', 'junction-starter-dht11-ground');
+    wire(session, 'net-starter-dht11-d4', 'dht11-1', 'DATA', 'board-1', 'D4');
   } else if (card.id === 'avr-active-buzzer') {
     add(session, createActiveBuzzerComponent('active-buzzer-1', 'Silent logical buzzer'), { x: 0.76, y: 0.7 });
     branch(session, 'net-5v', 'active-buzzer-1', 'VCC', 'junction-starter-buzzer-vcc');

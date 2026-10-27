@@ -17,7 +17,7 @@
     },
     {
       "path": "src/atmega328p-adapter.mjs",
-      "sha256": "16b0f9a1754de5d3abf3fb69ad52ae50f877c0fed5fd1dfa6de17a762beefbf9"
+      "sha256": "7b8ecf5ef392cf1ae118897ebbad48c5af5d03f6f42cd68a93753f925463a9eb"
     },
     {
       "path": "src/hex.mjs",
@@ -85,7 +85,7 @@
   "externalContracts": [
     "avr8js@0.21.1"
   ],
-  "implementationSha256": "d361f5f3805a830f67b1c7b1d4df7c97d89e6d42e822fa8c1bdcf63cbce14b0a",
+  "implementationSha256": "62396bb399fd0b2625e9b2b740f6a9987cf53284ff5e86f7cd503ade5b324bba",
   "evidenceToolSha256": "8fc7a44096b92aab6362c70367aad905274153f9da34dd236f9c187c03917306",
-  "semanticSha256": "25174adfcb82fcdc0b93a4c77372ca0ffa3ccb2e66d2233279c73b36b4b97457"
+  "semanticSha256": "6b6c2e6d0d8be90b3e4d52ff2aabbb843452c8f657f2df35046ed5b1d4c9cce3"
 }

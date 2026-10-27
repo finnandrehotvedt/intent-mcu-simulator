@@ -19,9 +19,9 @@ test('public documentation facts derive from the current release and canonical c
     read('../staging/examples.html'), read('../staging/support.html'),
     read('../staging/llms.txt'), read('../staging/sitemap.xml'),
   ]);
-  const avrCount = exampleCatalog().length + 1 + 1 + avrReferenceStarterCatalog().length;
-  assert.equal(RELEASE_VERSION, '1.1.0-rc.142');
-  assert.equal(avrCount, 19);
+  const avrCount = exampleCatalog().length + 3 + avrReferenceStarterCatalog().length;
+  assert.equal(RELEASE_VERSION, '1.1.0-rc.143');
+  assert.equal(avrCount, 21);
   assert.equal(THERMOSTAT_SCENARIOS.scenarios.length, 4);
   assert.match(THERMOSTAT_EXPERIMENT_CARD.outcome, /four reset-isolated/u);
   for (const page of [controllers, components, examples, support, llms]) {
@@ -30,7 +30,7 @@ test('public documentation facts derive from the current release and canonical c
   }
   assert.match(controllers, /four reset-isolated boundary scenarios/u);
   assert.match(examples, /four reset-isolated virtual-time scenarios/u);
-  assert.match(llms, /nineteen ready-made AVR examples/u);
+  assert.match(llms, /twenty-one ready-made AVR examples/u);
   assert.match(llms, /four reset-isolated virtual-time scenarios/u);
   assert.match(llms, /finite resistor-and-LED reusable subcircuit/u);
   assert.match(support, /X66[^·]+complete only against their bounded original criteria/u);

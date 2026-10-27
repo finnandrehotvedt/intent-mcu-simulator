@@ -63,6 +63,8 @@ const rows = [
   ['sensor.wind-speed-pulse-digital-v1', 'pulseHigh', 'control · manual active-high pulse level', 'authored pulse snapshot → bounded AVR projection', 'model-projected'],
   ['sensor.ir-obstacle-reflective-v1', 'obstacleDetected', 'control · active-low digital state', 'D7 input → executed firmware → USART', 'actual-executed'],
   ['sensor.line-tracking-reflective-v1', 'lineDetected', 'control · active-low digital state', 'D8 input → executed firmware → USART', 'actual-executed'],
+  ['sensor.dht11-temperature-humidity-v1', 'temperatureC', 'DHT11 payload · integer temperature byte plus checksum', 'D4 timed DATA response → executed firmware → USART', 'actual-executed'],
+  ['sensor.dht11-temperature-humidity-v1', 'humidityPercent', 'DHT11 payload · integer humidity byte plus checksum', 'D4 timed DATA response → executed firmware → USART', 'actual-executed'],
 ].map(([model, field, workerEvent, observable, evidence]) => Object.freeze({
   profile: AVR_PROFILE,
   model,
@@ -87,6 +89,8 @@ const rows = [
     ? 'test/analogue-moisture-level-sensors-browser.cjs'
     : ['obstacleDetected', 'lineDetected'].includes(field)
     ? 'test/digital-reflective-sensors-browser.cjs'
+    : model === 'sensor.dht11-temperature-humidity-v1'
+    ? 'test/dht11-temperature-humidity-browser.cjs'
     : ['sensor.flow-pulse-digital-v1', 'sensor.wind-speed-pulse-digital-v1'].includes(model)
     ? 'test/digital-pulse-sensors-browser.cjs'
     : ['liquidHigh', 'tilted', 'vibrationDetected'].includes(field)

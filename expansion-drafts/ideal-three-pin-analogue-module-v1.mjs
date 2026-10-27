@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
-import { CIRCUIT_SCHEMA } from '../src/circuit-engine.mjs';
+import { CIRCUIT_SCHEMA } from '../src/circuit-schema.mjs';
 import { exactKeys } from '../src/strict-json.mjs';
 
 export const IDEAL_ANALOGUE_MODULE_RUNTIME_TYPE = 'potentiometer.linear-v1';

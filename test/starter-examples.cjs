@@ -32,7 +32,7 @@ let browser;
   await page.waitForFunction(() => window.__M11_READY__ === true);
   const cards = page.locator('.starter-card');
   const dialog = page.locator('#example-picker-dialog');
-  assert(await cards.count() === 17, 'example picker does not expose all seventeen validated examples');
+  assert(await cards.count() === 21, 'example picker does not expose all twenty-one validated examples');
   assert(!(await dialog.evaluate((node) => node.open)), 'example picker is open by default');
   assert(await cards.filter({ visible: true }).count() === 0, 'inline starter gallery remains visible by default');
   const initialProject = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
@@ -42,12 +42,12 @@ let browser;
   assert(await dialog.evaluate((node) => node.open), 'Choose example did not open the dialog');
   assert(await page.locator('#example-picker-search').evaluate((node) => document.activeElement === node),
     'example search did not receive initial focus');
-  await page.fill('#example-picker-search', 'rotary');
+  await page.fill('#example-picker-search', 'DHT11');
   assert(await cards.filter({ visible: true }).count() === 1, 'example search did not filter to one card');
   await page.fill('#example-picker-search', '');
   await page.locator('#example-picker-close').focus();
   await page.keyboard.press('Shift+Tab');
-  assert(await page.evaluate(() => document.activeElement?.dataset?.example === 'avr-rotary-encoder'),
+  assert(await page.evaluate(() => document.activeElement?.closest('.starter-card')?.dataset?.example === 'avr-rotary-encoder'),
     'Shift+Tab did not wrap to the last example card');
   await page.keyboard.press('Tab');
   assert(await page.locator('#example-picker-close').evaluate((node) => document.activeElement === node),
@@ -71,6 +71,7 @@ let browser;
     ['pwm', 'PWM fade'],
     ['pwm-pulse', 'PWM pulse'],
     ['temperature-lcd-threshold', 'Temperature display'],
+    ['avr-pcf8574-lcd-hello', 'I2C character LCD'],
     ['avr-thermostat-boundary-v1', 'Thermostat boundary test'],
     ['avr-ground-reference-input', 'Ground reference input'],
     ['avr-ground-power-references', 'Ground and 5 V references'],
@@ -78,6 +79,7 @@ let browser;
     ['avr-spdt-selector', 'SPDT input selector'],
     ['avr-light-analogue', 'Analogue light level'],
     ['avr-light-threshold', 'Digital light threshold'],
+    ['avr-dht11-temperature-humidity', 'DHT11 temperature and humidity'],
     ['avr-active-buzzer', 'Logical active buzzer'],
     ['avr-traffic-light', 'Traffic light sequence'],
     ['avr-seven-segment', 'Seven-segment digits'],
@@ -92,13 +94,13 @@ let browser;
   for (let index = 0; index < examples.length; index += 1) {
     const [id, name] = examples[index];
     if (!(await dialog.evaluate((node) => node.open))) await page.click('#beginner-examples');
-    await page.click(`.starter-card[data-example="${id}"]`);
+    await page.click(`.starter-card[data-example="${id}"] .starter-action`);
     if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) {
       if (index === 1) {
         await page.click('#unsaved-keep');
         assert(await dialog.evaluate((node) => node.open), 'Keep editing closed the example picker');
         assert(await projectName() === examples[0][1], 'Keep editing replaced the current project');
-        await page.click(`.starter-card[data-example="${id}"]`);
+        await page.click(`.starter-card[data-example="${id}"] .starter-action`);
       }
       await page.click('#unsaved-discard');
     }
@@ -120,7 +122,7 @@ let browser;
   await page.keyboard.press('Escape');
   await page.click('#workbench-view-simple');
   await page.click('#beginner-examples');
-  await page.click('.starter-card[data-example="button"]');
+  await page.click('.starter-card[data-example="button"] .starter-action');
   if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
   await page.waitForFunction(() => document.querySelector('#project-message').textContent.includes('Button input loaded'));
   const loaded = await page.evaluate(() => ({
@@ -145,7 +147,7 @@ let browser;
     }));
     assert(layout.overflow <= 1, `example picker overflows the page at ${viewport.width}px`);
     assert(layout.dialogOverflow <= 1, `example card grid overflows at ${viewport.width}px`);
-    assert(layout.visibleCards === 15, `starter cards disappear at ${viewport.width}px`);
+    assert(layout.visibleCards === 21, `starter cards disappear at ${viewport.width}px`);
   }
   await page.keyboard.press('Escape');
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -172,7 +174,7 @@ let browser;
     fs.mkdirSync(path.dirname(process.env.STARTER_SCREENSHOT), { recursive: true });
     await page.screenshot({ path: process.env.STARTER_SCREENSHOT, fullPage: false });
   }
-  console.log(JSON.stringify({ browser: browserName, result: 'pass', cards: 15,
+  console.log(JSON.stringify({ browser: browserName, result: 'pass', cards: 21,
     pickerJourneys: examples.length + 1, unsavedKeepAndDiscard: true,
     finalProject: await projectName(), serverProjectWrites: 0 }));
   await context.close();
