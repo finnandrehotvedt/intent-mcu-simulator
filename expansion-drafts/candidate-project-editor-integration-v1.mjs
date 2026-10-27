@@ -53,6 +53,9 @@ import { ANALOGUE_DETECTION_DEFINITIONS, CO2_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
 import { ANALOGUE_DIRECTION_FIELD_DEFINITIONS, HALL_MAGNETIC_ANALOGUE_TYPE,
   WIND_DIRECTION_ANALOGUE_TYPE,
 } from './analogue-direction-field-sensors-v1.mjs';
+import { ANALOGUE_TEMPERATURE_IC_DEFINITIONS, LM35_TEMPERATURE_TYPE,
+  TMP36_TEMPERATURE_TYPE,
+} from './analogue-temperature-ic-sensors-v1.mjs';
 
 export const CANDIDATE_EDITOR_INTEGRATION_SCHEMA = 'intent-mcu-candidate-editor-session@1';
 export const CANDIDATE_EDITOR_HISTORY_LIMIT = 64;
@@ -75,6 +78,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
   MQ_GAS_ANALOGUE_TYPE, CO2_ANALOGUE_TYPE, UV_ANALOGUE_TYPE,
   WIND_DIRECTION_ANALOGUE_TYPE, HALL_MAGNETIC_ANALOGUE_TYPE,
+  TMP36_TEMPERATURE_TYPE, LM35_TEMPERATURE_TYPE,
 ]);
 
 function validPoint(value) {
@@ -622,6 +626,17 @@ export class CandidateEditorSession {
               return failure('PROJECT_CONTACT_ANALOGUE_DIRECTION_FIELD_SENSOR_STATE', this.revision);
             }
             component.controls[expectedKey] = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) {
+            const definition = ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type];
+            if (command.key !== 'temperatureC' || !Number.isFinite(command.value)
+                || command.value < definition.control.minimum
+                || command.value > definition.control.maximum) {
+              return failure('PROJECT_CONTACT_ANALOGUE_TEMPERATURE_IC_SENSOR_STATE', this.revision);
+            }
+            component.controls.temperatureC = command.value;
             runtimeDirty = true;
             break;
           }

@@ -146,6 +146,12 @@ import {
   createAnalogueDirectionFieldSensor,
 } from '../expansion-drafts/analogue-direction-field-sensors-v1.mjs';
 import { createAnalogueDirectionFieldArtwork } from '../expansion-drafts/analogue-direction-field-sensors-artwork-v1.mjs';
+import {
+  ANALOGUE_TEMPERATURE_IC_DEFINITIONS,
+  analogueTemperatureIcVoltage,
+  createAnalogueTemperatureIcSensor,
+} from '../expansion-drafts/analogue-temperature-ic-sensors-v1.mjs';
+import { createAnalogueTemperatureIcArtwork } from '../expansion-drafts/analogue-temperature-ic-sensors-artwork-v1.mjs';
 
 export const CANDIDATE_EXISTING_UI_ADAPTER_SCHEMA = 'intent-mcu-candidate-existing-ui@1';
 
@@ -213,6 +219,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   ...ANALOGUE_MOISTURE_LEVEL_DEFINITIONS,
   ...ANALOGUE_DETECTION_DEFINITIONS,
   ...ANALOGUE_DIRECTION_FIELD_DEFINITIONS,
+  ...ANALOGUE_TEMPERATURE_IC_DEFINITIONS,
 });
 
 export function candidateUiDefinition(type) {
@@ -290,6 +297,9 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component?.type]) {
     return createAnalogueDirectionFieldArtwork(documentObject, definition, component, options);
   }
+  if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component?.type]) {
+    return createAnalogueTemperatureIcArtwork(documentObject, definition, component, options);
+  }
   throw new TypeError('CANDIDATE_UI_COMPONENT');
 }
 
@@ -324,6 +334,7 @@ export function createCandidateUiComponent(type, id) {
   if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[type]) return createAnalogueMoistureLevelSensor(type, id);
   if (ANALOGUE_DETECTION_DEFINITIONS[type]) return createAnalogueDetectionSensor(type, id);
   if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[type]) return createAnalogueDirectionFieldSensor(type, id);
+  if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[type]) return createAnalogueTemperatureIcSensor(type, id);
   throw new TypeError('CANDIDATE_UI_COMPONENT_TYPE');
 }
 
@@ -501,6 +512,19 @@ export function candidateContactControl(session, componentId, key, value) {
       command: { type: 'component.control.set', componentId, key, value },
       worker: { command: 'control', componentId, key: 'position',
         value: analogueDirectionFieldVoltage(component.type, value) / 5 },
+    };
+  }
+  if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]
+      && key === 'temperatureC') {
+    const control = ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type].control;
+    if (!Number.isFinite(value) || value < control.minimum || value > control.maximum) {
+      return failure('PROJECT_CONTACT_ANALOGUE_TEMPERATURE_IC_SENSOR_STATE', [componentId]);
+    }
+    return {
+      ok: true,
+      command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'position',
+        value: analogueTemperatureIcVoltage(component.type, value) / 5 },
     };
   }
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {

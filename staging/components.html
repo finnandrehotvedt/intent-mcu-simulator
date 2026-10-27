@@ -18,14 +18,14 @@
     <section class="docs-grid" aria-label="Component groups">
       <article class="docs-card"><h2>Core circuit</h2><ul><li>ATmega328P learning controller</li><li>Axial fixed resistor</li><li>5 mm through-hole LED</li><li>0 V circuit reference</li></ul></article>
       <article class="docs-card"><h2>Inputs and controls</h2><ul><li>Four-terminal tactile button</li><li>Linear rotary potentiometer</li><li>SPST latching toggle switch</li><li>SPDT changeover contact</li><li>Quadrature rotary encoder</li></ul></article>
-      <article class="docs-card"><h2>Sensors</h2><ul><li>Analogue light and temperature modules</li><li>Soil, water, rain, sound-level and flame modules</li><li>MQ gas, CO₂, UV, wind-direction and bipolar Hall response models</li><li>Digital light threshold, touch, PIR and Hall switch</li></ul></article>
+      <article class="docs-card"><h2>Sensors</h2><ul><li>Analogue light, generic temperature, TMP36 and LM35 models</li><li>Soil, water, rain, sound-level and flame modules</li><li>MQ gas, CO₂, UV, wind-direction and bipolar Hall response models</li><li>Digital light threshold, touch, PIR and Hall switch</li></ul></article>
       <article class="docs-card"><h2>Outputs and displays</h2><ul><li>Common-cathode RGB LED</li><li>Active buzzer module</li><li>Single-digit common-cathode seven-segment display</li><li>16×2 character LCD in write-only 4-bit GPIO mode</li></ul></article>
     </section>
     <section class="panel"><h2>Model limits matter</h2><p class="docs-intro">Sensors use ideal bounded values, contacts do not model bounce or wear, light and sound outputs are relative indicators, and the LCD implements a tested command subset. The thermostat experiment uses the temperature module only as an ideal linear signal, its button as an ideal active-low contact and its LED as a heater-command indicator; it does not model a room or physical heater. Representable invalid polarity, missing current limiting, ground, known output contention, named-rail shorts and unsupported topologies fail closed with corrective actions. These checks are not physical-damage prediction or safety certification, and arbitrary cross-controller voltage wiring is unavailable.</p></section>
     <section id="compatibility-matrix" class="panel" aria-labelledby="compatibility-matrix-title">
       <p class="eyebrow">EXACT PUBLIC CONTRACT</p><h2 id="compatibility-matrix-title">Controller compatibility matrix</h2>
-      <p class="docs-intro">There are 55 unique public models and 220 profile/model cells. AVR has 48 executable models: 29 Simulated and 19 Partial. Each narrow controller profile has exactly 3 executable models plus 4 additional authoring-only parts. Across the complete matrix, 57 cells are executable, 12 more are authoring-only and 151 are unavailable.</p>
-      <p class="docs-intro"><strong>AVR project modes:</strong> ordinary project-v2 shows 5 Simulated parts. Candidate-v3 exposes all 43 executable AVR models with exact status and limitations. Partial always means the stated bounded behaviour, never broad hardware equivalence.</p>
+      <p class="docs-intro">There are 57 unique public models and 228 profile/model cells. AVR has 50 executable models: 31 Simulated and 19 Partial. Each narrow controller profile has exactly 3 executable models plus 4 additional authoring-only parts. Across the complete matrix, 59 cells are executable, 12 more are authoring-only and 157 are unavailable.</p>
+      <p class="docs-intro"><strong>AVR project modes:</strong> ordinary project-v2 shows 5 Simulated parts. Candidate-v3 exposes all 45 executable AVR models with exact status and limitations. Partial always means the stated bounded behaviour, never broad hardware equivalence.</p>
       <p class="docs-intro"><strong>Control persistence:</strong> validated AVR button, potentiometer, switch, sensor, threshold and encoder values are canonical project data. Open never restores runtime events or executable authority and always requires a fresh Build. The current narrow profiles have no interactive control keys.</p>
       <div class="support-table-wrap"><table class="support-table component-doc-matrix">
         <thead><tr><th scope="col">Public model</th><th scope="col">AVR</th><th scope="col">RP2040 Pico</th><th scope="col">ESP32-C3</th><th scope="col">STM32F429ZI</th></tr></thead>
@@ -70,6 +70,8 @@
           <tr data-model="sensor.uv-analogue-v1"><th>Analogue UV response sensor<br><code>sensor.uv-analogue-v1</code></th><td class="status-supported">Simulated · candidate-v3</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
           <tr data-model="sensor.wind-direction-analogue-v1"><th>Analogue wind direction sensor<br><code>sensor.wind-direction-analogue-v1</code></th><td class="status-supported">Simulated · candidate-v3</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
           <tr data-model="sensor.hall-magnetic-analogue-v1"><th>Analogue Hall field sensor<br><code>sensor.hall-magnetic-analogue-v1</code></th><td class="status-supported">Simulated · candidate-v3</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
+          <tr data-model="sensor.tmp36-temperature-analogue-v1"><th>TMP36 analogue temperature sensor<br><code>sensor.tmp36-temperature-analogue-v1</code></th><td class="status-supported">Simulated · candidate-v3</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
+          <tr data-model="sensor.lm35-temperature-analogue-v1"><th>LM35 analogue temperature sensor<br><code>sensor.lm35-temperature-analogue-v1</code></th><td class="status-supported">Simulated · candidate-v3</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
           <tr data-model="output.rgb-led-common-cathode-v1"><th>Common-cathode RGB LED<br><code>output.rgb-led-common-cathode-v1</code></th><td class="status-supported">Simulated · candidate-v3</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
           <tr data-model="output.rgb-led-common-anode-v1"><th>Common-anode RGB LED<br><code>output.rgb-led-common-anode-v1</code></th><td class="status-limited">Partial · active-low candidate-v3</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
           <tr data-model="output.led-bar-graph-10-v1"><th>Ten-segment LED bar graph<br><code>output.led-bar-graph-10-v1</code></th><td class="status-limited">Partial · candidate-v3</td><td>Unavailable</td><td>Unavailable</td><td>Unavailable</td></tr>
@@ -91,7 +93,7 @@
     </section>
     <section id="narrow-profile-parts" class="panel" aria-labelledby="narrow-profile-parts-title">
       <h2 id="narrow-profile-parts-title">Pico, ESP32-C3 and STM32 supported parts</h2>
-      <p class="docs-intro">The general AVR editor exposes 48 executable models. Each 3.3 V workbench exposes seven authoring types: its fixed controller, resistor, LED, ground reference, momentary button, potentiometer and toggle switch. The last four are explicitly data-only and never grant runtime authority. Narrow controllers cannot be added, duplicated or deleted.</p>
+          <p class="docs-intro">The general AVR editor exposes 50 executable models. Each 3.3 V workbench exposes seven authoring types: its fixed controller, resistor, LED, ground reference, momentary button, potentiometer and toggle switch. The last four are explicitly data-only and never grant runtime authority. Narrow controllers cannot be added, duplicated or deleted.</p>
       <div class="docs-grid">
         <article class="docs-card"><h3>Fixed controller</h3><p>Pico exposes GP0 physical pin 1 and GND pin 3; ESP32-C3 exposes GPIO2 J1 pin 4 and GND J1 pin 6; STM32F429ZI exposes PB0 CN11 pin 34 and GND CN11 pin 19. These are profile-specific, not interchangeable.</p></article>
         <article class="docs-card"><h3>Series resistor</h3><p>The resistance field is accepted only when the selected LED remains inside the exact ideal 3.3 V / 12 mA model. Unsafe values reject atomically and leave the previous project unchanged.</p></article>
@@ -100,7 +102,7 @@
       </div>
       <nav class="docs-nav" aria-label="Narrow profile learning links"><a href="/examples.html#narrow-controller-guides">First project guides</a><a href="/support.html#repair-after-open">Save/Open recovery</a></nav>
     </section>
-    <footer>55 public models · 57 executable cells, 12 additional authoring-only cells and 151 unavailable cells across four exact controller profiles · original project graphics · no third-party simulator artwork or branding</footer>
+        <footer>57 public models · 59 executable cells, 12 additional authoring-only cells and 157 unavailable cells across four exact controller profiles · original project graphics · no third-party simulator artwork or branding</footer>
   </main>
 </body>
 </html>

@@ -45,7 +45,7 @@ test('all three contracts carry original artwork provenance and explicit limitat
     assert.equal(definition.artwork.license, 'Apache-2.0');
     assert(definition.support.limitations.length >= 2);
   }
-  assert.equal(Object.values(CANDIDATE_UI_COMPONENTS).filter(({ selectable }) => selectable).length, 44);
+  assert.equal(Object.values(CANDIDATE_UI_COMPONENTS).filter(({ selectable }) => selectable).length, 46);
   assert.deepEqual(createCandidateUiComponent(ROTARY_SELECTOR_TYPE, 'selector-4-2').controls, { position: 1 });
   assert.deepEqual(createCandidateUiComponent(RGB_COMMON_ANODE_TYPE, 'rgb-ca-2').properties, {});
   assert.deepEqual(createCandidateUiComponent(LED_BAR_GRAPH_TYPE, 'bar-2').properties, { color: 'green' });

@@ -32,6 +32,9 @@ import { CO2_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE, MQ_GAS_ANALOGUE_TYPE,
 import { HALL_MAGNETIC_ANALOGUE_TYPE, WIND_DIRECTION_ANALOGUE_TYPE,
   createAnalogueDirectionFieldSensor,
 } from '../expansion-drafts/analogue-direction-field-sensors-v1.mjs';
+import { LM35_TEMPERATURE_TYPE, TMP36_TEMPERATURE_TYPE,
+  createAnalogueTemperatureIcSensor,
+} from '../expansion-drafts/analogue-temperature-ic-sensors-v1.mjs';
 
 const ID = /^[a-z][a-z0-9-]{0,47}$/u;
 const TYPES = new Set(['board.atmega328p-16mhz-v1', 'resistor.fixed-v1', 'led.basic-v1',
@@ -49,6 +52,7 @@ const TYPES = new Set(['board.atmega328p-16mhz-v1', 'resistor.fixed-v1', 'led.ba
   RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
   MQ_GAS_ANALOGUE_TYPE, CO2_ANALOGUE_TYPE, UV_ANALOGUE_TYPE,
   WIND_DIRECTION_ANALOGUE_TYPE, HALL_MAGNETIC_ANALOGUE_TYPE,
+  TMP36_TEMPERATURE_TYPE, LM35_TEMPERATURE_TYPE,
   GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE]);
 const exact = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && Object.keys(value).sort().join('|') === [...keys].sort().join('|');
@@ -124,6 +128,8 @@ export function prepareApiBatch(project, operations) {
         : avr && [WIND_DIRECTION_ANALOGUE_TYPE, HALL_MAGNETIC_ANALOGUE_TYPE]
           .includes(operation.type)
           ? createAnalogueDirectionFieldSensor(operation.type, operation.id)
+        : avr && [TMP36_TEMPERATURE_TYPE, LM35_TEMPERATURE_TYPE].includes(operation.type)
+          ? createAnalogueTemperatureIcSensor(operation.type, operation.id)
         : avr ? createComponent(operation.id, operation.type) : { id: operation.id, type: operation.type };
       return { type: 'component.add', component,
         position: structuredClone(operation.position) };

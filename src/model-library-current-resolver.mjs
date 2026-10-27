@@ -216,6 +216,19 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       return { ok: true, code: 'OK', result: { magneticFieldRatio: input.magneticFieldRatio,
         outputVolts: (input.magneticFieldRatio + 1) * 2.5 } };
     }
+    if (['sensor.tmp36-temperature-analogue-v1',
+      'sensor.lm35-temperature-analogue-v1'].includes(componentType)) {
+      if (!exactInput(input, ['temperatureC']) || !Number.isFinite(input.temperatureC)) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      const tmp36 = componentType === 'sensor.tmp36-temperature-analogue-v1';
+      if ((tmp36 && (input.temperatureC < -40 || input.temperatureC > 125))
+          || (!tmp36 && (input.temperatureC < 0 || input.temperatureC > 150))) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { temperatureC: input.temperatureC,
+        outputVolts: (tmp36 ? 0.5 : 0) + input.temperatureC * 0.01 } };
+    }
     if (componentType === 'sensor.light-threshold-digital-v1') {
       const { lightLevelPercent, thresholdPercent, hysteresisPercentagePoints, currentActive } = input ?? {};
       if (![lightLevelPercent, thresholdPercent, hysteresisPercentagePoints].every(Number.isFinite)

@@ -69,6 +69,9 @@ import { ANALOGUE_DETECTION_DEFINITIONS, CO2_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
 import { ANALOGUE_DIRECTION_FIELD_DEFINITIONS, HALL_MAGNETIC_ANALOGUE_TYPE,
   WIND_DIRECTION_ANALOGUE_TYPE,
 } from '../expansion-drafts/analogue-direction-field-sensors-v1.mjs';
+import { ANALOGUE_TEMPERATURE_IC_DEFINITIONS, LM35_TEMPERATURE_TYPE,
+  TMP36_TEMPERATURE_TYPE,
+} from '../expansion-drafts/analogue-temperature-ic-sensors-v1.mjs';
 
 export const CANDIDATE_EDITOR_INTEGRATION_SCHEMA = 'intent-mcu-candidate-editor-session@1';
 export const CANDIDATE_EDITOR_HISTORY_LIMIT = 64;
@@ -97,6 +100,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
   MQ_GAS_ANALOGUE_TYPE, CO2_ANALOGUE_TYPE, UV_ANALOGUE_TYPE,
   WIND_DIRECTION_ANALOGUE_TYPE, HALL_MAGNETIC_ANALOGUE_TYPE,
+  TMP36_TEMPERATURE_TYPE, LM35_TEMPERATURE_TYPE,
 ]);
 
 function validPoint(value) {
@@ -225,6 +229,8 @@ function contactSupport(result) {
             ? 'potentiometer.linear-v1-ideal-analogue-sensor-adapter'
           : ANALOGUE_DIRECTION_FIELD_DEFINITIONS[contact.type]
             ? 'potentiometer.linear-v1-ideal-analogue-sensor-adapter'
+          : ANALOGUE_TEMPERATURE_IC_DEFINITIONS[contact.type]
+            ? 'potentiometer.linear-v1-ideal-analogue-sensor-adapter'
           : contact.type === DIGITAL_LIGHT_THRESHOLD_TYPE
             ? 'button.momentary-v1'
         : contact.type === COMMON_CATHODE_RGB_LED_TYPE
@@ -288,6 +294,8 @@ function contactSupport(result) {
         ? 'Ideal linear 0–5 V detector response only; no calibrated concentration, rainfall, sound-pressure, UV index, physical geometry, spectral, timing, alarm or safety accuracy is modelled.'
         : ANALOGUE_DIRECTION_FIELD_DEFINITIONS[contact.type]
         ? 'Ideal linear 0–5 V direction or signed field response only; no physical vane, compass, tesla/gauss, geometry, calibration, saturation, timing or electrical accuracy is modelled.'
+        : ANALOGUE_TEMPERATURE_IC_DEFINITIONS[contact.type]
+        ? 'Ideal TMP36 or nonnegative single-supply LM35 transfer only; no physical tolerance, calibration, thermal response, loading, noise or package-pin guidance is modelled.'
         : contact.type === LIGHT_ANALOGUE_SENSOR_TYPE
         ? 'Ideal linear 0–5 V module signal only; no lux accuracy or physical LDR response is modelled.'
         : contact.type === SPDT_CONTACT_TYPE
@@ -994,6 +1002,19 @@ export class CandidateEditorSession {
             const evaluated = this.evaluateModel(component.type, { [expectedKey]: command.value });
             if (!evaluated.ok) return failure(evaluated.code, this.revision, [component.id]);
             component.controls[expectedKey] = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) {
+            const definition = ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type];
+            if (command.key !== 'temperatureC' || !Number.isFinite(command.value)
+                || command.value < definition.control.minimum
+                || command.value > definition.control.maximum) {
+              return failure('PROJECT_CONTACT_ANALOGUE_TEMPERATURE_IC_SENSOR_STATE', this.revision);
+            }
+            const evaluated = this.evaluateModel(component.type, { temperatureC: command.value });
+            if (!evaluated.ok) return failure(evaluated.code, this.revision, [component.id]);
+            component.controls.temperatureC = command.value;
             runtimeDirty = true;
             break;
           }

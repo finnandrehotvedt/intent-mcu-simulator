@@ -150979,6 +150979,93 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
+      "behaviorContractSha256": "141fb999f19c4d621dbaeaf384e186cb7d2199d00d957a22dd0212670fc495d2",
+      "componentType": "sensor.lm35-temperature-analogue-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.lm35-temperature-analogue-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "sensor.lm35-temperature-analogue-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "sensor-lm35-temperature-analogue",
+        "thumbnail": "sensor-lm35-temperature-analogue",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "d2a3015513054bca3083c827817e6122ab5b38ef68a3eb607ab04c4106ad97f7",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "temperatureC": {
+            "default": 25,
+            "kind": "number",
+            "maximum": 150,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "°C"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.lm35-temperature-analogue-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "AOUT",
+            "role": "analogue-out",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Idealized LM35 transfer only: 0 to 150 °C single-supply range maps with VOUT = temperatureC × 0.01 V.",
+            "Negative-temperature circuitry, device tolerance, calibration error, output loading, self-heating, thermal lag, noise and absolute-maximum behavior are not modelled",
+            "The schematic VCC/AOUT/GND terminal order is not a physical package-orientation guide; verify the real device datasheet before wiring hardware.",
+            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "5ae90ed705ec747957dba14b40aa3e15f137f8c828137e9216a7296d1f1884a2",
+      "supportStatus": "simulated"
+    },
+    {
       "behaviorContractSha256": "d6e4ce8b5982a7aa7bc2a67c588258b81ac476c782de565491b77b7aa902254c",
       "componentType": "sensor.mq-gas-analogue-v1",
       "componentVersion": 1,
@@ -151575,6 +151662,93 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
         }
       },
       "semanticSha256": "83428743da39b176d458a323047645d234dcdebfac4a2622fb53cea123e2ee99",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "89f2cd8c3eb6bdf92e8aa5b592a2033e70f538ae0c0a54069379daf1a4b010f5",
+      "componentType": "sensor.tmp36-temperature-analogue-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.tmp36-temperature-analogue-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "sensor.tmp36-temperature-analogue-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "sensor-tmp36-temperature-analogue",
+        "thumbnail": "sensor-tmp36-temperature-analogue",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "fdaffcf5dc882f33386f0d54d2ea28ee3d99bd14fa1e08872a46d05e15262ccf",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "temperatureC": {
+            "default": 25,
+            "kind": "number",
+            "maximum": 125,
+            "minimum": -40,
+            "mutability": "authored",
+            "unit": "°C"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.tmp36-temperature-analogue-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "AOUT",
+            "role": "analogue-out",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Idealized TMP36 transfer only: −40 to 125 °C maps with VOUT = 0.5 V + temperatureC × 0.01 V.",
+            "No device tolerance, calibration error, supply rejection, output loading, self-heating, thermal lag, noise or absolute-maximum behavior is modelled",
+            "The schematic VCC/AOUT/GND terminal order is not a physical package-orientation guide; verify the real device datasheet before wiring hardware.",
+            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "320d06615456ddd2f5bdd30bf26400f96f6a9d3a8e35215a9e7fe445966ce0c0",
       "supportStatus": "simulated"
     },
     {
@@ -153533,7 +153707,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-control-contracts.mjs",
-      "sha256": "cdb3898595ee44b3cfbda99a56ffc138a5fdef5af8cfb48a4718daa1573ae299"
+      "sha256": "be82e811fd18767ff32f3a94a88bc0062ac4c66da07a78542c35e322d429f8e4"
     },
     {
       "path": "src/simulator.worker.mjs",
@@ -153541,7 +153715,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "1f5e2dd97a2cb9ce125916734da1ba8a3f08f9ce794b962ca667ecdf4656599d"
+      "sha256": "b18029be3e8225b2a50acfba8d0e39fce6c6d201b76068667092eac09dea5869"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -153573,7 +153747,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "fa0fe17f87a714181a27da3fd54747619ea83d5f09ea1ab8a56cafcbbeaa30ce"
+      "sha256": "a85b20dac5a804453350d46d9b26aeb5208167385e5cb31f7d3e61fd5184a338"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -153581,7 +153755,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "1aa8600836dc8575a5f75280c904d4dfcbe35f529774df36c8088458a879dbba"
+      "sha256": "3527673f394be9d4b98e1e4ec669be351ea5a263d4b415aac283b98e7d87ac3f"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -153629,7 +153803,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "a6a9e214617aac679382e6ec21370f95e2edb8a359b40880321aeebb47a39f83"
+      "sha256": "2e881db44096735498fa454545468b9ffacc302a4b898cf808327a759699af2d"
     },
     {
       "path": "expansion-drafts/joystick-keypads-v1.mjs",
@@ -153678,6 +153852,14 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     {
       "path": "expansion-drafts/analogue-direction-field-sensors-artwork-v1.mjs",
       "sha256": "bd4176d3891ba3738350f3fb769c159ab78e5423bb2094a9931a4565cbedd66b"
+    },
+    {
+      "path": "expansion-drafts/analogue-temperature-ic-sensors-v1.mjs",
+      "sha256": "c09d1669d1f1e658268524ae0f8caaabff41da1d16f82c1755f94a156096f8aa"
+    },
+    {
+      "path": "expansion-drafts/analogue-temperature-ic-sensors-artwork-v1.mjs",
+      "sha256": "8ad072a43c8291be1c9639ef361531cacc5462e4315853d4c8597dac2d6b70c3"
     },
     {
       "path": "expansion-drafts/ground-reference-integration-v1.mjs",
@@ -153749,10 +153931,10 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "05ebad40170714bb12e1b2f947f728dc0f0338cb7adb665a22730d8e31622a2c"
+      "sha256": "35baadc8e5c31e1b8be6f63f9e9744a037c13f35d483c66f57b3796e207060ea"
     }
   ],
-  "implementationSha256": "93bea9131755d77083c978f0ac407a3932bbef907d3f0a9f5ac91e0d18750a6d",
+  "implementationSha256": "ea2d630e21927701201976dbe55e732b864c6bab749fba5d88515f9b2dd3ffb2",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -153762,7 +153944,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract"
   },
-  "manifestSha256": "f5b7ab28e89bb8dfdf5b1ba90832dd284c5f1a0b9e70b08f2b5afded351c2e72",
+  "manifestSha256": "1691c1bfe7f281036325f3884cc1f11da5caa23eef2c16d279ae4f2d0a10b428",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

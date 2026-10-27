@@ -55,6 +55,8 @@ const expected = {
   'sensor.uv-analogue-v1': ['uvResponseRatio'],
   'sensor.wind-direction-analogue-v1': ['directionDegrees'],
   'sensor.hall-magnetic-analogue-v1': ['magneticFieldRatio'],
+  'sensor.tmp36-temperature-analogue-v1': ['temperatureC'],
+  'sensor.lm35-temperature-analogue-v1': ['temperatureC'],
   'input.rotary-encoder-quadrature-v1': ['detent'],
 };
 
@@ -78,10 +80,10 @@ function candidate(id, componentId, changes) {
   return opened.session;
 }
 
-test('all 57 executable cells have one exact controls-persist or controls-empty policy', () => {
+test('all 59 executable cells have one exact controls-persist or controls-empty policy', () => {
   assert.deepEqual(controlPersistenceSummary(), {
-    profiles: 4, cells: 220, available: 57, unavailable: 163,
-    controlBearing: 36, controlsEmpty: 21, controls: 45,
+    profiles: 4, cells: 228, available: 59, unavailable: 169,
+    controlBearing: 38, controlsEmpty: 21, controls: 47,
   });
   const inventory = controlPersistenceInventory();
   const bearing = inventory.filter((cell) => cell.available && cell.controls.length);

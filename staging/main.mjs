@@ -496,6 +496,12 @@ import {
   analogueDirectionFieldVoltage,
 } from '../expansion-drafts/analogue-direction-field-sensors-v1.mjs';
 import {
+  ANALOGUE_TEMPERATURE_IC_DEFINITIONS,
+  LM35_TEMPERATURE_TYPE,
+  TMP36_TEMPERATURE_TYPE,
+  analogueTemperatureIcVoltage,
+} from '../expansion-drafts/analogue-temperature-ic-sensors-v1.mjs';
+import {
   ROTARY_ENCODER_TYPE,
   nextRotaryEncoderDetent,
 } from '../expansion-drafts/rotary-encoder-quadrature-v1.mjs';
@@ -13035,6 +13041,8 @@ function candidateComponentPrefix(type) {
       [UV_ANALOGUE_TYPE]: 'uv-sensor',
       [WIND_DIRECTION_ANALOGUE_TYPE]: 'wind-direction',
       [HALL_MAGNETIC_ANALOGUE_TYPE]: 'hall-field',
+      [TMP36_TEMPERATURE_TYPE]: 'tmp36-temperature',
+      [LM35_TEMPERATURE_TYPE]: 'lm35-temperature',
       [COMMON_CATHODE_RGB_LED_TYPE]: 'rgb-led',
       [RGB_COMMON_ANODE_TYPE]: 'rgb-led-ca',
       [LED_BAR_GRAPH_TYPE]: 'led-bar',
@@ -13099,6 +13107,8 @@ function addComponent(type, point = null) {
       [UV_ANALOGUE_TYPE]: { x: 0.86, y: 0.44 },
       [WIND_DIRECTION_ANALOGUE_TYPE]: { x: 0.58, y: 0.38 },
       [HALL_MAGNETIC_ANALOGUE_TYPE]: { x: 0.72, y: 0.38 },
+      [TMP36_TEMPERATURE_TYPE]: { x: 0.58, y: 0.32 },
+      [LM35_TEMPERATURE_TYPE]: { x: 0.72, y: 0.32 },
       [COMMON_CATHODE_RGB_LED_TYPE]: { x: 0.78, y: 0.7 },
       [RGB_COMMON_ANODE_TYPE]: { x: 0.78, y: 0.7 },
       [LED_BAR_GRAPH_TYPE]: { x: 0.72, y: 0.62 },
@@ -13770,6 +13780,29 @@ function renderRuntimeControls() {
         }
         const messageValue = isDirection ? `${input.value}°` : input.value;
         const result = applyEditor(prepared.command, `${component.label} idealized signal ${messageValue}`);
+        if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+      });
+      row.append(label, input); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) {
+      const row = document.createElement('div'); const label = document.createElement('label');
+      const definition = ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type];
+      const value = component.controls.temperatureC;
+      label.textContent = `${component.label} · idealized ${value.toFixed(1)} °C · ${analogueTemperatureIcVoltage(component.type, value).toFixed(2)} V`;
+      const input = document.createElement('input'); input.type = 'range';
+      input.min = String(definition.control.minimum); input.max = String(definition.control.maximum);
+      input.step = '0.5'; input.value = String(value);
+      input.dataset.control = `${component.id}.temperatureC`;
+      input.id = `control-${component.id}-temperatureC`; label.htmlFor = input.id;
+      input.setAttribute('aria-label', `${component.label} idealized temperature, ${definition.control.minimum} to ${definition.control.maximum} degrees Celsius`);
+      input.addEventListener('input', () => {
+        const nextValue = Number(input.value);
+        const prepared = selectedCandidateContactControl(component.id, 'temperatureC', nextValue);
+        if (!prepared.ok) {
+          showActionableError(elements.projectmessage, prepared.code, 'Analogue temperature IC control rejected.');
+          return;
+        }
+        const result = applyEditor(prepared.command, `${component.label} idealized temperature ${input.value} °C`);
         if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
       });
       row.append(label, input); return [row];

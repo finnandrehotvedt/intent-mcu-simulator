@@ -120,6 +120,14 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
     magneticFieldRatio: { kind: 'number', minimum: -1, maximum: 1, default: 0,
       unit: 'signed ratio', mutability: 'authored' },
   },
+  'sensor.tmp36-temperature-analogue-v1': {
+    temperatureC: { kind: 'number', minimum: -40, maximum: 125, default: 25,
+      unit: '°C', mutability: 'authored' },
+  },
+  'sensor.lm35-temperature-analogue-v1': {
+    temperatureC: { kind: 'number', minimum: 0, maximum: 150, default: 25,
+      unit: '°C', mutability: 'authored' },
+  },
   'sensor.light-threshold-digital-v1': {
     lightLevelPercent: { kind: 'number', minimum: 0, maximum: 100, default: 40,
       unit: '%', mutability: 'authored' },

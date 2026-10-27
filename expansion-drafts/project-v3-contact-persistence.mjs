@@ -86,6 +86,12 @@ import {
   validateAnalogueDirectionFieldSensor,
 } from './analogue-direction-field-sensors-v1.mjs';
 import {
+  ANALOGUE_TEMPERATURE_IC_DEFINITIONS,
+  analogueTemperatureIcValue,
+  projectAnalogueTemperatureIcSensors,
+  validateAnalogueTemperatureIcSensor,
+} from './analogue-temperature-ic-sensors-v1.mjs';
+import {
   DIGITAL_LIGHT_THRESHOLD_DEFINITION,
   DIGITAL_LIGHT_THRESHOLD_TYPE,
   projectDigitalLightThresholdModules,
@@ -230,6 +236,7 @@ function pinIds(component) {
   if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
   if (ANALOGUE_DETECTION_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
   if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
+  if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return ['VCC', 'GND', 'DOUT'];
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
@@ -261,6 +268,7 @@ function componentPins(component) {
   if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) return ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type].pins;
   if (ANALOGUE_DETECTION_DEFINITIONS[component.type]) return ANALOGUE_DETECTION_DEFINITIONS[component.type].pins;
   if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]) return ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type].pins;
+  if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) return ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type].pins;
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return DIGITAL_LIGHT_THRESHOLD_DEFINITION.pins;
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].pins;
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type].pins;
@@ -330,6 +338,10 @@ function validateCandidateComponent(component) {
   } else if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]) {
     if (!validateAnalogueDirectionFieldSensor(component)) {
       fail('PROJECT_CONTACT_ANALOGUE_DIRECTION_FIELD_SENSOR_STATE', [component.id]);
+    }
+  } else if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) {
+    if (!validateAnalogueTemperatureIcSensor(component)) {
+      fail('PROJECT_CONTACT_ANALOGUE_TEMPERATURE_IC_SENSOR_STATE', [component.id]);
     }
   } else if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
     if (!validateDigitalLightThresholdComponent(component)) {
@@ -850,7 +862,24 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
       fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
     }
   }
-  const thresholdProjection = projectDigitalLightThresholdModules(directionFieldProjection.runtimeGraph);
+  const temperatureIcProjection = projectAnalogueTemperatureIcSensors(directionFieldProjection.runtimeGraph);
+  if (!temperatureIcProjection.ok) {
+    fail(`PROJECT_CONTACT_${temperatureIcProjection.code}`, temperatureIcProjection.details);
+  }
+  contacts.push(...temperatureIcProjection.sensors.map((sensor) => ({
+    componentId: sensor.componentId,
+    type: sensor.type,
+    state: { temperatureC: sensor.temperatureC, voltage: sensor.voltage },
+    runtimeProjection: clone(sensor),
+  })));
+  for (const sensor of temperatureIcProjection.sensors) {
+    const expected = production(implementation, sensor.type,
+      { temperatureC: sensor.temperatureC }, [sensor.componentId]);
+    if (expected.temperatureC !== sensor.temperatureC || expected.outputVolts !== sensor.voltage) {
+      fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+    }
+  }
+  const thresholdProjection = projectDigitalLightThresholdModules(temperatureIcProjection.runtimeGraph);
   if (!thresholdProjection.ok) {
     fail(`PROJECT_CONTACT_${thresholdProjection.code}`, thresholdProjection.details);
   }
@@ -1110,6 +1139,14 @@ function draftContacts(graph) {
         componentId: component.id,
         type: component.type,
         state: { [key]: analogueDirectionFieldValue(component) },
+        runtimeProjection: null,
+      }];
+    }
+    if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) {
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { temperatureC: analogueTemperatureIcValue(component) },
         runtimeProjection: null,
       }];
     }

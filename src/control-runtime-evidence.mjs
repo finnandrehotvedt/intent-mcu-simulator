@@ -37,6 +37,8 @@ const rows = [
   ['sensor.uv-analogue-v1', 'uvResponseRatio', 'control · normalized position', 'A4 ADC → executed firmware → USART', 'actual-executed'],
   ['sensor.wind-direction-analogue-v1', 'directionDegrees', 'control · normalized direction position', 'A0 ADC → executed firmware → USART', 'actual-executed'],
   ['sensor.hall-magnetic-analogue-v1', 'magneticFieldRatio', 'control · normalized bipolar position', 'A1 ADC → executed firmware → USART', 'actual-executed'],
+  ['sensor.tmp36-temperature-analogue-v1', 'temperatureC', 'control · TMP36 transfer position', 'A0 ADC → executed firmware → USART', 'actual-executed'],
+  ['sensor.lm35-temperature-analogue-v1', 'temperatureC', 'control · LM35 transfer position', 'A1 ADC → executed firmware → USART', 'actual-executed'],
   ['sensor.light-threshold-digital-v1', 'lightLevelPercent', 'control · derived pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed'],
   ['sensor.light-threshold-digital-v1', 'thresholdPercent', 'control · derived pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed'],
   ['sensor.light-threshold-digital-v1', 'hysteresisPercentagePoints', 'control · derived pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed'],
@@ -60,7 +62,10 @@ const rows = [
   workerEvent,
   observable,
   evidence,
-  evidenceSource: ['directionDegrees', 'magneticFieldRatio'].includes(field)
+  evidenceSource: model === 'sensor.tmp36-temperature-analogue-v1'
+      || model === 'sensor.lm35-temperature-analogue-v1'
+    ? 'test/analogue-temperature-ic-sensors-browser.cjs'
+    : ['directionDegrees', 'magneticFieldRatio'].includes(field)
     ? 'test/analogue-direction-field-sensors-browser.cjs'
     : ['gasResponseRatio', 'co2ResponseRatio', 'uvResponseRatio'].includes(field)
     ? 'test/analogue-exposure-sensors-browser.cjs'
