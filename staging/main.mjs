@@ -634,6 +634,7 @@ const elements = Object.fromEntries([
   'selected-runtime-action', 'selected-runtime-range', 'runtime-shortcuts',
   'shortcut-settings-open', 'shortcut-settings-dialog', 'shortcut-settings-close',
   'shortcut-settings-reset', 'shortcut-settings-save', 'shortcut-settings-status',
+  'shortcut-settings-export', 'shortcut-settings-import', 'shortcut-settings-import-file',
   'shortcut-key-build', 'shortcut-key-run', 'shortcut-key-pause', 'shortcut-key-reset',
   'shortcut-key-stop', 'shortcut-key-sequence', 'shortcut-sequence-enabled',
   'shortcut-sequence-status',
@@ -16118,6 +16119,29 @@ elements.shortcutsettingssave.addEventListener('click', () => {
 elements.shortcutsettingsreset.addEventListener('click', () => {
   keyboardShortcutDraft = defaultKeyboardShortcuts();
   persistKeyboardShortcuts(keyboardShortcutDraft, 'Default shortcuts restored locally.');
+});
+elements.shortcutsettingsexport.addEventListener('click', () => {
+  downloadText('intent-mcu-keyboard-shortcuts.json', `${JSON.stringify(keyboardShortcuts, null, 2)}\n`,
+    'application/json');
+  shortcutSettingsMessage('Exported the active exact-schema shortcut settings. No project, source or runtime data was included.');
+});
+elements.shortcutsettingsimport.addEventListener('click', () => elements.shortcutsettingsimportfile.click());
+elements.shortcutsettingsimportfile.addEventListener('change', async () => {
+  const file = elements.shortcutsettingsimportfile.files[0];
+  elements.shortcutsettingsimportfile.value = '';
+  if (!file) return;
+  if (file.size > 16 * 1024) {
+    shortcutSettingsMessage(`Import rejected: ${file.size} bytes exceeds the 16384-byte data-only limit.`, true);
+    return;
+  }
+  const parsed = parseKeyboardShortcuts(await file.text());
+  if (!parsed.ok) {
+    shortcutSettingsMessage(`Import rejected before activation: ${parsed.code}. Existing shortcuts are unchanged.`, true);
+    return;
+  }
+  keyboardShortcutDraft = structuredClone(parsed.value);
+  renderKeyboardShortcutEditor();
+  shortcutSettingsMessage('Imported settings are an inactive draft. Review every key, then choose Save shortcuts to activate them.');
 });
 
 function cancelShortcutSequence(reason = 'cancelled') {

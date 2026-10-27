@@ -61,3 +61,11 @@ test('stored data is exact-schema, data-only and fails closed to caller-controll
   assert.equal(parseKeyboardShortcuts(JSON.stringify({ ...settings, executable: 'alert(1)' })).code,
     'SHORTCUT_SETTINGS_INVALID');
 });
+
+test('an enabled sequence requires its own non-conflicting activation key', () => {
+  const settings = defaultKeyboardShortcuts();
+  settings.sequence.enabled = true;
+  assert.deepEqual(validateKeyboardShortcuts(settings), {
+    ok: false, code: 'SHORTCUT_SEQUENCE_KEY_REQUIRED',
+  });
+});

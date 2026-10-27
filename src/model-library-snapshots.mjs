@@ -245061,7 +245061,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/keyboard-shortcuts.mjs",
-      "sha256": "a593bb6bc168463097e8c0e3e3fcffe7d4a5d5a9f7c35b22ccef1de5893b8464"
+      "sha256": "a95d2f599e99f5508b8ad35ec17933bef119c74b84c544c4c32103b9460c5b8f"
     },
     {
       "path": "src/x47-repeatable-inputs.mjs",
@@ -245109,7 +245109,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "f37dd5997e4905c1799a97c3f1e760494c87d4247cbb6e0452965a92aab1b080"
+      "sha256": "42ba6bd8d231f77c156833e285e9904f6d3c13c54ea85c138f4a387a660bd9f4"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -245456,7 +245456,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "c08af4fd851fcc566ae29683b7f16e15f2c376d09854e43e296abb9acf4ca8ea"
     }
   ],
-  "implementationSha256": "b114661f36c5ebf45e2da284cd1dad304c9489b1b3fee8926ecbfb0facdf76b3",
+  "implementationSha256": "d85102e29be5ad67193f6adcce3af1c3d626f2c62db8900ab3f4b40182faa5b2",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "rc148 commit 4c7f88d and every earlier identity remain immutable migration-only anchors; this P1 candidate is source and isolated-test only",
@@ -245466,7 +245466,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-visible-runtime-controls.1-current",
     "semanticDisposition": "retains every BME280 and prior component, electrical, protocol and runtime contract without semantic change"
   },
-  "manifestSha256": "0e97bdcac9fe1dc20691bd22db3ddfd469875a355078a7113a1b13efdfdf176e",
+  "manifestSha256": "e203716fb02b2ca80a019e2f3cca87b251a9afb39dc61f4691fbc06d24c69419",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

@@ -104,6 +104,65 @@ function staticServer() {
     assert.equal(stored.bindings.sequence, 'Shift+G');
     assert.deepEqual(stored.sequence, { enabled: true, steps: ['build', 'run'] });
 
+    await page.click('#shortcut-settings-open');
+    const downloadPromise = page.waitForEvent('download');
+    await page.click('#shortcut-settings-export');
+    const download = await downloadPromise;
+    const exportPath = await download.path();
+    const exported = JSON.parse(fs.readFileSync(exportPath, 'utf8'));
+    assert.deepEqual(exported, stored);
+    assert.deepEqual(Object.keys(exported).sort(), ['bindings', 'schema', 'sequence']);
+    assert.equal(JSON.stringify(exported).includes(retainedHex), false);
+
+    const beforeRejectedImport = await page.evaluate(
+      () => localStorage.getItem('intent-mcu.keyboard-shortcuts.v1'),
+    );
+    await page.locator('#shortcut-settings-import-file').setInputFiles({
+      name: 'invalid-shortcuts.json', mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify({ ...stored, executable: 'alert(1)' })),
+    });
+    await page.waitForFunction(() => /Import rejected/iu.test(
+      document.querySelector('#shortcut-settings-status').textContent,
+    ));
+    assert.match(await page.locator('#shortcut-settings-status').textContent(), /Import rejected/iu);
+    assert.equal(await page.evaluate(
+      () => localStorage.getItem('intent-mcu.keyboard-shortcuts.v1'),
+    ), beforeRejectedImport);
+    assert.equal(await page.locator('#quick-build').getAttribute('data-shortcut'), 'K');
+
+    await page.locator('#shortcut-settings-import-file').setInputFiles({
+      name: 'oversized-shortcuts.json', mimeType: 'application/json',
+      buffer: Buffer.alloc((16 * 1024) + 1, 0x20),
+    });
+    await page.waitForFunction(() => /exceeds the 16384-byte/iu.test(
+      document.querySelector('#shortcut-settings-status').textContent,
+    ));
+    assert.match(await page.locator('#shortcut-settings-status').textContent(), /exceeds the 16384-byte/iu);
+    assert.equal(await page.evaluate(
+      () => localStorage.getItem('intent-mcu.keyboard-shortcuts.v1'),
+    ), beforeRejectedImport);
+
+    const imported = structuredClone(stored);
+    imported.bindings.build = 'L';
+    await page.locator('#shortcut-settings-import-file').setInputFiles({
+      name: 'valid-shortcuts.json', mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(imported)),
+    });
+    await page.waitForFunction(() => /inactive draft/iu.test(
+      document.querySelector('#shortcut-settings-status').textContent,
+    ));
+    assert.match(await page.locator('#shortcut-settings-status').textContent(), /inactive draft/iu);
+    assert.equal(await page.locator('#shortcut-key-build').inputValue(), 'L');
+    assert.equal(await page.locator('#quick-build').getAttribute('data-shortcut'), 'K');
+    assert.equal(await page.evaluate(
+      () => localStorage.getItem('intent-mcu.keyboard-shortcuts.v1'),
+    ), beforeRejectedImport);
+    await page.click('#shortcut-settings-save');
+    assert.equal(await page.locator('#quick-build').getAttribute('data-shortcut'), 'L');
+    assert.equal(JSON.parse(await page.evaluate(
+      () => localStorage.getItem('intent-mcu.keyboard-shortcuts.v1'),
+    )).bindings.build, 'L');
+
     await page.click('#serial-tab');
     await page.locator('#serial-input').focus();
     assert.equal(await page.evaluate(() => document.activeElement?.id), 'serial-input');
@@ -111,7 +170,7 @@ function staticServer() {
     assert.equal(buildInputs.length, 0, 'shortcut fired while source input held focus');
     await page.click('#serial-close');
     await page.locator('body').click({ position: { x: 12, y: 12 } });
-    await page.keyboard.press('k');
+    await page.keyboard.press('l');
     await page.waitForFunction(() => document.querySelector('#build-state').textContent === 'Build succeeded');
     assert.equal(buildInputs.length, 1);
 
@@ -137,7 +196,7 @@ function staticServer() {
 
     await page.reload({ waitUntil: 'networkidle' });
     await page.waitForFunction(() => window.__M11_READY__ === true);
-    assert.equal(await page.locator('#quick-build').getAttribute('data-shortcut'), 'K');
+    assert.equal(await page.locator('#quick-build').getAttribute('data-shortcut'), 'L');
     await page.click('#shortcut-settings-open');
     await page.click('#shortcut-settings-reset');
     await page.click('#shortcut-settings-close');
@@ -148,6 +207,8 @@ function staticServer() {
     assert.deepEqual(errors, []);
     process.stdout.write(`${JSON.stringify({ result: 'pass', configurableActions: 5,
       conflictRejected: true, textInputSuppressed: true, localPersistence: true,
+      exactSchemaExport: true, rejectedImportUnchanged: true, importedDraftInactive: true,
+      oversizedImportRejected: true,
       sequenceBuildThenRun: true, escapeCancellation: true, resetDefaults: true,
       builds: buildInputs.length })}\n`);
   } finally {

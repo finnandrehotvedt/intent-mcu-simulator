@@ -57,6 +57,9 @@ export function validateKeyboardShortcuts(value) {
     if (binding) owners.set(binding, action);
     bindings[action] = binding;
   }
+  if (value.sequence.enabled && !bindings.sequence) {
+    return { ok: false, code: 'SHORTCUT_SEQUENCE_KEY_REQUIRED' };
+  }
   return {
     ok: true,
     value: {
