@@ -30,3 +30,10 @@ test('CMP105/CMP130/CMP131 example is exact, openable and runtime-projectable', 
   assert(runtime.every(({ type }) => type === 'button.momentary-v1'));
   assert.match(envelope.project.project.source.files[0].content, /INPUT_PULLUP/u);
 });
+
+test('CMP105/CMP130/CMP131 example is visibly discoverable with contact limits', async () => {
+  const html = await readFile(new URL('../staging/examples.html', import.meta.url), 'utf8');
+  assert.match(html, /<h2>Float, tilt and vibration contacts<\/h2>/u);
+  assert.match(html, /D4\/D5\/D6 with INPUT_PULLUP and three explicit ground returns/u);
+  assert.match(html, /without liquid mechanics, angle, bounce, vibration timing, resistance or physical calibration/u);
+});
