@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
+import { PASSIVE_ENERGY_STORAGE_DEFINITIONS,
+  validatePassiveEnergyStorageComponent } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
+
 export const BOUNDED_3V3_AUTHORING_SCHEMA = 'intent-mcu-bounded-3v3-authoring@1';
 export const GROUND_REFERENCE_3V3_TYPE = 'ground.reference-3v3-v1';
 export const MOMENTARY_BUTTON_3V3_TYPE = 'button.momentary-3v3-v1';
@@ -41,6 +44,13 @@ export const BOUNDED_3V3_AUTHORING_CONTRACTS = Object.freeze({
         { id: 'LOW', role: 'passive', voltageMin: 0, voltageMax: 3.3 }],
       properties: { ohms: 10000, taper: 'linear' },
     }),
+    ...Object.fromEntries(Object.values(PASSIVE_ENERGY_STORAGE_DEFINITIONS).map((definition) =>
+      [definition.type, contract({ type: definition.type, version: definition.version,
+        displayName: definition.displayName,
+        pins: definition.pins.map(({ id }) => ({ id, role: 'passive', voltageMin: 0, voltageMax: 3.3 })),
+        properties: Object.fromEntries(definition.propertyKeys.map((key) =>
+          [key, definition.propertySchema[key].default])),
+      })])),
   }),
 });
 
@@ -82,6 +92,7 @@ export const BOUNDED_3V3_UI_COMPONENTS = Object.freeze({
       functions: Object.freeze(['data-only analogue circuit authoring']), interfaces: Object.freeze(['analogue']),
       supplyVolts: Object.freeze({ min: 0, max: 3.3 }), package: 'three-terminal authoring symbol' }),
   }),
+  ...PASSIVE_ENERGY_STORAGE_DEFINITIONS,
 });
 
 const key = ({ component, pin }) => `${component}.${pin}`;
@@ -111,6 +122,10 @@ export function validateBounded3v3AuthoringGraph({ board, components, nets }) {
         && (component.properties?.taper !== 'linear' || !Number.isFinite(component.properties?.ohms)
           || component.properties.ohms < 1 || component.properties.ohms > 10_000_000)) {
       return failure('AUTHORING_POTENTIOMETER_PROPERTIES_UNSUPPORTED', { componentId: component.id });
+    }
+    if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]
+        && !validatePassiveEnergyStorageComponent(component)) {
+      return failure('AUTHORING_PASSIVE_PROPERTIES_UNSUPPORTED', { componentId: component.id });
     }
     instances.set(component.id, definition);
   }

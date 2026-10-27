@@ -6,6 +6,8 @@ import { withComponentAppearance, withComponentAppearanceBody } from './componen
 import {
   GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE,
 } from './bounded-3v3-authoring-contracts.mjs';
+import { ELECTROLYTIC_CAPACITOR_TYPE, FIXED_INDUCTOR_TYPE, NONPOLAR_CAPACITOR_TYPE,
+  PASSIVE_ENERGY_STORAGE_DEFINITIONS } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
 
 const clone = (value) => structuredClone(value);
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
@@ -17,7 +19,9 @@ export const BOUNDED_LED_TYPE = 'led.basic-v1';
 export { GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE };
 const COMPONENT_ID_STEMS = Object.freeze({ [BOUNDED_RESISTOR_TYPE]: 'resistor', [BOUNDED_LED_TYPE]: 'led',
   [GROUND_REFERENCE_3V3_TYPE]: 'ground', [MOMENTARY_BUTTON_3V3_TYPE]: 'button',
-  [TOGGLE_SWITCH_3V3_TYPE]: 'switch', [POTENTIOMETER_3V3_TYPE]: 'potentiometer' });
+  [TOGGLE_SWITCH_3V3_TYPE]: 'switch', [POTENTIOMETER_3V3_TYPE]: 'potentiometer',
+  [NONPOLAR_CAPACITOR_TYPE]: 'capacitor', [ELECTROLYTIC_CAPACITOR_TYPE]: 'electrolytic',
+  [FIXED_INDUCTOR_TYPE]: 'inductor' });
 const COMPONENT_ID_COUNTER_KEYS = Object.freeze([...new Set(Object.values(COMPONENT_ID_STEMS))].sort());
 
 export function normalizeBoundedIdCounters(value, components) {
@@ -123,6 +127,17 @@ export function createSeriesLedComponentPolicy({
         pins: ['HIGH', 'WIPER', 'LOW'],
         limitation: 'Authoring-only passive three-terminal network rated for 0–3.3 V; GPIO HIGH is not a proven supply, and no ADC runtime, loading, noise or physical tolerance model is provided.',
       }),
+      ...Object.values(PASSIVE_ENERGY_STORAGE_DEFINITIONS).map((definition, index) => part({
+        id: `${COMPONENT_ID_STEMS[definition.type]}-1`, type: definition.type,
+        displayName: definition.displayName, label: definition.displayName,
+        properties: Object.fromEntries(definition.propertyKeys.map((key) =>
+          [key, definition.propertySchema[key].default])),
+        position: { x: 0.34 + index * 0.14, y: 0.84, rotation: 0 },
+        supportedProperties: Object.fromEntries(definition.propertyKeys.map((key) =>
+          [key, { ...definition.propertySchema[key] }])),
+        pins: definition.pins.map(({ id }) => id),
+        limitation: definition.support.limitations.join(' '),
+      })),
     ]),
   });
 }
@@ -166,7 +181,9 @@ export function createSeriesLedConnectionPolicy({
       if (board?.pin === groundPin) return led?.component === 'led-1' ? 'net-ground' : `net-${led.component}-ground`;
       return `net-${led.component}-${board?.pin.toLowerCase()}-ground`.slice(0, 48);
     }
-    const authoringOnly = new Set([GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE, POTENTIOMETER_3V3_TYPE]);
+    const authoringOnly = new Set([GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE,
+      TOGGLE_SWITCH_3V3_TYPE, POTENTIOMETER_3V3_TYPE,
+      ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS)]);
     if (authoringOnly.has(endpointType(draft, left)) || authoringOnly.has(endpointType(draft, right))) {
       return `net-${[endpointKey(left), endpointKey(right)].sort().join('-').replaceAll('.', '-')}`.toLowerCase().slice(0, 48);
     }
@@ -604,6 +621,9 @@ export class NamedSeriesLedCircuitEditor {
     if (target.type === BOUNDED_RESISTOR_TYPE && key === 'ohms') target.label = `${value} Ω series resistor`;
     if (target.type === BOUNDED_LED_TYPE && key === 'color') target.label = `External ${value} LED`;
     if (target.type === POTENTIOMETER_3V3_TYPE && key === 'ohms') target.label = `${value} Ω linear potentiometer`;
+    if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[target.type]) {
+      target.label = PASSIVE_ENERGY_STORAGE_DEFINITIONS[target.type].displayName;
+    }
     const electrical = this.validatePropertyPair(next);
     if (!electrical.ok) {
       return this.fail('COMPONENT_PROPERTY_ELECTRICAL_LIMIT', {

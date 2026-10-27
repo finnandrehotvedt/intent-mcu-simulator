@@ -1,0 +1,238 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.esp32-c3-devmodule-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "0af826b40fb4a22605eef5c2d691a2473bad8b697c456f3188c1019058d1766a",
+    "implementationSha256": "453aea3eb7737a5b47ac697213019cfcfe6f6351e7dce96a6da052f48e02a6f0"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-esp32c3-public-project@1",
+    "name": "esp32-c3 raw capacitor and inductor authoring",
+    "profile": "board.esp32-c3-devmodule-v1",
+    "source": "// Copyright 2026 IntentForce\n// SPDX-License-Identifier: Apache-2.0\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(2, OUTPUT);\n  digitalWrite(2, HIGH);\n  Serial.println(\"C3_PUBLIC\");\n}\n\nvoid loop() {\n  delay(1000);\n}\n",
+    "circuit": {
+      "schema": "intent-mcu-esp32c3-public-circuit@1",
+      "boardProfile": "board.esp32-c3-devmodule-v1",
+      "components": [
+        {
+          "id": "c3-1",
+          "type": "board.esp32-c3-devmodule-v1",
+          "label": "ESP32-C3 GPIO2 profile",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "capacitor-1",
+          "type": "capacitor.nonpolarized-v1",
+          "label": "Non-polarized capacitor",
+          "properties": {
+            "capacitanceFarads": 1e-7
+          },
+          "controls": {}
+        },
+        {
+          "id": "electrolytic-1",
+          "type": "capacitor.electrolytic-v1",
+          "label": "Electrolytic capacitor",
+          "properties": {
+            "capacitanceFarads": 0.0001
+          },
+          "controls": {}
+        },
+        {
+          "id": "inductor-1",
+          "type": "inductor.fixed-v1",
+          "label": "Fixed inductor",
+          "properties": {
+            "inductanceHenries": 0.001
+          },
+          "controls": {}
+        },
+        {
+          "id": "led-1",
+          "type": "led.basic-v1",
+          "label": "External red LED",
+          "properties": {
+            "color": "red"
+          },
+          "controls": {}
+        },
+        {
+          "id": "resistor-1",
+          "type": "resistor.fixed-v1",
+          "label": "220 Ω series resistor",
+          "properties": {
+            "ohms": 220
+          },
+          "controls": {}
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-c3-1-gnd8-inductor-1-b",
+          "endpoints": [
+            {
+              "component": "c3-1",
+              "pin": "GND8"
+            },
+            {
+              "component": "inductor-1",
+              "pin": "B"
+            }
+          ]
+        },
+        {
+          "id": "net-c3-1-gpio3-capacitor-1-a",
+          "endpoints": [
+            {
+              "component": "c3-1",
+              "pin": "GPIO3"
+            },
+            {
+              "component": "capacitor-1",
+              "pin": "A"
+            }
+          ]
+        },
+        {
+          "id": "net-capacitor-1-b-electrolytic-1-positive",
+          "endpoints": [
+            {
+              "component": "capacitor-1",
+              "pin": "B"
+            },
+            {
+              "component": "electrolytic-1",
+              "pin": "POSITIVE"
+            }
+          ]
+        },
+        {
+          "id": "net-electrolytic-1-negative-inductor-1-a",
+          "endpoints": [
+            {
+              "component": "electrolytic-1",
+              "pin": "NEGATIVE"
+            },
+            {
+              "component": "inductor-1",
+              "pin": "A"
+            }
+          ]
+        },
+        {
+          "id": "net-gpio2",
+          "endpoints": [
+            {
+              "component": "c3-1",
+              "pin": "GPIO2"
+            },
+            {
+              "component": "resistor-1",
+              "pin": "A"
+            }
+          ]
+        },
+        {
+          "id": "net-ground",
+          "endpoints": [
+            {
+              "component": "c3-1",
+              "pin": "GND"
+            },
+            {
+              "component": "led-1",
+              "pin": "CATHODE"
+            }
+          ]
+        },
+        {
+          "id": "net-series",
+          "endpoints": [
+            {
+              "component": "led-1",
+              "pin": "ANODE"
+            },
+            {
+              "component": "resistor-1",
+              "pin": "B"
+            }
+          ]
+        }
+      ],
+      "layout": {
+        "positions": {
+          "c3-1": {
+            "x": 0.2,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "capacitor-1": {
+            "x": 0.34,
+            "y": 0.84,
+            "rotation": 0
+          },
+          "electrolytic-1": {
+            "x": 0.48000000000000004,
+            "y": 0.84,
+            "rotation": 0
+          },
+          "inductor-1": {
+            "x": 0.6200000000000001,
+            "y": 0.84,
+            "rotation": 0
+          },
+          "led-1": {
+            "x": 0.8,
+            "y": 0.48,
+            "rotation": 0
+          },
+          "resistor-1": {
+            "x": 0.52,
+            "y": 0.27,
+            "rotation": 0
+          }
+        },
+        "wireStyles": {
+          "net-c3-1-gnd8-inductor-1-b": "#39dff2",
+          "net-c3-1-gpio3-capacitor-1-a": "#39dff2",
+          "net-capacitor-1-b-electrolytic-1-positive": "#39dff2",
+          "net-electrolytic-1-negative-inductor-1-a": "#39dff2",
+          "net-gpio2": "#f5c451",
+          "net-ground": "#303943",
+          "net-series": "#f04f5f"
+        },
+        "wireRoutes": {},
+        "componentAppearance": {
+          "schema": "intent-mcu-component-appearance@1",
+          "components": {}
+        },
+        "idCounters": {
+          "button": 0,
+          "capacitor": 1,
+          "electrolytic": 1,
+          "ground": 0,
+          "inductor": 1,
+          "led": 1,
+          "potentiometer": 0,
+          "resistor": 1,
+          "switch": 0
+        }
+      }
+    }
+  }
+}

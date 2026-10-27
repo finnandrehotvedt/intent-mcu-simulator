@@ -100,6 +100,11 @@ import {
   validateResistiveDividerSensor,
 } from './resistive-divider-sensors-v1.mjs';
 import {
+  PASSIVE_ENERGY_STORAGE_DEFINITIONS,
+  validatePassiveEnergyStorageAuthoringGraph,
+  validatePassiveEnergyStorageComponent,
+} from './passive-energy-storage-components-v1.mjs';
+import {
   DIGITAL_LIGHT_THRESHOLD_DEFINITION,
   DIGITAL_LIGHT_THRESHOLD_TYPE,
   projectDigitalLightThresholdModules,
@@ -253,6 +258,9 @@ function pinIds(component) {
   if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
   if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
   if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
+  if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]) {
+    return PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type].pins.map(({ id }) => id);
+  }
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return ['VCC', 'GND', 'DOUT'];
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
   if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
@@ -288,6 +296,7 @@ function componentPins(component) {
   if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]) return ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type].pins;
   if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) return ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type].pins;
   if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type]) return RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type].pins;
+  if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]) return PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type].pins;
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return DIGITAL_LIGHT_THRESHOLD_DEFINITION.pins;
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].pins;
   if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type].pins;
@@ -368,6 +377,10 @@ function validateCandidateComponent(component) {
   } else if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type]) {
     if (!validateResistiveDividerSensor(component)) {
       fail('PROJECT_CONTACT_RESISTIVE_DIVIDER_SENSOR_STATE', [component.id]);
+    }
+  } else if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]) {
+    if (!validatePassiveEnergyStorageComponent(component)) {
+      fail('PROJECT_CONTACT_PASSIVE_ENERGY_STORAGE_STATE', [component.id]);
     }
   } else if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
     if (!validateDigitalLightThresholdComponent(component)) {
@@ -454,6 +467,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
         CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
         ...Object.keys(DIGITAL_PULSE_SENSOR_DEFINITIONS),
+        ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
         IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
         ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
         ROTARY_ENCODER_TYPE,
@@ -506,7 +520,18 @@ export function validateCandidateCircuitGraph(value, {
     const graph = normalizeCandidateCircuit(value, { requireCandidate });
     const admission = validateProjectModelLibrary(modelLibraryLock, BOARD_TYPE,
       { candidateCircuit: graph });
-    if (!admission.ok) return admission;
+    if (!admission.ok) {
+      const authoring = validatePassiveEnergyStorageAuthoringGraph(graph);
+      if (!authoring.ok) return admission;
+      const filtered = { ...graph,
+        components: graph.components.filter((component) => !PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]) };
+      const retainedAdmission = validateProjectModelLibrary(modelLibraryLock, BOARD_TYPE,
+        { candidateCircuit: filtered });
+      if (!retainedAdmission.ok) return retainedAdmission;
+      validateDraftElectricalSafety(graph);
+      return { ok: true, code: authoring.code, graph, modelLibrary: clone(retainedAdmission.lock),
+        authoringOnly: true, executable: false };
+    }
     validateDraftElectricalSafety(graph);
     return { ok: true, code: 'OK', graph, modelLibrary: clone(admission.lock) };
   } catch (error) {
@@ -749,6 +774,10 @@ function production(implementation, componentType, input, details = []) {
 }
 
 function reconstructCandidate(graph, implementation, modelLibraryLock) {
+  const passiveOnly = graph.components.filter((component) => PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]);
+  if (passiveOnly.length) {
+    fail('PASSIVE_TRANSIENT_MODEL_UNAVAILABLE', passiveOnly.map(({ id }) => id).sort());
+  }
   const netClasses = deriveNetClasses(graph);
   const contacts = [];
   for (const component of graph.components) {
@@ -1236,6 +1265,11 @@ function draftContacts(graph) {
       return [{ componentId: component.id, type: component.type,
         state: { [key]: resistiveDividerSensorValue(component) }, runtimeProjection: null }];
     }
+    if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]) {
+      return [{ componentId: component.id, type: component.type,
+        state: { properties: clone(component.properties), execution: 'authoring-only' },
+        runtimeProjection: null }];
+    }
     if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
       return [{
         componentId: component.id,
@@ -1433,6 +1467,7 @@ export function validateContactPersistenceProject(value, options = {}) {
       DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
       CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
       ...Object.keys(DIGITAL_PULSE_SENSOR_DEFINITIONS),
+      ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
       IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
       ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
       ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,

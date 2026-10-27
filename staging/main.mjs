@@ -4,6 +4,9 @@
 import { installX81Assessment } from './x81-assessment-controller.mjs';
 import { X81_RETAINED_ASSESSMENT } from '../src/x81-retained-assessment.mjs';
 import { BOUNDED_3V3_UI_COMPONENTS, validateBounded3v3AuthoringGraph } from '../src/bounded-3v3-authoring-contracts.mjs';
+import { ELECTROLYTIC_CAPACITOR_TYPE, FIXED_INDUCTOR_TYPE, NONPOLAR_CAPACITOR_TYPE,
+  PASSIVE_ENERGY_STORAGE_DEFINITIONS,
+  validatePassiveEnergyStorageAuthoringGraph } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
 
 import {
   CATALOG_CATEGORIES,
@@ -1474,7 +1477,9 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
       id: `catalog-${part.type.replace(/[^a-z0-9]+/giu, '-')}`,
       type: part.type,
       label: part.displayName,
-      properties: definition?.propertyKeys?.length ? defaultProperties(part.type) : {},
+      properties: definition?.propertyKeys?.length
+        ? Object.fromEntries(definition.propertyKeys.map((key) => [key, definition.propertySchema[key].default]))
+        : {},
       controls: {},
     };
     if (definition) thumbnail.append(createComponentArtwork(definition, previewComponent, { thumbnail: true }));
@@ -1514,7 +1519,8 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
     properties.replaceChildren(note); return;
   }
 
-  if (!['resistor.fixed-v1', 'led.basic-v1', 'potentiometer.linear-3v3-v1'].includes(selected.type)) {
+  if (!['resistor.fixed-v1', 'led.basic-v1', 'potentiometer.linear-3v3-v1',
+    ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS)].includes(selected.type)) {
     const note = document.createElement('p');
     note.textContent = `${selectedPart.displayName} is a 3.3 V authoring-only part. Its named pins persist, but it cannot grant Build or Run authority.`;
     const duplicate = document.createElement('button'); duplicate.type = 'button'; duplicate.textContent = 'Duplicate disconnected part';
@@ -1527,6 +1533,7 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
   const label = document.createElement('label');
   const limit = document.createElement('small');
   let input;
+  const passiveDefinition = PASSIVE_ENERGY_STORAGE_DEFINITIONS[selected.type];
   if (['resistor.fixed-v1', 'potentiometer.linear-3v3-v1'].includes(selected.type)) {
     label.append('Resistance (Ω)');
     limit.textContent = selected.type === 'resistor.fixed-v1'
@@ -1534,6 +1541,13 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
       : 'Authoring value only. This does not prove a powered divider, ADC runtime, loading, noise or physical tolerance.';
     input = document.createElement('input'); input.type = 'number'; input.min = '1'; input.max = '10000000';
     input.step = '1'; input.value = String(selected.properties.ohms); input.dataset.boundedProperty = 'ohms';
+  } else if (passiveDefinition) {
+    const key = passiveDefinition.propertyKeys[0]; const contract = passiveDefinition.propertySchema[key];
+    label.append(`${key} (${contract.unit})`);
+    limit.textContent = 'Authoring value only. No transient/frequency solver or Build/Run authority is added.';
+    input = document.createElement('input'); input.type = 'number'; input.min = String(contract.minimum);
+    input.max = String(contract.maximum); input.step = 'any'; input.value = String(selected.properties[key]);
+    input.dataset.boundedProperty = key;
   } else {
     label.append('LED colour');
     limit.textContent = 'Colour selects a tested ideal forward-voltage constant; it is not a wavelength, brightness or physical-accuracy claim.';
@@ -1559,7 +1573,8 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
   modelCancel.dataset.componentEditorCancel = 'model';
   const currentValue = selected.properties[input.dataset.boundedProperty];
   const previewValue = () => typeof currentValue === 'number' ? Number(input.value) : input.value;
-  const modelValid = () => input.checkValidity() && (typeof currentValue !== 'number' || Number.isInteger(previewValue()));
+  const modelValid = () => input.checkValidity() && (typeof currentValue !== 'number'
+    || (passiveDefinition ? Number.isFinite(previewValue()) : Number.isInteger(previewValue())));
   const modelChanged = () => previewValue() !== currentValue;
   const updateModel = () => {
     const valid = modelValid(); const changed = modelChanged();
@@ -1593,7 +1608,7 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
   const modelActions = document.createElement('div'); modelActions.className = 'component-editor-actions';
   modelActions.append(duplicate, modelCancel, modelApply); modelPanel.append(row, modelStatus, modelActions); updateModel();
 
-  if (selected.type === 'potentiometer.linear-3v3-v1') {
+  if (selected.type === 'potentiometer.linear-3v3-v1' || passiveDefinition) {
     properties.replaceChildren(modelPanel); return;
   }
 
@@ -7779,6 +7794,11 @@ const commonProjectAdapters = Object.freeze({
     electrical: (result) => result.prepared?.runnable
       ?? modelLibraryImplementationForResult(result).validateAvrCircuit(result.project.circuit,
         { modelLibraryLock: result.modelLibrary }),
+    authoringAdmission: ({ project }) => validatePassiveEnergyStorageAuthoringGraph(
+      project.candidateCircuit
+        ? { components: project.candidateCircuit.components, nets: project.candidateCircuit.nets }
+        : project.circuit,
+    ),
   }),
   [RP2040_PROFILE]: Object.freeze({
     schemas: Object.freeze([RP2040_PUBLIC_PROJECT_SCHEMA]),
@@ -13071,6 +13091,9 @@ function candidateComponentPrefix(type) {
       [CHARACTER_LCD_20X4_TYPE]: 'character-lcd-20x4',
       [PCF8574_LCD_TYPE]: 'pcf8574-lcd',
       [ROTARY_ENCODER_TYPE]: 'rotary-encoder',
+      [NONPOLAR_CAPACITOR_TYPE]: 'capacitor',
+      [ELECTROLYTIC_CAPACITOR_TYPE]: 'electrolytic-capacitor',
+      [FIXED_INDUCTOR_TYPE]: 'inductor',
   }[type] ?? null;
 }
 
@@ -13144,6 +13167,9 @@ function addComponent(type, point = null) {
       [CHARACTER_LCD_TYPE]: { x: 0.72, y: 0.64 },
       [CHARACTER_LCD_20X4_TYPE]: { x: 0.7, y: 0.62 },
       [ROTARY_ENCODER_TYPE]: { x: 0.72, y: 0.64 },
+      [NONPOLAR_CAPACITOR_TYPE]: { x: 0.56, y: 0.2 },
+      [ELECTROLYTIC_CAPACITOR_TYPE]: { x: 0.7, y: 0.2 },
+      [FIXED_INDUCTOR_TYPE]: { x: 0.84, y: 0.2 },
     }[type];
     const sameTypeCount = currentProject().circuit.components.filter((item) => item.type === type).length;
     const slot = index % 16;

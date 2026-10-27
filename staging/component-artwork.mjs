@@ -2,6 +2,8 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import { ARTWORK_RENDERER_IDS } from '../src/component-catalog.mjs';
+import { PASSIVE_ENERGY_STORAGE_DEFINITIONS } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
+import { createPassiveEnergyStorageArtwork } from '../expansion-drafts/passive-energy-storage-components-artwork-v1.mjs';
 
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -268,6 +270,11 @@ if (JSON.stringify(COMPONENT_ARTWORK_RENDERER_IDS) !== JSON.stringify(ARTWORK_RE
 }
 
 export function createComponentArtwork(definition, component, options = {}) {
+  if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[component?.type]) {
+    const svg = createPassiveEnergyStorageArtwork(document, definition, component);
+    if (options.thumbnail) svg.classList.add('catalog-thumbnail');
+    return svg;
+  }
   const { thumbnail = false, appearancePreset, appearanceBody } = options;
   const svg = element('svg', {
     class: `component-artwork${thumbnail ? ' catalog-thumbnail' : ''}`,

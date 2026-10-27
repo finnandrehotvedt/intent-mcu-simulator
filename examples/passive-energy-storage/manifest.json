@@ -1,0 +1,195 @@
+{
+  "schema": "intent-mcu-passive-energy-storage-example-manifest@1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "0af826b40fb4a22605eef5c2d691a2473bad8b697c456f3188c1019058d1766a",
+    "implementationSha256": "453aea3eb7737a5b47ac697213019cfcfe6f6351e7dce96a6da052f48e02a6f0"
+  },
+  "requirementIds": [
+    "CMP-004",
+    "CMP-005",
+    "CMP-006"
+  ],
+  "profileBehavior": {
+    "board.atmega328p-16mhz-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence",
+    "board.rp2040-pico-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence",
+    "board.esp32-c3-devmodule-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence",
+    "board.stm32f429zi-nucleo144-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence"
+  },
+  "entries": [
+    {
+      "id": "avr-passive-energy-storage",
+      "profile": "board.atmega328p-16mhz-v1",
+      "file": "avr-passive-energy-storage.intent-mcu.json",
+      "requirementIds": [
+        "CMP-004",
+        "CMP-005",
+        "CMP-006"
+      ],
+      "componentTypes": [
+        "capacitor.nonpolarized-v1",
+        "capacitor.electrolytic-v1",
+        "inductor.fixed-v1"
+      ],
+      "componentIds": [
+        "capacitor-1",
+        "electrolytic-1",
+        "inductor-1"
+      ],
+      "nameplateValues": {
+        "nonpolarCapacitanceFarads": 1e-7,
+        "electrolyticCapacitanceFarads": 0.0001,
+        "inductanceHenries": 0.001
+      },
+      "namedChain": [
+        "board-1.5V → capacitor-1.A",
+        "capacitor-1.B → electrolytic-1.POSITIVE",
+        "electrolytic-1.NEGATIVE → inductor-1.A",
+        "inductor-1.B → board-1.GND1"
+      ],
+      "expectedVisibleBehavior": "Opening restores three original SVG symbols, exact named terminals, bounded nameplate values and four authored wires.",
+      "runtimeUnavailableCode": "PASSIVE_TRANSIENT_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence"
+      },
+      "limitations": "Raw two-terminal authoring only. No transient/SPICE or frequency solver, capacitance/inductance behavior, ESR, leakage, polarity-failure, saturation, tolerance, temperature, Build/Run authority or physical equivalence.",
+      "sourceSha256": "b65dc8b613d592b39d0b243223a6421cb151c83a504105cbb7a18adbf7cbda13",
+      "projectSha256": "dc43afc0fc7e17352ac15ec72f82d378ed4deca28b32389a650e48dbc39ea2f9",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    },
+    {
+      "id": "pico-passive-energy-storage",
+      "profile": "board.rp2040-pico-v1",
+      "file": "pico-passive-energy-storage.intent-mcu.json",
+      "requirementIds": [
+        "CMP-004",
+        "CMP-005",
+        "CMP-006"
+      ],
+      "componentTypes": [
+        "capacitor.nonpolarized-v1",
+        "capacitor.electrolytic-v1",
+        "inductor.fixed-v1"
+      ],
+      "componentIds": [
+        "capacitor-1",
+        "electrolytic-1",
+        "inductor-1"
+      ],
+      "nameplateValues": {
+        "nonpolarCapacitanceFarads": 1e-7,
+        "electrolyticCapacitanceFarads": 0.0001,
+        "inductanceHenries": 0.001
+      },
+      "namedChain": [
+        "pico-1.GP1 → capacitor-1.A",
+        "capacitor-1.B → electrolytic-1.POSITIVE",
+        "electrolytic-1.NEGATIVE → inductor-1.A",
+        "inductor-1.B → pico-1.GND8"
+      ],
+      "expectedVisibleBehavior": "Opening restores three original SVG symbols, exact named terminals, bounded nameplate values and four authored wires.",
+      "runtimeUnavailableCode": "PASSIVE_TRANSIENT_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence"
+      },
+      "limitations": "Raw two-terminal authoring only. No transient/SPICE or frequency solver, capacitance/inductance behavior, ESR, leakage, polarity-failure, saturation, tolerance, temperature, Build/Run authority or physical equivalence.",
+      "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
+      "projectSha256": "9abe91d7736e1cdc208fa1b134f225fc1d5c2b74ea4436d20789be33d4694866",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    },
+    {
+      "id": "esp32-c3-passive-energy-storage",
+      "profile": "board.esp32-c3-devmodule-v1",
+      "file": "esp32-c3-passive-energy-storage.intent-mcu.json",
+      "requirementIds": [
+        "CMP-004",
+        "CMP-005",
+        "CMP-006"
+      ],
+      "componentTypes": [
+        "capacitor.nonpolarized-v1",
+        "capacitor.electrolytic-v1",
+        "inductor.fixed-v1"
+      ],
+      "componentIds": [
+        "capacitor-1",
+        "electrolytic-1",
+        "inductor-1"
+      ],
+      "nameplateValues": {
+        "nonpolarCapacitanceFarads": 1e-7,
+        "electrolyticCapacitanceFarads": 0.0001,
+        "inductanceHenries": 0.001
+      },
+      "namedChain": [
+        "c3-1.GPIO3 → capacitor-1.A",
+        "capacitor-1.B → electrolytic-1.POSITIVE",
+        "electrolytic-1.NEGATIVE → inductor-1.A",
+        "inductor-1.B → c3-1.GND8"
+      ],
+      "expectedVisibleBehavior": "Opening restores three original SVG symbols, exact named terminals, bounded nameplate values and four authored wires.",
+      "runtimeUnavailableCode": "PASSIVE_TRANSIENT_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence"
+      },
+      "limitations": "Raw two-terminal authoring only. No transient/SPICE or frequency solver, capacitance/inductance behavior, ESR, leakage, polarity-failure, saturation, tolerance, temperature, Build/Run authority or physical equivalence.",
+      "sourceSha256": "d936fc50b2c874d6af660ece56abbb024c86e7b30462c403542b8d2166b85480",
+      "projectSha256": "e6e9afe37e986425b477d64faba7b5557c796474bb6e5a8545ab4d985417fbfd",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    },
+    {
+      "id": "stm32-passive-energy-storage",
+      "profile": "board.stm32f429zi-nucleo144-v1",
+      "file": "stm32-passive-energy-storage.intent-mcu.json",
+      "requirementIds": [
+        "CMP-004",
+        "CMP-005",
+        "CMP-006"
+      ],
+      "componentTypes": [
+        "capacitor.nonpolarized-v1",
+        "capacitor.electrolytic-v1",
+        "inductor.fixed-v1"
+      ],
+      "componentIds": [
+        "capacitor-1",
+        "electrolytic-1",
+        "inductor-1"
+      ],
+      "nameplateValues": {
+        "nonpolarCapacitanceFarads": 1e-7,
+        "electrolyticCapacitanceFarads": 0.0001,
+        "inductanceHenries": 0.001
+      },
+      "namedChain": [
+        "stm32-1.PB1 → capacitor-1.A",
+        "capacitor-1.B → electrolytic-1.POSITIVE",
+        "electrolytic-1.NEGATIVE → inductor-1.A",
+        "inductor-1.B → stm32-1.GND20"
+      ],
+      "expectedVisibleBehavior": "Opening restores three original SVG symbols, exact named terminals, bounded nameplate values and four authored wires.",
+      "runtimeUnavailableCode": "PASSIVE_TRANSIENT_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only raw two-terminal data; no transient/frequency solver, Build/Run authority or physical-hardware equivalence"
+      },
+      "limitations": "Raw two-terminal authoring only. No transient/SPICE or frequency solver, capacitance/inductance behavior, ESR, leakage, polarity-failure, saturation, tolerance, temperature, Build/Run authority or physical equivalence.",
+      "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
+      "projectSha256": "f456d9fe5b04655250cf99d23f11720ebcdd60e957d4fa318a67ffa56d7d6b7b",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    }
+  ]
+}

@@ -58,6 +58,7 @@ import { ANALOGUE_TEMPERATURE_IC_DEFINITIONS, LM35_TEMPERATURE_TYPE,
   TMP36_TEMPERATURE_TYPE,
 } from './analogue-temperature-ic-sensors-v1.mjs';
 import { RESISTIVE_DIVIDER_SENSOR_DEFINITIONS } from './resistive-divider-sensors-v1.mjs';
+import { PASSIVE_ENERGY_STORAGE_DEFINITIONS } from './passive-energy-storage-components-v1.mjs';
 import { CONTACT_SENSOR_DEFINITIONS } from './contact-sensors-v1.mjs';
 
 export const CANDIDATE_EDITOR_INTEGRATION_SCHEMA = 'intent-mcu-candidate-editor-session@1';
@@ -84,6 +85,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   WIND_DIRECTION_ANALOGUE_TYPE, HALL_MAGNETIC_ANALOGUE_TYPE,
   TMP36_TEMPERATURE_TYPE, LM35_TEMPERATURE_TYPE,
   ...Object.keys(RESISTIVE_DIVIDER_SENSOR_DEFINITIONS),
+  ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
   ...Object.keys(CONTACT_SENSOR_DEFINITIONS),
 ]);
 
@@ -674,6 +676,17 @@ export class CandidateEditorSession {
               return failure('PROJECT_CONTACT_RESISTIVE_DIVIDER_SENSOR_STATE', this.revision);
             }
             component.controls[expectedKey] = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]) {
+            const definition = PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type];
+            const contract = definition.propertySchema[command.key];
+            if (!contract || !Number.isFinite(command.value)
+                || command.value < contract.minimum || command.value > contract.maximum) {
+              return failure('PROJECT_CONTACT_PASSIVE_ENERGY_STORAGE_STATE', this.revision);
+            }
+            component.properties[command.key] = command.value;
             runtimeDirty = true;
             break;
           }

@@ -157,6 +157,9 @@ import { createAnalogueTemperatureIcArtwork } from '../expansion-drafts/analogue
 import { RESISTIVE_DIVIDER_SENSOR_DEFINITIONS, createResistiveDividerSensor,
   resistiveDividerSensorVoltage } from '../expansion-drafts/resistive-divider-sensors-v1.mjs';
 import { createResistiveDividerSensorArtwork } from '../expansion-drafts/resistive-divider-sensors-artwork-v1.mjs';
+import { PASSIVE_ENERGY_STORAGE_DEFINITIONS,
+  createPassiveEnergyStorageComponent } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
+import { createPassiveEnergyStorageArtwork } from '../expansion-drafts/passive-energy-storage-components-artwork-v1.mjs';
 import { CONTACT_SENSOR_DEFINITIONS, createContactSensor } from '../expansion-drafts/contact-sensors-v1.mjs';
 import { createContactSensorArtwork } from '../expansion-drafts/contact-sensors-artwork-v1.mjs';
 
@@ -229,6 +232,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   ...ANALOGUE_DIRECTION_FIELD_DEFINITIONS,
   ...ANALOGUE_TEMPERATURE_IC_DEFINITIONS,
   ...RESISTIVE_DIVIDER_SENSOR_DEFINITIONS,
+  ...PASSIVE_ENERGY_STORAGE_DEFINITIONS,
   ...CONTACT_SENSOR_DEFINITIONS,
 });
 
@@ -316,6 +320,9 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component?.type]) {
     return createResistiveDividerSensorArtwork(documentObject, definition, component, options);
   }
+  if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[component?.type]) {
+    return createPassiveEnergyStorageArtwork(documentObject, definition, component, options);
+  }
   if (CONTACT_SENSOR_DEFINITIONS[component?.type]) {
     return createContactSensorArtwork(documentObject, definition, component, options);
   }
@@ -356,6 +363,7 @@ export function createCandidateUiComponent(type, id) {
   if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[type]) return createAnalogueDirectionFieldSensor(type, id);
   if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[type]) return createAnalogueTemperatureIcSensor(type, id);
   if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[type]) return createResistiveDividerSensor(type, id);
+  if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[type]) return createPassiveEnergyStorageComponent(type, id);
   if (CONTACT_SENSOR_DEFINITIONS[type]) return createContactSensor(type, id);
   throw new TypeError('CANDIDATE_UI_COMPONENT_TYPE');
 }

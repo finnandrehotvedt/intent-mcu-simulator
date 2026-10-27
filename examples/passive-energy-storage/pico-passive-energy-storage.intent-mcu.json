@@ -1,0 +1,238 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.rp2040-pico-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "0af826b40fb4a22605eef5c2d691a2473bad8b697c456f3188c1019058d1766a",
+    "implementationSha256": "453aea3eb7737a5b47ac697213019cfcfe6f6351e7dce96a6da052f48e02a6f0"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-rp2040-public-project@1",
+    "name": "pico raw capacitor and inductor authoring",
+    "profile": "board.rp2040-pico-v1",
+    "source": "/* Intent MCU Simulator public RP2040 source v1 */\nint main(void)\n{\n  intent_gpio0_output(1u);\n  intent_uart0_text(\"PICO PUBLIC\");\n  intent_halt();\n}\n",
+    "circuit": {
+      "schema": "intent-mcu-rp2040-pico-circuit@1",
+      "boardProfile": "board.rp2040-pico-v1",
+      "components": [
+        {
+          "id": "capacitor-1",
+          "type": "capacitor.nonpolarized-v1",
+          "label": "Non-polarized capacitor",
+          "properties": {
+            "capacitanceFarads": 1e-7
+          },
+          "controls": {}
+        },
+        {
+          "id": "electrolytic-1",
+          "type": "capacitor.electrolytic-v1",
+          "label": "Electrolytic capacitor",
+          "properties": {
+            "capacitanceFarads": 0.0001
+          },
+          "controls": {}
+        },
+        {
+          "id": "inductor-1",
+          "type": "inductor.fixed-v1",
+          "label": "Fixed inductor",
+          "properties": {
+            "inductanceHenries": 0.001
+          },
+          "controls": {}
+        },
+        {
+          "id": "led-1",
+          "type": "led.basic-v1",
+          "label": "External red LED",
+          "properties": {
+            "color": "red"
+          },
+          "controls": {}
+        },
+        {
+          "id": "pico-1",
+          "type": "board.rp2040-pico-v1",
+          "label": "RP2040 Pico profile",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "resistor-1",
+          "type": "resistor.fixed-v1",
+          "label": "220 Ω series resistor",
+          "properties": {
+            "ohms": 220
+          },
+          "controls": {}
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-capacitor-1-a-pico-1-gp1",
+          "endpoints": [
+            {
+              "component": "capacitor-1",
+              "pin": "A"
+            },
+            {
+              "component": "pico-1",
+              "pin": "GP1"
+            }
+          ]
+        },
+        {
+          "id": "net-capacitor-1-b-electrolytic-1-positive",
+          "endpoints": [
+            {
+              "component": "capacitor-1",
+              "pin": "B"
+            },
+            {
+              "component": "electrolytic-1",
+              "pin": "POSITIVE"
+            }
+          ]
+        },
+        {
+          "id": "net-electrolytic-1-negative-inductor-1-a",
+          "endpoints": [
+            {
+              "component": "electrolytic-1",
+              "pin": "NEGATIVE"
+            },
+            {
+              "component": "inductor-1",
+              "pin": "A"
+            }
+          ]
+        },
+        {
+          "id": "net-gpio0",
+          "endpoints": [
+            {
+              "component": "pico-1",
+              "pin": "GP0"
+            },
+            {
+              "component": "resistor-1",
+              "pin": "B"
+            }
+          ]
+        },
+        {
+          "id": "net-ground",
+          "endpoints": [
+            {
+              "component": "led-1",
+              "pin": "CATHODE"
+            },
+            {
+              "component": "pico-1",
+              "pin": "GND3"
+            }
+          ]
+        },
+        {
+          "id": "net-inductor-1-b-pico-1-gnd8",
+          "endpoints": [
+            {
+              "component": "inductor-1",
+              "pin": "B"
+            },
+            {
+              "component": "pico-1",
+              "pin": "GND8"
+            }
+          ]
+        },
+        {
+          "id": "net-series",
+          "endpoints": [
+            {
+              "component": "led-1",
+              "pin": "ANODE"
+            },
+            {
+              "component": "resistor-1",
+              "pin": "A"
+            }
+          ]
+        }
+      ],
+      "layout": {
+        "positions": {
+          "capacitor-1": {
+            "x": 0.34,
+            "y": 0.84,
+            "rotation": 0
+          },
+          "electrolytic-1": {
+            "x": 0.48000000000000004,
+            "y": 0.84,
+            "rotation": 0
+          },
+          "inductor-1": {
+            "x": 0.6200000000000001,
+            "y": 0.84,
+            "rotation": 0
+          },
+          "led-1": {
+            "x": 0.22,
+            "y": 0.48,
+            "rotation": 0
+          },
+          "pico-1": {
+            "x": 0.78,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "resistor-1": {
+            "x": 0.48,
+            "y": 0.27,
+            "rotation": 0
+          }
+        },
+        "wireStyles": {
+          "net-capacitor-1-a-pico-1-gp1": "#39dff2",
+          "net-capacitor-1-b-electrolytic-1-positive": "#39dff2",
+          "net-electrolytic-1-negative-inductor-1-a": "#39dff2",
+          "net-gpio0": "#f5c451",
+          "net-ground": "#303943",
+          "net-inductor-1-b-pico-1-gnd8": "#39dff2",
+          "net-series": "#f04f5f"
+        },
+        "wireRoutes": {},
+        "componentAppearance": {
+          "schema": "intent-mcu-component-appearance@1",
+          "components": {}
+        },
+        "idCounters": {
+          "button": 0,
+          "capacitor": 1,
+          "electrolytic": 1,
+          "ground": 0,
+          "inductor": 1,
+          "led": 1,
+          "potentiometer": 0,
+          "resistor": 1,
+          "switch": 0
+        }
+      }
+    }
+  }
+}
