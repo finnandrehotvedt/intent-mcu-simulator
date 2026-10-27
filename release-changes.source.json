@@ -24,7 +24,7 @@
       "contracts": [
         "x72-example-progression-v1"
       ],
-      "summary": "Adds a runnable AVR DS18B20 starter with original component artwork, signed 1/16 degree temperature control, OneWire reset, presence, command and scratchpad execution, Dallas CRC-8 validation, and canonical Save and Open persistence."
+      "summary": "Surfaces the runnable AVR DHT11 lesson in Simple view and Parts, and adds a DS18B20 starter with original artwork, signed 1/16-degree control, OneWire scratchpad execution, CRC-8, and canonical Save/Open."
     }
   ],
   "migrationRequired": false,

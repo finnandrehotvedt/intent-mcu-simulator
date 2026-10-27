@@ -32,6 +32,9 @@ const PRE_CMP092_DHT11_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_CMP091_DS18B20_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_CMP091_DS18B20_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -365,16 +368,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-ds18b20-onewire.1-current',
-  'intent-mcu-model-bundle-current-ds18b20-onewire-1@52',
+  '2.0.0-dht11-public-visibility.1-current',
+  'intent-mcu-model-bundle-current-dht11-public-visibility-1@53',
   currentImplementation,
   {
-    priorVersion: PRE_CMP091_DS18B20_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_CMP091_DS18B20_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'adds the AVR-only DS18B20 reset, presence, Skip ROM, Convert T and CRC-protected scratchpad OneWire model while retaining every prior component contract',
-    presentationDisposition: 'CMP-091 uses original waterproof-probe artwork, exact 1/16 degree temperature control, canonical persistence and visible firmware Serial evidence',
-    baselineClosureDisposition: 'accepted rc143 head a207af4 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only',
+    semanticDisposition: 'retains the complete DS18B20 and DHT11 component contracts without electrical, protocol or runtime semantic changes',
+    presentationDisposition: 'makes the DHT11 example directly visible in Simple view and features its simulator controls in the shared Parts drawer',
+    baselineClosureDisposition: 'source rc144 DS18B20 head 0172198 and every earlier identity remain immutable migration-only anchors; public rc143 remains the rollback release until acceptance',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -443,6 +446,7 @@ export const PRE_CMP041_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.fr
 export const PRE_CMP043_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP043_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_CMP092_DHT11_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP092_DHT11_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_CMP091_DS18B20_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP091_DS18B20_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

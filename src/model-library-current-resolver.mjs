@@ -40,7 +40,7 @@ const exactInput = (value, keys) => value && typeof value === 'object' && !Array
 // Current behavior is separately owned so future current changes cannot mutate
 // the retained pre-X56 implementation by alias or shared constant.
 export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
-  id: 'intent-mcu-model-bundle-current-ds18b20-onewire-1@52',
+  id: 'intent-mcu-model-bundle-current-dht11-public-visibility-1@53',
   manifestVersion: CURRENT_MODEL_LIBRARY_MANIFEST.version,
   definition(profile, componentType) {
     const entry = entries.get(`${profile}\u0000${componentType}`);
@@ -439,6 +439,13 @@ export const PRE_CMP091_DS18B20_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION =
   ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
   id: 'intent-mcu-model-bundle-current-pre-cmp091-ds18b20@58',
   manifestVersion: '2.0.0-dht11-protocol.1-current',
+  migrationOnly: true,
+});
+
+export const PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-pre-dht11-public-visibility@59',
+  manifestVersion: '2.0.0-ds18b20-onewire.1-current',
   migrationOnly: true,
 });
 

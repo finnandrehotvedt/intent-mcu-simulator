@@ -620,7 +620,7 @@ const elements = Object.fromEntries([
   'counterexample-reduce', 'counterexample-reduction-summary',
   'fault-suite-load', 'fault-suite-replay', 'fault-suite-summary',
   'starter-examples', 'starter-gallery', 'quick-controls', 'workbench-workspace', 'project-bar',
-  'beginner-primary', 'beginner-run', 'beginner-runtime-toggle', 'beginner-examples', 'beginner-scratch', 'beginner-source', 'beginner-status', 'workbench-more',
+  'beginner-primary', 'beginner-run', 'beginner-runtime-toggle', 'beginner-dht11', 'beginner-examples', 'beginner-scratch', 'beginner-source', 'beginner-status', 'workbench-more',
   'build-list-export', 'build-list-status', 'accessible-svg-export', 'accessible-svg-status',
   'project-navigation', 'project-navigation-query', 'project-navigation-status', 'project-navigation-results',
   'family-select', 'board-select', 'controller-status', 'toolchain-boundary',
@@ -16318,11 +16318,17 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
 
 function renderStarterExamples() {
   const availableExamples = [...exampleCatalog(), TEMPERATURE_LCD_THRESHOLD_CARD, PCF8574_LCD_HELLO_CARD, THERMOSTAT_EXPERIMENT_CARD, ...avrReferenceStarterCatalog()];
+  const dht11Example = availableExamples.find((example) => example.id === 'avr-dht11-temperature-humidity');
+  const ds18b20Example = availableExamples.find((example) => example.id === 'avr-ds18b20-temperature');
   const trafficLightExample = availableExamples.find((example) => example.id === 'avr-traffic-light');
   const examples = [
     availableExamples.find((example) => example.id === 'blink'),
+    dht11Example,
+    ds18b20Example,
     trafficLightExample,
-    ...availableExamples.filter((example) => !['blink', 'avr-traffic-light'].includes(example.id)),
+    ...availableExamples.filter((example) => ![
+      'blink', 'avr-dht11-temperature-humidity', 'avr-ds18b20-temperature', 'avr-traffic-light',
+    ].includes(example.id)),
   ].filter(Boolean);
   const cards = examples.map((example) => {
     const card = document.createElement('article'); card.className = 'starter-card'; card.dataset.example = example.id;
@@ -16330,8 +16336,10 @@ function renderStarterExamples() {
     const meta = document.createElement('span'); meta.className = 'starter-meta';
     const focus = document.createElement('span'); focus.className = 'starter-focus'; focus.textContent = example.focus;
     const difficulty = document.createElement('span'); difficulty.className = 'starter-difficulty';
-    difficulty.textContent = example.id === 'avr-traffic-light'
-      ? 'New example'
+    difficulty.textContent = example.id === 'avr-dht11-temperature-humidity'
+      ? 'New digital sensor'
+      : example.id === 'avr-ds18b20-temperature'
+        ? 'Next digital sensor'
       : ['blink', 'button', 'adc'].includes(example.id) ? 'Beginner' : 'Next step';
     meta.append(focus, difficulty);
     const name = document.createElement('strong'); name.textContent = example.name;
@@ -16365,22 +16373,22 @@ function renderStarterExamples() {
   elements.starterexamples.replaceChildren(...cards);
 }
 
-function mountTrafficLightFeature() {
-  const definition = uiComponentCatalog[TRAFFIC_LIGHT_TYPE];
+function mountReleaseFeature() {
+  const definition = uiComponentCatalog[DHT11_TYPE];
   if (!definition) return;
-  const component = createCandidateUiComponent(TRAFFIC_LIGHT_TYPE, 'traffic-light-feature-preview');
+  const component = createCandidateUiComponent(DHT11_TYPE, 'dht11-feature-preview');
   component.label = definition.displayName;
   elements.catalogreleasefeatureartwork.replaceChildren(
     createComponentArtwork(definition, component, { thumbnail: true }),
   );
   elements.catalogreleasefeatureopen.addEventListener('click', () => {
     const install = () => {
-      const result = loadExampleProject('avr-traffic-light', 'project.release-feature');
+      const result = loadExampleProject('avr-dht11-temperature-humidity', 'project.release-feature');
       if (result?.ok) sharedWorkbenchShell.closeParts({ restoreFocus: false });
     };
     if (!requestUnsavedChangeGuard({
       profile: AVR_PROFILE,
-      actionLabel: 'loading Traffic light sequence',
+      actionLabel: 'loading DHT11 temperature and humidity',
       continueAction: install,
     })) install();
   });
@@ -16393,14 +16401,15 @@ function examplePickerFocusable() {
 }
 function filterStarterExamples() {
   const query = elements.examplepickersearch.value.trim().toLocaleLowerCase();
+  const total = elements.starterexamples.querySelectorAll('.starter-card').length;
   let visible = 0;
   for (const card of elements.starterexamples.querySelectorAll('.starter-card')) {
     card.hidden = Boolean(query) && !card.textContent.toLocaleLowerCase().includes(query);
     if (!card.hidden) visible += 1;
   }
   elements.examplepickerstatus.textContent = query
-    ? `${visible} of 21 examples match “${elements.examplepickersearch.value.trim()}”`
-    : '21 examples available';
+    ? `${visible} of ${total} examples match “${elements.examplepickersearch.value.trim()}”`
+    : `${total} examples available`;
 }
 function closeExamplePicker({ restoreFocus = true } = {}) {
   const returnFocus = examplePickerReturnFocus;
@@ -16429,6 +16438,23 @@ function startFromScratch() {
     profile: AVR_PROFILE, actionLabel: 'starting from scratch', continueAction: createScratch,
   })) return;
   createScratch();
+}
+function startDht11FromSimpleView() {
+  if (selectedCompilerProfile !== AVR_PROFILE) {
+    elements.beginnerstatus.textContent = 'DHT11 is currently executable on AVR. Select ATmega328P, then choose New: DHT11 sensor.';
+    return;
+  }
+  const install = () => {
+    const result = loadExampleProject('avr-dht11-temperature-humidity', 'project.beginner-dht11');
+    if (result?.ok) {
+      elements.beginnerstatus.textContent = 'DHT11 loaded · choose Run project, then adjust temperature and humidity in Inspector.';
+      document.querySelector('#active-canvas-stage')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+  if (requestUnsavedChangeGuard({
+    profile: AVR_PROFILE, actionLabel: 'loading DHT11 temperature and humidity', continueAction: install,
+  })) return;
+  install();
 }
 const MINIMAL_LED_SOURCE = `void setup() {
   pinMode(13, OUTPUT);
@@ -16493,6 +16519,7 @@ async function runBeginnerProject() {
     elements.beginnerstatus.textContent = 'Build could not start. Your project was kept; choose Run to try again.';
   }
 }
+elements.beginnerdht11.addEventListener('click', startDht11FromSimpleView);
 elements.beginnerexamples.addEventListener('click', openExamplePicker);
 elements.beginnerruntimetoggle.addEventListener('click', () => {
   if (elements.beginnerruntimetoggle.dataset.state === 'paused') elements.quickrun.click();
@@ -17116,7 +17143,7 @@ window.__M7_CATALOG_BENCHMARK__ = benchmarkCatalogFixture;
 
 for (const category of CATALOG_CATEGORIES) elements.catalogcategory.append(new Option(category.label, category.id));
 renderStarterExamples();
-mountTrafficLightFeature();
+mountReleaseFeature();
 syncControllerSelectors(selectedCompilerProfile);
 
 let stored = null; let recoveryStored = null;

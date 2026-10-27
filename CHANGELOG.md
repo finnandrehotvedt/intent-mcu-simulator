@@ -4,6 +4,9 @@ All notable public source changes are recorded here.
 
 ## 1.1.0-rc.144 — 2026-10-27
 
+- Makes the already executable DHT11 sensor visible in the ordinary Simple
+  view with a direct action, first-page example placement and the featured
+  card in the shared Parts drawer.
 - Adds an AVR-only DS18B20 component with original VCC/DQ/GND probe artwork
   and a signed temperature control in exact 1/16 °C steps.
 - Executes OneWire reset/presence, Skip ROM, Convert T, Read Scratchpad and

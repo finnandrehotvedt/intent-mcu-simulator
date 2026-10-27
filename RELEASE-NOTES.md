@@ -1,5 +1,14 @@
 # Intent MCU Simulator 1.1.0-rc.144
 
+## Digital sensors visible from the first screen
+
+DHT11 is no longer discoverable only after opening the full example chooser.
+The ordinary Simple view now shows a direct **New: DHT11 sensor** action, the
+example is placed immediately after Blink, and the shared Parts drawer features
+the complete temperature/humidity lesson. This is the same executable AVR
+sensor with independent controls and checksum-validated Serial output; it is
+now visible where a first-time visitor actually starts.
+
 ## OneWire digital temperature probe
 
 Rc.144 adds DS18B20 as a distinct AVR component and working starter. The part
