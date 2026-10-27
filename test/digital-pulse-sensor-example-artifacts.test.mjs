@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+test('CMP106/CMP112 discovery refuses automatic physical-rate claims', async () => { const html = await readFile(new URL('../staging/examples.html', import.meta.url), 'utf8'); assert.match(html, /<h2>Flow and wind pulse inputs<\/h2>/u); assert.match(html, /D4\/D5 edge counts/u); assert.match(html, /no automatic pulse train, flow rate, wind speed, calibration, bounce or physical timing/u); });
 import { openCandidateUiSession } from '../src/candidate-existing-ui-adapter.mjs';
 import { FLOW_PULSE_SENSOR_TYPE,
   WIND_SPEED_PULSE_SENSOR_TYPE } from '../expansion-drafts/digital-pulse-sensors-v1.mjs';

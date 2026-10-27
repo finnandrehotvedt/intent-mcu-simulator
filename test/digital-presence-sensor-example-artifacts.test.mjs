@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+test('CMP031/CMP121/CMP124 discovery preserves active-high limits', async () => { const html = await readFile(new URL('../staging/examples.html', import.meta.url), 'utf8'); assert.match(html, /<h2>Touch, PIR and Hall presence sensors<\/h2>/u); assert.match(html, /D4\/D5\/D6/u); assert.match(html, /without capacitance, PIR optics, magnetic thresholds, noise, latency or physical range/u); });
 import { openCandidateUiSession } from '../src/candidate-existing-ui-adapter.mjs';
 import {
   CAPACITIVE_TOUCH_TYPE, HALL_SWITCH_TYPE, PIR_MOTION_TYPE,

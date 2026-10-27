@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+test('CMP122/CMP123 discovery preserves active-low optical limits', async () => { const html = await readFile(new URL('../staging/examples.html', import.meta.url), 'utf8'); assert.match(html, /<h2>Obstacle and line reflective sensors<\/h2>/u); assert.match(html, /D7\/D8/u); assert.match(html, /without distance, reflectance spectrum, optics, ambient light, calibration or timing/u); });
 import { openCandidateUiSession } from '../src/candidate-existing-ui-adapter.mjs';
 import {
   IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
