@@ -78,6 +78,7 @@ const referenceBindings = deepFreeze({
     [RESISTOR]: { starters: ['blink', 'pwm', 'pwm-pulse', 'temperature-lcd-threshold', 'avr-thermostat-boundary-v1'], tests: ['test/circuit-model.test.mjs', 'test/starter-examples.cjs', 'test/basic-component-example-artifacts.test.mjs'] },
     'button.momentary-v1': { starters: ['button', 'avr-thermostat-boundary-v1'], tests: ['test/circuit-model.test.mjs', 'test/starter-examples.cjs', 'test/input-control-example-artifacts.test.mjs'] },
     'potentiometer.linear-v1': { starters: ['adc'], tests: ['test/circuit-model.test.mjs', 'test/starter-examples.cjs', 'test/basic-component-example-artifacts.test.mjs'] },
+    'potentiometer.trimmer-v1': { starters: ['trimmer'], tests: ['test/trimmer-potentiometer.test.mjs', 'test/basic-component-example-artifacts.test.mjs'] },
     'reference.ground-v1': { starters: ['avr-ground-reference-input'], tests: ['test/candidate-draft-runnable-transition.test.mjs'] },
     'reference.power-5v-v1': { starters: ['avr-ground-power-references'], tests: ['test/power-reference-integration.test.mjs', 'test/power-reference-example-artifacts.test.mjs'] },
     'switch.toggle-spst-v1': { starters: ['avr-toggle-input'], tests: ['test/candidate-draft-runnable-transition.test.mjs', 'test/input-control-example-artifacts.test.mjs'] },

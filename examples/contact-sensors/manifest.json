@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-lcd-20x4-cgram.1-current",
-    "manifestSha256": "66eecf28c381c3ad07993ddfa9c3351740c0ebba95c9b8aef328658c914f716d",
-    "implementationSha256": "962fe9d738609d19e770e75e7872c959af7ac7c8584a6dc7b831b2c784ee6341"
+    "manifestSha256": "32a7db356bb2d16e55f0ad6c2dbd9f19837dd587b76326dc39fe6e9c262c0d50",
+    "implementationSha256": "0b731cecdfd706a93d1948ca95659cd26fa37a9c497e856d2611bf550eead2bf"
   },
   "entries": [
     {
@@ -17,7 +17,7 @@
         "CMP-131"
       ],
       "file": "avr-contact-sensors.intent-mcu.json",
-      "projectSha256": "90bc29940f339bac79c63633590954619bf1f39ba867335868228d55d0fe30b4",
+      "projectSha256": "5c7c4f0a2e860a3fbf1fcbe4ec0ffb84df8b4eeaef5449eb5d771e8174536d90",
       "sourceSha256": "6de5dc65a1328d479b3b83bac75c5a0749d66226af6654b1315eb7fceb8a1a43",
       "expectedBehavior": "D4, D5 and D6 independently report active-low float, tilt and vibration contacts using INPUT_PULLUP.",
       "namedPins": {

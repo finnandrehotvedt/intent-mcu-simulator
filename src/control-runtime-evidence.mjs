@@ -9,6 +9,7 @@ export const CONTROL_RUNTIME_EVIDENCE_SCHEMA = 'intent-mcu-control-runtime-evide
 const rows = [
   ['button.momentary-v1', 'pressed', 'control · pressed', 'D2 input → executed firmware → USART/D13', 'actual-executed'],
   ['potentiometer.linear-v1', 'position', 'control · position', 'A0 ADC → executed firmware → USART/D13', 'actual-executed'],
+  ['potentiometer.trimmer-v1', 'position', 'control · position', 'A1 ADC → executed firmware → USART', 'actual-executed'],
   ['switch.toggle-spst-v1', 'closed', 'control · pressed', 'D2 input → executed firmware → USART/D13', 'actual-executed'],
   ['switch.changeover-spdt-v1', 'selectedThrow', 'digital-input · BREAK then selected throw', 'D2 input → executed firmware → USART/D13', 'actual-executed'],
   ['switch.slide-spdt-v1', 'selectedThrow', 'contact projection · selected throw', 'authored contact state → bounded AVR projection', 'model-projected'],

@@ -17,6 +17,10 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
     position: { kind: 'number', minimum: 0, maximum: 1, default: 0.5,
       unit: 'ratio', mutability: 'authored' },
   },
+  'potentiometer.trimmer-v1': {
+    position: { kind: 'number', minimum: 0, maximum: 1, default: 0.5,
+      unit: 'ratio', mutability: 'authored' },
+  },
   'switch.toggle-spst-v1': {
     closed: { kind: 'boolean', default: false, mutability: 'authored' },
   },

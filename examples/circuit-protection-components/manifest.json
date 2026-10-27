@@ -4,8 +4,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-lcd-20x4-cgram.1-current",
-    "manifestSha256": "66eecf28c381c3ad07993ddfa9c3351740c0ebba95c9b8aef328658c914f716d",
-    "implementationSha256": "962fe9d738609d19e770e75e7872c959af7ac7c8584a6dc7b831b2c784ee6341"
+    "manifestSha256": "32a7db356bb2d16e55f0ad6c2dbd9f19837dd587b76326dc39fe6e9c262c0d50",
+    "implementationSha256": "0b731cecdfd706a93d1948ca95659cd26fa37a9c497e856d2611bf550eead2bf"
   },
   "requirementIds": [
     "CMP-015",
@@ -61,7 +61,7 @@
       },
       "limitations": "Raw two-terminal circuit-protection authoring only. No overcurrent trip execution, time-current or I²t curve, interruption, arc, resistance, heating, cooling, reset, thermal/breakdown behavior, certification, safety protection, Build/Run authority or physical equivalence.",
       "sourceSha256": "f87b5b7d14d58f9fb1d8407b67dd7a11b7e1263d76c3148e53ba66896290e6c6",
-      "projectSha256": "cfb8f2fc061d141f5e08b559aa9d62ac729d262b5029f78c9f5a332ee5731e9d",
+      "projectSha256": "a027124e3410487b7b6a6515dafc6ef955484fd90e2d8f02f93b36e8296bb418",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     },
     {
@@ -107,7 +107,7 @@
       },
       "limitations": "Raw two-terminal circuit-protection authoring only. No overcurrent trip execution, time-current or I²t curve, interruption, arc, resistance, heating, cooling, reset, thermal/breakdown behavior, certification, safety protection, Build/Run authority or physical equivalence.",
       "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
-      "projectSha256": "9b236674775efa43f4e1c21447c355f100d1bfb9aa154160e4ac303440e9a2e1",
+      "projectSha256": "7aac2ce0e64d152f55209b89330b4d9d3aeb7879a6bd1dc26aec7d7906f4aaf3",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     },
     {
@@ -153,7 +153,7 @@
       },
       "limitations": "Raw two-terminal circuit-protection authoring only. No overcurrent trip execution, time-current or I²t curve, interruption, arc, resistance, heating, cooling, reset, thermal/breakdown behavior, certification, safety protection, Build/Run authority or physical equivalence.",
       "sourceSha256": "d936fc50b2c874d6af660ece56abbb024c86e7b30462c403542b8d2166b85480",
-      "projectSha256": "f5cd3fce344af375e1efc03205ba0c89a3c1c4144c29a6dc947d1904f063c02c",
+      "projectSha256": "4ab6d6f16895b0e7894ae89ddfab5e5bc8fc27c3e725ada593b31ee030004877",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     },
     {
@@ -199,7 +199,7 @@
       },
       "limitations": "Raw two-terminal circuit-protection authoring only. No overcurrent trip execution, time-current or I²t curve, interruption, arc, resistance, heating, cooling, reset, thermal/breakdown behavior, certification, safety protection, Build/Run authority or physical equivalence.",
       "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
-      "projectSha256": "148a1a715134b619a4e5d39888057827451bf71702626dabc969a6957bffc611",
+      "projectSha256": "6de2929df9c7ac630cbfbaa5ee8916663dbde518242088fc64f105d3d93ba2b7",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     }
   ]

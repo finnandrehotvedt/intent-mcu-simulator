@@ -20,6 +20,7 @@ import { validateDigitalLightThresholdComponent } from '../expansion-drafts/digi
 const expected = {
   'button.momentary-v1': ['pressed'],
   'potentiometer.linear-v1': ['position'],
+  'potentiometer.trimmer-v1': ['position'],
   'switch.toggle-spst-v1': ['closed'],
   'switch.changeover-spdt-v1': ['selectedThrow'],
   'switch.slide-spdt-v1': ['selectedThrow'],
@@ -88,10 +89,10 @@ function candidate(id, componentId, changes) {
   return opened.session;
 }
 
-test('all 68 executable cells have one exact controls-persist or controls-empty policy', () => {
+test('all 69 executable cells have one exact controls-persist or controls-empty policy', () => {
   assert.deepEqual(controlPersistenceSummary(), {
-    profiles: 4, cells: 324, available: 68, unavailable: 256,
-    controlBearing: 46, controlsEmpty: 22, controls: 55,
+    profiles: 4, cells: 328, available: 69, unavailable: 259,
+    controlBearing: 47, controlsEmpty: 22, controls: 56,
   });
   const inventory = controlPersistenceInventory();
   const bearing = inventory.filter((cell) => cell.available && cell.controls.length);
@@ -111,6 +112,7 @@ test('project-v2 button and potentiometer controls round-trip as authored data',
   for (const [id, type, controls] of [
     ['button', 'button.momentary-v1', { pressed: true }],
     ['adc', 'potentiometer.linear-v1', { position: 0.83 }],
+    ['trimmer', 'potentiometer.trimmer-v1', { position: 0.37 }],
   ]) {
     const project = createExampleProject(id).project;
     project.circuit.components.find((component) => component.type === type).controls = controls;

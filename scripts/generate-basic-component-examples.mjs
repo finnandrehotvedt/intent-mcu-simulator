@@ -23,7 +23,15 @@ const profiles = Object.freeze({
   'board.esp32-c3-devmodule-v1': 'bounded LED model output plus 3.3 V potentiometer authoring; ADC firmware unavailable',
   'board.stm32f429zi-nucleo144-v1': 'bounded LED execution plus 3.3 V potentiometer authoring; ADC firmware unavailable',
 });
-const projects = Object.freeze({ blink: createExampleProject('blink'), adc: createExampleProject('adc') });
+const trimmerProfiles = Object.freeze({
+  'board.atmega328p-16mhz-v1': 'authoring and executable adapter available after a fresh isolated Build',
+  'board.rp2040-pico-v1': 'exact top-adjust trimmer model unavailable; no cross-profile authoring or ADC firmware claim',
+  'board.esp32-c3-devmodule-v1': 'exact top-adjust trimmer model unavailable; no cross-profile authoring or ADC firmware claim',
+  'board.stm32f429zi-nucleo144-v1': 'exact top-adjust trimmer model unavailable; no cross-profile authoring or ADC firmware claim',
+});
+const projects = Object.freeze({
+  blink: createExampleProject('blink'), adc: createExampleProject('adc'), trimmer: createExampleProject('trimmer'),
+});
 const files = new Map(Object.entries(projects).map(([id, value]) => [`avr-${id}.intent-mcu.json`, canonicalProjectJson(value.project)]));
 const authoringProfiles = [
   { id: 'pico', profile: 'board.rp2040-pico-v1', schema: RP2040_PUBLIC_PROJECT_SCHEMA, source: RP2040_PUBLIC_SOURCE,
@@ -94,6 +102,11 @@ const definitions = [
     expectedBehavior: 'Turning the control maps linearly from 0–5 V to AVR ADC counts 0–1023.',
     limits: 'Ideal unloaded linear divider; no tolerance, contact noise, loading or logarithmic taper.',
     crossProfileAuthoring },
+  { id: 'avr-trimmer-calibration', requirementIds: ['CMP-003'], file: 'avr-trimmer.intent-mcu.json',
+    componentType: 'potentiometer.trimmer-v1', namedPins: { HIGH: '5V', WIPER: 'A1', LOW: 'GND1' }, value: '10 kΩ linear top-adjust',
+    expectedBehavior: 'Moving the retained position control maps linearly from 0–5 V to AVR A1 ADC counts 0–1023.',
+    limits: 'Ideal unloaded divider; no tolerance, loading, contact noise, end-stop, screw mechanics, turn count, power or thermal model.',
+    crossProfileAuthoring: [], profileBehavior: trimmerProfiles },
   { id: 'avr-series-led', requirementIds: ['CMP-037'], file: 'avr-blink.intent-mcu.json',
     componentType: 'led.basic-v1', namedPins: { ANODE: '220Ω.B', CATHODE: 'GND1' }, value: 'red 5 mm',
     expectedBehavior: 'Compiled D13 HIGH/LOW changes the visible LED and logic trace together.',
@@ -107,7 +120,7 @@ const manifest = { schema: 'intent-mcu-basic-component-example-manifest@1',
   entries: definitions.map((entry) => {
     const bytes = files.get(entry.file); const parsed = JSON.parse(bytes);
     return { ...entry, sourceSha256: sha256(parsed.source.files[0].content), projectSha256: sha256(bytes),
-      profileBehavior: profiles,
+      profileBehavior: entry.profileBehavior ?? profiles,
       provenance: 'Original project-owned component artwork, circuit factory, firmware example and canonical project format.' };
   }) };
 files.set('manifest.json', `${JSON.stringify(manifest, null, 2)}\n`);

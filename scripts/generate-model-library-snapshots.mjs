@@ -17,6 +17,9 @@ const PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_CMP003_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_CMP003_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -310,7 +313,7 @@ function manifest(version, implementationId, implementation, lineage = null) {
   const ownedEntries = entries.map((entry) => {
     const pipelineId = entry.profile === 'board.atmega328p-16mhz-v1'
       ? (entry.componentType.startsWith('board.') || ['resistor.fixed-v1', 'led.basic-v1',
-        'button.momentary-v1', 'potentiometer.linear-v1'].includes(entry.componentType)
+        'button.momentary-v1', 'potentiometer.linear-v1', 'potentiometer.trimmer-v1'].includes(entry.componentType)
         ? 'avr-base-circuit-runtime-v1' : 'avr-candidate-reconstruction-ordered-v1')
       : `${entry.profile}-validation-observation-v1`;
     const observerId = entry.componentType.startsWith('output.')
@@ -346,12 +349,12 @@ const current = manifest(
   'intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48',
   currentImplementation,
   {
-    priorVersion: PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_CMP003_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_CMP003_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'adds the fixed AVR-only 5 V source as a manifest-owned simulated model while retaining every prior component contract',
-    presentationDisposition: 'CMP-020 distinguishes the named OUT source terminal from the existing REF ground terminal with original project artwork',
-    baselineClosureDisposition: 'accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only',
+    semanticDisposition: 'adds the separate AVR-only three-terminal top-adjust trimmer as a manifest-owned simulated model while retaining every prior component contract',
+    presentationDisposition: 'CMP-003 uses original top-adjust trimmer artwork, named HIGH/WIPER/LOW terminals and a retained position control distinct from the rotary potentiometer',
+    baselineClosureDisposition: 'accepted CMP-020 head 355d068 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -415,6 +418,7 @@ export const PRE_X66_SUBCIRCUIT_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Obje
 export const PRE_X66_PUBLIC_THERMOSTAT_CREATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X66_PUBLIC_THERMOSTAT_CREATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_CMP003_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP003_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

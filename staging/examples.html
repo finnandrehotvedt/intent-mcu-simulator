@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Sixteen validated AVR starters, including nine exact component references, plus paired UART/LED lessons for bounded Pico, ESP32-C3 and STM32 profiles.">
+  <meta name="description" content="Seventeen validated AVR starters, including ten exact component references, plus paired UART/LED lessons for bounded Pico, ESP32-C3 and STM32 profiles.">
   <meta name="robots" content="index,follow,max-snippet:-1">
   <title>Starter examples | Intent MCU Simulator</title>
   <link rel="canonical" href="https://lab.teachthecompany.com/examples.html">
@@ -24,6 +24,7 @@
       <article class="docs-card"><h2>Blink LED</h2><p>Connect D13 through a 220 Ω resistor to an LED and ground. Build, run, and compare the light with GPIO and Serial ON/OFF records.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
       <article class="docs-card"><h2>Button input</h2><p>Read a tactile button on D2 with <code>INPUT_PULLUP</code>. Press it in Interact mode and inspect firmware-derived input and Serial state.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
       <article class="docs-card"><h2>ADC dial</h2><p>Turn a potentiometer feeding A0 and compare its ideal 0–5 V position with the 10-bit ADC values produced by executed firmware.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
+      <article class="docs-card"><h2>Trimmer calibration</h2><p>Adjust a distinct top-adjust trimmer feeding A1 and compare its retained ideal 0–5 V position with ADC values from executed firmware. The exact trimmer type is AVR-only.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
       <article class="docs-card"><h2>PWM fade</h2><p>Drive a current-limited LED from D3 and relate duty cycle, relative brightness, and the logic analyser waveform.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
       <article class="docs-card"><h2>PWM pulse</h2><p>Compare fixed 25% and 75% duty cycles on the same validated D3, resistor, LED and ground path. Executed firmware prints each phase over Serial.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
       <article class="docs-card"><h2>Temperature display</h2><p>Read the ideal temperature module on A1, write whole Celsius to a 16×2 LCD, and select a current-limited RGB status colour.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
@@ -44,7 +45,8 @@
       <ol>
         <li><strong>Blink LED</strong><span>Next: Load Button input to add a user-controlled digital input.</span></li>
         <li><strong>Button input</strong><span>Next: Load ADC dial to compare a digital input with a measured analogue value.</span></li>
-        <li><strong>ADC dial</strong><span>Next: Load PWM fade to turn a measured range into a variable output.</span></li>
+        <li><strong>ADC dial</strong><span>Next: Load Trimmer calibration to compare a set-and-retain adjustment with a rotary control.</span></li>
+        <li><strong>Trimmer calibration</strong><span>Next: Load PWM fade to turn a measured range into a variable output.</span></li>
         <li><strong>PWM fade</strong><span>Next: Load PWM pulse to compare exact duty-cycle boundaries.</span></li>
         <li><strong>PWM pulse</strong><span>Next: Load Temperature display to combine analogue input with several outputs.</span></li>
         <li><strong>Temperature display</strong><span>Next: Load Thermostat boundary test to turn the threshold into saved scenarios and requirements.</span></li>
@@ -81,7 +83,7 @@
       <ol><li>Save the incomplete project and Open it again if you want to prove history-free recovery.</li><li>In <strong>Supported parts</strong>, add the one missing resistor or LED. The fixed stable ID returns, with no cable.</li><li>Activate two compatible free named pins for each missing connection. Unsafe resistance/colour pairs reject without changing the accepted draft.</li><li>When the circuit state says accepted, Build fresh and Run. Old executable authority never returns from the file.</li></ol>
       <nav class="docs-nav" aria-label="Recovery help"><a href="/components.html#narrow-profile-parts">Part and property limits</a><a href="/support.html#routing-help">Cable routing help</a><a href="/support.html#repair-after-open">Detailed Save/Open recovery</a><a href="/">Open the workbench</a></nav>
     </section>
-    <footer>Sixteen validated AVR starters and paired bounded Pico, ESP32-C3 and STM32 examples in Intent MCU Simulator 1.1.0-rc.139</footer>
+    <footer>Seventeen validated AVR starters and paired bounded Pico, ESP32-C3 and STM32 examples in Intent MCU Simulator 1.1.0-rc.139</footer>
   </main>
 </body>
 </html>

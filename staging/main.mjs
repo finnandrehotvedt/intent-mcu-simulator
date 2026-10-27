@@ -13166,6 +13166,7 @@ function addComponent(type, point = null) {
       'led.basic-v1': { x: 0.77, y: 0.16 },
       'button.momentary-v1': { x: 0.77, y: 0.52 },
       'potentiometer.linear-v1': { x: 0.47, y: 0.76 },
+      'potentiometer.trimmer-v1': { x: 0.6, y: 0.76 },
       'reference.ground-v1': { x: 0.18, y: 0.78 },
       [POWER_REFERENCE_TYPE]: { x: 0.18, y: 0.64 },
       'switch.toggle-spst-v1': { x: 0.48, y: 0.78 },
@@ -14017,7 +14018,7 @@ function renderRuntimeControls() {
         return row;
       });
     }
-    if (component.type === 'potentiometer.linear-v1') {
+    if (['potentiometer.linear-v1', 'potentiometer.trimmer-v1'].includes(component.type)) {
       const row = document.createElement('div');
       const label = document.createElement('label'); label.textContent = component.label;
       const input = document.createElement('input'); input.type = 'range'; input.min = '0'; input.max = '100'; input.value = String(component.controls.position * 100); input.dataset.control = `${component.id}.position`;
@@ -16082,8 +16083,8 @@ function filterStarterExamples() {
     if (!card.hidden) visible += 1;
   }
   elements.examplepickerstatus.textContent = query
-    ? `${visible} of 16 examples match “${elements.examplepickersearch.value.trim()}”`
-    : '16 examples available';
+    ? `${visible} of 17 examples match “${elements.examplepickersearch.value.trim()}”`
+    : '17 examples available';
 }
 function closeExamplePicker({ restoreFocus = true } = {}) {
   const returnFocus = examplePickerReturnFocus;

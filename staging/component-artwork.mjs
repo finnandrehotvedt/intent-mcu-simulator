@@ -251,6 +251,26 @@ function potentiometer(svg, definition) {
   drawTerminals(svg, definition, 3);
 }
 
+function trimmerPotentiometer(svg, definition, component) {
+  const position = Math.max(0, Math.min(1, Number(component?.controls?.position) || 0));
+  const angle = -140 + position * 280;
+  const radians = angle * Math.PI / 180;
+  const x2 = 50 + Math.cos(radians) * 17;
+  const y2 = 39 + Math.sin(radians) * 17;
+  append(svg,
+    element('rect', { x: 12, y: 9, width: 76, height: 61, rx: 8, class: 'pot-body' }),
+    element('circle', { cx: 50, cy: 39, r: 25, class: 'pot-case' }),
+    element('circle', { cx: 50, cy: 39, r: 15, class: 'pot-shaft' }),
+    element('line', { x1: 50, y1: 39, x2, y2, class: 'pot-index' }),
+    element('line', { x1: 38, y1: 39, x2: 62, y2: 39, class: 'pot-index' }),
+    element('text', { x: 50, y: 67, 'text-anchor': 'middle', class: 'pico-board-subtitle' }, 'TRIM'),
+    element('line', { x1: 20, y1: 69, x2: 20, y2: 84, class: 'metal-lead' }),
+    element('line', { x1: 50, y1: 68, x2: 50, y2: 88, class: 'metal-lead' }),
+    element('line', { x1: 80, y1: 69, x2: 80, y2: 84, class: 'metal-lead' }),
+  );
+  drawTerminals(svg, definition, 3);
+}
+
 function serialInstrument(svg) {
   append(svg,
     element('rect', { x: 4, y: 5, width: 92, height: 50, rx: 6, class: 'board-module' }),
@@ -271,6 +291,7 @@ const renderers = Object.freeze({
   'ground-reference-3v3': groundReference3v3,
   'switch-toggle-3v3': toggleSwitch3v3,
   'potentiometer-rotary': potentiometer,
+  'potentiometer-trimmer': trimmerPotentiometer,
   'instrument-serial': serialInstrument,
 });
 

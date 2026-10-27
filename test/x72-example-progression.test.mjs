@@ -32,7 +32,8 @@ const cards = () => [
 const expectedNext = Object.freeze({
   blink: 'Load Button input to add a user-controlled digital input.',
   button: 'Load ADC dial to compare a digital input with a measured analogue value.',
-  adc: 'Load PWM fade to turn a measured range into a variable output.',
+  adc: 'Load Trimmer calibration to compare a set-and-retain adjustment with a rotary control.',
+  trimmer: 'Load PWM fade to turn a measured range into a variable output.',
   pwm: 'Load PWM pulse to compare exact duty-cycle boundaries.',
   'pwm-pulse': 'Load Temperature display to combine analogue input with several outputs.',
   'temperature-lcd-threshold': 'Load Thermostat boundary test to turn the threshold into saved scenarios and requirements.',
@@ -57,6 +58,7 @@ const baselineProjectHashes = Object.freeze({
   blink: '2b94712762974e149bb3f29fea48f46025ac09105c903218fc64ce3546b48fd8',
   button: '2a77a2a367e0810e67c040eb02a17bc0d819c0cb250d9681175012c8adfa0d20',
   adc: '816740837eb3b463d718dd3d6ba2a992ecc93374c8c711cbfb349fa00da0685a',
+  trimmer: 'dbde3666dc62c374c1978c5ef927853b4c5ccc67dc59df5e1d8ff884ff2bcc1b',
   pwm: 'aa1ab663a65b804adf1e471b5c15e20e61c7bbaf1c09c9d528ec8b5cb9a28a42',
   'pwm-pulse': '6c046293b5e08ddf505b0775d73ef3d6984e02f33c4958825855b8548e8982db',
   'temperature-lcd-threshold': 'de518c3c0754502f8c3d499249e329339214862578284e0a4ef3fbe585eaffd1',
@@ -79,10 +81,10 @@ const baselineProjectHashes = Object.freeze({
 });
 const hash = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
-test('X72 exposes one concise five-part learning progression for all 22 examples', () => {
+test('X72 exposes one concise five-part learning progression for all 23 examples', () => {
   const catalog = cards();
-  assert.equal(catalog.length, 22);
-  assert.equal(new Set(catalog.map(({ id }) => id)).size, 22);
+  assert.equal(catalog.length, 23);
+  assert.equal(new Set(catalog.map(({ id }) => id)).size, 23);
   assert.deepEqual(Object.fromEntries(catalog.map(({ id, next }) => [id, next])), expectedNext);
   for (const card of catalog) {
     for (const field of ['learn', 'try', 'limits', 'next']) assert.match(card[field], /\S/u, `${card.id}.${field}`);

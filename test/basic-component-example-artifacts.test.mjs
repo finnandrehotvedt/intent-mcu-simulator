@@ -17,10 +17,10 @@ await import('../scripts/generate-basic-component-examples.mjs');
 const ROOT = new URL('../examples/basic-components/', import.meta.url);
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 
-test('CMP-001/002/037 examples are canonical, hashed and electrically named', async () => {
+test('CMP-001/002/003/037 examples are canonical, hashed and electrically named', async () => {
   const manifest = JSON.parse(await readFile(new URL('manifest.json', ROOT), 'utf8'));
   assert.equal(manifest.schema, 'intent-mcu-basic-component-example-manifest@1');
-  assert.deepEqual(manifest.entries.flatMap((entry) => entry.requirementIds), ['CMP-001', 'CMP-002', 'CMP-037']);
+  assert.deepEqual(manifest.entries.flatMap((entry) => entry.requirementIds), ['CMP-001', 'CMP-002', 'CMP-003', 'CMP-037']);
   for (const entry of manifest.entries) {
     const bytes = await readFile(new URL(entry.file, ROOT), 'utf8');
     const opened = parseProjectV2(bytes);
@@ -55,6 +55,27 @@ test('CMP-002 cross-profile combined examples reopen with exact hashes and hones
   }
 });
 
+test('CMP-003 artifact preserves exact AVR topology and explicit narrow-profile unavailability', async () => {
+  const manifest = JSON.parse(await readFile(new URL('manifest.json', ROOT), 'utf8'));
+  const entry = manifest.entries.find(({ id }) => id === 'avr-trimmer-calibration');
+  assert.deepEqual(entry.crossProfileAuthoring, []);
+  for (const profile of ['board.rp2040-pico-v1', 'board.esp32-c3-devmodule-v1', 'board.stm32f429zi-nucleo144-v1']) {
+    assert.match(entry.profileBehavior[profile], /exact top-adjust trimmer model unavailable/u);
+  }
+  const bytes = await readFile(new URL(entry.file, ROOT), 'utf8');
+  assert.equal(sha256(bytes), entry.projectSha256);
+  const project = parseProjectV2(bytes).project;
+  const trimmer = project.circuit.components.find(({ type }) => type === 'potentiometer.trimmer-v1');
+  assert.deepEqual(trimmer.properties, { ohms: 10_000, taper: 'linear' });
+  assert.deepEqual(trimmer.controls, { position: 0.5 });
+  assert.deepEqual(project.circuit.nets.map(({ endpoints }) => endpoints.map(
+    ({ component, pin }) => `${component}.${pin}`)), [
+    ['board-1.5V', 'trimmer-1.HIGH'],
+    ['board-1.A1', 'trimmer-1.WIPER'],
+    ['board-1.GND1', 'trimmer-1.LOW'],
+  ]);
+});
+
 test('CMP-001/037 cross-profile series examples reopen with exact components nets and hashes', async () => {
   const manifest = JSON.parse(await readFile(new URL('manifest.json', ROOT), 'utf8'));
   const entries = manifest.entries.filter(({ requirementIds }) => requirementIds.some((id) => ['CMP-001', 'CMP-037'].includes(id)));
@@ -80,10 +101,14 @@ test('CMP-001/037 cross-profile series examples reopen with exact components net
 test('basic examples preserve exact validated topology and values', async () => {
   const blink = parseProjectV2(await readFile(new URL('avr-blink.intent-mcu.json', ROOT), 'utf8')).project;
   const adc = parseProjectV2(await readFile(new URL('avr-adc.intent-mcu.json', ROOT), 'utf8')).project;
+  const trimmer = parseProjectV2(await readFile(new URL('avr-trimmer.intent-mcu.json', ROOT), 'utf8')).project;
   assert.deepEqual(blink.circuit.components.map((item) => item.type),
     ['board.atmega328p-16mhz-v1', 'led.basic-v1', 'resistor.fixed-v1']);
   assert.equal(blink.circuit.components.find((item) => item.type === 'resistor.fixed-v1').properties.ohms, 220);
   assert.deepEqual(adc.circuit.components.map((item) => item.type),
     ['board.atmega328p-16mhz-v1', 'potentiometer.linear-v1']);
   assert.equal(adc.circuit.components.find((item) => item.type === 'potentiometer.linear-v1').properties.ohms, 10000);
+  assert.deepEqual(trimmer.circuit.components.map((item) => item.type),
+    ['board.atmega328p-16mhz-v1', 'potentiometer.trimmer-v1']);
+  assert.equal(trimmer.instruments.selectedPin, 'A1');
 });

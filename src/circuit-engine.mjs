@@ -22,6 +22,7 @@ export const MODEL_LIBRARY_TEST_AUTHORITY = Symbol('MODEL_LIBRARY_TEST_AUTHORITY
 const ID = /^[a-z][a-z0-9-]{0,47}$/;
 const LABEL = /^[\p{L}\p{N} ._#()°Ω×+\-]{1,64}$/u;
 const ACCEPTED_BAUD = new Set([9_600, 19_200, 38_400, 57_600, 115_200]);
+const POTENTIOMETER_TYPES = new Set(['potentiometer.linear-v1', 'potentiometer.trimmer-v1']);
 
 function diagnostic(code, details = {}) {
   return Object.freeze({
@@ -64,7 +65,7 @@ function validateProperties(type, properties, controls, componentId) {
       && (properties.normallyOpen !== true || typeof controls.pressed !== 'boolean')) {
     fail('INVALID_COMPONENT_PROPERTIES', { componentId });
   }
-  if (type === 'potentiometer.linear-v1'
+  if (POTENTIOMETER_TYPES.has(type)
       && (!Number.isFinite(properties.ohms) || properties.ohms < 1 || properties.ohms > 10_000_000
         || properties.taper !== 'linear' || !Number.isFinite(controls.position)
         || controls.position < 0 || controls.position > 1)) {
@@ -328,7 +329,7 @@ function analyzeElectrical(graph, options = {}) {
         pressed: button.controls.pressed, connected: reference.result.connected });
   }
 
-  for (const pot of graph.components.filter((component) => component.type === 'potentiometer.linear-v1')) {
+  for (const pot of graph.components.filter((component) => POTENTIOMETER_TYPES.has(component.type))) {
     const highNet = connectedNet(indexes, pot.id, 'HIGH');
     const lowNet = connectedNet(indexes, pot.id, 'LOW');
     const wiperNet = connectedNet(indexes, pot.id, 'WIPER');
@@ -340,7 +341,7 @@ function analyzeElectrical(graph, options = {}) {
       diagnostics.push(diagnostic('UNSUPPORTED_ANALOG_TOPOLOGY', { componentId: pot.id, netId: wiperNet ?? highNet ?? lowNet }));
       continue;
     }
-    const reference = modelLibrary.evaluateReference('potentiometer.linear-v1', {
+    const reference = modelLibrary.evaluateReference(pot.type, {
       supplyVolts: 5, position: pot.controls.position,
     });
     if (!reference.ok) {
@@ -349,6 +350,7 @@ function analyzeElectrical(graph, options = {}) {
     }
     models.potentiometers.push({
       componentId: pot.id,
+      modelType: pot.type,
       boardPin: input.pin,
       position: pot.controls.position,
       voltage: reference.result.outputVolts,
@@ -482,7 +484,7 @@ export class CircuitRuntime {
     for (const pot of this.models.potentiometers) {
       const position = this.controls[pot.componentId].position;
       const reference = resolveModelLibrary(this.modelLibraryLock).implementation
-        .evaluateReference('potentiometer.linear-v1', { supplyVolts: 5, position });
+        .evaluateReference(pot.modelType, { supplyVolts: 5, position });
       adapter.setAnalogChannel(Number(pot.boardPin.slice(1)), reference.result.outputVolts);
     }
   }
@@ -521,7 +523,7 @@ export class CircuitRuntime {
         componentId: model.componentId,
         boardPin: model.boardPin,
         voltage: resolveModelLibrary(this.modelLibraryLock).implementation
-          .evaluateReference('potentiometer.linear-v1', {
+          .evaluateReference(model.modelType, {
             supplyVolts: 5, position: this.controls[model.componentId].position,
           }).result.outputVolts,
       })),

@@ -96,7 +96,7 @@ test('canonical draft bytes are deterministic and contain no third-party product
 
 test('drafts cannot alter the active component catalogue or selectable count', () => {
   assert.equal(validateComponentCatalog(COMPONENT_CATALOG), true);
-  assert.equal(catalogEntries({ selectableOnly: true }).length, 5);
+  assert.equal(catalogEntries({ selectableOnly: true }).length, 6);
   for (const definition of FOUNDATION_PRIMITIVE_DRAFTS) {
     assert.equal(Object.hasOwn(COMPONENT_CATALOG, definition.type), false);
   }

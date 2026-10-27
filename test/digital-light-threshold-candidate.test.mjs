@@ -85,7 +85,7 @@ test('digital light threshold is a distinct generic contract with exact active-l
   assert.match(DIGITAL_LIGHT_THRESHOLD_DEFINITION.support.limitations.join(' '), /No lux calibration/u);
   assert.match(DIGITAL_LIGHT_THRESHOLD_DEFINITION.artwork.provenance, /Original IntentForce SVG/u);
   assert(!Object.hasOwn(COMPONENT_CATALOG, DIGITAL_LIGHT_THRESHOLD_TYPE));
-  assert.equal(Object.values(COMPONENT_CATALOG).filter((definition) => definition.selectable).length, 5);
+  assert.equal(Object.values(COMPONENT_CATALOG).filter((definition) => definition.selectable).length, 6);
   assert.equal(Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable).length, 69);
 
   const contract = {

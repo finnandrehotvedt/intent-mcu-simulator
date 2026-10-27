@@ -32,7 +32,7 @@ let browser;
   await page.waitForFunction(() => window.__M11_READY__ === true);
   const cards = page.locator('.starter-card');
   const dialog = page.locator('#example-picker-dialog');
-  assert(await cards.count() === 16, 'example picker does not expose all sixteen validated examples');
+  assert(await cards.count() === 17, 'example picker does not expose all seventeen validated examples');
   assert(!(await dialog.evaluate((node) => node.open)), 'example picker is open by default');
   assert(await cards.filter({ visible: true }).count() === 0, 'inline starter gallery remains visible by default');
   const initialProject = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
@@ -67,6 +67,7 @@ let browser;
     ['blink', 'Blink demo'],
     ['button', 'Button input'],
     ['adc', 'ADC dial'],
+    ['trimmer', 'Trimmer calibration'],
     ['pwm', 'PWM fade'],
     ['pwm-pulse', 'PWM pulse'],
     ['temperature-lcd-threshold', 'Temperature display'],

@@ -93,7 +93,7 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       if (typeof input?.pressed !== 'boolean') return failure('MODEL_LIBRARY_REFERENCE_INPUT');
       return { ok: true, code: 'OK', result: { connected: input.pressed } };
     }
-    if (componentType === 'potentiometer.linear-v1') {
+    if (['potentiometer.linear-v1', 'potentiometer.trimmer-v1'].includes(componentType)) {
       if (!Number.isFinite(input?.supplyVolts) || !Number.isFinite(input?.position)
           || input.position < 0 || input.position > 1) return failure('MODEL_LIBRARY_REFERENCE_INPUT');
       return { ok: true, code: 'OK', result: { outputVolts: input.supplyVolts * input.position } };
@@ -104,7 +104,9 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
     if (componentType === 'resistor.fixed-v1') return this.evaluateReference(componentType, input);
     if (componentType === 'led.basic-v1') return this.evaluateReference(componentType, input);
     if (componentType === 'button.momentary-v1') return this.evaluateReference(componentType, input);
-    if (componentType === 'potentiometer.linear-v1') return this.evaluateReference(componentType, input);
+    if (['potentiometer.linear-v1', 'potentiometer.trimmer-v1'].includes(componentType)) {
+      return this.evaluateReference(componentType, input);
+    }
     if (componentType === 'reference.ground-v1') {
       return exactInput(input, []) ? { ok: true, code: 'OK', result: { potentialVolts: 0 } }
         : failure('MODEL_LIBRARY_PRODUCTION_INPUT');
@@ -360,6 +362,13 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
 export const PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
   ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
   id: 'intent-mcu-model-bundle-current-pre-cmp020-manual-mixed-repair@49',
+  manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
+  migrationOnly: true,
+});
+
+export const PRE_CMP003_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-pre-cmp003-public-source@54',
   manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
   migrationOnly: true,
 });

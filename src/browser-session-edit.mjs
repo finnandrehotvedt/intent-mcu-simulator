@@ -54,7 +54,7 @@ import { CONTACT_SENSOR_DEFINITIONS, createContactSensor } from '../expansion-dr
 
 const ID = /^[a-z][a-z0-9-]{0,47}$/u;
 const TYPES = new Set(['board.atmega328p-16mhz-v1', 'resistor.fixed-v1', 'led.basic-v1',
-  'button.momentary-v1', 'potentiometer.linear-v1', 'terminal.serial-uart-v1',
+  'button.momentary-v1', 'potentiometer.linear-v1', 'potentiometer.trimmer-v1', 'terminal.serial-uart-v1',
   CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE, PCF8574_LCD_TYPE,
   POWER_REFERENCE_TYPE,
   SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE,

@@ -48,7 +48,7 @@
               ]
             }
           ],
-          "projectSha256": "b5fdad8b4fbc11b267c9fb06e05ea27d80c0e623b63f118c657ea69bc42bb164",
+          "projectSha256": "bd6446713cf72c45a0fadd42e9d344e7a51be5ad8e585e9db58594b5ccc92248",
           "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
           "expectedVisibleBehavior": "Opening restores the board, resistor and LED with the validated named series wiring.",
           "firmware": "the bounded profile supports only its documented output subset; this file makes no broader peripheral claim"
@@ -85,7 +85,7 @@
               ]
             }
           ],
-          "projectSha256": "673e4f66cc22a387192da3a64048193178f3d3e7e864e287dfb885bde47d2326",
+          "projectSha256": "b2eaaf7415d0edbbd797b5f7f87cf8241fe5a2405b084139919f4f67f0ad7781",
           "sourceSha256": "d936fc50b2c874d6af660ece56abbb024c86e7b30462c403542b8d2166b85480",
           "expectedVisibleBehavior": "Opening restores the board, resistor and LED with the validated named series wiring.",
           "firmware": "the bounded profile supports only its documented output subset; this file makes no broader peripheral claim"
@@ -122,7 +122,7 @@
               ]
             }
           ],
-          "projectSha256": "26efd1cc91668ca1d2e4fbe9fa94284a9f94da4a244bd73c6f8ccc335436f314",
+          "projectSha256": "808071c7d06075b5bc2790c54f1fc779ab02bae13683e5617c0cb2e005b5cf2b",
           "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
           "expectedVisibleBehavior": "Opening restores the board, resistor and LED with the validated named series wiring.",
           "firmware": "the bounded profile supports only its documented output subset; this file makes no broader peripheral claim"
@@ -229,6 +229,32 @@
       "provenance": "Original project-owned component artwork, circuit factory, firmware example and canonical project format."
     },
     {
+      "id": "avr-trimmer-calibration",
+      "requirementIds": [
+        "CMP-003"
+      ],
+      "file": "avr-trimmer.intent-mcu.json",
+      "componentType": "potentiometer.trimmer-v1",
+      "namedPins": {
+        "HIGH": "5V",
+        "WIPER": "A1",
+        "LOW": "GND1"
+      },
+      "value": "10 kΩ linear top-adjust",
+      "expectedBehavior": "Moving the retained position control maps linearly from 0–5 V to AVR A1 ADC counts 0–1023.",
+      "limits": "Ideal unloaded divider; no tolerance, loading, contact noise, end-stop, screw mechanics, turn count, power or thermal model.",
+      "crossProfileAuthoring": [],
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "exact top-adjust trimmer model unavailable; no cross-profile authoring or ADC firmware claim",
+        "board.esp32-c3-devmodule-v1": "exact top-adjust trimmer model unavailable; no cross-profile authoring or ADC firmware claim",
+        "board.stm32f429zi-nucleo144-v1": "exact top-adjust trimmer model unavailable; no cross-profile authoring or ADC firmware claim"
+      },
+      "sourceSha256": "26019078726abb0a82e84da5ffcd26a9d6460f8d7b887aeaa27f29e50d2c3180",
+      "projectSha256": "dbde3666dc62c374c1978c5ef927853b4c5ccc67dc59df5e1d8ff884ff2bcc1b",
+      "provenance": "Original project-owned component artwork, circuit factory, firmware example and canonical project format."
+    },
+    {
       "id": "avr-series-led",
       "requirementIds": [
         "CMP-037"
@@ -275,7 +301,7 @@
               ]
             }
           ],
-          "projectSha256": "b5fdad8b4fbc11b267c9fb06e05ea27d80c0e623b63f118c657ea69bc42bb164",
+          "projectSha256": "bd6446713cf72c45a0fadd42e9d344e7a51be5ad8e585e9db58594b5ccc92248",
           "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
           "expectedVisibleBehavior": "Opening restores the board, resistor and LED with the validated named series wiring.",
           "firmware": "the bounded profile supports only its documented output subset; this file makes no broader peripheral claim"
@@ -312,7 +338,7 @@
               ]
             }
           ],
-          "projectSha256": "673e4f66cc22a387192da3a64048193178f3d3e7e864e287dfb885bde47d2326",
+          "projectSha256": "b2eaaf7415d0edbbd797b5f7f87cf8241fe5a2405b084139919f4f67f0ad7781",
           "sourceSha256": "d936fc50b2c874d6af660ece56abbb024c86e7b30462c403542b8d2166b85480",
           "expectedVisibleBehavior": "Opening restores the board, resistor and LED with the validated named series wiring.",
           "firmware": "the bounded profile supports only its documented output subset; this file makes no broader peripheral claim"
@@ -349,7 +375,7 @@
               ]
             }
           ],
-          "projectSha256": "26efd1cc91668ca1d2e4fbe9fa94284a9f94da4a244bd73c6f8ccc335436f314",
+          "projectSha256": "808071c7d06075b5bc2790c54f1fc779ab02bae13683e5617c0cb2e005b5cf2b",
           "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
           "expectedVisibleBehavior": "Opening restores the board, resistor and LED with the validated named series wiring.",
           "firmware": "the bounded profile supports only its documented output subset; this file makes no broader peripheral claim"
