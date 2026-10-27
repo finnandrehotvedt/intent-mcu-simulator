@@ -8,6 +8,8 @@ import { DIODE_COMPONENT_DEFINITIONS } from '../expansion-drafts/diode-component
 import { createDiodeArtwork } from '../expansion-drafts/diode-components-artwork-v1.mjs';
 import { TRANSISTOR_COMPONENT_DEFINITIONS } from '../expansion-drafts/transistor-components-v1.mjs';
 import { createTransistorArtwork } from '../expansion-drafts/transistor-components-artwork-v1.mjs';
+import { CIRCUIT_PROTECTION_DEFINITIONS } from '../expansion-drafts/circuit-protection-components-v1.mjs';
+import { createCircuitProtectionArtwork } from '../expansion-drafts/circuit-protection-components-artwork-v1.mjs';
 import { SEMICONDUCTOR_ACTIVE_DEFINITIONS } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
 import { createSemiconductorActiveArtwork } from '../expansion-drafts/semiconductor-active-components-artwork-v1.mjs';
 
@@ -288,6 +290,11 @@ export function createComponentArtwork(definition, component, options = {}) {
   }
   if (TRANSISTOR_COMPONENT_DEFINITIONS[component?.type]) {
     const svg = createTransistorArtwork(document, definition, component);
+    if (options.thumbnail) svg.classList.add('catalog-thumbnail');
+    return svg;
+  }
+  if (CIRCUIT_PROTECTION_DEFINITIONS[component?.type]) {
+    const svg = createCircuitProtectionArtwork(document, definition, component);
     if (options.thumbnail) svg.classList.add('catalog-thumbnail');
     return svg;
   }

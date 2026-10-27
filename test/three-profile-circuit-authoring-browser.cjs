@@ -45,7 +45,7 @@ const profiles = [
       await page.waitForFunction(({ api }) => Boolean(window[api]?.state().active), profile);
       await page.waitForFunction(({ list }) => {
         const cards = [...document.querySelectorAll(`${list} .bounded-part-card`)];
-        return cards.length === 18 && cards.every((card) => card.querySelector('.bounded-part-thumbnail svg[role="img"]'));
+        return cards.length === 20 && cards.every((card) => card.querySelector('.bounded-part-thumbnail svg[role="img"]'));
       }, profile);
       const catalogueArtwork = await page.evaluate(({ list }) => ({
         cards: document.querySelectorAll(`${list} .bounded-part-card`).length,

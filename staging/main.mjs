@@ -12,6 +12,8 @@ import { DIODE_COMPONENT_DEFINITIONS, SCHOTTKY_DIODE_TYPE, SILICON_DIODE_TYPE,
 import { NPN_BJT_TYPE, PNP_BJT_TYPE, N_CHANNEL_MOSFET_TYPE,
   TRANSISTOR_COMPONENT_DEFINITIONS,
   validateTransistorAuthoringGraph } from '../expansion-drafts/transistor-components-v1.mjs';
+import { FUSE_TYPE, RESETTABLE_FUSE_PTC_TYPE, CIRCUIT_PROTECTION_DEFINITIONS,
+  validateCircuitProtectionAuthoringGraph } from '../expansion-drafts/circuit-protection-components-v1.mjs';
 import { OPTOCOUPLER_TYPE, P_CHANNEL_MOSFET_TYPE,
   SEMICONDUCTOR_ACTIVE_DEFINITIONS,
   validateSemiconductorActiveAuthoringGraph } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
@@ -1531,6 +1533,7 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
     ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
     ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
     ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS),
+    ...Object.keys(CIRCUIT_PROTECTION_DEFINITIONS),
     ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS)].includes(selected.type)) {
     const note = document.createElement('p');
     note.textContent = `${selectedPart.displayName} is a 3.3 V authoring-only part. Its named pins persist, but it cannot grant Build or Run authority.`;
@@ -1547,6 +1550,7 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
   const authoringDefinition = PASSIVE_ENERGY_STORAGE_DEFINITIONS[selected.type]
     ?? DIODE_COMPONENT_DEFINITIONS[selected.type]
     ?? TRANSISTOR_COMPONENT_DEFINITIONS[selected.type]
+    ?? CIRCUIT_PROTECTION_DEFINITIONS[selected.type]
     ?? SEMICONDUCTOR_ACTIVE_DEFINITIONS[selected.type];
   if (['resistor.fixed-v1', 'potentiometer.linear-3v3-v1'].includes(selected.type)) {
     label.append('Resistance (Ω)');
@@ -1562,6 +1566,8 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
       ? 'Authoring value only. No nonlinear I-V/reverse-breakdown model or Build/Run authority is added.'
       : TRANSISTOR_COMPONENT_DEFINITIONS[selected.type]
         ? 'Authoring value only. No bias/switching/current model or Build/Run authority is added.'
+      : CIRCUIT_PROTECTION_DEFINITIONS[selected.type]
+        ? 'Authoring value only. No trip/interruption/reset/thermal model, safety protection or Build/Run authority is added.'
       : SEMICONDUCTOR_ACTIVE_DEFINITIONS[selected.type]
         ? 'Authoring value only. No switching, optical-transfer, isolation model or Build/Run authority is added.'
         : 'Authoring value only. No transient/frequency solver or Build/Run authority is added.';
@@ -7823,7 +7829,10 @@ const commonProjectAdapters = Object.freeze({
       const diode = validateDiodeAuthoringGraph(graph);
       if (diode.ok) return diode;
       const transistor = validateTransistorAuthoringGraph(graph);
-      return transistor.ok ? transistor : validateSemiconductorActiveAuthoringGraph(graph);
+      if (transistor.ok) return transistor;
+      const circuitProtection = validateCircuitProtectionAuthoringGraph(graph);
+      return circuitProtection.ok
+        ? circuitProtection : validateSemiconductorActiveAuthoringGraph(graph);
     },
   }),
   [RP2040_PROFILE]: Object.freeze({
@@ -13126,6 +13135,8 @@ function candidateComponentPrefix(type) {
       [NPN_BJT_TYPE]: 'npn',
       [PNP_BJT_TYPE]: 'pnp',
       [N_CHANNEL_MOSFET_TYPE]: 'nmos',
+      [FUSE_TYPE]: 'fuse',
+      [RESETTABLE_FUSE_PTC_TYPE]: 'ptc',
       [P_CHANNEL_MOSFET_TYPE]: 'pmos',
       [OPTOCOUPLER_TYPE]: 'optocoupler',
   }[type] ?? null;
@@ -13210,6 +13221,8 @@ function addComponent(type, point = null) {
       [NPN_BJT_TYPE]: { x: 0.56, y: 0.08 },
       [PNP_BJT_TYPE]: { x: 0.7, y: 0.08 },
       [N_CHANNEL_MOSFET_TYPE]: { x: 0.84, y: 0.08 },
+      [FUSE_TYPE]: { x: 0.28, y: 0.04 },
+      [RESETTABLE_FUSE_PTC_TYPE]: { x: 0.44, y: 0.04 },
       [P_CHANNEL_MOSFET_TYPE]: { x: 0.56, y: 0.04 },
       [OPTOCOUPLER_TYPE]: { x: 0.76, y: 0.04 },
     }[type];

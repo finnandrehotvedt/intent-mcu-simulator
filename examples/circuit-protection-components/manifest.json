@@ -1,0 +1,206 @@
+{
+  "schema": "intent-mcu-circuit-protection-example-manifest@1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "13ab67ce142246f1d7d890882501e8216d5673ab4f396437ca8697b31fc489cd",
+    "implementationSha256": "ab472c11c96d7b27985ac1c91d34371b8fb3c27a2daed2bf0929e969926e3b9a"
+  },
+  "requirementIds": [
+    "CMP-015",
+    "CMP-016"
+  ],
+  "profileBehavior": {
+    "board.atmega328p-16mhz-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence",
+    "board.rp2040-pico-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence",
+    "board.esp32-c3-devmodule-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence",
+    "board.stm32f429zi-nucleo144-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence"
+  },
+  "entries": [
+    {
+      "id": "avr-circuit-protection-components",
+      "profile": "board.atmega328p-16mhz-v1",
+      "file": "avr-circuit-protection-components.intent-mcu.json",
+      "requirementIds": [
+        "CMP-015",
+        "CMP-016"
+      ],
+      "componentTypes": [
+        "protection.fuse-v1",
+        "protection.resettable-fuse-ptc-v1"
+      ],
+      "componentIds": [
+        "fuse-1",
+        "ptc-1"
+      ],
+      "nameplateValues": {
+        "protection.fuse-v1": {
+          "ratedCurrentAmps": 1,
+          "ratedVoltageVolts": 250,
+          "breakingCapacityAmps": 100
+        },
+        "protection.resettable-fuse-ptc-v1": {
+          "holdCurrentAmps": 0.5,
+          "tripCurrentAmps": 1,
+          "maxVoltageVolts": 30
+        }
+      },
+      "namedWiring": [
+        "board-1.D2 → fuse-1.A",
+        "fuse-1.B ↔ ptc-1.A",
+        "ptc-1.B → board-1.GND1"
+      ],
+      "expectedVisibleBehavior": "Opening restores two original protection SVG symbols, exact A/B terminals, bounded nameplate values and three authored nets.",
+      "runtimeUnavailableCode": "CIRCUIT_PROTECTION_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence"
+      },
+      "limitations": "Raw two-terminal circuit-protection authoring only. No overcurrent trip execution, time-current or I²t curve, interruption, arc, resistance, heating, cooling, reset, thermal/breakdown behavior, certification, safety protection, Build/Run authority or physical equivalence.",
+      "sourceSha256": "f87b5b7d14d58f9fb1d8407b67dd7a11b7e1263d76c3148e53ba66896290e6c6",
+      "projectSha256": "19443eba68521d6450543f1df1ed615462f7bbc17c280244b76b49504e55efcd",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    },
+    {
+      "id": "pico-circuit-protection-components",
+      "profile": "board.rp2040-pico-v1",
+      "file": "pico-circuit-protection-components.intent-mcu.json",
+      "requirementIds": [
+        "CMP-015",
+        "CMP-016"
+      ],
+      "componentTypes": [
+        "protection.fuse-v1",
+        "protection.resettable-fuse-ptc-v1"
+      ],
+      "componentIds": [
+        "fuse-1",
+        "ptc-1"
+      ],
+      "nameplateValues": {
+        "protection.fuse-v1": {
+          "ratedCurrentAmps": 1,
+          "ratedVoltageVolts": 250,
+          "breakingCapacityAmps": 100
+        },
+        "protection.resettable-fuse-ptc-v1": {
+          "holdCurrentAmps": 0.5,
+          "tripCurrentAmps": 1,
+          "maxVoltageVolts": 30
+        }
+      },
+      "namedWiring": [
+        "pico-1.GP1 → fuse-1.A",
+        "fuse-1.B ↔ ptc-1.A",
+        "ptc-1.B → pico-1.GND8"
+      ],
+      "expectedVisibleBehavior": "Opening restores two original protection SVG symbols, exact A/B terminals, bounded nameplate values and three authored nets.",
+      "runtimeUnavailableCode": "CIRCUIT_PROTECTION_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence"
+      },
+      "limitations": "Raw two-terminal circuit-protection authoring only. No overcurrent trip execution, time-current or I²t curve, interruption, arc, resistance, heating, cooling, reset, thermal/breakdown behavior, certification, safety protection, Build/Run authority or physical equivalence.",
+      "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
+      "projectSha256": "5423d85d81dca62af5ab255d2596d1d0c9b708e1e98970f90a421de74d1ba957",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    },
+    {
+      "id": "esp32-c3-circuit-protection-components",
+      "profile": "board.esp32-c3-devmodule-v1",
+      "file": "esp32-c3-circuit-protection-components.intent-mcu.json",
+      "requirementIds": [
+        "CMP-015",
+        "CMP-016"
+      ],
+      "componentTypes": [
+        "protection.fuse-v1",
+        "protection.resettable-fuse-ptc-v1"
+      ],
+      "componentIds": [
+        "fuse-1",
+        "ptc-1"
+      ],
+      "nameplateValues": {
+        "protection.fuse-v1": {
+          "ratedCurrentAmps": 1,
+          "ratedVoltageVolts": 250,
+          "breakingCapacityAmps": 100
+        },
+        "protection.resettable-fuse-ptc-v1": {
+          "holdCurrentAmps": 0.5,
+          "tripCurrentAmps": 1,
+          "maxVoltageVolts": 30
+        }
+      },
+      "namedWiring": [
+        "c3-1.GPIO3 → fuse-1.A",
+        "fuse-1.B ↔ ptc-1.A",
+        "ptc-1.B → c3-1.GND8"
+      ],
+      "expectedVisibleBehavior": "Opening restores two original protection SVG symbols, exact A/B terminals, bounded nameplate values and three authored nets.",
+      "runtimeUnavailableCode": "CIRCUIT_PROTECTION_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence"
+      },
+      "limitations": "Raw two-terminal circuit-protection authoring only. No overcurrent trip execution, time-current or I²t curve, interruption, arc, resistance, heating, cooling, reset, thermal/breakdown behavior, certification, safety protection, Build/Run authority or physical equivalence.",
+      "sourceSha256": "d936fc50b2c874d6af660ece56abbb024c86e7b30462c403542b8d2166b85480",
+      "projectSha256": "97ffc6f10c583b3464b9d92569251cd59f399a634ba597f85c9642498e0a7bee",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    },
+    {
+      "id": "stm32-circuit-protection-components",
+      "profile": "board.stm32f429zi-nucleo144-v1",
+      "file": "stm32-circuit-protection-components.intent-mcu.json",
+      "requirementIds": [
+        "CMP-015",
+        "CMP-016"
+      ],
+      "componentTypes": [
+        "protection.fuse-v1",
+        "protection.resettable-fuse-ptc-v1"
+      ],
+      "componentIds": [
+        "fuse-1",
+        "ptc-1"
+      ],
+      "nameplateValues": {
+        "protection.fuse-v1": {
+          "ratedCurrentAmps": 1,
+          "ratedVoltageVolts": 250,
+          "breakingCapacityAmps": 100
+        },
+        "protection.resettable-fuse-ptc-v1": {
+          "holdCurrentAmps": 0.5,
+          "tripCurrentAmps": 1,
+          "maxVoltageVolts": 30
+        }
+      },
+      "namedWiring": [
+        "stm32-1.PB1 → fuse-1.A",
+        "fuse-1.B ↔ ptc-1.A",
+        "ptc-1.B → stm32-1.GND20"
+      ],
+      "expectedVisibleBehavior": "Opening restores two original protection SVG symbols, exact A/B terminals, bounded nameplate values and three authored nets.",
+      "runtimeUnavailableCode": "CIRCUIT_PROTECTION_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only raw circuit-protection data; no trip/interruption/reset/thermal runtime, safety guarantee, Build/Run authority or physical-hardware equivalence"
+      },
+      "limitations": "Raw two-terminal circuit-protection authoring only. No overcurrent trip execution, time-current or I²t curve, interruption, arc, resistance, heating, cooling, reset, thermal/breakdown behavior, certification, safety protection, Build/Run authority or physical equivalence.",
+      "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
+      "projectSha256": "a8bc7d89593427a0611983382bb307ba2d62b35aaf17780fe37ff60fd0a5ba15",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    }
+  ]
+}

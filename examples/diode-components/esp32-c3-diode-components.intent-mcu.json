@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-lcd-20x4-cgram.1-current",
-    "manifestSha256": "4566d5d6e5ec6ade1d0f1cafe6fa16e740d01462cf5d6b0f56d75aabe925b341",
-    "implementationSha256": "4b8568bd33fdb9c4e164c6cbd3fb6bc726742237064422061bf7e21e2aba1ea7"
+    "manifestSha256": "13ab67ce142246f1d7d890882501e8216d5673ab4f396437ca8697b31fc489cd",
+    "implementationSha256": "ab472c11c96d7b27985ac1c91d34371b8fb3c27a2daed2bf0929e969926e3b9a"
   },
   "brief": {
     "schema": "intent-mcu-project-brief@4",
@@ -230,6 +230,7 @@
           "capacitor": 0,
           "diode": 1,
           "electrolytic": 0,
+          "fuse": 0,
           "ground": 0,
           "inductor": 0,
           "led": 1,
@@ -239,6 +240,7 @@
           "pmos": 0,
           "pnp": 0,
           "potentiometer": 0,
+          "ptc": 0,
           "resistor": 1,
           "schottky": 1,
           "switch": 0,

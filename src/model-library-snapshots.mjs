@@ -154339,7 +154339,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/component-artwork.mjs",
-      "sha256": "abcfc3e7cfdb845427401a71dc95f2632660915d2c7ae23aff8a9abe2c3ae7b4"
+      "sha256": "4043d247c92e7d86b3eff2fc499ba029151d35b52b0490f440b8568dfc634fca"
     },
     {
       "path": "src/model-library.mjs",
@@ -154363,7 +154363,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "5a21983404378cdeb201dcc0df239cfd85862138f73a82ecb2896f67433e9e2f"
+      "sha256": "2e349ea95132363b6d63dc33a0e065aaa2ce96edd0d104b35d0695eefac7218c"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -154395,7 +154395,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "7a5da6744be18afd81cb9250895cbc5886b4f7cc6313f7221aee05e7bc8d2184"
+      "sha256": "d5ee67f11fb797ca11fe4c31ba44ac5078868629b8e8e80a486c6d38a10bd475"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -154403,27 +154403,27 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "cfcc866d87c65560e450d4baf1c6a1d14ff4db1a8fdaffc872b85549bb81869a"
+      "sha256": "ca89004a7f9c40b2940d635c4fbe31de7fa5f85a001f367b768c27c1dee8ee0c"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
-      "sha256": "7646eda540f2f15854aa820921a01199429f3261aac016e37ba490fdac1def78"
+      "sha256": "91e95dfa1b648eaf07010e112a50f36a3784c8135f0c65fc8ee5ebb817596c44"
     },
     {
       "path": "src/bounded-3v3-authoring-contracts.mjs",
-      "sha256": "df4cee4cac5dce12cf5a86929ddfc2badbf37026b513142b6033ec202d09d9fc"
+      "sha256": "d8fac081ee6488e24764a0927c3d1bed13d99ef514d08d9614f710306fe2a4ae"
     },
     {
       "path": "src/named-series-led-circuit-editor.mjs",
-      "sha256": "7f1bc4248d71b0ad8044e3289fb8441b45091b6ac6576f28c54c11fa3b774948"
+      "sha256": "9daa809828eaef32c82e2e241267440954bd35a2d0f5076964e3acb5c5226ad9"
     },
     {
       "path": "src/esp32c3-public-circuit.mjs",
-      "sha256": "1d689d0c30b958ef92c01fcd5503e1ada593a72dd558c8d690eb15fa8c660e1e"
+      "sha256": "6e4d038dbf7344e57d5a56a4ee8666e9888d21dd63cc8399cc87858f68f0b9a4"
     },
     {
       "path": "src/stm32-public-circuit.mjs",
-      "sha256": "b6aaba304055033109f28e851636336ab98763260e022ed6e042631d7192b766"
+      "sha256": "f082116e1ce0d8ae91c28d6ee17c25e874db17cf2a4755b640c83778711b6407"
     },
     {
       "path": "src/rp2040-public-workbench.mjs",
@@ -154459,7 +154459,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "ea07bea50161bc76fb14af4dd488696c6465079928adf28b3fda43b5b51fc45d"
+      "sha256": "409321ae4df8ddb154d3e12d98b95aef334bcb593ae1efd6a3007f8cde17ea5e"
     },
     {
       "path": "expansion-drafts/joystick-keypads-v1.mjs",
@@ -154558,6 +154558,14 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "0873551f0f7f391841a4cba1978fefdde135331f68590f5cb507f3f49b6d2aac"
     },
     {
+      "path": "expansion-drafts/circuit-protection-components-v1.mjs",
+      "sha256": "233462facd4d121c9f0f532bd598e4431d6ca48e1b96433ff309fd1794faafa4"
+    },
+    {
+      "path": "expansion-drafts/circuit-protection-components-artwork-v1.mjs",
+      "sha256": "a626d512fe866d59c3c08facb70f6b68166f5f13ce429559d4108facaf693ca8"
+    },
+    {
       "path": "expansion-drafts/semiconductor-active-components-v1.mjs",
       "sha256": "1bff8e3adf29b3150e0860117035a04d1ea49b4ee839db8a66f67ccd42115de8"
     },
@@ -154646,7 +154654,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "3f119c9e65934ae57ed8044e5a3a9a975c5bfa560717802d47e2db23b595d102"
     }
   ],
-  "implementationSha256": "4b8568bd33fdb9c4e164c6cbd3fb6bc726742237064422061bf7e21e2aba1ea7",
+  "implementationSha256": "ab472c11c96d7b27985ac1c91d34371b8fb3c27a2daed2bf0929e969926e3b9a",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -154656,7 +154664,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract"
   },
-  "manifestSha256": "4566d5d6e5ec6ade1d0f1cafe6fa16e740d01462cf5d6b0f56d75aabe925b341",
+  "manifestSha256": "13ab67ce142246f1d7d890882501e8216d5673ab4f396437ca8697b31fc489cd",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

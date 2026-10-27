@@ -61,6 +61,7 @@ import { RESISTIVE_DIVIDER_SENSOR_DEFINITIONS } from './resistive-divider-sensor
 import { PASSIVE_ENERGY_STORAGE_DEFINITIONS } from './passive-energy-storage-components-v1.mjs';
 import { DIODE_COMPONENT_DEFINITIONS } from './diode-components-v1.mjs';
 import { TRANSISTOR_COMPONENT_DEFINITIONS } from './transistor-components-v1.mjs';
+import { CIRCUIT_PROTECTION_DEFINITIONS } from './circuit-protection-components-v1.mjs';
 import { SEMICONDUCTOR_ACTIVE_DEFINITIONS } from './semiconductor-active-components-v1.mjs';
 import { CONTACT_SENSOR_DEFINITIONS } from './contact-sensors-v1.mjs';
 
@@ -91,6 +92,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
   ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
   ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS),
+  ...Object.keys(CIRCUIT_PROTECTION_DEFINITIONS),
   ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
   ...Object.keys(CONTACT_SENSOR_DEFINITIONS),
 ]);
@@ -713,6 +715,17 @@ export class CandidateEditorSession {
             if (!contract || !Number.isFinite(command.value)
                 || command.value < contract.minimum || command.value > contract.maximum) {
               return failure('PROJECT_CONTACT_TRANSISTOR_STATE', this.revision);
+            }
+            component.properties[command.key] = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (CIRCUIT_PROTECTION_DEFINITIONS[component.type]) {
+            const definition = CIRCUIT_PROTECTION_DEFINITIONS[component.type];
+            const contract = definition.propertySchema[command.key];
+            if (!contract || !Number.isFinite(command.value)
+                || command.value < contract.minimum || command.value > contract.maximum) {
+              return failure('PROJECT_CONTACT_CIRCUIT_PROTECTION_STATE', this.revision);
             }
             component.properties[command.key] = command.value;
             runtimeDirty = true;

@@ -166,6 +166,9 @@ import { createDiodeArtwork } from '../expansion-drafts/diode-components-artwork
 import { TRANSISTOR_COMPONENT_DEFINITIONS,
   createTransistorComponent } from '../expansion-drafts/transistor-components-v1.mjs';
 import { createTransistorArtwork } from '../expansion-drafts/transistor-components-artwork-v1.mjs';
+import { CIRCUIT_PROTECTION_DEFINITIONS,
+  createCircuitProtectionComponent } from '../expansion-drafts/circuit-protection-components-v1.mjs';
+import { createCircuitProtectionArtwork } from '../expansion-drafts/circuit-protection-components-artwork-v1.mjs';
 import { SEMICONDUCTOR_ACTIVE_DEFINITIONS,
   createSemiconductorActiveComponent } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
 import { createSemiconductorActiveArtwork } from '../expansion-drafts/semiconductor-active-components-artwork-v1.mjs';
@@ -244,6 +247,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   ...PASSIVE_ENERGY_STORAGE_DEFINITIONS,
   ...DIODE_COMPONENT_DEFINITIONS,
   ...TRANSISTOR_COMPONENT_DEFINITIONS,
+  ...CIRCUIT_PROTECTION_DEFINITIONS,
   ...SEMICONDUCTOR_ACTIVE_DEFINITIONS,
   ...CONTACT_SENSOR_DEFINITIONS,
 });
@@ -341,6 +345,9 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (TRANSISTOR_COMPONENT_DEFINITIONS[component?.type]) {
     return createTransistorArtwork(documentObject, definition, component, options);
   }
+  if (CIRCUIT_PROTECTION_DEFINITIONS[component?.type]) {
+    return createCircuitProtectionArtwork(documentObject, definition, component, options);
+  }
   if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[component?.type]) {
     return createSemiconductorActiveArtwork(documentObject, definition, component, options);
   }
@@ -387,6 +394,7 @@ export function createCandidateUiComponent(type, id) {
   if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[type]) return createPassiveEnergyStorageComponent(type, id);
   if (DIODE_COMPONENT_DEFINITIONS[type]) return createDiodeComponent(type, id);
   if (TRANSISTOR_COMPONENT_DEFINITIONS[type]) return createTransistorComponent(type, id);
+  if (CIRCUIT_PROTECTION_DEFINITIONS[type]) return createCircuitProtectionComponent(type, id);
   if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[type]) return createSemiconductorActiveComponent(type, id);
   if (CONTACT_SENSOR_DEFINITIONS[type]) return createContactSensor(type, id);
   throw new TypeError('CANDIDATE_UI_COMPONENT_TYPE');

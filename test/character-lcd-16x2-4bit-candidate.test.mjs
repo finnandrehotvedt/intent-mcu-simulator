@@ -188,7 +188,7 @@ test('character LCD is an original explicit nine-terminal bounded candidate', ()
   assert.match(limits, /I²C, backpacks/u);
   assert.match(CHARACTER_LCD_DEFINITION.artwork.provenance, /Original IntentForce SVG/u);
   assert(!Object.hasOwn(COMPONENT_CATALOG, CHARACTER_LCD_TYPE));
-  assert.equal(Object.values(CANDIDATE_UI_COMPONENTS).filter((item) => item.selectable).length, 65);
+  assert.equal(Object.values(CANDIDATE_UI_COMPONENTS).filter((item) => item.selectable).length, 67);
   assert.deepEqual(createCandidateUiComponent(CHARACTER_LCD_TYPE, 'character-lcd-2'), {
     id: 'character-lcd-2', type: CHARACTER_LCD_TYPE,
     label: '16×2 character LCD 4-bit GPIO', properties: {}, controls: {},

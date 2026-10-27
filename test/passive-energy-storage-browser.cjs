@@ -141,7 +141,7 @@ async function assertArtwork(page, layer = '#component-layer') {
         return graph.components.some(({ id }) => id === 'inductor-1');
       }, profile);
       assert.equal(await page.locator(`${profile.id === 'board.rp2040-pico-v1' ? '#pico-parts-list'
-        : profile.id === 'board.esp32-c3-devmodule-v1' ? '#c3-parts-list' : '#stm32-parts-list'} .bounded-part-card`).count(), 18);
+        : profile.id === 'board.esp32-c3-devmodule-v1' ? '#c3-parts-list' : '#stm32-parts-list'} .bounded-part-card`).count(), 20);
       await assertArtwork(page, profile.layer);
       const state = await page.evaluate(({ api }) => {
         const value = window[api].state(); const graph = value.circuit ?? value.project.circuit;

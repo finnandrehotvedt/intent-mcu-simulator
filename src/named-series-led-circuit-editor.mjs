@@ -12,6 +12,8 @@ import { DIODE_COMPONENT_DEFINITIONS, SCHOTTKY_DIODE_TYPE,
   SILICON_DIODE_TYPE, ZENER_DIODE_TYPE } from '../expansion-drafts/diode-components-v1.mjs';
 import { NPN_BJT_TYPE, PNP_BJT_TYPE, N_CHANNEL_MOSFET_TYPE,
   TRANSISTOR_COMPONENT_DEFINITIONS } from '../expansion-drafts/transistor-components-v1.mjs';
+import { FUSE_TYPE, RESETTABLE_FUSE_PTC_TYPE,
+  CIRCUIT_PROTECTION_DEFINITIONS } from '../expansion-drafts/circuit-protection-components-v1.mjs';
 import { OPTOCOUPLER_TYPE, P_CHANNEL_MOSFET_TYPE,
   SEMICONDUCTOR_ACTIVE_DEFINITIONS } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
 
@@ -30,7 +32,8 @@ const COMPONENT_ID_STEMS = Object.freeze({ [BOUNDED_RESISTOR_TYPE]: 'resistor', 
   [FIXED_INDUCTOR_TYPE]: 'inductor', [SILICON_DIODE_TYPE]: 'diode',
   [SCHOTTKY_DIODE_TYPE]: 'schottky', [ZENER_DIODE_TYPE]: 'zener',
   [NPN_BJT_TYPE]: 'npn', [PNP_BJT_TYPE]: 'pnp', [N_CHANNEL_MOSFET_TYPE]: 'nmos',
-  [P_CHANNEL_MOSFET_TYPE]: 'pmos', [OPTOCOUPLER_TYPE]: 'optocoupler' });
+  [P_CHANNEL_MOSFET_TYPE]: 'pmos', [OPTOCOUPLER_TYPE]: 'optocoupler',
+  [FUSE_TYPE]: 'fuse', [RESETTABLE_FUSE_PTC_TYPE]: 'ptc' });
 
 const COMPONENT_ID_COUNTER_KEYS = Object.freeze([...new Set(Object.values(COMPONENT_ID_STEMS))].sort());
 
@@ -170,6 +173,17 @@ export function createSeriesLedComponentPolicy({
         pins: definition.pins.map(({ id }) => id),
         limitation: definition.support.limitations.join(' '),
       })),
+      ...Object.values(CIRCUIT_PROTECTION_DEFINITIONS).map((definition, index) => part({
+        id: `${COMPONENT_ID_STEMS[definition.type]}-1`, type: definition.type,
+        displayName: definition.displayName, label: definition.displayName,
+        properties: Object.fromEntries(definition.propertyKeys.map((key) =>
+          [key, definition.propertySchema[key].default])),
+        position: { x: 0.28 + index * 0.2, y: 0.7, rotation: 0 },
+        supportedProperties: Object.fromEntries(definition.propertyKeys.map((key) =>
+          [key, { ...definition.propertySchema[key] }])),
+        pins: definition.pins.map(({ id }) => id),
+        limitation: definition.support.limitations.join(' '),
+      })),
       ...Object.values(SEMICONDUCTOR_ACTIVE_DEFINITIONS).map((definition, index) => part({
         id: `${COMPONENT_ID_STEMS[definition.type]}-1`, type: definition.type,
         displayName: definition.displayName, label: definition.displayName,
@@ -228,6 +242,7 @@ export function createSeriesLedConnectionPolicy({
       TOGGLE_SWITCH_3V3_TYPE, POTENTIOMETER_3V3_TYPE,
       ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS), ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
       ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS), ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS)]);
+    for (const type of Object.keys(CIRCUIT_PROTECTION_DEFINITIONS)) authoringOnly.add(type);
     if (authoringOnly.has(endpointType(draft, left)) || authoringOnly.has(endpointType(draft, right))) {
       return `net-${[endpointKey(left), endpointKey(right)].sort().join('-').replaceAll('.', '-')}`.toLowerCase().slice(0, 48);
     }
@@ -671,6 +686,9 @@ export class NamedSeriesLedCircuitEditor {
     if (DIODE_COMPONENT_DEFINITIONS[target.type]) target.label = DIODE_COMPONENT_DEFINITIONS[target.type].displayName;
     if (TRANSISTOR_COMPONENT_DEFINITIONS[target.type]) {
       target.label = TRANSISTOR_COMPONENT_DEFINITIONS[target.type].displayName;
+    }
+    if (CIRCUIT_PROTECTION_DEFINITIONS[target.type]) {
+      target.label = CIRCUIT_PROTECTION_DEFINITIONS[target.type].displayName;
     }
     if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[target.type]) {
       target.label = SEMICONDUCTOR_ACTIVE_DEFINITIONS[target.type].displayName;

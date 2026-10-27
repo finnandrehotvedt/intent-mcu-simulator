@@ -115,6 +115,11 @@ import {
   validateTransistorComponent,
 } from './transistor-components-v1.mjs';
 import {
+  CIRCUIT_PROTECTION_DEFINITIONS,
+  validateCircuitProtectionAuthoringGraph,
+  validateCircuitProtectionComponent,
+} from './circuit-protection-components-v1.mjs';
+import {
   SEMICONDUCTOR_ACTIVE_DEFINITIONS,
   validateSemiconductorActiveAuthoringGraph,
   validateSemiconductorActiveComponent,
@@ -282,6 +287,9 @@ function pinIds(component) {
   if (TRANSISTOR_COMPONENT_DEFINITIONS[component.type]) {
     return TRANSISTOR_COMPONENT_DEFINITIONS[component.type].pins.map(({ id }) => id);
   }
+  if (CIRCUIT_PROTECTION_DEFINITIONS[component.type]) {
+    return CIRCUIT_PROTECTION_DEFINITIONS[component.type].pins.map(({ id }) => id);
+  }
   if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type]) {
     return SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type].pins.map(({ id }) => id);
   }
@@ -323,6 +331,7 @@ function componentPins(component) {
   if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]) return PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type].pins;
   if (DIODE_COMPONENT_DEFINITIONS[component.type]) return DIODE_COMPONENT_DEFINITIONS[component.type].pins;
   if (TRANSISTOR_COMPONENT_DEFINITIONS[component.type]) return TRANSISTOR_COMPONENT_DEFINITIONS[component.type].pins;
+  if (CIRCUIT_PROTECTION_DEFINITIONS[component.type]) return CIRCUIT_PROTECTION_DEFINITIONS[component.type].pins;
   if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type]) return SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type].pins;
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return DIGITAL_LIGHT_THRESHOLD_DEFINITION.pins;
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].pins;
@@ -413,6 +422,10 @@ function validateCandidateComponent(component) {
     if (!validateDiodeComponent(component)) fail('PROJECT_CONTACT_DIODE_STATE', [component.id]);
   } else if (TRANSISTOR_COMPONENT_DEFINITIONS[component.type]) {
     if (!validateTransistorComponent(component)) fail('PROJECT_CONTACT_TRANSISTOR_STATE', [component.id]);
+  } else if (CIRCUIT_PROTECTION_DEFINITIONS[component.type]) {
+    if (!validateCircuitProtectionComponent(component)) {
+      fail('PROJECT_CONTACT_CIRCUIT_PROTECTION_STATE', [component.id]);
+    }
   } else if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type]) {
     if (!validateSemiconductorActiveComponent(component)) {
       fail('PROJECT_CONTACT_SEMICONDUCTOR_ACTIVE_STATE', [component.id]);
@@ -505,6 +518,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
         ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
         ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS),
+        ...Object.keys(CIRCUIT_PROTECTION_DEFINITIONS),
         ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
         IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
         ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
@@ -565,14 +579,19 @@ export function validateCandidateCircuitGraph(value, {
         DIODE_COMPONENT_DEFINITIONS[component.type]);
       const transistorComponents = graph.components.filter((component) =>
         TRANSISTOR_COMPONENT_DEFINITIONS[component.type]);
+      const circuitProtectionComponents = graph.components.filter((component) =>
+        CIRCUIT_PROTECTION_DEFINITIONS[component.type]);
       const activeSemiconductorComponents = graph.components.filter((component) =>
         SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type]);
       if (!passiveComponents.length && !diodeComponents.length && !transistorComponents.length
-          && !activeSemiconductorComponents.length) return admission;
+          && !circuitProtectionComponents.length && !activeSemiconductorComponents.length) return admission;
       const authoringResults = [];
       if (passiveComponents.length) authoringResults.push(validatePassiveEnergyStorageAuthoringGraph(graph));
       if (diodeComponents.length) authoringResults.push(validateDiodeAuthoringGraph(graph));
       if (transistorComponents.length) authoringResults.push(validateTransistorAuthoringGraph(graph));
+      if (circuitProtectionComponents.length) {
+        authoringResults.push(validateCircuitProtectionAuthoringGraph(graph));
+      }
       if (activeSemiconductorComponents.length) {
         authoringResults.push(validateSemiconductorActiveAuthoringGraph(graph));
       }
@@ -583,6 +602,7 @@ export function validateCandidateCircuitGraph(value, {
           !PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]
           && !DIODE_COMPONENT_DEFINITIONS[component.type]
           && !TRANSISTOR_COMPONENT_DEFINITIONS[component.type]
+          && !CIRCUIT_PROTECTION_DEFINITIONS[component.type]
           && !SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type]) };
       const retainedAdmission = validateProjectModelLibrary(modelLibraryLock, BOARD_TYPE,
         { candidateCircuit: filtered });
@@ -845,6 +865,11 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
     TRANSISTOR_COMPONENT_DEFINITIONS[component.type]);
   if (transistorOnly.length) {
     fail('TRANSISTOR_SWITCHING_MODEL_UNAVAILABLE', transistorOnly.map(({ id }) => id).sort());
+  }
+  const circuitProtectionOnly = graph.components.filter((component) =>
+    CIRCUIT_PROTECTION_DEFINITIONS[component.type]);
+  if (circuitProtectionOnly.length) {
+    fail('CIRCUIT_PROTECTION_MODEL_UNAVAILABLE', circuitProtectionOnly.map(({ id }) => id).sort());
   }
   const activeSemiconductorOnly = graph.components.filter((component) =>
     SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type]);
@@ -1353,6 +1378,11 @@ function draftContacts(graph) {
         state: { properties: clone(component.properties), execution: 'authoring-only' },
         runtimeProjection: null }];
     }
+    if (CIRCUIT_PROTECTION_DEFINITIONS[component.type]) {
+      return [{ componentId: component.id, type: component.type,
+        state: { properties: clone(component.properties), execution: 'authoring-only' },
+        runtimeProjection: null }];
+    }
     if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type]) {
       return [{ componentId: component.id, type: component.type,
         state: { properties: clone(component.properties), execution: 'authoring-only' },
@@ -1558,6 +1588,7 @@ export function validateContactPersistenceProject(value, options = {}) {
       ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
       ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
       ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS),
+      ...Object.keys(CIRCUIT_PROTECTION_DEFINITIONS),
       ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
       IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
       ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
