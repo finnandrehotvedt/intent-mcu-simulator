@@ -11,6 +11,8 @@ import { exactKeys, parseStrictJson } from './strict-json.mjs';
 import { GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE, validateBounded3v3AuthoringGraph } from './bounded-3v3-authoring-contracts.mjs';
 import { PASSIVE_ENERGY_STORAGE_DEFINITIONS,
   validatePassiveEnergyStorageComponent } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
+import { DIODE_COMPONENT_DEFINITIONS,
+  validateDiodeComponent } from '../expansion-drafts/diode-components-v1.mjs';
 
 export const RP2040_PICO_CIRCUIT_SCHEMA = 'intent-mcu-rp2040-pico-circuit@1';
 export const RP2040_PICO_PROFILE = 'board.rp2040-pico-v1';
@@ -97,6 +99,8 @@ const TYPE_PINS = Object.freeze({
   [POTENTIOMETER_3V3_TYPE]: new Set(['HIGH', 'WIPER', 'LOW']),
   ...Object.fromEntries(Object.values(PASSIVE_ENERGY_STORAGE_DEFINITIONS)
     .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
+  ...Object.fromEntries(Object.values(DIODE_COMPONENT_DEFINITIONS)
+    .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
 });
 const COMPONENT_POLICY = createSeriesLedComponentPolicy({
   profile: BOARD, boardId: 'pico-1', boardLabel: 'RP2040 Pico profile',
@@ -167,6 +171,9 @@ function normalizeComponent(value) {
   }
   if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[value.type]
       && !validatePassiveEnergyStorageComponent(value)) {
+    throw Object.assign(new Error('RP2040_CIRCUIT_COMPONENT_INVALID'), { code: 'RP2040_CIRCUIT_COMPONENT_INVALID' });
+  }
+  if (DIODE_COMPONENT_DEFINITIONS[value.type] && !validateDiodeComponent(value)) {
     throw Object.assign(new Error('RP2040_CIRCUIT_COMPONENT_INVALID'), { code: 'RP2040_CIRCUIT_COMPONENT_INVALID' });
   }
   return clone(value);

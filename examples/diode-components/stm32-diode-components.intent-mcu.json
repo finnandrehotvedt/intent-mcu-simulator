@@ -1,0 +1,245 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.stm32f429zi-nucleo144-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "909a86430e37f63677e9a7d972323cd2d0e362798415767556eb3ffedb9f28b9",
+    "implementationSha256": "94c3049dd2747fdc7ed182d3598beaad4246c436c622710ae64c467185c8ab22"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-stm32-public-project@2",
+    "name": "stm32 raw diode authoring",
+    "profile": "board.stm32f429zi-nucleo144-v1",
+    "source": "/* Intent MCU Simulator public STM32F429 source v1 */\nint main(void)\n{\n  intent_pb0_output(1u);\n  intent_usart3_text(\"STM32 PUBLIC\");\n  intent_halt();\n}\n",
+    "circuit": {
+      "schema": "intent-mcu-stm32-public-circuit@1",
+      "boardProfile": "board.stm32f429zi-nucleo144-v1",
+      "components": [
+        {
+          "id": "diode-1",
+          "type": "diode.rectifier-v1",
+          "label": "Silicon rectifier diode",
+          "properties": {
+            "nominalForwardVoltageVolts": 0.7,
+            "maxReverseVoltageVolts": 50
+          },
+          "controls": {}
+        },
+        {
+          "id": "led-1",
+          "type": "led.basic-v1",
+          "label": "External red LED",
+          "properties": {
+            "color": "red"
+          },
+          "controls": {}
+        },
+        {
+          "id": "resistor-1",
+          "type": "resistor.fixed-v1",
+          "label": "220 Ω series resistor",
+          "properties": {
+            "ohms": 220
+          },
+          "controls": {}
+        },
+        {
+          "id": "schottky-1",
+          "type": "diode.schottky-v1",
+          "label": "Schottky diode",
+          "properties": {
+            "nominalForwardVoltageVolts": 0.3,
+            "maxReverseVoltageVolts": 40
+          },
+          "controls": {}
+        },
+        {
+          "id": "stm32-1",
+          "type": "board.stm32f429zi-nucleo144-v1",
+          "label": "STM32F429ZI PB0 profile",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "zener-1",
+          "type": "diode.zener-v1",
+          "label": "Zener diode",
+          "properties": {
+            "nominalForwardVoltageVolts": 0.7,
+            "zenerVoltageVolts": 5.1,
+            "maxPowerWatts": 0.5
+          },
+          "controls": {}
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-diode-1-anode-stm32-1-pb1",
+          "endpoints": [
+            {
+              "component": "diode-1",
+              "pin": "ANODE"
+            },
+            {
+              "component": "stm32-1",
+              "pin": "PB1"
+            }
+          ]
+        },
+        {
+          "id": "net-diode-1-cathode-schottky-1-anode",
+          "endpoints": [
+            {
+              "component": "diode-1",
+              "pin": "CATHODE"
+            },
+            {
+              "component": "schottky-1",
+              "pin": "ANODE"
+            }
+          ]
+        },
+        {
+          "id": "net-ground",
+          "endpoints": [
+            {
+              "component": "led-1",
+              "pin": "CATHODE"
+            },
+            {
+              "component": "stm32-1",
+              "pin": "GND"
+            }
+          ]
+        },
+        {
+          "id": "net-pb0",
+          "endpoints": [
+            {
+              "component": "resistor-1",
+              "pin": "A"
+            },
+            {
+              "component": "stm32-1",
+              "pin": "PB0"
+            }
+          ]
+        },
+        {
+          "id": "net-schottky-1-cathode-zener-1-anode",
+          "endpoints": [
+            {
+              "component": "schottky-1",
+              "pin": "CATHODE"
+            },
+            {
+              "component": "zener-1",
+              "pin": "ANODE"
+            }
+          ]
+        },
+        {
+          "id": "net-series",
+          "endpoints": [
+            {
+              "component": "led-1",
+              "pin": "ANODE"
+            },
+            {
+              "component": "resistor-1",
+              "pin": "B"
+            }
+          ]
+        },
+        {
+          "id": "net-stm32-1-gnd20-zener-1-cathode",
+          "endpoints": [
+            {
+              "component": "stm32-1",
+              "pin": "GND20"
+            },
+            {
+              "component": "zener-1",
+              "pin": "CATHODE"
+            }
+          ]
+        }
+      ],
+      "layout": {
+        "positions": {
+          "diode-1": {
+            "x": 0.34,
+            "y": 0.92,
+            "rotation": 0
+          },
+          "led-1": {
+            "x": 0.82,
+            "y": 0.48,
+            "rotation": 0
+          },
+          "resistor-1": {
+            "x": 0.57,
+            "y": 0.27,
+            "rotation": 0
+          },
+          "schottky-1": {
+            "x": 0.48000000000000004,
+            "y": 0.92,
+            "rotation": 0
+          },
+          "stm32-1": {
+            "x": 0.2,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "zener-1": {
+            "x": 0.6200000000000001,
+            "y": 0.92,
+            "rotation": 0
+          }
+        },
+        "wireStyles": {
+          "net-diode-1-anode-stm32-1-pb1": "#39dff2",
+          "net-diode-1-cathode-schottky-1-anode": "#39dff2",
+          "net-ground": "#202a34",
+          "net-pb0": "#e2ab1b",
+          "net-schottky-1-cathode-zener-1-anode": "#39dff2",
+          "net-series": "#e13e51",
+          "net-stm32-1-gnd20-zener-1-cathode": "#39dff2"
+        },
+        "wireRoutes": {},
+        "componentAppearance": {
+          "schema": "intent-mcu-component-appearance@1",
+          "components": {}
+        },
+        "idCounters": {
+          "button": 0,
+          "capacitor": 0,
+          "diode": 1,
+          "electrolytic": 0,
+          "ground": 0,
+          "inductor": 0,
+          "led": 1,
+          "potentiometer": 0,
+          "resistor": 1,
+          "schottky": 1,
+          "switch": 0,
+          "zener": 1
+        }
+      }
+    }
+  }
+}

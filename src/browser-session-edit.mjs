@@ -40,6 +40,8 @@ import { RESISTIVE_DIVIDER_SENSOR_DEFINITIONS,
   createResistiveDividerSensor } from '../expansion-drafts/resistive-divider-sensors-v1.mjs';
 import { PASSIVE_ENERGY_STORAGE_DEFINITIONS,
   createPassiveEnergyStorageComponent } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
+import { DIODE_COMPONENT_DEFINITIONS,
+  createDiodeComponent } from '../expansion-drafts/diode-components-v1.mjs';
 import { CONTACT_SENSOR_DEFINITIONS, createContactSensor } from '../expansion-drafts/contact-sensors-v1.mjs';
 
 const ID = /^[a-z][a-z0-9-]{0,47}$/u;
@@ -62,6 +64,7 @@ const TYPES = new Set(['board.atmega328p-16mhz-v1', 'resistor.fixed-v1', 'led.ba
   TMP36_TEMPERATURE_TYPE, LM35_TEMPERATURE_TYPE,
   ...Object.keys(RESISTIVE_DIVIDER_SENSOR_DEFINITIONS),
   ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
+  ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
   ...Object.keys(CONTACT_SENSOR_DEFINITIONS),
   GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE]);
 const exact = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
@@ -146,6 +149,8 @@ export function prepareApiBatch(project, operations) {
           ? createResistiveDividerSensor(operation.type, operation.id)
         : avr && PASSIVE_ENERGY_STORAGE_DEFINITIONS[operation.type]
           ? createPassiveEnergyStorageComponent(operation.type, operation.id)
+        : avr && DIODE_COMPONENT_DEFINITIONS[operation.type]
+          ? createDiodeComponent(operation.type, operation.id)
         : avr && CONTACT_SENSOR_DEFINITIONS[operation.type]
           ? createContactSensor(operation.type, operation.id)
         : avr ? createComponent(operation.id, operation.type) : { id: operation.id, type: operation.type };

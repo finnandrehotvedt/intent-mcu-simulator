@@ -7,6 +7,9 @@ import test from 'node:test';
 import {
   ELECTROLYTIC_CAPACITOR_TYPE, FIXED_INDUCTOR_TYPE, NONPOLAR_CAPACITOR_TYPE,
 } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
+import {
+  SCHOTTKY_DIODE_TYPE, SILICON_DIODE_TYPE, ZENER_DIODE_TYPE,
+} from '../expansion-drafts/diode-components-v1.mjs';
 import { Esp32C3CircuitEditor } from '../src/esp32c3-public-circuit.mjs';
 import {
   BOUNDED_COMPONENT_CATALOG_SCHEMA, BOUNDED_LED_TYPE, BOUNDED_RESISTOR_TYPE,
@@ -31,6 +34,7 @@ for (const profile of profiles) {
       profile.boardType, BOUNDED_RESISTOR_TYPE, BOUNDED_LED_TYPE,
       GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE, POTENTIOMETER_3V3_TYPE,
       NONPOLAR_CAPACITOR_TYPE, ELECTROLYTIC_CAPACITOR_TYPE, FIXED_INDUCTOR_TYPE,
+      SILICON_DIODE_TYPE, SCHOTTKY_DIODE_TYPE, ZENER_DIODE_TYPE,
     ]);
     assert.equal(catalog.parts[0].fixed, true);
     assert.equal(catalog.parts[0].addable, false);

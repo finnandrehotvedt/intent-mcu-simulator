@@ -24,7 +24,7 @@
     <section class="panel"><h2>Model limits matter</h2><p class="docs-intro">Sensors use ideal bounded values, contacts do not model bounce or wear, light and sound outputs are relative indicators, and the LCD implements a tested command subset. The thermostat experiment uses the temperature module only as an ideal linear signal, its button as an ideal active-low contact and its LED as a heater-command indicator; it does not model a room or physical heater. Representable invalid polarity, missing current limiting, ground, known output contention, named-rail shorts and unsupported topologies fail closed with corrective actions. These checks are not physical-damage prediction or safety certification, and arbitrary cross-controller voltage wiring is unavailable.</p></section>
     <section id="compatibility-matrix" class="panel" aria-labelledby="compatibility-matrix-title">
       <p class="eyebrow">EXACT PUBLIC CONTRACT</p><h2 id="compatibility-matrix-title">Controller compatibility matrix</h2>
-      <p class="docs-intro">There are 68 unique public models and 272 profile/model cells. AVR has 58 executable models—34 Simulated and 24 Partial—plus 3 raw passive authoring-only symbols. Each narrow controller profile has exactly 3 executable models plus 7 additional authoring-only parts. Across the complete matrix, 67 cells are executable, 24 more are authoring-only and 181 are unavailable.</p>
+      <p class="docs-intro">There are 71 unique public models and 284 profile/model cells. AVR has 58 executable models—34 Simulated and 24 Partial—plus 6 raw passive/diode authoring-only symbols. Each narrow controller profile has exactly 3 executable models plus 10 additional authoring-only parts. Across the complete matrix, 67 cells are executable, 36 more are authoring-only and 181 are unavailable.</p>
       <p class="docs-intro"><strong>AVR project modes:</strong> ordinary project-v2 shows 5 Simulated parts. Candidate-v3 exposes all 58 executable AVR models plus the three raw passive authoring-only symbols with exact status and limitations. Partial always means the stated bounded behaviour, never broad hardware equivalence.</p>
       <p class="docs-intro"><strong>Control persistence:</strong> validated AVR button, potentiometer, switch, sensor, threshold and encoder values are canonical project data. Open never restores runtime events or executable authority and always requires a fresh Build. The current narrow profiles have no interactive control keys.</p>
       <div class="support-table-wrap"><table class="support-table component-doc-matrix">
@@ -98,6 +98,9 @@
           <tr data-model="capacitor.nonpolarized-v1"><th>Raw non-polarized capacitor<br><code>capacitor.nonpolarized-v1</code></th><td class="status-limited">Authoring-only · candidate-v3</td><td class="status-limited">Authoring-only</td><td class="status-limited">Authoring-only</td><td class="status-limited">Authoring-only</td></tr>
           <tr data-model="capacitor.electrolytic-v1"><th>Raw electrolytic capacitor<br><code>capacitor.electrolytic-v1</code></th><td class="status-limited">Authoring-only · candidate-v3</td><td class="status-limited">Authoring-only</td><td class="status-limited">Authoring-only</td><td class="status-limited">Authoring-only</td></tr>
           <tr data-model="inductor.fixed-v1"><th>Raw fixed inductor<br><code>inductor.fixed-v1</code></th><td class="status-limited">Authoring-only · candidate-v3</td><td class="status-limited">Authoring-only</td><td class="status-limited">Authoring-only</td><td class="status-limited">Authoring-only</td></tr>
+          <tr data-model="diode.rectifier-v1"><th>Raw silicon rectifier diode<br><code>diode.rectifier-v1</code></th><td class="status-limited">Authoring-only · candidate-v3</td><td class="status-limited">Authoring-only</td><td class="status-limited">Authoring-only</td><td class="status-limited">Authoring-only</td></tr>
+          <tr data-model="diode.schottky-v1"><th>Raw Schottky diode<br><code>diode.schottky-v1</code></th><td class="status-limited">Authoring-only · candidate-v3</td><td class="status-limited">Authoring-only</td><td class="status-limited">Authoring-only</td><td class="status-limited">Authoring-only</td></tr>
+          <tr data-model="diode.zener-v1"><th>Raw Zener diode<br><code>diode.zener-v1</code></th><td class="status-limited">Authoring-only · candidate-v3</td><td class="status-limited">Authoring-only</td><td class="status-limited">Authoring-only</td><td class="status-limited">Authoring-only</td></tr>
         </tbody>
       </table></div>
       <p class="docs-intro">Unavailable controllers and parts are not remapped or approximated. Open the in-workbench matrix for the exact project mode and first limitation or rejection reason for every cell.</p>
@@ -114,7 +117,7 @@
       </div>
       <nav class="docs-nav" aria-label="Narrow profile learning links"><a href="/examples.html#narrow-controller-guides">First project guides</a><a href="/support.html#repair-after-open">Save/Open recovery</a></nav>
     </section>
-        <footer>68 public models · 67 executable cells, 24 additional authoring-only cells and 181 unavailable cells across four exact controller profiles · original project graphics · no third-party simulator artwork or branding</footer>
+        <footer>71 public models · 67 executable cells, 36 additional authoring-only cells and 181 unavailable cells across four exact controller profiles · original project graphics · no third-party simulator artwork or branding</footer>
   </main>
 </body>
 </html>

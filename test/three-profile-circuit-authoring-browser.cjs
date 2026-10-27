@@ -57,7 +57,7 @@ const profiles = [
           return box.width >= 40 && box.height >= 40 && box.left >= 0 && box.right <= document.documentElement.clientWidth;
         }),
       }), profile);
-      assert.deepEqual(catalogueArtwork, { cards: 10, thumbnails: 10, empty: 0, labels: true, visible: true });
+      assert.deepEqual(catalogueArtwork, { cards: 13, thumbnails: 13, empty: 0, labels: true, visible: true });
       const recognizableBasics = await page.evaluate(({ list }) => ({
         resistorBands: document.querySelectorAll(`${list} [data-type="resistor.fixed-v1"] [data-resistor-band]`).length,
         resistorValue: document.querySelector(`${list} [data-type="resistor.fixed-v1"] [data-component-identity="resistance"]`)?.textContent,

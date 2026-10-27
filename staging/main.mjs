@@ -7,6 +7,8 @@ import { BOUNDED_3V3_UI_COMPONENTS, validateBounded3v3AuthoringGraph } from '../
 import { ELECTROLYTIC_CAPACITOR_TYPE, FIXED_INDUCTOR_TYPE, NONPOLAR_CAPACITOR_TYPE,
   PASSIVE_ENERGY_STORAGE_DEFINITIONS,
   validatePassiveEnergyStorageAuthoringGraph } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
+import { DIODE_COMPONENT_DEFINITIONS, SCHOTTKY_DIODE_TYPE, SILICON_DIODE_TYPE,
+  ZENER_DIODE_TYPE, validateDiodeAuthoringGraph } from '../expansion-drafts/diode-components-v1.mjs';
 
 import {
   CATALOG_CATEGORIES,
@@ -1520,7 +1522,8 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
   }
 
   if (!['resistor.fixed-v1', 'led.basic-v1', 'potentiometer.linear-3v3-v1',
-    ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS)].includes(selected.type)) {
+    ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
+    ...Object.keys(DIODE_COMPONENT_DEFINITIONS)].includes(selected.type)) {
     const note = document.createElement('p');
     note.textContent = `${selectedPart.displayName} is a 3.3 V authoring-only part. Its named pins persist, but it cannot grant Build or Run authority.`;
     const duplicate = document.createElement('button'); duplicate.type = 'button'; duplicate.textContent = 'Duplicate disconnected part';
@@ -1533,7 +1536,8 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
   const label = document.createElement('label');
   const limit = document.createElement('small');
   let input;
-  const passiveDefinition = PASSIVE_ENERGY_STORAGE_DEFINITIONS[selected.type];
+  const authoringDefinition = PASSIVE_ENERGY_STORAGE_DEFINITIONS[selected.type]
+    ?? DIODE_COMPONENT_DEFINITIONS[selected.type];
   if (['resistor.fixed-v1', 'potentiometer.linear-3v3-v1'].includes(selected.type)) {
     label.append('Resistance (Ω)');
     limit.textContent = selected.type === 'resistor.fixed-v1'
@@ -1541,10 +1545,12 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
       : 'Authoring value only. This does not prove a powered divider, ADC runtime, loading, noise or physical tolerance.';
     input = document.createElement('input'); input.type = 'number'; input.min = '1'; input.max = '10000000';
     input.step = '1'; input.value = String(selected.properties.ohms); input.dataset.boundedProperty = 'ohms';
-  } else if (passiveDefinition) {
-    const key = passiveDefinition.propertyKeys[0]; const contract = passiveDefinition.propertySchema[key];
+  } else if (authoringDefinition) {
+    const key = authoringDefinition.propertyKeys[0]; const contract = authoringDefinition.propertySchema[key];
     label.append(`${key} (${contract.unit})`);
-    limit.textContent = 'Authoring value only. No transient/frequency solver or Build/Run authority is added.';
+    limit.textContent = DIODE_COMPONENT_DEFINITIONS[selected.type]
+      ? 'Authoring value only. No nonlinear I-V/reverse-breakdown model or Build/Run authority is added.'
+      : 'Authoring value only. No transient/frequency solver or Build/Run authority is added.';
     input = document.createElement('input'); input.type = 'number'; input.min = String(contract.minimum);
     input.max = String(contract.maximum); input.step = 'any'; input.value = String(selected.properties[key]);
     input.dataset.boundedProperty = key;
@@ -1574,7 +1580,7 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
   const currentValue = selected.properties[input.dataset.boundedProperty];
   const previewValue = () => typeof currentValue === 'number' ? Number(input.value) : input.value;
   const modelValid = () => input.checkValidity() && (typeof currentValue !== 'number'
-    || (passiveDefinition ? Number.isFinite(previewValue()) : Number.isInteger(previewValue())));
+    || (authoringDefinition ? Number.isFinite(previewValue()) : Number.isInteger(previewValue())));
   const modelChanged = () => previewValue() !== currentValue;
   const updateModel = () => {
     const valid = modelValid(); const changed = modelChanged();
@@ -1608,7 +1614,7 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
   const modelActions = document.createElement('div'); modelActions.className = 'component-editor-actions';
   modelActions.append(duplicate, modelCancel, modelApply); modelPanel.append(row, modelStatus, modelActions); updateModel();
 
-  if (selected.type === 'potentiometer.linear-3v3-v1' || passiveDefinition) {
+  if (selected.type === 'potentiometer.linear-3v3-v1' || authoringDefinition) {
     properties.replaceChildren(modelPanel); return;
   }
 
@@ -7794,11 +7800,13 @@ const commonProjectAdapters = Object.freeze({
     electrical: (result) => result.prepared?.runnable
       ?? modelLibraryImplementationForResult(result).validateAvrCircuit(result.project.circuit,
         { modelLibraryLock: result.modelLibrary }),
-    authoringAdmission: ({ project }) => validatePassiveEnergyStorageAuthoringGraph(
-      project.candidateCircuit
+    authoringAdmission: ({ project }) => {
+      const graph = project.candidateCircuit
         ? { components: project.candidateCircuit.components, nets: project.candidateCircuit.nets }
-        : project.circuit,
-    ),
+        : project.circuit;
+      const passive = validatePassiveEnergyStorageAuthoringGraph(graph);
+      return passive.ok ? passive : validateDiodeAuthoringGraph(graph);
+    },
   }),
   [RP2040_PROFILE]: Object.freeze({
     schemas: Object.freeze([RP2040_PUBLIC_PROJECT_SCHEMA]),
@@ -13094,6 +13102,9 @@ function candidateComponentPrefix(type) {
       [NONPOLAR_CAPACITOR_TYPE]: 'capacitor',
       [ELECTROLYTIC_CAPACITOR_TYPE]: 'electrolytic-capacitor',
       [FIXED_INDUCTOR_TYPE]: 'inductor',
+      [SILICON_DIODE_TYPE]: 'diode',
+      [SCHOTTKY_DIODE_TYPE]: 'schottky',
+      [ZENER_DIODE_TYPE]: 'zener',
   }[type] ?? null;
 }
 
@@ -13170,6 +13181,9 @@ function addComponent(type, point = null) {
       [NONPOLAR_CAPACITOR_TYPE]: { x: 0.56, y: 0.2 },
       [ELECTROLYTIC_CAPACITOR_TYPE]: { x: 0.7, y: 0.2 },
       [FIXED_INDUCTOR_TYPE]: { x: 0.84, y: 0.2 },
+      [SILICON_DIODE_TYPE]: { x: 0.56, y: 0.14 },
+      [SCHOTTKY_DIODE_TYPE]: { x: 0.7, y: 0.14 },
+      [ZENER_DIODE_TYPE]: { x: 0.84, y: 0.14 },
     }[type];
     const sameTypeCount = currentProject().circuit.components.filter((item) => item.type === type).length;
     const slot = index % 16;
