@@ -118,6 +118,8 @@ import {
   createDigitalPresenceSensor,
 } from '../expansion-drafts/digital-presence-sensors-v1.mjs';
 import { createDigitalPresenceSensorArtwork } from '../expansion-drafts/digital-presence-sensors-artwork-v1.mjs';
+import { DIGITAL_PULSE_SENSOR_DEFINITIONS, createDigitalPulseSensor } from '../expansion-drafts/digital-pulse-sensors-v1.mjs';
+import { createDigitalPulseSensorArtwork } from '../expansion-drafts/digital-pulse-sensors-artwork-v1.mjs';
 import {
   DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS,
   IR_OBSTACLE_SENSOR_TYPE,
@@ -217,6 +219,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   [PCF8574_LCD_TYPE]: PCF8574_LCD_DEFINITION,
   [ROTARY_ENCODER_TYPE]: ROTARY_ENCODER_DEFINITION,
   ...DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
+  ...DIGITAL_PULSE_SENSOR_DEFINITIONS,
   ...DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS,
   ...ANALOGUE_MOISTURE_LEVEL_DEFINITIONS,
   ...ANALOGUE_DETECTION_DEFINITIONS,
@@ -288,6 +291,9 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component?.type]) {
     return createDigitalPresenceSensorArtwork(documentObject, definition, component, options);
   }
+  if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component?.type]) {
+    return createDigitalPulseSensorArtwork(documentObject, definition, component, options);
+  }
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component?.type]) {
     return createDigitalReflectiveSensorArtwork(documentObject, definition, component, options);
   }
@@ -336,6 +342,7 @@ export function createCandidateUiComponent(type, id) {
   if (type === PCF8574_LCD_TYPE) return createPcf8574LcdComponent(id);
   if (type === ROTARY_ENCODER_TYPE) return createRotaryEncoderComponent(id);
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[type]) return createDigitalPresenceSensor(type, id);
+  if (DIGITAL_PULSE_SENSOR_DEFINITIONS[type]) return createDigitalPulseSensor(type, id);
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[type]) return createDigitalReflectiveSensor(type, id);
   if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[type]) return createAnalogueMoistureLevelSensor(type, id);
   if (ANALOGUE_DETECTION_DEFINITIONS[type]) return createAnalogueDetectionSensor(type, id);
@@ -449,6 +456,11 @@ export function candidateContactControl(session, componentId, key, value) {
       command: { type: 'component.control.set', componentId, key, value },
       worker: { command: 'control', componentId, key: 'pressed', value: !value },
     };
+  }
+  if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type] && key === 'pulseHigh'
+      && typeof value === 'boolean') {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'pressed', value: !value } };
   }
   if ([IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE].includes(component.type)
       && key === DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type].controlKeys[0]

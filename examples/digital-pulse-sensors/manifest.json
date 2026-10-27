@@ -1,0 +1,37 @@
+{
+  "schema": "intent-mcu-digital-pulse-sensor-example-manifest@1",
+  "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "03ce956a972eefde66007290a7a7bb3dc437e85d0681bc62534a0e75ee150117",
+    "implementationSha256": "50507b1dc456306ed7caeaeebdd920c17bd8033ec32d43d879472200f16b21e4"
+  },
+  "entries": [
+    {
+      "id": "avr-digital-pulse-sensors",
+      "requirementIds": [
+        "CMP-106",
+        "CMP-112"
+      ],
+      "file": "avr-digital-pulse-sensors.intent-mcu.json",
+      "projectSha256": "c29403be31bc186b9be8625f377ce7c153a246e9bc748a1f9b5b409dca8d7f7f",
+      "sourceSha256": "f59a4d830c2eb6852e0a9c5cfa015ae02d65151dcaf4e7917f21cb8936cf14b1",
+      "expectedBehavior": "Manual LOW→HIGH changes on D4 and D5 are counted as independent rising edges; no automatic pulse train, flow rate or wind speed is generated.",
+      "namedPins": {
+        "supply": "VCC → 5V",
+        "ground": "GND → GND1",
+        "flow": "OUT → D4",
+        "wind": "OUT → D5"
+      },
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and bounded executable active-high level adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "unavailable",
+        "board.esp32-c3-devmodule-v1": "unavailable",
+        "board.stm32f429zi-nucleo144-v1": "unavailable"
+      },
+      "provenance": "Original project-owned contracts, SVG artwork, deterministic manual active-high projection, firmware source and canonical project envelope."
+    }
+  ]
+}

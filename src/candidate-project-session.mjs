@@ -58,6 +58,7 @@ import {
 import { ANALOG_JOYSTICK_TYPE, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE } from '../expansion-drafts/joystick-keypads-v1.mjs';
 import { CAPACITIVE_TOUCH_TYPE, DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
   HALL_SWITCH_TYPE, PIR_MOTION_TYPE } from '../expansion-drafts/digital-presence-sensors-v1.mjs';
+import { DIGITAL_PULSE_SENSOR_DEFINITIONS } from '../expansion-drafts/digital-pulse-sensors-v1.mjs';
 import { DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS, IR_OBSTACLE_SENSOR_TYPE,
   LINE_TRACKING_SENSOR_TYPE } from '../expansion-drafts/digital-reflective-sensors-v1.mjs';
 import { ANALOGUE_MOISTURE_LEVEL_DEFINITIONS, ANALOGUE_WATER_LEVEL_TYPE,
@@ -96,6 +97,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   ROTARY_ENCODER_TYPE,
   ANALOG_JOYSTICK_TYPE, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE,
   CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
+  ...Object.keys(DIGITAL_PULSE_SENSOR_DEFINITIONS),
   IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
   RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
   RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
@@ -261,6 +263,8 @@ function contactSupport(result) {
             ? 'selected-row-column-digital-bridge-v1'
           : DIGITAL_PRESENCE_SENSOR_DEFINITIONS[contact.type]
             ? 'button.momentary-v1-active-high-inverted-adapter'
+          : DIGITAL_PULSE_SENSOR_DEFINITIONS[contact.type]
+            ? 'button.momentary-v1-active-high-inverted-manual-pulse-level-adapter'
           : DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[contact.type]
             ? 'button.momentary-v1-active-low-adapter'
           : spdt?.ok
@@ -270,6 +274,8 @@ function contactSupport(result) {
         ? 'Ideal active-low percentage threshold with retained hysteresis state only; no lux accuracy or physical detector behavior is modelled.'
         : DIGITAL_PRESENCE_SENSOR_DEFINITIONS[contact.type]
         ? 'Ideal active-high digital state only; physical sensitivity, range, field behavior, timing and electrical loading are not modelled.'
+        : DIGITAL_PULSE_SENSOR_DEFINITIONS[contact.type]
+        ? 'Manually authored instantaneous active-high pulse level only; no automatic frequency, pulse train, rate calibration or physical flow/wind behavior is modelled.'
         : DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[contact.type]
         ? 'Ideal active-low reflected-state only; distance, surface response, calibration, geometry, ambient light and electrical loading are not modelled.'
         : contact.type === COMMON_CATHODE_RGB_LED_TYPE
@@ -944,6 +950,16 @@ export class CandidateEditorSession {
               return failure('MODEL_LIBRARY_PRODUCTION_MISMATCH', this.revision, [component.id]);
             }
             component.controls[expectedKey] = command.value; runtimeDirty = true; break;
+          }
+          if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) {
+            if (command.key !== 'pulseHigh' || typeof command.value !== 'boolean') {
+              return failure('PROJECT_CONTACT_DIGITAL_PULSE_SENSOR_STATE', this.revision);
+            }
+            const evaluated = this.evaluateModel(component.type, { pulseHigh: command.value });
+            if (!evaluated.ok || evaluated.result.digitalLevel !== command.value) {
+              return failure('MODEL_LIBRARY_PRODUCTION_MISMATCH', this.revision, [component.id]);
+            }
+            component.controls.pulseHigh = command.value; runtimeDirty = true; break;
           }
           if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) {
             const expectedKey = DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type].controlKeys[0];

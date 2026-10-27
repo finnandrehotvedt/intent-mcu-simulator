@@ -20,6 +20,7 @@ import { LED_BAR_GRAPH_TYPE, RGB_COMMON_ANODE_TYPE, ROTARY_SELECTOR_TYPE,
   createRotarySelectorIndicator } from '../expansion-drafts/rotary-selector-indicators-v1.mjs';
 import { CAPACITIVE_TOUCH_TYPE, HALL_SWITCH_TYPE, PIR_MOTION_TYPE,
   createDigitalPresenceSensor } from '../expansion-drafts/digital-presence-sensors-v1.mjs';
+import { DIGITAL_PULSE_SENSOR_DEFINITIONS, createDigitalPulseSensor } from '../expansion-drafts/digital-pulse-sensors-v1.mjs';
 import { IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
   createDigitalReflectiveSensor } from '../expansion-drafts/digital-reflective-sensors-v1.mjs';
 import { ANALOGUE_WATER_LEVEL_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE,
@@ -48,6 +49,7 @@ const TYPES = new Set(['board.atmega328p-16mhz-v1', 'resistor.fixed-v1', 'led.ba
   ANALOG_JOYSTICK_TYPE, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE,
   ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
   CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
+  ...Object.keys(DIGITAL_PULSE_SENSOR_DEFINITIONS),
   IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
   RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
   RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
@@ -118,6 +120,8 @@ export function prepareApiBatch(project, operations) {
           ? createRotarySelectorIndicator(operation.type, operation.id)
         : avr && [CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE].includes(operation.type)
           ? createDigitalPresenceSensor(operation.type, operation.id)
+        : avr && DIGITAL_PULSE_SENSOR_DEFINITIONS[operation.type]
+          ? createDigitalPulseSensor(operation.type, operation.id)
         : avr && [IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE].includes(operation.type)
           ? createDigitalReflectiveSensor(operation.type, operation.id)
         : avr && [RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE,

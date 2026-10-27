@@ -102,6 +102,8 @@ const referenceBindings = deepFreeze({
     'input.capacitive-touch-button-v1': { starters: ['avr-digital-presence-sensors'], tests: ['test/digital-presence-sensors-candidate.test.mjs', 'test/digital-presence-sensor-example-artifacts.test.mjs'] },
     'sensor.pir-motion-v1': { starters: ['avr-digital-presence-sensors'], tests: ['test/digital-presence-sensors-candidate.test.mjs', 'test/digital-presence-sensor-example-artifacts.test.mjs'] },
     'sensor.hall-switch-digital-v1': { starters: ['avr-digital-presence-sensors'], tests: ['test/digital-presence-sensors-candidate.test.mjs', 'test/digital-presence-sensor-example-artifacts.test.mjs'] },
+    'sensor.flow-pulse-digital-v1': { starters: ['avr-digital-pulse-sensors'], tests: ['test/digital-pulse-sensors-candidate.test.mjs', 'test/digital-pulse-sensor-example-artifacts.test.mjs'] },
+    'sensor.wind-speed-pulse-digital-v1': { starters: ['avr-digital-pulse-sensors'], tests: ['test/digital-pulse-sensors-candidate.test.mjs', 'test/digital-pulse-sensor-example-artifacts.test.mjs'] },
     'sensor.ir-obstacle-reflective-v1': { starters: ['avr-digital-reflective-sensors'], tests: ['test/digital-reflective-sensors-candidate.test.mjs', 'test/digital-reflective-sensor-example-artifacts.test.mjs'] },
     'sensor.line-tracking-reflective-v1': { starters: ['avr-digital-reflective-sensors'], tests: ['test/digital-reflective-sensors-candidate.test.mjs', 'test/digital-reflective-sensor-example-artifacts.test.mjs'] },
     'sensor.soil-moisture-resistive-analogue-v1': { starters: ['avr-analogue-moisture-level-sensors'], tests: ['test/analogue-moisture-level-sensors-candidate.test.mjs', 'test/analogue-moisture-level-sensor-example-artifacts.test.mjs'] },

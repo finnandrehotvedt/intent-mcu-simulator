@@ -155,6 +155,12 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
   'sensor.hall-switch-digital-v1': {
     magnetPresent: { kind: 'boolean', default: false, mutability: 'authored' },
   },
+  'sensor.flow-pulse-digital-v1': {
+    pulseHigh: { kind: 'boolean', default: false, mutability: 'authored' },
+  },
+  'sensor.wind-speed-pulse-digital-v1': {
+    pulseHigh: { kind: 'boolean', default: false, mutability: 'authored' },
+  },
   'sensor.ir-obstacle-reflective-v1': {
     obstacleDetected: { kind: 'boolean', default: false, mutability: 'authored' },
   },

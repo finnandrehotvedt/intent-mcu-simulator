@@ -155,6 +155,12 @@ import {
   validateDigitalPresenceSensor,
 } from './digital-presence-sensors-v1.mjs';
 import {
+  DIGITAL_PULSE_SENSOR_DEFINITIONS,
+  digitalPulseLevel,
+  projectDigitalPulseSensors,
+  validateDigitalPulseSensor,
+} from './digital-pulse-sensors-v1.mjs';
+import {
   DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS,
   IR_OBSTACLE_SENSOR_TYPE,
   LINE_TRACKING_SENSOR_TYPE,
@@ -242,6 +248,7 @@ function pinIds(component) {
   if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return ['VCC', 'GND', 'DOUT'];
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
+  if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
   if (component.type === COMMON_CATHODE_RGB_LED_TYPE) return ['R', 'G', 'B', 'COM'];
   if (component.type === ACTIVE_BUZZER_TYPE) return ['VCC', 'GND', 'EN'];
@@ -275,6 +282,7 @@ function componentPins(component) {
   if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) return ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type].pins;
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return DIGITAL_LIGHT_THRESHOLD_DEFINITION.pins;
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].pins;
+  if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type].pins;
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type].pins;
   if (component.type === COMMON_CATHODE_RGB_LED_TYPE) return COMMON_CATHODE_RGB_LED_DEFINITION.pins;
   if (component.type === ACTIVE_BUZZER_TYPE) return ACTIVE_BUZZER_DEFINITION.pins;
@@ -357,6 +365,10 @@ function validateCandidateComponent(component) {
     if (!validateDigitalPresenceSensor(component)) {
       fail('PROJECT_CONTACT_DIGITAL_PRESENCE_SENSOR_STATE', [component.id]);
     }
+  } else if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) {
+    if (!validateDigitalPulseSensor(component)) {
+      fail('PROJECT_CONTACT_DIGITAL_PULSE_SENSOR_STATE', [component.id]);
+    }
   } else if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) {
     if (!validateDigitalReflectiveSensor(component)) {
       fail('PROJECT_CONTACT_DIGITAL_REFLECTIVE_SENSOR_STATE', [component.id]);
@@ -429,6 +441,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
         DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
         CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
+        ...Object.keys(DIGITAL_PULSE_SENSOR_DEFINITIONS),
         IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
         ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
         ROTARY_ENCODER_TYPE,
@@ -937,7 +950,24 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
       fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
     }
   }
-  const reflectiveProjection = projectDigitalReflectiveSensors(presenceProjection.runtimeGraph);
+  const pulseProjection = projectDigitalPulseSensors(presenceProjection.runtimeGraph);
+  if (!pulseProjection.ok) {
+    fail(`PROJECT_CONTACT_${pulseProjection.code}`, pulseProjection.details);
+  }
+  contacts.push(...pulseProjection.sensors.map((sensor) => ({
+    componentId: sensor.componentId,
+    type: sensor.type,
+    state: { pulseHigh: sensor.pulseHigh, outputLevel: sensor.outputLevel },
+    runtimeProjection: clone(sensor),
+  })));
+  for (const sensor of pulseProjection.sensors) {
+    const expected = production(implementation, sensor.type,
+      { pulseHigh: sensor.pulseHigh }, [sensor.componentId]);
+    if (expected.pulseHigh !== sensor.pulseHigh || expected.digitalLevel !== sensor.pulseHigh) {
+      fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+    }
+  }
+  const reflectiveProjection = projectDigitalReflectiveSensors(pulseProjection.runtimeGraph);
   if (!reflectiveProjection.ok) {
     fail(`PROJECT_CONTACT_${reflectiveProjection.code}`, reflectiveProjection.details);
   }
@@ -1187,6 +1217,14 @@ function draftContacts(graph) {
         runtimeProjection: null,
       }];
     }
+    if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) {
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { pulseHigh: digitalPulseLevel(component) },
+        runtimeProjection: null,
+      }];
+    }
     if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) {
       return [{
         componentId: component.id,
@@ -1359,6 +1397,7 @@ export function validateContactPersistenceProject(value, options = {}) {
       RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
       DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
       CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
+      ...Object.keys(DIGITAL_PULSE_SENSOR_DEFINITIONS),
       IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
       ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
       ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,

@@ -55,6 +55,8 @@ const rows = [
   ['input.capacitive-touch-button-v1', 'touched', 'control · active-high digital state', 'D4 input → executed firmware → USART', 'actual-executed'],
   ['sensor.pir-motion-v1', 'motionDetected', 'control · active-high digital state', 'D5 input → executed firmware → USART', 'actual-executed'],
   ['sensor.hall-switch-digital-v1', 'magnetPresent', 'control · active-high digital state', 'D6 input → executed firmware → USART', 'actual-executed'],
+  ['sensor.flow-pulse-digital-v1', 'pulseHigh', 'control · manual active-high pulse level', 'authored pulse snapshot → bounded AVR projection', 'model-projected'],
+  ['sensor.wind-speed-pulse-digital-v1', 'pulseHigh', 'control · manual active-high pulse level', 'authored pulse snapshot → bounded AVR projection', 'model-projected'],
   ['sensor.ir-obstacle-reflective-v1', 'obstacleDetected', 'control · active-low digital state', 'D7 input → executed firmware → USART', 'actual-executed'],
   ['sensor.line-tracking-reflective-v1', 'lineDetected', 'control · active-low digital state', 'D8 input → executed firmware → USART', 'actual-executed'],
 ].map(([model, field, workerEvent, observable, evidence]) => Object.freeze({
@@ -78,6 +80,8 @@ const rows = [
     ? 'test/analogue-moisture-level-sensors-browser.cjs'
     : ['obstacleDetected', 'lineDetected'].includes(field)
     ? 'test/digital-reflective-sensors-browser.cjs'
+    : ['sensor.flow-pulse-digital-v1', 'sensor.wind-speed-pulse-digital-v1'].includes(model)
+    ? 'test/digital-pulse-sensors-browser.cjs'
     : ['liquidHigh', 'tilted', 'vibrationDetected'].includes(field)
       ? 'test/contact-sensors-browser.cjs'
     : ['touched', 'motionDetected', 'magnetPresent'].includes(field)

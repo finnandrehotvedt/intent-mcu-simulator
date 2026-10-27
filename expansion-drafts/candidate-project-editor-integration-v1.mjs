@@ -42,6 +42,7 @@ import {
 import { ANALOG_JOYSTICK_TYPE, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE } from './joystick-keypads-v1.mjs';
 import { CAPACITIVE_TOUCH_TYPE, DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
   HALL_SWITCH_TYPE, PIR_MOTION_TYPE } from './digital-presence-sensors-v1.mjs';
+import { DIGITAL_PULSE_SENSOR_DEFINITIONS } from './digital-pulse-sensors-v1.mjs';
 import { DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS, IR_OBSTACLE_SENSOR_TYPE,
   LINE_TRACKING_SENSOR_TYPE } from './digital-reflective-sensors-v1.mjs';
 import { ANALOGUE_MOISTURE_LEVEL_DEFINITIONS, ANALOGUE_WATER_LEVEL_TYPE,
@@ -74,6 +75,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   DIGITAL_LIGHT_THRESHOLD_TYPE,
   ANALOG_JOYSTICK_TYPE, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE,
   CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
+  ...Object.keys(DIGITAL_PULSE_SENSOR_DEFINITIONS),
   IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
   RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
   RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
@@ -197,6 +199,8 @@ function contactSupport(result) {
             ? 'potentiometer.linear-v1'
           : contact.type === DIGITAL_LIGHT_THRESHOLD_TYPE
             ? 'button.momentary-v1'
+          : DIGITAL_PULSE_SENSOR_DEFINITIONS[contact.type]
+            ? 'button.momentary-v1-active-high-inverted-manual-pulse-level-adapter'
           : spdt?.ok
             ? 'spdt-digital-reference-v1'
             : null,
@@ -206,6 +210,8 @@ function contactSupport(result) {
         ? 'Ideal linear -50 to 150 °C module signal only; no physical-sensor accuracy or thermal response is modelled.'
         : contact.type === LIGHT_ANALOGUE_SENSOR_TYPE
         ? 'Ideal linear 0–5 V module signal only; no lux accuracy or physical LDR response is modelled.'
+        : DIGITAL_PULSE_SENSOR_DEFINITIONS[contact.type]
+        ? 'Manually authored instantaneous active-high pulse level only; no automatic frequency, pulse train, rate calibration or physical flow/wind behavior is modelled.'
         : contact.type === SPDT_CONTACT_TYPE
         ? spdt?.ok
           ? 'Direct digital-input GND/5 V references are simulated; generic dynamic nets, analogue contacts and output-drive inference remain unsupported.'
@@ -575,6 +581,12 @@ export class CandidateEditorSession {
               return failure('PROJECT_CONTACT_DIGITAL_PRESENCE_SENSOR_STATE', this.revision);
             }
             component.controls[expectedKey] = command.value; runtimeDirty = true; break;
+          }
+          if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) {
+            if (command.key !== 'pulseHigh' || typeof command.value !== 'boolean') {
+              return failure('PROJECT_CONTACT_DIGITAL_PULSE_SENSOR_STATE', this.revision);
+            }
+            component.controls.pulseHigh = command.value; runtimeDirty = true; break;
           }
           if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) {
             const expectedKey = DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type].controlKeys[0];

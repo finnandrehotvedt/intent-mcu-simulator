@@ -45,6 +45,8 @@ const expected = {
   'input.capacitive-touch-button-v1': ['touched'],
   'sensor.pir-motion-v1': ['motionDetected'],
   'sensor.hall-switch-digital-v1': ['magnetPresent'],
+  'sensor.flow-pulse-digital-v1': ['pulseHigh'],
+  'sensor.wind-speed-pulse-digital-v1': ['pulseHigh'],
   'sensor.ir-obstacle-reflective-v1': ['obstacleDetected'],
   'sensor.line-tracking-reflective-v1': ['lineDetected'],
   'sensor.soil-moisture-resistive-analogue-v1': ['moistureRatio'],
@@ -83,10 +85,10 @@ function candidate(id, componentId, changes) {
   return opened.session;
 }
 
-test('all 62 executable cells have one exact controls-persist or controls-empty policy', () => {
+test('all 64 executable cells have one exact controls-persist or controls-empty policy', () => {
   assert.deepEqual(controlPersistenceSummary(), {
-    profiles: 4, cells: 240, available: 62, unavailable: 178,
-    controlBearing: 41, controlsEmpty: 21, controls: 50,
+    profiles: 4, cells: 248, available: 64, unavailable: 184,
+    controlBearing: 43, controlsEmpty: 21, controls: 52,
   });
   const inventory = controlPersistenceInventory();
   const bearing = inventory.filter((cell) => cell.available && cell.controls.length);

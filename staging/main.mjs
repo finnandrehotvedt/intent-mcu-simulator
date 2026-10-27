@@ -472,6 +472,11 @@ import {
   PIR_MOTION_TYPE,
 } from '../expansion-drafts/digital-presence-sensors-v1.mjs';
 import {
+  DIGITAL_PULSE_SENSOR_DEFINITIONS,
+  FLOW_PULSE_SENSOR_TYPE,
+  WIND_SPEED_PULSE_SENSOR_TYPE,
+} from '../expansion-drafts/digital-pulse-sensors-v1.mjs';
+import {
   DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS,
   IR_OBSTACLE_SENSOR_TYPE,
   LINE_TRACKING_SENSOR_TYPE,
@@ -13033,6 +13038,8 @@ function candidateComponentPrefix(type) {
       [CAPACITIVE_TOUCH_TYPE]: 'touch-button',
       [PIR_MOTION_TYPE]: 'pir-motion',
       [HALL_SWITCH_TYPE]: 'hall-switch',
+      [FLOW_PULSE_SENSOR_TYPE]: 'flow-pulse',
+      [WIND_SPEED_PULSE_SENSOR_TYPE]: 'wind-pulse',
       [IR_OBSTACLE_SENSOR_TYPE]: 'ir-obstacle',
       [LINE_TRACKING_SENSOR_TYPE]: 'line-tracker',
       [RESISTIVE_SOIL_MOISTURE_TYPE]: 'soil-resistive',
@@ -13102,6 +13109,8 @@ function addComponent(type, point = null) {
       [CAPACITIVE_TOUCH_TYPE]: { x: 0.58, y: 0.7 },
       [PIR_MOTION_TYPE]: { x: 0.72, y: 0.7 },
       [HALL_SWITCH_TYPE]: { x: 0.84, y: 0.7 },
+      [FLOW_PULSE_SENSOR_TYPE]: { x: 0.58, y: 0.26 },
+      [WIND_SPEED_PULSE_SENSOR_TYPE]: { x: 0.72, y: 0.26 },
       [IR_OBSTACLE_SENSOR_TYPE]: { x: 0.68, y: 0.62 },
       [LINE_TRACKING_SENSOR_TYPE]: { x: 0.82, y: 0.62 },
       [RESISTIVE_SOIL_MOISTURE_TYPE]: { x: 0.58, y: 0.56 },
@@ -13645,6 +13654,24 @@ function renderRuntimeControls() {
         applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject();
         if (prepared.worker) worker?.postMessage(prepared.worker);
         elements.projectmessage.textContent = `${component.label} active-high state changed.`; renderProject();
+      }); row.append(label, button); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) {
+      const row = document.createElement('div'); const label = document.createElement('span');
+      const value = component.controls.pulseHigh; label.textContent = component.label;
+      const button = document.createElement('button'); button.type = 'button';
+      button.dataset.control = `${component.id}.pulseHigh`;
+      button.setAttribute('aria-pressed', String(value));
+      button.textContent = value ? 'Pulse HIGH' : 'Pulse LOW';
+      button.setAttribute('aria-label', `${component.label}: manually authored pulse level ${value ? 'high' : 'low'}.`);
+      button.addEventListener('click', () => {
+        const prepared = selectedCandidateContactControl(component.id, 'pulseHigh', !value);
+        const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
+        if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Pulse level control rejected.'); return; }
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject();
+        if (prepared.worker) worker?.postMessage(prepared.worker);
+        elements.projectmessage.textContent = `${component.label} manual pulse level changed; no automatic pulse train is generated.`;
+        renderProject();
       }); row.append(label, button); return [row];
     }
     if (editor.kind === 'candidate-project-v3' && DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) {

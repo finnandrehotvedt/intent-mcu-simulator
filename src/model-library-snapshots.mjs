@@ -150523,6 +150523,90 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
+      "behaviorContractSha256": "c0d4da35fb7ee4fcba7a71a408f7cc5a156696e7d1b0eb2a227cf062abbce723",
+      "componentType": "sensor.flow-pulse-digital-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.flow-pulse-manual-pulse-level-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "sensor.flow-pulse-digital-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "sensor-flow-pulse",
+        "thumbnail": "sensor-flow-pulse",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "79b8b8371b04270209c59b3a2ee66fb48c492c046aa8285dacd80d77c45fc2f6",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "pulseHigh": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.flow-pulse-manual-pulse-level-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-input",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "OUT",
+            "role": "digital-out",
+            "signals": [
+              "digital.active-high"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "The retained pulseHigh control represents one manually authored instantaneous active-high OUT level.",
+            "The model does not generate a pulse train, frequency, edge timing or accumulated count automatically.",
+            "No liquid type, flow rate, litres, turbine inertia, calibration factor, pressure, direction, bounce, loading or physical accuracy is modelled.",
+            "OUT must connect directly and exclusively to one D2–D12 digital input on the supported 5 V AVR controller."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "69a338a21a32d8f8c14d9fb6f196040354ec1c30e33456555b1b370cd03dc798",
+      "supportStatus": "partial"
+    },
+    {
       "behaviorContractSha256": "caff43482f03842e429a51344f4530d505483b3c5049c861abc858259d77679b",
       "componentType": "sensor.hall-magnetic-analogue-v1",
       "componentVersion": 1,
@@ -152154,6 +152238,90 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       },
       "semanticSha256": "d2b843a1e196c1316607aa245119abc961c246b522792d5587ec6e5b7ce0a6b6",
       "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "91d239fc6e6938be52436c4c776b51868715e7d3d538db48d58609c34b6149fe",
+      "componentType": "sensor.wind-speed-pulse-digital-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.wind-speed-pulse-manual-pulse-level-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "sensor.wind-speed-pulse-digital-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "sensor-wind-speed-pulse",
+        "thumbnail": "sensor-wind-speed-pulse",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "a71681611172455e94e59182308cd08210c257eca30a7025a9d18e4e5d8a24ac",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "pulseHigh": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.wind-speed-pulse-manual-pulse-level-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-input",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "OUT",
+            "role": "digital-out",
+            "signals": [
+              "digital.active-high"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "The retained pulseHigh control represents one manually authored instantaneous active-high OUT level.",
+            "The model does not generate a pulse train, frequency, edge timing or accumulated count automatically.",
+            "No wind speed, metres per second, cup or rotor inertia, gust response, direction, calibration factor, bounce, loading or physical accuracy is modelled.",
+            "OUT must connect directly and exclusively to one D2–D12 digital input on the supported 5 V AVR controller."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "32398f2a13d5be737c85700214ca9064f042fadc9e65e4baf461be7f636549a2",
+      "supportStatus": "partial"
     },
     {
       "behaviorContractSha256": "15af21aa8cd278121383a3b69a11dbdd63de33292728ed22ac86729394c1e8b2",
@@ -153926,7 +154094,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-control-contracts.mjs",
-      "sha256": "8ca304dfa1ace9eca23da0a64134af46f08872f9690391702b40c8092026dce9"
+      "sha256": "06221de555f4ef0809736a09647ed2c53d693499428b70c8ae190313d8f716b1"
     },
     {
       "path": "src/simulator.worker.mjs",
@@ -153934,7 +154102,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "7058a7dfc786da9c5ec21066928061e1b7f4064d0f4c2e90e028a20816e10d5b"
+      "sha256": "864e1612ce2f0c75afe681c98b4bcbe1e319421e6246f753e673e3401224414c"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -153966,7 +154134,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "b5e6391eb23acee4d4403a4683756eaa5e5c1139aeffdb36ff866f2a74fadb56"
+      "sha256": "b70624532a18de82a697a4b2e324a465d6c8dafa776bd6fd757c95fdb083aa39"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -153974,7 +154142,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "547a4a690d3ef668acd61cd13bcce87ccec7fdcb795adbd93c1cb261cc9ad1bb"
+      "sha256": "13152a787aee81f6047b243fd3e60459ba54ba767006835230266bc572259981"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -154022,7 +154190,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "d61b78db4f429fa2b1449144f1cb7d5a9df918ee263ac123ebd4d6691a8558a6"
+      "sha256": "e35b3a58fe945af45c4095f7cc9f0cd3084d1d3472099054e250aa9cece15670"
     },
     {
       "path": "expansion-drafts/joystick-keypads-v1.mjs",
@@ -154039,6 +154207,14 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     {
       "path": "expansion-drafts/digital-presence-sensors-artwork-v1.mjs",
       "sha256": "d263637293808c0330c7004f3db5f0c2fe6ac8e9dcc6617ebefbd11610dab10e"
+    },
+    {
+      "path": "expansion-drafts/digital-pulse-sensors-v1.mjs",
+      "sha256": "b62cf56832aa71738ba7f956ac893eb3bd1ff979e73d42d3e58fcdf1de4f4956"
+    },
+    {
+      "path": "expansion-drafts/digital-pulse-sensors-artwork-v1.mjs",
+      "sha256": "1d6bfb249d0a343162eb135d06f8644e9d450da8f2f15115285f73ab6187cf4c"
     },
     {
       "path": "expansion-drafts/digital-reflective-sensors-v1.mjs",
@@ -154158,10 +154334,10 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "da891a2b0ed4b75842c81d392935c9ad06159f47629f89cd85844124b88f027c"
+      "sha256": "f0c5eb628ce92c819ff6dce4bd7c07d12815ccd44896beec594e2b3183e9dfa7"
     }
   ],
-  "implementationSha256": "a0aca302f6d0017ed73f8ee4d5a093423524e52ced2e05f0d9c0ce1423f7f3be",
+  "implementationSha256": "50507b1dc456306ed7caeaeebdd920c17bd8033ec32d43d879472200f16b21e4",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -154171,7 +154347,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract"
   },
-  "manifestSha256": "912d16ac738f7ae62c4695a5c80b6c59fc65585d1615eb89837d104d6421a760",
+  "manifestSha256": "03ce956a972eefde66007290a7a7bb3dc437e85d0681bc62534a0e75ee150117",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

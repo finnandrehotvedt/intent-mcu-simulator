@@ -252,6 +252,14 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       }
       return { ok: true, code: 'OK', result: { active: input.active, digitalLevel: input.active } };
     }
+    if (['sensor.flow-pulse-digital-v1', 'sensor.wind-speed-pulse-digital-v1']
+      .includes(componentType)) {
+      if (!exactInput(input, ['pulseHigh']) || typeof input.pulseHigh !== 'boolean') {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK',
+        result: { pulseHigh: input.pulseHigh, digitalLevel: input.pulseHigh } };
+    }
     if (['sensor.ir-obstacle-reflective-v1', 'sensor.line-tracking-reflective-v1']
       .includes(componentType)) {
       if (!exactInput(input, ['active']) || typeof input.active !== 'boolean') {
