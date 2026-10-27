@@ -8,7 +8,8 @@ import test from 'node:test';
 
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 const immutableRuntime = Object.freeze({
-  'src/simulator.worker.mjs': '03cb487340cb70684b4baf2422ac213be9fe7e24595b68f6fba5d7aada4c40c5',
+  'src/simulator.worker.mjs': '2da738b07f9ec8f2fbdf550c5f21f9ee5cfe9376a3233b5cc8857ef5bfc425b3',
+  'expansion-drafts/bme280-environment-v1.mjs': '3e901aae7073c6e58497a27042b377801e22cd19964569cb14fe8cf8bfa149eb',
   'src/runtime-kernel.mjs': '93f88d4dd9472a3c7cedf0396fad0c2cba617c8ef2ab535736434334d7cdfc84',
   'src/x49-public-run-contract.mjs': 'fa11957f8f4d2b528d2a4d71c42f64cc47cd0234be50b8dd129843802749c70b',
   'src/x49-public-runner.mjs': '7d869bf9621a8fa921e9a7a1bb198c426f07c1473f7ca5fde680e5bd5399c09c',
@@ -16,7 +17,7 @@ const immutableRuntime = Object.freeze({
   'src/x49-public-authoring.mjs': 'a1f47c371bcd7ada4bcfb452d41be18908937eba507ce8b5abc973993209a0d2',
 });
 
-test('approved DHT22 runtime increment preserves X49 public owners and sanitized output', async () => {
+test('approved BME280 runtime increment preserves X49 public owners and sanitized output', async () => {
   for (const [pathname, expected] of Object.entries(immutableRuntime)) {
     assert.equal(hash(await readFile(pathname)), expected, pathname);
   }

@@ -12,6 +12,12 @@ import { createTrafficLightComponent } from '../expansion-drafts/traffic-light-m
 import { createDht11Component } from '../expansion-drafts/dht11-temperature-humidity-v1.mjs';
 import { createDht22Component } from '../expansion-drafts/dht22-temperature-humidity-v1.mjs';
 import { createDs18b20Component } from '../expansion-drafts/ds18b20-temperature-v1.mjs';
+import { createBme280Component } from '../expansion-drafts/bme280-environment-v1.mjs';
+import {
+  BME280_ENVIRONMENT_CARD,
+  BME280_ENVIRONMENT_EXAMPLE_ID,
+  BME280_ENVIRONMENT_SOURCE,
+} from '../expansion-drafts/bme280-environment-example-v1.mjs';
 import { createComponent } from './circuit-engine.mjs';
 import { createCandidateUiComponent, openCandidateUiSession } from './candidate-existing-ui-adapter.mjs';
 
@@ -83,6 +89,7 @@ const CARDS = Object.freeze([
     limits: 'Ideal percentage input only; no lux calibration or comparator noise.',
     next: 'Load Thermostat boundary test to express a threshold as an executable requirement.',
   },
+  BME280_ENVIRONMENT_CARD,
   {
     id: 'avr-dht11-temperature-humidity', name: 'DHT11 temperature and humidity',
     model: 'sensor.dht11-temperature-humidity-v1',
@@ -171,6 +178,7 @@ const CARDS = Object.freeze([
 ]);
 
 const SOURCES = Object.freeze({
+  [BME280_ENVIRONMENT_EXAMPLE_ID]: BME280_ENVIRONMENT_SOURCE,
   'avr-ground-reference-input': `void setup() { pinMode(2, INPUT_PULLUP); pinMode(13, OUTPUT); Serial.begin(115200); }
 void loop() { bool grounded = digitalRead(2) == LOW; digitalWrite(13, grounded); Serial.println(grounded ? "GROUNDED" : "OPEN"); delay(120); }
 `,
@@ -483,6 +491,14 @@ function construct(card) {
     branch(session, 'net-5v', 'light-threshold-1', 'VCC', 'junction-starter-threshold-vcc');
     branch(session, 'net-ground-branch', 'light-threshold-1', 'GND', 'junction-starter-threshold-ground');
     wire(session, 'net-starter-threshold-d7', 'light-threshold-1', 'DOUT', 'board-1', 'D7');
+  } else if (card.id === BME280_ENVIRONMENT_EXAMPLE_ID) {
+    add(session, createBme280Component('bme280-1', 'Room BME280', {
+      temperatureC: 23.5, humidityPercent: 50, pressureHpa: 1013.2,
+    }), { x: 0.75, y: 0.68 });
+    branch(session, 'net-5v', 'bme280-1', 'VCC', 'junction-starter-bme280-vcc');
+    branch(session, 'net-ground-branch', 'bme280-1', 'GND', 'junction-starter-bme280-ground');
+    wire(session, 'net-starter-bme280-sda', 'bme280-1', 'SDA', 'board-1', 'A4');
+    wire(session, 'net-starter-bme280-scl', 'bme280-1', 'SCL', 'board-1', 'A5');
   } else if (card.id === 'avr-dht11-temperature-humidity') {
     add(session, createDht11Component('dht11-1', 'Room DHT11', {
       temperatureC: 25, humidityPercent: 50,

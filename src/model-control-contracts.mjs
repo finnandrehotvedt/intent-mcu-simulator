@@ -199,6 +199,14 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
     temperatureC: { kind: 'number', minimum: -55, maximum: 125, default: 23.5,
       unit: '°C', mutability: 'authored' },
   },
+  'sensor.bme280-environment-v1': {
+    temperatureC: { kind: 'number', minimum: -40, maximum: 85, default: 23.5,
+      unit: '°C', mutability: 'authored' },
+    humidityPercent: { kind: 'number', minimum: 0, maximum: 100, default: 50,
+      unit: '%RH', mutability: 'authored' },
+    pressureHpa: { kind: 'number', minimum: 300, maximum: 1100, default: 1013.2,
+      unit: 'hPa', mutability: 'authored' },
+  },
   'input.rotary-encoder-quadrature-v1': {
     detent: { kind: 'integer', minimum: -999, maximum: 999, default: 0,
       unit: 'detent', mutability: 'transition-only' },

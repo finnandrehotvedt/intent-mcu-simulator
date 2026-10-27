@@ -234,6 +234,12 @@ import {
   projectDs18b20Sensors,
   validateDs18b20Component,
 } from './ds18b20-temperature-v1.mjs';
+import {
+  BME280_DEFINITION,
+  BME280_TYPE,
+  projectBme280Sensors,
+  validateBme280Component,
+} from './bme280-environment-v1.mjs';
 
 export const CONTACT_PERSISTENCE_SCHEMA = 'intent-mcu-project-contact-persistence@1';
 export const COMPILED_FIXTURE_REFERENCE_SCHEMA = 'intent-mcu-compiled-fixture-ref@1';
@@ -338,6 +344,7 @@ function pinIds(component) {
   if (component.type === DHT11_TYPE) return ['VCC', 'DATA', 'GND'];
   if (component.type === DHT22_TYPE) return ['VCC', 'DATA', 'GND'];
   if (component.type === DS18B20_TYPE) return ['VCC', 'DQ', 'GND'];
+  if (component.type === BME280_TYPE) return ['VCC', 'GND', 'SDA', 'SCL'];
   if (component.type === COMMON_CATHODE_RGB_LED_TYPE) return ['R', 'G', 'B', 'COM'];
   if (component.type === TRAFFIC_LIGHT_TYPE) return ['RED', 'AMBER', 'GREEN', 'COM'];
   if (component.type === ACTIVE_BUZZER_TYPE) return ['VCC', 'GND', 'EN'];
@@ -386,6 +393,7 @@ function componentPins(component) {
   if (component.type === DHT11_TYPE) return DHT11_DEFINITION.pins;
   if (component.type === DHT22_TYPE) return DHT22_DEFINITION.pins;
   if (component.type === DS18B20_TYPE) return DS18B20_DEFINITION.pins;
+  if (component.type === BME280_TYPE) return BME280_DEFINITION.pins;
   if (component.type === COMMON_CATHODE_RGB_LED_TYPE) return COMMON_CATHODE_RGB_LED_DEFINITION.pins;
   if (component.type === TRAFFIC_LIGHT_TYPE) return TRAFFIC_LIGHT_DEFINITION.pins;
   if (component.type === ACTIVE_BUZZER_TYPE) return ACTIVE_BUZZER_DEFINITION.pins;
@@ -509,6 +517,8 @@ function validateCandidateComponent(component) {
     if (!validateDht22Component(component)) fail('PROJECT_CONTACT_DHT22_STATE', [component.id]);
   } else if (component.type === DS18B20_TYPE) {
     if (!validateDs18b20Component(component)) fail('PROJECT_CONTACT_DS18B20_STATE', [component.id]);
+  } else if (component.type === BME280_TYPE) {
+    if (!validateBme280Component(component)) fail('PROJECT_CONTACT_BME280_STATE', [component.id]);
   } else if (component.type === COMMON_CATHODE_RGB_LED_TYPE) {
     if (!validateCommonCathodeRgbLedComponent(component)) {
       fail('PROJECT_CONTACT_RGB_LED_STATE', [component.id]);
@@ -594,7 +604,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         ...Object.keys(CONNECTION_HARDWARE_DEFINITIONS),
         ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
         IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
-        DHT11_TYPE, DHT22_TYPE, DS18B20_TYPE,
+        DHT11_TYPE, DHT22_TYPE, DS18B20_TYPE, BME280_TYPE,
         ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
         CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
         ROTARY_ENCODER_TYPE,
@@ -1280,7 +1290,28 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
       fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
     }
   }
-  const commonAnodeProjection = projectCommonAnodeRgbLeds(ds18b20Projection.runtimeGraph);
+  const bme280Projection = projectBme280Sensors(ds18b20Projection.runtimeGraph);
+  if (!bme280Projection.ok) fail(`PROJECT_CONTACT_${bme280Projection.code}`, bme280Projection.details);
+  contacts.push(...bme280Projection.sensors.map((sensor) => ({
+    componentId: sensor.componentId,
+    type: BME280_TYPE,
+    state: { temperatureC: sensor.temperatureC, humidityPercent: sensor.humidityPercent,
+      pressureHpa: sensor.pressureHpa },
+    runtimeProjection: clone(sensor),
+  })));
+  for (const sensor of bme280Projection.sensors) {
+    const expected = production(implementation, BME280_TYPE, {
+      temperatureC: sensor.temperatureC,
+      humidityPercent: sensor.humidityPercent,
+      pressureHpa: sensor.pressureHpa,
+    }, [sensor.componentId]);
+    if (expected.temperatureC !== sensor.temperatureC
+        || expected.humidityPercent !== sensor.humidityPercent
+        || expected.pressureHpa !== sensor.pressureHpa) {
+      fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+    }
+  }
+  const commonAnodeProjection = projectCommonAnodeRgbLeds(bme280Projection.runtimeGraph);
   contacts.push(...commonAnodeProjection.outputs.map((output) => ({ componentId: output.componentId,
     type: RGB_COMMON_ANODE_TYPE, state: { commonPolarity: 'anode', activeLevel: 'LOW' },
     runtimeProjection: clone(output) })));
@@ -1610,6 +1641,12 @@ function draftContacts(graph) {
       return [{ componentId: component.id, type: component.type,
         state: { temperatureC: component.controls.temperatureC }, runtimeProjection: null }];
     }
+    if (component.type === BME280_TYPE) {
+      return [{ componentId: component.id, type: component.type,
+        state: { temperatureC: component.controls.temperatureC,
+          humidityPercent: component.controls.humidityPercent,
+          pressureHpa: component.controls.pressureHpa }, runtimeProjection: null }];
+    }
     if (component.type === COMMON_CATHODE_RGB_LED_TYPE) {
       return [{
         componentId: component.id,
@@ -1799,7 +1836,7 @@ export function validateContactPersistenceProject(value, options = {}) {
       ...Object.keys(CONNECTION_HARDWARE_DEFINITIONS),
       ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
       IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
-      DHT11_TYPE, DHT22_TYPE, DS18B20_TYPE,
+      DHT11_TYPE, DHT22_TYPE, DS18B20_TYPE, BME280_TYPE,
       ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
       ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
       CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,

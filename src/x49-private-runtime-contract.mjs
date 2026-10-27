@@ -28,6 +28,7 @@ export const X49_PRIVATE_RUNTIME_MEMBERS = Object.freeze([
   'src/x49-private-instrumented-runtime.mjs',
   'src/x49-private-runtime-contract.mjs',
   'src/atmega328p-adapter.mjs',
+  'expansion-drafts/bme280-environment-v1.mjs',
   'src/hex.mjs',
   'src/x34-precision-observer.mjs',
   'src/x34-precision-fixture.mjs',

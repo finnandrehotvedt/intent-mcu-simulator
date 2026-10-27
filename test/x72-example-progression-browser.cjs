@@ -54,7 +54,7 @@ async function openExampleChooser(page) {
 
   await openExampleChooser(page);
   const cards = page.locator('.starter-card');
-  assert(await cards.count() === 20, 'AVR chooser must retain exactly 20 cards');
+  assert(await cards.count() === 24, 'AVR chooser must retain exactly 24 cards');
   const cardShape = await cards.evaluateAll((nodes) => nodes.map((node) => ({
     id: node.dataset.example,
     text: node.textContent.toLocaleLowerCase(),

@@ -466,6 +466,10 @@ async function handleMessage(data) {
       if (isRp2040()) throw new Error('DS18B20_PROFILE_UNAVAILABLE');
       kernel.adapter.setDs18b20Temperature(data.componentId, data.value);
       status('ds18b20-control');
+    } else if (data.command === 'bme280-control') {
+      if (isRp2040()) throw new Error('BME280_PROFILE_UNAVAILABLE');
+      kernel.adapter.setBme280Environment(data.componentId, data.key, data.value);
+      status('bme280-control');
     } else if (data.command === 'x48-run') {
       if (!exactKeys(data, ['command', 'binding'])) throw new Error('X48_RUN_COMMAND_INVALID');
       if (isRp2040()) throw new Error('X48_PROFILE_UNAVAILABLE');

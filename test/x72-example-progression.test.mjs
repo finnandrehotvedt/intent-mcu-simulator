@@ -44,6 +44,10 @@ const expectedNext = Object.freeze({
   'avr-spdt-selector': 'Load Quadrature encoder to observe ordered changes across two inputs.',
   'avr-light-analogue': 'Load Digital light threshold to compare continuous and thresholded sensing.',
   'avr-light-threshold': 'Load Thermostat boundary test to express a threshold as an executable requirement.',
+  'avr-bme280-environment': 'Load DHT22 to compare I2C registers with a timed single-wire payload.',
+  'avr-dht11-temperature-humidity': 'Load Digital light threshold to compare a timed protocol sensor with a simple digital level.',
+  'avr-dht22-temperature-humidity': 'Load DHT11 to compare integer and signed decimal payload encodings.',
+  'avr-ds18b20-temperature': 'Load DHT11 to compare OneWire command slots with a fixed timed sensor payload.',
   'avr-active-buzzer': 'Load Traffic light sequence to coordinate three current-limited outputs.',
   'avr-traffic-light': 'Load Seven-segment digits to coordinate a larger group of outputs.',
   'avr-seven-segment': 'Load Four-digit multiplex to coordinate shared segments and digit selection.',
@@ -71,6 +75,10 @@ const baselineProjectHashes = Object.freeze({
   'avr-spdt-selector': 'cb16776f2abc4f4533e022333582cbee1fffcdc38d35de636847771e0b1efad9',
   'avr-light-analogue': 'd4b20faf2c75fc16fe902010cc11b231c649e50d8c8e3b7272fac148a7263f64',
   'avr-light-threshold': 'e087aabdf60ed40497635c1f069eb9f88dfb948f01d270a43a557ceea303aeb1',
+  'avr-bme280-environment': 'e148bfbc5ae174e2adb32c021564a1f0e3bcd97a4fe560eeefa44b359dec7534',
+  'avr-dht11-temperature-humidity': '883f1b424aa9bfac11a32abb8b5cd6845c94eff395971bef0dbdde6f34c899be',
+  'avr-dht22-temperature-humidity': '84cfa0835b64f97314f7a96637db18627a75f7769c995ef600048e58be753ffc',
+  'avr-ds18b20-temperature': '61a1bc8c0f7b4e85a08e8cbdf87159d9fb99de45db921ef23e87573ff8238276',
   'avr-active-buzzer': '999a45c11f65edf45e02d29815ab9df38d29534cb41c9609482cd1b3f9ae03d6',
   'avr-traffic-light': 'b0bf4f28a757bf9e5ec89f8b4401638971add650761db1c9248fc28c67389e59',
   'avr-seven-segment': 'b8bbdca870e92d26026eef5ceb1219a1771f62422eb789fb8652180360b88733',
@@ -85,10 +93,10 @@ const baselineProjectHashes = Object.freeze({
 });
 const hash = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
-test('X72 exposes one concise five-part learning progression for all 25 examples', () => {
+test('X72 exposes one concise five-part learning progression for all 29 examples', () => {
   const catalog = cards();
-  assert.equal(catalog.length, 25);
-  assert.equal(new Set(catalog.map(({ id }) => id)).size, 25);
+  assert.equal(catalog.length, 29);
+  assert.equal(new Set(catalog.map(({ id }) => id)).size, 29);
   assert.deepEqual(Object.fromEntries(catalog.map(({ id, next }) => [id, next])), expectedNext);
   for (const card of catalog) {
     for (const field of ['learn', 'try', 'limits', 'next']) assert.match(card[field], /\S/u, `${card.id}.${field}`);

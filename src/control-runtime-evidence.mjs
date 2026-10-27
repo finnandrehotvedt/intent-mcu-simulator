@@ -68,6 +68,9 @@ const rows = [
   ['sensor.dht22-temperature-humidity-v1', 'temperatureC', 'DHT22 payload · signed decimal temperature word plus checksum', 'D5 timed DATA response → executed firmware → USART', 'actual-executed'],
   ['sensor.dht22-temperature-humidity-v1', 'humidityPercent', 'DHT22 payload · decimal humidity word plus checksum', 'D5 timed DATA response → executed firmware → USART', 'actual-executed'],
   ['sensor.ds18b20-temperature-v1', 'temperatureC', 'DS18B20 scratchpad · signed 1/16 °C plus CRC-8', 'D3 OneWire response → executed firmware → USART', 'actual-executed'],
+  ['sensor.bme280-environment-v1', 'temperatureC', 'BME280 register payload · calibrated temperature sample', 'A4/A5 TWI register read → executed firmware → USART', 'actual-executed'],
+  ['sensor.bme280-environment-v1', 'humidityPercent', 'BME280 register payload · calibrated humidity sample', 'A4/A5 TWI register read → executed firmware → USART', 'actual-executed'],
+  ['sensor.bme280-environment-v1', 'pressureHpa', 'BME280 register payload · calibrated pressure sample', 'A4/A5 TWI register read → executed firmware → USART', 'actual-executed'],
 ].map(([model, field, workerEvent, observable, evidence]) => Object.freeze({
   profile: AVR_PROFILE,
   model,
@@ -98,6 +101,8 @@ const rows = [
     ? 'test/dht22-temperature-humidity-browser.cjs'
     : model === 'sensor.ds18b20-temperature-v1'
     ? 'test/ds18b20-temperature-browser.cjs'
+    : model === 'sensor.bme280-environment-v1'
+    ? 'test/bme280-environment-browser.cjs'
     : ['sensor.flow-pulse-digital-v1', 'sensor.wind-speed-pulse-digital-v1'].includes(model)
     ? 'test/digital-pulse-sensors-browser.cjs'
     : ['liquidHigh', 'tilted', 'vibrationDetected'].includes(field)

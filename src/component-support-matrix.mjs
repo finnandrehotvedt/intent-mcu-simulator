@@ -122,6 +122,7 @@ const referenceBindings = deepFreeze({
     'sensor.dht11-temperature-humidity-v1': { starters: ['avr-dht11-temperature-humidity'], tests: ['test/dht11-temperature-humidity.test.mjs', 'test/dht11-temperature-humidity-browser.cjs'] },
     'sensor.dht22-temperature-humidity-v1': { starters: ['avr-dht22-temperature-humidity'], tests: ['test/dht22-temperature-humidity.test.mjs', 'test/dht22-temperature-humidity-browser.cjs'] },
     'sensor.ds18b20-temperature-v1': { starters: ['avr-ds18b20-temperature'], tests: ['test/ds18b20-temperature.test.mjs', 'test/ds18b20-temperature-browser.cjs'] },
+    'sensor.bme280-environment-v1': { starters: ['avr-bme280-environment'], tests: ['test/bme280-environment.test.mjs', 'test/bme280-environment-browser.cjs'] },
     'sensor.soil-moisture-resistive-analogue-v1': { starters: ['avr-analogue-moisture-level-sensors'], tests: ['test/analogue-moisture-level-sensors-candidate.test.mjs', 'test/analogue-moisture-level-sensor-example-artifacts.test.mjs'] },
     'sensor.soil-moisture-capacitive-analogue-v1': { starters: ['avr-analogue-moisture-level-sensors'], tests: ['test/analogue-moisture-level-sensors-candidate.test.mjs', 'test/analogue-moisture-level-sensor-example-artifacts.test.mjs'] },
     'sensor.water-level-analogue-v1': { starters: ['avr-analogue-moisture-level-sensors'], tests: ['test/analogue-moisture-level-sensors-candidate.test.mjs', 'test/analogue-moisture-level-sensor-example-artifacts.test.mjs'] },

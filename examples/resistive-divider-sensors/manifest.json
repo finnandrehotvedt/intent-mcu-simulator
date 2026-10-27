@@ -4,9 +4,9 @@
   "modelLibrary": {
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
-    "version": "2.0.0-dht22-decimal.1-current",
-    "manifestSha256": "1de775a60ebd1e443449485e067e139aa315436ce58105acd16ddf49369d3b9e",
-    "implementationSha256": "e1c13609f8feec0e35fab250b849d7532281e21d603466932c3f3b0bda9c7f5a"
+    "version": "2.0.0-bme280-environment.1-current",
+    "manifestSha256": "994afa47cdd63257307aa765e194dc43fb0e61510711aa697f912a9ce1ef3761",
+    "implementationSha256": "6da5ca169f60cd6b8a7df1d9ceaabe31e962f6a5420fe568e38ceb7e7073bb30"
   },
   "entries": [
     {
@@ -39,7 +39,7 @@
         "board.stm32f429zi-nucleo144-v1": "unavailable"
       },
       "sourceSha256": "a45c454a3d400b2f489e17acb3aa35b5574bc689ecd09d5a1fc56f48f3db9350",
-      "projectSha256": "128b3ccd19d5097a22f07f62b0cedfbc0aa8dd4ce3df6496dbb7f3df472417f1",
+      "projectSha256": "111b713b8e812758c7cc8bd1dc978c641cc4e71b3d10da07353e3c5beb52e928",
       "provenance": "Original project-owned contracts, SVG artwork, deterministic divider transfer models, firmware source and canonical project envelope."
     }
   ]

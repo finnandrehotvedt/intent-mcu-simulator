@@ -41,6 +41,9 @@ const PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -284,6 +287,8 @@ const CURRENT_CLOSURE = Object.freeze([
   '../expansion-drafts/dht22-temperature-humidity-artwork-v1.mjs',
   '../expansion-drafts/ds18b20-temperature-v1.mjs',
   '../expansion-drafts/ds18b20-temperature-artwork-v1.mjs',
+  '../expansion-drafts/bme280-environment-v1.mjs',
+  '../expansion-drafts/bme280-environment-artwork-v1.mjs',
   '../expansion-drafts/analogue-moisture-level-sensors-v1.mjs',
   '../expansion-drafts/analogue-moisture-level-sensors-artwork-v1.mjs',
   '../expansion-drafts/analogue-detection-sensors-v1.mjs',
@@ -376,16 +381,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-dht22-decimal.1-current',
-  'intent-mcu-model-bundle-current-dht22-decimal-1@55',
+  '2.0.0-bme280-environment.1-current',
+  'intent-mcu-model-bundle-current-bme280-environment-1@62',
   currentImplementation,
   {
-    priorVersion: PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'adds the AVR-only signed decimal DHT22 timed single-wire temperature and humidity protocol model while retaining every prior component contract',
-    presentationDisposition: 'CMP-093 uses original DHT22 artwork, independent 0.1-unit temperature and humidity controls, canonical persistence and visible checksum-validated Serial evidence',
-    baselineClosureDisposition: 'public rc145 head 07a402c and every earlier identity remain immutable migration-only anchors; this rc146 candidate is source and isolated-test only',
+    semanticDisposition: 'adds the AVR-only fixed-address BME280 I2C temperature, humidity and pressure register model while retaining every prior component contract',
+    presentationDisposition: 'CMP-094 uses original BME280 breakout artwork, three independent 0.1-unit controls, canonical persistence and visible calibration-compensated Serial evidence',
+    baselineClosureDisposition: 'terminal CMP-093 DHT22 candidate 9f0d5d3 and every earlier identity remain immutable migration-only anchors; this rc147 candidate is source and isolated-test only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -457,6 +462,7 @@ export const PRE_CMP091_DS18B20_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze($
 export const PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

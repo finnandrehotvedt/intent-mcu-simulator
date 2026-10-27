@@ -92,8 +92,8 @@ test('active buzzer is an original silent logical three-terminal contract', () =
   assert(!Object.hasOwn(COMPONENT_CATALOG, ACTIVE_BUZZER_TYPE));
   assert.equal(Object.values(COMPONENT_CATALOG).length, 7);
   assert.equal(Object.values(COMPONENT_CATALOG).filter((definition) => definition.selectable).length, 6);
-  assert.equal(Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable).length, 74);
-  assert.equal(6 + Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable).length, 80);
+  assert.equal(Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable).length, 75);
+  assert.equal(6 + Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable).length, 81);
   assert.deepEqual(createCandidateUiComponent(ACTIVE_BUZZER_TYPE, 'active-buzzer-2'), {
     id: 'active-buzzer-2', type: ACTIVE_BUZZER_TYPE,
     label: 'Active buzzer module', properties: {}, controls: {},

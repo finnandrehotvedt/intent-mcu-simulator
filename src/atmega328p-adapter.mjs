@@ -25,6 +25,7 @@ import { X35CausalObserver } from './x35-causal-observer.mjs';
 import { parseIntelHex } from './hex.mjs';
 import { X46UsartConfigurationProducer } from './x46-usart-configuration-producer.mjs';
 import { USART_RX_OBSERVATION_LATENESS_LIMIT } from './x46-usart-rx-limits.mjs';
+import { bme280RegisterMap } from '../expansion-drafts/bme280-environment-v1.mjs';
 
 export const CLOCK_HZ = 16_000_000;
 export const TRACE_LIMIT = 100_000;
@@ -185,11 +186,29 @@ export class Atmega328PAdapter {
       converted: false,
     }]));
     const i2cDevices = options.i2cDevices ?? [];
-    if (!Array.isArray(i2cDevices) || i2cDevices.length > 1
-        || i2cDevices.some((item) => item?.address !== 0x27 || item?.type !== 'pcf8574-lcd')) {
+    const i2cAddresses = new Set(i2cDevices.map((item) => item?.address));
+    if (!Array.isArray(i2cDevices) || i2cDevices.length > 2
+        || i2cAddresses.size !== i2cDevices.length
+        || i2cDevices.filter((item) => item?.type === 'pcf8574-lcd').length > 1
+        || i2cDevices.filter((item) => item?.type === 'bme280').length > 1
+        || i2cDevices.some((item) => {
+          if (item?.type === 'pcf8574-lcd') return item.address !== 0x27;
+          return item?.type !== 'bme280' || item.address !== 0x76
+            || typeof item.componentId !== 'string' || !/^[a-z][a-z0-9-]{0,47}$/u.test(item.componentId)
+            || !validDht22RuntimeValue(item.temperatureC, -40, 85)
+            || !validDht22RuntimeValue(item.humidityPercent, 0, 100)
+            || !validDht22RuntimeValue(item.pressureHpa, 300, 1100);
+        })) {
       throw new TypeError('I2C_DEVICE_CONFIGURATION');
     }
-    this.i2cAddresses = new Set(i2cDevices.map((item) => item.address));
+    this.i2cDevices = new Map(i2cDevices.map((item) => [item.address,
+      item.type === 'bme280' ? {
+        type: item.type, address: item.address, componentId: item.componentId,
+        temperatureC: item.temperatureC, humidityPercent: item.humidityPercent,
+        pressureHpa: item.pressureHpa,
+        registers: bme280RegisterMap(item.temperatureC, item.humidityPercent, item.pressureHpa),
+        pointer: 0, expectingRegister: true,
+      } : { type: item.type, address: item.address }]));
     this.#createMachine();
   }
 
@@ -266,6 +285,9 @@ export class Atmega328PAdapter {
       device.readBit = 0;
       device.converted = false;
       this.#setDigitalPinNow(device.pin, true, false);
+    }
+    for (const device of this.i2cDevices.values()) {
+      if (device.type === 'bme280') { device.pointer = 0; device.expectingRegister = true; }
     }
     this.#refreshDigitalBridges();
     for (const [channel, voltage] of this.analogVoltages) this.adc.channelValues[channel] = voltage;
@@ -374,18 +396,45 @@ export class Atmega328PAdapter {
       },
       connectToSlave: (nextAddress, write) => {
         address = nextAddress;
-        const acknowledged = write && this.i2cAddresses.has(address);
+        const device = this.i2cDevices.get(address);
+        const acknowledged = Boolean(device && (write || device.type === 'bme280'));
+        if (acknowledged && write && device.type === 'bme280') device.expectingRegister = true;
         this.retentionDrops.i2c += boundedPush(this.i2c,
           { cycle: this.cpu.cycles, kind: 'address', address, read: !write, acknowledged }, I2C_LIMIT);
         this.twi.completeConnect(acknowledged);
       },
       writeByte: (value) => {
-        const acknowledged = this.i2cAddresses.has(address);
+        const device = this.i2cDevices.get(address);
+        const acknowledged = Boolean(device);
+        let register = null;
+        let applied = false;
+        if (device?.type === 'bme280') {
+          if (device.expectingRegister) {
+            device.pointer = value; device.expectingRegister = false;
+          } else {
+            register = device.pointer;
+            if ([0xf2, 0xf4, 0xf5].includes(register)) {
+              device.registers[register] = value; applied = true;
+            }
+            device.pointer = (device.pointer + 1) & 0xff;
+          }
+        }
         this.retentionDrops.i2c += boundedPush(this.i2c,
-          { cycle: this.cpu.cycles, kind: 'write', address, value, acknowledged }, I2C_LIMIT);
+          { cycle: this.cpu.cycles, kind: 'write', address, value, acknowledged,
+            ...(device?.type === 'bme280' ? { register, applied } : {}) }, I2C_LIMIT);
         this.twi.completeWrite(acknowledged);
       },
       readByte: () => {
+        const device = this.i2cDevices.get(address);
+        if (device?.type === 'bme280') {
+          const register = device.pointer;
+          const value = device.registers[register];
+          device.pointer = (device.pointer + 1) & 0xff;
+          this.retentionDrops.i2c += boundedPush(this.i2c,
+            { cycle: this.cpu.cycles, kind: 'read', address, register, value, acknowledged: true }, I2C_LIMIT);
+          this.twi.completeRead(value);
+          return;
+        }
         this.#markUnsupported('twi-read', { address });
         this.twi.completeRead(0xff);
       },
@@ -709,6 +758,22 @@ export class Atmega328PAdapter {
     const device = this.ds18b20Devices.get(componentId);
     if (!device || !validDs18b20RuntimeTemperature(value)) throw new TypeError('DS18B20_CONTROL');
     device.temperatureC = value;
+  }
+
+  setBme280Environment(componentId, key, value) {
+    const device = [...this.i2cDevices.values()].find((item) => item.type === 'bme280'
+      && item.componentId === componentId);
+    const ranges = { temperatureC: [-40, 85], humidityPercent: [0, 100], pressureHpa: [300, 1100] };
+    const range = ranges[key];
+    if (!device || !range || !validDht22RuntimeValue(value, ...range)) {
+      throw new TypeError('BME280_CONTROL');
+    }
+    device[key] = value;
+    const controls = [device.registers[0xf2], device.registers[0xf4], device.registers[0xf5]];
+    device.registers = bme280RegisterMap(
+      device.temperatureC, device.humidityPercent, device.pressureHpa,
+    );
+    [device.registers[0xf2], device.registers[0xf4], device.registers[0xf5]] = controls;
   }
 
   #scheduleDs18b20Presence(device, releaseCycle, resetPulseCycles) {
@@ -1116,6 +1181,10 @@ export class Atmega328PAdapter {
       trace: this.trace.slice(),
       serial: this.serial.slice(),
       i2c: this.i2c.map((entry) => ({ ...entry })),
+      bme280: [...this.i2cDevices.values()].filter((device) => device.type === 'bme280')
+        .map((device) => ({ componentId: device.componentId, address: device.address,
+          temperatureC: device.temperatureC, humidityPercent: device.humidityPercent,
+          pressureHpa: device.pressureHpa, registerPointer: device.pointer })),
       dht11: this.dht11.map((entry) => ({ ...entry, payload: [...entry.payload] })),
       dht22: this.dht22.map((entry) => ({ ...entry, payload: [...entry.payload] })),
       ds18b20: this.ds18b20.map((entry) => ({ ...entry,

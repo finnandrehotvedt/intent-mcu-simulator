@@ -498,6 +498,12 @@ import {
   DS18B20_TYPE,
 } from '../expansion-drafts/ds18b20-temperature-v1.mjs';
 import {
+  BME280_HUMIDITY_MAX_PERCENT, BME280_HUMIDITY_MIN_PERCENT,
+  BME280_PRESSURE_MAX_HPA, BME280_PRESSURE_MIN_HPA,
+  BME280_TEMPERATURE_MAX_C, BME280_TEMPERATURE_MIN_C,
+  BME280_TYPE, BME280_VALUE_STEP,
+} from '../expansion-drafts/bme280-environment-v1.mjs';
+import {
   CAPACITIVE_TOUCH_TYPE,
   DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
   HALL_SWITCH_TYPE,
@@ -625,7 +631,7 @@ const elements = Object.fromEntries([
   'counterexample-reduce', 'counterexample-reduction-summary',
   'fault-suite-load', 'fault-suite-replay', 'fault-suite-summary',
   'starter-examples', 'starter-gallery', 'quick-controls', 'workbench-workspace', 'project-bar',
-  'beginner-primary', 'beginner-run', 'beginner-runtime-toggle', 'beginner-dht11', 'beginner-dht22', 'beginner-examples', 'beginner-scratch', 'beginner-source', 'beginner-status', 'workbench-more',
+  'beginner-primary', 'beginner-run', 'beginner-runtime-toggle', 'beginner-bme280', 'beginner-dht11', 'beginner-dht22', 'beginner-examples', 'beginner-scratch', 'beginner-source', 'beginner-status', 'workbench-more',
   'build-list-export', 'build-list-status', 'accessible-svg-export', 'accessible-svg-status',
   'project-navigation', 'project-navigation-query', 'project-navigation-status', 'project-navigation-results',
   'family-select', 'board-select', 'controller-status', 'toolchain-boundary',
@@ -13111,7 +13117,7 @@ function renderComponentSupportMatrix() {
   const summary = componentSupportSummary(profile.id);
   elements.componentsupportsummary.textContent = `${summary.available} of ${summary.total} models available · ${summary.simulated} Simulated · ${summary.partial} Partial · ${summary.unavailable} Unavailable`;
   elements.componentsupportmode.textContent = profile.id === AVR_PROFILE
-    ? 'Ordinary AVR project-v2 exposes 6 executable models. Candidate-v3 exposes all 65 executable AVR models—41 Simulated and 24 Partial—plus 15 Visual authoring-only models.'
+    ? 'Ordinary AVR project-v2 exposes 6 executable models. Candidate-v3 exposes all 66 executable AVR models—42 Simulated and 24 Partial—plus 15 Visual authoring-only models.'
     : 'This bounded profile exposes exactly 3 available entries: its fixed Partial controller, plus the Simulated resistor and LED. Other models are unavailable and are never silently substituted.';
   const cells = COMPONENT_SUPPORT_CELLS.filter((cell) => cell.profile === profile.id);
   const rows = COMPONENT_SUPPORT_MODELS.map((model) => {
@@ -13280,6 +13286,7 @@ function candidateComponentPrefix(type) {
       [DHT11_TYPE]: 'dht11',
       [DHT22_TYPE]: 'dht22',
       [DS18B20_TYPE]: 'ds18b20',
+      [BME280_TYPE]: 'bme280',
       [ROTARY_ENCODER_TYPE]: 'rotary-encoder',
       [NONPOLAR_CAPACITOR_TYPE]: 'capacitor',
       [ELECTROLYTIC_CAPACITOR_TYPE]: 'electrolytic-capacitor',
@@ -13373,6 +13380,7 @@ function addComponent(type, point = null) {
       [DHT11_TYPE]: { x: 0.75, y: 0.7 },
       [DHT22_TYPE]: { x: 0.75, y: 0.7 },
       [DS18B20_TYPE]: { x: 0.74, y: 0.7 },
+      [BME280_TYPE]: { x: 0.74, y: 0.66 },
       [NONPOLAR_CAPACITOR_TYPE]: { x: 0.56, y: 0.2 },
       [ELECTROLYTIC_CAPACITOR_TYPE]: { x: 0.7, y: 0.2 },
       [FIXED_INDUCTOR_TYPE]: { x: 0.84, y: 0.2 },
@@ -14100,6 +14108,39 @@ function renderRuntimeControls() {
         if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
       });
       row.append(label, input); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && component.type === BME280_TYPE) {
+      const definitions = [
+        { key: 'temperatureC', label: 'Temperature', unit: '°C',
+          min: BME280_TEMPERATURE_MIN_C, max: BME280_TEMPERATURE_MAX_C,
+          aria: 'simulated BME280 temperature in degrees Celsius' },
+        { key: 'humidityPercent', label: 'Humidity', unit: '% RH',
+          min: BME280_HUMIDITY_MIN_PERCENT, max: BME280_HUMIDITY_MAX_PERCENT,
+          aria: 'simulated BME280 relative humidity percent' },
+        { key: 'pressureHpa', label: 'Pressure', unit: 'hPa',
+          min: BME280_PRESSURE_MIN_HPA, max: BME280_PRESSURE_MAX_HPA,
+          aria: 'simulated BME280 barometric pressure in hectopascals' },
+      ];
+      return definitions.map((control) => {
+        const row = document.createElement('div'); const label = document.createElement('label');
+        label.textContent = `${component.label} · ${control.label} ${component.controls[control.key].toFixed(1)} ${control.unit}`;
+        const input = document.createElement('input'); input.type = 'range';
+        input.step = String(BME280_VALUE_STEP); input.min = String(control.min); input.max = String(control.max);
+        input.value = String(component.controls[control.key]); input.dataset.control = `${component.id}.${control.key}`;
+        input.id = `control-${component.id}-${control.key}`; label.htmlFor = input.id;
+        input.setAttribute('aria-label', `${component.label} ${control.aria}, ${control.min} to ${control.max}`);
+        input.addEventListener('input', () => {
+          const value = Number(input.value);
+          const prepared = selectedCandidateContactControl(component.id, control.key, value);
+          if (!prepared.ok) {
+            showActionableError(elements.projectmessage, prepared.code, 'BME280 control rejected.'); return;
+          }
+          const result = applyEditor(prepared.command,
+            `${component.label} ${control.label.toLocaleLowerCase()} ${value.toFixed(1)} ${control.unit}`);
+          if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+        });
+        row.append(label, input); return row;
+      });
     }
     if (editor.kind === 'candidate-project-v3' && ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) {
       const row = document.createElement('div'); const label = document.createElement('label');
@@ -14857,9 +14898,14 @@ async function loadArtifact(hex, artifactIdentity, {
     modelExecutionContextSha256,
     digitalInputs: structuredClone(currentCandidateInputs()),
     i2cDevices: editor.kind === 'candidate-project-v3'
-      ? editor.runtimeSupport.filter((item) => item.type === PCF8574_LCD_TYPE).map((item) => ({
+      ? editor.runtimeSupport.flatMap((item) => item.type === PCF8574_LCD_TYPE ? [{
         type: 'pcf8574-lcd', address: item.runtimeProjection.address,
-      })) : [],
+      }] : item.type === BME280_TYPE ? [{
+        type: 'bme280', componentId: item.componentId, address: item.runtimeProjection.address,
+        temperatureC: item.runtimeProjection.temperatureC,
+        humidityPercent: item.runtimeProjection.humidityPercent,
+        pressureHpa: item.runtimeProjection.pressureHpa,
+      }] : []) : [],
     dht11Devices: editor.kind === 'candidate-project-v3'
       ? editor.runtimeSupport.filter((item) => item.type === DHT11_TYPE).map((item) => ({
         type: 'dht11', componentId: item.componentId,
@@ -16379,17 +16425,19 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
 function renderStarterExamples() {
   const availableExamples = [...exampleCatalog(), TEMPERATURE_LCD_THRESHOLD_CARD, PCF8574_LCD_HELLO_CARD, THERMOSTAT_EXPERIMENT_CARD, ...avrReferenceStarterCatalog()];
   const dht22Example = availableExamples.find((example) => example.id === 'avr-dht22-temperature-humidity');
+  const bme280Example = availableExamples.find((example) => example.id === 'avr-bme280-environment');
   const dht11Example = availableExamples.find((example) => example.id === 'avr-dht11-temperature-humidity');
   const ds18b20Example = availableExamples.find((example) => example.id === 'avr-ds18b20-temperature');
   const trafficLightExample = availableExamples.find((example) => example.id === 'avr-traffic-light');
   const examples = [
     availableExamples.find((example) => example.id === 'blink'),
+    bme280Example,
     dht22Example,
     dht11Example,
     ds18b20Example,
     trafficLightExample,
     ...availableExamples.filter((example) => ![
-      'blink', 'avr-dht22-temperature-humidity', 'avr-dht11-temperature-humidity', 'avr-ds18b20-temperature', 'avr-traffic-light',
+      'blink', 'avr-bme280-environment', 'avr-dht22-temperature-humidity', 'avr-dht11-temperature-humidity', 'avr-ds18b20-temperature', 'avr-traffic-light',
     ].includes(example.id)),
   ].filter(Boolean);
   const cards = examples.map((example) => {
@@ -16398,7 +16446,9 @@ function renderStarterExamples() {
     const meta = document.createElement('span'); meta.className = 'starter-meta';
     const focus = document.createElement('span'); focus.className = 'starter-focus'; focus.textContent = example.focus;
     const difficulty = document.createElement('span'); difficulty.className = 'starter-difficulty';
-    difficulty.textContent = example.id === 'avr-dht22-temperature-humidity'
+    difficulty.textContent = example.id === 'avr-bme280-environment'
+      ? 'New environment sensor'
+      : example.id === 'avr-dht22-temperature-humidity'
       ? 'New digital sensor'
       : example.id === 'avr-dht11-temperature-humidity'
         ? 'Digital sensor'
@@ -16510,6 +16560,23 @@ function startDht11FromSimpleView() {
   })) return;
   install();
 }
+function startBme280FromSimpleView() {
+  if (selectedCompilerProfile !== AVR_PROFILE) {
+    elements.beginnerstatus.textContent = 'BME280 is currently executable on AVR. Select ATmega328P, then choose New: BME280 sensor.';
+    return;
+  }
+  const install = () => {
+    const result = loadExampleProject('avr-bme280-environment', 'project.beginner-bme280');
+    if (result?.ok) {
+      elements.beginnerstatus.textContent = 'BME280 loaded · choose Run project, then adjust temperature, humidity and pressure in Inspector.';
+      document.querySelector('#active-canvas-stage')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+  if (requestUnsavedChangeGuard({
+    profile: AVR_PROFILE, actionLabel: 'loading BME280 temperature, humidity and pressure', continueAction: install,
+  })) return;
+  install();
+}
 function startDht22FromSimpleView() {
   if (selectedCompilerProfile !== AVR_PROFILE) {
     elements.beginnerstatus.textContent = 'DHT22 is currently executable on AVR. Select ATmega328P, then choose New: DHT22 sensor.';
@@ -16592,6 +16659,7 @@ async function runBeginnerProject() {
 }
 elements.beginnerdht11.addEventListener('click', startDht11FromSimpleView);
 elements.beginnerdht22.addEventListener('click', startDht22FromSimpleView);
+elements.beginnerbme280.addEventListener('click', startBme280FromSimpleView);
 elements.beginnerexamples.addEventListener('click', openExamplePicker);
 elements.beginnerruntimetoggle.addEventListener('click', () => {
   if (elements.beginnerruntimetoggle.dataset.state === 'paused') elements.quickrun.click();

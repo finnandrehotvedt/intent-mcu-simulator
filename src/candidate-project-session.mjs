@@ -76,6 +76,12 @@ import {
   DS18B20_TYPE,
   validDs18b20Temperature,
 } from '../expansion-drafts/ds18b20-temperature-v1.mjs';
+import {
+  BME280_HUMIDITY_MAX_PERCENT, BME280_HUMIDITY_MIN_PERCENT,
+  BME280_PRESSURE_MAX_HPA, BME280_PRESSURE_MIN_HPA,
+  BME280_TEMPERATURE_MAX_C, BME280_TEMPERATURE_MIN_C,
+  BME280_TYPE, validBme280Value,
+} from '../expansion-drafts/bme280-environment-v1.mjs';
 import { ANALOGUE_MOISTURE_LEVEL_DEFINITIONS, ANALOGUE_WATER_LEVEL_TYPE,
   CAPACITIVE_SOIL_MOISTURE_TYPE, RESISTIVE_SOIL_MOISTURE_TYPE,
 } from '../expansion-drafts/analogue-moisture-level-sensors-v1.mjs';
@@ -125,6 +131,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   DHT11_TYPE,
   DHT22_TYPE,
   DS18B20_TYPE,
+  BME280_TYPE,
   RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
   RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
   MQ_GAS_ANALOGUE_TYPE, CO2_ANALOGUE_TYPE, UV_ANALOGUE_TYPE,
@@ -324,6 +331,8 @@ function contactSupport(result) {
             ? 'avr-dht22-single-wire-protocol-v1'
           : contact.type === DS18B20_TYPE
             ? 'avr-ds18b20-onewire-protocol-v1'
+          : contact.type === BME280_TYPE
+            ? 'avr-twi-bme280-environment-v1'
           : spdt?.ok
             ? 'spdt-digital-reference-v1'
             : null,
@@ -341,6 +350,8 @@ function contactSupport(result) {
         ? 'Signed decimal DHT22 protocol payload with checksum on AVR only; no physical latency, minimum sampling interval, noise, self-heating, cable or electrical accuracy is modelled.'
         : contact.type === DS18B20_TYPE
         ? 'Externally powered single-device OneWire scratchpad with CRC on AVR only; no conversion latency, multidrop ROM selection, parasite power or physical thermal/electrical accuracy is modelled.'
+        : contact.type === BME280_TYPE
+        ? 'Fixed-address AVR I2C register model with one calibration set and idealized 5 V breakout regulation/level shifting; no physical bus, latency, weather or electrical accuracy is modelled.'
         : contact.type === COMMON_CATHODE_RGB_LED_TYPE
         ? 'Ideal relative PWM mix through three independently current-limited existing LED channels; no physical colour, wavelength, optical or current accuracy is modelled.'
         : contact.type === TRAFFIC_LIGHT_TYPE
@@ -1088,6 +1099,21 @@ export class CandidateEditorSession {
             const evaluated = this.evaluateModel(component.type, { temperatureC: command.value });
             if (!evaluated.ok) return failure(evaluated.code, this.revision, [component.id]);
             component.controls.temperatureC = command.value; runtimeDirty = true; break;
+          }
+          if (component.type === BME280_TYPE) {
+            const ranges = {
+              temperatureC: [BME280_TEMPERATURE_MIN_C, BME280_TEMPERATURE_MAX_C],
+              humidityPercent: [BME280_HUMIDITY_MIN_PERCENT, BME280_HUMIDITY_MAX_PERCENT],
+              pressureHpa: [BME280_PRESSURE_MIN_HPA, BME280_PRESSURE_MAX_HPA],
+            };
+            const range = ranges[command.key];
+            if (!range || !validBme280Value(command.value, ...range)) {
+              return failure('PROJECT_CONTACT_BME280_STATE', this.revision);
+            }
+            const evaluated = this.evaluateModel(component.type,
+              { ...component.controls, [command.key]: command.value });
+            if (!evaluated.ok) return failure(evaluated.code, this.revision, [component.id]);
+            component.controls[command.key] = command.value; runtimeDirty = true; break;
           }
           if (component.type === SPDT_CONTACT_TYPE) {
             if (command.key !== 'selectedThrow' || !['A', 'B'].includes(command.value)) {

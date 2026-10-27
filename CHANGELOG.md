@@ -2,6 +2,21 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.147 — 2026-10-27
+
+- Adds an AVR-only BME280 environment component with original VCC/GND/SDA/SCL
+  breakout artwork and fixed I2C address 0x76.
+- Adds independent 0.1-unit temperature, relative-humidity and barometric-
+  pressure controls backed by chip-ID, calibration and measurement registers.
+- Executes standard register reads and calibration compensation through
+  compiled AVR firmware, with all three values visible on Serial.
+- Places the BME280 lesson directly in Simple view and first in the digital-
+  sensor example progression while preserving the DHT11 drawer feature.
+- Preserves canonical Save/Open behavior and clears stale runtime authority.
+- Keeps BME280 unavailable on Pico, ESP32-C3 and STM32 until those profiles
+  own tested runtimes. This package has no deployment checkpoint and does not
+  merge or deploy the candidate.
+
 ## 1.1.0-rc.146 — 2026-10-27
 
 - Adds an AVR-only DHT22 component with original VCC/DATA/GND artwork and

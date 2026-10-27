@@ -168,6 +168,19 @@ import {
 } from '../expansion-drafts/ds18b20-temperature-v1.mjs';
 import { createDs18b20Artwork } from '../expansion-drafts/ds18b20-temperature-artwork-v1.mjs';
 import {
+  BME280_DEFINITION,
+  BME280_HUMIDITY_MAX_PERCENT,
+  BME280_HUMIDITY_MIN_PERCENT,
+  BME280_PRESSURE_MAX_HPA,
+  BME280_PRESSURE_MIN_HPA,
+  BME280_TEMPERATURE_MAX_C,
+  BME280_TEMPERATURE_MIN_C,
+  BME280_TYPE,
+  createBme280Component,
+  validBme280Value,
+} from '../expansion-drafts/bme280-environment-v1.mjs';
+import { createBme280Artwork } from '../expansion-drafts/bme280-environment-artwork-v1.mjs';
+import {
   ANALOGUE_MOISTURE_LEVEL_DEFINITIONS,
   ANALOGUE_WATER_LEVEL_TYPE,
   CAPACITIVE_SOIL_MOISTURE_TYPE,
@@ -287,6 +300,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   [DHT11_TYPE]: DHT11_DEFINITION,
   [DHT22_TYPE]: DHT22_DEFINITION,
   [DS18B20_TYPE]: DS18B20_DEFINITION,
+  [BME280_TYPE]: BME280_DEFINITION,
   ...ANALOGUE_MOISTURE_LEVEL_DEFINITIONS,
   ...ANALOGUE_DETECTION_DEFINITIONS,
   ...ANALOGUE_DIRECTION_FIELD_DEFINITIONS,
@@ -385,6 +399,9 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (component?.type === DS18B20_TYPE) {
     return createDs18b20Artwork(documentObject, definition, component, options);
   }
+  if (component?.type === BME280_TYPE) {
+    return createBme280Artwork(documentObject, definition, component, options);
+  }
   if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component?.type]) {
     return createAnalogueMoistureLevelArtwork(documentObject, definition, component, options);
   }
@@ -458,6 +475,7 @@ export function createCandidateUiComponent(type, id) {
   if (type === DHT11_TYPE) return createDht11Component(id);
   if (type === DHT22_TYPE) return createDht22Component(id);
   if (type === DS18B20_TYPE) return createDs18b20Component(id);
+  if (type === BME280_TYPE) return createBme280Component(id);
   if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[type]) return createAnalogueMoistureLevelSensor(type, id);
   if (ANALOGUE_DETECTION_DEFINITIONS[type]) return createAnalogueDetectionSensor(type, id);
   if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[type]) return createAnalogueDirectionFieldSensor(type, id);
@@ -641,6 +659,20 @@ export function candidateContactControl(session, componentId, key, value) {
       command: { type: 'component.control.set', componentId, key, value },
       worker: { command: 'ds18b20-control', componentId, key, value },
     };
+  }
+  if (component.type === BME280_TYPE) {
+    const ranges = {
+      temperatureC: [BME280_TEMPERATURE_MIN_C, BME280_TEMPERATURE_MAX_C],
+      humidityPercent: [BME280_HUMIDITY_MIN_PERCENT, BME280_HUMIDITY_MAX_PERCENT],
+      pressureHpa: [BME280_PRESSURE_MIN_HPA, BME280_PRESSURE_MAX_HPA],
+    };
+    if (ranges[key] && validBme280Value(value, ...ranges[key])) {
+      return {
+        ok: true,
+        command: { type: 'component.control.set', componentId, key, value },
+        worker: { command: 'bme280-control', componentId, key, value },
+      };
+    }
   }
   if (component.type === ANALOG_JOYSTICK_TYPE && ['x', 'y'].includes(key)
       && Number.isFinite(value) && value >= 0 && value <= 1) {

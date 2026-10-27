@@ -53,6 +53,7 @@ const expected = {
   'sensor.dht11-temperature-humidity-v1': ['temperatureC', 'humidityPercent'],
   'sensor.dht22-temperature-humidity-v1': ['temperatureC', 'humidityPercent'],
   'sensor.ds18b20-temperature-v1': ['temperatureC'],
+  'sensor.bme280-environment-v1': ['temperatureC', 'humidityPercent', 'pressureHpa'],
   'sensor.soil-moisture-resistive-analogue-v1': ['moistureRatio'],
   'sensor.soil-moisture-capacitive-analogue-v1': ['moistureRatio'],
   'sensor.water-level-analogue-v1': ['waterLevelRatio'],
@@ -92,10 +93,10 @@ function candidate(id, componentId, changes) {
   return opened.session;
 }
 
-test('all 74 executable cells have one exact controls-persist or controls-empty policy', () => {
+test('all 75 executable cells have one exact controls-persist or controls-empty policy', () => {
   assert.deepEqual(controlPersistenceSummary(), {
-    profiles: 4, cells: 348, available: 74, unavailable: 274,
-    controlBearing: 50, controlsEmpty: 24, controls: 61,
+    profiles: 4, cells: 352, available: 75, unavailable: 277,
+    controlBearing: 51, controlsEmpty: 24, controls: 64,
   });
   const inventory = controlPersistenceInventory();
   const bearing = inventory.filter((cell) => cell.available && cell.controls.length);

@@ -20,7 +20,7 @@ const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 test('generated private runtime and evidence-tool closures are exact and fresh', async () => {
   const { stdout } = await execute(process.execPath,
     ['scripts/generate-x49-private-runtime-manifest.mjs'], { cwd: repository });
-  const result = JSON.parse(stdout); assert.equal(result.runtimeMembers, 17);
+  const result = JSON.parse(stdout); assert.equal(result.runtimeMembers, 18);
   assert.equal(result.evidenceToolMembers, 2);
   assert.equal(result.trustAnchors, 1);
   const manifest = JSON.parse(await readFile(new URL('../src/x49-private-runtime-manifest.json', import.meta.url)));
@@ -29,11 +29,12 @@ test('generated private runtime and evidence-tool closures are exact and fresh',
   assert.deepEqual(manifest.externalContracts, ['avr8js@0.21.1']);
 });
 
-test('approved DHT22 runtime increment preserves X49 runtime dependencies and private-owner isolation', async () => {
+test('approved BME280 runtime increment preserves X49 runtime dependencies and private-owner isolation', async () => {
   const immutableRuntime = {
-    'src/atmega328p-adapter.mjs': '1c5a0eeb04174fb71a8cf65bdae2a84cc5eac0d23229f14d6b68d404b98e9672',
+    'src/atmega328p-adapter.mjs': '985f2eb09691abc4c1ca2c65a43455af12f2dd5476340d2d80651450ba3a9acf',
+    'expansion-drafts/bme280-environment-v1.mjs': '3e901aae7073c6e58497a27042b377801e22cd19964569cb14fe8cf8bfa149eb',
     'src/runtime-kernel.mjs': '93f88d4dd9472a3c7cedf0396fad0c2cba617c8ef2ab535736434334d7cdfc84',
-    'src/simulator.worker.mjs': '03cb487340cb70684b4baf2422ac213be9fe7e24595b68f6fba5d7aada4c40c5',
+    'src/simulator.worker.mjs': '2da738b07f9ec8f2fbdf550c5f21f9ee5cfe9376a3233b5cc8857ef5bfc425b3',
   };
   for (const [path, hash] of Object.entries(immutableRuntime)) {
     const bytes = await readFile(new URL(`../${path}`, import.meta.url));

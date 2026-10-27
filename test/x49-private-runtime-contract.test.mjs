@@ -56,9 +56,9 @@ async function init(caseId = 'baseline-offset-0', runtimeGeneration = 10) {
 
 test('private manifest and immutable init binding validate exactly', async () => {
   const validated = await validateX49PrivateManifest(manifest, crypto, manifest);
-  assert.equal(validated.runtimeMembers.length, 17);
+  assert.equal(validated.runtimeMembers.length, 18);
   assert.deepEqual(validated.runtimeMembers.map(({ path }) => path), [...X49_PRIVATE_RUNTIME_MEMBERS]);
-  assert.equal(validated.runtimeMembers[10].path, 'src/x46-usart-rx-limits.mjs');
+  assert.equal(validated.runtimeMembers[11].path, 'src/x46-usart-rx-limits.mjs');
   assert.equal(USART_RX_OBSERVATION_LATENESS_LIMIT, 4);
   const accepted = await validateX49PrivateInit(await init(), crypto, manifest);
   assert.equal(accepted.expected.inputIdentity,

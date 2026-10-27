@@ -1,4 +1,29 @@
-# Intent MCU Simulator 1.1.0-rc.146
+# Intent MCU Simulator 1.1.0-rc.147
+
+## Three-value I2C environment sensor
+
+Rc.147 adds BME280 as a distinct AVR component and working starter. The
+original breakout artwork exposes named VCC/GND/SDA/SCL terminals, a fixed
+0x76 address and independent temperature, relative-humidity and barometric-
+pressure controls in exact 0.1-unit steps.
+
+Compiled AVR firmware on A4/A5 reads chip ID 0x60, the fixed calibration
+registers and the eight-byte measurement block, then applies the documented
+compensation path before Serial reports all three environment values. The
+virtual 5 V breakout explicitly idealizes regulation, level shifting and I2C
+pull-ups; it does not claim physical weather or arbitrary library accuracy.
+
+Save/Open retains the component, three controls and exact wiring while
+clearing compiled and runtime authority until a fresh Build. Pico, ESP32-C3
+and STM32 keep BME280 unavailable until they own tested runtime paths, while
+the shared Parts drawer continues to show the same DHT11 feature.
+
+This is a source-only candidate. No deployment checkpoint, merge or public
+deployment is included.
+
+---
+
+## 1.1.0-rc.146
 
 ## Signed decimal climate sensor
 
