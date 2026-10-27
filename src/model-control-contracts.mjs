@@ -189,6 +189,12 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
     humidityPercent: { kind: 'integer', minimum: 20, maximum: 90, default: 50,
       unit: '%RH', mutability: 'authored' },
   },
+  'sensor.dht22-temperature-humidity-v1': {
+    temperatureC: { kind: 'number', minimum: -40, maximum: 80, default: 23.5,
+      unit: '°C', mutability: 'authored' },
+    humidityPercent: { kind: 'number', minimum: 0, maximum: 100, default: 50,
+      unit: '%RH', mutability: 'authored' },
+  },
   'sensor.ds18b20-temperature-v1': {
     temperatureC: { kind: 'number', minimum: -55, maximum: 125, default: 23.5,
       unit: '°C', mutability: 'authored' },

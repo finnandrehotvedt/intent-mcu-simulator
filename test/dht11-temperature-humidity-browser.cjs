@@ -25,6 +25,13 @@ async function discardIfRequired(page) {
   }
 }
 
+async function openInspector(page) {
+  if (!(await page.locator('#toggle-inspector').isVisible())) {
+    await page.locator('#workbench-more > summary').click();
+  }
+  await page.click('#toggle-inspector');
+}
+
 (async () => {
   const browser = await chromium.launch({ headless: true });
   try {
@@ -95,7 +102,7 @@ async function discardIfRequired(page) {
     }
 
     await card.click({ force: true });
-    await page.click('#toggle-inspector');
+    await openInspector(page);
     const temperature = page.locator('[data-control="dht11-1.temperatureC"]');
     const humidity = page.locator('[data-control="dht11-1.humidityPercent"]');
     assert.deepEqual(await temperature.evaluate((node) => ({ min: node.min, max: node.max, value: node.value })),
@@ -115,7 +122,7 @@ async function discardIfRequired(page) {
     await page.waitForFunction(() => /TEMP_C=25 HUMIDITY_RH=50 CHECKSUM=OK/u.test(
       document.querySelector('#serial-output').textContent), null, { timeout: 20_000 });
 
-    await page.click('#toggle-inspector');
+    await openInspector(page);
     await temperature.evaluate((node) => {
       node.value = '31'; node.dispatchEvent(new Event('input', { bubbles: true }));
     });

@@ -25,6 +25,7 @@ import {
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK,
@@ -125,7 +126,7 @@ test('trusted immutable snapshots have exact cells and independently recomputabl
   const manifests = trustedModelLibraryManifests();
   assert.equal(manifests.length, 2);
   for (const [index, manifest] of manifests.entries()) {
-    assert.equal(manifest.entries.length, index === 0 ? 25 : 73);
+    assert.equal(manifest.entries.length, index === 0 ? 25 : 74);
     const aggregate = structuredClone(manifest); delete aggregate.manifestSha256;
     assert.equal(sha256(aggregate), manifest.manifestSha256);
     for (const entry of manifest.entries) {
@@ -240,7 +241,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
   for (const [lock, expected] of [
     [RETAINED_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-retained-rc72@2'],
     [CURRENT_MODEL_LIBRARY_LOCK,
-      'intent-mcu-model-bundle-current-dht11-open-example-1@54'],
+      'intent-mcu-model-bundle-current-dht22-decimal-1@55'],
   ]) {
     const avr = validateCircuit(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
     assert.equal(avr.ok, true);
@@ -265,7 +266,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
 
 test('prior current locks remain exact and data-migratable but cannot authorize execution', () => {
   const historical = historicalModelLibraryManifests();
-  assert.equal(historical.length, 51);
+  assert.equal(historical.length, 52);
   for (const manifest of historical.slice(1)) {
     const lock = { schema: 'intent-mcu-model-library-lock@2', libraryId: manifest.libraryId,
       version: manifest.version, manifestSha256: manifest.manifestSha256,
@@ -351,7 +352,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_LOCK,
   );
   assert.equal(applyMigration.ok, true);
-  assert.equal(applyMigration.semanticChanges.length, 52);
+  assert.equal(applyMigration.semanticChanges.length, 53);
   assert.equal(applyMigration.rendererChanges.length, 0);
   assert.equal(applyMigration.unchanged.length, 21);
   const preMomentaryControl = historical.at(-2);
@@ -364,7 +365,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     PRE_X47_MOMENTARY_CONTROL_CURRENT_MODEL_LIBRARY_LOCK,
   );
   assert.equal(momentaryMigration.ok, true);
-  assert.equal(momentaryMigration.semanticChanges.length, 52);
+  assert.equal(momentaryMigration.semanticChanges.length, 53);
   assert.equal(momentaryMigration.rendererChanges.length, 0);
   assert.equal(momentaryMigration.unchanged.length, 21);
   const preRejection = historical.at(-3);
@@ -377,7 +378,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     PRE_X47_REPEATABLE_REJECTION_CURRENT_MODEL_LIBRARY_LOCK,
   );
   assert.equal(rejectionMigration.ok, true);
-  assert.equal(rejectionMigration.semanticChanges.length, 52);
+  assert.equal(rejectionMigration.semanticChanges.length, 53);
   assert.equal(rejectionMigration.rendererChanges.length, 0);
   assert.equal(rejectionMigration.unchanged.length, 21);
   const preRepeatable = historical.at(-4);
@@ -387,7 +388,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const repeatableMigration = modelLibraryMigrationPreview(PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(repeatableMigration.ok, true);
-  assert.equal(repeatableMigration.semanticChanges.length, 52);
+  assert.equal(repeatableMigration.semanticChanges.length, 53);
   assert.equal(repeatableMigration.rendererChanges.length, 0);
   assert.equal(repeatableMigration.unchanged.length, 21);
   const preHotpath = historical.find(({ version }) => version === '2.0.0-x43-observed-stack-candidate.1-current');
@@ -397,7 +398,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const hotpathMigration = modelLibraryMigrationPreview(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(hotpathMigration.ok, true);
-  assert.equal(hotpathMigration.semanticChanges.length, 52);
+  assert.equal(hotpathMigration.semanticChanges.length, 53);
   assert.equal(hotpathMigration.rendererChanges.length, 0);
   assert.equal(hotpathMigration.unchanged.length, 21);
 
@@ -408,7 +409,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const stackMigration = modelLibraryMigrationPreview(PRE_X43_STACK_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(stackMigration.ok, true);
-  assert.equal(stackMigration.semanticChanges.length, 52);
+  assert.equal(stackMigration.semanticChanges.length, 53);
   assert.equal(stackMigration.rendererChanges.length, 0);
   assert.equal(stackMigration.unchanged.length, 21);
 
@@ -423,7 +424,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_LOCK,
   );
   assert.equal(controlLabelMigration.ok, true);
-  assert.equal(controlLabelMigration.semanticChanges.length, 52);
+  assert.equal(controlLabelMigration.semanticChanges.length, 53);
   assert.equal(controlLabelMigration.rendererChanges.length, 0);
   assert.equal(controlLabelMigration.unchanged.length, 21);
 
@@ -434,7 +435,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const x55Migration = modelLibraryMigrationPreview(PRE_X55_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(x55Migration.ok, true);
-  assert.equal(x55Migration.semanticChanges.length, 52);
+  assert.equal(x55Migration.semanticChanges.length, 53);
   assert.equal(x55Migration.rendererChanges.length, 0);
   assert.equal(x55Migration.unchanged.length, 21);
 
@@ -448,7 +449,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   const migration = modelLibraryMigrationPreview(PRIOR_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(migration.ok, true);
   assert.equal(migration.migrationRequired, true);
-  assert.equal(migration.semanticChanges.length, 52);
+  assert.equal(migration.semanticChanges.length, 53);
   assert.equal(migration.rendererChanges.length, 0);
   assert.equal(migration.unchanged.length, 21);
 
@@ -464,7 +465,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   const x47Migration = modelLibraryMigrationPreview(PRE_X47_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(x47Migration.ok, true);
   assert.equal(x47Migration.migrationRequired, true);
-  assert.equal(x47Migration.semanticChanges.length, 52);
+  assert.equal(x47Migration.semanticChanges.length, 53);
   assert.equal(x47Migration.rendererChanges.length, 0);
   assert.equal(x47Migration.unchanged.length, 21);
 
@@ -479,7 +480,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const validationMigration = modelLibraryMigrationPreview(PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(validationMigration.ok, true);
-  assert.equal(validationMigration.semanticChanges.length, 52);
+  assert.equal(validationMigration.semanticChanges.length, 53);
   assert.equal(validationMigration.rendererChanges.length, 0);
   assert.equal(validationMigration.unchanged.length, 21);
 
@@ -494,7 +495,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const uiMigration = modelLibraryMigrationPreview(PRE_X47_UI_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(uiMigration.ok, true);
-  assert.equal(uiMigration.semanticChanges.length, 52);
+  assert.equal(uiMigration.semanticChanges.length, 53);
   assert.equal(uiMigration.rendererChanges.length, 0);
   assert.equal(uiMigration.unchanged.length, 21);
 
@@ -509,7 +510,7 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const asyncMigration = modelLibraryMigrationPreview(PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(asyncMigration.ok, true);
-  assert.equal(asyncMigration.semanticChanges.length, 52);
+  assert.equal(asyncMigration.semanticChanges.length, 53);
   assert.equal(asyncMigration.rendererChanges.length, 0);
   assert.equal(asyncMigration.unchanged.length, 21);
 
@@ -522,12 +523,12 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const uxMigration = modelLibraryMigrationPreview(PRE_UX_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(uxMigration.ok, true);
-  assert.equal(uxMigration.semanticChanges.length, 52);
+  assert.equal(uxMigration.semanticChanges.length, 53);
   assert.equal(uxMigration.rendererChanges.length, 0);
   assert.equal(uxMigration.unchanged.length, 21);
 });
 
-test('the pre-public-visibility lock is preserved as a presentation-only migration anchor', () => {
+test('the pre-public-visibility lock remains an exact migration anchor before DHT22', () => {
   assert.equal(PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_LOCK.version,
     '2.0.0-ds18b20-onewire.1-current');
   const resolved = resolveModelLibrary(PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_LOCK);
@@ -540,12 +541,18 @@ test('the pre-public-visibility lock is preserved as a presentation-only migrati
     PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_LOCK,
   );
   assert.equal(preview.ok, true);
-  assert.equal(preview.semanticChanges.length, 0);
+  assert.deepEqual(preview.semanticChanges.map(({ profile, componentType, kind }) => ({
+    profile, componentType, kind,
+  })), [{
+    profile: 'board.atmega328p-16mhz-v1',
+    componentType: 'sensor.dht22-temperature-humidity-v1',
+    kind: 'added',
+  }]);
   assert.equal(preview.rendererChanges.length, 0);
   assert.equal(preview.unchanged.length, 73);
 });
 
-test('the pre-open-example lock remains exact presentation-only migration data', () => {
+test('the pre-open-example lock remains exact migration data before DHT22', () => {
   assert.equal(PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_LOCK.version,
     '2.0.0-dht11-public-visibility.1-current');
   const resolved = resolveModelLibrary(PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_LOCK);
@@ -556,7 +563,35 @@ test('the pre-open-example lock remains exact presentation-only migration data',
   ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const preview = modelLibraryMigrationPreview(PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
-  assert.equal(preview.semanticChanges.length, 0);
+  assert.deepEqual(preview.semanticChanges.map(({ profile, componentType, kind }) => ({
+    profile, componentType, kind,
+  })), [{
+    profile: 'board.atmega328p-16mhz-v1',
+    componentType: 'sensor.dht22-temperature-humidity-v1',
+    kind: 'added',
+  }]);
+  assert.equal(preview.rendererChanges.length, 0);
+  assert.equal(preview.unchanged.length, 73);
+});
+
+test('the immediate pre-DHT22 lock remains exact migration-only data', () => {
+  assert.equal(PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_LOCK.version,
+    '2.0.0-dht11-open-example.1-current');
+  const resolved = resolveModelLibrary(PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(resolved.ok, true);
+  assert.equal(resolved.role, 'pre-cmp093-dht22-current-migration');
+  assert.equal(modelLibraryExecutionIdentity(
+    PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_LOCK,
+  ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const preview = modelLibraryMigrationPreview(PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(preview.ok, true);
+  assert.deepEqual(preview.semanticChanges.map(({ profile, componentType, kind }) => ({
+    profile, componentType, kind,
+  })), [{
+    profile: 'board.atmega328p-16mhz-v1',
+    componentType: 'sensor.dht22-temperature-humidity-v1',
+    kind: 'added',
+  }]);
   assert.equal(preview.rendererChanges.length, 0);
   assert.equal(preview.unchanged.length, 73);
 });
@@ -666,6 +701,7 @@ test('all cells admit exact defaults and all model types execute through each bu
     'sensor.ir-obstacle-reflective-v1': { active: true },
     'sensor.line-tracking-reflective-v1': { active: true },
     'sensor.dht11-temperature-humidity-v1': { temperatureC: 31, humidityPercent: 64 },
+    'sensor.dht22-temperature-humidity-v1': { temperatureC: -12.3, humidityPercent: 64.7 },
     'sensor.ds18b20-temperature-v1': { temperatureC: -10.125 },
     'sensor.soil-moisture-resistive-analogue-v1': { ratio: 0.25 },
     'sensor.soil-moisture-capacitive-analogue-v1': { ratio: 0.6 },
@@ -684,10 +720,10 @@ test('all cells admit exact defaults and all model types execute through each bu
     'sensor.ntc-10k-divider-v1': { temperatureC: 30 },
     'sensor.flex-divider-v1': { bendRatio: 0.4 },
   };
-  assert.equal(Object.keys(inputs).length, 67);
+  assert.equal(Object.keys(inputs).length, 68);
   for (const [manifest, lock] of [[manifests[0], RETAINED_MODEL_LIBRARY_LOCK],
     [manifests[1], CURRENT_MODEL_LIBRARY_LOCK]]) {
-    assert.equal(manifest.entries.length, manifest === manifests[0] ? 25 : 73);
+    assert.equal(manifest.entries.length, manifest === manifests[0] ? 25 : 74);
     for (const entry of manifest.entries) {
       const properties = Object.fromEntries(Object.entries(entry.semantic.properties)
         .map(([key, contract]) => [key, structuredClone(contract.default)]));
@@ -931,7 +967,7 @@ test('trusted migration reports unchanged real semantics while controlled test-o
   const preview = modelLibraryMigrationPreview(RETAINED_MODEL_LIBRARY_LOCK, CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
   assert.equal(preview.migrationRequired, true);
-  assert.equal(preview.semanticChanges.length, 52);
+  assert.equal(preview.semanticChanges.length, 53);
   assert.equal(preview.rendererChanges.length, 0);
   assert.equal(preview.unchanged.length, 21);
 

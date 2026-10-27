@@ -20,8 +20,8 @@ test('public documentation facts derive from the current release and canonical c
     read('../staging/llms.txt'), read('../staging/sitemap.xml'),
   ]);
   const avrCount = exampleCatalog().length + 3 + avrReferenceStarterCatalog().length;
-  assert.equal(RELEASE_VERSION, '1.1.0-rc.145');
-  assert.equal(avrCount, 22);
+  assert.equal(RELEASE_VERSION, '1.1.0-rc.146');
+  assert.equal(avrCount, 23);
   assert.equal(THERMOSTAT_SCENARIOS.scenarios.length, 4);
   assert.match(THERMOSTAT_EXPERIMENT_CARD.outcome, /four reset-isolated/u);
   for (const page of [controllers, components, examples, support, llms]) {

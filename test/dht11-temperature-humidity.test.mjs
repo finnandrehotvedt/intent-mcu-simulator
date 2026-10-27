@@ -140,7 +140,7 @@ test('current model and support matrix claim DHT11 only for executable AVR', () 
     ({ componentType }) => componentType === DHT11_TYPE).length, 1);
 });
 
-test('the exact public rc142 model lock opens as data-only and reports DHT11 plus the later DS18B20 addition', () => {
+test('the exact public rc142 model lock opens as data-only and reports DHT11 plus later digital sensors', () => {
   assert.equal(PRE_CMP092_DHT11_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256,
     '4d0e44325726cf6f1a33cbb8328b46da6dfbbce23bb0b2a14ce4b78e67e3d67f');
   assert.equal(PRE_CMP092_DHT11_CURRENT_MODEL_LIBRARY_LOCK.implementationSha256,
@@ -156,6 +156,7 @@ test('the exact public rc142 model lock opens as data-only and reports DHT11 plu
     profile, componentType, kind,
   })), [
     { profile: 'board.atmega328p-16mhz-v1', componentType: DHT11_TYPE, kind: 'added' },
+    { profile: 'board.atmega328p-16mhz-v1', componentType: 'sensor.dht22-temperature-humidity-v1', kind: 'added' },
     { profile: 'board.atmega328p-16mhz-v1', componentType: 'sensor.ds18b20-temperature-v1', kind: 'added' },
   ]);
   assert.deepEqual(preview.rendererChanges, []);

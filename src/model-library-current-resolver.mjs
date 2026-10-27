@@ -17,6 +17,7 @@ import {
 import { RESISTIVE_DIVIDER_SENSOR_DEFINITIONS, resistiveDividerSensorResistance,
   resistiveDividerSensorVoltage } from '../expansion-drafts/resistive-divider-sensors-v1.mjs';
 import { DHT11_TYPE, dht11Payload } from '../expansion-drafts/dht11-temperature-humidity-v1.mjs';
+import { DHT22_TYPE, dht22Payload } from '../expansion-drafts/dht22-temperature-humidity-v1.mjs';
 import { DS18B20_TYPE, ds18b20Scratchpad,
   validDs18b20Temperature } from '../expansion-drafts/ds18b20-temperature-v1.mjs';
 import { observeRp2040PicoCircuit, validateRp2040PicoCircuit } from './rp2040-pico-circuit.mjs';
@@ -40,7 +41,7 @@ const exactInput = (value, keys) => value && typeof value === 'object' && !Array
 // Current behavior is separately owned so future current changes cannot mutate
 // the retained pre-X56 implementation by alias or shared constant.
 export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
-  id: 'intent-mcu-model-bundle-current-dht11-open-example-1@54',
+  id: 'intent-mcu-model-bundle-current-dht22-decimal-1@55',
   manifestVersion: CURRENT_MODEL_LIBRARY_MANIFEST.version,
   definition(profile, componentType) {
     const entry = entries.get(`${profile}\u0000${componentType}`);
@@ -321,6 +322,18 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
         } };
       } catch { return failure('MODEL_LIBRARY_PRODUCTION_INPUT'); }
     }
+    if (componentType === DHT22_TYPE) {
+      if (!exactInput(input, ['temperatureC', 'humidityPercent'])) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      try {
+        return { ok: true, code: 'OK', result: {
+          temperatureC: input.temperatureC,
+          humidityPercent: input.humidityPercent,
+          payload: dht22Payload(input.temperatureC, input.humidityPercent),
+        } };
+      } catch { return failure('MODEL_LIBRARY_PRODUCTION_INPUT'); }
+    }
     if (componentType === 'output.rgb-led-common-cathode-v1') {
       const duties = input?.duties;
       if (!duties || ['R', 'G', 'B'].some((key) => !Number.isFinite(duties[key]))) {
@@ -453,6 +466,13 @@ export const PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATI
   ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
   id: 'intent-mcu-model-bundle-current-pre-dht11-open-example@60',
   manifestVersion: '2.0.0-dht11-public-visibility.1-current',
+  migrationOnly: true,
+});
+
+export const PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-pre-cmp093-dht22@61',
+  manifestVersion: '2.0.0-dht11-open-example.1-current',
   migrationOnly: true,
 });
 
