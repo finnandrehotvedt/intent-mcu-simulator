@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-lcd-20x4-cgram.1-current",
-    "manifestSha256": "b075bedefb91daca0697f76a37684a516c67ca29a7cbb60b1d3ed6b132580f2e",
-    "implementationSha256": "2e35bfd80cc390362a5db6246fea09ff0b02702442e25411f8469b944e0ff168"
+    "manifestSha256": "4566d5d6e5ec6ade1d0f1cafe6fa16e740d01462cf5d6b0f56d75aabe925b341",
+    "implementationSha256": "4b8568bd33fdb9c4e164c6cbd3fb6bc726742237064422061bf7e21e2aba1ea7"
   },
   "entries": [
     {
@@ -17,7 +17,7 @@
         "CMP-111"
       ],
       "file": "avr-analogue-exposure-sensors.intent-mcu.json",
-      "projectSha256": "5390879537f18836a665a3d7f28822896cca3f0247bc9eb5a7cadf8d047a900f",
+      "projectSha256": "767407d13460c8b3a1fba4ab43f5adc642130fe16fca6c2e19318421eda05ae4",
       "sourceSha256": "1b78af5b59128e5ab65d4b064e283378a6076b3d814244a47a0d37174438a5ad",
       "expectedBehavior": "A2, A3 and A4 report independent idealized 0–5 V MQ gas, CO2 and UV response ratios.",
       "namedPins": {

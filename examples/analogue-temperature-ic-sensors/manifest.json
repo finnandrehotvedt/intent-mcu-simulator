@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-lcd-20x4-cgram.1-current",
-    "manifestSha256": "b075bedefb91daca0697f76a37684a516c67ca29a7cbb60b1d3ed6b132580f2e",
-    "implementationSha256": "2e35bfd80cc390362a5db6246fea09ff0b02702442e25411f8469b944e0ff168"
+    "manifestSha256": "4566d5d6e5ec6ade1d0f1cafe6fa16e740d01462cf5d6b0f56d75aabe925b341",
+    "implementationSha256": "4b8568bd33fdb9c4e164c6cbd3fb6bc726742237064422061bf7e21e2aba1ea7"
   },
   "entries": [
     {
@@ -16,7 +16,7 @@
         "CMP-090"
       ],
       "file": "avr-analogue-temperature-ic-sensors.intent-mcu.json",
-      "projectSha256": "079afa42b2001dd7d0489aaaf86962a7954edf1d320a0172065b1973dd08f56e",
+      "projectSha256": "a2e2b1fae7f44b20856b7ae460fe002a691c2e37cb4771915dac704e6be3565e",
       "sourceSha256": "e366dad801ee75f32060fadc32d41422f00e7697a534a5171cc14ae0e7b55556",
       "expectedBehavior": "A0 compares a TMP36-style 500 mV offset plus 10 mV/°C transfer with A1 using an LM35-style nonnegative 10 mV/°C transfer.",
       "namedPins": {

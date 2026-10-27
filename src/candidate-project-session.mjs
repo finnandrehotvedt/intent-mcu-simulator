@@ -77,6 +77,7 @@ import { RESISTIVE_DIVIDER_SENSOR_DEFINITIONS } from '../expansion-drafts/resist
 import { PASSIVE_ENERGY_STORAGE_DEFINITIONS } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
 import { DIODE_COMPONENT_DEFINITIONS } from '../expansion-drafts/diode-components-v1.mjs';
 import { TRANSISTOR_COMPONENT_DEFINITIONS } from '../expansion-drafts/transistor-components-v1.mjs';
+import { SEMICONDUCTOR_ACTIVE_DEFINITIONS } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
 import { CONTACT_SENSOR_DEFINITIONS } from '../expansion-drafts/contact-sensors-v1.mjs';
 
 export const CANDIDATE_EDITOR_INTEGRATION_SCHEMA = 'intent-mcu-candidate-editor-session@1';
@@ -112,6 +113,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
   ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
   ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS),
+  ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
   ...Object.keys(CONTACT_SENSOR_DEFINITIONS),
 ]);
 
@@ -253,6 +255,8 @@ function contactSupport(result) {
             ? 'authoring-only-no-nonlinear-diode-runtime-adapter'
           : TRANSISTOR_COMPONENT_DEFINITIONS[contact.type]
             ? 'authoring-only-no-transistor-switching-runtime-adapter'
+          : SEMICONDUCTOR_ACTIVE_DEFINITIONS[contact.type]
+            ? 'authoring-only-no-active-semiconductor-runtime-adapter'
           : contact.type === DIGITAL_LIGHT_THRESHOLD_TYPE
             ? 'button.momentary-v1'
         : contact.type === COMMON_CATHODE_RGB_LED_TYPE
@@ -330,6 +334,8 @@ function contactSupport(result) {
         ? 'Raw polarized two-terminal authoring data only; no nonlinear I-V/reverse-breakdown model, Build/Run authority or physical equivalence is available.'
         : TRANSISTOR_COMPONENT_DEFINITIONS[contact.type]
         ? 'Raw three-terminal semiconductor authoring data only; no bias/switching/current model, Build/Run authority or physical equivalence is available.'
+        : SEMICONDUCTOR_ACTIVE_DEFINITIONS[contact.type]
+        ? 'Raw active-semiconductor authoring data only; no switching, optical-transfer, isolation, Build/Run authority or physical equivalence is available.'
         : contact.type === LIGHT_ANALOGUE_SENSOR_TYPE
         ? 'Ideal linear 0–5 V module signal only; no lux accuracy or physical LDR response is modelled.'
         : contact.type === SPDT_CONTACT_TYPE
@@ -1115,6 +1121,17 @@ export class CandidateEditorSession {
             if (!contract || !Number.isFinite(command.value)
                 || command.value < contract.minimum || command.value > contract.maximum) {
               return failure('PROJECT_CONTACT_TRANSISTOR_STATE', this.revision);
+            }
+            component.properties[command.key] = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type]) {
+            const definition = SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type];
+            const contract = definition.propertySchema[command.key];
+            if (!contract || !Number.isFinite(command.value)
+                || command.value < contract.minimum || command.value > contract.maximum) {
+              return failure('PROJECT_CONTACT_SEMICONDUCTOR_ACTIVE_STATE', this.revision);
             }
             component.properties[command.key] = command.value;
             runtimeDirty = true;

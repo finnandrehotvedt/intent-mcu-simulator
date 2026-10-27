@@ -10,6 +10,7 @@ import { BOUNDED_3V3_UI_COMPONENTS } from './bounded-3v3-authoring-contracts.mjs
 import { PASSIVE_ENERGY_STORAGE_DEFINITIONS } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
 import { DIODE_COMPONENT_DEFINITIONS } from '../expansion-drafts/diode-components-v1.mjs';
 import { TRANSISTOR_COMPONENT_DEFINITIONS } from '../expansion-drafts/transistor-components-v1.mjs';
+import { SEMICONDUCTOR_ACTIVE_DEFINITIONS } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
 
 export const COMPONENT_SUPPORT_MATRIX_SCHEMA = 'intent-mcu-component-support-matrix@1';
 
@@ -65,6 +66,7 @@ const AVR_CANDIDATE_TYPES = new Set(avrCandidate.map((definition) => definition.
 const ALL_PROFILE_AUTHORING_TYPES = new Set([
   ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS), ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
   ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS),
+  ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
 ]);
 const NARROW_BOARDS = new Map([[PICO, PICO], [C3, C3], [STM32, STM32]]);
 const NARROW_AUTHORING_TYPES = new Set(Object.keys(BOUNDED_3V3_UI_COMPONENTS));
@@ -168,6 +170,9 @@ function unavailableReason(profile, type) {
     }
     if (TRANSISTOR_COMPONENT_DEFINITIONS[type]) {
       return 'Authoring-only raw transistor; no bias/switching/current model or runtime adapter is available.';
+    }
+    if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[type]) {
+      return 'Authoring-only raw active semiconductor; no switching/optical-transfer/isolation model or runtime adapter is available.';
     }
     return 'Authoring-only raw passive component; no transient/frequency solver or runtime adapter is available.';
   }

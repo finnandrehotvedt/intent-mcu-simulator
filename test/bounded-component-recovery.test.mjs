@@ -13,6 +13,7 @@ import {
 import {
   NPN_BJT_TYPE, PNP_BJT_TYPE, N_CHANNEL_MOSFET_TYPE,
 } from '../expansion-drafts/transistor-components-v1.mjs';
+import { OPTOCOUPLER_TYPE, P_CHANNEL_MOSFET_TYPE } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
 import { Esp32C3CircuitEditor } from '../src/esp32c3-public-circuit.mjs';
 import {
   BOUNDED_COMPONENT_CATALOG_SCHEMA, BOUNDED_LED_TYPE, BOUNDED_RESISTOR_TYPE,
@@ -39,6 +40,7 @@ for (const profile of profiles) {
       NONPOLAR_CAPACITOR_TYPE, ELECTROLYTIC_CAPACITOR_TYPE, FIXED_INDUCTOR_TYPE,
       SILICON_DIODE_TYPE, SCHOTTKY_DIODE_TYPE, ZENER_DIODE_TYPE,
       NPN_BJT_TYPE, PNP_BJT_TYPE, N_CHANNEL_MOSFET_TYPE,
+      P_CHANNEL_MOSFET_TYPE, OPTOCOUPLER_TYPE,
     ]);
     assert.equal(catalog.parts[0].fixed, true);
     assert.equal(catalog.parts[0].addable, false);

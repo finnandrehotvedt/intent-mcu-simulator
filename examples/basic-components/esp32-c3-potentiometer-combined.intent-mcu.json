@@ -169,6 +169,8 @@
         "led": 1,
         "nmos": 0,
         "npn": 0,
+        "optocoupler": 0,
+        "pmos": 0,
         "pnp": 0,
         "potentiometer": 1,
         "resistor": 1,

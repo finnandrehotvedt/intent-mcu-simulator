@@ -45,7 +45,7 @@ const profiles = [
       await page.waitForFunction(({ api }) => Boolean(window[api]?.state().active), profile);
       await page.waitForFunction(({ list }) => {
         const cards = [...document.querySelectorAll(`${list} .bounded-part-card`)];
-        return cards.length === 16 && cards.every((card) => card.querySelector('.bounded-part-thumbnail svg[role="img"]'));
+        return cards.length === 18 && cards.every((card) => card.querySelector('.bounded-part-thumbnail svg[role="img"]'));
       }, profile);
       const catalogueArtwork = await page.evaluate(({ list }) => ({
         cards: document.querySelectorAll(`${list} .bounded-part-card`).length,
@@ -57,7 +57,7 @@ const profiles = [
           return box.width >= 40 && box.height >= 40 && box.left >= 0 && box.right <= document.documentElement.clientWidth;
         }),
       }), profile);
-      assert.deepEqual(catalogueArtwork, { cards: 16, thumbnails: 16, empty: 0, labels: true, visible: true });
+      assert.deepEqual(catalogueArtwork, { cards: 18, thumbnails: 18, empty: 0, labels: true, visible: true });
       const recognizableBasics = await page.evaluate(({ list }) => ({
         resistorBands: document.querySelectorAll(`${list} [data-type="resistor.fixed-v1"] [data-resistor-band]`).length,
         resistorValue: document.querySelector(`${list} [data-type="resistor.fixed-v1"] [data-component-identity="resistance"]`)?.textContent,

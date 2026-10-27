@@ -8,6 +8,8 @@ import { DIODE_COMPONENT_DEFINITIONS } from '../expansion-drafts/diode-component
 import { createDiodeArtwork } from '../expansion-drafts/diode-components-artwork-v1.mjs';
 import { TRANSISTOR_COMPONENT_DEFINITIONS } from '../expansion-drafts/transistor-components-v1.mjs';
 import { createTransistorArtwork } from '../expansion-drafts/transistor-components-artwork-v1.mjs';
+import { SEMICONDUCTOR_ACTIVE_DEFINITIONS } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
+import { createSemiconductorActiveArtwork } from '../expansion-drafts/semiconductor-active-components-artwork-v1.mjs';
 
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -286,6 +288,11 @@ export function createComponentArtwork(definition, component, options = {}) {
   }
   if (TRANSISTOR_COMPONENT_DEFINITIONS[component?.type]) {
     const svg = createTransistorArtwork(document, definition, component);
+    if (options.thumbnail) svg.classList.add('catalog-thumbnail');
+    return svg;
+  }
+  if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[component?.type]) {
+    const svg = createSemiconductorActiveArtwork(document, definition, component);
     if (options.thumbnail) svg.classList.add('catalog-thumbnail');
     return svg;
   }

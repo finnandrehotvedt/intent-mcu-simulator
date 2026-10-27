@@ -17,6 +17,8 @@ import { DIODE_COMPONENT_DEFINITIONS,
   validateDiodeComponent } from '../expansion-drafts/diode-components-v1.mjs';
 import { TRANSISTOR_COMPONENT_DEFINITIONS,
   validateTransistorComponent } from '../expansion-drafts/transistor-components-v1.mjs';
+import { SEMICONDUCTOR_ACTIVE_DEFINITIONS,
+  validateSemiconductorActiveComponent } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
 
 export const ESP32C3_PUBLIC_CIRCUIT_SCHEMA = 'intent-mcu-esp32c3-public-circuit@1';
 export const ESP32C3_PUBLIC_PROFILE = 'board.esp32-c3-devmodule-v1';
@@ -105,6 +107,8 @@ const TYPE_PINS = Object.freeze({
     .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
   ...Object.fromEntries(Object.values(TRANSISTOR_COMPONENT_DEFINITIONS)
     .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
+  ...Object.fromEntries(Object.values(SEMICONDUCTOR_ACTIVE_DEFINITIONS)
+    .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
 });
 const COMPONENT_POLICY = createSeriesLedComponentPolicy({
   profile: BOARD, boardId: 'c3-1', boardLabel: 'ESP32-C3 GPIO2 profile',
@@ -180,6 +184,10 @@ function normalizeComponent(value) {
     throw Object.assign(new Error('C3_CIRCUIT_COMPONENT_INVALID'), { code: 'C3_CIRCUIT_COMPONENT_INVALID' });
   }
   if (TRANSISTOR_COMPONENT_DEFINITIONS[value.type] && !validateTransistorComponent(value)) {
+    throw Object.assign(new Error('C3_CIRCUIT_COMPONENT_INVALID'), { code: 'C3_CIRCUIT_COMPONENT_INVALID' });
+  }
+  if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[value.type]
+      && !validateSemiconductorActiveComponent(value)) {
     throw Object.assign(new Error('C3_CIRCUIT_COMPONENT_INVALID'), { code: 'C3_CIRCUIT_COMPONENT_INVALID' });
   }
   return clone(value);

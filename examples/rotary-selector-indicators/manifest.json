@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-lcd-20x4-cgram.1-current",
-    "manifestSha256": "b075bedefb91daca0697f76a37684a516c67ca29a7cbb60b1d3ed6b132580f2e",
-    "implementationSha256": "2e35bfd80cc390362a5db6246fea09ff0b02702442e25411f8469b944e0ff168"
+    "manifestSha256": "4566d5d6e5ec6ade1d0f1cafe6fa16e740d01462cf5d6b0f56d75aabe925b341",
+    "implementationSha256": "4b8568bd33fdb9c4e164c6cbd3fb6bc726742237064422061bf7e21e2aba1ea7"
   },
   "entries": [
     {
@@ -23,7 +23,7 @@
         "P3": "GND2",
         "P4": "5V"
       },
-      "projectSha256": "044424048490b32acefff3635e12907bfce21de1cb8e8546c80e15076d20faac",
+      "projectSha256": "9c45339384043525020591b9c716f797c0982bdfd12f4e51afd0c80332647d96",
       "sourceSha256": "3fe76fbad516c32857e1f79d6d1588dd4b3c82f944039f214ea9afdc8126e1b4",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
@@ -46,7 +46,7 @@
         "B": "D6 through 330 Ω",
         "COM": "5V"
       },
-      "projectSha256": "4be8f974e3fde6811f2e575649904efcc0718b8236914c624f7472969631c159",
+      "projectSha256": "504e9019197ff9c9cc3d06b4dee3f70b4ac153fda191b43bd2c49346372489a2",
       "sourceSha256": "4922f5b3ef3c8848a1ddf16dac5bcbeef02c1f00e235f4b1b941e4ccfd928b31",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
@@ -67,7 +67,7 @@
         "anodes": "A1–A10 through 330 Ω to D2–D11",
         "cathodes": "K1–K10 to explicit 0 V reference"
       },
-      "projectSha256": "c4dc550c29164d36d4551811fced15bda6249220034a921c40e48afbfcc42cda",
+      "projectSha256": "4c585160b217caf8a98529cc24d1d726c00aaee6a96e84fd2b5de77138826deb",
       "sourceSha256": "2822f3cefa6bbfedb50b5efbfeec1d742648ec4910eb8f6be985faffbc6c85aa",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",

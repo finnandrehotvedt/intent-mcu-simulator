@@ -1,0 +1,288 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "4566d5d6e5ec6ade1d0f1cafe6fa16e740d01462cf5d6b0f56d75aabe925b341",
+    "implementationSha256": "4b8568bd33fdb9c4e164c6cbd3fb6bc726742237064422061bf7e21e2aba1ea7"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-project-contact-persistence@1",
+    "project": {
+      "schema": "intent-mcu-project@3",
+      "metadata": {
+        "name": "Raw P-channel MOSFET and optocoupler authoring network"
+      },
+      "catalogue": {
+        "schema": "intent-mcu-catalogue-ref@1",
+        "version": "intent-mcu-catalogue@2"
+      },
+      "controller": {
+        "profile": "board.atmega328p-16mhz-v1",
+        "adapterContract": "intent-mcu-controller-adapter@1",
+        "status": "simulated",
+        "capabilities": [
+          {
+            "id": "gpio",
+            "status": "simulated"
+          },
+          {
+            "id": "adc",
+            "status": "simulated"
+          },
+          {
+            "id": "pwm",
+            "status": "simulated"
+          },
+          {
+            "id": "uart0",
+            "status": "simulated"
+          },
+          {
+            "id": "timers",
+            "status": "partial"
+          },
+          {
+            "id": "interrupts",
+            "status": "partial"
+          },
+          {
+            "id": "spi",
+            "status": "unsupported"
+          },
+          {
+            "id": "i2c",
+            "status": "unsupported"
+          },
+          {
+            "id": "eeprom",
+            "status": "unsupported"
+          },
+          {
+            "id": "watchdog",
+            "status": "unsupported"
+          }
+        ]
+      },
+      "source": {
+        "files": [
+          {
+            "name": "main.ino",
+            "content": "void setup() { Serial.begin(115200); }\nvoid loop() {\n  Serial.println(\"RAW ACTIVE SEMICONDUCTORS ARE AUTHORING ONLY\");\n  delay(500);\n}\n"
+          }
+        ]
+      },
+      "circuit": {
+        "schema": "teach-lab-circuit@2",
+        "components": [
+          {
+            "id": "board-1",
+            "type": "board.atmega328p-16mhz-v1",
+            "label": "ATmega328P board",
+            "properties": {},
+            "controls": {}
+          }
+        ],
+        "nets": [],
+        "junctions": []
+      },
+      "layout": {
+        "positions": {
+          "board-1": {
+            "x": 0.12,
+            "y": 0.2,
+            "rotation": 0
+          }
+        },
+        "wireRoutes": {},
+        "wireStyles": {},
+        "viewport": {
+          "zoom": 1,
+          "panX": 0,
+          "panY": 0
+        }
+      },
+      "instruments": {
+        "logicChannels": [
+          "D13",
+          "D2"
+        ],
+        "selectedPin": "D13",
+        "serial": {
+          "baud": 9600,
+          "encoding": "utf-8",
+          "historyLimit": 512
+        }
+      },
+      "artifact": {
+        "schema": "intent-mcu-project-artifact-ref@1",
+        "status": "dirty",
+        "profile": null,
+        "inputIdentitySha256": null,
+        "artifactIdentitySha256": null
+      }
+    },
+    "candidateCircuit": {
+      "schema": "teach-lab-circuit@2",
+      "components": [
+        {
+          "id": "board-1",
+          "type": "board.atmega328p-16mhz-v1",
+          "label": "ATmega328P board",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "optocoupler-1",
+          "type": "semiconductor.optocoupler-phototransistor-v1",
+          "label": "Phototransistor optocoupler",
+          "properties": {
+            "nominalForwardVoltageVolts": 1.2,
+            "nominalCurrentTransferRatioPercent": 100,
+            "maxIsolationVoltageVolts": 3750
+          },
+          "controls": {}
+        },
+        {
+          "id": "pmos-1",
+          "type": "transistor.mosfet-p-channel-v1",
+          "label": "P-channel MOSFET",
+          "properties": {
+            "nominalGateThresholdMagnitudeVolts": 2,
+            "maxDrainSourceVoltageVolts": 60,
+            "maxDrainCurrentAmps": 10
+          },
+          "controls": {}
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-opto-anode",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D3"
+            },
+            {
+              "component": "optocoupler-1",
+              "pin": "ANODE"
+            }
+          ]
+        },
+        {
+          "id": "net-opto-cathode",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "GND1"
+            },
+            {
+              "component": "optocoupler-1",
+              "pin": "CATHODE"
+            }
+          ]
+        },
+        {
+          "id": "net-output-collector",
+          "endpoints": [
+            {
+              "component": "optocoupler-1",
+              "pin": "COLLECTOR"
+            },
+            {
+              "component": "pmos-1",
+              "pin": "DRAIN"
+            }
+          ]
+        },
+        {
+          "id": "net-output-emitter",
+          "endpoints": [
+            {
+              "component": "optocoupler-1",
+              "pin": "EMITTER"
+            },
+            {
+              "component": "pmos-1",
+              "pin": "SOURCE"
+            }
+          ]
+        },
+        {
+          "id": "net-pmos-gate",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D2"
+            },
+            {
+              "component": "pmos-1",
+              "pin": "GATE"
+            }
+          ]
+        }
+      ],
+      "junctions": []
+    },
+    "candidateLayout": {
+      "schema": "intent-mcu-candidate-layout@1",
+      "positions": {
+        "board-1": {
+          "x": 0.12,
+          "y": 0.2,
+          "rotation": 0
+        },
+        "optocoupler-1": {
+          "x": 0.7,
+          "y": 0.5,
+          "rotation": 0
+        },
+        "pmos-1": {
+          "x": 0.45,
+          "y": 0.5,
+          "rotation": 0
+        }
+      },
+      "wireRoutes": {},
+      "viewport": {
+        "zoom": 1,
+        "panX": 0,
+        "panY": 0
+      }
+    },
+    "compiledFixture": {
+      "schema": "intent-mcu-compiled-fixture-ref@1",
+      "id": "button-pullup",
+      "profile": "board.atmega328p-16mhz-v1",
+      "toolchainImageId": "sha256:f04aa7a8c37699d16a965fb374870ff147ca776ba6386f81e7700e350ed3d89f",
+      "source": {
+        "sha256": "84ceea4f298483f4696a3672ac1fff97b046b9e35c65aaa6155b20140a66f518",
+        "bytes": 209
+      },
+      "executable": {
+        "format": "intel-hex",
+        "sha256": "247f94bb051e9eebb4dfe8099278d810e04ccbf097f1b3ddb53b904e26ea8ebc",
+        "bytes": 2525
+      },
+      "debug": {
+        "format": "elf",
+        "sha256": "23a37eff7f7c5b1d0626e12a3f31e00d9b79466eab374cd0d74c46e3667150bd",
+        "bytes": 14632
+      },
+      "artifactIdentitySha256": "69ad0bc87ba02a2d33ac4c5ba1d9bd07e28636b631cd007f4b9423889e76bd3b"
+    }
+  }
+}

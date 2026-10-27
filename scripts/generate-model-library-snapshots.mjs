@@ -267,6 +267,8 @@ const CURRENT_CLOSURE = Object.freeze([
   '../expansion-drafts/diode-components-artwork-v1.mjs',
   '../expansion-drafts/transistor-components-v1.mjs',
   '../expansion-drafts/transistor-components-artwork-v1.mjs',
+  '../expansion-drafts/semiconductor-active-components-v1.mjs',
+  '../expansion-drafts/semiconductor-active-components-artwork-v1.mjs',
   '../expansion-drafts/contact-sensors-v1.mjs',
   '../expansion-drafts/contact-sensors-artwork-v1.mjs',
   '../expansion-drafts/ground-reference-integration-v1.mjs',

@@ -20,6 +20,7 @@ const adapter = Object.freeze({ schemas: Object.freeze(['intent-mcu-project-cont
 const adapters = Object.freeze({ [AVR]: adapter });
 const envelope = (project) => canonicalProjectEnvelope(AVR, project, adapters, emptyProjectBrief(), null, CURRENT_MODEL_LIBRARY_LOCK);
 const sourceEnvelope = JSON.parse(await readFile(new URL('../examples/lcd/parallel-hd44780-16x2.intent-mcu.json', import.meta.url), 'utf8'));
+sourceEnvelope.modelLibrary = structuredClone(CURRENT_MODEL_LIBRARY_LOCK);
 const profileBehavior = Object.freeze({
   [AVR]: 'authoring and executable adapter available after a fresh isolated Build',
   'board.rp2040-pico-v1': 'this exact component model is unavailable',
