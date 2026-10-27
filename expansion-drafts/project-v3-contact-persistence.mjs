@@ -116,6 +116,15 @@ import {
   ANALOG_JOYSTICK_TYPE, JOYSTICK_KEYPAD_DEFINITIONS, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE,
   projectJoystickKeypads, validateJoystickKeypad,
 } from './joystick-keypads-v1.mjs';
+import {
+  DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
+  CAPACITIVE_TOUCH_TYPE,
+  HALL_SWITCH_TYPE,
+  PIR_MOTION_TYPE,
+  digitalPresenceActive,
+  projectDigitalPresenceSensors,
+  validateDigitalPresenceSensor,
+} from './digital-presence-sensors-v1.mjs';
 
 export const CONTACT_PERSISTENCE_SCHEMA = 'intent-mcu-project-contact-persistence@1';
 export const COMPILED_FIXTURE_REFERENCE_SCHEMA = 'intent-mcu-compiled-fixture-ref@1';
@@ -190,6 +199,7 @@ function pinIds(component) {
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return ['VCC', 'GND', 'DOUT'];
+  if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
   if (component.type === COMMON_CATHODE_RGB_LED_TYPE) return ['R', 'G', 'B', 'COM'];
   if (component.type === ACTIVE_BUZZER_TYPE) return ['VCC', 'GND', 'EN'];
   if (component.type === SEVEN_SEGMENT_TYPE) return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'COM'];
@@ -216,6 +226,7 @@ function componentPins(component) {
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return LIGHT_ANALOGUE_SENSOR_DEFINITION.pins;
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return TEMPERATURE_ANALOGUE_SENSOR_DEFINITION.pins;
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return DIGITAL_LIGHT_THRESHOLD_DEFINITION.pins;
+  if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].pins;
   if (component.type === COMMON_CATHODE_RGB_LED_TYPE) return COMMON_CATHODE_RGB_LED_DEFINITION.pins;
   if (component.type === ACTIVE_BUZZER_TYPE) return ACTIVE_BUZZER_DEFINITION.pins;
   if (component.type === SEVEN_SEGMENT_TYPE) return SEVEN_SEGMENT_DEFINITION.pins;
@@ -274,6 +285,10 @@ function validateCandidateComponent(component) {
   } else if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
     if (!validateDigitalLightThresholdComponent(component)) {
       fail('PROJECT_CONTACT_DIGITAL_LIGHT_THRESHOLD_STATE', [component.id]);
+    }
+  } else if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) {
+    if (!validateDigitalPresenceSensor(component)) {
+      fail('PROJECT_CONTACT_DIGITAL_PRESENCE_SENSOR_STATE', [component.id]);
     }
   } else if (component.type === COMMON_CATHODE_RGB_LED_TYPE) {
     if (!validateCommonCathodeRgbLedComponent(component)) {
@@ -340,6 +355,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
         LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
         DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
+        CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
         ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
         ROTARY_ENCODER_TYPE,
       ].includes(component.type))) {
@@ -754,7 +770,23 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
     }, [module.componentId]);
     if (expected.outputActive !== module.outputActive) fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [module.componentId]);
   }
-  const commonAnodeProjection = projectCommonAnodeRgbLeds(thresholdProjection.runtimeGraph);
+  const presenceProjection = projectDigitalPresenceSensors(thresholdProjection.runtimeGraph);
+  if (!presenceProjection.ok) {
+    fail(`PROJECT_CONTACT_${presenceProjection.code}`, presenceProjection.details);
+  }
+  contacts.push(...presenceProjection.sensors.map((sensor) => ({
+    componentId: sensor.componentId,
+    type: sensor.type,
+    state: { active: sensor.active, outputLevel: sensor.outputLevel },
+    runtimeProjection: clone(sensor),
+  })));
+  for (const sensor of presenceProjection.sensors) {
+    const expected = production(implementation, sensor.type, { active: sensor.active }, [sensor.componentId]);
+    if (expected.active !== sensor.active || expected.digitalLevel !== sensor.active) {
+      fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+    }
+  }
+  const commonAnodeProjection = projectCommonAnodeRgbLeds(presenceProjection.runtimeGraph);
   contacts.push(...commonAnodeProjection.outputs.map((output) => ({ componentId: output.componentId,
     type: RGB_COMMON_ANODE_TYPE, state: { commonPolarity: 'anode', activeLevel: 'LOW' },
     runtimeProjection: clone(output) })));
@@ -944,6 +976,14 @@ function draftContacts(graph) {
         runtimeProjection: null,
       }];
     }
+    if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) {
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { active: digitalPresenceActive(component) },
+        runtimeProjection: null,
+      }];
+    }
     if (component.type === COMMON_CATHODE_RGB_LED_TYPE) {
       return [{
         componentId: component.id,
@@ -1105,6 +1145,7 @@ export function validateContactPersistenceProject(value, options = {}) {
       GROUND_REFERENCE_TYPE, POWER_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
       LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
       DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
+      CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
       ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
       ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
       ROTARY_ENCODER_TYPE,

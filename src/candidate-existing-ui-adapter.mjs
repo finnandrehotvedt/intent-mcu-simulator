@@ -110,6 +110,14 @@ import {
   rotaryEncoderDigitalSequence,
 } from '../expansion-drafts/rotary-encoder-quadrature-v1.mjs';
 import { createRotaryEncoderArtwork } from '../expansion-drafts/rotary-encoder-quadrature-artwork-v1.mjs';
+import {
+  CAPACITIVE_TOUCH_TYPE,
+  DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
+  HALL_SWITCH_TYPE,
+  PIR_MOTION_TYPE,
+  createDigitalPresenceSensor,
+} from '../expansion-drafts/digital-presence-sensors-v1.mjs';
+import { createDigitalPresenceSensorArtwork } from '../expansion-drafts/digital-presence-sensors-artwork-v1.mjs';
 
 export const CANDIDATE_EXISTING_UI_ADAPTER_SCHEMA = 'intent-mcu-candidate-existing-ui@1';
 
@@ -172,6 +180,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   [CHARACTER_LCD_20X4_TYPE]: CHARACTER_LCD_20X4_DEFINITION,
   [PCF8574_LCD_TYPE]: PCF8574_LCD_DEFINITION,
   [ROTARY_ENCODER_TYPE]: ROTARY_ENCODER_DEFINITION,
+  ...DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
 });
 
 export function candidateUiDefinition(type) {
@@ -234,6 +243,9 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (component?.type === ROTARY_ENCODER_TYPE) {
     return createRotaryEncoderArtwork(documentObject, definition, component, options);
   }
+  if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component?.type]) {
+    return createDigitalPresenceSensorArtwork(documentObject, definition, component, options);
+  }
   throw new TypeError('CANDIDATE_UI_COMPONENT');
 }
 
@@ -263,6 +275,7 @@ export function createCandidateUiComponent(type, id) {
   if (type === CHARACTER_LCD_20X4_TYPE) return createCharacterLcd20x4Component(id);
   if (type === PCF8574_LCD_TYPE) return createPcf8574LcdComponent(id);
   if (type === ROTARY_ENCODER_TYPE) return createRotaryEncoderComponent(id);
+  if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[type]) return createDigitalPresenceSensor(type, id);
   throw new TypeError('CANDIDATE_UI_COMPONENT_TYPE');
 }
 
@@ -356,6 +369,15 @@ export function candidateContactControl(session, componentId, key, value) {
   }
   if (component.type === FOOT_PEDAL_TYPE && key === 'pressed' && typeof value === 'boolean') {
     return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+  }
+  if ([CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE].includes(component.type)
+      && key === DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].controlKeys[0]
+      && typeof value === 'boolean') {
+    return {
+      ok: true,
+      command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'pressed', value: !value },
+    };
   }
   if (component.type === ANALOG_JOYSTICK_TYPE && ['x', 'y'].includes(key)
       && Number.isFinite(value) && value >= 0 && value <= 1) {

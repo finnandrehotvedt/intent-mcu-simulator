@@ -39,35 +39,35 @@ function encoderSession({ phaseB = 'D3', common = 'GND2' } = {}) {
   return session;
 }
 
-test('public component matrix separates executable and authoring-only support across 39 by 4 cells', () => {
-  assert.equal(COMPONENT_SUPPORT_MODELS.length, 39);
+test('public component matrix separates executable and authoring-only support across 42 by 4 cells', () => {
+  assert.equal(COMPONENT_SUPPORT_MODELS.length, 42);
   assert.equal(COMPONENT_SUPPORT_PROFILES.length, 4);
-  assert.equal(COMPONENT_SUPPORT_CELLS.length, 156);
-  assert.equal(COMPONENT_SUPPORT_CELLS.filter((cell) => cell.available).length, 41);
-  assert.equal(COMPONENT_SUPPORT_CELLS.filter((cell) => !cell.available).length, 115);
-  assert.equal(COMPONENT_SUPPORT_CELLS.filter((cell) => cell.authoringAvailable).length, 53);
-  assert.equal(COMPONENT_SUPPORT_CELLS.filter((cell) => cell.status === 'simulated').length, 19);
+  assert.equal(COMPONENT_SUPPORT_CELLS.length, 168);
+  assert.equal(COMPONENT_SUPPORT_CELLS.filter((cell) => cell.available).length, 44);
+  assert.equal(COMPONENT_SUPPORT_CELLS.filter((cell) => !cell.available).length, 124);
+  assert.equal(COMPONENT_SUPPORT_CELLS.filter((cell) => cell.authoringAvailable).length, 56);
+  assert.equal(COMPONENT_SUPPORT_CELLS.filter((cell) => cell.status === 'simulated').length, 22);
   assert.equal(COMPONENT_SUPPORT_CELLS.filter((cell) => cell.status === 'partial').length, 22);
   assert.equal(COMPONENT_SUPPORT_CELLS.filter((cell) => cell.status === 'visual').length, 12);
   assert.deepEqual(componentSupportSummary(AVR), {
-    profile: AVR, total: 39, available: 32, authoringAvailable: 32, executableAvailable: 32,
-    simulated: 13, partial: 19, visual: 0, unavailable: 7,
+    profile: AVR, total: 42, available: 35, authoringAvailable: 35, executableAvailable: 35,
+    simulated: 16, partial: 19, visual: 0, unavailable: 7,
   });
   for (const profile of COMPONENT_SUPPORT_PROFILES.filter((item) => item.id !== AVR)) {
     assert.deepEqual(componentSupportSummary(profile.id), {
-      profile: profile.id, total: 39, available: 3, authoringAvailable: 7, executableAvailable: 3,
-      simulated: 2, partial: 1, visual: 4, unavailable: 32,
+      profile: profile.id, total: 42, available: 3, authoringAvailable: 7, executableAvailable: 3,
+      simulated: 2, partial: 1, visual: 4, unavailable: 35,
     });
   }
   const avr = COMPONENT_SUPPORT_CELLS.filter((cell) => cell.profile === AVR && cell.available);
   assert.equal(avr.filter((cell) => cell.projectMode === 'project-v2-and-candidate-v3').length, 5);
-  assert.equal(avr.filter((cell) => cell.projectMode === 'candidate-v3-only').length, 27);
+  assert.equal(avr.filter((cell) => cell.projectMode === 'candidate-v3-only').length, 30);
   assert(COMPONENT_SUPPORT_CELLS.filter((cell) => !cell.available).every((cell) => cell.limitations[0]));
 });
 
 test('every available cell has tracked evidence and a public reference starter', () => {
   const inventory = componentReferenceInventory();
-  assert.equal(inventory.length, 41);
+  assert.equal(inventory.length, 44);
   assert(inventory.every((item) => item.hasTrackedTests));
   for (const item of inventory) for (const path of item.tests) assert(existsSync(path), path);
   assert.equal(inventory.filter((item) => !item.hasPositiveReference).length, 0);
@@ -78,7 +78,7 @@ test('crawlable documentation contains one row for every public model', () => {
   const html = readFileSync('staging/components.html', 'utf8');
   const rows = [...html.matchAll(/<tr data-model="([^"]+)"/gu)].map((match) => match[1]);
   assert.deepEqual(rows.sort(), COMPONENT_SUPPORT_MODELS.map((model) => model.type).sort());
-  assert.match(html, /41 executable cells, 12 additional authoring-only cells and 103 unavailable cells/u);
+  assert.match(html, /44 executable cells, 12 additional authoring-only cells and 112 unavailable cells/u);
 });
 
 test('rotary encoder accepts exact D2 D3 ground wiring and emits deterministic worker sequences', () => {

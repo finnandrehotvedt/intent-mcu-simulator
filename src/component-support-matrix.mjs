@@ -96,6 +96,9 @@ const referenceBindings = deepFreeze({
     'input.analog-joystick-2axis-v1': { starters: ['avr-analog-joystick'], tests: ['test/joystick-keypads-candidate.test.mjs', 'test/joystick-keypad-example-artifacts.test.mjs'] },
     'input.matrix-keypad-3x4-v1': { starters: ['avr-matrix-keypad-3x4'], tests: ['test/joystick-keypads-candidate.test.mjs', 'test/joystick-keypad-example-artifacts.test.mjs'] },
     'input.matrix-keypad-4x4-v1': { starters: ['avr-matrix-keypad-4x4'], tests: ['test/joystick-keypads-candidate.test.mjs', 'test/joystick-keypad-example-artifacts.test.mjs'] },
+    'input.capacitive-touch-button-v1': { starters: ['avr-digital-presence-sensors'], tests: ['test/digital-presence-sensors-candidate.test.mjs', 'test/digital-presence-sensor-example-artifacts.test.mjs'] },
+    'sensor.pir-motion-v1': { starters: ['avr-digital-presence-sensors'], tests: ['test/digital-presence-sensors-candidate.test.mjs', 'test/digital-presence-sensor-example-artifacts.test.mjs'] },
+    'sensor.hall-switch-digital-v1': { starters: ['avr-digital-presence-sensors'], tests: ['test/digital-presence-sensors-candidate.test.mjs', 'test/digital-presence-sensor-example-artifacts.test.mjs'] },
   },
   [PICO]: {
     [PICO]: { starters: ['pico-led-on', 'pico-led-off'], tests: ['test/rp2040-pico-circuit.test.mjs', 'test/supported-example-pack-browser.cjs'] },

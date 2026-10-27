@@ -39,6 +39,9 @@ const expected = {
   'sensor.light-threshold-digital-v1': [
     'lightLevelPercent', 'thresholdPercent', 'hysteresisPercentagePoints', 'outputActive',
   ],
+  'input.capacitive-touch-button-v1': ['touched'],
+  'sensor.pir-motion-v1': ['motionDetected'],
+  'sensor.hall-switch-digital-v1': ['magnetPresent'],
   'input.rotary-encoder-quadrature-v1': ['detent'],
 };
 
@@ -62,10 +65,10 @@ function candidate(id, componentId, changes) {
   return opened.session;
 }
 
-test('all 41 executable cells have one exact controls-persist or controls-empty policy', () => {
+test('all 44 executable cells have one exact controls-persist or controls-empty policy', () => {
   assert.deepEqual(controlPersistenceSummary(), {
-    profiles: 4, cells: 156, available: 41, unavailable: 115,
-    controlBearing: 20, controlsEmpty: 21, controls: 29,
+    profiles: 4, cells: 168, available: 44, unavailable: 124,
+    controlBearing: 23, controlsEmpty: 21, controls: 32,
   });
   const inventory = controlPersistenceInventory();
   const bearing = inventory.filter((cell) => cell.available && cell.controls.length);

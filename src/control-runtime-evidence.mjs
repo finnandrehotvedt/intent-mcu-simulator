@@ -36,6 +36,9 @@ const rows = [
   ['input.analog-joystick-2axis-v1', 'pressed', 'contact projection · shaft button', 'D2 input → executed firmware → USART', 'actual-executed'],
   ['input.matrix-keypad-3x4-v1', 'pressedKey', 'digital bridge · selected row and column', 'D2–D8 scan → executed firmware → USART', 'actual-executed'],
   ['input.matrix-keypad-4x4-v1', 'pressedKey', 'digital bridge · selected row and column', 'D2–D9 scan → executed firmware → USART', 'actual-executed'],
+  ['input.capacitive-touch-button-v1', 'touched', 'control · active-high digital state', 'D4 input → executed firmware → USART', 'actual-executed'],
+  ['sensor.pir-motion-v1', 'motionDetected', 'control · active-high digital state', 'D5 input → executed firmware → USART', 'actual-executed'],
+  ['sensor.hall-switch-digital-v1', 'magnetPresent', 'control · active-high digital state', 'D6 input → executed firmware → USART', 'actual-executed'],
 ].map(([model, field, workerEvent, observable, evidence]) => Object.freeze({
   profile: AVR_PROFILE,
   model,
@@ -44,9 +47,11 @@ const rows = [
   workerEvent,
   observable,
   evidence,
-  evidenceSource: ['thresholdPercent', 'hysteresisPercentagePoints', 'outputActive'].includes(field)
-    ? 'test/control-runtime-evidence-browser.cjs'
-    : 'test/control-persistence-browser.cjs',
+  evidenceSource: ['touched', 'motionDetected', 'magnetPresent'].includes(field)
+    ? 'test/digital-presence-sensors-browser.cjs'
+    : ['thresholdPercent', 'hysteresisPercentagePoints', 'outputActive'].includes(field)
+      ? 'test/control-runtime-evidence-browser.cjs'
+      : 'test/control-persistence-browser.cjs',
 }));
 
 const expected = controlPersistenceInventory()

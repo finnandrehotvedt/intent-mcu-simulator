@@ -1,0 +1,39 @@
+{
+  "schema": "intent-mcu-digital-presence-sensor-example-manifest@1",
+  "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "825a686a15ab5ecf4f364b722af1ee4bc759425094ab5aa2da2c710b9fffadea",
+    "implementationSha256": "3d967412ae6fadb427aae0208324dcc7d08419976b5c90a11474741120df1150"
+  },
+  "entries": [
+    {
+      "id": "avr-digital-presence-sensors",
+      "requirementIds": [
+        "CMP-031",
+        "CMP-121",
+        "CMP-124"
+      ],
+      "file": "avr-digital-presence-sensors.intent-mcu.json",
+      "projectSha256": "1c7060608bf40f97ddf4917590911715a6035d56cd124b56b22354fd2ed01945",
+      "sourceSha256": "e44bd12c83fce5fc59b41402a38e710e69f33c1e0f536f8c6c0741d67ecc125b",
+      "expectedBehavior": "D4, D5 and D6 report independent active-high touch, motion and magnet-presence states.",
+      "namedPins": {
+        "supply": "VCC → 5V",
+        "ground": "GND → GND1",
+        "touch": "OUT → D4",
+        "motion": "OUT → D5",
+        "hall": "OUT → D6"
+      },
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable active-high adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "unavailable",
+        "board.esp32-c3-devmodule-v1": "unavailable",
+        "board.stm32f429zi-nucleo144-v1": "unavailable"
+      },
+      "provenance": "Original project-owned contracts, SVG artwork, deterministic active-high projection, firmware source and canonical project envelope."
+    }
+  ]
+}

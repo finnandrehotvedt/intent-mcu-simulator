@@ -8,7 +8,7 @@
       ],
       "file": "avr-explicit-junction-crossing.intent-mcu.json",
       "profile": "board.atmega328p-16mhz-v1",
-      "projectSha256": "9647326711866eb96a1b20d9bea4fcc41ea1e48229eef302a5a341e368e52722",
+      "projectSha256": "05cf6478761b1dfb15c6c75d7962f05e191584ddb6aa1119644d61b06f33b78f",
       "junction": {
         "id": "junction-ground",
         "netId": "net-ground-branch",

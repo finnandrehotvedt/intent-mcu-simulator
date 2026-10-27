@@ -194,6 +194,13 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
         : lightLevelPercent <= thresholdPercent - hysteresisPercentagePoints ? false : currentActive;
       return { ok: true, code: 'OK', result: { outputActive, digitalLevel: !outputActive } };
     }
+    if (['input.capacitive-touch-button-v1', 'sensor.pir-motion-v1',
+      'sensor.hall-switch-digital-v1'].includes(componentType)) {
+      if (!exactInput(input, ['active']) || typeof input.active !== 'boolean') {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { active: input.active, digitalLevel: input.active } };
+    }
     if (componentType === 'output.rgb-led-common-cathode-v1') {
       const duties = input?.duties;
       if (!duties || ['R', 'G', 'B'].some((key) => !Number.isFinite(duties[key]))) {

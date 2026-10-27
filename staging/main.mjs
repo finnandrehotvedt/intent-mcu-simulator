@@ -464,6 +464,12 @@ import {
 } from '../expansion-drafts/character-lcd-20x4-4bit-v1.mjs';
 import { PCF8574_LCD_TYPE } from '../expansion-drafts/pcf8574-lcd-backpack-v1.mjs';
 import {
+  CAPACITIVE_TOUCH_TYPE,
+  DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
+  HALL_SWITCH_TYPE,
+  PIR_MOTION_TYPE,
+} from '../expansion-drafts/digital-presence-sensors-v1.mjs';
+import {
   ROTARY_ENCODER_TYPE,
   nextRotaryEncoderDetent,
 } from '../expansion-drafts/rotary-encoder-quadrature-v1.mjs';
@@ -12987,6 +12993,9 @@ function candidateComponentPrefix(type) {
       'sensor.light-analogue-v1': 'light-sensor',
       'sensor.temperature-analogue-v1': 'temperature-sensor',
       [DIGITAL_LIGHT_THRESHOLD_TYPE]: 'light-threshold',
+      [CAPACITIVE_TOUCH_TYPE]: 'touch-button',
+      [PIR_MOTION_TYPE]: 'pir-motion',
+      [HALL_SWITCH_TYPE]: 'hall-switch',
       [COMMON_CATHODE_RGB_LED_TYPE]: 'rgb-led',
       [RGB_COMMON_ANODE_TYPE]: 'rgb-led-ca',
       [LED_BAR_GRAPH_TYPE]: 'led-bar',
@@ -13035,6 +13044,9 @@ function addComponent(type, point = null) {
       'sensor.light-analogue-v1': { x: 0.62, y: 0.76 },
       'sensor.temperature-analogue-v1': { x: 0.78, y: 0.76 },
       [DIGITAL_LIGHT_THRESHOLD_TYPE]: { x: 0.78, y: 0.72 },
+      [CAPACITIVE_TOUCH_TYPE]: { x: 0.58, y: 0.7 },
+      [PIR_MOTION_TYPE]: { x: 0.72, y: 0.7 },
+      [HALL_SWITCH_TYPE]: { x: 0.84, y: 0.7 },
       [COMMON_CATHODE_RGB_LED_TYPE]: { x: 0.78, y: 0.7 },
       [RGB_COMMON_ANODE_TYPE]: { x: 0.78, y: 0.7 },
       [LED_BAR_GRAPH_TYPE]: { x: 0.72, y: 0.62 },
@@ -13527,6 +13539,24 @@ function renderRuntimeControls() {
         const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
         if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Input control rejected.'); return; }
         applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject(); renderProject();
+      }); row.append(label, button); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) {
+      const row = document.createElement('div'); const label = document.createElement('span');
+      const key = DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].controlKeys[0];
+      const value = component.controls[key]; label.textContent = component.label;
+      const button = document.createElement('button'); button.type = 'button';
+      button.dataset.control = `${component.id}.${key}`; button.setAttribute('aria-pressed', String(value));
+      button.textContent = component.type === CAPACITIVE_TOUCH_TYPE ? (value ? 'Touched' : 'Released')
+        : component.type === PIR_MOTION_TYPE ? (value ? 'Motion detected' : 'Clear')
+          : (value ? 'Magnet present' : 'Clear');
+      button.addEventListener('click', () => {
+        const prepared = selectedCandidateContactControl(component.id, key, !component.controls[key]);
+        const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
+        if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Digital sensor control rejected.'); return; }
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject();
+        if (prepared.worker) worker?.postMessage(prepared.worker);
+        elements.projectmessage.textContent = `${component.label} active-high state changed.`; renderProject();
       }); row.append(label, button); return [row];
     }
     if (editor.kind === 'candidate-project-v3' && component.type === ROTARY_SELECTOR_TYPE) {

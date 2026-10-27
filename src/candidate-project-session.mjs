@@ -56,6 +56,8 @@ import {
   ROTARY_ENCODER_DETENT_MIN,
 } from '../expansion-drafts/rotary-encoder-quadrature-v1.mjs';
 import { ANALOG_JOYSTICK_TYPE, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE } from '../expansion-drafts/joystick-keypads-v1.mjs';
+import { CAPACITIVE_TOUCH_TYPE, DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
+  HALL_SWITCH_TYPE, PIR_MOTION_TYPE } from '../expansion-drafts/digital-presence-sensors-v1.mjs';
 
 export const CANDIDATE_EDITOR_INTEGRATION_SCHEMA = 'intent-mcu-candidate-editor-session@1';
 export const CANDIDATE_EDITOR_HISTORY_LIMIT = 64;
@@ -78,6 +80,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   PCF8574_LCD_TYPE,
   ROTARY_ENCODER_TYPE,
   ANALOG_JOYSTICK_TYPE, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE,
+  CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
 ]);
 
 function validPoint(value) {
@@ -224,11 +227,15 @@ function contactSupport(result) {
             ? 'two-potentiometer.linear-v1-plus-button.momentary-v1'
           : [KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE].includes(contact.type)
             ? 'selected-row-column-digital-bridge-v1'
+          : DIGITAL_PRESENCE_SENSOR_DEFINITIONS[contact.type]
+            ? 'button.momentary-v1-active-high-inverted-adapter'
           : spdt?.ok
             ? 'spdt-digital-reference-v1'
             : null,
       limitation: contact.type === DIGITAL_LIGHT_THRESHOLD_TYPE
         ? 'Ideal active-low percentage threshold with retained hysteresis state only; no lux accuracy or physical detector behavior is modelled.'
+        : DIGITAL_PRESENCE_SENSOR_DEFINITIONS[contact.type]
+        ? 'Ideal active-high digital state only; physical sensitivity, range, field behavior, timing and electrical loading are not modelled.'
         : contact.type === COMMON_CATHODE_RGB_LED_TYPE
         ? 'Ideal relative PWM mix through three independently current-limited existing LED channels; no physical colour, wavelength, optical or current accuracy is modelled.'
         : contact.type === ROTARY_SELECTOR_TYPE
@@ -869,6 +876,17 @@ export class CandidateEditorSession {
               : component.type === EMERGENCY_STOP_TYPE ? 'latched' : 'pressed';
             if (command.key !== expectedKey || typeof command.value !== 'boolean') {
               return failure('PROJECT_CONTACT_SAFETY_PEDAL_STATE', this.revision);
+            }
+            component.controls[expectedKey] = command.value; runtimeDirty = true; break;
+          }
+          if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) {
+            const expectedKey = DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].controlKeys[0];
+            if (command.key !== expectedKey || typeof command.value !== 'boolean') {
+              return failure('PROJECT_CONTACT_DIGITAL_PRESENCE_SENSOR_STATE', this.revision);
+            }
+            const evaluated = this.evaluateModel(component.type, { active: command.value });
+            if (!evaluated.ok || evaluated.result.digitalLevel !== command.value) {
+              return failure('MODEL_LIBRARY_PRODUCTION_MISMATCH', this.revision, [component.id]);
             }
             component.controls[expectedKey] = command.value; runtimeDirty = true; break;
           }

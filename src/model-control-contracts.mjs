@@ -85,6 +85,15 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
       unit: 'percentage-point', mutability: 'authored' },
     outputActive: { kind: 'boolean', default: false, mutability: 'derived' },
   },
+  'input.capacitive-touch-button-v1': {
+    touched: { kind: 'boolean', default: false, mutability: 'authored' },
+  },
+  'sensor.pir-motion-v1': {
+    motionDetected: { kind: 'boolean', default: false, mutability: 'authored' },
+  },
+  'sensor.hall-switch-digital-v1': {
+    magnetPresent: { kind: 'boolean', default: false, mutability: 'authored' },
+  },
   'input.rotary-encoder-quadrature-v1': {
     detent: { kind: 'integer', minimum: -999, maximum: 999, default: 0,
       unit: 'detent', mutability: 'transition-only' },

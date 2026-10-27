@@ -148315,6 +148315,89 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
+      "behaviorContractSha256": "b43db3d94941d1e2e96a945303d53f56a54c857178e75d272a562cf07d15a060",
+      "componentType": "input.capacitive-touch-button-v1",
+      "componentVersion": 1,
+      "modelId": "model.input.capacitive-touch-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "input.capacitive-touch-button-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "input-capacitive-touch",
+        "thumbnail": "input-capacitive-touch",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "c56aa4e471d5f2b8dfb9931da3aa255ed93f652068e6966f9ef92a69faf8ec70",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "touched": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.input.capacitive-touch-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-input",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "OUT",
+            "role": "digital-out",
+            "signals": [
+              "digital.active-high"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Ideal active-high touch state only.",
+            "No capacitance, electrode geometry, calibration, debounce, moisture or electromagnetic interference model.",
+            "OUT must connect directly and exclusively to one D2–D12 digital input on the supported 5 V AVR controller."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "8cda99ad6dfaecebf66d2dd6f0339c49a18975d3543ed5153ecea99a4a6d2e9e",
+      "supportStatus": "simulated"
+    },
+    {
       "behaviorContractSha256": "8bc7ac77753ad926877b6135bc6666d6f90a181dc67f803b65d281fe7365e965",
       "componentType": "input.matrix-keypad-3x4-v1",
       "componentVersion": 1,
@@ -150195,6 +150278,89 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
+      "behaviorContractSha256": "46abdec866bac0c9d55a901a438bdc2b24f1ce692a1f686c02cdd6e1437ad9f1",
+      "componentType": "sensor.hall-switch-digital-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.hall-switch-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "sensor.hall-switch-digital-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "sensor-hall-switch",
+        "thumbnail": "sensor-hall-switch",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "1e70bea741f4e86e9c470fd842419347ae7678a59969ff3de417c183939a9411",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "magnetPresent": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.hall-switch-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-input",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "OUT",
+            "role": "digital-out",
+            "signals": [
+              "digital.active-high"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Ideal active-high magnet-presence state only.",
+            "No magnetic field strength, polarity, distance, hysteresis, orientation or electrical tolerance model.",
+            "OUT must connect directly and exclusively to one D2–D12 digital input on the supported 5 V AVR controller."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "13636bddf18687f43e075f2f0da0518eca54241723ef0a01a992f8298d18d640",
+      "supportStatus": "simulated"
+    },
+    {
       "behaviorContractSha256": "b098c6801370b2396962e0765a42e2e97a50a7b5366ce9fb16b4b13ca595c461",
       "componentType": "sensor.light-analogue-v1",
       "componentVersion": 1,
@@ -150386,6 +150552,89 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
         }
       },
       "semanticSha256": "af209039275b9cecebaee139b829e911fb3d0d6eb2f8dd15edd40bcde1baa992",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "ddb9447e0947a2a2750ebd549e7bf791aedd725358209b92f4ffcbcef976ac48",
+      "componentType": "sensor.pir-motion-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.pir-motion-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "sensor.pir-motion-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "sensor-pir-motion",
+        "thumbnail": "sensor-pir-motion",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "f946306ab5e5c04608640c246f285fbed3a33042429182a1a52ee014ffcddf1a",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "motionDetected": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.pir-motion-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-input",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "OUT",
+            "role": "digital-out",
+            "signals": [
+              "digital.active-high"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Ideal active-high motion state only.",
+            "No warm-up, retrigger delay, lens, range, field-of-view, thermal background or human-presence accuracy.",
+            "OUT must connect directly and exclusively to one D2–D12 digital input on the supported 5 V AVR controller."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "1481a92967ec9750b4eeaeac65da323993c8f516843fb2857c9b48986c604851",
       "supportStatus": "simulated"
     },
     {
@@ -152172,7 +152421,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-control-contracts.mjs",
-      "sha256": "2d32dea6692404d6840e9fcea41fc6ab7c85dff73d676c340d58311773cbbae6"
+      "sha256": "f23d2b6ccf38a169fed4dc67910c718c62a6e54fc899222d64fdd82fab0106e2"
     },
     {
       "path": "src/simulator.worker.mjs",
@@ -152180,7 +152429,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "b9f727edb1a8e1ffb6ac9e59c128d59a2a2c4311ff7027866d8ee61a68d5f8a9"
+      "sha256": "d86feaceb59ac8228d452ee8bded467401962ae3500c2fc137921e6db89dfa29"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -152212,7 +152461,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "aee89b83694fbbb9eec57f11796a270a75d0b16fbcf1ed270569c34988dc433f"
+      "sha256": "fb72f509305193c0f8190287a63d63585d09341320826debe57950ac6ea9a806"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -152220,7 +152469,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "3238210702f01b787e95f41e02efcea1b135ff66bc299bfddd1640697adf61ba"
+      "sha256": "0403b59ca64f3806ead557ef9f492207bcafe816252627ccbf0be95105f56944"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -152268,7 +152517,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "3e5e874493786dc78bd78ca967b4d70eb8b393f24bb59bba9be4ac1fb8f51e29"
+      "sha256": "915babc4ee5930ef3f2288f7b4ec0aacd1703d1f60868eb8406a67ea4fcbc693"
     },
     {
       "path": "expansion-drafts/joystick-keypads-v1.mjs",
@@ -152277,6 +152526,14 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     {
       "path": "expansion-drafts/joystick-keypads-artwork-v1.mjs",
       "sha256": "f313be4b031e5d64d00ec99dfeb1312c9ef001e30888e61f1e9ee5f9af3e982c"
+    },
+    {
+      "path": "expansion-drafts/digital-presence-sensors-v1.mjs",
+      "sha256": "42049ec8446b48749aa0740e14f9a0ff26bb9292a90bbc815054ac0870dbf8a9"
+    },
+    {
+      "path": "expansion-drafts/digital-presence-sensors-artwork-v1.mjs",
+      "sha256": "d263637293808c0330c7004f3db5f0c2fe6ac8e9dcc6617ebefbd11610dab10e"
     },
     {
       "path": "expansion-drafts/ground-reference-integration-v1.mjs",
@@ -152348,10 +152605,10 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "9210ee69c3659a48ff69798c09c4cd9b43131f3cde7d296ac35fc29d740ea291"
+      "sha256": "d1438268164013f55584694286e5466c45fb21f77628ee808cc6ccaad9bed02d"
     }
   ],
-  "implementationSha256": "a55fc49c2ee7f29f59a1c4fb955eefd731fdd01173fdd0addbdd199780db545a",
+  "implementationSha256": "3d967412ae6fadb427aae0208324dcc7d08419976b5c90a11474741120df1150",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -152361,7 +152618,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract"
   },
-  "manifestSha256": "da1e577cf3939ac733c0b00af3e45ec1765b45b93f974da7dbc228adcbb29858",
+  "manifestSha256": "825a686a15ab5ecf4f364b722af1ee4bc759425094ab5aa2da2c710b9fffadea",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",
