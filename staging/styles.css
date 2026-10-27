@@ -157,6 +157,26 @@ h2 { font-size: 1.22rem; margin: 0; }
 .runtime-shortcuts strong { color: var(--lime); }
 .runtime-shortcuts span { display: inline-flex; align-items: center; gap: 3px; }
 .runtime-shortcuts kbd { min-width: 22px; padding: 2px 5px; border: 1px solid #48738a; border-bottom-width: 2px; border-radius: 5px; color: var(--text); background: #0d2635; text-align: center; font: 800 .62rem/1.15 ui-monospace,monospace; }
+.runtime-shortcuts > button { min-height: 26px; padding: 3px 7px; color: #06111a; border-color: var(--cyan); background: var(--cyan); font-size: .62rem; font-weight: 900; }
+.runtime-shortcuts .shortcut-sequence-status { color: var(--lime); }
+.top-primary-controls .quick-controls button[data-shortcut]::after { content: attr(data-shortcut); display: inline-block; margin-left: 5px; padding: 1px 4px; border: 1px solid currentColor; border-radius: 4px; opacity: .8; font: 800 .56rem/1.1 ui-monospace,monospace; }
+.shortcut-settings-dialog { width: min(760px,94vw); max-width: 94vw; max-height: 90vh; margin: auto; padding: 0; overflow: auto; color: var(--text); border: 1px solid #3c718d; border-radius: 16px; background: #081722; box-shadow: 0 28px 90px #000c; }
+.shortcut-settings-dialog::backdrop { background: #02070dcc; backdrop-filter: blur(4px); }
+.shortcut-settings-dialog > header { position: sticky; z-index: 2; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; border-bottom: 1px solid #31536c; background: #0b2131; }
+.shortcut-settings-dialog > p, .shortcut-settings-dialog > section, .shortcut-settings-dialog > footer, .shortcut-binding-list { margin: 12px 16px; }
+.shortcut-binding-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
+.shortcut-binding-list label, .shortcut-sequence-editor > label:not(.shortcut-sequence-enabled) { display: grid; grid-template-columns: minmax(100px,1fr) minmax(150px,auto); gap: 4px 8px; align-items: center; padding: 8px; border: 1px solid #294f64; border-radius: 9px; background: #071620; font-weight: 850; }
+.shortcut-binding-list small { grid-column: 1 / -1; color: var(--muted); font-weight: 600; }
+.shortcut-binding-list input, .shortcut-sequence-editor input[type="text"] { min-height: 34px; color: var(--lime); background: #06111a; font: 800 .75rem/1.2 ui-monospace,monospace; cursor: pointer; }
+.shortcut-binding-list input:focus, .shortcut-sequence-editor input[type="text"]:focus { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.shortcut-sequence-editor { padding: 12px; border: 1px solid #396d57; border-radius: 12px; background: #092019; }
+.shortcut-sequence-editor h3 { margin: 0 0 10px; color: var(--lime); }
+.shortcut-sequence-editor ol { margin: 10px 0; padding-left: 24px; }
+.shortcut-sequence-enabled { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+.shortcut-settings-status { min-height: 34px; padding: 8px 10px; color: var(--cyan); border: 1px solid #315c72; border-radius: 8px; background: #071620; }
+.shortcut-settings-status[data-error="true"] { color: #ffd6dc; border-color: var(--red); background: #32131a; }
+.shortcut-settings-dialog > footer { display: flex; justify-content: flex-end; gap: 8px; padding-bottom: 14px; }
+@media (max-width: 620px) { .shortcut-binding-list { grid-template-columns: 1fr; } .shortcut-settings-dialog > footer { align-items: stretch; flex-direction: column; } }
 .workbench-popup-controls { display: grid; grid-template-columns: repeat(12,minmax(0,1fr)); gap: 6px; }
 .workbench-popup-controls button { min-height: 32px; padding: 4px 7px; overflow: hidden; font-size: .7rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .workbench-popup-controls button[aria-expanded="true"] { color: #06111a; background: var(--cyan); border-color: var(--cyan); }

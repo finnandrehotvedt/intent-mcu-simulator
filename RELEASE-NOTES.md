@@ -1,4 +1,28 @@
-# Intent MCU Simulator 1.1.0-rc.148
+# Intent MCU Simulator 1.1.0-rc.149
+
+## Configurable keyboard shortcuts
+
+Rc.149 adds a visible Customize keys action beside the always-visible keyboard
+overview. Build, Run, Pause/Resume, Reset and Stop can each use one local
+letter, number, F5 or Shift combination. The active key is shown in the
+overview and on its primary button.
+
+Duplicate keys, browser modifiers, the authoring Rotate key and malformed
+stored data fail closed. Shortcuts never fire while focus is inside source,
+search, Serial or a value field. Settings are data-only, stay in the current
+browser and can be returned to the tested defaults.
+
+One opt-in bounded sequence performs Build, waits for the current build to
+succeed and the visible Run action to become enabled, then starts Run once.
+It cannot bypass a disabled action and stops on Build failure, timeout, Stop or
+Esc. It cannot edit code or wiring or approve a dialog.
+
+This is a source-only candidate. No merge, deployment, public release or
+sensor publication is included.
+
+---
+
+## 1.1.0-rc.148
 
 ## Visible runtime controls and locked interaction
 

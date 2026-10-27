@@ -28,9 +28,9 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 binds the visible runtime-control source candidate to coherent rc148 bytes', async () => {
+test('X88 binds the configurable-shortcut source candidate to coherent rc149 bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.148');
+  assert.equal(release.version, '1.1.0-rc.149');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
@@ -38,7 +38,7 @@ test('X88 binds the visible runtime-control source candidate to coherent rc148 b
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
   assert(registry.ids.includes('X92'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.147', current: '1.1.0-rc.148' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.148', current: '1.1.0-rc.149' });
   assert.deepEqual(value.changes, [
     {
       id: 'X59', classification: 'changed', capabilities: ['intent-mcu-shared-workbench-view@1'],
@@ -106,7 +106,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.148');
+  assert.equal(discovery.identity.version, '1.1.0-rc.149');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

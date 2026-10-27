@@ -26,13 +26,13 @@ test('X48 current identity owns every newly executed path', async () => {
   ));
   for (const path of ['src/x48-ideal-room-plant.mjs', 'src/runtime-kernel.mjs',
     'src/x92-experiment-budget.mjs', 'src/simulator.worker.mjs',
-    'src/shared-workbench-shell.mjs', 'staging/main.mjs']) {
+    'src/shared-workbench-shell.mjs', 'src/keyboard-shortcuts.mjs', 'staging/main.mjs']) {
     assert.equal(members.has(path), true, path);
     const bytes = await readFile(new URL(`../${path}`, import.meta.url));
     assert.equal(createHash('sha256').update(bytes).digest('hex'), members.get(path), path);
   }
   assert.equal(CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    '2.0.0-visible-runtime-controls.1-current');
+    '2.0.0-configurable-shortcuts.1-current');
 });
 
 test('current resolver manifest and admitted execution identity use one exact implementation ID', () => {

@@ -4,9 +4,9 @@
   "modelLibrary": {
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
-    "version": "2.0.0-visible-runtime-controls.1-current",
-    "manifestSha256": "143881d384ba230c1ad227eb27468c24e0129c2240ea5f80f1844793ce408ec6",
-    "implementationSha256": "9c1cec8eb94665e75f945a3b2c08467576102b67eb1d100344acb1a1031a3313"
+    "version": "2.0.0-configurable-shortcuts.1-current",
+    "manifestSha256": "0e97bdcac9fe1dc20691bd22db3ddfd469875a355078a7113a1b13efdfdf176e",
+    "implementationSha256": "b114661f36c5ebf45e2da284cd1dad304c9489b1b3fee8926ecbfb0facdf76b3"
   },
   "entries": [
     {
@@ -23,7 +23,7 @@
         "VRY": "A1",
         "SW": "D2"
       },
-      "projectSha256": "258267f2e8665982fee3f7ef91c86113de112a9f06439f6822390b5212d03978",
+      "projectSha256": "11acb0dcc855a18178fa13ca0f22baeb49382146c8137cc1e5168977f59fd805",
       "sourceSha256": "5a5f5bb333df911fefc01420d7536c1c72f14103fb15b3ebbe4168982d9520ff",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
@@ -44,7 +44,7 @@
         "rows": "R1–R4 → D2–D5",
         "columns": "C1–C3 → D6–D8"
       },
-      "projectSha256": "ed786f44e4a670431086290a6e3e78bf0d21eb23c5027a8f18e83454fa31cfd2",
+      "projectSha256": "9dc2fe1a3bc02956e02bdb892d3db50b4e7d672872470b395ee87e5395391ff7",
       "sourceSha256": "03b48b59570d505554dbc5f09832c77fdad40c506cae8914b747f0e9cef30df4",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
@@ -65,7 +65,7 @@
         "rows": "R1–R4 → D2–D5",
         "columns": "C1–C4 → D6–D9"
       },
-      "projectSha256": "04adc85e5e208258681198851f1e80f077b9abc51761bef1afe07fab81af9404",
+      "projectSha256": "8de264c5e3696a2c71bd483cc364c80391424c6b67a97fd247245b4b8eb133f9",
       "sourceSha256": "a0124b38860823ba5a1a14cd8144fcdac5e41b5df088b92e78e59ab99ff422ac",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",

@@ -43,6 +43,17 @@ import { CIRCUIT_SCHEMA, validateCircuit } from '../src/circuit-engine.mjs';
 import { DEFAULT_CIRCUIT } from '../src/default-circuit.mjs';
 import { pinTargetGuidance } from '../src/pin-target-guidance.mjs';
 import { RELEASE_VERSION } from '../src/release-metadata.mjs';
+import {
+  DEFAULT_KEYBOARD_SHORTCUTS,
+  KEYBOARD_SHORTCUT_ACTIONS,
+  KEYBOARD_SHORTCUT_STORAGE_KEY,
+  defaultKeyboardShortcuts,
+  keyboardEventShortcut,
+  keyboardShortcutLabel,
+  parseKeyboardShortcuts,
+  shortcutFromKeyboardEvent,
+  validateKeyboardShortcuts,
+} from '../src/keyboard-shortcuts.mjs';
 import { isRetryableCapacityCode, retryGuidanceFromResponse, retryMessage, retryResultFields } from '../src/retry-guidance.mjs';
 import {
   commandBuildRelevance,
@@ -621,6 +632,11 @@ const elements = Object.fromEntries([
   'canvas-select-mode', 'canvas-interact-mode',
   'selected-runtime-control', 'selected-runtime-control-name', 'selected-runtime-value',
   'selected-runtime-action', 'selected-runtime-range', 'runtime-shortcuts',
+  'shortcut-settings-open', 'shortcut-settings-dialog', 'shortcut-settings-close',
+  'shortcut-settings-reset', 'shortcut-settings-save', 'shortcut-settings-status',
+  'shortcut-key-build', 'shortcut-key-run', 'shortcut-key-pause', 'shortcut-key-reset',
+  'shortcut-key-stop', 'shortcut-key-sequence', 'shortcut-sequence-enabled',
+  'shortcut-sequence-status',
   'thermostat-experiment', 'thermostat-experiment-state', 'thermostat-run-tests',
   'thermostat-load-bad', 'thermostat-restore', 'thermostat-results', 'thermostat-experiment-message',
   'x39-failure-location', 'x39-failure-location-summary', 'x39-failure-source',
@@ -1037,6 +1053,9 @@ let canvasInteractionMode = 'select';
 let runtimeInteractionLocked = false;
 let activeKeyboardSwitch = null;
 let activeCanvasButton = null;
+let keyboardShortcuts = defaultKeyboardShortcuts();
+let keyboardShortcutDraft = defaultKeyboardShortcuts();
+let activeShortcutSequence = null;
 let thermostatExperimentRun = null;
 let thermostatExperimentResults = [];
 let thermostatFailureLocator = null;
@@ -15961,6 +15980,234 @@ function setSerialDock(open, { returnFocus = false } = {}) {
   requestAnimationFrame(() => requestAnimationFrame(drawCircuitWires));
 }
 
+const shortcutInputs = Object.freeze(Object.fromEntries(KEYBOARD_SHORTCUT_ACTIONS.map((action) => [
+  action, elements[`shortcutkey${action}`],
+])));
+const shortcutButtons = Object.freeze({
+  build: elements.quickbuild,
+  run: elements.quickrun,
+  pause: elements.quickpause,
+  reset: elements.quickreset,
+  stop: elements.quickstop,
+});
+
+function shortcutSettingsMessage(message, error = false) {
+  elements.shortcutsettingsstatus.textContent = message;
+  elements.shortcutsettingsstatus.dataset.error = String(error);
+}
+
+function sequenceStatus(message) {
+  elements.shortcutsequencestatus.textContent = message;
+}
+
+function applyKeyboardShortcutPresentation() {
+  for (const action of ['build', 'run', 'pause', 'reset', 'stop']) {
+    const binding = keyboardShortcuts.bindings[action];
+    const button = shortcutButtons[action];
+    if (binding) {
+      button.dataset.shortcut = binding;
+      button.setAttribute('aria-keyshortcuts', binding);
+    } else {
+      delete button.dataset.shortcut;
+      button.removeAttribute('aria-keyshortcuts');
+    }
+  }
+  for (const action of KEYBOARD_SHORTCUT_ACTIONS) {
+    const row = elements.runtimeshortcuts.querySelector(`[data-shortcut-label="${action}"]`);
+    if (!row) continue;
+    const binding = keyboardShortcuts.bindings[action];
+    row.querySelector('kbd').textContent = keyboardShortcutLabel(binding);
+    if (action === 'sequence') row.hidden = !keyboardShortcuts.sequence.enabled || !binding;
+  }
+}
+
+function renderKeyboardShortcutEditor() {
+  for (const action of KEYBOARD_SHORTCUT_ACTIONS) {
+    shortcutInputs[action].value = keyboardShortcutLabel(keyboardShortcutDraft.bindings[action]);
+  }
+  elements.shortcutsequenceenabled.checked = keyboardShortcutDraft.sequence.enabled;
+}
+
+function persistKeyboardShortcuts(value, message) {
+  const validated = validateKeyboardShortcuts(value);
+  if (!validated.ok) {
+    const detail = validated.code === 'SHORTCUT_CONFLICT'
+      ? `${validated.shortcut} is assigned to both ${validated.actions.join(' and ')}.`
+      : validated.code;
+    shortcutSettingsMessage(`Not saved: ${detail}`, true);
+    return false;
+  }
+  if (validated.value.sequence.enabled && !validated.value.bindings.sequence) {
+    shortcutSettingsMessage('Not saved: assign a key to the enabled Build → Run sequence.', true);
+    return false;
+  }
+  try { localStorage.setItem(KEYBOARD_SHORTCUT_STORAGE_KEY, JSON.stringify(validated.value)); }
+  catch {
+    shortcutSettingsMessage('Not saved: this browser denied local storage. Existing shortcuts are unchanged.', true);
+    return false;
+  }
+  keyboardShortcuts = structuredClone(validated.value);
+  keyboardShortcutDraft = structuredClone(validated.value);
+  applyKeyboardShortcutPresentation();
+  renderKeyboardShortcutEditor();
+  shortcutSettingsMessage(message);
+  sequenceStatus('Ready');
+  return true;
+}
+
+function loadKeyboardShortcuts() {
+  let source = null;
+  try { source = localStorage.getItem(KEYBOARD_SHORTCUT_STORAGE_KEY); } catch { /* defaults remain */ }
+  const parsed = parseKeyboardShortcuts(source);
+  keyboardShortcuts = parsed.ok ? structuredClone(parsed.value) : defaultKeyboardShortcuts();
+  keyboardShortcutDraft = structuredClone(keyboardShortcuts);
+  applyKeyboardShortcutPresentation();
+  renderKeyboardShortcutEditor();
+}
+
+function openKeyboardShortcutEditor() {
+  keyboardShortcutDraft = structuredClone(keyboardShortcuts);
+  renderKeyboardShortcutEditor();
+  shortcutSettingsMessage('Press a supported key in a field. Delete or Backspace clears that assignment.');
+  elements.shortcutsettingsdialog.showModal();
+  document.querySelector('#shortcut-settings-title').focus();
+}
+
+elements.shortcutsettingsopen.addEventListener('click', openKeyboardShortcutEditor);
+elements.shortcutsettingsclose.addEventListener('click', () => elements.shortcutsettingsdialog.close());
+elements.shortcutsettingsdialog.addEventListener('cancel', (event) => {
+  event.preventDefault(); elements.shortcutsettingsdialog.close();
+});
+for (const action of KEYBOARD_SHORTCUT_ACTIONS) {
+  shortcutInputs[action].addEventListener('keydown', (event) => {
+    event.preventDefault(); event.stopPropagation();
+    if (event.key === 'Escape') {
+      shortcutInputs[action].value = keyboardShortcutLabel(keyboardShortcutDraft.bindings[action]);
+      shortcutSettingsMessage('Key capture cancelled; the draft is unchanged.');
+      return;
+    }
+    const captured = shortcutFromKeyboardEvent(event);
+    if (!captured.ok) {
+      const detail = captured.code === 'SHORTCUT_AUTHORING_CONFLICT'
+        ? 'Plain R remains reserved for Rotate while editing.'
+        : 'Use one letter, number, F5, or the same key with Shift.';
+      shortcutSettingsMessage(`Not accepted: ${detail}`, true);
+      return;
+    }
+    keyboardShortcutDraft.bindings[action] = captured.value;
+    renderKeyboardShortcutEditor();
+    const validated = validateKeyboardShortcuts(keyboardShortcutDraft);
+    if (!validated.ok && validated.code === 'SHORTCUT_CONFLICT') {
+      shortcutSettingsMessage(`${validated.shortcut} conflicts between ${validated.actions.join(' and ')}. Change one before saving.`, true);
+    } else {
+      shortcutSettingsMessage(`${action} is set to ${keyboardShortcutLabel(captured.value)} in this unsaved draft.`);
+    }
+  });
+}
+elements.shortcutsequenceenabled.addEventListener('change', () => {
+  keyboardShortcutDraft.sequence.enabled = elements.shortcutsequenceenabled.checked;
+  shortcutSettingsMessage(keyboardShortcutDraft.sequence.enabled
+    ? 'Build → Run is enabled in this draft. Assign a non-conflicting sequence key.'
+    : 'Build → Run is disabled in this draft.');
+});
+elements.shortcutsettingssave.addEventListener('click', () => {
+  if (persistKeyboardShortcuts(keyboardShortcutDraft, 'Shortcuts saved locally in this browser.')) {
+    elements.shortcutsettingsdialog.close();
+  }
+});
+elements.shortcutsettingsreset.addEventListener('click', () => {
+  keyboardShortcutDraft = defaultKeyboardShortcuts();
+  persistKeyboardShortcuts(keyboardShortcutDraft, 'Default shortcuts restored locally.');
+});
+
+function cancelShortcutSequence(reason = 'cancelled') {
+  if (!activeShortcutSequence) return false;
+  activeShortcutSequence.controller.abort();
+  sequenceStatus(`Build → Run ${reason}. No remaining step will start.`);
+  return true;
+}
+
+function waitForShortcutBuild(signal, runInitiallyDisabled) {
+  return new Promise((resolve, reject) => {
+    const started = performance.now();
+    let sawBuildBusy = false;
+    const timer = setInterval(() => {
+      if (signal.aborted) {
+        clearInterval(timer); reject(Object.assign(new Error('SHORTCUT_SEQUENCE_CANCELLED'), { code: 'SHORTCUT_SEQUENCE_CANCELLED' })); return;
+      }
+      sawBuildBusy ||= elements.quickbuild.disabled || window.__M6_STATE__.buildState === 'building';
+      if ((sawBuildBusy || runInitiallyDisabled) && !elements.quickrun.disabled) {
+        clearInterval(timer); resolve(); return;
+      }
+      if (sawBuildBusy && !elements.quickbuild.disabled && window.__M6_STATE__.buildState !== 'building') {
+        clearInterval(timer); reject(Object.assign(new Error('SHORTCUT_SEQUENCE_BUILD_FAILED'), { code: 'SHORTCUT_SEQUENCE_BUILD_FAILED' })); return;
+      }
+      if (performance.now() - started > 35_000) {
+        clearInterval(timer); reject(Object.assign(new Error('SHORTCUT_SEQUENCE_TIMEOUT'), { code: 'SHORTCUT_SEQUENCE_TIMEOUT' }));
+      }
+    }, 40);
+  });
+}
+
+async function runShortcutSequence() {
+  if (!keyboardShortcuts.sequence.enabled || !keyboardShortcuts.bindings.sequence) {
+    sequenceStatus('Build → Run is not enabled or has no assigned key.'); return false;
+  }
+  if (activeShortcutSequence) {
+    sequenceStatus('Build → Run is already active. Stop or Esc cancels it.'); return false;
+  }
+  if (elements.quickbuild.disabled) {
+    sequenceStatus('Build → Run stopped: visible Build is unavailable.'); return false;
+  }
+  const sequence = { controller: new AbortController() };
+  activeShortcutSequence = sequence;
+  const runInitiallyDisabled = elements.quickrun.disabled;
+  sequenceStatus('Build → Run: Build started. Waiting for a successful current build…');
+  elements.quickbuild.click();
+  try {
+    await waitForShortcutBuild(sequence.controller.signal, runInitiallyDisabled);
+    if (sequence.controller.signal.aborted) throw Object.assign(new Error('SHORTCUT_SEQUENCE_CANCELLED'), { code: 'SHORTCUT_SEQUENCE_CANCELLED' });
+    if (elements.quickrun.disabled) throw Object.assign(new Error('SHORTCUT_SEQUENCE_RUN_DISABLED'), { code: 'SHORTCUT_SEQUENCE_RUN_DISABLED' });
+    sequenceStatus('Build → Run: build succeeded. Starting visible Run…');
+    elements.quickrun.click();
+    sequenceStatus('Build → Run completed. Run was started once.');
+    return true;
+  } catch (error) {
+    if (error.code !== 'SHORTCUT_SEQUENCE_CANCELLED') {
+      sequenceStatus(`Build → Run stopped: ${error.code ?? 'sequence error'}.`);
+    }
+    return false;
+  } finally {
+    if (activeShortcutSequence === sequence) activeShortcutSequence = null;
+  }
+}
+
+function executeKeyboardShortcutAction(action) {
+  if (action === 'sequence') { void runShortcutSequence(); return true; }
+  if (action === 'stop') {
+    const cancelled = cancelShortcutSequence('cancelled by Stop');
+    if (!elements.quickstop.disabled) elements.quickstop.click();
+    else if (!cancelled) sequenceStatus('Stop is currently unavailable.');
+    return true;
+  }
+  if (activeShortcutSequence) {
+    sequenceStatus('A Build → Run sequence is active. Use Stop or Esc before another shortcut.');
+    return true;
+  }
+  if (action === 'pause') {
+    if (!elements.quickpause.disabled) elements.quickpause.click();
+    else if (runtimeInteractionLocked && !elements.quickrun.disabled) elements.quickrun.click();
+    else sequenceStatus('Pause / resume is currently unavailable.');
+    return true;
+  }
+  const button = shortcutButtons[action];
+  if (!button || button.disabled) sequenceStatus(`${action[0].toUpperCase()}${action.slice(1)} is currently unavailable.`);
+  else button.click();
+  return true;
+}
+
+loadKeyboardShortcuts();
+
 function selectedRuntimeDescriptor() {
   const component = currentProject().circuit.components.find(({ id }) => id === selectedComponentId);
   if (!component) return null;
@@ -17256,6 +17503,7 @@ elements.quickreset.addEventListener('click', () => {
   else elements.reset.click();
 });
 elements.quickstop.addEventListener('click', () => {
+  cancelShortcutSequence('cancelled by visible Stop');
   if (selectedCompilerProfile === ESP32C3_PROFILE) void c3PublicWorkbench.dispose('C3 session discarded.');
   else if (selectedCompilerProfile === RP2040_PROFILE) picoPublicWorkbench.stop();
   else if (selectedCompilerProfile === STM32F429ZI_PROFILE) stm32PublicWorkbench.stop();
@@ -17367,28 +17615,20 @@ function cancelPendingWiring() {
 }
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape'
-      && (releaseActiveKeyboardSwitch('Escape') || cancelComponentDrag() || cancelRouteDrag()
+      && (cancelShortcutSequence('cancelled by Esc')
+        || releaseActiveKeyboardSwitch('Escape') || cancelComponentDrag() || cancelRouteDrag()
         || releaseCanvasButton('Escape') || cancelCanvasPan() || cancelPendingWiring())) {
     event.preventDefault(); return;
   }
   if (isTextEditingTarget(event.target)) return;
-  const plainKey = !event.ctrlKey && !event.metaKey && !event.altKey;
-  if (plainKey && event.key.toLowerCase() === 'b') {
+  const configuredShortcut = keyboardEventShortcut(event);
+  const configuredAction = KEYBOARD_SHORTCUT_ACTIONS.find((action) => (
+    keyboardShortcuts.bindings[action] === configuredShortcut
+    && (action !== 'sequence' || keyboardShortcuts.sequence.enabled)
+  ));
+  if (configuredAction) {
     event.preventDefault();
-    if (!elements.quickbuild.disabled) elements.quickbuild.click();
-    return;
-  }
-  if (event.key === 'F5') {
-    event.preventDefault();
-    if (event.shiftKey) {
-      if (!elements.quickstop.disabled) elements.quickstop.click();
-    } else if (!elements.quickrun.disabled) elements.quickrun.click();
-    return;
-  }
-  if (plainKey && event.key.toLowerCase() === 'p' && runtimeInteractionLocked) {
-    event.preventDefault();
-    if (!elements.quickpause.disabled) elements.quickpause.click();
-    else if (!elements.quickrun.disabled) elements.quickrun.click();
+    if (!event.repeat) executeKeyboardShortcutAction(configuredAction);
     return;
   }
   if (runtimeInteractionLocked || canvasInteractionMode === 'interact') {

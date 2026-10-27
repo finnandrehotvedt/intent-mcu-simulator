@@ -42,3 +42,12 @@
   Build, Run, Stop, Pause/resume, selected potentiometer adjustment and selected
   momentary-switch operation need tested keyboard paths that do not fire while
   the user is typing in an editor or value field.
+- User-configurable shortcuts must remain local, exact-schema data only. Show
+  each active binding beside its visible action, reject duplicate, browser and
+  authoring conflicts before save, keep tested defaults recoverable, and never
+  execute a global shortcut while focus is in source, search, Serial or any
+  editable/value field.
+- A shortcut sequence may invoke only named visible actions in its displayed
+  order. It must wait for success before advancing, honor disabled state, and
+  stop without later steps on failure, timeout, Stop or Esc. It cannot edit
+  source or wiring, approve dialogs, bypass guards or run in the background.

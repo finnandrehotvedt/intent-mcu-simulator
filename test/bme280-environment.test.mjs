@@ -38,6 +38,7 @@ import { componentSupportCell } from '../src/component-support-matrix.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK,
   PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_CONFIGURABLE_SHORTCUTS_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_LOCK,
   modelLibraryExecutionIdentity,
   modelLibraryMigrationPreview,
@@ -185,6 +186,20 @@ test('rc147 BME280 lock migrates data-only into visible runtime controls without
   'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const preview = modelLibraryMigrationPreview(
     PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_LOCK, CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(preview.ok, true);
+  assert.deepEqual(preview.semanticChanges, []);
+  assert.deepEqual(preview.rendererChanges, []);
+  assert.equal(preview.unchanged.length, 75);
+});
+
+test('rc148 visible-control lock migrates data-only into configurable shortcuts without model drift', () => {
+  assert.equal(resolveModelLibrary(PRE_CONFIGURABLE_SHORTCUTS_CURRENT_MODEL_LIBRARY_LOCK).role,
+    'pre-configurable-shortcuts-current-migration');
+  assert.equal(modelLibraryExecutionIdentity(
+    PRE_CONFIGURABLE_SHORTCUTS_CURRENT_MODEL_LIBRARY_LOCK).code,
+  'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const preview = modelLibraryMigrationPreview(
+    PRE_CONFIGURABLE_SHORTCUTS_CURRENT_MODEL_LIBRARY_LOCK, CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
   assert.deepEqual(preview.semanticChanges, []);
   assert.deepEqual(preview.rendererChanges, []);

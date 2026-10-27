@@ -47,6 +47,9 @@ const PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_CONFIGURABLE_SHORTCUTS_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_CONFIGURABLE_SHORTCUTS_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -256,6 +259,7 @@ const CURRENT_CLOSURE = Object.freeze([
   '../src/x46-usart-rx-contract.mjs',
   '../src/x47-runtime-transaction.mjs',
   '../src/x47-ui-integration.mjs', '../src/strict-json.mjs',
+  '../src/keyboard-shortcuts.mjs',
   '../src/x47-repeatable-inputs.mjs',
   '../src/component-appearance.mjs', '../src/project-v2.mjs', '../src/project-editor.mjs',
   '../src/lifecycle.mjs', '../staging/component-artwork.mjs',
@@ -384,16 +388,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-visible-runtime-controls.1-current',
-  'intent-mcu-model-bundle-current-visible-runtime-controls-1@63',
+  '2.0.0-configurable-shortcuts.1-current',
+  'intent-mcu-model-bundle-current-configurable-shortcuts-1@64',
   currentImplementation,
   {
-    priorVersion: PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_CONFIGURABLE_SHORTCUTS_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_CONFIGURABLE_SHORTCUTS_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
     semanticDisposition: 'retains every BME280 and prior component, electrical, protocol and runtime contract without semantic change',
-    presentationDisposition: 'keeps runtime controls visible, enters locked Interact automatically, exposes bounded selected-control input and returns to Edit through Stop',
-    baselineClosureDisposition: 'public rc147 head e2b263e and every earlier identity remain immutable migration-only anchors; this rc148 candidate is source and isolated-test only',
+    presentationDisposition: 'adds local data-only configurable primary shortcuts, visible active labels, conflict control, reset defaults and one bounded Build-to-Run sequence',
+    baselineClosureDisposition: 'rc148 commit 4c7f88d and every earlier identity remain immutable migration-only anchors; this P1 candidate is source and isolated-test only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -467,6 +471,7 @@ export const PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.free
 export const PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_CONFIGURABLE_SHORTCUTS_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CONFIGURABLE_SHORTCUTS_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

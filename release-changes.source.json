@@ -11,8 +11,8 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.147",
-    "current": "1.1.0-rc.148"
+    "previous": "1.1.0-rc.148",
+    "current": "1.1.0-rc.149"
   },
   "changes": [
     {
@@ -24,7 +24,7 @@
       "contracts": [
         "x59-four-profile-simple-advanced-view-v1"
       ],
-      "summary": "Keeps Build, Run, Pause, Reset and Stop visible; Run enters locked Interact automatically; selected AVR controls expose value bounds plus fixed keyboard operation; Stop returns to Edit."
+      "summary": "Adds visible local shortcut customization for Build, Run, Pause, Reset and Stop with conflict control, active key labels, default reset and one bounded Build-to-Run sequence that cancels on Stop, Esc, failure or timeout."
     }
   ],
   "migrationRequired": false,

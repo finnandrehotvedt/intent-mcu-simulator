@@ -3,9 +3,9 @@
   "modelLibrary": {
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
-    "version": "2.0.0-visible-runtime-controls.1-current",
-    "manifestSha256": "143881d384ba230c1ad227eb27468c24e0129c2240ea5f80f1844793ce408ec6",
-    "implementationSha256": "9c1cec8eb94665e75f945a3b2c08467576102b67eb1d100344acb1a1031a3313"
+    "version": "2.0.0-configurable-shortcuts.1-current",
+    "manifestSha256": "0e97bdcac9fe1dc20691bd22db3ddfd469875a355078a7113a1b13efdfdf176e",
+    "implementationSha256": "b114661f36c5ebf45e2da284cd1dad304c9489b1b3fee8926ecbfb0facdf76b3"
   },
   "requirementIds": [
     "CMP-007",
@@ -69,7 +69,7 @@
       },
       "limitations": "Raw polarized two-terminal authoring only. No nonlinear I-V solver, current, reverse leakage/breakdown event, Zener clamp/regulator action, recovery time, temperature, power dissipation, tolerance, Build/Run authority or physical equivalence.",
       "sourceSha256": "d763812e8b4b373e8e7638fb60fedca1d5a089c9b99934f5a37c6f107f245e1b",
-      "projectSha256": "61aa65fa72e9b0327ec467f425ee7af9f7ded6eac3a1107458039aa2a8d288c1",
+      "projectSha256": "7c2a1d70cff3a65a4c2a331a9cb7b47fec7226ec47b94379eef26f175b8c7a6c",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     },
     {
@@ -122,7 +122,7 @@
       },
       "limitations": "Raw polarized two-terminal authoring only. No nonlinear I-V solver, current, reverse leakage/breakdown event, Zener clamp/regulator action, recovery time, temperature, power dissipation, tolerance, Build/Run authority or physical equivalence.",
       "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
-      "projectSha256": "ad244b2ceebf43753e1d04f65ea7f4cceeeeb1cb59c2100a785251287eee22c1",
+      "projectSha256": "cb015e63960bb43296873aa3596837dc9a09f4f2d2ec72014cb705a55cf5d794",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     },
     {
@@ -175,7 +175,7 @@
       },
       "limitations": "Raw polarized two-terminal authoring only. No nonlinear I-V solver, current, reverse leakage/breakdown event, Zener clamp/regulator action, recovery time, temperature, power dissipation, tolerance, Build/Run authority or physical equivalence.",
       "sourceSha256": "d936fc50b2c874d6af660ece56abbb024c86e7b30462c403542b8d2166b85480",
-      "projectSha256": "491a633dc8062744e03420034a061816caee1d2153c86b930590a3084b54faa2",
+      "projectSha256": "a2a9ac9cdfe35b743417b3c85b190c338c1065adb317d2c15a94091dce7e5f62",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     },
     {
@@ -228,7 +228,7 @@
       },
       "limitations": "Raw polarized two-terminal authoring only. No nonlinear I-V solver, current, reverse leakage/breakdown event, Zener clamp/regulator action, recovery time, temperature, power dissipation, tolerance, Build/Run authority or physical equivalence.",
       "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
-      "projectSha256": "d98399676eca2e9a05031e931a307ededcc22a17664ebfa18f2f4fdf2e20208b",
+      "projectSha256": "0090620af425de8c5a86db4d3e920c5fc01bb8bac460e79b2c4b046aad9ed294",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     }
   ]

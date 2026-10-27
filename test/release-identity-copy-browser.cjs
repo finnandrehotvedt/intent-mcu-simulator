@@ -21,14 +21,14 @@ let browser;
   assert.equal(response?.status(), 200);
   await page.waitForFunction(() => window.__M11_READY__ === true);
   assert.match(await page.locator('main > footer').textContent(), /Intent MCU Simulator 1\.1\.0-rc\.148 source release/u);
-  assert.equal(await page.locator('#release-version').textContent(), '1.1.0-rc.148');
+  assert.equal(await page.locator('#release-version').textContent(), '1.1.0-rc.149');
   assert.equal(await page.locator('#example-select option').count(), 24);
   const delta = await page.evaluate(async () => {
     const result = await fetch('/release-changes.json', { cache: 'no-store', credentials: 'omit' });
     return { status: result.status, value: await result.json() };
   });
   assert.equal(delta.status, 200);
-  assert.deepEqual(delta.value.release, { previous: '1.1.0-rc.147', current: '1.1.0-rc.148' });
+  assert.deepEqual(delta.value.release, { previous: '1.1.0-rc.148', current: '1.1.0-rc.149' });
   assert.deepEqual(delta.value.changes.map(({ id, classification }) => ({ id, classification })),
     [{ id: 'X59', classification: 'changed' }]);
   if (screenshot) {
@@ -37,7 +37,7 @@ let browser;
   }
   assert.deepEqual(errors, []);
   assert.equal((await context.cookies()).length, 0);
-  console.log(JSON.stringify({ result: 'pass', version: '1.1.0-rc.148', avrChooserChoices: 24,
+  console.log(JSON.stringify({ result: 'pass', version: '1.1.0-rc.149', avrChooserChoices: 24,
     release: delta.value.release, changes: delta.value.changes.map(({ id }) => id), screenshot }));
 })().catch((error) => { console.error(error.stack || error); process.exitCode = 1; })
   .finally(async () => { if (browser) await browser.close(); });

@@ -2,6 +2,20 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.149 — 2026-10-27
+
+- Adds a visible local shortcut editor for Build, Run, Pause/Resume, Reset and
+  Stop with active key labels beside the primary controls.
+- Rejects duplicate bindings, browser modifiers, authoring conflicts,
+  unsupported keys and malformed stored data without changing active settings.
+- Keeps shortcuts inactive in source, search, Serial and value inputs and
+  stores only exact-schema data in the current browser.
+- Adds default reset and one opt-in Build → successful current build → Run
+  sequence that stops on disabled actions, failure, timeout, Stop or Esc.
+- Preserves rc148 runtime locking and visible primary controls.
+- This is a source-only candidate; no merge, deploy, publication or sensor
+  promotion is included.
+
 ## 1.1.0-rc.148 — 2026-10-27
 
 - Keeps Build, Run, Pause/Resume, Reset and Stop visible in both Simple and
