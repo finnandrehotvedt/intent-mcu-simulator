@@ -45,7 +45,7 @@
         <details id="workbench-more" class="workbench-more"><summary>More</summary><nav id="workbench-popup-controls" class="workbench-popup-controls" aria-label="Open secondary workbench tools">
           <button id="top-get-started" class="workbench-get-started" type="button" aria-haspopup="dialog" aria-controls="walkthrough">Get started</button>
           <button id="project-files-open" type="button" aria-haspopup="dialog" aria-controls="workbench-project-dialog">Project &amp; files</button>
-          <button id="toggle-catalog" type="button" aria-haspopup="dialog" aria-controls="workbench-parts-dialog">Parts</button>
+          <button id="toggle-catalog" type="button" aria-controls="simple-parts-drawer" aria-expanded="false">Parts</button>
           <button id="toggle-inspector" type="button" aria-haspopup="dialog" aria-controls="workbench-inspector-dialog">Inspector</button>
           <button id="firmware-open" type="button" aria-haspopup="dialog" aria-controls="workbench-firmware-dialog">Firmware</button>
           <button id="brief-tests-open" type="button" aria-haspopup="dialog" aria-controls="workbench-brief-dialog">Brief &amp; tests</button>
@@ -61,8 +61,8 @@
         <p id="accessible-svg-status" class="build-list-status" role="status">Accessible SVG: circuit, named pins, release and model limits; no current measurements.</p>
       </div>
       <section id="active-canvas-stage" class="active-canvas-stage" aria-label="Active controller circuit build surface">
-        <aside id="simple-parts-drawer" class="simple-parts-drawer" aria-labelledby="simple-parts-title">
-          <header><div><p class="eyebrow">PARTS</p><h3 id="simple-parts-title" tabindex="-1">Add a part</h3></div><span id="simple-parts-profile">Current controller</span></header>
+        <aside id="simple-parts-drawer" class="simple-parts-drawer" aria-labelledby="simple-parts-title" aria-hidden="true">
+          <header><div><p class="eyebrow">PARTS</p><h3 id="simple-parts-title" tabindex="-1">Add parts</h3></div><div class="simple-parts-heading-actions"><span id="simple-parts-profile">Current controller</span><button id="simple-parts-close" type="button" aria-label="Close parts drawer">Close</button></div></header>
           <div id="simple-parts-mount" class="simple-parts-mount"></div>
           <footer><button id="simple-parts-edit" type="button">Edit selected</button><button id="simple-parts-undo" type="button" disabled>Undo</button><button id="simple-parts-save" type="button">Save copy</button></footer>
           <p id="simple-parts-status" role="status">Drag a supported card to the canvas, or activate its Add button.</p>
@@ -405,8 +405,11 @@
         <section class="pico-circuit-pane" aria-label="Editable validated Pico GPIO0 circuit">
           <header class="pico-editor-heading"><div><strong>Editable circuit</strong><small>Named GP0 pin 1 and GND pin 3 anchors</small></div><span id="pico-circuit-selection">Nothing selected</span></header>
           <section class="bounded-parts-panel" aria-labelledby="pico-parts-title">
-            <header><div><strong id="pico-parts-title">Supported parts</strong><small>Filtered for this bounded Pico profile</small></div><span>3.3 V model</span></header>
-            <div id="pico-parts-list" class="bounded-parts-list" role="list"></div>
+            <header><div><strong id="pico-parts-title">Add parts</strong><small>Supported for this bounded Pico profile</small></div><span>3.3 V model</span></header>
+            <label class="bounded-parts-search-label" for="pico-parts-search">Search name or function</label>
+            <input id="pico-parts-search" class="bounded-parts-search" type="search" autocomplete="off" placeholder="resistor, button, ground…">
+            <p id="pico-parts-count" class="catalog-count" aria-live="polite">0 parts</p>
+            <div id="pico-parts-list" class="bounded-parts-list catalog-list" role="list"></div>
             <div id="pico-part-properties" class="bounded-part-properties" aria-live="polite"></div>
           </section>
           <div class="pico-circuit-actions" aria-label="Pico circuit editor controls">
@@ -489,8 +492,11 @@
         <section class="c3-circuit-pane" aria-label="Project-owned ESP32-C3 GPIO2 LED model">
           <header class="pico-editor-heading"><div><strong>Editable project-model circuit</strong><small>Named GPIO2 J1 pin 4 and GND J1 pin 6 anchors</small></div><span id="c3-circuit-selection">Nothing selected</span></header>
           <section class="bounded-parts-panel" aria-labelledby="c3-parts-title">
-            <header><div><strong id="c3-parts-title">Supported parts</strong><small>Filtered for this bounded ESP32-C3 profile</small></div><span>3.3 V model</span></header>
-            <div id="c3-parts-list" class="bounded-parts-list" role="list"></div>
+            <header><div><strong id="c3-parts-title">Add parts</strong><small>Supported for this bounded ESP32-C3 profile</small></div><span>3.3 V model</span></header>
+            <label class="bounded-parts-search-label" for="c3-parts-search">Search name or function</label>
+            <input id="c3-parts-search" class="bounded-parts-search" type="search" autocomplete="off" placeholder="resistor, button, ground…">
+            <p id="c3-parts-count" class="catalog-count" aria-live="polite">0 parts</p>
+            <div id="c3-parts-list" class="bounded-parts-list catalog-list" role="list"></div>
             <div id="c3-part-properties" class="bounded-part-properties" aria-live="polite"></div>
           </section>
           <div class="c3-circuit-actions" aria-label="ESP32-C3 circuit editing controls">
@@ -575,8 +581,11 @@
         <section class="stm32-circuit-pane" aria-label="Named STM32F429ZI PB0 teaching circuit">
           <header class="pico-editor-heading"><div><strong>Editable ideal teaching circuit</strong><small>Named PB0 CN11 pin 34 and GND CN11 pin 19 anchors</small></div><span id="stm32-circuit-selection">Nothing selected</span></header>
           <section class="bounded-parts-panel" aria-labelledby="stm32-parts-title">
-            <header><div><strong id="stm32-parts-title">Supported parts</strong><small>Filtered for this bounded STM32 profile</small></div><span>3.3 V model</span></header>
-            <div id="stm32-parts-list" class="bounded-parts-list" role="list"></div>
+            <header><div><strong id="stm32-parts-title">Add parts</strong><small>Supported for this bounded STM32 profile</small></div><span>3.3 V model</span></header>
+            <label class="bounded-parts-search-label" for="stm32-parts-search">Search name or function</label>
+            <input id="stm32-parts-search" class="bounded-parts-search" type="search" autocomplete="off" placeholder="resistor, button, ground…">
+            <p id="stm32-parts-count" class="catalog-count" aria-live="polite">0 parts</p>
+            <div id="stm32-parts-list" class="bounded-parts-list catalog-list" role="list"></div>
             <div id="stm32-part-properties" class="bounded-part-properties" aria-live="polite"></div>
           </section>
           <div class="stm32-circuit-actions" aria-label="STM32 teaching circuit editing controls">
@@ -618,6 +627,11 @@
         <p class="eyebrow">1 · COMPONENTS</p><h2 id="catalog-title">Add parts</h2>
         <label for="catalog-search">Search name, alias, function or part number</label><input id="catalog-search" type="search" autocomplete="off" placeholder="GPIO, 328P, indicator…">
         <p id="catalog-count" class="catalog-count" aria-live="polite">0 parts</p>
+        <section id="catalog-release-feature" class="catalog-release-feature" aria-labelledby="catalog-release-feature-title">
+          <span id="catalog-release-feature-artwork" class="catalog-release-feature-artwork" aria-hidden="true"></span>
+          <span class="catalog-release-feature-copy"><span class="support-badge">NEW EXAMPLE</span><strong id="catalog-release-feature-title">Traffic light module</strong><small>Open the complete red, red+amber, green and amber AVR example.</small></span>
+          <button id="catalog-release-feature-open" type="button">Open example</button>
+        </section>
         <div id="catalog-list" class="catalog-list"></div>
         <div id="catalog-empty" class="catalog-empty" hidden><strong>No parts match these filters.</strong><span>Clear the filters, or broaden supply, pin-limit, support, interface, or category choices.</span><button id="catalog-clear" type="button">Clear catalogue filters</button></div>
         <nav class="catalog-pagination" aria-label="Catalogue result pages">

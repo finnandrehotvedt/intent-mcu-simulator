@@ -33,7 +33,7 @@ test('four real profiles declare the same shared workbench surfaces', () => {
   assert.equal(new Set(adapters.map(({ groupId }) => groupId)).size, 4);
 });
 
-test('top workbench exposes exactly seven accessible popup surfaces around one real active canvas', async () => {
+test('top workbench exposes one parts drawer and six modal surfaces around one real active canvas', async () => {
   assert.deepEqual(SHARED_WORKBENCH_DIALOGS, [
     'project', 'parts', 'inspector', 'firmware', 'brief', 'instruments', 'help',
   ]);
@@ -46,9 +46,16 @@ test('top workbench exposes exactly seven accessible popup surfaces around one r
   assert.match(html, /id="active-canvas-mount"/);
   for (const name of SHARED_WORKBENCH_DIALOGS) {
     assert.match(html, new RegExp(`id="workbench-${name}-dialog"`));
-    assert.match(html, new RegExp(`aria-controls="workbench-${name}-dialog"`));
+    assert.match(html, name === 'parts'
+      ? /id="toggle-catalog"[^>]+aria-controls="simple-parts-drawer"/
+      : new RegExp(`aria-controls="workbench-${name}-dialog"`));
     assert.match(html, new RegExp(`data-workbench-popup-mount="${name}"`));
   }
+  assert.match(html, /id="simple-parts-drawer"[^>]+aria-hidden="true"/);
+  assert.match(shell, /openPartsDrawer/);
+  assert.match(shell, /closePartsDrawer/);
+  assert.match(css, /\.simple-parts-drawer\.is-open/);
+  assert.match(css, /#toggle-catalog\[aria-expanded="true"\]/);
   assert.match(shell, /showModal\(\)/);
   assert.match(shell, /event\.key !== 'Tab'/);
   assert.match(shell, /addEventListener\('cancel'/);

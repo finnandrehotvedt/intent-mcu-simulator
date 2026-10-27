@@ -11,20 +11,20 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.139",
-    "current": "1.1.0-rc.140"
+    "previous": "1.1.0-rc.140",
+    "current": "1.1.0-rc.141"
   },
   "changes": [
     {
-      "id": "X72",
-      "classification": "additive",
+      "id": "X59",
+      "classification": "changed",
       "capabilities": [
-        "intent-mcu-example-progression@1"
+        "intent-mcu-shared-workbench-view@1"
       ],
       "contracts": [
-        "x72-example-progression-v1"
+        "x59-four-profile-simple-advanced-view-v1"
       ],
-      "summary": "Adds 20 AVR chooser choices—an empty circuit plus 19 ready-made examples—and extends the guided path with trimmer, power-reference, traffic-light and four-digit-display lessons while preserving project bytes and model limits."
+      "summary": "Replaces the permanent component column with one left-side sliding Parts drawer across all four controllers, aligns bounded profile cards with AVR, and features the traffic-light example without changing project semantics."
     }
   ],
   "migrationRequired": false,

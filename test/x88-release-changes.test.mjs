@@ -28,9 +28,9 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 binds the expanded example progression release to coherent rc140 bytes', async () => {
+test('X88 binds the shared sliding component drawer release to coherent rc141 bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.140');
+  assert.equal(release.version, '1.1.0-rc.141');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
@@ -38,12 +38,12 @@ test('X88 binds the expanded example progression release to coherent rc140 bytes
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
   assert(registry.ids.includes('X92'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.139', current: '1.1.0-rc.140' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.140', current: '1.1.0-rc.141' });
   assert.deepEqual(value.changes, [
     {
-      id: 'X72', classification: 'additive', capabilities: ['intent-mcu-example-progression@1'],
-      contracts: ['x72-example-progression-v1'],
-      summary: 'Adds 20 AVR chooser choices—an empty circuit plus 19 ready-made examples—and extends the guided path with trimmer, power-reference, traffic-light and four-digit-display lessons while preserving project bytes and model limits.',
+      id: 'X59', classification: 'changed', capabilities: ['intent-mcu-shared-workbench-view@1'],
+      contracts: ['x59-four-profile-simple-advanced-view-v1'],
+      summary: 'Replaces the permanent component column with one left-side sliding Parts drawer across all four controllers, aligns bounded profile cards with AVR, and features the traffic-light example without changing project semantics.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -106,7 +106,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.140');
+  assert.equal(discovery.identity.version, '1.1.0-rc.141');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

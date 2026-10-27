@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.141 — 2026-10-27
+
+- Replaces the permanent component column with one left-side Parts drawer that
+  opens and closes like Serial Monitor and remains the same shell across AVR,
+  Pico, ESP32-C3 and STM32.
+- Gives the three bounded 3.3 V profiles the same searchable card treatment as
+  AVR while retaining their exact supported, partial and authoring-only limits.
+- Features the traffic-light module and direct example action at the top of the
+  AVR drawer, and moves the traffic-light lesson directly behind Blink in the
+  example chooser.
+- Preserves authored project data, runtime authority, controller boundaries and
+  the rc.140 model catalogue; this release changes presentation and discovery.
+
 ## 1.1.0-rc.140 — 2026-10-27
 
 - Expands the AVR chooser to 20 visible choices: one empty circuit and 19

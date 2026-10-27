@@ -1,6 +1,6 @@
 {
   "name": "intent-mcu-simulator",
-  "version": "1.1.0-rc.140",
+  "version": "1.1.0-rc.141",
   "private": true,
   "description": "Original browser-based microcontroller learning environment source",
   "license": "Apache-2.0",
@@ -49,6 +49,7 @@
     "test:rc139:browser": "node test/three-profile-circuit-authoring-browser.cjs",
     "test:rc139:compatibility:browser": "node test/rc139-export-lock-compatibility-browser.cjs",
     "test:top-layout:browser": "node test/top-workbench-popup-layout-browser.cjs",
+    "test:component-drawer:browser": "node test/component-drawer-parity-browser.cjs",
     "test:runtime-controls-ui:browser": "node test/runtime-controls-serial-ui-browser.cjs",
     "test:w06-w07": "node --test --test-concurrency=1 test/candidate-branch-transactions.test.mjs test/existing-graph-edit-safety.test.mjs",
     "test:w08": "node --test --test-concurrency=1 test/candidate-placement-duplication.test.mjs test/existing-graph-edit-safety.test.mjs test/circuit-model.test.mjs",

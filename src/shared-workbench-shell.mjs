@@ -1725,6 +1725,9 @@ export function mountSharedWorkbenchShell(document) {
     if (!dialog || !mount || !opener) throw new Error('SHARED_WORKBENCH_DIALOG_MISSING:' + name);
     return [name, { dialog, mount, opener }];
   }));
+  // Parts is a persistent edge tab, parallel to Serial Monitor. It must stay
+  // reachable when the compact More disclosure is closed.
+  document.body.append(popupByName.get('parts').opener);
   const common = {
     recovery: document.querySelector('#browser-draft-recovery'),
     history: document.querySelector('#local-history'),
@@ -1796,6 +1799,8 @@ export function mountSharedWorkbenchShell(document) {
   let activeCanvas = null;
   let activePopup = null;
   let returnFocus = null;
+  let partsDrawerOpen = false;
+  let partsReturnFocus = null;
   let viewMode = 'simple';
   const x42 = installX42TriggerCapture(document, () => activeProfile);
   const x43 = installX43AvrObservationProfile(document, () => activeProfile);
@@ -1814,14 +1819,16 @@ export function mountSharedWorkbenchShell(document) {
   const simplePartsDrawer = document.querySelector('#simple-parts-drawer');
   const simplePartsMount = document.querySelector('#simple-parts-mount');
   const simplePartsProfile = document.querySelector('#simple-parts-profile');
+  const simplePartsClose = document.querySelector('#simple-parts-close');
   const simplePartsEdit = document.querySelector('#simple-parts-edit');
   const simplePartsUndo = document.querySelector('#simple-parts-undo');
   const simplePartsSave = document.querySelector('#simple-parts-save');
   if (Object.values(viewButtons).some((node) => !node) || !viewStatus || !more || !popupControls
-      || !simplePartsDrawer || !simplePartsMount || !simplePartsProfile || !simplePartsEdit
+      || !simplePartsDrawer || !simplePartsMount || !simplePartsProfile || !simplePartsClose || !simplePartsEdit
       || !simplePartsUndo || !simplePartsSave) {
     throw new Error('SHARED_WORKBENCH_VIEW_SWITCH_MISSING');
   }
+  document.body.append(simplePartsDrawer);
   const simpleActionSelectors = Object.freeze({
     [AVR_PROFILE]: { undo: '#undo', save: '#project-save' },
     [RP2040_PROFILE]: { undo: '#pico-undo', save: '#pico-save' },
@@ -1867,14 +1874,47 @@ export function mountSharedWorkbenchShell(document) {
     });
     return true;
   };
+  const closePartsDrawer = ({ restoreFocus = true } = {}) => {
+    if (!partsDrawerOpen) return false;
+    const opener = popupByName.get('parts').opener;
+    const focus = partsReturnFocus;
+    const target = focus?.isConnected && !focus.hidden ? focus : opener;
+    if (simplePartsDrawer.contains(document.activeElement)) {
+      (restoreFocus ? target : opener)?.focus({ preventScroll: true });
+    }
+    partsDrawerOpen = false;
+    partsReturnFocus = null;
+    simplePartsDrawer.classList.remove('is-open');
+    simplePartsDrawer.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('parts-drawer-open');
+    opener.setAttribute('aria-expanded', 'false');
+    if (restoreFocus && document.activeElement !== target) {
+      queueMicrotask(() => target?.focus({ preventScroll: true }));
+    }
+    return true;
+  };
+  const openPartsDrawer = (requestedOpener = null, { initialFocus = true } = {}) => {
+    if (activePopup) closePopup({ restoreFocus: false });
+    const opener = popupByName.get('parts').opener;
+    partsDrawerOpen = true;
+    partsReturnFocus = requestedOpener ?? document.activeElement ?? opener;
+    simplePartsDrawer.classList.add('is-open');
+    simplePartsDrawer.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('parts-drawer-open');
+    opener.setAttribute('aria-expanded', 'true');
+    if (initialFocus) queueMicrotask(() => {
+      simplePartsDrawer.querySelector('input:not([disabled]), button:not([disabled]), [tabindex="0"]')
+        ?.focus({ preventScroll: true });
+    });
+    return true;
+  };
   const openPopup = (name, requestedOpener = null, { initialFocus = true } = {}) => {
     if (!SHARED_WORKBENCH_DIALOGS.includes(name)) throw new Error('SHARED_WORKBENCH_DIALOG_UNKNOWN');
     if (viewMode === 'simple' && name === 'brief') return false;
-    if (viewMode === 'simple' && name === 'parts') {
-      simplePartsDrawer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      queueMicrotask(() => simplePartsDrawer.querySelector('input, button:not([disabled]), [tabindex="0"]')?.focus({ preventScroll: true }));
-      return true;
-    }
+    if (name === 'parts') return partsDrawerOpen
+      ? closePartsDrawer()
+      : openPartsDrawer(requestedOpener, { initialFocus });
+    if (partsDrawerOpen) closePartsDrawer({ restoreFocus: false });
     if (activePopup) closePopup({ restoreFocus: false });
     const popup = popupByName.get(name);
     for (const node of profileNodes(activeProfile)[name]) popup.mount.append(node);
@@ -1907,13 +1947,7 @@ export function mountSharedWorkbenchShell(document) {
     simplePartsSave.disabled = !save || save.disabled;
   };
   const mountSimpleParts = () => {
-    if (viewMode !== 'simple') {
-      for (const node of [...simplePartsMount.children]) parking.append(node);
-      simplePartsDrawer.hidden = true;
-      return;
-    }
     if (activePopup === 'parts') closePopup({ restoreFocus: false });
-    simplePartsDrawer.hidden = false;
     const activeParts = new Set(profileNodes(activeProfile).parts);
     for (const node of [...simplePartsMount.children]) if (!activeParts.has(node)) parking.append(node);
     for (const node of activeParts) simplePartsMount.append(node);
@@ -1925,6 +1959,13 @@ export function mountSharedWorkbenchShell(document) {
   simplePartsUndo.addEventListener('click', () => document.querySelector(simpleActionSelectors[activeProfile].undo)?.click());
   simplePartsSave.addEventListener('click', () => document.querySelector(simpleActionSelectors[activeProfile].save)?.click());
   simplePartsEdit.addEventListener('click', () => document.querySelector('#toggle-inspector')?.click());
+  simplePartsClose.addEventListener('click', () => closePartsDrawer());
+  simplePartsDrawer.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    event.stopPropagation();
+    closePartsDrawer();
+  });
   const SimpleActionObserver = document.defaultView?.MutationObserver;
   const simpleActionObserver = SimpleActionObserver ? new SimpleActionObserver(syncSimplePartsActions) : null;
   if (simpleActionObserver) {
@@ -2065,6 +2106,7 @@ export function mountSharedWorkbenchShell(document) {
       openPopup(surface, popupByName.get(surface).opener);
       return false;
     },
+    closeParts(options = {}) { return closePartsDrawer(options); },
     openDialog(name, opener = null, options = {}) { return openPopup(name, opener, options); },
     closeDialog(options = {}) { return closePopup(options); },
     openSerial() {

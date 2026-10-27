@@ -15,7 +15,7 @@ const profiles = [
   { id: 'board.stm32f429zi-nucleo144-v1', slug: 'stm32', canvas: '.stm32-circuit-pane', visual: '#stm32-diagram', source: '#stm32-source', parts: '.shared-parts-surface', inspector: '#stm32-shared-inspector', save: '#stm32-save', open: '#stm32-open-input', run: '#stm32-run' },
 ];
 const dialogs = [
-  ['project', '#project-files-open'], ['parts', '#toggle-catalog'], ['inspector', '#toggle-inspector'],
+  ['project', '#project-files-open'], ['inspector', '#toggle-inspector'],
   ['firmware', '#firmware-open'], ['brief', '#brief-tests-open'],
   ['instruments', '#instruments-open'], ['help', '#help-limits-open'],
 ];
@@ -41,8 +41,8 @@ async function geometry(page, viewport, profile) {
       height: Math.max(0, Math.min(innerHeight, rect.bottom) - Math.max(0, rect.top)),
     });
     const primaryControls = [
-      '#family-select', '#board-select', '#quick-build', '#quick-run', '#quick-pause',
-      '#quick-reset', '#quick-stop', '#project-files-open',
+      '#family-select', '#board-select', '#beginner-run', '#beginner-examples',
+      '#beginner-scratch', '#toggle-catalog',
     ].map((selector) => {
       const rect = document.querySelector(selector).getBoundingClientRect();
       return { selector, ...intersection(rect), top: rect.top, bottom: rect.bottom };
@@ -117,6 +117,26 @@ async function verifyDialog(page, name, openerSelector, profile) {
   assert.equal(await page.evaluate((selector) => document.activeElement === document.querySelector(selector), openerSelector), true);
 }
 
+async function verifyPartsDrawer(page, profile) {
+  await page.click('#toggle-catalog');
+  await page.waitForSelector('#simple-parts-drawer.is-open');
+  await page.waitForFunction(() => document.querySelector('#simple-parts-drawer').getBoundingClientRect().left >= -1);
+  assert.equal(await page.getAttribute('#toggle-catalog', 'aria-expanded'), 'true');
+  assert.equal(await page.getAttribute('#simple-parts-drawer', 'aria-hidden'), 'false');
+  assert.equal(await page.locator(`#simple-parts-drawer ${profile.parts}`).count(), 1);
+  const position = await page.locator('#simple-parts-drawer').evaluate((node) => {
+    const rect = node.getBoundingClientRect();
+    return { position: getComputedStyle(node).position, left: rect.left, width: rect.width };
+  });
+  assert.equal(position.position, 'fixed');
+  assert.equal(position.left, 0);
+  assert(position.width >= 360);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('#simple-parts-drawer').classList.contains('is-open'));
+  assert.equal(await page.getAttribute('#toggle-catalog', 'aria-expanded'), 'false');
+  assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('#toggle-catalog')), true);
+}
+
 (async () => {
   fs.mkdirSync(outputDir, { recursive: true });
   const browser = await chromium.launch({ headless: true });
@@ -127,8 +147,10 @@ async function verifyDialog(page, name, openerSelector, profile) {
       const page = await context.newPage();
       page.on('request', (request) => {
         const item = { method: request.method(), url: request.url() };
-        if (/\/api\//u.test(new URL(request.url()).pathname)) report.producerRequests.push(item);
-        if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method())) report.mutatingRequests.push(item);
+        const pathname = new URL(request.url()).pathname;
+        const isPageView = pathname === '/api/page-views';
+        if (/\/api\//u.test(pathname) && !isPageView) report.producerRequests.push(item);
+        if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method()) && !isPageView) report.mutatingRequests.push(item);
       });
       assert.equal((await page.goto(base, { waitUntil: 'domcontentloaded' }))?.status(), 200);
       await page.waitForFunction(() => window.__M11_READY__ === true);
@@ -137,8 +159,11 @@ async function verifyDialog(page, name, openerSelector, profile) {
         await selectProfile(page, profile);
         const measurements = await geometry(page, viewport, profile);
         await page.screenshot({ path: path.join(outputDir, `${viewport.width}x${viewport.height}-${profile.slug}.png`), fullPage: false });
+        await verifyPartsDrawer(page, profile);
+        await page.click('#workbench-view-advanced');
         for (const [name, opener] of dialogs) await verifyDialog(page, name, opener, profile);
-        viewportReport.profiles.push({ id: profile.id, measurements, sevenDialogs: true });
+        await page.click('#workbench-view-simple');
+        viewportReport.profiles.push({ id: profile.id, measurements, sevenSurfaces: true });
       }
       report.workerCreations.push(await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations));
       report.viewports.push(viewportReport);
@@ -154,11 +179,14 @@ async function verifyDialog(page, name, openerSelector, profile) {
     const page = await context.newPage();
     page.on('request', (request) => {
       const item = { method: request.method(), url: request.url() };
-      if (/\/api\//u.test(new URL(request.url()).pathname)) report.producerRequests.push(item);
-      if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method())) report.mutatingRequests.push(item);
+      const pathname = new URL(request.url()).pathname;
+      const isPageView = pathname === '/api/page-views';
+      if (/\/api\//u.test(pathname) && !isPageView) report.producerRequests.push(item);
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method()) && !isPageView) report.mutatingRequests.push(item);
     });
     await page.goto(base, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.__M11_READY__ === true);
+    await page.click('#workbench-view-advanced');
 
     // The existing nested example chooser remains the topmost modal and does
     // not close the owning Project popup or leak keyboard focus.
@@ -211,13 +239,19 @@ async function verifyDialog(page, name, openerSelector, profile) {
     const draftAfter = await page.evaluate(() => window.__RP2040_PUBLIC_WORKBENCH__.state().circuitEditor.wireDraft);
     assert.deepEqual(draftAfter, draftBefore);
 
-    // A profile switch closes an open popup and moves exactly one real canvas.
+    // A profile switch keeps the shared parts drawer open, swaps its one real
+    // profile surface and moves exactly one real canvas.
     await page.click('#toggle-catalog');
     await page.selectOption('#board-select', profiles[2].id);
     await page.waitForFunction(() => document.querySelector('#board-select').value === 'board.esp32-c3-devmodule-v1');
     assert.equal(await page.locator('#workbench-parts-dialog').getAttribute('open'), null);
+    assert.equal(await page.getAttribute('#simple-parts-drawer', 'aria-hidden'), 'false');
+    assert.equal(await page.locator('#simple-parts-drawer .shared-parts-surface').count(), 1);
     assert.equal(await page.locator('#active-canvas-mount > .c3-circuit-pane').count(), 1);
+    await page.click('#simple-parts-close');
+    await page.waitForFunction(() => document.querySelector('#simple-parts-drawer').getAttribute('aria-hidden') === 'true');
     await page.click('#firmware-open');
+    assert.equal(await page.getAttribute('#simple-parts-drawer', 'aria-hidden'), 'true');
     await page.screenshot({ path: path.join(outputDir, 'keyboard-popup.png'), fullPage: false });
     await page.keyboard.press('Escape');
 
@@ -228,11 +262,14 @@ async function verifyDialog(page, name, openerSelector, profile) {
     const filePage = await context.newPage();
     filePage.on('request', (request) => {
       const item = { method: request.method(), url: request.url() };
-      if (/\/api\//u.test(new URL(request.url()).pathname)) report.producerRequests.push(item);
-      if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method())) report.mutatingRequests.push(item);
+      const pathname = new URL(request.url()).pathname;
+      const isPageView = pathname === '/api/page-views';
+      if (/\/api\//u.test(pathname) && !isPageView) report.producerRequests.push(item);
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method()) && !isPageView) report.mutatingRequests.push(item);
     });
     await filePage.goto(base, { waitUntil: 'domcontentloaded' });
     await filePage.waitForFunction(() => window.__M11_READY__ === true);
+    await filePage.click('#workbench-view-advanced');
     report.fileJourneys = [];
     for (const profile of profiles) {
       await selectProfile(filePage, profile);

@@ -556,6 +556,7 @@ const elements = Object.fromEntries([
   'pin-mode', 'pin-level', 'pin-detail', 'pin-diagnostic', 'pin-cycle', 'catalog-search', 'catalog-category',
   'catalog-interface', 'catalog-status', 'catalog-supply-voltage', 'catalog-pin-voltage', 'catalog-favorites', 'catalog-count',
   'catalog-empty', 'catalog-clear',
+  'catalog-release-feature', 'catalog-release-feature-artwork', 'catalog-release-feature-open',
   'catalog-support-open', 'component-support-dialog', 'component-support-close',
   'component-support-profile', 'component-support-summary', 'component-support-mode', 'component-support-body',
   'catalog-list', 'catalog-prev', 'catalog-page', 'catalog-next', 'selection-name', 'property-editor', 'rotate-component', 'duplicate-component', 'delete-component',
@@ -718,7 +719,7 @@ const elements = Object.fromEntries([
   'pico-diagnostics', 'pico-diagnostic-links',
   'pico-source-hash', 'pico-artifact-hash', 'pico-diagram', 'pico-circuit-state',
   'pico-editor-wires', 'pico-editor-components', 'pico-circuit-selection',
-  'pico-parts-list', 'pico-part-properties',
+  'pico-parts-search', 'pico-parts-count', 'pico-parts-list', 'pico-part-properties',
   'pico-delete', 'pico-undo', 'pico-redo', 'pico-rotate', 'pico-zoom-out', 'pico-zoom-value',
   'pico-zoom-in', 'pico-fit', 'pico-reconnect', 'pico-branch', 'pico-add-bend', 'pico-route-back', 'pico-route-forward',
   'pico-wire-color', 'pico-wire-cancel', 'pico-wire-state', 'pico-serial',
@@ -730,7 +731,7 @@ const elements = Object.fromEntries([
   'c3-diagram', 'c3-external-led', 'c3-circuit-state', 'c3-reconnect', 'c3-branch', 'c3-add-bend', 'c3-route-back', 'c3-route-forward',
   'c3-wire-color', 'c3-wire-cancel', 'c3-wire-state', 'c3-terminal',
   'c3-editor-wires', 'c3-editor-components', 'c3-circuit-selection',
-  'c3-parts-list', 'c3-part-properties',
+  'c3-parts-search', 'c3-parts-count', 'c3-parts-list', 'c3-part-properties',
   'c3-delete', 'c3-undo', 'c3-redo', 'c3-rotate', 'c3-zoom-out', 'c3-zoom-value', 'c3-zoom-in', 'c3-fit',
   'stm32-public-workbench', 'stm32-state', 'stm32-project-name', 'stm32-save', 'stm32-open', 'stm32-open-input',
   'stm32-native-open', 'stm32-native-save', 'stm32-native-save-copy', 'stm32-file-connection', 'stm32-legacy-copy',
@@ -740,7 +741,7 @@ const elements = Object.fromEntries([
   'stm32-source-hash', 'stm32-artifact-hash', 'stm32-diagram', 'stm32-external-led',
   'stm32-circuit-state', 'stm32-terminal', 'stm32-editor-wires', 'stm32-editor-components',
   'stm32-circuit-selection', 'stm32-delete', 'stm32-undo', 'stm32-redo', 'stm32-rotate',
-  'stm32-parts-list', 'stm32-part-properties',
+  'stm32-parts-search', 'stm32-parts-count', 'stm32-parts-list', 'stm32-part-properties',
   'stm32-zoom-out', 'stm32-zoom-value', 'stm32-zoom-in', 'stm32-fit',
   'stm32-reconnect', 'stm32-branch', 'stm32-add-bend', 'stm32-route-back', 'stm32-route-forward',
   'stm32-wire-color', 'stm32-wire-cancel', 'stm32-wire-state',
@@ -1476,16 +1477,25 @@ function createComponentEditorSplit({ profile, component, modelPanel, drawingPan
   return root;
 }
 
-function renderBoundedComponentCatalog({ profile, state, editCircuit, list, properties }) {
+function renderBoundedComponentCatalog(options) {
+  const { profile, state, editCircuit, search, count, list, properties } = options;
   const { draft, selection, catalog } = state.circuitEditor;
-  const rows = catalog.parts.map((part) => {
+  search.oninput = () => renderBoundedComponentCatalog(options);
+  const query = search.value.trim().toLocaleLowerCase();
+  const matchedParts = catalog.parts.filter((part) => !query || [
+    part.displayName, part.type, part.id, part.limitation,
+  ].some((value) => String(value ?? '').toLocaleLowerCase().includes(query)));
+  count.textContent = query
+    ? `${matchedParts.length} of ${catalog.parts.length} parts`
+    : `${catalog.parts.length} parts`;
+  const rows = matchedParts.map((part) => {
     const component = draft.components.find((candidate) => candidate.type === part.type);
     const row = document.createElement('article');
-    row.className = 'bounded-part-card'; row.dataset.type = part.type;
+    row.className = 'bounded-part-card catalog-item'; row.dataset.type = part.type;
     row.dataset.present = String(part.present); row.setAttribute('role', 'listitem');
     row.draggable = part.addable || part.repeatable;
     const thumbnail = document.createElement('span');
-    thumbnail.className = 'bounded-part-thumbnail';
+    thumbnail.className = 'bounded-part-thumbnail catalog-thumbnail-slot';
     const definition = uiComponentCatalog[part.type];
     const previewComponent = component ?? {
       id: `catalog-${part.type.replace(/[^a-z0-9]+/giu, '-')}`,
@@ -1497,14 +1507,19 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
       controls: {},
     };
     if (definition) thumbnail.append(createComponentArtwork(definition, previewComponent, { thumbnail: true }));
-    const copy = document.createElement('span'); copy.className = 'bounded-part-copy';
+    const copy = document.createElement('span'); copy.className = 'bounded-part-copy catalog-item-copy';
     const name = document.createElement('strong'); name.textContent = part.displayName;
-    const summary = document.createElement('small'); summary.textContent = boundedPartSummary(part, component);
-    const id = document.createElement('code'); id.textContent = component?.id ?? part.id;
-    copy.append(name, summary, id);
+    const summary = document.createElement('small');
+    summary.textContent = `${component?.id ?? part.id} · ${boundedPartSummary(part, component)}`;
+    const status = document.createElement('span');
+    const simulated = ['resistor.fixed-v1', 'led.basic-v1'].includes(part.type);
+    status.className = `support-badge${part.fixed ? ' partial' : simulated ? '' : ' visual'}`;
+    status.textContent = part.fixed ? 'Partial' : simulated ? 'Simulated' : 'Authoring only';
+    copy.append(name, summary, status);
     const action = document.createElement('button'); action.type = 'button';
+    action.className = 'bounded-part-add';
     action.dataset.boundedAdd = part.type;
-    action.textContent = part.fixed ? 'Fixed' : part.present ? 'Add another' : 'Add part';
+    action.textContent = part.fixed ? 'Fixed' : part.present ? 'Add another' : 'Add';
     action.disabled = !(part.addable || part.repeatable);
     action.setAttribute('aria-label', part.fixed
       ? `${part.displayName} is fixed for this profile`
@@ -2754,6 +2769,7 @@ function renderPicoCircuitEditor(state) {
   elements.picozoomvalue.value = `${Math.round(picoEditorZoom * 100)}%`;
   renderBoundedComponentCatalog({
     profile: RP2040_PROFILE, state, editCircuit: (...args) => picoPublicWorkbench.editCircuit(...args),
+    search: elements.picopartssearch, count: elements.picopartscount,
     list: elements.picopartslist, properties: elements.picopartproperties,
   });
   const cards = draft.components.map((component) => {
@@ -3045,6 +3061,7 @@ function renderC3CircuitEditor(state) {
   elements.c3zoomvalue.value = `${Math.round(c3EditorZoom * 100)}%`;
   renderBoundedComponentCatalog({
     profile: ESP32C3_PROFILE, state, editCircuit: (...args) => c3PublicWorkbench.editCircuit(...args),
+    search: elements.c3partssearch, count: elements.c3partscount,
     list: elements.c3partslist, properties: elements.c3partproperties,
   });
   const modeledLed = Boolean(state.circuitAccepted && state.runtime?.modeledCircuit?.epochs?.at(-1)?.led?.on);
@@ -3340,6 +3357,7 @@ function renderStm32CircuitEditor(state) {
   elements.stm32zoomvalue.value = `${Math.round(stm32EditorZoom * 100)}%`;
   renderBoundedComponentCatalog({
     profile: STM32F429ZI_PROFILE, state, editCircuit: (...args) => stm32PublicWorkbench.editCircuit(...args),
+    search: elements.stm32partssearch, count: elements.stm32partscount,
     list: elements.stm32partslist, properties: elements.stm32partproperties,
   });
   const observedLed = Boolean(state.circuitAccepted && state.runtime?.observed?.pb0);
@@ -16133,13 +16151,22 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
 }
 
 function renderStarterExamples() {
-  const cards = [...exampleCatalog(), TEMPERATURE_LCD_THRESHOLD_CARD, PCF8574_LCD_HELLO_CARD, THERMOSTAT_EXPERIMENT_CARD, ...avrReferenceStarterCatalog()].map((example) => {
+  const availableExamples = [...exampleCatalog(), TEMPERATURE_LCD_THRESHOLD_CARD, PCF8574_LCD_HELLO_CARD, THERMOSTAT_EXPERIMENT_CARD, ...avrReferenceStarterCatalog()];
+  const trafficLightExample = availableExamples.find((example) => example.id === 'avr-traffic-light');
+  const examples = [
+    availableExamples.find((example) => example.id === 'blink'),
+    trafficLightExample,
+    ...availableExamples.filter((example) => !['blink', 'avr-traffic-light'].includes(example.id)),
+  ].filter(Boolean);
+  const cards = examples.map((example) => {
     const card = document.createElement('article'); card.className = 'starter-card'; card.dataset.example = example.id;
     const visual = document.createElement('span'); visual.className = 'starter-visual'; visual.setAttribute('aria-hidden', 'true');
     const meta = document.createElement('span'); meta.className = 'starter-meta';
     const focus = document.createElement('span'); focus.className = 'starter-focus'; focus.textContent = example.focus;
     const difficulty = document.createElement('span'); difficulty.className = 'starter-difficulty';
-    difficulty.textContent = ['blink', 'button', 'adc'].includes(example.id) ? 'Beginner' : 'Next step';
+    difficulty.textContent = example.id === 'avr-traffic-light'
+      ? 'New example'
+      : ['blink', 'button', 'adc'].includes(example.id) ? 'Beginner' : 'Next step';
     meta.append(focus, difficulty);
     const name = document.createElement('strong'); name.textContent = example.name;
     const description = document.createElement('span'); description.className = 'starter-description'; description.textContent = example.description;
@@ -16170,6 +16197,27 @@ function renderStarterExamples() {
     return card;
   });
   elements.starterexamples.replaceChildren(...cards);
+}
+
+function mountTrafficLightFeature() {
+  const definition = uiComponentCatalog[TRAFFIC_LIGHT_TYPE];
+  if (!definition) return;
+  const component = createCandidateUiComponent(TRAFFIC_LIGHT_TYPE, 'traffic-light-feature-preview');
+  component.label = definition.displayName;
+  elements.catalogreleasefeatureartwork.replaceChildren(
+    createComponentArtwork(definition, component, { thumbnail: true }),
+  );
+  elements.catalogreleasefeatureopen.addEventListener('click', () => {
+    const install = () => {
+      const result = loadExampleProject('avr-traffic-light', 'project.release-feature');
+      if (result?.ok) sharedWorkbenchShell.closeParts({ restoreFocus: false });
+    };
+    if (!requestUnsavedChangeGuard({
+      profile: AVR_PROFILE,
+      actionLabel: 'loading Traffic light sequence',
+      continueAction: install,
+    })) install();
+  });
 }
 
 let examplePickerReturnFocus = null;
@@ -16902,6 +16950,7 @@ window.__M7_CATALOG_BENCHMARK__ = benchmarkCatalogFixture;
 
 for (const category of CATALOG_CATEGORIES) elements.catalogcategory.append(new Option(category.label, category.id));
 renderStarterExamples();
+mountTrafficLightFeature();
 syncControllerSelectors(selectedCompilerProfile);
 
 let stored = null; let recoveryStored = null;

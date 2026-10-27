@@ -1,4 +1,23 @@
-# Intent MCU Simulator 1.1.0-rc.140
+# Intent MCU Simulator 1.1.0-rc.141
+
+## Shared sliding component drawer
+
+Rc.141 replaces the always-visible component column with one left-side Parts
+drawer. The same drawer slides over the workbench for AVR, Pico, ESP32-C3 and
+STM32, leaving the circuit canvas at full width while the chooser is closed.
+
+The three bounded 3.3 V profiles now use searchable component cards styled like
+the AVR catalogue. AVR features the traffic-light module at the top of the
+drawer with a direct action to load the complete sequence example; the same
+example is also placed immediately after Blink in the example chooser.
+
+This is a presentation and discovery release. It does not add runtime,
+compiler, project-file or controller authority. Existing project data and the
+rc.140 component-model boundaries remain unchanged.
+
+---
+
+## 1.1.0-rc.140
 
 ## Daily component and example expansion
 
@@ -16,7 +35,7 @@ authoring-only where no runtime model exists. Profile-specific unavailable
 states are preserved instead of implying cross-controller support.
 
 Release identity, machine-readable changes, public documentation and sitemap
-are synchronized to rc.140. Existing project files retain their migration
+were synchronized to rc.140. Existing project files retain their migration
 anchors, and no example file restores compiled or runtime authority. Actual
 public deployment state and rollback evidence remain owned by the separate
 deployment checkpoint.
