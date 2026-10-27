@@ -99,6 +99,7 @@ const referenceBindings = deepFreeze({
     'sensor.temperature-analogue-v1': { starters: ['temperature-lcd-threshold', 'avr-thermostat-boundary-v1'], tests: ['test/temperature-analogue-sensor-candidate.test.mjs', 'test/temperature-analogue-sensor-ui-candidate.cjs'] },
     'sensor.light-threshold-digital-v1': { starters: ['avr-light-threshold'], tests: ['test/digital-light-threshold-candidate.test.mjs', 'test/digital-light-threshold-ui-candidate.cjs'] },
     'output.rgb-led-common-cathode-v1': { starters: ['temperature-lcd-threshold'], tests: ['test/common-cathode-rgb-led-candidate.test.mjs', 'test/common-cathode-rgb-led-ui-candidate.cjs', 'test/indicator-actuator-example-artifacts.test.mjs'] },
+    'output.traffic-light-module-v1': { starters: ['avr-traffic-light'], tests: ['test/traffic-light-module.test.mjs', 'test/traffic-light-module-browser.cjs', 'test/indicator-actuator-example-artifacts.test.mjs'] },
     'output.rgb-led-common-anode-v1': { starters: ['avr-rgb-common-anode'], tests: ['test/rotary-selector-indicators-candidate.test.mjs'] },
     'output.led-bar-graph-10-v1': { starters: ['avr-led-bar-graph'], tests: ['test/rotary-selector-indicators-candidate.test.mjs'] },
     'output.active-buzzer-module-v1': { starters: ['avr-active-buzzer'], tests: ['test/active-buzzer-candidate.test.mjs', 'test/active-buzzer-ui-candidate.cjs', 'test/indicator-actuator-example-artifacts.test.mjs'] },

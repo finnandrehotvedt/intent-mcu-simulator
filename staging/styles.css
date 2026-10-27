@@ -1117,6 +1117,11 @@ button:disabled, select:disabled { opacity: .42; }
 .rgb-led-channel.rgb-green { color: #49e57b; }
 .rgb-led-channel.rgb-blue { color: #55a5ff; }
 .rgb-led-mix { transition: fill 80ms linear; filter: drop-shadow(0 0 4px #d7f3ff55); }
+.traffic-light-artwork { overflow: visible; }
+.traffic-light-lamp { transition: fill 80ms linear, filter 80ms linear, opacity 80ms linear; opacity: .55; }
+.traffic-light-lamp[data-traffic-channel="RED"].on { fill: #ff3049; filter: drop-shadow(0 0 9px #ff4057cc); opacity: 1; }
+.traffic-light-lamp[data-traffic-channel="AMBER"].on { fill: #ffe052; filter: drop-shadow(0 0 9px #ffd84dcc); opacity: 1; }
+.traffic-light-lamp[data-traffic-channel="GREEN"].on { fill: #50f084; filter: drop-shadow(0 0 9px #48ed7ccc); opacity: 1; }
 .active-buzzer-artwork { overflow: visible; }
 .active-buzzer-disc, .buzzer-status, .buzzer-wave { transition: fill 80ms linear, stroke 80ms linear, opacity 80ms linear, filter 80ms linear; }
 .active-buzzer-disc.on { fill: #304414; stroke: #b8ff63; filter: drop-shadow(0 0 8px #9cf545aa); }

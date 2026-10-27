@@ -468,6 +468,7 @@ import {
   LIGHT_THRESHOLD_MIN_PERCENT,
 } from '../expansion-drafts/digital-light-threshold-module-v1.mjs';
 import { COMMON_CATHODE_RGB_LED_TYPE } from '../expansion-drafts/common-cathode-rgb-led-v1.mjs';
+import { TRAFFIC_LIGHT_TYPE } from '../expansion-drafts/traffic-light-module-v1.mjs';
 import { LED_BAR_GRAPH_TYPE, RGB_COMMON_ANODE_TYPE,
   ROTARY_SELECTOR_TYPE } from '../expansion-drafts/rotary-selector-indicators-v1.mjs';
 import { ACTIVE_BUZZER_TYPE } from '../expansion-drafts/active-buzzer-module-v1.mjs';
@@ -11613,6 +11614,10 @@ function clearRuntimePresentation() {
       channel.classList.remove('on'); channel.style.opacity = '0.22'; channel.style.filter = '';
     }
   }
+  for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key="output-traffic-light-module"]')) {
+    artwork.dataset.redOn = 'false'; artwork.dataset.amberOn = 'false'; artwork.dataset.greenOn = 'false';
+    for (const lamp of artwork.querySelectorAll('.traffic-light-lamp')) lamp.classList.remove('on');
+  }
   for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key="output-active-buzzer-module"]')) {
     artwork.dataset.enabled = 'false'; artwork.dataset.driveState = 'idle';
     artwork.querySelector('.active-buzzer-disc')?.classList.remove('on');
@@ -13122,6 +13127,7 @@ function candidateComponentPrefix(type) {
       [NTC_DIVIDER_TYPE]: 'ntc-divider',
       [FLEX_DIVIDER_TYPE]: 'flex-divider',
       [COMMON_CATHODE_RGB_LED_TYPE]: 'rgb-led',
+      [TRAFFIC_LIGHT_TYPE]: 'traffic-light',
       [RGB_COMMON_ANODE_TYPE]: 'rgb-led-ca',
       [LED_BAR_GRAPH_TYPE]: 'led-bar',
       [ACTIVE_BUZZER_TYPE]: 'active-buzzer',
@@ -13210,6 +13216,7 @@ function addComponent(type, point = null) {
       [NTC_DIVIDER_TYPE]: { x: 0.7, y: 0.26 },
       [FLEX_DIVIDER_TYPE]: { x: 0.84, y: 0.26 },
       [COMMON_CATHODE_RGB_LED_TYPE]: { x: 0.78, y: 0.7 },
+      [TRAFFIC_LIGHT_TYPE]: { x: 0.8, y: 0.66 },
       [RGB_COMMON_ANODE_TYPE]: { x: 0.78, y: 0.7 },
       [LED_BAR_GRAPH_TYPE]: { x: 0.72, y: 0.62 },
       [ACTIVE_BUZZER_TYPE]: { x: 0.78, y: 0.68 },
@@ -14204,6 +14211,36 @@ function renderRgbLedRuntime(message) {
   }
 }
 
+function renderTrafficLightRuntime(message) {
+  if (editor.kind !== 'candidate-project-v3') return;
+  const pins = new Map((Array.isArray(message.pins) ? message.pins : []).map((pin) => [pin.pin, pin]));
+  for (const support of (Array.isArray(editor.runtimeSupport) ? editor.runtimeSupport : []).filter(
+    (item) => item.type === TRAFFIC_LIGHT_TYPE && item.runtimeProjection,
+  )) {
+    const artwork = elements.componentlayer.querySelector(
+      `[data-component-id="${support.componentId}"] [data-artwork-key="output-traffic-light-module"]`,
+    );
+    if (!artwork) continue;
+    const levels = Object.fromEntries(['RED', 'AMBER', 'GREEN'].map((channel) => {
+      const pin = pins.get(support.runtimeProjection.channels[channel].sourcePin);
+      const driven = pin?.mode === 'OUTPUT' || pin?.mode === 'DIGITAL_PWM';
+      const level = driven && (Number.isFinite(pin?.pwm?.duty) ? pin.pwm.duty > 0.001 : Boolean(pin?.level));
+      return [channel, level];
+    }));
+    Object.assign(levels, modelLibraryImplementationFor(AVR_PROFILE).observeTrafficLight(levels));
+    artwork.dataset.redOn = String(levels.RED);
+    artwork.dataset.amberOn = String(levels.AMBER);
+    artwork.dataset.greenOn = String(levels.GREEN);
+    for (const channel of ['RED', 'AMBER', 'GREEN']) {
+      artwork.querySelector(`[data-traffic-channel="${channel}"]`)?.classList.toggle('on', levels[channel]);
+    }
+    const active = ['RED', 'AMBER', 'GREEN'].filter((channel) => levels[channel]);
+    const label = `${support.componentId}, traffic light ${active.length ? active.join(' plus ').toLowerCase() : 'all lamps off'}; no physical light or road-signal compliance claimed`;
+    artwork.setAttribute('aria-label', label);
+    const title = artwork.querySelector('title'); if (title) title.textContent = label;
+  }
+}
+
 function renderActiveBuzzerRuntime(message) {
   if (editor.kind !== 'candidate-project-v3') return;
   const pins = new Map((Array.isArray(message.pins) ? message.pins : []).map((pin) => [pin.pin, pin]));
@@ -14410,6 +14447,7 @@ function renderRuntime(message, { publishState = true } = {}) {
     visual.setAttribute('aria-label', `${led.componentId} is ${led.on ? 'on' : 'off'} at ${(led.currentAmps * 1_000).toFixed(2)} mA, ${(brightness * 100).toFixed(1)} percent ideal relative brightness`);
   }
   renderRgbLedRuntime(message);
+  renderTrafficLightRuntime(message);
   renderActiveBuzzerRuntime(message);
   renderSevenSegmentRuntime(message);
   renderCharacterLcdRuntime(message);

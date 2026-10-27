@@ -45,6 +45,7 @@ import {
   updateDigitalLightThresholdControl,
 } from '../expansion-drafts/digital-light-threshold-module-v1.mjs';
 import { COMMON_CATHODE_RGB_LED_TYPE } from '../expansion-drafts/common-cathode-rgb-led-v1.mjs';
+import { TRAFFIC_LIGHT_TYPE } from '../expansion-drafts/traffic-light-module-v1.mjs';
 import { ACTIVE_BUZZER_TYPE } from '../expansion-drafts/active-buzzer-module-v1.mjs';
 import { SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
 import { CHARACTER_LCD_TYPE } from '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs';
@@ -97,6 +98,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
   LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
   DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
+  TRAFFIC_LIGHT_TYPE,
   ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE,
   CHARACTER_LCD_TYPE,
   CHARACTER_LCD_20X4_TYPE,
@@ -269,6 +271,8 @@ function contactSupport(result) {
             ? 'button.momentary-v1'
         : contact.type === COMMON_CATHODE_RGB_LED_TYPE
           ? 'three-independent-led.basic-v1'
+        : contact.type === TRAFFIC_LIGHT_TYPE
+          ? 'three-independent-traffic-lamp-led.basic-v1'
         : contact.type === ROTARY_SELECTOR_TYPE
           ? 'one-of-four-passive-contact-v1'
         : contact.type === RGB_COMMON_ANODE_TYPE
@@ -308,6 +312,8 @@ function contactSupport(result) {
         ? 'Ideal active-low reflected-state only; distance, surface response, calibration, geometry, ambient light and electrical loading are not modelled.'
         : contact.type === COMMON_CATHODE_RGB_LED_TYPE
         ? 'Ideal relative PWM mix through three independently current-limited existing LED channels; no physical colour, wavelength, optical or current accuracy is modelled.'
+        : contact.type === TRAFFIC_LIGHT_TYPE
+        ? 'Ideal commanded red/amber/green lamp state through three independently current-limited AVR outputs; no physical brightness, optics, electrical loading or road-signal timing compliance is modelled.'
         : contact.type === ROTARY_SELECTOR_TYPE
         ? 'Ideal maintained one-of-four passive contact; no overlap, bounce, resistance, current rating or shaft mechanics.'
         : contact.type === RGB_COMMON_ANODE_TYPE

@@ -79,6 +79,7 @@ let browser;
     ['avr-light-analogue', 'Analogue light level'],
     ['avr-light-threshold', 'Digital light threshold'],
     ['avr-active-buzzer', 'Logical active buzzer'],
+    ['avr-traffic-light', 'Traffic light sequence'],
     ['avr-seven-segment', 'Seven-segment digits'],
     ['avr-rotary-encoder', 'Quadrature encoder'],
   ];

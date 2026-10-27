@@ -74,6 +74,12 @@ import {
 } from '../expansion-drafts/common-cathode-rgb-led-v1.mjs';
 import { createCommonCathodeRgbLedArtwork } from '../expansion-drafts/common-cathode-rgb-led-artwork-v1.mjs';
 import {
+  TRAFFIC_LIGHT_DEFINITION,
+  TRAFFIC_LIGHT_TYPE,
+  createTrafficLightComponent,
+} from '../expansion-drafts/traffic-light-module-v1.mjs';
+import { createTrafficLightArtwork } from '../expansion-drafts/traffic-light-module-artwork-v1.mjs';
+import {
   ACTIVE_BUZZER_DEFINITION,
   ACTIVE_BUZZER_TYPE,
   createActiveBuzzerComponent,
@@ -233,6 +239,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   [TEMPERATURE_ANALOGUE_SENSOR_TYPE]: TEMPERATURE_ANALOGUE_SENSOR_DEFINITION,
   [DIGITAL_LIGHT_THRESHOLD_TYPE]: DIGITAL_LIGHT_THRESHOLD_DEFINITION,
   [COMMON_CATHODE_RGB_LED_TYPE]: COMMON_CATHODE_RGB_LED_DEFINITION,
+  [TRAFFIC_LIGHT_TYPE]: TRAFFIC_LIGHT_DEFINITION,
   [ACTIVE_BUZZER_TYPE]: ACTIVE_BUZZER_DEFINITION,
   [SEVEN_SEGMENT_TYPE]: SEVEN_SEGMENT_DEFINITION,
   [CHARACTER_LCD_TYPE]: CHARACTER_LCD_DEFINITION,
@@ -297,6 +304,9 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   }
   if (component?.type === COMMON_CATHODE_RGB_LED_TYPE) {
     return createCommonCathodeRgbLedArtwork(documentObject, definition, component, options);
+  }
+  if (component?.type === TRAFFIC_LIGHT_TYPE) {
+    return createTrafficLightArtwork(documentObject, definition, component, options);
   }
   if (component?.type === ACTIVE_BUZZER_TYPE) {
     return createActiveBuzzerArtwork(documentObject, definition, component, options);
@@ -384,6 +394,7 @@ export function createCandidateUiComponent(type, id) {
   if (type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return createTemperatureAnalogueSensorComponent(id);
   if (type === DIGITAL_LIGHT_THRESHOLD_TYPE) return createDigitalLightThresholdComponent(id);
   if (type === COMMON_CATHODE_RGB_LED_TYPE) return createCommonCathodeRgbLedComponent(id);
+  if (type === TRAFFIC_LIGHT_TYPE) return createTrafficLightComponent(id);
   if (type === ACTIVE_BUZZER_TYPE) return createActiveBuzzerComponent(id);
   if (type === SEVEN_SEGMENT_TYPE) return createSevenSegmentComponent(id);
   if (type === CHARACTER_LCD_TYPE) return createCharacterLcdComponent(id);

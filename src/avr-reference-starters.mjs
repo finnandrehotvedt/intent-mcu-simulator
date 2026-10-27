@@ -7,6 +7,7 @@ import { createDigitalLightThresholdComponent } from '../expansion-drafts/digita
 import { createLightAnalogueSensorComponent } from '../expansion-drafts/light-analogue-sensor-v1.mjs';
 import { canonicalContactPersistenceDraftJson } from '../expansion-drafts/project-v3-contact-persistence.mjs';
 import { createSevenSegmentComponent } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
+import { createTrafficLightComponent } from '../expansion-drafts/traffic-light-module-v1.mjs';
 import { createComponent } from './circuit-engine.mjs';
 import { createCandidateUiComponent, openCandidateUiSession } from './candidate-existing-ui-adapter.mjs';
 
@@ -83,7 +84,17 @@ const CARDS = Object.freeze([
     try: 'Build and Run the alternating enabled/disabled sequence.',
     observe: 'D8 and the silent visual indicator change with Serial BUZZER ON/OFF.',
     limits: 'Partial: silent logical indicator; no sound, current or acoustic accuracy.',
-    next: 'Load Seven-segment digits to coordinate several digital outputs.',
+    next: 'Load Traffic light sequence to coordinate three current-limited outputs.',
+  },
+  {
+    id: 'avr-traffic-light', name: 'Traffic light sequence', model: 'output.traffic-light-module-v1',
+    focus: 'Three current-limited outputs', partsLabel: 'Controller · traffic light · three resistors',
+    description: 'Drive a distinct common-cathode red/amber/green module from compiled firmware.',
+    learn: 'How a safe traffic-light sequence coordinates three independent digital outputs.',
+    try: 'Build and Run the red, red+amber, green and amber sequence.',
+    observe: 'The three visible lamps and Serial phase labels follow D3, D5 and D6.',
+    limits: 'Ideal AVR-only indicator; no physical optics, load, fault or road-signal timing compliance.',
+    next: 'Load Seven-segment digits to coordinate a larger group of outputs.',
   },
   {
     id: 'avr-seven-segment', name: 'Seven-segment digits', model: 'output.seven-segment-common-cathode-v1',
@@ -128,6 +139,11 @@ void loop() { bool active = digitalRead(7) == LOW; digitalWrite(13, active); Ser
 `,
   'avr-active-buzzer': `void setup() { pinMode(8, OUTPUT); Serial.begin(115200); }
 void loop() { digitalWrite(8, HIGH); Serial.println("BUZZER ON"); delay(240); digitalWrite(8, LOW); Serial.println("BUZZER OFF"); delay(240); }
+`,
+  'avr-traffic-light': `const byte RED=3, AMBER=5, GREEN=6;
+void phase(bool red, bool amber, bool green, const char* label) { digitalWrite(RED, red); digitalWrite(AMBER, amber); digitalWrite(GREEN, green); Serial.println(label); delay(240); }
+void setup() { pinMode(RED, OUTPUT); pinMode(AMBER, OUTPUT); pinMode(GREEN, OUTPUT); Serial.begin(115200); }
+void loop() { phase(HIGH,LOW,LOW,"RED"); phase(HIGH,HIGH,LOW,"RED AMBER"); phase(LOW,LOW,HIGH,"GREEN"); phase(LOW,HIGH,LOW,"AMBER"); }
 `,
   'avr-seven-segment': `const byte pins[7] = {3,4,5,6,7,8,9};
 const byte digits[4][7] = {{1,1,1,1,1,1,0},{0,1,1,0,0,0,0},{1,1,0,1,1,0,1},{1,1,1,1,1,1,1}};
@@ -203,6 +219,19 @@ function construct(card) {
     branch(session, 'net-5v', 'active-buzzer-1', 'VCC', 'junction-starter-buzzer-vcc');
     branch(session, 'net-ground-branch', 'active-buzzer-1', 'GND', 'junction-starter-buzzer-ground');
     wire(session, 'net-starter-buzzer-d8', 'active-buzzer-1', 'EN', 'board-1', 'D8');
+  } else if (card.id === 'avr-traffic-light') {
+    add(session, createTrafficLightComponent('traffic-light-1', 'Workshop traffic light'), { x: 0.79, y: 0.68 });
+    const channels = [['RED', 'D3'], ['AMBER', 'D5'], ['GREEN', 'D6']];
+    channels.forEach(([channel, boardPin], index) => {
+      add(session, createComponent(`traffic-resistor-${index + 1}`, 'resistor.fixed-v1', {
+        label: `${channel} lamp resistor`, properties: { ohms: 220 },
+      }), { x: 0.48, y: 0.48 + index * 0.12 });
+      wire(session, `net-starter-traffic-${channel.toLowerCase()}-lamp`, 'traffic-light-1', channel,
+        `traffic-resistor-${index + 1}`, 'B');
+      wire(session, `net-starter-traffic-${channel.toLowerCase()}-drive`, `traffic-resistor-${index + 1}`, 'A',
+        'board-1', boardPin);
+    });
+    branch(session, 'net-ground-branch', 'traffic-light-1', 'COM', 'junction-starter-traffic-common');
   } else if (card.id === 'avr-seven-segment') {
     add(session, createSevenSegmentComponent('seven-segment-1', 'Workshop digit'), { x: 0.78, y: 0.72 });
     SEGMENTS.forEach((segment, index) => add(session, createComponent(`resistor-${index + 3}`, 'resistor.fixed-v1', {

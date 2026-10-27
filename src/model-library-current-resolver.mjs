@@ -36,7 +36,7 @@ const exactInput = (value, keys) => value && typeof value === 'object' && !Array
 // Current behavior is separately owned so future current changes cannot mutate
 // the retained pre-X56 implementation by alias or shared constant.
 export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
-  id: 'intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48',
+  id: 'intent-mcu-model-bundle-current-lcd-20x4-cgram-1@49',
   manifestVersion: CURRENT_MODEL_LIBRARY_MANIFEST.version,
   definition(profile, componentType) {
     const entry = entries.get(`${profile}\u0000${componentType}`);
@@ -59,6 +59,9 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
   observeRgb(duties) {
     return Object.fromEntries(['R', 'G', 'B'].map((key) =>
       [key, Math.max(0, Math.min(1, duties[key]))]));
+  },
+  observeTrafficLight(levels) {
+    return Object.fromEntries(['RED', 'AMBER', 'GREEN'].map((key) => [key, Boolean(levels[key])]));
   },
   observeBuzzer(level) { return { enabled: Boolean(level) }; },
   observeSevenSegment(activeSegments) { return [...new Set(activeSegments)].sort(); },
@@ -296,6 +299,14 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
         ['R', 'G', 'B'].map((key) => [key, Math.max(0, Math.min(1, duties[key]))]),
       ) } };
     }
+    if (componentType === 'output.traffic-light-module-v1') {
+      const levels = input?.levels;
+      if (!levels || !exactInput(levels, ['RED', 'AMBER', 'GREEN'])
+          || ['RED', 'AMBER', 'GREEN'].some((key) => typeof levels[key] !== 'boolean')) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { levels: structuredClone(levels) } };
+    }
     if (componentType === 'output.active-buzzer-module-v1') {
       if (typeof input?.level !== 'boolean') return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
       return { ok: true, code: 'OK', result: { enabled: input.level } };
@@ -357,6 +368,13 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
     }
     return failure('MODEL_LIBRARY_PRODUCTION_UNAVAILABLE', [componentType]);
   },
+});
+
+export const PRE_CMP041_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-pre-cmp041-public-source@55',
+  manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
+  migrationOnly: true,
 });
 
 export const PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({

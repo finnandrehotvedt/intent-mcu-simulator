@@ -142,6 +142,12 @@ import {
   validateCommonCathodeRgbLedComponent,
 } from './common-cathode-rgb-led-v1.mjs';
 import {
+  TRAFFIC_LIGHT_DEFINITION,
+  TRAFFIC_LIGHT_TYPE,
+  projectTrafficLightModules,
+  validateTrafficLightComponent,
+} from './traffic-light-module-v1.mjs';
+import {
   ACTIVE_BUZZER_DEFINITION,
   ACTIVE_BUZZER_TYPE,
   projectActiveBuzzerModules,
@@ -306,6 +312,7 @@ function pinIds(component) {
   if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
   if (component.type === COMMON_CATHODE_RGB_LED_TYPE) return ['R', 'G', 'B', 'COM'];
+  if (component.type === TRAFFIC_LIGHT_TYPE) return ['RED', 'AMBER', 'GREEN', 'COM'];
   if (component.type === ACTIVE_BUZZER_TYPE) return ['VCC', 'GND', 'EN'];
   if (component.type === SEVEN_SEGMENT_TYPE) return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'COM'];
   if (component.type === CHARACTER_LCD_TYPE) return ['VCC', 'GND', 'RS', 'RW', 'E', 'D4', 'D5', 'D6', 'D7'];
@@ -347,6 +354,7 @@ function componentPins(component) {
   if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type].pins;
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type].pins;
   if (component.type === COMMON_CATHODE_RGB_LED_TYPE) return COMMON_CATHODE_RGB_LED_DEFINITION.pins;
+  if (component.type === TRAFFIC_LIGHT_TYPE) return TRAFFIC_LIGHT_DEFINITION.pins;
   if (component.type === ACTIVE_BUZZER_TYPE) return ACTIVE_BUZZER_DEFINITION.pins;
   if (component.type === SEVEN_SEGMENT_TYPE) return SEVEN_SEGMENT_DEFINITION.pins;
   if (component.type === CHARACTER_LCD_TYPE) return CHARACTER_LCD_DEFINITION.pins;
@@ -463,6 +471,10 @@ function validateCandidateComponent(component) {
     if (!validateCommonCathodeRgbLedComponent(component)) {
       fail('PROJECT_CONTACT_RGB_LED_STATE', [component.id]);
     }
+  } else if (component.type === TRAFFIC_LIGHT_TYPE) {
+    if (!validateTrafficLightComponent(component)) {
+      fail('PROJECT_CONTACT_TRAFFIC_LIGHT_STATE', [component.id]);
+    }
   } else if (component.type === ACTIVE_BUZZER_TYPE) {
     if (!validateActiveBuzzerComponent(component)) {
       fail('PROJECT_CONTACT_ACTIVE_BUZZER_STATE', [component.id]);
@@ -526,6 +538,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
         RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
         DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
+        TRAFFIC_LIGHT_TYPE,
         CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
         ...Object.keys(DIGITAL_PULSE_SENSOR_DEFINITIONS),
         ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
@@ -1190,7 +1203,19 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
   })));
   for (const led of rgbProjection.leds) production(implementation, COMMON_CATHODE_RGB_LED_TYPE,
     { duties: { R: 0, G: 0, B: 0 } }, [led.componentId]);
-  const buzzerProjection = projectActiveBuzzerModules(rgbProjection.runtimeGraph);
+  const trafficProjection = projectTrafficLightModules(rgbProjection.runtimeGraph);
+  if (!trafficProjection.ok) {
+    fail(`PROJECT_CONTACT_${trafficProjection.code}`, trafficProjection.details);
+  }
+  contacts.push(...trafficProjection.lights.map((light) => ({
+    componentId: light.componentId,
+    type: TRAFFIC_LIGHT_TYPE,
+    state: { commonPolarity: light.commonPolarity, lamps: ['RED', 'AMBER', 'GREEN'] },
+    runtimeProjection: clone(light),
+  })));
+  for (const light of trafficProjection.lights) production(implementation, TRAFFIC_LIGHT_TYPE,
+    { levels: { RED: false, AMBER: false, GREEN: false } }, [light.componentId]);
+  const buzzerProjection = projectActiveBuzzerModules(trafficProjection.runtimeGraph);
   if (!buzzerProjection.ok) {
     fail(`PROJECT_CONTACT_${buzzerProjection.code}`, buzzerProjection.details);
   }
@@ -1283,6 +1308,7 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
     modelLibraryImplementationId: implementation.id,
     runtimePositionSources: clone({
       ...rgbProjection.runtimePositionSources,
+      ...trafficProjection.runtimePositionSources,
       ...commonAnodeProjection.runtimePositionSources,
       ...barProjection.runtimePositionSources,
       ...sevenSegmentProjection.runtimePositionSources,
@@ -1460,6 +1486,14 @@ function draftContacts(graph) {
         runtimeProjection: null,
       }];
     }
+    if (component.type === TRAFFIC_LIGHT_TYPE) {
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { commonPolarity: 'cathode', lamps: ['RED', 'AMBER', 'GREEN'] },
+        runtimeProjection: null,
+      }];
+    }
     if (component.type === ACTIVE_BUZZER_TYPE) {
       return [{
         componentId: component.id,
@@ -1615,6 +1649,7 @@ export function validateContactPersistenceProject(value, options = {}) {
       LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
       RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
       DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
+      TRAFFIC_LIGHT_TYPE,
       CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
       ...Object.keys(DIGITAL_PULSE_SENSOR_DEFINITIONS),
       ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
