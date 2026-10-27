@@ -20,7 +20,7 @@ let browser;
   const response = await page.goto(base, { waitUntil: 'networkidle' });
   assert.equal(response?.status(), 200);
   await page.waitForFunction(() => window.__M11_READY__ === true);
-  assert.match(await page.locator('main > footer').textContent(), /Intent MCU Simulator 1\.1\.0-rc\.140 public release/u);
+  assert.match(await page.locator('main > footer').textContent(), /Intent MCU Simulator 1\.1\.0-rc\.141 public release/u);
   assert.equal(await page.locator('#release-version').textContent(), '1.1.0-rc.141');
   assert.equal(await page.locator('#example-select option').count(), 20);
   const delta = await page.evaluate(async () => {
