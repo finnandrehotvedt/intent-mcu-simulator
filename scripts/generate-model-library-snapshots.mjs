@@ -248,6 +248,8 @@ const CURRENT_CLOSURE = Object.freeze([
   '../expansion-drafts/digital-presence-sensors-artwork-v1.mjs',
   '../expansion-drafts/digital-reflective-sensors-v1.mjs',
   '../expansion-drafts/digital-reflective-sensors-artwork-v1.mjs',
+  '../expansion-drafts/analogue-moisture-level-sensors-v1.mjs',
+  '../expansion-drafts/analogue-moisture-level-sensors-artwork-v1.mjs',
   '../expansion-drafts/ground-reference-integration-v1.mjs',
   '../expansion-drafts/toggle-switch-integration-v1.mjs',
   '../expansion-drafts/switch-contact-graph-v1.mjs',

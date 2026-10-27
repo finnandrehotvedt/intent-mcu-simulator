@@ -475,6 +475,12 @@ import {
   LINE_TRACKING_SENSOR_TYPE,
 } from '../expansion-drafts/digital-reflective-sensors-v1.mjs';
 import {
+  ANALOGUE_MOISTURE_LEVEL_DEFINITIONS,
+  ANALOGUE_WATER_LEVEL_TYPE,
+  CAPACITIVE_SOIL_MOISTURE_TYPE,
+  RESISTIVE_SOIL_MOISTURE_TYPE,
+} from '../expansion-drafts/analogue-moisture-level-sensors-v1.mjs';
+import {
   ROTARY_ENCODER_TYPE,
   nextRotaryEncoderDetent,
 } from '../expansion-drafts/rotary-encoder-quadrature-v1.mjs';
@@ -13003,6 +13009,9 @@ function candidateComponentPrefix(type) {
       [HALL_SWITCH_TYPE]: 'hall-switch',
       [IR_OBSTACLE_SENSOR_TYPE]: 'ir-obstacle',
       [LINE_TRACKING_SENSOR_TYPE]: 'line-tracker',
+      [RESISTIVE_SOIL_MOISTURE_TYPE]: 'soil-resistive',
+      [CAPACITIVE_SOIL_MOISTURE_TYPE]: 'soil-capacitive',
+      [ANALOGUE_WATER_LEVEL_TYPE]: 'water-level',
       [COMMON_CATHODE_RGB_LED_TYPE]: 'rgb-led',
       [RGB_COMMON_ANODE_TYPE]: 'rgb-led-ca',
       [LED_BAR_GRAPH_TYPE]: 'led-bar',
@@ -13056,6 +13065,9 @@ function addComponent(type, point = null) {
       [HALL_SWITCH_TYPE]: { x: 0.84, y: 0.7 },
       [IR_OBSTACLE_SENSOR_TYPE]: { x: 0.68, y: 0.62 },
       [LINE_TRACKING_SENSOR_TYPE]: { x: 0.82, y: 0.62 },
+      [RESISTIVE_SOIL_MOISTURE_TYPE]: { x: 0.58, y: 0.56 },
+      [CAPACITIVE_SOIL_MOISTURE_TYPE]: { x: 0.72, y: 0.56 },
+      [ANALOGUE_WATER_LEVEL_TYPE]: { x: 0.86, y: 0.56 },
       [COMMON_CATHODE_RGB_LED_TYPE]: { x: 0.78, y: 0.7 },
       [RGB_COMMON_ANODE_TYPE]: { x: 0.78, y: 0.7 },
       [LED_BAR_GRAPH_TYPE]: { x: 0.72, y: 0.62 },
@@ -13655,6 +13667,28 @@ function renderRuntimeControls() {
           return;
         }
         const result = applyEditor(prepared.command, `${component.label} idealized signal ${nextTemperatureC} °C`);
+        if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+      });
+      row.append(label, input); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) {
+      const row = document.createElement('div'); const label = document.createElement('label');
+      const key = ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type].controlKeys[0];
+      const ratio = component.controls[key]; const percent = Math.round(ratio * 100);
+      label.textContent = `${component.label} · idealized ${percent}% · ${(ratio * 5).toFixed(2)} V`;
+      const input = document.createElement('input'); input.type = 'range';
+      input.min = '0'; input.max = '100'; input.step = '1'; input.value = String(percent);
+      input.dataset.control = `${component.id}.${key}`; input.id = `control-${component.id}-${key}`;
+      label.htmlFor = input.id;
+      input.setAttribute('aria-label', `${component.label} idealized signal, 0 to 100 percent`);
+      input.addEventListener('input', () => {
+        const value = Number(input.value) / 100;
+        const prepared = selectedCandidateContactControl(component.id, key, value);
+        if (!prepared.ok) {
+          showActionableError(elements.projectmessage, prepared.code, 'Analogue environment sensor control rejected.');
+          return;
+        }
+        const result = applyEditor(prepared.command, `${component.label} idealized signal ${input.value}%`);
         if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
       });
       row.append(label, input); return [row];

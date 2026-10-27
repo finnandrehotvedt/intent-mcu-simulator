@@ -76,6 +76,18 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
     temperatureC: { kind: 'number', minimum: -50, maximum: 150, default: 25,
       unit: '°C', mutability: 'authored' },
   },
+  'sensor.soil-moisture-resistive-analogue-v1': {
+    moistureRatio: { kind: 'number', minimum: 0, maximum: 1, default: 0.5,
+      unit: 'ratio', mutability: 'authored' },
+  },
+  'sensor.soil-moisture-capacitive-analogue-v1': {
+    moistureRatio: { kind: 'number', minimum: 0, maximum: 1, default: 0.5,
+      unit: 'ratio', mutability: 'authored' },
+  },
+  'sensor.water-level-analogue-v1': {
+    waterLevelRatio: { kind: 'number', minimum: 0, maximum: 1, default: 0.5,
+      unit: 'ratio', mutability: 'authored' },
+  },
   'sensor.light-threshold-digital-v1': {
     lightLevelPercent: { kind: 'number', minimum: 0, maximum: 100, default: 40,
       unit: '%', mutability: 'authored' },

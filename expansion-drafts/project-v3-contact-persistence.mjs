@@ -65,6 +65,15 @@ import {
   validateTemperatureAnalogueSensorComponent,
 } from './temperature-analogue-sensor-v1.mjs';
 import {
+  ANALOGUE_MOISTURE_LEVEL_DEFINITIONS,
+  ANALOGUE_WATER_LEVEL_TYPE,
+  CAPACITIVE_SOIL_MOISTURE_TYPE,
+  RESISTIVE_SOIL_MOISTURE_TYPE,
+  analogueMoistureLevelRatio,
+  projectAnalogueMoistureLevelSensors,
+  validateAnalogueMoistureLevelSensor,
+} from './analogue-moisture-level-sensors-v1.mjs';
+import {
   DIGITAL_LIGHT_THRESHOLD_DEFINITION,
   DIGITAL_LIGHT_THRESHOLD_TYPE,
   projectDigitalLightThresholdModules,
@@ -206,6 +215,7 @@ function pinIds(component) {
   if (component.type === SPDT_CONTACT_TYPE) return ['COM', 'A', 'B'];
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
+  if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return ['VCC', 'GND', 'DOUT'];
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
@@ -234,6 +244,7 @@ function componentPins(component) {
   if (component.type === SPDT_CONTACT_TYPE) return SPDT_CONTACT_DEFINITION.terminals;
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return LIGHT_ANALOGUE_SENSOR_DEFINITION.pins;
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return TEMPERATURE_ANALOGUE_SENSOR_DEFINITION.pins;
+  if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) return ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type].pins;
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return DIGITAL_LIGHT_THRESHOLD_DEFINITION.pins;
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].pins;
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type].pins;
@@ -291,6 +302,10 @@ function validateCandidateComponent(component) {
   } else if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) {
     if (!validateTemperatureAnalogueSensorComponent(component)) {
       fail('PROJECT_CONTACT_TEMPERATURE_SENSOR_STATE', [component.id]);
+    }
+  } else if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) {
+    if (!validateAnalogueMoistureLevelSensor(component)) {
+      fail('PROJECT_CONTACT_ANALOGUE_MOISTURE_LEVEL_SENSOR_STATE', [component.id]);
     }
   } else if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
     if (!validateDigitalLightThresholdComponent(component)) {
@@ -368,6 +383,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE,
         ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
         LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
+        RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
         DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
         CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
         IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
@@ -761,7 +777,23 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
       { temperatureC: sensor.temperatureC }, [sensor.componentId]);
     if (expected.outputVolts !== sensor.voltage) fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
   }
-  const thresholdProjection = projectDigitalLightThresholdModules(temperatureProjection.runtimeGraph);
+  const moistureLevelProjection = projectAnalogueMoistureLevelSensors(temperatureProjection.runtimeGraph);
+  if (!moistureLevelProjection.ok) {
+    fail(`PROJECT_CONTACT_${moistureLevelProjection.code}`, moistureLevelProjection.details);
+  }
+  contacts.push(...moistureLevelProjection.sensors.map((sensor) => ({
+    componentId: sensor.componentId,
+    type: sensor.type,
+    state: { ratio: sensor.ratio, voltage: sensor.voltage },
+    runtimeProjection: clone(sensor),
+  })));
+  for (const sensor of moistureLevelProjection.sensors) {
+    const expected = production(implementation, sensor.type, { ratio: sensor.ratio }, [sensor.componentId]);
+    if (expected.ratio !== sensor.ratio || expected.outputVolts !== sensor.voltage) {
+      fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+    }
+  }
+  const thresholdProjection = projectDigitalLightThresholdModules(moistureLevelProjection.runtimeGraph);
   if (!thresholdProjection.ok) {
     fail(`PROJECT_CONTACT_${thresholdProjection.code}`, thresholdProjection.details);
   }
@@ -999,6 +1031,14 @@ function draftContacts(graph) {
         runtimeProjection: null,
       }];
     }
+    if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) {
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { ratio: analogueMoistureLevelRatio(component) },
+        runtimeProjection: null,
+      }];
+    }
     if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
       return [{
         componentId: component.id,
@@ -1183,6 +1223,7 @@ export function validateContactPersistenceProject(value, options = {}) {
     (component) => [
       GROUND_REFERENCE_TYPE, POWER_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
       LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
+      RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
       DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
       CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
       IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,

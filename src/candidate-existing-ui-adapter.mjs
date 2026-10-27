@@ -125,6 +125,14 @@ import {
   createDigitalReflectiveSensor,
 } from '../expansion-drafts/digital-reflective-sensors-v1.mjs';
 import { createDigitalReflectiveSensorArtwork } from '../expansion-drafts/digital-reflective-sensors-artwork-v1.mjs';
+import {
+  ANALOGUE_MOISTURE_LEVEL_DEFINITIONS,
+  ANALOGUE_WATER_LEVEL_TYPE,
+  CAPACITIVE_SOIL_MOISTURE_TYPE,
+  RESISTIVE_SOIL_MOISTURE_TYPE,
+  createAnalogueMoistureLevelSensor,
+} from '../expansion-drafts/analogue-moisture-level-sensors-v1.mjs';
+import { createAnalogueMoistureLevelArtwork } from '../expansion-drafts/analogue-moisture-level-sensors-artwork-v1.mjs';
 
 export const CANDIDATE_EXISTING_UI_ADAPTER_SCHEMA = 'intent-mcu-candidate-existing-ui@1';
 
@@ -189,6 +197,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   [ROTARY_ENCODER_TYPE]: ROTARY_ENCODER_DEFINITION,
   ...DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
   ...DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS,
+  ...ANALOGUE_MOISTURE_LEVEL_DEFINITIONS,
 });
 
 export function candidateUiDefinition(type) {
@@ -257,6 +266,9 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component?.type]) {
     return createDigitalReflectiveSensorArtwork(documentObject, definition, component, options);
   }
+  if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component?.type]) {
+    return createAnalogueMoistureLevelArtwork(documentObject, definition, component, options);
+  }
   throw new TypeError('CANDIDATE_UI_COMPONENT');
 }
 
@@ -288,6 +300,7 @@ export function createCandidateUiComponent(type, id) {
   if (type === ROTARY_ENCODER_TYPE) return createRotaryEncoderComponent(id);
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[type]) return createDigitalPresenceSensor(type, id);
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[type]) return createDigitalReflectiveSensor(type, id);
+  if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[type]) return createAnalogueMoistureLevelSensor(type, id);
   throw new TypeError('CANDIDATE_UI_COMPONENT_TYPE');
 }
 
@@ -433,6 +446,16 @@ export function candidateContactControl(session, componentId, key, value) {
       worker: {
         command: 'control', componentId, key: 'position', value: temperatureCToVoltage(value) / 5,
       },
+    };
+  }
+  if ([RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE,
+    ANALOGUE_WATER_LEVEL_TYPE].includes(component.type)
+      && key === ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type].controlKeys[0]
+      && Number.isFinite(value) && value >= 0 && value <= 1) {
+    return {
+      ok: true,
+      command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'position', value },
     };
   }
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {

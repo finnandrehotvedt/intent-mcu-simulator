@@ -182,6 +182,15 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       }
       return { ok: true, code: 'OK', result: { outputVolts: (input.temperatureC + 50) / 40 } };
     }
+    if (['sensor.soil-moisture-resistive-analogue-v1',
+      'sensor.soil-moisture-capacitive-analogue-v1',
+      'sensor.water-level-analogue-v1'].includes(componentType)) {
+      if (!exactInput(input, ['ratio']) || !Number.isFinite(input.ratio)
+          || input.ratio < 0 || input.ratio > 1) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { ratio: input.ratio, outputVolts: input.ratio * 5 } };
+    }
     if (componentType === 'sensor.light-threshold-digital-v1') {
       const { lightLevelPercent, thresholdPercent, hysteresisPercentagePoints, currentActive } = input ?? {};
       if (![lightLevelPercent, thresholdPercent, hysteresisPercentagePoints].every(Number.isFinite)

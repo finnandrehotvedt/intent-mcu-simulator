@@ -44,6 +44,9 @@ const expected = {
   'sensor.hall-switch-digital-v1': ['magnetPresent'],
   'sensor.ir-obstacle-reflective-v1': ['obstacleDetected'],
   'sensor.line-tracking-reflective-v1': ['lineDetected'],
+  'sensor.soil-moisture-resistive-analogue-v1': ['moistureRatio'],
+  'sensor.soil-moisture-capacitive-analogue-v1': ['moistureRatio'],
+  'sensor.water-level-analogue-v1': ['waterLevelRatio'],
   'input.rotary-encoder-quadrature-v1': ['detent'],
 };
 
@@ -67,10 +70,10 @@ function candidate(id, componentId, changes) {
   return opened.session;
 }
 
-test('all 46 executable cells have one exact controls-persist or controls-empty policy', () => {
+test('all 49 executable cells have one exact controls-persist or controls-empty policy', () => {
   assert.deepEqual(controlPersistenceSummary(), {
-    profiles: 4, cells: 176, available: 46, unavailable: 130,
-    controlBearing: 25, controlsEmpty: 21, controls: 34,
+    profiles: 4, cells: 188, available: 49, unavailable: 139,
+    controlBearing: 28, controlsEmpty: 21, controls: 37,
   });
   const inventory = controlPersistenceInventory();
   const bearing = inventory.filter((cell) => cell.available && cell.controls.length);

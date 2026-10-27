@@ -26,6 +26,9 @@ const rows = [
   ['switch.rotary-selector-4-v1', 'position', 'contact projection · selected one-of-four throw', 'authored COM/P1–P4 contact → bounded AVR projection', 'model-projected'],
   ['sensor.light-analogue-v1', 'lightLevel', 'control · position', 'A0 ADC → executed firmware → USART/D13', 'actual-executed'],
   ['sensor.temperature-analogue-v1', 'temperatureC', 'control · normalized position', 'A1 ADC → executed firmware → USART/D13', 'actual-executed'],
+  ['sensor.soil-moisture-resistive-analogue-v1', 'moistureRatio', 'control · normalized position', 'A2 ADC → executed firmware → USART', 'actual-executed'],
+  ['sensor.soil-moisture-capacitive-analogue-v1', 'moistureRatio', 'control · normalized position', 'A3 ADC → executed firmware → USART', 'actual-executed'],
+  ['sensor.water-level-analogue-v1', 'waterLevelRatio', 'control · normalized position', 'A4 ADC → executed firmware → USART', 'actual-executed'],
   ['sensor.light-threshold-digital-v1', 'lightLevelPercent', 'control · derived pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed'],
   ['sensor.light-threshold-digital-v1', 'thresholdPercent', 'control · derived pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed'],
   ['sensor.light-threshold-digital-v1', 'hysteresisPercentagePoints', 'control · derived pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed'],
@@ -49,7 +52,9 @@ const rows = [
   workerEvent,
   observable,
   evidence,
-  evidenceSource: ['obstacleDetected', 'lineDetected'].includes(field)
+  evidenceSource: ['moistureRatio', 'waterLevelRatio'].includes(field)
+    ? 'test/analogue-moisture-level-sensors-browser.cjs'
+    : ['obstacleDetected', 'lineDetected'].includes(field)
     ? 'test/digital-reflective-sensors-browser.cjs'
     : ['touched', 'motionDetected', 'magnetPresent'].includes(field)
       ? 'test/digital-presence-sensors-browser.cjs'
