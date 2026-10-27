@@ -21,13 +21,17 @@ import {
 
 test('all controller profiles use the AVR component picker contract', async () => {
   assert.equal(AVR_COMPONENT_PICKER_CONTRACT, 'intent-mcu-avr-catalog-picker@1');
-  const [html, shell] = await Promise.all([
+  const [html, shell, browser] = await Promise.all([
     readFile(new URL('../staging/index.html', import.meta.url), 'utf8'),
     readFile(new URL('../src/shared-workbench-shell.mjs', import.meta.url), 'utf8'),
+    readFile(new URL('../staging/main.mjs', import.meta.url), 'utf8'),
   ]);
   assert.match(html, /data-component-picker-contract="intent-mcu-avr-catalog-picker@1"/u);
   assert.match(shell, /normalizeNarrowComponentPicker\(document, parts, adapter\)/u);
   assert.match(shell, /parts\.dataset\.componentPickerContract = AVR_COMPONENT_PICKER_CONTRACT/u);
+  assert.match(shell, /featureOpen\.textContent = 'Open example'/u);
+  assert.match(browser, /controls\.featureOpen\.onclick = openDht11ReleaseFeature/u);
+  assert.match(browser, /profile: AVR_PROFILE,[\s\S]+actionLabel: 'loading DHT11 temperature and humidity'/u);
   for (const role of ['search', 'count', 'feature', 'feature-artwork', 'feature-open', 'list', 'empty',
     'clear', 'prev', 'page', 'next', 'category', 'interface', 'status', 'supply-voltage',
     'pin-voltage', 'favorites', 'support-open']) {

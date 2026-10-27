@@ -1496,6 +1496,22 @@ function openComponentSupportDialogFor(profile, opener) {
   elements.componentsupportdialog.showModal();
 }
 
+function openDht11ReleaseFeature() {
+  const install = () => {
+    if (selectedCompilerProfile !== AVR_PROFILE) {
+      elements.boardselect.value = AVR_PROFILE;
+      elements.boardselect.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    const result = loadExampleProject('avr-dht11-temperature-humidity', 'project.release-feature');
+    if (result?.ok) sharedWorkbenchShell.closeParts({ restoreFocus: false });
+  };
+  if (!requestUnsavedChangeGuard({
+    profile: AVR_PROFILE,
+    actionLabel: 'loading DHT11 temperature and humidity',
+    continueAction: install,
+  })) install();
+}
+
 function renderBoundedComponentCatalog(options) {
   const { profile, state, editCircuit, search, count, list, properties } = options;
   const { draft, selection, catalog } = state.circuitEditor;
@@ -1527,21 +1543,18 @@ function renderBoundedComponentCatalog(options) {
     controls.favorites.checked = false; rerender({ reset: true }); search.focus();
   };
   controls.supportOpen.onclick = () => openComponentSupportDialogFor(profile, controls.supportOpen);
-  controls.featureOpen.onclick = () => openComponentSupportDialogFor(profile, controls.featureOpen);
+  controls.featureOpen.textContent = 'Open example';
+  controls.featureOpen.onclick = openDht11ReleaseFeature;
 
-  const boardPart = catalog.parts.find((part) => part.type === profile) ?? catalog.parts[0];
-  const boardDefinition = uiComponentCatalog[boardPart?.type];
-  const boardComponent = draft.components.find((component) => component.type === boardPart?.type);
-  if (boardDefinition && controls.featureArtwork.dataset.type !== boardDefinition.type) {
-    const preview = boardComponent ?? {
-      id: `catalog-${boardDefinition.type.replace(/[^a-z0-9]+/giu, '-')}`, type: boardDefinition.type,
-      label: boardDefinition.displayName, properties: defaultProperties(boardDefinition.type), controls: {},
-    };
-    controls.featureArtwork.replaceChildren(createComponentArtwork(boardDefinition, preview, { thumbnail: true }));
-    controls.featureArtwork.dataset.type = boardDefinition.type;
+  const releaseDefinition = uiComponentCatalog[DHT11_TYPE];
+  if (releaseDefinition && controls.featureArtwork.dataset.type !== releaseDefinition.type) {
+    const preview = createCandidateUiComponent(DHT11_TYPE, `${profile}-dht11-feature-preview`);
+    preview.label = releaseDefinition.displayName;
+    controls.featureArtwork.replaceChildren(createComponentArtwork(releaseDefinition, preview, { thumbnail: true }));
+    controls.featureArtwork.dataset.type = releaseDefinition.type;
   }
-  controls.featureTitle.textContent = boardDefinition?.displayName ?? 'Profile component set';
-  controls.featureDetail.textContent = `${catalog.parts.length} entries supported by this exact controller project.`;
+  controls.featureTitle.textContent = 'DHT11 temperature and humidity';
+  controls.featureDetail.textContent = 'Open the complete AVR sensor example. This controller project remains parked and unchanged.';
 
   const favorites = new Set(catalogPreferences.favorites);
   const recentRank = new Map(catalogPreferences.recent.map((type, index) => [type, index]));
@@ -8630,7 +8643,7 @@ function requestUnsavedChangeGuard({ profile, actionLabel, continueAction }) {
     return true;
   }
   const token = ++destructiveActionSequence;
-  pendingDestructiveProjectAction = { token, profile, continueAction,
+  pendingDestructiveProjectAction = { token, profile, activeProfile: selectedCompilerProfile, continueAction,
     fingerprint: authoredProjectFingerprint(profile), returnFocus: document.activeElement };
   elements.unsavedchangetitle.textContent = `Keep ${currentProjectNameForGuard(profile)} before ${actionLabel}?`;
   elements.unsavedchangedescription.textContent = `${actionLabel} will replace authored changes to this ${profile} project.`;
@@ -16381,17 +16394,7 @@ function mountReleaseFeature() {
   elements.catalogreleasefeatureartwork.replaceChildren(
     createComponentArtwork(definition, component, { thumbnail: true }),
   );
-  elements.catalogreleasefeatureopen.addEventListener('click', () => {
-    const install = () => {
-      const result = loadExampleProject('avr-dht11-temperature-humidity', 'project.release-feature');
-      if (result?.ok) sharedWorkbenchShell.closeParts({ restoreFocus: false });
-    };
-    if (!requestUnsavedChangeGuard({
-      profile: AVR_PROFILE,
-      actionLabel: 'loading DHT11 temperature and humidity',
-      continueAction: install,
-    })) install();
-  });
+  elements.catalogreleasefeatureopen.addEventListener('click', openDht11ReleaseFeature);
 }
 
 let examplePickerReturnFocus = null;
@@ -16849,7 +16852,7 @@ elements.unsaveddownload.addEventListener('click', () => {
 elements.unsaveddiscard.addEventListener('click', () => {
   const pending = pendingDestructiveProjectAction;
   if (!pending) return;
-  if (selectedCompilerProfile !== pending.profile
+  if (selectedCompilerProfile !== pending.activeProfile
     || authoredProjectFingerprint(pending.profile) !== pending.fingerprint) {
     closeUnsavedChangeGuard();
     profileMessage(pending.profile, 'The project changed while the decision was open. The older action was cancelled; your newer draft is unchanged.');

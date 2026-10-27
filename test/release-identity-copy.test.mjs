@@ -16,7 +16,7 @@ test('one release authority matches package capability and dynamic OCI projectio
   ]);
   assert.deepEqual(Object.keys(release).sort(), ['schema', 'version']);
   assert.equal(release.schema, 'intent-mcu-release@1');
-  assert.equal(release.version, '1.1.0-rc.144');
+  assert.equal(release.version, '1.1.0-rc.145');
   assert.equal(RELEASE_VERSION, release.version);
   assert.equal(PRODUCT_VERSION, release.version);
   assert.equal(packageValue.version, release.version);
@@ -34,7 +34,7 @@ test('footer, four-case helper and exact seed accessibility are coherent without
     import('../src/seeded-property-suite.mjs'),
   ]);
   assert.match(html, /id="release-version"/u);
-  assert.doesNotMatch(html, /1\.1\.0-rc\.4[145] public release/u);
+  assert.doesNotMatch(html, /1\.1\.0-rc\.4[146] public release/u);
   assert.match(main, /releaseversion\.textContent = RELEASE_VERSION/u);
   assert.match(html, /Run 4 boundary tests/u);
   assert.match(main, /four boundary scenarios/u);

@@ -35,6 +35,9 @@ const PRE_CMP091_DS18B20_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -368,16 +371,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-dht11-public-visibility.1-current',
-  'intent-mcu-model-bundle-current-dht11-public-visibility-1@53',
+  '2.0.0-dht11-open-example.1-current',
+  'intent-mcu-model-bundle-current-dht11-open-example-1@54',
   currentImplementation,
   {
-    priorVersion: PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
     semanticDisposition: 'retains the complete DS18B20 and DHT11 component contracts without electrical, protocol or runtime semantic changes',
-    presentationDisposition: 'makes the DHT11 example directly visible in Simple view and features its simulator controls in the shared Parts drawer',
-    baselineClosureDisposition: 'source rc144 DS18B20 head 0172198 and every earlier identity remain immutable migration-only anchors; public rc143 remains the rollback release until acceptance',
+    presentationDisposition: 'makes the DHT11 Open example action identical across all four profile drawers while preserving parked profile drafts and the AVR unsaved-change guard',
+    baselineClosureDisposition: 'public rc144 head 1461ed5 and every earlier identity remain immutable migration-only anchors; rc144 remains the rollback release until acceptance',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -447,6 +450,7 @@ export const PRE_CMP043_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.fr
 export const PRE_CMP092_DHT11_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP092_DHT11_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_CMP091_DS18B20_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP091_DS18B20_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

@@ -2,6 +2,18 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.145 — 2026-10-27
+
+- Shows the same DHT11 feature artwork and Open example action in the shared
+  Parts drawer on AVR, Pico, ESP32-C3 and STM32.
+- Opens the executable lesson by switching explicitly to AVR while retaining
+  the source, drawing and browser draft of the profile the user came from.
+- Extends the unsaved-change guard to protect a parked AVR project without
+  requiring that AVR already be the active profile.
+- Adds browser regression coverage for all three cross-profile entry paths,
+  parked-profile storage, Keep/Discard behavior and drawer visual parity.
+- Adds no DHT22 component, model or public runtime behavior.
+
 ## 1.1.0-rc.144 — 2026-10-27
 
 - Makes the already executable DHT11 sensor visible in the ordinary Simple

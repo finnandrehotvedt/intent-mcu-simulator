@@ -63,7 +63,9 @@ const output = process.env.COMPONENT_DRAWER_OUTPUT || '/tmp/component-drawer-par
       assert.equal(await picker.getAttribute('data-component-picker-contract'), 'intent-mcu-avr-catalog-picker@1');
       assert.equal(await picker.getAttribute('data-component-picker-profile'), profile);
       for (const role of requiredRoles) assert.equal(await picker.locator(`[data-picker-role="${role}"]`).count(), 1, `${profile}:${role}`);
-      assert.equal(await picker.locator('[data-picker-role="feature-artwork"] svg[role="img"]').count(), 1, profile);
+      assert.equal(await picker.locator('[data-picker-role="feature-artwork"] [data-artwork-key="sensor-dht11-temperature-humidity"]').count(), 1, profile);
+      assert.equal(await picker.locator('[data-picker-role="feature-title"]').textContent(), 'DHT11 temperature and humidity', profile);
+      assert.equal(await picker.locator('[data-picker-role="feature-open"]').textContent(), 'Open example', profile);
       assert.equal(await picker.locator('.catalog-advanced-filters').count(), 1, profile);
       assert.equal(await picker.locator('.catalog-pagination').count(), 1, profile);
       assert.equal(await picker.locator('.catalog-support-card').count(), 1, profile);

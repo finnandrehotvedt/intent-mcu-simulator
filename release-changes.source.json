@@ -11,8 +11,8 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.143",
-    "current": "1.1.0-rc.144"
+    "previous": "1.1.0-rc.144",
+    "current": "1.1.0-rc.145"
   },
   "changes": [
     {
@@ -24,7 +24,7 @@
       "contracts": [
         "x72-example-progression-v1"
       ],
-      "summary": "Surfaces the runnable AVR DHT11 lesson in Simple view and Parts, and adds a DS18B20 starter with original artwork, signed 1/16-degree control, OneWire scratchpad execution, CRC-8, and canonical Save/Open."
+      "summary": "Restores the DHT11 Open example action in the shared Parts drawer for AVR, Pico, ESP32-C3 and STM32, switches safely to AVR, and preserves parked profile drafts and the unsaved AVR guard."
     }
   ],
   "migrationRequired": false,

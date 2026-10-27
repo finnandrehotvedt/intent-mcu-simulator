@@ -252,13 +252,13 @@ function normalizeNarrowComponentPicker(document, parts, adapter) {
   featureArtwork.className = 'catalog-release-feature-artwork';
   featureArtwork.dataset.pickerRole = 'feature-artwork'; featureArtwork.setAttribute('aria-hidden', 'true');
   const featureCopy = document.createElement('span'); featureCopy.className = 'catalog-release-feature-copy';
-  const featureBadge = document.createElement('span'); featureBadge.className = 'support-badge'; featureBadge.textContent = 'PROFILE PARTS';
+  const featureBadge = document.createElement('span'); featureBadge.className = 'support-badge'; featureBadge.textContent = 'NEW DIGITAL SENSOR';
   const featureTitle = document.createElement('strong');
   featureTitle.id = `${prefix}-catalog-feature-title`; featureTitle.dataset.pickerRole = 'feature-title';
   const featureDetail = document.createElement('small'); featureDetail.dataset.pickerRole = 'feature-detail';
   featureCopy.append(featureBadge, featureTitle, featureDetail);
   const featureOpen = document.createElement('button');
-  featureOpen.type = 'button'; featureOpen.textContent = 'View support'; featureOpen.dataset.pickerRole = 'feature-open';
+  featureOpen.type = 'button'; featureOpen.textContent = 'Open example'; featureOpen.dataset.pickerRole = 'feature-open';
   feature.append(featureArtwork, featureCopy, featureOpen);
 
   list.className = 'catalog-list'; list.dataset.pickerRole = 'list'; list.setAttribute('role', 'list');

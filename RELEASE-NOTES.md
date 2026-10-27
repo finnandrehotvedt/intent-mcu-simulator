@@ -1,4 +1,24 @@
-# Intent MCU Simulator 1.1.0-rc.144
+# Intent MCU Simulator 1.1.0-rc.145
+
+## DHT11 Open example from every controller profile
+
+The shared Parts drawer now presents the same DHT11 feature and **Open
+example** action on AVR, Pico, ESP32-C3 and STM32. Opening it from a bounded
+3.3 V profile parks that profile's authored drawing and source unchanged,
+switches explicitly to AVR, and opens the complete executable DHT11 lesson.
+
+If the parked AVR project has unsaved edits, the existing Keep/Discard guard
+still protects it while the current Pico, ESP32-C3 or STM32 draft remains
+untouched. This release adds no new component or runtime authority; DHT11 is
+still executable only on AVR and the other profiles retain truthful support
+limits. DHT22 is not included in this public release.
+
+Actual public deployment state and rollback evidence remain owned by the
+separate deployment checkpoint.
+
+---
+
+## 1.1.0-rc.144
 
 ## Digital sensors visible from the first screen
 
