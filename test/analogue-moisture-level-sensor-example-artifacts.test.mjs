@@ -38,3 +38,10 @@ test('CMP101/CMP102/CMP104 example is exact, openable and runtime-projectable', 
     ['water-level-1', 'potentiometer.linear-v1', 0.8],
   ]);
 });
+
+test('CMP101/CMP102/CMP104 example is visibly discoverable with physical limits', async () => {
+  const html = await readFile(new URL('../staging/examples.html', import.meta.url), 'utf8');
+  assert.match(html, /<h2>Soil moisture and water level<\/h2>/u);
+  assert.match(html, /A2\/A3\/A4 and their ideal 0–5 V ADC values/u);
+  assert.match(html, /no soil, conductivity, corrosion, dielectric, depth, liquid or calibration physics/u);
+});

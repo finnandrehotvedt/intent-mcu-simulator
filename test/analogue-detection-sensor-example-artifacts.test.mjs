@@ -40,3 +40,9 @@ test('CMP103/CMP109/CMP110 example is exact, openable and runtime-projectable', 
   ]);
 });
 
+test('CMP103/CMP109/CMP110 example is visibly discoverable with detector limits', async () => {
+  const html = await readFile(new URL('../staging/examples.html', import.meta.url), 'utf8');
+  assert.match(html, /<h2>Rain, sound-level and flame analogue sensors<\/h2>/u);
+  assert.match(html, /A0\/A1\/A5 and the corresponding 0–5 V values/u);
+  assert.match(html, /no weather, acoustic, spectral, combustion, calibration, latency or alarm-safety accuracy/u);
+});
