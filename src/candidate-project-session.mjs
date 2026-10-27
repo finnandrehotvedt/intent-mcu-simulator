@@ -63,8 +63,8 @@ import { DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS, IR_OBSTACLE_SENSOR_TYPE,
 import { ANALOGUE_MOISTURE_LEVEL_DEFINITIONS, ANALOGUE_WATER_LEVEL_TYPE,
   CAPACITIVE_SOIL_MOISTURE_TYPE, RESISTIVE_SOIL_MOISTURE_TYPE,
 } from '../expansion-drafts/analogue-moisture-level-sensors-v1.mjs';
-import { ANALOGUE_DETECTION_DEFINITIONS, FLAME_ANALOGUE_TYPE, RAIN_ANALOGUE_TYPE,
-  SOUND_LEVEL_ANALOGUE_TYPE,
+import { ANALOGUE_DETECTION_DEFINITIONS, CO2_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
+  MQ_GAS_ANALOGUE_TYPE, RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, UV_ANALOGUE_TYPE,
 } from '../expansion-drafts/analogue-detection-sensors-v1.mjs';
 
 export const CANDIDATE_EDITOR_INTEGRATION_SCHEMA = 'intent-mcu-candidate-editor-session@1';
@@ -92,6 +92,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
   RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
   RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
+  MQ_GAS_ANALOGUE_TYPE, CO2_ANALOGUE_TYPE, UV_ANALOGUE_TYPE,
 ]);
 
 function validPoint(value) {
@@ -278,7 +279,7 @@ function contactSupport(result) {
         : ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[contact.type]
         ? 'Ideal linear 0–5 V environment-module signal only; no calibrated soil, liquid, geometry, material or response-time accuracy is modelled.'
         : ANALOGUE_DETECTION_DEFINITIONS[contact.type]
-        ? 'Ideal linear 0–5 V detector-module signal only; no rainfall, sound-pressure, flame-safety, geometry, spectral or response-time accuracy is modelled.'
+        ? 'Ideal linear 0–5 V detector response only; no calibrated concentration, rainfall, sound-pressure, UV index, physical geometry, spectral, timing, alarm or safety accuracy is modelled.'
         : contact.type === LIGHT_ANALOGUE_SENSOR_TYPE
         ? 'Ideal linear 0–5 V module signal only; no lux accuracy or physical LDR response is modelled.'
         : contact.type === SPDT_CONTACT_TYPE

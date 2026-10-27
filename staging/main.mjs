@@ -482,9 +482,12 @@ import {
 } from '../expansion-drafts/analogue-moisture-level-sensors-v1.mjs';
 import {
   ANALOGUE_DETECTION_DEFINITIONS,
+  CO2_ANALOGUE_TYPE,
   FLAME_ANALOGUE_TYPE,
+  MQ_GAS_ANALOGUE_TYPE,
   RAIN_ANALOGUE_TYPE,
   SOUND_LEVEL_ANALOGUE_TYPE,
+  UV_ANALOGUE_TYPE,
 } from '../expansion-drafts/analogue-detection-sensors-v1.mjs';
 import {
   ROTARY_ENCODER_TYPE,
@@ -13021,6 +13024,9 @@ function candidateComponentPrefix(type) {
       [RAIN_ANALOGUE_TYPE]: 'rain-sensor',
       [SOUND_LEVEL_ANALOGUE_TYPE]: 'sound-level',
       [FLAME_ANALOGUE_TYPE]: 'flame-sensor',
+      [MQ_GAS_ANALOGUE_TYPE]: 'mq-gas',
+      [CO2_ANALOGUE_TYPE]: 'co2-sensor',
+      [UV_ANALOGUE_TYPE]: 'uv-sensor',
       [COMMON_CATHODE_RGB_LED_TYPE]: 'rgb-led',
       [RGB_COMMON_ANODE_TYPE]: 'rgb-led-ca',
       [LED_BAR_GRAPH_TYPE]: 'led-bar',
@@ -13080,6 +13086,9 @@ function addComponent(type, point = null) {
       [RAIN_ANALOGUE_TYPE]: { x: 0.58, y: 0.5 },
       [SOUND_LEVEL_ANALOGUE_TYPE]: { x: 0.72, y: 0.5 },
       [FLAME_ANALOGUE_TYPE]: { x: 0.86, y: 0.5 },
+      [MQ_GAS_ANALOGUE_TYPE]: { x: 0.58, y: 0.44 },
+      [CO2_ANALOGUE_TYPE]: { x: 0.72, y: 0.44 },
+      [UV_ANALOGUE_TYPE]: { x: 0.86, y: 0.44 },
       [COMMON_CATHODE_RGB_LED_TYPE]: { x: 0.78, y: 0.7 },
       [RGB_COMMON_ANODE_TYPE]: { x: 0.78, y: 0.7 },
       [LED_BAR_GRAPH_TYPE]: { x: 0.72, y: 0.62 },

@@ -100,6 +100,18 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
     flameIntensityRatio: { kind: 'number', minimum: 0, maximum: 1, default: 0.5,
       unit: 'ratio', mutability: 'authored' },
   },
+  'sensor.mq-gas-analogue-v1': {
+    gasResponseRatio: { kind: 'number', minimum: 0, maximum: 1, default: 0.5,
+      unit: 'ratio', mutability: 'authored' },
+  },
+  'sensor.co2-analogue-v1': {
+    co2ResponseRatio: { kind: 'number', minimum: 0, maximum: 1, default: 0.5,
+      unit: 'ratio', mutability: 'authored' },
+  },
+  'sensor.uv-analogue-v1': {
+    uvResponseRatio: { kind: 'number', minimum: 0, maximum: 1, default: 0.5,
+      unit: 'ratio', mutability: 'authored' },
+  },
   'sensor.light-threshold-digital-v1': {
     lightLevelPercent: { kind: 'number', minimum: 0, maximum: 100, default: 40,
       unit: '%', mutability: 'authored' },

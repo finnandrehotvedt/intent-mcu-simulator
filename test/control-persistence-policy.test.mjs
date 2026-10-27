@@ -50,6 +50,9 @@ const expected = {
   'sensor.rain-analogue-v1': ['wetnessRatio'],
   'sensor.sound-level-analogue-v1': ['soundLevelRatio'],
   'sensor.flame-analogue-v1': ['flameIntensityRatio'],
+  'sensor.mq-gas-analogue-v1': ['gasResponseRatio'],
+  'sensor.co2-analogue-v1': ['co2ResponseRatio'],
+  'sensor.uv-analogue-v1': ['uvResponseRatio'],
   'input.rotary-encoder-quadrature-v1': ['detent'],
 };
 
@@ -73,10 +76,10 @@ function candidate(id, componentId, changes) {
   return opened.session;
 }
 
-test('all 52 executable cells have one exact controls-persist or controls-empty policy', () => {
+test('all 55 executable cells have one exact controls-persist or controls-empty policy', () => {
   assert.deepEqual(controlPersistenceSummary(), {
-    profiles: 4, cells: 200, available: 52, unavailable: 148,
-    controlBearing: 31, controlsEmpty: 21, controls: 40,
+    profiles: 4, cells: 212, available: 55, unavailable: 157,
+    controlBearing: 34, controlsEmpty: 21, controls: 43,
   });
   const inventory = controlPersistenceInventory();
   const bearing = inventory.filter((cell) => cell.available && cell.controls.length);

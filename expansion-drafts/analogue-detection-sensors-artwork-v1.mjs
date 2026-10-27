@@ -2,9 +2,12 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import {
+  CO2_ANALOGUE_TYPE,
   FLAME_ANALOGUE_TYPE,
+  MQ_GAS_ANALOGUE_TYPE,
   RAIN_ANALOGUE_TYPE,
   SOUND_LEVEL_ANALOGUE_TYPE,
+  UV_ANALOGUE_TYPE,
   analogueDetectionRatio,
 } from './analogue-detection-sensors-v1.mjs';
 
@@ -66,6 +69,51 @@ export function createAnalogueDetectionArtwork(documentObject, definition, compo
       el(documentObject, 'text', { x: 60, y: 18, 'text-anchor': 'middle', fill: '#fff0d3',
         'font-size': 7, 'font-family': 'sans-serif' }, `${percent}% RESPONSE`),
     );
+  } else if (component.type === MQ_GAS_ANALOGUE_TYPE) {
+    root.append(
+      el(documentObject, 'circle', { cx: 58, cy: 42, r: 21, fill: '#59666d',
+        stroke: '#d9e2e7', 'stroke-width': 2 }),
+      el(documentObject, 'circle', { cx: 58, cy: 42, r: 14, fill: '#283238',
+        stroke: '#9caeb7', 'stroke-width': 1 }),
+      ...Array.from({ length: 5 }, (_, index) => el(documentObject, 'circle', {
+        cx: 50 + (index % 3) * 8, cy: 34 + Math.floor(index / 3) * 13, r: 2.5,
+        fill: '#0c171d', stroke: '#87d7e8', 'stroke-width': 0.7,
+      })),
+      el(documentObject, 'path', { d: 'M82 55 Q88 48 84 41 Q91 34 86 26', fill: 'none',
+        stroke: '#95e3af', 'stroke-width': Math.max(1, ratio * 4), opacity: 0.5 + ratio * 0.5 }),
+      el(documentObject, 'text', { x: 60, y: 18, 'text-anchor': 'middle', fill: '#d8f5ff',
+        'font-size': 7, 'font-family': 'sans-serif' }, `${percent}% GAS RESPONSE`),
+    );
+  } else if (component.type === CO2_ANALOGUE_TYPE) {
+    root.append(
+      el(documentObject, 'circle', { cx: 47, cy: 43, r: 15, fill: '#31505d',
+        stroke: '#90d4e4', 'stroke-width': 2 }),
+      el(documentObject, 'circle', { cx: 62, cy: 37, r: 18, fill: '#31505d',
+        stroke: '#90d4e4', 'stroke-width': 2 }),
+      el(documentObject, 'circle', { cx: 77, cy: 44, r: 14, fill: '#31505d',
+        stroke: '#90d4e4', 'stroke-width': 2 }),
+      el(documentObject, 'rect', { x: 40, y: 43, width: 45, height: 14, fill: '#31505d' }),
+      el(documentObject, 'text', { x: 62, y: 49, 'text-anchor': 'middle', fill: '#effcff',
+        'font-size': 14, 'font-family': 'sans-serif', 'font-weight': 'bold', opacity: 0.45 + ratio * 0.55 }, 'CO₂'),
+      el(documentObject, 'text', { x: 60, y: 18, 'text-anchor': 'middle', fill: '#d8f5ff',
+        'font-size': 7, 'font-family': 'sans-serif' }, `${percent}% RESPONSE`),
+    );
+  } else if (component.type === UV_ANALOGUE_TYPE) {
+    root.append(
+      ...Array.from({ length: 8 }, (_, index) => {
+        const angle = index * Math.PI / 4; const x1 = 60 + Math.cos(angle) * 20;
+        const y1 = 42 + Math.sin(angle) * 20; const x2 = 60 + Math.cos(angle) * 28;
+        const y2 = 42 + Math.sin(angle) * 28;
+        return el(documentObject, 'line', { x1, y1, x2, y2, stroke: '#c792ff',
+          'stroke-width': Math.max(1.5, ratio * 4), 'stroke-linecap': 'round' });
+      }),
+      el(documentObject, 'circle', { cx: 60, cy: 42, r: 15, fill: '#7c4db5',
+        stroke: '#e2c5ff', 'stroke-width': 2, opacity: 0.5 + ratio * 0.5 }),
+      el(documentObject, 'text', { x: 60, y: 46, 'text-anchor': 'middle', fill: '#fff5ff',
+        'font-size': 11, 'font-family': 'sans-serif', 'font-weight': 'bold' }, 'UV'),
+      el(documentObject, 'text', { x: 60, y: 18, 'text-anchor': 'middle', fill: '#ead7ff',
+        'font-size': 7, 'font-family': 'sans-serif' }, `${percent}% RESPONSE`),
+    );
   }
   for (const [pin, x, color] of [
     ['VCC', 22, '#ef3340'], ['GND', 60, '#dbe8ed'], ['AOUT', 98, '#5ce1e6'],
@@ -80,4 +128,3 @@ export function createAnalogueDetectionArtwork(documentObject, definition, compo
   }
   return root;
 }
-

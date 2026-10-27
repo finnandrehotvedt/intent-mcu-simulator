@@ -135,9 +135,6 @@ import {
 import { createAnalogueMoistureLevelArtwork } from '../expansion-drafts/analogue-moisture-level-sensors-artwork-v1.mjs';
 import {
   ANALOGUE_DETECTION_DEFINITIONS,
-  FLAME_ANALOGUE_TYPE,
-  RAIN_ANALOGUE_TYPE,
-  SOUND_LEVEL_ANALOGUE_TYPE,
   createAnalogueDetectionSensor,
 } from '../expansion-drafts/analogue-detection-sensors-v1.mjs';
 import { createAnalogueDetectionArtwork } from '../expansion-drafts/analogue-detection-sensors-artwork-v1.mjs';
@@ -471,7 +468,7 @@ export function candidateContactControl(session, componentId, key, value) {
       worker: { command: 'control', componentId, key: 'position', value },
     };
   }
-  if ([RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE].includes(component.type)
+  if (ANALOGUE_DETECTION_DEFINITIONS[component.type]
       && key === ANALOGUE_DETECTION_DEFINITIONS[component.type].controlKeys[0]
       && Number.isFinite(value) && value >= 0 && value <= 1) {
     return {

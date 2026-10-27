@@ -192,7 +192,8 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       return { ok: true, code: 'OK', result: { ratio: input.ratio, outputVolts: input.ratio * 5 } };
     }
     if (['sensor.rain-analogue-v1', 'sensor.sound-level-analogue-v1',
-      'sensor.flame-analogue-v1'].includes(componentType)) {
+      'sensor.flame-analogue-v1', 'sensor.mq-gas-analogue-v1',
+      'sensor.co2-analogue-v1', 'sensor.uv-analogue-v1'].includes(componentType)) {
       if (!exactInput(input, ['ratio']) || !Number.isFinite(input.ratio)
           || input.ratio < 0 || input.ratio > 1) {
         return failure('MODEL_LIBRARY_PRODUCTION_INPUT');

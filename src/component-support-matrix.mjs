@@ -107,6 +107,9 @@ const referenceBindings = deepFreeze({
     'sensor.rain-analogue-v1': { starters: ['avr-analogue-detection-sensors'], tests: ['test/analogue-detection-sensors-candidate.test.mjs', 'test/analogue-detection-sensor-example-artifacts.test.mjs'] },
     'sensor.sound-level-analogue-v1': { starters: ['avr-analogue-detection-sensors'], tests: ['test/analogue-detection-sensors-candidate.test.mjs', 'test/analogue-detection-sensor-example-artifacts.test.mjs'] },
     'sensor.flame-analogue-v1': { starters: ['avr-analogue-detection-sensors'], tests: ['test/analogue-detection-sensors-candidate.test.mjs', 'test/analogue-detection-sensor-example-artifacts.test.mjs'] },
+    'sensor.mq-gas-analogue-v1': { starters: ['avr-analogue-exposure-sensors'], tests: ['test/analogue-exposure-sensors-candidate.test.mjs', 'test/analogue-exposure-sensor-example-artifacts.test.mjs'] },
+    'sensor.co2-analogue-v1': { starters: ['avr-analogue-exposure-sensors'], tests: ['test/analogue-exposure-sensors-candidate.test.mjs', 'test/analogue-exposure-sensor-example-artifacts.test.mjs'] },
+    'sensor.uv-analogue-v1': { starters: ['avr-analogue-exposure-sensors'], tests: ['test/analogue-exposure-sensors-candidate.test.mjs', 'test/analogue-exposure-sensor-example-artifacts.test.mjs'] },
   },
   [PICO]: {
     [PICO]: { starters: ['pico-led-on', 'pico-led-off'], tests: ['test/rp2040-pico-circuit.test.mjs', 'test/supported-example-pack-browser.cjs'] },

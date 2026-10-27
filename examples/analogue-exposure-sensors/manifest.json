@@ -1,0 +1,39 @@
+{
+  "schema": "intent-mcu-analogue-exposure-sensor-example-manifest@1",
+  "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "8d3c953a205d213e77dfff9fa60709f3a7c7d0b1c1fec3dbfa518f3ffe04bf8a",
+    "implementationSha256": "25a324b57d25cab870100b44ac7953025a1968ff59aba41d8cbaaad07241212d"
+  },
+  "entries": [
+    {
+      "id": "avr-analogue-exposure-sensors",
+      "requirementIds": [
+        "CMP-107",
+        "CMP-108",
+        "CMP-111"
+      ],
+      "file": "avr-analogue-exposure-sensors.intent-mcu.json",
+      "projectSha256": "64718ff06810f5838660ec16b60fa6b5e50688f0da7804d858ffbe63b409dc53",
+      "sourceSha256": "1b78af5b59128e5ab65d4b064e283378a6076b3d814244a47a0d37174438a5ad",
+      "expectedBehavior": "A2, A3 and A4 report independent idealized 0–5 V MQ gas, CO2 and UV response ratios.",
+      "namedPins": {
+        "supply": "VCC → 5V",
+        "ground": "GND → GND1",
+        "mqGas": "AOUT → A2",
+        "co2": "AOUT → A3",
+        "uv": "AOUT → A4"
+      },
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable ideal analogue adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "unavailable",
+        "board.esp32-c3-devmodule-v1": "unavailable",
+        "board.stm32f429zi-nucleo144-v1": "unavailable"
+      },
+      "provenance": "Original project-owned contracts, SVG artwork, deterministic analogue projection, firmware source and canonical project envelope."
+    }
+  ]
+}

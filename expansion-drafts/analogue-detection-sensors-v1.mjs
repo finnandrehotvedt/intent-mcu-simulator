@@ -11,6 +11,9 @@ import {
 export const RAIN_ANALOGUE_TYPE = 'sensor.rain-analogue-v1';
 export const SOUND_LEVEL_ANALOGUE_TYPE = 'sensor.sound-level-analogue-v1';
 export const FLAME_ANALOGUE_TYPE = 'sensor.flame-analogue-v1';
+export const MQ_GAS_ANALOGUE_TYPE = 'sensor.mq-gas-analogue-v1';
+export const CO2_ANALOGUE_TYPE = 'sensor.co2-analogue-v1';
+export const UV_ANALOGUE_TYPE = 'sensor.uv-analogue-v1';
 export const ANALOGUE_DETECTION_RUNTIME_TYPE = IDEAL_ANALOGUE_MODULE_RUNTIME_TYPE;
 
 const freeze = (value) => { if (value && typeof value === 'object' && !Object.isFrozen(value)) {
@@ -61,6 +64,30 @@ export const ANALOGUE_DETECTION_DEFINITIONS = freeze({
     functions: ['analogue flame-response input'], signalDescription: '0 no response to 1 maximum ideal response',
     omittedPhysics: 'flame detection or safety capability, distance, spectrum, angle, ambient-light rejection, source geometry, loading, tolerance, noise or response time',
   }),
+  [MQ_GAS_ANALOGUE_TYPE]: definition({
+    type: MQ_GAS_ANALOGUE_TYPE, family: 'sensor.mq-gas-analogue',
+    displayName: 'MQ-style gas response module', partNumber: 'IL-MQ-GAS-A1',
+    renderer: 'sensor-mq-gas-analogue', controlKey: 'gasResponseRatio',
+    outputLabel: 'Ideal normalized gas response', aliases: ['MQ gas module', 'analogue gas response sensor'],
+    functions: ['analogue gas-response input'], signalDescription: '0 minimum to 1 maximum ideal response',
+    omittedPhysics: 'gas identity, concentration or ppm calibration, selectivity, heater warm-up, cross-sensitivity, poisoning, humidity, temperature, loading, tolerance, noise, alarm or safety capability',
+  }),
+  [CO2_ANALOGUE_TYPE]: definition({
+    type: CO2_ANALOGUE_TYPE, family: 'sensor.co2-analogue',
+    displayName: 'CO₂ response model', partNumber: 'IL-CO2-A1',
+    renderer: 'sensor-co2-analogue', controlKey: 'co2ResponseRatio',
+    outputLabel: 'Ideal normalized CO2 response', aliases: ['carbon dioxide model', 'analogue CO2 response'],
+    functions: ['analogue CO2-response input'], signalDescription: '0 minimum to 1 maximum ideal response',
+    omittedPhysics: 'CO2 concentration or ppm calibration, NDIR optics, diffusion, pressure, humidity, temperature, baseline correction, drift, loading, tolerance, noise, alarm or safety capability',
+  }),
+  [UV_ANALOGUE_TYPE]: definition({
+    type: UV_ANALOGUE_TYPE, family: 'sensor.uv-analogue',
+    displayName: 'Analogue UV response sensor', partNumber: 'IL-UV-A1',
+    renderer: 'sensor-uv-analogue', controlKey: 'uvResponseRatio',
+    outputLabel: 'Ideal normalized UV response', aliases: ['ultraviolet sensor', 'analogue UV module'],
+    functions: ['analogue ultraviolet-response input'], signalDescription: '0 minimum to 1 maximum ideal response',
+    omittedPhysics: 'UV index or irradiance calibration, wavelength response, angle, window transmission, temperature, aging, loading, tolerance, noise, exposure dose or safety capability',
+  }),
 });
 
 export function createAnalogueDetectionSensor(type, id) {
@@ -89,7 +116,8 @@ export function analogueDetectionRatio(component) {
 export function projectAnalogueDetectionSensors(value) {
   let runtimeGraph = structuredClone(value);
   const sensors = [];
-  for (const type of [RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE]) {
+  for (const type of [RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
+    MQ_GAS_ANALOGUE_TYPE, CO2_ANALOGUE_TYPE, UV_ANALOGUE_TYPE]) {
     const definitionValue = ANALOGUE_DETECTION_DEFINITIONS[type];
     const controlKey = definitionValue.controlKeys[0];
     const projected = projectIdealThreePinAnalogueModules(runtimeGraph, {
@@ -116,4 +144,3 @@ export function projectAnalogueDetectionSensors(value) {
   }
   return { ok: true, runtimeGraph, sensors };
 }
-
