@@ -46,7 +46,8 @@ const expectedNext = Object.freeze({
   'avr-light-threshold': 'Load Thermostat boundary test to express a threshold as an executable requirement.',
   'avr-active-buzzer': 'Load Traffic light sequence to coordinate three current-limited outputs.',
   'avr-traffic-light': 'Load Seven-segment digits to coordinate a larger group of outputs.',
-  'avr-seven-segment': 'Load PWM pulse to compare switched outputs with duty-cycle output.',
+  'avr-seven-segment': 'Load Four-digit multiplex to coordinate shared segments and digit selection.',
+  'avr-four-digit-seven-segment': 'Load PWM pulse to compare switched outputs with duty-cycle output.',
   'avr-rotary-encoder': 'Load Thermostat boundary test, then open Scenario timeline to author inputs within the supported thermostat subset.',
   'pico-led-on': 'Load GPIO0 off + UART to test the opposite output boundary.',
   'pico-led-off': 'Use Download copy and Open local project to verify data-only recovery before changing source.',
@@ -73,6 +74,7 @@ const baselineProjectHashes = Object.freeze({
   'avr-active-buzzer': '999a45c11f65edf45e02d29815ab9df38d29534cb41c9609482cd1b3f9ae03d6',
   'avr-traffic-light': 'b0bf4f28a757bf9e5ec89f8b4401638971add650761db1c9248fc28c67389e59',
   'avr-seven-segment': 'b8bbdca870e92d26026eef5ceb1219a1771f62422eb789fb8652180360b88733',
+  'avr-four-digit-seven-segment': '988b1f6762ae2e43d0ac4048c850b19e4c574db2e3c8447c9819eb7c2a4f18df',
   'avr-rotary-encoder': 'b86effd37b2593b7740c903cb0916a821f826f32ce5e0723d7539f382478a817',
   'pico-led-on': 'e2e4f928148c45041ee6d2cba1deba6b60436425800add0cd8069607e9f47d3e',
   'pico-led-off': '5197b7127bb70e224f707da86bf6d55619ce309f79764733a782c58345da14de',
@@ -83,10 +85,10 @@ const baselineProjectHashes = Object.freeze({
 });
 const hash = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
-test('X72 exposes one concise five-part learning progression for all 24 examples', () => {
+test('X72 exposes one concise five-part learning progression for all 25 examples', () => {
   const catalog = cards();
-  assert.equal(catalog.length, 24);
-  assert.equal(new Set(catalog.map(({ id }) => id)).size, 24);
+  assert.equal(catalog.length, 25);
+  assert.equal(new Set(catalog.map(({ id }) => id)).size, 25);
   assert.deepEqual(Object.fromEntries(catalog.map(({ id, next }) => [id, next])), expectedNext);
   for (const card of catalog) {
     for (const field of ['learn', 'try', 'limits', 'next']) assert.match(card[field], /\S/u, `${card.id}.${field}`);

@@ -92,6 +92,12 @@ import {
 } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
 import { createSevenSegmentArtwork } from '../expansion-drafts/seven-segment-common-cathode-artwork-v1.mjs';
 import {
+  FOUR_DIGIT_SEVEN_SEGMENT_DEFINITION,
+  FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+  createFourDigitSevenSegmentComponent,
+} from '../expansion-drafts/seven-segment-four-digit-common-cathode-v1.mjs';
+import { createFourDigitSevenSegmentArtwork } from '../expansion-drafts/seven-segment-four-digit-common-cathode-artwork-v1.mjs';
+import {
   CHARACTER_LCD_DEFINITION,
   CHARACTER_LCD_TYPE,
   createCharacterLcdComponent,
@@ -242,6 +248,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   [TRAFFIC_LIGHT_TYPE]: TRAFFIC_LIGHT_DEFINITION,
   [ACTIVE_BUZZER_TYPE]: ACTIVE_BUZZER_DEFINITION,
   [SEVEN_SEGMENT_TYPE]: SEVEN_SEGMENT_DEFINITION,
+  [FOUR_DIGIT_SEVEN_SEGMENT_TYPE]: FOUR_DIGIT_SEVEN_SEGMENT_DEFINITION,
   [CHARACTER_LCD_TYPE]: CHARACTER_LCD_DEFINITION,
   [CHARACTER_LCD_20X4_TYPE]: CHARACTER_LCD_20X4_DEFINITION,
   [PCF8574_LCD_TYPE]: PCF8574_LCD_DEFINITION,
@@ -313,6 +320,9 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   }
   if (component?.type === SEVEN_SEGMENT_TYPE) {
     return createSevenSegmentArtwork(documentObject, definition, component, options);
+  }
+  if (component?.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
+    return createFourDigitSevenSegmentArtwork(documentObject, definition, component, options);
   }
   if (component?.type === CHARACTER_LCD_TYPE) {
     return createCharacterLcdArtwork(documentObject, definition, component, options);
@@ -397,6 +407,7 @@ export function createCandidateUiComponent(type, id) {
   if (type === TRAFFIC_LIGHT_TYPE) return createTrafficLightComponent(id);
   if (type === ACTIVE_BUZZER_TYPE) return createActiveBuzzerComponent(id);
   if (type === SEVEN_SEGMENT_TYPE) return createSevenSegmentComponent(id);
+  if (type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) return createFourDigitSevenSegmentComponent(id);
   if (type === CHARACTER_LCD_TYPE) return createCharacterLcdComponent(id);
   if (type === CHARACTER_LCD_20X4_TYPE) return createCharacterLcd20x4Component(id);
   if (type === PCF8574_LCD_TYPE) return createPcf8574LcdComponent(id);

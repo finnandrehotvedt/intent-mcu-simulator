@@ -23,6 +23,9 @@ const PRE_CMP003_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_CMP041_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_CMP041_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_CMP043_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_CMP043_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -296,6 +299,8 @@ const CURRENT_CLOSURE = Object.freeze([
   '../expansion-drafts/traffic-light-module-artwork-v1.mjs',
   '../expansion-drafts/active-buzzer-module-v1.mjs',
   '../expansion-drafts/seven-segment-common-cathode-v1.mjs',
+  '../expansion-drafts/seven-segment-four-digit-common-cathode-v1.mjs',
+  '../expansion-drafts/seven-segment-four-digit-common-cathode-artwork-v1.mjs',
   '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs',
   '../expansion-drafts/character-lcd-20x4-4bit-v1.mjs',
   '../expansion-drafts/character-lcd-20x4-4bit-artwork-v1.mjs',
@@ -351,15 +356,15 @@ const retained = process.argv.includes('--refresh-retained')
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
   '2.0.0-lcd-20x4-cgram.1-current',
-  'intent-mcu-model-bundle-current-lcd-20x4-cgram-1@49',
+  'intent-mcu-model-bundle-current-lcd-20x4-cgram-1@50',
   currentImplementation,
   {
-    priorVersion: PRE_CMP041_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_CMP041_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_CMP043_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_CMP043_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'adds the separate AVR-only common-cathode traffic-light module as a manifest-owned simulated model while retaining every prior component contract',
-    presentationDisposition: 'CMP-041 uses original traffic-signal artwork and named RED/AMBER/GREEN/COM terminals distinct from generic or RGB LED models',
-    baselineClosureDisposition: 'accepted CMP-003 head 731d695 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only',
+    semanticDisposition: 'adds the separate AVR-only twelve-terminal four-digit common-cathode multiplex display as a manifest-owned simulated model while retaining every prior component contract',
+    presentationDisposition: 'CMP-043 uses original four-digit artwork and named a-through-g, dp and DIG1-through-DIG4 terminals distinct from the single-digit display',
+    baselineClosureDisposition: 'accepted CMP-041 head db730407 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -425,6 +430,7 @@ export const PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MANIFEST = Obj
 export const PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_CMP003_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP003_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_CMP041_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP041_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_CMP043_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP043_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

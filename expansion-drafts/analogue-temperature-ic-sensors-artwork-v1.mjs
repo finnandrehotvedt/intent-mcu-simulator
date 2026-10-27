@@ -18,7 +18,8 @@ const el = (documentObject, name, attributes = {}, text = null) => {
 };
 
 export function createAnalogueTemperatureIcArtwork(documentObject, definition, component) {
-  if (!documentObject?.createElementNS || definition !== ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component?.type]) {
+  if (!documentObject?.createElementNS || definition?.type !== component?.type
+      || !ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) {
     throw new TypeError('ANALOGUE_TEMPERATURE_IC_ARTWORK');
   }
   const temperatureC = analogueTemperatureIcValue(component);

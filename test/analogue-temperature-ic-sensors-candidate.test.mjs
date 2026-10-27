@@ -17,6 +17,7 @@ import {
   createAnalogueTemperatureIcSensor,
   validateAnalogueTemperatureIcSensor,
 } from '../expansion-drafts/analogue-temperature-ic-sensors-v1.mjs';
+import { createAnalogueTemperatureIcArtwork } from '../expansion-drafts/analogue-temperature-ic-sensors-artwork-v1.mjs';
 import {
   CANDIDATE_UI_COMPONENTS, candidateContactControl, createCandidateUiComponent,
   openCandidateUiSession,
@@ -24,6 +25,12 @@ import {
 import { openPortableEditorSession } from '../src/candidate-project-session.mjs';
 
 const TYPES = [TMP36_TEMPERATURE_TYPE, LM35_TEMPERATURE_TYPE];
+
+class ArtworkNode {
+  constructor(name) { this.name = name; this.attributes = {}; this.children = []; this.textContent = ''; }
+  setAttribute(key, value) { this.attributes[key] = String(value); }
+  append(...children) { this.children.push(...children); }
+}
 
 function openSession() {
   const draft = createEditableContactDraft(); assert.equal(draft.ok, true);
@@ -64,6 +71,11 @@ test('CMP089/CMP090 are distinct original TMP36 and LM35 transfer contracts', ()
     const component = createCandidateUiComponent(type, `temperature-${type}`);
     assert.equal(validateAnalogueTemperatureIcSensor(component), true);
     assert.equal(analogueTemperatureIcValue(component), 25);
+    const artwork = createAnalogueTemperatureIcArtwork(
+      { createElementNS: (_namespace, name) => new ArtworkNode(name) },
+      { ...definition, displayName: `${definition.displayName} preview` }, component,
+    );
+    assert.equal(artwork.attributes['data-artwork-key'], definition.artwork.renderer);
   }
   assert.match(ANALOGUE_TEMPERATURE_IC_DEFINITIONS[TMP36_TEMPERATURE_TYPE].support.limitations.join(' '), /0\.5 V/u);
   assert.match(ANALOGUE_TEMPERATURE_IC_DEFINITIONS[LM35_TEMPERATURE_TYPE].support.limitations.join(' '), /Negative-temperature circuitry/u);

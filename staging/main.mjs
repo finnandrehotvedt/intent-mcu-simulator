@@ -473,6 +473,7 @@ import { LED_BAR_GRAPH_TYPE, RGB_COMMON_ANODE_TYPE,
   ROTARY_SELECTOR_TYPE } from '../expansion-drafts/rotary-selector-indicators-v1.mjs';
 import { ACTIVE_BUZZER_TYPE } from '../expansion-drafts/active-buzzer-module-v1.mjs';
 import { SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
+import { FOUR_DIGIT_SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-four-digit-common-cathode-v1.mjs';
 import {
   CHARACTER_LCD_TYPE,
 } from '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs';
@@ -11618,6 +11619,15 @@ function clearRuntimePresentation() {
     artwork.dataset.redOn = 'false'; artwork.dataset.amberOn = 'false'; artwork.dataset.greenOn = 'false';
     for (const lamp of artwork.querySelectorAll('.traffic-light-lamp')) lamp.classList.remove('on');
   }
+  for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key="output-seven-segment-four-digit-common-cathode"]')) {
+    for (let digit = 1; digit <= 4; digit += 1) {
+      artwork.dataset[`digit${digit}Segments`] = '';
+      artwork.dataset[`digit${digit}DecimalPoint`] = 'false';
+    }
+    for (const segment of artwork.querySelectorAll('.four-digit-seven-segment-bar')) {
+      segment.classList.remove('on');
+    }
+  }
   for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key="output-active-buzzer-module"]')) {
     artwork.dataset.enabled = 'false'; artwork.dataset.driveState = 'idle';
     artwork.querySelector('.active-buzzer-disc')?.classList.remove('on');
@@ -13132,6 +13142,7 @@ function candidateComponentPrefix(type) {
       [LED_BAR_GRAPH_TYPE]: 'led-bar',
       [ACTIVE_BUZZER_TYPE]: 'active-buzzer',
       [SEVEN_SEGMENT_TYPE]: 'seven-segment',
+      [FOUR_DIGIT_SEVEN_SEGMENT_TYPE]: 'four-digit-seven-segment',
       [CHARACTER_LCD_TYPE]: 'character-lcd',
       [CHARACTER_LCD_20X4_TYPE]: 'character-lcd-20x4',
       [PCF8574_LCD_TYPE]: 'pcf8574-lcd',
@@ -13221,6 +13232,7 @@ function addComponent(type, point = null) {
       [LED_BAR_GRAPH_TYPE]: { x: 0.72, y: 0.62 },
       [ACTIVE_BUZZER_TYPE]: { x: 0.78, y: 0.68 },
       [SEVEN_SEGMENT_TYPE]: { x: 0.76, y: 0.66 },
+      [FOUR_DIGIT_SEVEN_SEGMENT_TYPE]: { x: 0.72, y: 0.64 },
       [CHARACTER_LCD_TYPE]: { x: 0.72, y: 0.64 },
       [CHARACTER_LCD_20X4_TYPE]: { x: 0.7, y: 0.62 },
       [ROTARY_ENCODER_TYPE]: { x: 0.72, y: 0.64 },
@@ -14051,7 +14063,7 @@ function renderProject() {
   elements.graphstate.textContent = `${project.circuit.components.length} components · ${project.circuit.nets.length} nets · ${endpointCount} endpoints`;
   if (validation.ok) {
     elements.circuitdiagnostics.textContent = editor.kind === 'candidate-project-v3'
-      ? 'Candidate accepted: validated contacts, bounded analogue/digital modules, current-limited light outputs, silent buzzer, seven-segment, and write-only 4-bit GPIO character LCD. Unsupported display commands and electrical topologies fail closed; no physical sensor, optical, acoustic or display accuracy is claimed.'
+      ? 'Candidate accepted: validated contacts, bounded analogue/digital modules, current-limited light outputs, silent buzzer, single- and four-digit seven-segment displays, and write-only 4-bit GPIO character LCD. Unsupported display commands and electrical topologies fail closed; no physical sensor, optical, acoustic or display accuracy is claimed.'
       : 'Circuit accepted for the tested runtime subset.';
   } else {
     if (editor.kind === 'candidate-project-v3') {
@@ -14298,6 +14310,57 @@ function renderSevenSegmentRuntime(message) {
   }
 }
 
+function renderFourDigitSevenSegmentRuntime(message) {
+  if (editor.kind !== 'candidate-project-v3') return;
+  const pins = new Map((Array.isArray(message.pins) ? message.pins : []).map((pin) => [pin.pin, pin]));
+  for (const support of (Array.isArray(editor.runtimeSupport) ? editor.runtimeSupport : []).filter(
+    (item) => item.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE && item.runtimeProjection,
+  )) {
+    const artwork = elements.componentlayer.querySelector(
+      `[data-component-id="${support.componentId}"] [data-artwork-key="output-seven-segment-four-digit-common-cathode"]`,
+    );
+    if (!artwork) continue;
+    const activeSegments = Object.entries(support.runtimeProjection.segments)
+      .filter(([, segment]) => {
+        const pin = pins.get(segment.sourcePin);
+        return pin?.mode === 'OUTPUT' && Boolean(pin.level);
+      })
+      .map(([segment]) => segment);
+    const selectedDigits = Object.entries(support.runtimeProjection.digits)
+      .filter(([, digit]) => {
+        const pin = pins.get(digit.sourcePin);
+        return pin?.mode === 'OUTPUT' && !Boolean(pin.level);
+      })
+      .map(([digit]) => Number(digit.slice(3)));
+    for (const digit of selectedDigits) {
+      artwork.dataset[`digit${digit}Segments`] = activeSegments
+        .filter((segment) => segment !== 'dp').sort().join('');
+      artwork.dataset[`digit${digit}DecimalPoint`] = String(activeSegments.includes('dp'));
+    }
+    const digits = [1, 2, 3, 4].map((digit) => artwork.dataset[`digit${digit}Segments`] ?? '');
+    const decimalPoints = [1, 2, 3, 4].map(
+      (digit) => artwork.dataset[`digit${digit}DecimalPoint`] === 'true',
+    );
+    const observed = modelLibraryImplementationFor(AVR_PROFILE)
+      .observeFourDigitSevenSegment(digits, decimalPoints);
+    for (let digit = 1; digit <= 4; digit += 1) {
+      for (const segment of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp']) {
+        const on = segment === 'dp'
+          ? observed.decimalPoints[digit - 1]
+          : observed.digits[digit - 1].includes(segment);
+        artwork.querySelector(
+          `[data-four-digit-index="${digit}"][data-four-digit-segment="${segment}"]`,
+        )?.classList.toggle('on', on);
+      }
+    }
+    const visible = observed.digits.map((segments, index) =>
+      `${index + 1}:${segments || 'blank'}${observed.decimalPoints[index] ? '+dp' : ''}`).join(', ');
+    const label = `${support.componentId}, sampled multiplex digits ${visible}; idealized retained command state only, no physical brightness, package-current or refresh-rate accuracy claimed`;
+    artwork.setAttribute('aria-label', label);
+    const title = artwork.querySelector('title'); if (title) title.textContent = label;
+  }
+}
+
 function renderCharacterLcdRuntime(message) {
   if (editor.kind !== 'candidate-project-v3') return;
   const pins = new Map((Array.isArray(message.pins) ? message.pins : []).map((pin) => [pin.pin, pin]));
@@ -14450,6 +14513,7 @@ function renderRuntime(message, { publishState = true } = {}) {
   renderTrafficLightRuntime(message);
   renderActiveBuzzerRuntime(message);
   renderSevenSegmentRuntime(message);
+  renderFourDigitSevenSegmentRuntime(message);
   renderCharacterLcdRuntime(message);
   renderPcf8574LcdRuntime(message);
   const trace = Array.isArray(message.trace) ? message.trace : [];
@@ -16121,8 +16185,8 @@ function filterStarterExamples() {
     if (!card.hidden) visible += 1;
   }
   elements.examplepickerstatus.textContent = query
-    ? `${visible} of 17 examples match “${elements.examplepickersearch.value.trim()}”`
-    : '17 examples available';
+    ? `${visible} of 20 examples match “${elements.examplepickersearch.value.trim()}”`
+    : '20 examples available';
 }
 function closeExamplePicker({ restoreFocus = true } = {}) {
   const returnFocus = examplePickerReturnFocus;

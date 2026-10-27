@@ -11,6 +11,18 @@ const base = process.env.X72_URL || 'http://127.0.0.1:18830';
 const screenshot = process.env.X72_SCREENSHOT || null;
 const assert = (value, message) => { if (!value) throw new Error(message); };
 
+async function openExampleChooser(page) {
+  if (await page.locator('#beginner-examples').isVisible()) {
+    await page.click('#beginner-examples');
+    return '#beginner-examples';
+  }
+  await page.click('#project-files-open');
+  assert(await page.locator('#project-demo').isVisible() && await page.locator('.project-bar').isVisible(),
+    'Choose example is not visible inside Project & files');
+  await page.click('#project-demo');
+  return '#project-demo';
+}
+
 (async () => {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
@@ -18,6 +30,9 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   const errors = []; const mutations = []; const outside = [];
   page.on('pageerror', (error) => errors.push(error.stack || error.message));
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('response', (response) => {
+    if (response.status() >= 400) errors.push(`HTTP ${response.status()} ${new URL(response.url()).pathname}`);
+  });
   page.on('request', (request) => {
     const target = new URL(request.url());
     if (target.origin !== new URL(base).origin) outside.push(request.url());
@@ -30,18 +45,16 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
     workers: window.__M6_STATE__.runtimeWorkerCreations,
     chooserOpen: document.querySelector('#example-picker-dialog').open,
     projectOpenerVisible: Boolean(document.querySelector('#project-files-open').getClientRects().length),
+    beginnerExamplesVisible: Boolean(document.querySelector('#beginner-examples').getClientRects().length),
     activeCanvasVisible: Boolean(document.querySelector('#active-canvas-stage').getClientRects().length),
   }));
   assert(!initial.chooserOpen, 'example chooser displaced the workspace on load');
-  assert(initial.projectOpenerVisible && initial.activeCanvasVisible,
-    'primary workspace or Project & files action is not prominent on load');
+  assert((initial.beginnerExamplesVisible || initial.projectOpenerVisible) && initial.activeCanvasVisible,
+    'primary workspace or an example chooser action is not prominent on load');
 
-  await page.click('#project-files-open');
-  assert(await page.locator('#project-demo').isVisible() && await page.locator('.project-bar').isVisible(),
-    'Choose example is not visible inside Project & files');
-  await page.click('#project-demo');
+  await openExampleChooser(page);
   const cards = page.locator('.starter-card');
-  assert(await cards.count() === 16, 'AVR chooser must retain exactly 16 cards');
+  assert(await cards.count() === 20, 'AVR chooser must retain exactly 20 cards');
   const cardShape = await cards.evaluateAll((nodes) => nodes.map((node) => ({
     id: node.dataset.example,
     text: node.textContent.toLocaleLowerCase(),
@@ -65,7 +78,7 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
     === `${expectedMatches.length} of ${cardShape.length} examples match “${titleQuery}”`,
   'title search status does not describe the exact derived result');
 
-  await page.locator('.starter-card[data-example="avr-thermostat-boundary-v1"]').click();
+  await page.locator('.starter-card[data-example="avr-thermostat-boundary-v1"] .starter-action').click();
   if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) {
     await page.click('#unsaved-discard');
   }
@@ -73,6 +86,7 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
     await page.click('#workbench-project-dialog .workbench-popup-close');
   }
   await page.waitForFunction(() => window.__M6_STATE__.thermostatExperiment?.active === true);
+  if (!(await page.locator('#brief-tests-open').isVisible())) await page.click('#workbench-view-advanced');
   await page.click('#brief-tests-open');
   assert(await page.locator('#scenario-editor').count() === 1,
     'Thermostat did not expose the supported Scenario timeline next step');
@@ -107,9 +121,9 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   await page.selectOption('#board-select', 'board.atmega328p-16mhz-v1');
   for (const viewport of [{ width: 1440, height: 1000 }, { width: 1024, height: 900 }]) {
     await page.setViewportSize(viewport);
+    let returnSelector;
     if (!(await page.locator('#example-picker-dialog').evaluate((node) => node.open))) {
-      if (!(await page.locator('#workbench-project-dialog').evaluate((node) => node.open))) await page.click('#project-files-open');
-      await page.click('#project-demo');
+      returnSelector = await openExampleChooser(page);
     }
     const layout = await page.evaluate(() => ({
       pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -122,9 +136,11 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
       `${viewport.width}px desktop overflow: ${JSON.stringify(layout)}`);
     assert(layout.dialogInternalScroll, `${viewport.width}px chooser lost bounded internal scrolling`);
     await page.keyboard.press('Escape');
-    assert(await page.locator('#project-demo').evaluate((node) => document.activeElement === node),
+    assert(await page.locator(returnSelector ?? '#beginner-examples').evaluate((node) => document.activeElement === node),
       `${viewport.width}px Escape did not restore focus`);
-    await page.click('#workbench-project-dialog .workbench-popup-close');
+    if (await page.locator('#workbench-project-dialog').evaluate((node) => node.open)) {
+      await page.click('#workbench-project-dialog .workbench-popup-close');
+    }
   }
 
   const finalWorkers = await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations);
@@ -135,8 +151,7 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   assert(errors.length === 0, `X72 raised browser errors: ${errors.join(' | ')}`);
 
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.click('#project-files-open');
-  await page.click('#project-demo');
+  await openExampleChooser(page);
   if (screenshot) {
     fs.mkdirSync(path.dirname(screenshot), { recursive: true });
     await page.screenshot({ path: screenshot, fullPage: false });

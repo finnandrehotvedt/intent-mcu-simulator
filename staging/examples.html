@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Seventeen validated AVR starters, including ten exact component references, plus paired UART/LED lessons for bounded Pico, ESP32-C3 and STM32 profiles.">
+  <meta name="description" content="Twenty validated AVR starters, including eleven exact component references, plus paired UART/LED lessons for bounded Pico, ESP32-C3 and STM32 profiles.">
   <meta name="robots" content="index,follow,max-snippet:-1">
   <title>Starter examples | Intent MCU Simulator</title>
   <link rel="canonical" href="https://lab.teachthecompany.com/examples.html">
@@ -37,6 +37,7 @@
       <article class="docs-card"><h2>Digital light threshold</h2><p><strong>Learn:</strong> active-low threshold hysteresis. <strong>Try:</strong> cross the threshold in both directions. <strong>Observe:</strong> D7, D13 and Serial LIGHT/DARK. <strong>Limits:</strong> no lux calibration or comparator noise.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
       <article class="docs-card"><h2>Logical active buzzer</h2><p><strong>Learn:</strong> logic enable versus physical sound. <strong>Try:</strong> run the D8 on/off sequence. <strong>Observe:</strong> GPIO, Serial and the silent indicator. <strong>Limits:</strong> Partial; no audio, current or acoustic accuracy.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
       <article class="docs-card"><h2>Seven-segment digits</h2><p><strong>Learn:</strong> seven independent current-limited channels. <strong>Try:</strong> run digits 0, 1, 2 and 8. <strong>Observe:</strong> D3–D9 and Serial labels. <strong>Limits:</strong> one ideal digit without decimal point or multiplexing.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
+      <article class="docs-card"><h2>Four-digit multiplex</h2><p><strong>Learn:</strong> eight shared current-limited segments and four active-low digit selects. <strong>Try:</strong> run the deliberately slowed 1-2-3-4 scan. <strong>Observe:</strong> the retained visible digits and Serial DISPLAY 1234. <strong>Limits:</strong> ideal sampled AVR multiplex state without driver, package-current or refresh-rate fidelity.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
       <article class="docs-card"><h2>Traffic light sequence</h2><p><strong>Learn:</strong> coordinate three independent current-limited outputs. <strong>Try:</strong> run red, red+amber, green and amber. <strong>Observe:</strong> D3, D5, D6 and Serial phase labels. <strong>Limits:</strong> ideal AVR indicator without physical optics, load, fault or road-signal timing compliance.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
       <article class="docs-card"><h2>Quadrature encoder</h2><p><strong>Learn:</strong> phase order encodes direction. <strong>Try:</strong> turn one CW and one CCW detent. <strong>Observe:</strong> exact ordered D2/D3 Gray-code events. <strong>Limits:</strong> ideal 1 ms phases without bounce or acceleration.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
     </section>
@@ -60,7 +61,8 @@
         <li><strong>Digital light threshold</strong><span>Next: Load Thermostat boundary test to express a threshold as an executable requirement.</span></li>
         <li><strong>Logical active buzzer</strong><span>Next: Load Traffic light sequence to coordinate three current-limited outputs.</span></li>
         <li><strong>Traffic light sequence</strong><span>Next: Load Seven-segment digits to coordinate a larger group of outputs.</span></li>
-        <li><strong>Seven-segment digits</strong><span>Next: Load PWM pulse to compare switched outputs with duty-cycle output.</span></li>
+        <li><strong>Seven-segment digits</strong><span>Next: Load Four-digit multiplex to coordinate shared segments and digit selection.</span></li>
+        <li><strong>Four-digit multiplex</strong><span>Next: Load PWM pulse to compare switched outputs with duty-cycle output.</span></li>
         <li><strong>Quadrature encoder</strong><span>Next: Load Thermostat boundary test, then open Scenario timeline to author inputs within the supported thermostat subset.</span></li>
         <li><strong>GPIO0 on + UART</strong><span>Next: Load GPIO0 off + UART to test the opposite output boundary.</span></li>
         <li><strong>GPIO0 off + UART</strong><span>Next: Use Download copy and Open local project to verify data-only recovery before changing source.</span></li>
@@ -85,7 +87,7 @@
       <ol><li>Save the incomplete project and Open it again if you want to prove history-free recovery.</li><li>In <strong>Supported parts</strong>, add the one missing resistor or LED. The fixed stable ID returns, with no cable.</li><li>Activate two compatible free named pins for each missing connection. Unsafe resistance/colour pairs reject without changing the accepted draft.</li><li>When the circuit state says accepted, Build fresh and Run. Old executable authority never returns from the file.</li></ol>
       <nav class="docs-nav" aria-label="Recovery help"><a href="/components.html#narrow-profile-parts">Part and property limits</a><a href="/support.html#routing-help">Cable routing help</a><a href="/support.html#repair-after-open">Detailed Save/Open recovery</a><a href="/">Open the workbench</a></nav>
     </section>
-    <footer>Seventeen validated AVR starters and paired bounded Pico, ESP32-C3 and STM32 examples in Intent MCU Simulator 1.1.0-rc.139</footer>
+    <footer>Twenty validated AVR starters and paired bounded Pico, ESP32-C3 and STM32 examples in Intent MCU Simulator 1.1.0-rc.139</footer>
   </main>
 </body>
 </html>

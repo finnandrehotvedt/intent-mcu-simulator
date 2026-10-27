@@ -160,6 +160,12 @@ import {
   validateSevenSegmentComponent,
 } from './seven-segment-common-cathode-v1.mjs';
 import {
+  FOUR_DIGIT_SEVEN_SEGMENT_DEFINITION,
+  FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+  projectFourDigitSevenSegmentDisplays,
+  validateFourDigitSevenSegmentComponent,
+} from './seven-segment-four-digit-common-cathode-v1.mjs';
+import {
   CHARACTER_LCD_DEFINITION,
   CHARACTER_LCD_TYPE,
   projectCharacterLcdDisplays,
@@ -315,6 +321,9 @@ function pinIds(component) {
   if (component.type === TRAFFIC_LIGHT_TYPE) return ['RED', 'AMBER', 'GREEN', 'COM'];
   if (component.type === ACTIVE_BUZZER_TYPE) return ['VCC', 'GND', 'EN'];
   if (component.type === SEVEN_SEGMENT_TYPE) return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'COM'];
+  if (component.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
+    return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp', 'DIG1', 'DIG2', 'DIG3', 'DIG4'];
+  }
   if (component.type === CHARACTER_LCD_TYPE) return ['VCC', 'GND', 'RS', 'RW', 'E', 'D4', 'D5', 'D6', 'D7'];
   if (component.type === CHARACTER_LCD_20X4_TYPE) return ['VCC', 'GND', 'RS', 'RW', 'E', 'D4', 'D5', 'D6', 'D7'];
   if (component.type === PCF8574_LCD_TYPE) return ['VCC', 'GND', 'SDA', 'SCL'];
@@ -357,6 +366,9 @@ function componentPins(component) {
   if (component.type === TRAFFIC_LIGHT_TYPE) return TRAFFIC_LIGHT_DEFINITION.pins;
   if (component.type === ACTIVE_BUZZER_TYPE) return ACTIVE_BUZZER_DEFINITION.pins;
   if (component.type === SEVEN_SEGMENT_TYPE) return SEVEN_SEGMENT_DEFINITION.pins;
+  if (component.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
+    return FOUR_DIGIT_SEVEN_SEGMENT_DEFINITION.pins;
+  }
   if (component.type === CHARACTER_LCD_TYPE) return CHARACTER_LCD_DEFINITION.pins;
   if (component.type === CHARACTER_LCD_20X4_TYPE) return CHARACTER_LCD_20X4_DEFINITION.pins;
   if (component.type === PCF8574_LCD_TYPE) return PCF8574_LCD_DEFINITION.pins;
@@ -483,6 +495,10 @@ function validateCandidateComponent(component) {
     if (!validateSevenSegmentComponent(component)) {
       fail('PROJECT_CONTACT_SEVEN_SEGMENT_STATE', [component.id]);
     }
+  } else if (component.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
+    if (!validateFourDigitSevenSegmentComponent(component)) {
+      fail('PROJECT_CONTACT_FOUR_DIGIT_SEVEN_SEGMENT_STATE', [component.id]);
+    }
   } else if (component.type === CHARACTER_LCD_TYPE) {
     if (!validateCharacterLcdComponent(component)) {
       fail('PROJECT_CONTACT_CHARACTER_LCD_STATE', [component.id]);
@@ -548,7 +564,8 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         ...Object.keys(CONNECTION_HARDWARE_DEFINITIONS),
         ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
         IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
-        ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
+        ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+        CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
         ROTARY_ENCODER_TYPE,
       ].includes(component.type))) {
     fail('PROJECT_CONTACT_CANDIDATE_REQUIRED');
@@ -1239,7 +1256,23 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
   })));
   for (const display of sevenSegmentProjection.displays) production(implementation, SEVEN_SEGMENT_TYPE,
     { digit: 0 }, [display.componentId]);
-  const characterLcdProjection = projectCharacterLcdDisplays(sevenSegmentProjection.runtimeGraph);
+  const fourDigitProjection = projectFourDigitSevenSegmentDisplays(sevenSegmentProjection.runtimeGraph);
+  if (!fourDigitProjection.ok) {
+    fail(`PROJECT_CONTACT_${fourDigitProjection.code}`, fourDigitProjection.details);
+  }
+  contacts.push(...fourDigitProjection.displays.map((display) => ({
+    componentId: display.componentId,
+    type: FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+    state: { commonPolarity: display.commonPolarity, selectionPolarity: display.selectionPolarity },
+    runtimeProjection: clone(display),
+  })));
+  for (const display of fourDigitProjection.displays) production(
+    implementation,
+    FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+    { digits: ['', '', '', ''], decimalPoints: [false, false, false, false] },
+    [display.componentId],
+  );
+  const characterLcdProjection = projectCharacterLcdDisplays(fourDigitProjection.runtimeGraph);
   if (!characterLcdProjection.ok) {
     fail(`PROJECT_CONTACT_${characterLcdProjection.code}`, characterLcdProjection.details);
   }
@@ -1312,6 +1345,7 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
       ...commonAnodeProjection.runtimePositionSources,
       ...barProjection.runtimePositionSources,
       ...sevenSegmentProjection.runtimePositionSources,
+      ...fourDigitProjection.runtimePositionSources,
       ...rotaryEncoderProjection.runtimePositionSources,
       ...joystickKeypadProjection.runtimePositionSources,
     }),
@@ -1510,6 +1544,14 @@ function draftContacts(graph) {
         runtimeProjection: null,
       }];
     }
+    if (component.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { commonPolarity: 'cathode', selectionPolarity: 'active-low' },
+        runtimeProjection: null,
+      }];
+    }
     if (component.type === CHARACTER_LCD_TYPE) {
       return [{
         componentId: component.id,
@@ -1660,7 +1702,8 @@ export function validateContactPersistenceProject(value, options = {}) {
       ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
       IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
       ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
-      ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
+      ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+      CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
       ROTARY_ENCODER_TYPE,
     ].includes(component.type),
   )) return failResult('PROJECT_CONTACT_CANDIDATE_REQUIRED');

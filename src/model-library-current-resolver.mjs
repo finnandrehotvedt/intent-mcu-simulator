@@ -29,6 +29,7 @@ const sevenDigits = Object.freeze({
   6: ['a', 'c', 'd', 'e', 'f', 'g'], 7: ['a', 'b', 'c'],
   8: ['a', 'b', 'c', 'd', 'e', 'f', 'g'], 9: ['a', 'b', 'c', 'd', 'f', 'g'],
 });
+const fourDigitPattern = /^a?b?c?d?e?f?g?$/u;
 const failure = (code, details = []) => ({ ok: false, code, details: structuredClone(details) });
 const exactInput = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
@@ -36,7 +37,7 @@ const exactInput = (value, keys) => value && typeof value === 'object' && !Array
 // Current behavior is separately owned so future current changes cannot mutate
 // the retained pre-X56 implementation by alias or shared constant.
 export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
-  id: 'intent-mcu-model-bundle-current-lcd-20x4-cgram-1@49',
+  id: 'intent-mcu-model-bundle-current-lcd-20x4-cgram-1@50',
   manifestVersion: CURRENT_MODEL_LIBRARY_MANIFEST.version,
   definition(profile, componentType) {
     const entry = entries.get(`${profile}\u0000${componentType}`);
@@ -65,6 +66,12 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
   },
   observeBuzzer(level) { return { enabled: Boolean(level) }; },
   observeSevenSegment(activeSegments) { return [...new Set(activeSegments)].sort(); },
+  observeFourDigitSevenSegment(digits, decimalPoints = [false, false, false, false]) {
+    return {
+      digits: digits.map((segments) => [...new Set(segments)].sort().join('')),
+      decimalPoints: decimalPoints.map(Boolean),
+    };
+  },
   validateProfile(profile, value, options = {}) {
     if (profile === 'board.rp2040-pico-v1') return validateRp2040PicoCircuit(value, options);
     if (profile === 'board.esp32-c3-devmodule-v1') return validateEsp32C3Circuit(value, options);
@@ -321,6 +328,19 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       }
       return { ok: true, code: 'OK', result: { activeSegments: [...sevenDigits[input.digit]] } };
     }
+    if (componentType === 'output.seven-segment-four-digit-common-cathode-v1') {
+      if (!exactInput(input, ['digits', 'decimalPoints'])
+          || !Array.isArray(input.digits) || input.digits.length !== 4
+          || input.digits.some((segments) => typeof segments !== 'string'
+            || !fourDigitPattern.test(segments))
+          || !Array.isArray(input.decimalPoints) || input.decimalPoints.length !== 4
+          || input.decimalPoints.some((value) => typeof value !== 'boolean')) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: {
+        digits: [...input.digits], decimalPoints: [...input.decimalPoints],
+      } };
+    }
     if (componentType === 'output.character-lcd-16x2-4bit-v1') {
       if (!Array.isArray(input?.lines) || input.lines.length !== 2
           || input.lines.some((line) => typeof line !== 'string' || line.length > 16)) {
@@ -373,6 +393,13 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
 export const PRE_CMP041_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
   ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
   id: 'intent-mcu-model-bundle-current-pre-cmp041-public-source@55',
+  manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
+  migrationOnly: true,
+});
+
+export const PRE_CMP043_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-pre-cmp043-public-source@56',
   manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
   migrationOnly: true,
 });

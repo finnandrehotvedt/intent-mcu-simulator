@@ -1,0 +1,1210 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "7b39338e59c2403377012ca142049ffa287f1517249ab55e1ad8e547e796f16d",
+    "implementationSha256": "d8d96e4751cb25e56aecd4c9f64c9ead2297d573af80f0a8e31745fa8c42dc8c"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-project-contact-persistence@1",
+    "project": {
+      "schema": "intent-mcu-project@3",
+      "metadata": {
+        "name": "Four-digit multiplex"
+      },
+      "catalogue": {
+        "schema": "intent-mcu-catalogue-ref@1",
+        "version": "intent-mcu-catalogue@2"
+      },
+      "controller": {
+        "profile": "board.atmega328p-16mhz-v1",
+        "adapterContract": "intent-mcu-controller-adapter@1",
+        "status": "simulated",
+        "capabilities": [
+          {
+            "id": "gpio",
+            "status": "simulated"
+          },
+          {
+            "id": "adc",
+            "status": "simulated"
+          },
+          {
+            "id": "pwm",
+            "status": "simulated"
+          },
+          {
+            "id": "uart0",
+            "status": "simulated"
+          },
+          {
+            "id": "timers",
+            "status": "partial"
+          },
+          {
+            "id": "interrupts",
+            "status": "partial"
+          },
+          {
+            "id": "spi",
+            "status": "unsupported"
+          },
+          {
+            "id": "i2c",
+            "status": "unsupported"
+          },
+          {
+            "id": "eeprom",
+            "status": "unsupported"
+          },
+          {
+            "id": "watchdog",
+            "status": "unsupported"
+          }
+        ]
+      },
+      "source": {
+        "files": [
+          {
+            "name": "main.ino",
+            "content": "const byte segments[8]={2,3,4,5,6,7,8,9};\nconst byte selects[4]={10,11,12,13};\nconst byte patterns[4][8]={{0,1,1,0,0,0,0,0},{1,1,0,1,1,0,1,0},{1,1,1,1,0,0,1,0},{0,1,1,0,0,1,1,0}};\nvoid blank(){for(byte d=0;d<4;d++)digitalWrite(selects[d],HIGH);}\nvoid show(byte digit){blank();for(byte s=0;s<8;s++)digitalWrite(segments[s],patterns[digit][s]);digitalWrite(selects[digit],LOW);delay(60);}\nvoid setup(){for(byte s=0;s<8;s++)pinMode(segments[s],OUTPUT);for(byte d=0;d<4;d++){pinMode(selects[d],OUTPUT);digitalWrite(selects[d],HIGH);}Serial.begin(115200);}\nvoid loop(){for(byte d=0;d<4;d++)show(d);Serial.println(\"DISPLAY 1234\");}\n"
+          }
+        ]
+      },
+      "circuit": {
+        "schema": "teach-lab-circuit@2",
+        "components": [
+          {
+            "id": "board-1",
+            "type": "board.atmega328p-16mhz-v1",
+            "label": "ATmega328P board",
+            "properties": {},
+            "controls": {}
+          },
+          {
+            "id": "four-digit-seven-segment-1",
+            "type": "led.basic-v1",
+            "label": "Workshop four-digit display (a)",
+            "properties": {
+              "color": "red"
+            },
+            "controls": {}
+          },
+          {
+            "id": "four-digit-seven-segment-1-b",
+            "type": "led.basic-v1",
+            "label": "Workshop four-digit display (b)",
+            "properties": {
+              "color": "red"
+            },
+            "controls": {}
+          },
+          {
+            "id": "four-digit-seven-segment-1-c",
+            "type": "led.basic-v1",
+            "label": "Workshop four-digit display (c)",
+            "properties": {
+              "color": "red"
+            },
+            "controls": {}
+          },
+          {
+            "id": "four-digit-seven-segment-1-d",
+            "type": "led.basic-v1",
+            "label": "Workshop four-digit display (d)",
+            "properties": {
+              "color": "red"
+            },
+            "controls": {}
+          },
+          {
+            "id": "four-digit-seven-segment-1-dp",
+            "type": "led.basic-v1",
+            "label": "Workshop four-digit display (dp)",
+            "properties": {
+              "color": "red"
+            },
+            "controls": {}
+          },
+          {
+            "id": "four-digit-seven-segment-1-e",
+            "type": "led.basic-v1",
+            "label": "Workshop four-digit display (e)",
+            "properties": {
+              "color": "red"
+            },
+            "controls": {}
+          },
+          {
+            "id": "four-digit-seven-segment-1-f",
+            "type": "led.basic-v1",
+            "label": "Workshop four-digit display (f)",
+            "properties": {
+              "color": "red"
+            },
+            "controls": {}
+          },
+          {
+            "id": "four-digit-seven-segment-1-g",
+            "type": "led.basic-v1",
+            "label": "Workshop four-digit display (g)",
+            "properties": {
+              "color": "red"
+            },
+            "controls": {}
+          },
+          {
+            "id": "pot-1",
+            "type": "potentiometer.linear-v1",
+            "label": "Analogue control",
+            "properties": {
+              "ohms": 10000,
+              "taper": "linear"
+            },
+            "controls": {
+              "position": 0.5
+            }
+          },
+          {
+            "id": "four-digit-resistor-1",
+            "type": "resistor.fixed-v1",
+            "label": "a shared segment resistor",
+            "properties": {
+              "ohms": 220
+            },
+            "controls": {}
+          },
+          {
+            "id": "four-digit-resistor-2",
+            "type": "resistor.fixed-v1",
+            "label": "b shared segment resistor",
+            "properties": {
+              "ohms": 220
+            },
+            "controls": {}
+          },
+          {
+            "id": "four-digit-resistor-3",
+            "type": "resistor.fixed-v1",
+            "label": "c shared segment resistor",
+            "properties": {
+              "ohms": 220
+            },
+            "controls": {}
+          },
+          {
+            "id": "four-digit-resistor-4",
+            "type": "resistor.fixed-v1",
+            "label": "d shared segment resistor",
+            "properties": {
+              "ohms": 220
+            },
+            "controls": {}
+          },
+          {
+            "id": "four-digit-resistor-5",
+            "type": "resistor.fixed-v1",
+            "label": "e shared segment resistor",
+            "properties": {
+              "ohms": 220
+            },
+            "controls": {}
+          },
+          {
+            "id": "four-digit-resistor-6",
+            "type": "resistor.fixed-v1",
+            "label": "f shared segment resistor",
+            "properties": {
+              "ohms": 220
+            },
+            "controls": {}
+          },
+          {
+            "id": "four-digit-resistor-7",
+            "type": "resistor.fixed-v1",
+            "label": "g shared segment resistor",
+            "properties": {
+              "ohms": 220
+            },
+            "controls": {}
+          },
+          {
+            "id": "four-digit-resistor-8",
+            "type": "resistor.fixed-v1",
+            "label": "dp shared segment resistor",
+            "properties": {
+              "ohms": 220
+            },
+            "controls": {}
+          }
+        ],
+        "nets": [
+          {
+            "id": "net-5v",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "5V"
+              },
+              {
+                "component": "pot-1",
+                "pin": "HIGH"
+              }
+            ]
+          },
+          {
+            "id": "net-ground-branch",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "GND1"
+              },
+              {
+                "component": "four-digit-seven-segment-1-b",
+                "pin": "CATHODE"
+              },
+              {
+                "component": "four-digit-seven-segment-1-c",
+                "pin": "CATHODE"
+              },
+              {
+                "component": "four-digit-seven-segment-1-d",
+                "pin": "CATHODE"
+              },
+              {
+                "component": "four-digit-seven-segment-1-dp",
+                "pin": "CATHODE"
+              },
+              {
+                "component": "four-digit-seven-segment-1-e",
+                "pin": "CATHODE"
+              },
+              {
+                "component": "four-digit-seven-segment-1-f",
+                "pin": "CATHODE"
+              },
+              {
+                "component": "four-digit-seven-segment-1-g",
+                "pin": "CATHODE"
+              },
+              {
+                "component": "four-digit-seven-segment-1",
+                "pin": "CATHODE"
+              },
+              {
+                "component": "pot-1",
+                "pin": "LOW"
+              }
+            ]
+          },
+          {
+            "id": "net-pot-a0",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "A0"
+              },
+              {
+                "component": "pot-1",
+                "pin": "WIPER"
+              }
+            ]
+          },
+          {
+            "id": "net-starter-four-digit-a-anode",
+            "endpoints": [
+              {
+                "component": "four-digit-resistor-1",
+                "pin": "B"
+              },
+              {
+                "component": "four-digit-seven-segment-1",
+                "pin": "ANODE"
+              }
+            ]
+          },
+          {
+            "id": "net-starter-four-digit-a-drive",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D2"
+              },
+              {
+                "component": "four-digit-resistor-1",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-starter-four-digit-b-anode",
+            "endpoints": [
+              {
+                "component": "four-digit-resistor-2",
+                "pin": "B"
+              },
+              {
+                "component": "four-digit-seven-segment-1-b",
+                "pin": "ANODE"
+              }
+            ]
+          },
+          {
+            "id": "net-starter-four-digit-b-drive",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D3"
+              },
+              {
+                "component": "four-digit-resistor-2",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-starter-four-digit-c-anode",
+            "endpoints": [
+              {
+                "component": "four-digit-resistor-3",
+                "pin": "B"
+              },
+              {
+                "component": "four-digit-seven-segment-1-c",
+                "pin": "ANODE"
+              }
+            ]
+          },
+          {
+            "id": "net-starter-four-digit-c-drive",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D4"
+              },
+              {
+                "component": "four-digit-resistor-3",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-starter-four-digit-d-anode",
+            "endpoints": [
+              {
+                "component": "four-digit-resistor-4",
+                "pin": "B"
+              },
+              {
+                "component": "four-digit-seven-segment-1-d",
+                "pin": "ANODE"
+              }
+            ]
+          },
+          {
+            "id": "net-starter-four-digit-d-drive",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D5"
+              },
+              {
+                "component": "four-digit-resistor-4",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-starter-four-digit-dp-anode",
+            "endpoints": [
+              {
+                "component": "four-digit-resistor-8",
+                "pin": "B"
+              },
+              {
+                "component": "four-digit-seven-segment-1-dp",
+                "pin": "ANODE"
+              }
+            ]
+          },
+          {
+            "id": "net-starter-four-digit-dp-drive",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D9"
+              },
+              {
+                "component": "four-digit-resistor-8",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-starter-four-digit-e-anode",
+            "endpoints": [
+              {
+                "component": "four-digit-resistor-5",
+                "pin": "B"
+              },
+              {
+                "component": "four-digit-seven-segment-1-e",
+                "pin": "ANODE"
+              }
+            ]
+          },
+          {
+            "id": "net-starter-four-digit-e-drive",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D6"
+              },
+              {
+                "component": "four-digit-resistor-5",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-starter-four-digit-f-anode",
+            "endpoints": [
+              {
+                "component": "four-digit-resistor-6",
+                "pin": "B"
+              },
+              {
+                "component": "four-digit-seven-segment-1-f",
+                "pin": "ANODE"
+              }
+            ]
+          },
+          {
+            "id": "net-starter-four-digit-f-drive",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D7"
+              },
+              {
+                "component": "four-digit-resistor-6",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-starter-four-digit-g-anode",
+            "endpoints": [
+              {
+                "component": "four-digit-resistor-7",
+                "pin": "B"
+              },
+              {
+                "component": "four-digit-seven-segment-1-g",
+                "pin": "ANODE"
+              }
+            ]
+          },
+          {
+            "id": "net-starter-four-digit-g-drive",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D8"
+              },
+              {
+                "component": "four-digit-resistor-7",
+                "pin": "A"
+              }
+            ]
+          }
+        ],
+        "junctions": []
+      },
+      "layout": {
+        "positions": {
+          "board-1": {
+            "x": 0.12,
+            "y": 0.2,
+            "rotation": 0
+          },
+          "four-digit-resistor-1": {
+            "x": 0.39,
+            "y": 0.43,
+            "rotation": 0
+          },
+          "four-digit-resistor-2": {
+            "x": 0.49,
+            "y": 0.43,
+            "rotation": 0
+          },
+          "four-digit-resistor-3": {
+            "x": 0.5900000000000001,
+            "y": 0.43,
+            "rotation": 0
+          },
+          "four-digit-resistor-4": {
+            "x": 0.6900000000000001,
+            "y": 0.43,
+            "rotation": 0
+          },
+          "four-digit-resistor-5": {
+            "x": 0.39,
+            "y": 0.55,
+            "rotation": 0
+          },
+          "four-digit-resistor-6": {
+            "x": 0.49,
+            "y": 0.55,
+            "rotation": 0
+          },
+          "four-digit-resistor-7": {
+            "x": 0.5900000000000001,
+            "y": 0.55,
+            "rotation": 0
+          },
+          "four-digit-resistor-8": {
+            "x": 0.6900000000000001,
+            "y": 0.55,
+            "rotation": 0
+          },
+          "four-digit-seven-segment-1": {
+            "x": 0.73,
+            "y": 0.66,
+            "rotation": 0
+          },
+          "four-digit-seven-segment-1-b": {
+            "x": 0.73,
+            "y": 0.66,
+            "rotation": 0
+          },
+          "four-digit-seven-segment-1-c": {
+            "x": 0.73,
+            "y": 0.66,
+            "rotation": 0
+          },
+          "four-digit-seven-segment-1-d": {
+            "x": 0.73,
+            "y": 0.66,
+            "rotation": 0
+          },
+          "four-digit-seven-segment-1-dp": {
+            "x": 0.73,
+            "y": 0.66,
+            "rotation": 0
+          },
+          "four-digit-seven-segment-1-e": {
+            "x": 0.73,
+            "y": 0.66,
+            "rotation": 0
+          },
+          "four-digit-seven-segment-1-f": {
+            "x": 0.73,
+            "y": 0.66,
+            "rotation": 0
+          },
+          "four-digit-seven-segment-1-g": {
+            "x": 0.73,
+            "y": 0.66,
+            "rotation": 0
+          },
+          "pot-1": {
+            "x": 0.12,
+            "y": 0.55,
+            "rotation": 0
+          }
+        },
+        "wireRoutes": {},
+        "wireStyles": {
+          "net-5v": {
+            "color": "#f04f5f"
+          },
+          "net-ground-branch": {
+            "color": "#303943"
+          },
+          "net-pot-a0": {
+            "color": "#a8ff3f"
+          },
+          "net-starter-four-digit-a-anode": {
+            "color": "#39dff2"
+          },
+          "net-starter-four-digit-a-drive": {
+            "color": "#39dff2"
+          },
+          "net-starter-four-digit-b-anode": {
+            "color": "#39dff2"
+          },
+          "net-starter-four-digit-b-drive": {
+            "color": "#39dff2"
+          },
+          "net-starter-four-digit-c-anode": {
+            "color": "#39dff2"
+          },
+          "net-starter-four-digit-c-drive": {
+            "color": "#39dff2"
+          },
+          "net-starter-four-digit-d-anode": {
+            "color": "#39dff2"
+          },
+          "net-starter-four-digit-d-drive": {
+            "color": "#39dff2"
+          },
+          "net-starter-four-digit-dp-anode": {
+            "color": "#39dff2"
+          },
+          "net-starter-four-digit-dp-drive": {
+            "color": "#39dff2"
+          },
+          "net-starter-four-digit-e-anode": {
+            "color": "#39dff2"
+          },
+          "net-starter-four-digit-e-drive": {
+            "color": "#39dff2"
+          },
+          "net-starter-four-digit-f-anode": {
+            "color": "#39dff2"
+          },
+          "net-starter-four-digit-f-drive": {
+            "color": "#39dff2"
+          },
+          "net-starter-four-digit-g-anode": {
+            "color": "#39dff2"
+          },
+          "net-starter-four-digit-g-drive": {
+            "color": "#39dff2"
+          }
+        },
+        "viewport": {
+          "zoom": 1,
+          "panX": 0,
+          "panY": 0
+        }
+      },
+      "instruments": {
+        "logicChannels": [
+          "D13",
+          "D2"
+        ],
+        "selectedPin": "D13",
+        "serial": {
+          "baud": 9600,
+          "encoding": "utf-8",
+          "historyLimit": 512
+        }
+      },
+      "artifact": {
+        "schema": "intent-mcu-project-artifact-ref@1",
+        "status": "dirty",
+        "profile": null,
+        "inputIdentitySha256": null,
+        "artifactIdentitySha256": null
+      }
+    },
+    "candidateCircuit": {
+      "schema": "teach-lab-circuit@2",
+      "components": [
+        {
+          "id": "board-1",
+          "type": "board.atmega328p-16mhz-v1",
+          "label": "ATmega328P board",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "four-digit-seven-segment-1",
+          "type": "output.seven-segment-four-digit-common-cathode-v1",
+          "label": "Workshop four-digit display",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "pot-1",
+          "type": "potentiometer.linear-v1",
+          "label": "Analogue control",
+          "properties": {
+            "ohms": 10000,
+            "taper": "linear"
+          },
+          "controls": {
+            "position": 0.5
+          }
+        },
+        {
+          "id": "four-digit-resistor-1",
+          "type": "resistor.fixed-v1",
+          "label": "a shared segment resistor",
+          "properties": {
+            "ohms": 220
+          },
+          "controls": {}
+        },
+        {
+          "id": "four-digit-resistor-2",
+          "type": "resistor.fixed-v1",
+          "label": "b shared segment resistor",
+          "properties": {
+            "ohms": 220
+          },
+          "controls": {}
+        },
+        {
+          "id": "four-digit-resistor-3",
+          "type": "resistor.fixed-v1",
+          "label": "c shared segment resistor",
+          "properties": {
+            "ohms": 220
+          },
+          "controls": {}
+        },
+        {
+          "id": "four-digit-resistor-4",
+          "type": "resistor.fixed-v1",
+          "label": "d shared segment resistor",
+          "properties": {
+            "ohms": 220
+          },
+          "controls": {}
+        },
+        {
+          "id": "four-digit-resistor-5",
+          "type": "resistor.fixed-v1",
+          "label": "e shared segment resistor",
+          "properties": {
+            "ohms": 220
+          },
+          "controls": {}
+        },
+        {
+          "id": "four-digit-resistor-6",
+          "type": "resistor.fixed-v1",
+          "label": "f shared segment resistor",
+          "properties": {
+            "ohms": 220
+          },
+          "controls": {}
+        },
+        {
+          "id": "four-digit-resistor-7",
+          "type": "resistor.fixed-v1",
+          "label": "g shared segment resistor",
+          "properties": {
+            "ohms": 220
+          },
+          "controls": {}
+        },
+        {
+          "id": "four-digit-resistor-8",
+          "type": "resistor.fixed-v1",
+          "label": "dp shared segment resistor",
+          "properties": {
+            "ohms": 220
+          },
+          "controls": {}
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-5v",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "5V"
+            },
+            {
+              "component": "pot-1",
+              "pin": "HIGH"
+            }
+          ]
+        },
+        {
+          "id": "net-ground-branch",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "GND1"
+            },
+            {
+              "component": "pot-1",
+              "pin": "LOW"
+            }
+          ]
+        },
+        {
+          "id": "net-pot-a0",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "A0"
+            },
+            {
+              "component": "pot-1",
+              "pin": "WIPER"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-a-anode",
+          "endpoints": [
+            {
+              "component": "four-digit-resistor-1",
+              "pin": "B"
+            },
+            {
+              "component": "four-digit-seven-segment-1",
+              "pin": "a"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-a-drive",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D2"
+            },
+            {
+              "component": "four-digit-resistor-1",
+              "pin": "A"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-b-anode",
+          "endpoints": [
+            {
+              "component": "four-digit-resistor-2",
+              "pin": "B"
+            },
+            {
+              "component": "four-digit-seven-segment-1",
+              "pin": "b"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-b-drive",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D3"
+            },
+            {
+              "component": "four-digit-resistor-2",
+              "pin": "A"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-c-anode",
+          "endpoints": [
+            {
+              "component": "four-digit-resistor-3",
+              "pin": "B"
+            },
+            {
+              "component": "four-digit-seven-segment-1",
+              "pin": "c"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-c-drive",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D4"
+            },
+            {
+              "component": "four-digit-resistor-3",
+              "pin": "A"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-d-anode",
+          "endpoints": [
+            {
+              "component": "four-digit-resistor-4",
+              "pin": "B"
+            },
+            {
+              "component": "four-digit-seven-segment-1",
+              "pin": "d"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-d-drive",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D5"
+            },
+            {
+              "component": "four-digit-resistor-4",
+              "pin": "A"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-dp-anode",
+          "endpoints": [
+            {
+              "component": "four-digit-resistor-8",
+              "pin": "B"
+            },
+            {
+              "component": "four-digit-seven-segment-1",
+              "pin": "dp"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-dp-drive",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D9"
+            },
+            {
+              "component": "four-digit-resistor-8",
+              "pin": "A"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-e-anode",
+          "endpoints": [
+            {
+              "component": "four-digit-resistor-5",
+              "pin": "B"
+            },
+            {
+              "component": "four-digit-seven-segment-1",
+              "pin": "e"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-e-drive",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D6"
+            },
+            {
+              "component": "four-digit-resistor-5",
+              "pin": "A"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-f-anode",
+          "endpoints": [
+            {
+              "component": "four-digit-resistor-6",
+              "pin": "B"
+            },
+            {
+              "component": "four-digit-seven-segment-1",
+              "pin": "f"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-f-drive",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D7"
+            },
+            {
+              "component": "four-digit-resistor-6",
+              "pin": "A"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-g-anode",
+          "endpoints": [
+            {
+              "component": "four-digit-resistor-7",
+              "pin": "B"
+            },
+            {
+              "component": "four-digit-seven-segment-1",
+              "pin": "g"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-g-drive",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D8"
+            },
+            {
+              "component": "four-digit-resistor-7",
+              "pin": "A"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-select-1",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D10"
+            },
+            {
+              "component": "four-digit-seven-segment-1",
+              "pin": "DIG1"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-select-2",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D11"
+            },
+            {
+              "component": "four-digit-seven-segment-1",
+              "pin": "DIG2"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-select-3",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D12"
+            },
+            {
+              "component": "four-digit-seven-segment-1",
+              "pin": "DIG3"
+            }
+          ]
+        },
+        {
+          "id": "net-starter-four-digit-select-4",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D13"
+            },
+            {
+              "component": "four-digit-seven-segment-1",
+              "pin": "DIG4"
+            }
+          ]
+        }
+      ],
+      "junctions": []
+    },
+    "candidateLayout": {
+      "schema": "intent-mcu-candidate-layout@1",
+      "positions": {
+        "board-1": {
+          "x": 0.12,
+          "y": 0.2,
+          "rotation": 0
+        },
+        "four-digit-resistor-1": {
+          "x": 0.39,
+          "y": 0.43,
+          "rotation": 0
+        },
+        "four-digit-resistor-2": {
+          "x": 0.49,
+          "y": 0.43,
+          "rotation": 0
+        },
+        "four-digit-resistor-3": {
+          "x": 0.5900000000000001,
+          "y": 0.43,
+          "rotation": 0
+        },
+        "four-digit-resistor-4": {
+          "x": 0.6900000000000001,
+          "y": 0.43,
+          "rotation": 0
+        },
+        "four-digit-resistor-5": {
+          "x": 0.39,
+          "y": 0.55,
+          "rotation": 0
+        },
+        "four-digit-resistor-6": {
+          "x": 0.49,
+          "y": 0.55,
+          "rotation": 0
+        },
+        "four-digit-resistor-7": {
+          "x": 0.5900000000000001,
+          "y": 0.55,
+          "rotation": 0
+        },
+        "four-digit-resistor-8": {
+          "x": 0.6900000000000001,
+          "y": 0.55,
+          "rotation": 0
+        },
+        "four-digit-seven-segment-1": {
+          "x": 0.73,
+          "y": 0.66,
+          "rotation": 0
+        },
+        "pot-1": {
+          "x": 0.12,
+          "y": 0.55,
+          "rotation": 0
+        }
+      },
+      "wireRoutes": {},
+      "viewport": {
+        "zoom": 1,
+        "panX": 0,
+        "panY": 0
+      }
+    },
+    "compiledFixture": {
+      "schema": "intent-mcu-compiled-fixture-ref@1",
+      "id": "button-pullup",
+      "profile": "board.atmega328p-16mhz-v1",
+      "toolchainImageId": "sha256:f04aa7a8c37699d16a965fb374870ff147ca776ba6386f81e7700e350ed3d89f",
+      "source": {
+        "sha256": "84ceea4f298483f4696a3672ac1fff97b046b9e35c65aaa6155b20140a66f518",
+        "bytes": 209
+      },
+      "executable": {
+        "format": "intel-hex",
+        "sha256": "247f94bb051e9eebb4dfe8099278d810e04ccbf097f1b3ddb53b904e26ea8ebc",
+        "bytes": 2525
+      },
+      "debug": {
+        "format": "elf",
+        "sha256": "23a37eff7f7c5b1d0626e12a3f31e00d9b79466eab374cd0d74c46e3667150bd",
+        "bytes": 14632
+      },
+      "artifactIdentitySha256": "69ad0bc87ba02a2d33ac4c5ba1d9bd07e28636b631cd007f4b9423889e76bd3b"
+    }
+  }
+}

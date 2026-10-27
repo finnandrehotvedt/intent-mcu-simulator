@@ -81,6 +81,7 @@ let browser;
     ['avr-active-buzzer', 'Logical active buzzer'],
     ['avr-traffic-light', 'Traffic light sequence'],
     ['avr-seven-segment', 'Seven-segment digits'],
+    ['avr-four-digit-seven-segment', 'Four-digit multiplex'],
     ['avr-rotary-encoder', 'Quadrature encoder'],
   ];
   const projectName = () => page.evaluate(() => {

@@ -1130,6 +1130,9 @@ button:disabled, select:disabled { opacity: .42; }
 .seven-segment-artwork { overflow: visible; }
 .seven-segment-bar { transition: fill 70ms linear, stroke 70ms linear, filter 70ms linear; }
 .seven-segment-bar.on { fill: #ff3347; stroke: #ff7b88; filter: drop-shadow(0 0 6px #ff3347cc); }
+.four-digit-seven-segment-artwork { overflow: visible; }
+.four-digit-seven-segment-bar { transition: fill 45ms linear, stroke 45ms linear, filter 45ms linear; }
+.four-digit-seven-segment-bar.on { fill: #ff3347; stroke: #ff7b88; filter: drop-shadow(0 0 5px #ff3347cc); }
 .character-lcd-artwork { overflow: visible; }
 .character-lcd-screen { transition: fill 100ms linear, filter 100ms linear; }
 .character-lcd-artwork[data-protocol-state="ready"] .character-lcd-screen { fill: #b8e47a; filter: drop-shadow(0 0 4px #8ccf4f88); }

@@ -104,6 +104,7 @@ const referenceBindings = deepFreeze({
     'output.led-bar-graph-10-v1': { starters: ['avr-led-bar-graph'], tests: ['test/rotary-selector-indicators-candidate.test.mjs'] },
     'output.active-buzzer-module-v1': { starters: ['avr-active-buzzer'], tests: ['test/active-buzzer-candidate.test.mjs', 'test/active-buzzer-ui-candidate.cjs', 'test/indicator-actuator-example-artifacts.test.mjs'] },
     'output.seven-segment-common-cathode-v1': { starters: ['avr-seven-segment'], tests: ['test/seven-segment-common-cathode-candidate.test.mjs', 'test/seven-segment-common-cathode-ui-candidate.cjs', 'test/indicator-actuator-example-artifacts.test.mjs'] },
+    'output.seven-segment-four-digit-common-cathode-v1': { starters: ['avr-four-digit-seven-segment'], tests: ['test/four-digit-seven-segment.test.mjs', 'test/four-digit-seven-segment-browser.cjs', 'test/indicator-actuator-example-artifacts.test.mjs'] },
     'output.character-lcd-16x2-4bit-v1': { starters: ['temperature-lcd-threshold'], tests: ['test/character-lcd-16x2-4bit-candidate.test.mjs', 'test/character-lcd-16x2-4bit-ui-candidate.cjs'] },
     'output.character-lcd-20x4-4bit-v1': { starters: ['avr-character-lcd-20x4-cgram'], tests: ['test/character-lcd-20x4-cgram.test.mjs', 'test/character-lcd-20x4-cgram-ui-candidate.cjs'] },
     'output.character-lcd-16x2-pcf8574-v1': { starters: ['avr-pcf8574-lcd-hello'], tests: ['test/pcf8574-lcd-backpack.test.mjs', 'test/pcf8574-lcd-end-to-end-browser.cjs'] },

@@ -48,6 +48,7 @@ import { COMMON_CATHODE_RGB_LED_TYPE } from '../expansion-drafts/common-cathode-
 import { TRAFFIC_LIGHT_TYPE } from '../expansion-drafts/traffic-light-module-v1.mjs';
 import { ACTIVE_BUZZER_TYPE } from '../expansion-drafts/active-buzzer-module-v1.mjs';
 import { SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
+import { FOUR_DIGIT_SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-four-digit-common-cathode-v1.mjs';
 import { CHARACTER_LCD_TYPE } from '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs';
 import { CHARACTER_LCD_20X4_TYPE } from '../expansion-drafts/character-lcd-20x4-4bit-v1.mjs';
 import { PCF8574_LCD_TYPE } from '../expansion-drafts/pcf8574-lcd-backpack-v1.mjs';
@@ -99,7 +100,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
   DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
   TRAFFIC_LIGHT_TYPE,
-  ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE,
+  ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
   CHARACTER_LCD_TYPE,
   CHARACTER_LCD_20X4_TYPE,
   PCF8574_LCD_TYPE,
@@ -283,6 +284,8 @@ function contactSupport(result) {
             ? 'avr-gpio-logical-output-observer-v1'
           : contact.type === SEVEN_SEGMENT_TYPE
             ? 'seven-independent-led.basic-v1'
+          : contact.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE
+            ? 'eight-shared-led-channels-plus-four-active-low-digit-observers-v1'
           : contact.type === CHARACTER_LCD_TYPE
             ? 'avr-gpio-hd44780-write-only-decoder-v1'
           : contact.type === CHARACTER_LCD_20X4_TYPE
@@ -324,6 +327,8 @@ function contactSupport(result) {
         ? 'Ideal high-active GPIO enable observed as a silent logical on/off indicator; no waveform, frequency, sound pressure, supply/GPIO current, loading or physical acoustic accuracy is modelled.'
         : contact.type === SEVEN_SEGMENT_TYPE
         ? 'Ideal commanded on/off state through seven independently current-limited existing LED channels; no decimal point, multiplexing, driver IC, brightness, optical, package-current or physical display accuracy is modelled.'
+        : contact.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE
+        ? 'Ideal sampled AVR multiplex state through eight shared current-limited segment lines and four active-low digit selects; no transistor driver, package-current, refresh-rate, ghosting, brightness, optical, thermal or physical display accuracy is modelled.'
         : contact.type === CHARACTER_LCD_TYPE
         ? 'Bounded AVR-only 16x2 write-only 4-bit GPIO character decoder with deterministic wrapping, display on/off, cursor and blink. Reads, busy flag, custom glyphs, shifts, 8-bit mode, I2C/backpacks and physical display behavior are unsupported.'
         : contact.type === CHARACTER_LCD_20X4_TYPE

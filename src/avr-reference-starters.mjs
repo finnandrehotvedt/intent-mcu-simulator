@@ -7,12 +7,16 @@ import { createDigitalLightThresholdComponent } from '../expansion-drafts/digita
 import { createLightAnalogueSensorComponent } from '../expansion-drafts/light-analogue-sensor-v1.mjs';
 import { canonicalContactPersistenceDraftJson } from '../expansion-drafts/project-v3-contact-persistence.mjs';
 import { createSevenSegmentComponent } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
+import { createFourDigitSevenSegmentComponent } from '../expansion-drafts/seven-segment-four-digit-common-cathode-v1.mjs';
 import { createTrafficLightComponent } from '../expansion-drafts/traffic-light-module-v1.mjs';
 import { createComponent } from './circuit-engine.mjs';
 import { createCandidateUiComponent, openCandidateUiSession } from './candidate-existing-ui-adapter.mjs';
 
 const SEGMENTS = Object.freeze(['a', 'b', 'c', 'd', 'e', 'f', 'g']);
 const SEGMENT_PINS = Object.freeze(['D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9']);
+const FOUR_DIGIT_SEGMENTS = Object.freeze(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp']);
+const FOUR_DIGIT_SEGMENT_PINS = Object.freeze(['D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9']);
+const FOUR_DIGIT_SELECT_PINS = Object.freeze(['D10', 'D11', 'D12', 'D13']);
 const endpoint = (component, pin) => ({ component, pin });
 
 const CARDS = Object.freeze([
@@ -104,6 +108,18 @@ const CARDS = Object.freeze([
     try: 'Build and Run the 0, 1, 2, 8 sequence.',
     observe: 'Compiled D3–D9 patterns and Serial digit labels agree.',
     limits: 'One ideal digit only; no decimal point, multiplexing or physical brightness.',
+    next: 'Load Four-digit multiplex to coordinate shared segments and digit selection.',
+  },
+  {
+    id: 'avr-four-digit-seven-segment', name: 'Four-digit multiplex',
+    model: 'output.seven-segment-four-digit-common-cathode-v1',
+    focus: 'Eight shared segments · four digit selects',
+    partsLabel: 'Controller · four-digit display · eight resistors',
+    description: 'Drive a distinct common-cathode four-digit display through twelve GPIO lines.',
+    learn: 'How shared segment lines and active-low digit selection form a multiplexed display.',
+    try: 'Build and Run the deliberately slowed 1-2-3-4 scan.',
+    observe: 'The latched visible digits and Serial DISPLAY 1234 label agree.',
+    limits: 'Ideal sampled AVR multiplex observer; no driver transistor, package-current or refresh-rate fidelity.',
     next: 'Load PWM pulse to compare switched outputs with duty-cycle output.',
   },
   {
@@ -150,6 +166,14 @@ const byte digits[4][7] = {{1,1,1,1,1,1,0},{0,1,1,0,0,0,0},{1,1,0,1,1,0,1},{1,1,
 const char labels[4] = {'0','1','2','8'};
 void setup() { for (byte i=0;i<7;i++) pinMode(pins[i], OUTPUT); Serial.begin(115200); }
 void loop() { for (byte d=0;d<4;d++) { for (byte i=0;i<7;i++) digitalWrite(pins[i], digits[d][i]); Serial.println(labels[d]); delay(240); } }
+`,
+  'avr-four-digit-seven-segment': `const byte segments[8]={2,3,4,5,6,7,8,9};
+const byte selects[4]={10,11,12,13};
+const byte patterns[4][8]={{0,1,1,0,0,0,0,0},{1,1,0,1,1,0,1,0},{1,1,1,1,0,0,1,0},{0,1,1,0,0,1,1,0}};
+void blank(){for(byte d=0;d<4;d++)digitalWrite(selects[d],HIGH);}
+void show(byte digit){blank();for(byte s=0;s<8;s++)digitalWrite(segments[s],patterns[digit][s]);digitalWrite(selects[digit],LOW);delay(60);}
+void setup(){for(byte s=0;s<8;s++)pinMode(segments[s],OUTPUT);for(byte d=0;d<4;d++){pinMode(selects[d],OUTPUT);digitalWrite(selects[d],HIGH);}Serial.begin(115200);}
+void loop(){for(byte d=0;d<4;d++)show(d);Serial.println("DISPLAY 1234");}
 `,
   'avr-rotary-encoder': `int lastA = HIGH; int lastB = HIGH;
 void setup() { pinMode(2, INPUT_PULLUP); pinMode(3, INPUT_PULLUP); pinMode(13, OUTPUT); Serial.begin(115200); }
@@ -241,6 +265,27 @@ function construct(card) {
     SEGMENTS.forEach((segment, index) => {
       wire(session, `net-starter-seven-${segment}-anode`, 'seven-segment-1', segment, `resistor-${index + 3}`, 'B');
       wire(session, `net-starter-seven-${segment}-output`, `resistor-${index + 3}`, 'A', 'board-1', SEGMENT_PINS[index]);
+    });
+  } else if (card.id === 'avr-four-digit-seven-segment') {
+    ['button-1', 'led-1', 'led-2', 'resistor-1', 'resistor-2'].forEach((componentId) => {
+      apply(session, { type: 'component.remove', componentId });
+    });
+    add(session, createFourDigitSevenSegmentComponent(
+      'four-digit-seven-segment-1', 'Workshop four-digit display',
+    ), { x: 0.73, y: 0.66 });
+    FOUR_DIGIT_SEGMENTS.forEach((segment, index) => {
+      const resistorId = `four-digit-resistor-${index + 1}`;
+      add(session, createComponent(resistorId, 'resistor.fixed-v1', {
+        label: `${segment} shared segment resistor`, properties: { ohms: 220 },
+      }), { x: 0.39 + (index % 4) * 0.1, y: 0.43 + Math.floor(index / 4) * 0.12 });
+      wire(session, `net-starter-four-digit-${segment}-anode`,
+        'four-digit-seven-segment-1', segment, resistorId, 'B');
+      wire(session, `net-starter-four-digit-${segment}-drive`,
+        resistorId, 'A', 'board-1', FOUR_DIGIT_SEGMENT_PINS[index]);
+    });
+    FOUR_DIGIT_SELECT_PINS.forEach((boardPin, index) => {
+      wire(session, `net-starter-four-digit-select-${index + 1}`,
+        'four-digit-seven-segment-1', `DIG${index + 1}`, 'board-1', boardPin);
     });
   } else if (card.id === 'avr-rotary-encoder') {
     apply(session, { type: 'component.remove', componentId: 'button-1' });
