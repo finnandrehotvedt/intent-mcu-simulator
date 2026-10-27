@@ -150278,6 +150278,79 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
+      "behaviorContractSha256": "f374a7fa2b907dd5c5068b1971e57525cad4a021a87a5f9512dd2fe7e763cb26",
+      "componentType": "sensor.ball-vibration-switch-no-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.ball-vibration-switch-no-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "sensor.ball-vibration-switch-no-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 90,
+        "cssWidth": 126,
+        "renderer": "sensor-ball-vibration-switch-no",
+        "thumbnail": "sensor-ball-vibration-switch-no",
+        "viewBox": [
+          0,
+          0,
+          126,
+          90
+        ]
+      },
+      "rendererContractSha256": "5de9ef95c959589f02d13aea5a5726318d497ea15ae339d225c4763bab5f2776",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "vibrationDetected": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.ball-vibration-switch-no-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {},
+            "id": "A",
+            "role": "passive",
+            "signals": [
+              "passive.contact"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "B",
+            "role": "passive",
+            "signals": [
+              "passive.contact"
+            ]
+          }
+        ],
+        "properties": {
+          "normallyOpen": {
+            "default": true,
+            "kind": "boolean"
+          }
+        },
+        "support": {
+          "limitations": [
+            "Ideal normally-open passive contact: the contact is represented closed while Vibration detected is enabled.",
+            "No acceleration, frequency, direction, sensitivity, pulse train, contact duration, chatter, bounce, resistance, current rating or wear is modelled.",
+            "The executable AVR example requires one terminal on a direct INPUT_PULLUP pin and the other on a dedicated ground reference."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "82086083198bfad9818e43729e59732b2ac7e9ba4bb503ae2ce2e0cd7acc3b4c",
+      "supportStatus": "partial"
+    },
+    {
       "behaviorContractSha256": "ece47fd6a1532ecc47046feb12559f59f24ae91c10333ea32a69753eeb743f4b",
       "componentType": "sensor.co2-analogue-v1",
       "componentVersion": 1,
@@ -151665,6 +151738,79 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
+      "behaviorContractSha256": "59b894e57e7de7e439d7d3c30f0d84af711047f04667f3f39c4c19b737ef4d52",
+      "componentType": "sensor.tilt-switch-no-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.tilt-switch-no-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "sensor.tilt-switch-no-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 90,
+        "cssWidth": 126,
+        "renderer": "sensor-tilt-switch-no",
+        "thumbnail": "sensor-tilt-switch-no",
+        "viewBox": [
+          0,
+          0,
+          126,
+          90
+        ]
+      },
+      "rendererContractSha256": "c21a72b3949463935f33e5a7c3c260fe8d57a9da93c9a114f06db50dd678c9eb",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "tilted": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.tilt-switch-no-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {},
+            "id": "A",
+            "role": "passive",
+            "signals": [
+              "passive.contact"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "B",
+            "role": "passive",
+            "signals": [
+              "passive.contact"
+            ]
+          }
+        ],
+        "properties": {
+          "normallyOpen": {
+            "default": true,
+            "kind": "boolean"
+          }
+        },
+        "support": {
+          "limitations": [
+            "Ideal normally-open passive contact: the contact closes while Tilted is enabled for this explicitly chosen orientation.",
+            "No angle threshold, gravity vector, mounting orientation beyond the authored state, chatter, bounce, resistance, current rating or wear is modelled.",
+            "The executable AVR example requires one terminal on a direct INPUT_PULLUP pin and the other on a dedicated ground reference."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "efcbae8071e6d02bf6a1c09d81bbf64a47e3c583ae0906cd728e5443af5527f8",
+      "supportStatus": "partial"
+    },
+    {
       "behaviorContractSha256": "89f2cd8c3eb6bdf92e8aa5b592a2033e70f538ae0c0a54069379daf1a4b010f5",
       "componentType": "sensor.tmp36-temperature-analogue-v1",
       "componentVersion": 1,
@@ -152302,6 +152448,79 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
         }
       },
       "semanticSha256": "e827157a930c2968a5c1f314acd06b43791d1ceb2c3744d18f54a9a67502e06c",
+      "supportStatus": "partial"
+    },
+    {
+      "behaviorContractSha256": "94f76cf9e440acc2b9870f4fc9a54934226f54ac0475610e3019ac2fe38f14d7",
+      "componentType": "switch.float-no-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.float-switch-no-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "switch.float-no-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 90,
+        "cssWidth": 126,
+        "renderer": "sensor-float-switch-no",
+        "thumbnail": "sensor-float-switch-no",
+        "viewBox": [
+          0,
+          0,
+          126,
+          90
+        ]
+      },
+      "rendererContractSha256": "797205fac2bb64c81de15cb23b909d67148e4c17673159027f76877929e4a706",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "liquidHigh": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.float-switch-no-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {},
+            "id": "A",
+            "role": "passive",
+            "signals": [
+              "passive.contact"
+            ]
+          },
+          {
+            "constraints": {},
+            "id": "B",
+            "role": "passive",
+            "signals": [
+              "passive.contact"
+            ]
+          }
+        ],
+        "properties": {
+          "normallyOpen": {
+            "default": true,
+            "kind": "boolean"
+          }
+        },
+        "support": {
+          "limitations": [
+            "Ideal normally-open passive contact: the contact closes while Liquid high is enabled.",
+            "No liquid type, buoyancy, mounting orientation, switching height, hysteresis, waves, bounce, resistance, cable, current rating or wear is modelled.",
+            "The executable AVR example requires one terminal on a direct INPUT_PULLUP pin and the other on a dedicated ground reference."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "96cd8348d49a9595b784b4d659cbcaed79527b330539869530893c29d3b957a5",
       "supportStatus": "partial"
     },
     {
@@ -153707,7 +153926,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-control-contracts.mjs",
-      "sha256": "be82e811fd18767ff32f3a94a88bc0062ac4c66da07a78542c35e322d429f8e4"
+      "sha256": "8ca304dfa1ace9eca23da0a64134af46f08872f9690391702b40c8092026dce9"
     },
     {
       "path": "src/simulator.worker.mjs",
@@ -153715,7 +153934,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "b18029be3e8225b2a50acfba8d0e39fce6c6d201b76068667092eac09dea5869"
+      "sha256": "7058a7dfc786da9c5ec21066928061e1b7f4064d0f4c2e90e028a20816e10d5b"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -153747,7 +153966,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "a85b20dac5a804453350d46d9b26aeb5208167385e5cb31f7d3e61fd5184a338"
+      "sha256": "b5e6391eb23acee4d4403a4683756eaa5e5c1139aeffdb36ff866f2a74fadb56"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -153755,7 +153974,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "3527673f394be9d4b98e1e4ec669be351ea5a263d4b415aac283b98e7d87ac3f"
+      "sha256": "547a4a690d3ef668acd61cd13bcce87ccec7fdcb795adbd93c1cb261cc9ad1bb"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -153803,7 +154022,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "2e881db44096735498fa454545468b9ffacc302a4b898cf808327a759699af2d"
+      "sha256": "d61b78db4f429fa2b1449144f1cb7d5a9df918ee263ac123ebd4d6691a8558a6"
     },
     {
       "path": "expansion-drafts/joystick-keypads-v1.mjs",
@@ -153860,6 +154079,14 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     {
       "path": "expansion-drafts/analogue-temperature-ic-sensors-artwork-v1.mjs",
       "sha256": "8ad072a43c8291be1c9639ef361531cacc5462e4315853d4c8597dac2d6b70c3"
+    },
+    {
+      "path": "expansion-drafts/contact-sensors-v1.mjs",
+      "sha256": "73368126aa45d8690649ce31e6eac235236ed0de2cba34fd0c7e99b76d30c68b"
+    },
+    {
+      "path": "expansion-drafts/contact-sensors-artwork-v1.mjs",
+      "sha256": "158728f6daca68b1b476c2a9a035a07ff2d63d3d3d2ee7629eaf4339c22469b3"
     },
     {
       "path": "expansion-drafts/ground-reference-integration-v1.mjs",
@@ -153931,10 +154158,10 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "35baadc8e5c31e1b8be6f63f9e9744a037c13f35d483c66f57b3796e207060ea"
+      "sha256": "da891a2b0ed4b75842c81d392935c9ad06159f47629f89cd85844124b88f027c"
     }
   ],
-  "implementationSha256": "ea2d630e21927701201976dbe55e732b864c6bab749fba5d88515f9b2dd3ffb2",
+  "implementationSha256": "a0aca302f6d0017ed73f8ee4d5a093423524e52ced2e05f0d9c0ce1423f7f3be",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -153944,7 +154171,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract"
   },
-  "manifestSha256": "1691c1bfe7f281036325f3884cc1f11da5caa23eef2c16d279ae4f2d0a10b428",
+  "manifestSha256": "912d16ac738f7ae62c4695a5c80b6c59fc65585d1615eb89837d104d6421a760",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

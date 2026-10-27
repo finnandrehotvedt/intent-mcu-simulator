@@ -434,6 +434,8 @@ import {
   openCandidateUiSession,
 } from '../src/candidate-existing-ui-adapter.mjs';
 import { CONTACT_PERSISTENCE_SCHEMA } from '../expansion-drafts/project-v3-contact-persistence.mjs';
+import { BALL_VIBRATION_SWITCH_TYPE, CONTACT_SENSOR_DEFINITIONS, FLOAT_SWITCH_TYPE,
+  TILT_SWITCH_TYPE } from '../expansion-drafts/contact-sensors-v1.mjs';
 import { POWER_REFERENCE_TYPE } from '../expansion-drafts/power-reference-integration-v1.mjs';
 import { controlRuntimeEvidenceMatrix } from '../src/control-runtime-evidence.mjs';
 import {
@@ -13021,6 +13023,9 @@ function candidateComponentPrefix(type) {
       'switch.reed-no-v1': 'reed-switch',
       'switch.emergency-stop-nc-v1': 'emergency-stop',
       'switch.foot-pedal-no-v1': 'foot-pedal',
+      [FLOAT_SWITCH_TYPE]: 'float-switch',
+      [TILT_SWITCH_TYPE]: 'tilt-switch',
+      [BALL_VIBRATION_SWITCH_TYPE]: 'vibration-switch',
       [ROTARY_SELECTOR_TYPE]: 'rotary-selector',
       'sensor.light-analogue-v1': 'light-sensor',
       'sensor.temperature-analogue-v1': 'temperature-sensor',
@@ -13087,6 +13092,9 @@ function addComponent(type, point = null) {
       'switch.reed-no-v1': { x: 0.58, y: 0.72 },
       'switch.emergency-stop-nc-v1': { x: 0.72, y: 0.72 },
       'switch.foot-pedal-no-v1': { x: 0.84, y: 0.72 },
+      [FLOAT_SWITCH_TYPE]: { x: 0.58, y: 0.62 },
+      [TILT_SWITCH_TYPE]: { x: 0.72, y: 0.62 },
+      [BALL_VIBRATION_SWITCH_TYPE]: { x: 0.84, y: 0.62 },
       [ROTARY_SELECTOR_TYPE]: { x: 0.82, y: 0.66 },
       'sensor.light-analogue-v1': { x: 0.62, y: 0.76 },
       'sensor.temperature-analogue-v1': { x: 0.78, y: 0.76 },
@@ -13600,6 +13608,24 @@ function renderRuntimeControls() {
         const prepared = selectedCandidateContactControl(component.id, key, !component.controls[key]);
         const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
         if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Input control rejected.'); return; }
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject(); renderProject();
+      }); row.append(label, button); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && CONTACT_SENSOR_DEFINITIONS[component.type]) {
+      const row = document.createElement('div'); const label = document.createElement('span');
+      const key = CONTACT_SENSOR_DEFINITIONS[component.type].controlKeys[0];
+      const value = component.controls[key]; label.textContent = component.label;
+      const button = document.createElement('button'); button.type = 'button';
+      button.dataset.control = `${component.id}.${key}`; button.setAttribute('aria-pressed', String(value));
+      button.textContent = component.type === FLOAT_SWITCH_TYPE
+        ? (value ? 'Liquid high · closed' : 'Liquid low · open')
+        : component.type === TILT_SWITCH_TYPE
+          ? (value ? 'Tilted · closed' : 'Level · open')
+          : (value ? 'Vibration detected · closed' : 'Still · open');
+      button.addEventListener('click', () => {
+        const prepared = selectedCandidateContactControl(component.id, key, !component.controls[key]);
+        const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
+        if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Contact sensor control rejected.'); return; }
         applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject(); renderProject();
       }); row.append(label, button); return [row];
     }

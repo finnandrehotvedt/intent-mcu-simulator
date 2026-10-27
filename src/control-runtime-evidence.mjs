@@ -23,6 +23,9 @@ const rows = [
   ['switch.reed-no-v1', 'magnetPresent', 'contact projection · magnetic presence', 'authored reed contact → bounded AVR projection', 'model-projected'],
   ['switch.emergency-stop-nc-v1', 'latched', 'contact projection · instructional latch', 'authored NC stop contact → bounded AVR projection', 'model-projected'],
   ['switch.foot-pedal-no-v1', 'pressed', 'contact projection · pedal press', 'authored pedal contact → bounded AVR projection', 'model-projected'],
+  ['switch.float-no-v1', 'liquidHigh', 'contact projection · liquid state', 'authored float contact → bounded AVR projection', 'model-projected'],
+  ['sensor.tilt-switch-no-v1', 'tilted', 'contact projection · orientation state', 'authored tilt contact → bounded AVR projection', 'model-projected'],
+  ['sensor.ball-vibration-switch-no-v1', 'vibrationDetected', 'contact projection · vibration snapshot', 'authored vibration contact → bounded AVR projection', 'model-projected'],
   ['switch.rotary-selector-4-v1', 'position', 'contact projection · selected one-of-four throw', 'authored COM/P1–P4 contact → bounded AVR projection', 'model-projected'],
   ['sensor.light-analogue-v1', 'lightLevel', 'control · position', 'A0 ADC → executed firmware → USART/D13', 'actual-executed'],
   ['sensor.temperature-analogue-v1', 'temperatureC', 'control · normalized position', 'A1 ADC → executed firmware → USART/D13', 'actual-executed'],
@@ -75,6 +78,8 @@ const rows = [
     ? 'test/analogue-moisture-level-sensors-browser.cjs'
     : ['obstacleDetected', 'lineDetected'].includes(field)
     ? 'test/digital-reflective-sensors-browser.cjs'
+    : ['liquidHigh', 'tilted', 'vibrationDetected'].includes(field)
+      ? 'test/contact-sensors-browser.cjs'
     : ['touched', 'motionDetected', 'magnetPresent'].includes(field)
       ? 'test/digital-presence-sensors-browser.cjs'
     : ['thresholdPercent', 'hysteresisPercentagePoints', 'outputActive'].includes(field)

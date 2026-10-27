@@ -152,6 +152,8 @@ import {
   createAnalogueTemperatureIcSensor,
 } from '../expansion-drafts/analogue-temperature-ic-sensors-v1.mjs';
 import { createAnalogueTemperatureIcArtwork } from '../expansion-drafts/analogue-temperature-ic-sensors-artwork-v1.mjs';
+import { CONTACT_SENSOR_DEFINITIONS, createContactSensor } from '../expansion-drafts/contact-sensors-v1.mjs';
+import { createContactSensorArtwork } from '../expansion-drafts/contact-sensors-artwork-v1.mjs';
 
 export const CANDIDATE_EXISTING_UI_ADAPTER_SCHEMA = 'intent-mcu-candidate-existing-ui@1';
 
@@ -220,6 +222,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   ...ANALOGUE_DETECTION_DEFINITIONS,
   ...ANALOGUE_DIRECTION_FIELD_DEFINITIONS,
   ...ANALOGUE_TEMPERATURE_IC_DEFINITIONS,
+  ...CONTACT_SENSOR_DEFINITIONS,
 });
 
 export function candidateUiDefinition(type) {
@@ -300,6 +303,9 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component?.type]) {
     return createAnalogueTemperatureIcArtwork(documentObject, definition, component, options);
   }
+  if (CONTACT_SENSOR_DEFINITIONS[component?.type]) {
+    return createContactSensorArtwork(documentObject, definition, component, options);
+  }
   throw new TypeError('CANDIDATE_UI_COMPONENT');
 }
 
@@ -335,6 +341,7 @@ export function createCandidateUiComponent(type, id) {
   if (ANALOGUE_DETECTION_DEFINITIONS[type]) return createAnalogueDetectionSensor(type, id);
   if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[type]) return createAnalogueDirectionFieldSensor(type, id);
   if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[type]) return createAnalogueTemperatureIcSensor(type, id);
+  if (CONTACT_SENSOR_DEFINITIONS[type]) return createContactSensor(type, id);
   throw new TypeError('CANDIDATE_UI_COMPONENT_TYPE');
 }
 
@@ -427,6 +434,11 @@ export function candidateContactControl(session, componentId, key, value) {
     return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
   }
   if (component.type === FOOT_PEDAL_TYPE && key === 'pressed' && typeof value === 'boolean') {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+  }
+  if (CONTACT_SENSOR_DEFINITIONS[component.type]
+      && key === CONTACT_SENSOR_DEFINITIONS[component.type].controlKeys[0]
+      && typeof value === 'boolean') {
     return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
   }
   if ([CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE].includes(component.type)

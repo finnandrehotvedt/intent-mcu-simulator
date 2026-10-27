@@ -56,6 +56,7 @@ import { ANALOGUE_DIRECTION_FIELD_DEFINITIONS, HALL_MAGNETIC_ANALOGUE_TYPE,
 import { ANALOGUE_TEMPERATURE_IC_DEFINITIONS, LM35_TEMPERATURE_TYPE,
   TMP36_TEMPERATURE_TYPE,
 } from './analogue-temperature-ic-sensors-v1.mjs';
+import { CONTACT_SENSOR_DEFINITIONS } from './contact-sensors-v1.mjs';
 
 export const CANDIDATE_EDITOR_INTEGRATION_SCHEMA = 'intent-mcu-candidate-editor-session@1';
 export const CANDIDATE_EDITOR_HISTORY_LIMIT = 64;
@@ -79,6 +80,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   MQ_GAS_ANALOGUE_TYPE, CO2_ANALOGUE_TYPE, UV_ANALOGUE_TYPE,
   WIND_DIRECTION_ANALOGUE_TYPE, HALL_MAGNETIC_ANALOGUE_TYPE,
   TMP36_TEMPERATURE_TYPE, LM35_TEMPERATURE_TYPE,
+  ...Object.keys(CONTACT_SENSOR_DEFINITIONS),
 ]);
 
 function validPoint(value) {
@@ -187,6 +189,8 @@ function contactSupport(result) {
           ? 'board-5v-source-projection'
         : contact.type === TOGGLE_SWITCH_TYPE
           ? 'button.momentary-v1'
+        : CONTACT_SENSOR_DEFINITIONS[contact.type]
+          ? 'button.momentary-v1-passive-contact-adapter'
           : contact.type === LIGHT_ANALOGUE_SENSOR_TYPE
             ? 'potentiometer.linear-v1'
           : contact.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE
@@ -555,6 +559,13 @@ export class CandidateEditorSession {
               : component.type === EMERGENCY_STOP_TYPE ? 'latched' : 'pressed';
             if (command.key !== expectedKey || typeof command.value !== 'boolean') {
               return failure('PROJECT_CONTACT_SAFETY_PEDAL_STATE', this.revision);
+            }
+            component.controls[expectedKey] = command.value; runtimeDirty = true; break;
+          }
+          if (CONTACT_SENSOR_DEFINITIONS[component.type]) {
+            const expectedKey = CONTACT_SENSOR_DEFINITIONS[component.type].controlKeys[0];
+            if (command.key !== expectedKey || typeof command.value !== 'boolean') {
+              return failure('PROJECT_CONTACT_SENSOR_STATE', this.revision);
             }
             component.controls[expectedKey] = command.value; runtimeDirty = true; break;
           }

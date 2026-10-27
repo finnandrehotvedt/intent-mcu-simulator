@@ -48,6 +48,8 @@ import {
   EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE, REED_SWITCH_TYPE, SAFETY_PEDAL_INPUT_DEFINITIONS,
   safetyPedalRuntimeState, validateSafetyPedalInput,
 } from './safety-pedal-inputs-v1.mjs';
+import { CONTACT_SENSOR_DEFINITIONS, contactSensorRuntimeState,
+  validateContactSensor } from './contact-sensors-v1.mjs';
 import { LED_BAR_GRAPH_TYPE, RGB_COMMON_ANODE_TYPE, ROTARY_SELECTOR_INDICATOR_DEFINITIONS,
   ROTARY_SELECTOR_TYPE, projectCommonAnodeRgbLeds, projectLedBarGraphs, projectRotarySelectors,
   rotarySelectorContactState,
@@ -224,6 +226,7 @@ function pinIds(component) {
   if (component.type === DIP_SWITCH_4_TYPE) return ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B'];
   if (component.type === ROTARY_ENCODER_BUTTON_TYPE) return ['A', 'COM', 'B', 'SW', 'SWCOM'];
   if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component.type)) return ['A', 'B'];
+  if (CONTACT_SENSOR_DEFINITIONS[component.type]) return ['A', 'B'];
   if (ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type]) {
     return ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type].pins.map((item) => item.id);
   }
@@ -260,6 +263,7 @@ function componentPins(component) {
   if (component.type === LIMIT_SWITCH_TYPE) return LIMIT_SWITCH_DEFINITION.pins;
   if (ADVANCED_SWITCH_INPUT_DEFINITIONS[component.type]) return ADVANCED_SWITCH_INPUT_DEFINITIONS[component.type].pins;
   if (SAFETY_PEDAL_INPUT_DEFINITIONS[component.type]) return SAFETY_PEDAL_INPUT_DEFINITIONS[component.type].pins;
+  if (CONTACT_SENSOR_DEFINITIONS[component.type]) return CONTACT_SENSOR_DEFINITIONS[component.type].pins;
   if (ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type]) return ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type].pins;
   if (JOYSTICK_KEYPAD_DEFINITIONS[component.type]) return JOYSTICK_KEYPAD_DEFINITIONS[component.type].pins;
   if (component.type === SPDT_CONTACT_TYPE) return SPDT_CONTACT_DEFINITION.terminals;
@@ -308,6 +312,8 @@ function validateCandidateComponent(component) {
     if (!validateAdvancedSwitchInput(component)) fail('PROJECT_CONTACT_ADVANCED_SWITCH_STATE', [component.id]);
   } else if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component.type)) {
     if (!validateSafetyPedalInput(component)) fail('PROJECT_CONTACT_SAFETY_PEDAL_STATE', [component.id]);
+  } else if (CONTACT_SENSOR_DEFINITIONS[component.type]) {
+    if (!validateContactSensor(component)) fail('PROJECT_CONTACT_SENSOR_STATE', [component.id]);
   } else if (ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type]) {
     if (!validateRotarySelectorIndicator(component)) fail('PROJECT_CONTACT_ROTARY_SELECTOR_INDICATOR_STATE', [component.id]);
   } else if (JOYSTICK_KEYPAD_DEFINITIONS[component.type]) {
@@ -417,6 +423,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE,
         DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE,
         REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE,
+        ...Object.keys(CONTACT_SENSOR_DEFINITIONS),
         ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
         LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
         RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
@@ -695,6 +702,12 @@ function projectAdvancedSwitchInputs(graph) {
       return [{ id: contactId, type: TOGGLE_SWITCH_TYPE, label: component.label,
         properties: { normallyOpen: true }, controls: { closed: safetyPedalRuntimeState(component).closed } }];
     }
+    if (CONTACT_SENSOR_DEFINITIONS[component.type]) {
+      const contactId = component.id;
+      replacements.set(component.id, { A: { component: contactId, pin: 'A' }, B: { component: contactId, pin: 'B' } });
+      return [{ id: contactId, type: TOGGLE_SWITCH_TYPE, label: component.label,
+        properties: { normallyOpen: true }, controls: { closed: contactSensorRuntimeState(component).closed } }];
+    }
     return [component];
   });
   projected.nets = projected.nets.map((net) => ({ ...net, endpoints: net.endpoints.map((endpoint) => {
@@ -762,6 +775,11 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
     }
     if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component.type)) {
       const state = safetyPedalRuntimeState(component);
+      production(implementation, component.type, { closed: state.closed }, [component.id]);
+      contacts.push({ componentId: component.id, type: component.type, state });
+    }
+    if (CONTACT_SENSOR_DEFINITIONS[component.type]) {
+      const state = contactSensorRuntimeState(component);
       production(implementation, component.type, { closed: state.closed }, [component.id]);
       contacts.push({ componentId: component.id, type: component.type, state });
     }
@@ -1092,6 +1110,9 @@ function draftContacts(graph) {
     if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component.type)) {
       return [{ componentId: component.id, type: component.type, state: safetyPedalRuntimeState(component) }];
     }
+    if (CONTACT_SENSOR_DEFINITIONS[component.type]) {
+      return [{ componentId: component.id, type: component.type, state: contactSensorRuntimeState(component) }];
+    }
     if (component.type === ROTARY_SELECTOR_TYPE) {
       return [{ componentId: component.id, type: component.type, state: {
         position: component.controls.position, contacts: rotarySelectorContactState(component),
@@ -1333,6 +1354,7 @@ export function validateContactPersistenceProject(value, options = {}) {
   if (!draft.reconstruction.graph.components.some(
     (component) => [
       GROUND_REFERENCE_TYPE, POWER_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
+      ...Object.keys(CONTACT_SENSOR_DEFINITIONS),
       LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
       RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
       DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,

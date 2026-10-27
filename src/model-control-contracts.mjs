@@ -53,6 +53,15 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
   'switch.foot-pedal-no-v1': {
     pressed: { kind: 'boolean', default: false, mutability: 'authored' },
   },
+  'switch.float-no-v1': {
+    liquidHigh: { kind: 'boolean', default: false, mutability: 'authored' },
+  },
+  'sensor.tilt-switch-no-v1': {
+    tilted: { kind: 'boolean', default: false, mutability: 'authored' },
+  },
+  'sensor.ball-vibration-switch-no-v1': {
+    vibrationDetected: { kind: 'boolean', default: false, mutability: 'authored' },
+  },
   'switch.rotary-selector-4-v1': {
     position: { kind: 'integer', minimum: 1, maximum: 4, default: 1,
       unit: 'position', mutability: 'authored' },
