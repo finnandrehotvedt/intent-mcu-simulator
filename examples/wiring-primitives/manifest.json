@@ -1,5 +1,37 @@
 {
-  "schema": "intent-mcu-wiring-primitive-example-manifest@1",
+  "schema": "intent-mcu-wiring-primitive-example-manifest@2",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "0777557ad9327be568169fa8daf24c879ca1793f93f9ec174297d28a9bd1f1f5",
+    "implementationSha256": "f0d6827049cc490e7841e1a535df41d041e1510b525c9d2f1dc7a2c8b219d5c9"
+  },
+  "requirementIds": [
+    "CMP-019"
+  ],
+  "profileBehavior": {
+    "board.atmega328p-16mhz-v1": {
+      "representation": "explicit-junction-record",
+      "explicitJunctionIdentity": true,
+      "runtimeBoundary": "Topology participates only in a fresh project-specific AVR Build; this contract grants no independent runtime authority."
+    },
+    "board.rp2040-pico-v1": {
+      "representation": "validated-multi-endpoint-net",
+      "explicitJunctionIdentity": false,
+      "runtimeBoundary": "The canonical example is authoring-only and has no executable projection."
+    },
+    "board.esp32-c3-devmodule-v1": {
+      "representation": "validated-multi-endpoint-net",
+      "explicitJunctionIdentity": false,
+      "runtimeBoundary": "The canonical example is authoring-only and has no executable projection."
+    },
+    "board.stm32f429zi-nucleo144-v1": {
+      "representation": "validated-multi-endpoint-net",
+      "explicitJunctionIdentity": false,
+      "runtimeBoundary": "The canonical example is authoring-only and has no executable projection."
+    }
+  },
   "entries": [
     {
       "id": "avr-explicit-junction-crossing",
@@ -8,7 +40,8 @@
       ],
       "file": "avr-explicit-junction-crossing.intent-mcu.json",
       "profile": "board.atmega328p-16mhz-v1",
-      "projectSha256": "a8bfd01621f23935b44827a8c4d4c12ecc5579a13159b803f1301bc1798a2545",
+      "projectSha256": "45bad4e45cfe57119716b0485a8bdef03d5cd382574981772b291ee412279843",
+      "sourceSha256": "41a0f9060221af6d28f8ff2fa6ff67fb593ace58717ffebf50c063e4e1275a28",
       "junction": {
         "id": "junction-ground",
         "netId": "net-ground-branch",
@@ -19,7 +52,8 @@
           "led-1.CATHODE",
           "led-2.CATHODE",
           "pot-1.LOW"
-        ]
+        ],
+        "representation": "explicit-junction-record"
       },
       "crossing": {
         "netIds": [
@@ -32,8 +66,139 @@
         },
         "electricallyConnected": false
       },
-      "expectedBehavior": "Only the declared ground junction joins branches; the D2 route crossing at the same drawing point remains a separate net.",
-      "limits": "A junction is an explicit graph operation, not a decorative component. Route crossings never infer electrical identity."
+      "runtimeUnavailableCode": null,
+      "runtimeBoundary": "Topology participates only in a fresh project-specific AVR Build; this contract grants no independent runtime authority.",
+      "expectedBehavior": "Only endpoints in the declared branched net are joined; the other route at the same drawing point remains a separate net.",
+      "limitations": [
+        "A junction is authored graph topology, not a decorative or physical component.",
+        "Only endpoints in the declared branched net are electrically joined; a different net crossing at the same drawing point remains separate.",
+        "The contract does not model contact resistance, current capacity, voltage drop, heating, parasitics, arcing, insulation, safety certification or physical hardware.",
+        "Opening or drawing a junction never restores or creates executable authority."
+      ],
+      "provenance": "Original project-owned graph contract, route data, canonical project data and example source."
+    },
+    {
+      "id": "pico-explicit-junction-crossing",
+      "requirementIds": [
+        "CMP-019"
+      ],
+      "file": "pico-explicit-junction-crossing.intent-mcu.json",
+      "profile": "board.rp2040-pico-v1",
+      "projectSha256": "4f55c4ac646b9a7b10e7f7e5f51fa4d221bc5494346663005c6aef70e9b5062b",
+      "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
+      "junction": {
+        "id": null,
+        "netId": "net-ground",
+        "endpointKeys": [
+          "ground-1.GND",
+          "led-1.CATHODE",
+          "pico-1.GND3"
+        ],
+        "representation": "validated-multi-endpoint-net"
+      },
+      "crossing": {
+        "netIds": [
+          "net-ground",
+          "net-gpio0"
+        ],
+        "point": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "electricallyConnected": false
+      },
+      "runtimeUnavailableCode": "MODEL_LIBRARY_COMPONENT_UNAVAILABLE",
+      "runtimeBoundary": "The canonical example is authoring-only and has no executable projection.",
+      "expectedBehavior": "Only endpoints in the declared branched net are joined; the other route at the same drawing point remains a separate net.",
+      "limitations": [
+        "A junction is authored graph topology, not a decorative or physical component.",
+        "Only endpoints in the declared branched net are electrically joined; a different net crossing at the same drawing point remains separate.",
+        "The contract does not model contact resistance, current capacity, voltage drop, heating, parasitics, arcing, insulation, safety certification or physical hardware.",
+        "Opening or drawing a junction never restores or creates executable authority."
+      ],
+      "provenance": "Original project-owned graph contract, route data, canonical project data and example source."
+    },
+    {
+      "id": "esp32-c3-explicit-junction-crossing",
+      "requirementIds": [
+        "CMP-019"
+      ],
+      "file": "esp32-c3-explicit-junction-crossing.intent-mcu.json",
+      "profile": "board.esp32-c3-devmodule-v1",
+      "projectSha256": "b8723bd0bfcab14e764fc2af5436ec5e343fc4b814963a3c669146fe583cb1e7",
+      "sourceSha256": "d936fc50b2c874d6af660ece56abbb024c86e7b30462c403542b8d2166b85480",
+      "junction": {
+        "id": null,
+        "netId": "net-ground",
+        "endpointKeys": [
+          "c3-1.GND",
+          "ground-1.GND",
+          "led-1.CATHODE"
+        ],
+        "representation": "validated-multi-endpoint-net"
+      },
+      "crossing": {
+        "netIds": [
+          "net-ground",
+          "net-gpio2"
+        ],
+        "point": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "electricallyConnected": false
+      },
+      "runtimeUnavailableCode": "MODEL_LIBRARY_COMPONENT_UNAVAILABLE",
+      "runtimeBoundary": "The canonical example is authoring-only and has no executable projection.",
+      "expectedBehavior": "Only endpoints in the declared branched net are joined; the other route at the same drawing point remains a separate net.",
+      "limitations": [
+        "A junction is authored graph topology, not a decorative or physical component.",
+        "Only endpoints in the declared branched net are electrically joined; a different net crossing at the same drawing point remains separate.",
+        "The contract does not model contact resistance, current capacity, voltage drop, heating, parasitics, arcing, insulation, safety certification or physical hardware.",
+        "Opening or drawing a junction never restores or creates executable authority."
+      ],
+      "provenance": "Original project-owned graph contract, route data, canonical project data and example source."
+    },
+    {
+      "id": "stm32-explicit-junction-crossing",
+      "requirementIds": [
+        "CMP-019"
+      ],
+      "file": "stm32-explicit-junction-crossing.intent-mcu.json",
+      "profile": "board.stm32f429zi-nucleo144-v1",
+      "projectSha256": "ab51b985c0a7a1f30a31a6c83399f2214f8b8ad024835daf9609a9867cc3fff9",
+      "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
+      "junction": {
+        "id": null,
+        "netId": "net-ground",
+        "endpointKeys": [
+          "ground-1.GND",
+          "led-1.CATHODE",
+          "stm32-1.GND"
+        ],
+        "representation": "validated-multi-endpoint-net"
+      },
+      "crossing": {
+        "netIds": [
+          "net-ground",
+          "net-pb0"
+        ],
+        "point": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "electricallyConnected": false
+      },
+      "runtimeUnavailableCode": "MODEL_LIBRARY_COMPONENT_UNAVAILABLE",
+      "runtimeBoundary": "The canonical example is authoring-only and has no executable projection.",
+      "expectedBehavior": "Only endpoints in the declared branched net are joined; the other route at the same drawing point remains a separate net.",
+      "limitations": [
+        "A junction is authored graph topology, not a decorative or physical component.",
+        "Only endpoints in the declared branched net are electrically joined; a different net crossing at the same drawing point remains separate.",
+        "The contract does not model contact resistance, current capacity, voltage drop, heating, parasitics, arcing, insulation, safety certification or physical hardware.",
+        "Opening or drawing a junction never restores or creates executable authority."
+      ],
+      "provenance": "Original project-owned graph contract, route data, canonical project data and example source."
     }
   ]
 }
